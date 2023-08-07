@@ -6,7 +6,7 @@
  */
 package io.camunda.operate.webapp.security.identity;
 
-import static io.camunda.operate.webapp.security.OperateProfileService.IDENTITY_AUTH_PROFILE;
+import static io.camunda.operate.OperateProfileService.IDENTITY_AUTH_PROFILE;
 import static io.camunda.operate.webapp.security.OperateURIs.IDENTITY_CALLBACK_URI;
 
 import io.camunda.identity.sdk.Identity;

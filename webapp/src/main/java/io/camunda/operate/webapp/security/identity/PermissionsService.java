@@ -8,23 +8,15 @@ package io.camunda.operate.webapp.security.identity;
 
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.schema.indices.DecisionIndex;
-import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.webapp.security.sso.TokenAuthentication;
 import jakarta.annotation.PostConstruct;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class PermissionsService {
@@ -96,7 +88,7 @@ public class PermissionsService {
   /**
    * getDecisionDefinitionPermission
    *
-   * @param decisionId decisionId
+   * @param decisionId                 decisionId
    * @param includeWildcardPermissions true to include the wildcard permission, false to not include them
    * @return Identity permissions for the given decisionId
    */
@@ -122,6 +114,7 @@ public class PermissionsService {
 
   /**
    * hasPermissionForProcess
+   *
    * @return true if the user has the given permission for the process
    */
   public boolean hasPermissionForProcess(String bpmnProcessId, IdentityPermission permission) {
@@ -137,6 +130,7 @@ public class PermissionsService {
 
   /**
    * hasPermissionForDecision
+   *
    * @return true if the user has the given permission for the decision
    */
   public boolean hasPermissionForDecision(String decisionId, IdentityPermission permission) {
@@ -182,16 +176,8 @@ public class PermissionsService {
   }
 
   /**
-   * createQueryForProcessesByPermission
-   * @return query that matches the processes for which the user has the given permission
-   */
-  public QueryBuilder createQueryForProcessesByPermission(IdentityPermission permission) {
-    ResourcesAllowed allowed = getProcessesWithPermission(permission);
-    return allowed.isAll() ? QueryBuilders.matchAllQuery() : QueryBuilders.termsQuery(ListViewTemplate.BPMN_PROCESS_ID, allowed.getIds());
-  }
-
-  /**
    * getProcessesWithPermission
+   *
    * @return processes for which the user has the given permission; the result matches either all processes, or a list of bpmnProcessId
    */
   public ResourcesAllowed getProcessesWithPermission(IdentityPermission permission) {
@@ -217,16 +203,8 @@ public class PermissionsService {
   }
 
   /**
-   * createQueryForDecisionsByPermission
-   * @return query that matches the decisions for which the user has the given permission
-   */
-  public QueryBuilder createQueryForDecisionsByPermission(IdentityPermission permission) {
-    ResourcesAllowed allowed = getDecisionsWithPermission(permission);
-    return allowed.isAll() ? QueryBuilders.matchAllQuery() : QueryBuilders.termsQuery(DecisionIndex.DECISION_ID, allowed.getIds());
-  }
-
-  /**
    * getDecisionsWithPermission
+   *
    * @return decisions for which the user has the given permission; the result matches either all decisions, or a list of decisionId
    */
   public ResourcesAllowed getDecisionsWithPermission(IdentityPermission permission) {
@@ -255,9 +233,34 @@ public class PermissionsService {
    * ResourcesAllowed
    */
   public static class ResourcesAllowed {
-
     private boolean all;
     private Set<String> ids;
+
+    private ResourcesAllowed(boolean all, Set<String> ids) {
+      this.all = all;
+      this.ids = ids;
+    }
+
+    public static ResourcesAllowed all() {
+      return new ResourcesAllowed(true, null);
+    }
+
+    public static ResourcesAllowed withIds(Set<String> ids) {
+      return new ResourcesAllowed(false, ids);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+      ResourcesAllowed that = (ResourcesAllowed) o;
+      return all == that.all && Objects.equals(ids, that.ids);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(all, ids);
+    }
 
     /**
      * isAll
@@ -275,19 +278,6 @@ public class PermissionsService {
      */
     public Set<String> getIds() {
       return ids;
-    }
-
-    private ResourcesAllowed(boolean all, Set<String> ids) {
-      this.all = all;
-      this.ids = ids;
-    }
-
-    public static ResourcesAllowed all() {
-      return new ResourcesAllowed(true, null);
-    }
-
-    public static ResourcesAllowed withIds(Set<String> ids) {
-      return new ResourcesAllowed(false, ids);
     }
   }
 }

@@ -6,8 +6,6 @@
  */
 package io.camunda.operate.webapp.security.ldap;
 
-import static io.camunda.operate.webapp.security.OperateProfileService.LDAP_AUTH_PROFILE;
-
 import io.camunda.operate.property.OperateProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,6 +15,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.ldap.core.LdapTemplate;
 import org.springframework.ldap.core.support.LdapContextSource;
+
+import static io.camunda.operate.OperateProfileService.LDAP_AUTH_PROFILE;
 
 @Configuration
 @Profile(LDAP_AUTH_PROFILE)

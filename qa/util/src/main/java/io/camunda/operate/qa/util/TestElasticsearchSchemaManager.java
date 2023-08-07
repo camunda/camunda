@@ -6,13 +6,11 @@
  */
 package io.camunda.operate.qa.util;
 
-import io.camunda.operate.schema.ElasticsearchSchemaManager;
+import io.camunda.operate.schema.elasticsearch.ElasticsearchSchemaManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
-
-import jakarta.annotation.PostConstruct;
 
 @Component("schemaManager")
 @Profile("test")

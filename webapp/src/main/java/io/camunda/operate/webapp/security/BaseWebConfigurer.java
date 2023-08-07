@@ -11,6 +11,7 @@ import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 import static org.springframework.http.HttpStatus.NO_CONTENT;
 import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 
+import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.property.OperateProperties;
 import java.io.IOException;
 import java.io.PrintWriter;

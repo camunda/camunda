@@ -8,7 +8,7 @@ package io.camunda.operate.webapp.management;
 
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.webapp.api.v1.rest.ErrorController;
-import io.camunda.operate.webapp.es.backup.BackupManager;
+import io.camunda.operate.webapp.backup.BackupService;
 import io.camunda.operate.webapp.management.dto.GetBackupStateResponseDto;
 import io.camunda.operate.webapp.management.dto.TakeBackupRequestDto;
 import io.camunda.operate.webapp.management.dto.TakeBackupResponseDto;
@@ -29,7 +29,7 @@ import java.util.regex.Pattern;
 public class BackupController extends ErrorController {
 
   @Autowired
-  private BackupManager backupManager;
+  private BackupService backupService;
 
   @Autowired
   private OperateProperties operateProperties;
@@ -40,7 +40,7 @@ public class BackupController extends ErrorController {
   public TakeBackupResponseDto takeBackup(@RequestBody TakeBackupRequestDto request) {
     validateRequest(request);
     validateRepositoryNameIsConfigured();
-    return backupManager.takeBackup(request);
+    return backupService.takeBackup(request);
   }
 
   private void validateRepositoryNameIsConfigured() {
@@ -54,13 +54,13 @@ public class BackupController extends ErrorController {
   public GetBackupStateResponseDto getBackupState(@PathVariable Integer backupId) {
     validateBackupId(backupId);
     validateRepositoryNameIsConfigured();
-    return backupManager.getBackupState(backupId);
+    return backupService.getBackupState(backupId);
   }
 
   @GetMapping
   public List<GetBackupStateResponseDto> getBackups() {
     validateRepositoryNameIsConfigured();
-    return backupManager.getBackups();
+    return backupService.getBackups();
   }
 
   @DeleteMapping("/{backupId}")
@@ -68,7 +68,7 @@ public class BackupController extends ErrorController {
   public void deleteBackup(@PathVariable Integer backupId) {
     validateBackupId(backupId);
     validateRepositoryNameIsConfigured();
-    backupManager.deleteBackup(backupId);
+    backupService.deleteBackup(backupId);
   }
 
   private void validateRequest(TakeBackupRequestDto request) {

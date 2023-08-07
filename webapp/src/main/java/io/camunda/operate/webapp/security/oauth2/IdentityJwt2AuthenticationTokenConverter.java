@@ -6,8 +6,6 @@
  */
 package io.camunda.operate.webapp.security.oauth2;
 
-import static io.camunda.operate.webapp.security.OperateProfileService.IDENTITY_AUTH_PROFILE;
-
 import io.camunda.identity.sdk.Identity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
@@ -17,6 +15,8 @@ import org.springframework.security.authentication.InsufficientAuthenticationExc
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Component;
+
+import static io.camunda.operate.OperateProfileService.IDENTITY_AUTH_PROFILE;
 
 @Component
 @Profile(IDENTITY_AUTH_PROFILE)

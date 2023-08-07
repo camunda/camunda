@@ -7,15 +7,17 @@
 package io.camunda.operate.store.elasticsearch;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.operate.entities.OperationEntity;
-import io.camunda.operate.entities.OperationState;
-import io.camunda.operate.entities.OperationType;
+import io.camunda.operate.entities.*;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.exceptions.PersistenceException;
+import io.camunda.operate.schema.templates.BatchOperationTemplate;
 import io.camunda.operate.schema.templates.OperationTemplate;
+import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.store.OperationStore;
 import io.camunda.operate.util.ElasticsearchUtil;
+import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -24,6 +26,10 @@ import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.elasticsearch.xcontent.XContentType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
@@ -35,6 +41,9 @@ import java.util.List;
 import java.util.Map;
 
 import static io.camunda.operate.util.ElasticsearchUtil.*;
+
+import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
+import static io.camunda.operate.util.ElasticsearchUtil.scroll;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
@@ -42,6 +51,7 @@ import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 @Profile("!opensearch")
 public class ElasticsearchOperationStore implements OperationStore {
 
+  private static final Logger logger = LoggerFactory.getLogger(ElasticsearchOperationStore.class);
   @Autowired
   private ObjectMapper objectMapper;
 
@@ -50,6 +60,12 @@ public class ElasticsearchOperationStore implements OperationStore {
 
   @Autowired
   private OperationTemplate operationTemplate;
+
+  @Autowired
+  private BatchOperationTemplate batchOperationTemplate;
+
+  @Autowired
+  private BeanFactory beanFactory;
 
   @Override
   public Map<String, String> getIndexNameForAliasAndIds(String alias, Collection<String> ids) {
@@ -88,6 +104,36 @@ public class ElasticsearchOperationStore implements OperationStore {
   }
 
   @Override
+  public String add(BatchOperationEntity batchOperationEntity) throws PersistenceException {
+    try {
+      var indexRequest = new IndexRequest(batchOperationTemplate.getFullQualifiedName()).id(batchOperationEntity.getId()).
+          source(objectMapper.writeValueAsString(batchOperationEntity), XContentType.JSON);
+      esClient.index(indexRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      logger.error("Error persisting batch operation", e);
+      throw new PersistenceException(
+          String.format("Error persisting batch operation of type [%s]", batchOperationEntity.getType()), e);
+    }
+    return batchOperationEntity.getId();
+  }
+
+  @Override
+  public void update(OperationEntity operation, boolean refreshImmediately) throws PersistenceException {
+    try {
+      Map<String, Object> jsonMap = objectMapper.readValue(objectMapper.writeValueAsString(operation), HashMap.class);
+
+      UpdateRequest updateRequest = new UpdateRequest().index(operationTemplate.getFullQualifiedName()).id(operation.getId()).doc(jsonMap).retryOnConflict(UPDATE_RETRY_COUNT);
+      if (refreshImmediately) {
+        updateRequest = updateRequest.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
+      }
+      esClient.update(updateRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      throw new PersistenceException(
+          String.format("Error preparing the query to update operation [%s] for process instance id [%s]", operation.getId(), operation.getProcessInstanceKey()), e);
+    }
+  }
+
+  @Override
   public void updateWithScript(String index, String id, String script,
       Map<String, Object> parameters) {
     try {
@@ -109,5 +155,10 @@ public class ElasticsearchOperationStore implements OperationStore {
     } catch (IOException e) {
       throw new PersistenceException(e);
     }
+  }
+
+  @Override
+  public BatchRequest newBatchRequest() {
+    return beanFactory.getBean(BatchRequest.class);
   }
 }

@@ -6,12 +6,12 @@
  */
 package io.camunda.operate.webapp;
 
+import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.webapp.rest.exception.Error;
 import io.camunda.operate.webapp.rest.exception.InternalAPIException;
 import io.camunda.operate.webapp.rest.exception.NotAuthorizedException;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
-import io.camunda.operate.webapp.security.OperateProfileService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

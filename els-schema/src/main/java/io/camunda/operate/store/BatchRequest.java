@@ -6,9 +6,11 @@
  */
 package io.camunda.operate.store;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import io.camunda.operate.entities.OperateEntity;
 import io.camunda.operate.exceptions.PersistenceException;
 
+import java.util.HashMap;
 import java.util.Map;
 
 public interface BatchRequest {
@@ -24,7 +26,11 @@ public interface BatchRequest {
 
   BatchRequest update(String index, String id, Map<String,Object> updateFields) throws PersistenceException;
 
+  BatchRequest update(String index, String id, OperateEntity entity) throws PersistenceException;
+
   BatchRequest updateWithScript(String index, String id, String script, Map<String,Object> parameters) throws
       PersistenceException;
   void execute() throws PersistenceException;
+
+  void executeWithRefresh() throws PersistenceException;
 }

@@ -7,8 +7,6 @@
 package io.camunda.operate.zeebeimport;
 
 import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllProcessInstancesRequest;
-import static io.camunda.operate.schema.templates.ListViewTemplate.ACTIVITIES_JOIN_RELATION;
-import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
 import static io.camunda.operate.util.ThreadUtil.sleepFor;
 import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -29,15 +27,15 @@ import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.schema.templates.VariableTemplate;
 import io.camunda.operate.store.NotFoundException;
+import io.camunda.operate.store.SequenceFlowStore;
 import io.camunda.operate.util.ConversionUtils;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.util.OperateZeebeIntegrationTest;
 import io.camunda.operate.util.ZeebeTestUtil;
-import io.camunda.operate.webapp.es.reader.FlowNodeInstanceReader;
-import io.camunda.operate.webapp.es.reader.IncidentReader;
-import io.camunda.operate.webapp.es.reader.ListViewReader;
-import io.camunda.operate.webapp.es.reader.ProcessInstanceReader;
-import io.camunda.operate.webapp.es.reader.SequenceFlowReader;
+import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
+import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
+import io.camunda.operate.webapp.reader.IncidentReader;
+import io.camunda.operate.webapp.reader.ListViewReader;
 import io.camunda.operate.webapp.rest.dto.ProcessInstanceReferenceDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
@@ -48,21 +46,14 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.IOException;
 import java.time.OffsetDateTime;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
 import org.elasticsearch.index.query.TermQueryBuilder;
-import org.elasticsearch.index.reindex.BulkByScrollResponse;
-import org.elasticsearch.index.reindex.UpdateByQueryRequest;
-import org.elasticsearch.script.Script;
-import org.elasticsearch.script.ScriptType;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MvcResult;
@@ -82,7 +73,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
   private ListViewReader listViewReader;
 
   @Autowired
-  private SequenceFlowReader sequenceFlowReader;
+  private SequenceFlowStore sequenceFlowStore;
 
   @Autowired
   private RestHighLevelClient esClient;
@@ -775,7 +766,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "taskA");
 
     //then
-    final List<SequenceFlowEntity> sequenceFlowEntities = sequenceFlowReader.getSequenceFlowsByProcessInstanceKey(processInstanceKey);
+    final List<SequenceFlowEntity> sequenceFlowEntities = sequenceFlowStore.getSequenceFlowsByProcessInstanceKey(processInstanceKey);
     assertThat(sequenceFlowEntities).hasSize(1);
 
     SequenceFlowEntity sequenceFlowEntity = sequenceFlowEntities.get(0);

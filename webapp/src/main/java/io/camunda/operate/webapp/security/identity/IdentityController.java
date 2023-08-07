@@ -26,7 +26,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
-import static io.camunda.operate.webapp.security.OperateProfileService.IDENTITY_AUTH_PROFILE;
+import static io.camunda.operate.OperateProfileService.IDENTITY_AUTH_PROFILE;
 import static io.camunda.operate.webapp.security.OperateURIs.*;
 
 @Controller

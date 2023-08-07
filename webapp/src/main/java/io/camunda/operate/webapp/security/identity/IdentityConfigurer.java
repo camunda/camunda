@@ -8,15 +8,17 @@ package io.camunda.operate.webapp.security.identity;
 
 import io.camunda.identity.sdk.Identity;
 import io.camunda.identity.sdk.IdentityConfiguration;
+import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.webapp.security.OperateProfileService;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 
+import static io.camunda.operate.OperateProfileService.IDENTITY_AUTH_PROFILE;
+
+@Profile(IDENTITY_AUTH_PROFILE)
 @Configuration
 public class IdentityConfigurer {
 

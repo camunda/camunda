@@ -26,7 +26,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.ldap.userdetails.LdapUserDetails;
 import org.springframework.stereotype.Component;
 
-import static io.camunda.operate.webapp.security.OperateProfileService.LDAP_AUTH_PROFILE;
+import static io.camunda.operate.OperateProfileService.LDAP_AUTH_PROFILE;
 import static io.camunda.operate.webapp.security.Permission.READ;
 import static io.camunda.operate.webapp.security.Permission.WRITE;
 

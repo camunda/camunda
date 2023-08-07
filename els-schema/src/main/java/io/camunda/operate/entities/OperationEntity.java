@@ -51,16 +51,18 @@ public class OperationEntity extends OperateEntity<OperationEntity> {
     return processDefinitionKey;
   }
 
-  public void setProcessDefinitionKey(Long processDefinitionKey) {
+  public OperationEntity setProcessDefinitionKey(Long processDefinitionKey) {
     this.processDefinitionKey = processDefinitionKey;
+    return this;
   }
 
   public String getBpmnProcessId() {
     return bpmnProcessId;
   }
 
-  public void setBpmnProcessId(String bpmnProcessId) {
+  public OperationEntity setBpmnProcessId(String bpmnProcessId) {
     this.bpmnProcessId = bpmnProcessId;
+    return this;
   }
 
   public Long getDecisionDefinitionKey() {
@@ -75,96 +77,108 @@ public class OperationEntity extends OperateEntity<OperationEntity> {
     return incidentKey;
   }
 
-  public void setIncidentKey(Long incidentKey) {
+  public OperationEntity setIncidentKey(Long incidentKey) {
     this.incidentKey = incidentKey;
+    return this;
   }
 
   public Long getScopeKey() {
     return scopeKey;
   }
 
-  public void setScopeKey(Long scopeKey) {
+  public OperationEntity setScopeKey(Long scopeKey) {
     this.scopeKey = scopeKey;
+    return this;
   }
 
   public String getVariableName() {
     return variableName;
   }
 
-  public void setVariableName(String variableName) {
+  public OperationEntity setVariableName(String variableName) {
     this.variableName = variableName;
+    return this;
   }
 
   public String getVariableValue() {
     return variableValue;
   }
 
-  public void setVariableValue(String variableValue) {
+  public OperationEntity setVariableValue(String variableValue) {
     this.variableValue = variableValue;
+    return this;
   }
 
   public OperationType getType() {
     return type;
   }
 
-  public void setType(OperationType type) {
+  public OperationEntity setType(OperationType type) {
     this.type = type;
+    return this;
   }
 
   public Long getZeebeCommandKey() {
     return zeebeCommandKey;
   }
 
-  public void setZeebeCommandKey(Long zeebeCommandKey) {
+  public OperationEntity setZeebeCommandKey(Long zeebeCommandKey) {
     this.zeebeCommandKey = zeebeCommandKey;
+    return this;
   }
 
   public OperationState getState() {
     return state;
   }
 
-  public void setState(OperationState state) {
+  public OperationEntity setState(OperationState state) {
     this.state = state;
+    return this;
   }
 
   public OffsetDateTime getLockExpirationTime() {
     return lockExpirationTime;
   }
 
-  public void setLockExpirationTime(OffsetDateTime lockExpirationTime) {
+  public OperationEntity setLockExpirationTime(OffsetDateTime lockExpirationTime) {
     this.lockExpirationTime = lockExpirationTime;
+    return this;
   }
 
   public String getLockOwner() {
     return lockOwner;
   }
 
-  public void setLockOwner(String lockOwner) {
+  public OperationEntity setLockOwner(String lockOwner) {
     this.lockOwner = lockOwner;
+    return this;
   }
 
   public String getErrorMessage() {
     return errorMessage;
   }
 
-  public void setErrorMessage(String errorMessage) {
+  public OperationEntity setErrorMessage(String errorMessage) {
     this.errorMessage = errorMessage;
+    return this;
   }
 
   public String getBatchOperationId() {
     return batchOperationId;
   }
 
-  public void setBatchOperationId(String batchOperationId) {
+  public OperationEntity setBatchOperationId(String batchOperationId) {
     this.batchOperationId = batchOperationId;
+    return this;
   }
 
   public String getUsername() {
     return username;
   }
 
-  public void setUsername(String username) {
+  public OperationEntity setUsername(String username) {
     this.username = username;
+    return this;
   }
 
   public String getModifyInstructions() {

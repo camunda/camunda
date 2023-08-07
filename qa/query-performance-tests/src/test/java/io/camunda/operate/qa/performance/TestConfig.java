@@ -8,7 +8,9 @@ package io.camunda.operate.qa.performance;
 
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
-import io.camunda.operate.es.ElasticsearchConnector;
+
+import io.camunda.operate.connect.CustomOffsetDateTimeDeserializer;
+import io.camunda.operate.connect.CustomOffsetDateTimeSerializer;
 import io.camunda.operate.property.ElasticsearchProperties;
 import org.springframework.beans.factory.config.YamlPropertiesFactoryBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -51,8 +53,8 @@ public class TestConfig {
   @Bean
   public ObjectMapper getObjectMapper() {
     JavaTimeModule javaTimeModule = new JavaTimeModule();
-    javaTimeModule.addSerializer(OffsetDateTime.class, new ElasticsearchConnector.CustomOffsetDateTimeSerializer(getDateTimeFormatter()));
-    javaTimeModule.addDeserializer(OffsetDateTime.class, new ElasticsearchConnector.CustomOffsetDateTimeDeserializer(getDateTimeFormatter()));
+    javaTimeModule.addSerializer(OffsetDateTime.class, new CustomOffsetDateTimeSerializer(getDateTimeFormatter()));
+    javaTimeModule.addDeserializer(OffsetDateTime.class, new CustomOffsetDateTimeDeserializer(getDateTimeFormatter()));
     return Jackson2ObjectMapperBuilder.json().modules(javaTimeModule, new Jdk8Module())
         .featuresToDisable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE,
             DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)

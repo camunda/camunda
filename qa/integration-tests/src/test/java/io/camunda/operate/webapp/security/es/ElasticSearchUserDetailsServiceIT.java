@@ -14,6 +14,8 @@ import io.camunda.operate.schema.indices.UserIndex;
 import io.camunda.operate.util.ElasticsearchTestRule;
 import io.camunda.operate.util.OperateIntegrationTest;
 import io.camunda.operate.util.TestApplication;
+import io.camunda.operate.webapp.security.auth.OperateUserDetailsService;
+import io.camunda.operate.webapp.security.auth.User;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
@@ -49,7 +51,7 @@ public class ElasticSearchUserDetailsServiceIT extends OperateIntegrationTest {
   public static final String TEST_PASSWORD = "psw1";
 
   @Autowired
-  private ElasticSearchUserDetailsService userDetailsService;
+  private OperateUserDetailsService userDetailsService;
 
   @Autowired
   private RestHighLevelClient esClient;

@@ -7,11 +7,11 @@
 package io.camunda.operate.rest;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.BDDMockito.given;
 
-import io.camunda.operate.es.ElasticsearchConnector;
+import io.camunda.operate.OperateProfileService;
+import io.camunda.operate.connect.ElasticsearchConnector;
 import io.camunda.operate.es.ElasticsearchTask;
 import io.camunda.operate.es.RetryElasticsearchClient;
 import io.camunda.operate.property.OperateProperties;
@@ -23,7 +23,6 @@ import io.camunda.operate.webapp.security.ElasticsearchSessionRepository;
 import io.camunda.operate.webapp.security.oauth2.CCSaaSJwtAuthenticationTokenValidator;
 import io.camunda.operate.webapp.security.oauth2.Jwt2AuthenticationTokenConverter;
 import io.camunda.operate.webapp.security.oauth2.OAuth2WebConfigurer;
-import io.camunda.operate.webapp.security.OperateProfileService;
 import io.camunda.operate.webapp.security.WebSecurityConfig;
 import org.junit.Ignore;
 import org.junit.Test;

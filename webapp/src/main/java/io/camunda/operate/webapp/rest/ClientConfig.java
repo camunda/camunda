@@ -8,8 +8,8 @@ package io.camunda.operate.webapp.rest;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.webapp.security.OperateProfileService;
 import jakarta.servlet.ServletContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;

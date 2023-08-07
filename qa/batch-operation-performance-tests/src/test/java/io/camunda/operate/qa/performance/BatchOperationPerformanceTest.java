@@ -6,6 +6,7 @@
  */
 package io.camunda.operate.qa.performance;
 
+import io.camunda.operate.webapp.writer.BatchOperationWriter;
 import io.camunda.operate.webapp.rest.dto.UserDto;
 import java.time.Duration;
 import java.time.Instant;
@@ -15,7 +16,6 @@ import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.qa.util.ElasticsearchUtil;
 import io.camunda.operate.schema.indices.ProcessIndex;
-import io.camunda.operate.webapp.es.writer.BatchOperationWriter;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import io.camunda.operate.webapp.security.UserService;

@@ -7,10 +7,11 @@
 package io.camunda.operate.webapp.rest;
 
 import io.camunda.operate.webapp.InternalAPIErrorController;
+import io.camunda.operate.webapp.reader.IncidentStatisticsReader;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.Collection;
-import io.camunda.operate.webapp.es.reader.IncidentStatisticsReader;
+
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentsByErrorMsgStatisticsDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentsByProcessGroupStatisticsDto;
 import org.springframework.beans.factory.annotation.Autowired;

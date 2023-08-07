@@ -57,7 +57,6 @@ public class DecisionIT extends OperateIntegrationTest {
     // when
     when(permissionsService.getDecisionsWithPermission(IdentityPermission.READ)).thenReturn(
         PermissionsService.ResourcesAllowed.withIds(Set.of()));
-    when(permissionsService.createQueryForDecisionsByPermission(IdentityPermission.READ)).thenCallRealMethod();
     MvcResult mvcResult = getRequest(QUERY_DECISION_GROUPED_URL);
 
     // then
@@ -85,7 +84,6 @@ public class DecisionIT extends OperateIntegrationTest {
     // when
     when(permissionsService.getDecisionsWithPermission(IdentityPermission.READ)).thenReturn(
         PermissionsService.ResourcesAllowed.all());
-    when(permissionsService.createQueryForDecisionsByPermission(IdentityPermission.READ)).thenCallRealMethod();
     MvcResult mvcResult = getRequest(QUERY_DECISION_GROUPED_URL);
 
     // then
@@ -115,7 +113,6 @@ public class DecisionIT extends OperateIntegrationTest {
     // when
     when(permissionsService.getDecisionsWithPermission(IdentityPermission.READ)).thenReturn(
         PermissionsService.ResourcesAllowed.withIds(Set.of(decisionId2)));
-    when(permissionsService.createQueryForDecisionsByPermission(IdentityPermission.READ)).thenCallRealMethod();
     MvcResult mvcResult = getRequest(QUERY_DECISION_GROUPED_URL);
 
     // then

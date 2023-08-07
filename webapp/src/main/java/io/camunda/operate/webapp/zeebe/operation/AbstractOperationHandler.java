@@ -14,7 +14,7 @@ import io.camunda.operate.entities.OperationEntity;
 import io.camunda.operate.entities.OperationState;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.webapp.es.writer.BatchOperationWriter;
+import io.camunda.operate.webapp.writer.BatchOperationWriter;
 import io.camunda.zeebe.client.ZeebeClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

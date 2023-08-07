@@ -7,7 +7,7 @@
 package io.camunda.operate.webapp.zeebe.operation;
 
 import io.camunda.operate.util.CollectionUtil;
-import io.camunda.operate.webapp.es.reader.ProcessInstanceReader;
+import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import org.apache.commons.collections4.MapUtils;

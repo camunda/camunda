@@ -6,6 +6,7 @@
  */
 package io.camunda.operate.es;
 
+import io.camunda.operate.archiver.Archiver;
 import io.camunda.operate.archiver.ProcessInstancesArchiverJob;
 import io.camunda.operate.zeebe.PartitionHolder;
 import org.springframework.beans.factory.BeanFactory;
@@ -18,13 +19,16 @@ public class ListViewQueryAfterArchivingIT extends ListViewQueryIT {
   private PartitionHolder partitionHolder;
 
   @Autowired
+  private Archiver archiver;
+
+  @Autowired
   private BeanFactory beanFactory;
 
   @Override
   protected void createData() {
     super.createData();
     mockPartitionHolder(partitionHolder);
-    ProcessInstancesArchiverJob archiverJob = beanFactory.getBean(ProcessInstancesArchiverJob.class, partitionHolder.getPartitionIds());
+    ProcessInstancesArchiverJob archiverJob = beanFactory.getBean(ProcessInstancesArchiverJob.class, archiver, partitionHolder.getPartitionIds());
     runArchiving(archiverJob, () -> {
       elasticsearchTestRule.refreshIndexesInElasticsearch();
       return null;

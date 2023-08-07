@@ -6,15 +6,17 @@
  */
 package io.camunda.operate.webapp.security.es;
 
+import static io.camunda.operate.OperateProfileService.AUTH_PROFILE;
 import static io.camunda.operate.util.CollectionUtil.map;
-import static io.camunda.operate.webapp.security.OperateProfileService.AUTH_PROFILE;
 import static io.camunda.operate.webapp.security.Permission.READ;
 import static io.camunda.operate.webapp.security.Permission.WRITE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 
+import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.entities.UserEntity;
-import io.camunda.operate.es.ElasticsearchConnector;
+import io.camunda.operate.store.UserStore;
+import io.camunda.operate.connect.ElasticsearchConnector;
 import io.camunda.operate.es.ElasticsearchTask;
 import io.camunda.operate.es.RetryElasticsearchClient;
 import io.camunda.operate.property.OperateProperties;
@@ -24,12 +26,15 @@ import io.camunda.operate.webapp.rest.AuthenticationRestService;
 import io.camunda.operate.webapp.rest.dto.UserDto;
 import io.camunda.operate.webapp.security.AuthenticationTestable;
 import io.camunda.operate.webapp.security.ElasticsearchSessionRepository;
-import io.camunda.operate.webapp.security.ElasticsearchSessionRepositoryConfigurator;
+import io.camunda.operate.webapp.security.SessionRepositoryConfig;
 import io.camunda.operate.webapp.security.SameSiteCookieTomcatContextCustomizer;
+import io.camunda.operate.webapp.security.auth.AuthUserService;
+import io.camunda.operate.webapp.security.auth.OperateUserDetailsService;
+import io.camunda.operate.webapp.security.auth.Role;
+import io.camunda.operate.webapp.security.auth.RolePermissionService;
 import io.camunda.operate.webapp.security.oauth2.CCSaaSJwtAuthenticationTokenValidator;
 import io.camunda.operate.webapp.security.oauth2.Jwt2AuthenticationTokenConverter;
 import io.camunda.operate.webapp.security.oauth2.OAuth2WebConfigurer;
-import io.camunda.operate.webapp.security.OperateProfileService;
 import io.camunda.operate.webapp.security.OperateURIs;
 import io.camunda.operate.webapp.security.WebSecurityConfig;
 import java.util.List;
@@ -56,7 +61,7 @@ import org.springframework.test.context.junit4.SpringRunner;
  * This test tests:
  * * authentication and security of REST API
  * * /api/authentications/user endpoint to get current user
- * * {@link UserStorage} is mocked (integration with ELS is not tested)
+ * * {@link io.camunda.operate.store.UserStore} is mocked (integration with ELS is not tested)
  */
 @RunWith(SpringRunner.class)
 @SpringBootTest(
@@ -68,13 +73,13 @@ import org.springframework.test.context.junit4.SpringRunner;
       OAuth2WebConfigurer.class,
       Jwt2AuthenticationTokenConverter.class,
       CCSaaSJwtAuthenticationTokenValidator.class,
-      ElasticsearchUserService.class,
+      AuthUserService.class,
       RolePermissionService.class,
       AuthenticationRestService.class,
-      ElasticSearchUserDetailsService.class,
+      OperateUserDetailsService.class,
       RetryElasticsearchClient.class,
       ElasticsearchTask.class,
-      ElasticsearchSessionRepositoryConfigurator.class,
+      SessionRepositoryConfig.class,
       ElasticsearchSessionRepository.class,
       OperateWebSessionIndex.class,
       OperateProfileService.class,
@@ -102,7 +107,7 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
   private PasswordEncoder encoder;
 
   @MockBean
-  private UserStorage userStorage;
+  private UserStore userStore;
 
   @Before
   public void setUp() {
@@ -112,7 +117,7 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
         .setRoles(map(List.of(Role.OPERATOR), Role::name))
         .setDisplayName(FIRSTNAME + " " + LASTNAME)
             .setRoles(List.of(Role.OPERATOR.name()));
-    given(userStorage.getByUserId(USER_ID)).willReturn(user);
+    given(userStore.getById(USER_ID)).willReturn(user);
   }
 
   @Test

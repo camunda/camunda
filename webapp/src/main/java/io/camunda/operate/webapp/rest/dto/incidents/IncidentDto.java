@@ -10,7 +10,7 @@ import io.camunda.operate.entities.IncidentEntity;
 import io.camunda.operate.entities.OperationEntity;
 import io.camunda.operate.entities.OperationState;
 import io.camunda.operate.util.ConversionUtils;
-import io.camunda.operate.webapp.es.reader.IncidentReader.IncidentDataHolder;
+import io.camunda.operate.webapp.data.IncidentDataHolder;
 import io.camunda.operate.webapp.rest.dto.DtoCreator;
 import io.camunda.operate.webapp.rest.dto.OperationDto;
 import io.camunda.operate.webapp.rest.dto.ProcessInstanceReferenceDto;

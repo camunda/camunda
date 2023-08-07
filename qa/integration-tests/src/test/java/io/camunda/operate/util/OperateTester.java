@@ -23,8 +23,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.operate.archiver.ArchiveBatch;
+import io.camunda.operate.archiver.Archiver;
+import io.camunda.operate.archiver.ProcessInstancesArchiverJob;
 import io.camunda.operate.entities.*;
-import io.camunda.operate.webapp.es.reader.*;
+import io.camunda.operate.webapp.elasticsearch.reader.OperationReader;
+import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
+import io.camunda.operate.webapp.reader.IncidentReader;
+import io.camunda.operate.webapp.reader.ListViewReader;
 import io.camunda.operate.webapp.rest.dto.OperationDto;
 import io.camunda.operate.webapp.rest.dto.activity.*;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
@@ -49,8 +55,6 @@ import java.util.stream.IntStream;
 
 import org.apache.commons.lang3.Validate;
 import org.apache.http.HttpStatus;
-import io.camunda.operate.archiver.AbstractArchiverJob;
-import io.camunda.operate.archiver.ProcessInstancesArchiverJob;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
 import io.camunda.operate.webapp.rest.dto.VariableDto;
@@ -191,7 +195,7 @@ public class OperateTester {
   protected OperationExecutor operationExecutor;
 
   @Autowired
-  protected VariableReader variableReader;
+  protected io.camunda.operate.webapp.reader.VariableReader variableReader;
 
   @Autowired
   protected IncidentReader incidentReader;
@@ -612,8 +616,9 @@ public class OperateTester {
 
   public OperateTester archive() {
     try {
-      ProcessInstancesArchiverJob.ArchiveBatch finishedAtDateIds = new AbstractArchiverJob.ArchiveBatch("_test_archived", Arrays.asList(processInstanceKey));
-      ProcessInstancesArchiverJob archiverJob = beanFactory.getBean(ProcessInstancesArchiverJob.class);
+      ArchiveBatch finishedAtDateIds = new ArchiveBatch("_test_archived", Arrays.asList(processInstanceKey));
+      Archiver archiver = beanFactory.getBean(Archiver.class);
+      ProcessInstancesArchiverJob archiverJob = beanFactory.getBean(ProcessInstancesArchiverJob.class, archiver);
       archiverJob.archiveBatch(finishedAtDateIds).join();
     } catch (Exception e) {
       return this;

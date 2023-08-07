@@ -1,0 +1,21 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
+ * under one or more contributor license agreements. Licensed under a proprietary license.
+ * See the License.txt file for more information. You may not use this file
+ * except in compliance with the proprietary license.
+ */
+package io.camunda.operate.archiver;
+
+import jakarta.annotation.PreDestroy;
+
+import java.util.concurrent.CompletableFuture;
+
+public interface ArchiverJob extends Runnable {
+
+    CompletableFuture<Integer> archiveBatch(ArchiveBatch archiveBatch);
+
+    CompletableFuture<ArchiveBatch> getNextBatch();
+
+    CompletableFuture<Integer> archiveNextBatch();
+
+}

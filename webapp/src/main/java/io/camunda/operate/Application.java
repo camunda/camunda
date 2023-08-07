@@ -7,7 +7,6 @@
 package io.camunda.operate;
 
 import io.camunda.operate.data.DataGenerator;
-import io.camunda.operate.webapp.security.OperateProfileService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;

@@ -9,6 +9,7 @@ package io.camunda.operate.webapp.rest;
 import static io.camunda.operate.webapp.rest.ProcessRestService.PROCESS_URL;
 
 import io.camunda.operate.webapp.InternalAPIErrorController;
+import io.camunda.operate.webapp.reader.ProcessReader;
 import io.camunda.operate.webapp.rest.dto.DtoCreator;
 import io.camunda.operate.webapp.rest.exception.NotAuthorizedException;
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
@@ -19,8 +20,7 @@ import java.util.List;
 import java.util.Map;
 
 import io.camunda.operate.entities.ProcessEntity;
-import io.camunda.operate.webapp.es.reader.ProcessInstanceReader;
-import io.camunda.operate.webapp.es.reader.ProcessReader;
+import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.rest.dto.ProcessDto;
 import io.camunda.operate.webapp.rest.dto.ProcessGroupDto;
 import org.springframework.beans.factory.annotation.Autowired;

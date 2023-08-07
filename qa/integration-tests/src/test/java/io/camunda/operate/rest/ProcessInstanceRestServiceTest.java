@@ -8,21 +8,22 @@ package io.camunda.operate.rest;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.camunda.operate.JacksonConfig;
+import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.store.SequenceFlowStore;
 import io.camunda.operate.util.OperateIntegrationTest;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
-import io.camunda.operate.webapp.es.reader.ActivityStatisticsReader;
-import io.camunda.operate.webapp.es.reader.FlowNodeInstanceReader;
-import io.camunda.operate.webapp.es.reader.IncidentReader;
-import io.camunda.operate.webapp.es.reader.ListViewReader;
-import io.camunda.operate.webapp.es.reader.OperationReader;
-import io.camunda.operate.webapp.es.reader.SequenceFlowReader;
-import io.camunda.operate.webapp.es.reader.VariableReader;
-import io.camunda.operate.webapp.es.reader.ProcessInstanceReader;
-import io.camunda.operate.webapp.es.writer.BatchOperationWriter;
+import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
+import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
+import io.camunda.operate.webapp.reader.FlowNodeStatisticsReader;
+import io.camunda.operate.webapp.reader.IncidentReader;
+import io.camunda.operate.webapp.reader.ListViewReader;
+import io.camunda.operate.webapp.reader.OperationReader;
+import io.camunda.operate.webapp.reader.VariableReader;
+import io.camunda.operate.webapp.writer.BatchOperationWriter;
 import io.camunda.operate.webapp.rest.ProcessInstanceRestService;
 import io.camunda.operate.webapp.rest.dto.VariableDto;
 import io.camunda.operate.webapp.rest.dto.VariableRequestDto;
@@ -31,7 +32,6 @@ import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
-import io.camunda.operate.webapp.security.OperateProfileService;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.*;
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
@@ -60,7 +60,7 @@ import static org.mockito.Mockito.*;
         OperateProperties.class,
         OperateProfileService.class,
         ModifyProcessInstanceRequestValidator.class,
-        JacksonConfig.class, 
+        JacksonConfig.class,
         OperateProperties.class
     }
 )
@@ -70,7 +70,7 @@ public class ProcessInstanceRestServiceTest extends OperateIntegrationTest {
   private ListViewReader listViewReader;
 
   @MockBean
-  private ActivityStatisticsReader activityStatisticsReader;
+  private FlowNodeStatisticsReader flowNodeStatisticsReader;
 
   @MockBean
   private ProcessInstanceReader processInstanceReader;
@@ -82,7 +82,7 @@ public class ProcessInstanceRestServiceTest extends OperateIntegrationTest {
   private VariableReader variableReader;
 
   @MockBean
-  private SequenceFlowReader sequenceFlowReader;
+  private SequenceFlowStore sequenceFlowStore;
 
   @MockBean
   private FlowNodeInstanceReader flowNodeInstanceReader;

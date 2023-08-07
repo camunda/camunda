@@ -13,9 +13,11 @@ import io.camunda.operate.exceptions.OperateElasticsearchConnectionException;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.BackupProperties;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.webapp.es.backup.BackupManager;
-import io.camunda.operate.webapp.es.backup.Metadata;
-  import io.camunda.operate.webapp.management.BackupController;
+import io.camunda.operate.webapp.backup.BackupConfig;
+import io.camunda.operate.webapp.backup.BackupService;
+import io.camunda.operate.webapp.backup.Metadata;
+import io.camunda.operate.webapp.elasticsearch.backup.BackupManager;
+import io.camunda.operate.webapp.management.BackupController;
 import io.camunda.operate.webapp.management.dto.GetBackupStateResponseDetailDto;
 import io.camunda.operate.webapp.management.dto.GetBackupStateResponseDto;
 import io.camunda.operate.webapp.management.dto.TakeBackupRequestDto;
@@ -53,7 +55,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static io.camunda.operate.util.CollectionUtil.asMap;
-import static io.camunda.operate.webapp.es.backup.BackupManager.SNAPSHOT_MISSING_EXCEPTION_TYPE;
+import static io.camunda.operate.webapp.backup.BackupService.SNAPSHOT_MISSING_EXCEPTION_TYPE;
 import static io.camunda.operate.webapp.management.dto.BackupStateDto.*;
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -63,12 +65,12 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest(classes = {TestConfig.class, JacksonConfig.class, BackupController.class})
+@SpringBootTest(classes = {TestConfig.class, JacksonConfig.class, BackupConfig.class, BackupController.class, BackupManager.class })
 @ActiveProfiles({"test", "backend-test"})
 public class BackupControllerTest {
 
   @SpyBean
-  private BackupManager backupManager;
+  private BackupService backupService;
 
   @Mock
   private SnapshotClient snapshotClient;

@@ -57,7 +57,6 @@ public class ProcessIT extends OperateIntegrationTest {
     // when
     when(permissionsService.getProcessesWithPermission(IdentityPermission.READ)).thenReturn(
         PermissionsService.ResourcesAllowed.withIds(Set.of()));
-    when(permissionsService.createQueryForProcessesByPermission(IdentityPermission.READ)).thenCallRealMethod();
     MvcResult mvcResult = getRequest(QUERY_PROCESS_GROUPED_URL);
 
     // then
@@ -84,7 +83,6 @@ public class ProcessIT extends OperateIntegrationTest {
 
     // when
     when(permissionsService.getProcessesWithPermission(IdentityPermission.READ)).thenReturn(PermissionsService.ResourcesAllowed.all());
-    when(permissionsService.createQueryForProcessesByPermission(IdentityPermission.READ)).thenCallRealMethod();
     MvcResult mvcResult = getRequest(QUERY_PROCESS_GROUPED_URL);
 
     // then
@@ -114,7 +112,6 @@ public class ProcessIT extends OperateIntegrationTest {
     // when
     when(permissionsService.getProcessesWithPermission(IdentityPermission.READ)).thenReturn(
         PermissionsService.ResourcesAllowed.withIds(Set.of(bpmnProcessId2)));
-    when(permissionsService.createQueryForProcessesByPermission(IdentityPermission.READ)).thenCallRealMethod();
     MvcResult mvcResult = getRequest(QUERY_PROCESS_GROUPED_URL);
 
     // then

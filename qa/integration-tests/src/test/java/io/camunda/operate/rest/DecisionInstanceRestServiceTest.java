@@ -7,13 +7,13 @@
 package io.camunda.operate.rest;
 
 import io.camunda.operate.JacksonConfig;
+import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.OperateIntegrationTest;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
-import io.camunda.operate.webapp.es.reader.DecisionInstanceReader;
+import io.camunda.operate.webapp.reader.DecisionInstanceReader;
 import io.camunda.operate.webapp.rest.DecisionInstanceRestService;
 import io.camunda.operate.webapp.rest.dto.dmn.DecisionInstanceDto;
-import io.camunda.operate.webapp.security.OperateProfileService;
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.identity.PermissionsService;
 import org.junit.Test;
@@ -30,7 +30,7 @@ import static org.mockito.Mockito.*;
         JacksonConfig.class,
         OperateProperties.class,
         OperateProfileService.class,
-        JacksonConfig.class, 
+        JacksonConfig.class,
         OperateProperties.class
     }
 )

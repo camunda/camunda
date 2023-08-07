@@ -6,6 +6,7 @@
  */
 package io.camunda.operate.es;
 
+import io.camunda.operate.connect.ElasticsearchConnector;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import org.elasticsearch.client.RestHighLevelClient;

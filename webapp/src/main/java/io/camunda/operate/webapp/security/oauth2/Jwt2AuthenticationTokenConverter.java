@@ -6,8 +6,6 @@
  */
 package io.camunda.operate.webapp.security.oauth2;
 
-import static io.camunda.operate.webapp.security.OperateProfileService.IDENTITY_AUTH_PROFILE;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.convert.converter.Converter;
@@ -17,6 +15,8 @@ import org.springframework.security.oauth2.server.resource.InvalidBearerTokenExc
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Component;
+
+import static io.camunda.operate.OperateProfileService.IDENTITY_AUTH_PROFILE;
 
 @Component
 @Profile("!" + IDENTITY_AUTH_PROFILE)

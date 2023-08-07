@@ -9,10 +9,11 @@ package io.camunda.operate.webapp.rest;
 import static io.camunda.operate.webapp.rest.OperationRestService.OPERATION_URL;
 
 import io.camunda.operate.webapp.InternalAPIErrorController;
+import io.camunda.operate.webapp.reader.OperationReader;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
-import io.camunda.operate.webapp.es.reader.OperationReader;
+
 import io.camunda.operate.webapp.rest.dto.OperationDto;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;

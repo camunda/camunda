@@ -13,8 +13,9 @@ import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.util.OperationsManager;
-import io.camunda.operate.webapp.es.reader.ProcessInstanceReader;
-import io.camunda.operate.webapp.es.writer.ProcessInstanceWriter;
+import io.camunda.operate.webapp.writer.ProcessInstanceWriter;
+import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
+
 import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;

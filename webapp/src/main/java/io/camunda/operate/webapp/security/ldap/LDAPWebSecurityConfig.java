@@ -6,8 +6,6 @@
  */
 package io.camunda.operate.webapp.security.ldap;
 
-import static io.camunda.operate.webapp.security.OperateProfileService.LDAP_AUTH_PROFILE;
-
 import io.camunda.operate.property.LdapProperties;
 import io.camunda.operate.webapp.security.BaseWebConfigurer;
 import io.camunda.operate.webapp.security.oauth2.OAuth2WebConfigurer;
@@ -23,6 +21,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.ldap.authentication.ad.ActiveDirectoryLdapAuthenticationProvider;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
+
+import static io.camunda.operate.OperateProfileService.LDAP_AUTH_PROFILE;
 
 @Profile(LDAP_AUTH_PROFILE)
 @Configuration

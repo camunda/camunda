@@ -6,7 +6,6 @@
  */
 package io.camunda.operate.webapp.security.sso;
 
-import io.camunda.operate.webapp.security.OperateProfileService;
 import io.camunda.operate.webapp.security.Permission;
 import io.camunda.operate.webapp.security.UserService;
 
@@ -23,8 +22,10 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.stereotype.Component;
 import com.auth0.jwt.interfaces.Claim;
 
+import static io.camunda.operate.OperateProfileService.SSO_AUTH_PROFILE;
+
 @Component
-@Profile(OperateProfileService.SSO_AUTH_PROFILE)
+@Profile(SSO_AUTH_PROFILE)
 public class SSOUserService implements UserService<AbstractAuthenticationToken> {
 
   @Autowired

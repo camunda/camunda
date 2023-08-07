@@ -6,7 +6,7 @@
  */
 package io.camunda.operate.webapp.security.identity;
 
-import static io.camunda.operate.webapp.security.OperateProfileService.IDENTITY_AUTH_PROFILE;
+import static io.camunda.operate.OperateProfileService.IDENTITY_AUTH_PROFILE;
 import static io.camunda.operate.webapp.security.OperateURIs.COOKIE_JSESSIONID;
 import static io.camunda.operate.webapp.security.OperateURIs.IDENTITY_CALLBACK_URI;
 import static io.camunda.operate.webapp.security.OperateURIs.LOGIN_RESOURCE;
@@ -16,7 +16,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
-import io.camunda.operate.es.ElasticsearchConnector;
+import io.camunda.operate.OperateProfileService;
+import io.camunda.operate.connect.ElasticsearchConnector;
 import io.camunda.operate.es.ElasticsearchTask;
 import io.camunda.operate.es.RetryElasticsearchClient;
 import io.camunda.operate.property.OperateProperties;
@@ -24,8 +25,7 @@ import io.camunda.operate.schema.indices.OperateWebSessionIndex;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.security.AuthenticationTestable;
 import io.camunda.operate.webapp.security.ElasticsearchSessionRepository;
-import io.camunda.operate.webapp.security.ElasticsearchSessionRepositoryConfigurator;
-import io.camunda.operate.webapp.security.OperateProfileService;
+import io.camunda.operate.webapp.security.SessionRepositoryConfig;
 import io.camunda.operate.webapp.security.OperateURIs;
 import io.camunda.operate.webapp.security.SameSiteCookieTomcatContextCustomizer;
 import io.camunda.operate.webapp.security.oauth2.CCSaaSJwtAuthenticationTokenValidator;
@@ -69,7 +69,7 @@ import org.springframework.test.context.junit4.SpringRunner;
         OperateProperties.class,
         OperateProfileService.class,
         ElasticsearchSessionRepository.class,
-        ElasticsearchSessionRepositoryConfigurator.class,
+        SessionRepositoryConfig.class,
         OperateWebSessionIndex.class,
         RetryElasticsearchClient.class,
         ElasticsearchTask.class,

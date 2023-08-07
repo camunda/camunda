@@ -60,7 +60,6 @@ public class BatchOperationWriterIT extends OperateIntegrationTest {
     // when
     when(permissionsService.getProcessesWithPermission(UPDATE)).thenReturn(
         PermissionsService.ResourcesAllowed.all());
-    when(permissionsService.createQueryForProcessesByPermission(UPDATE)).thenCallRealMethod();
     MvcResult mvcResult = postRequest(QUERY_CREATE_BATCH_OPERATIONS_URL, request);
 
     // then
@@ -82,7 +81,6 @@ public class BatchOperationWriterIT extends OperateIntegrationTest {
     // when
     when(permissionsService.getProcessesWithPermission(UPDATE)).thenReturn(
         PermissionsService.ResourcesAllowed.withIds(Set.of()));
-    when(permissionsService.createQueryForProcessesByPermission(UPDATE)).thenCallRealMethod();
     MvcResult mvcResult = postRequest(QUERY_CREATE_BATCH_OPERATIONS_URL, request);
 
     // then
@@ -104,7 +102,7 @@ public class BatchOperationWriterIT extends OperateIntegrationTest {
     // when
     when(permissionsService.getProcessesWithPermission(UPDATE)).thenReturn(
         PermissionsService.ResourcesAllowed.withIds(Set.of(bpmnProcessId1)));
-    when(permissionsService.createQueryForProcessesByPermission(UPDATE)).thenCallRealMethod();
+
     MvcResult mvcResult = postRequest(QUERY_CREATE_BATCH_OPERATIONS_URL, request);
 
     // then
@@ -126,7 +124,7 @@ public class BatchOperationWriterIT extends OperateIntegrationTest {
     // when
     when(permissionsService.getProcessesWithPermission(DELETE)).thenReturn(
         PermissionsService.ResourcesAllowed.all());
-    when(permissionsService.createQueryForProcessesByPermission(DELETE)).thenCallRealMethod();
+
     MvcResult mvcResult = postRequest(QUERY_CREATE_BATCH_OPERATIONS_URL, request);
 
     // then
@@ -148,7 +146,6 @@ public class BatchOperationWriterIT extends OperateIntegrationTest {
     // when
     when(permissionsService.getProcessesWithPermission(DELETE)).thenReturn(
         PermissionsService.ResourcesAllowed.withIds(Set.of()));
-    when(permissionsService.createQueryForProcessesByPermission(DELETE)).thenCallRealMethod();
     MvcResult mvcResult = postRequest(QUERY_CREATE_BATCH_OPERATIONS_URL, request);
 
     // then
@@ -170,7 +167,6 @@ public class BatchOperationWriterIT extends OperateIntegrationTest {
     // when
     when(permissionsService.getProcessesWithPermission(DELETE)).thenReturn(
         PermissionsService.ResourcesAllowed.withIds(Set.of(bpmnProcessId1)));
-    when(permissionsService.createQueryForProcessesByPermission(DELETE)).thenCallRealMethod();
     MvcResult mvcResult = postRequest(QUERY_CREATE_BATCH_OPERATIONS_URL, request);
 
     // then

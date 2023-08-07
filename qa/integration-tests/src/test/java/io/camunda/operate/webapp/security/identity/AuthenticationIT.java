@@ -35,7 +35,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Set;
 
-import static io.camunda.operate.webapp.security.OperateProfileService.IDENTITY_AUTH_PROFILE;
+import static io.camunda.operate.OperateProfileService.IDENTITY_AUTH_PROFILE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;

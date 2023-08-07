@@ -40,7 +40,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MvcResult;
-import org.testcontainers.shaded.com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * Tests Elasticsearch query for process statistics.
@@ -194,7 +193,7 @@ public class ProcessStatisticsIT extends OperateIntegrationTest {
     // when
     when(permissionsService.getProcessesWithPermission(IdentityPermission.READ)).thenReturn(
         PermissionsService.ResourcesAllowed.withIds(Set.of(processInstance.getBpmnProcessId())));
-    when(permissionsService.createQueryForProcessesByPermission(IdentityPermission.READ)).thenCallRealMethod();
+
     MvcResult mvcResult = postRequest(QUERY_PROCESS_STATISTICS_URL, queryRequest);
 
     // then
@@ -222,7 +221,7 @@ public class ProcessStatisticsIT extends OperateIntegrationTest {
 
     // when
     when(permissionsService.getProcessesWithPermission(IdentityPermission.READ)).thenReturn(PermissionsService.ResourcesAllowed.withIds(Set.of()));
-    when(permissionsService.createQueryForProcessesByPermission(IdentityPermission.READ)).thenCallRealMethod();
+
     MvcResult mvcResult = postRequest(QUERY_PROCESS_STATISTICS_URL, queryRequest);
 
     // then
@@ -247,7 +246,6 @@ public class ProcessStatisticsIT extends OperateIntegrationTest {
 
     // when
     when(permissionsService.getProcessesWithPermission(IdentityPermission.READ)).thenReturn(PermissionsService.ResourcesAllowed.all());
-    when(permissionsService.createQueryForProcessesByPermission(IdentityPermission.READ)).thenCallRealMethod();
 
     // then
     ProcessInstanceCoreStatisticsDto coreStatistics = mockMvcTestRule.fromResponse(getRequest(QUERY_PROCESS_CORE_STATISTICS_URL),
@@ -271,7 +269,6 @@ public class ProcessStatisticsIT extends OperateIntegrationTest {
 
     // when
     when(permissionsService.getProcessesWithPermission(IdentityPermission.READ)).thenReturn(PermissionsService.ResourcesAllowed.withIds(Set.of()));
-    when(permissionsService.createQueryForProcessesByPermission(IdentityPermission.READ)).thenCallRealMethod();
 
     // then
     ProcessInstanceCoreStatisticsDto coreStatistics = mockMvcTestRule.fromResponse(getRequest(QUERY_PROCESS_CORE_STATISTICS_URL),

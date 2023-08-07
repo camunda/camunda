@@ -47,8 +47,6 @@ import java.util.Set;
 
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.identity.PermissionsService;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
 import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -1126,7 +1124,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     // when
     when(permissionsService.getProcessesWithPermission(IdentityPermission.READ)).thenReturn(
         PermissionsService.ResourcesAllowed.all());
-    when(permissionsService.createQueryForProcessesByPermission(IdentityPermission.READ)).thenCallRealMethod();
+
     MvcResult mvcResult = postRequest(query(),query);
 
     // then
@@ -1154,7 +1152,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     // when
     when(permissionsService.getProcessesWithPermission(IdentityPermission.READ)).thenReturn(
         PermissionsService.ResourcesAllowed.withIds(Set.of()));
-    when(permissionsService.createQueryForProcessesByPermission(IdentityPermission.READ)).thenCallRealMethod();
+
     MvcResult mvcResult = postRequest(query(),query);
 
     // then
@@ -1180,7 +1178,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     // when
     when(permissionsService.getProcessesWithPermission(IdentityPermission.READ)).thenReturn(
         PermissionsService.ResourcesAllowed.withIds(Set.of(bpmnProcessId1, bpmnProcessId2)));
-    when(permissionsService.createQueryForProcessesByPermission(IdentityPermission.READ)).thenCallRealMethod();
+
     MvcResult mvcResult = postRequest(query(),query);
 
     // then

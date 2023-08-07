@@ -6,8 +6,8 @@
  */
 package io.camunda.operate.webapp.security.oauth2;
 
+import static io.camunda.operate.OperateProfileService.IDENTITY_AUTH_PROFILE;
 import static io.camunda.operate.webapp.security.BaseWebConfigurer.sendJSONErrorMessage;
-import static io.camunda.operate.webapp.security.OperateProfileService.IDENTITY_AUTH_PROFILE;
 
 import java.io.IOException;
 import jakarta.servlet.http.HttpServletRequest;

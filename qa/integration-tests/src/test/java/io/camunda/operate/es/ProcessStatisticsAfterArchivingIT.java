@@ -6,6 +6,7 @@
  */
 package io.camunda.operate.es;
 
+import io.camunda.operate.archiver.Archiver;
 import io.camunda.operate.archiver.ProcessInstancesArchiverJob;
 import io.camunda.operate.zeebe.PartitionHolder;
 import org.junit.Before;
@@ -38,7 +39,8 @@ public class ProcessStatisticsAfterArchivingIT extends ProcessStatisticsIT {
   protected void createData(Long processDefinitionKey) {
     super.createData(processDefinitionKey);
     mockPartitionHolder(partitionHolder);
-    ProcessInstancesArchiverJob archiverJob = beanFactory.getBean(ProcessInstancesArchiverJob.class, partitionHolder.getPartitionIds());
+    Archiver archiver = beanFactory.getBean(Archiver.class);
+    ProcessInstancesArchiverJob archiverJob = beanFactory.getBean(ProcessInstancesArchiverJob.class, archiver, partitionHolder.getPartitionIds());
     runArchiving(archiverJob, () -> {
       elasticsearchTestRule.refreshIndexesInElasticsearch();
       return null;

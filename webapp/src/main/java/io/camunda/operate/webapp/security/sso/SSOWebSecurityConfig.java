@@ -6,11 +6,11 @@
  */
 package io.camunda.operate.webapp.security.sso;
 
+import static io.camunda.operate.OperateProfileService.SSO_AUTH_PROFILE;
 import static io.camunda.operate.webapp.security.OperateURIs.API;
 import static io.camunda.operate.webapp.security.OperateURIs.AUTH_WHITELIST;
 import static io.camunda.operate.webapp.security.OperateURIs.PUBLIC_API;
 import static io.camunda.operate.webapp.security.OperateURIs.ROOT;
-import static io.camunda.operate.webapp.security.OperateProfileService.SSO_AUTH_PROFILE;
 
 import com.auth0.AuthenticationController;
 import io.camunda.operate.webapp.security.BaseWebConfigurer;

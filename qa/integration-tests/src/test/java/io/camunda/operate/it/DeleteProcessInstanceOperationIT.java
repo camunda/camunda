@@ -10,7 +10,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.util.OperateZeebeIntegrationTest;
-import io.camunda.operate.webapp.es.reader.BatchOperationReader;
+import io.camunda.operate.webapp.reader.BatchOperationReader;
 import io.camunda.operate.webapp.rest.dto.operation.BatchOperationRequestDto;
 import java.util.List;
 import org.junit.Before;

@@ -8,7 +8,6 @@ package io.camunda.operate.webapp.rest.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.operate.webapp.es.reader.ListViewReader;
 import io.camunda.operate.webapp.rest.dto.listview.SortValuesWrapper;
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -22,7 +21,7 @@ import org.slf4j.LoggerFactory;
 
 public abstract class PaginatedQuery<T extends PaginatedQuery<T>> {
 
-  private static final Logger logger = LoggerFactory.getLogger(ListViewReader.class);
+  private static final Logger logger = LoggerFactory.getLogger(PaginatedQuery.class);
 
   private static final int DEFAULT_PAGE_SIZE = 50;
 

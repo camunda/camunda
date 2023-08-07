@@ -9,7 +9,6 @@ package io.camunda.operate.webapp.security.identity;
 import io.camunda.identity.sdk.Identity;
 import io.camunda.identity.sdk.authentication.AccessToken;
 import io.camunda.operate.webapp.rest.dto.UserDto;
-import io.camunda.operate.webapp.security.OperateProfileService;
 import io.camunda.operate.webapp.security.Permission;
 import io.camunda.operate.webapp.security.UserService;
 import java.util.List;
@@ -21,8 +20,10 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Component;
 
+import static io.camunda.operate.OperateProfileService.IDENTITY_AUTH_PROFILE;
+
 @Component
-@Profile(OperateProfileService.IDENTITY_AUTH_PROFILE)
+@Profile(IDENTITY_AUTH_PROFILE)
 public class IdentityUserService implements UserService<AbstractAuthenticationToken> {
 
   @Autowired

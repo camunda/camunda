@@ -6,6 +6,7 @@
  */
 package io.camunda.operate.webapp.security.sso;
 
+import static io.camunda.operate.OperateProfileService.SSO_AUTH_PROFILE;
 import static io.camunda.operate.property.Auth0Properties.DEFAULT_ORGANIZATIONS_KEY;
 import static io.camunda.operate.util.CollectionUtil.asMap;
 import static io.camunda.operate.webapp.security.OperateURIs.SSO_CALLBACK_URI;
@@ -13,7 +14,6 @@ import static io.camunda.operate.webapp.security.OperateURIs.LOGIN_RESOURCE;
 import static io.camunda.operate.webapp.security.OperateURIs.LOGOUT_RESOURCE;
 import static io.camunda.operate.webapp.security.OperateURIs.NO_PERMISSION;
 import static io.camunda.operate.webapp.security.OperateURIs.ROOT;
-import static io.camunda.operate.webapp.security.OperateProfileService.SSO_AUTH_PROFILE;
 import static io.camunda.operate.webapp.security.sso.AuthenticationIT.OPERATE_TEST_SALESPLAN;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.*;
@@ -27,7 +27,8 @@ import com.auth0.AuthorizeUrl;
 import com.auth0.IdentityVerificationException;
 import com.auth0.Tokens;
 
-import io.camunda.operate.es.ElasticsearchConnector;
+import io.camunda.operate.OperateProfileService;
+import io.camunda.operate.connect.ElasticsearchConnector;
 import io.camunda.operate.es.ElasticsearchTask;
 import io.camunda.operate.es.RetryElasticsearchClient;
 import io.camunda.operate.management.ElsIndicesCheck;
@@ -37,13 +38,12 @@ import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.rest.AuthenticationRestService;
 import io.camunda.operate.webapp.security.AuthenticationTestable;
 import io.camunda.operate.webapp.security.ElasticsearchSessionRepository;
-import io.camunda.operate.webapp.security.ElasticsearchSessionRepositoryConfigurator;
+import io.camunda.operate.webapp.security.SessionRepositoryConfig;
 import io.camunda.operate.webapp.security.oauth2.CCSaaSJwtAuthenticationTokenValidator;
 import io.camunda.operate.webapp.security.oauth2.Jwt2AuthenticationTokenConverter;
 import io.camunda.operate.webapp.security.oauth2.OAuth2WebConfigurer;
-import io.camunda.operate.webapp.security.OperateProfileService;
 import io.camunda.operate.webapp.security.OperateURIs;
-import io.camunda.operate.webapp.security.es.RolePermissionService;
+import io.camunda.operate.webapp.security.auth.RolePermissionService;
 import io.camunda.operate.webapp.security.sso.model.ClusterInfo;
 import java.util.Arrays;
 import java.util.Base64;
@@ -98,7 +98,7 @@ import org.springframework.web.client.RestTemplate;
         OperateURIs.class,
         OperateProperties.class,
         ElasticsearchSessionRepository.class,
-        ElasticsearchSessionRepositoryConfigurator.class,
+        SessionRepositoryConfig.class,
         OperateWebSessionIndex.class,
         RetryElasticsearchClient.class,
         ElasticsearchTask.class,

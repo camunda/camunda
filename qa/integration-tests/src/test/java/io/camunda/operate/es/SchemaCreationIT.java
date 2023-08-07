@@ -10,7 +10,7 @@ import static io.camunda.operate.util.CollectionUtil.filter;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.operate.management.ElsIndicesCheck;
-import io.camunda.operate.schema.ElasticsearchSchemaManager;
+import io.camunda.operate.schema.SchemaManager;
 import io.camunda.operate.schema.indices.IndexDescriptor;
 import io.camunda.operate.schema.indices.MigrationRepositoryIndex;
 import io.camunda.operate.schema.indices.OperateWebSessionIndex;
@@ -40,7 +40,7 @@ public class SchemaCreationIT extends OperateIntegrationTest {
   @Autowired
   private RestHighLevelClient esClient;
   @Autowired
-  private ElasticsearchSchemaManager schemaManager;
+  private SchemaManager schemaManager;
   @Autowired
   private IncidentTemplate processInstanceTemplate;
   @Autowired

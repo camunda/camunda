@@ -8,15 +8,12 @@ package io.camunda.operate.webapp.rest;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.webapp.InternalAPIErrorController;
-import io.camunda.operate.webapp.rest.dto.DtoCreator;
+import io.camunda.operate.webapp.reader.BatchOperationReader;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
-import java.util.Arrays;
 import java.util.List;
 import io.camunda.operate.entities.BatchOperationEntity;
-import io.camunda.operate.util.CollectionUtil;
-import io.camunda.operate.webapp.es.reader.BatchOperationReader;
 import io.camunda.operate.webapp.rest.dto.operation.BatchOperationDto;
 import io.camunda.operate.webapp.rest.dto.operation.BatchOperationRequestDto;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;

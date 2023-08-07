@@ -6,8 +6,8 @@
  */
 package io.camunda.operate.webapp;
 
+import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.util.ConversionUtils;
-import io.camunda.operate.webapp.security.OperateProfileService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

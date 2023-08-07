@@ -6,7 +6,7 @@
  */
 package io.camunda.operate.webapp.security.identity;
 
-import static io.camunda.operate.webapp.security.OperateProfileService.IDENTITY_AUTH_PROFILE;
+import static io.camunda.operate.OperateProfileService.IDENTITY_AUTH_PROFILE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Arrays;
@@ -23,14 +23,9 @@ import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.property.IdentityProperties;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
-import io.camunda.operate.webapp.es.reader.ProcessInstanceReader;
-import io.camunda.operate.webapp.es.reader.ProcessReader;
 import io.camunda.operate.webapp.rest.dto.ProcessGroupDto;
 import io.camunda.operate.webapp.rest.dto.dmn.DecisionGroupDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
-import org.elasticsearch.index.query.MatchAllQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.TermsQueryBuilder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mockito;
@@ -61,13 +56,6 @@ public class PermissionsIT {
 
   @MockBean
   private OperateProperties operateProperties;
-
-  @MockBean
-  protected ProcessReader processReader;
-
-  @MockBean
-  protected ProcessInstanceReader processInstanceReader;
-
   @Autowired
   private PermissionsService permissionsService;
 
@@ -413,21 +401,20 @@ public class PermissionsIT {
   }
 
   @Test
-  public void testCreateQueryForProcessesByPermissionWhenAllProcessesAllowed() {
+  public void testGetProcessesByPermissionWhenAllProcessesAllowed() {
     // given
-    PermissionsService.ResourcesAllowed resourcesAllowed = PermissionsService.ResourcesAllowed.all();
     IdentityPermission permission = IdentityPermission.READ;
 
     // when
     Mockito.when(operateProperties.getIdentity()).thenReturn(new IdentityProperties().setResourcePermissionsEnabled(false));
-    QueryBuilder query = permissionsService.createQueryForProcessesByPermission(permission);
+    var resourcesAllowed = permissionsService.getProcessesWithPermission(permission);
 
     // then
-    assertThat(query instanceof MatchAllQueryBuilder).isTrue();
+    assertThat(resourcesAllowed).isEqualTo(PermissionsService.ResourcesAllowed.all());
   }
 
   @Test
-  public void testCreateQueryForProcessesByPermissionWhenSpecificProcessesAllowed() {
+  public void testGetProcessesByPermissionWhenSpecificProcessesAllowed() {
     // given
     String bpmnProcessId1 = "processId1";
     String bpmnProcessId2 = "processId2";
@@ -440,12 +427,10 @@ public class PermissionsIT {
             .setPermissions(new HashSet<>(List.of(READ))),
         new IdentityAuthorization().setResourceKey(bpmnProcessId2).setResourceType(PermissionsService.RESOURCE_TYPE_PROCESS_DEFINITION)
             .setPermissions(new HashSet<>(List.of(READ)))));
-    QueryBuilder query = permissionsService.createQueryForProcessesByPermission(permission);
+    var resourcesAllowed = permissionsService.getProcessesWithPermission(permission);
 
     // then
-    assertThat(query instanceof TermsQueryBuilder).isTrue();
-    assertThat(((TermsQueryBuilder)query).fieldName()).isEqualTo("bpmnProcessId");
-    assertThat(((TermsQueryBuilder)query).values()).containsExactlyInAnyOrder(bpmnProcessId1, bpmnProcessId2);
+    assertThat(resourcesAllowed.getIds()).containsExactlyInAnyOrder(bpmnProcessId1, bpmnProcessId2);
   }
 
   @Test
@@ -506,21 +491,20 @@ public class PermissionsIT {
   }
 
   @Test
-  public void testCreateQueryForDecisionsByPermissionWhenAllDecisionsAllowed() {
+  public void testGetDecisionsByPermissionWhenAllDecisionsAllowed() {
     // given
-    PermissionsService.ResourcesAllowed resourcesAllowed = PermissionsService.ResourcesAllowed.all();
     IdentityPermission permission = IdentityPermission.READ;
 
     // when
     Mockito.when(operateProperties.getIdentity()).thenReturn(new IdentityProperties().setResourcePermissionsEnabled(false));
-    QueryBuilder query = permissionsService.createQueryForDecisionsByPermission(permission);
+    var resourcesAllowed = permissionsService.getDecisionsWithPermission(permission);
 
     // then
-    assertThat(query instanceof MatchAllQueryBuilder).isTrue();
+    assertThat(resourcesAllowed).isEqualTo(PermissionsService.ResourcesAllowed.all());
   }
 
   @Test
-  public void testCreateQueryForDecisionsByPermissionWhenSpecificDecisionsAllowed() {
+  public void testGetDecisionsByPermissionWhenSpecificDecisionsAllowed() {
     // given
     String decisionId1 = "decisionId1";
     String decisionId2 = "decisionId2";
@@ -533,12 +517,10 @@ public class PermissionsIT {
             .setPermissions(new HashSet<>(List.of(READ))),
         new IdentityAuthorization().setResourceKey(decisionId2).setResourceType(PermissionsService.RESOURCE_TYPE_DECISION_DEFINITION)
             .setPermissions(new HashSet<>(List.of(READ)))));
-    QueryBuilder query = permissionsService.createQueryForDecisionsByPermission(permission);
+    var resourcesAllowed = permissionsService.getDecisionsWithPermission(permission);
 
     // then
-    assertThat(query instanceof TermsQueryBuilder).isTrue();
-    assertThat(((TermsQueryBuilder)query).fieldName()).isEqualTo("decisionId");
-    assertThat(((TermsQueryBuilder)query).values()).containsExactlyInAnyOrder(decisionId1, decisionId2);
+    assertThat(resourcesAllowed.getIds()).containsExactlyInAnyOrder(decisionId1, decisionId2);
   }
 
   private void registerAuthorizations(List<IdentityAuthorization> authorizations) {

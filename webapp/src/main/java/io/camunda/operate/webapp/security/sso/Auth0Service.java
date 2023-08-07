@@ -6,13 +6,15 @@
  */
 package io.camunda.operate.webapp.security.sso;
 
+import static io.camunda.operate.OperateProfileService.SSO_AUTH_PROFILE;
+import static io.camunda.operate.webapp.security.OperateURIs.SSO_CALLBACK_URI;
+
 import com.auth0.AuthenticationController;
 import com.auth0.IdentityVerificationException;
 import com.auth0.Tokens;
 import io.camunda.identity.sdk.Identity;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.RetryOperation;
-import io.camunda.operate.webapp.security.OperateProfileService;
 import io.camunda.operate.webapp.security.Permission;
 import io.camunda.operate.webapp.security.sso.model.ClusterInfo;
 import jakarta.servlet.http.HttpServletRequest;
@@ -34,10 +36,8 @@ import org.springframework.web.client.RestTemplate;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import static io.camunda.operate.webapp.security.OperateURIs.SSO_CALLBACK_URI;
-
 @Component
-@Profile(OperateProfileService.SSO_AUTH_PROFILE)
+@Profile(SSO_AUTH_PROFILE)
 public class Auth0Service {
 
   private static final String LOGOUT_URL_TEMPLATE = "https://%s/v2/logout?client_id=%s&returnTo=%s";

@@ -6,32 +6,23 @@
  */
 package io.camunda.operate.webapp.rest;
 
-import static io.camunda.operate.entities.OperationType.ADD_VARIABLE;
-import static io.camunda.operate.entities.OperationType.UPDATE_VARIABLE;
-import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
-
 import io.camunda.operate.Metrics;
 import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.entities.SequenceFlowEntity;
+import io.camunda.operate.store.SequenceFlowStore;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.rest.ValidLongId;
+import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
+import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
+import io.camunda.operate.webapp.reader.FlowNodeStatisticsReader;
+import io.camunda.operate.webapp.reader.IncidentReader;
+import io.camunda.operate.webapp.reader.ListViewReader;
+import io.camunda.operate.webapp.reader.OperationReader;
+import io.camunda.operate.webapp.reader.VariableReader;
+import io.camunda.operate.webapp.writer.BatchOperationWriter;
 import io.camunda.operate.webapp.InternalAPIErrorController;
-import io.camunda.operate.webapp.es.reader.ActivityStatisticsReader;
-import io.camunda.operate.webapp.es.reader.FlowNodeInstanceReader;
-import io.camunda.operate.webapp.es.reader.IncidentReader;
-import io.camunda.operate.webapp.es.reader.ListViewReader;
-import io.camunda.operate.webapp.es.reader.OperationReader;
-import io.camunda.operate.webapp.es.reader.ProcessInstanceReader;
-import io.camunda.operate.webapp.es.reader.SequenceFlowReader;
-import io.camunda.operate.webapp.es.reader.VariableReader;
-import io.camunda.operate.webapp.es.writer.BatchOperationWriter;
-import io.camunda.operate.webapp.rest.dto.DtoCreator;
-import io.camunda.operate.webapp.rest.dto.FlowNodeStatisticsDto;
-import io.camunda.operate.webapp.rest.dto.ProcessInstanceCoreStatisticsDto;
-import io.camunda.operate.webapp.rest.dto.SequenceFlowDto;
-import io.camunda.operate.webapp.rest.dto.VariableDto;
-import io.camunda.operate.webapp.rest.dto.VariableRequestDto;
+import io.camunda.operate.webapp.rest.dto.*;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeStateDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentResponseDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
@@ -43,31 +34,29 @@ import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
+import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import io.camunda.operate.webapp.rest.exception.NotAuthorizedException;
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.identity.PermissionsService;
 import io.camunda.operate.webapp.zeebe.operation.ModifyProcessInstanceRequestValidator;
-import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import io.micrometer.core.annotation.Timed;
-import io.swagger.v3.oas.annotations.*;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.ConstraintViolationException;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import static io.camunda.operate.entities.OperationType.ADD_VARIABLE;
+import static io.camunda.operate.entities.OperationType.UPDATE_VARIABLE;
+import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
 
 @RestController
 @RequestMapping(value = PROCESS_INSTANCE_URL)
@@ -86,7 +75,7 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
   private ListViewReader listViewReader;
 
   @Autowired
-  private ActivityStatisticsReader activityStatisticsReader;
+  private FlowNodeStatisticsReader flowNodeStatisticsReader;
 
   @Autowired
   private IncidentReader incidentReader;
@@ -98,7 +87,7 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
   private FlowNodeInstanceReader flowNodeInstanceReader;
 
   @Autowired
-  private SequenceFlowReader sequenceFlowReader;
+  private SequenceFlowStore sequenceFlowStore;
 
   @Autowired
   private OperationReader operationReader;
@@ -131,8 +120,7 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
     validate(operationRequest, id);
     if(operationRequest.getOperationType() == OperationType.DELETE_PROCESS_INSTANCE) {
       checkIdentityPermission(Long.valueOf(id), IdentityPermission.DELETE_PROCESS_INSTANCE);
-    }
-    else {
+    } else {
       checkIdentityPermission(Long.valueOf(id), IdentityPermission.UPDATE_PROCESS_INSTANCE);
     }
     return batchOperationWriter.scheduleSingleOperation(Long.parseLong(id), operationRequest);
@@ -220,7 +208,7 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
   @GetMapping("/{id}/sequence-flows")
   public List<SequenceFlowDto> querySequenceFlowsByProcessInstanceId(@PathVariable @ValidLongId String id) {
     checkIdentityReadPermission(Long.parseLong(id));
-    final List<SequenceFlowEntity> sequenceFlows = sequenceFlowReader.getSequenceFlowsByProcessInstanceKey(Long.valueOf(id));
+    final List<SequenceFlowEntity> sequenceFlows = sequenceFlowStore.getSequenceFlowsByProcessInstanceKey(Long.valueOf(id));
     return DtoCreator.create(sequenceFlows, SequenceFlowDto.class);
   }
 
@@ -288,7 +276,7 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
     if ( (processDefinitionKeys != null && processDefinitionKeys.size() == 1) == (bpmnProcessId != null && processVersion != null) ) {
       throw new InvalidRequestException("Exactly one process must be specified in the request (via processIds or bpmnProcessId/version).");
     }
-    return activityStatisticsReader.getFlowNodeStatistics(query);
+    return flowNodeStatisticsReader.getFlowNodeStatistics(query);
   }
 
   @Operation(summary = "Get process instance core statistics (aggregations)")

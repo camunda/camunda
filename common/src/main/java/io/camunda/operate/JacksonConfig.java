@@ -9,7 +9,10 @@ package io.camunda.operate;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
-import io.camunda.operate.es.ElasticsearchConnector;
+
+import io.camunda.operate.connect.CustomInstantDeserializer;
+import io.camunda.operate.connect.CustomOffsetDateTimeDeserializer;
+import io.camunda.operate.connect.CustomOffsetDateTimeSerializer;
 import io.camunda.operate.property.OperateProperties;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -35,9 +38,9 @@ public class JacksonConfig {
   public ObjectMapper objectMapper() {
 
     JavaTimeModule javaTimeModule = new JavaTimeModule();
-    javaTimeModule.addSerializer(OffsetDateTime.class, new ElasticsearchConnector.CustomOffsetDateTimeSerializer(dateTimeFormatter()));
-    javaTimeModule.addDeserializer(OffsetDateTime.class, new ElasticsearchConnector.CustomOffsetDateTimeDeserializer(dateTimeFormatter()));
-    javaTimeModule.addDeserializer(Instant.class, new ElasticsearchConnector.CustomInstantDeserializer());
+    javaTimeModule.addSerializer(OffsetDateTime.class, new CustomOffsetDateTimeSerializer(dateTimeFormatter()));
+    javaTimeModule.addDeserializer(OffsetDateTime.class, new CustomOffsetDateTimeDeserializer(dateTimeFormatter()));
+    javaTimeModule.addDeserializer(Instant.class, new CustomInstantDeserializer());
 
     return Jackson2ObjectMapperBuilder.json()
         .modules(javaTimeModule, new Jdk8Module())

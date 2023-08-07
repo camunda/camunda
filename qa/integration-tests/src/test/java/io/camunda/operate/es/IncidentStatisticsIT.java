@@ -167,7 +167,6 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
 
     // when
     when(permissionsService.getProcessesWithPermission(IdentityPermission.READ)).thenReturn(PermissionsService.ResourcesAllowed.all());
-    when(permissionsService.createQueryForProcessesByPermission(IdentityPermission.READ)).thenCallRealMethod();
 
     // then
     List<IncidentsByProcessGroupStatisticsDto> response = requestIncidentsByProcess();
@@ -186,7 +185,6 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
     // when
     when(permissionsService.getProcessesWithPermission(IdentityPermission.READ)).thenReturn(
         PermissionsService.ResourcesAllowed.withIds(Set.of(DEMO_BPMN_PROCESS_ID, ORDER_BPMN_PROCESS_ID)));
-    when(permissionsService.createQueryForProcessesByPermission(IdentityPermission.READ)).thenCallRealMethod();
 
     // then
     List<IncidentsByProcessGroupStatisticsDto> response = requestIncidentsByProcess();
@@ -204,7 +202,6 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
 
     // when
     when(permissionsService.getProcessesWithPermission(IdentityPermission.READ)).thenReturn(PermissionsService.ResourcesAllowed.all());
-    when(permissionsService.createQueryForProcessesByPermission(IdentityPermission.READ)).thenCallRealMethod();
 
     // then
     List<IncidentsByErrorMsgStatisticsDto> response = requestIncidentsByError();
@@ -213,6 +210,7 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
 
     IncidentsByErrorMsgStatisticsDto incidentsByError1 = response.stream().filter(x -> Objects.equals(x.getErrorMessage(), TestUtil.ERROR_MSG))
         .findFirst().orElseThrow();
+    //TODO: Check
     assertThat(incidentsByError1.getInstancesWithErrorCount()).isEqualTo(3);
     assertThat(incidentsByError1.getProcesses()).hasSize(2);
     assertThat(incidentsByError1.getProcesses().stream().map(IncidentByProcessStatisticsDto::getBpmnProcessId)
@@ -234,7 +232,6 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
 
     // when
     when(permissionsService.getProcessesWithPermission(IdentityPermission.READ)).thenReturn(PermissionsService.ResourcesAllowed.withIds(Set.of()));
-    when(permissionsService.createQueryForProcessesByPermission(IdentityPermission.READ)).thenCallRealMethod();
 
     // then
     List<IncidentsByErrorMsgStatisticsDto> response = requestIncidentsByError();
@@ -250,7 +247,6 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
 
     // when
     when(permissionsService.getProcessesWithPermission(IdentityPermission.READ)).thenReturn(PermissionsService.ResourcesAllowed.withIds(Set.of(DEMO_BPMN_PROCESS_ID)));
-    when(permissionsService.createQueryForProcessesByPermission(IdentityPermission.READ)).thenCallRealMethod();
 
     // then
     List<IncidentsByErrorMsgStatisticsDto> response = requestIncidentsByError();
@@ -280,7 +276,6 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
 
     // when
     when(permissionsService.getProcessesWithPermission(IdentityPermission.READ)).thenReturn(PermissionsService.ResourcesAllowed.withIds(Set.of(ORDER_BPMN_PROCESS_ID)));
-    when(permissionsService.createQueryForProcessesByPermission(IdentityPermission.READ)).thenCallRealMethod();
 
     // then
     List<IncidentsByErrorMsgStatisticsDto> response = requestIncidentsByError();
@@ -289,6 +284,7 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
 
     IncidentsByErrorMsgStatisticsDto incidentsByError1 = response.stream().filter(x -> Objects.equals(x.getErrorMessage(), TestUtil.ERROR_MSG))
         .findFirst().orElseThrow();
+    //TODO: Check
     assertThat(incidentsByError1.getInstancesWithErrorCount()).isEqualTo(1);
     assertThat(incidentsByError1.getProcesses()).hasSize(1);
     assertThat(incidentsByError1.getProcesses().stream().map(IncidentByProcessStatisticsDto::getBpmnProcessId)

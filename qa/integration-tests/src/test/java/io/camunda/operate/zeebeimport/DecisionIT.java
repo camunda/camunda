@@ -21,7 +21,7 @@ import io.camunda.operate.entities.dmn.definition.DecisionDefinitionEntity;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.util.ElasticsearchTestRule;
 import io.camunda.operate.util.OperateZeebeIntegrationTest;
-import io.camunda.operate.webapp.es.reader.DecisionReader;
+import io.camunda.operate.webapp.reader.DecisionReader;
 import io.camunda.operate.webapp.rest.dto.dmn.DecisionGroupDto;
 import java.util.List;
 import java.util.Map;

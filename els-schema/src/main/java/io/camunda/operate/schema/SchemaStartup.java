@@ -24,7 +24,7 @@ public class SchemaStartup {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SchemaStartup.class);
 
-  @Autowired private ElasticsearchSchemaManager schemaManager;
+  @Autowired private SchemaManager schemaManager;
 
   @Autowired private IndexSchemaValidator schemaValidator;
 

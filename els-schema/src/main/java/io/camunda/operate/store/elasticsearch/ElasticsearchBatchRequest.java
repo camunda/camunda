@@ -135,6 +135,14 @@ public class ElasticsearchBatchRequest implements BatchRequest {
   }
 
   @Override
+  public BatchRequest update(String index, String id, OperateEntity entity) throws PersistenceException {
+    try {
+      return update(index, id, objectMapper.readValue(objectMapper.writeValueAsString(entity), HashMap.class));
+    } catch (JsonProcessingException e) {
+      throw new RuntimeException(e);
+    }
+  }
+  @Override
   public BatchRequest updateWithScript(String index, String id, String script, Map<String, Object> parameters) throws PersistenceException {
     logger.debug("Add update with script request for index {} id {} ", index, id);
     final UpdateRequest updateRequest = new UpdateRequest()
@@ -156,7 +164,14 @@ public class ElasticsearchBatchRequest implements BatchRequest {
 
   @Override
   public void execute() throws PersistenceException{
-    logger.debug("Execute transaction with {} requests", bulkRequest.requests().size());
+    logger.debug("Execute batchRequest with {} requests", bulkRequest.requests().size());
     ElasticsearchUtil.processBulkRequest(esClient, bulkRequest, operateProperties.getElasticsearch().getBulkRequestMaxSizeInBytes());
   }
+
+  @Override
+  public void executeWithRefresh() throws PersistenceException {
+    logger.debug("Execute batchRequest with {} requests and refresh", bulkRequest.requests().size());
+    ElasticsearchUtil.processBulkRequest(esClient, bulkRequest, true, operateProperties.getElasticsearch().getBulkRequestMaxSizeInBytes());
+  }
+
 }

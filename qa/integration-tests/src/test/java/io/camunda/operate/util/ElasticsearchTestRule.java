@@ -23,11 +23,11 @@ import io.camunda.operate.entities.dmn.definition.DecisionRequirementsEntity;
 import io.camunda.operate.entities.listview.FlowNodeInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.VariableForListViewEntity;
-import io.camunda.operate.es.ElasticsearchConnector;
+import io.camunda.operate.connect.ElasticsearchConnector;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateElasticsearchProperties;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.schema.ElasticsearchSchemaManager;
+import io.camunda.operate.schema.SchemaManager;
 import io.camunda.operate.schema.indices.DecisionIndex;
 import io.camunda.operate.schema.indices.DecisionRequirementsIndex;
 import io.camunda.operate.schema.indices.ProcessIndex;
@@ -118,7 +118,7 @@ public class ElasticsearchTestRule extends TestWatcher {
   protected OperateProperties operateProperties;
 
   @Autowired
-  private ElasticsearchSchemaManager schemaManager;
+  private SchemaManager schemaManager;
 
   @Autowired
   protected ZeebeImporter zeebeImporter;

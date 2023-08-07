@@ -6,6 +6,7 @@
  */
 package io.camunda.operate.webapp.zeebe.operation;
 
+import io.camunda.operate.webapp.writer.BatchOperationWriter;
 import jakarta.annotation.PreDestroy;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -15,7 +16,6 @@ import java.util.concurrent.Future;
 
 import io.camunda.operate.entities.OperationEntity;
 import io.camunda.operate.entities.OperationType;
-import io.camunda.operate.webapp.es.writer.BatchOperationWriter;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateProperties;
 import org.slf4j.Logger;

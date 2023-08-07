@@ -8,7 +8,7 @@ package io.camunda.operate.webapp.rest;
 
 import io.camunda.operate.entities.dmn.definition.DecisionDefinitionEntity;
 import io.camunda.operate.webapp.InternalAPIErrorController;
-import io.camunda.operate.webapp.es.reader.DecisionReader;
+import io.camunda.operate.webapp.reader.DecisionReader;
 import io.camunda.operate.webapp.rest.dto.dmn.DecisionGroupDto;
 import io.camunda.operate.webapp.rest.exception.NotAuthorizedException;
 import io.camunda.operate.webapp.security.identity.IdentityPermission;

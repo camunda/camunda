@@ -21,6 +21,9 @@ import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.operate.archiver.Archiver;
+import io.camunda.operate.webapp.reader.ListViewReader;
+import io.camunda.operate.webapp.writer.BatchOperationWriter;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.IOException;
@@ -36,9 +39,9 @@ import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import io.camunda.operate.archiver.Archiver;
-import io.camunda.operate.archiver.BatchOperationArchiverJob;
-import io.camunda.operate.archiver.ProcessInstancesArchiverJob;
+
+import io.camunda.operate.archiver.elasticsearch.ElasticsearchBatchOperationArchiverJob;
+import io.camunda.operate.archiver.elasticsearch.ElasticsearchProcessInstancesArchiverJob;
 import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
@@ -53,8 +56,6 @@ import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.util.MetricAssert;
 import io.camunda.operate.util.OperateZeebeIntegrationTest;
 import io.camunda.operate.util.ZeebeTestUtil;
-import io.camunda.operate.webapp.es.reader.ListViewReader;
-import io.camunda.operate.webapp.es.writer.BatchOperationWriter;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
@@ -107,7 +108,7 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
   @Autowired
   private CancelProcessInstanceHandler cancelProcessInstanceHandler;
 
-  private ProcessInstancesArchiverJob archiverJob;
+  private ElasticsearchProcessInstancesArchiverJob archiverJob;
 
   private Random random = new Random();
 
@@ -117,7 +118,7 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
   public void before() {
     super.before();
     dateTimeFormatter = DateTimeFormatter.ofPattern(operateProperties.getArchiver().getRolloverDateFormat()).withZone(ZoneId.systemDefault());
-    archiverJob = beanFactory.getBean(ProcessInstancesArchiverJob.class, partitionHolder.getPartitionIds());
+    archiverJob = beanFactory.getBean(ElasticsearchProcessInstancesArchiverJob.class, archiver, partitionHolder.getPartitionIds());
     cancelProcessInstanceHandler.setZeebeClient(super.getClient());
     clearMetrics();
   }
@@ -214,7 +215,7 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
     elasticsearchTestRule.persistNew(bo3);
 
     //when
-    BatchOperationArchiverJob batchOperationArchiverJob = beanFactory.getBean(BatchOperationArchiverJob.class);
+    ElasticsearchBatchOperationArchiverJob batchOperationArchiverJob = beanFactory.getBean(ElasticsearchBatchOperationArchiverJob.class, archiver);
     int count = batchOperationArchiverJob.archiveNextBatch().join();
     assertThat(count).isEqualTo(2);
     elasticsearchTestRule.refreshOperateESIndices();

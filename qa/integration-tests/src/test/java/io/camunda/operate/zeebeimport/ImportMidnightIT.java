@@ -7,7 +7,6 @@
 package io.camunda.operate.zeebeimport;
 
 import java.io.IOException;
-import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
@@ -20,7 +19,6 @@ import java.util.List;
 import io.camunda.operate.entities.FlowNodeInstanceEntity;
 import io.camunda.operate.entities.FlowNodeState;
 import io.camunda.operate.exceptions.NoSuchIndexException;
-import io.camunda.operate.schema.templates.BatchOperationTemplate;
 import io.camunda.operate.util.TestApplication;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceState;
@@ -28,7 +26,7 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.ElasticsearchTestRule;
 import io.camunda.operate.util.OperateZeebeIntegrationTest;
 import io.camunda.operate.util.ZeebeTestUtil;
-import io.camunda.operate.webapp.es.reader.ProcessInstanceReader;
+import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.reindex.ReindexRequest;

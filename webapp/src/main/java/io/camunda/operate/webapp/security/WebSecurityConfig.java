@@ -6,8 +6,6 @@
  */
 package io.camunda.operate.webapp.security;
 
-import static io.camunda.operate.webapp.security.OperateProfileService.AUTH_PROFILE;
-
 import io.camunda.operate.webapp.security.oauth2.OAuth2WebConfigurer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
@@ -17,6 +15,8 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Component;
+
+import static io.camunda.operate.OperateProfileService.AUTH_PROFILE;
 
 @Profile(AUTH_PROFILE)
 @EnableWebSecurity

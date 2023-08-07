@@ -32,7 +32,6 @@ import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
 import io.camunda.operate.util.ElasticsearchTestRule;
 import io.camunda.operate.util.OperateIntegrationTest;
-import io.camunda.operate.util.TestUtil;
 import io.camunda.operate.webapp.rest.dto.SortingDto;
 import io.camunda.operate.webapp.rest.dto.dmn.DecisionInstanceStateDto;
 import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceForListDto;
@@ -477,7 +476,6 @@ public class DecisionListQueryIT extends OperateIntegrationTest {
 
     // when
     when(permissionsService.getDecisionsWithPermission(IdentityPermission.READ)).thenReturn(PermissionsService.ResourcesAllowed.all());
-    when(permissionsService.createQueryForDecisionsByPermission(IdentityPermission.READ)).thenCallRealMethod();
 
     DecisionInstanceListRequestDto query = createGetAllDecisionInstancesRequest();
     MvcResult mvcResult = postRequest(query(), query);
@@ -498,7 +496,6 @@ public class DecisionListQueryIT extends OperateIntegrationTest {
 
     // when
     when(permissionsService.getDecisionsWithPermission(IdentityPermission.READ)).thenReturn(PermissionsService.ResourcesAllowed.withIds(Set.of()));
-    when(permissionsService.createQueryForDecisionsByPermission(IdentityPermission.READ)).thenCallRealMethod();
 
     DecisionInstanceListRequestDto query = createGetAllDecisionInstancesRequest();
     MvcResult mvcResult = postRequest(query(), query);
@@ -521,7 +518,6 @@ public class DecisionListQueryIT extends OperateIntegrationTest {
 
     // when
     when(permissionsService.getDecisionsWithPermission(IdentityPermission.READ)).thenReturn(PermissionsService.ResourcesAllowed.withIds(Set.of(decisionId)));
-    when(permissionsService.createQueryForDecisionsByPermission(IdentityPermission.READ)).thenCallRealMethod();
 
     DecisionInstanceListRequestDto query = createGetAllDecisionInstancesRequest();
     MvcResult mvcResult = postRequest(query(), query);

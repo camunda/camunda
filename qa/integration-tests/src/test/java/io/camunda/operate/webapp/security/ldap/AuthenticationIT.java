@@ -6,7 +6,8 @@
  */
 package io.camunda.operate.webapp.security.ldap;
 
-import io.camunda.operate.es.ElasticsearchConnector;
+import io.camunda.operate.OperateProfileService;
+import io.camunda.operate.connect.ElasticsearchConnector;
 import io.camunda.operate.es.ElasticsearchTask;
 import io.camunda.operate.es.RetryElasticsearchClient;
 import io.camunda.operate.property.OperateProperties;
@@ -20,7 +21,6 @@ import io.camunda.operate.webapp.security.SameSiteCookieTomcatContextCustomizer;
 import io.camunda.operate.webapp.security.oauth2.CCSaaSJwtAuthenticationTokenValidator;
 import io.camunda.operate.webapp.security.oauth2.Jwt2AuthenticationTokenConverter;
 import io.camunda.operate.webapp.security.oauth2.OAuth2WebConfigurer;
-import io.camunda.operate.webapp.security.OperateProfileService;
 import io.camunda.operate.webapp.security.OperateURIs;
 import org.junit.ClassRule;
 import org.junit.Test;

@@ -10,6 +10,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static io.camunda.operate.webapp.rest.FlowNodeInstanceRestService.FLOW_NODE_INSTANCE_URL;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import io.camunda.operate.webapp.reader.IncidentReader;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeStateDto;
 import io.camunda.operate.webapp.rest.dto.listview.SortValuesWrapper;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -21,7 +22,6 @@ import io.camunda.operate.entities.FlowNodeType;
 import io.camunda.operate.util.ConversionUtils;
 import io.camunda.operate.util.OperateZeebeIntegrationTest;
 import io.camunda.operate.util.ZeebeTestUtil;
-import io.camunda.operate.webapp.es.reader.IncidentReader;
 import io.camunda.operate.webapp.rest.ProcessInstanceRestService;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceDto;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceQueryDto;

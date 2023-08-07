@@ -11,8 +11,8 @@ import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 
 import io.camunda.operate.data.DataGenerator;
-import io.camunda.operate.es.ElasticsearchConnector;
-import io.camunda.operate.webapp.security.es.ElasticSearchUserDetailsService;
+import io.camunda.operate.connect.ElasticsearchConnector;
+import io.camunda.operate.webapp.security.auth.OperateUserDetailsService;
 import io.camunda.operate.webapp.zeebe.operation.OperationExecutor;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.slf4j.Logger;
@@ -39,7 +39,7 @@ public class StartupBean {
   private ElasticsearchClient elasticsearchClient;
 
   @Autowired(required = false)
-  private ElasticSearchUserDetailsService elasticsearchUserDetailsService;
+  private OperateUserDetailsService elasticsearchUserDetailsService;
 
   @Autowired
   private DataGenerator dataGenerator;

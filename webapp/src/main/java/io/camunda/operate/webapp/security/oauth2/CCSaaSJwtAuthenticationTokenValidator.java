@@ -6,10 +6,10 @@
  */
 package io.camunda.operate.webapp.security.oauth2;
 
+import static io.camunda.operate.OperateProfileService.IDENTITY_AUTH_PROFILE;
 import static io.camunda.operate.util.CollectionUtil.firstOrDefault;
 import static io.camunda.operate.util.CollectionUtil.getOrDefaultFromMap;
 import static io.camunda.operate.util.ConversionUtils.stringIsEmpty;
-import static io.camunda.operate.webapp.security.OperateProfileService.IDENTITY_AUTH_PROFILE;
 
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;

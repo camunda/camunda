@@ -6,7 +6,8 @@
  */
 package io.camunda.operate.qa.performance;
 
-import io.camunda.operate.webapp.security.OperateProfileService;
+import io.camunda.operate.OperateProfileService;
+import io.camunda.operate.archiver.Archiver;
 import io.camunda.operate.zeebeimport.CountImportListener;
 import java.io.IOException;
 import java.time.OffsetDateTime;
@@ -106,8 +107,9 @@ public class ImportPerformanceStaticDataTest {
 
   @Test
   public void testBArchiver() throws ArchiverException {
+    final Archiver archiver = applicationContext.getBean(Archiver.class);
     final PartitionHolder partitionHolder = applicationContext.getBean(PartitionHolder.class);
-    ProcessInstancesArchiverJob archiverJob = applicationContext.getBean(ProcessInstancesArchiverJob.class, partitionHolder.getPartitionIds());
+    ProcessInstancesArchiverJob archiverJob = applicationContext.getBean(ProcessInstancesArchiverJob.class, archiver, partitionHolder.getPartitionIds());
     final int archivedCount = archiverJob.archiveNextBatch().join();
     assertThat(archivedCount).isEqualTo(1);
   }

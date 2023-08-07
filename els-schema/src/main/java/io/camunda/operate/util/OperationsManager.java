@@ -20,6 +20,18 @@ import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.store.OperationStore;
 import org.springframework.beans.factory.BeanFactory;
+import io.camunda.operate.store.OperationStore;
+import org.elasticsearch.action.bulk.BulkRequest;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.update.UpdateRequest;
+import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.TermQueryBuilder;
+import org.elasticsearch.script.Script;
+import org.elasticsearch.script.ScriptType;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -37,7 +49,6 @@ public class OperationsManager {
 
   @Autowired
   private OperationStore operationStore;
-
   @Autowired
   BeanFactory beanFactory;
 
@@ -62,7 +73,7 @@ public class OperationsManager {
   public void completeOperation(final Long zeebeCommandKey, final Long processInstanceKey, final Long incidentKey,
                                 final OperationType operationType, final BatchRequest batchRequest)
       throws PersistenceException {
-    final BatchRequest theBatchRequest = Objects.requireNonNullElseGet(batchRequest, this::newTransaction);
+    final BatchRequest theBatchRequest = Objects.requireNonNullElseGet(batchRequest, this::newBatchRequest);
     final List<OperationEntity> operationEntities = getOperations(zeebeCommandKey, processInstanceKey, incidentKey, operationType);
     final List<String> operationIds = operationEntities.stream().map(OperateEntity::getId).collect(Collectors.toList());
     final Map<String,String> ids2indexNames = getIndexNameForAliasAndIds(operationTemplate.getAlias(), operationIds);
@@ -78,7 +89,7 @@ public class OperationsManager {
   }
 
   public void completeOperation(final OperationEntity operationEntity) throws PersistenceException {
-    final BatchRequest batchRequest = newTransaction();
+    final BatchRequest batchRequest = newBatchRequest();
     if (operationEntity.getBatchOperationId() != null) {
         updateFinishedInBatchOperation(operationEntity.getBatchOperationId(), batchRequest);
     }
@@ -87,7 +98,7 @@ public class OperationsManager {
     batchRequest.execute();
   }
 
-  private BatchRequest newTransaction() {
+  private BatchRequest newBatchRequest() {
     return beanFactory.getBean(BatchRequest.class);
   }
 

@@ -11,7 +11,7 @@ import io.camunda.operate.es.dao.Query;
 import io.camunda.operate.es.dao.UsageMetricDAO;
 import io.camunda.operate.es.dao.response.AggregationResponse;
 import io.camunda.operate.exceptions.OperateRuntimeException;
-import io.camunda.operate.webapp.es.reader.MetricReader;
+import io.camunda.operate.webapp.elasticsearch.reader.MetricReader;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -118,7 +118,7 @@ public class MetricReaderTest {
 
     Query expected = Query.whereEquals(EVENT, MetricContract.EVENT_DECISION_INSTANCE_EVALUATED)
         .and(range(EVENT_TIME, oneHourBefore, now))
-        .aggregate(MetricReader.DECISION_INSTANCES_AGG_NAME, VALUE, 1);
+        .aggregate(io.camunda.operate.webapp.reader.MetricReader.DECISION_INSTANCES_AGG_NAME, VALUE, 1);
     Query calledValue = entityCaptor.getValue();
     assertEquals(expected, calledValue);
   }
