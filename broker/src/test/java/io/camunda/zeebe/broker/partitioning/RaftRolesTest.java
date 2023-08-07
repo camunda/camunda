@@ -165,11 +165,12 @@ public final class RaftRolesTest {
       atomix = atomixFuture.get();
 
       partitionGroup.getPartitions().forEach(partitionConsumer);
-      return partitionGroup
-          .join(
-              new DefaultPartitionManagementService(
-                  atomix.getMembershipService(), atomix.getCommunicationService()))
-          .thenApply(pg -> null);
+      return CompletableFuture.allOf(
+          partitionGroup
+              .join(
+                  new DefaultPartitionManagementService(
+                      atomix.getMembershipService(), atomix.getCommunicationService()))
+              .toArray(CompletableFuture[]::new));
     } catch (final InterruptedException | ExecutionException e) {
       LangUtil.rethrowUnchecked(e);
       // won't be executed

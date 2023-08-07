@@ -79,9 +79,12 @@ public class ZeebeTestNode {
         .start()
         .thenCompose(
             ignored ->
-                dataPartitionGroup.join(
-                    new DefaultPartitionManagementService(
-                        cluster.getMembershipService(), cluster.getCommunicationService())))
+                CompletableFuture.allOf(
+                    dataPartitionGroup
+                        .join(
+                            new DefaultPartitionManagementService(
+                                cluster.getMembershipService(), cluster.getCommunicationService()))
+                        .toArray(CompletableFuture[]::new)))
         .thenApply(v -> null);
   }
 

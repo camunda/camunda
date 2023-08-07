@@ -7,9 +7,7 @@
  */
 package io.camunda.zeebe.broker.partitioning;
 
-import io.atomix.cluster.MemberId;
 import io.atomix.raft.partition.RaftPartition;
-import io.atomix.raft.partition.RaftPartitionGroup;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
@@ -61,7 +59,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.List;
 
 final class PartitionFactory {
@@ -120,68 +117,54 @@ final class PartitionFactory {
     this.jobStreamer = jobStreamer;
   }
 
-  List<ZeebePartition> constructPartitions(
-      final RaftPartitionGroup partitionGroup,
+  ZeebePartition constructPartition(
+      final RaftPartition raftPartition,
       final List<PartitionListener> partitionListeners,
       final TopologyManager topologyManager,
       final FeatureFlags featureFlags) {
-    final var partitions = new ArrayList<ZeebePartition>();
     final var communicationService = clusterServices.getCommunicationService();
     final var membershipService = clusterServices.getMembershipService();
-
-    final MemberId nodeId = membershipService.getLocalMember().id();
-
-    final List<RaftPartition> owningPartitions =
-        partitionGroup.getPartitionsWithMember(nodeId).stream()
-            .map(RaftPartition.class::cast)
-            .toList();
-
     final var typedRecordProcessorsFactory = createFactory(localBroker, featureFlags);
-    for (final RaftPartition owningPartition : owningPartitions) {
-      final var partitionId = owningPartition.id().id();
 
-      final ConstructableSnapshotStore constructableSnapshotStore =
-          snapshotStoreFactory.getConstructableSnapshotStore(partitionId);
-      final StateController stateController =
-          createStateController(
-              owningPartition,
-              constructableSnapshotStore,
-              snapshotStoreFactory.getSnapshotStoreConcurrencyControl(partitionId));
+    final var partitionId = raftPartition.id().id();
 
-      final PartitionStartupAndTransitionContextImpl partitionStartupAndTransitionContext =
-          new PartitionStartupAndTransitionContextImpl(
-              localBroker.getNodeId(),
-              communicationService,
-              owningPartition,
-              partitionListeners,
-              new AtomixPartitionMessagingService(
-                  communicationService, membershipService, owningPartition.members()),
-              actorSchedulingService,
-              brokerCfg,
-              commandApiService::newCommandResponseWriter,
-              () -> commandApiService.getOnProcessedListener(partitionId),
-              constructableSnapshotStore,
-              stateController,
-              typedRecordProcessorsFactory,
-              exporterRepository,
-              new PartitionProcessingState(owningPartition),
-              diskSpaceUsageMonitor,
-              gatewayBrokerTransport,
-              topologyManager);
+    final ConstructableSnapshotStore constructableSnapshotStore =
+        snapshotStoreFactory.getConstructableSnapshotStore(partitionId);
 
-      final PartitionTransition newTransitionBehavior =
-          new PartitionTransitionImpl(TRANSITION_STEPS);
+    final StateController stateController =
+        createStateController(
+            raftPartition,
+            constructableSnapshotStore,
+            snapshotStoreFactory.getSnapshotStoreConcurrencyControl(partitionId));
 
-      final ZeebePartition zeebePartition =
-          new ZeebePartition(
-              partitionStartupAndTransitionContext, newTransitionBehavior, STARTUP_STEPS);
+    final var context =
+        new PartitionStartupAndTransitionContextImpl(
+            localBroker.getNodeId(),
+            communicationService,
+            raftPartition,
+            partitionListeners,
+            new AtomixPartitionMessagingService(
+                communicationService, membershipService, raftPartition.members()),
+            actorSchedulingService,
+            brokerCfg,
+            commandApiService::newCommandResponseWriter,
+            () -> commandApiService.getOnProcessedListener(partitionId),
+            constructableSnapshotStore,
+            stateController,
+            typedRecordProcessorsFactory,
+            exporterRepository,
+            new PartitionProcessingState(raftPartition),
+            diskSpaceUsageMonitor,
+            gatewayBrokerTransport,
+            topologyManager);
 
-      healthCheckService.registerMonitoredPartition(
-          zeebePartition.getPartitionId(), zeebePartition);
-      partitions.add(zeebePartition);
-    }
+    final PartitionTransition newTransitionBehavior = new PartitionTransitionImpl(TRANSITION_STEPS);
 
-    return partitions;
+    final ZeebePartition zeebePartition =
+        new ZeebePartition(context, newTransitionBehavior, STARTUP_STEPS);
+
+    healthCheckService.registerMonitoredPartition(zeebePartition.getPartitionId(), zeebePartition);
+    return zeebePartition;
   }
 
   private StateController createStateController(

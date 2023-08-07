@@ -83,12 +83,12 @@ public final class RaftPartition implements Partition, HealthMonitorable {
   }
 
   /** Opens the partition. */
-  CompletableFuture<Partition> open(final PartitionManagementService managementService) {
+  CompletableFuture<RaftPartition> open(final PartitionManagementService managementService) {
     if (partitionMetadata
         .members()
         .contains(managementService.getMembershipService().getLocalMember().id())) {
       initServer(managementService);
-      return server.start().thenApply(v -> null);
+      return server.start().thenApply(v -> this);
     }
     return CompletableFuture.completedFuture(this);
   }

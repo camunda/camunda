@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,7 +51,7 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
   private RaftPartitionGroup partitionGroup;
   private TopologyManagerImpl topologyManager;
 
-  private final List<ZeebePartition> partitions = new ArrayList<>();
+  private final List<ZeebePartition> partitions = new CopyOnWriteArrayList<>();
   private final Map<Integer, PartitionAdminAccess> adminAccess = new ConcurrentHashMap<>();
   private final DiskSpaceUsageMonitor diskSpaceUsageMonitor;
   private final BrokerCfg brokerCfg;
@@ -106,9 +107,7 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
   }
 
   public PartitionAdminAccess createAdminAccess(final ConcurrencyControl concurrencyControl) {
-    return new MultiPartitionAdminAccess(
-        concurrencyControl,
-        adminAccess);
+    return new MultiPartitionAdminAccess(concurrencyControl, adminAccess);
   }
 
   public CompletableFuture<Void> start() {
@@ -121,10 +120,7 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
 
     actorSchedulingService.submitActor(topologyManager);
 
-    partitionGroup.join(
-        new DefaultPartitionManagementService(
-            clusterServices.getMembershipService(), clusterServices.getCommunicationService()));
-
+    final var featureFlags = brokerCfg.getExperimental().getFeatures().toFeatureFlags();
     final var partitionFactory =
         new PartitionFactory(
             actorSchedulingService,
@@ -138,14 +134,27 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
             diskSpaceUsageMonitor,
             gatewayBrokerTransport,
             jobStreamer);
+    partitionGroup
+        .join(
+            new DefaultPartitionManagementService(
+                clusterServices.getMembershipService(), clusterServices.getCommunicationService()))
+        .forEach(
+            partitionStart ->
+                partitionStart
+                    .thenApply(
+                        partition -> {
+                          final var zeebePartition =
+                              partitionFactory.constructPartition(
+                                  partition, partitionListeners, topologyManager, featureFlags);
+                          startPartition(zeebePartition);
+                          return null;
+                        })
+                    .exceptionally(
+                        error -> {
+                          LOGGER.error("Failed to start partition", error);
+                          return null;
+                        }));
 
-    partitions.addAll(
-        partitionFactory.constructPartitions(
-            partitionGroup,
-            partitionListeners,
-            topologyManager,
-            brokerCfg.getExperimental().getFeatures().toFeatureFlags()));
-    partitions.forEach(this::startPartition);
     healthCheckService.registerPartitionManager(this);
 
     return CompletableFuture.completedFuture(null);
@@ -169,6 +178,7 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
                       zeebePartition.getPartitionId(), this::onHealthChanged));
               diskSpaceUsageMonitor.addDiskUsageListener(zeebePartition);
               adminAccess.put(zeebePartition.getPartitionId(), zeebePartition.createAdminAccess());
+              partitions.add(zeebePartition);
             });
   }
 
