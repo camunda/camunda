@@ -45,6 +45,9 @@
             },
             "duplicate": {
               "type": "boolean"
+            },
+            "tenantId": {
+              "type": "keyword"
             }
           }
         }

@@ -37,6 +37,9 @@
             },
             "bpmnProcessId": {
               "type": "keyword"
+            },
+            "tenantId": {
+              "type": "keyword"
             }
           }
         }

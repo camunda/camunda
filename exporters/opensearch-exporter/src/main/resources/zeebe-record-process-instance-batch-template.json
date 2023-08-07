@@ -27,6 +27,9 @@
             },
             "index": {
               "type": "long"
+            },
+            "tenantId": {
+              "type": "keyword"
             }
           }
         }
