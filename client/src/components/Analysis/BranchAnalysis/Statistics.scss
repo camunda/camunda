@@ -5,6 +5,11 @@
   border-left: 1px solid var(--silver-darken-80);
   position: relative;
 
+  ul.branchDistribution {
+    list-style: initial;
+    padding-left: 40px;
+  }
+
   .diagram-container {
     width: 100%;
     height: 100px;

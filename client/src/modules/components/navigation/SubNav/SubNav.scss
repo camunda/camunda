@@ -2,17 +2,12 @@
   position: fixed;
   top: 48px;
   left: 0;
-  margin: 0;
   width: 100%;
   padding-bottom: 11px;
   font-weight: 500;
   border-bottom: 1px solid var(--silver-darken-87);
   font-size: 15px;
   display: flex;
-
-  li {
-    list-style: none;
-  }
 
   .NavItem:first-child {
     border-left: none;

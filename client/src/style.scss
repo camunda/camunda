@@ -91,6 +91,10 @@ a:hover {
   text-decoration: underline;
 }
 
+a:active {
+  color: inherit;
+}
+
 .focus-visible:not(.cds--search-input, .cds--text-input) {
   outline: none;
   border-radius: 3px;
@@ -152,6 +156,12 @@ section h1 {
 
 .textBold {
   font-weight: bold;
+}
+
+ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
 }
 
 /* UTILITIES */

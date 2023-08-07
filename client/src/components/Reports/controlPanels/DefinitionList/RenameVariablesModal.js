@@ -85,7 +85,7 @@ export function RenameVariablesModal({
               <b>{t('report.definition.variables.important')} </b>
               {t('report.definition.variables.followGuidelines')}
             </p>
-            <ul>
+            <ul className="guidelines">
               <li>{t('report.definition.variables.globalChanges')}</li>
               <li>{t('report.definition.variables.useSameVariable')}</li>
             </ul>

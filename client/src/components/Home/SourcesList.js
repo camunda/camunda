@@ -210,7 +210,7 @@ export default withErrorHandling(
               {conflict && conflict.length > 0 && (
                 <>
                   <p>{t('home.sources.saveConflict.header')}</p>
-                  <ul>
+                  <ul className="conflictList">
                     {conflict.map(({id, name}) => (
                       <li key={id}>'{name || id}'</li>
                     ))}

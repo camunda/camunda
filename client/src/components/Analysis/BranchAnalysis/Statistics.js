@@ -62,7 +62,7 @@ export default class Statistics extends React.Component {
       return (
         <div className="Statistics" ref={this.rootRef}>
           <p>{t('analysis.gatewayInstances', {totalGateway})}</p>
-          <ul>
+          <ul className="branchDistribution">
             {Object.keys(this.state.data.followingNodes).map((key) => {
               const count = this.state.data.followingNodes[key].activityCount;
               const reached = this.state.data.followingNodes[key].activitiesReached;
