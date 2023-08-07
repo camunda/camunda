@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.zeebe.client.job;
+package io.camunda.zeebe.client.impl.worker;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -22,7 +22,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.zeebe.client.api.response.ActivatedJob;
-import io.camunda.zeebe.client.impl.worker.JobPoller;
 import io.camunda.zeebe.client.util.ClientTest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.grpc.Status;
@@ -36,7 +35,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 
-public final class JobPollerTest extends ClientTest {
+public final class JobPollerImplTest extends ClientTest {
 
   private Consumer<ActivatedJob> jobConsumer;
   private IntConsumer doneCallback;
@@ -106,7 +105,7 @@ public final class JobPollerTest extends ClientTest {
   }
 
   private JobPoller getJobPoller(final Duration requestTimeout) {
-    return new JobPoller(
+    return new JobPollerImpl(
         client,
         requestTimeout,
         "testJobType",

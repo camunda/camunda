@@ -165,9 +165,9 @@ public final class JobWorkerBuilderImpl
     ensureGreaterThan("maxJobsActive", maxJobsActive, 0);
 
     final JobStreamer jobStreamer;
-    final JobRunnableFactory jobRunnableFactory = new JobRunnableFactory(jobClient, handler);
+    final JobRunnableFactory jobRunnableFactory = new JobRunnableFactoryImpl(jobClient, handler);
     final JobPoller jobPoller =
-        new JobPoller(
+        new JobPollerImpl(
             jobClient, requestTimeout, jobType, workerName, timeout, fetchVariables, maxJobsActive);
 
     if (enableStreaming) {
