@@ -123,6 +123,9 @@
                   }
                 }
               }
+            },
+            "tenantId": {
+              "type": "keyword"
             }
           }
         }

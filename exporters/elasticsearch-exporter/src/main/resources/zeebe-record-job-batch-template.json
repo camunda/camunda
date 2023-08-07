@@ -85,11 +85,17 @@
                 },
                 "errorCode": {
                   "type": "text"
+                },
+                "tenantId": {
+                  "type": "keyword"
                 }
               }
             },
             "truncated": {
               "type": "boolean"
+            },
+            "tenantIds": {
+              "type": "keyword"
             }
           }
         }

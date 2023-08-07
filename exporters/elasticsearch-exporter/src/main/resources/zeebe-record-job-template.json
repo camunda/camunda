@@ -66,6 +66,9 @@
             },
             "errorCode": {
               "type": "text"
+            },
+            "tenantId": {
+              "type": "keyword"
             }
           }
         }

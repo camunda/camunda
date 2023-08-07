@@ -36,6 +36,9 @@
             },
             "processInstanceKey": {
               "type": "long"
+            },
+            "tenantId": {
+              "type": "keyword"
             }
           }
         }
