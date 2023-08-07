@@ -8,6 +8,7 @@
 import {Header} from './styled';
 import {Title} from '../PanelTitle';
 import {forwardRef} from 'react';
+import pluralSuffix from 'modules/utils/pluralSuffix';
 
 type Props = {
   title: string;
@@ -25,7 +26,10 @@ const PanelHeader = forwardRef<HTMLElement, Props>(
         <Title>
           {title}
           {count > 0 && (
-            <>&nbsp;&nbsp;&nbsp;-&nbsp;&nbsp;&nbsp;{count} results</>
+            <>
+              &nbsp;&nbsp;&nbsp;-&nbsp;&nbsp;&nbsp;
+              {pluralSuffix(count, 'result')}
+            </>
           )}
         </Title>
         {children}

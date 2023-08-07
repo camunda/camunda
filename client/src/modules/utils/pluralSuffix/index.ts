@@ -8,6 +8,6 @@
 /**
  * Adds an 's' at the end of a text, when count is not 1 or -1
  */
-export default function pluralSuffix(count: any, text: any) {
+export default function pluralSuffix(count: number, text: string) {
   return Math.abs(count) === 1 ? `${count} ${text}` : `${count} ${text}s`;
 }
