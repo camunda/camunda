@@ -42,6 +42,7 @@ describe('<Bar />', () => {
       <Bar
         flowNodeInstance={mockStartNode}
         nodeName={mockStartEventBusinessObject.name}
+        isTimestampLabelVisible
       />,
       {
         wrapper: Wrapper,

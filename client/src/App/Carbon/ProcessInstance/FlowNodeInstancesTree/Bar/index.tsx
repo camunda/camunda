@@ -11,34 +11,35 @@ import {TimeStampLabel} from './TimeStampLabel';
 import {NodeName, Container, StateIcon} from './styled';
 import {Layer, Stack} from '@carbon/react';
 
-import {modificationsStore} from 'modules/stores/modifications';
-import {observer} from 'mobx-react';
 import {ModificationIcons} from './ModificationIcons';
 import {FlowNodeInstance} from 'modules/stores/flowNodeInstance';
 
 type Props = {
   flowNodeInstance: FlowNodeInstance;
   nodeName: string;
+  isTimestampLabelVisible?: boolean;
 };
 
-const Bar: React.FC<Props> = observer(({nodeName, flowNodeInstance}) => {
-  return (
-    <Container>
-      <Stack orientation="horizontal" gap={5}>
-        {flowNodeInstance.state !== undefined && (
-          <StateIcon state={flowNodeInstance.state} size={16} />
-        )}
-        <NodeName>{nodeName}</NodeName>
-        {!modificationsStore.isModificationModeEnabled && (
-          <Layer>
-            <TimeStampLabel timeStamp={flowNodeInstance.endDate} />
-          </Layer>
-        )}
-      </Stack>
+const Bar = React.forwardRef<HTMLDivElement, Props>(
+  ({nodeName, flowNodeInstance, isTimestampLabelVisible = false}, ref) => {
+    return (
+      <Container ref={ref}>
+        <Stack orientation="horizontal" gap={5}>
+          {flowNodeInstance.state !== undefined && (
+            <StateIcon state={flowNodeInstance.state} size={16} />
+          )}
+          <NodeName>{nodeName}</NodeName>
+          {isTimestampLabelVisible && (
+            <Layer>
+              <TimeStampLabel timeStamp={flowNodeInstance.endDate} />
+            </Layer>
+          )}
+        </Stack>
 
-      <ModificationIcons flowNodeInstance={flowNodeInstance} />
-    </Container>
-  );
-});
+        <ModificationIcons flowNodeInstance={flowNodeInstance} />
+      </Container>
+    );
+  },
+);
 
 export {Bar};

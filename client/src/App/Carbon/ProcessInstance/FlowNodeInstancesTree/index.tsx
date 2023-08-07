@@ -24,6 +24,8 @@ import {FlowNodeIcon} from 'modules/components/Carbon/FlowNodeIcon';
 import {isSubProcess} from 'modules/bpmn-js/utils/isSubProcess';
 import {Bar} from './Bar';
 
+const TREE_NODE_HEIGHT = 32;
+
 type Props = {
   flowNodeInstance: FlowNodeInstance;
   isRoot?: boolean;
@@ -236,7 +238,16 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
             : undefined
         }
         isExpanded={isExpanded}
-        label={<Bar nodeName={nodeName} flowNodeInstance={flowNodeInstance} />}
+        label={
+          <Bar
+            nodeName={nodeName}
+            flowNodeInstance={flowNodeInstance}
+            isTimestampLabelVisible={
+              !modificationsStore.isModificationModeEnabled
+            }
+            ref={rowRef}
+          />
+        }
       >
         {hasChildren ? (
           <ScrollableNodes
@@ -251,9 +262,7 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
                 );
 
               if (fetchedInstancesCount !== undefined) {
-                scrollDown(
-                  fetchedInstancesCount * (rowRef.current?.offsetHeight ?? 0),
-                );
+                scrollDown(fetchedInstancesCount * TREE_NODE_HEIGHT);
               }
             }}
             scrollableContainerRef={scrollableContainerRef}
