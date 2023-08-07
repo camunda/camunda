@@ -670,6 +670,14 @@
       </dependency>
 
       <dependency>
+        <groupId>io.micrometer</groupId>
+        <artifactId>micrometer-bom</artifactId>
+        <version>${version.micrometer}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <dependency>
         <groupId>org.elasticsearch.client</groupId>
         <artifactId>elasticsearch-rest-client</artifactId>
         <version>${version.elasticsearch}</version>
@@ -802,18 +810,6 @@
         <groupId>io.prometheus</groupId>
         <artifactId>simpleclient_hotspot</artifactId>
         <version>${version.prometheus}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.micrometer</groupId>
-        <artifactId>micrometer-core</artifactId>
-        <version>${version.micrometer}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.micrometer</groupId>
-        <artifactId>micrometer-registry-prometheus</artifactId>
-        <version>${version.micrometer}</version>
       </dependency>
 
       <dependency>
@@ -1118,13 +1114,6 @@
         <groupId>com.google.code.gson</groupId>
         <artifactId>gson</artifactId>
         <version>${version.gson}</version>
-      </dependency>
-
-      <!-- between micrometer-core 1.10.2 and spring-web 6.0.0 -->
-      <dependency>
-        <groupId>io.micrometer</groupId>
-        <artifactId>micrometer-observation</artifactId>
-        <version>${version.micrometer}</version>
       </dependency>
 
       <dependency>
