@@ -20,7 +20,6 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
-import io.camunda.zeebe.protocol.record.value.deployment.DecisionMetadataValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsMetadataValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -219,7 +218,7 @@ public final class DeploymentDmnTest {
         .containsExactly(2);
 
     assertThat(deploymentEvent.getValue().getDecisionsMetadata())
-        .extracting(DecisionMetadataValue::getVersion)
+        .extracting(DecisionRecordValue::getVersion)
         .describedAs("Expect that the decision version is increased")
         .containsExactly(2);
 
@@ -311,7 +310,7 @@ public final class DeploymentDmnTest {
         .containsExactly(2);
 
     assertThat(deploymentEvent.getValue().getDecisionsMetadata())
-        .extracting(DecisionMetadataValue::getVersion)
+        .extracting(DecisionRecordValue::getVersion)
         .describedAs("Expect that the decision version is increased")
         .containsExactly(2);
   }
@@ -359,7 +358,7 @@ public final class DeploymentDmnTest {
         .containsOnly(tuple(2, false));
 
     assertThat(deploymentEvent.getValue().getDecisionsMetadata())
-        .extracting(DecisionMetadataValue::getVersion, DecisionMetadataValue::isDuplicate)
+        .extracting(DecisionRecordValue::getVersion, DecisionRecordValue::isDuplicate)
         .describedAs("Expect that the decision version is increased")
         .containsExactly(tuple(3, false));
 

@@ -28,7 +28,7 @@ import io.camunda.zeebe.protocol.record.value.EvaluatedOutputValue;
 import io.camunda.zeebe.protocol.record.value.MatchedRuleValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
-import io.camunda.zeebe.protocol.record.value.deployment.DecisionMetadataValue;
+import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Map;
@@ -237,7 +237,7 @@ public final class BusinessRuleTaskTest {
 
     final var deployedDecisionsById =
         deployment.getValue().getDecisionsMetadata().stream()
-            .collect(Collectors.toMap(DecisionMetadataValue::getDecisionId, Function.identity()));
+            .collect(Collectors.toMap(DecisionRecordValue::getDecisionId, Function.identity()));
 
     final var calledDecision = deployedDecisionsById.get("force_user");
     final var requiredDecision = deployedDecisionsById.get("jedi_or_sith");
@@ -403,7 +403,7 @@ public final class BusinessRuleTaskTest {
 
     final var deployedDecisionsById =
         deployment.getValue().getDecisionsMetadata().stream()
-            .collect(Collectors.toMap(DecisionMetadataValue::getDecisionId, Function.identity()));
+            .collect(Collectors.toMap(DecisionRecordValue::getDecisionId, Function.identity()));
 
     final var calledDecision = deployedDecisionsById.get("force_user");
     final var requiredDecision = deployedDecisionsById.get("jedi_or_sith");

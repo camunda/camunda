@@ -16,6 +16,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
+import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -101,7 +102,7 @@ public class StandaloneDecisionEvaluationTest {
     // given
     final Record<DeploymentRecordValue> deploymentRecord =
         ENGINE.deployment().withXmlClasspathResource(DMN_RESOURCE).deploy();
-    final var decisionRecord =
+    final DecisionRecordValue decisionRecord =
         deploymentRecord.getValue().getDecisionsMetadata().stream()
             .filter(decisionRecordValue -> decisionRecordValue.getDecisionId().equals(DECISION_ID))
             .findAny()

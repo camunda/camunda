@@ -11,7 +11,7 @@ import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.value.ValueArray;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
-import io.camunda.zeebe.protocol.record.value.deployment.DecisionMetadataValue;
+import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsMetadataValue;
 import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -88,8 +88,8 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
   }
 
   @Override
-  public List<DecisionMetadataValue> getDecisionsMetadata() {
-    final var metadataList = new ArrayList<DecisionMetadataValue>();
+  public List<DecisionRecordValue> getDecisionsMetadata() {
+    final var metadataList = new ArrayList<DecisionRecordValue>();
 
     for (final DecisionRecord metadata : decisionMetadataProp) {
       final var copyRecord = new DecisionRecord();

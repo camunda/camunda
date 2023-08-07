@@ -20,7 +20,7 @@ import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
-import io.camunda.zeebe.protocol.record.value.deployment.DecisionMetadataValue;
+import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsMetadataValue;
 import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -441,7 +441,7 @@ public final class CreateDeploymentMultiplePartitionsTest {
   }
 
   private void assertSameDecision(
-      final DecisionMetadataValue original, final DecisionMetadataValue repeated) {
+      final DecisionRecordValue original, final DecisionRecordValue repeated) {
     Assertions.assertThat(repeated)
         .hasDecisionId(original.getDecisionId())
         .hasDecisionName(original.getDecisionName())
@@ -452,7 +452,7 @@ public final class CreateDeploymentMultiplePartitionsTest {
   }
 
   private void assertDifferentDecision(
-      final DecisionMetadataValue original, final DecisionMetadataValue repeated) {
+      final DecisionRecordValue original, final DecisionRecordValue repeated) {
     assertThat(original.getVersion()).isLessThan(repeated.getVersion());
     assertThat(original.getDecisionKey()).isLessThan(repeated.getDecisionKey());
     assertThat(original.getDecisionRequirementsKey())
