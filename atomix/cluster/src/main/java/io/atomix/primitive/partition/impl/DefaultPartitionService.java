@@ -16,6 +16,8 @@
  */
 package io.atomix.primitive.partition.impl;
 
+import static java.util.Objects.requireNonNull;
+
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.primitive.partition.ManagedPartitionGroup;
@@ -43,7 +45,7 @@ public class DefaultPartitionService implements ManagedPartitionService {
       final ManagedPartitionGroup group) {
     clusterMembershipService = membershipService;
     communicationService = messagingService;
-    this.group = group;
+    this.group = requireNonNull(group);
   }
 
   @Override
@@ -58,17 +60,14 @@ public class DefaultPartitionService implements ManagedPartitionService {
       partitionManagementService =
           new DefaultPartitionManagementService(clusterMembershipService, communicationService);
 
-      final var startStepFuture =
-          group != null
-              ? group.join(partitionManagementService)
-              : CompletableFuture.completedFuture(null);
-
-      return startStepFuture.thenApply(
-          v -> {
-            LOGGER.debug("Started {}", getClass());
-            started.set(true);
-            return this;
-          });
+      return group
+          .join(partitionManagementService)
+          .thenApply(
+              v -> {
+                LOGGER.debug("Started {}", getClass());
+                started.set(true);
+                return this;
+              });
     }
     return CompletableFuture.completedFuture(null);
   }
@@ -80,10 +79,9 @@ public class DefaultPartitionService implements ManagedPartitionService {
 
   @Override
   public CompletableFuture<Void> stop() {
-    final var stopStepFuture =
-        group != null ? group.close() : CompletableFuture.completedFuture(null);
 
-    return stopStepFuture
+    return group
+        .close()
         .exceptionally(
             throwable -> {
               LOGGER.error("Failed closing partition group(s)", throwable);
