@@ -42,7 +42,6 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.awaitility.Awaitility;
 
-@SuppressWarnings({"unchecked"})
 public final class StubbedGateway {
 
   private static final String SERVER_NAME = "server";
@@ -69,7 +68,7 @@ public final class StubbedGateway {
     submitActorToActivateJobs(activateJobsHandler);
 
     final EndpointManager endpointManager =
-        new EndpointManager(brokerClient, activateJobsHandler, jobStreamer);
+        new EndpointManager(brokerClient, activateJobsHandler, jobStreamer, Runnable::run);
     final GatewayGrpcService gatewayGrpcService = new GatewayGrpcService(endpointManager);
 
     final InProcessServerBuilder serverBuilder =

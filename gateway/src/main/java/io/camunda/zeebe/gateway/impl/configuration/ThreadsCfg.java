@@ -14,6 +14,8 @@ import java.util.Objects;
 public final class ThreadsCfg {
 
   private int managementThreads = DEFAULT_MANAGEMENT_THREADS;
+  private int grpcMinThreads = Runtime.getRuntime().availableProcessors();
+  private int grpcMaxThreads = 2 * Runtime.getRuntime().availableProcessors();
 
   public int getManagementThreads() {
     return managementThreads;
@@ -24,9 +26,25 @@ public final class ThreadsCfg {
     return this;
   }
 
+  public int getGrpcMinThreads() {
+    return grpcMinThreads;
+  }
+
+  public void setGrpcMinThreads(final int grpcMinThreads) {
+    this.grpcMinThreads = grpcMinThreads;
+  }
+
+  public int getGrpcMaxThreads() {
+    return grpcMaxThreads;
+  }
+
+  public void setGrpcMaxThreads(final int grpcMaxThreads) {
+    this.grpcMaxThreads = grpcMaxThreads;
+  }
+
   @Override
   public int hashCode() {
-    return Objects.hash(managementThreads);
+    return Objects.hash(managementThreads, grpcMinThreads, grpcMaxThreads);
   }
 
   @Override
@@ -38,11 +56,20 @@ public final class ThreadsCfg {
       return false;
     }
     final ThreadsCfg that = (ThreadsCfg) o;
-    return managementThreads == that.managementThreads;
+    return managementThreads == that.managementThreads
+        && grpcMinThreads == that.grpcMinThreads
+        && grpcMaxThreads == that.grpcMaxThreads;
   }
 
   @Override
   public String toString() {
-    return "ThreadsCfg{" + "managementThreads=" + managementThreads + '}';
+    return "ThreadsCfg{"
+        + "managementThreads="
+        + managementThreads
+        + ", grpcMinThreads="
+        + grpcMinThreads
+        + ", grpcMaxThreads="
+        + grpcMaxThreads
+        + '}';
   }
 }

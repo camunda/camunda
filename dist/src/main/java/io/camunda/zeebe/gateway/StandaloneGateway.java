@@ -80,6 +80,9 @@ public class StandaloneGateway
         FatalErrorHandler.uncaughtExceptionHandler(Loggers.GATEWAY_LOGGER));
 
     System.setProperty("spring.banner.location", "classpath:/assets/zeebe_gateway_banner.txt");
+    System.setProperty(
+        "reactor.schedulers.defaultBoundedElasticSize",
+        String.valueOf(2 * Runtime.getRuntime().availableProcessors()));
     final var application =
         new SpringApplicationBuilder(StandaloneGateway.class)
             .web(WebApplicationType.REACTIVE)
@@ -129,7 +132,7 @@ public class StandaloneGateway
   public void close() {
     if (gateway != null) {
       try {
-        gateway.stop();
+        gateway.close();
       } catch (final Exception e) {
         LOG.warn("Failed to gracefully shutdown gRPC gateway", e);
       }

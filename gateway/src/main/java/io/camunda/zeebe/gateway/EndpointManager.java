@@ -66,6 +66,7 @@ import io.grpc.stub.ServerCallStreamObserver;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Set;
+import java.util.concurrent.Executor;
 import java.util.function.Function;
 
 public final class EndpointManager {
@@ -79,11 +80,12 @@ public final class EndpointManager {
   public EndpointManager(
       final BrokerClient brokerClient,
       final ActivateJobsHandler activateJobsHandler,
-      final ClientStreamer<JobActivationProperties> jobStreamer) {
+      final ClientStreamer<JobActivationProperties> jobStreamer,
+      final Executor executor) {
     this.brokerClient = brokerClient;
     this.activateJobsHandler = activateJobsHandler;
 
-    clientStreamAdapter = new ClientStreamAdapter(jobStreamer);
+    clientStreamAdapter = new ClientStreamAdapter(jobStreamer, executor);
     topologyManager = brokerClient.getTopologyManager();
     requestRetryHandler = new RequestRetryHandler(brokerClient, topologyManager);
   }
@@ -115,21 +117,11 @@ public final class EndpointManager {
 
               final var status = topology.getPartitionHealth(brokerId, partitionId);
               switch (status) {
-                case HEALTHY:
-                  partitionBuilder.setHealth(PartitionBrokerHealth.HEALTHY);
-                  break;
-
-                case UNHEALTHY:
-                  partitionBuilder.setHealth(PartitionBrokerHealth.UNHEALTHY);
-                  break;
-
-                case DEAD:
-                  partitionBuilder.setHealth(PartitionBrokerHealth.DEAD);
-                  break;
-
-                default:
-                  Loggers.GATEWAY_LOGGER.debug(
-                      "Unsupported partition broker health status '{}'", status.name());
+                case HEALTHY -> partitionBuilder.setHealth(PartitionBrokerHealth.HEALTHY);
+                case UNHEALTHY -> partitionBuilder.setHealth(PartitionBrokerHealth.UNHEALTHY);
+                case DEAD -> partitionBuilder.setHealth(PartitionBrokerHealth.DEAD);
+                default -> Loggers.GATEWAY_LOGGER.debug(
+                    "Unsupported partition broker health status '{}'", status.name());
               }
               brokerInfo.addPartitions(partitionBuilder);
             });

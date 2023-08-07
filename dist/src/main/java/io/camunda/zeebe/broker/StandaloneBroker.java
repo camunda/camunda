@@ -72,6 +72,9 @@ public class StandaloneBroker
         FatalErrorHandler.uncaughtExceptionHandler(Loggers.SYSTEM_LOGGER));
 
     System.setProperty("spring.banner.location", "classpath:/assets/zeebe_broker_banner.txt");
+    System.setProperty(
+        "reactor.schedulers.defaultBoundedElasticSize",
+        String.valueOf(2 * Runtime.getRuntime().availableProcessors()));
     final var application =
         new SpringApplicationBuilder(StandaloneBroker.class)
             .web(WebApplicationType.REACTIVE)
