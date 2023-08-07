@@ -29,6 +29,8 @@ public final class CreateProcessInstanceWithResultResponseImpl implements Proces
   private final long processInstanceKey;
   private final String variables;
 
+  private Map<String, Object> variablesAsMap;
+
   public CreateProcessInstanceWithResultResponseImpl(
       final JsonMapper jsonMapper, final CreateProcessInstanceWithResultResponse response) {
     this.jsonMapper = jsonMapper;
@@ -66,7 +68,10 @@ public final class CreateProcessInstanceWithResultResponseImpl implements Proces
 
   @Override
   public Map<String, Object> getVariablesAsMap() {
-    return jsonMapper.fromJsonAsMap(variables);
+    if (variablesAsMap == null) {
+      variablesAsMap = jsonMapper.fromJsonAsMap(variables);
+    }
+    return variablesAsMap;
   }
 
   @Override
@@ -78,6 +83,11 @@ public final class CreateProcessInstanceWithResultResponseImpl implements Proces
   public String getTenantId() {
     // todo(#13536): replace dummy implementation
     return "";
+  }
+
+  @Override
+  public Object getVariable(final String name) {
+    return getVariablesAsMap().get(name);
   }
 
   @Override

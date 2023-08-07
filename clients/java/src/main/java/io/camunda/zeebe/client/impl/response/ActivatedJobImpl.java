@@ -40,6 +40,8 @@ public final class ActivatedJobImpl implements ActivatedJob {
   private final long deadline;
   private final String variables;
 
+  private Map<String, Object> variablesAsMap;
+
   public ActivatedJobImpl(final JsonMapper jsonMapper, final GatewayOuterClass.ActivatedJob job) {
     this.jsonMapper = jsonMapper;
 
@@ -130,7 +132,10 @@ public final class ActivatedJobImpl implements ActivatedJob {
 
   @Override
   public Map<String, Object> getVariablesAsMap() {
-    return jsonMapper.fromJsonAsMap(variables);
+    if (variablesAsMap == null) {
+      variablesAsMap = jsonMapper.fromJsonAsMap(variables);
+    }
+    return variablesAsMap;
   }
 
   @Override
@@ -147,6 +152,11 @@ public final class ActivatedJobImpl implements ActivatedJob {
   public String getTenantId() {
     // todo(#13560): replace dummy implementation
     return "";
+  }
+
+  @Override
+  public Object getVariable(final String name) {
+    return getVariablesAsMap().get(name);
   }
 
   @Override
