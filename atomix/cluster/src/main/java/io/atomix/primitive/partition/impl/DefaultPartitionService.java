@@ -32,10 +32,7 @@ import org.slf4j.LoggerFactory;
 /** Default partition service. */
 public class DefaultPartitionService implements ManagedPartitionService {
   private static final Logger LOGGER = LoggerFactory.getLogger(DefaultPartitionService.class);
-
-  private final ClusterMembershipService clusterMembershipService;
-  private final ClusterCommunicationService communicationService;
-  private volatile PartitionManagementService partitionManagementService;
+  private final PartitionManagementService partitionManagementService;
   private final ManagedPartitionGroup group;
   private final AtomicBoolean started = new AtomicBoolean();
 
@@ -43,8 +40,8 @@ public class DefaultPartitionService implements ManagedPartitionService {
       final ClusterMembershipService membershipService,
       final ClusterCommunicationService messagingService,
       final ManagedPartitionGroup group) {
-    clusterMembershipService = membershipService;
-    communicationService = messagingService;
+    partitionManagementService =
+        new DefaultPartitionManagementService(membershipService, messagingService);
     this.group = requireNonNull(group);
   }
 
@@ -56,18 +53,8 @@ public class DefaultPartitionService implements ManagedPartitionService {
   @Override
   public CompletableFuture<PartitionService> start() {
     if (started.compareAndSet(false, true)) {
-
-      partitionManagementService =
-          new DefaultPartitionManagementService(clusterMembershipService, communicationService);
-
-      return group
-          .join(partitionManagementService)
-          .thenApply(
-              v -> {
-                LOGGER.debug("Started {}", getClass());
-                started.set(true);
-                return this;
-              });
+      group.join(partitionManagementService);
+      return CompletableFuture.completedFuture(this);
     }
     return CompletableFuture.completedFuture(null);
   }

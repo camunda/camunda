@@ -140,14 +140,8 @@ public final class RaftPartitionGroup implements ManagedPartitionGroup {
   @Override
   public CompletableFuture<ManagedPartitionGroup> join(
       final PartitionManagementService managementService) {
-    final var futures =
-        partitions.values().stream()
-            .map(p -> p.open(managementService))
-            .toArray(CompletableFuture[]::new);
-
-    return CompletableFuture.allOf(futures)
-        .thenRun(() -> LOGGER.info("Started RaftPartitionGroup {}", name))
-        .thenApply(ok -> this);
+    partitions.values().forEach(p -> p.open(managementService));
+    return CompletableFuture.completedFuture(this);
   }
 
   @Override
