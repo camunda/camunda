@@ -5,14 +5,14 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {useState, useEffect} from 'react';
+import {useState, useEffect, ComponentProps} from 'react';
 
 import {getOptimizeProfile} from 'config';
 
 import PlatformLogin from './PlatformLogin';
 
-export function Login(props) {
-  const [optimizeProfile, setOptimizeProfile] = useState();
+export function Login(props: ComponentProps<typeof PlatformLogin>) {
+  const [optimizeProfile, setOptimizeProfile] = useState<string>();
 
   useEffect(() => {
     (async () => {

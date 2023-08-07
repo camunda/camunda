@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {useState, useRef} from 'react';
+import {useState, useRef, MouseEvent, ChangeEvent} from 'react';
 import {
   Form,
   TextInput,
@@ -18,26 +18,27 @@ import {
 } from '@carbon/react';
 
 import {PageTitle} from 'components';
-import {withErrorHandling} from 'HOC';
 import {t} from 'translation';
+import {useErrorHandling} from 'hooks';
 
 import {login} from './service';
 import {ReactComponent as Logo} from './logo.svg';
 
 import './PlatformLogin.scss';
 
-export function PlatformLogin({onLogin, mightFail}) {
+export function PlatformLogin({onLogin}: {onLogin: (token: string) => void}) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [waitingForServer, setWaitingForServer] = useState(false);
   const [error, setError] = useState(null);
+  const {mightFail} = useErrorHandling();
 
-  const passwordField = useRef(null);
+  const passwordField = useRef<HTMLInputElement>(null);
 
-  const usernameLabel = t('login.username');
-  const passwordLabel = t('login.password');
+  const usernameLabel = t('login.username').toString();
+  const passwordLabel = t('login.password').toString();
 
-  async function submit(evt) {
+  async function submit(evt: MouseEvent) {
     evt.preventDefault();
 
     setWaitingForServer(true);
@@ -62,7 +63,7 @@ export function PlatformLogin({onLogin, mightFail}) {
 
   return (
     <Form className="PlatformLogin">
-      <PageTitle pageName={t('login.label')} />
+      <PageTitle pageName={t('login.label').toString()} />
       <Grid>
         <Column
           sm={4}
@@ -83,8 +84,8 @@ export function PlatformLogin({onLogin, mightFail}) {
             {error && (
               <InlineNotification
                 kind="error"
-                aria-label={t('login.closeError')}
-                statusIconDescription={t('common.error')}
+                aria-label={t('login.closeError').toString()}
+                statusIconDescription={t('common.error').toString()}
                 onCloseButtonClick={() => setError(null)}
                 subtitle={error}
               />
@@ -103,7 +104,7 @@ export function PlatformLogin({onLogin, mightFail}) {
               placeholder={passwordLabel}
               labelText={passwordLabel}
               value={password}
-              onChange={(evt) => setPassword(evt.target.value)}
+              onChange={(evt: ChangeEvent<HTMLInputElement>) => setPassword(evt.target.value)}
               name="password"
               id="loginPassword"
               ref={passwordField}
@@ -119,4 +120,4 @@ export function PlatformLogin({onLogin, mightFail}) {
   );
 }
 
-export default withErrorHandling(PlatformLogin);
+export default PlatformLogin;

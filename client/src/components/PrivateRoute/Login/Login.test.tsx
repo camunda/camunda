@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {runAllEffects} from 'react';
+import {runAllEffects} from '__mocks__/react';
 import {shallow} from 'enzyme';
 
 import {getOptimizeProfile} from 'config';
@@ -17,9 +17,31 @@ jest.mock('config', () => ({
   getOptimizeProfile: jest.fn(),
 }));
 
+const props = {
+  onLogin: jest.fn(),
+};
+
+let originalWindowLocation = window.location;
+
+beforeEach(() => {
+  Object.defineProperty(window, 'location', {
+    configurable: true,
+    enumerable: true,
+    value: new URL(window.location.href),
+  });
+});
+
+afterEach(() => {
+  Object.defineProperty(window, 'location', {
+    configurable: true,
+    enumerable: true,
+    value: originalWindowLocation,
+  });
+});
+
 it('should display the Optimize default login page in platform mode', async () => {
-  getOptimizeProfile.mockReturnValueOnce('platform');
-  const node = shallow(<Login />);
+  (getOptimizeProfile as jest.Mock).mockReturnValueOnce('platform');
+  const node = shallow(<Login {...props} />);
 
   await runAllEffects();
 
@@ -27,11 +49,10 @@ it('should display the Optimize default login page in platform mode', async () =
 });
 
 it('should do a whole page refresh in C8 mode to reinitialize login flow', async () => {
-  getOptimizeProfile.mockReturnValueOnce('cloud');
+  (getOptimizeProfile as jest.Mock).mockReturnValueOnce('cloud');
 
-  delete window.location;
-  window.location = {reload: jest.fn()};
-  const node = shallow(<Login />);
+  window.location.reload = jest.fn();
+  const node = shallow(<Login {...props} />);
 
   await runAllEffects();
 

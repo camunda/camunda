@@ -639,4 +639,30 @@ declare module '@carbon/react' {
   declare function FilterableMultiSelect<T>(
     props: ForwardRefProps<HTMLElement, FilterableMultiSelectProps<T>>
   ): JSX.Element;
+
+  interface PasswordInputProps extends ReactInputAttr {
+    defaultValue?: string | number;
+    helperText?: ReactNode;
+    hideLabel?: boolean;
+    hidePasswordLabel?: string;
+    id: string;
+    inline?: boolean;
+    invalid?: boolean;
+    invalidText?: ReactNode;
+    labelText: ReactNode;
+    onTogglePasswordVisibility?: () => void;
+    showPasswordLabel?: string;
+    size?: 'sm' | 'md' | 'lg';
+    tooltipAlignment?: 'start' | 'center' | 'end';
+    tooltipPosition?: 'top' | 'right' | 'bottom' | 'left';
+    value?: string | number;
+    warn?: boolean;
+    warnText?: ReactNode;
+  }
+
+  declare function PasswordInput(
+    props: ForwardRefProps<HTMLInputElement, PasswordInputProps>
+  ): JSX.Element;
+
+  declare function Stack(props: {gap: number; children: ReactNode}): JSX.Element;
 }

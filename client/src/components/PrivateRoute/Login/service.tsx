@@ -7,7 +7,7 @@
 
 import {post} from 'request';
 
-export async function login(username, password) {
+export async function login(username: string, password: string): Promise<string> {
   const response = await post('api/authentication', {username, password});
 
   return await response.text();

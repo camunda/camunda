@@ -5,9 +5,10 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import {shallow} from 'enzyme';
 import {InlineNotification, Button} from '@carbon/react';
+
+import {useErrorHandling} from 'hooks';
 
 import {PlatformLogin} from './PlatformLogin';
 
@@ -19,9 +20,19 @@ jest.mock('./service', () => {
   };
 });
 
+jest.mock('hooks', () => ({
+  useErrorHandling: jest.fn(() => ({
+    mightFail: jest.fn((data, cb) => cb(data)),
+  })),
+}));
+
 const props = {
-  mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
+  onLogin: jest.fn(),
 };
+
+beforeEach(() => {
+  jest.clearAllMocks();
+});
 
 it('renders without crashing', () => {
   shallow(<PlatformLogin {...props} />);
@@ -38,7 +49,7 @@ it('should have entered values in the input fields', () => {
 });
 
 it('should call the login function when submitting the form', async () => {
-  const node = shallow(<PlatformLogin {...props} onLogin={jest.fn()} />);
+  const node = shallow(<PlatformLogin {...props} />);
 
   const username = 'david';
   const password = 'dennis';
@@ -52,19 +63,21 @@ it('should call the login function when submitting the form', async () => {
 });
 
 it('should call the onLogin callback after login', async () => {
-  const spy = jest.fn();
-  const node = shallow(<PlatformLogin {...props} onLogin={spy} />);
+  const node = shallow(<PlatformLogin {...props} />);
 
   await node.find(Button).simulate('click', {preventDefault: jest.fn()});
 
-  expect(spy).toHaveBeenCalled();
+  expect(props.onLogin).toHaveBeenCalled();
 });
 
 it('should display error message on failed login', async () => {
-  const mightFail = (promise, cb, err) => err({status: 400, message: 'test error'});
-  const node = shallow(<PlatformLogin {...props} mightFail={mightFail} />);
+  (useErrorHandling as jest.Mock).mockImplementation(() => ({
+    mightFail: (promise: any, cb: any, err: any) => err({status: 400, message: 'test error'}),
+  }));
 
-  login.mockReturnValueOnce({errorMessage: 'Failed'});
+  const node = shallow(<PlatformLogin {...props} />);
+
+  (login as jest.Mock).mockReturnValueOnce({errorMessage: 'Failed'});
 
   await node.find(Button).simulate('click', {preventDefault: jest.fn()});
 
@@ -72,7 +85,7 @@ it('should display error message on failed login', async () => {
 });
 
 it('should disable the login button when waiting for server response', () => {
-  const node = shallow(<PlatformLogin {...props} mightFail={() => {}} onLogin={jest.fn()} />);
+  const node = shallow(<PlatformLogin {...props} />);
 
   node.find(Button).simulate('click', {preventDefault: jest.fn()});
 
