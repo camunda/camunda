@@ -5,7 +5,13 @@
  */
 package org.camunda.optimize.upgrade.plan.factories;
 
+import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.zeebe.variable.ZeebeVariableRecordDto;
+import org.camunda.optimize.service.es.schema.MappingMetadataUtil;
 import org.camunda.optimize.service.es.schema.index.DashboardIndex;
+import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex;
+import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.es.schema.index.report.CombinedReportIndex;
 import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportIndex;
 import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
@@ -13,10 +19,20 @@ import org.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
 import org.camunda.optimize.upgrade.steps.UpgradeStep;
+import org.camunda.optimize.upgrade.steps.document.UpdateDataStep;
 import org.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
+import org.elasticsearch.index.query.BoolQueryBuilder;
 
+import java.util.ArrayList;
 import java.util.List;
 
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
+import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
+
+@Slf4j
 public class Upgrade310To311PlanFactory implements UpgradePlanFactory {
   @Override
   public UpgradePlan createUpgradePlan(final UpgradeExecutionDependencies upgradeExecutionDependencies) {
@@ -25,6 +41,8 @@ public class Upgrade310To311PlanFactory implements UpgradePlanFactory {
       .toVersion("3.11.0")
       .addUpgradeSteps(addDescriptionFieldToReportIndices())
       .addUpgradeStep(addDescriptionFieldToDashboardIndex())
+      .addUpgradeStep(updateTenantIdInProcessDefinitionDocumentC8())
+      .addUpgradeSteps(updateTenantIdInProcessInstanceDocumentC8(upgradeExecutionDependencies))
       .build();
   }
 
@@ -38,6 +56,41 @@ public class Upgrade310To311PlanFactory implements UpgradePlanFactory {
       new UpdateIndexStep(new SingleDecisionReportIndex(), addDescriptionScript()),
       new UpdateIndexStep(new CombinedReportIndex(), addDescriptionScript())
     );
+  }
+
+  private UpgradeStep updateTenantIdInProcessDefinitionDocumentC8() {
+   final BoolQueryBuilder query = boolQuery().mustNot(existsQuery(ProcessDefinitionIndex.TENANT_ID));
+    final String script =
+      // Only data sources with type == 'zeebe' will get migrated.
+      // In case the data source has name == 'zeebe' it wont get migrated
+      // In practice this should migrate all definitions for C8 environments only, and not affect C7 environments
+      "if (ctx._source.dataSource.type == 'zeebe') {\n" +
+      "  ctx._source.tenantId = '<default>';\n" +
+      "}\n";
+    return new UpdateDataStep(new ProcessDefinitionIndex(), query, script);
+  }
+
+  private List<UpgradeStep> updateTenantIdInProcessInstanceDocumentC8(final UpgradeExecutionDependencies upgradeExecutionDependencies) {
+    List<String> processDefinitionKeys = MappingMetadataUtil.retrieveProcessInstanceIndexIdentifiers(
+      upgradeExecutionDependencies.getEsClient(),
+      false
+    );
+    final BoolQueryBuilder query =  boolQuery().mustNot(existsQuery(ProcessInstanceIndex.TENANT_ID));
+    final String script =
+      // Only data sources with type == 'zeebe' will get migrated.
+      // In case the data source has name == 'zeebe' it wont get migrated
+      // In practice this should migrate all definitions for C8 environments only, and not affect C7 environments
+      "if (ctx._source.dataSource.type == 'zeebe') {\n" +
+      "  ctx._source.tenantId = '<default>';\n" +
+      "  for (incident in ctx._source.incidents) {\n" +
+      "      incident.tenantId = '<default>';\n" +
+      "  }\n" +
+      "}\n";
+    List<UpgradeStep> updateDataSteps = new ArrayList<>();
+    for (String processDefinitionKey : processDefinitionKeys) {
+        updateDataSteps.add(new UpdateDataStep(new ProcessInstanceIndex(processDefinitionKey),query, script));
+      }
+    return updateDataSteps;
   }
 
   private static String addDescriptionScript() {
