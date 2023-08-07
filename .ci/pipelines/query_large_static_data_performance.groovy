@@ -122,6 +122,21 @@ spec:
         requests:
           cpu: 4
           memory: 8Gi
+    - name: zeebe
+      image: camunda/zeebe:8.3.0-alpha4
+      #imagePullPolicy: Always   #this must be uncommented when snapshot is used
+      env:
+        - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME
+          value: io.camunda.zeebe.exporter.ElasticsearchExporter
+        - name: ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT
+          value: 12
+      resources:
+        limits:
+          cpu: 1
+          memory: 1Gi
+        requests:
+          cpu: 1
+          memory: 1Gi
     - name: operate
       image: registry.camunda.cloud/team-operate/camunda-operate:latest
       env:
