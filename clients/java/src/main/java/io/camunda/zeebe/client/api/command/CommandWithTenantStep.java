@@ -27,13 +27,6 @@ public interface CommandWithTenantStep<T> {
   String DEFAULT_TENANT_IDENTIFIER = "<default>";
 
   /**
-   * This identifier is used for entities that are shared among all tenants. For example, a deployed
-   * process can be shared among all tenants such that all tenants can create their own instances of
-   * the shared process definition. Process instances are always owned by a single tenant.
-   */
-  String SHARED_TENANT_IDENTIFIER = "[shared]";
-
-  /**
    * <strong>Experimental: This method is under development, and as such using it may have no effect
    * on the command builder when called. While unimplemented, it simply returns the command builder
    * instance unchanged. This method already exists for software that is building support for
@@ -55,19 +48,6 @@ public interface CommandWithTenantStep<T> {
    * assigned to the {@link #DEFAULT_TENANT_IDENTIFIER}.
    *
    * <p>If no tenant is explicitly specified, then the command is rejected.
-   *
-   * <h2>Shared entities</h2>
-   *
-   * <p>Some entities (i.e. process and decision definitions) can be shared among all tenants using
-   * the {@link #SHARED_TENANT_IDENTIFIER}.
-   *
-   * <p>When referring to shared entities in your command, the owning tenant may be inferred from
-   * the client's access.
-   *
-   * <p>For example, you can create an instance of a process, where all tenants share the process
-   * definition, without specifying the {@code tenantId} explicitly, if the client only has access
-   * to one specific tenant. In that case, the tenant owning the created process instance can be
-   * inferred from the client's access.
    *
    * @param tenantId the identifier of the tenant to specify for this command, e.g. {@code "ACME"}
    * @return the builder for this command with the tenant specified

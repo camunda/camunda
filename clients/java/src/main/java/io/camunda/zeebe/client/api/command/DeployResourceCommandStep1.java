@@ -15,7 +15,6 @@
  */
 package io.camunda.zeebe.client.api.command;
 
-import io.camunda.zeebe.client.api.ExperimentalApi;
 import io.camunda.zeebe.client.api.response.DeploymentEvent;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.InputStream;
@@ -101,20 +100,5 @@ public interface DeployResourceCommandStep1 {
           CommandWithTenantStep<DeployResourceCommandStep2>,
           FinalCommandStep<DeploymentEvent> {
     // the place for new optional parameters
-
-    /**
-     * {@inheritDoc}
-     *
-     * <h1>Deploy resource command specifics</h1>
-     *
-     * <p>When no {@code tenantId} is specified explicitly, the deployed resources are owned by all
-     * tenants using the {@link #SHARED_TENANT_IDENTIFIER} as long as multi-tenancy is enabled in
-     * the Zeebe cluster.
-     *
-     * @since 8.3
-     */
-    @Override
-    @ExperimentalApi("https://github.com/camunda/zeebe/issues/13321")
-    DeployResourceCommandStep2 tenantId(String tenantId);
   }
 }
