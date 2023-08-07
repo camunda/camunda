@@ -54,36 +54,34 @@ const ArrowPopover: React.FC<Props> = ({
 }) => {
   const arrowElementRef = useRef<HTMLDivElement | null>(null);
   const {
-    floating,
     x,
     y,
     strategy,
-    reference,
     middlewareData,
     placement: actualPlacement,
-    refs: {floating: popoverElementRef},
+    refs: {floating, setFloating},
   } = useFloating({
     placement,
     middleware: [...middlewareOptions, arrow({element: arrowElementRef})],
     whileElementsMounted: autoUpdatePosition ? autoUpdate : undefined,
+    elements: {
+      reference: referenceElement,
+    },
   });
 
   const [isHidden, setIsHidden] = useState<boolean>(false);
 
   useEffect(() => {
-    if (middlewareData.hide && popoverElementRef?.current !== null) {
+    if (middlewareData.hide && floating?.current !== null) {
       setIsHidden(!!middlewareData.hide.referenceHidden);
     }
-  }, [popoverElementRef, middlewareData]);
+  }, [floating, middlewareData]);
 
   useLayoutEffect(() => {
     const handleClick = (event: MouseEvent) => {
       const target = event.target;
 
-      if (
-        target instanceof Element &&
-        !popoverElementRef.current?.contains(target)
-      ) {
+      if (target instanceof Element && !floating.current?.contains(target)) {
         onOutsideClick?.(event);
       }
     };
@@ -92,13 +90,7 @@ const ArrowPopover: React.FC<Props> = ({
     return () => {
       document.body?.removeEventListener('click', handleClick, true);
     };
-  }, [onOutsideClick, popoverElementRef]);
-
-  useLayoutEffect(() => {
-    if (referenceElement) {
-      reference(referenceElement);
-    }
-  }, [referenceElement, reference]);
+  }, [onOutsideClick, floating]);
 
   const {x: arrowX, y: arrowY} = middlewareData.arrow ?? {};
 
@@ -107,7 +99,7 @@ const ArrowPopover: React.FC<Props> = ({
     : createPortal(
         <Container
           className={className}
-          ref={floating}
+          ref={setFloating}
           style={{
             position: strategy,
             top: getValueWhenValidNumber(y),
