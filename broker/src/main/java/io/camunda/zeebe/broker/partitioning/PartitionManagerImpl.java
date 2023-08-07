@@ -126,57 +126,55 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
           new IllegalStateException("PartitionManager is closed"));
     }
 
+    LOGGER.info("Starting partitions");
+
     actorSchedulingService.submitActor(topologyManager);
+    partitionService.start();
 
-    return partitionService
-        .start()
-        .thenApply(
-            ps -> {
-              LOGGER.info("Registering Partition Manager");
+    final var partitionFactory =
+        new PartitionFactory(
+            actorSchedulingService,
+            brokerCfg,
+            localBroker,
+            commandApiService,
+            snapshotStoreFactory,
+            clusterServices,
+            exporterRepository,
+            healthCheckService,
+            diskSpaceUsageMonitor,
+            gatewayBrokerTransport,
+            jobStreamer);
 
-              /* this must be called here; it must be called after the members of the partition have been
-              populated which happens during start of bootstrap manager and before the partitions are registered */
-              healthCheckService.registerPartitionManager(this);
+    partitions.addAll(
+        partitionFactory.constructPartitions(
+            partitionGroup,
+            partitionListeners,
+            topologyManager,
+            brokerCfg.getExperimental().getFeatures().toFeatureFlags()));
+    partitions.forEach(this::startPartition);
+    healthCheckService.registerPartitionManager(this);
 
-              LOGGER.info("Starting partitions");
-
-              final var partitionFactory =
-                  new PartitionFactory(
-                      actorSchedulingService,
-                      brokerCfg,
-                      localBroker,
-                      commandApiService,
-                      snapshotStoreFactory,
-                      clusterServices,
-                      exporterRepository,
-                      healthCheckService,
-                      diskSpaceUsageMonitor,
-                      gatewayBrokerTransport,
-                      jobStreamer);
-
-              partitions.addAll(
-                  partitionFactory.constructPartitions(
-                      partitionGroup,
-                      partitionListeners,
-                      topologyManager,
-                      brokerCfg.getExperimental().getFeatures().toFeatureFlags()));
-
-              final var futures =
-                  partitions.stream()
-                      .map(partition -> CompletableFuture.runAsync(() -> startPartition(partition)))
-                      .toArray(CompletableFuture[]::new);
-
-              CompletableFuture.allOf(futures).join();
-              return null;
-            });
+    return CompletableFuture.completedFuture(null);
   }
 
   private void startPartition(final ZeebePartition zeebePartition) {
+    actorSchedulingService
+        .submitActor(zeebePartition)
+        .onComplete(
+            (ok, error) -> {
+              if (error != null) {
+                LOGGER.error(
+                    "Failed to start partition {}", zeebePartition.getPartitionId(), error);
+                return;
+              }
 
-    actorSchedulingService.submitActor(zeebePartition).join();
-    zeebePartition.addFailureListener(
-        new PartitionHealthBroadcaster(zeebePartition.getPartitionId(), this::onHealthChanged));
-    diskSpaceUsageMonitor.addDiskUsageListener(zeebePartition);
+              LOGGER.info("Started partition {}", zeebePartition.getPartitionId());
+
+              zeebePartition.addFailureListener(
+                  new PartitionHealthBroadcaster(
+                      zeebePartition.getPartitionId(), this::onHealthChanged));
+              diskSpaceUsageMonitor.addDiskUsageListener(zeebePartition);
+            });
   }
 
   public CompletableFuture<Void> stop() {
