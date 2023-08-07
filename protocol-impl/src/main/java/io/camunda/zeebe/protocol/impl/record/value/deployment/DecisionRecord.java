@@ -126,4 +126,10 @@ public final class DecisionRecord extends UnifiedRecordValue implements Decision
   public DirectBuffer getDecisionRequirementsIdBuffer() {
     return decisionRequirementsIdProp.getValue();
   }
+
+  @Override
+  public String getTenantId() {
+    // todo(#13320): replace dummy implementation
+    return "";
+  }
 }

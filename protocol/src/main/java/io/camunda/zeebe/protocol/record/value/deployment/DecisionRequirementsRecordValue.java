@@ -17,7 +17,6 @@ package io.camunda.zeebe.protocol.record.value.deployment;
 
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValue;
-import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import org.immutables.value.Value;
 
 /**
@@ -27,7 +26,7 @@ import org.immutables.value.Value;
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableDecisionRequirementsRecordValue.Builder.class)
 public interface DecisionRequirementsRecordValue
-    extends RecordValue, DecisionRequirementsMetadataValue, TenantOwned {
+    extends RecordValue, DecisionRequirementsMetadataValue {
 
   /**
    * @return the binary DMN resource

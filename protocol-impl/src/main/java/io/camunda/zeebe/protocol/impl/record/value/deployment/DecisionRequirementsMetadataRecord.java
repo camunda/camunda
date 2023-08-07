@@ -157,4 +157,10 @@ public class DecisionRequirementsMetadataRecord extends UnifiedRecordValue
   public DirectBuffer getChecksumBuffer() {
     return checksumProp.getValue();
   }
+
+  @Override
+  public String getTenantId() {
+    // todo(#13320): replace dummy implementation
+    return "";
+  }
 }

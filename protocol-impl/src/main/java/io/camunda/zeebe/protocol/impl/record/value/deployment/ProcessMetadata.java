@@ -152,4 +152,10 @@ public final class ProcessMetadata extends UnifiedRecordValue implements Process
     isDuplicateProp.setValue(true);
     return this;
   }
+
+  @Override
+  public String getTenantId() {
+    // todo(#13320): replace dummy implementation
+    return "";
+  }
 }

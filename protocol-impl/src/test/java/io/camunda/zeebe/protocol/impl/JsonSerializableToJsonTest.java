@@ -192,7 +192,8 @@ final class JsonSerializableToJsonTest {
                 "resourceName": "resource",
                 "checksum": "Y2hlY2tzdW0=",
                 "processDefinitionKey": 123,
-                "duplicate": false
+                "duplicate": false,
+                "tenantId": ""
               }
             ],
             "resources": [
@@ -315,7 +316,8 @@ final class JsonSerializableToJsonTest {
               "version": 12,
               "processDefinitionKey": 123,
               "resourceName": "resource",
-              "duplicate": true
+              "duplicate": true,
+              "tenantId": ""
             }
           ],
           "decisionsMetadata": [
@@ -326,7 +328,8 @@ final class JsonSerializableToJsonTest {
               "decisionId": "decision-id",
               "decisionName": "decision-name",
               "decisionKey": 2,
-              "duplicate": true
+              "duplicate": true,
+              "tenantId": ""
             }
           ],
           "decisionRequirementsMetadata": [
@@ -338,7 +341,8 @@ final class JsonSerializableToJsonTest {
               "namespace": "namespace",
               "resourceName": "resource-name",
               "checksum": "Y2hlY2tzdW0=",
-              "duplicate": true
+              "duplicate": true,
+              "tenantId": ""
             }
           ],
           "tenantId": ""
@@ -1786,7 +1790,8 @@ final class JsonSerializableToJsonTest {
               "bpmnProcessId": "my_first_process",
               "resourceName": "my_first_bpmn.bpmn",
               "checksum": "c2hhMQ==",
-              "duplicate": false
+              "duplicate": false,
+              "tenantId": ""
             }],
             "decisionsMetadata": [],
             "decisionRequirementsMetadata": [],
