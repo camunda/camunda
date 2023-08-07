@@ -14,7 +14,6 @@ import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.ActorFutureCollector;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
@@ -27,7 +26,7 @@ final class MultiPartitionAdminAccess implements PartitionAdminAccess {
       final ConcurrencyControl concurrencyControl,
       final Map<Integer, ? extends PartitionAdminAccess> partitions) {
     this.concurrencyControl = requireNonNull(concurrencyControl);
-    this.partitions = Collections.unmodifiableMap(requireNonNull(partitions));
+    this.partitions = requireNonNull(partitions);
   }
 
   /**

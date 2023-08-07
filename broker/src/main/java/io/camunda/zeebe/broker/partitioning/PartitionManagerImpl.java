@@ -32,8 +32,9 @@ import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.health.HealthStatus;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
+import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,6 +51,7 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
   private TopologyManagerImpl topologyManager;
 
   private final List<ZeebePartition> partitions = new ArrayList<>();
+  private final Map<Integer, PartitionAdminAccess> adminAccess = new ConcurrentHashMap<>();
   private final DiskSpaceUsageMonitor diskSpaceUsageMonitor;
   private final BrokerCfg brokerCfg;
   private final BrokerInfo localBroker;
@@ -106,10 +108,7 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
   public PartitionAdminAccess createAdminAccess(final ConcurrencyControl concurrencyControl) {
     return new MultiPartitionAdminAccess(
         concurrencyControl,
-        partitions.stream()
-            .collect(
-                Collectors.toMap(
-                    ZeebePartition::getPartitionId, ZeebePartition::createAdminAccess)));
+        adminAccess);
   }
 
   public CompletableFuture<Void> start() {
@@ -169,6 +168,7 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
                   new PartitionHealthBroadcaster(
                       zeebePartition.getPartitionId(), this::onHealthChanged));
               diskSpaceUsageMonitor.addDiskUsageListener(zeebePartition);
+              adminAccess.put(zeebePartition.getPartitionId(), zeebePartition.createAdminAccess());
             });
   }
 
@@ -181,6 +181,8 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
                   (ok, error) -> {
                     logErrorIfApplicable(error);
                     partitionGroup = null;
+                    partitions.clear();
+                    adminAccess.clear();
                     topologyManager.close();
                     topologyManager = null;
                   });
