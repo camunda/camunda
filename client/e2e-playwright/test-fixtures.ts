@@ -8,12 +8,15 @@
 import {test as base} from '@playwright/test';
 import {Common} from './pages/Common';
 import {Login} from './pages/Login';
+import {Processes} from './pages/Processes';
 import fs from 'fs';
+import {Dashboard} from './pages/Dashboard';
 
 type Fixture = {
   resetData: () => Promise<void>;
   commonPage: Common;
   loginPage: Login;
+  dashboardPage: Dashboard;
 };
 
 const loginTest = base.extend<Fixture>({
@@ -27,7 +30,10 @@ const loginTest = base.extend<Fixture>({
 
 const authFile = 'playwright/.auth/user.json';
 
-const test = base.extend<{}, {workerStorageState: string}>({
+const test = base.extend<
+  {processesPage: Processes; dashboardPage: Dashboard},
+  {workerStorageState: string}
+>({
   storageState: ({workerStorageState}, use) => use(workerStorageState),
 
   workerStorageState: [
@@ -44,6 +50,7 @@ const test = base.extend<{}, {workerStorageState: string}>({
         await use(authFile);
         return;
       }
+
       // Important: make sure we authenticate in a clean environment by unsetting storage state.
       const page = await browser.newPage({storageState: undefined});
       await page.goto(`${baseURL}/login`);
@@ -59,6 +66,12 @@ const test = base.extend<{}, {workerStorageState: string}>({
     },
     {scope: 'worker'},
   ],
+  processesPage: async ({page}, use) => {
+    await use(new Processes(page));
+  },
+  dashboardPage: async ({page}, use) => {
+    await use(new Dashboard(page));
+  },
 });
 
 export {loginTest, test};
