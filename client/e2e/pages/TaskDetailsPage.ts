@@ -137,47 +137,47 @@ class TaskDetailsPage {
     await this.getNthVariableValueInput(1).fill(value);
   }
 
-  async fillNumber(number: string): Promise<void> {
+  async fillNumber(number: string) {
     await this.numberInput.fill(number);
   }
 
-  async clickIncrementButton(): Promise<void> {
+  async clickIncrementButton() {
     await this.incrementButton.click();
   }
 
-  async clickDecrementButton(): Promise<void> {
+  async clickDecrementButton() {
     await this.decrementButton.click();
   }
 
-  async fillDate(date: string): Promise<void> {
+  async fillDate(date: string) {
     await this.dateInput.click();
     await this.dateInput.fill(date);
     await this.dateInput.press('Enter');
   }
 
-  async enterTime(time: string): Promise<void> {
+  async enterTime(time: string) {
     await this.timeInput.click();
     await this.page.getByText(time).click();
   }
 
-  async checkCheckbox(): Promise<void> {
+  async checkCheckbox() {
     await this.checkbox.check();
   }
 
-  async selectDropdownValue(value: string): Promise<void> {
+  async selectDropdownValue(value: string) {
     await this.selectDropdown.click();
     await this.page.getByText(value).click();
   }
 
-  async clickRadioButton(radioBtnLabel: string): Promise<void> {
+  async clickRadioButton(radioBtnLabel: string) {
     await this.page.getByText(radioBtnLabel).click();
   }
 
-  async checkChecklistBox(label: string): Promise<void> {
+  async checkChecklistBox(label: string) {
     await this.page.getByLabel(label).check();
   }
 
-  async enterTwoValuesInTagList(value1: string, value2: string): Promise<void> {
+  async enterTwoValuesInTagList(value1: string, value2: string) {
     await this.tagList.click();
     await this.page.getByText(value1).click();
     await this.page.getByText(value2, {exact: true}).click();

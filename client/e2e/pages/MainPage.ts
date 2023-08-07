@@ -20,20 +20,20 @@ class MainPage {
     this.logoutButton = page.getByRole('button', {name: 'Log out'});
   }
 
-  async clickOpenSettingsButton(): Promise<void> {
+  async clickOpenSettingsButton() {
     await this.openSettingsButton.click();
   }
 
-  async clickLogoutButton(): Promise<void> {
+  async clickLogoutButton() {
     await this.logoutButton.click();
   }
 
-  async logout(): Promise<void> {
+  async logout() {
     await this.openSettingsButton.click();
     await this.clickLogoutButton();
   }
 
-  async clickProcessesTab(): Promise<void> {
+  async clickProcessesTab() {
     await this.processesTab.click();
   }
 }

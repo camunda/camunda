@@ -22,15 +22,15 @@ class LoginPage {
     this.errorMessage = page.getByRole('alert').first();
   }
 
-  async fillUsername(username: string): Promise<void> {
+  async fillUsername(username: string) {
     await this.usernameInput.fill(username);
   }
 
-  async fillPassword(password: string): Promise<void> {
+  async fillPassword(password: string) {
     await this.passwordInput.fill(password);
   }
 
-  async clickLoginButton(): Promise<void> {
+  async clickLoginButton() {
     await this.loginButton.click();
   }
 
@@ -42,7 +42,7 @@ class LoginPage {
     await this.clickLoginButton();
   }
 
-  async navigateToURL(url: string): Promise<void> {
+  async navigateToURL(url: string) {
     await this.page.goto(url);
   }
 }

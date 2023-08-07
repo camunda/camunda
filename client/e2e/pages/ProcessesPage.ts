@@ -26,23 +26,23 @@ class ProcessesPage {
     this.processTile = page.getByTestId('process-tile');
   }
 
-  async clickContinueButton(): Promise<void> {
+  async clickContinueButton() {
     await this.continueButton.click();
   }
 
-  async clickCancelButton(): Promise<void> {
+  async clickCancelButton() {
     await this.cancelButton.click();
   }
 
-  async clickStartProcessButton(): Promise<void> {
+  async clickStartProcessButton() {
     await this.startProcessButton.click();
   }
 
-  public async clickDocsLink(): Promise<void> {
+  public async clickDocsLink() {
     await this.docsLink.click();
   }
 
-  public async searchForProcess(process: string): Promise<void> {
+  public async searchForProcess(process: string) {
     await this.searchProcessesInput.click();
     await this.searchProcessesInput.fill(process);
     await this.searchProcessesInput.press('Enter');

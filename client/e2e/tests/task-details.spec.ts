@@ -47,7 +47,7 @@ test.beforeAll(async () => {
     createInstances('Checkbox_User_Task', 1, 1),
     createInstances('Checklist_Task', 1, 1),
     createInstances('Date_and_Time_Task', 1, 1),
-    createInstances('Number_Task', 1, 1),
+    createInstances('Number_Task', 1, 2),
     createInstances('Radio_Button_User_Task', 1, 1),
     createInstances('Select', 1, 1),
     createInstances('Tag_List_Task', 1, 1),
@@ -316,7 +316,7 @@ test.describe('task details page', () => {
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.openTask('Checkbox Task');
 
-    await expect(taskDetailsPage.checkbox.isChecked()).toBeTruthy();
+    expect(await taskDetailsPage.checkbox.isChecked()).toBe(true);
   });
 
   test('task completion with select form', async ({
@@ -355,7 +355,7 @@ test.describe('task details page', () => {
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.openTask('Radio Button Task');
 
-    await expect(page.getByText('Value').isChecked()).toBeTruthy();
+    expect(await page.getByText('Value').isChecked()).toBe(true);
   });
 
   test('task completion with checklist form', async ({
@@ -375,8 +375,8 @@ test.describe('task details page', () => {
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.openTask('Checklist User Task');
 
-    await expect(page.getByLabel('Value1').isChecked()).toBeTruthy();
-    await expect(page.getByLabel('Value2').isChecked()).toBeTruthy();
+    expect(await page.getByLabel('Value1').isChecked()).toBe(true);
+    expect(await page.getByLabel('Value2').isChecked()).toBe(true);
   });
 
   test('task completion with tag list form', async ({

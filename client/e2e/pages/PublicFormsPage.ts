@@ -24,11 +24,11 @@ class PublicFormsPage {
     });
   }
 
-  async clickSubmitButton(): Promise<void> {
+  async clickSubmitButton() {
     await this.submitButton.click();
   }
 
-  async goToPublicForm(bpmnProcessId: string): Promise<void> {
+  async goToPublicForm(bpmnProcessId: string) {
     await this.page.goto(`/new/${bpmnProcessId}`);
   }
 }

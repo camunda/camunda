@@ -18,13 +18,13 @@ class TaskPanelPage {
     this.filterOptions = page.getByRole('combobox', {name: 'Filter options'});
   }
 
-  async openTask(name: string): Promise<void> {
+  async openTask(name: string) {
     await this.availableTasks.getByText(name, {exact: true}).nth(0).click();
   }
 
   async filterBy(
     option: 'All open' | 'Unassigned' | 'Assigned to me' | 'Completed',
-  ): Promise<void> {
+  ) {
     await this.filterOptions.click();
     await this.page
       .getByRole('option', {name: option})
@@ -32,11 +32,11 @@ class TaskPanelPage {
       .click();
   }
 
-  async scrollToLastTask(name: string): Promise<void> {
+  async scrollToLastTask(name: string) {
     await this.page.getByText(name).last().scrollIntoViewIfNeeded();
   }
 
-  async scrollToFirstTask(name: string): Promise<void> {
+  async scrollToFirstTask(name: string) {
     await this.page.getByText(name).first().scrollIntoViewIfNeeded();
   }
 }

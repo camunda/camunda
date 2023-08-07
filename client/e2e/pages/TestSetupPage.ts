@@ -14,7 +14,7 @@ class TestSetupPage {
     this.page = page;
   }
 
-  async goToLoginPage(): Promise<void> {
+  async goToLoginPage() {
     await this.page.goto('/login');
   }
 }
