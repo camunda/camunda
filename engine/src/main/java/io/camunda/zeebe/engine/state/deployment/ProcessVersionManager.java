@@ -12,18 +12,17 @@ import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
-import java.util.function.ToLongFunction;
 import org.agrona.DirectBuffer;
-import org.agrona.collections.Object2LongHashMap;
+import org.agrona.collections.Object2ObjectHashMap;
 
 public final class ProcessVersionManager {
 
   private final long initialValue;
 
-  private final ColumnFamily<DbString, NextValue> nextValueColumnFamily;
+  private final ColumnFamily<DbString, ProcessVersionInfo> processVersionInfoColumnFamily;
   private final DbString processIdKey;
-  private final NextValue nextVersion = new NextValue();
-  private final Object2LongHashMap<String> versionCache;
+  private final ProcessVersionInfo nextVersion = new ProcessVersionInfo();
+  private final Object2ObjectHashMap<String, ProcessVersionInfo> versionCache;
 
   public ProcessVersionManager(
       final long initialValue,
@@ -32,42 +31,30 @@ public final class ProcessVersionManager {
     this.initialValue = initialValue;
 
     processIdKey = new DbString();
-    nextValueColumnFamily =
+    processVersionInfoColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.PROCESS_VERSION, transactionContext, processIdKey, nextVersion);
-    versionCache = new Object2LongHashMap<>(initialValue);
+    versionCache = new Object2ObjectHashMap<>();
   }
 
-  public void setProcessVersion(final String processId, final long value) {
-    processIdKey.wrapString(processId);
-    nextVersion.set(value);
-    nextValueColumnFamily.upsert(processIdKey, nextVersion);
-    versionCache.put(processId, value);
-  }
+  private ProcessVersionInfo getVersionInfo() {
+    final var versionInfo =
+        versionCache.computeIfAbsent(
+            processIdKey.toString(), (key) -> processVersionInfoColumnFamily.get(processIdKey));
 
-  public long getCurrentProcessVersion(final String processId) {
-    processIdKey.wrapString(processId);
-    return getCurrentProcessVersion();
-  }
-
-  public long getCurrentProcessVersion(final DirectBuffer processId) {
-    processIdKey.wrapBuffer(processId);
-    return getCurrentProcessVersion();
-  }
-
-  private long getCurrentProcessVersion() {
-    return versionCache.computeIfAbsent(
-        processIdKey.toString(), (ToLongFunction<String>) (key) -> getProcessVersionFromDB());
-  }
-
-  private long getProcessVersionFromDB() {
-    final NextValue readValue = nextValueColumnFamily.get(processIdKey);
-
-    long currentValue = initialValue;
-    if (readValue != null) {
-      currentValue = readValue.get();
+    if (versionInfo == null) {
+      return new ProcessVersionInfo().setHighestVersionIfHigher(initialValue);
     }
-    return currentValue;
+
+    return versionInfo;
+  }
+
+  public void addProcessVersion(final String processId, final long value) {
+    processIdKey.wrapString(processId);
+    final var versionInfo = getVersionInfo();
+    versionInfo.addKnownVersion(value);
+    processVersionInfoColumnFamily.upsert(processIdKey, versionInfo);
+    versionCache.put(processId, versionInfo);
   }
 
   /**
@@ -75,26 +62,66 @@ public final class ProcessVersionManager {
    *
    * @param processId the id of the process
    * @param version the version that needs to be deleted
-   * @param previousVersion the previous known version of the process
    */
-  public void deleteProcessVersion(
-      final String processId, final long version, final long previousVersion) {
-    if (getCurrentProcessVersion(processId) != version) {
-      // If the deleted version is not the latest version we don't have to do anything.
-      return;
-    }
-
+  public void deleteProcessVersion(final String processId, final long version) {
     processIdKey.wrapString(processId);
-    // If there is no previous version we can delete the process id from the state entirely.
-    if (previousVersion == 0) {
-      nextValueColumnFamily.deleteExisting(processIdKey);
-      versionCache.remove(processId);
-    } else {
-      setProcessVersion(processId, previousVersion);
-    }
+    final var versionInfo = getVersionInfo();
+    versionInfo.removeKnownVersion(version);
+    processVersionInfoColumnFamily.update(processIdKey, versionInfo);
+    versionCache.put(processId, versionInfo);
   }
 
   public void clear() {
     versionCache.clear();
+  }
+
+  /**
+   * Returns the latest known version of a process. A process with this version exists in the state.
+   *
+   * @param processId the process id
+   * @return the latest known version of this process
+   */
+  public long getLatestProcessVersion(final String processId) {
+    processIdKey.wrapString(processId);
+    return getVersionInfo().getLatestVersion();
+  }
+
+  /**
+   * Returns the latest known version of a process. A process with this version exists in the state.
+   *
+   * @param processId the process id
+   * @return the latest known version of this process
+   */
+  public long getLatestProcessVersion(final DirectBuffer processId) {
+    processIdKey.wrapBuffer(processId);
+    return getVersionInfo().getLatestVersion();
+  }
+
+  /**
+   * Returns the highest version ever deployed for a given process. This process could already be
+   * deleted from the state.
+   *
+   * @param processId the process id
+   * @return the highest version ever deployed for this process id.
+   */
+  public long getHighestProcessVersion(final String processId) {
+    processIdKey.wrapString(processId);
+    return getHighestProcessVersion();
+  }
+
+  /**
+   * Returns the highest process id ever deployed for a given process. This process could already be
+   * deleted from the state.
+   *
+   * @param processId the process id
+   * @return the highest version ever deployed for this process id.
+   */
+  public long getHighestProcessVersion(final DirectBuffer processId) {
+    processIdKey.wrapBuffer(processId);
+    return getHighestProcessVersion();
+  }
+
+  private long getHighestProcessVersion() {
+    return getVersionInfo().getHighestVersion();
   }
 }

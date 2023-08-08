@@ -37,7 +37,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.concurrent.atomic.AtomicLong;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.Long2ObjectHashMap;
@@ -159,27 +158,16 @@ public final class DbProcessState implements MutableProcessState {
     processesByKey.remove(processRecord.getProcessDefinitionKey());
 
     final long latestVersion =
-        versionManager.getCurrentProcessVersion(processRecord.getBpmnProcessId());
-
+        versionManager.getLatestProcessVersion(processRecord.getBpmnProcessId());
     if (latestVersion == processRecord.getVersion()) {
       // As we don't set the digest to the digest of the previous there is a chance it does not
       // exist. This happens when deleting the latest version two times in a row. To be safe we must
       // use deleteIfExists.
       digestByIdColumnFamily.deleteIfExists(fkProcessId);
-
-      final var previousVersion = new AtomicLong(0);
-      processByIdAndVersionColumnFamily.whileEqualPrefix(
-          processId,
-          (key, value) -> {
-            final long version = key.second().getValue();
-            if (version > previousVersion.get()) {
-              previousVersion.set(version);
-            }
-          });
-
-      versionManager.deleteProcessVersion(
-          processRecord.getBpmnProcessId(), processRecord.getVersion(), previousVersion.get());
     }
+
+    versionManager.deleteProcessVersion(
+        processRecord.getBpmnProcessId(), processRecord.getVersion());
   }
 
   private void persistProcess(final long processDefinitionKey, final ProcessRecord processRecord) {
@@ -196,13 +184,8 @@ public final class DbProcessState implements MutableProcessState {
   private void updateLatestVersion(final ProcessRecord processRecord) {
     processId.wrapBuffer(processRecord.getBpmnProcessIdBuffer());
     final var bpmnProcessId = processRecord.getBpmnProcessId();
-
-    final var currentVersion = versionManager.getCurrentProcessVersion(bpmnProcessId);
-    final var nextVersion = processRecord.getVersion();
-
-    if (nextVersion > currentVersion) {
-      versionManager.setProcessVersion(bpmnProcessId, nextVersion);
-    }
+    final var version = processRecord.getVersion();
+    versionManager.addProcessVersion(bpmnProcessId, version);
   }
 
   // is called on getters, if process is not in memory
@@ -264,7 +247,7 @@ public final class DbProcessState implements MutableProcessState {
         processesByProcessIdAndVersion.get(processIdBuffer);
 
     processId.wrapBuffer(processIdBuffer);
-    final long latestVersion = versionManager.getCurrentProcessVersion(processIdBuffer);
+    final long latestVersion = versionManager.getLatestProcessVersion(processIdBuffer);
 
     DeployedProcess deployedProcess;
     if (versionMap == null) {
@@ -330,8 +313,13 @@ public final class DbProcessState implements MutableProcessState {
   }
 
   @Override
-  public int getProcessVersion(final String bpmnProcessId) {
-    return (int) versionManager.getCurrentProcessVersion(bpmnProcessId);
+  public int getLatestProcessVersion(final String bpmnProcessId) {
+    return (int) versionManager.getLatestProcessVersion(bpmnProcessId);
+  }
+
+  @Override
+  public int getNextProcessVersion(final String bpmnProcessId) {
+    return (int) versionManager.getHighestProcessVersion(bpmnProcessId) + 1;
   }
 
   @Override
