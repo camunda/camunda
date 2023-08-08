@@ -91,7 +91,7 @@
     "husky": "8.0.3",
     "jest-styled-components": "7.1.1",
     "lint-staged": "13.2.3",
-    "monaco-editor": "0.40.0",
+    "monaco-editor": "0.41.0",
     "msw": "0.42.1",
     "node-fetch": "2.6.12",
     "prettier": "3.0.0",
