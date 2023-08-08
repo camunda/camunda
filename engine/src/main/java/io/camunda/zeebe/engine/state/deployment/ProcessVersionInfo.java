@@ -67,8 +67,10 @@ public final class ProcessVersionInfo extends UnpackedObject implements DbValue 
   }
 
   public void addKnownVersion(final long version) {
-    knownVersions.add().setValue(version);
-    setHighestVersion(version);
+    if (!getKnownVersions().contains(version)) {
+      knownVersions.add().setValue(version);
+      setHighestVersion(version);
+    }
   }
 
   public void removeKnownVersion(final long version) {
