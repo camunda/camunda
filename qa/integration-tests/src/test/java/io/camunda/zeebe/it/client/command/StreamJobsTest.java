@@ -14,19 +14,15 @@ import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.it.clustering.ClusteringRuleExtension;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
-import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.qa.util.JobStreamServiceAssert;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
-import io.camunda.zeebe.transport.stream.api.RemoteStreamInfo;
-import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Map;
 import java.util.function.Consumer;
 import org.assertj.core.api.InstanceOfAssertFactories;
-import org.assertj.core.api.ThrowingConsumer;
 import org.assertj.core.data.Offset;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
@@ -172,22 +168,12 @@ final class StreamJobsTest {
   }
 
   private void awaitStreamRegistered(final String jobType) {
-    awaitStreamRegistered(
-        streams ->
-            assertThat(streams)
-                .as("has one stream with type '%s'", jobType)
-                .satisfiesOnlyOnce(
-                    stream ->
-                        assertThat(BufferUtil.bufferAsString(stream.streamType()))
-                            .isEqualTo(jobType)));
-  }
-
-  private void awaitStreamRegistered(
-      final ThrowingConsumer<Collection<RemoteStreamInfo<JobActivationProperties>>> assertions) {
     final var brokerBridge = CLUSTER.getBrokerBridge(0);
     final var jobStreamService = brokerBridge.getJobStreamService().orElseThrow();
-    Awaitility.await("until one or more matching job streams are registered")
-        .untilAsserted(() -> assertions.accept(jobStreamService.remoteStreamService().streams()));
+    final var assertion = JobStreamServiceAssert.assertThat(jobStreamService);
+
+    Awaitility.await("until stream with type '%s' is registered".formatted(jobType))
+        .untilAsserted(() -> assertion.hasStreamWithType(1, jobType));
   }
 
   private long createProcessInstance(final String processId) {
@@ -206,11 +192,6 @@ final class StreamJobsTest {
   }
 
   private void deployProcess(final BpmnModelInstance process) {
-    CLUSTER
-        .getClient()
-        .newDeployResourceCommand()
-        .addProcessModel(process, "sequence.bpmn")
-        .send()
-        .join();
+    client.newDeployResourceCommand().addProcessModel(process, "sequence.bpmn").send().join();
   }
 }
