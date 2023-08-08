@@ -6,8 +6,6 @@
  */
 package io.camunda.operate.archiver;
 
-import jakarta.annotation.PreDestroy;
-
 import java.util.concurrent.CompletableFuture;
 
 public interface ArchiverJob extends Runnable {

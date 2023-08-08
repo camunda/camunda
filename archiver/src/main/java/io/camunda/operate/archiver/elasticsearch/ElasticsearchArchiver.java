@@ -46,6 +46,7 @@ import org.springframework.stereotype.Component;
 @DependsOn("schemaStartup")
 public class ElasticsearchArchiver implements Archiver {
 
+  public static final int INTERNAL_SCROLL_KEEP_ALIVE_MS = 30000;    //this scroll timeout value is used for reindex and delete queries
   private static final String INDEX_NAME_PATTERN = "%s%s";
   private static final Logger logger = LoggerFactory.getLogger(ElasticsearchArchiver.class);
 

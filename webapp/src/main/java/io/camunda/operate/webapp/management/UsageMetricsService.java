@@ -6,7 +6,7 @@
  */
 package io.camunda.operate.webapp.management;
 
-import io.camunda.operate.es.contract.MetricContract;
+import io.camunda.operate.store.MetricsStore;
 import io.camunda.operate.webapp.management.dto.UsageMetricDTO;
 import io.camunda.operate.webapp.management.dto.UsageMetricQueryDTO;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 @RestControllerEndpoint(id = "usage-metrics")
 public class UsageMetricsService {
 
-  @Autowired private MetricContract.Reader reader;
+  @Autowired private MetricsStore metricsStore;
 
   /**
    * Retrieve total of started instances given a period of time
@@ -32,7 +32,7 @@ public class UsageMetricsService {
       value = "/process-instances",
       produces = {MediaType.APPLICATION_JSON_VALUE})
   public UsageMetricDTO retrieveProcessInstanceCount(UsageMetricQueryDTO query) {
-    Long total = reader.retrieveProcessInstanceCount(query.getStartTime(), query.getEndTime());
+    Long total = metricsStore.retrieveProcessInstanceCount(query.getStartTime(), query.getEndTime());
     return new UsageMetricDTO().setTotal(total);
   }
   /**
@@ -46,7 +46,7 @@ public class UsageMetricsService {
       value = "/decision-instances",
       produces = {MediaType.APPLICATION_JSON_VALUE})
   public UsageMetricDTO retrieveDecisionInstancesCount(UsageMetricQueryDTO query) {
-    Long total = reader.retrieveDecisionInstanceCount(query.getStartTime(), query.getEndTime());
+    Long total = metricsStore.retrieveDecisionInstanceCount(query.getStartTime(), query.getEndTime());
     return new UsageMetricDTO().setTotal(total);
   }
 }

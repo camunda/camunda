@@ -6,11 +6,7 @@
  */
 package io.camunda.operate.schema.elasticsearch;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.*;
-
-import io.camunda.operate.es.RetryElasticsearchClient;
+import io.camunda.operate.store.elasticsearch.RetryElasticsearchClient;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateElasticsearchProperties;
 import io.camunda.operate.property.OperateProperties;
@@ -39,6 +35,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.*;
+
 @Component("schemaManager")
 @Profile("!test && !opensearch")
 public class ElasticsearchSchemaManager implements SchemaManager {
@@ -47,27 +47,88 @@ public class ElasticsearchSchemaManager implements SchemaManager {
 
   private static final String NUMBER_OF_SHARDS = "index.number_of_shards";
   private static final String NUMBER_OF_REPLICAS = "index.number_of_replicas";
-
-    @Autowired
+  @Autowired
+  protected RetryElasticsearchClient retryElasticsearchClient;
+  @Autowired
+  protected OperateProperties operateProperties;
+  @Autowired
   private List<AbstractIndexDescriptor> indexDescriptors;
-
   @Autowired
   private List<TemplateDescriptor> templateDescriptors;
 
-  @Autowired
-  protected RetryElasticsearchClient retryElasticsearchClient;
-
-  @Autowired
-  protected OperateProperties operateProperties;
-
   @Override
   public void createSchema() {
-    if(operateProperties.getArchiver().isIlmEnabled()) {
+    if (operateProperties.getArchiver().isIlmEnabled()) {
       createIndexLifeCycles();
     }
     createDefaults();
     createTemplates();
     createIndices();
+  }
+
+  @Override
+  public boolean setIndexSettingsFor(Map<String, ?> settings, String indexPattern) {
+    return retryElasticsearchClient.setIndexSettingsFor(Settings.builder().loadFromMap(settings).build(), indexPattern);
+  }
+
+  @Override
+  public String getOrDefaultRefreshInterval(String indexName, String defaultValue) {
+    return retryElasticsearchClient.getOrDefaultRefreshInterval(indexName, defaultValue);
+  }
+
+  @Override
+  public String getOrDefaultNumbersOfReplica(String indexName, String defaultValue) {
+    return retryElasticsearchClient.getOrDefaultNumbersOfReplica(indexName, defaultValue);
+  }
+
+  @Override
+  public void refresh(String indexPattern) {
+    retryElasticsearchClient.refresh(indexPattern);
+  }
+
+  @Override
+  public boolean isHealthy() {
+    return retryElasticsearchClient.isHealthy();
+  }
+
+  @Override
+  public Set<String> getIndexNames(String indexPattern) {
+    return retryElasticsearchClient.getIndexNames(indexPattern);
+  }
+
+  @Override
+  public long getNumberOfDocumentsFor(String... indexPatterns) {
+    return retryElasticsearchClient.getNumberOfDocumentsFor(indexPatterns);
+  }
+
+  @Override
+  public boolean deleteIndicesFor(String indexPattern) {
+    return retryElasticsearchClient.deleteIndicesFor(indexPattern);
+  }
+
+  @Override
+  public boolean deleteTemplatesFor(String deleteTemplatePattern) {
+    return retryElasticsearchClient.deleteTemplatesFor(deleteTemplatePattern);
+  }
+
+  @Override
+  public void removePipeline(String pipelineName) {
+    retryElasticsearchClient.removePipeline(pipelineName);
+  }
+
+  @Override
+  public boolean addPipeline(String name, String pipelineDefinition) {
+    return retryElasticsearchClient.addPipeline(name, pipelineDefinition);
+  }
+
+  @Override
+  public Map<String, String> getIndexSettingsFor(String indexName, String... fields) {
+    return retryElasticsearchClient.getIndexSettingsFor(indexName, fields);
+  }
+
+  @Override
+  public void createIndex(String indexName, Map<String, ?> mapping) {
+    retryElasticsearchClient.createIndex(new CreateIndexRequest(indexName).mapping(mapping));
   }
 
   private String settingsTemplateName() {
@@ -160,11 +221,11 @@ public class ElasticsearchSchemaManager implements SchemaManager {
         .source(templateConfig);
     try {
       final Map<String, AliasMetadata> aliases = Map.of(
-          templateDescriptor.getAlias(),AliasMetadata.builder(templateDescriptor.getAlias()).build());
+          templateDescriptor.getAlias(), AliasMetadata.builder(templateDescriptor.getAlias()).build());
       return new Template(ptr.settings(), new CompressedXContent(ptr.mappings()), aliases);
     } catch (IOException e) {
       throw new OperateRuntimeException(
-          String.format("Error in reading mappings for %s ",templateDescriptor.getTemplateName()), e );
+          String.format("Error in reading mappings for %s ", templateDescriptor.getTemplateName()), e);
     }
   }
 

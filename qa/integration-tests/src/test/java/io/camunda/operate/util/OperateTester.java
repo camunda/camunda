@@ -24,7 +24,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.archiver.ArchiveBatch;
-import io.camunda.operate.archiver.Archiver;
 import io.camunda.operate.archiver.ProcessInstancesArchiverJob;
 import io.camunda.operate.entities.*;
 import io.camunda.operate.webapp.elasticsearch.reader.OperationReader;
@@ -617,8 +616,7 @@ public class OperateTester {
   public OperateTester archive() {
     try {
       ArchiveBatch finishedAtDateIds = new ArchiveBatch("_test_archived", Arrays.asList(processInstanceKey));
-      Archiver archiver = beanFactory.getBean(Archiver.class);
-      ProcessInstancesArchiverJob archiverJob = beanFactory.getBean(ProcessInstancesArchiverJob.class, archiver);
+      io.camunda.operate.archiver.ProcessInstancesArchiverJob archiverJob = beanFactory.getBean(ProcessInstancesArchiverJob.class);
       archiverJob.archiveBatch(finishedAtDateIds).join();
     } catch (Exception e) {
       return this;

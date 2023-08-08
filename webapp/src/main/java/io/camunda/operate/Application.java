@@ -106,7 +106,7 @@ public class Application {
         "management.endpoints.web.exposure.include", "health, prometheus, loggers, usage-metrics, backups",
 
         //add custom check to standard readiness check
-        "management.endpoint.health.group.readiness.include", "readinessState,elsIndicesCheck");
+        "management.endpoint.health.group.readiness.include", "readinessState,indicesCheck");
   }
 
   @Bean(name = "dataGenerator")

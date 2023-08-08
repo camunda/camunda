@@ -22,6 +22,8 @@ import static org.hamcrest.CoreMatchers.containsString;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.archiver.Archiver;
+import io.camunda.operate.archiver.BatchOperationArchiverJob;
+import io.camunda.operate.archiver.ProcessInstancesArchiverJob;
 import io.camunda.operate.webapp.reader.ListViewReader;
 import io.camunda.operate.webapp.writer.BatchOperationWriter;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -40,8 +42,6 @@ import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import io.camunda.operate.archiver.elasticsearch.ElasticsearchBatchOperationArchiverJob;
-import io.camunda.operate.archiver.elasticsearch.ElasticsearchProcessInstancesArchiverJob;
 import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
@@ -108,7 +108,7 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
   @Autowired
   private CancelProcessInstanceHandler cancelProcessInstanceHandler;
 
-  private ElasticsearchProcessInstancesArchiverJob archiverJob;
+  private ProcessInstancesArchiverJob archiverJob;
 
   private Random random = new Random();
 
@@ -118,7 +118,7 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
   public void before() {
     super.before();
     dateTimeFormatter = DateTimeFormatter.ofPattern(operateProperties.getArchiver().getRolloverDateFormat()).withZone(ZoneId.systemDefault());
-    archiverJob = beanFactory.getBean(ElasticsearchProcessInstancesArchiverJob.class, archiver, partitionHolder.getPartitionIds());
+    archiverJob = beanFactory.getBean(ProcessInstancesArchiverJob.class, archiver, partitionHolder.getPartitionIds());
     cancelProcessInstanceHandler.setZeebeClient(super.getClient());
     clearMetrics();
   }
@@ -215,7 +215,7 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
     elasticsearchTestRule.persistNew(bo3);
 
     //when
-    ElasticsearchBatchOperationArchiverJob batchOperationArchiverJob = beanFactory.getBean(ElasticsearchBatchOperationArchiverJob.class, archiver);
+    BatchOperationArchiverJob batchOperationArchiverJob = beanFactory.getBean(BatchOperationArchiverJob.class);
     int count = batchOperationArchiverJob.archiveNextBatch().join();
     assertThat(count).isEqualTo(2);
     elasticsearchTestRule.refreshOperateESIndices();

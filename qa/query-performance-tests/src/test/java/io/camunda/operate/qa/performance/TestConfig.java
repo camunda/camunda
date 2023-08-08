@@ -8,7 +8,6 @@ package io.camunda.operate.qa.performance;
 
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
-
 import io.camunda.operate.connect.CustomOffsetDateTimeDeserializer;
 import io.camunda.operate.connect.CustomOffsetDateTimeSerializer;
 import io.camunda.operate.property.ElasticsearchProperties;

@@ -6,8 +6,6 @@
  */
 package io.camunda.operate.archiver;
 
-import java.util.concurrent.CompletableFuture;
-
 public interface BatchOperationArchiverJob extends ArchiverJob {
 
 }

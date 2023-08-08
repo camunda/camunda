@@ -9,6 +9,7 @@ package io.camunda.operate.store.elasticsearch;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.entities.ErrorType;
 import io.camunda.operate.entities.IncidentEntity;
+import io.camunda.operate.entities.IncidentState;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.IncidentTemplate;
@@ -41,11 +42,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static io.camunda.operate.schema.templates.IncidentTemplate.ACTIVE_INCIDENT_QUERY;
 import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ONLY_RUNTIME;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static io.camunda.operate.util.ElasticsearchUtil.scrollWith;
 import static org.elasticsearch.index.query.QueryBuilders.*;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 
 @Profile("!opensearch")
@@ -53,6 +54,7 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 public class ElasticsearchIncidentStore implements IncidentStore {
 
   private static final Logger logger = LoggerFactory.getLogger(ElasticsearchIncidentStore.class);
+  public static QueryBuilder ACTIVE_INCIDENT_QUERY = termQuery(IncidentTemplate.STATE, IncidentState.ACTIVE);
   @Autowired
   private RestHighLevelClient esClient;
 

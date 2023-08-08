@@ -6,9 +6,10 @@
  */
 package io.camunda.operate.schema;
 
-import io.camunda.operate.es.RetryElasticsearchClient;
+import io.camunda.operate.store.elasticsearch.RetryElasticsearchClient;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.qa.util.TestElasticsearchSchemaManager;
 import io.camunda.operate.schema.indices.IndexDescriptor;
 import io.camunda.operate.schema.indices.UserIndex;
 import io.camunda.operate.schema.indices.ProcessIndex;
@@ -36,6 +37,7 @@ import java.util.stream.Collectors;
 @RunWith(SpringRunner.class) @SpringBootTest(classes = {
     TestApplicationWithNoBeans.class, OperateProperties.class,
     IndexSchemaValidator.class,
+    TestElasticsearchSchemaManager.class,
     IndexDescriptor.class,
     // Assume we have only 3 indices:
     ProcessIndex.class, UserIndex.class, IncidentTemplate.class

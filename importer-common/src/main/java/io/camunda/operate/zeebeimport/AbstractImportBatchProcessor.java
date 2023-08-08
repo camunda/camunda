@@ -11,12 +11,16 @@ import io.camunda.operate.Metrics;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.store.BatchRequest;
 import org.springframework.beans.factory.BeanFactory;
+import io.camunda.operate.property.OperateProperties;
 import org.springframework.beans.factory.annotation.Autowired;
 
 public abstract class AbstractImportBatchProcessor implements ImportBatchProcessor {
 
   @Autowired
   private BeanFactory beanFactory;
+
+  @Autowired
+  private OperateProperties operateProperties;
 
   @Autowired
   private Metrics metrics;

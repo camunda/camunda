@@ -20,7 +20,7 @@ public interface ProcessStore {
 
 
   // General methods -> TODO: refactor to upper interface?
-  Optional<Long> getDistinctCountFor(final String indexAlias, final String fieldName);
+  Optional<Long> getDistinctCountFor(final String fieldName);
 
   // ProcessStore
   ProcessEntity getProcessByKey(final Long processDefinitionKey);

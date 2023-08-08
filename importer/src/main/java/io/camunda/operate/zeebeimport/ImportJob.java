@@ -25,7 +25,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import static io.camunda.operate.util.ElasticsearchUtil.ZEEBE_INDEX_DELIMITER;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
 /**
@@ -34,6 +33,8 @@ import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROT
 @Component
 @Scope(SCOPE_PROTOTYPE)
 public class ImportJob implements Callable<Boolean> {
+
+  public static final String ZEEBE_INDEX_DELIMITER = "_";
 
   private static final Logger logger = LoggerFactory.getLogger(ImportJob.class);
 

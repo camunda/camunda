@@ -6,10 +6,46 @@
  */
 package io.camunda.operate.schema;
 
-public interface SchemaManager {
-    String OPERATE_DELETE_ARCHIVED_INDICES = "operate_delete_archived_indices";
-    String INDEX_LIFECYCLE_NAME = "index.lifecycle.name";
-    String DELETE_PHASE = "delete";
 
-    void createSchema();
+import java.util.Map;
+import java.util.Set;
+
+public interface SchemaManager {
+
+  String REFRESH_INTERVAL = "index.refresh_interval";
+  String NO_REFRESH = "-1";
+  String NUMBERS_OF_REPLICA = "index.number_of_replicas";
+  String NO_REPLICA = "0";
+
+  String OPERATE_DELETE_ARCHIVED_INDICES = "operate_delete_archived_indices";
+  String INDEX_LIFECYCLE_NAME = "index.lifecycle.name";
+  String DELETE_PHASE = "delete";
+
+  void createSchema();
+
+  boolean setIndexSettingsFor(Map<String, ?> settings, String indexPattern);
+
+  String getOrDefaultRefreshInterval(String indexName, String defaultValue);
+
+  String getOrDefaultNumbersOfReplica(String indexName, String defaultValue);
+
+  void refresh(final String indexPattern);
+
+  boolean isHealthy();
+
+  Set<String> getIndexNames(final String indexPattern);
+
+  long getNumberOfDocumentsFor(final String... indexPatterns);
+
+  boolean deleteIndicesFor(final String indexPattern);
+
+  boolean deleteTemplatesFor(final String deleteTemplatePattern);
+
+  void removePipeline(String pipelineName);
+
+  boolean addPipeline(String name, String pipelineDefinition);
+
+  Map<String, String> getIndexSettingsFor(String s, String... fields);
+
+  void createIndex(String indexName, Map<String, ?> mapping);
 }

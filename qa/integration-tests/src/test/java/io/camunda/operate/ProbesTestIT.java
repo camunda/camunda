@@ -9,7 +9,7 @@ package io.camunda.operate;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
-import io.camunda.operate.management.ElsIndicesCheck;
+import io.camunda.operate.management.IndicesCheck;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.qa.util.TestElasticsearchSchemaManager;
 import io.camunda.operate.util.TestApplication;
@@ -19,7 +19,6 @@ import io.camunda.operate.webapp.security.oauth2.OAuth2WebConfigurer;
 import io.camunda.operate.webapp.security.UserService;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,7 +43,7 @@ public class ProbesTestIT{
   private TestElasticsearchSchemaManager schemaManager;
 
   @Autowired
-  private ElsIndicesCheck probes;
+  private IndicesCheck probes;
 
   @MockBean
   private UserService userService;

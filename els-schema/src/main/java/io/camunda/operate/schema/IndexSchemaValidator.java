@@ -6,7 +6,6 @@
  */
 package io.camunda.operate.schema;
 
-import io.camunda.operate.es.RetryElasticsearchClient;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.indices.IndexDescriptor;
@@ -37,12 +36,12 @@ public class IndexSchemaValidator {
   OperateProperties operateProperties;
 
   @Autowired
-  RetryElasticsearchClient retryElasticsearchClient;
+  SchemaManager schemaManager;
 
   private Set<String> getAllIndexNamesForIndex(String index) {
     final String indexPattern = String.format("%s-%s*", getIndexPrefix(), index);
     logger.debug("Getting all indices for {}", indexPattern);
-    final Set<String> indexNames = retryElasticsearchClient.getIndexNames(indexPattern);
+    final Set<String> indexNames = schemaManager.getIndexNames(indexPattern);
     // since we have indices with similar names, we need to additionally filter index names
     // e.g. task and task-variable
     final String patternWithVersion = String.format("%s-%s-\\d.*", getIndexPrefix(), index);
@@ -110,14 +109,14 @@ public class IndexSchemaValidator {
   }
 
   public boolean hasAnyOperateIndices() {
-    final Set<String> indices = retryElasticsearchClient
+    final Set<String> indices = schemaManager
         .getIndexNames(operateProperties.getElasticsearch().getIndexPrefix() + "*");
     return !indices.isEmpty();
   }
 
   public boolean schemaExists() {
     try {
-      final Set<String> indices = retryElasticsearchClient
+      final Set<String> indices = schemaManager
           .getIndexNames(operateProperties.getElasticsearch().getIndexPrefix() + "*");
       List<String> allIndexNames = map(indexDescriptors, IndexDescriptor::getFullQualifiedName);
       return indices.containsAll(allIndexNames);

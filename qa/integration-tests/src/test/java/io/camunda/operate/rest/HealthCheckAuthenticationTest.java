@@ -12,13 +12,13 @@ import static org.mockito.BDDMockito.given;
 
 import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.connect.ElasticsearchConnector;
-import io.camunda.operate.es.ElasticsearchTask;
-import io.camunda.operate.es.RetryElasticsearchClient;
+import io.camunda.operate.store.elasticsearch.ElasticsearchTask;
+import io.camunda.operate.store.elasticsearch.RetryElasticsearchClient;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.rest.HealthCheckTest.AddManagementPropertiesInitializer;
 import io.camunda.operate.schema.indices.OperateWebSessionIndex;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
-import io.camunda.operate.management.ElsIndicesHealthIndicator;
+import io.camunda.operate.management.IndicesHealthIndicator;
 import io.camunda.operate.webapp.security.ElasticsearchSessionRepository;
 import io.camunda.operate.webapp.security.oauth2.CCSaaSJwtAuthenticationTokenValidator;
 import io.camunda.operate.webapp.security.oauth2.Jwt2AuthenticationTokenConverter;
@@ -48,7 +48,7 @@ import java.io.IOException;
   classes = {
       OperateProperties.class,
       TestApplicationWithNoBeans.class,
-      ElsIndicesHealthIndicator.class,
+      IndicesHealthIndicator.class,
       OAuth2WebConfigurer.class,
       Jwt2AuthenticationTokenConverter.class,
       CCSaaSJwtAuthenticationTokenValidator.class,
@@ -70,7 +70,7 @@ public class HealthCheckAuthenticationTest {
   private TestRestTemplate testRestTemplate;
 
   @MockBean
-  private ElsIndicesHealthIndicator probes;
+  private IndicesHealthIndicator probes;
 
   @Autowired
   private ElasticsearchTask elasticsearchTask;

@@ -11,10 +11,10 @@ import io.camunda.operate.entities.dmn.DecisionInstanceInputEntity;
 import io.camunda.operate.entities.dmn.DecisionInstanceOutputEntity;
 import io.camunda.operate.entities.dmn.DecisionInstanceState;
 import io.camunda.operate.entities.dmn.DecisionType;
-import io.camunda.operate.es.writer.MetricWriter;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
 import io.camunda.operate.store.BatchRequest;
+import io.camunda.operate.store.MetricsStore;
 import io.camunda.operate.util.DateUtil;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
@@ -42,7 +42,7 @@ public class DecisionEvaluationZeebeRecordProcessor {
   private DecisionInstanceTemplate decisionInstanceTemplate;
 
   @Autowired
-  private MetricWriter metricWriter;
+  private MetricsStore metricsStore;
 
   public void processDecisionEvaluationRecord(Record record, BatchRequest batchRequest)
       throws PersistenceException {
@@ -61,7 +61,7 @@ public class DecisionEvaluationZeebeRecordProcessor {
       OffsetDateTime timestamp = DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp()));
       for (DecisionInstanceEntity entity : decisionEntities) {
         batchRequest.add(decisionInstanceTemplate.getFullQualifiedName(), entity);
-        metricWriter.registerDecisionInstanceCompleteEvent(entity.getId(), timestamp, batchRequest);
+        metricsStore.registerDecisionInstanceCompleteEvent(entity.getId(), timestamp, batchRequest);
       }
 
   }

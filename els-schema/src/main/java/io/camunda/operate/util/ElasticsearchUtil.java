@@ -38,11 +38,8 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.util.EntityUtils;
-import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.DocWriteRequest;
-import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
-import org.elasticsearch.action.admin.indices.refresh.RefreshResponse;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
@@ -53,7 +50,6 @@ import org.elasticsearch.action.search.SearchScrollRequest;
 import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.*;
-import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.client.tasks.GetTaskRequest;
 import org.elasticsearch.client.tasks.GetTaskResponse;
 import org.elasticsearch.core.TimeValue;
@@ -74,10 +70,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 public abstract class ElasticsearchUtil {
 
   private static final Logger logger = LoggerFactory.getLogger(ElasticsearchUtil.class);
-
-  public static final String ZEEBE_INDEX_DELIMITER = "_";
   public static final int SCROLL_KEEP_ALIVE_MS = 60000;
-  public static final int INTERNAL_SCROLL_KEEP_ALIVE_MS = 30000;    //this scroll timeout value is used for reindex and delete queries
   public static final int TERMS_AGG_SIZE = 10000;
   public static final int QUERY_MAX_SIZE = 10000;
   public static final int TOPHITS_AGG_SIZE = 100;
@@ -145,7 +138,7 @@ public abstract class ElasticsearchUtil {
         (tId) -> checkTaskResult(executor, tId, sourceIndexName, "delete", esClient));
   }
 
-  public static CompletableFuture<Long> checkTaskResult(ThreadPoolTaskScheduler executor, String taskId,
+  private static CompletableFuture<Long> checkTaskResult(ThreadPoolTaskScheduler executor, String taskId,
       String sourceIndexName, String operation, RestHighLevelClient esClient) {
 
     CompletableFuture<Long> checkTaskResult = new CompletableFuture<>();
@@ -281,17 +274,6 @@ public abstract class ElasticsearchUtil {
     }
   }
 
-  public static QueryBuilder addToBoolMust(BoolQueryBuilder boolQuery, QueryBuilder... queries) {
-    if (boolQuery.mustNot().size() != 0 || boolQuery.filter().size() != 0 || boolQuery.should().size() != 0) {
-      throw new IllegalArgumentException("BoolQuery with only must elements is expected here.");
-    }
-    List<QueryBuilder> notNullQueries = throwAwayNullElements(queries);
-    for (QueryBuilder query : notNullQueries) {
-      boolQuery.must(query);
-    }
-    return boolQuery;
-  }
-
   public static BoolQueryBuilder createMatchNoneQuery() {
     return boolQuery().must(QueryBuilders.wrapperQuery("{\"match_none\": {}}"));
   }
@@ -387,7 +369,7 @@ public abstract class ElasticsearchUtil {
     }
   }
 
-  public static String extractIncidentId(final String errorMessage) {
+  private static String extractIncidentId(final String errorMessage) {
     final Pattern fniPattern = Pattern
         .compile(".*\\[_doc\\]\\[(\\d*)\\].*");
     final Matcher matcher = fniPattern.matcher(errorMessage);
@@ -403,17 +385,6 @@ public abstract class ElasticsearchUtil {
   private static boolean isEventConflictError(final BulkItemResponse responseItem) {
     return responseItem.getIndex().contains(EventTemplate.INDEX_NAME)
         && responseItem.getFailure().getStatus().equals(RestStatus.CONFLICT);
-  }
-
-  public static void executeUpdate(RestHighLevelClient esClient, UpdateRequest updateRequest) throws PersistenceException {
-    try {
-      esClient.update(updateRequest, RequestOptions.DEFAULT);
-    } catch (ElasticsearchException | IOException e)  {
-      final String errorMessage = String.format("Update request failed for [%s] and id [%s] with the message [%s].",
-          updateRequest.index(), updateRequest.id(), e.getMessage());
-      logger.error(errorMessage, e);
-      throw new PersistenceException(errorMessage, e);
-    }
   }
 
   /* MAP QUERY RESULTS */
@@ -602,17 +573,6 @@ public abstract class ElasticsearchUtil {
     }
   }
 
-  public static List<String> scrollIdsToList(SearchRequest request, RestHighLevelClient esClient) throws IOException {
-    List<String> result = new ArrayList<>();
-
-    Consumer<SearchHits> collectIds = (hits) -> {
-      result.addAll(map(hits.getHits(),searchHitIdToString));
-    };
-
-    scrollWith(request, esClient, collectIds, null, collectIds);
-    return result;
-  }
-
   public static List<Long> scrollKeysToList(SearchRequest request, RestHighLevelClient esClient) throws IOException {
     List<Long> result = new ArrayList<>();
 
@@ -641,15 +601,6 @@ public abstract class ElasticsearchUtil {
 
     Consumer<SearchHits> collectIds= (hits) -> {
         result.addAll(map(hits.getHits(),searchHitIdToString));
-    };
-    scrollWith(request, esClient, collectIds, null, collectIds);
-    return result;
-  }
-
-  public static Set<Long> scrollKeysToSet(SearchRequest request, RestHighLevelClient esClient) throws IOException {
-    Set<Long> result = new HashSet<>();
-    Consumer<SearchHits> collectIds= (hits) -> {
-      result.addAll(map(hits.getHits(), searchHitIdToLong));
     };
     scrollWith(request, esClient, collectIds, null, collectIds);
     return result;
@@ -729,32 +680,6 @@ public abstract class ElasticsearchUtil {
       throw new OperateRuntimeException(e.getMessage(), e);
     }
     return indexNames;
-  }
-
-  public static void refreshIndicesFor(final RestHighLevelClient esClient, final String indexPattern) {
-    RefreshRequest refreshRequest = new RefreshRequest(indexPattern);
-    try {
-      RefreshResponse refresh = esClient.indices().refresh(refreshRequest, RequestOptions.DEFAULT);
-      if (refresh.getFailedShards() > 0) {
-        logger.warn("Unable to refresh indices: {}", indexPattern);
-      }
-    } catch (Exception ex) {
-      logger.warn(String.format("Unable to refresh indices: %s", indexPattern), ex);
-    }
-  }
-
-  public static boolean indexExists(final RestHighLevelClient esCLient, final String indexName) throws IOException {
-    return esCLient.indices().exists(new GetIndexRequest(indexName), RequestOptions.DEFAULT);
-  }
-
-  public static boolean fieldInIndexExists(final RestHighLevelClient esCLient, final String indexName, final String fieldName)
-      throws IOException {
-    final SearchResponse searchResponse = esCLient.search(new SearchRequest(indexName)
-            .source(new SearchSourceBuilder()
-                .query(
-                    QueryBuilders.existsQuery(fieldName)))
-        , RequestOptions.DEFAULT);
-    return searchResponse.getHits().getTotalHits().value > 0;
   }
 
   public static RequestOptions requestOptionsFor(int maxSizeInBytes) {

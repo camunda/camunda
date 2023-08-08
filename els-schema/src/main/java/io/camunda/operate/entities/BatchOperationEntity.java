@@ -7,7 +7,6 @@
 package io.camunda.operate.entities;
 
 import java.time.OffsetDateTime;
-import java.util.Arrays;
 import java.util.UUID;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 

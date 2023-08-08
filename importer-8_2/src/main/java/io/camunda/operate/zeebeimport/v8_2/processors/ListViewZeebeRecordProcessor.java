@@ -18,7 +18,7 @@ import io.camunda.operate.entities.listview.FlowNodeInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceState;
 import io.camunda.operate.entities.listview.VariableForListViewEntity;
-import io.camunda.operate.es.contract.MetricContract;
+import io.camunda.operate.store.MetricsStore;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateProperties;
@@ -94,7 +94,7 @@ public class ListViewZeebeRecordProcessor {
   private FlowNodeStore flowNodeStore;
 
   @Autowired
-  private MetricContract.Writer metricWriter;
+  private MetricsStore metricsStore;
 
   //treePath by processInstanceKey cache
   private Map<String, String> treePathCache;
@@ -319,7 +319,7 @@ public class ListViewZeebeRecordProcessor {
   private void registerStartedRootProcessInstance(ProcessInstanceForListViewEntity piEntity, BatchRequest batchRequest, OffsetDateTime timestamp)
       throws PersistenceException {
     String processInstanceKey = String.valueOf(piEntity.getProcessInstanceKey());
-    metricWriter.registerProcessInstanceStartEvent(processInstanceKey, timestamp, batchRequest);
+    metricsStore.registerProcessInstanceStartEvent(processInstanceKey, timestamp, batchRequest);
   }
 
   private String getTreePathForCalledProcess(final ProcessInstanceRecordValue recordValue) {

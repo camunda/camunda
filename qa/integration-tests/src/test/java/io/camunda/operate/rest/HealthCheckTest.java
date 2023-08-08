@@ -21,7 +21,7 @@ import java.util.Map;
 import io.camunda.operate.Application;
 import io.camunda.operate.rest.HealthCheckTest.AddManagementPropertiesInitializer;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
-import io.camunda.operate.management.ElsIndicesHealthIndicator;
+import io.camunda.operate.management.IndicesHealthIndicator;
 import org.hamcrest.core.StringContains;
 import org.junit.Before;
 import org.junit.Test;
@@ -42,7 +42,7 @@ import org.springframework.web.context.WebApplicationContext;
 
 @AutoConfigureObservability(tracing = false)
 @SpringBootTest(
-    classes = { TestApplicationWithNoBeans.class, ElsIndicesHealthIndicator.class })
+    classes = { TestApplicationWithNoBeans.class, IndicesHealthIndicator.class })
 @ContextConfiguration(initializers = AddManagementPropertiesInitializer.class)
 @RunWith(SpringRunner.class)
 public class HealthCheckTest {
@@ -51,7 +51,7 @@ public class HealthCheckTest {
   private WebApplicationContext context;
 
   @MockBean
-  private ElsIndicesHealthIndicator probes;
+  private IndicesHealthIndicator probes;
 
   private MockMvc mockMvc;
 

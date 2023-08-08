@@ -43,7 +43,7 @@ import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROT
 @Profile("!opensearch")
 @Component
 @Scope(SCOPE_PROTOTYPE)
-public class ElasticsearchBatchOperationArchiverJob extends ElasticsearchAbstractArchiverJob implements BatchOperationArchiverJob {
+public class ElasticsearchBatchOperationArchiverJob extends AbstractArchiverJob implements BatchOperationArchiverJob {
 
   private static final Logger logger = LoggerFactory.getLogger(ElasticsearchBatchOperationArchiverJob.class);
 

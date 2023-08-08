@@ -22,6 +22,7 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.indices.DecisionIndex;
 import io.camunda.operate.schema.templates.*;
 import io.camunda.operate.store.NotFoundException;
+import io.camunda.operate.store.elasticsearch.ElasticsearchIncidentStore;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.reader.*;
 import io.camunda.operate.webapp.rest.dto.VariableDto;
@@ -652,7 +653,7 @@ public class ElasticsearchChecks {
   public long getActiveIncidentsCount() {
     final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(incidentTemplate)
         .source(new SearchSourceBuilder()
-            .query(ACTIVE_INCIDENT_QUERY));
+            .query(ElasticsearchIncidentStore.ACTIVE_INCIDENT_QUERY));
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
       return response.getHits().getTotalHits().value;
@@ -686,7 +687,7 @@ public class ElasticsearchChecks {
   public long getActiveIncidentsCount(Long processInstanceKey) {
     final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(incidentTemplate)
         .source(new SearchSourceBuilder()
-            .query(joinWithAnd(ACTIVE_INCIDENT_QUERY,
+            .query(joinWithAnd(ElasticsearchIncidentStore.ACTIVE_INCIDENT_QUERY,
                 termQuery(PROCESS_INSTANCE_KEY, processInstanceKey))));
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);

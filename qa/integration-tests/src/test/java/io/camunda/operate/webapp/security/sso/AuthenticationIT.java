@@ -41,7 +41,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
-import io.camunda.operate.management.ElsIndicesCheck;
+import io.camunda.operate.management.IndicesCheck;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.rest.AuthenticationRestService;
@@ -138,7 +138,7 @@ public class AuthenticationIT implements AuthenticationTestable {
   private RestTemplate restTemplate;
 
   @MockBean
-  private ElsIndicesCheck probes;
+  private IndicesCheck probes;
   private final BiFunction<String, String, Tokens> orgExtractor = AuthenticationIT::tokensWithOrgAsMapFrom;
 
   @Before

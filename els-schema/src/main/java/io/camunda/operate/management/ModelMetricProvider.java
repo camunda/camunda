@@ -10,6 +10,7 @@ import io.camunda.operate.Metrics;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.indices.DecisionIndex;
 import io.camunda.operate.schema.indices.ProcessIndex;
+import io.camunda.operate.store.DecisionStore;
 import io.camunda.operate.store.ProcessStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,10 +30,7 @@ public class ModelMetricProvider {
   private ProcessStore processStore;
 
   @Autowired
-  private ProcessIndex processIndex;
-
-  @Autowired
-  private DecisionIndex decisionIndex;
+  private DecisionStore decisionStore;
 
   @Autowired
   private Metrics metrics;
@@ -59,18 +57,15 @@ public class ModelMetricProvider {
   }
 
   public Long getBPMNModelCount(){
-    final Optional<Long> optionalCount = getDistinctCountFor(processIndex.getAlias(), ProcessIndex.BPMN_PROCESS_ID);
+    final Optional<Long> optionalCount = processStore.getDistinctCountFor(ProcessIndex.BPMN_PROCESS_ID);
     optionalCount.ifPresent(val -> lastBPMNModelCount = val);
     return lastBPMNModelCount;
   }
 
   public Long getDMNModelCount(){
-    final Optional<Long> optionalCount = getDistinctCountFor(decisionIndex.getAlias(), DecisionIndex.DECISION_ID);
+    final Optional<Long> optionalCount = decisionStore.getDistinctCountFor(DecisionIndex.DECISION_ID);
     optionalCount.ifPresent(val -> lastDMNModelCount = val);
     return lastDMNModelCount;
   }
 
-  public Optional<Long> getDistinctCountFor(final String indexAlias,final String fieldName){
-    return processStore.getDistinctCountFor(indexAlias, fieldName);
-  }
 }

@@ -12,7 +12,7 @@ import static io.camunda.operate.schema.indices.OperateWebSessionIndex.ID;
 import static io.camunda.operate.schema.indices.OperateWebSessionIndex.LAST_ACCESSED_TIME;
 import static io.camunda.operate.schema.indices.OperateWebSessionIndex.MAX_INACTIVE_INTERVAL_IN_SECONDS;
 
-import io.camunda.operate.es.RetryElasticsearchClient;
+import io.camunda.operate.store.elasticsearch.RetryElasticsearchClient;
 import io.camunda.operate.schema.indices.OperateWebSessionIndex;
 import java.time.Duration;
 import java.time.Instant;

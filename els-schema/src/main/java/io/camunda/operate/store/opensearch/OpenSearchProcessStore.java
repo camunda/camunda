@@ -37,7 +37,7 @@ public class OpenSearchProcessStore implements ProcessStore {
   private ProcessIndex processIndex;
 
   @Override
-  public Optional<Long> getDistinctCountFor(String indexAlias, String fieldName) {
+  public Optional<Long> getDistinctCountFor(String fieldName) {
     return Optional.empty();
   }
 

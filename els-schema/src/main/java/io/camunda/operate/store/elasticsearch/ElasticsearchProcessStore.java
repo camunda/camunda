@@ -96,7 +96,8 @@ public class ElasticsearchProcessStore implements ProcessStore {
   private OperateProperties operateProperties;
 
   @Override
-  public Optional<Long> getDistinctCountFor(String indexAlias, String fieldName) {
+  public Optional<Long> getDistinctCountFor(String fieldName) {
+    final String indexAlias = processIndex.getAlias();
     logger.debug("Called distinct count for field {} in index alias {}.", fieldName, indexAlias);
     final SearchRequest searchRequest = new SearchRequest(indexAlias)
         .source(new SearchSourceBuilder()

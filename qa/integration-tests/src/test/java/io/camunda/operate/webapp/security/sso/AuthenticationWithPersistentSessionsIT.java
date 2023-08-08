@@ -29,9 +29,9 @@ import com.auth0.Tokens;
 
 import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.connect.ElasticsearchConnector;
-import io.camunda.operate.es.ElasticsearchTask;
-import io.camunda.operate.es.RetryElasticsearchClient;
-import io.camunda.operate.management.ElsIndicesCheck;
+import io.camunda.operate.store.elasticsearch.ElasticsearchTask;
+import io.camunda.operate.store.elasticsearch.RetryElasticsearchClient;
+import io.camunda.operate.management.IndicesCheck;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.indices.OperateWebSessionIndex;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
@@ -146,7 +146,7 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
   private RestTemplate restTemplate;
 
   @MockBean
-  private ElsIndicesCheck probes;
+  private IndicesCheck probes;
 
   private final BiFunction<String, String, Tokens> orgExtractor;
 
