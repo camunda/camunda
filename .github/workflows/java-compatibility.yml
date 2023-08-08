@@ -14,7 +14,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        javaVersion: [ 11, 16 ]
+        javaVersion: [ 17, 20 ]
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v3
@@ -43,7 +43,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        javaVersion: [ 11, 17, 20 ]
+        javaVersion: [ 17, 20 ]
         includedGroups: [ 'Zeebe-test', 'import,eventBasedProcess', 'reportEvaluation', '' ]
         include:
           - includedGroups: 'Zeebe-test'
@@ -113,7 +113,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        javaVersion: [ 11, 17, 20 ]
+        javaVersion: [ 17, 20 ]
     steps:
       - uses: actions/checkout@v3
       - name: Setup Maven
