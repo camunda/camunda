@@ -142,10 +142,9 @@ public final class DbDecisionState implements MutableDecisionState {
             decisionRequirementsIdAndVersion,
             fkDecisionRequirements);
 
-    // TODO get maximum size from configuration
     drgCache =
         CacheBuilder.newBuilder()
-            .maximumSize(10000L)
+            .maximumSize(config.getDrgCacheCapacity())
             .build(
                 new CacheLoader<>() {
                   @Override
