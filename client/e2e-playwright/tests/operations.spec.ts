@@ -11,7 +11,7 @@ import {test} from '../test-fixtures';
 import {expect} from '@playwright/test';
 import {config} from '../config';
 
-let initialData;
+let initialData: Awaited<ReturnType<typeof createDemoInstances>>;
 
 test.beforeAll(async ({request}) => {
   test.setTimeout(SETUP_WAITING_TIME);

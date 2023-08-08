@@ -7,6 +7,7 @@
 
 import {expect} from '@playwright/test';
 import {loginTest as test} from '../test-fixtures';
+import {Paths} from 'modules/Routes';
 
 test.beforeEach(async ({loginPage}) => {
   await loginPage.navigateToLogin();
@@ -26,7 +27,7 @@ test.describe('login page', () => {
     await expect(
       page.getByRole('alert').getByText('Username and password do not match'),
     ).toBeVisible();
-    await expect(page).toHaveURL('/login');
+    await expect(page).toHaveURL(Paths.login());
   });
 
   test('Log in with valid user account', async ({loginPage, page}) => {
@@ -35,7 +36,7 @@ test.describe('login page', () => {
       password: 'demo',
     });
 
-    await expect(page).toHaveURL('/');
+    await expect(page).toHaveURL(Paths.dashboard());
   });
 
   test('Log out', async ({loginPage, commonPage, page}) => {
@@ -46,19 +47,21 @@ test.describe('login page', () => {
 
     await expect(page).toHaveURL('');
     await commonPage.logout();
-    await expect(page).toHaveURL('/login');
+    await expect(page).toHaveURL(Paths.login());
   });
 
   test('Redirect to initial page after login', async ({loginPage, page}) => {
-    await expect(page).toHaveURL('/login');
-    await page.goto('/processes?active=true&incidents=true');
-    await expect(page).toHaveURL('/login');
+    await expect(page).toHaveURL(Paths.login());
+    await page.goto(`${Paths.processes()}?active=true&incidents=true`);
+    await expect(page).toHaveURL(Paths.login());
 
     await loginPage.login({
       username: 'demo',
       password: 'demo',
     });
 
-    await expect(page).toHaveURL('/processes?active=true&incidents=true');
+    await expect(page).toHaveURL(
+      `${Paths.processes()}?active=true&incidents=true`,
+    );
   });
 });

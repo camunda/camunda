@@ -12,8 +12,9 @@ import {convertToQueryString} from '../utils/convertToQueryString';
 import {deployProcess} from '../setup-utils';
 import {config} from '../config';
 import {SETUP_WAITING_TIME} from './constants';
+import {Paths} from 'modules/Routes';
 
-let initialData;
+let initialData: Awaited<ReturnType<typeof setup>>;
 
 test.beforeAll(async ({request}) => {
   initialData = await setup();
@@ -60,7 +61,8 @@ test.beforeAll(async ({request}) => {
             },
           );
 
-          const incidents = await response.json();
+          const incidents: {items: [{state: string}]; total: number} =
+            await response.json();
 
           return (
             incidents.total > 0 &&
@@ -149,7 +151,7 @@ test.describe('Processes', () => {
     ).toBeVisible();
 
     await expect(page).toHaveURL(
-      `/processes?${convertToQueryString({
+      `${Paths.processes()}?${convertToQueryString({
         active: 'true',
         incidents: 'true',
         ids: instance.processInstanceKey,
@@ -168,7 +170,7 @@ test.describe('Processes', () => {
     await expect(page.getByRole('table').getByRole('row')).toHaveCount(2);
 
     await expect(page).toHaveURL(
-      `/processes?${convertToQueryString({
+      `${Paths.processes()}?${convertToQueryString({
         active: 'true',
         incidents: 'true',
         ids: instance.processInstanceKey,

@@ -42,7 +42,7 @@ const getCredentials = memoize(
       .reduce((accumulator, cookie) => {
         const [cookieValue] = cookie.split(';');
 
-        if (sessionToken.test(cookieValue)) {
+        if (cookieValue !== undefined && sessionToken.test(cookieValue)) {
           return {...accumulator, session: cookieValue};
         }
 

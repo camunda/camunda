@@ -27,7 +27,7 @@ function deployDecision(filenames: string[]) {
   return Promise.all(
     filenames
       .map(getFullFilePath)
-      .map((decisionFilename) => zbc.deployResource({decisionFilename}))
+      .map((decisionFilename) => zbc.deployResource({decisionFilename})),
   );
 }
 
@@ -39,18 +39,18 @@ async function createInstances<Variables = IProcessVariables>(
   bpmnProcessId: string,
   version: number,
   numberOfInstances: number,
-  variables?: Variables
+  variables?: Variables,
 ): Promise<CreateProcessInstanceResponse[]> {
   const batchSize = Math.min(numberOfInstances, 50);
 
   const responses = await Promise.all(
     [...new Array(batchSize)].map(() =>
-      zbc.createProcessInstance<typeof variables>({
+      zbc.createProcessInstance({
         bpmnProcessId,
         version,
-        variables,
-      })
-    )
+        variables: {...variables},
+      }),
+    ),
   );
 
   if (batchSize < 50) {
@@ -63,7 +63,7 @@ async function createInstances<Variables = IProcessVariables>(
       bpmnProcessId,
       version,
       numberOfInstances - batchSize,
-      variables
+      variables,
     )),
   ];
 }
@@ -71,12 +71,12 @@ async function createInstances<Variables = IProcessVariables>(
 function createSingleInstance<Variables = IProcessVariables>(
   bpmnProcessId: string,
   version: number,
-  variables?: Variables
+  variables?: Variables,
 ) {
-  return zbc.createProcessInstance<typeof variables>({
+  return zbc.createProcessInstance({
     bpmnProcessId,
     version,
-    variables,
+    variables: {...variables},
   });
 }
 
@@ -91,7 +91,7 @@ function completeTask(
       return job.complete(variables);
     }
   },
-  pollInterval = 300
+  pollInterval = 300,
 ) {
   zbc.createWorker({
     taskType,
