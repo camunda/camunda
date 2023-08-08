@@ -37,12 +37,42 @@ public final class ProcessVersionManager {
     versionCache = new Object2ObjectHashMap<>();
   }
 
+  private ProcessVersionInfo getVersionInfo() {
+    final var versionInfo =
+        versionCache.computeIfAbsent(
+            processIdKey.toString(), (key) -> processVersionInfoColumnFamily.get(processIdKey));
+
+    if (versionInfo == null) {
+      return new ProcessVersionInfo().setHighestVersionIfHigher(initialValue);
+    }
+
+    return versionInfo;
+  }
+
   public void addProcessVersion(final String processId, final long value) {
     processIdKey.wrapString(processId);
     final var versionInfo = getVersionInfo();
     versionInfo.addKnownVersion(value);
     processVersionInfoColumnFamily.upsert(processIdKey, versionInfo);
     versionCache.put(processId, versionInfo);
+  }
+
+  /**
+   * Deletes a specified version of a process
+   *
+   * @param processId the id of the process
+   * @param version the version that needs to be deleted
+   */
+  public void deleteProcessVersion(final String processId, final long version) {
+    processIdKey.wrapString(processId);
+    final var versionInfo = getVersionInfo();
+    versionInfo.removeKnownVersion(version);
+    processVersionInfoColumnFamily.update(processIdKey, versionInfo);
+    versionCache.put(processId, versionInfo);
+  }
+
+  public void clear() {
+    versionCache.clear();
   }
 
   /**
@@ -93,35 +123,5 @@ public final class ProcessVersionManager {
 
   private long getHighestProcessVersion() {
     return getVersionInfo().getHighestVersion();
-  }
-
-  private ProcessVersionInfo getVersionInfo() {
-    final var versionInfo =
-        versionCache.computeIfAbsent(
-            processIdKey.toString(), (key) -> processVersionInfoColumnFamily.get(processIdKey));
-
-    if (versionInfo == null) {
-      return new ProcessVersionInfo().setHighestVersionIfHigher(initialValue);
-    }
-
-    return versionInfo;
-  }
-
-  /**
-   * Deletes a specified version of a process
-   *
-   * @param processId the id of the process
-   * @param version the version that needs to be deleted
-   */
-  public void deleteProcessVersion(final String processId, final long version) {
-    processIdKey.wrapString(processId);
-    final var versionInfo = getVersionInfo();
-    versionInfo.removeKnownVersion(version);
-    processVersionInfoColumnFamily.update(processIdKey, versionInfo);
-    versionCache.put(processId, versionInfo);
-  }
-
-  public void clear() {
-    versionCache.clear();
   }
 }
