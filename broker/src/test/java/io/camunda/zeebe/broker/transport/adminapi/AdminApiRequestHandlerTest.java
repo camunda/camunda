@@ -8,18 +8,13 @@
 package io.camunda.zeebe.broker.transport.adminapi;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.Mockito.mock;
+import static org.mockito.Answers.RETURNS_MOCKS;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.atomix.primitive.partition.ManagedPartitionGroup;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
-import io.atomix.raft.partition.RaftPartitionGroup;
 import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
-import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.protocol.impl.encoding.AdminRequest;
 import io.camunda.zeebe.protocol.impl.encoding.AdminResponse;
 import io.camunda.zeebe.protocol.impl.encoding.ErrorResponse;
@@ -31,7 +26,6 @@ import io.camunda.zeebe.transport.ServerOutput;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.Either;
 import java.time.Duration;
-import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import org.agrona.ExpandableArrayBuffer;
@@ -104,10 +98,9 @@ final class AdminApiRequestHandlerTest {
 
     OtherRequest(
         @Mock final AtomixServerTransport transport,
-        @Mock final PartitionManagerImpl partitionManager) {
-      when(partitionManager.getPartitionGroup()).thenReturn(mock(ManagedPartitionGroup.class));
-      when(partitionManager.getPartitions()).thenReturn(List.of());
-      handler = new AdminApiRequestHandler(transport, partitionManager);
+        @Mock final PartitionAdminAccess adminAccess,
+        @Mock(answer = RETURNS_MOCKS) final RaftPartition raftPartition) {
+      handler = new AdminApiRequestHandler(transport, adminAccess, raftPartition);
     }
 
     @BeforeEach
@@ -143,15 +136,12 @@ final class AdminApiRequestHandlerTest {
 
     public PauseExportingRequest(
         @Mock final PartitionAdminAccess adminAccess,
-        @Mock final PartitionManagerImpl partitionManager,
+        @Mock(answer = RETURNS_MOCKS) final RaftPartition raftPartition,
         @Mock final AtomixServerTransport transport) {
       this.adminAccess = adminAccess;
       final int partitionId = 1;
       when(adminAccess.forPartition(partitionId)).thenReturn(Optional.of(adminAccess));
-      when(partitionManager.getPartitionGroup()).thenReturn(mock(ManagedPartitionGroup.class));
-      when(partitionManager.getPartitions()).thenReturn(List.of());
-      when(partitionManager.createAdminAccess(any())).thenReturn(adminAccess);
-      handler = new AdminApiRequestHandler(transport, partitionManager);
+      handler = new AdminApiRequestHandler(transport, adminAccess, raftPartition);
 
       request = new AdminRequest();
       request.setPartitionId(partitionId);
@@ -220,15 +210,12 @@ final class AdminApiRequestHandlerTest {
 
     public ResumeExportingRequest(
         @Mock final PartitionAdminAccess adminAccess,
-        @Mock final PartitionManagerImpl partitionManager,
+        @Mock(answer = RETURNS_MOCKS) final RaftPartition raftPartition,
         @Mock final AtomixServerTransport transport) {
       this.adminAccess = adminAccess;
       final int partitionId = 1;
       when(adminAccess.forPartition(partitionId)).thenReturn(Optional.of(adminAccess));
-      when(partitionManager.getPartitionGroup()).thenReturn(mock(ManagedPartitionGroup.class));
-      when(partitionManager.getPartitions()).thenReturn(List.of());
-      when(partitionManager.createAdminAccess(any())).thenReturn(adminAccess);
-      handler = new AdminApiRequestHandler(transport, partitionManager);
+      handler = new AdminApiRequestHandler(transport, adminAccess, raftPartition);
 
       request = new AdminRequest();
       request.setPartitionId(partitionId);
@@ -292,15 +279,14 @@ final class AdminApiRequestHandlerTest {
     final ControlledActorSchedulerExtension scheduler = new ControlledActorSchedulerExtension();
 
     private final AdminApiRequestHandler handler;
-    private final PartitionManagerImpl partitionManager;
+    private final RaftPartition raftPartition;
 
     StepdownRequest(
         @Mock final AtomixServerTransport transport,
-        @Mock final PartitionManagerImpl partitionManager) {
-      this.partitionManager = partitionManager;
-      when(partitionManager.getPartitionGroup()).thenReturn(mock(ManagedPartitionGroup.class));
-      when(partitionManager.getPartitions()).thenReturn(List.of());
-      handler = new AdminApiRequestHandler(transport, partitionManager);
+        @Mock final PartitionAdminAccess adminAccess,
+        @Mock(answer = RETURNS_MOCKS) final RaftPartition raftPartition) {
+      this.raftPartition = raftPartition;
+      handler = new AdminApiRequestHandler(transport, adminAccess, raftPartition);
     }
 
     @BeforeEach
@@ -312,12 +298,7 @@ final class AdminApiRequestHandlerTest {
     @Test
     void shouldInitiateStepdown() {
       // given
-      final var partition = mock(RaftPartition.class);
-      when(partition.getRole()).thenReturn(Role.LEADER);
-
-      final var partitionGroup = mock(ManagedPartitionGroup.class);
-      when(partitionGroup.getPartition(anyInt())).thenReturn(partition);
-      when(partitionManager.getPartitionGroup()).thenReturn(partitionGroup);
+      when(raftPartition.getRole()).thenReturn(Role.LEADER);
 
       final var request = new AdminRequest();
       request.setType(AdminRequestType.STEP_DOWN_IF_NOT_PRIMARY);
@@ -348,11 +329,7 @@ final class AdminApiRequestHandlerTest {
     @Test
     void shouldRejectRequestWhenNotLeader() {
       // given
-      final var partitionGroup = mock(RaftPartitionGroup.class);
-      final var partition = mock(RaftPartition.class);
-      when(partition.getRole()).thenReturn(Role.FOLLOWER);
-      when(partitionGroup.getPartition(anyInt())).thenReturn(partition);
-      when(partitionManager.getPartitionGroup()).thenReturn(partitionGroup);
+      when(raftPartition.getRole()).thenReturn(Role.FOLLOWER);
 
       final var request = new AdminRequest();
       request.setType(AdminRequestType.STEP_DOWN_IF_NOT_PRIMARY);

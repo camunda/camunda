@@ -28,6 +28,7 @@ import io.camunda.zeebe.broker.system.partitions.impl.AtomixRecordEntrySupplierI
 import io.camunda.zeebe.broker.system.partitions.impl.PartitionProcessingState;
 import io.camunda.zeebe.broker.system.partitions.impl.PartitionTransitionImpl;
 import io.camunda.zeebe.broker.system.partitions.impl.StateControllerImpl;
+import io.camunda.zeebe.broker.system.partitions.impl.steps.AdminApiRequestHandlerStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.BackupApiRequestHandlerStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.BackupServiceTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.BackupStoreTransitionStep;
@@ -78,7 +79,8 @@ final class PartitionFactory {
           new StreamProcessorTransitionStep(),
           new SnapshotDirectorPartitionTransitionStep(),
           new ExporterDirectorPartitionTransitionStep(),
-          new BackupApiRequestHandlerStep());
+          new BackupApiRequestHandlerStep(),
+          new AdminApiRequestHandlerStep());
 
   private final ActorSchedulingService actorSchedulingService;
   private final BrokerCfg brokerCfg;

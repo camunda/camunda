@@ -18,11 +18,13 @@ import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
 import io.camunda.zeebe.broker.logstreams.AtomixLogStorage;
+import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManager;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
 import io.camunda.zeebe.broker.system.partitions.impl.PartitionProcessingState;
+import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
 import io.camunda.zeebe.broker.transport.backupapi.BackupApiRequestHandler;
 import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandReceiverActor;
 import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandSenderService;
@@ -62,7 +64,6 @@ public class PartitionStartupAndTransitionContextImpl
   private final PartitionMessagingService messagingService;
   private final ActorSchedulingService actorSchedulingService;
   private final BrokerCfg brokerCfg;
-
   private final RaftPartition raftPartition;
   private final TypedRecordProcessorsFactory typedRecordProcessorsFactory;
   private final Supplier<CommandResponseWriter> commandResponseWriterSupplier;
@@ -74,7 +75,6 @@ public class PartitionStartupAndTransitionContextImpl
   private final PartitionProcessingState partitionProcessingState;
   private final DiskSpaceUsageMonitor diskSpaceUsageMonitor;
   private final StateController stateController;
-
   private StreamProcessor streamProcessor;
   private LogStream logStream;
   private AsyncSnapshotDirector snapshotDirector;
@@ -85,7 +85,6 @@ public class PartitionStartupAndTransitionContextImpl
   private ExporterDirector exporterDirector;
   private AtomixLogStorage logStorage;
   private QueryService queryService;
-
   private long currentTerm;
   private Role currentRole;
   private ConcurrencyControl concurrencyControl;
@@ -96,8 +95,9 @@ public class PartitionStartupAndTransitionContextImpl
   private BackupManager backupManager;
   private CheckpointRecordsProcessor checkpointRecordsProcessor;
   private final TopologyManager topologyManager;
-
   private BackupStore backupStore;
+  private AdminApiRequestHandler adminApiService;
+  private PartitionAdminAccess adminAccess;
 
   public PartitionStartupAndTransitionContextImpl(
       final int nodeId,
@@ -349,6 +349,26 @@ public class PartitionStartupAndTransitionContextImpl
   @Override
   public TopologyManager getTopologyManager() {
     return topologyManager;
+  }
+
+  @Override
+  public AdminApiRequestHandler getAdminApiService() {
+    return adminApiService;
+  }
+
+  @Override
+  public void setAdminApiRequestHandler(final AdminApiRequestHandler handler) {
+    adminApiService = handler;
+  }
+
+  @Override
+  public PartitionAdminAccess getAdminAccess() {
+    return adminAccess;
+  }
+
+  @Override
+  public void setAdminAccess(final PartitionAdminAccess adminAccess) {
+    this.adminAccess = adminAccess;
   }
 
   @Override

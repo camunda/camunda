@@ -54,7 +54,7 @@ public final class ZeebePartition extends Actor
   private final ZeebePartitionHealth zeebePartitionHealth;
   private PartitionContext context;
   private PartitionStartupContext startupContext;
-  private final PartitionAdminControl adminControl;
+  private final PartitionAdminAccess adminAccess;
   private final PartitionTransition transition;
   private CompletableActorFuture<Void> closeFuture;
   private boolean closing = false;
@@ -64,13 +64,16 @@ public final class ZeebePartition extends Actor
       final PartitionTransition transition,
       final List<StartupStep<PartitionStartupContext>> startupSteps) {
     context = transitionContext.getPartitionContext();
-    adminControl = transitionContext.getPartitionAdminControl();
+    adminAccess =
+        new ZeebePartitionAdminAccess(
+            actor, getPartitionId(), transitionContext.getPartitionAdminControl());
 
     this.transition = transition;
     startupContext = transitionContext;
 
     startupProcess = new StartupProcess<>(LOG, startupSteps);
 
+    transitionContext.setAdminAccess(adminAccess);
     transitionContext.setActorControl(actor);
     transitionContext.setDiskSpaceAvailable(true);
 
@@ -87,8 +90,8 @@ public final class ZeebePartition extends Actor
     roleMetrics = new RoleMetrics(transitionContext.getPartitionId());
   }
 
-  public PartitionAdminAccess createAdminAccess() {
-    return new ZeebePartitionAdminAccess(actor, getPartitionId(), adminControl);
+  public PartitionAdminAccess getAdminAccess() {
+    return adminAccess;
   }
 
   @Override

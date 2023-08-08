@@ -18,10 +18,12 @@ import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
 import io.camunda.zeebe.broker.logstreams.AtomixLogStorage;
+import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManager;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
+import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
 import io.camunda.zeebe.broker.transport.backupapi.BackupApiRequestHandler;
 import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandReceiverActor;
 import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandSenderService;
@@ -131,6 +133,22 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   public TopologyManager getTopologyManager() {
     return null;
   }
+
+  @Override
+  public AdminApiRequestHandler getAdminApiService() {
+    return null;
+  }
+
+  @Override
+  public void setAdminApiRequestHandler(final AdminApiRequestHandler handler) {}
+
+  @Override
+  public PartitionAdminAccess getAdminAccess() {
+    return null;
+  }
+
+  @Override
+  public void setAdminAccess(final PartitionAdminAccess adminAccess) {}
 
   @Override
   public void setExporterDirector(final ExporterDirector exporterDirector) {

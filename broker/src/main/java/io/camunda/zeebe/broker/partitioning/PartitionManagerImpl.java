@@ -176,7 +176,7 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
                   new PartitionHealthBroadcaster(
                       zeebePartition.getPartitionId(), this::onHealthChanged));
               diskSpaceUsageMonitor.addDiskUsageListener(zeebePartition);
-              adminAccess.put(zeebePartition.getPartitionId(), zeebePartition.createAdminAccess());
+              adminAccess.put(zeebePartition.getPartitionId(), zeebePartition.getAdminAccess());
               partitions.add(zeebePartition);
             });
   }

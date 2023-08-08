@@ -10,7 +10,9 @@ package io.camunda.zeebe.broker.system.partitions;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
+import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManager;
+import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.util.health.HealthMonitor;
@@ -52,4 +54,12 @@ public interface PartitionContext {
   void setDiskSpaceAvailable(boolean b);
 
   TopologyManager getTopologyManager();
+
+  AdminApiRequestHandler getAdminApiService();
+
+  void setAdminApiRequestHandler(AdminApiRequestHandler handler);
+
+  PartitionAdminAccess getAdminAccess();
+
+  void setAdminAccess(PartitionAdminAccess adminAccess);
 }
