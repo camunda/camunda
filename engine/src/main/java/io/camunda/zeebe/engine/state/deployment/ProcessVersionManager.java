@@ -101,7 +101,7 @@ public final class ProcessVersionManager {
             processIdKey.toString(), (key) -> processVersionInfoColumnFamily.get(processIdKey));
 
     if (versionInfo == null) {
-      return new ProcessVersionInfo().setHighestVersion(initialValue);
+      return new ProcessVersionInfo().setHighestVersionIfHigher(initialValue);
     }
 
     return versionInfo;

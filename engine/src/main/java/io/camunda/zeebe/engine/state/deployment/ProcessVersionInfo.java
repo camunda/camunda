@@ -40,11 +40,12 @@ public final class ProcessVersionInfo extends UnpackedObject implements DbValue 
   }
 
   /**
-   * Sets the highest version of a process. This is the highest version we've ever known.
+   * Sets the highest version of a process. This is the highest version we've ever known. If the
+   * passed version is lower than the current known highest version, nothing is changed.
    *
    * @param version the version of the process
    */
-  public ProcessVersionInfo setHighestVersion(final long version) {
+  public ProcessVersionInfo setHighestVersionIfHigher(final long version) {
     if (version > highestVersionProp.getValue()) {
       highestVersionProp.setValue(version);
     }
@@ -69,7 +70,7 @@ public final class ProcessVersionInfo extends UnpackedObject implements DbValue 
   public void addKnownVersion(final long version) {
     if (!getKnownVersions().contains(version)) {
       knownVersions.add().setValue(version);
-      setHighestVersion(version);
+      setHighestVersionIfHigher(version);
     }
   }
 

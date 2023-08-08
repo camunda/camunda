@@ -48,7 +48,7 @@ public class ProcessDefinitionVersionMigrationTest {
 
     public void insertProcessVersion(final String processId, final int version) {
       processIdKey.wrapString(processId);
-      final var value = new ProcessVersionInfo().setHighestVersion(version);
+      final var value = new ProcessVersionInfo().setHighestVersionIfHigher(version);
       processVersionInfoColumnFamily.insert(processIdKey, value);
     }
   }
