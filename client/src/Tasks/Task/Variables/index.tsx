@@ -217,7 +217,7 @@ const Variables: React.FC<Props> = ({
                 {variables.length >= 1 ||
                 (values?.newVariables?.length !== undefined &&
                   values?.newVariables?.length >= 1) ? (
-                  <Container data-testid="variables-form-table">
+                  <Container data-testid="variables-form-table" as={Layer}>
                     <StructuredListWrapper isCondensed>
                       <StructuredListHead>
                         <StructuredListRow head>
