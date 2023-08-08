@@ -43,6 +43,7 @@ public final class VariableDocumentRecord extends UnifiedRecordValue
     return this;
   }
 
+  @Override
   public long getScopeKey() {
     return scopeKeyProperty.getValue();
   }
@@ -52,6 +53,7 @@ public final class VariableDocumentRecord extends UnifiedRecordValue
     return this;
   }
 
+  @Override
   public VariableDocumentUpdateSemantic getUpdateSemantics() {
     return updateSemanticsProperty.getValue();
   }
@@ -96,5 +98,11 @@ public final class VariableDocumentRecord extends UnifiedRecordValue
     return Objects.equals(scopeKeyProperty, that.scopeKeyProperty)
         && Objects.equals(updateSemanticsProperty, that.updateSemanticsProperty)
         && Objects.equals(variablesProperty, that.variablesProperty);
+  }
+
+  @Override
+  public String getTenantId() {
+    // todo(#13388): replace dummy implementation
+    return "";
   }
 }

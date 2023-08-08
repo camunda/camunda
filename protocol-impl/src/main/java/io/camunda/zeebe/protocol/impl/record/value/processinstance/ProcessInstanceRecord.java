@@ -215,4 +215,10 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
     elementIdProp.setValue(elementId, offset, length);
     return this;
   }
+
+  @Override
+  public String getTenantId() {
+    // todo(#13774): replace dummy implementation
+    return "";
+  }
 }

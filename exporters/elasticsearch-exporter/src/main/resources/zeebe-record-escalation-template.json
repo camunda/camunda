@@ -30,6 +30,9 @@
             },
             "catchElementId": {
               "type": "keyword"
+            },
+            "tenantId": {
+              "type": "keyword"
             }
           }
         }

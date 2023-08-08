@@ -27,7 +27,7 @@ import org.immutables.value.Value;
  */
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableMessageRecordValue.Builder.class)
-public interface MessageRecordValue extends RecordValueWithVariables {
+public interface MessageRecordValue extends RecordValueWithVariables, TenantOwned {
   /**
    * @return the name of the message
    */

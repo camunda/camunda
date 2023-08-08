@@ -144,4 +144,10 @@ public final class ProcessInstanceModificationRecord extends UnifiedRecordValue
   public boolean equals(final Object o) {
     return super.equals(o);
   }
+
+  @Override
+  public String getTenantId() {
+    // todo(#13288): replace dummy implementation
+    return "";
+  }
 }

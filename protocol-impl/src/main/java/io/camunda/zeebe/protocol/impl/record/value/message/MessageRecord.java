@@ -86,6 +86,16 @@ public final class MessageRecord extends UnifiedRecordValue implements MessageRe
     return this;
   }
 
+  @Override
+  public long getDeadline() {
+    return deadlineProp.getValue();
+  }
+
+  public MessageRecord setDeadline(final long deadline) {
+    deadlineProp.setValue(deadline);
+    return this;
+  }
+
   public MessageRecord setMessageId(final String messageId) {
     messageIdProp.setValue(messageId);
     return this;
@@ -137,12 +147,8 @@ public final class MessageRecord extends UnifiedRecordValue implements MessageRe
   }
 
   @Override
-  public long getDeadline() {
-    return deadlineProp.getValue();
-  }
-
-  public MessageRecord setDeadline(final long deadline) {
-    deadlineProp.setValue(deadline);
-    return this;
+  public String getTenantId() {
+    // todo(#13289): replace dummy implementation
+    return "";
   }
 }

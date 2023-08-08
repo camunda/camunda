@@ -45,6 +45,9 @@
             },
             "interrupting": {
               "type": "boolean"
+            },
+            "tenantId": {
+              "type": "keyword"
             }
           }
         }

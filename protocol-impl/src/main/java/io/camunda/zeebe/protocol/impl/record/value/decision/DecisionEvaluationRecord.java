@@ -317,4 +317,10 @@ public final class DecisionEvaluationRecord extends UnifiedRecordValue
   public DirectBuffer getDecisionNameBuffer() {
     return decisionNameProp.getValue();
   }
+
+  @Override
+  public String getTenantId() {
+    // todo(#13777): replace dummy implementation
+    return "";
+  }
 }

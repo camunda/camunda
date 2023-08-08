@@ -42,6 +42,9 @@
             },
             "variables": {
               "enabled": false
+            },
+            "tenantId": {
+              "type": "keyword"
             }
           }
         }

@@ -104,6 +104,7 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
     return this;
   }
 
+  @Override
   public long getProcessDefinitionKey() {
     return processDefinitionKeyProp.getValue();
   }
@@ -111,6 +112,11 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
   public IncidentRecord setProcessDefinitionKey(final long processDefinitionKey) {
     processDefinitionKeyProp.setValue(processDefinitionKey);
     return this;
+  }
+
+  @Override
+  public long getProcessInstanceKey() {
+    return processInstanceKeyProp.getValue();
   }
 
   @Override
@@ -123,6 +129,7 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
     return this;
   }
 
+  @Override
   public long getElementInstanceKey() {
     return elementInstanceKeyProp.getValue();
   }
@@ -132,10 +139,12 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
     return this;
   }
 
+  @Override
   public long getJobKey() {
     return jobKeyProp.getValue();
   }
 
+  @Override
   public long getVariableScopeKey() {
     return variableScopeKeyProp.getValue();
   }
@@ -147,6 +156,11 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
 
   public IncidentRecord setJobKey(final long jobKey) {
     jobKeyProp.setValue(jobKey);
+    return this;
+  }
+
+  public IncidentRecord setProcessInstanceKey(final long processInstanceKey) {
+    processInstanceKeyProp.setValue(processInstanceKey);
     return this;
   }
 
@@ -165,12 +179,9 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
     return this;
   }
 
-  public long getProcessInstanceKey() {
-    return processInstanceKeyProp.getValue();
-  }
-
-  public IncidentRecord setProcessInstanceKey(final long processInstanceKey) {
-    processInstanceKeyProp.setValue(processInstanceKey);
-    return this;
+  @Override
+  public String getTenantId() {
+    // todo(#13426): replace dummy implementation
+    return "";
   }
 }

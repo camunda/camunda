@@ -15,21 +15,9 @@
  */
 package io.camunda.zeebe.protocol.record.value;
 
-import io.camunda.zeebe.protocol.record.ImmutableProtocol;
-import io.camunda.zeebe.protocol.record.RecordValueWithVariables;
-import io.camunda.zeebe.protocol.record.intent.SignalIntent;
-import org.immutables.value.Value;
+/** Concerns an entity that is owned by a tenant. */
+public interface TenantOwned {
 
-/**
- * Represents a signal event or command.
- *
- * <p>See {@link SignalIntent} for intents.
- */
-@Value.Immutable
-@ImmutableProtocol(builder = ImmutableSignalRecordValue.Builder.class)
-public interface SignalRecordValue extends RecordValueWithVariables, TenantOwned {
-  /**
-   * @return the name of the signal
-   */
-  String getSignalName();
+  /** Returns the identifier of the tenant that owns this entity. */
+  String getTenantId();
 }

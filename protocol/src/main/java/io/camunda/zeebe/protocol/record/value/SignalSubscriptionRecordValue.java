@@ -27,7 +27,7 @@ import org.immutables.value.Value;
  */
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableSignalSubscriptionRecordValue.Builder.class)
-public interface SignalSubscriptionRecordValue extends RecordValue {
+public interface SignalSubscriptionRecordValue extends RecordValue, TenantOwned {
 
   /**
    * @return the process key tied to the subscription

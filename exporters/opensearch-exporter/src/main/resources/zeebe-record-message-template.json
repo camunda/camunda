@@ -36,6 +36,9 @@
             },
             "deadline": {
               "type": "long"
+            },
+            "tenantId": {
+              "type": "keyword"
             }
           }
         }

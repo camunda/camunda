@@ -66,6 +66,9 @@
             "failedDecisionId": {
               "type": "keyword"
             },
+            "tenantId": {
+              "type": "keyword"
+            },
             "evaluatedDecisions": {
               "properties": {
                 "decisionId": {

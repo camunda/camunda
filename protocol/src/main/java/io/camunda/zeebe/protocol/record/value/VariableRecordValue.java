@@ -27,7 +27,7 @@ import org.immutables.value.Value;
  */
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableVariableRecordValue.Builder.class)
-public interface VariableRecordValue extends RecordValue, ProcessInstanceRelated {
+public interface VariableRecordValue extends RecordValue, ProcessInstanceRelated, TenantOwned {
 
   /**
    * @return the name of the variable.

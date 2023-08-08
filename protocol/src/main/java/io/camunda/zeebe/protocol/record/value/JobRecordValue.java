@@ -28,7 +28,8 @@ import org.immutables.value.Value;
  */
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableJobRecordValue.Builder.class)
-public interface JobRecordValue extends RecordValueWithVariables, ProcessInstanceRelated {
+public interface JobRecordValue
+    extends RecordValueWithVariables, ProcessInstanceRelated, TenantOwned {
 
   /**
    * @return the type of the job

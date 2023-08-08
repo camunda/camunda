@@ -27,7 +27,7 @@ import org.immutables.value.Value;
  */
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableTimerRecordValue.Builder.class)
-public interface TimerRecordValue extends RecordValue, ProcessInstanceRelated {
+public interface TimerRecordValue extends RecordValue, ProcessInstanceRelated, TenantOwned {
 
   /**
    * @return the key of the process in which this timer was created

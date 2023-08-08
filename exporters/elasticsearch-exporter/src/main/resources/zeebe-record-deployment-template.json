@@ -40,6 +40,9 @@
                 },
                 "duplicate": {
                   "type": "boolean"
+                },
+                "tenantId": {
+                  "type": "keyword"
                 }
               }
             },
@@ -78,6 +81,9 @@
                 },
                 "duplicate": {
                   "type": "boolean"
+                },
+                "tenantId": {
+                  "type": "keyword"
                 }
               }
             },
@@ -103,8 +109,14 @@
                 },
                 "duplicate": {
                   "type": "boolean"
+                },
+                "tenantId": {
+                  "type": "keyword"
                 }
               }
+            },
+            "tenantId": {
+              "type": "keyword"
             }
           }
         }

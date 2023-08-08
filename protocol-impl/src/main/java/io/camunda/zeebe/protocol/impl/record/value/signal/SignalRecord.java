@@ -66,4 +66,10 @@ public final class SignalRecord extends UnifiedRecordValue implements SignalReco
   public DirectBuffer getVariablesBuffer() {
     return variablesProp.getValue();
   }
+
+  @Override
+  public String getTenantId() {
+    // todo(#13336): replace dummy implementation
+    return "";
+  }
 }

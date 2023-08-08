@@ -21,6 +21,9 @@
           "properties": {
             "resourceKey": {
               "type": "long"
+            },
+            "tenantId": {
+              "type": "keyword"
             }
           }
         }

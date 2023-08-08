@@ -68,4 +68,10 @@ public final class ProcessInstanceBatchRecord extends UnifiedRecordValue
     indexProperty.setValue(index);
     return this;
   }
+
+  @Override
+  public String getTenantId() {
+    // todo(#13774): replace dummy implementation
+    return "";
+  }
 }

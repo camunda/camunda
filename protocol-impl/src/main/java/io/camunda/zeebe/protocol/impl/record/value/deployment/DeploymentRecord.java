@@ -118,4 +118,10 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
   public void resetResources() {
     resourcesProp.reset();
   }
+
+  @Override
+  public String getTenantId() {
+    // todo(#13320): replace dummy implementation
+    return "";
+  }
 }
