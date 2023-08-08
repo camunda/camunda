@@ -60,7 +60,7 @@
     "@axe-core/playwright": "4.7.3",
     "@playwright/test": "1.35.1",
     "@tanstack/react-query-devtools": "4.32.6",
-    "@testing-library/jest-dom": "5.16.5",
+    "@testing-library/jest-dom": "5.17.0",
     "@testing-library/react": "14.0.0",
     "@testing-library/user-event": "14.4.3",
     "@types/carbon-components-react": "7.55.2",
