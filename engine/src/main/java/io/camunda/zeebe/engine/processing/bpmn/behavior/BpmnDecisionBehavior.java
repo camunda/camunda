@@ -97,7 +97,7 @@ public final class BpmnDecisionBehavior {
     final var decisionOrFailure = findDecisionById(decisionId);
     final var resultOrFailure =
         decisionOrFailure
-            .flatMap(this::findDrgByDecision)
+            .flatMap(this::findParsedDrgByDecision)
             .mapLeft(
                 failure ->
                     new Failure(
@@ -152,7 +152,7 @@ public final class BpmnDecisionBehavior {
         .orElse(new Failure("no decision found for id '%s'".formatted(decisionId)));
   }
 
-  private Either<Failure, PersistedDecisionRequirements> findDrgByDecision(
+  private Either<Failure, PersistedDecisionRequirements> findParsedDrgByDecision(
       final PersistedDecision decision) {
     final var key = decision.getDecisionRequirementsKey();
     final var id = decision.getDecisionRequirementsId();
