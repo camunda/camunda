@@ -8,15 +8,16 @@ package org.camunda.optimize.dto.optimize.query.report.single.process.result.raw
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.RawDataInstanceDto;
+
+import java.time.OffsetDateTime;
 
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
-@FieldNameConstants(asEnum = true)
-public class RawDataCountDtoDto implements RawDataInstanceDto {
-  protected long incidents;
-  protected long openIncidents;
-  protected long userTasks;
+public class RawDataFlowNodeDataDto implements RawDataInstanceDto {
+  private String id;
+  private String name;
+  private OffsetDateTime startDate;
+  private OffsetDateTime endDate;
 }

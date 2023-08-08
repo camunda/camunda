@@ -20,9 +20,11 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Filt
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.NoneGroupByDto;
 import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginatedDataExportDto;
+import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.util.ProcessReportDataType;
 import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
+import org.camunda.optimize.util.SuppressionConstants;
 import org.elasticsearch.action.search.ClearScrollRequest;
 import org.elasticsearch.action.search.ClearScrollResponse;
 import org.junit.jupiter.api.Test;
@@ -35,6 +37,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.rest.pagination.PaginationScrollableRequestDto.QUERY_LIMIT_PARAM;
@@ -72,6 +75,9 @@ public class PublicApiReportExportIT extends AbstractIT {
       .isEqualTo(Response.Status.OK.getStatusCode());
     assertThat(data.getMessage()).isNull();
     assertThat(data.getReportId()).isEqualTo(reportId);
+    final List<Map<String, Object>> dataAsList = getDataAsList(data);
+    assertThat(extractDataFieldNames(dataAsList)).contains("flowNodeInstances");
+    assertThat(extractFirstValueForFlowNodeInstancesProperty(dataAsList)).isNotEmpty();
   }
 
   @Test
@@ -114,13 +120,13 @@ public class PublicApiReportExportIT extends AbstractIT {
       .isEqualTo(responsePage3.getStatus())
       .isEqualTo(Response.Status.OK.getStatusCode());
 
-    //Make sure the data in the pages are different
-    assertThat(extractFirstProcessInstanceId(dataPage1.getDataAs(List.class))).
-      isNotEqualTo(extractFirstProcessInstanceId(dataPage2.getDataAs(List.class)));
-    assertThat(extractFirstProcessInstanceId(dataPage1.getDataAs(List.class)))
-      .isNotEqualTo(extractFirstProcessInstanceId(dataPage3.getDataAs(List.class)));
-    assertThat(extractFirstProcessInstanceId(dataPage2.getDataAs(List.class)))
-      .isNotEqualTo(extractFirstProcessInstanceId(dataPage3.getDataAs(List.class)));
+    // Make sure the data in the pages are different
+    assertThat(extractFirstProcessInstanceId(getDataAsList(dataPage1))).
+      isNotEqualTo(extractFirstProcessInstanceId(getDataAsList(dataPage2)));
+    assertThat(extractFirstProcessInstanceId(getDataAsList(dataPage1)))
+      .isNotEqualTo(extractFirstProcessInstanceId(getDataAsList(dataPage3)));
+    assertThat(extractFirstProcessInstanceId(getDataAsList(dataPage2)))
+      .isNotEqualTo(extractFirstProcessInstanceId(getDataAsList(dataPage3)));
     assertThat(dataPage1.getMessage()).isNull();
     assertThat(dataPage1.getReportId()).isEqualTo(reportId);
     assertThat(dataPage2.getMessage()).isNull();
@@ -149,7 +155,6 @@ public class PublicApiReportExportIT extends AbstractIT {
   @Test
   @SneakyThrows
   public void rawDataExportPaginatingWithExpiredScrollId() {
-
     // given
     int numberOfInstances = 3;
     int limit = numberOfInstances / 2;
@@ -407,14 +412,24 @@ public class PublicApiReportExportIT extends AbstractIT {
     assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
   }
 
-  private String extractFirstProcessInstanceId(List<?> data) {
+  private Optional<String> extractFirstProcessInstanceId(List<?> data) {
     Object firstData = data.get(0);
     if (firstData instanceof Map) {
-      @SuppressWarnings("unchecked")
+      @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
       Map<String, String> firstDataPair = (Map<String, String>) firstData;
-      return firstDataPair.get("processInstanceId");
+      return Optional.ofNullable(firstDataPair.get("processInstanceId"));
     }
-    return "";
+    throw new OptimizeIntegrationTestException("Could not extract process instance ID value");
+  }
+
+  private Set<String> extractDataFieldNames(List<?> data) {
+    Object firstData = data.get(0);
+    if (firstData instanceof Map) {
+      @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
+      Map<String, Object> fieldNames = (Map<String, Object>) firstData;
+      return fieldNames.keySet();
+    }
+    throw new OptimizeIntegrationTestException("Could not extract field names");
   }
 
   private String createAndStoreDefaultReportDefinition(ProcessReportDataDto reportData) {
@@ -616,4 +631,15 @@ public class PublicApiReportExportIT extends AbstractIT {
     // @formatter:on
     return engineIntegrationExtension.deployAndStartProcess(processModel);
   }
+
+  @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
+  public List<Map<String, Object>> getDataAsList(final PaginatedDataExportDto data) {
+    return (List<Map<String, Object>>) data.getData();
+  }
+
+  @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
+  private static List<Object> extractFirstValueForFlowNodeInstancesProperty(final List<Map<String, Object>> dataAsList) {
+    return (List<Object>) dataAsList.get(0).get("flowNodeInstances");
+  }
+
 }

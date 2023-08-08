@@ -19,7 +19,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Filt
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.VariableFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataCountDtoDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataCountDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
@@ -431,11 +431,11 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     // then
     assertThat(evaluationResultWithUserTask.getResult().getData())
       .extracting(RawDataProcessInstanceDto::getCounts)
-      .extracting(RawDataCountDtoDto::getUserTasks)
+      .extracting(RawDataCountDto::getUserTasks)
       .containsExactlyInAnyOrder(1L, 1L);
     assertThat(evaluationResultWithoutUserTask.getResult().getData())
       .extracting(RawDataProcessInstanceDto::getCounts)
-      .extracting(RawDataCountDtoDto::getUserTasks)
+      .extracting(RawDataCountDto::getUserTasks)
       .containsExactly(0L);
   }
 
@@ -1201,7 +1201,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
       )
       .containsExactly(definitionKey, List.of(definitionVersion));
     final ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluationResult.getResult();
-    assertThat(result.getData()).extracting(RawDataProcessInstanceDto::getCounts).extracting(RawDataCountDtoDto::getOpenIncidents)
+    assertThat(result.getData()).extracting(RawDataProcessInstanceDto::getCounts).extracting(RawDataCountDto::getOpenIncidents)
       .containsExactlyInAnyOrder(0L, 1L);
   }
 

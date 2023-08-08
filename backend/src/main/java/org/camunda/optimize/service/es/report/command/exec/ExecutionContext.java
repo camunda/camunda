@@ -34,6 +34,7 @@ public class ExecutionContext<D extends SingleReportDataDto> {
   private long unfilteredTotalInstanceCount;
   private Optional<PaginationDto> pagination;
   private boolean isCsvExport;
+  private boolean isJsonExport;
 
   // used in the context of combined reports to establish identical bucket sizes/ranges across all single reports
   private MinMaxStatDto combinedRangeMinMaxStats;
@@ -62,6 +63,7 @@ public class ExecutionContext<D extends SingleReportDataDto> {
     this.pagination = reportEvaluationContext.getPagination();
     this.isCsvExport = reportEvaluationContext.isCsvExport();
     this.filterContext = createFilterContext(reportEvaluationContext);
+    this.isJsonExport = reportEvaluationContext.isJsonExport();
   }
 
   public SingleReportConfigurationDto getReportConfiguration() {

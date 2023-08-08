@@ -33,8 +33,8 @@ public class ReportEvaluationInfo {
   private ZoneId timezone = ZoneId.systemDefault();
   private PaginationDto pagination;
   private boolean isCsvExport;
-  private boolean isSharedReport;
   private boolean isJsonExport;
+  private boolean isSharedReport;
 
   public void postFetchSavedReport(final ReportReader reportReader) {
     if (reportId != null) {

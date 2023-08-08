@@ -117,8 +117,10 @@ public class ProcessViewRawData extends ProcessViewPart {
       .orElse(SortOrder.DESC);
 
     final SearchSourceBuilder search = searchRequest.source()
-      .fetchSource(true)
-      .fetchSource(null, new String[]{FLOW_NODE_INSTANCES});
+      .fetchSource(true);
+    if (!context.isJsonExport()) {
+      search.fetchSource(null, new String[]{FLOW_NODE_INSTANCES});
+    }
     if (context.isCsvExport()) {
       context.getPagination()
         .ifPresent(pag -> search.size(pag.getLimit() > MAX_RESPONSE_SIZE_LIMIT ?
@@ -134,30 +136,32 @@ public class ProcessViewRawData extends ProcessViewPart {
           .from(pag.getOffset());
       });
     }
+    // @formatter:off
     String getFlowNodeDurationsScript =
         "def flowNodeInstanceIdToDuration = new HashMap();" +
         "def dateFormatter = new SimpleDateFormat(params.dateFormat);" +
-          "for (flowNodeInstance in params._source.flowNodeInstances) {" +
-            "if (flowNodeInstance.totalDurationInMs != null) {" +
-              "if (flowNodeInstanceIdToDuration.containsKey(flowNodeInstance.flowNodeId)) {" +
-                "def currentDuration = flowNodeInstanceIdToDuration.get(flowNodeInstance.flowNodeId);" +
-                "flowNodeInstanceIdToDuration.put(flowNodeInstance.flowNodeId, flowNodeInstance.totalDurationInMs + currentDuration)" +
-              "} else {" +
-                "flowNodeInstanceIdToDuration.put(flowNodeInstance.flowNodeId, flowNodeInstance.totalDurationInMs)" +
-                "}" +
-            "} else {" +
-              "if (flowNodeInstance.startDate != null) {" +
-                "def duration = params.currentTime - dateFormatter.parse(flowNodeInstance.startDate).getTime();" +
-                "if (flowNodeInstanceIdToDuration.containsKey(flowNodeInstance.flowNodeId)) {" +
-                  "def currentDuration = flowNodeInstanceIdToDuration.get(flowNodeInstance.flowNodeId);" +
-                  "flowNodeInstanceIdToDuration.put(flowNodeInstance.flowNodeId, duration + currentDuration)" +
-                "} else {" +
-                  "flowNodeInstanceIdToDuration.put(flowNodeInstance.flowNodeId, duration)" +
-                "}" +
-              "}" +
-            "}" +
-          "}" +
+        "for (flowNodeInstance in params._source.flowNodeInstances) {" +
+        "  if (flowNodeInstance.totalDurationInMs != null) {" +
+        "    if (flowNodeInstanceIdToDuration.containsKey(flowNodeInstance.flowNodeId)) {" +
+        "      def currentDuration = flowNodeInstanceIdToDuration.get(flowNodeInstance.flowNodeId);" +
+        "      flowNodeInstanceIdToDuration.put(flowNodeInstance.flowNodeId, flowNodeInstance.totalDurationInMs + currentDuration)" +
+        "    } else {" +
+        "      flowNodeInstanceIdToDuration.put(flowNodeInstance.flowNodeId, flowNodeInstance.totalDurationInMs)" +
+        "    }" +
+        "  } else {" +
+        "    if (flowNodeInstance.startDate != null) {" +
+        "      def duration = params.currentTime - dateFormatter.parse(flowNodeInstance.startDate).getTime();" +
+        "      if (flowNodeInstanceIdToDuration.containsKey(flowNodeInstance.flowNodeId)) {" +
+        "        def currentDuration = flowNodeInstanceIdToDuration.get(flowNodeInstance.flowNodeId);" +
+        "        flowNodeInstanceIdToDuration.put(flowNodeInstance.flowNodeId, duration + currentDuration)" +
+        "      } else {" +
+        "        flowNodeInstanceIdToDuration.put(flowNodeInstance.flowNodeId, duration)" +
+        "      }" +
+        "    }" +
+        "  }" +
+        "}" +
         "return flowNodeInstanceIdToDuration;";
+    // @formatter:on
 
     Map<String, Object> params = new HashMap<>();
     params.put(CURRENT_TIME, LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli());
@@ -168,7 +172,9 @@ public class ProcessViewRawData extends ProcessViewPart {
     );
     searchRequest.source().scriptField(
       NUMBER_OF_USERTASKS,
-      createDefaultScript("Optional.ofNullable(params._source.flowNodeInstances).map(list -> list.stream().filter(item -> item.flowNodeType.equals('userTask')).count()).orElse(0L)")
+      createDefaultScript(
+        "Optional.ofNullable(params._source.flowNodeInstances).map(list -> list.stream().filter(item -> item.flowNodeType" +
+          ".equals('userTask')).count()).orElse(0L)")
     );
     searchRequest.source().scriptField(
       FLOWNODE_IDS_TO_DURATIONS,
@@ -198,7 +204,10 @@ public class ProcessViewRawData extends ProcessViewPart {
           processInstance.getProcessInstanceId(),
           hit.getFields().get(FLOWNODE_IDS_TO_DURATIONS).getValue()
         );
-        instanceIdsToUserTaskCount.put(processInstance.getProcessInstanceId(), Long.valueOf(hit.getFields().get(NUMBER_OF_USERTASKS).getValue().toString()));
+        instanceIdsToUserTaskCount.put(
+          processInstance.getProcessInstanceId(),
+          Long.valueOf(hit.getFields().get(NUMBER_OF_USERTASKS).getValue().toString())
+        );
         if (processInstance.getDuration() == null && processInstance.getStartDate() != null) {
           final Optional<ReportSortingDto> sorting = context.getReportConfiguration().getSorting();
           if (sorting.isPresent() && sorting.get().getBy().isPresent()
@@ -238,8 +247,8 @@ public class ProcessViewRawData extends ProcessViewPart {
     }
 
     RawProcessDataResultDtoMapper rawDataSingleReportResultDtoMapper = new RawProcessDataResultDtoMapper();
-    Map<String, String> flowNodeIdsToFlowNodeNames = definitionService.fetchDefinitionFlowNodeNamesAndIdsForProcessInstances(
-      rawDataProcessInstanceDtos);
+    Map<String, String> flowNodeIdsToFlowNodeNames =
+      definitionService.fetchDefinitionFlowNodeNamesAndIdsForProcessInstances(rawDataProcessInstanceDtos);
     final List<RawDataProcessInstanceDto> rawData = rawDataSingleReportResultDtoMapper.mapFrom(
       rawDataProcessInstanceDtos,
       objectMapper,

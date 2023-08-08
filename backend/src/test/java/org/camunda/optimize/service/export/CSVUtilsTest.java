@@ -10,7 +10,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.Table
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataCountDtoDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataCountDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import org.camunda.optimize.service.es.report.result.RawDataCommandResult;
 import org.junit.jupiter.api.Test;
@@ -116,7 +116,7 @@ public class CSVUtilsTest {
     // then
     assertThat(result).hasSize(4);
     assertThat(result.get(0))
-      .hasSize(extractAllProcessInstanceDtoFieldKeys().size() - excludedColumns.size() + RawDataCountDtoDto.Fields.values().length)
+      .hasSize(extractAllProcessInstanceDtoFieldKeys().size() - excludedColumns.size() + RawDataCountDto.Fields.values().length)
       .doesNotContainAnyElementsOf(excludedColumns);
   }
 
@@ -146,7 +146,7 @@ public class CSVUtilsTest {
     // then
     assertThat(result).hasSize(4);
     assertThat(result.get(0))
-      .hasSize(includedColumns.size() - excludedColumns.size() + RawDataCountDtoDto.Fields.values().length)
+      .hasSize(includedColumns.size() - excludedColumns.size() + RawDataCountDto.Fields.values().length)
       .doesNotContainAnyElementsOf(excludedColumns);
   }
 
@@ -192,7 +192,7 @@ public class CSVUtilsTest {
     // then
     assertThat(result).hasSize(4);
     assertThat(result.get(0))
-      .hasSize(includedColumns.size() + RawDataCountDtoDto.Fields.values().length);
+      .hasSize(includedColumns.size() + RawDataCountDto.Fields.values().length);
   }
 
   @Test

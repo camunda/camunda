@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.dto.optimize.rest.pagination;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -27,19 +26,13 @@ public class PaginatedDataExportDto {
 
   public void setData(Object data) {
     this.data = data;
-    if(data == null)
-    {
+    if (data == null) {
       this.numberOfRecordsInResponse = 0;
-    } else if(data instanceof Collection) {
+    } else if (data instanceof Collection) {
       this.numberOfRecordsInResponse = ((Collection<?>) data).size();
-    }
-    else {
+    } else {
       this.numberOfRecordsInResponse = 1;
     }
   }
 
-  @JsonIgnore
-  public <T> T getDataAs(Class<T> expected) {
-    return (T) this.data;
-  }
 }

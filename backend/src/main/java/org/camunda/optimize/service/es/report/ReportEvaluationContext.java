@@ -20,6 +20,7 @@ public class ReportEvaluationContext<R extends ReportDefinitionDto<?>> {
   private R reportDefinition;
   private PaginationDto pagination;
   private boolean isCsvExport;
+  private boolean isJsonExport;
 
   // used in the context of combined reports to establish identical bucket sizes/ranges across all single reports
   private MinMaxStatDto combinedRangeMinMaxStats;
@@ -38,6 +39,7 @@ public class ReportEvaluationContext<R extends ReportDefinitionDto<?>> {
     context.setTimezone(evaluationInfo.getTimezone());
     context.setPagination(evaluationInfo.getPagination().orElse(null));
     context.setCsvExport(evaluationInfo.isCsvExport());
+    context.setJsonExport(evaluationInfo.isJsonExport());
     return context;
   }
 
