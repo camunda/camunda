@@ -129,6 +129,7 @@ export default class Configuration extends React.Component {
     return (
       <div className="Configuration">
         <Popover
+          isTabTip
           tooltip={t('report.config.buttonTooltip')}
           title={<Icon type="settings" />}
           disabled={!enablePopover}

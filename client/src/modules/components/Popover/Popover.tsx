@@ -105,7 +105,7 @@ export default function Popover({
     const margin = 10;
     const padding = 10 + 15;
 
-    let newAlignment: PopoverAlignment = 'bottom';
+    let newAlignment: PopoverAlignment = props.isTabTip ? 'bottom-left' : 'bottom';
 
     if (buttonCenter + overlayWidth / 2 > bodyWidth) {
       newAlignment = 'bottom-right';
@@ -135,7 +135,7 @@ export default function Popover({
     }
 
     popoverClassList.add(getClassName(align || newAlignment));
-  }, [align]);
+  }, [align, props.isTabTip]);
 
   const fixPositioning = useCallback(() => {
     if (!floating) {

@@ -154,6 +154,7 @@ export default function DateFilter({
       </div>
       {showFixedPopover && filter?.type !== 'relative' ? (
         <Popover
+          isTabTip
           title={
             <>
               <Icon type={icon} className={classnames('indicator', {active: filter})} />{' '}
