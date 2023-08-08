@@ -176,7 +176,7 @@ describe('<Filters />', () => {
 
     await user.click(screen.getByText(/^more filters$/i));
     await user.click(screen.getByText('Evaluation Date Range'));
-    await user.click(screen.getByLabelText('Evaluation Date Range'));
+
     const evaluationDate = await pickDateTimeRange({
       user,
       screen,

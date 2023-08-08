@@ -6,7 +6,7 @@
  */
 
 import {formatISODate} from 'modules/components/DateRangeField/formatDate';
-import {UserEvent, Screen, waitFor} from 'modules/testing-library';
+import {UserEvent, Screen, waitFor, act} from 'modules/testing-library';
 
 const pad = (value: String | Number) => {
   return String(value).padStart(2, '0');
@@ -27,6 +27,7 @@ const pickDateTimeRange = async ({
   fromTime?: string;
   toTime?: string;
 }) => {
+  await act(async () => {});
   expect(await screen.findByTestId('popover')).toBeInTheDocument();
   const monthName = document.querySelector('.cur-month')?.textContent;
   const year = document.querySelector<HTMLInputElement>('.cur-year')?.value;

@@ -283,7 +283,7 @@ describe('Filters', () => {
 
     await user.click(screen.getByText(/^more filters$/i));
     await user.click(screen.getByText('Start Date Range'));
-    await user.click(screen.getByLabelText('Start Date Range'));
+
     const startDate = await pickDateTimeRange({
       user,
       screen,
@@ -293,7 +293,7 @@ describe('Filters', () => {
     await user.click(screen.getByText('Apply'));
     await user.click(screen.getByText(/^more filters$/i));
     await user.click(screen.getByText('End Date Range'));
-    await user.click(screen.getByLabelText('End Date Range'));
+
     const endDate = await pickDateTimeRange({
       user,
       screen,
