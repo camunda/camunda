@@ -29,7 +29,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "Please check the issue: ${{ github.event.issue.url }}\n \\cc @zeebe-process-automation-team @zeebe-distributed-platform-team "
+                    "text": "Please check the issue: ${{ github.event.issue.html_url }}\n \\cc @zeebe-process-automation-team @zeebe-distributed-platform-team "
                   }
                 }
               ]
