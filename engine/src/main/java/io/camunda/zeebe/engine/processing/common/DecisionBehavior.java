@@ -64,7 +64,7 @@ public class DecisionBehavior {
         .mapLeft(failure -> formatDecisionLookupFailure(failure, decisionKey));
   }
 
-  public Either<Failure, ParsedDecisionRequirementsGraph> findAndParseDrgByDecision(
+  public Either<Failure, ParsedDecisionRequirementsGraph> findParsedDrgByDecision(
       final PersistedDecision persistedDecision) {
     return findDrgByDecision(persistedDecision)
         .flatMap(drg -> parseDrg(drg.getResource()))

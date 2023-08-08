@@ -75,7 +75,7 @@ public final class BpmnDecisionBehavior {
     final var decisionOrFailure = decisionBehavior.findDecisionById(decisionId);
     final Either<Failure, ParsedDecisionRequirementsGraph> drgOrFailure =
         decisionOrFailure
-            .flatMap(decision -> decisionBehavior.findAndParseDrgByDecision(decision))
+            .flatMap(decision -> decisionBehavior.findParsedDrgByDecision(decision))
             // any failures above have the same error type and the correct scope
             // decisions invoked by business rule tasks have a different error type
             .mapLeft(
