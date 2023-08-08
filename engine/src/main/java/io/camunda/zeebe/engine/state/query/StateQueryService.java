@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.state.query;
 
 import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.state.ProcessingDbState;
 import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.engine.state.ZbColumnFamilies;
@@ -68,7 +69,11 @@ public final class StateQueryService implements QueryService {
       // we don't need a key generator here, so we set it to null
       state =
           new ProcessingDbState(
-              Protocol.DEPLOYMENT_PARTITION, zeebeDb, zeebeDb.createContext(), null);
+              Protocol.DEPLOYMENT_PARTITION,
+              zeebeDb,
+              zeebeDb.createContext(),
+              null,
+              new EngineConfiguration());
     }
   }
 }

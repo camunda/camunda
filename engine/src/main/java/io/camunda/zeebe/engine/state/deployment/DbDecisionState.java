@@ -21,6 +21,7 @@ import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.dmn.DecisionEngine;
 import io.camunda.zeebe.dmn.DecisionEngineFactory;
 import io.camunda.zeebe.dmn.ParsedDecisionRequirementsGraph;
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.state.ZbColumnFamilies;
 import io.camunda.zeebe.engine.state.mutable.MutableDecisionState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
@@ -61,7 +62,9 @@ public final class DbDecisionState implements MutableDecisionState {
   private final LoadingCache<Long, DeployedDrg> drgCache;
 
   public DbDecisionState(
-      final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
+      final ZeebeDb<ZbColumnFamilies> zeebeDb,
+      final TransactionContext transactionContext,
+      final EngineConfiguration config) {
     dbDecisionKey = new DbLong();
     fkDecision = new DbForeignKey<>(dbDecisionKey, ZbColumnFamilies.DMN_DECISIONS);
 
