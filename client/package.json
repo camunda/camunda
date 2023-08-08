@@ -5,7 +5,7 @@
   "dependencies": {
     "@bpmn-io/form-js-carbon-styles": "1.1.0",
     "@bpmn-io/form-js-viewer": "1.1.0",
-    "@camunda/camunda-composite-components": "0.0.41",
+    "@camunda/camunda-composite-components": "0.1.1",
     "@carbon/elements": "11.27.0",
     "@carbon/react": "1.35.0",
     "@monaco-editor/react": "4.5.1",

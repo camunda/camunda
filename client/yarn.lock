@@ -1128,10 +1128,10 @@
     preact-markup "^2.1.1"
     showdown "^2.1.0"
 
-"@camunda/camunda-composite-components@0.0.41":
-  version "0.0.41"
-  resolved "https://registry.yarnpkg.com/@camunda/camunda-composite-components/-/camunda-composite-components-0.0.41.tgz#fafe61dd5b4fb0c234b245563b43f63125a82c7e"
-  integrity sha512-9I6NiDyHFNgEMLdU6AQASJUSW7PtT+4zHbnnOvl7AgNGOkoAe/PzWAZGuNeyS1WJMTk+Opi5BXu8qvfQoEp+Cg==
+"@camunda/camunda-composite-components@0.1.1":
+  version "0.1.1"
+  resolved "https://registry.yarnpkg.com/@camunda/camunda-composite-components/-/camunda-composite-components-0.1.1.tgz#f1be9af4e62a9004fb61a391be524c0782f18542"
+  integrity sha512-0hGIq8ENbs8cy1fSc75QViKD3P+Y2NsO+LIym8OGgLmkujNdsFgsJR1uK8RcbRv0Wh3p2LLLmpTt03X5DIATLw==
 
 "@carbon/colors@^11.19.0":
   version "11.19.0"
