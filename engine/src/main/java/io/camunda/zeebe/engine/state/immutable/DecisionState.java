@@ -58,4 +58,7 @@ public interface DecisionState {
    *     it
    */
   List<PersistedDecision> findDecisionsByDecisionRequirementsKey(long decisionRequirementsKey);
+
+  /** Completely clears all caches. */
+  void clearCache();
 }
