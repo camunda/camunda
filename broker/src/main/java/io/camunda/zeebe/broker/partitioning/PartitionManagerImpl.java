@@ -119,6 +119,7 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
     LOGGER.info("Starting partitions");
 
     actorSchedulingService.submitActor(topologyManager);
+    healthCheckService.registerPartitionManager(this);
 
     final var featureFlags = brokerCfg.getExperimental().getFeatures().toFeatureFlags();
     final var partitionFactory =
@@ -154,8 +155,6 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
                           LOGGER.error("Failed to start partition", error);
                           return null;
                         }));
-
-    healthCheckService.registerPartitionManager(this);
 
     return CompletableFuture.completedFuture(null);
   }
