@@ -36,8 +36,9 @@ public interface ProcessState {
   int getLatestProcessVersion(String bpmnProcessId);
 
   /**
-   * Gets the next version a process of a given id will get. This is used, for example, when a new
-   * deployment is done. Using this method we decide the version the newly deployed process gets.
+   * Gets the next version a process of a given id will receive. This is used, for example, when a
+   * new deployment is done. Using this method we decide the version the newly deployed process
+   * receives.
    *
    * @param bpmnProcessId the id of the process
    */

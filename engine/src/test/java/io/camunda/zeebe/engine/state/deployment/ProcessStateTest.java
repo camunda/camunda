@@ -134,7 +134,6 @@ public final class ProcessStateTest {
     processState.putProcess(processRecord.getKey(), processRecord);
 
     final var processRecord2 = creatingProcessRecord(processingState);
-    processState.putProcess(processRecord2.getKey(), processRecord2);
 
     // when
     processState.putProcess(processRecord2.getKey(), processRecord2);
@@ -142,6 +141,20 @@ public final class ProcessStateTest {
     // then
     final long processVersion = processState.getNextProcessVersion("processId");
     assertThat(processVersion).isEqualTo(3L);
+  }
+
+  @Test
+  public void shouldNotIncrementOnNextProcessVersionOnDuplicate() {
+    // given
+    final var processRecord = creatingProcessRecord(processingState);
+    processState.putProcess(processRecord.getKey(), processRecord);
+
+    // when
+    processState.putProcess(processRecord.getKey(), processRecord);
+
+    // then
+    final long processVersion = processState.getNextProcessVersion("processId");
+    assertThat(processVersion).isEqualTo(2L);
   }
 
   @Test
