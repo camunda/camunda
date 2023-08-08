@@ -11,6 +11,7 @@ import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.state.deployment.DbDecisionState;
 import io.camunda.zeebe.engine.state.deployment.DbDeploymentState;
 import io.camunda.zeebe.engine.state.deployment.DbProcessState;
@@ -86,7 +87,8 @@ public class ProcessingDbState implements MutableProcessingState {
       final TransactionContext transactionContext,
       final KeyGenerator keyGenerator,
       final TransientPendingSubscriptionState transientMessageSubscriptionState,
-      final TransientPendingSubscriptionState transientProcessMessageSubscriptionState) {
+      final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
+      final EngineConfiguration config) {
     this.partitionId = partitionId;
     this.zeebeDb = zeebeDb;
     this.keyGenerator = Objects.requireNonNull(keyGenerator);
@@ -110,7 +112,7 @@ public class ProcessingDbState implements MutableProcessingState {
             zeebeDb, transactionContext, transientProcessMessageSubscriptionState);
     incidentState = new DbIncidentState(zeebeDb, transactionContext, partitionId);
     bannedInstanceState = new DbBannedInstanceState(zeebeDb, transactionContext, partitionId);
-    decisionState = new DbDecisionState(zeebeDb, transactionContext);
+    decisionState = new DbDecisionState(zeebeDb, transactionContext, config);
     signalSubscriptionState = new DbSignalSubscriptionState(zeebeDb, transactionContext);
     distributionState = new DbDistributionState(zeebeDb, transactionContext);
 
