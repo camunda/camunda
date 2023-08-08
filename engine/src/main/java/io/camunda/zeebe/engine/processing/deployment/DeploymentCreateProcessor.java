@@ -24,6 +24,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.immutable.DecisionState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.TimerInstanceState;
@@ -47,6 +48,7 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
 
   private final DeploymentTransformer deploymentTransformer;
   private final ProcessState processState;
+  private final DecisionState decisionState;
   private final TimerInstanceState timerInstanceState;
   private final CatchEventBehavior catchEventBehavior;
   private final KeyGenerator keyGenerator;
@@ -66,6 +68,7 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
       final KeyGenerator keyGenerator,
       final FeatureFlags featureFlags) {
     processState = processingState.getProcessState();
+    decisionState = processingState.getDecisionState();
     timerInstanceState = processingState.getTimerState();
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
@@ -120,7 +123,12 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
   public ProcessingError tryHandleError(
       final TypedRecord<DeploymentRecord> command, final Throwable error) {
     // Make sure the cache does not contain any leftovers from this run (by hard resetting)
-    processState.clearCache();
+    if (command.getValue().hasBpmnResources()) {
+      processState.clearCache();
+    }
+    if (command.getValue().hasDmnResources()) {
+      decisionState.clearCache();
+    }
 
     if (error instanceof ResourceTransformationFailedException exception) {
       rejectionWriter.appendRejection(

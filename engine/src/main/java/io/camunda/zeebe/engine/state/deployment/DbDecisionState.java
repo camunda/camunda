@@ -199,6 +199,11 @@ public final class DbDecisionState implements MutableDecisionState {
     return decisions;
   }
 
+  @Override
+  public void clearCache() {
+    drgCache.invalidateAll();
+  }
+
   private DeployedDrg findAndParseDecisionRequirementsByKeyFromDb(
       final long decisionRequirementsKey) throws DrgNotFoundException {
     dbDecisionRequirementsKey.wrapLong(decisionRequirementsKey);
