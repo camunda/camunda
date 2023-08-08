@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.state.query;
 
 import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.state.ProcessingDbState;
 import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
@@ -73,7 +74,8 @@ public final class StateQueryService implements QueryService {
               zeebeDb.createContext(),
               () -> {
                 throw new UnsupportedOperationException("Not allowed to generate a new key");
-              });
+              },
+              new EngineConfiguration());
     }
   }
 }
