@@ -52,10 +52,6 @@ public interface ProcessInstanceResult {
    */
   <T> T getVariablesAsType(Class<T> variableType);
 
-  /** Tenant identifier that owns this process instance */
-  @ExperimentalApi("https://github.com/camunda/zeebe/issues/13321")
-  String getTenantId();
-
   /**
    * Variable returned by name after the process is completed.
    *
@@ -63,4 +59,8 @@ public interface ProcessInstanceResult {
    * @return de-serialized variable value
    */
   Object getVariable(String name);
+
+  /** Tenant identifier that owns this process instance */
+  @ExperimentalApi("https://github.com/camunda/zeebe/issues/13321")
+  String getTenantId();
 }

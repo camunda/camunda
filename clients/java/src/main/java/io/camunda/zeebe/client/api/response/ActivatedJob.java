@@ -98,6 +98,11 @@ public interface ActivatedJob {
   <T> T getVariablesAsType(Class<T> variableType);
 
   /**
+   * @return de-serialized variable value
+   */
+  Object getVariable(String name);
+
+  /**
    * @return the record encoded as JSON
    */
   String toJson();
@@ -107,12 +112,4 @@ public interface ActivatedJob {
    */
   @ExperimentalApi("https://github.com/camunda/zeebe/issues/13560")
   String getTenantId();
-
-  /**
-   * Variable returned by name after the process is completed.
-   *
-   * @param name the name of the variable
-   * @return de-serialized variable value
-   */
-  Object getVariable(String name);
 }
