@@ -75,6 +75,16 @@ public final class JobStreamServiceAssert
   }
 
   /**
+   * Asserts that the given service does not contain any streams for the given stream type.
+   *
+   * @param streamType the expected job type of the streams
+   * @return itself for chaining
+   */
+  public JobStreamServiceAssert doesNotHaveStreamWithType(final String streamType) {
+    return doesNotHaveStreamMatching(hasStreamType(streamType));
+  }
+
+  /**
    * Asserts that the given service contains exactly {@code expectedCount} streams which all match
    * the same condition.
    *

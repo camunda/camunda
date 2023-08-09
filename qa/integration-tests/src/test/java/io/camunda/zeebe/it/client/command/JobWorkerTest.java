@@ -173,6 +173,33 @@ final class JobWorkerTest {
     }
   }
 
+  @Test
+  void shouldRecreateStreamOnGatewayRestart() {
+    // given
+    final var jobHandler = new RecordingJobHandler();
+    final var builder =
+        client.getClient().newWorker().jobType(jobType).handler(jobHandler).enableStreaming();
+
+    // when
+    try (final var ignored = builder.open()) {
+      awaitStreamRegistered(jobType);
+      // have to reuse the same gateway config, otherwise we need to recreate the client to point to
+      // the new gateway, which sort of negates the point of this test
+      final var gatewayConfig = CLUSTER.stopGateway();
+      // avoid flakiness by awaiting it gets removed properly; this may be removed once the
+      // following issue is finished: https://github.com/camunda/zeebe/issues/13389
+      awaitStreamRemoved(jobType);
+      CLUSTER.startGateway(gatewayConfig);
+      // need to stream being registered, as otherwise the job will be polled, not streamed
+      awaitStreamRegistered(jobType);
+      client.createSingleJob(jobType, b -> {});
+
+      // then - expect job to be activated
+      Awaitility.await("until all jobs are activated")
+          .untilAsserted(() -> assertThat(jobHandler.getHandledJobs()).hasSize(1));
+    }
+  }
+
   private static Stream<Named<BiFunction<String, JobWorkerBuilderStep3, JobWorker>>>
       provideWorkerConfigurators() {
     return Stream.of(
@@ -193,5 +220,14 @@ final class JobWorkerTest {
         .untilAsserted(
             () ->
                 JobStreamServiceAssert.assertThat(jobStreamService).hasStreamWithType(1, jobType));
+  }
+
+  private void awaitStreamRemoved(final String jobType) {
+    final var jobStreamService = CLUSTER.getBrokerBridge(0).getJobStreamService().orElseThrow();
+    Awaitility.await("until no streams are registered")
+        .untilAsserted(
+            () ->
+                JobStreamServiceAssert.assertThat(jobStreamService)
+                    .doesNotHaveStreamWithType(jobType));
   }
 }
