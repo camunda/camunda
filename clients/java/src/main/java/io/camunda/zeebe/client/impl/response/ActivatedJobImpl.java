@@ -17,7 +17,7 @@ package io.camunda.zeebe.client.impl.response;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.client.api.JsonMapper;
-import io.camunda.zeebe.client.api.command.InternalClientException;
+import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import java.util.HashMap;
@@ -148,7 +148,7 @@ public final class ActivatedJobImpl implements ActivatedJob {
   public Object getVariable(final String name) {
     final Map<String, Object> variables = getVariablesAsMap();
     if (!variables.containsKey(name)) {
-      throw new InternalClientException(String.format("The variable %s is not available", name));
+      throw new ClientException(String.format("The variable %s is not available", name));
     }
     return getVariablesAsMap().get(name);
   }
