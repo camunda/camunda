@@ -9,21 +9,26 @@ package io.camunda.zeebe.it.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.gateway.metrics.LongPollingMetrics;
 import io.camunda.zeebe.it.clustering.ClusteringRuleExtension;
+import io.camunda.zeebe.qa.util.JobStreamServiceAssert;
 import java.time.Duration;
+import java.util.UUID;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 final class ClientCancelPendingCommandTest {
   @RegisterExtension
-  final ClusteringRuleExtension cluster = new ClusteringRuleExtension(1, 1, 1, cfg -> {});
+  private static final ClusteringRuleExtension CLUSTER =
+      new ClusteringRuleExtension(1, 1, 1, cfg -> {});
+
+  private final ZeebeClient client = CLUSTER.getClient();
 
   @Test
   void shouldCancelCommandOnFutureCancellation() {
     // given
-    final var client = cluster.getClient();
     final var future =
         client
             .newActivateJobsCommand()
@@ -42,5 +47,47 @@ final class ClientCancelPendingCommandTest {
     // then
     Awaitility.await("until no long polling clients are waiting")
         .untilAsserted(() -> assertThat(metrics.getBlockedRequestsCount("type")).isZero());
+  }
+
+  @Test
+  void shouldRemoveStreamOnCancel() {
+    // given
+    final var uniqueWorkerName = UUID.randomUUID().toString();
+    final var stream =
+        client
+            .newStreamJobsCommand()
+            .jobType("jobs")
+            .consumer(ignored -> {})
+            .workerName(uniqueWorkerName)
+            .send();
+
+    // when
+    awaitStreamRegistered(uniqueWorkerName);
+    stream.cancel(true);
+
+    // then
+    awaitStreamRemoved(uniqueWorkerName);
+  }
+
+  private void awaitStreamRegistered(final String workerName) {
+    final var brokerBridge = CLUSTER.getBrokerBridge(0);
+    final var jobStreamService = brokerBridge.getJobStreamService().orElseThrow();
+
+    Awaitility.await("until a stream with the worker name '%s' is registered".formatted(workerName))
+        .untilAsserted(
+            () ->
+                JobStreamServiceAssert.assertThat(jobStreamService)
+                    .hasStreamWithWorker(1, workerName));
+  }
+
+  private void awaitStreamRemoved(final String workerName) {
+    final var brokerBridge = CLUSTER.getBrokerBridge(0);
+    final var jobStreamService = brokerBridge.getJobStreamService().orElseThrow();
+
+    Awaitility.await("until no stream with worker name '%s' is registered".formatted(workerName))
+        .untilAsserted(
+            () ->
+                JobStreamServiceAssert.assertThat(jobStreamService)
+                    .doesNotHaveStreamWithWorker(workerName));
   }
 }
