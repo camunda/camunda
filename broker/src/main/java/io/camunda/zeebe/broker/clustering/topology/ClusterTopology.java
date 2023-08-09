@@ -17,6 +17,13 @@ import java.util.stream.Stream;
 /**
  * Represents the cluster topology which describes the current active, joining or leaving brokers
  * and the partitions that each broker replicates.
+ *
+ * <p>version - represents the current version of the topology. It is incremented when new
+ * configuration change is triggered.
+ *
+ * <p>members - represents the state of each members
+ *
+ * <p>changes - keeps track of the ongoing configuration changes
  */
 public record ClusterTopology(
     long version, Map<MemberId, MemberState> members, ClusterChangePlan changes) {
@@ -53,14 +60,28 @@ public record ClusterTopology(
     return new ClusterTopology(version, newMembers, changes);
   }
 
+  /**
+   * Returns a new ClusterTopology after merging this and other. This doesn't overwrite this or
+   * other. If this.version == other.version then the new ClusterTopology contains merged members
+   * and changes. Otherwise, it returns the one with highest version.
+   *
+   * @param other ClusterTopology to merge
+   * @return merged ClusterTopology
+   */
   ClusterTopology merge(final ClusterTopology other) {
-    final var newVersion = Math.max(version, other.version);
-    final var mergedMembers =
-        Stream.concat(members.entrySet().stream(), other.members().entrySet().stream())
-            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, MemberState::merge));
+    if (version > other.version) {
+      return this;
+    } else if (other.version > version) {
+      return other;
+    } else {
+      final var mergedMembers =
+          Stream.concat(members.entrySet().stream(), other.members().entrySet().stream())
+              .collect(
+                  Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, MemberState::merge));
 
-    // TODO: changes also have to be merged. We will do it when we add support for configuration
-    // changes.
-    return new ClusterTopology(newVersion, ImmutableMap.copyOf(mergedMembers), changes);
+      // TODO: changes also have to be merged. We will do it when we add support for configuration
+      // changes.
+      return new ClusterTopology(version, ImmutableMap.copyOf(mergedMembers), changes);
+    }
   }
 }

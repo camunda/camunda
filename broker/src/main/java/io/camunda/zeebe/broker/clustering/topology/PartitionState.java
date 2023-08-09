@@ -17,6 +17,10 @@ record PartitionState(State state, int priority) {
   }
 
   PartitionState toActive() {
+    if (state == State.LEAVING) {
+      throw new IllegalStateException(
+          String.format("Cannot transition to ACTIVE when current state is %s", state));
+    }
     return new PartitionState(State.ACTIVE, priority);
   }
 

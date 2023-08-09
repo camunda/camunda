@@ -14,7 +14,7 @@ import java.util.function.UnaryOperator;
 
 record MemberState(long version, State state, Map<Integer, PartitionState> partitions) {
   static MemberState initializeAsActive(final Map<Integer, PartitionState> initialPartitions) {
-    return new MemberState(0, State.ACTIVE, initialPartitions);
+    return new MemberState(0, State.ACTIVE, Map.copyOf(initialPartitions));
   }
 
   static MemberState uninitialized() {
@@ -22,14 +22,26 @@ record MemberState(long version, State state, Map<Integer, PartitionState> parti
   }
 
   MemberState toJoining() {
+    if (state == State.LEAVING) {
+      throw new IllegalStateException(
+          String.format("Cannot transition to JOINING when current state is %s", state));
+    }
     return update(State.JOINING, partitions);
   }
 
   MemberState toActive() {
+    if (state == State.LEFT || state == State.LEAVING) {
+      throw new IllegalStateException(
+          String.format("Cannot transition to ACTIVE when current state is %s", state));
+    }
     return update(State.ACTIVE, partitions);
   }
 
   MemberState toLeaving() {
+    if (state == State.LEFT) {
+      throw new IllegalStateException(
+          String.format("Cannot transition to LEAVING when current state is %s", state));
+    }
     return update(State.LEAVING, partitions);
   }
 
@@ -69,9 +81,22 @@ record MemberState(long version, State state, Map<Integer, PartitionState> parti
     return update(state, updatedPartitions);
   }
 
+  /**
+   * Returns a new MemberState after merging this and other. This doesn't overwrite this or other.
+   *
+   * @param other MemberState to merge
+   * @return merged MemberState
+   */
   MemberState merge(final MemberState other) {
     if (other == null) {
       return this;
+    }
+
+    if (version == other.version && !equals(other)) {
+      throw new IllegalStateException(
+          String.format(
+              "Expected to find same MemberState at same version, but found %s and %s",
+              this, other));
     }
     // Choose the one with the highest version. MemberState is always updated by a member by itself.
     // It is guaranteed that the highest version number is the latest state.
