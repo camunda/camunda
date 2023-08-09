@@ -39,6 +39,9 @@ outputs:
   version:
     description: "The semantic version of the packaged artifact"
     value: ${{ steps.get-version.outputs.result }}
+  digest:
+    description: "digest of the docker image"
+    value: ${{ steps.build-action.outputs.digest }}
 
 runs:
   using: composite
@@ -76,6 +79,7 @@ runs:
       run: echo "result=$(realpath --relative-to="${PWD}" ${{ inputs.distball }})" >> $GITHUB_OUTPUT
     - name: Build Docker image
       uses: docker/build-push-action@v3
+      id: build-action
       with:
         context: .
         tags: ${{ steps.get-image.outputs.result }}

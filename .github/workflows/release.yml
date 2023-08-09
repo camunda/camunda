@@ -285,6 +285,8 @@ jobs:
         with:
           username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
           password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3.1.1
       - name: Download Zeebe Release Artifacts
         uses: actions/download-artifact@v3
         with:
@@ -317,6 +319,10 @@ jobs:
             --tag ${{ env.DOCKER_IMAGE }}:${{ env.RELEASE_VERSION }} \
             ${{ inputs.isLatest && format('--tag {0}:latest', env.DOCKER_IMAGE) || '' }} \
             ${{ steps.build-docker.outputs.image }}
+      - name: Sign docker image with github OIDC token
+        if: ${{ inputs.dryRun == false }}
+        run: |
+          cosign sign --yes ${{ env.DOCKER_IMAGE }}:${{ env.RELEASE_VERSION }}@${{ steps.build-docker.outputs.digest }}
   snyk:
     name: Snyk Monitor
     needs: [ docker, release ]
