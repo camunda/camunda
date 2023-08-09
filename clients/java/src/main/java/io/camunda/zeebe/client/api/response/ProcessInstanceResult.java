@@ -56,7 +56,8 @@ public interface ProcessInstanceResult {
    * Variable returned by name after the process is completed.
    *
    * @param name the name of the variable
-   * @return de-serialized variable value
+   * @return de-serialized variable value or null if the provided variable name is present among the
+   * available variables, otherwise throw a {@link io.camunda.zeebe.client.api.command.ClientException}
    */
   Object getVariable(String name);
 
