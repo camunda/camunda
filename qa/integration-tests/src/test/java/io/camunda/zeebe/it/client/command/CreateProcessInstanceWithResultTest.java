@@ -26,8 +26,10 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.collection.Maps;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.apache.commons.collections4.map.HashedMap;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -404,6 +406,25 @@ public final class CreateProcessInstanceWithResultTest {
 
     assertThat(result.getVariable("foo")).isEqualTo("bar");
     assertThat(result.getVariable("key")).isEqualTo("value");
+  }
+
+  @Test
+  public void shouldCreateProcessInstanceAndGetSingleVariableWithNullValue() {
+    final Map<String, Object> variables = new HashMap<>();
+    variables.put("key", null);
+    final ProcessInstanceResult result = createProcessInstanceWithVariables(variables).join();
+
+    assertThat(result.getVariable("key")).isNull();
+  }
+
+  @Test
+  public void shouldCreateProcessInstanceAndThrowAnErrorIfVariableIsNotPresent() {
+    final Map<String, Object> variables = new HashMap<>();
+    variables.put("key", "value");
+    final ProcessInstanceResult result = createProcessInstanceWithVariables(variables).join();
+
+    assertThatThrownBy(() -> result.getVariable("notPresentKey"))
+        .isInstanceOf(ClientException.class);
   }
 
   private ZeebeFuture<ProcessInstanceResult> createProcessInstanceWithVariables(
