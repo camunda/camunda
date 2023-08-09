@@ -113,6 +113,12 @@ final class JobStreamerImpl implements JobStreamer {
       return;
     }
 
+    if (isClosed) {
+      LOGGER.trace(
+          "Skip opening stream '{}' for worker '{}' because it's closed", jobType, workerName);
+      return;
+    }
+
     try {
       this.command = command;
       lockedOpen();
@@ -155,6 +161,7 @@ final class JobStreamerImpl implements JobStreamer {
 
   @GuardedBy("streamLock")
   private void lockedClose() {
+    LOGGER.debug("Closing job stream for type '{}' and worker '{}", jobType, workerName);
     isClosed = true;
     if (streamControl != null) {
       streamControl.cancel(true);
@@ -171,17 +178,26 @@ final class JobStreamerImpl implements JobStreamer {
     final ZeebeFuture<StreamJobsResponse> control = command.send();
     control.whenCompleteAsync((ignored, error) -> handleStreamComplete(error), executor);
     streamControl = control;
+    LOGGER.debug("Opened job stream of type '{}' for worker '{}'", jobType, workerName);
   }
 
   @GuardedBy("streamLock")
   private void lockedHandleStreamComplete(final Throwable error) {
     if (isClosed) {
+      LOGGER.trace("Skip re-opening job stream of type '{}' for worker '{}'", jobType, workerName);
       return;
     }
 
     if (error != null) {
       logStreamError(error);
       retryDelay = backoffSupplier.supplyRetryDelay(retryDelay);
+      LOGGER
+          .atDebug()
+          .addArgument(jobType)
+          .addArgument(workerName)
+          .addArgument(() -> Duration.ofMillis(retryDelay))
+          .setMessage("Recreating closed stream of type '{}' and worker '{}' in {}")
+          .log();
       executor.schedule(() -> open(command), retryDelay, TimeUnit.MILLISECONDS);
     }
   }
