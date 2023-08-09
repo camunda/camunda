@@ -113,6 +113,8 @@ camunda-platform:
         effect: "NoSchedule"
 
   zeebe:
+    podSecurityContext:
+      fsGroup: 1000
     # Defines the size of the zeebe cluster.
     clusterSize: 1
     fullnameOverride: zeebe
