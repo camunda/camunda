@@ -29,6 +29,14 @@ final class LogCompactorTest {
   void beforeEach() {
     threadContext = Mockito.mock(ThreadContext.class);
     raftLog = Mockito.mock(RaftLog.class);
+    // immediately run anything to be executed
+    Mockito.doAnswer(
+            i -> {
+              i.getArgument(0, Runnable.class).run();
+              return null;
+            })
+        .when(threadContext)
+        .execute(Mockito.any());
 
     compactor =
         new LogCompactor(
