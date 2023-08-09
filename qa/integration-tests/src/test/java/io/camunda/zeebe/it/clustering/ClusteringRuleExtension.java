@@ -80,8 +80,8 @@ public class ClusteringRuleExtension extends ClusteringRule
   }
 
   private void teardown() throws IOException {
-    FileUtil.deleteFolderIfExists(tempDir);
     super.after();
+    FileUtil.deleteFolderIfExists(tempDir);
   }
 
   @Override

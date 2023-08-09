@@ -72,18 +72,22 @@ final class ClientCancelPendingCommandTest {
   private void awaitStreamRegistered(final String workerName) {
     final var brokerBridge = CLUSTER.getBrokerBridge(0);
     final var jobStreamService = brokerBridge.getJobStreamService().orElseThrow();
-    final var assertions = JobStreamServiceAssert.assertThat(jobStreamService);
 
     Awaitility.await("until a stream with the worker name '%s' is registered".formatted(workerName))
-        .untilAsserted(() -> assertions.hasStreamWithWorker(1, workerName));
+        .untilAsserted(
+            () ->
+                JobStreamServiceAssert.assertThat(jobStreamService)
+                    .hasStreamWithWorker(1, workerName));
   }
 
   private void awaitStreamRemoved(final String workerName) {
     final var brokerBridge = CLUSTER.getBrokerBridge(0);
     final var jobStreamService = brokerBridge.getJobStreamService().orElseThrow();
-    final var assertions = JobStreamServiceAssert.assertThat(jobStreamService);
 
     Awaitility.await("until no stream with worker name '%s' is registered".formatted(workerName))
-        .untilAsserted(() -> assertions.doesNotHaveStreamWithWorker(workerName));
+        .untilAsserted(
+            () ->
+                JobStreamServiceAssert.assertThat(jobStreamService)
+                    .doesNotHaveStreamWithWorker(workerName));
   }
 }

@@ -170,10 +170,11 @@ final class StreamJobsTest {
   private void awaitStreamRegistered(final String jobType) {
     final var brokerBridge = CLUSTER.getBrokerBridge(0);
     final var jobStreamService = brokerBridge.getJobStreamService().orElseThrow();
-    final var assertion = JobStreamServiceAssert.assertThat(jobStreamService);
 
     Awaitility.await("until stream with type '%s' is registered".formatted(jobType))
-        .untilAsserted(() -> assertion.hasStreamWithType(1, jobType));
+        .untilAsserted(
+            () ->
+                JobStreamServiceAssert.assertThat(jobStreamService).hasStreamWithType(1, jobType));
   }
 
   private long createProcessInstance(final String processId) {
