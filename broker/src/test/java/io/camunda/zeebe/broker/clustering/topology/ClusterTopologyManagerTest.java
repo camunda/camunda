@@ -9,16 +9,19 @@ package io.camunda.zeebe.broker.clustering.topology;
 
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
+import java.nio.file.Path;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 final class ClusterTopologyManagerTest {
 
   @Test
-  void shouldInitializeClusterTopologyFromBrokerCfg() {
+  void shouldInitializeClusterTopologyFromBrokerCfg(@TempDir final Path topologyFile) {
     // given
     final ClusterTopologyManager clusterTopologyManager =
-        new ClusterTopologyManager(new TestConcurrencyControl(), new PersistedClusterTopology());
+        new ClusterTopologyManager(
+            new TestConcurrencyControl(), new PersistedClusterTopology(topologyFile));
     final BrokerCfg brokerCfg = new BrokerCfg();
     brokerCfg.getCluster().setClusterSize(3);
     brokerCfg.getCluster().setPartitionsCount(3);

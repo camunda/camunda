@@ -12,6 +12,7 @@ import io.camunda.zeebe.broker.partitioning.topology.StaticPartitionDistribution
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import java.io.IOException;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
@@ -52,7 +53,7 @@ final class ClusterTopologyManager {
     return startFuture;
   }
 
-  private void initialize(final BrokerCfg brokerCfg) {
+  private void initialize(final BrokerCfg brokerCfg) throws IOException {
     persistedClusterTopology.initialize();
     if (persistedClusterTopology.getTopology() == null) {
       final var topology = initializeFromConfig(brokerCfg);
@@ -62,7 +63,7 @@ final class ClusterTopologyManager {
     }
   }
 
-  private ClusterTopology initializeFromConfig(final BrokerCfg brokerCfg) {
+  private ClusterTopology initializeFromConfig(final BrokerCfg brokerCfg) throws IOException {
     final var partitionDistribution =
         new StaticPartitionDistributionResolver()
             .resolveTopology(brokerCfg.getExperimental().getPartitioning(), brokerCfg.getCluster());
@@ -96,7 +97,7 @@ final class ClusterTopologyManager {
     return topology;
   }
 
-  private void updateLocalTopology(final ClusterTopology topology) {
+  private void updateLocalTopology(final ClusterTopology topology) throws IOException {
     persistedClusterTopology.update(topology);
   }
 }

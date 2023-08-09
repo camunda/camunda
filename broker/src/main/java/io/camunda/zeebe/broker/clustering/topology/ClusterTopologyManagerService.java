@@ -12,13 +12,15 @@ import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import java.nio.file.Path;
 
 public final class ClusterTopologyManagerService extends Actor {
 
   private final ClusterTopologyManager clusterTopologyManager;
 
-  public ClusterTopologyManagerService() {
-    clusterTopologyManager = new ClusterTopologyManager(this, new PersistedClusterTopology());
+  public ClusterTopologyManagerService(final Path topologyFile) {
+    clusterTopologyManager =
+        new ClusterTopologyManager(this, new PersistedClusterTopology(topologyFile));
   }
 
   /**
