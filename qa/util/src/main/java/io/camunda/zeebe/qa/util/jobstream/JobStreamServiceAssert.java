@@ -5,15 +5,17 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.qa.util;
+package io.camunda.zeebe.qa.util.jobstream;
 
 import io.camunda.zeebe.broker.jobstream.JobStreamService;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamInfo;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.Arrays;
 import org.assertj.core.api.AbstractObjectAssert;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.Condition;
+import org.assertj.core.condition.AllOf;
 import org.assertj.core.condition.VerboseCondition;
 
 /**
@@ -50,6 +52,22 @@ public final class JobStreamServiceAssert
    */
   public JobStreamServiceAssert hasStreamWithType(final int expectedCount, final String jobType) {
     return hasStreamMatchingCount(expectedCount, hasStreamType(jobType));
+  }
+
+  /**
+   * Asserts that the given service contains exactly {@code expectedCount} streams for the given job
+   * type, and each stream has the expected consumer count.
+   *
+   * @param expectedCount the exact count of streams to find
+   * @param jobType the expected type of the streams
+   * @param expectedConsumerCount the number of consumers each stream should have
+   * @return itself for chaining
+   */
+  public JobStreamServiceAssert hasStreamWithType(
+      final int expectedCount, final String jobType, final int expectedConsumerCount) {
+    return hasStreamMatchingCount(
+        expectedCount,
+        AllOf.allOf(hasStreamType(jobType), hasConsumerCount(expectedConsumerCount)));
   }
 
   /**
@@ -149,6 +167,42 @@ public final class JobStreamServiceAssert
         stream ->
             " but actual worker is '%s'"
                 .formatted(BufferUtil.bufferAsString(stream.metadata().worker())));
+  }
+
+  /** Returns a condition which checks that a stream has the expected amount of consumers. */
+  public static Condition<RemoteStreamInfo<JobActivationProperties>> hasConsumerCount(
+      final int count) {
+    return VerboseCondition.verboseCondition(
+        stream -> stream.consumers().size() == count,
+        "a stream with '%d' consumers".formatted(count),
+        stream -> " but actual consumers are '%s'".formatted(stream.consumers()));
+  }
+
+  /** Returns a condition which checks that a stream has the given timeout in milliseconds. */
+  public static Condition<RemoteStreamInfo<JobActivationProperties>> hasTimeout(
+      final long timeoutMillis) {
+    return VerboseCondition.verboseCondition(
+        stream -> stream.metadata().timeout() == timeoutMillis,
+        "a stream with timeout '%dms'".formatted(timeoutMillis),
+        stream -> " but actual timeout is '%dms'".formatted(stream.metadata().timeout()));
+  }
+
+  /** Returns a condition which checks that a stream has the given timeout in milliseconds. */
+  public static Condition<RemoteStreamInfo<JobActivationProperties>> hasFetchVariables(
+      final String... variables) {
+    //noinspection DuplicatedCode
+    final var expectedVariables = Arrays.stream(variables).map(BufferUtil::wrapString).toList();
+    return VerboseCondition.verboseCondition(
+        stream ->
+            stream.metadata().fetchVariables().containsAll(expectedVariables)
+                && stream.metadata().fetchVariables().size() == expectedVariables.size(),
+        "a stream with fetch variables %s".formatted(Arrays.toString(variables)),
+        stream ->
+            " but actual variables is %s"
+                .formatted(
+                    stream.metadata().fetchVariables().stream()
+                        .map(BufferUtil::bufferAsString)
+                        .toList()));
   }
 
   private String descriptionOrDefault(final String description, final Object... args) {

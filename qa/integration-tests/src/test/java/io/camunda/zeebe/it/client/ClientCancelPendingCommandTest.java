@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.gateway.metrics.LongPollingMetrics;
 import io.camunda.zeebe.it.clustering.ClusteringRuleExtension;
-import io.camunda.zeebe.qa.util.JobStreamServiceAssert;
+import io.camunda.zeebe.qa.util.jobstream.JobStreamServiceAssert;
 import java.time.Duration;
 import java.util.UUID;
 import org.awaitility.Awaitility;
