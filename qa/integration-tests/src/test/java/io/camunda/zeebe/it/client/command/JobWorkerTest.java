@@ -7,43 +7,39 @@
  */
 package io.camunda.zeebe.it.client.command;
 
-import static io.camunda.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.entry;
 
-import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
+import io.camunda.zeebe.it.clustering.ClusteringRuleExtension;
 import io.camunda.zeebe.it.util.GrpcClientRule;
 import io.camunda.zeebe.it.util.RecordingJobHandler;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
-import java.time.Instant;
+import io.camunda.zeebe.test.util.Strings;
 import java.util.List;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import java.util.Map;
+import org.assertj.core.data.Offset;
+import org.awaitility.Awaitility;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
-public final class JobWorkerTest {
+final class JobWorkerTest {
 
-  private static final EmbeddedBrokerRule BROKER_RULE = new EmbeddedBrokerRule();
-  private static final GrpcClientRule CLIENT_RULE = new GrpcClientRule(BROKER_RULE);
+  @SuppressWarnings("JUnitMalformedDeclaration")
+  @RegisterExtension
+  private static final ClusteringRuleExtension CLUSTER = new ClusteringRuleExtension(1, 1, 1);
 
-  @ClassRule
-  public static RuleChain ruleChain = RuleChain.outerRule(BROKER_RULE).around(CLIENT_RULE);
+  private static GrpcClientRule client;
 
-  @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
+  private final String jobType = Strings.newRandomValidBpmnId();
 
-  private String jobType;
-
-  @Before
-  public void init() {
-    jobType = helper.getJobType();
+  @BeforeAll
+  static void beforeAll() {
+    client = new GrpcClientRule(CLUSTER.getClient());
   }
 
   @Test
-  public void shouldActivateJob() {
+  void shouldActivateJob() {
     // given
     final var process =
         Bpmn.createExecutableProcess("process")
@@ -56,54 +52,64 @@ public final class JobWorkerTest {
                         .zeebeTaskHeader("x", "1")
                         .zeebeTaskHeader("y", "2"))
             .done();
-    final var processDefinitionKey = CLIENT_RULE.deployProcess(process);
-
+    final var processDefinitionKey = client.deployProcess(process);
     final var processInstanceKey =
-        CLIENT_RULE.createProcessInstance(processDefinitionKey, "{\"a\":1, \"b\":2}");
+        client.createProcessInstance(processDefinitionKey, "{\"a\":1, \"b\":2}");
 
     // when
-    final RecordingJobHandler jobHandler = new RecordingJobHandler();
-    CLIENT_RULE.getClient().newWorker().jobType(jobType).handler(jobHandler).name("test").open();
-
-    waitUntil(() -> jobHandler.getHandledJobs().size() >= 1);
+    final var jobHandler = new RecordingJobHandler();
+    final var startTime = System.currentTimeMillis();
+    final var builder =
+        client
+            .getClient()
+            .newWorker()
+            .jobType(jobType)
+            .handler(jobHandler)
+            .name("test")
+            .timeout(5000);
+    try (final var ignored = builder.open()) {
+      Awaitility.await("until all jobs are activated")
+          .untilAsserted(() -> assertThat(jobHandler.getHandledJobs()).hasSize(1));
+    }
 
     // then
-    final ActivatedJob job = jobHandler.getHandledJobs().get(0);
-
+    final var job = jobHandler.getHandledJobs().get(0);
     assertThat(job.getType()).isEqualTo(jobType);
     assertThat(job.getRetries()).isEqualTo(5);
-    assertThat(job.getDeadline()).isGreaterThan(Instant.now().toEpochMilli());
+    assertThat(job.getDeadline()).isCloseTo(startTime + 5000, Offset.offset(500L));
     assertThat(job.getWorker()).isEqualTo("test");
     assertThat(job.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
     assertThat(job.getBpmnProcessId()).isEqualTo("process");
     assertThat(job.getProcessInstanceKey()).isEqualTo(processInstanceKey);
     assertThat(job.getElementId()).isEqualTo("task");
-    assertThat(job.getCustomHeaders()).containsExactly(entry("x", "1"), entry("y", "2"));
-    assertThat(job.getVariablesAsMap()).containsExactly(entry("a", 1), entry("b", 2));
+    assertThat(job.getCustomHeaders()).isEqualTo(Map.of("x", "1", "y", "2"));
+    assertThat(job.getVariablesAsMap()).isEqualTo(Map.of("a", 1, "b", 2));
   }
 
   @Test
-  public void shouldActivateJobsOfDifferentTypes() {
+  void shouldActivateJobsOfDifferentTypes() {
     // given
-    final long jobX = CLIENT_RULE.createSingleJob(jobType + "x");
-    final long jobY = CLIENT_RULE.createSingleJob(jobType + "y");
+    final var jobX = client.createSingleJob(jobType + "x");
+    final var jobY = client.createSingleJob(jobType + "y");
+    final var jobHandlerX = new RecordingJobHandler();
+    final var jobHandlerY = new RecordingJobHandler();
+    final var builderX = client.getClient().newWorker().jobType(jobType + "x").handler(jobHandlerX);
+    final var builderY = client.getClient().newWorker().jobType(jobType + "y").handler(jobHandlerY);
 
     // when
-    final RecordingJobHandler jobHandlerX = new RecordingJobHandler();
-    final RecordingJobHandler jobHandlerY = new RecordingJobHandler();
-
-    CLIENT_RULE.getClient().newWorker().jobType(jobType + "x").handler(jobHandlerX).open();
-    CLIENT_RULE.getClient().newWorker().jobType(jobType + "y").handler(jobHandlerY).open();
-
-    waitUntil(() -> jobHandlerX.getHandledJobs().size() >= 1);
-    waitUntil(() -> jobHandlerY.getHandledJobs().size() >= 1);
+    try (final var ignoredX = builderX.open();
+        final var ignoredY = builderY.open()) {
+      Awaitility.await("until all jobs are activated")
+          .untilAsserted(() -> assertThat(jobHandlerX.getHandledJobs()).hasSize(1));
+      Awaitility.await("until all jobs are activated")
+          .untilAsserted(() -> assertThat(jobHandlerY.getHandledJobs()).hasSize(1));
+    }
 
     // then
     assertThat(jobHandlerX.getHandledJobs())
         .hasSize(1)
         .extracting(ActivatedJob::getKey)
         .contains(jobX);
-
     assertThat(jobHandlerY.getHandledJobs())
         .hasSize(1)
         .extracting(ActivatedJob::getKey)
@@ -111,26 +117,27 @@ public final class JobWorkerTest {
   }
 
   @Test
-  public void shouldFetchOnlySpecifiedVariables() {
+  void shouldFetchOnlySpecifiedVariables() {
     // given
-    CLIENT_RULE.createSingleJob(jobType, b -> {}, "{\"a\":1, \"b\":2, \"c\":3,\"d\":4}");
+    client.createSingleJob(jobType, b -> {}, "{\"a\":1, \"b\":2, \"c\":3,\"d\":4}");
 
     // when
-    final List<String> fetchVariables = List.of("a", "b");
-
-    final RecordingJobHandler jobHandler = new RecordingJobHandler();
-    CLIENT_RULE
-        .getClient()
-        .newWorker()
-        .jobType(jobType)
-        .handler(jobHandler)
-        .fetchVariables(fetchVariables)
-        .open();
-
-    waitUntil(() -> jobHandler.getHandledJobs().size() >= 1);
+    final var fetchVariables = List.of("a", "b");
+    final var jobHandler = new RecordingJobHandler();
+    final var builder =
+        client
+            .getClient()
+            .newWorker()
+            .jobType(jobType)
+            .handler(jobHandler)
+            .fetchVariables(fetchVariables);
+    try (final var ignored = builder.open()) {
+      Awaitility.await("until all jobs are activated")
+          .untilAsserted(() -> assertThat(jobHandler.getHandledJobs()).hasSize(1));
+    }
 
     // then
     final ActivatedJob job = jobHandler.getHandledJobs().get(0);
-    assertThat(job.getVariablesAsMap().keySet()).containsOnlyElementsOf(fetchVariables);
+    assertThat(job.getVariablesAsMap()).isEqualTo(Map.of("a", 1, "b", 2));
   }
 }
