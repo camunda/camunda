@@ -18,9 +18,13 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.qa.util.JobStreamServiceAssert;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import io.grpc.Status;
+import io.grpc.Status.Code;
+import io.grpc.StatusRuntimeException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.concurrent.Future;
 import java.util.function.Consumer;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.assertj.core.data.Offset;
@@ -165,6 +169,33 @@ final class StreamJobsTest {
         .first(InstanceOfAssertFactories.type(ActivatedJob.class))
         .extracting(ActivatedJob::getProcessInstanceKey)
         .isEqualTo(secondPIKey);
+  }
+
+  @Test
+  void shouldCompleteStreamOnGatewayClose() {
+    // given
+    final var uniqueId = Strings.newRandomValidBpmnId();
+
+    // when
+    final var stream =
+        client
+            .newStreamJobsCommand()
+            .jobType(uniqueId)
+            .consumer(ignored -> {})
+            .workerName("stream")
+            .send();
+    awaitStreamRegistered(uniqueId);
+    CLUSTER.restartGateway();
+
+    // then
+    assertThat((Future<?>) stream)
+        .failsWithin(Duration.ofSeconds(10))
+        .withThrowableThat()
+        .havingCause()
+        .asInstanceOf(InstanceOfAssertFactories.throwable(StatusRuntimeException.class))
+        .extracting(StatusRuntimeException::getStatus)
+        .extracting(Status::getCode)
+        .isEqualTo(Code.CANCELLED);
   }
 
   private void awaitStreamRegistered(final String jobType) {

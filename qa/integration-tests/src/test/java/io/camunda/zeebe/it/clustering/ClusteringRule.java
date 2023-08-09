@@ -48,9 +48,11 @@ import io.camunda.zeebe.gateway.BrokerClientComponent;
 import io.camunda.zeebe.gateway.Gateway;
 import io.camunda.zeebe.gateway.GatewayClusterConfiguration;
 import io.camunda.zeebe.gateway.JobStreamComponent;
+import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
+import io.camunda.zeebe.gateway.impl.stream.JobStreamClient;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.scheduler.ActorScheduler;
@@ -91,6 +93,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.agrona.CloseHelper;
 import org.agrona.LangUtil;
 import org.awaitility.Awaitility;
 import org.junit.Assert;
@@ -128,7 +131,7 @@ public class ClusteringRule extends ExternalResource {
 
   // cluster
   private ZeebeClient client;
-  private Gateway gateway;
+  private GatewayResource gatewayResource;
   private CountDownLatch partitionLatch;
   private final Map<Integer, Leader> partitionLeader;
   private final Map<Integer, SpringBrokerBridge> springBrokerBridge;
@@ -251,8 +254,7 @@ public class ClusteringRule extends ExternalResource {
     final var brokersStarted = startBrokers();
 
     // create gateway
-    gateway = createGateway();
-    gateway.start().join();
+    gatewayResource = createGateway();
 
     // create client
     client = createClient();
@@ -304,6 +306,19 @@ public class ClusteringRule extends ExternalResource {
     brokerCfgs.clear();
     logstreams.clear();
     partitionLeader.clear();
+  }
+
+  private void awaitCompleteTopology() {
+    try {
+      waitForTopology(
+          assertion -> assertion.isComplete(clusterSize, partitionCount, replicationFactor));
+      LOG.info("All brokers in topology {}", getTopologyFromClient());
+
+    } catch (final Exception e) {
+      // If the previous waits timeouts, the brokers are not closed automatically.
+      after();
+      throw new UncheckedExecutionException("Cluster start failed", e);
+    }
   }
 
   public Broker getBroker(final int nodeId) {
@@ -412,7 +427,7 @@ public class ClusteringRule extends ExternalResource {
     return springBrokerBridge.get(nodeId);
   }
 
-  private Gateway createGateway() {
+  private GatewayResource createGateway() {
     final List<String> initialContactPoints =
         brokerCfgs.values().stream()
             .map(
@@ -453,19 +468,18 @@ public class ClusteringRule extends ExternalResource {
     brokerClient.start().forEach(ActorFuture::join);
     brokerClient.getTopologyManager().addTopologyListener(jobStreamClient);
 
-    final Gateway gateway =
+    final var gateway =
         new Gateway(gatewayCfg, brokerClient, actorScheduler, jobStreamClient.streamer());
-    closeables.add(actorScheduler);
-    closeables.add(gateway);
-    closeables.add(() -> atomixCluster.stop().join());
-    closeables.add(jobStreamClient);
-    closeables.add(brokerClient);
-    return gateway;
+    gateway.start().join();
+
+    return new GatewayResource(
+        actorScheduler, atomixCluster, brokerClient, jobStreamClient, gateway);
   }
 
   private ZeebeClient createClient() {
     final String contactPoint =
-        NetUtil.toSocketAddressString(gateway.getGatewayCfg().getNetwork().toSocketAddress());
+        NetUtil.toSocketAddressString(
+            gatewayResource.gateway.getGatewayCfg().getNetwork().toSocketAddress());
     final ZeebeClientBuilder zeebeClientBuilder =
         ZeebeClient.newClientBuilder().gatewayAddress(contactPoint);
 
@@ -544,6 +558,22 @@ public class ClusteringRule extends ExternalResource {
       LOG.error("Failed to restart cluster", e);
       Assert.fail("Failed to restart cluster");
     }
+  }
+
+  public void restartGateway() {
+    if (gatewayResource != null) {
+      gatewayResource.close();
+      gatewayResource = null;
+
+      if (client != null) {
+        client.close();
+        client = null;
+      }
+    }
+
+    gatewayResource = createGateway();
+    client = createClient();
+    awaitCompleteTopology();
   }
 
   /** Returns the list of available brokers in a cluster. */
@@ -701,7 +731,7 @@ public class ClusteringRule extends ExternalResource {
     request.setPartitionId(partitionId);
 
     final BrokerResponse<ProcessInstanceCreationRecord> response =
-        gateway.getBrokerClient().sendRequestWithRetry(request).join();
+        gatewayResource.gateway.getBrokerClient().sendRequestWithRetry(request).join();
 
     if (response.isResponse()) {
       return response.getResponse().getProcessInstanceKey();
@@ -717,11 +747,11 @@ public class ClusteringRule extends ExternalResource {
   }
 
   public InetSocketAddress getGatewayAddress() {
-    return gateway.getGatewayCfg().getNetwork().toSocketAddress();
+    return gatewayResource.gateway.getGatewayCfg().getNetwork().toSocketAddress();
   }
 
   public Gateway getGateway() {
-    return gateway;
+    return gatewayResource.gateway;
   }
 
   public ZeebeClient getClient() {
@@ -918,6 +948,21 @@ public class ClusteringRule extends ExternalResource {
     final var nodeId = otherBrokerObjects.get(0).getConfig().getCluster().getNodeId();
     stopBroker(nodeId);
     return nodeId;
+  }
+
+  private record GatewayResource(
+      ActorScheduler scheduler,
+      AtomixCluster cluster,
+      BrokerClient brokerClient,
+      JobStreamClient jobStreamClient,
+      Gateway gateway)
+      implements AutoCloseable {
+
+    @Override
+    public void close() {
+      CloseHelper.quietCloseAll(
+          gateway, jobStreamClient, brokerClient, scheduler, () -> cluster.stop().join());
+    }
   }
 
   private class LeaderListener implements PartitionListener {
