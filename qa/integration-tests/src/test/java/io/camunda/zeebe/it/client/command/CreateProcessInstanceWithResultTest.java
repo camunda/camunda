@@ -29,7 +29,6 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.commons.collections4.map.HashedMap;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;

@@ -332,8 +332,7 @@ public final class ActivateJobsTest extends ClientTest {
   public void shouldThrowAnErrorIfVariableNameIsNotPresent() {
     final String variables = "{\"key\" : \"val\", \"foo\" : \"bar\", \"joe\" : \"doe\"}";
     // given
-    final ActivatedJob activatedJob1 =
-        ActivatedJob.newBuilder().setVariables(variables).build();
+    final ActivatedJob activatedJob1 = ActivatedJob.newBuilder().setVariables(variables).build();
 
     gatewayService.onActivateJobsRequest(activatedJob1);
 
@@ -352,8 +351,7 @@ public final class ActivateJobsTest extends ClientTest {
   public void shouldReturnNullIfVariableValueIsNull() {
     final String variables = "{\"key\" : null}";
     // given
-    final ActivatedJob activatedJob1 =
-        ActivatedJob.newBuilder().setVariables(variables).build();
+    final ActivatedJob activatedJob1 = ActivatedJob.newBuilder().setVariables(variables).build();
 
     gatewayService.onActivateJobsRequest(activatedJob1);
 

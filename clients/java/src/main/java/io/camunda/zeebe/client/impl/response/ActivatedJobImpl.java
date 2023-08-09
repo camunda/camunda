@@ -148,8 +148,7 @@ public final class ActivatedJobImpl implements ActivatedJob {
   public Object getVariable(final String name) {
     final Map<String, Object> variables = getVariablesAsMap();
     if (!variables.containsKey(name)) {
-      throw new InternalClientException(
-          String.format("The variable %s is not available", name));
+      throw new InternalClientException(String.format("The variable %s is not available", name));
     }
     return getVariablesAsMap().get(name);
   }
