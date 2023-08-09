@@ -72,7 +72,8 @@ COPY --from=jre-build /jre ${JAVA_HOME}
 RUN java -Xshare:dump;
 
 ### Build zeebe from scratch ###
-FROM java as build
+# hadolint ignore=DL3006
+FROM maven:3.9.3-eclipse-temurin-17-focal as build
 WORKDIR /zeebe
 ENV MAVEN_OPTS -XX:MaxRAMPercentage=80
 COPY --link . ./
