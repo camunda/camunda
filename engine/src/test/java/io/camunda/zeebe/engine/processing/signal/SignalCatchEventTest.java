@@ -24,18 +24,17 @@ import org.junit.Rule;
 import org.junit.Test;
 
 public class SignalCatchEventTest {
+  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
   private static final String PROCESS_ID = "wf";
   private static final String ELEMENT_ID = "catch";
   private static final String SIGNAL_NAME = "signal";
 
-  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
-
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
 
-  private static final SignalClient signalClient = ENGINE.signal().withSignalName(SIGNAL_NAME);
+  private final SignalClient signalClient = ENGINE.signal().withSignalName(SIGNAL_NAME);
 
   @Test
   public void shouldTriggerIntermediateCatchEvent() {
@@ -159,5 +158,50 @@ public class SignalCatchEventTest {
             tuple("task", ProcessInstanceIntent.ELEMENT_COMPLETING),
             tuple("task", ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(PROCESS_ID, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
+  public void shouldCloseSignalSubscription() {
+    // given
+    final var process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .serviceTask("task", b -> b.zeebeJobType("type"))
+            .boundaryEvent(ELEMENT_ID)
+            .signal(SIGNAL_NAME)
+            .endEvent("end")
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    assertThat(
+            RecordingExporter.signalSubscriptionRecords(SignalSubscriptionIntent.CREATED)
+                .withSignalName(SIGNAL_NAME)
+                .exists())
+        .isTrue();
+
+    final Record<JobBatchRecordValue> batchRecord = ENGINE.jobs().withType("type").activate();
+
+    // when
+    ENGINE.job().withKey(batchRecord.getValue().getJobKeys().get(0)).complete();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple("task", ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple("task", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(PROCESS_ID, ProcessInstanceIntent.ELEMENT_COMPLETED));
+
+    assertThat(
+            RecordingExporter.signalSubscriptionRecords(SignalSubscriptionIntent.DELETED)
+                .withSignalName(SIGNAL_NAME)
+                .exists())
+        .isTrue();
   }
 }
