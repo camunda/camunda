@@ -15,8 +15,8 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 /**
- * Helper class that allows Spring beans to access information from the gateway code that is not
- * managed by Spring
+ * Helper class that allows Micronaut beans to access information from the gateway code that is not
+ * managed by Micronaut
  */
 @Singleton
 public class MicronautGatewayBridge {

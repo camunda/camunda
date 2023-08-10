@@ -10,7 +10,7 @@ package io.camunda.zeebe.gateway;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
 import io.atomix.cluster.AtomixCluster;
-import io.camunda.zeebe.gateway.impl.SpringGatewayBridge;
+import io.camunda.zeebe.gateway.impl.MicronautGatewayBridge;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
 import io.camunda.zeebe.gateway.impl.configuration.ClusterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
@@ -146,7 +146,7 @@ final class StandaloneGatewaySecurityTest {
 
     return new StandaloneGateway(
         gatewayCfg,
-        new SpringGatewayBridge(),
+        new MicronautGatewayBridge(),
         actorScheduler,
         atomixCluster,
         brokerClient,
