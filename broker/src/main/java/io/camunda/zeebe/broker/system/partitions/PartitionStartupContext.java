@@ -8,7 +8,6 @@
 package io.camunda.zeebe.broker.system.partitions;
 
 import io.atomix.raft.partition.RaftPartition;
-import io.camunda.zeebe.broker.logstreams.LogDeletionService;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.state.ZbColumnFamilies;
 import io.camunda.zeebe.scheduler.ActorControl;
@@ -38,10 +37,6 @@ public interface PartitionStartupContext {
   ActorControl getActorControl();
 
   void setActorControl(ActorControl actorControl);
-
-  LogDeletionService getLogDeletionService();
-
-  void setLogDeletionService(final LogDeletionService deletionService);
 
   ScheduledTimer getMetricsTimer();
 

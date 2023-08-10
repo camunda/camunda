@@ -186,24 +186,8 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer>, Health
         .build();
   }
 
-  /**
-   * Compacts the log to the latest known compactable index. Compaction occurs asynchronously.
-   *
-   * @return a future to be completed once the log has been compacted
-   */
-  public CompletableFuture<Void> compact() {
-    return server.compact();
-  }
-
   public CompletableFuture<Void> flushLog() {
     return server.flushLog();
-  }
-
-  public void setCompactableIndex(final long index) {
-    // Don't compact everything, leave enough entries so that slow followers are not forced into
-    // snapshot replication immediately.
-    final var offset = config.getPartitionConfig().getPreferSnapshotReplicationThreshold();
-    server.getContext().getLogCompactor().setCompactableIndex(index - offset);
   }
 
   public RaftLogReader openReader() {

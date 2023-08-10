@@ -15,6 +15,7 @@
  */
 package io.atomix.raft;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 
@@ -291,11 +292,21 @@ public final class RaftRule extends ExternalResource {
         .orElseThrow();
   }
 
-  public void doSnapshot(final long index) throws Exception {
-    doSnapshot(index, 1);
+  /**
+   * Takes a snapshot across the cluster. This method expects the given index to trigger compaction,
+   * and will await it. If you don't need or care for compaction in your test, then use {@link
+   * #takeSnapshot(RaftServer, long, int)}.
+   */
+  public void takeSnapshot(final long index) {
+    takeSnapshot(index, 1);
   }
 
-  public void doSnapshot(final long index, final int size) throws Exception {
+  /**
+   * Takes a snapshot across the cluster. This method expects the given index to trigger compaction,
+   * and will await it. If you don't need or care for compaction in your test, then use {@link
+   * #takeSnapshot(RaftServer, long, int)}.
+   */
+  public void takeSnapshot(final long index, final int size) {
     awaitNewLeader();
 
     // we write on all nodes the same snapshot
@@ -303,46 +314,72 @@ public final class RaftRule extends ExternalResource {
     // in the end all call the method #newSnapshot and the snapshot listener is triggered to compact
 
     for (final RaftServer raftServer : servers.values()) {
-      doSnapshotOnMember(raftServer, index, size);
+      takeSnapshot(raftServer, index, size);
     }
   }
 
-  public void doSnapshotOnMember(final RaftServer raftServer, final long index, final int size)
-      throws Exception {
-    doSnapshotOnMember(raftServer, index, size, true);
+  /**
+   * Takes a snapshot with size 1, across the cluster, awaiting compaction on each node.
+   *
+   * @see #takeCompactingSnapshot(long)
+   */
+  public void takeCompactingSnapshot(final long index) {
+    takeCompactingSnapshot(index, 1);
   }
 
-  public void doSnapshotOnMemberWithoutCompaction(
-      final RaftServer raftServer, final long index, final int size) throws Exception {
-    doSnapshotOnMember(raftServer, index, size, false);
+  /**
+   * Takes a snapshot across the cluster, awaiting compaction on each node.
+   *
+   * @see #takeCompactingSnapshot(RaftServer, long, int)
+   */
+  public void takeCompactingSnapshot(final long index, final int size) {
+    awaitNewLeader();
+
+    // we write on all nodes the same snapshot
+    // this is similar to our current logic where leader takes a snapshot and replicates it
+    // in the end all call the method #newSnapshot and the snapshot listener is triggered to compact
+
+    for (final RaftServer raftServer : servers.values()) {
+      takeCompactingSnapshot(raftServer, index, size);
+    }
   }
 
-  private void doSnapshotOnMember(
-      final RaftServer raftServer, final long index, final int size, final boolean shouldCompact)
-      throws Exception {
+  /**
+   * Takes a snapshot across the cluster. This method expects the given index to trigger compaction,
+   * and will await it. If you don't need or care for compaction in your test, then use {@link
+   * #takeSnapshot(RaftServer, long, int)}.
+   *
+   * <p>NOTE: keep in mind the replication threshold! If you take a snapshot whose index is below
+   * the replication threshold, nothing will be compacted!
+   */
+  public Optional<PersistedSnapshot> takeCompactingSnapshot(
+      final RaftServer raftServer, final long index, final int size) {
+    final var raftContext = raftServer.getContext();
+    final var raftLog = raftContext.getLog();
+    final var previousFirstIndex = raftLog.getFirstIndex();
+    final var snapshot = takeSnapshot(raftServer, index, size);
+
+    // since compaction is asynchronously done after a snapshot is taken, we need to wait for the
+    // first index to be greater than what it previously was; this implies that compaction MUST
+    // occur! if you do not need this, call takeSnapshot instead
+    Awaitility.await("until compaction has occurred")
+        .untilAsserted(() -> assertThat(raftLog.getFirstIndex()).isGreaterThan(previousFirstIndex));
+    return snapshot;
+  }
+
+  /** Takes a snapshot on the given node, without waiting for compaction to occur. */
+  public Optional<PersistedSnapshot> takeSnapshot(
+      final RaftServer raftServer, final long index, final int size) {
     if (!raftServer.isRunning()) {
-      return;
+      return Optional.empty();
     }
+
     final var raftContext = raftServer.getContext();
     final var memberId = raftServer.cluster().getLocalMember().memberId();
     final var snapshotStore = getSnapshotStore(memberId.id());
-    final var snapshot =
-        InMemorySnapshot.newPersistedSnapshot(index, raftContext.getTerm(), size, snapshotStore);
 
-    if (shouldCompact) {
-      compact(memberId, snapshot);
-    }
-  }
-
-  private void compact(final MemberId memberId, final PersistedSnapshot persistedSnapshot)
-      throws Exception {
-    final var raftServer = servers.get(memberId.id());
-    if (raftServer != null) {
-      final var raftContext = raftServer.getContext();
-      final var serviceManager = raftContext.getLogCompactor();
-      serviceManager.setCompactableIndex(persistedSnapshot.getIndex());
-      raftServer.compact().get();
-    }
+    return Optional.of(
+        InMemorySnapshot.newPersistedSnapshot(index, raftContext.getTerm(), size, snapshotStore));
   }
 
   private TestSnapshotStore getSnapshotStore(final String memberId) {
@@ -527,8 +564,6 @@ public final class RaftRule extends ExternalResource {
   }
 
   public long appendEntries(final int count) throws Exception {
-    final var leader = getLeader().orElseThrow();
-
     for (int i = 0; i < count - 1; i++) {
       appendEntry();
     }
@@ -548,20 +583,6 @@ public final class RaftRule extends ExternalResource {
       final var testAppendListener = appendEntry(entrySize, (LeaderRole) raftRole);
       return testAppendListener.awaitCommit();
     }
-    throw new IllegalArgumentException(
-        "Expected to append entry on leader, "
-            + leader.getContext().getName()
-            + " was not the leader!");
-  }
-
-  private void appendEntryAsync(final RaftServer leader, final int entrySize) {
-    final var raftRole = leader.getContext().getRaftRole();
-
-    if (raftRole instanceof LeaderRole) {
-      appendEntry(entrySize, (LeaderRole) raftRole);
-      return;
-    }
-
     throw new IllegalArgumentException(
         "Expected to append entry on leader, "
             + leader.getContext().getName()
@@ -685,7 +706,7 @@ public final class RaftRule extends ExternalResource {
     private static CopiedRaftLogEntry of(final IndexedRaftLogEntry entry) {
       final RaftEntry copiedEntry;
 
-      if (entry.entry() instanceof ApplicationEntry app) {
+      if (entry.entry() instanceof final ApplicationEntry app) {
         copiedEntry =
             new ApplicationEntry(
                 app.lowestPosition(), app.highestPosition(), BufferUtil.cloneBuffer(app.data()));

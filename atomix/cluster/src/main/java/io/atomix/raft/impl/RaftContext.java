@@ -39,6 +39,7 @@ import io.atomix.raft.cluster.impl.RaftClusterContext;
 import io.atomix.raft.impl.zeebe.LogCompactor;
 import io.atomix.raft.metrics.RaftReplicationMetrics;
 import io.atomix.raft.metrics.RaftRoleMetrics;
+import io.atomix.raft.metrics.RaftServiceMetrics;
 import io.atomix.raft.partition.RaftElectionConfig;
 import io.atomix.raft.partition.RaftPartitionConfig;
 import io.atomix.raft.protocol.RaftResponse;
@@ -195,7 +196,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
 
     // Open the snapshot store.
     persistedSnapshotStore = storage.getPersistedSnapshotStore();
-    persistedSnapshotStore.addSnapshotListener(this::setSnapshot);
+    persistedSnapshotStore.addSnapshotListener(this::onNewPersistedSnapshot);
     // Update the current snapshot because the listener only notifies when a new snapshot is
     // created.
     persistedSnapshotStore
@@ -209,10 +210,15 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
         raftLog::reset,
         log);
 
-    logCompactor = new LogCompactor(this);
-
     this.partitionConfig = partitionConfig;
     cluster = new RaftClusterContext(localMemberId, this);
+    logCompactor =
+        new LogCompactor(
+            threadContext,
+            raftLog,
+            partitionConfig.getPreferSnapshotReplicationThreshold(),
+            new RaftServiceMetrics(name),
+            log);
 
     replicationMetrics = new RaftReplicationMetrics(name);
     replicationMetrics.setAppendIndex(raftLog.getLastIndex());
@@ -223,8 +229,12 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     started = true;
   }
 
-  private void setSnapshot(final PersistedSnapshot persistedSnapshot) {
-    threadContext.execute(() -> currentSnapshot = persistedSnapshot);
+  private void onNewPersistedSnapshot(final PersistedSnapshot persistedSnapshot) {
+    threadContext.execute(
+        () -> {
+          currentSnapshot = persistedSnapshot;
+          logCompactor.compactFromSnapshots(persistedSnapshotStore);
+        });
   }
 
   private void onUncaughtException(final Throwable error) {
@@ -783,8 +793,6 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     started = false;
     // Unregister protocol listeners.
     unregisterHandlers(protocol);
-
-    logCompactor.close();
 
     // Close the log.
     try {

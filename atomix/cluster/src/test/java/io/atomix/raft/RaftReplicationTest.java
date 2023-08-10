@@ -54,7 +54,7 @@ public class RaftReplicationTest {
     // when
     raftRule.partition(follower);
     final var lastCommitIndex = raftRule.appendEntries(entryCount);
-    raftRule.doSnapshotOnMemberWithoutCompaction(leader, snapshotIndex, 1);
+    raftRule.takeSnapshot(leader, snapshotIndex, 1);
     raftRule.reconnect(follower);
 
     // then
@@ -66,27 +66,24 @@ public class RaftReplicationTest {
   @Test
   public void shouldReplicateSnapshotIfEventsNotAvailable() throws Exception {
     // given
-    final var entryCount = 20;
-    final var snapshotIndex = 30;
-
     final var leader = raftRule.getLeader().orElseThrow();
     final var follower = raftRule.getFollower().orElseThrow();
 
-    raftRule.appendEntries(entryCount);
+    raftRule.appendEntries(50);
 
     // when
     raftRule.partition(follower);
-    final var lastCommitIndex = raftRule.appendEntries(entryCount);
+    final var lastCommitIndex = raftRule.appendEntries(200);
 
     // Snapshot multiple chunks to split snapshot replication across multiple messages
-    raftRule.doSnapshotOnMember(leader, snapshotIndex, 3);
+    raftRule.takeCompactingSnapshot(leader, 200, 3);
 
     raftRule.reconnect(follower);
 
     // then - follower received snapshot
     raftRule.awaitSameLogSizeOnAllNodes(lastCommitIndex);
     assertThat(follower.getContext().getPersistedSnapshotStore().getCurrentSnapshotIndex())
-        .isEqualTo(snapshotIndex);
+        .isEqualTo(200);
   }
 
   @Test
@@ -106,12 +103,18 @@ public class RaftReplicationTest {
 
     // Set threshold to a smaller, sensible value
     leader.getContext().setPreferSnapshotReplicationThreshold(1);
-    raftRule.doSnapshotOnMemberWithoutCompaction(leader, snapshotIndex, 1);
-
+    // since compaction is asynchronous, in all likelihood it will not run before the test
+    // finishes, but that's not guaranteed
+    raftRule.takeSnapshot(leader, snapshotIndex, 1);
     raftRule.reconnect(follower);
 
     // then - follower received snapshot
     raftRule.awaitSameLogSizeOnAllNodes(lastCommitIndex);
+    // the default storage config allows writing about 9 entries per segment; if we trigger a
+    // snapshot at index 15, we know there are some entries left, but let's assert it anyway in case
+    // this is ever false and the test must be updated
+    assertThat(raftRule.getLeader().orElseThrow().getContext().getLog().getFirstIndex())
+        .isLessThan(snapshotIndex);
     assertThat(follower.getContext().getPersistedSnapshotStore().getCurrentSnapshotIndex())
         .isEqualTo(snapshotIndex);
   }
@@ -123,7 +126,7 @@ public class RaftReplicationTest {
     final var initialLeader = raftRule.getLeader().orElseThrow();
 
     final var snapshotIndex = raftRule.appendEntries(5);
-    raftRule.doSnapshotOnMember(initialLeader, snapshotIndex, 3);
+    raftRule.takeSnapshot(initialLeader, snapshotIndex, 3);
     raftRule.appendEntries(5);
 
     raftRule.getServers().stream()
