@@ -15,7 +15,6 @@
   <properties>
     <springdoc-openapi-starter.version>2.1.0</springdoc-openapi-starter.version>
   </properties>
-  
   <dependencies>
 
     <dependency>
@@ -136,7 +135,7 @@
       <groupId>org.springframework.security</groupId>
       <artifactId>spring-security-oauth2-jose</artifactId>
     </dependency>
-    
+
     <!-- OpenAPI -->
     <dependency>
       <groupId>org.springdoc</groupId>
@@ -208,7 +207,6 @@
           </execution>
         </executions>
       </plugin>
-      
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
@@ -259,6 +257,13 @@
       <plugin>
         <groupId>com.google.cloud.tools</groupId>
         <artifactId>jib-maven-plugin</artifactId>
+        <dependencies>
+          <dependency>
+            <groupId>com.google.cloud.tools</groupId>
+            <artifactId>jib-ownership-extension-maven</artifactId>
+            <version>0.1.0</version>
+          </dependency>
+        </dependencies>
         <configuration>
           <from>
             <image>eclipse-temurin:17-jre-focal</image>
@@ -318,11 +323,28 @@
           <extraDirectories>
             <paths>
               <path>
-                <from>src/main/resources/docker</from>
+                <from>src/main/resources/docker/etc</from>
                 <into>/etc</into>
+              </path>
+              <path>
+                <from>src/main/resources/docker/home</from>
+                <into>/home</into>
               </path>
             </paths>
           </extraDirectories>
+          <pluginExtensions>
+            <pluginExtension>
+              <implementation>com.google.cloud.tools.jib.maven.extension.ownership.JibOwnershipExtension</implementation>
+              <configuration implementation="com.google.cloud.tools.jib.maven.extension.ownership.Configuration">
+                <rules>
+                  <rule>
+                    <glob>/home/tasklist</glob>
+                    <ownership>1002</ownership>
+                  </rule>
+                </rules>
+              </configuration>
+            </pluginExtension>
+          </pluginExtensions>
         </configuration>
       </plugin>
 
@@ -330,3 +352,4 @@
   </build>
 
 </project>
+
