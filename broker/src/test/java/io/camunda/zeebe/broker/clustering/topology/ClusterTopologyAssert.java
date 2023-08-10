@@ -11,6 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
 import java.util.Collection;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.assertj.core.api.AbstractAssert;
 
 final class ClusterTopologyAssert extends AbstractAssert<ClusterTopologyAssert, ClusterTopology> {
@@ -28,6 +30,13 @@ final class ClusterTopologyAssert extends AbstractAssert<ClusterTopologyAssert, 
     final var memberId = MemberId.from(Integer.toString(member));
     assertThat(actual.members()).containsKey(memberId);
     assertThat(actual.members().get(memberId).partitions()).containsOnlyKeys(partitionIds);
+    return this;
+  }
+
+  ClusterTopologyAssert hasOnlyMembers(final Set<Integer> members) {
+    final var memberIds =
+        members.stream().map(id -> MemberId.from(String.valueOf(id))).collect(Collectors.toSet());
+    assertThat(actual.members()).containsOnlyKeys(memberIds);
     return this;
   }
 }
