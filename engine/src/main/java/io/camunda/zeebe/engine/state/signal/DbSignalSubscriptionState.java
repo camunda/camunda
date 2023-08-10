@@ -22,37 +22,38 @@ import org.agrona.DirectBuffer;
 public final class DbSignalSubscriptionState implements MutableSignalSubscriptionState {
 
   private final DbString signalName;
-  private final DbLong processDefinitionKey;
+  // processDefinitionKey or elementInstanceKey
+  private final DbLong subscriptionKey;
 
-  // (signalName, processDefinitionKey => SignalSubscription)
-  private final DbCompositeKey<DbString, DbLong> signalNameAndProcessDefinitionKey;
+  // (signalName, subscriptionKey => SignalSubscription)
+  private final DbCompositeKey<DbString, DbLong> signalNameAndSubscriptionKey;
   private final ColumnFamily<DbCompositeKey<DbString, DbLong>, SignalSubscription>
-      subscriptionsColumnFamily;
+      signalNameAndSubscriptionKeyColumnFamily;
   private final SignalSubscription signalSubscription = new SignalSubscription();
 
-  // (processDefinitionKey, signalName) => \0  : to find existing subscriptions of a process
-  private final DbCompositeKey<DbLong, DbString> processDefinitionKeyAndSignalName;
+  // (subscriptionKey, signalName) => \0  : to find existing subscriptions of a process or element
+  private final DbCompositeKey<DbLong, DbString> subscriptionKeyAndSignalName;
   private final ColumnFamily<DbCompositeKey<DbLong, DbString>, DbNil>
-      subscriptionsOfProcessDefinitionKeyColumnFamily;
+      subscriptionKeyAndSignalNameColumnFamily;
 
   public DbSignalSubscriptionState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     signalName = new DbString();
-    processDefinitionKey = new DbLong();
-    signalNameAndProcessDefinitionKey = new DbCompositeKey<>(signalName, processDefinitionKey);
-    subscriptionsColumnFamily =
+    subscriptionKey = new DbLong();
+    signalNameAndSubscriptionKey = new DbCompositeKey<>(signalName, subscriptionKey);
+    signalNameAndSubscriptionKeyColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.SIGNAL_SUBSCRIPTION_BY_NAME_AND_KEY,
             transactionContext,
-            signalNameAndProcessDefinitionKey,
+            signalNameAndSubscriptionKey,
             signalSubscription);
 
-    processDefinitionKeyAndSignalName = new DbCompositeKey<>(processDefinitionKey, signalName);
-    subscriptionsOfProcessDefinitionKeyColumnFamily =
+    subscriptionKeyAndSignalName = new DbCompositeKey<>(subscriptionKey, signalName);
+    subscriptionKeyAndSignalNameColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.SIGNAL_SUBSCRIPTION_BY_KEY_AND_NAME,
             transactionContext,
-            processDefinitionKeyAndSignalName,
+            subscriptionKeyAndSignalName,
             DbNil.INSTANCE);
   }
 
@@ -60,36 +61,32 @@ public final class DbSignalSubscriptionState implements MutableSignalSubscriptio
   public void put(final long key, final SignalSubscriptionRecord subscription) {
     signalSubscription.setKey(key).setRecord(subscription);
 
-    signalName.wrapBuffer(subscription.getSignalNameBuffer());
-    processDefinitionKey.wrapLong(subscription.getProcessDefinitionKey());
-    subscriptionsColumnFamily.upsert(signalNameAndProcessDefinitionKey, signalSubscription);
-    subscriptionsOfProcessDefinitionKeyColumnFamily.upsert(
-        processDefinitionKeyAndSignalName, DbNil.INSTANCE);
+    wrapSubscriptionKeys(subscription);
+
+    signalNameAndSubscriptionKeyColumnFamily.upsert(
+        signalNameAndSubscriptionKey, signalSubscription);
+    subscriptionKeyAndSignalNameColumnFamily.upsert(subscriptionKeyAndSignalName, DbNil.INSTANCE);
   }
 
   @Override
-  public void remove(final long processDefinitionKey, final DirectBuffer signalName) {
-    this.processDefinitionKey.wrapLong(processDefinitionKey);
-    this.signalName.wrapBuffer(signalName);
+  public void remove(final long subscriptionKey, final DirectBuffer signalName) {
+    wrapSubscriptionKeys(subscriptionKey, signalName);
 
-    subscriptionsColumnFamily.deleteExisting(signalNameAndProcessDefinitionKey);
-    subscriptionsOfProcessDefinitionKeyColumnFamily.deleteExisting(
-        processDefinitionKeyAndSignalName);
+    signalNameAndSubscriptionKeyColumnFamily.deleteExisting(signalNameAndSubscriptionKey);
+    subscriptionKeyAndSignalNameColumnFamily.deleteExisting(subscriptionKeyAndSignalName);
   }
 
   @Override
   public boolean exists(final SignalSubscriptionRecord subscription) {
-    signalName.wrapBuffer(subscription.getSignalNameBuffer());
-    processDefinitionKey.wrapLong(subscription.getProcessDefinitionKey());
-
-    return subscriptionsColumnFamily.exists(signalNameAndProcessDefinitionKey);
+    wrapSubscriptionKeys(subscription);
+    return signalNameAndSubscriptionKeyColumnFamily.exists(signalNameAndSubscriptionKey);
   }
 
   @Override
   public void visitBySignalName(
       final DirectBuffer signalName, final SignalSubscriptionVisitor visitor) {
     this.signalName.wrapBuffer(signalName);
-    subscriptionsColumnFamily.whileEqualPrefix(
+    signalNameAndSubscriptionKeyColumnFamily.whileEqualPrefix(
         this.signalName,
         (key, value) -> {
           visitor.visit(value);
@@ -99,16 +96,30 @@ public final class DbSignalSubscriptionState implements MutableSignalSubscriptio
   @Override
   public void visitStartEventSubscriptionsByProcessDefinitionKey(
       final long processDefinitionKey, final SignalSubscriptionVisitor visitor) {
-    this.processDefinitionKey.wrapLong(processDefinitionKey);
+    this.subscriptionKey.wrapLong(processDefinitionKey);
 
-    subscriptionsOfProcessDefinitionKeyColumnFamily.whileEqualPrefix(
-        this.processDefinitionKey,
+    subscriptionKeyAndSignalNameColumnFamily.whileEqualPrefix(
+        this.subscriptionKey,
         (key, value) -> {
-          final var subscription = subscriptionsColumnFamily.get(signalNameAndProcessDefinitionKey);
+          final var subscription =
+              signalNameAndSubscriptionKeyColumnFamily.get(signalNameAndSubscriptionKey);
 
           if (subscription != null) {
             visitor.visit(subscription);
           }
         });
+  }
+
+  private void wrapSubscriptionKeys(final SignalSubscriptionRecord subscription) {
+    final var key =
+        subscription.getCatchEventInstanceKey() > -1
+            ? subscription.getCatchEventInstanceKey()
+            : subscription.getProcessDefinitionKey();
+    wrapSubscriptionKeys(key, subscription.getSignalNameBuffer());
+  }
+
+  private void wrapSubscriptionKeys(final long key, final DirectBuffer signalName) {
+    this.subscriptionKey.wrapLong(key);
+    this.signalName.wrapBuffer(signalName);
   }
 }

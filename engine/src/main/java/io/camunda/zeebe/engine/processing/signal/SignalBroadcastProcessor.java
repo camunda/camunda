@@ -11,17 +11,21 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.common.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEvent;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
+import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.SignalSubscriptionState;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
+import io.camunda.zeebe.protocol.impl.record.value.signal.SignalSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import org.agrona.DirectBuffer;
 
 public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor<SignalRecord> {
 
@@ -31,25 +35,27 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
   private final TypedResponseWriter responseWriter;
   private final SignalSubscriptionState signalSubscriptionState;
   private final CommandDistributionBehavior commandDistributionBehavior;
+  private final ProcessState processState;
+  private final ElementInstanceState elementInstanceState;
 
   public SignalBroadcastProcessor(
       final Writers writers,
       final KeyGenerator keyGenerator,
-      final EventScopeInstanceState eventScopeInstanceState,
-      final ProcessState processState,
+      final ProcessingState processingState,
       final BpmnStateBehavior stateBehavior,
       final EventTriggerBehavior eventTriggerBehavior,
-      final SignalSubscriptionState signalSubscriptionState,
       final CommandDistributionBehavior commandDistributionBehavior) {
     stateWriter = writers.state();
     responseWriter = writers.response();
-    this.signalSubscriptionState = signalSubscriptionState;
+    this.processState = processingState.getProcessState();
+    this.signalSubscriptionState = processingState.getSignalSubscriptionState();
     this.keyGenerator = keyGenerator;
     this.commandDistributionBehavior = commandDistributionBehavior;
+    this.elementInstanceState = processingState.getElementInstanceState();
     eventHandle =
         new EventHandle(
             keyGenerator,
-            eventScopeInstanceState,
+            processingState.getEventScopeInstanceState(),
             writers,
             processState,
             eventTriggerBehavior,
@@ -68,14 +74,14 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
         signalRecord.getSignalNameBuffer(),
         subscription -> {
           final var subscriptionRecord = subscription.getRecord();
-          final var processDefinitionKey = subscriptionRecord.getProcessDefinitionKey();
-
           if (subscriptionRecord.getCatchEventInstanceKey() == -1) {
             eventHandle.activateProcessInstanceForStartEvent(
-                processDefinitionKey,
+                subscriptionRecord.getProcessDefinitionKey(),
                 keyGenerator.nextKey(),
                 subscriptionRecord.getCatchEventIdBuffer(),
                 signalRecord.getVariablesBuffer());
+          } else {
+            activateElement(subscriptionRecord, signalRecord.getVariablesBuffer());
           }
         });
 
@@ -84,7 +90,29 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
 
   @Override
   public void processDistributedCommand(final TypedRecord<SignalRecord> command) {
+    final var value = command.getValue();
+    signalSubscriptionState.visitBySignalName(
+        value.getSignalNameBuffer(),
+        subscription -> activateElement(subscription.getRecord(), value.getVariablesBuffer()));
+
     stateWriter.appendFollowUpEvent(command.getKey(), SignalIntent.BROADCASTED, command.getValue());
     commandDistributionBehavior.acknowledgeCommand(command.getKey(), command);
+  }
+
+  private void activateElement(
+      final SignalSubscriptionRecord subscription, final DirectBuffer variables) {
+    final var processDefinitionKey = subscription.getProcessDefinitionKey();
+    final var catchEventInstanceKey = subscription.getCatchEventInstanceKey();
+    final var catchEventId = subscription.getCatchEventIdBuffer();
+    final var catchEvent =
+        processState.getFlowElement(processDefinitionKey, catchEventId, ExecutableCatchEvent.class);
+
+    final var elementInstance = elementInstanceState.getInstance(catchEventInstanceKey);
+    final var canTriggerElement = eventHandle.canTriggerElement(elementInstance, catchEventId);
+
+    if (canTriggerElement) {
+      eventHandle.activateElement(
+          catchEvent, catchEventInstanceKey, elementInstance.getValue(), variables);
+    }
   }
 }
