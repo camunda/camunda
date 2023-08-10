@@ -10,16 +10,16 @@ package io.camunda.zeebe.gateway.impl;
 import io.camunda.zeebe.gateway.health.Status;
 import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
 import io.camunda.zeebe.gateway.impl.stream.JobStreamClient;
+import jakarta.inject.Singleton;
 import java.util.Optional;
 import java.util.function.Supplier;
-import org.springframework.stereotype.Component;
 
 /**
  * Helper class that allows Spring beans to access information from the gateway code that is not
  * managed by Spring
  */
-@Component
-public class SpringGatewayBridge {
+@Singleton
+public class MicronautGatewayBridge {
 
   private Supplier<Status> gatewayStatusSupplier;
   private Supplier<Optional<BrokerClusterState>> clusterStateSupplier;

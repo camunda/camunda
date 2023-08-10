@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.gateway;
 
-import io.camunda.zeebe.gateway.impl.SpringGatewayBridge;
+import io.camunda.zeebe.gateway.impl.MicronautGatewayBridge;
 import io.camunda.zeebe.gateway.impl.stream.JobStreamClient;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -21,10 +21,10 @@ import org.springframework.stereotype.Component;
 
 @Component(value = "jobStreamService")
 final class GatewayJobStreamService implements JobStreamEndpoint.Service {
-  private final SpringGatewayBridge bridge;
+  private final MicronautGatewayBridge bridge;
 
   @Autowired
-  public GatewayJobStreamService(final SpringGatewayBridge bridge) {
+  public GatewayJobStreamService(final MicronautGatewayBridge bridge) {
     this.bridge = bridge;
   }
 

@@ -11,14 +11,14 @@ import static io.camunda.zeebe.util.ObjectWriterFactory.getDefaultJsonObjectWrit
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.camunda.zeebe.util.exception.UncheckedExecutionException;
+import io.micronaut.context.annotation.ConfigurationProperties;
+import jakarta.inject.Singleton;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.stereotype.Component;
 
-@Component
-@ConfigurationProperties(prefix = "zeebe.gateway")
+@Singleton
+@ConfigurationProperties("zeebe.gateway")
 public class GatewayCfg {
 
   private NetworkCfg network = new NetworkCfg();

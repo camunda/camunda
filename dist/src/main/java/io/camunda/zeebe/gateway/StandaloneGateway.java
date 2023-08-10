@@ -8,7 +8,7 @@
 package io.camunda.zeebe.gateway;
 
 import io.atomix.cluster.AtomixCluster;
-import io.camunda.zeebe.gateway.impl.SpringGatewayBridge;
+import io.camunda.zeebe.gateway.impl.MicronautGatewayBridge;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
@@ -19,16 +19,15 @@ import io.camunda.zeebe.shared.Profile;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.VersionUtil;
 import io.camunda.zeebe.util.error.FatalErrorHandler;
+import io.micronaut.runtime.Micronaut;
+import jakarta.inject.Inject;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.slf4j.Logger;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.WebApplicationType;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
-import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextClosedEvent;
 
@@ -38,20 +37,18 @@ import org.springframework.context.event.ContextClosedEvent;
  *
  * <p>See {@link #main(String[])} for more.
  */
-@SpringBootApplication(
-    proxyBeanMethods = false,
-    scanBasePackages = {
-      "io.camunda.zeebe.gateway",
-      "io.camunda.zeebe.shared",
-      "io.camunda.zeebe.util.liveness"
-    })
-@ConfigurationPropertiesScan(basePackages = {"io.camunda.zeebe.gateway", "io.camunda.zeebe.shared"})
+// @SpringBootApplication(
+//    scanBasePackages = {
+//      "io.camunda.zeebe.gateway",
+//      "io.camunda.zeebe.shared",
+//      "io.camunda.zeebe.util.liveness"
+//    })
 public class StandaloneGateway
     implements CommandLineRunner, ApplicationListener<ContextClosedEvent>, CloseableSilently {
   private static final Logger LOG = Loggers.GATEWAY_LOGGER;
 
   private final GatewayCfg configuration;
-  private final SpringGatewayBridge springGatewayBridge;
+  private final MicronautGatewayBridge micronautGatewayBridge;
   private final ActorScheduler actorScheduler;
   private final AtomixCluster atomixCluster;
   private final BrokerClient brokerClient;
@@ -59,16 +56,16 @@ public class StandaloneGateway
 
   private Gateway gateway;
 
-  @Autowired
+  @Inject
   public StandaloneGateway(
       final GatewayCfg configuration,
-      final SpringGatewayBridge springGatewayBridge,
+      final MicronautGatewayBridge micronautGatewayBridge,
       final ActorScheduler actorScheduler,
       final AtomixCluster atomixCluster,
       final BrokerClient brokerClient,
       final JobStreamClient jobStreamClient) {
     this.configuration = configuration;
-    this.springGatewayBridge = springGatewayBridge;
+    this.micronautGatewayBridge = micronautGatewayBridge;
     this.actorScheduler = actorScheduler;
     this.atomixCluster = atomixCluster;
     this.brokerClient = brokerClient;
@@ -91,6 +88,15 @@ public class StandaloneGateway
             .build(args);
 
     application.run();
+
+    final var micronautApplication =
+        Micronaut.build(args)
+            .mainClass(StandaloneGateway.class)
+            .defaultEnvironments(Profile.GATEWAY.getId())
+            .banner(true)
+            .build();
+
+    micronautApplication.start();
   }
 
   @Override
@@ -112,13 +118,13 @@ public class StandaloneGateway
     brokerClient.getTopologyManager().addTopologyListener(jobStreamClient);
 
     gateway = new Gateway(configuration, brokerClient, actorScheduler, jobStreamClient.streamer());
-    springGatewayBridge.registerGatewayStatusSupplier(gateway::getStatus);
-    springGatewayBridge.registerClusterStateSupplier(
+    micronautGatewayBridge.registerGatewayStatusSupplier(gateway::getStatus);
+    micronautGatewayBridge.registerClusterStateSupplier(
         () ->
             Optional.ofNullable(gateway.getBrokerClient())
                 .map(BrokerClient::getTopologyManager)
                 .map(BrokerTopologyManager::getTopology));
-    springGatewayBridge.registerJobStreamClient(() -> jobStreamClient);
+    micronautGatewayBridge.registerJobStreamClient(() -> jobStreamClient);
 
     gateway.start().join(30, TimeUnit.SECONDS);
   }

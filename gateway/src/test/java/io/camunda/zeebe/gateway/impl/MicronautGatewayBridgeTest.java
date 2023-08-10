@@ -17,13 +17,13 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 
-public class SpringGatewayBridgeTest {
+public class MicronautGatewayBridgeTest {
 
-  private SpringGatewayBridge sutBrigde;
+  private MicronautGatewayBridge sutBrigde;
 
   @Before
   public void setUp() {
-    sutBrigde = new SpringGatewayBridge();
+    sutBrigde = new MicronautGatewayBridge();
   }
 
   @Test
