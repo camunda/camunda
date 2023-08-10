@@ -119,18 +119,20 @@ public abstract class AbstractZeebeIT extends AbstractIT {
       ElasticsearchConstants.ZEEBE_PROCESS_DEFINITION_INDEX_NAME,
       boolQuery()
         .must(termQuery(ZeebeProcessDefinitionRecordDto.Fields.intent, ProcessIntent.CREATED.name()))
-        .must(termQuery(ZeebeProcessDefinitionRecordDto.Fields.value + "." +
-                               ZeebeProcessInstanceDataDto.Fields.bpmnProcessId,
-                               processDefinitionId))
+        .must(termQuery(
+          ZeebeProcessDefinitionRecordDto.Fields.value + "." +
+            ZeebeProcessInstanceDataDto.Fields.bpmnProcessId,
+          processDefinitionId
+        ))
     );
   }
 
-  protected void waitUntilInstanceRecordWithIdExported(final String instanceRecordId, final long timeoutInSeconds) {
+  protected void waitUntilInstanceRecordWithIdExported(final String instanceRecordId) {
     waitUntilMinimumDataExportedCount(
       1,
       ElasticsearchConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME,
       getInstanceRecordIdQuery(instanceRecordId),
-      timeoutInSeconds
+      10
     );
   }
 
@@ -167,6 +169,11 @@ public abstract class AbstractZeebeIT extends AbstractIT {
 
   protected static boolean isZeebeVersionPre82() {
     final Pattern zeebeVersionPreSequenceField = Pattern.compile("8.0.*|8.1.*");
+    return zeebeVersionPreSequenceField.matcher(IntegrationTestConfigurationUtil.getZeebeDockerVersion()).matches();
+  }
+
+  protected static boolean isZeebeVersionPre83() {
+    final Pattern zeebeVersionPreSequenceField = Pattern.compile("8.0.*|8.1.*||8.2.*");
     return zeebeVersionPreSequenceField.matcher(IntegrationTestConfigurationUtil.getZeebeDockerVersion()).matches();
   }
 

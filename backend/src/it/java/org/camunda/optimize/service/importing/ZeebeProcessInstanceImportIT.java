@@ -45,6 +45,7 @@ import static org.camunda.optimize.util.ZeebeBpmnModels.SERVICE_TASK;
 import static org.camunda.optimize.util.ZeebeBpmnModels.START_EVENT;
 import static org.camunda.optimize.util.ZeebeBpmnModels.USER_TASK;
 import static org.camunda.optimize.util.ZeebeBpmnModels.createInclusiveGatewayProcess;
+import static org.camunda.optimize.util.ZeebeBpmnModels.createInclusiveGatewayProcessWithConverging;
 import static org.camunda.optimize.util.ZeebeBpmnModels.createLoopingProcess;
 import static org.camunda.optimize.util.ZeebeBpmnModels.createSendTaskProcess;
 import static org.camunda.optimize.util.ZeebeBpmnModels.createSimpleServiceTaskProcess;
@@ -467,6 +468,32 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
         ));
   }
 
+  @DisabledIf("isZeebeVersionPre83")
+  @Test
+  public void importZeebeProcessInstanceData_processContainsInclusiveGatewayWithConverging() {
+    // given
+    final String processName = "someProcess";
+    final Process process = zeebeExtension.deployProcess(createInclusiveGatewayProcessWithConverging(processName));
+    zeebeExtension.startProcessInstanceWithVariables(process.getBpmnProcessId(), Map.of("varName", "a,b"));
+
+    // when
+    waitUntilInstanceRecordWithIdExported(END_EVENT);
+    waitUntilMinimumProcessInstanceEventsExportedCount(8);
+    importAllZeebeEntitiesFromScratch();
+
+    // then
+    assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
+      .singleElement()
+      .satisfies(instance -> assertThat(instance.getFlowNodeInstances())
+        .extracting(FlowNodeInstanceDto::getFlowNodeType)
+        .containsExactlyInAnyOrder(
+          BpmnElementType.START_EVENT.getElementTypeName().get(),
+          BpmnElementType.INCLUSIVE_GATEWAY.getElementTypeName().get(),
+          BpmnElementType.INCLUSIVE_GATEWAY.getElementTypeName().get(),
+          BpmnElementType.END_EVENT.getElementTypeName().get()
+        ));
+  }
+
   @Test
   public void importSendTaskZeebeProcessInstanceData_flowNodeInstancesCreatedCorrectly() {
     // given
@@ -513,7 +540,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
     );
 
     // when
-    waitUntilInstanceRecordWithIdExported("milkAdventureEndEventId", 10);
+    waitUntilInstanceRecordWithIdExported("milkAdventureEndEventId");
     importAllZeebeEntitiesFromScratch();
 
     // then all new events were imported
