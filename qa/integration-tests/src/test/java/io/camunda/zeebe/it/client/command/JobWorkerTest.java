@@ -7,43 +7,48 @@
  */
 package io.camunda.zeebe.it.client.command;
 
-import static io.camunda.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.entry;
 
-import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
+import io.camunda.zeebe.client.api.worker.JobWorker;
+import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep3;
+import io.camunda.zeebe.it.clustering.ClusteringRuleExtension;
 import io.camunda.zeebe.it.util.GrpcClientRule;
 import io.camunda.zeebe.it.util.RecordingJobHandler;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
-import java.time.Instant;
+import io.camunda.zeebe.qa.util.JobStreamServiceAssert;
+import io.camunda.zeebe.test.util.Strings;
 import java.util.List;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import java.util.Map;
+import java.util.function.BiFunction;
+import java.util.stream.Stream;
+import org.assertj.core.data.Offset;
+import org.awaitility.Awaitility;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Named;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
-public final class JobWorkerTest {
+final class JobWorkerTest {
 
-  private static final EmbeddedBrokerRule BROKER_RULE = new EmbeddedBrokerRule();
-  private static final GrpcClientRule CLIENT_RULE = new GrpcClientRule(BROKER_RULE);
+  @SuppressWarnings("JUnitMalformedDeclaration")
+  @RegisterExtension
+  private static final ClusteringRuleExtension CLUSTER = new ClusteringRuleExtension(1, 1, 1);
 
-  @ClassRule
-  public static RuleChain ruleChain = RuleChain.outerRule(BROKER_RULE).around(CLIENT_RULE);
+  private static GrpcClientRule client;
 
-  @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
+  private final String jobType = Strings.newRandomValidBpmnId();
 
-  private String jobType;
-
-  @Before
-  public void init() {
-    jobType = helper.getJobType();
+  @BeforeAll
+  static void beforeAll() {
+    client = new GrpcClientRule(CLUSTER.getClient());
   }
 
-  @Test
-  public void shouldActivateJob() {
+  @ParameterizedTest
+  @MethodSource("provideWorkerConfigurators")
+  void shouldActivateJob(final BiFunction<String, JobWorkerBuilderStep3, JobWorker> configurator) {
     // given
     final var process =
         Bpmn.createExecutableProcess("process")
@@ -56,81 +61,173 @@ public final class JobWorkerTest {
                         .zeebeTaskHeader("x", "1")
                         .zeebeTaskHeader("y", "2"))
             .done();
-    final var processDefinitionKey = CLIENT_RULE.deployProcess(process);
-
+    final var processDefinitionKey = client.deployProcess(process);
     final var processInstanceKey =
-        CLIENT_RULE.createProcessInstance(processDefinitionKey, "{\"a\":1, \"b\":2}");
+        client.createProcessInstance(processDefinitionKey, "{\"a\":1, \"b\":2}");
 
     // when
-    final RecordingJobHandler jobHandler = new RecordingJobHandler();
-    CLIENT_RULE.getClient().newWorker().jobType(jobType).handler(jobHandler).name("test").open();
-
-    waitUntil(() -> jobHandler.getHandledJobs().size() >= 1);
+    final var jobHandler = new RecordingJobHandler();
+    final var startTime = System.currentTimeMillis();
+    final var builder =
+        client
+            .getClient()
+            .newWorker()
+            .jobType(jobType)
+            .handler(jobHandler)
+            .name("test")
+            .timeout(5000);
+    try (final var ignored = configurator.apply(jobType, builder)) {
+      Awaitility.await("until all jobs are activated")
+          .untilAsserted(() -> assertThat(jobHandler.getHandledJobs()).hasSize(1));
+    }
 
     // then
-    final ActivatedJob job = jobHandler.getHandledJobs().get(0);
-
+    final var job = jobHandler.getHandledJobs().get(0);
     assertThat(job.getType()).isEqualTo(jobType);
     assertThat(job.getRetries()).isEqualTo(5);
-    assertThat(job.getDeadline()).isGreaterThan(Instant.now().toEpochMilli());
+    assertThat(job.getDeadline()).isCloseTo(startTime + 5000, Offset.offset(500L));
     assertThat(job.getWorker()).isEqualTo("test");
     assertThat(job.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
     assertThat(job.getBpmnProcessId()).isEqualTo("process");
     assertThat(job.getProcessInstanceKey()).isEqualTo(processInstanceKey);
     assertThat(job.getElementId()).isEqualTo("task");
-    assertThat(job.getCustomHeaders()).containsExactly(entry("x", "1"), entry("y", "2"));
-    assertThat(job.getVariablesAsMap()).containsExactly(entry("a", 1), entry("b", 2));
+    assertThat(job.getCustomHeaders()).isEqualTo(Map.of("x", "1", "y", "2"));
+    assertThat(job.getVariablesAsMap()).isEqualTo(Map.of("a", 1, "b", 2));
   }
 
-  @Test
-  public void shouldActivateJobsOfDifferentTypes() {
+  @ParameterizedTest
+  @MethodSource("provideWorkerConfigurators")
+  void shouldActivateJobsOfDifferentTypes(
+      final BiFunction<String, JobWorkerBuilderStep3, JobWorker> configurator) {
     // given
-    final long jobX = CLIENT_RULE.createSingleJob(jobType + "x");
-    final long jobY = CLIENT_RULE.createSingleJob(jobType + "y");
+    final var jobX = client.createSingleJob(jobType + "x");
+    final var jobY = client.createSingleJob(jobType + "y");
+    final var jobHandlerX = new RecordingJobHandler();
+    final var jobHandlerY = new RecordingJobHandler();
+    final var builderX = client.getClient().newWorker().jobType(jobType + "x").handler(jobHandlerX);
+    final var builderY = client.getClient().newWorker().jobType(jobType + "y").handler(jobHandlerY);
 
     // when
-    final RecordingJobHandler jobHandlerX = new RecordingJobHandler();
-    final RecordingJobHandler jobHandlerY = new RecordingJobHandler();
-
-    CLIENT_RULE.getClient().newWorker().jobType(jobType + "x").handler(jobHandlerX).open();
-    CLIENT_RULE.getClient().newWorker().jobType(jobType + "y").handler(jobHandlerY).open();
-
-    waitUntil(() -> jobHandlerX.getHandledJobs().size() >= 1);
-    waitUntil(() -> jobHandlerY.getHandledJobs().size() >= 1);
+    try (final var ignoredX = configurator.apply(jobType + "x", builderX);
+        final var ignoredY = configurator.apply(jobType + "y", builderY)) {
+      Awaitility.await("until all jobs are activated")
+          .untilAsserted(() -> assertThat(jobHandlerX.getHandledJobs()).hasSize(1));
+      Awaitility.await("until all jobs are activated")
+          .untilAsserted(() -> assertThat(jobHandlerY.getHandledJobs()).hasSize(1));
+    }
 
     // then
     assertThat(jobHandlerX.getHandledJobs())
         .hasSize(1)
         .extracting(ActivatedJob::getKey)
         .contains(jobX);
-
     assertThat(jobHandlerY.getHandledJobs())
         .hasSize(1)
         .extracting(ActivatedJob::getKey)
         .contains(jobY);
   }
 
-  @Test
-  public void shouldFetchOnlySpecifiedVariables() {
+  @ParameterizedTest
+  @MethodSource("provideWorkerConfigurators")
+  void shouldFetchOnlySpecifiedVariables(
+      final BiFunction<String, JobWorkerBuilderStep3, JobWorker> configurator) {
     // given
-    CLIENT_RULE.createSingleJob(jobType, b -> {}, "{\"a\":1, \"b\":2, \"c\":3,\"d\":4}");
+    client.createSingleJob(jobType, b -> {}, "{\"a\":1, \"b\":2, \"c\":3,\"d\":4}");
 
     // when
-    final List<String> fetchVariables = List.of("a", "b");
-
-    final RecordingJobHandler jobHandler = new RecordingJobHandler();
-    CLIENT_RULE
-        .getClient()
-        .newWorker()
-        .jobType(jobType)
-        .handler(jobHandler)
-        .fetchVariables(fetchVariables)
-        .open();
-
-    waitUntil(() -> jobHandler.getHandledJobs().size() >= 1);
+    final var fetchVariables = List.of("a", "b");
+    final var jobHandler = new RecordingJobHandler();
+    final var builder =
+        client
+            .getClient()
+            .newWorker()
+            .jobType(jobType)
+            .handler(jobHandler)
+            .fetchVariables(fetchVariables);
+    try (final var ignored = configurator.apply(jobType, builder)) {
+      Awaitility.await("until all jobs are activated")
+          .untilAsserted(() -> assertThat(jobHandler.getHandledJobs()).hasSize(1));
+    }
 
     // then
     final ActivatedJob job = jobHandler.getHandledJobs().get(0);
-    assertThat(job.getVariablesAsMap().keySet()).containsOnlyElementsOf(fetchVariables);
+    assertThat(job.getVariablesAsMap()).isEqualTo(Map.of("a", 1, "b", 2));
+  }
+
+  @Test
+  void shouldStreamAndActivateJobs() {
+    // given - a job created before any stream was registered, i.e. can only be polled
+    client.createSingleJob(jobType, b -> {});
+
+    // when - create a worker that streams, and create a new job after the stream is registered
+    final var jobHandler = new RecordingJobHandler();
+    final var builder =
+        client.getClient().newWorker().jobType(jobType).handler(jobHandler).enableStreaming();
+    try (final var ignored = builder.open()) {
+      awaitStreamRegistered(jobType);
+      client.createSingleJob(jobType, b -> {});
+
+      // then - expect both jobs to be activated
+      Awaitility.await("until all jobs are activated")
+          .untilAsserted(() -> assertThat(jobHandler.getHandledJobs()).hasSize(2));
+    }
+  }
+
+  @Test
+  void shouldRecreateStreamOnGatewayRestart() {
+    // given
+    final var jobHandler = new RecordingJobHandler();
+    final var builder =
+        client.getClient().newWorker().jobType(jobType).handler(jobHandler).enableStreaming();
+
+    // when
+    try (final var ignored = builder.open()) {
+      awaitStreamRegistered(jobType);
+      // have to reuse the same gateway config, otherwise we need to recreate the client to point to
+      // the new gateway, which sort of negates the point of this test
+      final var gatewayConfig = CLUSTER.stopGateway();
+      // avoid flakiness by awaiting it gets removed properly; this may be removed once the
+      // following issue is finished: https://github.com/camunda/zeebe/issues/13389
+      awaitStreamRemoved(jobType);
+      CLUSTER.startGateway(gatewayConfig);
+      // need to stream being registered, as otherwise the job will be polled, not streamed
+      awaitStreamRegistered(jobType);
+      client.createSingleJob(jobType, b -> {});
+
+      // then - expect job to be activated
+      Awaitility.await("until all jobs are activated")
+          .untilAsserted(() -> assertThat(jobHandler.getHandledJobs()).hasSize(1));
+    }
+  }
+
+  private static Stream<Named<BiFunction<String, JobWorkerBuilderStep3, JobWorker>>>
+      provideWorkerConfigurators() {
+    return Stream.of(
+        Named.named("polling", (ignored, builder) -> builder.open()),
+        Named.named("streaming", JobWorkerTest::prepareStreamingWorker));
+  }
+
+  private static JobWorker prepareStreamingWorker(
+      final String jobType, final JobWorkerBuilderStep3 builder) {
+    final var worker = builder.enableStreaming().open();
+    awaitStreamRegistered(jobType);
+    return worker;
+  }
+
+  private static void awaitStreamRegistered(final String jobType) {
+    final var jobStreamService = CLUSTER.getBrokerBridge(0).getJobStreamService().orElseThrow();
+    Awaitility.await("until stream is registered")
+        .untilAsserted(
+            () ->
+                JobStreamServiceAssert.assertThat(jobStreamService).hasStreamWithType(1, jobType));
+  }
+
+  private void awaitStreamRemoved(final String jobType) {
+    final var jobStreamService = CLUSTER.getBrokerBridge(0).getJobStreamService().orElseThrow();
+    Awaitility.await("until no streams are registered")
+        .untilAsserted(
+            () ->
+                JobStreamServiceAssert.assertThat(jobStreamService)
+                    .doesNotHaveStreamWithType(jobType));
   }
 }

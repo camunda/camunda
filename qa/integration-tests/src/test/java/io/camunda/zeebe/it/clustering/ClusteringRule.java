@@ -18,6 +18,7 @@ import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.AtomixCluster;
+import io.atomix.cluster.Member;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.impl.NettyMessagingService;
 import io.atomix.cluster.messaging.impl.NettyUnicastService;
@@ -449,6 +450,10 @@ public class ClusteringRule extends ExternalResource {
 
     gatewayConfigurator.accept(gatewayCfg);
 
+    return createGateway(gatewayCfg);
+  }
+
+  private GatewayResource createGateway(final GatewayCfg gatewayCfg) {
     final GatewayClusterConfiguration clusterFactory = new GatewayClusterConfiguration();
     final AtomixCluster atomixCluster = clusterFactory.atomixCluster(gatewayCfg);
     atomixCluster.start().join();
@@ -473,7 +478,7 @@ public class ClusteringRule extends ExternalResource {
     gateway.start().join();
 
     return new GatewayResource(
-        actorScheduler, atomixCluster, brokerClient, jobStreamClient, gateway);
+        gatewayCfg, actorScheduler, atomixCluster, brokerClient, jobStreamClient, gateway);
   }
 
   private ZeebeClient createClient() {
@@ -561,19 +566,42 @@ public class ClusteringRule extends ExternalResource {
   }
 
   public void restartGateway() {
+    final var config = stopGateway();
+    startGateway(config);
+  }
+
+  public void startGateway(final GatewayCfg config) {
+    gatewayResource = createGateway(config);
+    awaitCompleteTopology();
+  }
+
+  public GatewayCfg stopGateway() {
+    GatewayCfg config = null;
     if (gatewayResource != null) {
+      final var gatewayMember = gatewayResource.cluster.getMembershipService().getLocalMember();
+      config = gatewayResource.config;
       gatewayResource.close();
       gatewayResource = null;
 
-      if (client != null) {
-        client.close();
-        client = null;
-      }
+      // since we're reusing the same gateway ports and members, it's better we wait for it to be
+      // removed from the cluster before restarting, so let's wait for it here
+      awaitMemberRemovedFromCluster(gatewayMember);
     }
 
-    gatewayResource = createGateway();
-    client = createClient();
-    awaitCompleteTopology();
+    return config;
+  }
+
+  private void awaitMemberRemovedFromCluster(final Member gatewayMember) {
+    Awaitility.await("until gateway is removed from cluster")
+        .untilAsserted(
+            () ->
+                assertThat(brokers.values())
+                    .allSatisfy(broker -> assertMemberRemovedFromCluster(gatewayMember, broker)));
+  }
+
+  private void assertMemberRemovedFromCluster(final Member gatewayMember, final Broker broker) {
+    assertThat(broker.getBrokerContext().getClusterServices().getMembershipService().getMembers())
+        .doesNotContain(gatewayMember);
   }
 
   /** Returns the list of available brokers in a cluster. */
@@ -951,6 +979,7 @@ public class ClusteringRule extends ExternalResource {
   }
 
   private record GatewayResource(
+      GatewayCfg config,
       ActorScheduler scheduler,
       AtomixCluster cluster,
       BrokerClient brokerClient,
