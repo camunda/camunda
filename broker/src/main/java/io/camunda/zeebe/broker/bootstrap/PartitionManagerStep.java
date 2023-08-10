@@ -26,6 +26,7 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
       final ActorFuture<BrokerStartupContext> startupFuture) {
     final var partitionManager =
         new PartitionManagerImpl(
+            concurrencyControl,
             brokerStartupContext.getActorSchedulingService(),
             brokerStartupContext.getBrokerConfiguration(),
             brokerStartupContext.getBrokerInfo(),

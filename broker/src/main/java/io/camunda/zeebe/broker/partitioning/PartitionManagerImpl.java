@@ -61,10 +61,12 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
   private final ClusterServices clusterServices;
   private final CommandApiService commandApiService;
   private final ExporterRepository exporterRepository;
+  private final ConcurrencyControl concurrencyControl;
   private final AtomixServerTransport gatewayBrokerTransport;
   private final JobStreamer jobStreamer;
 
   public PartitionManagerImpl(
+      final ConcurrencyControl concurrencyControl,
       final ActorSchedulingService actorSchedulingService,
       final BrokerCfg brokerCfg,
       final BrokerInfo localBroker,
@@ -77,6 +79,7 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
       final AtomixServerTransport gatewayBrokerTransport,
       final JobStreamer jobStreamer,
       final PartitionDistribution partitionDistribution) {
+    this.concurrencyControl = concurrencyControl;
     this.gatewayBrokerTransport = gatewayBrokerTransport;
 
     snapshotStoreFactory =
@@ -144,7 +147,7 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
         .forEach(
             partitionStart ->
                 partitionStart
-                    .thenAccept(
+                    .thenAcceptAsync(
                         partition -> {
                           if (!partition.members().contains(memberId)) {
                             return;
@@ -164,25 +167,27 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
   }
 
   private void startPartition(final ZeebePartition zeebePartition) {
-    actorSchedulingService
-        .submitActor(zeebePartition)
-        .onComplete(
-            (ok, error) -> {
-              if (error != null) {
-                LOGGER.error(
-                    "Failed to start partition {}", zeebePartition.getPartitionId(), error);
-                return;
-              }
+    final var submit = actorSchedulingService.submitActor(zeebePartition);
+    concurrencyControl.run(
+        () ->
+            concurrencyControl.runOnCompletion(
+                submit,
+                (ok, error) -> {
+                  if (error != null) {
+                    LOGGER.error(
+                        "Failed to start partition {}", zeebePartition.getPartitionId(), error);
+                    return;
+                  }
 
-              LOGGER.info("Started partition {}", zeebePartition.getPartitionId());
+                  LOGGER.info("Started partition {}", zeebePartition.getPartitionId());
 
-              zeebePartition.addFailureListener(
-                  new PartitionHealthBroadcaster(
-                      zeebePartition.getPartitionId(), this::onHealthChanged));
-              diskSpaceUsageMonitor.addDiskUsageListener(zeebePartition);
-              adminAccess.put(zeebePartition.getPartitionId(), zeebePartition.getAdminAccess());
-              partitions.add(zeebePartition);
-            });
+                  zeebePartition.addFailureListener(
+                      new PartitionHealthBroadcaster(
+                          zeebePartition.getPartitionId(), this::onHealthChanged));
+                  diskSpaceUsageMonitor.addDiskUsageListener(zeebePartition);
+                  adminAccess.put(zeebePartition.getPartitionId(), zeebePartition.getAdminAccess());
+                  partitions.add(zeebePartition);
+                }));
   }
 
   public CompletableFuture<Void> stop() {
