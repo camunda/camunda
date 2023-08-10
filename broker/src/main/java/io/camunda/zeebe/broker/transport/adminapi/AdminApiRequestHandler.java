@@ -42,6 +42,11 @@ public class AdminApiRequestHandler
   }
 
   @Override
+  protected void onActorClosing() {
+    transport.unsubscribe(raftPartition.id().id(), RequestType.ADMIN);
+  }
+
+  @Override
   protected ActorFuture<Either<ErrorResponseWriter, ApiResponseWriter>> handleAsync(
       final int partitionId,
       final long requestId,
