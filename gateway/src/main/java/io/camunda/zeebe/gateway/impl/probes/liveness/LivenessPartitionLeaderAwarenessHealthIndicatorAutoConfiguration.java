@@ -10,29 +10,22 @@ package io.camunda.zeebe.gateway.impl.probes.liveness;
 import io.camunda.zeebe.gateway.impl.probes.health.PartitionLeaderAwarenessHealthIndicator;
 import io.camunda.zeebe.util.health.DelayedHealthIndicator;
 import io.camunda.zeebe.util.health.MemoryHealthIndicator;
-import org.springframework.boot.actuate.autoconfigure.health.ConditionalOnEnabledHealthIndicator;
-import org.springframework.boot.actuate.autoconfigure.health.HealthContributorAutoConfiguration;
-import org.springframework.boot.actuate.health.HealthIndicator;
-import org.springframework.boot.autoconfigure.AutoConfigureBefore;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.scheduling.annotation.EnableScheduling;
+import io.micronaut.context.annotation.Replaces;
+import io.micronaut.context.annotation.Requires;
+import io.micronaut.management.health.indicator.HealthIndicator;
+import jakarta.inject.Singleton;
 
 /** {@link EnableAutoConfiguration Auto-configuration} for {@link MemoryHealthIndicator}. */
-@Configuration(proxyBeanMethods = false)
-@ConditionalOnEnabledHealthIndicator("gateway-partitionleaderawareness")
-@AutoConfigureBefore(HealthContributorAutoConfiguration.class)
-@EnableConfigurationProperties(LivenessPartitionLeaderAwarenessHealthIndicatorProperties.class)
-@EnableScheduling
+@Singleton
+@Requires(property = "management.health.gateway-partitionleaderawareness.enabled", value = "true")
 public class LivenessPartitionLeaderAwarenessHealthIndicatorAutoConfiguration {
 
-  @Bean
-  @ConditionalOnMissingBean(name = "livenessGatewayPartitionLeaderAwarenessHealthIndicator")
+  @Singleton
+  @Replaces(named = "livenessGatewayPartitionLeaderAwarenessHealthIndicator")
+  @Requires("livenessGatewayPartitionLeaderAwarenessHealthIndicator")
   public HealthIndicator livenessGatewayPartitionLeaderAwarenessHealthIndicator(
-      PartitionLeaderAwarenessHealthIndicator healthIndicator,
-      LivenessPartitionLeaderAwarenessHealthIndicatorProperties properties) {
+      final PartitionLeaderAwarenessHealthIndicator healthIndicator,
+      final LivenessPartitionLeaderAwarenessHealthIndicatorProperties properties) {
     return new DelayedHealthIndicator(healthIndicator, properties.getMaxDowntime());
   }
 }

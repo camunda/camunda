@@ -8,10 +8,10 @@
 package io.camunda.zeebe.gateway.impl.probes.liveness;
 
 import io.camunda.zeebe.util.health.AbstractDelayedHealthIndicatorProperties;
+import io.micronaut.context.annotation.ConfigurationProperties;
 import java.time.Duration;
-import org.springframework.boot.context.properties.ConfigurationProperties;
 
-@ConfigurationProperties(prefix = "management.health.liveness.gateway-partitionleaderawareness")
+@ConfigurationProperties("management.health.liveness.gateway-partitionleaderawareness")
 public class LivenessPartitionLeaderAwarenessHealthIndicatorProperties
     extends AbstractDelayedHealthIndicatorProperties {
 

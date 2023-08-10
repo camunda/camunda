@@ -10,21 +10,23 @@ package io.camunda.zeebe.gateway.impl.probes.health;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.gateway.health.Status;
-import io.camunda.zeebe.gateway.impl.SpringGatewayBridge;
+import io.camunda.zeebe.gateway.impl.MicronautGatewayBridge;
+import io.micronaut.health.HealthStatus;
+import java.time.Duration;
 import java.util.function.Supplier;
 import org.junit.Before;
 import org.junit.Test;
-import org.springframework.boot.actuate.health.Health;
+import reactor.core.publisher.Mono;
 
 public class StartedHealthIndicatorAutoConfigurationTest {
 
-  private SpringGatewayBridge helperGatewayBridge;
+  private MicronautGatewayBridge helperGatewayBridge;
 
   private StartedHealthIndicatorAutoConfiguration sutAutoConfig;
 
   @Before
   public void setUp() {
-    helperGatewayBridge = new SpringGatewayBridge();
+    helperGatewayBridge = new MicronautGatewayBridge();
     sutAutoConfig = new StartedHealthIndicatorAutoConfiguration();
   }
 
@@ -48,11 +50,11 @@ public class StartedHealthIndicatorAutoConfigurationTest {
 
     // when
     helperGatewayBridge.registerGatewayStatusSupplier(statusSupplier);
-    final Health actualHealth = healthIndicator.health();
+    final var actualHealth = healthIndicator.getResult();
+    final var healthResult = Mono.from(actualHealth).block(Duration.ofMillis(5000));
 
     // then
-    assertThat(actualHealth).isNotNull();
-    assertThat(actualHealth.getStatus())
-        .isSameAs(org.springframework.boot.actuate.health.Status.UP);
+    assertThat(healthResult).isNotNull();
+    assertThat(healthResult.getStatus()).isEqualTo(HealthStatus.UP);
   }
 }

@@ -10,29 +10,22 @@ package io.camunda.zeebe.gateway.impl.probes.liveness;
 import io.camunda.zeebe.gateway.impl.probes.health.ClusterAwarenessHealthIndicator;
 import io.camunda.zeebe.util.health.DelayedHealthIndicator;
 import io.camunda.zeebe.util.health.MemoryHealthIndicator;
-import org.springframework.boot.actuate.autoconfigure.health.ConditionalOnEnabledHealthIndicator;
-import org.springframework.boot.actuate.autoconfigure.health.HealthContributorAutoConfiguration;
-import org.springframework.boot.actuate.health.HealthIndicator;
-import org.springframework.boot.autoconfigure.AutoConfigureBefore;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.scheduling.annotation.EnableScheduling;
+import io.micronaut.context.annotation.Replaces;
+import io.micronaut.context.annotation.Requires;
+import io.micronaut.management.health.indicator.HealthIndicator;
+import jakarta.inject.Singleton;
 
 /** {@link EnableAutoConfiguration Auto-configuration} for {@link MemoryHealthIndicator}. */
-@Configuration(proxyBeanMethods = false)
-@ConditionalOnEnabledHealthIndicator("gateway-clusterawareness")
-@AutoConfigureBefore(HealthContributorAutoConfiguration.class)
-@EnableConfigurationProperties(LivenessClusterAwarenessHealthIndicatorProperties.class)
-@EnableScheduling
+@Singleton
+@Requires(property = "management.health.gateway-clusterawareness.enabled", value = "true")
 public class LivenessClusterAwarenessHealthIndicatorAutoConfiguration {
 
-  @Bean(name = "livenessGatewayClusterAwarenessHealthIndicator")
-  @ConditionalOnMissingBean(name = "livenessGatewayClusterAwarenessHealthIndicator")
+  @Singleton
+  @Replaces(named = "livenessGatewayClusterAwarenessHealthIndicator")
+  @Requires("livenessGatewayClusterAwarenessHealthIndicator")
   public HealthIndicator livenessGatewayClusterAwarenessHealthIndicator(
-      ClusterAwarenessHealthIndicator healthIndicator,
-      LivenessClusterAwarenessHealthIndicatorProperties properties) {
+      final ClusterAwarenessHealthIndicator healthIndicator,
+      final LivenessClusterAwarenessHealthIndicatorProperties properties) {
     return new DelayedHealthIndicator(healthIndicator, properties.getMaxDowntime());
   }
 }

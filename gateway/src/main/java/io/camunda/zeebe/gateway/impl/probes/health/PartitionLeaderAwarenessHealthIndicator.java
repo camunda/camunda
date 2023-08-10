@@ -10,10 +10,13 @@ package io.camunda.zeebe.gateway.impl.probes.health;
 import static java.util.Objects.requireNonNull;
 
 import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
+import io.micronaut.health.HealthStatus;
+import io.micronaut.management.health.indicator.HealthIndicator;
+import io.micronaut.management.health.indicator.HealthResult;
 import java.util.Optional;
 import java.util.function.Supplier;
-import org.springframework.boot.actuate.health.Health;
-import org.springframework.boot.actuate.health.HealthIndicator;
+import org.reactivestreams.Publisher;
+import reactor.core.publisher.Mono;
 
 /**
  * Health indicator that signals whether the gateway is aware of partition leaders in the cluster.
@@ -29,21 +32,23 @@ public class PartitionLeaderAwarenessHealthIndicator implements HealthIndicator 
   }
 
   @Override
-  public Health health() {
+  public Publisher<HealthResult> getResult() {
     final var optClusterState = clusterStateSupplier.get();
 
+    final HealthStatus healthStatus;
     if (optClusterState.isEmpty()) {
-      return Health.down().build();
+      healthStatus = HealthStatus.DOWN;
     } else {
       final var clusterState = optClusterState.get();
       if (clusterState.getPartitions().stream()
           .anyMatch(
               index ->
                   clusterState.getLeaderForPartition(index) != BrokerClusterState.NODE_ID_NULL)) {
-        return Health.up().build();
+        healthStatus = HealthStatus.UP;
       } else {
-        return Health.down().build();
+        healthStatus = HealthStatus.DOWN;
       }
     }
+    return Mono.just(HealthResult.builder(getClass().getSimpleName(), healthStatus).build());
   }
 }

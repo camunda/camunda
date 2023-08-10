@@ -11,25 +11,28 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import io.camunda.zeebe.gateway.impl.SpringGatewayBridge;
+import io.camunda.zeebe.gateway.impl.MicronautGatewayBridge;
 import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
+import io.micronaut.health.HealthStatus;
+import io.micronaut.management.health.indicator.HealthResult;
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
 import org.junit.Before;
 import org.junit.Test;
-import org.springframework.boot.actuate.health.Health;
-import org.springframework.boot.actuate.health.Status;
+import org.reactivestreams.Publisher;
+import reactor.core.publisher.Mono;
 
 public class LivenessClusterAwarenessHealthIndicatorAutoConfigurationTest {
 
-  private SpringGatewayBridge helperGatewayBridge;
+  private MicronautGatewayBridge helperGatewayBridge;
 
   private ClusterAwarenessHealthIndicatorAutoConfiguration sutAutoConfig;
 
   @Before
   public void setUp() {
-    helperGatewayBridge = new SpringGatewayBridge();
+    helperGatewayBridge = new MicronautGatewayBridge();
     sutAutoConfig = new ClusterAwarenessHealthIndicatorAutoConfiguration();
   }
 
@@ -57,10 +60,11 @@ public class LivenessClusterAwarenessHealthIndicatorAutoConfigurationTest {
 
     // when
     helperGatewayBridge.registerClusterStateSupplier(stateSupplier);
-    final Health actualHealth = healthIndicator.health();
+    final Publisher<HealthResult> actualHealth = healthIndicator.getResult();
+    final var healthResult = Mono.from(actualHealth).block(Duration.ofMillis(5000));
 
     // then
-    assertThat(actualHealth).isNotNull();
-    assertThat(actualHealth.getStatus()).isSameAs(Status.UP);
+    assertThat(healthResult).isNotNull();
+    assertThat(healthResult.getStatus()).isSameAs(HealthStatus.UP);
   }
 }

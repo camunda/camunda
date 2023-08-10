@@ -11,9 +11,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.gateway.health.Status;
+import io.micronaut.health.HealthStatus;
+import java.time.Duration;
 import java.util.Optional;
 import org.junit.Test;
-import org.springframework.boot.actuate.health.Health;
+import reactor.core.publisher.Mono;
 
 public class StartedHealthIndicatorTest {
 
@@ -30,10 +32,12 @@ public class StartedHealthIndicatorTest {
         new StartedHealthIndicator(() -> Optional.empty());
 
     // when
-    final Health actual = sutHealthIndicator.health();
+    final var actualHealth = sutHealthIndicator.getResult();
+    final var healthResult = Mono.from(actualHealth).block(Duration.ofMillis(5000));
 
     // then
-    assertThat(actual.getStatus()).isSameAs(org.springframework.boot.actuate.health.Status.UNKNOWN);
+    assertThat(healthResult).isNotNull();
+    assertThat(healthResult.getStatus()).isEqualTo(HealthStatus.UNKNOWN);
   }
 
   @Test
@@ -43,10 +47,12 @@ public class StartedHealthIndicatorTest {
         new StartedHealthIndicator(() -> Optional.of(Status.INITIAL));
 
     // when
-    final Health actual = sutHealthIndicator.health();
+    final var actualHealth = sutHealthIndicator.getResult();
+    final var healthResult = Mono.from(actualHealth).block(Duration.ofMillis(5000));
 
     // then
-    assertThat(actual.getStatus()).isSameAs(org.springframework.boot.actuate.health.Status.DOWN);
+    assertThat(healthResult).isNotNull();
+    assertThat(healthResult.getStatus()).isEqualTo(HealthStatus.DOWN);
   }
 
   @Test
@@ -56,10 +62,12 @@ public class StartedHealthIndicatorTest {
         new StartedHealthIndicator(() -> Optional.of(Status.STARTING));
 
     // when
-    final Health actual = sutHealthIndicator.health();
+    final var actualHealth = sutHealthIndicator.getResult();
+    final var healthResult = Mono.from(actualHealth).block(Duration.ofMillis(5000));
 
     // then
-    assertThat(actual.getStatus()).isSameAs(org.springframework.boot.actuate.health.Status.DOWN);
+    assertThat(healthResult).isNotNull();
+    assertThat(healthResult.getStatus()).isEqualTo(HealthStatus.DOWN);
   }
 
   @Test
@@ -69,10 +77,12 @@ public class StartedHealthIndicatorTest {
         new StartedHealthIndicator(() -> Optional.of(Status.RUNNING));
 
     // when
-    final Health actual = sutHealthIndicator.health();
+    final var actualHealth = sutHealthIndicator.getResult();
+    final var healthResult = Mono.from(actualHealth).block(Duration.ofMillis(5000));
 
     // then
-    assertThat(actual.getStatus()).isSameAs(org.springframework.boot.actuate.health.Status.UP);
+    assertThat(healthResult).isNotNull();
+    assertThat(healthResult.getStatus()).isEqualTo(HealthStatus.UP);
   }
 
   @Test
@@ -82,10 +92,11 @@ public class StartedHealthIndicatorTest {
         new StartedHealthIndicator(() -> Optional.of(Status.SHUTDOWN));
 
     // when
-    final Health actual = sutHealthIndicator.health();
+    final var actualHealth = sutHealthIndicator.getResult();
+    final var healthResult = Mono.from(actualHealth).block(Duration.ofMillis(5000));
 
     // then
-    assertThat(actual.getStatus())
-        .isSameAs(org.springframework.boot.actuate.health.Status.OUT_OF_SERVICE);
+    assertThat(healthResult).isNotNull();
+    assertThat(healthResult.getStatus()).isEqualTo(new HealthStatus("OUT_OF_SERVICE"));
   }
 }

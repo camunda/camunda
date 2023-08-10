@@ -14,11 +14,13 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
+import io.micronaut.health.HealthStatus;
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
 import org.junit.Test;
-import org.springframework.boot.actuate.health.Status;
+import reactor.core.publisher.Mono;
 
 public class ClusterAwarenessHealthIndicatorTest {
 
@@ -36,11 +38,12 @@ public class ClusterAwarenessHealthIndicatorTest {
     final var sutHealthIndicator = new ClusterAwarenessHealthIndicator(stateSupplier);
 
     // when
-    final var actualHealth = sutHealthIndicator.health();
+    final var actualHealth = sutHealthIndicator.getResult();
+    final var healthResult = Mono.from(actualHealth).block(Duration.ofMillis(5000));
 
     // then
-    assertThat(actualHealth).isNotNull();
-    assertThat(actualHealth.getStatus()).isEqualTo(Status.DOWN);
+    assertThat(healthResult).isNotNull();
+    assertThat(healthResult.getStatus()).isEqualTo(HealthStatus.DOWN);
   }
 
   @Test
@@ -54,11 +57,12 @@ public class ClusterAwarenessHealthIndicatorTest {
     final var sutHealthIndicator = new ClusterAwarenessHealthIndicator(stateSupplier);
 
     // when
-    final var actualHealth = sutHealthIndicator.health();
+    final var actualHealth = sutHealthIndicator.getResult();
+    final var healthResult = Mono.from(actualHealth).block(Duration.ofMillis(5000));
 
     // then
-    assertThat(actualHealth).isNotNull();
-    assertThat(actualHealth.getStatus()).isEqualTo(Status.UP);
+    assertThat(healthResult).isNotNull();
+    assertThat(healthResult.getStatus()).isEqualTo(HealthStatus.UP);
   }
 
   @Test
@@ -72,10 +76,11 @@ public class ClusterAwarenessHealthIndicatorTest {
     final var sutHealthIndicator = new ClusterAwarenessHealthIndicator(stateSupplier);
 
     // when
-    final var actualHealth = sutHealthIndicator.health();
+    final var actualHealth = sutHealthIndicator.getResult();
+    final var healthResult = Mono.from(actualHealth).block(Duration.ofMillis(5000));
 
     // then
-    assertThat(actualHealth).isNotNull();
-    assertThat(actualHealth.getStatus()).isEqualTo(Status.DOWN);
+    assertThat(healthResult).isNotNull();
+    assertThat(healthResult.getStatus()).isEqualTo(HealthStatus.DOWN);
   }
 }

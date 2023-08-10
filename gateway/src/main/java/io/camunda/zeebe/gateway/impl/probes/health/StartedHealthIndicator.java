@@ -11,11 +11,14 @@ import static java.util.Objects.requireNonNull;
 
 import io.camunda.zeebe.gateway.Loggers;
 import io.camunda.zeebe.gateway.health.Status;
+import io.micronaut.health.HealthStatus;
+import io.micronaut.management.health.indicator.HealthIndicator;
+import io.micronaut.management.health.indicator.HealthResult;
 import java.util.Optional;
 import java.util.function.Supplier;
+import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
-import org.springframework.boot.actuate.health.Health;
-import org.springframework.boot.actuate.health.HealthIndicator;
+import reactor.core.publisher.Mono;
 
 /**
  * Health indicator that signals whether the gateway is starting {@code DOWN }, running {@code UP}
@@ -32,25 +35,30 @@ public class StartedHealthIndicator implements HealthIndicator {
   }
 
   @Override
-  public Health health() {
+  public Publisher<HealthResult> getResult() {
     final Optional<Status> optStatus = gatewayStatusSupplier.get();
 
+    final HealthStatus healthStatus;
     if (optStatus.isEmpty()) {
-      return Health.unknown().build();
+      healthStatus = HealthStatus.UNKNOWN;
     } else {
       final var status = optStatus.get();
       switch (status) {
         case INITIAL:
         case STARTING:
-          return Health.down().build();
+          healthStatus = HealthStatus.DOWN;
+          break;
         case RUNNING:
-          return Health.up().build();
+          healthStatus = HealthStatus.UP;
+          break;
         case SHUTDOWN:
-          return Health.outOfService().build();
+          healthStatus = new HealthStatus("OUT_OF_SERVICE");
+          break;
         default:
           LOG.warn("Encountered unexpected status " + status);
-          return Health.unknown().build();
+          healthStatus = HealthStatus.UNKNOWN;
       }
     }
+    return Mono.just(HealthResult.builder(getClass().getSimpleName(), healthStatus).build());
   }
 }
