@@ -6,10 +6,11 @@
  */
 
 import {test, expect} from '@playwright/test';
+import {Paths} from 'modules/Routes';
 
 test.describe('login page', () => {
   test('empty page', async ({page}) => {
-    await page.goto('/login', {
+    await page.goto(Paths.login(), {
       waitUntil: 'networkidle',
     });
 

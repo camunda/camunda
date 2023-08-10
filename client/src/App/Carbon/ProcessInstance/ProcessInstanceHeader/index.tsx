@@ -125,6 +125,7 @@ const ProcessInstanceHeader: React.FC = observer(() => {
                 <Link
                   to={Paths.processInstance(parentInstanceId)}
                   title={`View parent instance ${parentInstanceId}`}
+                  aria-label={`View parent instance ${parentInstanceId}`}
                   onClick={() => {
                     tracking.track({
                       eventName: 'navigation',
@@ -160,6 +161,7 @@ const ProcessInstanceHeader: React.FC = observer(() => {
                     });
                   }}
                   title="View all called instances"
+                  aria-label="View all called instances"
                 >
                   View All
                 </Link>

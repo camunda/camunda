@@ -169,6 +169,7 @@ const InstancesTable: React.FC = observer(() => {
                   <Link
                     to={Paths.processInstance(instance.parentInstanceId)}
                     title={`View parent instance ${instance.parentInstanceId}`}
+                    aria-label={`View parent instance ${instance.parentInstanceId}`}
                     onClick={() => {
                       tracking.track({
                         eventName: 'navigation',

@@ -7,6 +7,7 @@
 
 import {Page, Locator, expect} from '@playwright/test';
 import {convertToQueryString} from '../utils/convertToQueryString';
+import {Paths} from 'modules/Routes';
 
 type OptionalFilter =
   | 'Variable'
@@ -98,10 +99,12 @@ export class Processes {
     searchParams?: Parameters<typeof convertToQueryString>[0],
   ) {
     if (searchParams === undefined) {
-      await this.page.goto('/processes');
+      await this.page.goto(Paths.processes());
       return;
     }
 
-    await this.page.goto(`/processes?${convertToQueryString(searchParams)}`);
+    await this.page.goto(
+      `${Paths.processes()}?${convertToQueryString(searchParams)}`,
+    );
   }
 }

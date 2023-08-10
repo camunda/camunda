@@ -5,17 +5,15 @@
  * except in compliance with the proprietary license.
  */
 
-import {Page} from '@playwright/test';
-import {Paths} from 'modules/Routes';
+import {deployProcess, createSingleInstance} from '../setup-utils';
 
-export class Dashboard {
-  private page: Page;
+export async function setup() {
+  await deployProcess(['callActivityProcess.bpmn', 'calledProcess.bpmn']);
 
-  constructor(page: Page) {
-    this.page = page;
-  }
-
-  async navigateToDashboard() {
-    await this.page.goto(Paths.dashboard());
-  }
+  return {
+    callActivityProcessInstance: await createSingleInstance(
+      'CallActivityProcess',
+      1,
+    ),
+  };
 }

@@ -97,6 +97,7 @@ const Details: React.FC<Props> = ({metaData, flowNodeId}) => {
                   <Link
                     to={Paths.processInstance(calledProcessInstanceId)}
                     title={`View ${calledProcessDefinitionName} instance ${calledProcessInstanceId}`}
+                    aria-label={`View ${calledProcessDefinitionName} instance ${calledProcessInstanceId}`}
                   >
                     {`${calledProcessDefinitionName} - ${calledProcessInstanceId}`}
                   </Link>
@@ -115,6 +116,7 @@ const Details: React.FC<Props> = ({metaData, flowNodeId}) => {
                 <Link
                   to={Paths.decisionInstance(calledDecisionInstanceId)}
                   title={`View ${calledDecisionDefinitionName} instance ${calledDecisionInstanceId}`}
+                  aria-label={`View ${calledDecisionDefinitionName} instance ${calledDecisionInstanceId}`}
                 >
                   {`${calledDecisionDefinitionName} - ${calledDecisionInstanceId}`}
                 </Link>

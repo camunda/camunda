@@ -11,12 +11,14 @@ import {Login} from './pages/Login';
 import {Processes} from './pages/Processes';
 import fs from 'fs';
 import {Dashboard} from './pages/Dashboard';
+import {ProcessInstance} from './pages/ProcessInstance';
 
 type Fixture = {
   resetData: () => Promise<void>;
   commonPage: Common;
   loginPage: Login;
   dashboardPage: Dashboard;
+  processInstancePage: ProcessInstance;
 };
 
 const loginTest = base.extend<Fixture>({
@@ -31,7 +33,11 @@ const loginTest = base.extend<Fixture>({
 const authFile = 'playwright/.auth/user.json';
 
 const test = base.extend<
-  {processesPage: Processes; dashboardPage: Dashboard},
+  {
+    processesPage: Processes;
+    dashboardPage: Dashboard;
+    processInstancePage: ProcessInstance;
+  },
   {workerStorageState: string}
 >({
   storageState: ({workerStorageState}, use) => use(workerStorageState),
@@ -71,6 +77,9 @@ const test = base.extend<
   },
   dashboardPage: async ({page}, use) => {
     await use(new Dashboard(page));
+  },
+  processInstancePage: async ({page}, use) => {
+    await use(new ProcessInstance(page));
   },
 });
 
