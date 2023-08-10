@@ -127,6 +127,7 @@
     <version.jackson-annotations>2.15.2</version.jackson-annotations>
     <version.swagger-annotations>2.2.15</version.swagger-annotations>
     <version.checker-qual>3.37.0</version.checker-qual>
+    <version.micronaut>4.0.3</version.micronaut>
 
     <!-- maven plugins -->
     <plugin.version.antrun>3.1.0</plugin.version.antrun>
@@ -422,6 +423,45 @@
         <version>${version.jackson}</version>
         <type>pom</type>
         <scope>import</scope>
+      </dependency>
+
+<!--      <dependency>-->
+<!--        <groupId>io.micronaut.platform</groupId>-->
+<!--        <artifactId>micronaut-platform</artifactId>-->
+<!--        <version>${version.micronaut}</version>-->
+<!--        <type>pom</type>-->
+<!--        <scope>import</scope>-->
+<!--      </dependency>-->
+
+      <dependency>
+        <groupId>io.micronaut</groupId>
+        <artifactId>micronaut-core</artifactId>
+        <version>${version.micronaut}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.micronaut</groupId>
+        <artifactId>micronaut-runtime</artifactId>
+        <version>${version.micronaut}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.micronaut</groupId>
+        <artifactId>micronaut-context</artifactId>
+        <version>${version.micronaut}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.micronaut</groupId>
+        <artifactId>micronaut-inject</artifactId>
+        <version>${version.micronaut}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.micronaut</groupId>
+        <artifactId>micronaut-inject-java</artifactId>
+        <version>${version.micronaut}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.micronaut</groupId>
+        <artifactId>micronaut-management</artifactId>
+        <version>${version.micronaut}</version>
       </dependency>
 
       <dependency>
@@ -1146,6 +1186,8 @@
         <artifactId>reactor-core</artifactId>
         <version>3.5.8</version>
       </dependency>
+
+      
 
       <!--      JMH Tests   -->
       <dependency>
