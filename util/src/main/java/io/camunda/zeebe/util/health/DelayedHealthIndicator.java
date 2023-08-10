@@ -69,7 +69,7 @@ public class DelayedHealthIndicator implements HealthIndicator {
     final var originalHealth = originalHealthIndicator.getResult();
     lastHealthResult = Mono.from(originalHealth).block(Duration.ofMillis(5000));
 
-    if (lastHealthResult.equals(HealthStatus.UP)) {
+    if (lastHealthResult.getStatus().equals(HealthStatus.UP)) {
       lastTimeUp = clock.get();
     }
   }
@@ -91,7 +91,10 @@ public class DelayedHealthIndicator implements HealthIndicator {
       }
     }
 
-    return Mono.just(HealthResult.builder(getClass().getSimpleName(), healthStatus).build());
+    return Mono.just(
+        HealthResult.builder(getClass().getSimpleName(), healthStatus)
+            .details(createDetails(now))
+            .build());
   }
 
   private Map<String, Object> createDetails(final long referenceTime) {
@@ -103,7 +106,9 @@ public class DelayedHealthIndicator implements HealthIndicator {
 
     result.put("wasEverUp", lastTimeUp != null);
 
-    if (lastTimeUp != null && lastHealthResult != null && lastHealthResult != HealthStatus.UP) {
+    if (lastTimeUp != null
+        && lastHealthResult != null
+        && lastHealthResult.getStatus() != HealthStatus.UP) {
       result.put("downTime", Duration.ofMillis(referenceTime - lastTimeUp));
     }
 
