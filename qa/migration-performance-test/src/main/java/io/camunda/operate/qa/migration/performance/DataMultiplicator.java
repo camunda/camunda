@@ -44,7 +44,7 @@ import static io.camunda.operate.util.CollectionUtil.map;
 
 @SpringBootApplication
 @ComponentScan(basePackages = {
-    "io.camunda.operate.property", "io.camunda.operate.es",
+    "io.camunda.operate.property", "io.camunda.operate.connect",
     "io.camunda.operate.schema.templates","io.camunda.operate.schema.indices"
     },
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class
