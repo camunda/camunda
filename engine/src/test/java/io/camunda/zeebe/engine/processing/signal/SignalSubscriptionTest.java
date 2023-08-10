@@ -158,6 +158,85 @@ public final class SignalSubscriptionTest {
         .hasSize(1);
   }
 
+  @Test
+  public void shouldOpenSubscriptionWithBoundaryEvent() {
+    // given
+    final String processId = Strings.newRandomValidBpmnId();
+    final var process =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .serviceTask("task", s -> s.zeebeJobType("test"))
+            .boundaryEvent("catch", b -> b.signal("signal"))
+            .endEvent()
+            .done();
+
+    engine.deployment().withXmlResource(process).deploy();
+
+    // when
+    engine.processInstance().ofBpmnProcessId(processId).create();
+
+    // then
+    assertThat(
+            RecordingExporter.signalSubscriptionRecords()
+                .withCatchEventId("catch")
+                .withSignalName("signal")
+                .withBpmnProcessId(processId)
+                .limit(1))
+        .hasSize(1);
+  }
+
+  @Test
+  public void shouldOpenSubscriptionWithIntermediateCatchEvent() {
+    // given
+    final String processId = Strings.newRandomValidBpmnId();
+    final var process =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .intermediateCatchEvent("catch", b -> b.signal("signal"))
+            .endEvent()
+            .done();
+
+    engine.deployment().withXmlResource(process).deploy();
+
+    // when
+    engine.processInstance().ofBpmnProcessId(processId).create();
+
+    // then
+    assertThat(
+            RecordingExporter.signalSubscriptionRecords()
+                .withCatchEventId("catch")
+                .withSignalName("signal")
+                .withBpmnProcessId(processId)
+                .limit(1))
+        .hasSize(1);
+  }
+
+  @Test
+  public void shouldOpenSubscriptionWithSignalEventSubProcess() {
+    // given
+    final String processId = Strings.newRandomValidBpmnId();
+    final var process =
+        Bpmn.createExecutableProcess(processId)
+            .eventSubProcess("sub", e -> e.startEvent("catch", s -> s.signal("signal")).endEvent())
+            .startEvent()
+            .endEvent()
+            .done();
+
+    engine.deployment().withXmlResource(process).deploy();
+
+    // when
+    engine.processInstance().ofBpmnProcessId(processId).create();
+
+    // then
+    assertThat(
+            RecordingExporter.signalSubscriptionRecords()
+                .withCatchEventId("catch")
+                .withSignalName("signal")
+                .withBpmnProcessId(processId)
+                .limit(1))
+        .hasSize(1);
+  }
+
   private static BpmnModelInstance createProcessWithOneSignalStartEvent(final String processId) {
     return Bpmn.createExecutableProcess(processId)
         .startEvent(EVENT_ID1)

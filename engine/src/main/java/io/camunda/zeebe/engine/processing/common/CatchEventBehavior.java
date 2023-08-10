@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCat
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventSupplier;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMessage;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSignal;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -28,8 +29,10 @@ import io.camunda.zeebe.engine.state.message.ProcessMessageSubscription;
 import io.camunda.zeebe.model.bpmn.util.time.Timer;
 import io.camunda.zeebe.protocol.impl.SubscriptionUtil;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.signal.SignalSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
@@ -58,6 +61,8 @@ public final class CatchEventBehavior {
   private final DueDateTimerChecker timerChecker;
   private final KeyGenerator keyGenerator;
   private final int currentPartitionId;
+
+  private final SignalSubscriptionRecord signalSubscription = new SignalSubscriptionRecord();
 
   public CatchEventBehavior(
       final ProcessingState processingState,
@@ -136,7 +141,7 @@ public final class CatchEventBehavior {
       final BpmnElementContext context, final ExecutableCatchEventSupplier supplier) {
     final var evaluationResults =
         supplier.getEvents().stream()
-            .filter(event -> event.isTimer() || event.isMessage())
+            .filter(event -> event.isTimer() || event.isMessage() || event.isSignal())
             .map(event -> evalExpressions(expressionProcessor, event, context))
             .collect(Either.collectorFoldingLeft());
 
@@ -144,6 +149,7 @@ public final class CatchEventBehavior {
         results -> {
           subscribeToMessageEvents(context, results);
           subscribeToTimerEvents(context, results);
+          subscribeToSignalEvents(context, results);
         });
 
     return evaluationResults.map(r -> null);
@@ -157,6 +163,7 @@ public final class CatchEventBehavior {
         .flatMap(this::evaluateMessageName)
         .flatMap(this::evaluateCorrelationKey)
         .flatMap(this::evaluateTimer)
+        .flatMap(this::evaluateSignalName)
         .map(OngoingEvaluation::getResult);
   }
 
@@ -209,6 +216,23 @@ public final class CatchEventBehavior {
         .getTimerFactory()
         .apply(evaluation.expressionProcessor(), scopeKey)
         .map(evaluation::recordTimer);
+  }
+
+  private Either<Failure, OngoingEvaluation> evaluateSignalName(
+      final OngoingEvaluation evaluation) {
+    final var event = evaluation.event();
+
+    if (!event.isSignal()) {
+      return Either.right(evaluation);
+    }
+    final var scopeKey = evaluation.context().getElementInstanceKey();
+    final ExecutableSignal signal = event.getSignal();
+    final Expression signalNameExpression = signal.getSignalNameExpression();
+    return evaluation
+        .expressionProcessor()
+        .evaluateStringExpression(signalNameExpression, scopeKey)
+        .map(BufferUtil::wrapString)
+        .map(evaluation::recordSignalName);
   }
 
   private void subscribeToMessageEvents(
@@ -295,6 +319,30 @@ public final class CatchEventBehavior {
         });
 
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), TimerIntent.CREATED, timerRecord);
+  }
+
+  private void subscribeToSignalEvents(
+      final BpmnElementContext context, final List<EvalResult> results) {
+    results.stream()
+        .filter(EvalResult::isSignal)
+        .forEach(result -> subscribeToSignalEvent(context, result));
+  }
+
+  private void subscribeToSignalEvent(final BpmnElementContext context, final EvalResult result) {
+    final var event = result.event;
+    final var signalName = result.signalName;
+
+    signalSubscription.reset();
+    signalSubscription
+        .setSignalName(signalName)
+        .setProcessDefinitionKey(context.getProcessDefinitionKey())
+        .setBpmnProcessId(context.getBpmnProcessId())
+        .setCatchEventInstanceKey(context.getElementInstanceKey())
+        .setCatchEventId(event.getId());
+
+    final var subscriptionKey = keyGenerator.nextKey();
+    stateWriter.appendFollowUpEvent(
+        subscriptionKey, SignalSubscriptionIntent.CREATED, signalSubscription);
   }
 
   private void unsubscribeFromTimerEvents(
@@ -385,6 +433,7 @@ public final class CatchEventBehavior {
     private DirectBuffer messageName;
     private DirectBuffer correlationKey;
     private Timer timer;
+    private DirectBuffer signalName;
 
     public OngoingEvaluation(
         final ExpressionProcessor expressionProcessor,
@@ -422,8 +471,13 @@ public final class CatchEventBehavior {
       return this;
     }
 
+    public OngoingEvaluation recordSignalName(final DirectBuffer signalName) {
+      this.signalName = signalName;
+      return this;
+    }
+
     EvalResult getResult() {
-      return new EvalResult(event, messageName, correlationKey, timer);
+      return new EvalResult(event, messageName, correlationKey, timer, signalName);
     }
   }
 
@@ -431,7 +485,8 @@ public final class CatchEventBehavior {
       ExecutableCatchEvent event,
       DirectBuffer messageName,
       DirectBuffer correlationKey,
-      Timer timer) {
+      Timer timer,
+      DirectBuffer signalName) {
 
     public boolean isMessage() {
       return event.isMessage();
@@ -439,6 +494,10 @@ public final class CatchEventBehavior {
 
     public boolean isTimer() {
       return event.isTimer();
+    }
+
+    public boolean isSignal() {
+      return event.isSignal();
     }
   }
 }

@@ -24,7 +24,6 @@ import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -194,7 +193,7 @@ public final class SignalEventValidationTest {
   }
 
   @Test
-  public void shouldRejectSignalBoundaryEvent() {
+  public void shouldDeploySignalBoundaryEvent() {
     // given
     final String processId = Strings.newRandomValidBpmnId();
 
@@ -208,20 +207,37 @@ public final class SignalEventValidationTest {
             .done();
 
     final Record<DeploymentRecordValue> deployment =
+        ENGINE.deployment().withXmlResource(processDefinition).deploy();
+
+    // then
+    assertThat(deployment.getKey())
+        .describedAs("Support signal boundary event process deployment")
+        .isNotNegative();
+  }
+
+  @Test
+  public void shouldRejectDeploymentIfSignalBoundaryEventWithEmptyName() {
+    // given
+    final String processId = Strings.newRandomValidBpmnId();
+
+    // when
+    final BpmnModelInstance processDefinition =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .manualTask()
+            .boundaryEvent("signal_boundary_event", b -> b.signal(m -> m.name("")))
+            .endEvent()
+            .done();
+
+    final Record<DeploymentRecordValue> rejectedDeployment =
         ENGINE.deployment().withXmlResource(processDefinition).expectRejection().deploy();
 
     // then
-    Assertions.assertThat(deployment)
-        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
-        .hasRejectionReason(
-            """
-            Expected to deploy new resources, but encountered the following errors:
-            'process.xml': - Element: signal_boundary_event
-                - ERROR: Elements of type signal boundary event are currently not supported
-            """);
+    assertThat(rejectedDeployment.getRejectionReason())
+        .contains("Element: signal_")
+        .contains("ERROR: Name must be present and not empty");
   }
 
-  @Ignore("Should be re-enabled when signal boundary events are supported")
   @Test
   public void shouldDeploySignalStartAndMultipleBoundaryEvents() {
     // given
@@ -250,8 +266,6 @@ public final class SignalEventValidationTest {
         .isNotNegative();
   }
 
-  @Ignore(
-      "Should be re-enabled when signal event-subprocess & signal boundary events are supported")
   @Test
   public void shouldDeployEventSubProcessWithMultipleSignalEvents() {
     // given
@@ -270,7 +284,7 @@ public final class SignalEventValidationTest {
   }
 
   @Test
-  public void shouldRejectSignalIntermediateCatchEvent() {
+  public void shouldDeploySignalIntermediateCatchEvent() {
     // given
     final String processId = Strings.newRandomValidBpmnId();
 
@@ -283,21 +297,38 @@ public final class SignalEventValidationTest {
             .done();
 
     final Record<DeploymentRecordValue> deployment =
-        ENGINE.deployment().withXmlResource(processDefinition).expectRejection().deploy();
+        ENGINE.deployment().withXmlResource(processDefinition).deploy();
 
     // then
-    Assertions.assertThat(deployment)
-        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
-        .hasRejectionReason(
-            """
-            Expected to deploy new resources, but encountered the following errors:
-            'process.xml': - Element: signal_catch_event
-                - ERROR: Elements of type signal intermediate catch event are currently not supported
-            """);
+    assertThat(deployment.getKey())
+        .describedAs("Support signal intermediate event process deployment")
+        .isNotNegative();
   }
 
   @Test
-  public void shouldRejectSignalEventSubprocess() {
+  public void shouldRejectDeploymentIfSignalIntermediateCatchEventWithEmptyName() {
+    // given
+    final String processId = Strings.newRandomValidBpmnId();
+
+    // when
+    final BpmnModelInstance processDefinition =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .intermediateCatchEvent("signal_catch_event")
+            .signal("")
+            .done();
+
+    final Record<DeploymentRecordValue> rejectedDeployment =
+        ENGINE.deployment().withXmlResource(processDefinition).expectRejection().deploy();
+
+    // then
+    assertThat(rejectedDeployment.getRejectionReason())
+        .contains("Element: signal_")
+        .contains("ERROR: Name must be present and not empty");
+  }
+
+  @Test
+  public void shouldDeploySignalEventSubprocess() {
     // given
     final String processId = Strings.newRandomValidBpmnId();
 
@@ -311,20 +342,36 @@ public final class SignalEventValidationTest {
             .done();
 
     final Record<DeploymentRecordValue> deployment =
+        ENGINE.deployment().withXmlResource(processDefinition).deploy();
+
+    // then
+    assertThat(deployment.getKey())
+        .describedAs("Support signal event subprocess process deployment")
+        .isNotNegative();
+  }
+
+  @Test
+  public void shouldRejectDeploymentIfSignalEventSubprocessWithEmptyName() {
+    // given
+    final String processId = Strings.newRandomValidBpmnId();
+
+    // when
+    final BpmnModelInstance processDefinition =
+        Bpmn.createExecutableProcess(processId)
+            .eventSubProcess(
+                "signal_event_subprocess", sub -> sub.startEvent("signal_event", s -> s.signal("")))
+            .startEvent()
+            .done();
+
+    final Record<DeploymentRecordValue> rejectedDeployment =
         ENGINE.deployment().withXmlResource(processDefinition).expectRejection().deploy();
 
     // then
-    Assertions.assertThat(deployment)
-        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
-        .hasRejectionReason(
-            """
-            Expected to deploy new resources, but encountered the following errors:
-            'process.xml': - Element: signal_event_subprocess
-                - ERROR: Elements of type signal event subprocess are currently not supported
-            """);
+    assertThat(rejectedDeployment.getRejectionReason())
+        .contains("Element: signal_")
+        .contains("ERROR: Name must be present and not empty");
   }
 
-  @Ignore("Should be re-enabled when signal boundary events are supported")
   @Test
   public void shouldDeploySignalStartAndBoundaryEventEvenWithSameSignal() {
     // given
