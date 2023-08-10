@@ -185,7 +185,7 @@ final class JobStreamLifecycleIT {
   }
 
   @Test
-  void shouldNotRemoveStreamOnClientCancel() {
+  void shouldNotRemoveOtherStreamOnClientCancel() {
     // given - two logically equivalent clients
     final var stream =
         client.getClient().newStreamJobsCommand().jobType(jobType).consumer(ignored -> {}).send();
