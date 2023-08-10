@@ -97,7 +97,17 @@ public final class DbSignalSubscriptionState implements MutableSignalSubscriptio
   public void visitStartEventSubscriptionsByProcessDefinitionKey(
       final long processDefinitionKey, final SignalSubscriptionVisitor visitor) {
     this.subscriptionKey.wrapLong(processDefinitionKey);
+    visitSubscriptions(visitor);
+  }
 
+  @Override
+  public void visitByElementInstanceKey(
+      final long elementInstanceKey, final SignalSubscriptionVisitor visitor) {
+    this.subscriptionKey.wrapLong(elementInstanceKey);
+    visitSubscriptions(visitor);
+  }
+
+  private void visitSubscriptions(final SignalSubscriptionVisitor visitor) {
     subscriptionKeyAndSignalNameColumnFamily.whileEqualPrefix(
         this.subscriptionKey,
         (key, value) -> {
@@ -111,10 +121,7 @@ public final class DbSignalSubscriptionState implements MutableSignalSubscriptio
   }
 
   private void wrapSubscriptionKeys(final SignalSubscriptionRecord subscription) {
-    final var key =
-        subscription.getCatchEventInstanceKey() > -1
-            ? subscription.getCatchEventInstanceKey()
-            : subscription.getProcessDefinitionKey();
+    final var key = subscription.getSubscriptionKey();
     wrapSubscriptionKeys(key, subscription.getSignalNameBuffer());
   }
 

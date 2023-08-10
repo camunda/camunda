@@ -23,6 +23,7 @@ import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
 import io.camunda.zeebe.engine.state.immutable.ProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.engine.state.immutable.SignalSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.TimerInstanceState;
 import io.camunda.zeebe.engine.state.instance.TimerInstance;
 import io.camunda.zeebe.engine.state.message.ProcessMessageSubscription;
@@ -54,6 +55,7 @@ public final class CatchEventBehavior {
   private final ProcessMessageSubscriptionState processMessageSubscriptionState;
   private final TimerInstanceState timerInstanceState;
   private final ProcessState processState;
+  private final SignalSubscriptionState signalSubscriptionState;
 
   private final ProcessMessageSubscriptionRecord subscription =
       new ProcessMessageSubscriptionRecord();
@@ -82,6 +84,7 @@ public final class CatchEventBehavior {
     timerInstanceState = processingState.getTimerState();
     processMessageSubscriptionState = processingState.getProcessMessageSubscriptionState();
     processState = processingState.getProcessState();
+    signalSubscriptionState = processingState.getSignalSubscriptionState();
 
     this.keyGenerator = keyGenerator;
     this.timerChecker = timerChecker;
@@ -132,6 +135,7 @@ public final class CatchEventBehavior {
 
     unsubscribeFromTimerEvents(elementInstanceKey, elementIdFilter);
     unsubscribeFromMessageEvents(elementInstanceKey, elementIdFilter);
+    unsubscribeFromSignalEvents(elementInstanceKey, elementIdFilter);
   }
 
   /**
@@ -343,6 +347,19 @@ public final class CatchEventBehavior {
     final var subscriptionKey = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(
         subscriptionKey, SignalSubscriptionIntent.CREATED, signalSubscription);
+  }
+
+  private void unsubscribeFromSignalEvents(
+      final long elementInstanceKey, final Predicate<DirectBuffer> elementIdFilter) {
+    signalSubscriptionState.visitByElementInstanceKey(
+        elementInstanceKey,
+        subscription -> {
+          final var elementId = subscription.getRecord().getCatchEventIdBuffer();
+          if (elementIdFilter.test(elementId)) {
+            stateWriter.appendFollowUpEvent(
+                subscription.getKey(), SignalSubscriptionIntent.DELETED, subscription.getRecord());
+          }
+        });
   }
 
   private void unsubscribeFromTimerEvents(

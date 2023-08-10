@@ -23,7 +23,7 @@ public final class SignalSubscriptionDeletedApplier
 
   @Override
   public void applyState(final long key, final SignalSubscriptionRecord value) {
-    final var processDefinitionKey = value.getProcessDefinitionKey();
-    subscriptionState.remove(processDefinitionKey, value.getSignalNameBuffer());
+    final var subscriptionKey = value.getSubscriptionKey();
+    subscriptionState.remove(subscriptionKey, value.getSignalNameBuffer());
   }
 }
