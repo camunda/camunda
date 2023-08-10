@@ -7,8 +7,12 @@
  */
 package io.camunda.zeebe.util.health;
 
-import org.springframework.boot.actuate.health.Health;
-import org.springframework.boot.actuate.health.HealthIndicator;
+import io.micronaut.health.HealthStatus;
+import io.micronaut.management.health.indicator.HealthIndicator;
+import io.micronaut.management.health.indicator.HealthResult;
+import java.util.Map;
+import org.reactivestreams.Publisher;
+import reactor.core.publisher.Mono;
 
 /**
  * Health indicator that compares the free memory against a given threshold. The threshold is given
@@ -23,7 +27,7 @@ public final class MemoryHealthIndicator implements HealthIndicator {
    *
    * @param threshold threshold of free memory in percent; must be a value between {@code ]0,1[}
    */
-  public MemoryHealthIndicator(double threshold) {
+  public MemoryHealthIndicator(final double threshold) {
     if (threshold <= 0 || threshold >= 1) {
       throw new IllegalArgumentException("Threshold must be a value in the interval ]0,1[");
     }
@@ -35,12 +39,17 @@ public final class MemoryHealthIndicator implements HealthIndicator {
   }
 
   @Override
-  public Health health() {
+  public Publisher<HealthResult> getResult() {
+    final HealthStatus healthStatus;
     if (getAvailableMemoryPercentageCurrently() > threshold) {
-      return Health.up().withDetail("threshold", threshold).build();
+      healthStatus = HealthStatus.UP;
     } else {
-      return Health.down().withDetail("threshold", threshold).build();
+      healthStatus = HealthStatus.DOWN;
     }
+    return Mono.just(
+        HealthResult.builder(getClass().getSimpleName(), healthStatus)
+            .details(Map.of("threshold", threshold))
+            .build());
   }
 
   private double getAvailableMemoryPercentageCurrently() {

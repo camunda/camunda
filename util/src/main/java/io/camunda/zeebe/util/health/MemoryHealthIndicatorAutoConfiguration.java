@@ -7,24 +7,22 @@
  */
 package io.camunda.zeebe.util.health;
 
-import org.springframework.boot.actuate.autoconfigure.health.ConditionalOnEnabledHealthIndicator;
-import org.springframework.boot.actuate.autoconfigure.health.HealthContributorAutoConfiguration;
-import org.springframework.boot.autoconfigure.AutoConfigureBefore;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
+import io.micronaut.context.annotation.Replaces;
+import io.micronaut.context.annotation.Requires;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 /** {@link EnableAutoConfiguration Auto-configuration} for {@link MemoryHealthIndicator}. */
-@Configuration(proxyBeanMethods = false)
-@ConditionalOnEnabledHealthIndicator("memory")
-@AutoConfigureBefore(HealthContributorAutoConfiguration.class)
-@EnableConfigurationProperties(MemoryHealthIndicatorProperties.class)
+@Singleton
+@Requires(property = "management.health.memory.enabled", value = "true")
 public class MemoryHealthIndicatorAutoConfiguration {
 
-  @Bean
-  @ConditionalOnMissingBean(name = "memoryHealthIndicator")
-  public MemoryHealthIndicator memoryHealthIndicator(MemoryHealthIndicatorProperties properties) {
+  @Inject
+  @Singleton
+  @Replaces(named = "memoryHealthIndicator")
+  @Requires("memoryHealthIndicator")
+  public MemoryHealthIndicator memoryHealthIndicator(
+      final MemoryHealthIndicatorProperties properties) {
     return new MemoryHealthIndicator(properties.getThreshold());
   }
 }

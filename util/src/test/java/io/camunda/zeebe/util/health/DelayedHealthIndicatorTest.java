@@ -9,6 +9,9 @@ package io.camunda.zeebe.util.health;
 
 import static org.mockito.Mockito.when;
 
+import io.micronaut.health.HealthStatus;
+import io.micronaut.management.health.indicator.AbstractHealthIndicator;
+import io.micronaut.management.health.indicator.HealthResult;
 import java.time.Duration;
 import java.util.function.Supplier;
 import org.assertj.core.api.Assertions;
@@ -16,16 +19,14 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
-import org.springframework.boot.actuate.health.Health;
-import org.springframework.boot.actuate.health.HealthIndicator;
-import org.springframework.boot.actuate.health.Status;
+import reactor.core.publisher.Mono;
 
 @RunWith(MockitoJUnitRunner.class)
 public class DelayedHealthIndicatorTest {
 
   private static final Duration TEST_MAX_DOWNTIME = Duration.ofMillis(10);
 
-  @Mock private HealthIndicator mockHealthIndicator;
+  @Mock private AbstractHealthIndicator<HealthResult> mockHealthIndicator;
 
   @Test
   public void shouldRejectNullHealthIndicatorInConstructor() {
@@ -53,11 +54,12 @@ public class DelayedHealthIndicatorTest {
         new DelayedHealthIndicator(mockHealthIndicator, TEST_MAX_DOWNTIME);
 
     // when
-    final Health actualHealth = sutDelayedHealthIndicator.health();
+    final var actualHealth = sutDelayedHealthIndicator.getResult();
+    final var healthResult = Mono.from(actualHealth).block(Duration.ofMillis(5000));
 
     // then
-    Assertions.assertThat(actualHealth).isNotNull();
-    Assertions.assertThat(actualHealth.getStatus()).isEqualTo(Status.DOWN);
+    Assertions.assertThat(healthResult).isNotNull();
+    Assertions.assertThat(healthResult.getStatus()).isEqualTo(HealthStatus.DOWN);
   }
 
   @Test
@@ -67,15 +69,18 @@ public class DelayedHealthIndicatorTest {
     final var sutDelayedHealthIndicator =
         new DelayedHealthIndicator(mockHealthIndicator, TEST_MAX_DOWNTIME);
 
-    when(mockHealthIndicator.health()).thenReturn(Health.down().build());
+    when(mockHealthIndicator.getResult())
+        .thenReturn(
+            Mono.just(HealthResult.builder(getClass().getSimpleName(), HealthStatus.DOWN).build()));
 
     // when
     sutDelayedHealthIndicator.checkHealth();
-    final Health actualHealth = sutDelayedHealthIndicator.health();
+    final var actualHealth = sutDelayedHealthIndicator.getResult();
+    final var healthResult = Mono.from(actualHealth).block(Duration.ofMillis(5000));
 
     // then
-    Assertions.assertThat(actualHealth).isNotNull();
-    Assertions.assertThat(actualHealth.getStatus()).isEqualTo(Status.DOWN);
+    Assertions.assertThat(healthResult).isNotNull();
+    Assertions.assertThat(healthResult.getStatus()).isEqualTo(HealthStatus.DOWN);
   }
 
   @Test
@@ -86,21 +91,26 @@ public class DelayedHealthIndicatorTest {
     final var sutDelayedHealthIndicator =
         new DelayedHealthIndicator(mockHealthIndicator, TEST_MAX_DOWNTIME, testClock);
     // backend health indicator was up in the past
-    when(mockHealthIndicator.health()).thenReturn(Health.up().build());
+    when(mockHealthIndicator.getResult())
+        .thenReturn(
+            Mono.just(HealthResult.builder(getClass().getSimpleName(), HealthStatus.UP).build()));
     sutDelayedHealthIndicator.checkHealth();
 
     // when
     // backend health indicator goes down
-    when(mockHealthIndicator.health()).thenReturn(Health.down().build());
+    when(mockHealthIndicator.getResult())
+        .thenReturn(
+            Mono.just(HealthResult.builder(getClass().getSimpleName(), HealthStatus.DOWN).build()));
     testClock.setTime(TEST_MAX_DOWNTIME.toMillis() - 1);
     sutDelayedHealthIndicator.checkHealth();
 
-    final Health actualHealth = sutDelayedHealthIndicator.health();
+    final var actualHealth = sutDelayedHealthIndicator.getResult();
+    final var healthResult = Mono.from(actualHealth).block(Duration.ofMillis(5000));
 
     // then
     // delayed health indicator is still up
-    Assertions.assertThat(actualHealth).isNotNull();
-    Assertions.assertThat(actualHealth.getStatus()).isEqualTo(Status.UP);
+    Assertions.assertThat(healthResult).isNotNull();
+    Assertions.assertThat(healthResult.getStatus()).isEqualTo(HealthStatus.UP);
   }
 
   @Test
@@ -112,29 +122,37 @@ public class DelayedHealthIndicatorTest {
     final var sutDelayedHealthIndicator =
         new DelayedHealthIndicator(mockHealthIndicator, TEST_MAX_DOWNTIME, testClock);
     // backend health indicator was up in the past
-    when(mockHealthIndicator.health()).thenReturn(Health.up().build());
+    when(mockHealthIndicator.getResult())
+        .thenReturn(
+            Mono.just(HealthResult.builder(getClass().getSimpleName(), HealthStatus.UP).build()));
     sutDelayedHealthIndicator.checkHealth();
 
     // when
     // backend health indicator goes down
-    when(mockHealthIndicator.health()).thenReturn(Health.down().build());
+    when(mockHealthIndicator.getResult())
+        .thenReturn(
+            Mono.just(HealthResult.builder(getClass().getSimpleName(), HealthStatus.DOWN).build()));
     testClock.setTime(TEST_MAX_DOWNTIME.toMillis() - 1);
     sutDelayedHealthIndicator.checkHealth();
 
-    final Health actualHealthImmediate = sutDelayedHealthIndicator.health();
+    final var actualHealthImmediate = sutDelayedHealthIndicator.getResult();
+    final var healthResultImmediate =
+        Mono.from(actualHealthImmediate).block(Duration.ofMillis(5000));
 
     testClock.setTime(TEST_MAX_DOWNTIME.toMillis() + 1);
     sutDelayedHealthIndicator.checkHealth();
-    final Health actualHealthAfterDelay = sutDelayedHealthIndicator.health();
+    final var actualHealthAfterDelay = sutDelayedHealthIndicator.getResult();
+    final var healthResultAfterDelay =
+        Mono.from(actualHealthAfterDelay).block(Duration.ofMillis(5000));
 
     // then
     // immediate health report was up
-    Assertions.assertThat(actualHealthImmediate).isNotNull();
-    Assertions.assertThat(actualHealthImmediate.getStatus()).isEqualTo(Status.UP);
+    Assertions.assertThat(healthResultImmediate).isNotNull();
+    Assertions.assertThat(healthResultImmediate.getStatus()).isEqualTo(HealthStatus.UP);
 
     // delayed health report was down
-    Assertions.assertThat(actualHealthAfterDelay).isNotNull();
-    Assertions.assertThat(actualHealthAfterDelay.getStatus()).isEqualTo(Status.DOWN);
+    Assertions.assertThat(healthResultAfterDelay).isNotNull();
+    Assertions.assertThat(healthResultAfterDelay.getStatus()).isEqualTo(HealthStatus.DOWN);
   }
 
   @Test
@@ -146,32 +164,42 @@ public class DelayedHealthIndicatorTest {
     final var sutDelayedHealthIndicator =
         new DelayedHealthIndicator(mockHealthIndicator, TEST_MAX_DOWNTIME, testClock);
     // backend health indicator was up in the past
-    when(mockHealthIndicator.health()).thenReturn(Health.up().build());
+    when(mockHealthIndicator.getResult())
+        .thenReturn(
+            Mono.just(HealthResult.builder(getClass().getSimpleName(), HealthStatus.UP).build()));
     sutDelayedHealthIndicator.checkHealth();
 
     // when
     // backend health indicator goes down
-    when(mockHealthIndicator.health()).thenReturn(Health.down().build());
+    when(mockHealthIndicator.getResult())
+        .thenReturn(
+            Mono.just(HealthResult.builder(getClass().getSimpleName(), HealthStatus.DOWN).build()));
     testClock.setTime(TEST_MAX_DOWNTIME.toMillis() - 5);
     sutDelayedHealthIndicator.checkHealth();
-    final Health actualHealthImmediate = sutDelayedHealthIndicator.health();
+    final var actualHealthImmediate = sutDelayedHealthIndicator.getResult();
+    final var healthResultImmediate =
+        Mono.from(actualHealthImmediate).block(Duration.ofMillis(5000));
 
     // backend health indicator is up again
-    when(mockHealthIndicator.health()).thenReturn(Health.up().build());
+    when(mockHealthIndicator.getResult())
+        .thenReturn(
+            Mono.just(HealthResult.builder(getClass().getSimpleName(), HealthStatus.UP).build()));
     testClock.setTime(TEST_MAX_DOWNTIME.toMillis() - 1);
     sutDelayedHealthIndicator.checkHealth();
 
     testClock.setTime(TEST_MAX_DOWNTIME.toMillis() + 1);
-    final Health actualHealthAfterDelay = sutDelayedHealthIndicator.health();
+    final var actualHealthAfterDelay = sutDelayedHealthIndicator.getResult();
+    final var healthResultAfterDelay =
+        Mono.from(actualHealthAfterDelay).block(Duration.ofMillis(5000));
 
     // then
     // immediate health report was up
-    Assertions.assertThat(actualHealthImmediate).isNotNull();
-    Assertions.assertThat(actualHealthImmediate.getStatus()).isEqualTo(Status.UP);
+    Assertions.assertThat(healthResultImmediate).isNotNull();
+    Assertions.assertThat(healthResultImmediate.getStatus()).isEqualTo(HealthStatus.UP);
 
     // delayed health report is also up
-    Assertions.assertThat(actualHealthAfterDelay).isNotNull();
-    Assertions.assertThat(actualHealthAfterDelay.getStatus()).isEqualTo(Status.UP);
+    Assertions.assertThat(healthResultAfterDelay).isNotNull();
+    Assertions.assertThat(healthResultAfterDelay.getStatus()).isEqualTo(HealthStatus.UP);
   }
 
   private static final class TestCLock implements Supplier<Long> {

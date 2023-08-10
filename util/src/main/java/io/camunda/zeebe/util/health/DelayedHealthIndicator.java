@@ -9,15 +9,16 @@ package io.camunda.zeebe.util.health;
 
 import static java.util.Objects.requireNonNull;
 
+import io.micronaut.health.HealthStatus;
+import io.micronaut.management.health.indicator.HealthIndicator;
+import io.micronaut.management.health.indicator.HealthResult;
+import io.micronaut.scheduling.annotation.Scheduled;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
-import org.springframework.boot.actuate.health.Health;
-import org.springframework.boot.actuate.health.Health.Builder;
-import org.springframework.boot.actuate.health.HealthIndicator;
-import org.springframework.boot.actuate.health.Status;
-import org.springframework.scheduling.annotation.Scheduled;
+import org.reactivestreams.Publisher;
+import reactor.core.publisher.Mono;
 
 /**
  * Wrapper for a health indicator that adds time tolerance to the underlying health indicator. When
@@ -37,7 +38,7 @@ public class DelayedHealthIndicator implements HealthIndicator {
   private final Duration maxDowntime;
   private final Supplier<Long> clock;
 
-  private Health lastHealthStatus;
+  private HealthResult lastHealthResult;
   private Long lastTimeUp;
 
   private final Map<String, Object> staticDetails = new HashMap<>();
@@ -63,47 +64,46 @@ public class DelayedHealthIndicator implements HealthIndicator {
     this(originalHealthIndicator, maxDowntime, System::currentTimeMillis);
   }
 
-  @Scheduled(fixedDelay = 5000)
+  @Scheduled(fixedDelay = "5000")
   public void checkHealth() {
-    lastHealthStatus = originalHealthIndicator.health();
+    final var originalHealth = originalHealthIndicator.getResult();
+    lastHealthResult = Mono.from(originalHealth).block(Duration.ofMillis(5000));
 
-    if (lastHealthStatus.getStatus().equals(Status.UP)) {
+    if (lastHealthResult.equals(HealthStatus.UP)) {
       lastTimeUp = clock.get();
     }
   }
 
   @Override
-  public Health health() {
-    final Builder responseBuilder;
+  public Publisher<HealthResult> getResult() {
+    final HealthStatus healthStatus;
     final long now = clock.get();
 
-    if (lastHealthStatus == null) { // was never checked
-      responseBuilder = Health.down();
+    if (lastHealthResult == null) { // was never checked
+      healthStatus = HealthStatus.DOWN;
     } else {
       if (lastTimeUp == null) { // was never up
-        responseBuilder = Health.status(lastHealthStatus.getStatus());
+        healthStatus = lastHealthResult.getStatus();
       } else if (lastTimeUp + maxDowntime.toMillis() > now) {
-        responseBuilder = Health.up();
+        healthStatus = HealthStatus.UP;
       } else {
-        responseBuilder = Health.status(lastHealthStatus.getStatus());
+        healthStatus = lastHealthResult.getStatus();
       }
     }
 
-    return responseBuilder.withDetails(createDetails(now)).build();
+    return Mono.just(HealthResult.builder(getClass().getSimpleName(), healthStatus).build());
   }
 
   private Map<String, Object> createDetails(final long referenceTime) {
     final var result = new HashMap<>(staticDetails);
 
-    if (lastHealthStatus != null) {
-      result.put("lastSeenDelegateHealthStatus", lastHealthStatus);
+    if (lastHealthResult != null) {
+      result.put("lastSeenDelegateHealthStatus", lastHealthResult);
     }
 
     result.put("wasEverUp", lastTimeUp != null);
 
-    if (lastTimeUp != null
-        && lastHealthStatus != null
-        && lastHealthStatus.getStatus() != Status.UP) {
+    if (lastTimeUp != null && lastHealthResult != null && lastHealthResult != HealthStatus.UP) {
       result.put("downTime", Duration.ofMillis(referenceTime - lastTimeUp));
     }
 

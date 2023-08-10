@@ -7,11 +7,14 @@
  */
 package io.camunda.zeebe.util.health;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import io.micronaut.health.HealthStatus;
+import java.time.Duration;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.data.Offset;
 import org.junit.Test;
-import org.springframework.boot.actuate.health.Health;
-import org.springframework.boot.actuate.health.Status;
+import reactor.core.publisher.Mono;
 
 public class MemoryHealthIndicatorTest {
 
@@ -63,10 +66,12 @@ public class MemoryHealthIndicatorTest {
         new MemoryHealthIndicator(thresholdBelowCurrentLevel);
 
     // when
-    final Health actual = sutHealthIndicator.health();
+    final var actualHealth = sutHealthIndicator.getResult();
+    final var healthResult = Mono.from(actualHealth).block(Duration.ofMillis(5000));
 
     // then
-    Assertions.assertThat(actual.getStatus()).isSameAs(Status.UP);
+    assertThat(healthResult).isNotNull();
+    assertThat(healthResult.getStatus()).isEqualTo(HealthStatus.UP);
   }
 
   @Test
@@ -80,10 +85,12 @@ public class MemoryHealthIndicatorTest {
         new MemoryHealthIndicator(thresholdAboveCurrentLevel);
 
     // when
-    final Health actual = sutHealthIndicator.health();
+    final var actualHealth = sutHealthIndicator.getResult();
+    final var healthResult = Mono.from(actualHealth).block(Duration.ofMillis(5000));
 
     // then
-    Assertions.assertThat(actual.getStatus()).isSameAs(Status.DOWN);
+    assertThat(healthResult).isNotNull();
+    assertThat(healthResult.getStatus()).isEqualTo(HealthStatus.DOWN);
   }
 
   private double getAvailablePercentageCurrently() {
