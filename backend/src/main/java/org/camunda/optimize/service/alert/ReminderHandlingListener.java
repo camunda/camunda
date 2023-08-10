@@ -20,7 +20,7 @@ public class ReminderHandlingListener implements JobListener {
   private final Logger logger = LoggerFactory.getLogger(getClass());
   private static final String LISTENER_NAME = "alert-reminder-handler";
 
-  private AlertReminderJobFactory alertReminderJobFactory;
+  private final AlertReminderJobFactory alertReminderJobFactory;
 
   public ReminderHandlingListener(AlertReminderJobFactory reminderJobFactory) {
     this.alertReminderJobFactory = reminderJobFactory;

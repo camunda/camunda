@@ -105,7 +105,7 @@ public class RawProcessDataResultDtoMapper {
           .orElseGet(flowNodeInstance::getFlowNodeId),
         flowNodeInstance.getStartDate(),
         flowNodeInstance.getEndDate()
-      )).collect(Collectors.toList())
+      )).toList()
     );
   }
 

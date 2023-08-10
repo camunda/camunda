@@ -285,7 +285,7 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
       return getAllDocumentsOfIndicesAs(new String[]{indexName}, type, query);
     } catch (ElasticsearchStatusException e) {
       throw new OptimizeIntegrationTestException(
-        "Cannot evaluate document count for index " + indexName,
+        "Cannot get all documents for index " + indexName,
         e
       );
     }

@@ -153,7 +153,7 @@ public class DefinitionReader {
     filterQuery.filter(
       boolQuery().minimumShouldMatch(1)
         .must(termQuery(DEFINITION_DELETED, false))
-        // use separate should queries as definition type may be null (returning both process and decision)
+        // use separate 'should' queries as definition type may be null (returning both process and decision)
         .should(existsQuery(PROCESS_DEFINITION_XML))
         .should(existsQuery(DECISION_DEFINITION_XML))
     );

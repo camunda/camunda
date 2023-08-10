@@ -13,13 +13,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Data
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class ZeebeConfiguration {
+public class ZeebeImportConfiguration {
 
-  private boolean enabled;
-  private String name;
-  private int partitionCount;
-  private int maxImportPageSize;
-  private boolean includeObjectVariableValue;
-  private ZeebeImportConfiguration importConfig;
+  private int dynamicBatchSuccessAttempts;
+  private int maxEmptyPagesToImport;
 
 }

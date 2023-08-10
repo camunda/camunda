@@ -8,6 +8,7 @@ package org.camunda.optimize.service.importing.processdefinition;
 import io.camunda.zeebe.client.api.response.Process;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import lombok.SneakyThrows;
 import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.AbstractZeebeIT;
@@ -16,6 +17,9 @@ import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.FlowNodeDataDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.zeebe.definition.ZeebeProcessDefinitionRecordDto;
+import org.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceDataDto;
+import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIf;
 
@@ -30,6 +34,8 @@ import static org.camunda.optimize.util.ZeebeBpmnModels.USER_TASK;
 import static org.camunda.optimize.util.ZeebeBpmnModels.createSimpleServiceTaskProcess;
 import static org.camunda.optimize.util.ZeebeBpmnModels.createSimpleUserTaskProcess;
 import static org.camunda.optimize.util.ZeebeBpmnModels.createStartEndProcess;
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 public class ZeebeProcessDefinitionImportIT extends AbstractZeebeIT {
 
@@ -231,6 +237,20 @@ public class ZeebeProcessDefinitionImportIT extends AbstractZeebeIT {
     final Process deployedProcess = zeebeExtension.deployProcess(simpleProcess);
     zeebeExtension.startProcessInstanceForProcess(deployedProcess.getBpmnProcessId());
     return deployedProcess;
+  }
+
+  private void waitUntilDefinitionWithIdExported(final String processDefinitionId) {
+    waitUntilMinimumDataExportedCount(
+      1,
+      ElasticsearchConstants.ZEEBE_PROCESS_DEFINITION_INDEX_NAME,
+      boolQuery()
+        .must(termQuery(ZeebeProcessDefinitionRecordDto.Fields.intent, ProcessIntent.CREATED.name()))
+        .must(termQuery(
+          ZeebeProcessDefinitionRecordDto.Fields.value + "." +
+            ZeebeProcessInstanceDataDto.Fields.bpmnProcessId,
+          processDefinitionId
+        ))
+    );
   }
 
 }

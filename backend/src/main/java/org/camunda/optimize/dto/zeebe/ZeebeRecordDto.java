@@ -15,6 +15,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 import lombok.experimental.FieldNameConstants;
 
 @EqualsAndHashCode
@@ -22,6 +23,7 @@ import lombok.experimental.FieldNameConstants;
 @Setter
 @FieldNameConstants
 @NoArgsConstructor
+@ToString(callSuper = true)
 public abstract class ZeebeRecordDto<VALUE extends RecordValue, INTENT extends Intent> implements Record<VALUE> {
 
   private long position;

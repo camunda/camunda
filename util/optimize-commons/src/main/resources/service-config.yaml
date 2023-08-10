@@ -201,6 +201,12 @@ zeebe:
   maxImportPageSize: ${CAMUNDA_OPTIMIZE_ZEEBE_MAX_IMPORT_PAGE_SIZE:200}
   # Determines whether Optimize should convert and store object variables from Zeebe
   includeObjectVariableValue: ${CAMUNDA_OPTIMIZE_ZEEBE_INCLUDE_OBJECT_VARIABLE:true}
+  importConfig:
+    # The number of successful fetches that should be attempted before increasing the batch size during fetching
+    dynamicBatchSuccessAttempts: ${CAMUNDA_OPTIMIZE_ZEEBE_IMPORT_DYNAMIC_BATCH_SUCCESS_ATTEMPTS:10}
+    # The number of empty pages to fetch before checking whether new data is available to import that cannot be reached
+    # using the sequence query
+    maxEmptyPagesToImport: ${CAMUNDA_OPTIMIZE_ZEEBE_IMPORT_MAX_EMPTY_PAGES_TO_IMPORT:10}
 
 import:
   data:
