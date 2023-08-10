@@ -135,20 +135,24 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
             diskSpaceUsageMonitor,
             gatewayBrokerTransport,
             jobStreamer);
+    final var managementService =
+        new DefaultPartitionManagementService(
+            clusterServices.getMembershipService(), clusterServices.getCommunicationService());
+    final var memberId = clusterServices.getMembershipService().getLocalMember().id();
     partitionGroup
-        .join(
-            new DefaultPartitionManagementService(
-                clusterServices.getMembershipService(), clusterServices.getCommunicationService()))
+        .join(managementService)
         .forEach(
             partitionStart ->
                 partitionStart
-                    .thenApply(
+                    .thenAccept(
                         partition -> {
+                          if (!partition.members().contains(memberId)) {
+                            return;
+                          }
                           final var zeebePartition =
                               partitionFactory.constructPartition(
                                   partition, partitionListeners, topologyManager, featureFlags);
                           startPartition(zeebePartition);
-                          return null;
                         })
                     .exceptionally(
                         error -> {
