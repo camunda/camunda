@@ -9,5 +9,5 @@ We are in the process of migrating Camunda Optimize UI to use the Carbon Design 
 
 The migration to the Carbon Design System for Camunda Optimize is an ongoing effort. We have successfully migrated modals, tables, and popovers, ensuring these components seamlessly integrate into the new design. While the functionality you love remains intact, you can expect a refreshing new UI that aligns with the Carbon Design System.
 
-## Updated Report Templates
+## Copy Instant Preview Dashboard
 When viewing an Instant Preview Dashboard, you can now directly create a copy that can then be edited and shared like any other Dashboard. This Dashboard is now also available as a selectable template during Dashboard creation.

@@ -9,5 +9,5 @@ Aktuell befinden wir uns in einer Migration der aktuellen Optimize Oberflächen 
 
 Die Migration erfolgt schrittweise mit kommenden Releases von Optimize. Aktuell wurden Modal-Dialoge, Tabellen und Pop-Overs erfolgreich migriert. Die bekannten Funktionen sind weiter in gewohnter Weise verfügbar, ab sofort jedoch im frischen Carbon Design.
 
-## Aktualisierte Berichtsvorlagen
+## Kopierfunktion für das Instant Preview Dashboard
 Beim Anzeigen eines Instant Preview-Dashboards können Sie jetzt direkt eine Kopie erstellen, die dann wie jedes andere Dashboard bearbeitet und geteilt werden kann. Dieses Dashboard steht nun auch als auswählbare Vorlage bei der Dashboard-Erstellung zur Verfügung.
