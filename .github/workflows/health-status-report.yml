@@ -1,4 +1,4 @@
-name: Medic daily report
+name: Optimize health status report
 
 on:
   workflow_dispatch:
@@ -10,7 +10,7 @@ permissions:
   actions: read
 
 jobs:
-  medic-daily-report:
+  health-status-report:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -29,23 +29,23 @@ jobs:
             secret/data/products/optimize/ci/camunda-optimize ARGOCD_TOKEN;
             secret/data/products/optimize/ci/camunda-optimize SNYK_TOKEN;
 
-      - name: Get medic daily report
+      - name: Get health status report
         id: get-report
         run: |
-          cd ${{ github.workspace }}/.github/scripts/medicDailyReport
+          cd ${{ github.workspace }}/.github/scripts/healthStatusReport
           yarn
-          echo "medic_daily_report<<EOF" >> "$GITHUB_OUTPUT"
-          echo "$(npx ts-node getDailyStatusMessage.ts)" >> "$GITHUB_OUTPUT"
+          echo "health_status_report<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$(npx ts-node getHealthStatusMessage.ts)" >> "$GITHUB_OUTPUT"
           echo "EOF" >> "$GITHUB_OUTPUT"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ARGOCD_TOKEN: ${{ steps.secrets.outputs.ARGOCD_TOKEN }}
           SNYK_TOKEN: ${{ steps.secrets.outputs.SNYK_TOKEN }}
 
-      - name: Send daily report to slack channel
+      - name: Send report to slack channel
         uses: slackapi/slack-github-action@v1.24.0
         with:
-          channel-id: "#optimize-daily-medic-update"
-          slack-message: ${{ steps.get-report.outputs.medic_daily_report }}
+          channel-id: "#optimize-health-status-update"
+          slack-message: ${{ steps.get-report.outputs.health_status_report }}
         env:
           SLACK_BOT_TOKEN: ${{ steps.secrets.outputs.SLACK_API_KEY }}
