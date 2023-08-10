@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import {runLastEffect} from '__mocks__/react';
 import {shallow} from 'enzyme';
 
 import Footer from './Footer';
@@ -22,23 +22,21 @@ jest.mock('config', () => {
 
 it('includes the version number retrieved from back-end', async () => {
   const version = 'alpha';
-  getOptimizeVersion.mockReturnValue(version);
+  (getOptimizeVersion as jest.Mock).mockReturnValue(version);
 
   const node = shallow(<Footer />);
 
+  runLastEffect();
   await flushPromises();
 
   expect(node.find('.colophon')).toIncludeText(version);
 });
 
 it('should not show status in cloud environment', async () => {
-  getOptimizeProfile.mockReturnValueOnce('cloud');
+  (getOptimizeProfile as jest.Mock).mockReturnValueOnce('cloud');
   const node = shallow(<Footer />);
 
-  node.setState({
-    loaded: true,
-  });
-
+  runLastEffect();
   await flushPromises();
 
   expect(node.find(ConnectionStatus)).not.toExist();

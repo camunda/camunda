@@ -5,13 +5,13 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {runLastEffect} from 'react';
+import {runLastEffect} from '__mocks__/react';
 import {shallow} from 'enzyme';
 import {Server} from 'mock-socket';
 
 import ConnectionStatus from './ConnectionStatus';
 
-let server;
+let server: Server;
 beforeEach(() => {
   server = new Server('ws://localhost/ws/status');
 });

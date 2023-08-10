@@ -53,7 +53,8 @@
     "label": "Lizenz",
     "licensedFor": "Lizenziert für",
     "validUntil": "Gültig bis",
-    "redirectMessage": "Sie werden in Kürze zur Anmeldeseite weitergeleitet. <a href=\"./\">Klicken Sie hier, um sofort zur Anmeldeseite zu gelangen</a> ",
+    "redirectMessage": "Sie werden in Kürze zur Anmeldeseite weitergeleitet.",
+    "clickToLogin": "Klicken Sie hier, um sofort zur Anmeldeseite zu gelangen",
     "licenseKey": "Lizenzschlüssel",
     "enterLicense": "Bitte geben Sie den Lizenzschlüssel ein",
     "submit": "Absenden",
@@ -1082,6 +1083,7 @@
     "configure": "Konfigurieren",
     "new": "Neuer",
     "error": "Fehler",
+    "closeError": "Fehlerbenachrichtigung schließen",
     "process": {
       "label": "Prozess",
       "label-plural": "Prozesse"

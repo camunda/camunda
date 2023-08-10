@@ -5,15 +5,21 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {useEffect, useState} from 'react';
-
+import {useEffect, useState} from 'react';
 import {Tooltip} from 'components';
 import {t} from 'translation';
 
 import './ConnectionStatus.scss';
 
+interface EngineStatus {
+  [key: string]: {
+    isConnected: boolean;
+    isImporting: boolean;
+  };
+}
+
 export default function ConnectionStatus() {
-  const [engineStatus, setEngineStatus] = useState({});
+  const [engineStatus, setEngineStatus] = useState<EngineStatus>({});
   const [connectedToElasticsearch, setConnectedToElasticsearch] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
@@ -42,9 +48,9 @@ export default function ConnectionStatus() {
     return () => {
       connection.close();
     };
-  }, [setConnectedToElasticsearch, setEngineStatus, setError, setLoaded]);
+  }, []);
 
-  function renderListElement(key, connectionStatus, isImporting) {
+  function renderListElement(key: string, connectionStatus: boolean, isImporting: boolean) {
     let className = 'statusItem';
     let title;
 
@@ -79,8 +85,8 @@ export default function ConnectionStatus() {
         loaded && (
           <ul className="status">
             <>
-              {Object.keys(engineStatus).map((key) =>
-                renderListElement(key, engineStatus[key].isConnected, engineStatus[key].isImporting)
+              {Object.entries(engineStatus).map(([key, {isConnected, isImporting}]) =>
+                renderListElement(key, isConnected, isImporting)
               )}
               {renderListElement('Elasticsearch', connectedToElasticsearch, false)}
             </>

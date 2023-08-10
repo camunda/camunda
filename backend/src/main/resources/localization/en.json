@@ -53,7 +53,8 @@
     "label": "License",
     "licensedFor": "Licensed for",
     "validUntil": "Valid until",
-    "redirectMessage": "You will be redirected to login page shortly. <a href=\"./\">Click here to go to login page immediately</a>",
+    "redirectMessage": "You will be redirected to login page shortly.",
+    "clickToLogin": "Click here to go to login page immediately",
     "licenseKey": "License Key",
     "enterLicense": "Please enter license key",
     "submit": "Submit",
@@ -1082,6 +1083,7 @@
     "configure": "Configure",
     "new": "New",
     "error": "Error",
+    "closeError": "Close error notification",
     "process": {
       "label": "Process",
       "label-plural": "Processes"
