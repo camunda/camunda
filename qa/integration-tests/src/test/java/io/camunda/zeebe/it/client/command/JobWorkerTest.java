@@ -16,7 +16,7 @@ import io.camunda.zeebe.it.clustering.ClusteringRuleExtension;
 import io.camunda.zeebe.it.util.GrpcClientRule;
 import io.camunda.zeebe.it.util.RecordingJobHandler;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.qa.util.JobStreamServiceAssert;
+import io.camunda.zeebe.qa.util.jobstream.JobStreamServiceAssert;
 import io.camunda.zeebe.test.util.Strings;
 import java.util.List;
 import java.util.Map;

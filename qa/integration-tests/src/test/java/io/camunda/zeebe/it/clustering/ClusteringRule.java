@@ -852,6 +852,10 @@ public class ClusteringRule extends ExternalResource {
     }
   }
 
+  public JobStreamClient gatewayJobStreamClient() {
+    return gatewayResource.jobStreamClient;
+  }
+
   /**
    * Runs until a given number of segments are filled on all brokers. This is useful for publishing
    * messages until a segment is full, thus triggering log compaction.

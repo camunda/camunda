@@ -15,7 +15,7 @@ import io.camunda.zeebe.it.clustering.ClusteringRuleExtension;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
-import io.camunda.zeebe.qa.util.JobStreamServiceAssert;
+import io.camunda.zeebe.qa.util.jobstream.JobStreamServiceAssert;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.grpc.Status;
