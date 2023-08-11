@@ -11,16 +11,17 @@ import io.camunda.zeebe.broker.jobstream.JobStreamService;
 import io.camunda.zeebe.broker.system.management.BrokerAdminService;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.gateway.impl.stream.JobStreamClient;
+import io.micronaut.context.annotation.Bean;
+import jakarta.inject.Singleton;
 import java.util.Optional;
 import java.util.function.Supplier;
-import org.springframework.stereotype.Component;
 
 /**
  * Helper class that allows Spring beans to access information from the Broker code that is not
  * managed by Spring
  */
-@Component
-public class SpringBrokerBridge {
+@Singleton
+public class MicronautBrokerBridge {
 
   private Supplier<BrokerHealthCheckService> healthCheckServiceSupplier;
   private Supplier<BrokerAdminService> adminServiceSupplier;

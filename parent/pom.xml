@@ -458,6 +458,11 @@
         <artifactId>micronaut-management</artifactId>
         <version>${version.micronaut}</version>
       </dependency>
+      <dependency>
+        <groupId>io.micronaut</groupId>
+        <artifactId>micronaut-http</artifactId>
+        <version>${version.micronaut}</version>
+      </dependency>
 
       <dependency>
         <groupId>org.springframework</groupId>

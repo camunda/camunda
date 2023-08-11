@@ -7,26 +7,28 @@
  */
 package io.camunda.zeebe.broker.system.monitoring;
 
-import io.camunda.zeebe.broker.SpringBrokerBridge;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RestController;
+import io.camunda.zeebe.broker.MicronautBrokerBridge;
+import io.micronaut.http.HttpStatus;
+import io.micronaut.http.annotation.Controller;
+import io.micronaut.http.annotation.Get;
 
-@RestController
+@Controller
 public class MonitoringRestController {
 
   private static final String BROKER_READY_STATUS_URI = "/ready";
   private static final String BROKER_STARTUP_STATUS_URI = "/startup";
   private static final String BROKER_HEALTH_STATUS_URI = "/health";
 
-  @Autowired private SpringBrokerBridge springBrokerBridge;
+  private final MicronautBrokerBridge micronautBrokerBridge;
 
-  @GetMapping(value = BROKER_HEALTH_STATUS_URI)
-  public ResponseEntity<String> health() {
+  public MonitoringRestController(final MicronautBrokerBridge micronautBrokerBridge) {
+    this.micronautBrokerBridge = micronautBrokerBridge;
+  }
+
+  @Get(value = BROKER_HEALTH_STATUS_URI)
+  public HttpStatus health() {
     final boolean brokerHealthy =
-        springBrokerBridge
+        micronautBrokerBridge
             .getBrokerHealthCheckService()
             .map(BrokerHealthCheckService::isBrokerHealthy)
             .orElse(false);
@@ -37,13 +39,13 @@ public class MonitoringRestController {
     } else {
       status = HttpStatus.SERVICE_UNAVAILABLE;
     }
-    return new ResponseEntity<>(status);
+    return status;
   }
 
-  @GetMapping(value = BROKER_READY_STATUS_URI)
-  public ResponseEntity<String> ready() {
+  @Get(value = BROKER_READY_STATUS_URI)
+  public HttpStatus ready() {
     final boolean brokerReady =
-        springBrokerBridge
+        micronautBrokerBridge
             .getBrokerHealthCheckService()
             .map(BrokerHealthCheckService::isBrokerReady)
             .orElse(false);
@@ -54,13 +56,13 @@ public class MonitoringRestController {
     } else {
       status = HttpStatus.SERVICE_UNAVAILABLE;
     }
-    return new ResponseEntity<>(status);
+    return status;
   }
 
-  @GetMapping(value = BROKER_STARTUP_STATUS_URI)
-  public ResponseEntity<String> startup() {
+  @Get(value = BROKER_STARTUP_STATUS_URI)
+  public HttpStatus startup() {
     final boolean brokerStarted =
-        springBrokerBridge
+        micronautBrokerBridge
             .getBrokerHealthCheckService()
             .map(BrokerHealthCheckService::isBrokerStarted)
             .orElse(false);
@@ -71,6 +73,6 @@ public class MonitoringRestController {
     } else {
       status = HttpStatus.SERVICE_UNAVAILABLE;
     }
-    return new ResponseEntity<>(status);
+    return status;
   }
 }

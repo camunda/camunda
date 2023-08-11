@@ -15,9 +15,13 @@ import io.camunda.zeebe.broker.exporter.metrics.MetricsExporter;
 import io.camunda.zeebe.broker.system.configuration.backpressure.BackpressureCfg;
 import io.camunda.zeebe.util.Environment;
 import io.camunda.zeebe.util.exception.UncheckedExecutionException;
+import io.micronaut.context.annotation.ConfigurationProperties;
+import jakarta.inject.Singleton;
 import java.util.HashMap;
 import java.util.Map;
 
+@Singleton
+@ConfigurationProperties("zeebe.broker")
 public final class BrokerCfg {
 
   static final String ENV_DEBUG_EXPORTER = "ZEEBE_DEBUG";

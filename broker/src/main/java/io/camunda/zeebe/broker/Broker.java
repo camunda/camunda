@@ -45,13 +45,14 @@ public final class Broker implements AutoCloseable {
   private BrokerContext brokerContext;
 
   // TODO make Broker class itself the actor
-  public Broker(final SystemContext systemContext, final SpringBrokerBridge springBrokerBridge) {
-    this(systemContext, springBrokerBridge, Collections.emptyList());
+  public Broker(
+      final SystemContext systemContext, final MicronautBrokerBridge micronautBrokerBridge) {
+    this(systemContext, micronautBrokerBridge, Collections.emptyList());
   }
 
   public Broker(
       final SystemContext systemContext,
-      final SpringBrokerBridge springBrokerBridge,
+      final MicronautBrokerBridge micronautBrokerBridge,
       final List<PartitionListener> additionalPartitionListeners) {
     this.systemContext = systemContext;
 
@@ -64,7 +65,7 @@ public final class Broker implements AutoCloseable {
         new BrokerStartupContextImpl(
             localBroker,
             systemContext.getBrokerConfiguration(),
-            springBrokerBridge,
+            micronautBrokerBridge,
             scheduler,
             healthCheckService,
             buildExporterRepository(getConfig()),

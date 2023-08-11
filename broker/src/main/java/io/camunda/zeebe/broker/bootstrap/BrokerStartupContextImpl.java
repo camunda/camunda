@@ -11,8 +11,8 @@ import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
 
 import io.atomix.cluster.messaging.ManagedMessagingService;
+import io.camunda.zeebe.broker.MicronautBrokerBridge;
 import io.camunda.zeebe.broker.PartitionListener;
-import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.jobstream.JobStreamService;
@@ -37,7 +37,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
 
   private final BrokerInfo brokerInfo;
   private final BrokerCfg configuration;
-  private final SpringBrokerBridge springBrokerBridge;
+  private final MicronautBrokerBridge micronautBrokerBridge;
   private final ActorSchedulingService actorScheduler;
   private final BrokerHealthCheckService healthCheckService;
   private final ExporterRepository exporterRepository;
@@ -59,7 +59,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   public BrokerStartupContextImpl(
       final BrokerInfo brokerInfo,
       final BrokerCfg configuration,
-      final SpringBrokerBridge springBrokerBridge,
+      final MicronautBrokerBridge micronautBrokerBridge,
       final ActorSchedulingService actorScheduler,
       final BrokerHealthCheckService healthCheckService,
       final ExporterRepository exporterRepository,
@@ -68,7 +68,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
 
     this.brokerInfo = requireNonNull(brokerInfo);
     this.configuration = requireNonNull(configuration);
-    this.springBrokerBridge = requireNonNull(springBrokerBridge);
+    this.micronautBrokerBridge = requireNonNull(micronautBrokerBridge);
     this.actorScheduler = requireNonNull(actorScheduler);
     this.healthCheckService = requireNonNull(healthCheckService);
     this.exporterRepository = requireNonNull(exporterRepository);
@@ -87,8 +87,8 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   }
 
   @Override
-  public SpringBrokerBridge getSpringBrokerBridge() {
-    return springBrokerBridge;
+  public MicronautBrokerBridge getSpringBrokerBridge() {
+    return micronautBrokerBridge;
   }
 
   @Override

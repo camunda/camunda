@@ -22,10 +22,10 @@ import org.springframework.stereotype.Component;
 
 @Component(value = "jobStreamService")
 final class BrokerJobStreamService implements JobStreamEndpoint.Service {
-  private final SpringBrokerBridge bridge;
+  private final MicronautBrokerBridge bridge;
 
   @Autowired
-  public BrokerJobStreamService(final SpringBrokerBridge bridge) {
+  public BrokerJobStreamService(final MicronautBrokerBridge bridge) {
     this.bridge = bridge;
   }
 

@@ -7,25 +7,26 @@
  */
 package io.camunda.zeebe.broker.system.management;
 
-import io.camunda.zeebe.broker.SpringBrokerBridge;
+import io.camunda.zeebe.broker.MicronautBrokerBridge;
+import io.micronaut.context.annotation.Bean;
+import io.micronaut.management.endpoint.annotation.Endpoint;
+import io.micronaut.management.endpoint.annotation.Read;
+import io.micronaut.management.endpoint.annotation.Selector;
+import io.micronaut.management.endpoint.annotation.Write;
+import jakarta.inject.Singleton;
 import java.util.HashMap;
 import java.util.Map;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.actuate.endpoint.annotation.Endpoint;
-import org.springframework.boot.actuate.endpoint.annotation.ReadOperation;
-import org.springframework.boot.actuate.endpoint.annotation.Selector;
-import org.springframework.boot.actuate.endpoint.annotation.WriteOperation;
-import org.springframework.stereotype.Component;
 
-@Component
+@Singleton
 @Endpoint(id = "partitions")
 public class BrokerAdminServiceEndpoint {
 
-  @Autowired private SpringBrokerBridge springBrokerBridge;
+  private final MicronautBrokerBridge micronautBrokerBridge;
 
   private final Map<String, Runnable> operations = new HashMap<>();
 
-  public BrokerAdminServiceEndpoint() {
+  public BrokerAdminServiceEndpoint(final MicronautBrokerBridge micronautBrokerBridge) {
+    this.micronautBrokerBridge = micronautBrokerBridge;
     operations.put("pauseProcessing", this::pauseProcessing);
     operations.put("resumeProcessing", this::resumeProcessing);
     operations.put("takeSnapshot", this::takeSnapshot);
@@ -34,7 +35,7 @@ public class BrokerAdminServiceEndpoint {
     operations.put("resumeExporting", this::resumeExporting);
   }
 
-  @WriteOperation
+  @Write
   public Map<Integer, PartitionStatus> trigger(@Selector final String operation) {
     final var runnable = operations.get(operation);
     if (runnable != null) {
@@ -46,38 +47,38 @@ public class BrokerAdminServiceEndpoint {
   }
 
   private Map<Integer, PartitionStatus> pauseProcessing() {
-    springBrokerBridge.getAdminService().ifPresent(BrokerAdminService::pauseStreamProcessing);
+    micronautBrokerBridge.getAdminService().ifPresent(BrokerAdminService::pauseStreamProcessing);
     return partitionStatus();
   }
 
   private Map<Integer, PartitionStatus> resumeProcessing() {
-    springBrokerBridge.getAdminService().ifPresent(BrokerAdminService::resumeStreamProcessing);
+    micronautBrokerBridge.getAdminService().ifPresent(BrokerAdminService::resumeStreamProcessing);
     return partitionStatus();
   }
 
   private Map<Integer, PartitionStatus> pauseExporting() {
-    springBrokerBridge.getAdminService().ifPresent(BrokerAdminService::pauseExporting);
+    micronautBrokerBridge.getAdminService().ifPresent(BrokerAdminService::pauseExporting);
     return partitionStatus();
   }
 
   private Map<Integer, PartitionStatus> resumeExporting() {
-    springBrokerBridge.getAdminService().ifPresent(BrokerAdminService::resumeExporting);
+    micronautBrokerBridge.getAdminService().ifPresent(BrokerAdminService::resumeExporting);
     return partitionStatus();
   }
 
   private Map<Integer, PartitionStatus> takeSnapshot() {
-    springBrokerBridge.getAdminService().ifPresent(BrokerAdminService::takeSnapshot);
+    micronautBrokerBridge.getAdminService().ifPresent(BrokerAdminService::takeSnapshot);
     return partitionStatus();
   }
 
   private Map<Integer, PartitionStatus> prepareUpgrade() {
-    springBrokerBridge.getAdminService().ifPresent(BrokerAdminService::prepareForUpgrade);
+    micronautBrokerBridge.getAdminService().ifPresent(BrokerAdminService::prepareForUpgrade);
     return partitionStatus();
   }
 
-  @ReadOperation
+  @Read
   public Map<Integer, PartitionStatus> partitionStatus() {
-    return springBrokerBridge
+    return micronautBrokerBridge
         .getAdminService()
         .map(BrokerAdminService::getPartitionStatus)
         .orElse(Map.of());

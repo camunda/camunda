@@ -8,8 +8,8 @@
 package io.camunda.zeebe.broker.bootstrap;
 
 import io.atomix.cluster.messaging.ManagedMessagingService;
+import io.camunda.zeebe.broker.MicronautBrokerBridge;
 import io.camunda.zeebe.broker.PartitionListener;
-import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.jobstream.JobStreamService;
@@ -39,7 +39,7 @@ public interface BrokerStartupContext {
 
   BrokerCfg getBrokerConfiguration();
 
-  SpringBrokerBridge getSpringBrokerBridge();
+  MicronautBrokerBridge getSpringBrokerBridge();
 
   ActorSchedulingService getActorSchedulingService();
 
