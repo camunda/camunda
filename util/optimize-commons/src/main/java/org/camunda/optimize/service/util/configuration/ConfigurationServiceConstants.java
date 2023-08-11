@@ -137,7 +137,8 @@ public class ConfigurationServiceConstants {
   public static final String ANALYTICS_CONFIGURATION = "$.analytics";
 
   public static final String ONBOARDING_CONFIGURATION = "$.onboarding";
-
+  public static final String PANEL_NOTIFICATION_CONFIGURATION = "$.panelNotification";
+  public static final String M2M_CLIENT_CONFIGURATION = "$.m2mClient";
   public static final String CREATE_MANAGEMENT_ENTITIES_ON_STARTUP = "$.managementEntities.createOnStartup";
 
   //  This isn't strictly part of the configuration service, but is part of how Optimize is configured

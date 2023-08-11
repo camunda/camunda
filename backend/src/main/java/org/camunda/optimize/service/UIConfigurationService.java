@@ -80,7 +80,7 @@ public class UIConfigurationService {
     cloudSaasMetaInfoService.flatMap(CloudSaasMetaInfoService::getSalesPlanType).ifPresent(onboarding::setSalesPlanType);
     cloudSaasMetaInfoService.ifPresent(service -> {
       uiConfigurationDto.setWebappsLinks(service.getWebappsLinks());
-      uiConfigurationDto.setNotificationsUrl(configurationService.getUsersConfiguration().getCloud().getNotificationsUrl());
+      uiConfigurationDto.setNotificationsUrl(configurationService.getPanelNotificationConfiguration().getUrl());
     });
 
     return uiConfigurationDto;

@@ -15,7 +15,7 @@ import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOwnerRespo
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessUpdateDto;
 import org.camunda.optimize.dto.optimize.rest.sorting.ProcessOverviewSorter;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
-import org.camunda.optimize.service.onboardinglistener.OnboardingSchedulerService;
+import org.camunda.optimize.service.onboarding.OnboardingSchedulerService;
 import org.junit.jupiter.api.Test;
 
 import jakarta.ws.rs.core.Response;
@@ -53,7 +53,7 @@ public class ProcessInitialOwnerIT extends AbstractIT {
     final OnboardingSchedulerService onboardingSchedulerService =
       embeddedOptimizeExtension.getApplicationContext().getBean(OnboardingSchedulerService.class);
     // Process the pending data
-    onboardingSchedulerService.checkIfNewOnboardingDataIsPresent();
+    onboardingSchedulerService.onboardNewProcesses();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
@@ -80,7 +80,7 @@ public class ProcessInitialOwnerIT extends AbstractIT {
     final OnboardingSchedulerService onboardingSchedulerService =
       embeddedOptimizeExtension.getApplicationContext().getBean(OnboardingSchedulerService.class);
     // Process the pending data
-    onboardingSchedulerService.checkIfNewOnboardingDataIsPresent();
+    onboardingSchedulerService.onboardNewProcesses();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
@@ -111,7 +111,7 @@ public class ProcessInitialOwnerIT extends AbstractIT {
     final OnboardingSchedulerService onboardingSchedulerService =
       embeddedOptimizeExtension.getApplicationContext().getBean(OnboardingSchedulerService.class);
     // Process the pending data
-    onboardingSchedulerService.checkIfNewOnboardingDataIsPresent();
+    onboardingSchedulerService.onboardNewProcesses();
 
     // then
     assertThat(responseInitialOwner.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
@@ -141,7 +141,7 @@ public class ProcessInitialOwnerIT extends AbstractIT {
     final OnboardingSchedulerService onboardingSchedulerService =
       embeddedOptimizeExtension.getApplicationContext().getBean(OnboardingSchedulerService.class);
     // Process the pending data
-    onboardingSchedulerService.checkIfNewOnboardingDataIsPresent();
+    onboardingSchedulerService.onboardNewProcesses();
 
     // then
     assertThat(responseInitialOwner.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
@@ -164,7 +164,7 @@ public class ProcessInitialOwnerIT extends AbstractIT {
     final OnboardingSchedulerService onboardingSchedulerService =
       embeddedOptimizeExtension.getApplicationContext().getBean(OnboardingSchedulerService.class);
     // Process the pending data
-    onboardingSchedulerService.checkIfNewOnboardingDataIsPresent();
+    onboardingSchedulerService.onboardNewProcesses();
 
     // then
     assertThat(responseInitialOwner.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());

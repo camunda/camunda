@@ -51,8 +51,10 @@ import static org.camunda.optimize.service.util.configuration.ConfigurationServi
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.FALLBACK_LOCALE;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.IDENTITY_SYNC_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.IMPORT_USER_TASK_IDENTITY_META_DATA;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.M2M_CLIENT_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ONBOARDING_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.OPTIMIZE_API_CONFIGURATION;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.PANEL_NOTIFICATION_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.TELEMETRY_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.UI_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.ensureGreaterThanZero;
@@ -224,6 +226,10 @@ public class ConfigurationService {
   private OptimizeApiConfiguration optimizeApiConfiguration;
 
   private OnboardingConfiguration onboarding;
+
+  private PanelNotificationConfiguration panelNotificationConfiguration;
+
+  private M2mAuth0ClientConfiguration m2mAuth0ClientConfiguration;
 
   @JsonCreator
   public static ConfigurationService createDefault() {
@@ -1254,6 +1260,20 @@ public class ConfigurationService {
       onboarding = configJsonContext.read(ONBOARDING_CONFIGURATION, OnboardingConfiguration.class);
     }
     return onboarding;
+  }
+
+  public PanelNotificationConfiguration getPanelNotificationConfiguration() {
+    if (panelNotificationConfiguration == null) {
+      panelNotificationConfiguration = configJsonContext.read(PANEL_NOTIFICATION_CONFIGURATION, PanelNotificationConfiguration.class);
+    }
+    return panelNotificationConfiguration;
+  }
+
+  public M2mAuth0ClientConfiguration getM2mAuth0ClientConfiguration() {
+    if (m2mAuth0ClientConfiguration == null) {
+      m2mAuth0ClientConfiguration = configJsonContext.read(M2M_CLIENT_CONFIGURATION, M2mAuth0ClientConfiguration.class);
+    }
+    return m2mAuth0ClientConfiguration;
   }
 
 }

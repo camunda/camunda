@@ -12,7 +12,8 @@ security:
       organizationId: ${CAMUNDA_OPTIMIZE_AUTH0_ORGANIZATION:}
       clusterId: ${CAMUNDA_OPTIMIZE_CLIENT_CLUSTERID:}
       audience: ${CAMUNDA_OPTIMIZE_CLIENT_AUDIENCE:}
-      userAccessTokenAudience: ${CAMUNDA_OPTIMIZE_M2M_ACCOUNTS_AUTH0_AUDIENCE:null}
+      userAccessTokenAudience: ${CAMUNDA_OPTIMIZE_M2M_ACCOUNTS_AUTH0_AUDIENCE:}
+      tokenUrl: ${CAMUNDA_OPTIMIZE_AUTH0_TOKEN_URL:}
     ccsm:
       issuerUrl: ${CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL:}
       issuerBackendUrl: ${CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_BACKEND_URL:}
@@ -40,7 +41,7 @@ security:
     # definitions in Camunda Platform Admin
     superUserIds: ${OPTIMIZE_SUPER_USER_IDS:[]}
     # List of group ids that are granted full permission to all collections, reports & dashboards
-    superGroupIds: []
+    superGroupIds: [ ]
 
   # Configuration relating to the use of Optimize
   license:
@@ -77,6 +78,11 @@ security:
     # By default Optimize uses the base-uri directive which restricts the URLs that can be used to the Optimize pages.
     # Find more details: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy
     Content-Security-Policy: base-uri 'self'
+
+m2mClient:
+  # ID and secret of the Optimize Auth0 M2M Client
+  m2mClientId: ${CAMUNDA_OPTIMIZE_M2M_ACCOUNTS_AUTH0_CLIENTID:}
+  m2mClientSecret: ${CAMUNDA_OPTIMIZE_M2M_ACCOUNTS_AUTH0_CLIENTSECRET:}
 
 # A global access token used by all public APIs of Optimize
 api:
@@ -126,7 +132,6 @@ container:
 users:
   cloud:
     accountsUrl: ${CAMUNDA_OPTIMIZE_M2M_ACCOUNTS_URL:}
-    notificationsUrl: ${CAMUNDA_OPTIMIZE_NOTIFICATIONS_URL:}
 
 # Configuration for engines used to import data. Please note that you have to have at
 # least one engine configured at all times.
@@ -138,7 +143,7 @@ engines:
     name: default
     # List of tenant IDs to be excluded when importing data. When left empty, data from all tenants will be imported.
     # Please note that the defaultTenant cannot be excluded (and therefore also not the entities with "null" as tenant)
-    excludedTenants: []
+    excludedTenants: [ ]
     # A default tenant to be injected on data from this engine where no tenant is configured in the engine itself.
     # This property is only relevant in the context of a `One Process Engine Per Tenant`.
     # For details consult the Multi-Tenancy documentation.
@@ -362,7 +367,6 @@ es:
     # The repository name in which the backups should be stored
     repositoryName: ${CAMUNDA_OPTIMIZE_BACKUP_REPOSITORY_NAME:}
 
-
   # Elasticsearch security settings
   security:
     # the basic auth (x-pack) username
@@ -418,31 +422,31 @@ plugin:
   variableImport:
     # Look in the given base package list for variable import adaption plugins.
     # If empty, the import is not influenced.
-    basePackages: []
+    basePackages: [ ]
   engineRestFilter:
     # Look in the given base package list for engine rest filter plugins.
     # If empty, the REST calls are not influenced.
-    basePackages: []
+    basePackages: [ ]
   authenticationExtractor:
     # Looks in the given base package list for authentication extractor plugins.
     # If empty, the standard Optimize authentication mechanism is used.
-    basePackages: []
+    basePackages: [ ]
   decisionInputImport:
     # Look in the given base package list for Decision input import adaption plugins.
     # If empty, the import is not influenced.
-    basePackages: []
+    basePackages: [ ]
   decisionOutputImport:
     # Look in the given base package list for Decision output import adaption plugins.
     # If empty, the import is not influenced.
-    basePackages: []
+    basePackages: [ ]
   businessKeyImport:
     # Look in the given base package list for business key import adaption plugins.
     # If empty, the import is not influenced.
-    basePackages: []
+    basePackages: [ ]
   elasticsearchCustomHeader:
     # Look in the given base package list for Elasticsearch custom header fetching plugins.
     # If empty, ES requests are not influenced.
-    basePackages: []
+    basePackages: [ ]
 
 serialization:
   # Define a custom date format that should be used for
@@ -507,6 +511,15 @@ webhookAlerting:
 digest:
   # cron expression to define when enabled email digests are to be sent
   cronTrigger: "0 0 9 * * MON"
+
+panelNotification:
+  url: ${CAMUNDA_OPTIMIZE_NOTIFICATIONS_URL:}
+  # Determines whether onboarding notifications should be sent after importing first instance of new process.
+  # 'scheduleProcessOnboardingChecks' must be set to true for this to take effect.
+  # Panel notifications are only available in SaaS
+  enabled: ${CAMUNDA_OPTIMIZE_PANEL_NOTIFICATION_ENABLED:true}
+  # Audience required to request an M2M token to use notifications API
+  m2mTokenAudience: ${CAMUNDA_OPTIMIZE_PANEL_NOTIFICATION_M2M_TOKEN_AUDIENCE:}
 
 entity:
   # which users are authorized to create/edit/delete Optimize entities outside of a collection.
@@ -582,7 +595,7 @@ dataArchive:
 locales:
   # all locales available
   # Note: for others than the default there must be a <localeCode>.json file available under ./config/localization.
-  availableLocales: ['en','de']
+  availableLocales: [ 'en','de' ]
   # the fallback locale is used if there is a locale requested that is not available in availableLocales
   fallbackLocale: 'en'
 
@@ -594,7 +607,7 @@ eventBasedProcess:
   # A list of userIds that are authorized to manage (Create, Update, Publish & Delete) event based processes.
   authorizedUserIds: ${OPTIMIZE_EVENT_BASED_PROCESSES_USER_IDS:[]}
   # A list of groupIds that are authorized to manage (Create, Update, Publish & Delete) event based processes.
-  authorizedGroupIds: []
+  authorizedGroupIds: [ ]
   eventImport:
     # Determines whether this Optimize instance performs event based process instance import.
     enabled: ${OPTIMIZE_EVENT_BASED_PROCESSES_IMPORT_ENABLED:false}

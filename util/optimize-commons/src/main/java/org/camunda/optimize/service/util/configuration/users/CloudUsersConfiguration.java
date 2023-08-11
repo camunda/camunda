@@ -13,8 +13,6 @@ import lombok.Data;
 public class CloudUsersConfiguration {
 
   private String accountsUrl;
-  private String notificationsUrl;
-
   // Only here for backwards compatibility as the param got renamed to accountsUrl
   @Deprecated
   public void setUsersUrl(final String usersUrl) {

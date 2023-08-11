@@ -3,7 +3,7 @@
  * Licensed under a proprietary license. See the License.txt file for more information.
  * You may not use this file except in compliance with the proprietary license.
  */
-package org.camunda.optimize.service.onboardinglistener;
+package org.camunda.optimize.service.onboarding;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
@@ -19,6 +19,7 @@ import org.camunda.optimize.service.es.writer.ProcessDefinitionWriter;
 import org.camunda.optimize.service.importing.CustomerOnboardingDataImportService;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.support.PeriodicTrigger;
@@ -27,7 +28,7 @@ import org.springframework.stereotype.Component;
 import java.time.Duration;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.function.Function;
+import java.util.function.Consumer;
 
 @EqualsAndHashCode(callSuper = true)
 @RequiredArgsConstructor
@@ -40,46 +41,66 @@ public class OnboardingSchedulerService extends AbstractScheduledService impleme
   private final ProcessDefinitionWriter processDefinitionWriter;
   private final ProcessInstanceReader processInstanceReader;
   private final ConfigurationService configurationService;
-  private final OnboardingNotificationService onboardingNotificationService;
+  private final OnboardingEmailNotificationService onboardingEmailNotificationService;
   private final ProcessOverviewService processOverviewService;
   private final CustomerOnboardingDataImportService onboardingDataService;
-
+  private CCSaaSOnboardingPanelNotificationService saaSPanelNotificationService;
+  @Autowired
+  private ApplicationContext applicationContext;
   private int intervalToCheckForOnboardingDataInSeconds;
-  private Function<String, Object> notificationHandler;
+  private Consumer<String> emailNotificationHandler;
+  private Consumer<String> panelNotificationHandler;
 
   @PostConstruct
   public void init() {
+    // the default are empty handlers to be set based on configuration and active profile
+    // @formatter:off
+    emailNotificationHandler = processDefKey -> {};
+    panelNotificationHandler = processDefKey -> {};
+    // @formatter:on
     setUpScheduler();
   }
 
   public void setUpScheduler() {
     if (configurationService.getOnboarding().isScheduleProcessOnboardingChecks()) {
+      log.info("Initializing OnboardingScheduler");
       // Check no more often than every 60s, recommended 180 (3min)
       setIntervalToCheckForOnboardingDataInSeconds(
         Math.max(60, configurationService.getOnboarding().getIntervalForCheckingTriggerForOnboardingEmails()));
-      log.info("Initializing OnboardingScheduler");
-      if (configurationService.getOnboarding().isEnableOnboardingEmails()) {
-        this.setNotificationHandler(processKey -> {
-          onboardingNotificationService.notifyOnboardingWithErrorHandling(processKey);
-          return processKey;
-        });
-      } else {
-        log.info("Onboarding E-Mails deactivated by configuration");
-      }
+      setupOnboardingEmailNotifications();
+      setupOnboardingPanelNotifications();
       startOnboardingScheduling();
     } else {
       log.info("Will not schedule checks for process onboarding state as this is disabled by configuration");
     }
   }
 
-  public void checkIfNewOnboardingDataIsPresent() {
+  public void setupOnboardingEmailNotifications() {
+    if (configurationService.getOnboarding().isEnableOnboardingEmails()) {
+      this.setEmailNotificationHandler(onboardingEmailNotificationService::sendOnboardingEmailWithErrorHandling);
+    } else {
+      log.info("Onboarding emails deactivated by configuration");
+    }
+  }
+
+  public void setupOnboardingPanelNotifications() {
+    if (applicationContext.containsBeanDefinition(CCSaaSOnboardingPanelNotificationService.class.getSimpleName())) {
+      if (configurationService.getPanelNotificationConfiguration().isEnabled()) {
+        this.setPanelNotificationHandler(processDefKey -> applicationContext.getBean(CCSaaSOnboardingPanelNotificationService.class)
+          .sendOnboardingPanelNotification(processDefKey));
+      } else {
+        log.info("Onboarding panel notifications deactivated by configuration");
+      }
+    }
+  }
+
+  public void onboardNewProcesses() {
     Set<String> processesNewlyOnboarded = new HashSet<>();
     for (String processToBeOnboarded : processDefinitionReader.getAllNonOnboardedProcessDefinitionKeys()) {
       resolveAnyPendingOwnerAuthorizations(processToBeOnboarded);
-      if (processHasCompletedInstance(processToBeOnboarded)) {
-        if (configurationService.getOnboarding().isEnableOnboardingEmails()) {
-          triggerOnboardingForProcess(processToBeOnboarded);
-        }
+      if (processHasStartedInstance(processToBeOnboarded)) {
+        emailNotificationHandler.accept(processToBeOnboarded);
+        panelNotificationHandler.accept(processToBeOnboarded);
         processesNewlyOnboarded.add(processToBeOnboarded);
       }
     }
@@ -107,7 +128,7 @@ public class OnboardingSchedulerService extends AbstractScheduledService impleme
   @Override
   protected void run() {
     log.info("Checking whether new data would trigger onboarding");
-    checkIfNewOnboardingDataIsPresent();
+    onboardNewProcesses();
     log.info("Onboarding check completed");
   }
 
@@ -116,17 +137,12 @@ public class OnboardingSchedulerService extends AbstractScheduledService impleme
     return new PeriodicTrigger(Duration.ofSeconds(getIntervalToCheckForOnboardingDataInSeconds()));
   }
 
-  private boolean processHasCompletedInstance(final String processToBeEvaluated) {
-    return processInstanceReader.processDefinitionHasCompletedInstances(processToBeEvaluated);
+  private boolean processHasStartedInstance(final String processToBeEvaluated) {
+    return processInstanceReader.processDefinitionHasStartedInstances(processToBeEvaluated);
   }
 
   private void resolveAnyPendingOwnerAuthorizations(final String processToBeOnboarded) {
     processOverviewService.confirmOrDenyOwnershipData(processToBeOnboarded);
-  }
-
-  private void triggerOnboardingForProcess(final String processToBeOnboarded) {
-    log.info("Triggering onboarding for process " + processToBeOnboarded);
-    notificationHandler.apply(processToBeOnboarded);
   }
 
 }

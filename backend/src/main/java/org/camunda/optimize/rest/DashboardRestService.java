@@ -48,10 +48,11 @@ import static org.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIEN
 import static org.camunda.optimize.rest.queryparam.QueryParamUtil.normalizeNullStringValue;
 
 @AllArgsConstructor
-@Path("/dashboard")
+@Path(DashboardRestService.DASHBOARD_PATH)
 @Component
 public class DashboardRestService {
-
+  public static final String DASHBOARD_PATH = "/dashboard";
+  public static final String INSTANT_PREVIEW_PATH = "/instant";
   private final DashboardService dashboardService;
   private final InstantPreviewDashboardService instantPreviewDashboardService;
   private final SessionService sessionService;
@@ -115,7 +116,7 @@ public class DashboardRestService {
   }
 
   @GET
-  @Path("/instant/{procDefKey}")
+  @Path(INSTANT_PREVIEW_PATH + "/{procDefKey}")
   @Produces(MediaType.APPLICATION_JSON)
   public AuthorizedDashboardDefinitionResponseDto getInstantDashboard(@Context ContainerRequestContext requestContext,
                                                                       @PathParam("procDefKey") String processDefinitionKey,

@@ -3,7 +3,7 @@
  * Licensed under a proprietary license. See the License.txt file for more information.
  * You may not use this file except in compliance with the proprietary license.
  */
-package org.camunda.optimize.service.onboardinglistener;
+package org.camunda.optimize.service.onboarding;
 
 import com.icegreen.greenmail.util.GreenMail;
 import com.icegreen.greenmail.util.GreenMailUtil;
@@ -29,6 +29,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import jakarta.mail.Message;
 import jakarta.mail.internet.MimeMessage;
+
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -37,8 +38,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 import static org.camunda.optimize.service.importing.CustomerOnboadingDataImportIT.CUSTOMER_ONBOARDING_DEFINITION_FILE_NAME;
 import static org.camunda.optimize.service.importing.CustomerOnboadingDataImportIT.CUSTOMER_ONBOARDING_PROCESS_INSTANCES;
-import static org.camunda.optimize.service.onboardinglistener.OnboardingNotificationService.EMAIL_SUBJECT;
-import static org.camunda.optimize.service.onboardinglistener.OnboardingNotificationService.MAGIC_LINK_TEMPLATE;
+import static org.camunda.optimize.service.onboarding.OnboardingEmailNotificationService.EMAIL_SUBJECT;
+import static org.camunda.optimize.service.onboarding.OnboardingEmailNotificationService.MAGIC_LINK_TEMPLATE;
 import static org.camunda.optimize.service.util.configuration.EmailSecurityProtocol.NONE;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 
@@ -49,7 +50,7 @@ public class OnboardingSchedulerServiceIT extends AbstractIT {
 
   @RegisterExtension
   private final LogCapturer notificationServiceLogs = LogCapturer.create()
-    .captureForType(OnboardingNotificationService.class);
+    .captureForType(OnboardingEmailNotificationService.class);
 
   @RegisterExtension
   private final LogCapturer schedulerServiceLogs = LogCapturer.create()
@@ -102,48 +103,20 @@ public class OnboardingSchedulerServiceIT extends AbstractIT {
     final String processKey = "crazy_new_process";
     final OnboardingSchedulerService onboardingSchedulerService =
       embeddedOptimizeExtension.getApplicationContext().getBean(OnboardingSchedulerService.class);
-    Set<String> processTriggeredOnboarding = new HashSet<>();
-    onboardingSchedulerService.setNotificationHandler(processTriggeredOnboarding::add);
-    deployAndStartSimpleServiceTaskProcess(processKey);
-
-    // when
-    importAllEngineEntitiesFromScratch();
-    assertDefinitionHasOnboardedState(false);
-    onboardingSchedulerService.checkIfNewOnboardingDataIsPresent();
-
-    // then
-    assertThat(processTriggeredOnboarding).containsExactly(processKey);
-    assertDefinitionHasOnboardedState(true);
-  }
-
-  @Test
-  public void aRunningProcessDoesNotTriggerNotification() {
-    // given
-    final String processKey = "runningProcess";
-    final OnboardingSchedulerService onboardingSchedulerService =
-      embeddedOptimizeExtension.getApplicationContext().getBean(OnboardingSchedulerService.class);
-    Set<String> processTriggeredOnboarding = new HashSet<>();
+    Set<String> processTriggeredOnboardingEmail = new HashSet<>();
+    Set<String> processTriggeredOnboardingPanelNotification = new HashSet<>();
+    onboardingSchedulerService.setEmailNotificationHandler(processTriggeredOnboardingEmail::add);
+    onboardingSchedulerService.setPanelNotificationHandler(processTriggeredOnboardingPanelNotification::add);
     deployAndStartUserTaskProcess(processKey);
 
     // when
-    restartOnboardingSchedulingService(onboardingSchedulerService);
-    onboardingSchedulerService.setNotificationHandler(processTriggeredOnboarding::add);
     importAllEngineEntitiesFromScratch();
-    onboardingSchedulerService.checkIfNewOnboardingDataIsPresent();
-
-    // then
-    // Make sure notification was not triggered
-    assertThat(processTriggeredOnboarding).isEmpty();
     assertDefinitionHasOnboardedState(false);
-
-    // when
-    // Now let's complete that task
-    engineIntegrationExtension.finishAllRunningUserTasks();
-    importAllEngineEntitiesFromScratch();
-    onboardingSchedulerService.checkIfNewOnboardingDataIsPresent();
+    onboardingSchedulerService.onboardNewProcesses();
 
     // then
-    assertThat(processTriggeredOnboarding).containsExactly(processKey);
+    assertThat(processTriggeredOnboardingEmail).containsExactly(processKey);
+    assertThat(processTriggeredOnboardingPanelNotification).containsExactly(processKey);
     assertDefinitionHasOnboardedState(true);
   }
 
@@ -153,32 +126,37 @@ public class OnboardingSchedulerServiceIT extends AbstractIT {
     final String processKey = "crazy_new_onboarded_process";
     final OnboardingSchedulerService onboardingSchedulerService =
       embeddedOptimizeExtension.getApplicationContext().getBean(OnboardingSchedulerService.class);
-    Set<String> processTriggeredOnboarding = new HashSet<>();
-    onboardingSchedulerService.setNotificationHandler(processTriggeredOnboarding::add);
+    Set<String> processTriggeredOnboardingEmail = new HashSet<>();
+    Set<String> processTriggeredOnboardingPanelNotification = new HashSet<>();
+    onboardingSchedulerService.setEmailNotificationHandler(processTriggeredOnboardingEmail::add);
+    onboardingSchedulerService.setPanelNotificationHandler(processTriggeredOnboardingPanelNotification::add);
     final ProcessDefinitionEngineDto processOne = deployAndStartSimpleServiceTaskProcess(processKey);
 
     // when
     importAllEngineEntitiesFromScratch();
-    onboardingSchedulerService.checkIfNewOnboardingDataIsPresent();
+    onboardingSchedulerService.onboardNewProcesses();
 
     // then
-    assertThat(processTriggeredOnboarding).containsExactly(processKey);
+    assertThat(processTriggeredOnboardingEmail).containsExactly(processKey);
+    assertThat(processTriggeredOnboardingPanelNotification).containsExactly(processKey);
     assertDefinitionHasOnboardedState(true);
 
     // First instance was completed and notified, now let's start with the 2nd instance
     // Clear our result array to check whether something new will be written on it
-    processTriggeredOnboarding.clear();
+    processTriggeredOnboardingEmail.clear();
+    processTriggeredOnboardingPanelNotification.clear();
 
     // given
     engineIntegrationExtension.startProcessInstance(processOne.getId());
 
     // when
     importAllEngineEntitiesFromScratch();
-    onboardingSchedulerService.checkIfNewOnboardingDataIsPresent();
+    onboardingSchedulerService.onboardNewProcesses();
 
     // then
     // Make sure our function was not triggered
-    assertThat(processTriggeredOnboarding).isEmpty();
+    assertThat(processTriggeredOnboardingEmail).isEmpty();
+    assertThat(processTriggeredOnboardingPanelNotification).isEmpty();
     assertDefinitionHasOnboardedState(true);
   }
 
@@ -189,20 +167,23 @@ public class OnboardingSchedulerServiceIT extends AbstractIT {
     final String processKey2 = "imUnique2";
     final OnboardingSchedulerService onboardingSchedulerService =
       embeddedOptimizeExtension.getApplicationContext().getBean(OnboardingSchedulerService.class);
-    Set<String> processTriggeredOnboarding = new HashSet<>();
+    Set<String> processTriggeredOnboardingEmail = new HashSet<>();
+    Set<String> processTriggeredOnboardingPanelNotification = new HashSet<>();
     deployAndStartSimpleServiceTaskProcess(processKey1);
     deployAndStartSimpleServiceTaskProcess(processKey2);
 
     // when
     restartOnboardingSchedulingService(onboardingSchedulerService);
-    onboardingSchedulerService.setNotificationHandler(processTriggeredOnboarding::add);
+    onboardingSchedulerService.setEmailNotificationHandler(processTriggeredOnboardingEmail::add);
+    onboardingSchedulerService.setPanelNotificationHandler(processTriggeredOnboardingPanelNotification::add);
     importAllEngineEntitiesFromScratch();
     assertDefinitionHasOnboardedStateForDefinition(false, processKey1);
     assertDefinitionHasOnboardedStateForDefinition(false, processKey2);
-    onboardingSchedulerService.checkIfNewOnboardingDataIsPresent();
+    onboardingSchedulerService.onboardNewProcesses();
 
     // then
-    assertThat(processTriggeredOnboarding).containsExactlyInAnyOrder(processKey1, processKey2);
+    assertThat(processTriggeredOnboardingEmail).containsExactlyInAnyOrder(processKey1, processKey2);
+    assertThat(processTriggeredOnboardingPanelNotification).containsExactlyInAnyOrder(processKey1, processKey2);
     assertDefinitionHasOnboardedStateForDefinition(true, processKey1);
     assertDefinitionHasOnboardedStateForDefinition(true, processKey2);
   }
@@ -214,23 +195,27 @@ public class OnboardingSchedulerServiceIT extends AbstractIT {
     final String processKey2 = "aNewProcessDoesntInterfereWithAnOldProcess2";
     final OnboardingSchedulerService onboardingSchedulerService =
       embeddedOptimizeExtension.getApplicationContext().getBean(OnboardingSchedulerService.class);
-    Set<String> processTriggeredOnboarding = new HashSet<>();
+    Set<String> processTriggeredOnboardingEmail = new HashSet<>();
+    Set<String> processTriggeredOnboardingPanelNotification = new HashSet<>();
     final ProcessDefinitionEngineDto processOne = deployAndStartSimpleServiceTaskProcess(processKey1);
 
     // when
     restartOnboardingSchedulingService(onboardingSchedulerService);
-    onboardingSchedulerService.setNotificationHandler(processTriggeredOnboarding::add);
+    onboardingSchedulerService.setEmailNotificationHandler(processTriggeredOnboardingEmail::add);
+    onboardingSchedulerService.setPanelNotificationHandler(processTriggeredOnboardingPanelNotification::add);
     importAllEngineEntitiesFromScratch();
     assertDefinitionHasOnboardedStateForDefinition(false, processKey1);
-    onboardingSchedulerService.checkIfNewOnboardingDataIsPresent();
+    onboardingSchedulerService.onboardNewProcesses();
 
     // then
     // Check that notification for the first process was sent
-    assertThat(processTriggeredOnboarding).containsExactly(processKey1);
+    assertThat(processTriggeredOnboardingEmail).containsExactly(processKey1);
+    assertThat(processTriggeredOnboardingPanelNotification).containsExactly(processKey1);
 
     // First instance was completed and notified, now let's start with the first instance of the 2nd process
     // Clear our result array to check that only the second process will be written to it
-    processTriggeredOnboarding.clear();
+    processTriggeredOnboardingEmail.clear();
+    processTriggeredOnboardingPanelNotification.clear();
 
     // given
     engineIntegrationExtension.startProcessInstance(processOne.getId()); // New instance for the already onboarded process
@@ -240,11 +225,12 @@ public class OnboardingSchedulerServiceIT extends AbstractIT {
     // when
     importAllEngineEntitiesFromScratch();
     assertDefinitionHasOnboardedStateForDefinition(false, processKey2);
-    onboardingSchedulerService.checkIfNewOnboardingDataIsPresent();
+    onboardingSchedulerService.onboardNewProcesses();
 
     // then
     // Only the 2nd process should trigger onboarding
-    assertThat(processTriggeredOnboarding).containsExactly(processKey2);
+    assertThat(processTriggeredOnboardingEmail).containsExactly(processKey2);
+    assertThat(processTriggeredOnboardingPanelNotification).containsExactly(processKey2);
     assertDefinitionHasOnboardedStateForDefinition(true, processKey1);
     assertDefinitionHasOnboardedStateForDefinition(true, processKey2);
   }
@@ -256,12 +242,14 @@ public class OnboardingSchedulerServiceIT extends AbstractIT {
     final String processKey2 = "second_process";
     final OnboardingSchedulerService onboardingSchedulerService =
       embeddedOptimizeExtension.getApplicationContext().getBean(OnboardingSchedulerService.class);
-    Set<String> processTriggeredOnboarding = new HashSet<>();
+    Set<String> processTriggeredOnboardingEmail = new HashSet<>();
+    Set<String> processTriggeredOnboardingPanelNotification = new HashSet<>();
     onboardingSchedulerService.stopOnboardingScheduling();
     onboardingSchedulerService.setIntervalToCheckForOnboardingDataInSeconds(1800); // Set interval to 30min
     deployAndStartSimpleServiceTaskProcess(processKey1);
     deployAndStartSimpleServiceTaskProcess(processKey2);
-    onboardingSchedulerService.setNotificationHandler(processTriggeredOnboarding::add);
+    onboardingSchedulerService.setEmailNotificationHandler(processTriggeredOnboardingEmail::add);
+    onboardingSchedulerService.setPanelNotificationHandler(processTriggeredOnboardingPanelNotification::add);
 
     // when
     onboardingSchedulerService.startOnboardingScheduling();
@@ -273,7 +261,8 @@ public class OnboardingSchedulerServiceIT extends AbstractIT {
 
     // then
     // No onboarding was triggered
-    assertThat(processTriggeredOnboarding).isEmpty();
+    assertThat(processTriggeredOnboardingEmail).isEmpty();
+    assertThat(processTriggeredOnboardingPanelNotification).isEmpty();
 
     // when
     onboardingSchedulerService.stopOnboardingScheduling();
@@ -287,7 +276,8 @@ public class OnboardingSchedulerServiceIT extends AbstractIT {
     // then
     Awaitility.given().ignoreExceptions()
       .timeout(10, TimeUnit.SECONDS)
-      .untilAsserted(() -> assertThat(processTriggeredOnboarding)
+      .untilAsserted(() -> assertThat(processTriggeredOnboardingEmail)
+        .containsExactlyInAnyOrderElementsOf(processTriggeredOnboardingPanelNotification)
         .containsExactlyInAnyOrder(processKey1, processKey2));
   }
 
@@ -305,13 +295,13 @@ public class OnboardingSchedulerServiceIT extends AbstractIT {
     assertDefinitionHasOnboardedStateForDefinition(false, processKey2);
     restartOnboardingSchedulingService(onboardingSchedulerService); // Reinitialize the service to simulate the first start
     // when Optimize is booted
-    onboardingSchedulerService.checkIfNewOnboardingDataIsPresent();
+    onboardingSchedulerService.onboardNewProcesses();
 
     // When
     engineIntegrationExtension.startProcessInstance(processOne.getId());
     engineIntegrationExtension.startProcessInstance(processTwo.getId());
     importAllEngineEntitiesFromLastIndex();
-    onboardingSchedulerService.checkIfNewOnboardingDataIsPresent();
+    onboardingSchedulerService.onboardNewProcesses();
 
     // Then
     // No onboarding was triggered
@@ -325,12 +315,14 @@ public class OnboardingSchedulerServiceIT extends AbstractIT {
     final String processKey1 = "aProcessWhatever";
     final OnboardingSchedulerService onboardingSchedulerService =
       embeddedOptimizeExtension.getApplicationContext().getBean(OnboardingSchedulerService.class);
-    Set<String> processTriggeredOnboarding = new HashSet<>();
+    Set<String> processTriggeredOnboardingEmail = new HashSet<>();
+    Set<String> processTriggeredOnboardingPanelNotification = new HashSet<>();
     onboardingSchedulerService.stopOnboardingScheduling();
     embeddedOptimizeExtension.getConfigurationService().getOnboarding().setEnableOnboardingEmails(false);
 
     // when
-    onboardingSchedulerService.setNotificationHandler(processTriggeredOnboarding::add);
+    onboardingSchedulerService.setEmailNotificationHandler(processTriggeredOnboardingEmail::add);
+    onboardingSchedulerService.setPanelNotificationHandler(processTriggeredOnboardingPanelNotification::add);
     onboardingSchedulerService.setIntervalToCheckForOnboardingDataInSeconds(1); // Check every second
     onboardingSchedulerService.init(); // Reinitialize the service to simulate the first start when Optimize is booted
     deployAndStartSimpleServiceTaskProcess(processKey1);
@@ -342,7 +334,8 @@ public class OnboardingSchedulerServiceIT extends AbstractIT {
 
     // then
     // No onboarding was triggered
-    assertThat(processTriggeredOnboarding).isEmpty();
+    assertThat(processTriggeredOnboardingEmail).isEmpty();
+    assertThat(processTriggeredOnboardingPanelNotification).isEmpty();
   }
 
   @SneakyThrows
@@ -365,7 +358,7 @@ public class OnboardingSchedulerServiceIT extends AbstractIT {
     // when
     importAllEngineEntitiesFromScratch();
     processOverviewClient.setInitialProcessOwner(processKey, KERMIT_USER);
-    onboardingSchedulerService.checkIfNewOnboardingDataIsPresent();
+    onboardingSchedulerService.onboardNewProcesses();
 
     // then
     MimeMessage[] emails = greenMail.getReceivedMessages();
@@ -373,7 +366,7 @@ public class OnboardingSchedulerServiceIT extends AbstractIT {
 
     //Remove all empty spaces and new lines for content comparison
     String expectedEmailText = String.format(
-      "You have completed your first process instance for the %s process!",
+      "You have started your first process instance for the %s process!",
       processKey
     ).replaceAll("[\\n\t ]", "");
     String expectedMagicLink = String.format(MAGIC_LINK_TEMPLATE, "", processKey, processKey).replaceAll("[\\n\t ]", "");
@@ -408,7 +401,7 @@ public class OnboardingSchedulerServiceIT extends AbstractIT {
       // when
       importAllEngineEntitiesFromScratch();
       processOverviewClient.setInitialProcessOwner(processKey, DEFAULT_USERNAME);
-      onboardingSchedulerService.checkIfNewOnboardingDataIsPresent();
+      onboardingSchedulerService.onboardNewProcesses();
 
       // then
       MimeMessage[] emails = greenMail.getReceivedMessages();
@@ -434,7 +427,7 @@ public class OnboardingSchedulerServiceIT extends AbstractIT {
 
     // when
     importAllEngineEntitiesFromScratch();
-    onboardingSchedulerService.checkIfNewOnboardingDataIsPresent();
+    onboardingSchedulerService.onboardNewProcesses();
 
     // then
     MimeMessage[] emails = greenMail.getReceivedMessages();
@@ -451,7 +444,8 @@ public class OnboardingSchedulerServiceIT extends AbstractIT {
     // given
     final OnboardingSchedulerService onboardingSchedulerService =
       embeddedOptimizeExtension.getApplicationContext().getBean(OnboardingSchedulerService.class);
-    Set<String> processTriggeredOnboarding = new HashSet<>();
+    Set<String> processTriggeredOnboardingEmail = new HashSet<>();
+    Set<String> processTriggeredOnboardingPanelNotification = new HashSet<>();
 
 
     // when
@@ -459,12 +453,14 @@ public class OnboardingSchedulerServiceIT extends AbstractIT {
     importOnboardingData();
     // It is crucial that the next statement comes after the import of onboarding data, because during that import the
     // configuration is reloaded and therefore the notification Handler gets reset
-    onboardingSchedulerService.setNotificationHandler(processTriggeredOnboarding::add);
-    onboardingSchedulerService.checkIfNewOnboardingDataIsPresent();
+    onboardingSchedulerService.setEmailNotificationHandler(processTriggeredOnboardingEmail::add);
+    onboardingSchedulerService.setPanelNotificationHandler(processTriggeredOnboardingPanelNotification::add);
+    onboardingSchedulerService.onboardNewProcesses();
 
     // then
     // No onboarding was triggered
-    assertThat(processTriggeredOnboarding).isEmpty();
+    assertThat(processTriggeredOnboardingEmail).isEmpty();
+    assertThat(processTriggeredOnboardingPanelNotification).isEmpty();
   }
 
   private void setupEmailAlerting(boolean authenticationEnabled, String username, String password,

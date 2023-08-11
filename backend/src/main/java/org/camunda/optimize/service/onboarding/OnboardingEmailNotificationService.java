@@ -3,7 +3,7 @@
  * Licensed under a proprietary license. See the License.txt file for more information.
  * You may not use this file except in compliance with the proprietary license.
  */
-package org.camunda.optimize.service.onboardinglistener;
+package org.camunda.optimize.service.onboarding;
 
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
@@ -31,7 +31,7 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 @AllArgsConstructor
 @Component
 @Slf4j
-public class OnboardingNotificationService {
+public class OnboardingEmailNotificationService {
 
   public static final String MAGIC_LINK_TEMPLATE = "%s/collection/%s/dashboard/%s/";
   public static final String EMAIL_SUBJECT = "You've got insights from Optimize for your new process";
@@ -46,7 +46,7 @@ public class OnboardingNotificationService {
   private final DefinitionService definitionService;
   private final TenantService tenantService;
 
-  public void notifyOnboardingWithErrorHandling(@NonNull final String processKey) {
+  public void sendOnboardingEmailWithErrorHandling(@NonNull final String processKey) {
     final Optional<ProcessOverviewDto> optProcessOverview = processOverviewReader.getProcessOverviewByKey(processKey);
     if (optProcessOverview.isPresent()) {
       ProcessOverviewDto overviewDto = optProcessOverview.get();
