@@ -18,6 +18,32 @@ import org.junit.jupiter.api.extension.ExtendWith;
 /**
  * Registers the {@link ZeebeClusterExtension} extension, which will manage the lifecycle of one or
  * more {@link io.camunda.zeebe.qa.util.cluster.spring.SpringCluster}
+ *
+ * <pre>{@code
+ * &#64;ZeebeClusters
+ * final class MyClusteredTest {
+ *   &#64;ZeebeCluster(autoStart = true, awaitCompleteTopology = true)
+ *   private SpringCluster cluster = SpringCluster.builder()
+ *          .withBrokersCount(3)
+ *          .withReplicationFactor(3)
+ *          .withPartitionsCount(1)
+ *          .useEmbeddedGateway(true)
+ *          .build();
+ *
+ *   &#64;Test
+ *   void shouldConnectToCluster() {
+ *     // given
+ *     final Topology topology;
+ *
+ *     // when
+ *     try (final ZeebeClient client = cluster.newClientBuilder().build()) {
+ *       topology = c.newTopologyRequest().send().join();
+ *     }
+ *
+ *     // then
+ *     assertThat(topology.getClusterSize()).isEqualTo(3);
+ *   }
+ * }</pre>
  */
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
