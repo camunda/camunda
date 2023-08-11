@@ -16,8 +16,8 @@ import static io.camunda.zeebe.broker.test.EmbeddedBrokerConfigurator.setInterna
 
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.zeebe.broker.Broker;
+import io.camunda.zeebe.broker.MicronautBrokerBridge;
 import io.camunda.zeebe.broker.PartitionListener;
-import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.TestLoggers;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
 import io.camunda.zeebe.broker.system.SystemContext;
@@ -72,7 +72,7 @@ public final class EmbeddedBrokerRule extends ExternalResource {
   protected BrokerCfg brokerCfg;
   protected Broker broker;
   protected final ControlledActorClock controlledActorClock = new ControlledActorClock();
-  protected final SpringBrokerBridge springBrokerBridge = new SpringBrokerBridge();
+  protected final MicronautBrokerBridge micronautBrokerBridge = new MicronautBrokerBridge();
 
   protected long startTime;
   private AtomixCluster atomixCluster;
@@ -167,8 +167,8 @@ public final class EmbeddedBrokerRule extends ExternalResource {
     return brokerCfg;
   }
 
-  public SpringBrokerBridge getSpringBrokerBridge() {
-    return springBrokerBridge;
+  public MicronautBrokerBridge getSpringBrokerBridge() {
+    return micronautBrokerBridge;
   }
 
   public ClusterServices getClusterServices() {
@@ -239,7 +239,7 @@ public final class EmbeddedBrokerRule extends ExternalResource {
     final CountDownLatch latch = new CountDownLatch(brokerCfg.getCluster().getPartitionsCount());
     additionalListeners.add(new LeaderPartitionListener(latch));
 
-    broker = new Broker(systemContext, springBrokerBridge, additionalListeners);
+    broker = new Broker(systemContext, micronautBrokerBridge, additionalListeners);
 
     broker.start().join();
 

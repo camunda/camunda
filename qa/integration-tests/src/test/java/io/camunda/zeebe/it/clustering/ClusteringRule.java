@@ -27,7 +27,7 @@ import io.camunda.zeebe.broker.ActorSchedulerConfiguration;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.BrokerClusterConfiguration;
 import io.camunda.zeebe.broker.PartitionListener;
-import io.camunda.zeebe.broker.SpringBrokerBridge;
+import io.camunda.zeebe.broker.MicronautBrokerBridge;
 import io.camunda.zeebe.broker.bootstrap.BrokerContext;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirectorContext;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
@@ -131,7 +131,7 @@ public class ClusteringRule extends ExternalResource {
   private Gateway gateway;
   private CountDownLatch partitionLatch;
   private final Map<Integer, Leader> partitionLeader;
-  private final Map<Integer, SpringBrokerBridge> springBrokerBridge;
+  private final Map<Integer, MicronautBrokerBridge> springBrokerBridge;
   private final Map<Integer, SystemContext> systemContexts;
   private final ActorClockConfiguration actorClockConfiguration;
 
@@ -350,8 +350,8 @@ public class ClusteringRule extends ExternalResource {
     return broker;
   }
 
-  private SpringBrokerBridge getSpringBrokerBridge(final int nodeId) {
-    return springBrokerBridge.computeIfAbsent(nodeId, n -> new SpringBrokerBridge());
+  private MicronautBrokerBridge getSpringBrokerBridge(final int nodeId) {
+    return springBrokerBridge.computeIfAbsent(nodeId, n -> new MicronautBrokerBridge());
   }
 
   public boolean isBrokerHealthy(final int nodeId) {

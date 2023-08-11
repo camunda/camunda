@@ -14,7 +14,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.zeebe.broker.SpringBrokerBridge;
+import io.camunda.zeebe.broker.MicronautBrokerBridge;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -29,7 +29,7 @@ class MonitoringServerStepTest {
   private static final TestConcurrencyControl CONCURRENCY_CONTROL = new TestConcurrencyControl();
   private static final Duration TIME_OUT = Duration.ofSeconds(10);
 
-  private SpringBrokerBridge mockSpringBrokerBridge;
+  private MicronautBrokerBridge mockMicronautBrokerBridge;
   private BrokerStartupContext mockBrokerStartupContext;
   private BrokerHealthCheckService mockHealthCheckService;
   private ActorSchedulingService mockActorSchedulingService;
@@ -40,7 +40,7 @@ class MonitoringServerStepTest {
 
   @BeforeEach
   void setUp() {
-    mockSpringBrokerBridge = mock(SpringBrokerBridge.class);
+    mockMicronautBrokerBridge = mock(MicronautBrokerBridge.class);
     mockBrokerStartupContext = mock(BrokerStartupContext.class);
     mockActorSchedulingService = mock(ActorSchedulingService.class);
 
@@ -48,7 +48,7 @@ class MonitoringServerStepTest {
     when(mockHealthCheckService.closeAsync()).thenReturn(CONCURRENCY_CONTROL.completedFuture(null));
 
     when(mockBrokerStartupContext.getConcurrencyControl()).thenReturn(CONCURRENCY_CONTROL);
-    when(mockBrokerStartupContext.getSpringBrokerBridge()).thenReturn(mockSpringBrokerBridge);
+    when(mockBrokerStartupContext.getSpringBrokerBridge()).thenReturn(mockMicronautBrokerBridge);
     when(mockBrokerStartupContext.getHealthCheckService()).thenReturn(mockHealthCheckService);
     when(mockBrokerStartupContext.getActorSchedulingService())
         .thenReturn(mockActorSchedulingService);
@@ -97,7 +97,7 @@ class MonitoringServerStepTest {
 
     // then
     final var argumentCaptor = ArgumentCaptor.forClass(Supplier.class);
-    verify(mockSpringBrokerBridge)
+    verify(mockMicronautBrokerBridge)
         .registerBrokerHealthCheckServiceSupplier(argumentCaptor.capture());
 
     assertThat(argumentCaptor.getValue().get()).isSameAs(mockHealthCheckService);
@@ -141,7 +141,7 @@ class MonitoringServerStepTest {
 
     // then
     final var argumentCaptor = ArgumentCaptor.forClass(Supplier.class);
-    verify(mockSpringBrokerBridge)
+    verify(mockMicronautBrokerBridge)
         .registerBrokerHealthCheckServiceSupplier(argumentCaptor.capture());
 
     assertThat(argumentCaptor.getValue().get()).isNull();

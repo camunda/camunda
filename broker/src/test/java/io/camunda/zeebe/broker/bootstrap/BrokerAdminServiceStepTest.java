@@ -14,7 +14,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.zeebe.broker.SpringBrokerBridge;
+import io.camunda.zeebe.broker.MicronautBrokerBridge;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
 import io.camunda.zeebe.broker.system.management.BrokerAdminServiceImpl;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
@@ -34,7 +34,7 @@ final class BrokerAdminServiceStepTest {
 
   private BrokerStartupContext mockBrokerStartupContext;
   private ActorSchedulingService mockActorSchedulingService;
-  private SpringBrokerBridge mockSpringBrokerBridge;
+  private MicronautBrokerBridge mockMicronautBrokerBridge;
   private BrokerAdminServiceImpl mockBrokerAdminService;
 
   private ActorFuture<BrokerStartupContext> future;
@@ -48,7 +48,7 @@ final class BrokerAdminServiceStepTest {
     when(mockActorSchedulingService.submitActor(any()))
         .thenReturn(CONCURRENCY_CONTROL.completedFuture(null));
 
-    mockSpringBrokerBridge = mock(SpringBrokerBridge.class);
+    mockMicronautBrokerBridge = mock(MicronautBrokerBridge.class);
 
     mockBrokerAdminService = mock(BrokerAdminServiceImpl.class);
     when(mockBrokerAdminService.closeAsync()).thenReturn(CONCURRENCY_CONTROL.completedFuture(null));
@@ -59,7 +59,7 @@ final class BrokerAdminServiceStepTest {
     when(mockBrokerStartupContext.getBrokerInfo()).thenReturn(mock(BrokerInfo.class));
     when(mockBrokerStartupContext.getActorSchedulingService())
         .thenReturn(mockActorSchedulingService);
-    when(mockBrokerStartupContext.getSpringBrokerBridge()).thenReturn(mockSpringBrokerBridge);
+    when(mockBrokerStartupContext.getSpringBrokerBridge()).thenReturn(mockMicronautBrokerBridge);
     when(mockBrokerStartupContext.getBrokerAdminService()).thenReturn(mockBrokerAdminService);
 
     when(mockBrokerStartupContext.getClusterServices())
@@ -102,7 +102,7 @@ final class BrokerAdminServiceStepTest {
     verify(mockBrokerStartupContext).setBrokerAdminService(adminServiceCaptor.capture());
 
     final var adminServiceSupplierCaptor = ArgumentCaptor.forClass(Supplier.class);
-    verify(mockSpringBrokerBridge)
+    verify(mockMicronautBrokerBridge)
         .registerBrokerAdminServiceSupplier(adminServiceSupplierCaptor.capture());
 
     assertThat(adminServiceSupplierCaptor.getValue().get()).isSameAs(adminServiceCaptor.getValue());

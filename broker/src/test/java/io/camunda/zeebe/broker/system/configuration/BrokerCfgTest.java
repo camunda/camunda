@@ -20,6 +20,7 @@ import io.camunda.zeebe.broker.exporter.debug.DebugLogExporter;
 import io.camunda.zeebe.broker.exporter.metrics.MetricsExporter;
 import io.camunda.zeebe.broker.system.configuration.backpressure.BackpressureCfg;
 import io.camunda.zeebe.broker.system.configuration.backpressure.BackpressureCfg.LimitAlgorithm;
+import java.net.BindException;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.HashMap;
@@ -32,7 +33,6 @@ import org.assertj.core.api.Condition;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.springframework.boot.context.properties.bind.BindException;
 
 public final class BrokerCfgTest {
 

@@ -15,7 +15,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.zeebe.broker.SpringBrokerBridge;
+import io.camunda.zeebe.broker.MicronautBrokerBridge;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
@@ -61,7 +61,7 @@ class CommandApiServiceStepTest {
         new BrokerStartupContextImpl(
             TEST_BROKER_INFO,
             TEST_BROKER_CONFIG,
-            mock(SpringBrokerBridge.class),
+            mock(MicronautBrokerBridge.class),
             mockActorSchedulingService,
             mock(BrokerHealthCheckService.class),
             mock(ExporterRepository.class),
