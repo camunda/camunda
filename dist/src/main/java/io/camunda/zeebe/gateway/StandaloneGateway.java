@@ -19,15 +19,16 @@ import io.camunda.zeebe.shared.Profile;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.VersionUtil;
 import io.camunda.zeebe.util.error.FatalErrorHandler;
+import io.micronaut.context.event.ApplicationEventListener;
 import io.micronaut.runtime.Micronaut;
+import io.micronaut.runtime.server.event.ServerShutdownEvent;
+import io.micronaut.runtime.server.event.ServerStartupEvent;
 import jakarta.inject.Inject;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.slf4j.Logger;
-import org.springframework.boot.CommandLineRunner;
-import org.springframework.context.ApplicationListener;
-import org.springframework.context.event.ContextClosedEvent;
+import org.springframework.context.event.EventListener;
 
 /**
  * Entry point for the standalone gateway application. By default, it enables the {@link
@@ -36,7 +37,7 @@ import org.springframework.context.event.ContextClosedEvent;
  * <p>See {@link #main(String[])} for more.
  */
 public class StandaloneGateway
-    implements CommandLineRunner, ApplicationListener<ContextClosedEvent>, CloseableSilently {
+    implements ApplicationEventListener<ServerShutdownEvent>, CloseableSilently {
   private static final Logger LOG = Loggers.GATEWAY_LOGGER;
 
   private final GatewayCfg configuration;
@@ -75,16 +76,16 @@ public class StandaloneGateway
         String.valueOf(2 * Runtime.getRuntime().availableProcessors()));
     final var application =
         Micronaut.build(args)
-            .mainClass(StandaloneGateway.class)
             .defaultEnvironments(Profile.GATEWAY.getId())
             .banner(true)
-            .build();
+            .args(args)
+            .run(StandaloneGateway.class);
 
-    application.start();
+    //    application.start();
   }
 
-  @Override
-  public void run(final String... args) throws Exception {
+  @EventListener
+  public void run(final ServerStartupEvent... events) throws Exception {
     configuration.init();
 
     if (LOG.isInfoEnabled()) {
@@ -114,7 +115,7 @@ public class StandaloneGateway
   }
 
   @Override
-  public void onApplicationEvent(final ContextClosedEvent event) {
+  public void onApplicationEvent(final ServerShutdownEvent event) {
     close();
   }
 
