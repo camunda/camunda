@@ -16,14 +16,13 @@ import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.shared.Profile;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.error.FatalErrorHandler;
+import io.micronaut.runtime.Micronaut;
 import java.io.IOException;
 import org.apache.logging.log4j.LogManager;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextClosedEvent;
@@ -34,34 +33,33 @@ import org.springframework.context.event.ContextClosedEvent;
  *
  * <p>See {@link #main(String[])} for more.
  */
-@SpringBootApplication(
-    proxyBeanMethods = false,
-    scanBasePackages = {"io.camunda.zeebe.broker", "io.camunda.zeebe.shared"})
-@ConfigurationPropertiesScan(basePackages = {"io.camunda.zeebe.broker", "io.camunda.zeebe.shared"})
+//@SpringBootApplication(
+//    proxyBeanMethods = false,
+//    scanBasePackages = {"io.camunda.zeebe.broker", "io.camunda.zeebe.shared"})
+//@ConfigurationPropertiesScan(basePackages = {"io.camunda.zeebe.broker", "io.camunda.zeebe.shared"})
 public class StandaloneBroker
     implements CommandLineRunner, ApplicationListener<ContextClosedEvent> {
   private static final Logger LOGGER = Loggers.SYSTEM_LOGGER;
 
   private final BrokerCfg configuration;
   private final WorkingDirectory workingDirectory;
-  private final SpringBrokerBridge springBrokerBridge;
+  private final MicronautBrokerBridge micronautBrokerBridge;
   private final ActorScheduler actorScheduler;
   private final AtomixCluster cluster;
   private final BrokerClient brokerClient;
 
   private Broker broker;
 
-  @Autowired
   public StandaloneBroker(
       final BrokerCfg configuration,
       final WorkingDirectory workingDirectory,
-      final SpringBrokerBridge springBrokerBridge,
+      final MicronautBrokerBridge micronautBrokerBridge,
       final ActorScheduler actorScheduler,
       final AtomixCluster cluster,
       final BrokerClient brokerClient) {
     this.configuration = configuration;
     this.workingDirectory = workingDirectory;
-    this.springBrokerBridge = springBrokerBridge;
+    this.micronautBrokerBridge = micronautBrokerBridge;
     this.actorScheduler = actorScheduler;
     this.cluster = cluster;
     this.brokerClient = brokerClient;
@@ -76,13 +74,12 @@ public class StandaloneBroker
         "reactor.schedulers.defaultBoundedElasticSize",
         String.valueOf(2 * Runtime.getRuntime().availableProcessors()));
     final var application =
-        new SpringApplicationBuilder(StandaloneBroker.class)
-            .web(WebApplicationType.REACTIVE)
-            .logStartupInfo(true)
-            .profiles(Profile.BROKER.getId())
-            .build(args);
+        Micronaut.build(args)
+            .mainClass(StandaloneBroker.class)
+            .defaultEnvironments(Profile.BROKER.getId())
+            .build();
 
-    application.run();
+    application.start();
   }
 
   @Override
@@ -91,7 +88,7 @@ public class StandaloneBroker
 
     actorScheduler.start();
     brokerClient.start();
-    broker = new Broker(systemContext, springBrokerBridge);
+    broker = new Broker(systemContext, micronautBrokerBridge);
     broker.start();
   }
 
