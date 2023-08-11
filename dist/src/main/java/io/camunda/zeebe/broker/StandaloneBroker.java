@@ -17,7 +17,6 @@ import io.camunda.zeebe.shared.Profile;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.error.FatalErrorHandler;
 import java.io.IOException;
-import org.apache.logging.log4j.LogManager;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
@@ -101,7 +100,6 @@ public class StandaloneBroker
       broker.close();
     } finally {
       cleanupWorkingDirectory();
-      LogManager.shutdown();
     }
   }
 
