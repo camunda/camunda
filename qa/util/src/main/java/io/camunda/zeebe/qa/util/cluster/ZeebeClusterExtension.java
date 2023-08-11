@@ -83,14 +83,16 @@ final class ZeebeClusterExtension
     final var cluster = resource.cluster;
     final var annotation = resource.annotation;
 
-    cluster.start();
+    if (annotation.autoStart()) {
+      cluster.start();
 
-    if (annotation.awaitReady()) {
-      cluster.await(ZeebeHealthProbe.READY);
-    }
+      if (annotation.awaitReady()) {
+        cluster.await(ZeebeHealthProbe.READY);
+      }
 
-    if (annotation.awaitCompleteTopology()) {
-      cluster.awaitCompleteTopology();
+      if (annotation.awaitCompleteTopology()) {
+        cluster.awaitCompleteTopology();
+      }
     }
   }
 

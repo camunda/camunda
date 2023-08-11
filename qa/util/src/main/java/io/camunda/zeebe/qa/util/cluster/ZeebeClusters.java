@@ -31,12 +31,19 @@ public @interface ZeebeClusters {
   @Documented
   @Inherited
   @interface ZeebeCluster {
-    /** If true (the default), will block and wait until all nodes in the cluster are ready. */
+    /**
+     * If true (the default), will block and wait until all nodes in the cluster are ready. Does
+     * nothing if {@link #autoStart()} is false.
+     */
     boolean awaitReady() default true;
 
     /**
      * If true (the default), the cluster is considered started only if the topology is complete.
+     * Does nothing if {@link #autoStart()} is false.
      */
     boolean awaitCompleteTopology() default true;
+
+    /** If true (the default), will automatically start the cluster before tests. */
+    boolean autoStart() default true;
   }
 }
