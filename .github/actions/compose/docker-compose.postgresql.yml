@@ -2,7 +2,7 @@ version: "2.4"
 
 services:
   postgres:
-    image: postgres:15.3
+    image: postgres:15.4
     container_name: postgres
     command:
       [
