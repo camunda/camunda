@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.process;
 
 import org.assertj.core.groups.Tuple;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.IdentityDto;
@@ -41,7 +41,7 @@ import static org.camunda.optimize.test.engine.AuthorizationClient.SPIDERMAN_USE
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
-public class ProcessOverviewRetrievalIT extends AbstractIT {
+public class ProcessOverviewRetrievalIT extends AbstractPlatformIT {
 
   private final String FIRST_PROCESS_DEFINITION_KEY = "firstDefKey";
   private final String SECOND_PROCESS_DEFINITION_KEY = "secondDefKey";

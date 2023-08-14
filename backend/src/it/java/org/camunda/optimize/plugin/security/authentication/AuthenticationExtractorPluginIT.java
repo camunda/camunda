@@ -6,7 +6,7 @@
 package org.camunda.optimize.plugin.security.authentication;
 
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
@@ -30,7 +30,7 @@ import static org.camunda.optimize.service.util.importing.EngineConstants.AUTHOR
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
-public class AuthenticationExtractorPluginIT extends AbstractIT {
+public class AuthenticationExtractorPluginIT extends AbstractPlatformIT {
 
   private static final String TEST_DEFINITION = "test-definition";
   private static final String KERMIT_USER = "kermit";

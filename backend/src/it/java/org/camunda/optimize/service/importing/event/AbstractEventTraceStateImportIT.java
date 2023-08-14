@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.service.importing.event;
 
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventSequenceCountDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventTraceStateDto;
@@ -21,7 +21,7 @@ import java.util.List;
 import static org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil.mapHits;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
 
-public abstract class AbstractEventTraceStateImportIT extends AbstractIT {
+public abstract class AbstractEventTraceStateImportIT extends AbstractPlatformIT {
 
   @BeforeEach
   public void init() {

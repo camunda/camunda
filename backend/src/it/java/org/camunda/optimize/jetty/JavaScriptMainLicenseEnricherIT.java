@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.jetty;
 
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.util.FileReaderUtil;
 import org.junit.jupiter.api.Test;
 
@@ -14,7 +14,7 @@ import jakarta.ws.rs.core.Response;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.jetty.JavaScriptMainLicenseEnricherFilter.LICENSE_PATH;
 
-public class JavaScriptMainLicenseEnricherIT extends AbstractIT {
+public class JavaScriptMainLicenseEnricherIT extends AbstractPlatformIT {
   private static final String MOCKED_JS_CONTENT = "/* no content */\n";
 
   @Test

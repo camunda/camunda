@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.process.archive;
 
 import lombok.SneakyThrows;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.service.archive.ProcessInstanceArchivingService;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceArchiveIndex;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
-public class ProcessInstanceArchivingServiceIT extends AbstractIT {
+public class ProcessInstanceArchivingServiceIT extends AbstractPlatformIT {
 
   @Test
   public void processInstanceArchiverIsNotStartedByDefault() {

@@ -6,7 +6,7 @@
 package org.camunda.optimize.service;
 
 import com.google.common.collect.ImmutableList;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
 import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.service.util.configuration.engine.DefaultTenant;
@@ -23,7 +23,7 @@ import static org.camunda.optimize.service.util.importing.EngineConstants.RESOUR
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_INDEX_NAME;
 
-public class TenantServiceIT extends AbstractIT {
+public class TenantServiceIT extends AbstractPlatformIT {
 
   @Test
   public void getStoredTenants() {

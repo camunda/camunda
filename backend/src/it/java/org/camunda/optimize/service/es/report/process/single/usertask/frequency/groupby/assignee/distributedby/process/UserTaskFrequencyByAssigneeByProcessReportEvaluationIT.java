@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.service.es.report.process.single.usertask.frequency.groupby.assignee.distributedby.process;
 
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
@@ -38,7 +38,7 @@ import static org.camunda.optimize.service.util.ProcessReportDataType.USER_TASK_
 import static org.camunda.optimize.util.BpmnModels.getFourUserTaskDiagram;
 import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 
-public class UserTaskFrequencyByAssigneeByProcessReportEvaluationIT extends AbstractIT {
+public class UserTaskFrequencyByAssigneeByProcessReportEvaluationIT extends AbstractPlatformIT {
 
   private static final String SECOND_USER = "secondUser";
   private static final String SECOND_USER_FIRST_NAME = "the";

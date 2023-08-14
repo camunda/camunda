@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.service.es.retrieval;
 
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.query.entity.EntitiesDeleteRequestDto;
 import org.junit.jupiter.api.Test;
 
@@ -17,7 +17,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 
-public class EntityConflictIT extends AbstractIT {
+public class EntityConflictIT extends AbstractPlatformIT {
 
   @Test
   public void checkBulkDeleteConflicts_failsWithoutAuthentication() {

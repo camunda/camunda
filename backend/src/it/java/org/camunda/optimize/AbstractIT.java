@@ -6,14 +6,8 @@
 package org.camunda.optimize;
 
 import org.camunda.optimize.jetty.OptimizeResourceConstants;
-import org.camunda.optimize.test.engine.AuthorizationClient;
-import org.camunda.optimize.test.engine.IncidentClient;
-import org.camunda.optimize.test.engine.OutlierDistributionClient;
 import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtension;
 import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
-import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
-import org.camunda.optimize.test.it.extension.EngineIntegrationExtension;
-import org.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
 import org.camunda.optimize.test.optimize.AlertClient;
 import org.camunda.optimize.test.optimize.AnalysisClient;
 import org.camunda.optimize.test.optimize.AssigneesClient;
@@ -38,15 +32,12 @@ import org.camunda.optimize.test.optimize.UiConfigurationClient;
 import org.camunda.optimize.test.optimize.VariablesClient;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.mockserver.integration.ClientAndServer;
-import org.mockserver.model.HttpRequest;
-import org.springframework.boot.SpringApplication;
+import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Configuration;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -57,7 +48,6 @@ import static org.camunda.optimize.service.util.configuration.EnvironmentPropert
 import static org.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants.HTTPS_PORT_KEY;
 import static org.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants.HTTP_PORT_KEY;
 import static org.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants.INTEGRATION_TESTS;
-import static org.camunda.optimize.test.it.extension.MockServerUtil.MOCKSERVER_HOST;
 
 @SpringBootTest(
   webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT,
@@ -70,63 +60,17 @@ public abstract class AbstractIT {
   @Order(1)
   public static ElasticSearchIntegrationTestExtension elasticSearchIntegrationTestExtension =
     new ElasticSearchIntegrationTestExtension();
-  @RegisterExtension
-  @Order(2)
-  public static EngineIntegrationExtension engineIntegrationExtension = new EngineIntegrationExtension();
+
   @RegisterExtension
   @Order(3)
   public static EmbeddedOptimizeExtension embeddedOptimizeExtension = new EmbeddedOptimizeExtension();
-  @RegisterExtension
-  @Order(4)
-  public static EngineDatabaseExtension engineDatabaseExtension =
-    new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
 
   private final Supplier<OptimizeRequestExecutor> optimizeRequestExecutorSupplier =
-    () -> getEmbeddedOptimizeExtension().getRequestExecutor();
+    () -> embeddedOptimizeExtension.getRequestExecutor();
 
-  protected ClientAndServer useAndGetElasticsearchMockServer() {
-    final ClientAndServer esMockServer = elasticSearchIntegrationTestExtension.useEsMockServer();
-    embeddedOptimizeExtension.configureEsHostAndPort(MOCKSERVER_HOST, esMockServer.getLocalPort());
-    // clear any requests that might have been recorded during configuration reload
-    esMockServer.clear(HttpRequest.request());
-    return esMockServer;
-  }
+  protected abstract void startAndUseNewOptimizeInstance();
 
-  protected ClientAndServer useAndGetEngineMockServer() {
-    return useAndGetMockServerForEngine(engineIntegrationExtension.getEngineName());
-  }
-
-  protected ClientAndServer useAndGetMockServerForEngine(String engineName) {
-    String mockServerUrl = "http://" + MOCKSERVER_HOST + ":" +
-      IntegrationTestConfigurationUtil.getEngineMockServerPort() + "/engine-rest";
-    embeddedOptimizeExtension.configureEngineRestEndpointForEngineWithName(engineName, mockServerUrl);
-    return engineIntegrationExtension.useEngineMockServer();
-  }
-
-  protected void importAllEngineEntitiesFromScratch() {
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-  }
-
-  protected void importAllEngineEntitiesFromLastIndex() {
-    embeddedOptimizeExtension.importAllEngineEntitiesFromLastIndex();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-  }
-
-  protected EmbeddedOptimizeExtension getEmbeddedOptimizeExtension() {
-    return embeddedOptimizeExtension;
-  }
-
-  // engine test helpers
-  protected AuthorizationClient authorizationClient = new AuthorizationClient(engineIntegrationExtension);
-  protected OutlierDistributionClient outlierDistributionClient =
-    new OutlierDistributionClient(engineIntegrationExtension);
-
-  public void startAndUseNewOptimizeInstance() {
-    startAndUseNewOptimizeInstance(new HashMap<>());
-  }
-
-  public void startAndUseNewOptimizeInstance(Map<String, String> argMap) {
+  protected void startAndUseNewOptimizeInstance(Map<String, String> argMap, String activeProfile) {
     String[] arguments = prepareArgs(argMap);
 
     // run after-test cleanups with the old context
@@ -136,7 +80,10 @@ public abstract class AbstractIT {
       ((ConfigurableApplicationContext) embeddedOptimizeExtension.getApplicationContext()).close();
     }
 
-    final ConfigurableApplicationContext context = SpringApplication.run(Main.class, arguments);
+    final ConfigurableApplicationContext context = new SpringApplicationBuilder(Main.class)
+      .profiles(activeProfile)
+      .build()
+      .run(arguments);
 
     embeddedOptimizeExtension.setApplicationContext(context);
     embeddedOptimizeExtension.setCloseContextAfterTest(true);
@@ -161,15 +108,14 @@ public abstract class AbstractIT {
     return argList.toArray(String[]::new);
   }
 
-  private String getArg(String key, String value) {
-    return String.format("--%s=%s", key, value);
-  }
-
   private String getPortArg(String portKey) {
     return getArg(portKey, String.valueOf(embeddedOptimizeExtension.getBean(JettyConfig.class).getPort(portKey) + 100));
   }
 
-  protected IncidentClient incidentClient = new IncidentClient(engineIntegrationExtension, engineDatabaseExtension);
+  private String getArg(String key, String value) {
+    return String.format("--%s=%s", key, value);
+  }
+
   // optimize test helpers
   protected CollectionClient collectionClient = new CollectionClient(optimizeRequestExecutorSupplier);
   protected ReportClient reportClient = new ReportClient(optimizeRequestExecutorSupplier);

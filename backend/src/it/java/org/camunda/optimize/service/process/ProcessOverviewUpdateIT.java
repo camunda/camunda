@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.service.process;
 
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestRequestDto;
@@ -31,7 +31,7 @@ import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_LASTNAME;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
-public class ProcessOverviewUpdateIT extends AbstractIT {
+public class ProcessOverviewUpdateIT extends AbstractPlatformIT {
 
   private static final String DEF_KEY = "def_key";
 

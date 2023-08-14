@@ -8,7 +8,7 @@ package org.camunda.optimize.reimport.preparation;
 import com.google.common.collect.ImmutableList;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.SpringDefaultITConfig;
+import org.camunda.optimize.SpringDefaultC7ITConfig;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
@@ -376,7 +376,7 @@ public class ForceReimportIT extends AbstractEventProcessIT {
     return processDefinitionEngineDto;
   }
 
-  @Import(SpringDefaultITConfig.class)
+  @Import(SpringDefaultC7ITConfig.class)
   @TestConfiguration
   public class Configuration {
   }

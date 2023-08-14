@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.service.event;
 
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEventDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableUpdateInstanceDto;
@@ -35,7 +35,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EV
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.VARIABLE_UPDATE_INSTANCE_INDEX_NAME;
 import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 
-public class EventIndexRolloverIT extends AbstractIT {
+public class EventIndexRolloverIT extends AbstractPlatformIT {
 
   private static final int NUMBER_OF_EVENTS_IN_BATCH = 10;
   private static final String EXPECTED_SUFFIX_AFTER_FIRST_ROLLOVER = "-000002";

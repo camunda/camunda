@@ -8,7 +8,7 @@ on:
     - maintenance/*
   workflow_dispatch:
 
-# Will limit the workflow to 1 concurrenct run per ref (branch / PR)
+# Will limit the workflow to 1 concurrent run per ref (branch / PR)
 # If a new commits occurs, the current run will be canceled
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -179,16 +179,24 @@ jobs:
       matrix:
         cambpm: [ 'latest' ]
         elasticsearch: [ '8' ] # exact version is pulled for each from the pom.xml
-        includedGroups: [ 'Zeebe-test', 'import,eventBasedProcess', 'reportEvaluation', '' ]
+        includedGroups: [ 'ccsm-test', 'import,eventBasedProcess', 'reportEvaluation', '' ]
         include:
-        - includedGroups: 'Zeebe-test'
+        - includedGroups: 'ccsm-test'
           excludedGroups: ''
+          profiles: 'ccsm-it'
+          requiresCambpm: false
         - includedGroups: ''
-          excludedGroups: 'Zeebe-test,import,eventBasedProcess,reportEvaluation'
+          excludedGroups: 'ccsm-test,import,eventBasedProcess,reportEvaluation'
+          profiles: 'it,engine-latest'
+          requiresCambpm: true
         - includedGroups: 'import,eventBasedProcess'
           excludedGroups: ''
+          profiles: 'it,engine-latest'
+          requiresCambpm: true
         - includedGroups: 'reportEvaluation'
           excludedGroups: ''
+          profiles: 'it,engine-latest'
+          requiresCambpm: true
     steps:
     - uses: actions/checkout@v3
     - name: Setup Maven
@@ -210,6 +218,7 @@ jobs:
             echo "ELASTIC_VERSION=${{ steps.pom-info.outputs.x_elasticsearch8_test_version }}" >> "$GITHUB_ENV"
         fi
     - name: Start Cambpm
+      if: ${{ matrix.requiresCambpm }}
       uses: ./.github/actions/compose
       with:
         compose_file: ${{ github.workspace }}/.github/actions/compose/docker-compose.cambpm.yml
@@ -232,7 +241,7 @@ jobs:
         LIMITS_CPU: 8
       with:
         threads: 8
-        parameters: verify -Dit.test.excludedGroups=${{ matrix.excludedGroups }} -Dit.test.includedGroups=${{ matrix.includedGroups }} -Dskip.docker -Dskip.fe.build -Pit,engine-${{ matrix.cambpm }} -pl backend -am
+        parameters: verify -Dit.test.excludedGroups=${{ matrix.excludedGroups }} -Dit.test.includedGroups=${{ matrix.includedGroups }} -Dskip.docker -Dskip.fe.build -P${{ matrix.profiles }} -pl backend -am
     - name: Upload Test Results
       if: always()
       uses: actions/upload-artifact@v3

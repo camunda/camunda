@@ -11,7 +11,7 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.github.netmikey.logunit.api.LogCapturer;
 import lombok.SneakyThrows;
 import org.apache.commons.text.StringSubstitutor;
-import org.camunda.optimize.AbstractZeebeIT;
+import org.camunda.optimize.AbstractCCSMIT;
 import org.camunda.optimize.dto.optimize.ProcessInstanceConstants;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.dto.zeebe.ZeebeRecordDto;
@@ -49,7 +49,7 @@ import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
-public class ZeebePositionBasedImportIndexIT extends AbstractZeebeIT {
+public class ZeebePositionBasedImportIndexIT extends AbstractCCSMIT {
 
   public static final OffsetDateTime BEGINNING_OF_TIME = OffsetDateTime.ofInstant(
     Instant.EPOCH,
@@ -161,7 +161,7 @@ public class ZeebePositionBasedImportIndexIT extends AbstractZeebeIT {
   @Test
   public void recordsAreFetchedWithSequenceOrPosition() {
     // given
-    getEmbeddedOptimizeExtension().getConfigurationService().getConfiguredZeebe().setMaxImportPageSize(1);
+    embeddedOptimizeExtension.getConfigurationService().getConfiguredZeebe().setMaxImportPageSize(1);
     embeddedOptimizeExtension.reloadConfiguration();
     deployAndStartInstanceForProcess(createSimpleServiceTaskProcess("aProcess"));
     zeebeExtension.completeTaskForInstanceWithJobType(SERVICE_TASK);
@@ -228,7 +228,7 @@ public class ZeebePositionBasedImportIndexIT extends AbstractZeebeIT {
     // stuck
 
     // given
-    getEmbeddedOptimizeExtension().getConfigurationService().getConfiguredZeebe().getImportConfig().setMaxEmptyPagesToImport(3);
+    embeddedOptimizeExtension.getConfigurationService().getConfiguredZeebe().getImportConfig().setMaxEmptyPagesToImport(3);
     embeddedOptimizeExtension.reloadConfiguration();
     deployAndStartInstanceForProcess(createStartEndProcess("aProcess"));
     waitUntilInstanceRecordWithElementTypeAndIntentExported(BpmnElementType.PROCESS, ELEMENT_COMPLETED);
@@ -247,7 +247,7 @@ public class ZeebePositionBasedImportIndexIT extends AbstractZeebeIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // the first search always uses the position query, so we set the page size here as we only want to import the first record
-    getEmbeddedOptimizeExtension().getConfigurationService().getConfiguredZeebe().setMaxImportPageSize(1);
+    embeddedOptimizeExtension.getConfigurationService().getConfiguredZeebe().setMaxImportPageSize(1);
     embeddedOptimizeExtension.reloadConfiguration();
     // when importing the first record
     importAllZeebeEntitiesFromScratch();
@@ -263,7 +263,7 @@ public class ZeebePositionBasedImportIndexIT extends AbstractZeebeIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // we can increase the page size again to a more reasonable amount
-    getEmbeddedOptimizeExtension().getConfigurationService().getConfiguredZeebe().setMaxImportPageSize(20);
+    embeddedOptimizeExtension.getConfigurationService().getConfiguredZeebe().setMaxImportPageSize(20);
     embeddedOptimizeExtension.reloadConfiguration();
     // when importing the next page, it gets an empty result as the next record sequence is not caught by the sequence query
     importAllZeebeEntitiesFromLastIndex();
@@ -313,8 +313,8 @@ public class ZeebePositionBasedImportIndexIT extends AbstractZeebeIT {
   @Test
   public void dynamicRecordQueryingIsUsedToFetchNewUnreachableData_noUnreachableData() {
     // given
-    getEmbeddedOptimizeExtension().getConfigurationService().getConfiguredZeebe().setMaxImportPageSize(1000);
-    getEmbeddedOptimizeExtension().getConfigurationService().getConfiguredZeebe().getImportConfig().setMaxEmptyPagesToImport(3);
+    embeddedOptimizeExtension.getConfigurationService().getConfiguredZeebe().setMaxImportPageSize(1000);
+    embeddedOptimizeExtension.getConfigurationService().getConfiguredZeebe().getImportConfig().setMaxEmptyPagesToImport(3);
     embeddedOptimizeExtension.reloadConfiguration();
     deployAndStartInstanceForProcess(createStartEndProcess("aProcess"));
     waitUntilInstanceRecordWithElementTypeAndIntentExported(BpmnElementType.PROCESS, ELEMENT_COMPLETED);

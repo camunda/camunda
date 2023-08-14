@@ -7,7 +7,7 @@ package org.camunda.optimize.rest;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.SneakyThrows;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableDto;
 import org.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
@@ -37,7 +37,7 @@ import static org.camunda.optimize.rest.providers.BeanConstraintViolationExcepti
 import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_PROCESS_VARIABLE_INDEX_NAME;
 
-public class ExternalVariableIngestionRestIT extends AbstractIT {
+public class ExternalVariableIngestionRestIT extends AbstractPlatformIT {
 
   @BeforeEach
   public void before() {

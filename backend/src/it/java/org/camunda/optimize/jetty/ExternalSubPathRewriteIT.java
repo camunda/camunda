@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.jetty;
 
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -23,7 +23,7 @@ import static org.camunda.optimize.rest.CandidateGroupRestService.CANDIDATE_GROU
 import static org.camunda.optimize.rest.EntitiesRestService.ENTITIES_PATH;
 import static org.camunda.optimize.rest.UIConfigurationRestService.UI_CONFIGURATION_PATH;
 
-public class ExternalSubPathRewriteIT extends AbstractIT {
+public class ExternalSubPathRewriteIT extends AbstractPlatformIT {
 
   @BeforeEach
   public void beforeEach() {

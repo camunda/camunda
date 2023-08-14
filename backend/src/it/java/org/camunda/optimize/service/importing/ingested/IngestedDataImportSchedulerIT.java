@@ -5,12 +5,12 @@
  */
 package org.camunda.optimize.service.importing.ingested;
 
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class IngestedDataImportSchedulerIT extends AbstractIT {
+public class IngestedDataImportSchedulerIT extends AbstractPlatformIT {
 
   @Test
   public void ingestedDataImportSchedulerIsDisabledByDefault() {

@@ -44,16 +44,24 @@ jobs:
       fail-fast: false
       matrix:
         javaVersion: [ 17, 20 ]
-        includedGroups: [ 'Zeebe-test', 'import,eventBasedProcess', 'reportEvaluation', '' ]
+        includedGroups: [ 'ccsm-test', 'import,eventBasedProcess', 'reportEvaluation', '' ]
         include:
-          - includedGroups: 'Zeebe-test'
+          - includedGroups: 'ccsm-test'
             excludedGroups: ''
+            profiles: 'ccsm-it'
+            requiresCambpm: false
           - includedGroups: ''
-            excludedGroups: 'Zeebe-test,import,eventBasedProcess,reportEvaluation'
+            excludedGroups: 'ccsm-test,import,eventBasedProcess,reportEvaluation'
+            profiles: 'it,engine-latest'
+            requiresCambpm: true
           - includedGroups: 'import,eventBasedProcess'
             excludedGroups: ''
+            profiles: 'it,engine-latest'
+            requiresCambpm: true
           - includedGroups: 'reportEvaluation'
             excludedGroups: ''
+            profiles: 'it,engine-latest'
+            requiresCambpm: true
     steps:
       - uses: actions/checkout@v3
       - name: Setup Maven
@@ -69,6 +77,7 @@ jobs:
         id: "java_info"
         uses: YunaBraska/java-info-action@main
       - name: Start Cambpm
+        if: ${{ matrix.requiresCambpm }}
         uses: ./.github/actions/compose
         with:
           compose_file: ${{ github.workspace }}/.github/actions/compose/docker-compose.cambpm.yml
@@ -90,7 +99,7 @@ jobs:
           LIMITS_CPU: 8
         with:
           threads: 8
-          parameters: verify -Dit.test.excludedGroups=${{ matrix.excludedGroups }} -Dit.test.includedGroups=${{ matrix.includedGroups }} -Dskip.docker -Dskip.fe.build -Pit,engine-latest -pl backend -am
+          parameters: verify -Dit.test.excludedGroups=${{ matrix.excludedGroups }} -Dit.test.includedGroups=${{ matrix.includedGroups }} -Dskip.docker -Dskip.fe.build -P${{ matrix.profiles }} -pl backend -am
       - name: Upload Test Results
         if: always()
         uses: actions/upload-artifact@v3
@@ -176,4 +185,4 @@ jobs:
         uses: ./.github/actions/docker-logs
         if: always()
         with:
-          archive_name: data-upgrade-test-docker-${{ matrix.includedGroups }}-docker
+          archive_name: data-upgrade-test-${{ matrix.javaVersion }}-docker

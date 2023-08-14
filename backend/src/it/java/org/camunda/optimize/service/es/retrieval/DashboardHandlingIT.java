@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.es.retrieval;
 
 import lombok.SneakyThrows;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardReportTileDto;
@@ -44,7 +44,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_I
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
 import static org.mockserver.model.HttpRequest.request;
 
-public class DashboardHandlingIT extends AbstractIT {
+public class DashboardHandlingIT extends AbstractPlatformIT {
 
   @AfterEach
   public void cleanUp() {

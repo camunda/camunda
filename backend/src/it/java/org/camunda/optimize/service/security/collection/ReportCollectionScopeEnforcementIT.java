@@ -8,7 +8,7 @@ package org.camunda.optimize.service.security.collection;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
@@ -49,7 +49,7 @@ import static org.camunda.optimize.util.SuppressionConstants.UNUSED;
 // we need to create the test instance per class since this allows
 // the @MethodSource method to be non-static.
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class ReportCollectionScopeEnforcementIT extends AbstractIT {
+public class ReportCollectionScopeEnforcementIT extends AbstractPlatformIT {
 
   private static final String DEFINITION_KEY_1 = "KEY_1";
 

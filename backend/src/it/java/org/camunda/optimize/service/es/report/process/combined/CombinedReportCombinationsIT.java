@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.service.es.report.process.combined;
 
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
@@ -45,7 +45,7 @@ import static org.camunda.optimize.service.util.ProcessReportDataType.PROC_INST_
 import static org.camunda.optimize.service.util.ProcessReportDataType.USER_TASK_DUR_GROUP_BY_USER_TASK;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class CombinedReportCombinationsIT extends AbstractIT {
+public class CombinedReportCombinationsIT extends AbstractPlatformIT {
 
   @AfterEach
   public void cleanUp() {

@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.service.es.filter.process;
 
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -30,7 +30,7 @@ import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
 import static org.camunda.optimize.util.SuppressionConstants.UNUSED;
 
-public abstract class AbstractFilterIT extends AbstractIT {
+public abstract class AbstractFilterIT extends AbstractPlatformIT {
 
   protected static final String TEST_DEFINITION = "TestDefinition";
 

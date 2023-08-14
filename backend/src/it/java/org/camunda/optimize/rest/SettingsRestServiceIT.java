@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.rest;
 
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.SettingsResponseDto;
 import org.camunda.optimize.service.util.configuration.TelemetryConfiguration;
 import org.camunda.optimize.util.SuperUserType;
@@ -21,7 +21,7 @@ import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 
-public class SettingsRestServiceIT extends AbstractIT {
+public class SettingsRestServiceIT extends AbstractPlatformIT {
   public final String GROUP_ID = "someGroup";
 
   @Test

@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.rest;
 
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionRequestDto;
@@ -29,7 +29,7 @@ import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 import static org.camunda.optimize.util.SuppressionConstants.UNUSED;
 
-public abstract class AbstractEntitiesRestServiceIT extends AbstractIT {
+public abstract class AbstractEntitiesRestServiceIT extends AbstractPlatformIT {
 
   protected String addCollection(final String collectionName) {
     final String collectionId = collectionClient.createNewCollection();

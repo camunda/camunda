@@ -10,7 +10,7 @@ import com.google.common.collect.Lists;
 import io.github.netmikey.logunit.api.LogCapturer;
 import org.assertj.core.api.Condition;
 import org.assertj.core.groups.Tuple;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
@@ -57,7 +57,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROC
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_INDEX_NAME;
 import static org.mockserver.model.HttpRequest.request;
 
-public class CollectionRestServiceScopeIT extends AbstractIT {
+public class CollectionRestServiceScopeIT extends AbstractPlatformIT {
 
   public static final String DEFAULT_DEFINITION_KEY = "_KEY_";
 

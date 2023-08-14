@@ -12,7 +12,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import lombok.SneakyThrows;
 import org.assertj.core.groups.Tuple;
-import org.camunda.optimize.AbstractZeebeIT;
+import org.camunda.optimize.AbstractCCSMIT;
 import org.camunda.optimize.dto.optimize.ProcessInstanceConstants;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
@@ -57,7 +57,7 @@ import static org.camunda.optimize.util.ZeebeBpmnModels.createTerminateEndEventP
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
-public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
+public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
 
   private final Supplier<OptimizeIntegrationTestException> eventNotFoundExceptionSupplier =
     () -> new OptimizeIntegrationTestException("Cannot find exported event");

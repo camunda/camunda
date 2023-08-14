@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.service.security.authorization;
 
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
@@ -28,7 +28,7 @@ import static org.camunda.optimize.service.util.importing.EngineConstants.RESOUR
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANTS;
 
-public class MultiDefinitionProcessReportAuthorizationIT extends AbstractIT {
+public class MultiDefinitionProcessReportAuthorizationIT extends AbstractPlatformIT {
   private static final String DEFINITION_KEY_1 = "key1";
   private static final String DEFINITION_KEY_2 = "key2";
 

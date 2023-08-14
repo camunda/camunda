@@ -20,6 +20,10 @@ static String mavenElasticsearchIntegrationTestAgent(esVersion, camBpmVersion) {
   return itStageBasePod() + camBpmContainerSpec(camBpmVersion) + elasticSearchContainerSpec(esVersion)
 }
 
+static String mavenElasticsearchIntegrationTestAgentWithoutCambpm(esVersion) {
+  return itStageBasePod() + elasticSearchContainerSpec(esVersion)
+}
+
 static String itStageBasePod() {
   return """
 metadata:
@@ -178,10 +182,10 @@ void runMaven(String cmd) {
   }
 }
 
-void integrationTestSteps(String excludedGroups = '', String includedGroups = '') {
+void integrationTestSteps(String excludedGroups = '', String includedGroups = '', String profiles = 'it,engine-latest') {
   optimizeCloneGitRepo(params.BRANCH)
   container('maven') {
-    runMaven("verify -Dit.test.excludedGroups=${excludedGroups} -Dit.test.includedGroups=${includedGroups} -Dskip.docker -Dskip.fe.build -Pit,engine-latest -pl backend -am -T\$LIMITS_CPU")
+    runMaven("verify -Dit.test.excludedGroups=${excludedGroups} -Dit.test.includedGroups=${includedGroups} -Dskip.docker -Dskip.fe.build -P${profiles} -pl backend -am -T\$LIMITS_CPU")
   }
 }
 
@@ -267,20 +271,20 @@ pipeline {
             }
           }
         }
-        stage("ES 8.7.0 Zeebe IT") {
+        stage("ES 8.7.0 C8 Import IT") {
           agent {
             kubernetes {
               cloud 'optimize-ci'
-              label "optimize-ci-build_870zeebe_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+              label "optimize-ci-build_870c8import_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml mavenElasticsearchIntegrationTestAgent("8.7.0", "${env.CAMBPM_VERSION}")
+              yaml mavenElasticsearchIntegrationTestAgentWithoutCambpm("8.7.0")
             }
           }
           environment {
-            LABEL = "optimize-ci-build_870zeebe_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+            LABEL = "optimize-ci-build_870c8import_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
           }
           steps {
-            integrationTestSteps('', 'Zeebe-test')
+            integrationTestSteps('', 'ccsm-test', 'ccsm-it')
           }
           post {
             always {
@@ -306,7 +310,7 @@ pipeline {
             LABEL = "optimize-ci-build_870it_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
           }
           steps {
-            integrationTestSteps('Zeebe-test,import,eventBasedProcess,reportEvaluation', '')
+            integrationTestSteps('ccsm-test,import,eventBasedProcess,reportEvaluation', '')
           }
           post {
             always {
@@ -371,20 +375,20 @@ pipeline {
             }
           }
         }
-        stage("ES 8.8.0 Zeebe IT") {
+        stage("ES 8.8.0 C8 Import IT") {
           agent {
             kubernetes {
               cloud 'optimize-ci'
-              label "optimize-ci-build_880zeebe_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+              label "optimize-ci-build_880c8import_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml mavenElasticsearchIntegrationTestAgent("8.8.0", "${env.CAMBPM_VERSION}")
+              yaml mavenElasticsearchIntegrationTestAgentWithoutCambpm("8.8.0")
             }
           }
           environment {
-            LABEL = "optimize-ci-build_880zeebe_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+            LABEL = "optimize-ci-build_880c8import_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
           }
           steps {
-            integrationTestSteps('', 'Zeebe-test')
+            integrationTestSteps('', 'ccsm-test', 'ccsm-it')
           }
           post {
             always {
@@ -410,7 +414,7 @@ pipeline {
             LABEL = "optimize-ci-build_880it_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
           }
           steps {
-            integrationTestSteps('Zeebe-test,import,eventBasedProcess,reportEvaluation', '')
+            integrationTestSteps('ccsm-test,import,eventBasedProcess,reportEvaluation', '')
           }
           post {
             always {

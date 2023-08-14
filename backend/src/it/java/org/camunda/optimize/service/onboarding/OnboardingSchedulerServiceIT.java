@@ -12,7 +12,7 @@ import io.github.netmikey.logunit.api.LogCapturer;
 import lombok.SneakyThrows;
 import org.awaitility.Awaitility;
 import org.awaitility.Durations;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.rest.engine.dto.EngineUserDto;
 import org.camunda.optimize.rest.engine.dto.UserCredentialsDto;
@@ -43,7 +43,7 @@ import static org.camunda.optimize.service.onboarding.OnboardingEmailNotificatio
 import static org.camunda.optimize.service.util.configuration.EmailSecurityProtocol.NONE;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 
-public class OnboardingSchedulerServiceIT extends AbstractIT {
+public class OnboardingSchedulerServiceIT extends AbstractPlatformIT {
 
   private ConfigurationService configurationService;
   private GreenMail greenMail;

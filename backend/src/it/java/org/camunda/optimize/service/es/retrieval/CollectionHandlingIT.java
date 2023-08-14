@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.es.retrieval;
 
 import com.google.common.collect.Lists;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
@@ -87,7 +87,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_INDE
 import static org.mockserver.model.HttpError.error;
 import static org.mockserver.model.HttpRequest.request;
 
-public class CollectionHandlingIT extends AbstractIT {
+public class CollectionHandlingIT extends AbstractPlatformIT {
 
   private static Stream<DefinitionType> definitionTypes() {
     return Stream.of(PROCESS, DECISION);

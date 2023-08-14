@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.rest;
 
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameRequestDto;
@@ -22,7 +22,7 @@ import java.util.stream.Stream;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.util.DmnModels.createDefaultDmnModelNoInputAndOutputLabels;
 
-public class DecisionVariableNamesRestServiceIT extends AbstractIT {
+public class DecisionVariableNamesRestServiceIT extends AbstractPlatformIT {
 
   private static final String TEST_VARIANT_INPUTS = "inputs";
   private static final String TEST_VARIANT_OUTPUTS = "outputs";

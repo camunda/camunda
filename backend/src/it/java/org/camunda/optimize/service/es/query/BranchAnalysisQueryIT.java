@@ -9,7 +9,7 @@ import com.google.common.collect.ImmutableList;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisOutcomeDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisRequestDto;
@@ -34,7 +34,7 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.ReportConstants.LATEST_VERSION;
 
 @Slf4j
-public class BranchAnalysisQueryIT extends AbstractIT {
+public class BranchAnalysisQueryIT extends AbstractPlatformIT {
 
   private static final String PROCESS_DEFINITION_KEY = "aProcessDefinitionKey";
   private static final String PROCESS_DEFINITION_VERSION = "1";

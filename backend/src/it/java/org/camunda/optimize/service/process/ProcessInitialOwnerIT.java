@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.process;
 
 import org.awaitility.Awaitility;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.query.processoverview.InitialProcessOwnerDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestRequestDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewDto;
@@ -33,7 +33,7 @@ import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_OVERVIEW_INDEX_NAME;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
-public class ProcessInitialOwnerIT extends AbstractIT {
+public class ProcessInitialOwnerIT extends AbstractPlatformIT {
 
   private static final String DEF_KEY = "def_key";
 

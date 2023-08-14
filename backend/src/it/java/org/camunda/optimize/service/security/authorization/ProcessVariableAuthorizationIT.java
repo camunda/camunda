@@ -8,7 +8,7 @@ package org.camunda.optimize.service.security.authorization;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import org.assertj.core.groups.Tuple;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
@@ -35,7 +35,7 @@ import static org.camunda.optimize.service.util.importing.EngineConstants.RESOUR
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
-public class ProcessVariableAuthorizationIT extends AbstractIT {
+public class ProcessVariableAuthorizationIT extends AbstractPlatformIT {
 
   private static final String PROCESS_DEFINITION_KEY = "aProcessDefinitionKey";
   private static final String VARIABLE_NAME = "variableName";

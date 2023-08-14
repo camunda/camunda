@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.identity;
 
 import io.github.netmikey.logunit.api.LogCapturer;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
@@ -51,7 +51,7 @@ import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockserver.model.HttpRequest.request;
 
-public class CollectionRoleCleanupIT extends AbstractIT {
+public class CollectionRoleCleanupIT extends AbstractPlatformIT {
 
   private static final String USER_KERMIT = "kermit";
   private static final String TEST_GROUP = "testGroup";

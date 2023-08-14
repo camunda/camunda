@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.plugin.elasticsearch;
 
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClientConfiguration;
 import org.camunda.optimize.service.util.BackoffCalculator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -25,7 +25,7 @@ import static jakarta.ws.rs.HttpMethod.GET;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockserver.model.HttpRequest.request;
 
-public class ElasticsearchCustomHeaderSupplierPluginIT extends AbstractIT {
+public class ElasticsearchCustomHeaderSupplierPluginIT extends AbstractPlatformIT {
 
   private ConfigurationService configurationService;
 

@@ -197,6 +197,13 @@
     </profile>
 
     <profile>
+      <id>ccsm-it</id>
+      <properties>
+        <skip.unit.tests>true</skip.unit.tests>
+      </properties>
+    </profile>
+
+    <profile>
       <id>coverage</id>
       <build>
         <plugins>

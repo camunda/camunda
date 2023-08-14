@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.service.security.authorization;
 
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
@@ -55,7 +55,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCE
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 
-public class ReportDefinitionAuthorizationIT extends AbstractIT {
+public class ReportDefinitionAuthorizationIT extends AbstractPlatformIT {
 
   private static final String PROCESS_KEY = "aprocess";
   private static final String DECISION_KEY = "aDecision";

@@ -8,7 +8,7 @@ package org.camunda.optimize.service.security.authorization;
 import com.google.common.collect.Lists;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisRequestDto;
 import org.junit.jupiter.api.Test;
@@ -24,7 +24,7 @@ import static org.camunda.optimize.service.util.importing.EngineConstants.RESOUR
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_TENANT;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 
-public class AnalysisAuthorizationIT extends AbstractIT {
+public class AnalysisAuthorizationIT extends AbstractPlatformIT {
 
   private static final String PROCESS_DEFINITION_KEY = "aProcessDefinitionKey";
   private static final String START_EVENT_ID = "startEvent";

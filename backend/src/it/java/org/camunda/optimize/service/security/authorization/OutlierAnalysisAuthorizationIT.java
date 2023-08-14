@@ -10,7 +10,7 @@ import com.google.common.collect.ImmutableMap;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.builder.StartEventBuilder;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
@@ -28,7 +28,7 @@ import static org.camunda.optimize.service.util.importing.EngineConstants.RESOUR
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_TENANT;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 
-public class OutlierAnalysisAuthorizationIT extends AbstractIT {
+public class OutlierAnalysisAuthorizationIT extends AbstractPlatformIT {
   private static final String PROCESS_DEFINITION_KEY = "outlierTest";
   private static final String ENDPOINT_FLOW_NODE_OUTLIERS = "flowNodeOutliers";
   private static final String ENDPOINT_DURATION_CHART = "durationChart";

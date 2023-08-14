@@ -14,7 +14,7 @@ import jakarta.mail.Multipart;
 import jakarta.mail.Part;
 import jakarta.mail.internet.MimeMessage;
 import lombok.SneakyThrows;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestRequestDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewDto;
@@ -43,7 +43,7 @@ import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_OVERVIEW_INDEX_NAME;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
-public class ProcessDigestNotificationIT extends AbstractIT {
+public class ProcessDigestNotificationIT extends AbstractPlatformIT {
 
   private static final String DEF_KEY = "aProcessDefKey";
   private static GreenMail greenMail;

@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.jetty;
 
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.rest.UIConfigurationRestService;
 import org.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
 import org.junit.jupiter.api.AfterAll;
@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.OptimizeJettyServerCustomizer.EXTERNAL_SUB_PATH;
 import static org.camunda.optimize.jetty.OptimizeResourceConstants.REST_API_PATH;
 
-public class ContextPathIT extends AbstractIT {
+public class ContextPathIT extends AbstractPlatformIT {
 
   @AfterAll
   public static void afterAll() {

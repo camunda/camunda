@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.service.entities;
 
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
@@ -95,7 +95,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DE
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.util.SuppressionConstants.UNUSED;
 
-public abstract class AbstractExportImportEntityDefinitionIT extends AbstractIT {
+public abstract class AbstractExportImportEntityDefinitionIT extends AbstractPlatformIT {
   protected static final String DEFINITION_KEY = "aKey";
   protected static final String DEFINITION_NAME = "aDefinitionName";
   protected static final String DEFINITION_VERSION = "1";

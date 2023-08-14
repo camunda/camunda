@@ -8,7 +8,7 @@ package org.camunda.optimize.service.es.retrieval;
 import com.google.common.collect.ImmutableMap;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardFilterDto;
@@ -47,7 +47,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_I
 import static org.mockserver.model.HttpError.error;
 import static org.mockserver.model.HttpRequest.request;
 
-public class DashboardFilterHandlingIT extends AbstractIT {
+public class DashboardFilterHandlingIT extends AbstractPlatformIT {
 
   private static final String BOOL_VAR = "boolVar";
   private static final String DATE_VAR = "dateVar";

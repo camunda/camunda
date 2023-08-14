@@ -11,7 +11,7 @@ import org.apache.commons.math3.analysis.function.Gaussian;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.builder.StartEventBuilder;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.analysis.DurationChartEntryDto;
 import org.camunda.optimize.dto.optimize.query.analysis.FindingsDto;
@@ -37,7 +37,7 @@ import static org.camunda.optimize.test.engine.OutlierDistributionClient.VARIABL
 import static org.camunda.optimize.test.engine.OutlierDistributionClient.VARIABLE_VALUE_OUTLIER;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 
-public class OutlierAnalysisIT extends AbstractIT {
+public class OutlierAnalysisIT extends AbstractPlatformIT {
   private static final int NUMBER_OF_DATAPOINTS = 40;
   private static final int NUMBER_OF_DATAPOINTS_FOR_CHART = NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
   private static final String PROCESS_DEFINITION_KEY = "outlierTest";

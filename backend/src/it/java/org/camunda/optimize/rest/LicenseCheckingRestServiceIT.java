@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.rest;
 
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.query.LicenseInformationResponseDto;
 import org.camunda.optimize.service.license.LicenseManager;
@@ -28,7 +28,7 @@ import static org.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_AUTHORI
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class LicenseCheckingRestServiceIT extends AbstractIT {
+public class LicenseCheckingRestServiceIT extends AbstractPlatformIT {
 
   private static final String CUSTOMER_ID = "schrottis inn";
   private static OffsetDateTime VALID_UNTIL;

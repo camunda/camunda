@@ -6,7 +6,7 @@
 package org.camunda.optimize.rest;
 
 import com.google.common.collect.Sets;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.dto.optimize.query.ui_configuration.UIConfigurationResponseDto;
 import org.camunda.optimize.dto.optimize.query.ui_configuration.WebappsEndpointDto;
@@ -23,7 +23,7 @@ import static org.camunda.optimize.service.util.configuration.ConfigurationServi
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_INDEX_NAME;
 
-public class UIConfigurationRestServiceIT extends AbstractIT {
+public class UIConfigurationRestServiceIT extends AbstractPlatformIT {
 
   @Test
   public void logoutHidden() {

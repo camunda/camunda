@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.schema;
 
 import org.apache.http.client.methods.HttpGet;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
@@ -58,7 +58,7 @@ import static org.elasticsearch.xcontent.XContentFactory.jsonBuilder;
 import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.verify.VerificationTimes.exactly;
 
-public class SchemaManagerIT extends AbstractIT {
+public class SchemaManagerIT extends AbstractPlatformIT {
 
   private OptimizeElasticsearchClient prefixAwareRestHighLevelClient;
   private OptimizeIndexNameService indexNameService;

@@ -13,7 +13,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
@@ -60,7 +60,7 @@ import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANT
 import static org.camunda.optimize.test.util.decision.DmnHelper.createSimpleDmnModel;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
-public class CollectionScopeAuthorizationIT extends AbstractIT {
+public class CollectionScopeAuthorizationIT extends AbstractPlatformIT {
 
   protected AuthorizationClient authorizationClient = new AuthorizationClient(engineIntegrationExtension);
 

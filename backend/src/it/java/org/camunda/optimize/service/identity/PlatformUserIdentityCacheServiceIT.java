@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.service.identity;
 
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.service.MaxEntryLimitHitException;
@@ -42,7 +42,7 @@ import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.KERMIT_GROUP_NAME;
 import static org.mockserver.model.HttpRequest.request;
 
-public class PlatformUserIdentityCacheServiceIT extends AbstractIT {
+public class PlatformUserIdentityCacheServiceIT extends AbstractPlatformIT {
 
   @Test
   public void verifySyncEnabledByDefault() {

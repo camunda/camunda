@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.process.kpi;
 
 import org.assertj.core.groups.Tuple;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.query.processoverview.KpiResultDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.KpiType;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewResponseDto;
@@ -39,7 +39,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
-public class ProcessKpiRetrievalIT extends AbstractIT {
+public class ProcessKpiRetrievalIT extends AbstractPlatformIT {
 
   private static final String PROCESS_DEFINITION_KEY = "aProcessDefKey";
 

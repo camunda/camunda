@@ -9,7 +9,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
@@ -25,7 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.query.entity.EntityType.DASHBOARD;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 
-public class DashboardCollectionScopeEnforcementIT extends AbstractIT {
+public class DashboardCollectionScopeEnforcementIT extends AbstractPlatformIT {
 
   private static final List<ReportScenario> POSSIBLE_REPORT_SCENARIOS = ImmutableList
     .of(

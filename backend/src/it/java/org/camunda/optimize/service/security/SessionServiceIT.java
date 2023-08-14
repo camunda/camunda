@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.service.security;
 
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.service.es.schema.index.TerminatedUserSessionIndex;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.junit.jupiter.api.Test;
@@ -20,7 +20,7 @@ import static org.camunda.optimize.rest.constants.RestConstants.AUTH_COOKIE_TOKE
 import static org.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_AUTHORIZATION;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TERMINATED_USER_SESSION_INDEX_NAME;
 
-public class SessionServiceIT extends AbstractIT {
+public class SessionServiceIT extends AbstractPlatformIT {
 
   @Test
   public void verifyTerminatedSessionCleanupIsScheduledAfterStartup() {

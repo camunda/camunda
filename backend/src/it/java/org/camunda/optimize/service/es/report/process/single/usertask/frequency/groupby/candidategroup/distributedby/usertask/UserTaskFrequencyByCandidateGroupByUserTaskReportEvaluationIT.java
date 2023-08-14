@@ -9,7 +9,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
@@ -57,7 +57,7 @@ import static org.camunda.optimize.util.BpmnModels.USER_TASK_3;
 import static org.camunda.optimize.util.BpmnModels.USER_TASK_4;
 import static org.camunda.optimize.util.BpmnModels.getFourUserTaskDiagram;
 
-public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT extends AbstractIT {
+public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT extends AbstractPlatformIT {
 
   private static final String FIRST_CANDIDATE_GROUP_ID = "firstGroup";
   private static final String FIRST_CANDIDATE_GROUP_NAME = "first";

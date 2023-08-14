@@ -5,14 +5,14 @@
  */
 package org.camunda.optimize.jetty;
 
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.annotation.DirtiesContext;
 
 import java.util.Collections;
 
 @DirtiesContext
-public class SpringBootCompressionIT extends AbstractIT {
+public class SpringBootCompressionIT extends AbstractPlatformIT {
 
   @Test
   public void optimizeBootsWithEnabledCompression() {

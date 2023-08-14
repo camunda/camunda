@@ -8,7 +8,7 @@ package org.camunda.optimize.service.cleanup;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.service.util.configuration.cleanup.CleanupConfiguration;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -18,7 +18,7 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class CleanupSchedulerIT extends AbstractIT {
+public class CleanupSchedulerIT extends AbstractPlatformIT {
 
   @Test
   public void verifyDisabledByDefault() {

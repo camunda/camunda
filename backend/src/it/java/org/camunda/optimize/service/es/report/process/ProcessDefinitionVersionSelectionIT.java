@@ -7,7 +7,7 @@ package org.camunda.optimize.service.es.report.process;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
@@ -29,7 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.ReportConstants.LATEST_VERSION;
 
-public class ProcessDefinitionVersionSelectionIT extends AbstractIT {
+public class ProcessDefinitionVersionSelectionIT extends AbstractPlatformIT {
 
   private static final String START_EVENT = "startEvent";
   private static final String END_EVENT = "endEvent";

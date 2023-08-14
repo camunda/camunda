@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.export;
 
 import com.opencsv.CSVReader;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -36,7 +36,7 @@ import static org.camunda.optimize.service.export.CsvExportService.DEFAULT_RECOR
 import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
-public class ExportLimitsIT extends AbstractIT {
+public class ExportLimitsIT extends AbstractPlatformIT {
 
   @Test
   public void exportWithLimit() throws Exception {

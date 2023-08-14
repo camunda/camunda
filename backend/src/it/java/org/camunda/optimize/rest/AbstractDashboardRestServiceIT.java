@@ -8,7 +8,7 @@ package org.camunda.optimize.rest;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardAssigneeFilterDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardCandidateGroupFilterDto;
@@ -57,7 +57,7 @@ import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_CONTAINS;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_IN;
 
-public abstract class AbstractDashboardRestServiceIT extends AbstractIT {
+public abstract class AbstractDashboardRestServiceIT extends AbstractPlatformIT {
 
   protected static Stream<List<DashboardFilterDto<?>>> validFilterCombinations() {
     return Stream.of(

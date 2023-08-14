@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.es.report.process.single.processinstance.duration.groupby.date.distributedby.process;
 
 import org.assertj.core.groups.Tuple;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
@@ -44,7 +44,7 @@ import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagram;
 import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 
 public abstract class AbstractProcessInstanceDurationByProcessInstanceDateByProcessReportEvaluationIT
-  extends AbstractIT {
+  extends AbstractPlatformIT {
 
   protected abstract ProcessReportDataType getReportDataType();
 

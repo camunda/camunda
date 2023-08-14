@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.plugin.adapter.businesskey;
 
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
@@ -20,7 +20,7 @@ import java.util.List;
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class BusinessKeyImportAdapterPluginIT extends AbstractIT {
+public class BusinessKeyImportAdapterPluginIT extends AbstractPlatformIT {
   private ConfigurationService configurationService;
 
   @BeforeEach

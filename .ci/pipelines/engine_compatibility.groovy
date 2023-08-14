@@ -266,7 +266,7 @@ pipeline {
             LABEL = "optimize-ci-build_718it_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
           }
           steps {
-            integrationTestSteps('7.18', 'Zeebe-test,import,eventBasedProcess,reportEvaluation', '')
+            integrationTestSteps('7.18', 'ccsm-test,import,eventBasedProcess,reportEvaluation', '')
           }
           post {
             always {
@@ -344,7 +344,7 @@ pipeline {
             LABEL = "optimize-ci-build_719it_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
           }
           steps {
-            integrationTestSteps('7.19', 'Zeebe-test,import,eventBasedProcess,reportEvaluation', '')
+            integrationTestSteps('7.19', 'ccsm-test,import,eventBasedProcess,reportEvaluation', '')
           }
           post {
             always {
@@ -422,7 +422,7 @@ pipeline {
             LABEL = "optimize-ci-build_snapit_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
           }
           steps {
-            integrationTestSteps('snapshot', 'Zeebe-test,import,eventBasedProcess,reportEvaluation', '')
+            integrationTestSteps('snapshot', 'ccsm-test,import,eventBasedProcess,reportEvaluation', '')
           }
           post {
             always {

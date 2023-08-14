@@ -64,7 +64,7 @@ import static org.camunda.optimize.test.util.decision.DmnHelper.createSimpleDmnM
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 import static org.mockserver.model.HttpRequest.request;
 
-public abstract class AbstractAlertIT extends AbstractIT {
+public abstract class AbstractAlertIT extends AbstractPlatformIT {
 
   @BeforeEach
   public void beforeEach() throws Exception {

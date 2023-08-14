@@ -345,7 +345,6 @@ public class DigestService implements ConfigurationReloadable {
      */
     private String getKpiTargetString(final String target, final TargetValueUnit unit,
                                       final ViewProperty kpiMeasure, final boolean isBelow) {
-      //
       String targetString;
       if (ViewProperty.DURATION.equals(kpiMeasure)) {
         targetString = target + " " + StringUtils.capitalize(unit.getId());

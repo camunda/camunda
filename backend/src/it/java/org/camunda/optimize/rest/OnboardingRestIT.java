@@ -6,7 +6,7 @@
 package org.camunda.optimize.rest;
 
 import lombok.SneakyThrows;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.OnboardingStateDto;
 import org.camunda.optimize.dto.optimize.rest.OnboardingStateRestDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
@@ -22,7 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ONBOARDING_INDEX_NAME;
 
-public class OnboardingRestIT extends AbstractIT {
+public class OnboardingRestIT extends AbstractPlatformIT {
 
   private static final String KEY_WHATSNEW = "whatsnew";
 

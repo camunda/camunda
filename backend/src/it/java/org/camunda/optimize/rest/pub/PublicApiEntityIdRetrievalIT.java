@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.rest.pub;
 
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
@@ -29,7 +29,7 @@ import static org.camunda.optimize.service.util.ProcessReportDataType.RAW_DATA;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
 
-public class PublicApiEntityIdRetrievalIT extends AbstractIT {
+public class PublicApiEntityIdRetrievalIT extends AbstractPlatformIT {
   private static final String ACCESS_TOKEN = "secret_export_token";
 
   @BeforeEach

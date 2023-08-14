@@ -9,7 +9,7 @@ import com.google.common.collect.ImmutableMap;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEvaluationFilterDto;
@@ -98,7 +98,7 @@ import static org.camunda.optimize.util.BpmnModels.USER_TASK_1;
 import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class CombinedReportHandlingIT extends AbstractIT {
+public class CombinedReportHandlingIT extends AbstractPlatformIT {
 
   private static final String TEST_REPORT_NAME = "My foo report";
 

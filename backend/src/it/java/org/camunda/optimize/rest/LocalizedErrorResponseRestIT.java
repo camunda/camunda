@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.rest;
 
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import org.junit.jupiter.api.Test;
 
@@ -15,7 +15,7 @@ import jakarta.ws.rs.core.Response;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.rest.providers.GenericExceptionMapper.NOT_FOUND_ERROR_CODE;
 
-public class LocalizedErrorResponseRestIT extends AbstractIT {
+public class LocalizedErrorResponseRestIT extends AbstractPlatformIT {
 
   @Test
   public void fallbackLocaleMessageIsResolved() {

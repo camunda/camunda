@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.rest;
 
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
@@ -34,7 +34,7 @@ import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINI
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANTS;
 import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 
-public class CollectionRestServiceReportsIT extends AbstractIT {
+public class CollectionRestServiceReportsIT extends AbstractPlatformIT {
 
   private static Stream<DefinitionType> definitionTypes() {
     return Stream.of(PROCESS, DECISION);

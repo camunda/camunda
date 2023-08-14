@@ -11,7 +11,7 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import lombok.SneakyThrows;
 import org.assertj.core.groups.Tuple;
-import org.camunda.optimize.AbstractZeebeIT;
+import org.camunda.optimize.AbstractCCSMIT;
 import org.camunda.optimize.dto.optimize.DataImportSourceType;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
@@ -37,7 +37,7 @@ import static org.camunda.optimize.util.ZeebeBpmnModels.createStartEndProcess;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
-public class ZeebeProcessDefinitionImportIT extends AbstractZeebeIT {
+public class ZeebeProcessDefinitionImportIT extends AbstractCCSMIT {
 
   @Test
   public void importZeebeProcess_allDataSavedToDefinition() {

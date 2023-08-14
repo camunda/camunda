@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.rest;
 
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.query.status.EngineStatusDto;
 import org.camunda.optimize.dto.optimize.query.status.StatusResponseDto;
 import org.camunda.optimize.service.util.importing.EngineConstants;
@@ -27,7 +27,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.mockserver.model.HttpRequest.request;
 
-public class StatusRestServiceIT extends AbstractIT {
+public class StatusRestServiceIT extends AbstractPlatformIT {
 
   @Test
   public void getConnectedStatus() {

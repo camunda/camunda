@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.service.cleanup;
 
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto;
 import org.camunda.optimize.service.util.configuration.cleanup.IngestedEventCleanupConfiguration;
@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class IngestedEventCleanupIT extends AbstractIT {
+public class IngestedEventCleanupIT extends AbstractPlatformIT {
 
   @BeforeEach
   public void enableIngestedEventCleanup() {

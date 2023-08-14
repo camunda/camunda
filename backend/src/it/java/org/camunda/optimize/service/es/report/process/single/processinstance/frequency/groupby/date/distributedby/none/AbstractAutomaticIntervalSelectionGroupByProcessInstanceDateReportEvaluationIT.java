@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.service.es.report.process.single.processinstance.frequency.groupby.date.distributedby.none;
 
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -33,7 +33,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_D
 import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
 
 public abstract class AbstractAutomaticIntervalSelectionGroupByProcessInstanceDateReportEvaluationIT
-  extends AbstractIT {
+  extends AbstractPlatformIT {
 
   protected abstract void updateProcessInstanceDates(Map<String, OffsetDateTime> updates) throws SQLException;
 

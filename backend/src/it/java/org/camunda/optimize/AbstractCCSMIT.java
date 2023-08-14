@@ -30,29 +30,31 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.io.InputStream;
+import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CCSM_PROFILE;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
-@Tag("Zeebe-test")
-public abstract class AbstractZeebeIT extends AbstractIT {
-
+@Tag("ccsm-test")
+@ActiveProfiles(CCSM_PROFILE)
+public abstract class AbstractCCSMIT extends AbstractIT {
   @RegisterExtension
-  @Order(5)
+  @Order(4)
   protected static ZeebeExtension zeebeExtension = new ZeebeExtension();
 
   @BeforeEach
   public void setupZeebeImportAndReloadConfiguration() {
     final String embeddedZeebePrefix = zeebeExtension.getZeebeRecordPrefix();
     // set the new record prefix for the next test
-    embeddedOptimizeExtension.getConfigurationService().getConfiguredZeebe().setEnabled(true);
     embeddedOptimizeExtension.getConfigurationService().getConfiguredZeebe().setName(embeddedZeebePrefix);
     embeddedOptimizeExtension.reloadConfiguration();
   }
@@ -61,6 +63,10 @@ public abstract class AbstractZeebeIT extends AbstractIT {
   public void after() {
     // Clear all potential existing Zeebe records in Optimize
     elasticSearchIntegrationTestExtension.deleteAllZeebeRecordsForPrefix(zeebeExtension.getZeebeRecordPrefix());
+  }
+
+  protected void startAndUseNewOptimizeInstance() {
+    startAndUseNewOptimizeInstance(new HashMap<>(), CCSM_PROFILE);
   }
 
   protected void importAllZeebeEntitiesFromScratch() {

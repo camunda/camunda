@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.es.report.process.single.usertask.frequency.groupby.date.distributedby.process;
 
 import org.assertj.core.groups.Tuple;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
@@ -39,7 +39,7 @@ import static org.camunda.optimize.util.BpmnModels.USER_TASK_2;
 import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagram;
 import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 
-public abstract class UserTaskFrequencyByUserTaskDateByProcessReportEvaluationIT extends AbstractIT {
+public abstract class UserTaskFrequencyByUserTaskDateByProcessReportEvaluationIT extends AbstractPlatformIT {
 
   protected abstract ProcessReportDataType getReportDataType();
 

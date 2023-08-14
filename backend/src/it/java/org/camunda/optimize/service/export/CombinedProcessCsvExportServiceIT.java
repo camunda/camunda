@@ -7,14 +7,13 @@ package org.camunda.optimize.service.export;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.util.ProcessReportDataType;
 import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
-import org.camunda.optimize.service.util.configuration.CsvConfiguration;
 import org.camunda.optimize.service.util.configuration.users.AuthorizedUserType;
 import org.camunda.optimize.util.FileReaderUtil;
 import org.junit.jupiter.api.Test;
@@ -33,7 +32,7 @@ import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 import static org.camunda.optimize.rest.RestTestUtil.getResponseContentAsString;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
-public class CombinedProcessCsvExportServiceIT extends AbstractIT {
+public class CombinedProcessCsvExportServiceIT extends AbstractPlatformIT {
 
   private static final String START = "aStart";
   private static final String END = "anEnd";

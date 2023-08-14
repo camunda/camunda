@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.rest;
 
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
@@ -24,7 +24,7 @@ import java.util.List;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.ReportConstants.DEFAULT_TENANT_IDS;
 
-public abstract class AbstractReportRestServiceIT extends AbstractIT {
+public abstract class AbstractReportRestServiceIT extends AbstractPlatformIT {
 
   protected static final String PROCESS_DEFINITION_KEY = "simple";
   protected static final String DECISION_DEFINITION_KEY = "invoiceClassification";

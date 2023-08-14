@@ -7,7 +7,7 @@ package org.camunda.optimize.service.es;
 
 import io.github.netmikey.logunit.api.LogCapturer;
 import lombok.SneakyThrows;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.service.util.BackoffCalculator;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -21,7 +21,7 @@ import static jakarta.ws.rs.HttpMethod.GET;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockserver.model.HttpRequest.request;
 
-public class OptimizeElasticsearchClientFactoryIT extends AbstractIT {
+public class OptimizeElasticsearchClientFactoryIT extends AbstractPlatformIT {
 
   @RegisterExtension
   protected final LogCapturer logCapturer =

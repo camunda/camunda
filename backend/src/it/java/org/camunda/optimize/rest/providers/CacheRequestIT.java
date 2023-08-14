@@ -6,7 +6,7 @@
 package org.camunda.optimize.rest.providers;
 
 import com.google.common.collect.ImmutableList;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
@@ -35,7 +35,7 @@ import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.D
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
 
-public class CacheRequestIT extends AbstractIT {
+public class CacheRequestIT extends AbstractPlatformIT {
 
   @ParameterizedTest
   @EnumSource(DefinitionType.class)

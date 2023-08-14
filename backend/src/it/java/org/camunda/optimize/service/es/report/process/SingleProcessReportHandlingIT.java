@@ -9,7 +9,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import io.github.netmikey.logunit.api.LogCapturer;
 import jakarta.ws.rs.core.Response;
 import lombok.SneakyThrows;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
@@ -77,7 +77,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROC
 import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
 import static org.mockserver.model.HttpRequest.request;
 
-public class SingleProcessReportHandlingIT extends AbstractIT {
+public class SingleProcessReportHandlingIT extends AbstractPlatformIT {
 
   @RegisterExtension
   protected final LogCapturer logCapturer =

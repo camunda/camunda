@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.service.security;
 
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.query.security.CredentialsRequestDto;
 import org.junit.jupiter.api.Test;
 
@@ -21,7 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 
-public class SecurityResponseHeadersIT extends AbstractIT {
+public class SecurityResponseHeadersIT extends AbstractPlatformIT {
 
   @Test
   public void xFrameOptionsDisabled() {

@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.telemetry.mixpanel;
 
 import lombok.NonNull;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareRestDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareRestDto;
 import org.camunda.optimize.service.telemetry.mixpanel.client.MixpanelEntityEventProperties;
@@ -16,7 +16,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class MixpanelDataServiceIT extends AbstractIT {
+public class MixpanelDataServiceIT extends AbstractPlatformIT {
 
   private static final String CLUSTER_ID = "IT-cluster";
   private static final String STAGE = "IT";

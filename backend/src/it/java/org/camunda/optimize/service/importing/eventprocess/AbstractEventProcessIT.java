@@ -9,7 +9,7 @@ import com.google.common.collect.ImmutableMap;
 import lombok.SneakyThrows;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.ProcessInstanceConstants;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
@@ -88,7 +88,7 @@ import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 @Tag("eventBasedProcess")
-public abstract class AbstractEventProcessIT extends AbstractIT {
+public abstract class AbstractEventProcessIT extends AbstractPlatformIT {
   protected static final String MY_TRACE_ID_1 = "myTraceId1";
 
   protected static final String BPMN_START_EVENT_ID = "StartEvent_1";

@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.schema;
 
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtension;
@@ -27,7 +27,7 @@ import static org.camunda.optimize.service.es.schema.OptimizeIndexNameService.ge
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameService.getOptimizeIndexOrTemplateNameForAliasAndVersion;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 
-public class CustomIndexPrefixIT extends AbstractIT {
+public class CustomIndexPrefixIT extends AbstractPlatformIT {
   private static final String CUSTOM_PREFIX = UUID.randomUUID().toString().substring(0, 5);
 
   @RegisterExtension
