@@ -39,4 +39,8 @@ public interface MutableJobState extends JobState {
 
   // TODO: stop using job streamer on state
   void setJobStreamer(final JobStreamer jobStreamer);
+
+  void cleanupTimeoutsWithoutJobs();
+
+  void cleanupBackoffsWithoutJobs();
 }
