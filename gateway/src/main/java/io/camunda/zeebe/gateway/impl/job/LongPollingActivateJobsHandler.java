@@ -92,7 +92,12 @@ public final class LongPollingActivateJobsHandler implements ActivateJobsHandler
     activateJobs(longPollingRequest);
 
     // eagerly removing the request on cancellation may free up some resources
-    responseObserver.setOnCancelHandler(
+    responseObserver.setOnCancelHandler(() -> onRequestCancel(type, longPollingRequest));
+  }
+
+  private void onRequestCancel(
+      final String type, final InflightActivateJobsRequest longPollingRequest) {
+    actor.run(
         () -> {
           final var state = jobTypeState.get(type);
           if (state != null) {
