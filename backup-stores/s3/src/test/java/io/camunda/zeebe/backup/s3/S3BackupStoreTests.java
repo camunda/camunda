@@ -31,6 +31,7 @@ import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Object;
 
 public interface S3BackupStoreTests extends BackupStoreTestKit {
+
   S3AsyncClient getClient();
 
   S3BackupConfig getConfig();

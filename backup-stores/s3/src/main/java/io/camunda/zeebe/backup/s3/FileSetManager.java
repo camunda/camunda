@@ -21,6 +21,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Semaphore;
 import org.apache.commons.compress.compressors.CompressorException;
 import org.apache.commons.compress.compressors.CompressorStreamFactory;
 import org.apache.commons.compress.utils.IOUtils;
@@ -36,16 +37,23 @@ import software.amazon.awssdk.services.s3.S3AsyncClient;
 final class FileSetManager {
 
   private static final Logger LOG = LoggerFactory.getLogger(FileSetManager.class);
-  private static final String COMPRESSION_ALGORITHM = CompressorStreamFactory.getZstandard();
   private static final int COMPRESSION_SIZE_THRESHOLD = 8 * 1024 * 1024; // 8 MiB
   private static final String TMP_COMPRESSION_PREFIX = "zb-backup-compress-";
   private static final String TMP_DECOMPRESSION_PREFIX = "zb-backup-decompress-";
+
   private final S3AsyncClient client;
   private final S3BackupConfig config;
+  private final Semaphore uploadLimit;
 
   public FileSetManager(final S3AsyncClient client, final S3BackupConfig config) {
     this.client = client;
     this.config = config;
+
+    // We try not to exhaust the available connections by restricting the number of
+    // concurrent uploads to half of the number of available connections.
+    // This should prevent ConnectionAcquisitionTimeout for backups with many and/or large files
+    // where we would otherwise occupy all connections, preventing some uploads from starting.
+    uploadLimit = new Semaphore(Math.max(1, config.maxConcurrentConnections() / 2));
   }
 
   CompletableFuture<FileSet> save(final String prefix, final NamedFileSet files) {
@@ -59,24 +67,36 @@ final class FileSetManager {
 
   private CompletableFuture<FileSet.FileMetadata> saveFile(
       final String prefix, final String fileName, final Path filePath) {
+
     if (shouldCompressFile(filePath)) {
       final var algorithm = config.compressionAlgorithm().orElseThrow();
-      final var compressed = compressFile(filePath, algorithm);
-      LOG.trace("Saving compressed file {}({}) in prefix {}", fileName, compressed, prefix);
-      return client
-          .putObject(
-              put -> put.bucket(config.bucketName()).key(prefix + fileName),
-              AsyncRequestBody.fromFile(compressed))
-          .thenRunAsync(() -> cleanupCompressedFile(compressed))
-          .thenApply(unused -> FileSet.FileMetadata.withCompression(algorithm));
+      return CompletableFuture.runAsync(uploadLimit::acquireUninterruptibly)
+          .thenApply((success) -> compressFile(filePath, algorithm))
+          .thenCompose(
+              (compressedFile) -> {
+                LOG.trace(
+                    "Saving compressed file {}({}) in prefix {}", fileName, compressedFile, prefix);
+                return client
+                    .putObject(
+                        put -> put.bucket(config.bucketName()).key(prefix + fileName),
+                        AsyncRequestBody.fromFile(compressedFile))
+                    .thenRunAsync(() -> cleanupCompressedFile(compressedFile))
+                    .thenApply(unused -> FileSet.FileMetadata.withCompression(algorithm));
+              })
+          .whenComplete((success, error) -> uploadLimit.release());
     }
 
-    LOG.trace("Saving file {}({}) in prefix {}", fileName, filePath, prefix);
-    return client
-        .putObject(
-            put -> put.bucket(config.bucketName()).key(prefix + fileName),
-            AsyncRequestBody.fromFile(filePath))
-        .thenApply(unused -> FileSet.FileMetadata.none());
+    return CompletableFuture.runAsync(uploadLimit::acquireUninterruptibly)
+        .thenCompose(
+            (nothing) -> {
+              LOG.trace("Saving file {}({}) in prefix {}", fileName, filePath, prefix);
+              return client
+                  .putObject(
+                      put -> put.bucket(config.bucketName()).key(prefix + fileName),
+                      AsyncRequestBody.fromFile(filePath))
+                  .thenApply(unused -> FileSet.FileMetadata.none());
+            })
+        .whenComplete((success, error) -> uploadLimit.release());
   }
 
   private void cleanupCompressedFile(final Path compressedFile) {

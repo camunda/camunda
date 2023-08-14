@@ -29,6 +29,9 @@ import org.apache.commons.compress.compressors.CompressorStreamFactory;
  * @param compressionAlgorithm Algorithm to use (if any) for compressing backup contents.
  * @param basePath Prefix to use for all objects in this bucket. Must be non-empty and not start or
  *     end with '/'.
+ * @param maxConcurrentConnections Maximum number of connections allowed in a connection pool.
+ * @param connectionAcquisitionTimeout Timeout for acquiring an already-established connection from
+ *     a connection pool to a remote service.
  * @see <a
  *     href=https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/region-selection.html#automatically-determine-the-aws-region-from-the-environment>
  *     Automatically determine the Region from the environment</a>
@@ -45,7 +48,9 @@ public record S3BackupConfig(
     Optional<Duration> apiCallTimeout,
     boolean forcePathStyleAccess,
     Optional<String> compressionAlgorithm,
-    Optional<String> basePath) {
+    Optional<String> basePath,
+    Integer maxConcurrentConnections,
+    Duration connectionAcquisitionTimeout) {
 
   public S3BackupConfig {
     if (bucketName == null || bucketName.isEmpty()) {
@@ -103,6 +108,12 @@ public record S3BackupConfig(
     private Credentials credentials;
     private String basePath;
 
+    /** Default from `SdkHttpConfigurationOption.MAX_CONNECTIONS` */
+    private Integer maxConcurrentConnections = 50;
+
+    /** Default from `SdkHttpConfigurationOption.DEFAULT_CONNECTION_ACQUIRE_TIMEOUT` */
+    private Duration connectionAcquisitionTimeout = Duration.ofSeconds(45);
+
     public Builder withBucketName(final String bucketName) {
       this.bucketName = bucketName;
       return this;
@@ -119,7 +130,7 @@ public record S3BackupConfig(
     }
 
     public Builder withCredentials(final String accessKey, final String secretKey) {
-      this.credentials = new Credentials(accessKey, secretKey);
+      credentials = new Credentials(accessKey, secretKey);
       return this;
     }
 
@@ -143,6 +154,16 @@ public record S3BackupConfig(
       return this;
     }
 
+    public Builder withParallelUploadsLimit(final Integer parallelUploadsLimit) {
+      maxConcurrentConnections = parallelUploadsLimit;
+      return this;
+    }
+
+    public Builder withConnectionAcquisitionTimeout(final Duration connectionAcquisitionTimeout) {
+      this.connectionAcquisitionTimeout = connectionAcquisitionTimeout;
+      return this;
+    }
+
     public S3BackupConfig build() {
       return new S3BackupConfig(
           bucketName,
@@ -152,7 +173,9 @@ public record S3BackupConfig(
           Optional.ofNullable(apiCallTimeoutMs),
           forcePathStyleAccess,
           Optional.ofNullable(compressionAlgorithm),
-          Optional.ofNullable(basePath));
+          Optional.ofNullable(basePath),
+          maxConcurrentConnections,
+          connectionAcquisitionTimeout);
     }
   }
 }

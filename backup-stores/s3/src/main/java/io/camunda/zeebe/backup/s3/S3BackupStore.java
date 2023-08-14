@@ -31,7 +31,6 @@ import io.camunda.zeebe.backup.s3.util.AsyncAggregatingSubscriber;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -175,6 +174,7 @@ public final class S3BackupStore implements BackupStore {
             status -> {
               final var snapshot = saveSnapshotFiles(backup);
               final var segments = saveSegmentFiles(backup);
+
               return CompletableFuture.allOf(snapshot, segments)
                   .thenComposeAsync(
                       ignored ->
@@ -339,7 +339,7 @@ public final class S3BackupStore implements BackupStore {
               if (throwable.getCause() instanceof NoSuchKeyException) {
                 LOG.debug("Found no manifest for backup {}", id);
                 return new NoBackupManifest(BackupIdentifierImpl.from(id));
-              } else if (throwable.getCause() instanceof S3BackupStoreException e) {
+              } else if (throwable.getCause() instanceof final S3BackupStoreException e) {
                 // Exception was already wrapped, no need to re-wrap
                 throw e;
               } else {
@@ -401,10 +401,10 @@ public final class S3BackupStore implements BackupStore {
 
     builder.httpClient(
         NettyNioAsyncHttpClient.builder()
+            .maxConcurrency(config.maxConcurrentConnections())
             // We'd rather wait longer for a connection than have a failed backup. This helps in
             // smoothing out spikes when taking a backup.
-            // Default is 10s: `SdkHttpConfigurationOption.DEFAULT_CONNECTION_ACQUIRE_TIMEOUT`.
-            .connectionAcquisitionTimeout(Duration.ofSeconds(45))
+            .connectionAcquisitionTimeout(config.connectionAcquisitionTimeout())
             .build());
 
     builder.overrideConfiguration(cfg -> cfg.retryPolicy(RetryMode.ADAPTIVE));
