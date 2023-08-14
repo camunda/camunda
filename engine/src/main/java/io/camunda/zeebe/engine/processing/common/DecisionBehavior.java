@@ -18,8 +18,8 @@ import io.camunda.zeebe.dmn.MatchedRule;
 import io.camunda.zeebe.dmn.ParsedDecisionRequirementsGraph;
 import io.camunda.zeebe.dmn.impl.VariablesContext;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
+import io.camunda.zeebe.engine.state.deployment.DeployedDrg;
 import io.camunda.zeebe.engine.state.deployment.PersistedDecision;
-import io.camunda.zeebe.engine.state.deployment.PersistedDecisionRequirements;
 import io.camunda.zeebe.engine.state.immutable.DecisionState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
@@ -30,7 +30,6 @@ import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.collection.Tuple;
-import java.io.ByteArrayInputStream;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 
@@ -64,10 +63,10 @@ public class DecisionBehavior {
         .mapLeft(failure -> formatDecisionLookupFailure(failure, decisionKey));
   }
 
-  public Either<Failure, ParsedDecisionRequirementsGraph> findAndParseDrgByDecision(
+  public Either<Failure, ParsedDecisionRequirementsGraph> findParsedDrgByDecision(
       final PersistedDecision persistedDecision) {
     return findDrgByDecision(persistedDecision)
-        .flatMap(drg -> parseDrg(drg.getResource()))
+        .map(DeployedDrg::getParsedDecisionRequirements)
         .mapLeft(
             failure ->
                 formatDecisionLookupFailure(
@@ -152,27 +151,11 @@ public class DecisionBehavior {
     }
   }
 
-  private Either<Failure, PersistedDecisionRequirements> findDrgByDecision(
-      final PersistedDecision decision) {
+  private Either<Failure, DeployedDrg> findDrgByDecision(final PersistedDecision decision) {
     final var key = decision.getDecisionRequirementsKey();
     final var id = decision.getDecisionRequirementsId();
     return Either.ofOptional(decisionState.findDecisionRequirementsByKey(key))
         .orElse(new Failure("no drg found for id '%s'".formatted(bufferAsString(id))));
-  }
-
-  private Either<Failure, ParsedDecisionRequirementsGraph> parseDrg(final DirectBuffer resource) {
-    return Either.<Failure, DirectBuffer>right(resource)
-        .map(BufferUtil::bufferAsArray)
-        .map(ByteArrayInputStream::new)
-        .map(decisionEngine::parse)
-        .flatMap(
-            parseResult -> {
-              if (parseResult.isValid()) {
-                return Either.right(parseResult);
-              } else {
-                return Either.left(new Failure(parseResult.getFailureMessage()));
-              }
-            });
   }
 
   private void addDecisionToEvaluationEvent(

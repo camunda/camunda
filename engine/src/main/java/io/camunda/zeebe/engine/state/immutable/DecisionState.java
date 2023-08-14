@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.engine.state.immutable;
 
+import io.camunda.zeebe.engine.state.deployment.DeployedDrg;
 import io.camunda.zeebe.engine.state.deployment.PersistedDecision;
-import io.camunda.zeebe.engine.state.deployment.PersistedDecisionRequirements;
 import java.util.List;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
@@ -40,8 +40,7 @@ public interface DecisionState {
    * @return the latest version of the DRG, or {@link Optional#empty()} if no DRG is deployed with
    *     the given id
    */
-  Optional<PersistedDecisionRequirements> findLatestDecisionRequirementsById(
-      DirectBuffer decisionRequirementsId);
+  Optional<DeployedDrg> findLatestDecisionRequirementsById(DirectBuffer decisionRequirementsId);
 
   /**
    * Query decision requirements (DRGs) by the given decision requirements key.
@@ -49,8 +48,7 @@ public interface DecisionState {
    * @param decisionRequirementsKey the key of the DRG
    * @return the DRG, or {@link Optional#empty()} if no DRG is deployed with the given key
    */
-  Optional<PersistedDecisionRequirements> findDecisionRequirementsByKey(
-      long decisionRequirementsKey);
+  Optional<DeployedDrg> findDecisionRequirementsByKey(long decisionRequirementsKey);
 
   /**
    * Query decisions by the given decision requirements (DRG) key.
@@ -60,4 +58,7 @@ public interface DecisionState {
    *     it
    */
   List<PersistedDecision> findDecisionsByDecisionRequirementsKey(long decisionRequirementsKey);
+
+  /** Completely clears all caches. */
+  void clearCache();
 }

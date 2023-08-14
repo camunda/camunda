@@ -20,8 +20,11 @@ public final class EngineConfiguration {
   // message size.
   public static final int BATCH_SIZE_CALCULATION_BUFFER = 1024 * 8;
 
+  public static final int DEFAULT_DRG_CACHE_CAPACITY = 1000;
+
   private int messagesTtlCheckerBatchLimit = DEFAULT_MESSAGES_TTL_CHECKER_BATCH_LIMIT;
   private Duration messagesTtlCheckerInterval = DEFAULT_MESSAGES_TTL_CHECKER_INTERVAL;
+  private int drgCacheCapacity = DEFAULT_DRG_CACHE_CAPACITY;
 
   public int getMessagesTtlCheckerBatchLimit() {
     return messagesTtlCheckerBatchLimit;
@@ -40,6 +43,15 @@ public final class EngineConfiguration {
   public EngineConfiguration setMessagesTtlCheckerInterval(
       final Duration messagesTtlCheckerInterval) {
     this.messagesTtlCheckerInterval = messagesTtlCheckerInterval;
+    return this;
+  }
+
+  public int getDrgCacheCapacity() {
+    return drgCacheCapacity;
+  }
+
+  public EngineConfiguration setDrgCacheCapacity(final int drgCacheCapacity) {
+    this.drgCacheCapacity = drgCacheCapacity;
     return this;
   }
 }

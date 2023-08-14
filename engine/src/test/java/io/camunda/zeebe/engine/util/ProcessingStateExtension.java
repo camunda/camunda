@@ -13,6 +13,7 @@ import static org.junit.platform.commons.util.ReflectionUtils.makeAccessible;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.engine.state.ProcessingDbState;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
@@ -164,7 +165,8 @@ public class ProcessingStateExtension implements BeforeEachCallback {
                 transactionContext,
                 keyGenerator,
                 new TransientPendingSubscriptionState(),
-                new TransientPendingSubscriptionState());
+                new TransientPendingSubscriptionState(),
+                new EngineConfiguration());
       } catch (final Exception e) {
         ExceptionUtils.throwAsUncheckedException(e);
       }
