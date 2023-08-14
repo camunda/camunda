@@ -54,7 +54,7 @@ public class EvaluateDecisionProcessor implements TypedRecordProcessor<DecisionE
     final Either<Failure, PersistedDecision> decisionOrFailure = getDecision(record);
 
     decisionOrFailure
-        .flatMap(decisionBehavior::findAndParseDrgByDecision)
+        .flatMap(decisionBehavior::findParsedDrgByDecision)
         .ifRightOrLeft(
             drg -> {
               final var decision = decisionOrFailure.get();

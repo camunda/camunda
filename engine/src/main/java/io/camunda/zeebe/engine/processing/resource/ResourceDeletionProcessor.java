@@ -12,8 +12,8 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.deployment.DeployedDrg;
 import io.camunda.zeebe.engine.state.deployment.PersistedDecision;
-import io.camunda.zeebe.engine.state.deployment.PersistedDecisionRequirements;
 import io.camunda.zeebe.engine.state.immutable.DecisionState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
@@ -81,7 +81,7 @@ public class ResourceDeletionProcessor implements TypedRecordProcessor<ResourceD
     responseWriter.writeEventOnCommand(eventKey, ResourceDeletionIntent.DELETED, value, command);
   }
 
-  private void deleteDecisionRequirements(final PersistedDecisionRequirements drg) {
+  private void deleteDecisionRequirements(final DeployedDrg drg) {
     decisionState
         .findDecisionsByDecisionRequirementsKey(drg.getDecisionRequirementsKey())
         .forEach(this::deleteDecision);
