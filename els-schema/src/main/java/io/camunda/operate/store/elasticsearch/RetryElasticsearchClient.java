@@ -355,41 +355,37 @@ public class RetryElasticsearchClient {
   }
 
   private boolean waitUntilTaskIsCompleted(String taskId) {
-    final String[] taskIdParts = taskId.split(":");
-    final String nodeId = taskIdParts[0];
-    final Long smallTaskId = Long.parseLong(taskIdParts[1]);
-    Optional<GetTaskResponse> taskResponse = executeWithGivenRetries(Integer.MAX_VALUE ,"GetTaskInfo{" + nodeId + "},{" + smallTaskId + "}",
-        () -> {
-            elasticsearchTask.checkForErrorsOrFailures(nodeId, smallTaskId.intValue());
-            return esClient.tasks().get(new GetTaskRequest(nodeId, smallTaskId), requestOptions);
-        }, elasticsearchTask::needsToPollAgain);
-    if (taskResponse.isPresent()) {
-      final long total = elasticsearchTask.getTotal(taskResponse.get());
-      logger.info("Migrated docs: {}", total);
-      return taskResponse.get().isCompleted();
-    } else {
-      // need to reindex again
-      return false;
-    }
+    return waitUntilTaskIsCompleted(taskId, null);
   }
 
   // Returns if task is completed under this conditions:
   // - If the response is empty we can immediately return false to force a new reindex in outer retry loop
   // - If the response has a status with uncompleted flag and a sum of changed documents (created,updated and deleted documents) not equal to total documents
   //   we need to wait and poll again the task status
-  private boolean waitUntilTaskIsCompleted(String taskId, long srcCount) {
+  private boolean waitUntilTaskIsCompleted(String taskId, Long srcCount) {
     final String[] taskIdParts = taskId.split(":");
     final String nodeId = taskIdParts[0];
     final Long smallTaskId = Long.parseLong(taskIdParts[1]);
     Optional<GetTaskResponse> taskResponse = executeWithGivenRetries(Integer.MAX_VALUE ,"GetTaskInfo{" + nodeId + "},{" + smallTaskId + "}",
         () -> {
           elasticsearchTask.checkForErrorsOrFailures(nodeId, smallTaskId.intValue());
-          return esClient.tasks().get(new GetTaskRequest(nodeId, smallTaskId), requestOptions);
+          final Optional<GetTaskResponse> getTaskResponse = esClient.tasks()
+            .get(new GetTaskRequest(nodeId, smallTaskId), requestOptions);
+          getTaskResponse.ifPresent(theTaskResponse -> logger.info(
+            "TaskId: {}, Progress: {}%",
+            taskId, String.format("%.2f", elasticsearchTask.getProgress(theTaskResponse) * 100.0D)
+          ));
+          return getTaskResponse;
         }, elasticsearchTask::needsToPollAgain);
     if (taskResponse.isPresent()) {
       final long total = elasticsearchTask.getTotal(taskResponse.get());
-      logger.info("Source docs: {}, Migrated docs: {}", srcCount, total);
-      return total == srcCount;
+      if (srcCount != null) {
+        logger.info("Source docs: {}, Migrated docs: {}", srcCount, total);
+        return total == srcCount;
+      } else {
+        logger.info("Migrated docs: {}", total);
+        return taskResponse.get().isCompleted();
+      }
     } else {
       // need to reindex again
       return false;

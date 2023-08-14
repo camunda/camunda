@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 import static org.elasticsearch.index.query.QueryBuilders.*;
@@ -127,23 +128,31 @@ public class ElasticsearchTask {
   }
 
   public boolean needsToPollAgain(final Optional<GetTaskResponse> taskResponse) {
-    if (taskResponse.isEmpty()) {
-      return false;
-    }
-    final Map<String, Object> statusMap = getTaskStatusMap(taskResponse.get());
-    final long total = (Integer) statusMap.get(TOTAL);
-    final long created = (Integer) statusMap.get(CREATED);
-    final long updated = (Integer) statusMap.get(UPDATED);
-    final long deleted = (Integer) statusMap.get(DELETED);
-    return !taskResponse.get().isCompleted() || (created + updated + deleted != total);
+    return taskResponse
+      .filter(getTaskResponse -> !getTaskResponse.isCompleted() || getProgress(getTaskResponse) < 1.0D)
+      .isPresent();
+  }
+
+  public int getTotal(final GetTaskResponse taskResponse){
+    return getAsInt(getTaskStatusMap(taskResponse), TOTAL);
+  }
+
+  public double getProgress(final GetTaskResponse taskResponse) {
+    final Map<String, Object> taskStatusMap = getTaskStatusMap(taskResponse);
+    return Optional.of(taskStatusMap)
+      .filter(status -> getAsInt(status, TOTAL) != 0)
+      .map(status ->
+             ((double) (getAsInt(status, CREATED) + getAsInt(status, UPDATED) + getAsInt(status, DELETED)))
+               / getAsInt(status, TOTAL))
+      .orElse(0.0D);
   }
 
   private Map<String, Object> getTaskStatusMap(final GetTaskResponse taskResponse){
     return ((RawTaskStatus) taskResponse.getTaskInfo().getStatus()).toMap();
   }
 
-  public int getTotal(final GetTaskResponse taskResponse){
-    return (Integer) getTaskStatusMap(taskResponse).get(TOTAL);
+  private static int getAsInt(final Map<String, Object> status, final String key) {
+    return Objects.requireNonNullElse((Integer) status.get(key), 0);
   }
 
 }
