@@ -147,6 +147,9 @@ camunda-platform:
   tasklist:
     enabled: false
 
+  connectors:
+    enabled: false
+
   zeebe-gateway:
     replicas: 1
     image:

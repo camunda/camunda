@@ -2,5 +2,10 @@
   "extends": ["config:base", ":rebaseStalePrs"],
   "includePaths": [".github/**", ".ci/**"],
   "commitMessagePrefix": "chore(deps):",
-  "branchPrefix": "renovate/"
+  "branchPrefix": "renovate/",
+  "helmv3": {
+    "registryAliases": {
+      "helm-camunda-io": "https://helm.camunda.io"
+    }
+  }
 }
