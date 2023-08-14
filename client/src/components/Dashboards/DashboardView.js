@@ -24,12 +24,12 @@ import {
   EntityDescription,
   DashboardTemplateModal,
 } from 'components';
-import {evaluateReport, createEntity, deleteEntity, addSources} from 'services';
+import {evaluateReport, createEntity, deleteEntity, addSources, loadEntities} from 'services';
 import {themed} from 'theme';
 import {t} from 'translation';
 import {getOptimizeProfile} from 'config';
 import {showError} from 'notifications';
-import {useErrorHandling} from 'hooks';
+import {useErrorHandling, useUser} from 'hooks';
 
 import {
   getSharedDashboard,
@@ -78,6 +78,7 @@ export function DashboardView(props) {
   const {definitions} = useReportDefinitions(optimizeReports?.[0]);
   const {mightFail} = useErrorHandling();
   const history = useHistory();
+  const {user} = useUser();
 
   const themeRef = useRef(theme);
 
@@ -122,11 +123,19 @@ export function DashboardView(props) {
     const {definitions} = dashboardState;
     const [definition] = definitions || [];
     const {key: definitionKey, tenantIds: tenants} = definition || {};
-    let collectionId;
+    let collectionId, existingCollection;
 
     mightFail(
       (async () => {
-        collectionId = await createEntity('collection', {name: definitionKey});
+        const entities = await loadEntities();
+        existingCollection = entities.find((entity) => entity.name === definitionKey);
+
+        if (existingCollection && existingCollection?.owner === user?.name) {
+          collectionId = existingCollection.id;
+        } else {
+          collectionId = await createEntity('collection', {name: definitionKey});
+        }
+
         await addSources(collectionId, [
           {
             definitionKey,
@@ -141,7 +150,7 @@ export function DashboardView(props) {
           state: dashboardState,
         }),
       (error) => {
-        if (collectionId) {
+        if (collectionId && !existingCollection) {
           deleteEntity('collection', collectionId);
         }
         showError(error);

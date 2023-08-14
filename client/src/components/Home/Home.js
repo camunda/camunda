@@ -23,12 +23,12 @@ import {
   Button,
   LoadingIndicator,
 } from 'components';
-import {formatters, createEntity, updateEntity, checkDeleteConflict} from 'services';
+import {formatters, createEntity, updateEntity, checkDeleteConflict, loadEntities} from 'services';
 
 import Copier from './Copier';
 import CreateNewButton from './CreateNewButton';
 import CollectionModal from './modals/CollectionModal';
-import {loadEntities, importEntity, removeEntities, checkConflicts} from './service';
+import {importEntity, removeEntities, checkConflicts} from './service';
 
 import {formatLink, formatType, formatSubEntities} from './formatters';
 

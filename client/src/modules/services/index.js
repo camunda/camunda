@@ -21,6 +21,7 @@ export {getDiagramElementsBetween} from './diagramServices';
 export {default as getTooltipText} from './getTooltipText';
 export {default as getScreenBounds} from './getScreenBounds';
 export {
+  loadEntities,
   loadEntity,
   loadReports,
   createEntity,

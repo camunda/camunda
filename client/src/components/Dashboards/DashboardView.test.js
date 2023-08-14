@@ -15,6 +15,7 @@ import {createEntity, deleteEntity, addSources} from 'services';
 
 import {AutoRefreshSelect} from './AutoRefresh';
 import {DashboardView} from './DashboardView';
+import {loadEntities} from 'services';
 
 jest.mock('config', () => ({
   getOptimizeProfile: jest.fn().mockReturnValue('platform'),
@@ -25,6 +26,7 @@ jest.mock('services', () => ({
   createEntity: jest.fn().mockReturnValue('collectionId'),
   deleteEntity: jest.fn(),
   addSources: jest.fn(),
+  loadEntities: jest.fn().mockReturnValue([]),
 }));
 
 jest.mock('hooks', () => ({
@@ -37,6 +39,9 @@ jest.mock('hooks', () => ({
         err?.(e);
       }
     }),
+  })),
+  useUser: jest.fn().mockImplementation(() => ({
+    user: {name: 'User'},
   })),
 }));
 
@@ -262,7 +267,14 @@ it('should render the create copy button and modal for instant preview dashboard
   expect(node.find('DashboardTemplateModal')).toExist();
 });
 
-it('should create a collection with the current data source when copying instant dashboard', async () => {
+it('should create a collection with the current data source when copying instant dashboard if one fot this user doesnt exist', async () => {
+  loadEntities.mockReturnValueOnce([
+    {
+      name: 'someKey',
+      id: 'someId',
+      owner: 'OtherUser',
+    },
+  ]);
   const node = shallow(<DashboardView isInstantDashboard />);
 
   const createCopyButton = node.find('.create-copy');
@@ -296,4 +308,53 @@ it('should delete collection in case of error during collection creation', async
   await flushPromises();
 
   expect(deleteEntity).toHaveBeenCalledWith('collection', 'collectionId');
+});
+
+it('should use existing collection with the same name if there is one for the current user', async () => {
+  loadEntities.mockReturnValueOnce([
+    {
+      name: 'someKey',
+      id: 'someId',
+      owner: 'User',
+    },
+  ]);
+  const node = shallow(<DashboardView isInstantDashboard />);
+
+  const createCopyButton = node.find('.create-copy');
+
+  createCopyButton.simulate('click');
+
+  node.find('DashboardTemplateModal').prop('onConfirm')({
+    definitions: [{key: 'someKey', tenantIds: []}],
+  });
+
+  await flushPromises();
+
+  expect(loadEntities).toHaveBeenCalled();
+  expect(addSources).toHaveBeenCalledWith('someId', [
+    {definitionKey: 'someKey', definitionType: 'process', tenants: []},
+  ]);
+});
+
+it('should not delete collection in case of error if collection existed', async () => {
+  loadEntities.mockReturnValueOnce([
+    {
+      name: 'someKey',
+      id: 'someId',
+    },
+  ]);
+  addSources.mockRejectedValue(new Error());
+  const node = shallow(<DashboardView isInstantDashboard />);
+
+  const createCopyButton = node.find('.create-copy');
+
+  createCopyButton.simulate('click');
+
+  node.find('DashboardTemplateModal').prop('onConfirm')({
+    definitions: [{key: 'someKey', tenantIds: []}],
+  });
+
+  await flushPromises();
+
+  expect(deleteEntity).not.toHaveBeenCalled();
 });

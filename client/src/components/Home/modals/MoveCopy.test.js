@@ -12,11 +12,12 @@ import {Switch} from 'components';
 
 import MoveCopyWithErrorHandling from './MoveCopy';
 
-import {loadEntities} from '../service';
+import {loadEntities} from 'services';
 
 const MoveCopy = MoveCopyWithErrorHandling.WrappedComponent;
 
-jest.mock('../service', () => ({
+jest.mock('services', () => ({
+  ...jest.requireActual('services'),
   loadEntities: jest.fn().mockReturnValue([
     {
       id: 'aCollectionId',

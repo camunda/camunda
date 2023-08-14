@@ -5,5 +5,10 @@
  * except in compliance with the proprietary license.
  */
 
-export {default as useErrorHandling} from './useErrorHandling';
-export {default as useUser} from './useUser';
+import {useContext} from 'react';
+
+import {UserContext} from 'HOC';
+
+export default function useUser() {
+  return useContext(UserContext);
+}

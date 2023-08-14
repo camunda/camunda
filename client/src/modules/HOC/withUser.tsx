@@ -5,10 +5,10 @@
  * except in compliance with the proprietary license.
  */
 
-import {ReactNode} from 'react';
-import {createContext, useContext, useState, useEffect, ComponentType} from 'react';
+import {ReactNode, createContext, useState, useEffect, ComponentType} from 'react';
 
 import {get} from 'request';
+import {useUser} from 'hooks';
 
 export interface User {
   id: string;
@@ -27,7 +27,7 @@ export interface WithUserProps {
   refreshUser: () => Promise<User>;
 }
 
-const UserContext = createContext<WithUserProps | undefined>(undefined);
+export const UserContext = createContext<WithUserProps | undefined>(undefined);
 const resolveWithUser: ((user: User) => void)[] = [];
 
 export function UserProvider({children}: {children: ReactNode}): JSX.Element {
@@ -57,7 +57,7 @@ export function UserProvider({children}: {children: ReactNode}): JSX.Element {
 }
 
 export default function withuser<T extends object>(Component: ComponentType<T>) {
-  return (props: Omit<T, keyof WithUserProps> & Partial<WithUserProps>) => (
-    <Component {...useContext(UserContext)} {...(props as T)} />
-  );
+  return (props: Omit<T, keyof WithUserProps> & Partial<WithUserProps>) => {
+    return <Component {...useUser()} {...(props as T)} />;
+  };
 }
