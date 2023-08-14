@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.util;
 
 import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.engine.state.ProcessingDbState;
 import io.camunda.zeebe.engine.state.ZbColumnFamilies;
@@ -39,7 +40,8 @@ public final class ProcessingStateRule extends ExternalResource {
 
     final var context = db.createContext();
     final var keyGenerator = new DbKeyGenerator(partition, db, context);
-    processingState = new ProcessingDbState(partition, db, context, keyGenerator);
+    processingState =
+        new ProcessingDbState(partition, db, context, keyGenerator, new EngineConfiguration());
   }
 
   @Override

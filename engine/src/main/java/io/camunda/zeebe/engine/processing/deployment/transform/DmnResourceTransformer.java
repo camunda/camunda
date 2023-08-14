@@ -17,8 +17,8 @@ import io.camunda.zeebe.dmn.ParsedDecisionRequirementsGraph;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.state.KeyGenerator;
+import io.camunda.zeebe.engine.state.deployment.DeployedDrg;
 import io.camunda.zeebe.engine.state.deployment.PersistedDecision;
-import io.camunda.zeebe.engine.state.deployment.PersistedDecisionRequirements;
 import io.camunda.zeebe.engine.state.immutable.DecisionState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsMetadataRecord;
@@ -237,18 +237,16 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
     return drgRecord.getDecisionRequirementsKey();
   }
 
-  private boolean hasSameResourceNameAs(
-      final DeploymentResource resource, final PersistedDecisionRequirements drg) {
+  private boolean hasSameResourceNameAs(final DeploymentResource resource, final DeployedDrg drg) {
     return drg.getResourceName().equals(resource.getResourceNameBuffer());
   }
 
-  private boolean hasSameChecksumAs(
-      final DirectBuffer checksum, final PersistedDecisionRequirements drg) {
+  private boolean hasSameChecksumAs(final DirectBuffer checksum, final DeployedDrg drg) {
     return drg.getChecksum().equals(checksum);
   }
 
   private boolean hasSameDecisionRequirementsKeyAs(
-      final Collection<ParsedDecision> decisions, final PersistedDecisionRequirements drg) {
+      final Collection<ParsedDecision> decisions, final DeployedDrg drg) {
     return decisions.stream()
         .map(ParsedDecision::getId)
         .map(BufferUtil::wrapString)

@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.engine.state.deployment;
 
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
@@ -15,16 +18,25 @@ import io.camunda.zeebe.db.impl.DbForeignKey;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
+import io.camunda.zeebe.dmn.DecisionEngine;
+import io.camunda.zeebe.dmn.DecisionEngineFactory;
+import io.camunda.zeebe.dmn.ParsedDecisionRequirementsGraph;
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.state.ZbColumnFamilies;
 import io.camunda.zeebe.engine.state.mutable.MutableDecisionState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
+import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ExecutionException;
 import org.agrona.DirectBuffer;
 
 public final class DbDecisionState implements MutableDecisionState {
+
+  private final DecisionEngine decisionEngine = DecisionEngineFactory.createDecisionEngine();
 
   private final DbLong dbDecisionKey;
   private final DbForeignKey<DbLong> fkDecision;
@@ -47,8 +59,12 @@ public final class DbDecisionState implements MutableDecisionState {
   private final ColumnFamily<DbLong, PersistedDecisionRequirements> decisionRequirementsByKey;
   private final ColumnFamily<DbString, DbForeignKey<DbLong>> latestDecisionRequirementsKeysById;
 
+  private final LoadingCache<Long, DeployedDrg> drgCache;
+
   public DbDecisionState(
-      final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
+      final ZeebeDb<ZbColumnFamilies> zeebeDb,
+      final TransactionContext transactionContext,
+      final EngineConfiguration config) {
     dbDecisionKey = new DbLong();
     fkDecision = new DbForeignKey<>(dbDecisionKey, ZbColumnFamilies.DMN_DECISIONS);
 
@@ -92,6 +108,18 @@ public final class DbDecisionState implements MutableDecisionState {
             transactionContext,
             dbDecisionRequirementsKeyAndDecisionKey,
             DbNil.INSTANCE);
+
+    // TODO get maximum size from configuration
+    drgCache =
+        CacheBuilder.newBuilder()
+            .maximumSize(config.getDrgCacheCapacity())
+            .build(
+                new CacheLoader<>() {
+                  @Override
+                  public DeployedDrg load(final Long key) throws DrgNotFoundException {
+                    return findAndParseDecisionRequirementsByKeyFromDb(key);
+                  }
+                });
   }
 
   @Override
@@ -103,7 +131,7 @@ public final class DbDecisionState implements MutableDecisionState {
   }
 
   @Override
-  public Optional<PersistedDecisionRequirements> findLatestDecisionRequirementsById(
+  public Optional<DeployedDrg> findLatestDecisionRequirementsById(
       final DirectBuffer decisionRequirementsId) {
     dbDecisionRequirementsId.wrapBuffer(decisionRequirementsId);
 
@@ -113,12 +141,8 @@ public final class DbDecisionState implements MutableDecisionState {
   }
 
   @Override
-  public Optional<PersistedDecisionRequirements> findDecisionRequirementsByKey(
-      final long decisionRequirementsKey) {
-    dbDecisionRequirementsKey.wrapLong(decisionRequirementsKey);
-
-    return Optional.ofNullable(decisionRequirementsByKey.get(dbDecisionRequirementsKey))
-        .map(PersistedDecisionRequirements::copy);
+  public Optional<DeployedDrg> findDecisionRequirementsByKey(final long decisionRequirementsKey) {
+    return findDeployedDrg(decisionRequirementsKey);
   }
 
   @Override
@@ -135,6 +159,40 @@ public final class DbDecisionState implements MutableDecisionState {
         }));
 
     return decisions;
+  }
+
+  @Override
+  public void clearCache() {
+    drgCache.invalidateAll();
+  }
+
+  private DeployedDrg findAndParseDecisionRequirementsByKeyFromDb(
+      final long decisionRequirementsKey) throws DrgNotFoundException {
+    dbDecisionRequirementsKey.wrapLong(decisionRequirementsKey);
+
+    final PersistedDecisionRequirements persistedDrg =
+        decisionRequirementsByKey.get(dbDecisionRequirementsKey);
+    if (persistedDrg == null) {
+      throw new DrgNotFoundException();
+    }
+
+    final PersistedDecisionRequirements copiedDrg = persistedDrg.copy();
+
+    final var resourceBytes = BufferUtil.bufferAsArray(copiedDrg.getResource());
+    final ParsedDecisionRequirementsGraph parsedDrg =
+        decisionEngine.parse(new ByteArrayInputStream(resourceBytes));
+
+    return new DeployedDrg(parsedDrg, copiedDrg);
+  }
+
+  private Optional<DeployedDrg> findDeployedDrg(final long decisionRequirementsKey) {
+    try {
+      // The cache automatically fetches it from the state if the key does not exist.
+      return Optional.of(drgCache.get(decisionRequirementsKey));
+    } catch (final ExecutionException e) {
+      // We reach this when we couldn't load the DRG from the state.
+      return Optional.empty();
+    }
   }
 
   private Optional<PersistedDecision> findDecisionByKey(final long decisionKey) {
@@ -211,4 +269,10 @@ public final class DbDecisionState implements MutableDecisionState {
     dbDecisionRequirementsKey.wrapLong(record.getDecisionRequirementsKey());
     latestDecisionRequirementsKeysById.upsert(dbDecisionRequirementsId, fkDecisionRequirements);
   }
+
+  /**
+   * This exception is thrown when the drgCache can't find a DRG in the state for a given key. This
+   * must be a checked exception, because of the way the {@link LoadingCache} works.
+   */
+  private static final class DrgNotFoundException extends Exception {}
 }

@@ -114,4 +114,16 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
 
     return metadataList;
   }
+
+  public boolean hasBpmnResources() {
+    return getResources().stream()
+        .map(io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource::getResourceName)
+        .anyMatch(x -> x.endsWith(".bpmn") || x.endsWith(".xml"));
+  }
+
+  public boolean hasDmnResources() {
+    return getResources().stream()
+        .map(io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource::getResourceName)
+        .anyMatch(x -> x.endsWith(".dmn"));
+  }
 }

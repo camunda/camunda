@@ -25,8 +25,8 @@ import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCalledDecision;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.state.KeyGenerator;
+import io.camunda.zeebe.engine.state.deployment.DeployedDrg;
 import io.camunda.zeebe.engine.state.deployment.PersistedDecision;
-import io.camunda.zeebe.engine.state.deployment.PersistedDecisionRequirements;
 import io.camunda.zeebe.engine.state.immutable.DecisionState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
@@ -93,17 +93,15 @@ public final class BpmnDecisionBehavior {
     }
 
     final var decisionId = decisionIdOrFailure.get();
-    // todo(#8571): avoid parsing drg every time
     final var decisionOrFailure = findDecisionById(decisionId);
     final var resultOrFailure =
         decisionOrFailure
-            .flatMap(this::findDrgByDecision)
+            .flatMap(this::findParsedDrgByDecision)
             .mapLeft(
                 failure ->
                     new Failure(
                         "Expected to evaluate decision '%s', but %s"
                             .formatted(decisionId, failure.getMessage())))
-            .flatMap(drg -> parseDrg(drg.getResource()))
             // all the above failures have the same error type and the correct scope
             .mapLeft(f -> new Failure(f.getMessage(), ErrorType.CALLED_DECISION_ERROR, scopeKey))
             .flatMap(
@@ -152,8 +150,12 @@ public final class BpmnDecisionBehavior {
         .orElse(new Failure("no decision found for id '%s'".formatted(decisionId)));
   }
 
-  private Either<Failure, PersistedDecisionRequirements> findDrgByDecision(
-      final PersistedDecision decision) {
+  public Either<Failure, ParsedDecisionRequirementsGraph> findParsedDrgByDecision(
+      final PersistedDecision persistedDecision) {
+    return findDrgByDecision(persistedDecision).map(DeployedDrg::getParsedDecisionRequirements);
+  }
+
+  private Either<Failure, DeployedDrg> findDrgByDecision(final PersistedDecision decision) {
     final var key = decision.getDecisionRequirementsKey();
     final var id = decision.getDecisionRequirementsId();
     return Either.ofOptional(decisionState.findDecisionRequirementsByKey(key))
