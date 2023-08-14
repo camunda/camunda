@@ -24,9 +24,8 @@ fixture('Decision Report')
 test('create a dmn js table report', async (t) => {
   await t.resizeWindow(1400, 700);
 
-  await t.click(Common.createNewMenu);
-  await t.click(Common.option('Report'));
-
+  await t.click(Common.createNewButton);
+  await t.hover(Common.newReportOption);
   await t.hover(Common.submenuOption('Decision Report'));
 
   await t.takeElementScreenshot(Common.entityList, 'decision-analysis/img/dmn_report_create.png', {

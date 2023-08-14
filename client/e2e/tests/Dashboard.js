@@ -26,13 +26,13 @@ fixture('Dashboard')
   .afterEach(cleanEntities);
 
 test('create a dashboard and reports from a template', async (t) => {
-  await t.click(Common.createNewMenu).click(Common.option('Collection'));
+  await t.click(Common.createNewButton).click(Common.menuOption('Collection'));
   await t.click(Common.modalConfirmButton);
   await t.click(Common.modalConfirmButton);
 
   await t.resizeWindow(1300, 750);
-  await t.click(Common.createNewMenu);
-  await t.click(Common.option('Dashboard'));
+  await t.click(Common.createNewButton);
+  await t.click(Common.menuOption('Dashboard'));
 
   await t.click(Common.templateModalProcessField);
   await t.click(Common.carbonOption('Invoice Receipt with alternative correlation variable'));
@@ -146,8 +146,8 @@ test('cancel changes', async (t) => {
 
 test('sharing', async (t) => {
   await t.resizeWindow(1300, 750);
-  await t.click(Common.createNewMenu);
-  await t.click(Common.option('Dashboard'));
+  await t.click(Common.createNewButton);
+  await t.click(Common.menuOption('Dashboard'));
 
   await t.click(e.templateOption('Improve Productivity'));
 
@@ -406,7 +406,7 @@ test('filters', async (t) => {
 });
 
 test('version selection', async (t) => {
-  await t.click(Common.createNewMenu).click(Common.option('Collection'));
+  await t.click(Common.createNewButton).click(Common.menuOption('Collection'));
   await t.click(Common.modalConfirmButton);
   await t.click(Common.modalConfirmButton);
 

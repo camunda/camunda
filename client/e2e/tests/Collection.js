@@ -21,7 +21,7 @@ fixture('Collection')
   .afterEach(cleanEntities);
 
 async function createCollection(t, name = 'Test Collection') {
-  await t.click(Common.createNewMenu).click(Common.option('Collection'));
+  await t.click(Common.createNewButton).click(Common.menuOption('Collection'));
   await t.typeText(Common.modalNameInput, name, {replace: true});
 
   await t.click(Common.modalConfirmButton);
@@ -37,12 +37,14 @@ test('create a collection and entities inside it', async (t) => {
 
   await t.click(e.entitiesTab);
 
-  await t.click(Common.createNewMenu);
+  await t.click(Common.createNewButton);
 
-  await t.expect(Common.createNewMenu.textContent).notContains('Collection');
-  await t.expect(Common.createNewMenu.textContent).contains('Dashboard');
-  await t.expect(Common.createNewMenu.textContent).contains('Report');
-  await t.click(Common.createNewMenu);
+  const createNewMenu = Common.menu('Create New').textContent;
+
+  await t.expect(createNewMenu).notContains('Collection');
+  await t.expect(createNewMenu).contains('Dashboard');
+  await t.expect(createNewMenu).contains('Report');
+  await t.click(Common.createNewButton);
 
   await createNewDashboard(t);
   const description = 'This is a description of the dashboard.';

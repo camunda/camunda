@@ -7,7 +7,8 @@
 
 import {Selector} from 'testcafe';
 
-export const createNewMenu = Selector('.CreateNewButton');
+export const createNewButton = Selector('.CreateNewButton');
+export const menu = (text) => Selector('ul').withAttribute('aria-label', text);
 export const editButton = Selector('.edit-button');
 export const confirmButton = Selector('button.confirm');
 export const modalConfirmButton = Selector('.Modal.is-visible')
@@ -22,9 +23,10 @@ export const descriptionModalInput = descriptionModal.find('textarea');
 export const modalNameInput = Selector('.Modal.is-visible input[type="text"]');
 export const option = (text) => Selector('.DropdownOption').withText(text);
 export const carbonOption = (text) => Selector('.cds--list-box__menu-item').withText(text);
+export const menuOption = (text) => Selector('.cds--menu-item').withText(text);
+export const submenuOption = (text) => Selector('.cds--menu-item > .cds--menu > *').withText(text);
 export const selectedOption = (text) =>
   Selector('.cds--list-box__menu-item--active').withText(text);
-export const submenuOption = (text) => Selector('.Submenu .DropdownOption').withText(text);
 export const entityList = Selector('.EntityList');
 export const edit = (element) => element.find('.DropdownOption').withText('Edit');
 export const copy = (element) => element.find('.DropdownOption').withText('Copy');
@@ -47,7 +49,7 @@ export const processItem = listItem.filter(
 );
 export const reportLabel = reportItem.find('.name .type');
 export const listItemCheckbox = (item) => item.find('input[type="checkbox"]');
-export const newReportOption = createNewMenu.find('.Submenu');
+export const newReportOption = Selector('.cds--menu--shown .cds--menu-item[aria-haspopup=true]');
 export const templateModalProcessField = Selector('.Modal .DefinitionSelection input');
 export const firstOption = Selector('.TemplateModal .cds--list-box__menu-item');
 export const modalContainer = Selector('div:not([aria-hidden="true"]) > .cds--modal-container');

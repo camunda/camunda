@@ -23,8 +23,8 @@ fixture('Process Report')
 
 test('create a report from a template', async (t) => {
   await t.resizeWindow(1300, 750);
-  await t.click(Common.createNewMenu);
-  await t.click(Common.newReportOption);
+  await t.click(Common.createNewButton);
+  await t.hover(Common.newReportOption);
   await t.click(Common.submenuOption('Process Report'));
 
   await t.click(Common.templateModalProcessField);
@@ -498,7 +498,7 @@ test('bar chart and line chart configuration', async (t) => {
 
   await t.click(e.distributedBySelect);
   await t.click(e.dropdownOption('Variable'));
-  await t.click(Common.submenuOption('boolVar'));
+  await t.click(e.variableSubmenuOption('boolVar'));
   await u.selectVisualization(t, 'Bar Chart');
 
   await t.click(e.configurationButton);
@@ -936,7 +936,7 @@ test('distribute by variable', async (t) => {
 
   await t.click(e.distributedBySelect);
   await t.click(e.dropdownOption('Variable'));
-  await t.click(Common.submenuOption('approved'));
+  await t.click(e.variableSubmenuOption('approved'));
   await t
     .resizeWindow(1650, 900)
     .takeElementScreenshot(
@@ -947,7 +947,7 @@ test('distribute by variable', async (t) => {
 
   await t.click(e.distributedBySelect);
   await t.click(e.dropdownOption('Variable'));
-  await t.click(Common.submenuOption('invoiceCategory'));
+  await t.click(e.variableSubmenuOption('invoiceCategory'));
   await u.selectVisualization(t, 'Table');
 
   await t.expect(e.reportRenderer.textContent).contains('Misc');
@@ -965,10 +965,10 @@ test('distribute by start/end date', async (t) => {
   await u.selectVisualization(t, 'Bar Chart');
   await t.click(e.distributedBySelect);
   await t.click(e.dropdownOption('Start Date'));
-  await t.click(Common.submenuOption('Month'));
+  await t.click(e.variableSubmenuOption('Month'));
   await t.click(e.distributedBySelect);
   await t.click(e.dropdownOption('End Date'));
-  await t.click(Common.submenuOption('Automatic'));
+  await t.click(e.variableSubmenuOption('Automatic'));
   await u.selectGroupby(t, 'Variable', 'boolVar');
 
   await t.expect(e.reportChart.visible).ok();
@@ -1088,7 +1088,7 @@ test('distributed multi-measure reports', async (t) => {
 
   await t.click(e.distributedBySelect);
   await t.click(e.dropdownOption('Variable'));
-  await t.click(Common.submenuOption('invoiceCategory'));
+  await t.click(e.variableSubmenuOption('invoiceCategory'));
 
   await t.click(e.addMeasureButton);
   await t.click(e.dropdownOption('Count'));

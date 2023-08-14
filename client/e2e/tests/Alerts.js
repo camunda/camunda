@@ -22,7 +22,7 @@ fixture('Alerts')
   .afterEach(cleanEntities);
 
 test('create, edit, copy and remove an alert', async (t) => {
-  await t.click(Common.createNewMenu).click(Common.option('Collection'));
+  await t.click(Common.createNewButton).click(Common.menuOption('Collection'));
   await t.typeText(Common.modalNameInput, 'Test Collection', {replace: true});
   await t.click(Common.modalConfirmButton);
   await t.click(Common.modalConfirmButton);

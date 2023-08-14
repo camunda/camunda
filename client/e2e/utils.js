@@ -45,24 +45,24 @@ export function getUser(t, userHandle) {
 }
 
 export async function createNewReport(t) {
-  await t.click(Common.createNewMenu);
-  await t.click(Selector('.Submenu').withText('Report'));
-  await t.click(Selector('.Submenu .DropdownOption').withText('Process Report'));
+  await t.click(Common.createNewButton);
+  await t.hover(Common.newReportOption);
+  await t.click(Common.submenuOption('Process Report'));
   await t.click(Selector('.Button').withText('Blank report'));
   await t.click(Selector(Common.modalConfirmButton));
   await toggleReportAutoPreviewUpdate(t);
 }
 
 export async function createNewDecisionReport(t) {
-  await t.click(Common.createNewMenu);
-  await t.click(Common.option('Report'));
+  await t.click(Common.createNewButton);
+  await t.hover(Common.newReportOption);
   await t.click(Common.submenuOption('Decision Report'));
   await toggleReportAutoPreviewUpdate(t);
 }
 
 export async function createNewCombinedReport(t) {
-  await t.click(Common.createNewMenu);
-  await t.click(Common.option('Report'));
+  await t.click(Common.createNewButton);
+  await t.hover(Common.newReportOption);
   await t.click(Common.submenuOption('Combined Process Report'));
   await toggleReportAutoPreviewUpdate(t);
 }
@@ -151,8 +151,8 @@ export async function gotoOverview(t) {
 }
 
 export async function createNewDashboard(t) {
-  await t.click(Common.createNewMenu);
-  await t.click(Common.option('Dashboard'));
+  await t.click(Common.createNewButton);
+  await t.click(Common.menuOption('Dashboard'));
   await t.click(Homepage.blankDashboardButton);
   await t.click(Common.modalConfirmButton);
 }

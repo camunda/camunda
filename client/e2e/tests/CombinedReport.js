@@ -61,9 +61,8 @@ test('combine two single number reports', async (t) => {
 
   await t.resizeWindow(1400, 700);
 
-  await t.click(Common.createNewMenu);
-  await t.click(Common.option('Report'));
-
+  await t.click(Common.createNewButton);
+  await t.hover(Common.newReportOption);
   await t.hover(Common.submenuOption('Combined Process Report'));
 
   await t.takeElementScreenshot(Common.entityList, 'img/combined-report-create.png', {

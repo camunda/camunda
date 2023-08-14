@@ -29,7 +29,7 @@ test('create a report from a template', async (t) => {
   await t.click(e.whatsNewCloseBtn);
   await t.click(Collection.navItem);
   await t.click(Common.createNewMenu);
-  await t.click(Common.option('Report'));
+  await t.click(Common.menuOption('Report'));
   await t.click(e.emptyTemplate);
   await t.click(Common.modalConfirmButton);
   await u.save(t);

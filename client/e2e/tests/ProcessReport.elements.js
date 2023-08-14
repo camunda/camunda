@@ -126,3 +126,4 @@ export const newNameInput = (name) =>
   Selector('.RenameVariablesModal tbody tr').withText(name).find('.Input');
 export const viewSelect = Selector('.View .activateButton');
 export const numberReportInfo = reportRenderer.find('.Number .label');
+export const variableSubmenuOption = (text) => Selector('.Submenu .DropdownOption').withText(text);
