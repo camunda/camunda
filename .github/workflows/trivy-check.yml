@@ -112,7 +112,7 @@ jobs:
         run: ./.github/scripts/build-docker-images.sh
 
       - name: list images
-        run: docker images ls
+        run: docker image ls
 
       - name: Build local image for testing
         uses: docker/build-push-action@v4
@@ -149,27 +149,27 @@ jobs:
           retention-days: 7
           if-no-files-found: ignore
 
-  post-results-on-slack:
-    name: Post results on slack
-    # if: failure()
-    needs:
-      - trivy-check
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
+  # post-results-on-slack:
+  #   name: Post results on slack
+  #   # if: failure()
+  #   needs:
+  #     - trivy-check
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v3
 
-      - name: Import secrets
-        id: secrets
-        uses: hashicorp/vault-action@62aa8bb4c43190676348ad2b146075f0421136db
-        with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secrets: |
-            secret/data/products/optimize/ci/camunda-optimize SLACK_BOT_URL;
+  #     - name: Import secrets
+  #       id: secrets
+  #       uses: hashicorp/vault-action@62aa8bb4c43190676348ad2b146075f0421136db
+  #       with:
+  #         url: ${{ secrets.VAULT_ADDR }}
+  #         method: approle
+  #         roleId: ${{ secrets.VAULT_ROLE_ID }}
+  #         secretId: ${{ secrets.VAULT_SECRET_ID }}
+  #         secrets: |
+  #           secret/data/products/optimize/ci/camunda-optimize SLACK_BOT_URL;
 
-      - name: Post results on slack
-        uses: ./.github/actions/notify-on-slack
-        with:
-          slack_webhook_url: ${{ steps.secrets.outputs.SLACK_BOT_URL}}
+  #     - name: Post results on slack
+  #       uses: ./.github/actions/notify-on-slack
+  #       with:
+  #         slack_webhook_url: ${{ steps.secrets.outputs.SLACK_BOT_URL}}
