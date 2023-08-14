@@ -82,7 +82,7 @@ public class ProcessInstanceMutationIT extends TasklistZeebeIntegrationTest {
     // then
     assertThat(deleted).isTrue();
 
-    elasticsearchTestRule.refreshIndexesInElasticsearch();
+    tasklistTestRule.refreshIndexesInElasticsearch();
 
     assertWhoIsAProcessInstanceDependant();
     assertThatProcessDependantsAreDeleted(processInstanceId);

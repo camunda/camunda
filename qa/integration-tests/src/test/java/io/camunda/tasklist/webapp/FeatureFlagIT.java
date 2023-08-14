@@ -6,13 +6,14 @@
  */
 package io.camunda.tasklist.webapp;
 
+import static io.camunda.tasklist.util.TestCheck.PROCESS_IS_DEPLOYED_CHECK;
 import static io.camunda.tasklist.util.assertions.CustomAssertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.tasklist.util.ElasticsearchChecks;
 import io.camunda.tasklist.util.MockMvcHelper;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
+import io.camunda.tasklist.util.TestCheck;
 import io.camunda.tasklist.util.ZeebeTestUtil;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import org.junit.Before;
@@ -28,8 +29,8 @@ import org.springframework.web.context.WebApplicationContext;
 public class FeatureFlagIT extends TasklistZeebeIntegrationTest {
 
   @Autowired
-  @Qualifier("processIsDeployedCheck")
-  private ElasticsearchChecks.TestCheck processIsDeployedCheck;
+  @Qualifier(PROCESS_IS_DEPLOYED_CHECK)
+  private TestCheck processIsDeployedCheck;
 
   @Autowired private WebApplicationContext context;
 
@@ -54,7 +55,7 @@ public class FeatureFlagIT extends TasklistZeebeIntegrationTest {
     final String bpmnProcessId = "startedByForm";
     final String formId = "testForm";
 
-    elasticsearchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId1);
+    tasklistTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId1);
 
     // when
     final var result =

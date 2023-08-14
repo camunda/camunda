@@ -6,20 +6,20 @@
  */
 package io.camunda.tasklist.webapp.api.rest.v1.controllers.external;
 
+import static io.camunda.tasklist.util.TestCheck.PROCESS_IS_DEPLOYED_CHECK;
 import static io.camunda.tasklist.util.assertions.CustomAssertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.tasklist.util.ElasticsearchChecks;
 import io.camunda.tasklist.util.MockMvcHelper;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
+import io.camunda.tasklist.util.TestCheck;
 import io.camunda.tasklist.util.ZeebeTestUtil;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.FormResponse;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.StartProcessRequest;
 import io.camunda.tasklist.webapp.graphql.entity.ProcessInstanceDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
-import io.camunda.tasklist.webapp.rest.exception.Error;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -38,8 +38,8 @@ import org.springframework.web.context.WebApplicationContext;
 public class ProcessExternalControllerIT extends TasklistZeebeIntegrationTest {
 
   @Autowired
-  @Qualifier("processIsDeployedCheck")
-  private ElasticsearchChecks.TestCheck processIsDeployedCheck;
+  @Qualifier(PROCESS_IS_DEPLOYED_CHECK)
+  private TestCheck processIsDeployedCheck;
 
   @Autowired private WebApplicationContext context;
 
@@ -60,7 +60,7 @@ public class ProcessExternalControllerIT extends TasklistZeebeIntegrationTest {
     final String bpmnProcessId = "startedByForm";
     final String formId = "testForm";
 
-    elasticsearchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId1);
+    tasklistTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId1);
 
     // when
     final var result =
@@ -98,7 +98,7 @@ public class ProcessExternalControllerIT extends TasklistZeebeIntegrationTest {
     final String processId1 = ZeebeTestUtil.deployProcess(zeebeClient, "simple_process.bpmn");
     final String bpmnProcessId = "Process_1g4wt4m";
 
-    elasticsearchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId1);
+    tasklistTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId1);
 
     // when
     final var result =
@@ -129,11 +129,8 @@ public class ProcessExternalControllerIT extends TasklistZeebeIntegrationTest {
     final var result = startProcessDeployInvokeAndReturn("simple_process.bpmn", "Process_1g4wt4m");
     assertThat(result)
         .hasHttpStatus(HttpStatus.NOT_FOUND)
-        .extractingContent(objectMapper, Error.class)
-        .satisfies(
-            error -> {
-              Assertions.assertThat(error.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
-            });
+        .extractingErrorContent(objectMapper)
+        .hasStatus(HttpStatus.NOT_FOUND);
   }
 
   @Test
@@ -141,11 +138,9 @@ public class ProcessExternalControllerIT extends TasklistZeebeIntegrationTest {
     final var result = startProcessDeployInvokeAndReturn("simple_process.bpmn", "wrongProcess");
     assertThat(result)
         .hasHttpStatus(HttpStatus.NOT_FOUND)
-        .extractingContent(objectMapper, Error.class)
-        .satisfies(
-            error -> {
-              Assertions.assertThat(error.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
-            });
+        .extractingErrorContent(objectMapper)
+        .hasStatus(HttpStatus.NOT_FOUND)
+        .hasMessage("Could not find process with id 'wrongProcess'.");
   }
 
   private MockHttpServletResponse startProcessDeployInvokeAndReturn(
@@ -159,19 +154,14 @@ public class ProcessExternalControllerIT extends TasklistZeebeIntegrationTest {
 
     final String processId1 = ZeebeTestUtil.deployProcess(zeebeClient, pathProcess);
 
-    elasticsearchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId1);
+    tasklistTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId1);
 
     // when
-    final var result =
-        mockMvcHelper.doRequest(
-            patch(
-                    TasklistURIs.EXTERNAL_PROCESS_URL_V1.concat("/{bpmnProcessId}/start"),
-                    bpmnProcessId)
-                .content(objectMapper.writeValueAsString(startProcessRequest))
-                .contentType(MediaType.APPLICATION_JSON)
-                .accept(MediaType.APPLICATION_JSON)
-                .characterEncoding(StandardCharsets.UTF_8.name()));
-
-    return result;
+    return mockMvcHelper.doRequest(
+        patch(TasklistURIs.EXTERNAL_PROCESS_URL_V1.concat("/{bpmnProcessId}/start"), bpmnProcessId)
+            .content(objectMapper.writeValueAsString(startProcessRequest))
+            .contentType(MediaType.APPLICATION_JSON)
+            .accept(MediaType.APPLICATION_JSON)
+            .characterEncoding(StandardCharsets.UTF_8.name()));
   }
 }

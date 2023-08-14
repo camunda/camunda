@@ -7,8 +7,8 @@
 package io.camunda.tasklist.webapp.graphql.mutation;
 
 import graphql.kickstart.tools.GraphQLMutationResolver;
-import io.camunda.tasklist.webapp.es.ProcessInstanceWriter;
-import io.camunda.tasklist.webapp.es.enums.DeletionStatus;
+import io.camunda.tasklist.enums.DeletionStatus;
+import io.camunda.tasklist.store.ProcessInstanceStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Component;
@@ -16,11 +16,11 @@ import org.springframework.stereotype.Component;
 @Component
 public class ProcessInstanceMutationResolver implements GraphQLMutationResolver {
 
-  @Autowired ProcessInstanceWriter processInstanceWriter;
+  @Autowired ProcessInstanceStore processInstanceStore;
 
   @PreAuthorize("hasPermission('write')")
   public Boolean deleteProcessInstance(String processInstanceId) {
     return DeletionStatus.DELETED.equals(
-        processInstanceWriter.deleteProcessInstance(processInstanceId));
+        processInstanceStore.deleteProcessInstance(processInstanceId));
   }
 }

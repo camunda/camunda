@@ -7,6 +7,7 @@
 package io.camunda.tasklist.property;
 
 public class IdentityProperties {
+  public static final String ALL_RESOURCES = "*";
   private String issuerUrl;
   private String baseUrl;
   private String issuerBackendUrl;

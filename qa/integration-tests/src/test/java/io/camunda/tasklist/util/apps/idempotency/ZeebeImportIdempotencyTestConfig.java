@@ -9,7 +9,7 @@ package io.camunda.tasklist.util.apps.idempotency;
 import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.zeebe.ImportValueType;
 import io.camunda.tasklist.zeebeimport.ImportBatch;
-import io.camunda.tasklist.zeebeimport.v830.processors.ElasticsearchBulkProcessor;
+import io.camunda.tasklist.zeebeimport.v820.processors.es.BulkProcessorElasticSearch;
 import java.util.HashSet;
 import java.util.Set;
 import org.springframework.context.annotation.Bean;
@@ -29,14 +29,14 @@ public class ZeebeImportIdempotencyTestConfig {
     return new CustomElasticsearchBulkProcessor();
   }
 
-  public static class CustomElasticsearchBulkProcessor extends ElasticsearchBulkProcessor {
+  public static class CustomElasticsearchBulkProcessor extends BulkProcessorElasticSearch {
 
     private Set<ImportValueType> alreadyFailedTypes = new HashSet<>();
 
     @Override
-    public void performImport(ImportBatch importBatch) throws PersistenceException {
-      super.performImport(importBatch);
-      final ImportValueType importValueType = importBatch.getImportValueType();
+    public void performImport(ImportBatch importBatchElasticSearch) throws PersistenceException {
+      super.performImport(importBatchElasticSearch);
+      final ImportValueType importValueType = importBatchElasticSearch.getImportValueType();
       if (!alreadyFailedTypes.contains(importValueType)) {
         alreadyFailedTypes.add(importValueType);
         throw new PersistenceException(

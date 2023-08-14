@@ -6,6 +6,12 @@ env-up:
 	&& docker-compose up -d elasticsearch zeebe \
 	&& mvn -f webapp/pom.xml exec:java -Dexec.mainClass="io.camunda.tasklist.Application" -Dspring.profiles.active=dev,dev-data,auth
 
+.PHONY: env-up-os
+env-up-os:
+	@mvn clean install -DskipTests=true \
+	&& docker-compose up -d opensearch elasticsearch zeebe-opensearch \
+	&& mvn -f webapp/pom.xml exec:java -Dexec.mainClass="io.camunda.tasklist.Application" -Dspring.profiles.active=dev,dev-data,auth -Dcamunda.tasklist.database=opensearch
+
 # Set the env var ZEEBE_TASKLIST_AUTH0_CLIENTSECRET in your shell please, eg: export ZEEBE_TASKLIST_AUTH0_CLIENTSECRET=<client-secret>
 .PHONY: env-sso-up
 env-sso-up:

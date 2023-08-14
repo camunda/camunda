@@ -7,7 +7,7 @@
 
 import {expect} from '@playwright/test';
 import {test} from '../test-fixtures';
-import {deploy, createInstances} from '../zeebeClient';
+import {createInstances, deploy} from '../zeebeClient';
 
 test.afterAll(async ({resetData}) => {
   await resetData();

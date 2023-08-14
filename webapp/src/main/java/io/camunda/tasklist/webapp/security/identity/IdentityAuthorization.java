@@ -7,13 +7,13 @@
 package io.camunda.tasklist.webapp.security.identity;
 
 import io.camunda.identity.sdk.authorizations.dto.Authorization;
+import io.camunda.tasklist.property.IdentityProperties;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
 public class IdentityAuthorization implements Serializable {
 
-  public static final String ALL_RESOURCES = "*";
   private static final String PROCESS_DEFINITION = "process-definition";
   // TODO - the UPDATE_PROCESS_INSTANCE is being used temporarily until we have the new permission
   private static final String PROCESS_PERMISSION = "START_PROCESS_INSTANCE";
@@ -24,9 +24,9 @@ public class IdentityAuthorization implements Serializable {
     for (Authorization authorization : authorizations) {
       if (authorization.getResourceType().equals(PROCESS_DEFINITION)
           && authorization.getPermissions().contains(PROCESS_PERMISSION)) {
-        if (authorization.getResourceKey().equals(ALL_RESOURCES)) {
+        if (authorization.getResourceKey().equals(IdentityProperties.ALL_RESOURCES)) {
           processesAllowedToStart.clear();
-          processesAllowedToStart.add(ALL_RESOURCES);
+          processesAllowedToStart.add(IdentityProperties.ALL_RESOURCES);
           break;
         } else {
           processesAllowedToStart.add(authorization.getResourceKey());

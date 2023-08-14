@@ -6,6 +6,7 @@
  */
 package io.camunda.tasklist.util;
 
+import java.text.SimpleDateFormat;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -16,6 +17,8 @@ import org.slf4j.LoggerFactory;
 
 public abstract class DateUtil {
 
+  public static final SimpleDateFormat SIMPLE_DATE_FORMAT =
+      new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSX");
   private static final Logger LOGGER = LoggerFactory.getLogger(DateUtil.class);
 
   private static final Random RANDOM = new Random();

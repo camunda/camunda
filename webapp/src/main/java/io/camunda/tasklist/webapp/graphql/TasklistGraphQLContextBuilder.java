@@ -9,11 +9,11 @@ package io.camunda.tasklist.webapp.graphql;
 import graphql.kickstart.execution.context.DefaultGraphQLContext;
 import graphql.kickstart.execution.context.GraphQLKickstartContext;
 import graphql.kickstart.servlet.context.GraphQLServletContextBuilder;
+import io.camunda.tasklist.store.VariableStore;
 import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableDTO;
 import io.camunda.tasklist.webapp.security.UserReader;
 import io.camunda.tasklist.webapp.service.VariableService;
-import io.camunda.tasklist.webapp.service.VariableService.GetVariablesRequest;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.websocket.Session;
@@ -68,7 +68,7 @@ public class TasklistGraphQLContextBuilder implements GraphQLServletContextBuild
                     CompletableFuture.supplyAsync(() -> userReader.getUsersByUsernames(usernames))))
         .register(
             VARIABLE_DATA_LOADER,
-            DataLoaderFactory.<GetVariablesRequest, List<VariableDTO>>newDataLoader(
+            DataLoaderFactory.<VariableStore.GetVariablesRequest, List<VariableDTO>>newDataLoader(
                 req -> CompletableFuture.supplyAsync(() -> variableService.getVariables(req))));
   }
 }

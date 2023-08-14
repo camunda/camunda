@@ -7,6 +7,7 @@
 package io.camunda.tasklist.util;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.UUID;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
@@ -15,6 +16,7 @@ import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.indices.DeleteComposableIndexTemplateRequest;
 import org.elasticsearch.client.indices.GetComposableIndexTemplateRequest;
 import org.elasticsearch.client.indices.GetIndexRequest;
+import org.opensearch.client.opensearch.OpenSearchClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,6 +27,30 @@ public abstract class TestUtil {
 
   public static String createRandomString(int length) {
     return UUID.randomUUID().toString().substring(0, length);
+  }
+
+  public static void removeAllIndices(OpenSearchClient osClient, String prefix) {
+    try {
+      LOGGER.info("Removing indices");
+      final var indexResponses = osClient.indices().get(ir -> ir.index(List.of(prefix + "*")));
+      osClient.indices().delete(d -> d.index(indexResponses.result().keySet().stream().toList()));
+
+      final var templateResponses =
+          osClient.indices().getIndexTemplate(it -> it.name(prefix + "*"));
+
+      templateResponses.indexTemplates().stream()
+          .forEach(
+              t -> {
+                try {
+                  osClient.indices().deleteIndexTemplate(dit -> dit.name(t.name()));
+                } catch (IOException e) {
+                  throw new RuntimeException(e);
+                }
+              });
+
+    } catch (IOException ex) {
+      LOGGER.error(ex.getMessage(), ex);
+    }
   }
 
   public static void removeAllIndices(RestHighLevelClient esClient, String prefix) {

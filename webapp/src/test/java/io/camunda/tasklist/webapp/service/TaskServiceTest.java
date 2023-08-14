@@ -17,10 +17,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.Metrics;
 import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.entities.TaskState;
+import io.camunda.tasklist.store.TaskMetricsStore;
+import io.camunda.tasklist.store.TaskStore;
+import io.camunda.tasklist.views.TaskSearchView;
 import io.camunda.tasklist.webapp.CommonUtils;
-import io.camunda.tasklist.webapp.es.TaskReaderWriter;
 import io.camunda.tasklist.webapp.es.TaskValidator;
-import io.camunda.tasklist.webapp.es.contract.UsageMetricsContract;
 import io.camunda.tasklist.webapp.graphql.entity.TaskDTO;
 import io.camunda.tasklist.webapp.graphql.entity.TaskQueryDTO;
 import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
@@ -33,7 +34,6 @@ import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
 import java.time.OffsetDateTime;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -52,11 +52,11 @@ class TaskServiceTest {
 
   @Mock private UserReader userReader;
   @Mock private ZeebeClient zeebeClient;
-  @Mock private TaskReaderWriter taskReaderWriter;
+  @Mock private TaskStore taskStore;
   @Mock private VariableService variableService;
   @Spy private ObjectMapper objectMapper = CommonUtils.getObjectMapper();
   @Mock private Metrics metrics;
-  @Mock private UsageMetricsContract metricsContract;
+  @Mock private TaskMetricsStore taskMetricsStore;
   @Mock private AssigneeMigrator assigneeMigrator;
   @Mock private TaskValidator taskValidator;
 
@@ -67,19 +67,23 @@ class TaskServiceTest {
     // Given
     final var taskQuery = new TaskQueryDTO().setSearchAfter(new String[] {"123", "456"});
     final var providedTask =
+        new TaskSearchView()
+            .setId("123")
+            .setState(TaskState.CREATED)
+            .setSortValues(new String[] {"123", "456"});
+    final var expectedTask =
         new TaskDTO()
             .setId("123")
             .setTaskState(TaskState.CREATED)
             .setSortValues(new String[] {"123", "456"});
 
-    when(taskReaderWriter.getTasks(taskQuery, Collections.emptyList()))
-        .thenReturn(List.of(providedTask));
+    when(taskStore.getTasks(taskQuery.toTaskQuery())).thenReturn(List.of(providedTask));
 
     // When
-    final var result = instance.getTasks(taskQuery, Collections.emptyList());
+    final var result = instance.getTasks(taskQuery);
 
     // Then
-    assertThat(result).containsExactly(providedTask);
+    assertThat(result).containsExactly(expectedTask);
   }
 
   private static Stream<Arguments> getTasksTestData() {
@@ -108,26 +112,27 @@ class TaskServiceTest {
             .setSearchAfterOrEqual(searchAfterOrEqual);
 
     // When - Then
-    assertThatThrownBy(() -> instance.getTasks(taskQuery, Collections.emptyList()))
+    assertThatThrownBy(() -> instance.getTasks(taskQuery))
         .isInstanceOf(InvalidRequestException.class)
         .hasMessage(
             "Only one of [searchAfter, searchAfterOrEqual, searchBefore, searchBeforeOrEqual] must be present in request.");
 
-    verifyNoInteractions(taskReaderWriter);
+    verifyNoInteractions(taskStore);
   }
 
   @Test
   void getTask() {
     // Given
     final String taskId = "123";
-    final var providedTask = new TaskDTO().setId(taskId).setTaskState(TaskState.CREATED);
-    when(taskReaderWriter.getTaskDTO(taskId, Collections.emptyList())).thenReturn(providedTask);
+    final var providedTask = new TaskEntity().setId(taskId).setState(TaskState.CREATED);
+    final var expectedTask = new TaskDTO().setId(taskId).setTaskState(TaskState.CREATED);
+    when(taskStore.getTask(taskId)).thenReturn(providedTask);
 
     // When
-    final var result = instance.getTask(taskId, Collections.emptyList());
+    final var result = instance.getTask(taskId);
 
     // Then
-    assertThat(result).isEqualTo(providedTask);
+    assertThat(result).isEqualTo(expectedTask);
   }
 
   private static Stream<Arguments> assignTaskTestData() {
@@ -152,10 +157,10 @@ class TaskServiceTest {
     // Given
     final var taskId = "123";
     final var taskBefore = mock(TaskEntity.class);
-    when(taskReaderWriter.getTask(taskId)).thenReturn(taskBefore);
+    when(taskStore.getTask(taskId)).thenReturn(taskBefore);
     when(userReader.getCurrentUser()).thenReturn(user);
     final var assignedTask = new TaskEntity().setAssignee(expectedAssignee);
-    when(taskReaderWriter.persistTaskClaim(taskBefore, expectedAssignee)).thenReturn(assignedTask);
+    when(taskStore.persistTaskClaim(taskBefore, expectedAssignee)).thenReturn(assignedTask);
 
     // When
     final var result =
@@ -173,7 +178,7 @@ class TaskServiceTest {
     when(userReader.getCurrentUser()).thenReturn(new UserDTO().setUserId("userA").setApiUser(true));
 
     // when - then
-    verifyNoInteractions(taskReaderWriter, taskValidator);
+    verifyNoInteractions(taskStore, taskValidator);
     assertThatThrownBy(() -> instance.assignTask(taskId, "", true))
         .isInstanceOf(InvalidRequestException.class)
         .hasMessage("Assignee must be specified");
@@ -186,7 +191,7 @@ class TaskServiceTest {
     when(userReader.getCurrentUser()).thenReturn(new UserDTO().setUserId("userA"));
 
     // when - then
-    verifyNoInteractions(taskReaderWriter, taskValidator);
+    verifyNoInteractions(taskStore, taskValidator);
     assertThatThrownBy(() -> instance.assignTask(taskId, "userB", true))
         .isInstanceOf(ForbiddenActionException.class)
         .hasMessage("User doesn't have the permission to assign another user to this task");
@@ -197,9 +202,9 @@ class TaskServiceTest {
     // Given
     final var taskId = "123";
     final var taskBefore = mock(TaskEntity.class);
-    when(taskReaderWriter.getTask(taskId)).thenReturn(taskBefore);
+    when(taskStore.getTask(taskId)).thenReturn(taskBefore);
     final var unassignedTask = new TaskEntity().setId(taskId).setState(TaskState.CREATED);
-    when(taskReaderWriter.persistTaskUnclaim(taskBefore)).thenReturn(unassignedTask);
+    when(taskStore.persistTaskUnclaim(taskBefore)).thenReturn(unassignedTask);
 
     // When
     final var result = instance.unassignTask(taskId);
@@ -219,14 +224,14 @@ class TaskServiceTest {
     final var mockedUser = mock(UserDTO.class);
     when(userReader.getCurrentUser()).thenReturn(mockedUser);
     final var taskBefore = mock(TaskEntity.class);
-    when(taskReaderWriter.getTask(taskId)).thenReturn(taskBefore);
+    when(taskStore.getTask(taskId)).thenReturn(taskBefore);
     final var completedTask =
         new TaskEntity()
             .setId(taskId)
             .setState(TaskState.COMPLETED)
             .setAssignee("demo")
             .setCompletionTime(OffsetDateTime.now());
-    when(taskReaderWriter.persistTaskCompletion(taskBefore)).thenReturn(completedTask);
+    when(taskStore.persistTaskCompletion(taskBefore)).thenReturn(completedTask);
 
     // mock zeebe command
     final var mockedJobCommandStep1 = mock(CompleteJobCommandStep1.class);

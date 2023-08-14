@@ -1,0 +1,18 @@
+{
+  "dynamic": "strict",
+  "properties": {
+    "id": {
+      "type": "keyword"
+    },
+    "processDefinitionId": {
+      "type": "keyword"
+    },
+    "bpmnId": {
+      "type": "keyword"
+    },
+    "schema": {
+      "type": "text",
+      "index": false
+    }
+  }
+}

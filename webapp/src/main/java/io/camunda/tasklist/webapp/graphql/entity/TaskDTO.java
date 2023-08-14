@@ -11,6 +11,10 @@ import static io.camunda.tasklist.util.CollectionUtil.toArrayOfStrings;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.entities.TaskState;
+import io.camunda.tasklist.exceptions.TasklistRuntimeException;
+import io.camunda.tasklist.util.DateUtil;
+import io.camunda.tasklist.views.TaskSearchView;
+import java.text.ParseException;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.Objects;
@@ -230,6 +234,63 @@ public final class TaskDTO {
       taskDTO.setSortValues(toArrayOfStrings(sortValues));
     }
     return taskDTO;
+  }
+
+  public static TaskDTO createFrom(TaskSearchView taskSearchView, ObjectMapper objectMapper) {
+    return new TaskDTO()
+        .setCreationTime(objectMapper.convertValue(taskSearchView.getCreationTime(), String.class))
+        .setCompletionTime(
+            objectMapper.convertValue(taskSearchView.getCompletionTime(), String.class))
+        .setId(taskSearchView.getId())
+        .setProcessInstanceId(taskSearchView.getProcessInstanceId())
+        .setTaskState(taskSearchView.getState())
+        .setAssignee(taskSearchView.getAssignee())
+        .setBpmnProcessId(taskSearchView.getBpmnProcessId())
+        .setProcessDefinitionId(taskSearchView.getProcessDefinitionId())
+        .setFlowNodeBpmnId(taskSearchView.getFlowNodeBpmnId())
+        .setFlowNodeInstanceId(taskSearchView.getFlowNodeInstanceId())
+        .setFormKey(taskSearchView.getFormKey())
+        .setFollowUpDate(taskSearchView.getFollowUpDate())
+        .setDueDate(taskSearchView.getDueDate())
+        .setCandidateGroups(taskSearchView.getCandidateGroups())
+        .setCandidateUsers(taskSearchView.getCandidateUsers())
+        .setSortValues(taskSearchView.getSortValues())
+        .setIsFirst(taskSearchView.isFirst());
+  }
+
+  public static TaskEntity toTaskEntity(TaskDTO taskDTO) {
+
+    final TaskEntity taskEntity;
+    try {
+      taskEntity =
+          new TaskEntity()
+              .setCreationTime(
+                  DateUtil.toOffsetDateTime(
+                      DateUtil.SIMPLE_DATE_FORMAT.parse(taskDTO.getCreationTime()).toInstant()))
+              .setId(taskDTO.getId())
+              .setProcessInstanceId(taskDTO.getProcessInstanceId())
+              .setState(taskDTO.getTaskState())
+              .setAssignee(taskDTO.getAssignee())
+              .setBpmnProcessId(taskDTO.getBpmnProcessId())
+              .setProcessDefinitionId(taskDTO.getProcessDefinitionId())
+              .setFlowNodeBpmnId(taskDTO.getFlowNodeBpmnId())
+              .setFlowNodeInstanceId(taskDTO.getFlowNodeInstanceId())
+              .setFormKey(taskDTO.getFormKey())
+              .setFollowUpDate(taskDTO.getFollowUpDate())
+              .setDueDate(taskDTO.getDueDate())
+              .setCandidateGroups(taskDTO.getCandidateGroups())
+              .setCandidateUsers(taskDTO.getCandidateUsers());
+
+      if (taskDTO.getCompletionTime() != null) {
+        taskEntity.setCompletionTime(
+            DateUtil.toOffsetDateTime(
+                DateUtil.SIMPLE_DATE_FORMAT.parse(taskDTO.getCompletionTime()).toInstant()));
+      }
+    } catch (ParseException e) {
+      throw new TasklistRuntimeException(e);
+    }
+
+    return taskEntity;
   }
 
   @Override

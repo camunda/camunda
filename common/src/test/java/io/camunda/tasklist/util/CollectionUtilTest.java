@@ -13,19 +13,19 @@ import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public class CollectionUtilTest {
+class CollectionUtilTest {
 
   @Test
-  public void testAsMapOneEntry() {
+  void testAsMapOneEntry() {
     final Map<String, Object> result = CollectionUtil.asMap("key1", "value1");
     assertThat(result).hasSize(1);
     assertThat(result).containsEntry("key1", "value1");
   }
 
   @Test
-  public void testAsMapManyEntries() {
+  void testAsMapManyEntries() {
     final Map<String, Object> result =
         CollectionUtil.asMap("key1", "value1", "key2", "value2", "key3", "value3");
     assertThat(result).hasSize(3);
@@ -34,7 +34,7 @@ public class CollectionUtilTest {
   }
 
   @Test
-  public void testAsMapException() {
+  void testAsMapException() {
     assertThatExceptionOfType(TasklistRuntimeException.class)
         .isThrownBy(() -> CollectionUtil.asMap((Object[]) null));
     assertThatExceptionOfType(TasklistRuntimeException.class)
@@ -44,7 +44,7 @@ public class CollectionUtilTest {
   }
 
   @Test
-  public void testFromTo() {
+  void testFromTo() {
     assertThat(CollectionUtil.fromTo(0, 0)).contains(0);
     assertThat(CollectionUtil.fromTo(0, -1)).isEmpty();
     assertThat(CollectionUtil.fromTo(-1, 0)).contains(-1, 0);
@@ -52,19 +52,19 @@ public class CollectionUtilTest {
   }
 
   @Test
-  public void testWithoutNulls() {
+  void testWithoutNulls() {
     final List<Object> ids = Arrays.asList("id-1", null, "id3", null, null, "id5");
     assertThat(CollectionUtil.withoutNulls(ids)).containsExactly("id-1", "id3", "id5");
   }
 
   @Test
-  public void testToSafeListOfStrings() {
+  void testToSafeListOfStrings() {
     final List<Object> ids = Arrays.asList("id-1", null, "id3", null, null, "id5");
     assertThat(CollectionUtil.withoutNulls(ids)).containsExactly("id-1", "id3", "id5");
   }
 
   @Test
-  public void testSplitAndGetSublist() {
+  void testSplitAndGetSublist() {
     List<Integer> partitions = Arrays.asList(1, 2, 3, 4, 5, 6);
     assertThat(CollectionUtil.splitAndGetSublist(partitions, 2, 1))
         .containsExactlyInAnyOrder(4, 5, 6);

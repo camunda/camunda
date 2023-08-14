@@ -20,7 +20,9 @@ import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.NoBeansTest;
 import io.camunda.tasklist.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.tasklist.zeebe.ImportValueType;
-import io.camunda.tasklist.zeebeimport.v830.processors.ElasticsearchBulkProcessor;
+import io.camunda.tasklist.zeebeimport.es.ImportBatchElasticSearch;
+import io.camunda.tasklist.zeebeimport.es.ImportJobElasticSearch;
+import io.camunda.tasklist.zeebeimport.v830.processors.es.BulkProcessorElasticSearch;
 import java.util.ArrayList;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.junit.Before;
@@ -35,14 +37,14 @@ import org.springframework.stereotype.Component;
 @SpringBootTest(
     classes = {
       TestApplicationWithNoBeans.class,
-      ImportJob.class,
+      ImportJobElasticSearch.class,
       ImportListenerTest.TestImportListener.class
     })
 public class ImportListenerTest extends NoBeansTest {
 
   @MockBean private ImportBatchProcessorFactory importBatchProcessorFactory;
 
-  @MockBean private ElasticsearchBulkProcessor elasticsearchBulkProcessor;
+  @MockBean private BulkProcessorElasticSearch elasticsearchBulkProcessor;
 
   @MockBean private ImportPositionHolder importPositionHolder;
 
@@ -64,18 +66,21 @@ public class ImportListenerTest extends NoBeansTest {
   }
 
   @Test
-  public void testFinished() {
-    final ImportBatch importBatch =
-        new ImportBatch(1, ImportValueType.PROCESS_INSTANCE, new ArrayList<>(), "some_name");
+  public void testFinished() throws Exception {
+    final ImportBatch importBatchElasticSearch =
+        new ImportBatchElasticSearch(
+            1, ImportValueType.PROCESS_INSTANCE, new ArrayList<>(), "some_name");
     final ImportPositionEntity previousPosition =
         new ImportPositionEntity().setAliasName("alias").setPartitionId(1).setPosition(0);
-    final ImportJob importJob = beanFactory.getBean(ImportJob.class, importBatch, previousPosition);
+    final ImportJob importJob =
+        beanFactory.getBean(
+            ImportJobElasticSearch.class, importBatchElasticSearch, previousPosition);
 
     // mock import methods
     try {
       when(importBatchProcessorFactory.getImportBatchProcessor(anyString()))
           .thenReturn(elasticsearchBulkProcessor);
-      doNothing().when(elasticsearchBulkProcessor).performImport(importBatch);
+      doNothing().when(elasticsearchBulkProcessor).performImport(importBatchElasticSearch);
     } catch (PersistenceException e) {
       // ignore
     }
@@ -86,21 +91,23 @@ public class ImportListenerTest extends NoBeansTest {
     // then
     assertTrue(importListener.isFinishedCalled());
     assertFalse(importListener.isFailedCalled());
-    assertEquals(importListener.getImportBatch(), importBatch);
+    assertEquals(importListener.getImportBatch(), importBatchElasticSearch);
   }
 
   @Test
-  public void testFailed() {
-    final ImportBatch importBatch =
-        new ImportBatch(1, ImportValueType.PROCESS_INSTANCE, new ArrayList<>(), null);
+  public void testFailed() throws Exception {
+    final ImportBatchElasticSearch importBatchElasticSearch =
+        new ImportBatchElasticSearch(1, ImportValueType.PROCESS_INSTANCE, new ArrayList<>(), null);
     final ImportPositionEntity previousPosition =
         new ImportPositionEntity().setAliasName("alias").setPartitionId(1).setPosition(0);
-    final ImportJob importJob = beanFactory.getBean(ImportJob.class, importBatch, previousPosition);
+    final ImportJob importJob =
+        beanFactory.getBean(
+            ImportJobElasticSearch.class, importBatchElasticSearch, previousPosition);
     // mock import methods
     try {
       doThrow(new PersistenceException())
           .when(elasticsearchBulkProcessor)
-          .performImport(importBatch);
+          .performImport(importBatchElasticSearch);
     } catch (PersistenceException e) {
       // ignore
     }
@@ -111,7 +118,7 @@ public class ImportListenerTest extends NoBeansTest {
     // then
     assertTrue(importListener.isFailedCalled());
     assertFalse(importListener.isFinishedCalled());
-    assertEquals(importListener.getImportBatch(), importBatch);
+    assertEquals(importListener.getImportBatch(), importBatchElasticSearch);
   }
 
   @Component
@@ -119,18 +126,18 @@ public class ImportListenerTest extends NoBeansTest {
 
     private boolean finishedCalled = false;
     private boolean failedCalled = false;
-    private ImportBatch importBatch;
+    private ImportBatch importBatchElasticSearch;
 
     @Override
-    public void finished(ImportBatch importBatch) {
+    public void finished(ImportBatch importBatchElasticSearch) {
       finishedCalled = true;
-      this.importBatch = importBatch;
+      this.importBatchElasticSearch = importBatchElasticSearch;
     }
 
     @Override
-    public void failed(ImportBatch importBatch) {
+    public void failed(ImportBatch importBatchElasticSearch) {
       failedCalled = true;
-      this.importBatch = importBatch;
+      this.importBatchElasticSearch = importBatchElasticSearch;
     }
 
     public boolean isFinishedCalled() {
@@ -142,13 +149,13 @@ public class ImportListenerTest extends NoBeansTest {
     }
 
     public ImportBatch getImportBatch() {
-      return importBatch;
+      return importBatchElasticSearch;
     }
 
     public void cancel() {
       finishedCalled = false;
       failedCalled = false;
-      importBatch = null;
+      importBatchElasticSearch = null;
     }
   }
 }

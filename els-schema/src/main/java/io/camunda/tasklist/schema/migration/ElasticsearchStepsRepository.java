@@ -45,7 +45,7 @@ public class ElasticsearchStepsRepository implements StepsRepository {
 
   private static final String STEP_FILE_EXTENSION = ".json";
 
-  private static final String DEFAULT_SCHEMA_CHANGE_FOLDER = "/schema/change";
+  private static final String DEFAULT_SCHEMA_CHANGE_FOLDER = "/schema/es/change";
 
   @Autowired private RetryElasticsearchClient retryElasticsearchClient;
 

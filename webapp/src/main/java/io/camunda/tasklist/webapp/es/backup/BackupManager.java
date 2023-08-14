@@ -6,15 +6,25 @@
  */
 package io.camunda.tasklist.webapp.es.backup;
 
-import static java.util.stream.Collectors.*;
-import static org.elasticsearch.snapshots.SnapshotState.*;
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.toList;
+import static org.elasticsearch.snapshots.SnapshotState.FAILED;
+import static org.elasticsearch.snapshots.SnapshotState.INCOMPATIBLE;
+import static org.elasticsearch.snapshots.SnapshotState.IN_PROGRESS;
+import static org.elasticsearch.snapshots.SnapshotState.PARTIAL;
+import static org.elasticsearch.snapshots.SnapshotState.SUCCESS;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.exceptions.TasklistElasticsearchConnectionException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.schema.backup.*;
+import io.camunda.tasklist.schema.backup.BackupPriority;
+import io.camunda.tasklist.schema.backup.Prio1Backup;
+import io.camunda.tasklist.schema.backup.Prio2Backup;
+import io.camunda.tasklist.schema.backup.Prio3Backup;
+import io.camunda.tasklist.schema.backup.Prio4Backup;
 import io.camunda.tasklist.schema.indices.IndexDescriptor;
 import io.camunda.tasklist.schema.templates.TemplateDescriptor;
 import io.camunda.tasklist.webapp.management.dto.BackupStateDto;
@@ -23,12 +33,17 @@ import io.camunda.tasklist.webapp.management.dto.GetBackupStateResponseDto;
 import io.camunda.tasklist.webapp.management.dto.TakeBackupRequestDto;
 import io.camunda.tasklist.webapp.management.dto.TakeBackupResponseDto;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
-import io.camunda.tasklist.webapp.rest.exception.NotFoundException;
+import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.Collectors;
 import org.elasticsearch.ElasticsearchStatusException;
@@ -462,7 +477,7 @@ public class BackupManager {
     } catch (Exception e) {
       if (isSnapshotMissingException(e)) {
         // no snapshot with given backupID exists
-        throw new NotFoundException(String.format("No backup with id [%s] found.", backupId), e);
+        throw new NotFoundApiException(String.format("No backup with id [%s] found.", backupId), e);
       }
       if (isRepositoryMissingException(e)) {
         final String reason =

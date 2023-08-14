@@ -8,18 +8,21 @@ package io.camunda.tasklist.webapp.api.rest.v1.controllers.internal;
 
 import static java.util.Objects.requireNonNullElse;
 
+import io.camunda.tasklist.entities.ProcessEntity;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.tasklist.store.FormStore;
+import io.camunda.tasklist.store.ProcessInstanceStore;
+import io.camunda.tasklist.store.ProcessStore;
 import io.camunda.tasklist.webapp.api.rest.v1.controllers.ApiErrorController;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.ProcessPublicEndpointsResponse;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.ProcessResponse;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.StartProcessRequest;
-import io.camunda.tasklist.webapp.es.ProcessInstanceWriter;
-import io.camunda.tasklist.webapp.es.cache.ProcessReader;
 import io.camunda.tasklist.webapp.graphql.entity.ProcessInstanceDTO;
 import io.camunda.tasklist.webapp.rest.exception.Error;
-import io.camunda.tasklist.webapp.rest.exception.NotFoundException;
+import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
+import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService;
 import io.camunda.tasklist.webapp.service.ProcessService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -34,17 +37,26 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 @Tag(name = "Process", description = "API to manage processes.")
 @RestController
 @RequestMapping(value = TasklistURIs.PROCESSES_URL_V1, produces = MediaType.APPLICATION_JSON_VALUE)
 public class ProcessInternalController extends ApiErrorController {
 
-  @Autowired private ProcessReader processReader;
+  @Autowired private ProcessStore processStore;
+  @Autowired private FormStore formStore;
   @Autowired private ProcessService processService;
-  @Autowired private ProcessInstanceWriter processInstanceWriter;
+  @Autowired private ProcessInstanceStore processInstanceStore;
   @Autowired private TasklistProperties tasklistProperties;
+  @Autowired private IdentityAuthorizationService identityAuthorizationService;
 
   @Operation(
       summary = "Returns the list of processes by search query",
@@ -58,11 +70,25 @@ public class ProcessInternalController extends ApiErrorController {
   @GetMapping
   public ResponseEntity<List<ProcessResponse>> searchProcesses(
       @RequestParam(defaultValue = StringUtils.EMPTY) String query) {
+
     final var processes =
-        processReader.getProcesses(query).stream()
-            .map(process -> ProcessResponse.fromProcessDTO(process, processReader))
+        processStore
+            .getProcesses(
+                query, identityAuthorizationService.getProcessDefinitionsFromAuthorization())
+            .stream()
+            .map(pe -> ProcessResponse.fromProcessEntity(pe, getStartEventFormIdByBpmnProcess(pe)))
             .collect(Collectors.toList());
     return ResponseEntity.ok(processes);
+  }
+
+  /** Retrieving the start event form id when exists. */
+  private String getStartEventFormIdByBpmnProcess(ProcessEntity process) {
+    if (process.isStartedByForm()) {
+      final String formId = StringUtils.substringAfterLast(process.getFormKey(), ":");
+      final var form = formStore.getForm(formId, process.getId());
+      return form.getBpmnId();
+    }
+    return null;
   }
 
   @Operation(
@@ -121,11 +147,11 @@ public class ProcessInternalController extends ApiErrorController {
   @PreAuthorize("hasPermission('write')")
   @DeleteMapping("{processInstanceId}")
   public ResponseEntity<?> deleteProcessInstance(@PathVariable String processInstanceId) {
-    switch (processInstanceWriter.deleteProcessInstance(processInstanceId)) {
+    switch (processInstanceStore.deleteProcessInstance(processInstanceId)) {
       case DELETED:
         return ResponseEntity.noContent().build();
       case NOT_FOUND:
-        throw new NotFoundException(
+        throw new NotFoundApiException(
             String.format(
                 "The process with processInstanceId: '%s' is not found", processInstanceId));
       default:
@@ -152,8 +178,8 @@ public class ProcessInternalController extends ApiErrorController {
 
     if (tasklistProperties.getFeatureFlag().getProcessPublicEndpoints()) {
       publicEndpoints =
-          processReader.getProcessesStartedByForm().stream()
-              .map(ProcessPublicEndpointsResponse::fromProcessDTO)
+          processStore.getProcessesStartedByForm().stream()
+              .map(ProcessPublicEndpointsResponse::fromProcessEntity)
               .collect(Collectors.toList());
     } else {
       publicEndpoints = new ArrayList<ProcessPublicEndpointsResponse>();
@@ -182,11 +208,11 @@ public class ProcessInternalController extends ApiErrorController {
   @GetMapping("{bpmnProcessId}/publicEndpoint")
   public ResponseEntity<ProcessPublicEndpointsResponse> getPublicEndpoint(
       @PathVariable String bpmnProcessId) {
-    final var process = processReader.getProcessByBpmnProcessId(bpmnProcessId);
+    final var process = processStore.getProcessByBpmnProcessId(bpmnProcessId);
     if (!process.isStartedByForm()) {
-      throw new NotFoundException(
+      throw new NotFoundApiException(
           String.format("The public endpoint for bpmnProcessId: '%s' is not found", bpmnProcessId));
     }
-    return ResponseEntity.ok(ProcessPublicEndpointsResponse.fromProcessDTO(process));
+    return ResponseEntity.ok(ProcessPublicEndpointsResponse.fromProcessEntity(process));
   }
 }

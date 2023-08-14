@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {Page, Locator} from '@playwright/test';
+import {Locator, Page} from '@playwright/test';
 
 function cardinalToOrdinal(numberValue: number): string {
   const realOrderIndex = numberValue.toString();

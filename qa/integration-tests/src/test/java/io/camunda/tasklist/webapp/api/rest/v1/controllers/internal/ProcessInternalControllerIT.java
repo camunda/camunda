@@ -6,19 +6,18 @@
  */
 package io.camunda.tasklist.webapp.api.rest.v1.controllers.internal;
 
+import static io.camunda.tasklist.util.TestCheck.PROCESS_IS_DEPLOYED_CHECK;
 import static io.camunda.tasklist.util.assertions.CustomAssertions.assertThat;
 import static org.apache.commons.lang3.RandomStringUtils.randomNumeric;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.tuple;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.util.ElasticsearchChecks;
 import io.camunda.tasklist.util.MockMvcHelper;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
+import io.camunda.tasklist.util.TestCheck;
 import io.camunda.tasklist.util.ZeebeTestUtil;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.ProcessPublicEndpointsResponse;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.ProcessResponse;
@@ -45,8 +44,8 @@ import org.springframework.web.context.WebApplicationContext;
 public class ProcessInternalControllerIT extends TasklistZeebeIntegrationTest {
 
   @Autowired
-  @Qualifier("processIsDeployedCheck")
-  private ElasticsearchChecks.TestCheck processIsDeployedCheck;
+  @Qualifier(PROCESS_IS_DEPLOYED_CHECK)
+  private TestCheck processIsDeployedCheck;
 
   @Autowired private WebApplicationContext context;
 
@@ -77,9 +76,9 @@ public class ProcessInternalControllerIT extends TasklistZeebeIntegrationTest {
     final String processId2 = ZeebeTestUtil.deployProcess(zeebeClient, "simple_process_2.bpmn");
     final String processId3 = ZeebeTestUtil.deployProcess(zeebeClient, "userTaskForm.bpmn");
 
-    elasticsearchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId1);
-    elasticsearchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId2);
-    elasticsearchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId3);
+    tasklistTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId1);
+    tasklistTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId2);
+    tasklistTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId3);
 
     // when
     final var result =
@@ -107,9 +106,9 @@ public class ProcessInternalControllerIT extends TasklistZeebeIntegrationTest {
     final String processId2 = ZeebeTestUtil.deployProcess(zeebeClient, "simple_process_2.bpmn");
     final String processId3 = ZeebeTestUtil.deployProcess(zeebeClient, "userTaskForm.bpmn");
 
-    elasticsearchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId1);
-    elasticsearchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId2);
-    elasticsearchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId3);
+    tasklistTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId1);
+    tasklistTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId2);
+    tasklistTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId3);
 
     // when
     final var result = mockMvcHelper.doRequest(get(TasklistURIs.PROCESSES_URL_V1));
@@ -134,9 +133,9 @@ public class ProcessInternalControllerIT extends TasklistZeebeIntegrationTest {
     final String processId2 = ZeebeTestUtil.deployProcess(zeebeClient, "simple_process_2.bpmn");
     final String processId3 = ZeebeTestUtil.deployProcess(zeebeClient, "userTaskForm.bpmn");
 
-    elasticsearchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId1);
-    elasticsearchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId2);
-    elasticsearchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId3);
+    tasklistTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId1);
+    tasklistTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId2);
+    tasklistTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId3);
 
     // when
     final var result =
@@ -167,7 +166,7 @@ public class ProcessInternalControllerIT extends TasklistZeebeIntegrationTest {
   public void startProcessInstanceWhenProcessNotFoundByProcessDefinitionKeyThen404ErrorExpected() {
     // given
     final String processId1 = ZeebeTestUtil.deployProcess(zeebeClient, "simple_process.bpmn");
-    elasticsearchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId1);
+    tasklistTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId1);
 
     // when
     final var result =
@@ -254,9 +253,9 @@ public class ProcessInternalControllerIT extends TasklistZeebeIntegrationTest {
     final String processId3 =
         ZeebeTestUtil.deployProcess(zeebeClient, "travelSearchProcess_v2.bpmn");
 
-    elasticsearchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId1);
-    elasticsearchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId2);
-    elasticsearchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId3);
+    tasklistTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId1);
+    tasklistTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId2);
+    tasklistTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId3);
 
     // when
     final var result =
@@ -280,7 +279,7 @@ public class ProcessInternalControllerIT extends TasklistZeebeIntegrationTest {
   public void shouldNotReturnPublicEndpoints() {
     // given
     final String processId1 = ZeebeTestUtil.deployProcess(zeebeClient, "simple_process.bpmn");
-    elasticsearchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId1);
+    tasklistTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId1);
 
     // when
     final var result =
@@ -303,9 +302,9 @@ public class ProcessInternalControllerIT extends TasklistZeebeIntegrationTest {
     final String processId3 =
         ZeebeTestUtil.deployProcess(zeebeClient, "travelSearchProcess_v2.bpmn");
 
-    elasticsearchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId1);
-    elasticsearchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId2);
-    elasticsearchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId3);
+    tasklistTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId1);
+    tasklistTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId2);
+    tasklistTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId3);
 
     // when
     final var result =
@@ -327,7 +326,7 @@ public class ProcessInternalControllerIT extends TasklistZeebeIntegrationTest {
 
     // given
     final String processId1 = ZeebeTestUtil.deployProcess(zeebeClient, "subscribeFormProcess.bpmn");
-    elasticsearchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId1);
+    tasklistTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId1);
 
     // when
     final var result =
@@ -359,8 +358,8 @@ public class ProcessInternalControllerIT extends TasklistZeebeIntegrationTest {
     final String processId1 = ZeebeTestUtil.deployProcess(zeebeClient, "travelSearchProcess.bpmn");
     final String processId2 =
         ZeebeTestUtil.deployProcess(zeebeClient, "travelSearchProcess_v2.bpmn");
-    elasticsearchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId1);
-    elasticsearchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId2);
+    tasklistTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId1);
+    tasklistTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId2);
 
     // when
     final var result =
@@ -390,7 +389,7 @@ public class ProcessInternalControllerIT extends TasklistZeebeIntegrationTest {
 
     final String processId1 = ZeebeTestUtil.deployProcess(zeebeClient, pathProcess);
 
-    elasticsearchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId1);
+    tasklistTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId1);
 
     // when
     final var result =

@@ -8,13 +8,20 @@ package io.camunda.tasklist.webapp;
 
 import static io.camunda.tasklist.util.CollectionUtil.asMap;
 import static io.camunda.tasklist.webapp.es.backup.BackupManager.SNAPSHOT_MISSING_EXCEPTION_TYPE;
-import static io.camunda.tasklist.webapp.management.dto.BackupStateDto.*;
+import static io.camunda.tasklist.webapp.management.dto.BackupStateDto.COMPLETED;
+import static io.camunda.tasklist.webapp.management.dto.BackupStateDto.FAILED;
+import static io.camunda.tasklist.webapp.management.dto.BackupStateDto.INCOMPATIBLE;
+import static io.camunda.tasklist.webapp.management.dto.BackupStateDto.INCOMPLETE;
+import static io.camunda.tasklist.webapp.management.dto.BackupStateDto.IN_PROGRESS;
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -30,7 +37,7 @@ import io.camunda.tasklist.webapp.management.dto.GetBackupStateResponseDetailDto
 import io.camunda.tasklist.webapp.management.dto.GetBackupStateResponseDto;
 import io.camunda.tasklist.webapp.management.dto.TakeBackupRequestDto;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
-import io.camunda.tasklist.webapp.rest.exception.NotFoundException;
+import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
 import io.camunda.tasklist.webapp.security.TasklistProfileService;
 import java.io.IOException;
 import java.time.OffsetDateTime;
@@ -147,7 +154,7 @@ public class BackupServiceTest {
 
     Exception exception =
         assertThrows(
-            NotFoundException.class,
+            NotFoundApiException.class,
             () -> {
               backupService.takeBackup(new TakeBackupRequestDto().setBackupId(backupId));
             });
@@ -156,7 +163,7 @@ public class BackupServiceTest {
 
     exception =
         assertThrows(
-            NotFoundException.class,
+            NotFoundApiException.class,
             () -> {
               backupService.getBackupState(backupId);
             });
@@ -165,7 +172,7 @@ public class BackupServiceTest {
 
     exception =
         assertThrows(
-            NotFoundException.class,
+            NotFoundApiException.class,
             () -> {
               backupService.deleteBackup(backupId);
             });
@@ -175,7 +182,7 @@ public class BackupServiceTest {
     when(tasklistProperties.getBackup()).thenReturn(new BackupProperties());
     exception =
         assertThrows(
-            NotFoundException.class,
+            NotFoundApiException.class,
             () -> {
               backupService.takeBackup(new TakeBackupRequestDto().setBackupId(backupId));
             });
@@ -184,7 +191,7 @@ public class BackupServiceTest {
 
     exception =
         assertThrows(
-            NotFoundException.class,
+            NotFoundApiException.class,
             () -> {
               backupService.getBackupState(backupId);
             });
@@ -193,7 +200,7 @@ public class BackupServiceTest {
 
     exception =
         assertThrows(
-            NotFoundException.class,
+            NotFoundApiException.class,
             () -> {
               backupService.deleteBackup(backupId);
             });
@@ -323,7 +330,7 @@ public class BackupServiceTest {
 
     final Exception exception =
         assertThrows(
-            NotFoundException.class,
+            NotFoundApiException.class,
             () -> {
               backupService.getBackupState(backupId);
             });

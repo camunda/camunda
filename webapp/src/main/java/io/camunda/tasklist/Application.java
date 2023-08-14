@@ -10,6 +10,7 @@ import static io.camunda.tasklist.webapp.security.TasklistProfileService.AUTH_PR
 import static io.camunda.tasklist.webapp.security.TasklistProfileService.DEFAULT_AUTH;
 
 import io.camunda.tasklist.data.DataGenerator;
+import io.camunda.tasklist.data.es.DevDataGeneratorElasticSearch;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import java.util.HashMap;
 import java.util.Map;
@@ -130,7 +131,7 @@ public class Application {
   @ConditionalOnMissingBean
   public DataGenerator stubDataGenerator() {
     LOGGER.debug("Create Data generator stub");
-    return DataGenerator.DO_NOTHING;
+    return new DevDataGeneratorElasticSearch();
   }
 
   public static class ApplicationErrorListener

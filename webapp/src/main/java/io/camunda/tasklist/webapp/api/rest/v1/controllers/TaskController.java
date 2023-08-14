@@ -79,7 +79,7 @@ public class TaskController extends ApiErrorController {
     final var query =
         taskMapper.toTaskQuery(requireNonNullElse(searchRequest, new TaskSearchRequest()));
     final var tasks =
-        taskService.getTasks(query, List.of()).stream()
+        taskService.getTasks(query).stream()
             .map(taskMapper::toTaskSearchResponse)
             .collect(Collectors.toList());
     return ResponseEntity.ok(tasks);
@@ -102,7 +102,7 @@ public class TaskController extends ApiErrorController {
       })
   @GetMapping("{taskId}")
   public ResponseEntity<TaskResponse> getTaskById(@PathVariable String taskId) {
-    final var task = taskMapper.toTaskResponse(taskService.getTask(taskId, List.of()));
+    final var task = taskMapper.toTaskResponse(taskService.getTask(taskId));
     return ResponseEntity.ok(task);
   }
 

@@ -6,8 +6,8 @@
  */
 package io.camunda.tasklist.zeebeimport;
 
-import static io.camunda.tasklist.util.ElasticsearchChecks.PROCESS_IS_DEPLOYED_CHECK;
-import static io.camunda.tasklist.util.ElasticsearchChecks.TASK_IS_CREATED_BY_FLOW_NODE_BPMN_ID_CHECK;
+import static io.camunda.tasklist.util.TestCheck.PROCESS_IS_DEPLOYED_CHECK;
+import static io.camunda.tasklist.util.TestCheck.TASK_IS_CREATED_BY_FLOW_NODE_BPMN_ID_CHECK;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -15,8 +15,8 @@ import static org.junit.Assert.assertTrue;
 
 import com.graphql.spring.boot.test.GraphQLResponse;
 import io.camunda.tasklist.entities.TaskState;
-import io.camunda.tasklist.util.ElasticsearchChecks.TestCheck;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
+import io.camunda.tasklist.util.TestCheck;
 import java.io.IOException;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -69,7 +69,7 @@ public class ZeebeImportIT extends TasklistZeebeIntegrationTest {
   }
 
   protected void processAllRecordsAndWait(TestCheck testCheck, Object... arguments) {
-    elasticsearchTestRule.processRecordsAndWaitFor(
+    tasklistTestRule.processRecordsAndWaitFor(
         recordsReaderHolder.getAllRecordsReaders(), testCheck, null, arguments);
   }
 }

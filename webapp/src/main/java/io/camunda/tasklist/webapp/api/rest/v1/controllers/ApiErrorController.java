@@ -6,12 +6,13 @@
  */
 package io.camunda.tasklist.webapp.api.rest.v1.controllers;
 
+import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.webapp.rest.exception.APIException;
 import io.camunda.tasklist.webapp.rest.exception.Error;
 import io.camunda.tasklist.webapp.rest.exception.ForbiddenActionException;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
-import io.camunda.tasklist.webapp.rest.exception.NotFoundException;
+import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
 import io.camunda.tasklist.webapp.rest.exception.UnauthenticatedUserException;
 import io.swagger.v3.oas.annotations.Hidden;
 import java.util.UUID;
@@ -40,6 +41,13 @@ public abstract class ApiErrorController {
     return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .body(error);
+  }
+
+  @Hidden
+  @ResponseStatus(HttpStatus.NOT_FOUND)
+  @ExceptionHandler(NotFoundException.class)
+  public ResponseEntity<Error> handleNotFound(NotFoundException exception) {
+    return handleNotFound(new NotFoundApiException(exception.getMessage(), exception));
   }
 
   @Hidden
@@ -121,8 +129,8 @@ public abstract class ApiErrorController {
 
   @Hidden
   @ResponseStatus(HttpStatus.NOT_FOUND)
-  @ExceptionHandler(NotFoundException.class)
-  public ResponseEntity<Error> handleNotFound(NotFoundException exception) {
+  @ExceptionHandler(NotFoundApiException.class)
+  public ResponseEntity<Error> handleNotFound(NotFoundApiException exception) {
     logAPIException(exception);
     final Error error =
         new Error()

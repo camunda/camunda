@@ -13,10 +13,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import io.camunda.tasklist.entities.FormEntity;
+import io.camunda.tasklist.store.FormStore;
 import io.camunda.tasklist.webapp.CommonUtils;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.FormResponse;
-import io.camunda.tasklist.webapp.es.FormReader;
-import io.camunda.tasklist.webapp.graphql.entity.FormDTO;
 import io.camunda.tasklist.webapp.rest.exception.Error;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,7 +34,7 @@ class FormControllerTest {
 
   private MockMvc mockMvc;
 
-  @Mock private FormReader formReader;
+  @Mock private FormStore formStore;
 
   @InjectMocks private FormController instance;
 
@@ -48,14 +48,18 @@ class FormControllerTest {
     // Given
     final var formId = "userTaskForm_111";
     final var processDefinitionKey = "100001";
-    final var formDTO =
-        new FormDTO().setId(formId).setProcessDefinitionId(processDefinitionKey).setSchema("{}");
+    final var formEntity =
+        new FormEntity()
+            .setId(processDefinitionKey.concat("_").concat(formId))
+            .setBpmnId(formId)
+            .setProcessDefinitionId(processDefinitionKey)
+            .setSchema("{}");
     final var expectedFormResponse =
         new FormResponse()
             .setId(formId)
             .setProcessDefinitionKey(processDefinitionKey)
             .setSchema("{}");
-    when(formReader.getFormDTO(formId, processDefinitionKey)).thenReturn(formDTO);
+    when(formStore.getForm(formId, processDefinitionKey)).thenReturn(formEntity);
 
     // When
     final var responseAsString =
@@ -91,7 +95,7 @@ class FormControllerTest {
     final var errorResult = CommonUtils.OBJECT_MAPPER.readValue(errorResponseAsString, Error.class);
 
     // Then
-    verifyNoInteractions(formReader);
+    verifyNoInteractions(formStore);
     assertThat(errorResult)
         .satisfies(
             err -> {

@@ -10,7 +10,7 @@ import io.camunda.tasklist.exceptions.PersistenceException;
 
 public interface ImportBatchProcessor {
 
-  void performImport(ImportBatch importBatch) throws PersistenceException;
+  void performImport(ImportBatch importBatchElasticSearch) throws PersistenceException;
 
   String getZeebeVersion();
 }

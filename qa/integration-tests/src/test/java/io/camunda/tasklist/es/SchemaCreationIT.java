@@ -10,10 +10,10 @@ import static io.camunda.tasklist.util.CollectionUtil.filter;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.tasklist.management.ElsIndicesCheck;
-import io.camunda.tasklist.schema.ElasticsearchSchemaManager;
 import io.camunda.tasklist.schema.indices.IndexDescriptor;
 import io.camunda.tasklist.schema.indices.MigrationRepositoryIndex;
 import io.camunda.tasklist.schema.indices.TasklistWebSessionIndex;
+import io.camunda.tasklist.schema.manager.SchemaManager;
 import io.camunda.tasklist.schema.migration.ProcessorStep;
 import io.camunda.tasklist.util.ElasticsearchTestRule;
 import io.camunda.tasklist.util.TasklistIntegrationTest;
@@ -35,7 +35,7 @@ public class SchemaCreationIT extends TasklistIntegrationTest {
 
   @Rule public ElasticsearchTestRule elasticsearchTestRule = new ElasticsearchTestRule();
   @Autowired private RestHighLevelClient esClient;
-  @Autowired private ElasticsearchSchemaManager schemaManager;
+  @Autowired private SchemaManager schemaManager;
   @Autowired private List<IndexDescriptor> indexDescriptors;
   @Autowired private ElsIndicesCheck elsIndicesCheck;
 

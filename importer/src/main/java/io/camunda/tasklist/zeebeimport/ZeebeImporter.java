@@ -48,8 +48,8 @@ public class ZeebeImporter {
 
   public int performOneRoundOfImportFor(Collection<RecordsReader> readers) {
     int countRecords = 0;
-    for (RecordsReader recordsReader : readers) {
-      countRecords += importOneBatch(recordsReader, false);
+    for (RecordsReader recordsReaderElasticSearch : readers) {
+      countRecords += importOneBatch(recordsReaderElasticSearch, false);
     }
     return countRecords;
   }

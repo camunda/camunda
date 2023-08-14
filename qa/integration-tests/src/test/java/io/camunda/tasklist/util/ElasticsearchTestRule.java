@@ -13,8 +13,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.property.TasklistElasticsearchProperties;
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.schema.ElasticsearchSchemaManager;
-import io.camunda.tasklist.util.ElasticsearchChecks.TestCheck;
+import io.camunda.tasklist.schema.manager.SchemaManager;
 import io.camunda.tasklist.zeebe.ImportValueType;
 import io.camunda.tasklist.zeebeimport.RecordsReader;
 import io.camunda.tasklist.zeebeimport.RecordsReaderHolder;
@@ -40,7 +39,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 
-public class ElasticsearchTestRule extends TestWatcher {
+public class ElasticsearchTestRule extends TestWatcher implements TasklistTestRule {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchTestRule.class);
 
@@ -61,7 +60,7 @@ public class ElasticsearchTestRule extends TestWatcher {
   @Autowired protected ZeebeImporter zeebeImporter;
   @Autowired protected RecordsReaderHolder recordsReaderHolder;
   protected boolean failed = false;
-  @Autowired private ElasticsearchSchemaManager elasticsearchSchemaManager;
+  @Autowired private SchemaManager elasticsearchSchemaManager;
   @Autowired private ObjectMapper objectMapper;
   @Autowired private TestImportListener testImportListener;
   private String indexPrefix;
@@ -107,11 +106,11 @@ public class ElasticsearchTestRule extends TestWatcher {
   }
 
   public void refreshIndexesInElasticsearch() {
-    refreshZeebeESIndices();
-    refreshTasklistESIndices();
+    refreshZeebeIndices();
+    refreshTasklistIndices();
   }
 
-  public void refreshZeebeESIndices() {
+  public void refreshZeebeIndices() {
     try {
       final RefreshRequest refreshRequest =
           new RefreshRequest(tasklistProperties.getZeebeElasticsearch().getPrefix() + "*");
@@ -121,7 +120,7 @@ public class ElasticsearchTestRule extends TestWatcher {
     }
   }
 
-  public void refreshTasklistESIndices() {
+  public void refreshTasklistIndices() {
     try {
       final RefreshRequest refreshRequest =
           new RefreshRequest(tasklistProperties.getElasticsearch().getIndexPrefix() + "*");
@@ -186,7 +185,7 @@ public class ElasticsearchTestRule extends TestWatcher {
         imported = testImportListener.getImported();
         LOGGER.debug(" {} of {} records processed", imported, shouldImportCount);
       }
-      refreshTasklistESIndices();
+      refreshTasklistIndices();
       found = testCheck.test(arguments);
       if (!found) {
         sleepFor(500);

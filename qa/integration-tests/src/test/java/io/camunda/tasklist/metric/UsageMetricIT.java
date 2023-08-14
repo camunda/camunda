@@ -9,14 +9,11 @@ package io.camunda.tasklist.metric;
 import static io.camunda.tasklist.property.ElasticsearchProperties.DATE_FORMAT_DEFAULT;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.tasklist.entities.MetricEntity;
+import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.graphql.TaskIT;
-import io.camunda.tasklist.schema.indices.MetricIndex;
+import io.camunda.tasklist.store.TaskMetricsStore;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
-import io.camunda.tasklist.webapp.es.MetricReaderWriter;
-import io.camunda.tasklist.webapp.es.dao.UsageMetricDAO;
 import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
-import io.camunda.tasklist.webapp.graphql.mutation.TaskMutationResolver;
 import io.camunda.tasklist.webapp.management.dto.UsageMetricDTO;
 import io.camunda.tasklist.webapp.security.Permission;
 import java.io.IOException;
@@ -25,7 +22,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -42,10 +38,7 @@ public class UsageMetricIT extends TasklistZeebeIntegrationTest {
       DateTimeFormatter.ofPattern(DATE_FORMAT_DEFAULT);
 
   @Autowired private TestRestTemplate testRestTemplate;
-  @Autowired private UsageMetricDAO dao;
-  @Autowired private RestHighLevelClient esClient;
-  @Autowired private MetricIndex index;
-  @Autowired private TaskMutationResolver taskMutationResolver;
+  @Autowired private TaskMetricsStore taskMetricsStore;
   private final UserDTO joe = buildAllAccessUserWith("joe", "Joe", "Doe");
   private final UserDTO jane = buildAllAccessUserWith("jane", "Jane", "Doe");
   private final UserDTO demo = buildAllAccessUserWith("demo", "Demo", "User");
@@ -77,8 +70,7 @@ public class UsageMetricIT extends TasklistZeebeIntegrationTest {
   }
 
   @Test
-  public void shouldReturnExpectedDataForCorrectTimeRange()
-      throws IOException, InterruptedException {
+  public void shouldReturnExpectedDataForCorrectTimeRange() {
     final OffsetDateTime now = OffsetDateTime.now();
     insertMetricForAssignee("John Lennon", now);
     insertMetricForAssignee("Angela Merkel", now);
@@ -86,7 +78,7 @@ public class UsageMetricIT extends TasklistZeebeIntegrationTest {
     insertMetricForAssignee("Angela Merkel", now);
     insertMetricForAssignee("Angela Merkel", now);
 
-    elasticsearchTestRule.refreshTasklistESIndices();
+    tasklistTestRule.refreshTasklistIndices();
 
     final Map<String, String> parameters = new HashMap<>();
     parameters.put("startTime", now.minusSeconds(1L).format(FORMATTER));
@@ -110,7 +102,7 @@ public class UsageMetricIT extends TasklistZeebeIntegrationTest {
     insertMetricForAssignee("Angela Merkel", now);
     insertMetricForAssignee("Angela Merkel", now);
 
-    elasticsearchTestRule.refreshTasklistESIndices();
+    tasklistTestRule.refreshTasklistIndices();
 
     final Map<String, String> parameters = new HashMap<>();
     parameters.put("startTime", now.plusMinutes(5L).format(FORMATTER)); // out of range
@@ -127,12 +119,12 @@ public class UsageMetricIT extends TasklistZeebeIntegrationTest {
   @Test
   @Ignore(
       "Ignoring this test for now as it is quite slow - we can remove this mark to verify at any time")
-  public void shouldReturnOverTenThousandObjects() throws IOException, InterruptedException {
+  public void shouldReturnOverTenThousandObjects() {
     final OffsetDateTime now = OffsetDateTime.now();
     for (int i = 0; i <= 10_000; i++) {
       insertMetricForAssignee("Assignee " + i, now); // 10_001 different assignees
     }
-    elasticsearchTestRule.refreshTasklistESIndices();
+    tasklistTestRule.refreshTasklistIndices();
 
     final Map<String, String> parameters = new HashMap<>();
     parameters.put("startTime", now.minusSeconds(1L).format(FORMATTER));
@@ -183,7 +175,7 @@ public class UsageMetricIT extends TasklistZeebeIntegrationTest {
     tester.claimAndCompleteHumanTask(TaskIT.ELEMENT_ID);
 
     tester.waitFor(2000);
-    elasticsearchTestRule.refreshTasklistESIndices();
+    tasklistTestRule.refreshTasklistIndices();
     // when
     final Map<String, String> parameters = new HashMap<>();
     parameters.put("startTime", now.minusMinutes(5L).format(FORMATTER));
@@ -199,32 +191,7 @@ public class UsageMetricIT extends TasklistZeebeIntegrationTest {
   }
 
   private void insertMetricForAssignee(String assignee, OffsetDateTime eventTime) {
-    final MetricEntity entity = new MetricEntity();
-    entity.setEvent(MetricReaderWriter.EVENT_TASK_COMPLETED_BY_ASSIGNEE);
-    entity.setEventTime(eventTime);
-    entity.setValue(assignee);
-    dao.insert(entity);
-  }
-
-  /** This class is temporary and it is here exclusively for the initial setup */
-  private static class TemporaryMetricResponseDTO {
-    private Long startTime;
-    private Long endTime;
-
-    public Long getStartTime() {
-      return startTime;
-    }
-
-    public void setStartTime(Long startTime) {
-      this.startTime = startTime;
-    }
-
-    public Long getEndTime() {
-      return endTime;
-    }
-
-    public void setEndTime(Long endTime) {
-      this.endTime = endTime;
-    }
+    final var task = new TaskEntity().setAssignee(assignee).setCompletionTime(eventTime);
+    taskMetricsStore.registerTaskCompleteEvent(task);
   }
 }

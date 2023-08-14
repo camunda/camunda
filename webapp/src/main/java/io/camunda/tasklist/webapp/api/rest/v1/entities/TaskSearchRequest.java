@@ -9,8 +9,8 @@ package io.camunda.tasklist.webapp.api.rest.v1.entities;
 import static io.camunda.tasklist.webapp.graphql.entity.TaskQueryDTO.DEFAULT_PAGE_SIZE;
 
 import io.camunda.tasklist.entities.TaskState;
-import io.camunda.tasklist.webapp.graphql.entity.DateFilterDTO;
-import io.camunda.tasklist.webapp.graphql.entity.TaskOrderByDTO;
+import io.camunda.tasklist.queries.DateFilter;
+import io.camunda.tasklist.queries.TaskOrderBy;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.StringJoiner;
@@ -25,9 +25,9 @@ public class TaskSearchRequest {
   private String processDefinitionKey;
   private String processInstanceKey;
   private int pageSize = DEFAULT_PAGE_SIZE;
-  private DateFilterDTO followUpDate;
-  private DateFilterDTO dueDate;
-  private TaskOrderByDTO[] sort;
+  private DateFilter followUpDate;
+  private DateFilter dueDate;
+  private TaskOrderBy[] sort;
   private String[] searchAfter;
   private String[] searchAfterOrEqual;
   private String[] searchBefore;
@@ -114,29 +114,29 @@ public class TaskSearchRequest {
     return this;
   }
 
-  public DateFilterDTO getFollowUpDate() {
+  public DateFilter getFollowUpDate() {
     return followUpDate;
   }
 
-  public TaskSearchRequest setFollowUpDate(DateFilterDTO followUpDate) {
+  public TaskSearchRequest setFollowUpDate(DateFilter followUpDate) {
     this.followUpDate = followUpDate;
     return this;
   }
 
-  public DateFilterDTO getDueDate() {
+  public DateFilter getDueDate() {
     return dueDate;
   }
 
-  public TaskSearchRequest setDueDate(DateFilterDTO dueDate) {
+  public TaskSearchRequest setDueDate(DateFilter dueDate) {
     this.dueDate = dueDate;
     return this;
   }
 
-  public TaskOrderByDTO[] getSort() {
+  public TaskOrderBy[] getSort() {
     return sort;
   }
 
-  public TaskSearchRequest setSort(TaskOrderByDTO[] sort) {
+  public TaskSearchRequest setSort(TaskOrderBy[] sort) {
     this.sort = sort;
     return this;
   }

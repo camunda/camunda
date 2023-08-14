@@ -11,10 +11,10 @@ import static io.camunda.tasklist.webapp.graphql.TasklistGraphQLContextBuilder.V
 import graphql.kickstart.tools.GraphQLResolver;
 import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.SelectedField;
+import io.camunda.tasklist.store.VariableStore;
 import io.camunda.tasklist.webapp.graphql.entity.TaskDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableDTO;
 import io.camunda.tasklist.webapp.mapper.TaskMapper;
-import io.camunda.tasklist.webapp.service.VariableService.GetVariablesRequest;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -30,9 +30,12 @@ public class TaskResolver implements GraphQLResolver<TaskDTO> {
 
   public CompletableFuture<List<VariableDTO>> getVariables(
       TaskDTO task, DataFetchingEnvironment dfe) {
-    final DataLoader<GetVariablesRequest, List<VariableDTO>> dataloader =
+    final DataLoader<VariableStore.GetVariablesRequest, List<VariableDTO>> dataloader =
         dfe.getDataLoader(VARIABLE_DATA_LOADER);
-    return dataloader.load(GetVariablesRequest.createFrom(task, getFieldNames(dfe)));
+
+    return dataloader.load(
+        VariableStore.GetVariablesRequest.createFrom(
+            TaskDTO.toTaskEntity(task), getFieldNames(dfe)));
   }
 
   public String getProcessName(TaskDTO task) {

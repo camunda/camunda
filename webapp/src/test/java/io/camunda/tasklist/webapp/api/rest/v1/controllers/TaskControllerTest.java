@@ -92,7 +92,7 @@ class TaskControllerTest {
             .setSearchAfter(new String[] {"123", "456"});
     final var searchQuery = mock(TaskQueryDTO.class);
     when(taskMapper.toTaskQuery(searchRequest)).thenReturn(searchQuery);
-    when(taskService.getTasks(searchQuery, List.of())).thenReturn(List.of(providedTask));
+    when(taskService.getTasks(searchQuery)).thenReturn(List.of(providedTask));
     when(taskMapper.toTaskSearchResponse(providedTask)).thenReturn(taskResponse);
 
     // When
@@ -141,7 +141,7 @@ class TaskControllerTest {
     final var searchRequest = new TaskSearchRequest().setPageSize(50);
     final var searchQuery = new TaskQueryDTO().setPageSize(50);
     when(taskMapper.toTaskQuery(searchRequest)).thenReturn(searchQuery);
-    when(taskService.getTasks(searchQuery, List.of())).thenReturn(List.of(providedTask));
+    when(taskService.getTasks(searchQuery)).thenReturn(List.of(providedTask));
     when(taskMapper.toTaskSearchResponse(providedTask)).thenReturn(taskResponse);
 
     // When
@@ -181,7 +181,7 @@ class TaskControllerTest {
             .setAssignee("demo")
             .setCreationDate("2023-02-20T18:37:19.214+0000")
             .setTaskState(TaskState.CREATED);
-    when(taskService.getTask(taskId, List.of())).thenReturn(providedTask);
+    when(taskService.getTask(taskId)).thenReturn(providedTask);
     when(taskMapper.toTaskResponse(providedTask)).thenReturn(taskResponse);
 
     // When

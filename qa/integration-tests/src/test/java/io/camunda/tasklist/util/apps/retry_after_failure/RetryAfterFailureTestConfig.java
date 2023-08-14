@@ -9,7 +9,7 @@ package io.camunda.tasklist.util.apps.retry_after_failure;
 import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.zeebe.ImportValueType;
 import io.camunda.tasklist.zeebeimport.ImportBatch;
-import io.camunda.tasklist.zeebeimport.v830.processors.ElasticsearchBulkProcessor;
+import io.camunda.tasklist.zeebeimport.v820.processors.es.BulkProcessorElasticSearch;
 import java.util.HashSet;
 import java.util.Set;
 import org.springframework.context.annotation.Bean;
@@ -29,20 +29,20 @@ public class RetryAfterFailureTestConfig {
     return new CustomElasticsearchBulkProcessor();
   }
 
-  public static class CustomElasticsearchBulkProcessor extends ElasticsearchBulkProcessor {
+  public static class CustomElasticsearchBulkProcessor extends BulkProcessorElasticSearch {
 
     private Set<ImportValueType> alreadyFailedTypes = new HashSet<>();
 
     @Override
-    public void performImport(ImportBatch importBatch) throws PersistenceException {
-      final ImportValueType importValueType = importBatch.getImportValueType();
+    public void performImport(ImportBatch importBatchElasticSearch) throws PersistenceException {
+      final ImportValueType importValueType = importBatchElasticSearch.getImportValueType();
       if (!alreadyFailedTypes.contains(importValueType)) {
         alreadyFailedTypes.add(importValueType);
         throw new PersistenceException(
             String.format(
                 "Fake exception when saving data of type %s to Elasticsearch", importValueType));
       } else {
-        super.performImport(importBatch);
+        super.performImport(importBatchElasticSearch);
       }
     }
 

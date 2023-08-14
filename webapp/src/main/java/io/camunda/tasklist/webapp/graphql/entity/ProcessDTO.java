@@ -6,7 +6,6 @@
  */
 package io.camunda.tasklist.webapp.graphql.entity;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.entities.ProcessEntity;
 import io.camunda.tasklist.util.CollectionUtil;
 
@@ -26,12 +25,11 @@ public class ProcessDTO {
 
   private Integer version;
 
-  public static ProcessDTO createFrom(ProcessEntity processEntity, ObjectMapper objectMapper) {
-    return createFrom(processEntity, null, objectMapper);
+  public static ProcessDTO createFrom(ProcessEntity processEntity) {
+    return createFrom(processEntity, null);
   }
 
-  public static ProcessDTO createFrom(
-      ProcessEntity processEntity, Object[] sortValues, ObjectMapper objectMapper) {
+  public static ProcessDTO createFrom(ProcessEntity processEntity, Object[] sortValues) {
     final ProcessDTO processDTO =
         new ProcessDTO()
             .setId(processEntity.getId())

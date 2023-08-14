@@ -6,16 +6,16 @@
  */
 package io.camunda.tasklist.util;
 
-import static io.camunda.tasklist.util.ElasticsearchChecks.PROCESS_INSTANCE_IS_CANCELED_CHECK;
-import static io.camunda.tasklist.util.ElasticsearchChecks.PROCESS_INSTANCE_IS_COMPLETED_CHECK;
-import static io.camunda.tasklist.util.ElasticsearchChecks.PROCESS_IS_DEPLOYED_CHECK;
-import static io.camunda.tasklist.util.ElasticsearchChecks.TASKS_ARE_CREATED_BY_FLOW_NODE_BPMN_ID_CHECK;
-import static io.camunda.tasklist.util.ElasticsearchChecks.TASK_IS_ASSIGNED_CHECK;
-import static io.camunda.tasklist.util.ElasticsearchChecks.TASK_IS_CANCELED_BY_FLOW_NODE_BPMN_ID_CHECK;
-import static io.camunda.tasklist.util.ElasticsearchChecks.TASK_IS_COMPLETED_BY_FLOW_NODE_BPMN_ID_CHECK;
-import static io.camunda.tasklist.util.ElasticsearchChecks.TASK_IS_CREATED_BY_FLOW_NODE_BPMN_ID_CHECK;
-import static io.camunda.tasklist.util.ElasticsearchChecks.TASK_VARIABLE_EXISTS_CHECK;
-import static io.camunda.tasklist.util.ElasticsearchChecks.VARIABLES_EXIST_CHECK;
+import static io.camunda.tasklist.util.TestCheck.PROCESS_INSTANCE_IS_CANCELED_CHECK;
+import static io.camunda.tasklist.util.TestCheck.PROCESS_INSTANCE_IS_COMPLETED_CHECK;
+import static io.camunda.tasklist.util.TestCheck.PROCESS_IS_DEPLOYED_CHECK;
+import static io.camunda.tasklist.util.TestCheck.TASKS_ARE_CREATED_BY_FLOW_NODE_BPMN_ID_CHECK;
+import static io.camunda.tasklist.util.TestCheck.TASK_IS_ASSIGNED_CHECK;
+import static io.camunda.tasklist.util.TestCheck.TASK_IS_CANCELED_BY_FLOW_NODE_BPMN_ID_CHECK;
+import static io.camunda.tasklist.util.TestCheck.TASK_IS_COMPLETED_BY_FLOW_NODE_BPMN_ID_CHECK;
+import static io.camunda.tasklist.util.TestCheck.TASK_IS_CREATED_BY_FLOW_NODE_BPMN_ID_CHECK;
+import static io.camunda.tasklist.util.TestCheck.TASK_VARIABLE_EXISTS_CHECK;
+import static io.camunda.tasklist.util.TestCheck.VARIABLES_EXIST_CHECK;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
@@ -26,7 +26,6 @@ import com.graphql.spring.boot.test.GraphQLTestTemplate;
 import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.entities.TaskState;
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.util.ElasticsearchChecks.TestCheck;
 import io.camunda.tasklist.webapp.graphql.entity.TaskDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;

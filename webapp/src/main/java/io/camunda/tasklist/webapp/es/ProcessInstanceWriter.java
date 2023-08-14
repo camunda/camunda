@@ -11,14 +11,13 @@ import static io.camunda.tasklist.util.ElasticsearchUtil.QueryType.ALL;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
+import io.camunda.tasklist.enums.DeletionStatus;
 import io.camunda.tasklist.es.RetryElasticsearchClient;
-import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.schema.indices.ProcessInstanceDependant;
 import io.camunda.tasklist.schema.indices.ProcessInstanceIndex;
 import io.camunda.tasklist.schema.templates.TaskVariableTemplate;
+import io.camunda.tasklist.store.TaskStore;
 import io.camunda.tasklist.util.ElasticsearchUtil;
-import io.camunda.tasklist.webapp.es.enums.DeletionStatus;
-import java.io.IOException;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -28,7 +27,7 @@ public class ProcessInstanceWriter {
 
   @Autowired ProcessInstanceIndex processInstanceIndex;
 
-  @Autowired TaskReaderWriter taskReaderWriter;
+  @Autowired TaskStore taskStore;
 
   @Autowired List<ProcessInstanceDependant> processInstanceDependants;
 
@@ -68,13 +67,7 @@ public class ProcessInstanceWriter {
   }
 
   private List<String> getDependantTasksIdsFor(final String processInstanceId) {
-    final List<String> dependantTaskIds;
-    try {
-      dependantTaskIds = taskReaderWriter.getTaskIdsByProcessInstanceId(processInstanceId);
-    } catch (IOException e) {
-      throw new TasklistRuntimeException(e.getMessage(), e);
-    }
-    return dependantTaskIds;
+    return taskStore.getTaskIdsByProcessInstanceId(processInstanceId);
   }
 
   private boolean deleteVariablesFor(final List<String> taskIds) {

@@ -7,8 +7,8 @@
 package io.camunda.tasklist.webapp.api.rest.v1.entities;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import io.camunda.tasklist.webapp.graphql.entity.FormDTO;
-import io.camunda.tasklist.webapp.graphql.entity.ProcessDTO;
+import io.camunda.tasklist.entities.FormEntity;
+import io.camunda.tasklist.entities.ProcessEntity;
 import java.util.Objects;
 import java.util.StringJoiner;
 
@@ -85,21 +85,21 @@ public class FormResponse {
     return Objects.hash(id, processDefinitionKey, title, schema);
   }
 
-  public static FormResponse fromFormDTO(FormDTO form) {
+  public static FormResponse fromFormEntity(FormEntity form) {
     return new FormResponse()
-        .setId(form.getId())
+        .setId(form.getBpmnId())
         .setProcessDefinitionKey(form.getProcessDefinitionId())
         .setSchema(form.getSchema());
   }
 
-  public static FormResponse fromFormDTO(FormDTO form, ProcessDTO processDTO) {
+  public static FormResponse fromFormEntity(FormEntity form, ProcessEntity processEntity) {
     return new FormResponse()
-        .setId(form.getId())
+        .setId(form.getBpmnId())
         .setProcessDefinitionKey(form.getProcessDefinitionId())
         .setTitle(
-            processDTO.getName() != null
-                ? processDTO.getName()
-                : processDTO.getProcessDefinitionId())
+            processEntity.getName() != null
+                ? processEntity.getName()
+                : processEntity.getBpmnProcessId())
         .setSchema(form.getSchema());
   }
 }

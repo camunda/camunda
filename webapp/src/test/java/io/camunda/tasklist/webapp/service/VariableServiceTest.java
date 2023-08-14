@@ -10,11 +10,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.tuple;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.entities.DraftTaskVariableEntity;
@@ -23,18 +19,19 @@ import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.entities.TaskState;
 import io.camunda.tasklist.entities.TaskVariableEntity;
 import io.camunda.tasklist.entities.VariableEntity;
+import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.property.ImportProperties;
 import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.tasklist.store.DraftVariableStore;
+import io.camunda.tasklist.store.TaskStore;
+import io.camunda.tasklist.store.VariableStore;
 import io.camunda.tasklist.webapp.CommonUtils;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.VariableResponse;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.VariableSearchResponse;
-import io.camunda.tasklist.webapp.es.DraftVariablesReaderWriter;
-import io.camunda.tasklist.webapp.es.TaskReaderWriter;
 import io.camunda.tasklist.webapp.es.TaskValidator;
-import io.camunda.tasklist.webapp.es.VariableReaderWriter;
 import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
-import io.camunda.tasklist.webapp.rest.exception.NotFoundException;
+import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -45,19 +42,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.Spy;
+import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class VariableServiceTest {
-
-  @Mock private TaskReaderWriter taskReaderWriter;
-  @Mock private VariableReaderWriter variableReaderWriter;
-  @Mock private DraftVariablesReaderWriter draftVariablesReaderWriter;
+  @Mock private TaskStore taskStore;
+  @Mock private VariableStore variableStore;
+  @Mock private DraftVariableStore draftVariableStore;
   @Mock private TasklistProperties tasklistProperties;
   @Mock private TaskValidator taskValidator;
   @Captor private ArgumentCaptor<Collection<DraftTaskVariableEntity>> draftTaskVariableCaptor;
@@ -83,7 +75,7 @@ class VariableServiceTest {
                 .setValue("\"valueF_value_that_exceeds_variableSizeThreshold_limit\""));
     final TaskEntity task =
         new TaskEntity().setId(taskId).setFlowNodeInstanceId(flowNodeInstanceId);
-    when(taskReaderWriter.getTask(taskId)).thenReturn(task);
+    when(taskStore.getTask(taskId)).thenReturn(task);
     final ImportProperties importProperties = mock(ImportProperties.class);
     when(tasklistProperties.getImporter()).thenReturn(importProperties);
     final int variableSizeThreshold = 30;
@@ -99,8 +91,8 @@ class VariableServiceTest {
 
     // then
     verify(taskValidator).validateCanPersistDraftTaskVariables(task);
-    verify(draftVariablesReaderWriter).deleteAllByTaskId(taskId);
-    verify(draftVariablesReaderWriter).createOrUpdate(draftTaskVariableCaptor.capture());
+    verify(draftVariableStore).deleteAllByTaskId(taskId);
+    verify(draftVariableStore).createOrUpdate(draftTaskVariableCaptor.capture());
 
     final Collection<DraftTaskVariableEntity> variablesToPersist =
         draftTaskVariableCaptor.getValue();
@@ -126,8 +118,8 @@ class VariableServiceTest {
 
   private void mockReturnOriginalVariables(List<VariableEntity> originalVariables) {
     final FlowNodeInstanceEntity flowNodeInstance = mock(FlowNodeInstanceEntity.class);
-    when(variableReaderWriter.getFlowNodeInstances(any())).thenReturn(List.of(flowNodeInstance));
-    when(variableReaderWriter.getVariablesByFlowNodeInstanceIds(any(), any(), any()))
+    when(variableStore.getFlowNodeInstances(any())).thenReturn(List.of(flowNodeInstance));
+    when(variableStore.getVariablesByFlowNodeInstanceIds(any(), any(), any()))
         .thenReturn(originalVariables);
   }
 
@@ -153,13 +145,13 @@ class VariableServiceTest {
     final String taskId = "taskID_123";
     final List<VariableInputDTO> draftTaskVariables = List.of(variableInput);
     final TaskEntity task = mock(TaskEntity.class);
-    when(taskReaderWriter.getTask(taskId)).thenReturn(task);
+    when(taskStore.getTask(taskId)).thenReturn(task);
 
     assertThatThrownBy(() -> instance.persistDraftTaskVariables(taskId, draftTaskVariables))
         .isInstanceOf(InvalidRequestException.class)
         .hasMessageStartingWith(errorMessage);
 
-    verifyNoInteractions(variableReaderWriter, draftVariablesReaderWriter);
+    verifyNoInteractions(variableStore, draftVariableStore);
   }
 
   @Test
@@ -172,7 +164,7 @@ class VariableServiceTest {
             .setId(taskId)
             .setFlowNodeInstanceId(flowNodeInstanceId)
             .setState(TaskState.CREATED);
-    when(taskReaderWriter.getTask(taskId)).thenReturn(task);
+    when(taskStore.getTask(taskId)).thenReturn(task);
     final int variableSizeThreshold = 100;
     mockReturnOriginalVariables(
         List.of(
@@ -194,8 +186,7 @@ class VariableServiceTest {
             .setName("B_strVar")
             .setValue("\"strVarValue\"")
             .setFullValue("\"strVarValue\"");
-    when(draftVariablesReaderWriter.getVariablesByTaskIdAndVariableNames(
-            taskId, Collections.emptyList()))
+    when(draftVariableStore.getVariablesByTaskIdAndVariableNames(taskId, Collections.emptyList()))
         .thenReturn(List.of(numDraftVariable, strDraftVariable));
 
     // when
@@ -231,9 +222,9 @@ class VariableServiceTest {
   void getVariableResponseWhenOnlyOriginalVariableExists() {
     // given
     final String variableId = "id123-varA";
-    when(variableReaderWriter.getRuntimeVariable(variableId, Collections.emptySet()))
+    when(variableStore.getRuntimeVariable(variableId, Collections.emptySet()))
         .thenReturn(createVariableEntity("id123", "varA", "123", 100));
-    when(draftVariablesReaderWriter.getById(variableId)).thenReturn(Optional.empty());
+    when(draftVariableStore.getById(variableId)).thenReturn(Optional.empty());
 
     // when
     final var result = instance.getVariableResponse(variableId);
@@ -241,17 +232,17 @@ class VariableServiceTest {
     // then
     assertThat(result)
         .isEqualTo(new VariableResponse().setId(variableId).setName("varA").setValue("123"));
-    verify(draftVariablesReaderWriter).getById(variableId);
-    verify(variableReaderWriter, never()).getTaskVariable(any(), any());
+    verify(draftVariableStore).getById(variableId);
+    verify(variableStore, never()).getTaskVariable(any(), any());
   }
 
   @Test
   void getVariableResponseWhenOriginalVariableExistsWithDraftValue() {
     // given
     final String variableId = "id123-varB";
-    when(variableReaderWriter.getRuntimeVariable(variableId, Collections.emptySet()))
+    when(variableStore.getRuntimeVariable(variableId, Collections.emptySet()))
         .thenReturn(createVariableEntity("id123", "varB", "123", 100));
-    when(draftVariablesReaderWriter.getById(variableId))
+    when(draftVariableStore.getById(variableId))
         .thenReturn(
             Optional.of(
                 new DraftTaskVariableEntity()
@@ -271,17 +262,17 @@ class VariableServiceTest {
                 .setName("varB")
                 .setValue("123")
                 .setDraft(new VariableResponse.DraftVariableValue().setValue("557")));
-    verify(draftVariablesReaderWriter).getById(variableId);
-    verify(variableReaderWriter, never()).getTaskVariable(any(), any());
+    verify(draftVariableStore).getById(variableId);
+    verify(variableStore, never()).getTaskVariable(any(), any());
   }
 
   @Test
   void getVariableResponseWhenOnlyDraftValueExists() {
     // given
     final String variableId = "id456-strVal";
-    when(variableReaderWriter.getRuntimeVariable(variableId, Collections.emptySet()))
+    when(variableStore.getRuntimeVariable(variableId, Collections.emptySet()))
         .thenThrow(NotFoundException.class);
-    when(draftVariablesReaderWriter.getById(variableId))
+    when(draftVariableStore.getById(variableId))
         .thenReturn(
             Optional.of(
                 new DraftTaskVariableEntity()
@@ -304,18 +295,18 @@ class VariableServiceTest {
                 .setDraft(
                     new VariableResponse.DraftVariableValue()
                         .setValue("\"previewValue+fullValue\"")));
-    verify(draftVariablesReaderWriter).getById(variableId);
-    verify(variableReaderWriter, never()).getTaskVariable(any(), any());
+    verify(draftVariableStore).getById(variableId);
+    verify(variableStore, never()).getTaskVariable(any(), any());
   }
 
   @Test
   void getVariableResponseWhenOnlyTaskVariableExists() {
     // given
     final String variableId = "id789-arrayVar";
-    when(variableReaderWriter.getRuntimeVariable(variableId, Collections.emptySet()))
+    when(variableStore.getRuntimeVariable(variableId, Collections.emptySet()))
         .thenThrow(NotFoundException.class);
-    when(draftVariablesReaderWriter.getById(variableId)).thenReturn(Optional.empty());
-    when(variableReaderWriter.getTaskVariable(variableId, Collections.emptySet()))
+    when(draftVariableStore.getById(variableId)).thenReturn(Optional.empty());
+    when(variableStore.getTaskVariable(variableId, Collections.emptySet()))
         .thenReturn(
             new TaskVariableEntity()
                 .setId(variableId)
@@ -341,15 +332,15 @@ class VariableServiceTest {
   void getVariableResponseWhenNoOriginalDraftAndTaskVariableExistThenNotFoundExceptionExpected() {
     // given
     final String variableId = "idUnknown-var";
-    when(variableReaderWriter.getRuntimeVariable(variableId, Collections.emptySet()))
+    when(variableStore.getRuntimeVariable(variableId, Collections.emptySet()))
         .thenThrow(NotFoundException.class);
-    when(draftVariablesReaderWriter.getById(variableId)).thenReturn(Optional.empty());
-    when(variableReaderWriter.getTaskVariable(variableId, Collections.emptySet()))
+    when(draftVariableStore.getById(variableId)).thenReturn(Optional.empty());
+    when(variableStore.getTaskVariable(variableId, Collections.emptySet()))
         .thenThrow(NotFoundException.class);
 
     // when - then
     assertThatThrownBy(() -> instance.getVariableResponse(variableId))
-        .isInstanceOf(NotFoundException.class)
+        .isInstanceOf(NotFoundApiException.class)
         .hasMessage("Variable with id %s not found.", variableId);
   }
 
@@ -360,7 +351,7 @@ class VariableServiceTest {
     final String flowNodeInstanceId = "flowNodeInstanceId_456";
     final TaskEntity task =
         new TaskEntity().setId(taskId).setFlowNodeInstanceId(flowNodeInstanceId);
-    when(taskReaderWriter.getTask(taskId)).thenReturn(task);
+    when(taskStore.getTask(taskId)).thenReturn(task);
     final ImportProperties importProperties = mock(ImportProperties.class);
     when(tasklistProperties.getImporter()).thenReturn(importProperties);
     final int variableSizeThreshold = 30;
@@ -382,8 +373,8 @@ class VariableServiceTest {
         false);
 
     // then
-    verify(draftVariablesReaderWriter, never()).getVariablesByTaskIdAndVariableNames(any(), any());
-    verify(variableReaderWriter).persistTaskVariables(taskVariableCaptor.capture());
+    verify(draftVariableStore, never()).getVariablesByTaskIdAndVariableNames(any(), any());
+    verify(variableStore).persistTaskVariables(taskVariableCaptor.capture());
     final var variablesToPersist = taskVariableCaptor.getValue();
     assertThat(variablesToPersist)
         .extracting("name", "value", "fullValue")
@@ -400,7 +391,7 @@ class VariableServiceTest {
     final String flowNodeInstanceId = "flowNodeInstanceId_456";
     final TaskEntity task =
         new TaskEntity().setId(taskId).setFlowNodeInstanceId(flowNodeInstanceId);
-    when(taskReaderWriter.getTask(taskId)).thenReturn(task);
+    when(taskStore.getTask(taskId)).thenReturn(task);
     final ImportProperties importProperties = mock(ImportProperties.class);
     when(tasklistProperties.getImporter()).thenReturn(importProperties);
     final int variableSizeThreshold = 30;
@@ -413,8 +404,7 @@ class VariableServiceTest {
             createVariableEntity(
                 flowNodeInstanceId, "varB", "\"originalB\"", variableSizeThreshold)));
 
-    when(draftVariablesReaderWriter.getVariablesByTaskIdAndVariableNames(
-            taskId, Collections.emptyList()))
+    when(draftVariableStore.getVariablesByTaskIdAndVariableNames(taskId, Collections.emptyList()))
         .thenReturn(
             List.of(
                 new DraftTaskVariableEntity()
@@ -441,7 +431,7 @@ class VariableServiceTest {
         true);
 
     // then
-    verify(variableReaderWriter).persistTaskVariables(taskVariableCaptor.capture());
+    verify(variableStore).persistTaskVariables(taskVariableCaptor.capture());
     final var variablesToPersist = taskVariableCaptor.getValue();
     assertThat(variablesToPersist)
         .extracting("name", "value", "fullValue")

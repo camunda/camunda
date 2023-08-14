@@ -32,7 +32,9 @@
     <version.zeebe>8.3.0-alpha4</version.zeebe>
     <version.identity>8.3.0-alpha4</version.identity>
     <version.elasticsearch>7.17.10</version.elasticsearch>
-    <version.spring.boot>3.0.7</version.spring.boot>
+    <version.elasticsearch-client>8.7.1</version.elasticsearch-client>
+    <version.opensearch>2.4.0</version.opensearch>
+    <version.spring.boot>3.0.9</version.spring.boot>
     <version.log4j>2.19.0</version.log4j>
     <version.junit>4.13.2</version.junit>
     <version.jakarta.json>2.0.1</version.jakarta.json>
@@ -128,6 +130,33 @@
         <artifactId>elasticsearch-rest-high-level-client</artifactId>
         <version>${version.elasticsearch}</version>
       </dependency>
+
+      <dependency>
+        <groupId>co.elastic.clients</groupId>
+        <artifactId>elasticsearch-java</artifactId>
+        <version>${version.elasticsearch-client}</version>
+      </dependency>
+
+      <!-- Opensearch  -->
+      <dependency>
+        <groupId>org.apache.httpcomponents.core5</groupId>
+        <artifactId>httpcore5</artifactId>
+        <version>${version.apache.http5}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.httpcomponents.core5</groupId>
+        <artifactId>httpcore5-h2</artifactId>
+        <version>${version.apache.http5}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.opensearch.client</groupId>
+        <artifactId>opensearch-java</artifactId>
+        <version>${version.opensearch}</version>
+      </dependency>
+
+      <!-- End Opensearch  -->
 
       <!-- START have to define this to override wrong version coming from spring-boot-dependencies BOM -->
       <dependency>

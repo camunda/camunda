@@ -7,18 +7,26 @@
 package io.camunda.tasklist.webapp.graphql.query;
 
 import graphql.kickstart.tools.GraphQLQueryResolver;
-import io.camunda.tasklist.webapp.es.cache.ProcessReader;
+import io.camunda.tasklist.store.ProcessStore;
 import io.camunda.tasklist.webapp.graphql.entity.ProcessDTO;
+import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
 public class ProcessQueryResolver implements GraphQLQueryResolver {
 
-  @Autowired private ProcessReader processReader;
+  @Autowired private ProcessStore processStore;
+
+  @Autowired private IdentityAuthorizationService identityAuthorizationService;
 
   public List<ProcessDTO> getProcesses(String search) {
-    return processReader.getProcesses(search);
+    return processStore
+        .getProcesses(search, identityAuthorizationService.getProcessDefinitionsFromAuthorization())
+        .stream()
+        .map(ProcessDTO::createFrom)
+        .collect(Collectors.toList());
   }
 }

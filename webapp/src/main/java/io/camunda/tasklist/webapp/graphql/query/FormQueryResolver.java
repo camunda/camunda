@@ -7,7 +7,7 @@
 package io.camunda.tasklist.webapp.graphql.query;
 
 import graphql.kickstart.tools.GraphQLQueryResolver;
-import io.camunda.tasklist.webapp.es.FormReader;
+import io.camunda.tasklist.store.FormStore;
 import io.camunda.tasklist.webapp.graphql.entity.FormDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -15,9 +15,9 @@ import org.springframework.stereotype.Component;
 @Component
 public final class FormQueryResolver implements GraphQLQueryResolver {
 
-  @Autowired private FormReader formReader;
+  @Autowired private FormStore formStore;
 
   public FormDTO form(String id, String processDefinitionId) {
-    return formReader.getFormDTO(id, processDefinitionId);
+    return FormDTO.createFrom(formStore.getForm(id, processDefinitionId));
   }
 }

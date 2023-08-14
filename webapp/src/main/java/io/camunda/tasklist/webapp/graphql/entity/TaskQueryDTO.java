@@ -7,6 +7,9 @@
 package io.camunda.tasklist.webapp.graphql.entity;
 
 import io.camunda.tasklist.entities.TaskState;
+import io.camunda.tasklist.queries.DateFilter;
+import io.camunda.tasklist.queries.TaskOrderBy;
+import io.camunda.tasklist.queries.TaskQuery;
 import java.util.Arrays;
 import java.util.Objects;
 
@@ -27,9 +30,9 @@ public class TaskQueryDTO {
   private String[] searchAfterOrEqual;
   private String[] searchBefore;
   private String[] searchBeforeOrEqual;
-  private DateFilterDTO followUpDate;
-  private DateFilterDTO dueDate;
-  private TaskOrderByDTO[] sort;
+  private DateFilter followUpDate;
+  private DateFilter dueDate;
+  private TaskOrderBy[] sort;
 
   public TaskState getState() {
     return state;
@@ -148,43 +151,29 @@ public class TaskQueryDTO {
     return this;
   }
 
-  public TaskQueryDTO createCopy() {
-    return new TaskQueryDTO()
-        .setAssigned(this.assigned)
-        .setAssignee(this.assignee)
-        .setTaskDefinitionId(this.taskDefinitionId)
-        .setPageSize(this.pageSize)
-        .setSearchAfter(this.searchAfter)
-        .setSearchAfterOrEqual(this.searchAfterOrEqual)
-        .setSearchBefore(this.searchBefore)
-        .setSearchBeforeOrEqual(this.searchBeforeOrEqual)
-        .setState(this.state)
-        .setCandidateGroup(this.candidateGroup);
-  }
-
-  public DateFilterDTO getFollowUpDate() {
+  public DateFilter getFollowUpDate() {
     return followUpDate;
   }
 
-  public TaskQueryDTO setFollowUpDate(DateFilterDTO followUpDate) {
+  public TaskQueryDTO setFollowUpDate(DateFilter followUpDate) {
     this.followUpDate = followUpDate;
     return this;
   }
 
-  public DateFilterDTO getDueDate() {
+  public DateFilter getDueDate() {
     return dueDate;
   }
 
-  public TaskQueryDTO setDueDate(DateFilterDTO dueDate) {
+  public TaskQueryDTO setDueDate(DateFilter dueDate) {
     this.dueDate = dueDate;
     return this;
   }
 
-  public TaskOrderByDTO[] getSort() {
+  public TaskOrderBy[] getSort() {
     return sort;
   }
 
-  public TaskQueryDTO setSort(TaskOrderByDTO[] sort) {
+  public TaskQueryDTO setSort(TaskOrderBy[] sort) {
     this.sort = sort;
     return this;
   }
@@ -235,5 +224,26 @@ public class TaskQueryDTO {
     result = 31 * result + Arrays.hashCode(searchBefore);
     result = 31 * result + Arrays.hashCode(searchBeforeOrEqual);
     return result;
+  }
+
+  public TaskQuery toTaskQuery() {
+    return new TaskQuery()
+        .setState(this.state)
+        .setAssigned(this.assigned)
+        .setAssignee(this.assignee)
+        .setTaskDefinitionId(this.taskDefinitionId)
+        .setCandidateGroup(this.candidateGroup)
+        .setCandidateUser(this.candidateUser)
+        .setProcessDefinitionId(this.processDefinitionId)
+        .setProcessInstanceId(this.processInstanceId)
+        .setPageSize(this.pageSize)
+        .setSearchAfter(this.searchAfter)
+        .setSearchAfterOrEqual(this.searchAfterOrEqual)
+        .setSearchBefore(this.searchBefore)
+        .setSearchBefore(this.searchBefore)
+        .setSearchBeforeOrEqual(this.searchBeforeOrEqual)
+        .setFollowUpDate(this.followUpDate)
+        .setDueDate(this.dueDate)
+        .setSort(this.sort);
   }
 }

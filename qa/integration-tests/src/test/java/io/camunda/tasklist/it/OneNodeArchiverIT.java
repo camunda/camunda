@@ -12,7 +12,7 @@ import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.archiver.ArchiverUtil;
-import io.camunda.tasklist.archiver.TaskArchiverJob;
+import io.camunda.tasklist.archiver.es.TaskArchiverJobElasticSearch;
 import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.exceptions.ArchiverException;
 import io.camunda.tasklist.property.TasklistProperties;
@@ -52,7 +52,7 @@ import org.springframework.test.context.TestPropertySource;
     })
 public class OneNodeArchiverIT extends TasklistZeebeIntegrationTest {
 
-  private TaskArchiverJob archiverJob;
+  private TaskArchiverJobElasticSearch archiverJob;
 
   @Autowired private BeanFactory beanFactory;
 
@@ -78,7 +78,8 @@ public class OneNodeArchiverIT extends TasklistZeebeIntegrationTest {
     dateTimeFormatter =
         DateTimeFormatter.ofPattern(tasklistProperties.getArchiver().getRolloverDateFormat())
             .withZone(ZoneId.systemDefault());
-    archiverJob = beanFactory.getBean(TaskArchiverJob.class, partitionHolder.getPartitionIds());
+    archiverJob =
+        beanFactory.getBean(TaskArchiverJobElasticSearch.class, partitionHolder.getPartitionIds());
   }
 
   @Test
@@ -105,10 +106,10 @@ public class OneNodeArchiverIT extends TasklistZeebeIntegrationTest {
                 .getClusterNode()
                 .getNodeCount(); // we're archiving only part of the partitions
     assertThat(archiverJob.archiveNextBatch().join()).isGreaterThanOrEqualTo(expectedCount);
-    elasticsearchTestRule.refreshIndexesInElasticsearch();
+    tasklistTestRule.refreshIndexesInElasticsearch();
     assertThat(archiverJob.archiveNextBatch().join()).isLessThanOrEqualTo(expectedCount + 1);
 
-    elasticsearchTestRule.refreshIndexesInElasticsearch();
+    tasklistTestRule.refreshIndexesInElasticsearch();
 
     // then
     assertTasksInCorrectIndex(expectedCount, endDate);

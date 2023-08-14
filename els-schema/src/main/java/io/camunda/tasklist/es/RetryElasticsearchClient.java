@@ -92,8 +92,8 @@ public class RetryElasticsearchClient {
   public static final int DEFAULT_NUMBER_OF_RETRIES =
       30 * 10; // 30*10 with 2 seconds = 10 minutes retry loop
   public static final int DEFAULT_DELAY_INTERVAL_IN_SECONDS = 2;
-
   private static final Logger LOGGER = LoggerFactory.getLogger(RetryElasticsearchClient.class);
+
   @Autowired private RestHighLevelClient esClient;
 
   @Autowired private ElasticsearchTask elasticsearchTask;

@@ -6,7 +6,12 @@
  */
 package io.camunda.tasklist.webapp.service;
 
-import static io.camunda.tasklist.Metrics.*;
+import static io.camunda.tasklist.Metrics.COUNTER_NAME_CLAIMED_TASKS;
+import static io.camunda.tasklist.Metrics.COUNTER_NAME_COMPLETED_TASKS;
+import static io.camunda.tasklist.Metrics.TAG_KEY_BPMN_PROCESS_ID;
+import static io.camunda.tasklist.Metrics.TAG_KEY_FLOW_NODE_ID;
+import static io.camunda.tasklist.Metrics.TAG_KEY_ORGANIZATION_ID;
+import static io.camunda.tasklist.Metrics.TAG_KEY_USER_ID;
 import static io.camunda.tasklist.util.CollectionUtil.countNonNullObjects;
 import static java.util.Objects.requireNonNullElse;
 
@@ -15,9 +20,9 @@ import io.camunda.tasklist.Metrics;
 import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.webapp.es.TaskReaderWriter;
+import io.camunda.tasklist.store.TaskMetricsStore;
+import io.camunda.tasklist.store.TaskStore;
 import io.camunda.tasklist.webapp.es.TaskValidator;
-import io.camunda.tasklist.webapp.es.contract.UsageMetricsContract;
 import io.camunda.tasklist.webapp.graphql.entity.TaskDTO;
 import io.camunda.tasklist.webapp.graphql.entity.TaskQueryDTO;
 import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
@@ -46,16 +51,16 @@ public class TaskService {
 
   @Autowired private UserReader userReader;
   @Autowired private ZeebeClient zeebeClient;
-  @Autowired private TaskReaderWriter taskReaderWriter;
+  @Autowired private TaskStore taskStore;
   @Autowired private VariableService variableService;
   @Autowired private ObjectMapper objectMapper;
   @Autowired private Metrics metrics;
-  @Autowired private UsageMetricsContract metricsContract;
+  @Autowired private TaskMetricsStore taskMetricsStore;
   @Autowired private AssigneeMigrator assigneeMigrator;
   @Autowired private TaskValidator taskValidator;
   @Autowired private TasklistProperties tasklistProperties;
 
-  public List<TaskDTO> getTasks(TaskQueryDTO query, List<String> fieldNames) {
+  public List<TaskDTO> getTasks(TaskQueryDTO query) {
     if (countNonNullObjects(
             query.getSearchAfter(), query.getSearchAfterOrEqual(),
             query.getSearchBefore(), query.getSearchBeforeOrEqual())
@@ -63,11 +68,18 @@ public class TaskService {
       throw new InvalidRequestException(
           "Only one of [searchAfter, searchAfterOrEqual, searchBefore, searchBeforeOrEqual] must be present in request.");
     }
-    return taskReaderWriter.getTasks(query, fieldNames);
+
+    if (query.getPageSize() <= 0) {
+      throw new InvalidRequestException("Page size cannot should be a positive number");
+    }
+
+    return taskStore.getTasks(query.toTaskQuery()).stream()
+        .map(it -> TaskDTO.createFrom(it, objectMapper))
+        .toList();
   }
 
-  public TaskDTO getTask(String taskId, List<String> fieldNames) {
-    return taskReaderWriter.getTaskDTO(taskId, fieldNames);
+  public TaskDTO getTask(String taskId) {
+    return TaskDTO.createFrom(taskStore.getTask(taskId), objectMapper);
   }
 
   public TaskDTO assignTask(String taskId, String assignee, Boolean allowOverrideAssignment) {
@@ -87,11 +99,11 @@ public class TaskService {
           "User doesn't have the permission to assign another user to this task");
     }
 
-    final TaskEntity taskBefore = taskReaderWriter.getTask(taskId);
+    final TaskEntity taskBefore = taskStore.getTask(taskId);
     taskValidator.validateCanAssign(taskBefore, allowOverrideAssignment);
 
     final String taskAssignee = determineTaskAssignee(assignee);
-    final TaskEntity claimedTask = taskReaderWriter.persistTaskClaim(taskBefore, taskAssignee);
+    final TaskEntity claimedTask = taskStore.persistTaskClaim(taskBefore, taskAssignee);
 
     updateClaimedMetric(claimedTask);
     return TaskDTO.createFrom(claimedTask, objectMapper);
@@ -111,7 +123,7 @@ public class TaskService {
         .forEach(
             variable -> variablesMap.put(variable.getName(), this.extractTypedValue(variable)));
 
-    final TaskEntity task = taskReaderWriter.getTask(taskId);
+    final TaskEntity task = taskStore.getTask(taskId);
     taskValidator.validateCanComplete(task);
 
     // complete
@@ -121,7 +133,7 @@ public class TaskService {
     completeJobCommand.send().join();
 
     // persist completion and variables
-    final TaskEntity completedTaskEntity = taskReaderWriter.persistTaskCompletion(task);
+    final TaskEntity completedTaskEntity = taskStore.persistTaskCompletion(task);
     variableService.persistTaskVariables(taskId, variables, withDraftVariableValues);
     deleteDraftTaskVariablesSafely(taskId);
     updateCompletedMetric(completedTaskEntity);
@@ -149,10 +161,10 @@ public class TaskService {
   }
 
   public TaskDTO unassignTask(String taskId) {
-    final TaskEntity taskBefore = taskReaderWriter.getTask(taskId);
+    final TaskEntity taskBefore = taskStore.getTask(taskId);
     taskValidator.validateCanUnassign(taskBefore);
 
-    return TaskDTO.createFrom(taskReaderWriter.persistTaskUnclaim(taskBefore), objectMapper);
+    return TaskDTO.createFrom(taskStore.persistTaskUnclaim(taskBefore), objectMapper);
   }
 
   private UserDTO getCurrentUser() {
@@ -166,7 +178,7 @@ public class TaskService {
   private void updateCompletedMetric(final TaskEntity task) {
     metrics.recordCounts(COUNTER_NAME_COMPLETED_TASKS, 1, getTaskMetricLabels(task));
     assigneeMigrator.migrateUsageMetrics(getCurrentUser().getUserId());
-    metricsContract.registerTaskCompleteEvent(task);
+    taskMetricsStore.registerTaskCompleteEvent(task);
   }
 
   private String[] getTaskMetricLabels(final TaskEntity task) {

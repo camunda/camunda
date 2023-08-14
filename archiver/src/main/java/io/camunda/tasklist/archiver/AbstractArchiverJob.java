@@ -8,15 +8,11 @@ package io.camunda.tasklist.archiver;
 
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.BackoffIdleStrategy;
-import io.camunda.tasklist.util.ElasticsearchUtil;
 import jakarta.annotation.PreDestroy;
 import java.time.Instant;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,8 +36,6 @@ public abstract class AbstractArchiverJob implements Runnable {
   private List<Integer> partitionIds;
 
   @Autowired private TasklistProperties tasklistProperties;
-
-  @Autowired private RestHighLevelClient esClient;
 
   public AbstractArchiverJob(final List<Integer> partitionIds) {
     this.partitionIds = partitionIds;
@@ -97,10 +91,6 @@ public abstract class AbstractArchiverJob implements Runnable {
   @PreDestroy
   public void shutdown() {
     shutdown = true;
-  }
-
-  protected CompletableFuture<SearchResponse> sendSearchRequest(final SearchRequest searchRequest) {
-    return ElasticsearchUtil.searchAsync(searchRequest, archiverExecutor, esClient);
   }
 
   public static class ArchiveBatch {

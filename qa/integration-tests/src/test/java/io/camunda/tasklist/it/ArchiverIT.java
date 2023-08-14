@@ -6,12 +6,9 @@
  */
 package io.camunda.tasklist.it;
 
-import static io.camunda.tasklist.util.ElasticsearchChecks.PROCESS_INSTANCE_IS_CANCELED_CHECK;
-import static io.camunda.tasklist.util.ElasticsearchChecks.PROCESS_INSTANCE_IS_COMPLETED_CHECK;
+import static io.camunda.tasklist.util.TestCheck.PROCESS_INSTANCE_IS_CANCELED_CHECK;
+import static io.camunda.tasklist.util.TestCheck.PROCESS_INSTANCE_IS_COMPLETED_CHECK;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
-import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.archiver.ArchiverUtil;
@@ -21,11 +18,11 @@ import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.exceptions.ArchiverException;
 import io.camunda.tasklist.schema.templates.TaskTemplate;
 import io.camunda.tasklist.schema.templates.TaskVariableTemplate;
+import io.camunda.tasklist.store.TaskStore;
 import io.camunda.tasklist.util.CollectionUtil;
-import io.camunda.tasklist.util.ElasticsearchChecks.TestCheck;
-import io.camunda.tasklist.util.ElasticsearchHelper;
-import io.camunda.tasklist.util.ElasticsearchUtil;
+import io.camunda.tasklist.util.NoSqlHelper;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
+import io.camunda.tasklist.util.TestCheck;
 import io.camunda.tasklist.webapp.graphql.mutation.TaskMutationResolver;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -37,15 +34,9 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.index.query.IdsQueryBuilder;
-import org.elasticsearch.index.query.TermsQueryBuilder;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.BeanFactory;
@@ -58,8 +49,6 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
 
   @Autowired private ArchiverUtil archiverUtil;
 
-  @Autowired private RestHighLevelClient esClient;
-
   @Autowired private TaskTemplate taskTemplate;
 
   @Autowired private TaskVariableTemplate taskVariableTemplate;
@@ -68,7 +57,9 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
 
   @Autowired private TaskMutationResolver taskMutationResolver;
 
-  @Autowired private ElasticsearchHelper elasticsearchHelper;
+  @Autowired private TaskStore taskStore;
+
+  @Autowired private NoSqlHelper noSqlHelper;
 
   @Autowired
   @Qualifier(PROCESS_INSTANCE_IS_COMPLETED_CHECK)
@@ -129,14 +120,14 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
 
     // when
     assertThat(archiverJob.archiveNextBatch().join()).isEqualTo(count1);
-    elasticsearchTestRule.refreshIndexesInElasticsearch();
+    tasklistTestRule.refreshIndexesInElasticsearch();
     assertThat(archiverJob.archiveNextBatch().join()).isEqualTo(count2);
-    elasticsearchTestRule.refreshIndexesInElasticsearch();
+    tasklistTestRule.refreshIndexesInElasticsearch();
     assertThat(archiverJob.archiveNextBatch().join())
         .isEqualTo(
             0); // 3rd run should not move anything, as the rest of the tasks are not completed
 
-    elasticsearchTestRule.refreshIndexesInElasticsearch();
+    tasklistTestRule.refreshIndexesInElasticsearch();
 
     // then
     assertTasksInCorrectIndex(count1, ids1, endDate1);
@@ -179,11 +170,11 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
 
     // when
     assertThat(archiverJob.archiveNextBatch().join()).isEqualTo(count1);
-    elasticsearchTestRule.refreshIndexesInElasticsearch();
+    tasklistTestRule.refreshIndexesInElasticsearch();
     // 2rd run should not move anything, as the rest of the tasks are completed less then 1 hour ago
     assertThat(archiverJob.archiveNextBatch().join()).isEqualTo(0);
 
-    elasticsearchTestRule.refreshIndexesInElasticsearch();
+    tasklistTestRule.refreshIndexesInElasticsearch();
 
     // then
     assertTasksInCorrectIndex(count1, ids1, endDate1);
@@ -218,15 +209,15 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
         startAndCompleteInstances(processId, flowNodeBpmnId, count3, endDate2);
 
     resetZeebeTime();
-    elasticsearchTestRule.refreshIndexesInElasticsearch();
+    tasklistTestRule.refreshIndexesInElasticsearch();
 
     // when
     assertThat(processInstanceArchiverJob.archiveNextBatch().join()).isEqualTo(count1 + count2);
-    elasticsearchTestRule.refreshIndexesInElasticsearch();
+    tasklistTestRule.refreshIndexesInElasticsearch();
     // 2rd run should not move anything, as the rest of the tasks are completed less then 1 hour ago
     assertThat(processInstanceArchiverJob.archiveNextBatch().join()).isEqualTo(0);
 
-    elasticsearchTestRule.refreshIndexesInElasticsearch();
+    tasklistTestRule.refreshIndexesInElasticsearch();
 
     // then
     assertProcessInstancesAreDeleted(ids1);
@@ -235,11 +226,11 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
   }
 
   private void assertProcessInstancesExist(final List<String> ids) {
-    assertThat(elasticsearchHelper.getProcessInstances(ids)).hasSize(ids.size());
+    assertThat(noSqlHelper.getProcessInstances(ids)).hasSize(ids.size());
   }
 
   private void assertProcessInstancesAreDeleted(final List<String> ids) {
-    assertThat(elasticsearchHelper.getProcessInstances(ids)).isEmpty();
+    assertThat(noSqlHelper.getProcessInstances(ids)).isEmpty();
   }
 
   private void deployProcessWithOneFlowNode(String processId, String flowNodeBpmnId) {
@@ -270,21 +261,15 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
       destinationIndexName =
           archiverUtil.getDestinationIndexName(taskTemplate.getFullQualifiedName(), "");
     }
-    final IdsQueryBuilder idsQ = idsQuery().addIds(CollectionUtil.toSafeArrayOfStrings(ids));
 
-    final SearchRequest searchRequest =
-        new SearchRequest(destinationIndexName)
-            .source(new SearchSourceBuilder().query(constantScoreQuery(idsQ)).size(100));
+    final List<TaskEntity> tasksResponse =
+        noSqlHelper.getTasksFromIdAndIndex(
+            destinationIndexName, Arrays.stream(CollectionUtil.toSafeArrayOfStrings(ids)).toList());
 
-    final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
-
-    final List<TaskEntity> taskEntities =
-        ElasticsearchUtil.mapSearchHits(
-            response.getHits().getHits(), objectMapper, TaskEntity.class);
-    assertThat(taskEntities).hasSize(tasksCount);
-    assertThat(taskEntities).extracting(TaskTemplate.ID).containsExactlyInAnyOrderElementsOf(ids);
+    assertThat(tasksResponse).hasSize(tasksCount);
+    assertThat(tasksResponse).extracting(TaskTemplate.ID).containsExactlyInAnyOrderElementsOf(ids);
     if (endDate != null) {
-      assertThat(taskEntities)
+      assertThat(tasksResponse)
           .extracting(TaskTemplate.COMPLETION_TIME)
           .allMatch(ed -> ((OffsetDateTime) ed).toInstant().equals(endDate));
     }
@@ -300,12 +285,9 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
     } else {
       destinationIndexName = archiverUtil.getDestinationIndexName(mainIndexName, "");
     }
-    final TermsQueryBuilder q = termsQuery(idFieldName, CollectionUtil.toSafeArrayOfStrings(ids));
-    final SearchRequest request =
-        new SearchRequest(destinationIndexName)
-            .source(new SearchSourceBuilder().query(q).size(100));
+
     final List<String> idsFromEls =
-        ElasticsearchUtil.scrollFieldToList(request, idFieldName, esClient);
+        noSqlHelper.getIdsFromIndex(idFieldName, destinationIndexName, ids);
     assertThat(idsFromEls).as(mainIndexName).isSubsetOf(ids);
   }
 

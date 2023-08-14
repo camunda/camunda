@@ -10,36 +10,26 @@ import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toList;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.tasklist.entities.DraftTaskVariableEntity;
-import io.camunda.tasklist.entities.FlowNodeInstanceEntity;
-import io.camunda.tasklist.entities.TaskEntity;
-import io.camunda.tasklist.entities.TaskState;
-import io.camunda.tasklist.entities.TaskVariableEntity;
-import io.camunda.tasklist.entities.VariableEntity;
+import io.camunda.tasklist.entities.*;
+import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.tasklist.store.DraftVariableStore;
+import io.camunda.tasklist.store.TaskStore;
+import io.camunda.tasklist.store.VariableStore;
+import io.camunda.tasklist.store.VariableStore.FlowNodeTree;
+import io.camunda.tasklist.store.VariableStore.GetVariablesRequest;
+import io.camunda.tasklist.store.VariableStore.VariableMap;
 import io.camunda.tasklist.util.CollectionUtil;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.VariableResponse;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.VariableSearchResponse;
-import io.camunda.tasklist.webapp.es.DraftVariablesReaderWriter;
-import io.camunda.tasklist.webapp.es.TaskReaderWriter;
 import io.camunda.tasklist.webapp.es.TaskValidator;
-import io.camunda.tasklist.webapp.es.VariableReaderWriter;
-import io.camunda.tasklist.webapp.graphql.entity.TaskDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
-import io.camunda.tasklist.webapp.rest.exception.NotFoundException;
+import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import org.apache.commons.collections4.CollectionUtils;
@@ -55,20 +45,20 @@ public class VariableService {
   private static final Logger LOGGER = LoggerFactory.getLogger(VariableService.class);
   private static final String ABSENT_PARENT_ID = "-1";
 
-  @Autowired private TaskReaderWriter taskReaderWriter;
-  @Autowired private VariableReaderWriter variableReaderWriter;
-  @Autowired private DraftVariablesReaderWriter draftVariablesReaderWriter;
+  @Autowired private TaskStore taskStore;
+  @Autowired private VariableStore variableStore;
+  @Autowired private DraftVariableStore draftVariableStore;
   @Autowired private TasklistProperties tasklistProperties;
   @Autowired private TaskValidator taskValidator;
   @Autowired private ObjectMapper objectMapper;
 
   public void persistDraftTaskVariables(String taskId, List<VariableInputDTO> draftTaskVariables) {
-    final TaskEntity task = taskReaderWriter.getTask(taskId);
+    final TaskEntity task = taskStore.getTask(taskId);
     taskValidator.validateCanPersistDraftTaskVariables(task);
     validateVariableInputs(draftTaskVariables);
 
     // drop all current draft variables
-    final long deletedDraftVariablesCount = draftVariablesReaderWriter.deleteAllByTaskId(taskId);
+    final long deletedDraftVariablesCount = draftVariableStore.deleteAllByTaskId(taskId);
     LOGGER.debug(
         "'{}' draft task variables associated with task id '{}' were deleted",
         deletedDraftVariablesCount,
@@ -114,7 +104,7 @@ public class VariableService {
           }
         });
 
-    draftVariablesReaderWriter.createOrUpdate(toPersist.values());
+    draftVariableStore.createOrUpdate(toPersist.values());
   }
 
   private void validateVariableInputs(Collection<VariableInputDTO> variable) {
@@ -133,7 +123,7 @@ public class VariableService {
   public void persistTaskVariables(
       String taskId, List<VariableInputDTO> changedVariables, boolean withDraftVariableValues) {
     // take current runtime variables values and
-    final TaskEntity task = taskReaderWriter.getTask(taskId);
+    final TaskEntity task = taskStore.getTask(taskId);
     final List<VariableEntity> taskVariables =
         getRuntimeVariablesByRequest(GetVariablesRequest.createFrom(task));
 
@@ -145,7 +135,7 @@ public class VariableService {
 
     if (withDraftVariableValues) {
       // update/append with draft variables
-      draftVariablesReaderWriter
+      draftVariableStore
           .getVariablesByTaskIdAndVariableNames(taskId, Collections.emptyList())
           .forEach(
               draftTaskVariable ->
@@ -164,12 +154,12 @@ public class VariableService {
               var.getValue(),
               tasklistProperties.getImporter().getVariableSizeThreshold()));
     }
-    variableReaderWriter.persistTaskVariables(finalVariablesMap.values());
+    variableStore.persistTaskVariables(finalVariablesMap.values());
   }
 
   /** Deletes all draft variables associated with the task by {@code taskId}. */
   public void deleteDraftTaskVariables(String taskId) {
-    draftVariablesReaderWriter.deleteAllByTaskId(taskId);
+    draftVariableStore.deleteAllByTaskId(taskId);
   }
 
   private List<VariableEntity> getRuntimeVariablesByRequest(
@@ -296,8 +286,7 @@ public class VariableService {
       List<String> flowNodeInstanceIds, List<String> varNames, Set<String> fieldNames) {
     // get list of all variables
     final List<VariableEntity> variables =
-        variableReaderWriter.getVariablesByFlowNodeInstanceIds(
-            flowNodeInstanceIds, varNames, fieldNames);
+        variableStore.getVariablesByFlowNodeInstanceIds(flowNodeInstanceIds, varNames, fieldNames);
 
     return variables.stream()
         .collect(groupingBy(VariableEntity::getScopeFlowNodeId, getVariableMapCollector()));
@@ -325,7 +314,7 @@ public class VariableService {
         CollectionUtil.map(requests, GetVariablesRequest::getProcessInstanceId);
     // get all flow node instances for all process instance ids
     final List<FlowNodeInstanceEntity> flowNodeInstances =
-        variableReaderWriter.getFlowNodeInstances(processInstanceIds);
+        variableStore.getFlowNodeInstances(processInstanceIds);
 
     final Map<String, FlowNodeTree> flowNodeTrees = new HashMap<>();
     for (FlowNodeInstanceEntity flowNodeInstance : flowNodeInstances) {
@@ -345,10 +334,11 @@ public class VariableService {
 
   public List<VariableSearchResponse> getVariableSearchResponses(
       String taskId, List<String> variableNames) {
-    final TaskEntity task = taskReaderWriter.getTask(taskId);
+
+    final TaskEntity task = taskStore.getTask(taskId);
     final List<GetVariablesRequest> requests =
         Collections.singletonList(
-            GetVariablesRequest.createFrom(task)
+            VariableStore.GetVariablesRequest.createFrom(task)
                 .setVarNames(variableNames)
                 .setFieldNames(Collections.emptySet()));
 
@@ -360,7 +350,7 @@ public class VariableService {
             .forEach(
                 originalVar -> nameToOriginalVariables.put(originalVar.getName(), originalVar));
         final Map<String, DraftTaskVariableEntity> nameToDraftVariable = new HashMap<>();
-        draftVariablesReaderWriter
+        draftVariableStore
             .getVariablesByTaskIdAndVariableNames(taskId, variableNames)
             .forEach(draftVar -> nameToDraftVariable.put(draftVar.getName(), draftVar));
 
@@ -384,7 +374,7 @@ public class VariableService {
       }
       case COMPLETED -> {
         final Map<String, List<TaskVariableEntity>> variablesByTaskIds =
-            variableReaderWriter.getTaskVariablesPerTaskId(requests);
+            variableStore.getTaskVariablesPerTaskId(requests);
         if (variablesByTaskIds.size() > 0) {
           vars.addAll(
               variablesByTaskIds.values().iterator().next().stream()
@@ -400,7 +390,7 @@ public class VariableService {
 
   public List<VariableDTO> getVariables(
       String taskId, List<String> variableNames, final Set<String> fieldNames) {
-    final TaskEntity task = taskReaderWriter.getTask(taskId);
+    final TaskEntity task = taskStore.getTask(taskId);
     final List<GetVariablesRequest> requests =
         Collections.singletonList(
             GetVariablesRequest.createFrom(task)
@@ -413,7 +403,7 @@ public class VariableService {
           VariableDTO.createFrom(getRuntimeVariablesDTOPerTaskId(requests)));
       case COMPLETED -> {
         final Map<String, List<TaskVariableEntity>> variablesByTaskIds =
-            variableReaderWriter.getTaskVariablesPerTaskId(requests);
+            variableStore.getTaskVariablesPerTaskId(requests);
         if (variablesByTaskIds.size() > 0) {
           vars.addAll(
               variablesByTaskIds.values().iterator().next().stream()
@@ -445,8 +435,7 @@ public class VariableService {
           break;
         case COMPLETED:
           final Map<String, List<TaskVariableEntity>> varsForCompleted =
-              variableReaderWriter.getTaskVariablesPerTaskId(
-                  groupByStates.get(TaskState.COMPLETED));
+              variableStore.getTaskVariablesPerTaskId(groupByStates.get(TaskState.COMPLETED));
           vars.addAll(
               varsForCompleted.getOrDefault(req.getTaskId(), new ArrayList<>()).stream()
                   .map(VariableDTO::createFrom)
@@ -465,17 +454,17 @@ public class VariableService {
     try {
       // 1st search in runtime variables
       final VariableEntity runtimeVariable =
-          variableReaderWriter.getRuntimeVariable(variableId, fieldNames);
+          variableStore.getRuntimeVariable(variableId, fieldNames);
       return VariableDTO.createFrom(runtimeVariable);
     } catch (NotFoundException ex) {
       // then in task variables (for completed tasks)
       try {
         // 2nd search in runtime variables
         final TaskVariableEntity taskVariable =
-            variableReaderWriter.getTaskVariable(variableId, fieldNames);
+            variableStore.getTaskVariable(variableId, fieldNames);
         return VariableDTO.createFrom(taskVariable);
       } catch (NotFoundException ex2) {
-        throw new NotFoundException(String.format("Variable with id %s not found.", variableId));
+        throw new NotFoundApiException(String.format("Variable with id %s not found.", variableId));
       }
     }
   }
@@ -484,13 +473,13 @@ public class VariableService {
     try {
       // 1st search in runtime variables
       final VariableEntity runtimeVariable =
-          variableReaderWriter.getRuntimeVariable(variableId, Collections.emptySet());
+          variableStore.getRuntimeVariable(variableId, Collections.emptySet());
       final VariableResponse variableResponse = VariableResponse.createFrom(runtimeVariable);
-      draftVariablesReaderWriter.getById(variableId).ifPresent(variableResponse::addDraft);
+      draftVariableStore.getById(variableId).ifPresent(variableResponse::addDraft);
       return variableResponse;
     } catch (NotFoundException ex) {
       // 2nd then search in draft task variables
-      return draftVariablesReaderWriter
+      return draftVariableStore
           .getById(variableId)
           .map(VariableResponse::createFrom)
           .orElseGet(
@@ -498,126 +487,13 @@ public class VariableService {
                 try {
                   // 3rd search in task variables (for completed tasks)
                   final TaskVariableEntity taskVariable =
-                      variableReaderWriter.getTaskVariable(variableId, Collections.emptySet());
+                      variableStore.getTaskVariable(variableId, Collections.emptySet());
                   return VariableResponse.createFrom(taskVariable);
                 } catch (NotFoundException ex2) {
-                  throw new NotFoundException(
+                  throw new NotFoundApiException(
                       String.format("Variable with id %s not found.", variableId));
                 }
               });
-    }
-  }
-
-  static class FlowNodeTree extends HashMap<String, String> {
-
-    public String getParent(String currentFlowNodeInstanceId) {
-      return super.get(currentFlowNodeInstanceId);
-    }
-
-    public void setParent(String currentFlowNodeInstanceId, String parentFlowNodeInstanceId) {
-      super.put(currentFlowNodeInstanceId, parentFlowNodeInstanceId);
-    }
-
-    public Set<String> getFlowNodeInstanceIds() {
-      return super.keySet();
-    }
-  }
-
-  static class VariableMap extends HashMap<String, VariableEntity> {
-
-    public void putAll(final VariableMap m) {
-      for (Entry<String, VariableEntity> entry : m.entrySet()) {
-        // since we build variable map from bottom to top of the flow node tree, we don't overwrite
-        // the values from lower (inner) scopes with those from upper (outer) scopes
-        putIfAbsent(entry.getKey(), entry.getValue());
-      }
-    }
-
-    @Override
-    @Deprecated
-    public void putAll(final Map<? extends String, ? extends VariableEntity> m) {
-      super.putAll(m);
-    }
-  }
-
-  public static class GetVariablesRequest {
-
-    private String taskId;
-    private TaskState state;
-    private String flowNodeInstanceId;
-    private String processInstanceId;
-    private List<String> varNames;
-    private Set<String> fieldNames = new HashSet<>();
-
-    public static GetVariablesRequest createFrom(TaskDTO taskDTO, Set<String> fieldNames) {
-      return new GetVariablesRequest()
-          .setTaskId(taskDTO.getId())
-          .setFlowNodeInstanceId(taskDTO.getFlowNodeInstanceId())
-          .setState(taskDTO.getTaskState())
-          .setProcessInstanceId(taskDTO.getProcessInstanceId())
-          .setFieldNames(fieldNames);
-    }
-
-    public static GetVariablesRequest createFrom(TaskEntity taskEntity) {
-      return new GetVariablesRequest()
-          .setTaskId(taskEntity.getId())
-          .setFlowNodeInstanceId(taskEntity.getFlowNodeInstanceId())
-          .setState(taskEntity.getState())
-          .setProcessInstanceId(taskEntity.getProcessInstanceId());
-    }
-
-    public String getTaskId() {
-      return taskId;
-    }
-
-    public GetVariablesRequest setTaskId(final String taskId) {
-      this.taskId = taskId;
-      return this;
-    }
-
-    public TaskState getState() {
-      return state;
-    }
-
-    public GetVariablesRequest setState(final TaskState state) {
-      this.state = state;
-      return this;
-    }
-
-    public String getFlowNodeInstanceId() {
-      return flowNodeInstanceId;
-    }
-
-    public GetVariablesRequest setFlowNodeInstanceId(final String flowNodeInstanceId) {
-      this.flowNodeInstanceId = flowNodeInstanceId;
-      return this;
-    }
-
-    public String getProcessInstanceId() {
-      return processInstanceId;
-    }
-
-    public GetVariablesRequest setProcessInstanceId(final String processInstanceId) {
-      this.processInstanceId = processInstanceId;
-      return this;
-    }
-
-    public List<String> getVarNames() {
-      return varNames;
-    }
-
-    public GetVariablesRequest setVarNames(final List<String> varNames) {
-      this.varNames = varNames;
-      return this;
-    }
-
-    public Set<String> getFieldNames() {
-      return fieldNames;
-    }
-
-    public GetVariablesRequest setFieldNames(final Set<String> fieldNames) {
-      this.fieldNames = fieldNames;
-      return this;
     }
   }
 }

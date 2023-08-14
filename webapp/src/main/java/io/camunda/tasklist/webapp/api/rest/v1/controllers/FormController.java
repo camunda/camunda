@@ -6,8 +6,8 @@
  */
 package io.camunda.tasklist.webapp.api.rest.v1.controllers;
 
+import io.camunda.tasklist.store.FormStore;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.FormResponse;
-import io.camunda.tasklist.webapp.es.FormReader;
 import io.camunda.tasklist.webapp.rest.exception.Error;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.swagger.v3.oas.annotations.Operation;
@@ -28,7 +28,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping(value = TasklistURIs.FORMS_URL_V1, produces = MediaType.APPLICATION_JSON_VALUE)
 public class FormController extends ApiErrorController {
-  @Autowired private FormReader formReader;
+
+  @Autowired private FormStore formStore;
 
   @Operation(
       summary = "Get the form details by form id and processDefinitionKey.",
@@ -51,7 +52,7 @@ public class FormController extends ApiErrorController {
   @GetMapping("{formId}")
   public ResponseEntity<FormResponse> getForm(
       @PathVariable String formId, @RequestParam String processDefinitionKey) {
-    final var form = formReader.getFormDTO(formId, processDefinitionKey);
-    return ResponseEntity.ok(FormResponse.fromFormDTO(form));
+    final var form = formStore.getForm(formId, processDefinitionKey);
+    return ResponseEntity.ok(FormResponse.fromFormEntity(form));
   }
 }

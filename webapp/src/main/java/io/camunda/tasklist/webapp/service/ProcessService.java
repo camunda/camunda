@@ -12,7 +12,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.webapp.graphql.entity.ProcessInstanceDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
-import io.camunda.tasklist.webapp.rest.exception.NotFoundException;
+import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.command.ClientStatusException;
@@ -69,7 +69,7 @@ public class ProcessService {
       LOGGER.debug("Process instance created for process [{}]", processDefinitionKey);
     } catch (ClientStatusException ex) {
       if (Status.Code.NOT_FOUND.equals(ex.getStatusCode())) {
-        throw new NotFoundException(
+        throw new NotFoundApiException(
             String.format(
                 "No process definition found with processDefinitionKey: '%s'",
                 processDefinitionKey),

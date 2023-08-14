@@ -6,16 +6,11 @@
  */
 package io.camunda.tasklist.util;
 
-import static io.camunda.tasklist.util.ElasticsearchUtil.fromSearchHit;
-import static io.camunda.tasklist.util.ElasticsearchUtil.joinWithAnd;
-import static io.camunda.tasklist.util.ElasticsearchUtil.mapSearchHits;
-import static io.camunda.tasklist.util.ElasticsearchUtil.scroll;
-import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
-import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
+import static io.camunda.tasklist.util.ElasticsearchUtil.*;
+import static org.elasticsearch.index.query.QueryBuilders.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.entities.ProcessInstanceEntity;
 import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
@@ -23,7 +18,7 @@ import io.camunda.tasklist.schema.indices.ProcessInstanceIndex;
 import io.camunda.tasklist.schema.indices.VariableIndex;
 import io.camunda.tasklist.schema.templates.TaskTemplate;
 import io.camunda.tasklist.schema.templates.TaskVariableTemplate;
-import io.camunda.tasklist.webapp.rest.exception.NotFoundException;
+import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
 import java.io.IOException;
 import java.util.List;
 import org.elasticsearch.action.get.GetRequest;
@@ -33,17 +28,22 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.TermQueryBuilder;
+import org.elasticsearch.index.query.TermsQueryBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-public class ElasticsearchHelper {
+@Conditional(ElasticSearchCondition.class)
+public class ElasticsearchHelper implements NoSqlHelper {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchHelper.class);
+
+  private static final Integer QUERY_SIZE = 100;
 
   @Autowired private TaskTemplate taskTemplate;
 
@@ -64,7 +64,8 @@ public class ElasticsearchHelper {
       if (response.isExists()) {
         return fromSearchHit(response.getSourceAsString(), objectMapper, TaskEntity.class);
       } else {
-        throw new NotFoundException(String.format("Could not find  task for taskId [%s].", taskId));
+        throw new NotFoundApiException(
+            String.format("Could not find  task for taskId [%s].", taskId));
       }
     } catch (IOException e) {
       final String message =
@@ -82,7 +83,7 @@ public class ElasticsearchHelper {
         return fromSearchHit(
             response.getSourceAsString(), objectMapper, ProcessInstanceEntity.class);
       } else {
-        throw new NotFoundException(
+        throw new NotFoundApiException(
             String.format("Could not find task for processInstanceId [%s].", processInstanceId));
       }
     } catch (IOException e) {
@@ -128,7 +129,7 @@ public class ElasticsearchHelper {
       if (response.getHits().getTotalHits().value >= 1) {
         return mapSearchHits(response.getHits().getHits(), objectMapper, TaskEntity.class);
       } else {
-        throw new NotFoundException(
+        throw new NotFoundApiException(
             String.format(
                 "Could not find task for processInstanceId [%s] with flowNodeBpmnId [%s].",
                 processInstanceId, flowNodeBpmnId));
@@ -171,6 +172,34 @@ public class ElasticsearchHelper {
       final String message =
           String.format("Exception occurred, while obtaining variables: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
+    }
+  }
+
+  public List<String> getIdsFromIndex(
+      final String idFieldName, final String index, final List<String> ids) {
+    final TermsQueryBuilder q = termsQuery(idFieldName, CollectionUtil.toSafeArrayOfStrings(ids));
+    final SearchRequest request =
+        new SearchRequest(index).source(new SearchSourceBuilder().query(q).size(QUERY_SIZE));
+
+    try {
+      final List<String> idsFromEls =
+          ElasticsearchUtil.scrollFieldToList(request, idFieldName, esClient);
+      return idsFromEls;
+    } catch (IOException e) {
+      throw new TasklistRuntimeException(e);
+    }
+  }
+
+  public List<TaskEntity> getTasksFromIdAndIndex(final String index, final List<String> ids) {
+    final TermsQueryBuilder q =
+        termsQuery(TaskTemplate.ID, CollectionUtil.toSafeArrayOfStrings(ids));
+    final SearchRequest searchRequest =
+        new SearchRequest(index).source(new SearchSourceBuilder().query(q).size(QUERY_SIZE));
+    try {
+      final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      return mapSearchHits(response.getHits().getHits(), objectMapper, TaskEntity.class);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
     }
   }
 }

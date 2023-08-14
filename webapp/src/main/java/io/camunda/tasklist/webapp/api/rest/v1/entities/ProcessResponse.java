@@ -6,8 +6,7 @@
  */
 package io.camunda.tasklist.webapp.api.rest.v1.entities;
 
-import io.camunda.tasklist.webapp.es.cache.ProcessReader;
-import io.camunda.tasklist.webapp.graphql.entity.ProcessDTO;
+import io.camunda.tasklist.entities.ProcessEntity;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.StringJoiner;
@@ -109,13 +108,12 @@ public class ProcessResponse {
         .toString();
   }
 
-  public static ProcessResponse fromProcessDTO(ProcessDTO process, ProcessReader processReader) {
+  public static ProcessResponse fromProcessEntity(ProcessEntity process, String startEventFormId) {
     return new ProcessResponse()
         .setId(process.getId())
         .setName(process.getName())
-        .setBpmnProcessId(process.getProcessDefinitionId())
-        .setSortValues(process.getSortValues())
+        .setBpmnProcessId(process.getBpmnProcessId())
         .setVersion(process.getVersion())
-        .setStartEventFormId(processReader.getStartEventFormIdByBpmnProcess(process));
+        .setStartEventFormId(startEventFormId);
   }
 }

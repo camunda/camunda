@@ -10,7 +10,7 @@ import io.camunda.tasklist.exceptions.TasklistElasticsearchConnectionException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.webapp.rest.exception.APIException;
 import io.camunda.tasklist.webapp.rest.exception.Error;
-import io.camunda.tasklist.webapp.rest.exception.NotFoundException;
+import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
 import io.camunda.tasklist.webapp.security.TasklistProfileService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,8 +56,8 @@ public abstract class ManagementAPIErrorController {
   }
 
   @ResponseStatus(HttpStatus.NOT_FOUND)
-  @ExceptionHandler(NotFoundException.class)
-  public ResponseEntity<Error> handleNotFound(NotFoundException exception) {
+  @ExceptionHandler(NotFoundApiException.class)
+  public ResponseEntity<Error> handleNotFound(NotFoundApiException exception) {
     LOGGER.error(
         String.format("Instance: %s; %s", exception.getInstance(), exception.getMessage()));
     final Error error =

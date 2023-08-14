@@ -9,6 +9,7 @@ package io.camunda.tasklist.schema;
 import io.camunda.tasklist.exceptions.MigrationException;
 import io.camunda.tasklist.property.MigrationProperties;
 import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.tasklist.schema.manager.SchemaManager;
 import io.camunda.tasklist.schema.migration.Migrator;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
@@ -23,7 +24,7 @@ public class SchemaStartup {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SchemaStartup.class);
 
-  @Autowired private ElasticsearchSchemaManager schemaManager;
+  @Autowired private SchemaManager schemaManager;
 
   @Autowired private IndexSchemaValidator schemaValidator;
 
@@ -38,7 +39,15 @@ public class SchemaStartup {
     LOGGER.info("SchemaStartup started.");
     LOGGER.info("SchemaStartup: validate schema.");
     schemaValidator.validate();
-    if (tasklistProperties.getElasticsearch().isCreateSchema() && !schemaValidator.schemaExists()) {
+
+    Boolean isCreateSchema = false;
+    if (tasklistProperties.getDatabase().equals(TasklistProperties.ELASTIC_SEARCH)) {
+      isCreateSchema = tasklistProperties.getElasticsearch().isCreateSchema();
+    } else if (tasklistProperties.getDatabase().equals(TasklistProperties.OPEN_SEARCH)) {
+      isCreateSchema = tasklistProperties.getOpenSearch().isCreateSchema();
+    }
+
+    if (isCreateSchema && !schemaValidator.schemaExists()) {
       LOGGER.info("SchemaStartup: schema is empty or not complete. Indices will be created.");
       schemaManager.createSchema();
     } else {

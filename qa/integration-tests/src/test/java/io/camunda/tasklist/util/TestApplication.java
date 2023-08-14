@@ -8,6 +8,7 @@ package io.camunda.tasklist.util;
 
 import io.camunda.tasklist.Application;
 import io.camunda.tasklist.data.DataGenerator;
+import io.camunda.tasklist.data.es.DevDataGeneratorElasticSearch;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -35,6 +36,6 @@ public class TestApplication {
   @Bean(name = "dataGenerator")
   @ConditionalOnMissingBean
   public DataGenerator stubDataGenerator() {
-    return DataGenerator.DO_NOTHING;
+    return new DevDataGeneratorElasticSearch();
   }
 }

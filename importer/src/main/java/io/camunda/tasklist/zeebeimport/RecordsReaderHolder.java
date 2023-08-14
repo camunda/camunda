@@ -31,7 +31,7 @@ public class RecordsReaderHolder {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(RecordsReaderHolder.class);
 
-  private Set<RecordsReader> recordsReaders = null;
+  private Set<RecordsReader> recordsReader = null;
 
   @Autowired private BeanFactory beanFactory;
 
@@ -40,10 +40,10 @@ public class RecordsReaderHolder {
   @Autowired private TasklistProperties tasklistProperties;
 
   public Set<RecordsReader> getAllRecordsReaders() {
-    if (CollectionUtil.isNotEmpty(recordsReaders)) {
-      return recordsReaders;
+    if (CollectionUtil.isNotEmpty(recordsReader)) {
+      return recordsReader;
     }
-    recordsReaders = new HashSet<>();
+    recordsReader = new HashSet<>();
     final int queueSize = tasklistProperties.getImporter().getQueueSize();
     // create readers
     final List<Integer> partitionIds = partitionHolder.getPartitionIds();
@@ -54,19 +54,19 @@ public class RecordsReaderHolder {
         // we load deployments only from deployment partition
         if (!importValueType.equals(ImportValueType.PROCESS)
             || partitionId.equals(Protocol.DEPLOYMENT_PARTITION)) {
-          recordsReaders.add(
+          recordsReader.add(
               beanFactory.getBean(RecordsReader.class, partitionId, importValueType, queueSize));
         }
       }
     }
-    return recordsReaders;
+    return recordsReader;
   }
 
   public RecordsReader getRecordsReader(int partitionId, ImportValueType importValueType) {
-    for (RecordsReader recordsReader : recordsReaders) {
-      if (recordsReader.getPartitionId() == partitionId
-          && recordsReader.getImportValueType().equals(importValueType)) {
-        return recordsReader;
+    for (RecordsReader record : recordsReader) {
+      if (record.getPartitionId() == partitionId
+          && record.getImportValueType().equals(importValueType)) {
+        return record;
       }
     }
     return null;

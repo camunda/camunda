@@ -52,7 +52,20 @@ public abstract class TasklistZeebeIntegrationTest extends TasklistIntegrationTe
   @Autowired public BeanFactory beanFactory;
   @Rule public final TasklistZeebeRule zeebeRule;
   public ZeebeContainer zeebeContainer;
-  @Rule public ElasticsearchTestRule elasticsearchTestRule = new ElasticsearchTestRule();
+
+  public Boolean isElasticSearch =
+      System.getenv("camunda.tasklist.database") == null
+          || System.getenv("camunda.tasklist.database").equals(TasklistProperties.ELASTIC_SEARCH);
+
+  @Rule
+  public TasklistTestRule tasklistTestRule =
+      isElasticSearch ? new ElasticsearchTestRule() : new OpenSearchTestRule();
+
+  // @Rule public OpenSearchTestRule openSearchTestRule = new OpenSearchTestRule();
+
+  // @Rule public OpenSearchTestRule openSearchTestRule = new OpenSearchTestRule();
+
+  // @Rule public OpenSearchTestRule openSearchTestRule = new OpenSearchTestRule();
 
   @MockBean protected ZeebeClient mockedZeebeClient;
   // we don't want to create ZeebeClient, we will rather use the one from
@@ -86,7 +99,7 @@ public abstract class TasklistZeebeIntegrationTest extends TasklistIntegrationTe
     zeebeClient = getClient();
     workerName = TestUtil.createRandomString(10);
 
-    tester = beanFactory.getBean(TasklistTester.class, zeebeClient, elasticsearchTestRule);
+    tester = beanFactory.getBean(TasklistTester.class, zeebeClient, tasklistTestRule);
 
     processCache.clearCache();
     importPositionHolder.cancelScheduledImportPositionUpdateTask().join();

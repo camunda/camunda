@@ -7,8 +7,8 @@
 package io.camunda.tasklist.zeebeimport;
 
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.util.ElasticsearchChecks.TestCheck;
 import io.camunda.tasklist.util.TestApplication;
+import io.camunda.tasklist.util.TestCheck;
 import io.camunda.tasklist.util.apps.idempotency.ZeebeImportIdempotencyTestConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -35,8 +35,8 @@ public class ZeebeImportIdempotencyIT extends ZeebeImportIT {
 
   @Override
   protected void processAllRecordsAndWait(TestCheck waitTill, Object... arguments) {
-    elasticsearchTestRule.processAllRecordsAndWait(waitTill, arguments);
-    elasticsearchTestRule.processAllRecordsAndWait(waitTill, arguments);
+    tasklistTestRule.processAllRecordsAndWait(waitTill, arguments);
+    tasklistTestRule.processAllRecordsAndWait(waitTill, arguments);
     elasticsearchBulkProcessor.cancelAttempts();
   }
 }

@@ -8,6 +8,7 @@ package io.camunda.tasklist.webapp.es.cache;
 
 import io.camunda.tasklist.entities.ProcessEntity;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
+import io.camunda.tasklist.store.ProcessStore;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
@@ -23,7 +24,7 @@ public class ProcessCache {
   private static final Logger LOGGER = LoggerFactory.getLogger(ProcessCache.class);
   private static final int CACHE_MAX_SIZE = 100;
   private Map<String, ProcessCacheEntity> cache = new ConcurrentHashMap<>();
-  @Autowired private ProcessReader processReader;
+  @Autowired private ProcessStore processStore;
 
   private ProcessCacheEntity getProcessCacheEntity(String processId) {
     if (cache.get(processId) == null) {
@@ -56,7 +57,7 @@ public class ProcessCache {
 
   private Optional<ProcessEntity> readProcessByKey(String processId) {
     try {
-      return Optional.of(processReader.getProcess(processId));
+      return Optional.of(processStore.getProcess(processId));
     } catch (TasklistRuntimeException ex) {
       return Optional.empty();
     }

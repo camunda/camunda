@@ -8,7 +8,11 @@ package io.camunda.tasklist.data;
 
 public interface DataGenerator {
 
-  DataGenerator DO_NOTHING = () -> {};
-
   void createZeebeDataAsync();
+
+  public void createUser(String username, String firstname, String lastname);
+
+  public boolean shouldCreateData();
+
+  public void createDemoUsers();
 }

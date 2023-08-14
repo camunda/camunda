@@ -14,18 +14,18 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import io.camunda.tasklist.entities.FormEntity;
+import io.camunda.tasklist.entities.ProcessEntity;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
+import io.camunda.tasklist.store.FormStore;
+import io.camunda.tasklist.store.ProcessStore;
 import io.camunda.tasklist.webapp.CommonUtils;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.FormResponse;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.StartProcessRequest;
-import io.camunda.tasklist.webapp.es.FormReader;
-import io.camunda.tasklist.webapp.es.cache.ProcessReader;
-import io.camunda.tasklist.webapp.graphql.entity.FormDTO;
-import io.camunda.tasklist.webapp.graphql.entity.ProcessDTO;
 import io.camunda.tasklist.webapp.graphql.entity.ProcessInstanceDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
 import io.camunda.tasklist.webapp.rest.exception.Error;
-import io.camunda.tasklist.webapp.rest.exception.NotFoundException;
+import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.tasklist.webapp.service.ProcessService;
 import java.nio.charset.StandardCharsets;
@@ -51,11 +51,11 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 public class ProcessExternalControllerTest {
 
   private MockMvc mockMvc;
-  @Mock private ProcessReader processReader;
+  @Mock private ProcessStore processStore;
 
   @Mock private ProcessService processService;
 
-  @Mock private FormReader formReader;
+  @Mock private FormStore formStore;
 
   @InjectMocks private ProcessExternalController instance;
 
@@ -67,10 +67,10 @@ public class ProcessExternalControllerTest {
   @Test
   void getForm() throws Exception {
     final var bpmnProcessId = "hello";
-    final var providedProcessDTO =
-        new ProcessDTO()
+    final var processEntity =
+        new ProcessEntity()
             .setId("2251799813686367")
-            .setProcessDefinitionId("hello")
+            .setBpmnProcessId("hello")
             .setName("Process Name")
             .setVersion(1)
             .setFormKey("camunda-forms:bpmn:testForm")
@@ -83,14 +83,15 @@ public class ProcessExternalControllerTest {
             .setProcessDefinitionKey("2251799813686367")
             .setTitle("Process Name");
 
-    final var formDTO =
-        new FormDTO()
-            .setId("testForm")
+    final var formEntity =
+        new FormEntity()
+            .setId("2251799813686367_testForm")
+            .setBpmnId("testForm")
             .setProcessDefinitionId("2251799813686367")
             .setSchema("formSchema");
 
-    when(processReader.getProcessByBpmnProcessId(bpmnProcessId)).thenReturn(providedProcessDTO);
-    when(formReader.getFormDTO("testForm", providedProcessDTO.getId())).thenReturn(formDTO);
+    when(processStore.getProcessByBpmnProcessId(bpmnProcessId)).thenReturn(processEntity);
+    when(formStore.getForm("testForm", processEntity.getId())).thenReturn(formEntity);
 
     final var responseAsString =
         mockMvc
@@ -113,15 +114,15 @@ public class ProcessExternalControllerTest {
   @Test
   public void getFormWhenProcessCannotBeStarted() throws Exception {
     final var bpmnProcessId = "orderProcess";
-    final var providedProcessDTO =
-        new ProcessDTO()
+    final var processEntity =
+        new ProcessEntity()
             .setId("2251799813686367")
-            .setProcessDefinitionId("orderProcess")
+            .setBpmnProcessId("orderProcess")
             .setName("")
             .setVersion(1)
             .setStartedByForm(false);
 
-    when(processReader.getProcessByBpmnProcessId(bpmnProcessId)).thenReturn(providedProcessDTO);
+    when(processStore.getProcessByBpmnProcessId(bpmnProcessId)).thenReturn(processEntity);
 
     mockMvc
         .perform(
@@ -138,15 +139,8 @@ public class ProcessExternalControllerTest {
   @Test
   public void getFormWhenProcessDoesntExist() throws Exception {
     final var bpmnProcessId = "orderProcess";
-    final var providedProcessDTO =
-        new ProcessDTO()
-            .setId("2251799813686367")
-            .setProcessDefinitionId("orderProcess")
-            .setName("")
-            .setVersion(1)
-            .setStartedByForm(false);
 
-    when(processReader.getProcessByBpmnProcessId(bpmnProcessId))
+    when(processStore.getProcessByBpmnProcessId(bpmnProcessId))
         .thenThrow(new TasklistRuntimeException("Object not found"));
 
     mockMvc
@@ -161,11 +155,11 @@ public class ProcessExternalControllerTest {
         .getContentAsString();
   }
 
-  private static Stream<Arguments> startProcessByForm() throws Exception {
+  private static Stream<Arguments> startProcessByForm() {
     final String bpmnProcessId = "StartProcessByForm";
-    final ProcessDTO providedProcessDTO =
-        new ProcessDTO()
-            .setProcessDefinitionId(bpmnProcessId)
+    final ProcessEntity providedProcessEntity =
+        new ProcessEntity()
+            .setBpmnProcessId(bpmnProcessId)
             .setId("1")
             .setStartedByForm(true)
             .setName("StartFormProcess")
@@ -175,21 +169,21 @@ public class ProcessExternalControllerTest {
     final ProcessInstanceDTO processInstanceDTO = new ProcessInstanceDTO().setId(processInstanceId);
 
     return Stream.of(
-        Arguments.of(HttpStatus.OK, bpmnProcessId, providedProcessDTO, processInstanceDTO));
+        Arguments.of(HttpStatus.OK, bpmnProcessId, providedProcessEntity, processInstanceDTO));
   }
 
   private static Stream<Arguments> startProcessThatCannotBeStartedByForm() {
     final String bpmnProcessId = "StartProcessByForm";
-    final ProcessDTO processDTO =
-        new ProcessDTO()
-            .setProcessDefinitionId(bpmnProcessId)
+    final ProcessEntity processEntity =
+        new ProcessEntity()
+            .setBpmnProcessId(bpmnProcessId)
             .setId("1")
             .setStartedByForm(false)
             .setName("StartFormProcess")
             .setVersion(1)
             .setFormKey("camundaForm:bpmn:startForm");
 
-    return Stream.of(Arguments.of(HttpStatus.NOT_FOUND, bpmnProcessId, processDTO, null));
+    return Stream.of(Arguments.of(HttpStatus.NOT_FOUND, bpmnProcessId, processEntity, null));
   }
 
   private static Stream<Arguments> startProcessThatDoesNotExist() {
@@ -205,10 +199,10 @@ public class ProcessExternalControllerTest {
   public void startProcess(
       final HttpStatus expectedHttpStatus,
       final String bpmnProcessId,
-      final ProcessDTO providedProcessDTO,
+      final ProcessEntity processEntity,
       final ProcessInstanceDTO providedProcessInstanceDTO)
       throws Exception {
-    final Boolean isProcessThatDoesNotExist = providedProcessDTO == null;
+    final boolean isProcessThatDoesNotExist = processEntity == null;
 
     final List<VariableInputDTO> variables = new ArrayList<VariableInputDTO>();
     variables.add(new VariableInputDTO().setName("testVar").setValue("testValue"));
@@ -218,11 +212,11 @@ public class ProcessExternalControllerTest {
         new StartProcessRequest().setVariables(variables);
 
     if (isProcessThatDoesNotExist) {
-      when(processReader.getProcessByBpmnProcessId(bpmnProcessId))
-          .thenThrow(new NotFoundException("Could not find process with id."));
+      when(processStore.getProcessByBpmnProcessId(bpmnProcessId))
+          .thenThrow(new NotFoundApiException("Could not find process with id."));
     } else {
-      when(processReader.getProcessByBpmnProcessId(providedProcessDTO.getProcessDefinitionId()))
-          .thenReturn(providedProcessDTO);
+      when(processStore.getProcessByBpmnProcessId(processEntity.getBpmnProcessId()))
+          .thenReturn(processEntity);
     }
 
     if (providedProcessInstanceDTO != null) {

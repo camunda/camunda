@@ -6,6 +6,7 @@
  */
 package io.camunda.tasklist.webapp.api.rest.v1.entities;
 
+import io.camunda.tasklist.entities.ProcessEntity;
 import io.camunda.tasklist.webapp.graphql.entity.ProcessDTO;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import java.util.Objects;
@@ -50,6 +51,15 @@ public class ProcessPublicEndpointsResponse {
         .setEndpoint(
             String.format(
                 TasklistURIs.START_PUBLIC_PROCESS.concat("%s"), process.getProcessDefinitionId()));
+  }
+
+  public static ProcessPublicEndpointsResponse fromProcessEntity(ProcessEntity process) {
+    return new ProcessPublicEndpointsResponse()
+        .setBpmnProcessId(process.getBpmnProcessId())
+        .setProcessDefinitionKey(process.getId())
+        .setEndpoint(
+            String.format(
+                TasklistURIs.START_PUBLIC_PROCESS.concat("%s"), process.getBpmnProcessId()));
   }
 
   @Override

@@ -8,16 +8,16 @@ package io.camunda.tasklist.webapp.api.rest.v1.controllers.external;
 
 import static java.util.Objects.requireNonNullElse;
 
+import io.camunda.tasklist.entities.ProcessEntity;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
+import io.camunda.tasklist.store.FormStore;
+import io.camunda.tasklist.store.ProcessStore;
 import io.camunda.tasklist.webapp.api.rest.v1.controllers.ApiErrorController;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.FormResponse;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.StartProcessRequest;
-import io.camunda.tasklist.webapp.es.FormReader;
-import io.camunda.tasklist.webapp.es.cache.ProcessReader;
-import io.camunda.tasklist.webapp.graphql.entity.ProcessDTO;
 import io.camunda.tasklist.webapp.graphql.entity.ProcessInstanceDTO;
 import io.camunda.tasklist.webapp.rest.exception.Error;
-import io.camunda.tasklist.webapp.rest.exception.NotFoundException;
+import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.tasklist.webapp.service.ProcessService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -30,9 +30,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -46,11 +47,11 @@ import org.springframework.web.bind.annotation.RestController;
     produces = MediaType.APPLICATION_JSON_VALUE)
 public class ProcessExternalController extends ApiErrorController {
 
-  @Autowired private ProcessReader processReader;
+  @Autowired private ProcessStore processStore;
 
   @Autowired private ProcessService processService;
 
-  @Autowired private FormReader formReader;
+  @Autowired private FormStore formStore;
 
   @Operation(
       summary = "Get Form by Process BPMN id.",
@@ -72,17 +73,17 @@ public class ProcessExternalController extends ApiErrorController {
   @GetMapping("{bpmnProcessId}/form")
   public ResponseEntity<FormResponse> getFormFromProcess(@PathVariable String bpmnProcessId) {
     try {
-      final ProcessDTO process = processReader.getProcessByBpmnProcessId(bpmnProcessId);
+      final ProcessEntity process = processStore.getProcessByBpmnProcessId(bpmnProcessId);
       if (!process.isStartedByForm()) {
-        throw new NotFoundException(
+        throw new NotFoundApiException(
             String.format("The process with bpmnProcessId: '%s' is not found", bpmnProcessId));
       } else {
         final String formId = StringUtils.substringAfterLast(process.getFormKey(), ":");
-        final var form = formReader.getFormDTO(formId, process.getId());
-        return ResponseEntity.ok(FormResponse.fromFormDTO(form, process));
+        final var form = formStore.getForm(formId, process.getId());
+        return ResponseEntity.ok(FormResponse.fromFormEntity(form, process));
       }
     } catch (TasklistRuntimeException e) {
-      throw new NotFoundException("Not found");
+      throw new NotFoundApiException("Not found");
     }
   }
 
@@ -91,9 +92,9 @@ public class ProcessExternalController extends ApiErrorController {
       @PathVariable String bpmnProcessId,
       @RequestBody(required = false) StartProcessRequest startProcessRequest) {
 
-    final ProcessDTO process = processReader.getProcessByBpmnProcessId(bpmnProcessId);
+    final ProcessEntity process = processStore.getProcessByBpmnProcessId(bpmnProcessId);
     if (!process.isStartedByForm()) {
-      throw new NotFoundException(
+      throw new NotFoundApiException(
           String.format("The process with processDefinitionKey: '%s' is not found", bpmnProcessId));
     } else {
       final var variables =

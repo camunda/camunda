@@ -1,0 +1,249 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
+ * under one or more contributor license agreements. Licensed under a proprietary license.
+ * See the License.txt file for more information. You may not use this file
+ * except in compliance with the proprietary license.
+ */
+package io.camunda.tasklist.util;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
+import io.camunda.tasklist.entities.ProcessInstanceEntity;
+import io.camunda.tasklist.entities.TaskEntity;
+import io.camunda.tasklist.entities.TaskVariableEntity;
+import io.camunda.tasklist.entities.VariableEntity;
+import io.camunda.tasklist.exceptions.TasklistRuntimeException;
+import io.camunda.tasklist.schema.indices.ProcessInstanceIndex;
+import io.camunda.tasklist.schema.indices.VariableIndex;
+import io.camunda.tasklist.schema.templates.TaskTemplate;
+import io.camunda.tasklist.schema.templates.TaskVariableTemplate;
+import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
+import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch._types.FieldValue;
+import org.opensearch.client.opensearch._types.SortOrder;
+import org.opensearch.client.opensearch._types.query_dsl.Query;
+import org.opensearch.client.opensearch.core.GetResponse;
+import org.opensearch.client.opensearch.core.SearchRequest;
+import org.opensearch.client.opensearch.core.SearchResponse;
+import org.opensearch.client.opensearch.core.search.SourceConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Conditional;
+import org.springframework.stereotype.Component;
+
+@Component
+@Conditional(OpenSearchCondition.class)
+public class OpenSearchHelper implements NoSqlHelper {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(OpenSearchHelper.class);
+
+  @Autowired private TaskTemplate taskTemplate;
+
+  @Autowired private ProcessInstanceIndex processInstanceIndex;
+
+  @Autowired private TaskVariableTemplate taskVariableTemplate;
+
+  @Autowired private VariableIndex variableIndex;
+
+  @Autowired
+  @Qualifier("openSearchClient")
+  private OpenSearchClient osClient;
+
+  @Autowired private ObjectMapper objectMapper;
+
+  public TaskEntity getTask(String taskId) {
+    try {
+      final GetResponse<TaskEntity> response =
+          osClient.get(g -> g.index(taskTemplate.getAlias()).id(taskId), TaskEntity.class);
+      if (response.found()) {
+        return response.source();
+      } else {
+        throw new NotFoundApiException(
+            String.format("Could not find  task for taskId [%s].", taskId));
+      }
+    } catch (IOException e) {
+      final String message =
+          String.format("Exception occurred, while obtaining the task: %s", e.getMessage());
+      throw new TasklistRuntimeException(message, e);
+    }
+  }
+
+  public ProcessInstanceEntity getProcessInstance(String processInstanceId) {
+    try {
+      final GetResponse<ProcessInstanceEntity> response =
+          osClient.get(
+              g -> g.index(processInstanceIndex.getAlias()).id(processInstanceId),
+              ProcessInstanceEntity.class);
+      if (response.found()) {
+        return response.source();
+      } else {
+        throw new NotFoundApiException(
+            String.format("Could not find task for processInstanceId [%s].", processInstanceId));
+      }
+    } catch (IOException e) {
+      final String message =
+          String.format("Exception occurred, while obtaining the process: %s", e.getMessage());
+      throw new TasklistRuntimeException(message, e);
+    }
+  }
+
+  public List<ProcessInstanceEntity> getProcessInstances(List<String> processInstanceIds) {
+    try {
+      final SearchResponse<ProcessInstanceEntity> searchResponse =
+          osClient.search(
+              s ->
+                  s.source(
+                      new SourceConfig.Builder()
+                          .filter(filter -> filter.includes(processInstanceIds))
+                          .build()),
+              ProcessInstanceEntity.class);
+      return searchResponse.hits().hits().stream()
+          .map(m -> m.source())
+          .collect(Collectors.toList());
+    } catch (IOException e) {
+      final String message =
+          String.format(
+              "Exception occurred, while obtaining list of processes: %s", e.getMessage());
+      throw new TasklistRuntimeException(message, e);
+    }
+  }
+
+  public List<TaskEntity> getTask(String processInstanceId, String flowNodeBpmnId) {
+    final Query.Builder piId = new Query.Builder();
+    if (processInstanceId != null) {
+      piId.term(
+          t -> t.field(TaskTemplate.PROCESS_INSTANCE_ID).value(FieldValue.of(processInstanceId)));
+    }
+
+    final Query.Builder flowQ = new Query.Builder();
+    flowQ.term(t -> t.field(TaskTemplate.FLOW_NODE_BPMN_ID).value(FieldValue.of(flowNodeBpmnId)));
+
+    try {
+      final SearchResponse<TaskEntity> response =
+          osClient.search(
+              s ->
+                  s.index(List.of(taskTemplate.getAlias()))
+                      .query(OpenSearchUtil.joinWithAnd(piId, flowQ))
+                      .sort(
+                          sort ->
+                              sort.field(
+                                  field ->
+                                      field
+                                          .field(TaskTemplate.CREATION_TIME)
+                                          .order(SortOrder.Desc))),
+              TaskEntity.class);
+
+      if (response.hits().total().value() >= 1) {
+        return response.hits().hits().stream().map(m -> m.source()).collect(Collectors.toList());
+      } else {
+        throw new NotFoundApiException(
+            String.format(
+                "Could not find task for processInstanceId [%s] with flowNodeBpmnId [%s].",
+                processInstanceId, flowNodeBpmnId));
+      }
+    } catch (IOException e) {
+      final String message =
+          String.format("Exception occurred, while obtaining the process: %s", e.getMessage());
+      throw new TasklistRuntimeException(message, e);
+    }
+  }
+
+  public boolean checkVariableExists(final String taskId, final String varName) {
+    final Query.Builder taskIdQ = new Query.Builder();
+    taskIdQ.term(term -> term.field(TaskVariableTemplate.TASK_ID).value(FieldValue.of(taskId)));
+
+    final Query.Builder varNameQ = new Query.Builder();
+    varNameQ.term(term -> term.field(TaskVariableTemplate.NAME).value(FieldValue.of(varName)));
+
+    try {
+      final SearchResponse<TaskVariableEntity> response =
+          osClient.search(
+              s -> s.query(OpenSearchUtil.joinWithAnd(taskIdQ, varNameQ)),
+              TaskVariableEntity.class);
+      return response.hits().total().value() > 0;
+    } catch (IOException e) {
+      final String message =
+          String.format("Exception occurred, while obtaining all variables: %s", e.getMessage());
+      throw new TasklistRuntimeException(message, e);
+    }
+  }
+
+  public boolean checkVariablesExist(final String[] varNames) {
+    try {
+      final SearchResponse<VariableEntity> response =
+          osClient.search(
+              search ->
+                  search.query(
+                      q ->
+                          q.constantScore(
+                              cs ->
+                                  cs.filter(
+                                      filter ->
+                                          filter.terms(
+                                              terms ->
+                                                  terms
+                                                      .field(VariableIndex.NAME)
+                                                      .terms(
+                                                          tv ->
+                                                              tv.value(
+                                                                  Arrays.stream(varNames)
+                                                                      .map(m -> FieldValue.of(m))
+                                                                      .collect(
+                                                                          Collectors
+                                                                              .toList()))))))),
+              VariableEntity.class);
+      return response.hits().total().value() == varNames.length;
+    } catch (IOException e) {
+      final String message =
+          String.format("Exception occurred, while obtaining variables: %s", e.getMessage());
+      throw new TasklistRuntimeException(message, e);
+    }
+  }
+
+  public List<String> getIdsFromIndex(
+      final String idFieldName, final String index, final List<String> ids) {
+    final Query q =
+        new Query.Builder()
+            .terms(
+                terms ->
+                    terms
+                        .field(idFieldName)
+                        .terms(
+                            t ->
+                                t.value(
+                                    ids.stream()
+                                        .map(m -> FieldValue.of(m))
+                                        .collect(Collectors.toList()))))
+            .build();
+
+    final SearchRequest.Builder request =
+        new SearchRequest.Builder().index(List.of(index)).query(q).size(100);
+
+    try {
+      final List<String> idsFromEls =
+          OpenSearchUtil.scrollFieldToList(request, idFieldName, osClient);
+      return idsFromEls;
+    } catch (IOException e) {
+      throw new TasklistRuntimeException(e);
+    }
+  }
+
+  @Override
+  public List<TaskEntity> getTasksFromIdAndIndex(String index, List<String> ids) {
+    try {
+      final SearchResponse<TaskEntity> response =
+          osClient.search(
+              search -> search.index(index).query(q -> q.ids(idsQ -> idsQ.values(ids))),
+              TaskEntity.class);
+      return response.hits().hits().stream().map(m -> m.source()).collect(Collectors.toList());
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+}

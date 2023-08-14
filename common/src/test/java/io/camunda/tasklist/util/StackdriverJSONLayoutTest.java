@@ -15,31 +15,29 @@ import java.util.List;
 import java.util.Map;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.core.LoggerContext;
-import org.apache.logging.log4j.junit.LoggerContextRule;
+import org.apache.logging.log4j.junit.LoggerContextSource;
+import org.apache.logging.log4j.junit.Named;
 import org.apache.logging.log4j.test.appender.ListAppender;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * This test ensures that StackdriverLayout defined in zeebe-util library is working as expected. If
  * the test is failing, then probably smth was changed on Zeebe side and we need to make adjustments
  * accordingly, including /distro/config/log4j2.xml file and docs on logging.
  */
-public class StackdriverJSONLayoutTest {
+@LoggerContextSource("log4j2-test.xml")
+class StackdriverJSONLayoutTest {
 
-  public static final String STACKDRIVER_APPENDER_NAME = "Stackdriver";
-
-  @Rule public LoggerContextRule loggerRule = new LoggerContextRule("log4j2.xml");
-
-  private ObjectReader jsonReader = new ObjectMapper().reader();
+  private static final String STACKDRIVER_APPENDER_NAME = "Stackdriver";
+  private static final ObjectReader JSON_READER = new ObjectMapper().reader();
 
   @Test
-  public void testLayout() throws Exception {
+  void testLayout(LoggerContext ctx, @Named(STACKDRIVER_APPENDER_NAME) ListAppender app)
+      throws Exception {
+    // given
     // having Stackdriver appender activated
-    final LoggerContext ctx = loggerRule.getLoggerContext();
-    final ListAppender app = loggerRule.getListAppender(STACKDRIVER_APPENDER_NAME);
     ctx.getRootLogger().addAppender(app);
-    final Logger logger = loggerRule.getLogger();
+    final Logger logger = ctx.getLogger(StackdriverJSONLayoutTest.class.getName());
 
     // when
     logger.warn("Test message");
@@ -47,12 +45,14 @@ public class StackdriverJSONLayoutTest {
     // then
     final List<String> messages = app.getMessages();
     assertThat(messages).hasSize(1);
-    final Map<String, Object> logMap =
-        jsonReader.withValueToUpdate(new HashMap<String, String>()).readValue(messages.get(0));
-    assertThat(logMap.get("serviceContext")).isNotNull();
-    assertThat(((Map<String, String>) logMap.get("serviceContext")).get("service"))
-        .isEqualTo("customService");
-    assertThat(((Map<String, String>) logMap.get("serviceContext")).get("version"))
-        .isEqualTo("customVersion");
+
+    final Map<String, Map<String, String>> logMap =
+        JSON_READER.withValueToUpdate(new HashMap<String, String>()).readValue(messages.get(0));
+    assertThat(logMap)
+        .containsEntry(
+            "serviceContext",
+            Map.of(
+                "service", "customService",
+                "version", "customVersion"));
   }
 }

@@ -12,16 +12,17 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import org.assertj.core.api.Assertions;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-public class PartitionHolderTest {
+class PartitionHolderTest {
 
-  Optional<List<Integer>> zeebePartitionIds, elasticSearchPartitionIds;
-  int slept = 0;
+  private Optional<List<Integer>> zeebePartitionIds;
+  private Optional<List<Integer>> elasticSearchPartitionIds;
+  private int slept = 0;
 
   // Mock the involved components
-  PartitionHolder partitionHolder =
+  private final PartitionHolder partitionHolder =
       new PartitionHolder() {
         @Override
         protected List<Integer> extractCurrentNodePartitions(List<Integer> partitionIds) {
@@ -39,15 +40,15 @@ public class PartitionHolderTest {
         }
       };
 
-  @Before
-  public void setUp() {
+  @BeforeEach
+  void setUp() {
     slept = 0;
-    zeebePartitionIds = null;
-    elasticSearchPartitionIds = null;
+    zeebePartitionIds = Optional.empty();
+    elasticSearchPartitionIds = Optional.empty();
   }
 
   @Test
-  public void testGetEmptyPartitionIdsWhenNoComponentAvailable() {
+  void testGetEmptyPartitionIdsWhenNoComponentAvailable() {
     zeebePartitionIds = Optional.empty();
     elasticSearchPartitionIds = Optional.empty();
 
@@ -56,7 +57,7 @@ public class PartitionHolderTest {
   }
 
   @Test
-  public void testGetZeebeClientPartitionIds() {
+  void testGetZeebeClientPartitionIds() {
     zeebePartitionIds = Optional.of(new ArrayList<>(CollectionUtil.fromTo(5, 10)));
     elasticSearchPartitionIds = Optional.empty();
 
@@ -67,7 +68,7 @@ public class PartitionHolderTest {
   }
 
   @Test
-  public void testGetPartitionIds() {
+  void testGetPartitionIds() {
     zeebePartitionIds = Optional.of(new ArrayList<>(CollectionUtil.fromTo(1, 5)));
     elasticSearchPartitionIds = Optional.of(new ArrayList<>(CollectionUtil.fromTo(1, 5)));
 
@@ -76,7 +77,7 @@ public class PartitionHolderTest {
   }
 
   @Test
-  public void testGetPartitionIdsWithDifferentSets() {
+  void testGetPartitionIdsWithDifferentSets() {
     zeebePartitionIds = Optional.of(new ArrayList<>(CollectionUtil.fromTo(1, 7)));
     elasticSearchPartitionIds = Optional.of(new ArrayList<>(CollectionUtil.fromTo(1, 5)));
 

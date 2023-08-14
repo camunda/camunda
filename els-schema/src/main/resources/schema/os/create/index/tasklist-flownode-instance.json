@@ -1,0 +1,26 @@
+{
+  "dynamic": "strict",
+  "properties": {
+    "partitionId": {
+      "type": "integer"
+    },
+    "parentFlowNodeId": {
+      "type": "keyword"
+    },
+    "processInstanceId": {
+      "type": "keyword"
+    },
+    "id": {
+      "type": "keyword"
+    },
+    "position": {
+      "type": "long"
+    },
+    "type": {
+      "type": "keyword"
+    },
+    "key": {
+      "type": "long"
+    }
+  }
+}

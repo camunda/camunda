@@ -8,7 +8,7 @@ package io.camunda.tasklist.zeebeimport;
 
 public interface ImportListener {
 
-  void finished(ImportBatch importBatch);
+  void finished(ImportBatch importBatchElasticSearch);
 
-  void failed(ImportBatch importBatch);
+  void failed(ImportBatch importBatchElasticSearch);
 }

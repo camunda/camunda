@@ -23,13 +23,13 @@ public class TestImportListener implements ImportListener {
   }
 
   @Override
-  public void finished(ImportBatch importBatch) {
-    imported.addAndGet(importBatch.getRecordsCount());
+  public void finished(ImportBatch importBatchElasticSearch) {
+    imported.addAndGet(importBatchElasticSearch.getRecordsCount());
   }
 
   @Override
-  public void failed(ImportBatch importBatch) {
-    failed.addAndGet(importBatch.getRecordsCount());
+  public void failed(ImportBatch importBatchElasticSearch) {
+    failed.addAndGet(importBatchElasticSearch.getRecordsCount());
   }
 
   public int getImported() {

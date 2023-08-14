@@ -6,10 +6,10 @@
  */
 package io.camunda.tasklist.webapp.api.rest.v1.controllers.internal;
 
-import io.camunda.tasklist.data.DevDataGenerator;
-import io.camunda.tasklist.schema.ElasticsearchSchemaManager;
+import io.camunda.tasklist.data.DataGenerator;
+import io.camunda.tasklist.schema.manager.SchemaManager;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
-import io.camunda.tasklist.webapp.security.es.ElasticsearchUserDetailsService;
+import io.camunda.tasklist.webapp.security.se.SearchEngineUserDetailsService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -31,13 +31,13 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping(value = TasklistURIs.DEV_UTIL_URL_V1, produces = MediaType.APPLICATION_JSON_VALUE)
 public class DevUtilExternalController {
 
-  @Autowired private ElasticsearchSchemaManager schemaManager;
+  @Autowired private SchemaManager schemaManager;
 
   @Autowired private RestHighLevelClient esClient;
 
-  @Autowired private DevDataGenerator devDataGenerator;
+  @Autowired private DataGenerator devDataGenerator;
 
-  @Autowired private ElasticsearchUserDetailsService elasticsearchUserDetailsService;
+  @Autowired private SearchEngineUserDetailsService searchEngineUserDetailsService;
 
   @Operation(
       summary = "Get details about the current user.",
@@ -53,7 +53,7 @@ public class DevUtilExternalController {
     deleteRequest.indices("_all");
     esClient.indices().delete(deleteRequest, RequestOptions.DEFAULT);
     schemaManager.createSchema();
-    elasticsearchUserDetailsService.initializeUsers();
+    searchEngineUserDetailsService.initializeUsers();
     devDataGenerator.createDemoUsers();
     return ResponseEntity.ok().build();
   }

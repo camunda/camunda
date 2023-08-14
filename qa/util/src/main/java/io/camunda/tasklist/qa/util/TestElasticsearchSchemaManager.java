@@ -6,7 +6,7 @@
  */
 package io.camunda.tasklist.qa.util;
 
-import io.camunda.tasklist.schema.ElasticsearchSchemaManager;
+import io.camunda.tasklist.schema.manager.ElasticsearchSchemaManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;

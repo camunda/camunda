@@ -6,14 +6,14 @@
  */
 package io.camunda.tasklist.zeebeimport;
 
+import static io.camunda.tasklist.util.TestCheck.PROCESS_IS_DEPLOYED_CHECK;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import io.camunda.tasklist.util.ElasticsearchChecks.TestCheck;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
+import io.camunda.tasklist.util.TestCheck;
 import io.camunda.tasklist.util.ZeebeTestUtil;
 import io.camunda.tasklist.webapp.es.cache.ProcessCache;
 import org.junit.After;
@@ -27,7 +27,7 @@ public class ProcessCacheIT extends TasklistZeebeIntegrationTest {
   @SpyBean private ProcessCache processCache;
 
   @Autowired
-  @Qualifier("processIsDeployedCheck")
+  @Qualifier(PROCESS_IS_DEPLOYED_CHECK)
   private TestCheck processIsDeployedCheck;
 
   @After
@@ -48,8 +48,8 @@ public class ProcessCacheIT extends TasklistZeebeIntegrationTest {
     final String processId1 = ZeebeTestUtil.deployProcess(zeebeClient, "simple_process.bpmn");
     final String processId2 = ZeebeTestUtil.deployProcess(zeebeClient, "simple_process_2.bpmn");
 
-    elasticsearchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId1);
-    elasticsearchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId2);
+    tasklistTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId1);
+    tasklistTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId2);
 
     String demoProcessName = processCache.getProcessName(processId1);
     assertThat(demoProcessName).isNotNull();

@@ -24,7 +24,9 @@ public class TasklistProperties {
   public static final String PREFIX = "camunda.tasklist";
   public static final String ALPHA_RELEASES_SUFIX = "alpha";
   public static final long BATCH_OPERATION_MAX_SIZE_DEFAULT = 1_000_000L;
-
+  public static final String ELASTIC_SEARCH = "elasticsearch";
+  public static final String OPEN_SEARCH = "opensearch";
+  public static String database = ELASTIC_SEARCH;
   private static final String UNKNOWN_VERSION = "unknown-version";
 
   private boolean importerEnabled = true;
@@ -36,7 +38,6 @@ public class TasklistProperties {
   @Deprecated private boolean csrfPreventionEnabled = true;
 
   private boolean fixUsernames = true;
-
   private String userId = "demo";
   private String displayName = "demo";
   private String password = "demo";
@@ -64,7 +65,13 @@ public class TasklistProperties {
   private TasklistElasticsearchProperties elasticsearch = new TasklistElasticsearchProperties();
 
   @NestedConfigurationProperty
+  private TasklistOpenSearchProperties openSearch = new TasklistOpenSearchProperties();
+
+  @NestedConfigurationProperty
   private ZeebeElasticsearchProperties zeebeElasticsearch = new ZeebeElasticsearchProperties();
+
+  @NestedConfigurationProperty
+  private ZeebeOpenSearchProperties zeebeOpenSearch = new ZeebeOpenSearchProperties();
 
   @NestedConfigurationProperty private ZeebeProperties zeebe = new ZeebeProperties();
 
@@ -363,6 +370,33 @@ public class TasklistProperties {
 
   public TasklistProperties setReaderDisplayName(String readerDisplayName) {
     this.readerDisplayName = readerDisplayName;
+    return this;
+  }
+
+  public TasklistOpenSearchProperties getOpenSearch() {
+    return openSearch;
+  }
+
+  public TasklistProperties setOpenSearch(TasklistOpenSearchProperties openSearch) {
+    this.openSearch = openSearch;
+    return this;
+  }
+
+  public static String getDatabase() {
+    return database;
+  }
+
+  public TasklistProperties setDatabase(String database) {
+    this.database = database;
+    return this;
+  }
+
+  public ZeebeOpenSearchProperties getZeebeOpenSearch() {
+    return zeebeOpenSearch;
+  }
+
+  public TasklistProperties setZeebeOpenSearch(ZeebeOpenSearchProperties zeebeOpenSearch) {
+    this.zeebeOpenSearch = zeebeOpenSearch;
     return this;
   }
 }
