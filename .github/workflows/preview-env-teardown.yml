@@ -12,7 +12,7 @@ jobs:
     # check whether it's a branch delete stable || check whether it's unlabled || check whether the PR was closed / merged
     if: contains( github.event.ref, 'stable/' ) || github.event.label.name == 'deploy-preview' || (github.event.action == 'closed' && contains( github.event.pull_request.labels.*.name, 'deploy-preview'))
     name: teardown-${{ github.head_ref || github.event.ref }} # env is not yet available here
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     env:
       BRANCH_NAME: ${{ github.head_ref || github.event.ref }} # head_ref = branch on PR, event.ref stable/**
     steps:
