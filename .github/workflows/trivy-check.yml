@@ -22,8 +22,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        branch:
-          [
+        branch: [
             "master",
             # "maintenance/3.10",
             # "maintenance/3.9",
@@ -85,6 +84,29 @@ jobs:
             echo "IS_MAIN=${{ steps.define-values.outputs.is_main_branch }}"
             echo "REVISION=${{ steps.define-values.outputs.git_commit_hash }}"
           } >> "$GITHUB_ENV"
+
+      - name: Import secrets
+        id: secrets
+        uses: hashicorp/vault-action@cb841f2c86fb6d07cff94fda240828c1abc5ba43
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/optimize/ci/camunda-optimize REGISTRY_HUB_DOCKER_COM_USR;
+            secret/data/products/optimize/ci/camunda-optimize REGISTRY_HUB_DOCKER_COM_PSW;
+
+      - name: Login to Harbor registry
+        uses: ./.github/actions/login-registry
+        with:
+          secrets: ${{ toJSON(secrets) }}
+
+      - name: Login to Harbor docker registery
+        uses: docker/login-action@v2
+        with:
+          username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
+          password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
 
       - name: try to reuse existing build step
         run: ./.github/scripts/build-docker-images.sh
