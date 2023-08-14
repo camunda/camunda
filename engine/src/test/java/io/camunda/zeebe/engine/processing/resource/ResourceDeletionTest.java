@@ -327,6 +327,60 @@ public class ResourceDeletionTest {
     verifyNoTimersAreCancelled();
   }
 
+  @Test
+  public void shouldReactivateTimerOfPreviousVersion() {
+    // given
+    final var processId = helper.getBpmnProcessId();
+    final var versionOneProcessDefinitionKey = deployProcessWithTimerStartEvent(processId);
+    final var versionTwoProcessDefinitionKey = deployProcessWithTimerStartEvent(processId);
+
+    // when
+    engine.resourceDeletion().withResourceKey(versionTwoProcessDefinitionKey).delete();
+
+    // then
+    verifyTimerIsCancelled(versionTwoProcessDefinitionKey);
+    // The timer is created once on the first deployment, and a second time after the deletion
+    verifyTimerIsCreated(versionOneProcessDefinitionKey, 2);
+    verifyProcessIdWithVersionIsDeleted(processId, 2);
+    verifyResourceIsDeleted(versionTwoProcessDefinitionKey);
+  }
+
+  @Test
+  public void shouldReactivateAllTimersOfPreviousVersion() {
+
+    // given
+    final var processId = helper.getBpmnProcessId();
+    final var versionOneProcessDefinitionKey =
+        engine
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent("startEvent1")
+                    .timerWithDuration(Duration.ofDays(1))
+                    .endEvent("endEvent")
+                    .moveToProcess(processId)
+                    .startEvent("startEvent2")
+                    .timerWithDuration(Duration.ofDays(1))
+                    .connectTo("endEvent")
+                    .done())
+            .deploy()
+            .getValue()
+            .getProcessesMetadata()
+            .get(0)
+            .getProcessDefinitionKey();
+    final var versionTwoProcessDefinitionKey = deployProcessWithTimerStartEvent(processId);
+
+    // when
+    engine.resourceDeletion().withResourceKey(versionTwoProcessDefinitionKey).delete();
+
+    // then
+    verifyTimerIsCancelled(versionTwoProcessDefinitionKey);
+    // The timer is created twice on the first deployment, and a two more times after the deletion
+    verifyTimerIsCreated(versionOneProcessDefinitionKey, 4);
+    verifyProcessIdWithVersionIsDeleted(processId, 2);
+    verifyResourceIsDeleted(versionTwoProcessDefinitionKey);
+  }
+
   private long deployDrg(final String drgResource) {
     return engine
         .deployment()
@@ -530,12 +584,13 @@ public class ResourceDeletionTest {
     verifyTimersAreCancelled(processDefinitionKey, 1);
   }
 
-  private void verifyTimersAreCancelled(final long processDefinitionKey, final long times) {
+  private void verifyTimersAreCancelled(final long processDefinitionKey, final int times) {
     assertThat(
             RecordingExporter.timerRecords(TimerIntent.CANCELED)
                 .withProcessDefinitionKey(processDefinitionKey)
                 .limit(times))
         .describedAs("Timer(s) should be cancelled")
+        .hasSize(times)
         .extracting(
             t -> t.getValue().getProcessDefinitionKey(),
             t -> t.getValue().getProcessInstanceKey(),
@@ -551,5 +606,19 @@ public class ResourceDeletionTest {
                 .withIntent(TimerIntent.CANCELED)
                 .exists())
         .isFalse();
+  }
+
+  private void verifyTimerIsCreated(final long processDefinitionKey, final int times) {
+    assertThat(
+            RecordingExporter.timerRecords(TimerIntent.CREATED)
+                .withProcessDefinitionKey(processDefinitionKey)
+                .limit(times))
+        .describedAs("%d timers should be created".formatted(times))
+        .hasSize(times)
+        .extracting(
+            t -> t.getValue().getProcessDefinitionKey(),
+            t -> t.getValue().getProcessInstanceKey(),
+            t -> t.getValue().getElementInstanceKey())
+        .containsOnly(tuple(processDefinitionKey, NO_ELEMENT_INSTANCE, NO_ELEMENT_INSTANCE));
   }
 }
