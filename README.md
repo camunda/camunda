@@ -36,7 +36,7 @@ And then start the spring-boot application under webapp folder in your preferred
 
 ### Running E2E tests
 
-We use Testcafe for E2E tests, which are executed on every push to any branch via Github Actions.
+We use Playwright for E2E tests, which are executed on every push to any branch via Github Actions.
 
 To run these tests locally, follow the steps:
 
