@@ -42,6 +42,7 @@ const Header: React.FC<Props> = ({
               size="sm"
               onClick={button.onClick}
               title={button.title}
+              aria-label={button.title}
             >
               {button.label}
             </Button>

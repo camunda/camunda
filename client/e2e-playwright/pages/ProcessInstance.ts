@@ -13,15 +13,25 @@ export class ProcessInstance {
   readonly instanceHeader: Locator;
   readonly instanceHistory: Locator;
   readonly diagram: Locator;
+  readonly popover: Locator;
+  readonly variablePanelEmptyText: Locator;
 
   constructor(page: Page) {
     this.page = page;
     this.instanceHeader = page.getByTestId('instance-header');
     this.instanceHistory = page.getByTestId('instance-history');
     this.diagram = page.getByTestId('diagram');
+    this.popover = page.getByTestId('popover');
+    this.variablePanelEmptyText = page.getByText(
+      /to view the variables, select a single flow node instance in the instance history./i,
+    );
   }
 
   async navigateToProcessInstance(id: string) {
     await this.page.goto(Paths.processInstance(id));
+  }
+
+  async selectFlowNode(flowNodeName: string) {
+    await this.diagram.getByText(flowNodeName).click();
   }
 }

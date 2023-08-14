@@ -11,7 +11,7 @@ import {
   completeTask,
 } from '../setup-utils';
 
-export async function setup() {
+const setup = async () => {
   await deployProcess(['multiInstanceProcess.bpmn']);
 
   completeTask('multiInstanceProcessTaskA', false, {}, (job) => {
@@ -33,4 +33,6 @@ export async function setup() {
   return {
     multiInstanceProcessInstance,
   };
-}
+};
+
+export {setup};
