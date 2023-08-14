@@ -10,12 +10,6 @@ permissions:
   contents: read
   id-token: write
 
-env:
-  IMAGE_NAME: optimize/test
-  IMAGE_TAG: latest
-  DOCKER_IMAGE_TEAM: registry.camunda.cloud/team-optimize/optimize
-  DOCKER_IMAGE_DOCKER_HUB: camunda/optimize
-
 jobs:
   trivy-check:
     name: Run trivy check
@@ -36,9 +30,9 @@ jobs:
         with:
           ref: ${{ matrix.branch }}
 
-      - name: Define common variables
-        id: define-values
-        uses: ./.github/actions/git-environment
+      # - name: Define common variables
+      #   id: define-values
+      #   uses: ./.github/actions/git-environment
 
       - name: "Read Java Info"
         id: "pom-info"
@@ -65,24 +59,25 @@ jobs:
         with:
           parameters: clean install -DskipTests -Dskip.docker
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
+      # - name: Set up QEMU
+      #   uses: docker/setup-qemu-action@v2
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-        with:
-          driver-opts: network=host
+      # - name: Set up Docker Buildx
+      #   uses: docker/setup-buildx-action@v2
+      #   with:
+      #     driver-opts: network=host
 
       - name: Expose common variables as Env
         run: |
           {
-            echo "DOCKER_BRANCH_TAG=${{ steps.define-values.outputs.branch_slug }}"
-            echo "DOCKER_LATEST_TAG=${{ steps.define-values.outputs.latest_tag }}"
-            echo "DOCKER_TAG=${{ steps.define-values.outputs.image_tag }}"
+            echo "PUSH_LATEST_TAG=false"
+            echo "IS_MAIN=false"
+            echo "CI=false"
+            echo "DOCKER_BRANCH_TAG=${{ matrix.branch }}"
+            echo "DOCKER_IMAGE_TEAM=optimize/test"
+            echo "DOCKER_TAG=latest"
             echo "VERSION=${{ steps.pom-info.outputs.project_version }}"
-            echo "PUSH_LATEST_TAG=${{ steps.define-values.outputs.is_main_or_maintenance_branch }}"
-            echo "IS_MAIN=${{ steps.define-values.outputs.is_main_branch }}"
-            echo "REVISION=${{ steps.define-values.outputs.git_commit_hash }}"
+            echo "REVISION=${{ github.sha }}"
           } >> "$GITHUB_ENV"
 
       - name: Import secrets
@@ -114,20 +109,20 @@ jobs:
       - name: list images
         run: docker image ls
 
-      - name: Build local image for testing
-        uses: docker/build-push-action@v4
-        with:
-          context: .
-          load: true
-          build-args: |
-            VERSION=${{ steps.pom-info.outputs.project_version }}
-            REVISION= ${{ github.sha }}
-          tags: ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+      # - name: Build local image for testing
+      #   uses: docker/build-push-action@v4
+      #   with:
+      #     context: .
+      #     load: true
+      #     build-args: |
+      #       VERSION=${{ steps.pom-info.outputs.project_version }}
+      #       REVISION= ${{ github.sha }}
+      #     tags: ${{ env.DOCKER_IMAGE_TEAM }}:${{ env.DOCKER_TAG }}
 
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+          image-ref: ${{ env.DOCKER_IMAGE_TEAM }}:${{ env.DOCKER_TAG }}
           exit-code: "1"
           ignore-unfixed: true
           hide-progress: true
