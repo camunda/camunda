@@ -9,16 +9,10 @@ package io.camunda.zeebe.test.util.jmh;
 
 import java.util.Objects;
 import java.util.function.Consumer;
-<<<<<<< HEAD
-import java.util.regex.Pattern;
-import org.agrona.LangUtil;
-=======
->>>>>>> e2dd43fae7 (refactor(test-util): improve test matching)
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.ChainedOptionsBuilder;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
-import org.openjdk.jmh.runner.options.VerboseMode;
 
 /**
  * A small utility to help you build and run JMH benchmarks as JUnit tests. Use with {@link
@@ -90,16 +84,13 @@ public final class JMHTestCase {
   }
 
   /**
-   * Passes the given values as the named JMH parameter. See {@link
-   * org.openjdk.jmh.annotations.Param} for more.
+   * Allows setting custom options to the underlying JMH options builder.
    *
-   * @param name the name of the parameter
-   * @param values the values for it
+   * @param modifier a consumer which modifies the options builder
    * @return itself for chaining
-   * @see org.openjdk.jmh.annotations.Param
    */
-  public JMHTestCase withParam(final String name, final String... values) {
-    builder.param(name, values);
+  public JMHTestCase withOptions(final Consumer<ChainedOptionsBuilder> modifier) {
+    modifier.accept(builder);
     return this;
   }
 
@@ -109,13 +100,12 @@ public final class JMHTestCase {
    * @return assertions to verify the benchmark results
    */
   public JMHAssert run() {
-    final var runner = new Runner(builder.verbosity(VerboseMode.EXTRA).build());
+    final var runner = new Runner(builder.build());
 
     try {
       return JMHAssert.assertThat(runner.runSingle());
     } catch (final RunnerException e) {
-      LangUtil.rethrowUnchecked(e);
-      return null; // unreachable
+      throw new RuntimeException(e);
     }
   }
 }

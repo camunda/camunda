@@ -16,6 +16,8 @@ import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.clock.DefaultActorClock;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
+import io.camunda.zeebe.test.util.jmh.JMHTestCase;
+import io.camunda.zeebe.test.util.junit.JMHTest;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
@@ -127,5 +129,18 @@ public class EngineLargeStatePerformanceTest {
     count++;
     singlePartitionEngine.reset();
     return task;
+  }
+
+  @JMHTest("measureProcessExecutionTime")
+  void shouldProcessWithinExpectedDeviation(final JMHTestCase testCase) {
+    // given - an expected ops/s score, as measured in CI
+    // when running this test locally, you're likely to have a different score
+    final var referenceScore = 450;
+
+    // when
+    final var assertResult = testCase.run();
+
+    // then
+    assertResult.isWithinDeviation(referenceScore, 0.15);
   }
 }
