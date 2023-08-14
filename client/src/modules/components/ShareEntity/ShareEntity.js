@@ -115,6 +115,7 @@ export default class ShareEntity extends React.Component {
         <div className="includeFilters">
           <LabeledInput
             type="checkbox"
+            disabled={!isShared}
             checked={includeFilters}
             onChange={(evt) => {
               this.setState({includeFilters: evt.target.checked});

@@ -105,3 +105,28 @@ it('should display a loading indicator', () => {
 
   expect(node.find('LoadingIndicator')).toExist();
 });
+
+it('should disable all controlls when sharing is disabled', async () => {
+  props.getSharedEntity.mockReturnValue();
+  const node = shallow(<ShareEntity {...props} />);
+
+  await flushPromises();
+
+  expect(node.find('.linkText').prop('disabled')).toBe(true);
+  expect(node.find('.includeFilters ForwardRef(LabeledInput)').prop('disabled')).toBe(true);
+  expect(node.find('CopyToClipboard').at(0).prop('disabled')).toBe(true);
+  expect(node.find('CopyToClipboard').at(1).prop('disabled')).toBe(true);
+});
+
+it('should enable all controlls when sharing is enabled', async () => {
+  const node = shallow(<ShareEntity {...props} />);
+
+  await flushPromises();
+
+  node.find('Switch').simulate('change', {target: {checked: true}});
+
+  expect(node.find('.linkText').prop('disabled')).toBe(false);
+  expect(node.find('.includeFilters ForwardRef(LabeledInput)').prop('disabled')).toBe(false);
+  expect(node.find('CopyToClipboard').at(0).prop('disabled')).toBe(false);
+  expect(node.find('CopyToClipboard').at(1).prop('disabled')).toBe(false);
+});
