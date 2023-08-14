@@ -12,6 +12,7 @@ import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
+import java.util.Optional;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Object2ObjectHashMap;
 
@@ -123,5 +124,10 @@ public final class ProcessVersionManager {
 
   private long getHighestProcessVersion() {
     return getVersionInfo().getHighestVersion();
+  }
+
+  public Optional<Integer> findProcessVersionBefore(final String processId, final long version) {
+    processIdKey.wrapString(processId);
+    return getVersionInfo().findVersionBefore(version);
   }
 }

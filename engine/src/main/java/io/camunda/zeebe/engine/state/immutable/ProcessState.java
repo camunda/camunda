@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.state.immutable;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import java.util.Collection;
+import java.util.Optional;
 import org.agrona.DirectBuffer;
 
 public interface ProcessState {
@@ -43,6 +44,17 @@ public interface ProcessState {
    * @param bpmnProcessId the id of the process
    */
   int getNextProcessVersion(String bpmnProcessId);
+
+  /**
+   * Finds the previous known version a process. This is used, for example, when a process is
+   * deleted and the timers of the previous process need to be activated.
+   *
+   * <p>If not previous version is found, an empty optional is returned.
+   *
+   * @param bpmnProcessId the id of the process
+   * @param version the version for which we want to find the previous version
+   */
+  Optional<Integer> findProcessVersionBefore(String bpmnProcessId, long version);
 
   <T extends ExecutableFlowElement> T getFlowElement(
       long processDefinitionKey, DirectBuffer elementId, Class<T> elementType);
