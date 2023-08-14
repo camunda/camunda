@@ -32,14 +32,6 @@ public interface ManagedPartitionGroup extends PartitionGroup {
   Stream<CompletableFuture<RaftPartition>> join(PartitionManagementService managementService);
 
   /**
-   * Connects to the partition group.
-   *
-   * @param managementService the partition management service
-   * @return a future to be completed once the partition group has been connected
-   */
-  Stream<CompletableFuture<RaftPartition>> connect(PartitionManagementService managementService);
-
-  /**
    * Closes the partition group.
    *
    * @return a future to be completed once the partition group has been closed

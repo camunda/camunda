@@ -145,12 +145,6 @@ public final class RaftPartitionGroup implements ManagedPartitionGroup {
   }
 
   @Override
-  public Stream<CompletableFuture<RaftPartition>> connect(
-      final PartitionManagementService managementService) {
-    return join(managementService);
-  }
-
-  @Override
   public CompletableFuture<Void> close() {
     final var futures =
         partitions.values().stream().map(RaftPartition::close).toArray(CompletableFuture[]::new);
