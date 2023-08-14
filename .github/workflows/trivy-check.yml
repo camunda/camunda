@@ -13,6 +13,8 @@ permissions:
 env:
   IMAGE_NAME: optimize/test
   IMAGE_TAG: latest
+  DOCKER_IMAGE_TEAM: registry.camunda.cloud/team-optimize/optimize
+  DOCKER_IMAGE_DOCKER_HUB: camunda/optimize
 
 jobs:
   trivy-check:
@@ -34,6 +36,10 @@ jobs:
         uses: actions/checkout@v3
         with:
           ref: ${{ matrix.branch }}
+
+      - name: Define common variables
+        id: define-values
+        uses: ./.github/actions/git-environment
 
       - name: "Read Java Info"
         id: "pom-info"
@@ -71,13 +77,13 @@ jobs:
       - name: Expose common variables as Env
         run: |
           {
-            echo "DOCKER_IMAGE_TEAM=${{ env.IMAGE_NAME }}"
-            echo "DOCKER_BRANCH_TAG=${{ matrix.branch }}"
-            echo "DOCKER_TAG=${{ env.IMAGE_TAG }}"
+            echo "DOCKER_BRANCH_TAG=${{ steps.define-values.outputs.branch_slug }}"
+            echo "DOCKER_LATEST_TAG=${{ steps.define-values.outputs.latest_tag }}"
+            echo "DOCKER_TAG=${{ steps.define-values.outputs.image_tag }}"
             echo "VERSION=${{ steps.pom-info.outputs.project_version }}"
-            echo "PUSH_LATEST_TAG=false"
-            echo "IS_MAIN=false"
-            echo "REVISION=${{ github.sha }}"
+            echo "PUSH_LATEST_TAG=${{ steps.define-values.outputs.is_main_or_maintenance_branch }}"
+            echo "IS_MAIN=${{ steps.define-values.outputs.is_main_branch }}"
+            echo "REVISION=${{ steps.define-values.outputs.git_commit_hash }}"
           } >> "$GITHUB_ENV"
 
       - name: try to reuse existing build step
