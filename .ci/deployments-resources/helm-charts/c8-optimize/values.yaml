@@ -60,7 +60,6 @@ camunda-platform:
     image:
       tag: latest
     keycloak:
-      fullnameOverride: keycloak
       externalDatabase:
         password: postgresql
       nodeSelector:
