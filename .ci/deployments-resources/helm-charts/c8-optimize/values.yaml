@@ -224,8 +224,6 @@ global:
   identity:
     operate:
       enabled: false
-    keycloak:
-      fullname: keycloak
     auth:
       publicIssuerUrl: "https://keycloak-test.optimize.camunda.cloud/auth/realms/camunda-platform"
       optimize:
