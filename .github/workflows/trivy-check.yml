@@ -16,12 +16,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        branch: [
+        branch:
+          [
             "master",
-            # "maintenance/3.10",
-            # "maintenance/3.9",
-            # "maintenance/3.8",
-            # "maintenance/3.7",
+            "maintenance/3.10",
+            "maintenance/3.9",
+            "maintenance/3.8",
+            "maintenance/3.7",
           ]
     runs-on: ubuntu-latest
     steps:
@@ -29,10 +30,6 @@ jobs:
         uses: actions/checkout@v3
         with:
           ref: ${{ matrix.branch }}
-
-      # - name: Define common variables
-      #   id: define-values
-      #   uses: ./.github/actions/git-environment
 
       - name: "Read Java Info"
         id: "pom-info"
@@ -59,21 +56,14 @@ jobs:
         with:
           parameters: clean install -DskipTests -Dskip.docker
 
-      # - name: Set up QEMU
-      #   uses: docker/setup-qemu-action@v2
-
-      # - name: Set up Docker Buildx
-      #   uses: docker/setup-buildx-action@v2
-      #   with:
-      #     driver-opts: network=host
-
       - name: Expose common variables as Env
         run: |
           {
             echo "PUSH_LATEST_TAG=false"
             echo "IS_MAIN=false"
             echo "CI=false"
-            echo "DOCKER_BRANCH_TAG=${{ matrix.branch }}"
+            BRANCH=${{ matrix.branch }}
+            echo "DOCKER_BRANCH_TAG=${BRANCH//\//-}"
             echo "DOCKER_IMAGE_TEAM=optimize/test"
             echo "DOCKER_TAG=latest"
             echo "VERSION=${{ steps.pom-info.outputs.project_version }}"
@@ -103,21 +93,8 @@ jobs:
           username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
           password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
 
-      - name: try to reuse existing build step
+      - name: Build local image for testing
         run: ./.github/scripts/build-docker-images.sh
-
-      - name: list images
-        run: docker image ls
-
-      # - name: Build local image for testing
-      #   uses: docker/build-push-action@v4
-      #   with:
-      #     context: .
-      #     load: true
-      #     build-args: |
-      #       VERSION=${{ steps.pom-info.outputs.project_version }}
-      #       REVISION= ${{ github.sha }}
-      #     tags: ${{ env.DOCKER_IMAGE_TEAM }}:${{ env.DOCKER_TAG }}
 
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
