@@ -170,6 +170,7 @@ public final class RaftRolesTest {
               .join(
                   new DefaultPartitionManagementService(
                       atomix.getMembershipService(), atomix.getCommunicationService()))
+              .values()
               .toArray(CompletableFuture[]::new));
     } catch (final InterruptedException | ExecutionException e) {
       LangUtil.rethrowUnchecked(e);

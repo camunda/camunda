@@ -17,8 +17,8 @@
 package io.atomix.primitive.partition;
 
 import io.atomix.raft.partition.RaftPartition;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Stream;
 
 /** Managed partition group. */
 public interface ManagedPartitionGroup extends PartitionGroup {
@@ -29,7 +29,7 @@ public interface ManagedPartitionGroup extends PartitionGroup {
    * @param managementService the partition management service
    * @return a future to be completed once the partition group has been joined
    */
-  Stream<CompletableFuture<RaftPartition>> join(PartitionManagementService managementService);
+  Map<Integer, CompletableFuture<RaftPartition>> join(PartitionManagementService managementService);
 
   /**
    * Closes the partition group.

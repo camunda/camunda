@@ -84,6 +84,7 @@ public class ZeebeTestNode {
                         .join(
                             new DefaultPartitionManagementService(
                                 cluster.getMembershipService(), cluster.getCommunicationService()))
+                        .values()
                         .toArray(CompletableFuture[]::new)))
         .thenApply(v -> null);
   }

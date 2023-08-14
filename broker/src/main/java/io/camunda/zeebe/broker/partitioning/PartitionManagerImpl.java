@@ -145,21 +145,22 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
     partitionGroup
         .join(managementService)
         .forEach(
-            partitionStart ->
+            (partitionId, partitionStart) ->
                 partitionStart
                     .thenAcceptAsync(
                         partition -> {
                           if (!partition.members().contains(memberId)) {
                             return;
                           }
-                          final var zeebePartition =
+                          LOGGER.info("Started raft partition {}", partitionId);
+                          startPartition(
                               partitionFactory.constructPartition(
-                                  partition, partitionListeners, topologyManager, featureFlags);
-                          startPartition(zeebePartition);
+                                  partition, partitionListeners, topologyManager, featureFlags));
                         })
                     .exceptionally(
                         error -> {
-                          LOGGER.error("Failed to start partition", error);
+                          LOGGER.error("Failed to start raft partition {}", partitionId, error);
+                          onHealthChanged(partitionId, HealthStatus.DEAD);
                           return null;
                         }));
 
@@ -167,6 +168,7 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
   }
 
   private void startPartition(final ZeebePartition zeebePartition) {
+    final var partitionId = zeebePartition.getPartitionId();
     final var submit = actorSchedulingService.submitActor(zeebePartition);
     concurrencyControl.run(
         () ->
@@ -174,18 +176,17 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
                 submit,
                 (ok, error) -> {
                   if (error != null) {
-                    LOGGER.error(
-                        "Failed to start partition {}", zeebePartition.getPartitionId(), error);
+                    LOGGER.error("Failed to start Zeebe partition {}", partitionId, error);
+                    onHealthChanged(partitionId, HealthStatus.DEAD);
                     return;
                   }
 
-                  LOGGER.info("Started partition {}", zeebePartition.getPartitionId());
+                  LOGGER.info("Started Zeebe partition {}", partitionId);
 
                   zeebePartition.addFailureListener(
-                      new PartitionHealthBroadcaster(
-                          zeebePartition.getPartitionId(), this::onHealthChanged));
+                      new PartitionHealthBroadcaster(partitionId, this::onHealthChanged));
                   diskSpaceUsageMonitor.addDiskUsageListener(zeebePartition);
-                  adminAccess.put(zeebePartition.getPartitionId(), zeebePartition.getAdminAccess());
+                  adminAccess.put(partitionId, zeebePartition.getAdminAccess());
                   partitions.add(zeebePartition);
                 }));
   }
