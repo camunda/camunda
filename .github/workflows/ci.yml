@@ -265,6 +265,7 @@ jobs:
           ./mvnw -B --no-snapshot-updates
           -P include-performance-tests
           -D skipChecks
+          -T1C
           test
           | tee "${BUILD_OUTPUT_FILE_PATH}"
         env:
