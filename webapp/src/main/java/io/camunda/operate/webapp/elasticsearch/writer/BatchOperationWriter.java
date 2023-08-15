@@ -19,6 +19,7 @@ import io.camunda.operate.entities.IncidentEntity;
 import io.camunda.operate.entities.OperationEntity;
 import io.camunda.operate.entities.OperationState;
 import io.camunda.operate.entities.OperationType;
+import io.camunda.operate.entities.dmn.definition.DecisionDefinitionEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.exceptions.PersistenceException;
@@ -32,9 +33,13 @@ import io.camunda.operate.store.OperationStore;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.util.ElasticsearchUtil.QueryType;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
+import io.camunda.operate.webapp.reader.DecisionInstanceReader;
 import io.camunda.operate.webapp.reader.IncidentReader;
 import io.camunda.operate.webapp.reader.ListViewReader;
 import io.camunda.operate.webapp.reader.OperationReader;
+import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListQueryDto;
+import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListRequestDto;
+import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListResponseDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
@@ -56,14 +61,10 @@ import java.util.stream.Collectors;
 
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.identity.PermissionsService;
-import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.xcontent.XContentType;
 import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
-import org.elasticsearch.script.Script;
-import org.elasticsearch.script.ScriptType;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -111,6 +112,9 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
 
   @Autowired
   private ProcessInstanceReader processInstanceReader;
+
+  @Autowired
+  private DecisionInstanceReader decisionInstanceReader;
 
   @Autowired(required = false)
   private PermissionsService permissionsService;
@@ -337,6 +341,38 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
     }
   }
 
+  @Override
+  public BatchOperationEntity scheduleDeleteDecisionDefinition(DecisionDefinitionEntity decisionDefinitionEntity) {
+    Long decisionDefinitionKey = decisionDefinitionEntity.getKey();
+
+    // Collect all dependant data
+    DecisionInstanceListResponseDto decisionInstanceListResponseDto = decisionInstanceReader.queryDecisionInstances(
+        new DecisionInstanceListRequestDto().setQuery(
+            new DecisionInstanceListQueryDto().setDecisionDefinitionIds(List.of(decisionDefinitionEntity.getDecisionId()))));
+    // Create batch operation
+    final BatchOperationEntity batchOperation = createBatchOperationEntity(OperationType.DELETE_DECISION_DEFINITION,
+        "Decision Definition: " + decisionDefinitionEntity.getName() + " Version " + decisionDefinitionEntity.getVersion()).setOperationsTotalCount(
+        Long.valueOf(decisionInstanceListResponseDto.getTotalCount()).intValue()).setInstancesCount(1);
+    // Create operation
+    final OperationEntity operationEntity = new OperationEntity();
+    operationEntity.generateId();
+    operationEntity.setDecisionDefinitionKey(decisionDefinitionKey);
+    operationEntity.setType(OperationType.DELETE_DECISION_DEFINITION);
+    operationEntity.setState(OperationState.SCHEDULED);
+    operationEntity.setBatchOperationId(batchOperation.getId());
+    operationEntity.setUsername(userService.getCurrentUser().getUsername());
+    // Create request
+    try {
+      var batchRequest = operationStore.newBatchRequest()
+          .add(operationTemplate.getFullQualifiedName(), operationEntity)
+          .add(batchOperationTemplate.getFullQualifiedName(), batchOperation);
+      batchRequest.execute();
+      return batchOperation;
+    } catch (Exception ex) {
+      throw new OperateRuntimeException(String.format("Exception occurred, while scheduling 'delete decision definition' operation: %s", ex.getMessage()), ex);
+    }
+  }
+
   private BatchOperationEntity createBatchOperationEntity(OperationType operationType, String name) {
     BatchOperationEntity batchOperationEntity = new BatchOperationEntity();
     batchOperationEntity.generateId();
@@ -422,16 +458,6 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
     operationEntity.setUsername(userService.getCurrentUser().getUsername());
 
     return operationEntity;
-  }
-
-  private IndexRequest createIndexRequest(OperationEntity operationEntity, Long processInstanceKey) throws PersistenceException {
-    try {
-      return new IndexRequest(operationTemplate.getFullQualifiedName()).id(operationEntity.getId())
-          .source(objectMapper.writeValueAsString(operationEntity), XContentType.JSON);
-    } catch (IOException e) {
-      throw new PersistenceException(
-          String.format("Error preparing the query to insert operation [%s] for process instance id [%s]", operationEntity.getType(), processInstanceKey), e);
-    }
   }
 
   private void validateTotalHits(SearchHits hits) {

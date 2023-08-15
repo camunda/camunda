@@ -8,6 +8,7 @@ package io.camunda.operate.webapp.writer;
 
 import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.entities.OperationEntity;
+import io.camunda.operate.entities.dmn.definition.DecisionDefinitionEntity;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
@@ -25,4 +26,6 @@ public interface BatchOperationWriter {
     BatchOperationEntity scheduleSingleOperation(long processInstanceKey, CreateOperationRequestDto operationRequest);
 
     BatchOperationEntity scheduleModifyProcessInstance(ModifyProcessInstanceRequestDto modifyRequest);
+
+    BatchOperationEntity scheduleDeleteDecisionDefinition(DecisionDefinitionEntity decisionDefinitionEntity);
 }
