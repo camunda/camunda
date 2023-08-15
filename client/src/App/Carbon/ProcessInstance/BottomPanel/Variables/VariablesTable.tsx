@@ -134,6 +134,7 @@ const VariablesTable: React.FC<Props> = observer(
                       .map((variableName, index) => {
                         return {
                           key: fields.value[index]?.id ?? variableName,
+                          dataTestId: `variable-${variableName}`,
                           columns: [
                             {
                               cellContent: (

@@ -27,6 +27,34 @@ export class ProcessInstance {
     );
   }
 
+  getEditVariableFieldSelector(variableName: string) {
+    return this.page
+      .getByTestId(`variable-${variableName}`)
+      .getByRole('textbox', {
+        name: /value/i,
+      });
+  }
+
+  getNewVariableNameFieldSelector = (variableName: string) => {
+    return this.page
+      .getByTestId(`variable-${variableName}`)
+      .getByTestId('new-variable-name');
+  };
+
+  getNewVariableValueFieldSelector = (variableName: string) => {
+    return this.page
+      .getByTestId(`variable-${variableName}`)
+      .getByTestId('new-variable-value');
+  };
+
+  async undoModification() {
+    await this.page
+      .getByRole('button', {
+        name: /undo/i,
+      })
+      .click();
+  }
+
   async navigateToProcessInstance(id: string) {
     await this.page.goto(Paths.processInstance(id));
   }
