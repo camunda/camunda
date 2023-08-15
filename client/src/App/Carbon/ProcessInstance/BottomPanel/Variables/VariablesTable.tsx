@@ -316,6 +316,7 @@ const VariablesTable: React.FC<Props> = observer(
                               kind="ghost"
                               size="sm"
                               iconDescription={`Edit variable ${variableName}`}
+                              aria-label={`Edit variable ${variableName}`}
                               disabled={
                                 variablesStore.state.loadingItemId !== null
                               }

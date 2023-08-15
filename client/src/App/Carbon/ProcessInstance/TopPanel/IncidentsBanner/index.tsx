@@ -36,6 +36,7 @@ const IncidentsBanner: React.FC<Props> = observer(({onClick, isOpen}) => {
       data-testid="incidents-banner"
       onClick={onClick}
       title={title}
+      aria-label={title}
     >
       <Stack orientation="horizontal" gap={5}>
         <WarningFilled size={24} />

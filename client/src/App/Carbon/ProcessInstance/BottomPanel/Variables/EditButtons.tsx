@@ -46,6 +46,7 @@ const EditButtons: React.FC<Props> = ({onExitEditMode}) => {
         kind="ghost"
         size="sm"
         iconDescription="Save variable"
+        aria-label="Save variable"
         tooltipPosition="left"
         disabled={
           initialValues.value === values.value ||

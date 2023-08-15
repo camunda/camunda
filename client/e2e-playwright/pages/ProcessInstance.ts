@@ -12,19 +12,39 @@ export class ProcessInstance {
   private page: Page;
   readonly instanceHeader: Locator;
   readonly instanceHistory: Locator;
+  readonly variablesList: Locator;
+  readonly incidentsTable: Locator;
+  readonly incidentsBanner: Locator;
   readonly diagram: Locator;
   readonly popover: Locator;
   readonly variablePanelEmptyText: Locator;
+  readonly addVariableButton: Locator;
+  readonly saveVariableButton: Locator;
+  readonly newVariableNameField: Locator;
+  readonly newVariableValueField: Locator;
+  readonly editVariableValueField: Locator;
+  readonly variableSpinner: Locator;
+  readonly operationSpinner: Locator;
 
   constructor(page: Page) {
     this.page = page;
     this.instanceHeader = page.getByTestId('instance-header');
     this.instanceHistory = page.getByTestId('instance-history');
+    this.variablesList = page.getByTestId('variables-list');
+    this.incidentsTable = page.getByTestId('data-list');
+    this.incidentsBanner = page.getByTestId('incidents-banner');
     this.diagram = page.getByTestId('diagram');
     this.popover = page.getByTestId('popover');
     this.variablePanelEmptyText = page.getByText(
       /to view the variables, select a single flow node instance in the instance history./i,
     );
+    this.addVariableButton = page.getByRole('button', {name: 'Add variable'});
+    this.saveVariableButton = page.getByRole('button', {name: 'Save variable'});
+    this.newVariableNameField = page.getByRole('textbox', {name: 'Name'});
+    this.newVariableValueField = page.getByRole('textbox', {name: 'Value'});
+    this.editVariableValueField = page.getByRole('textbox', {name: 'Value'});
+    this.variableSpinner = page.getByTestId('variable-operation-spinner');
+    this.operationSpinner = page.getByTestId('operation-spinner');
   }
 
   getEditVariableFieldSelector(variableName: string) {
