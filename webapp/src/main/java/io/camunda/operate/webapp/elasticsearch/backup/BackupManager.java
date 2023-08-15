@@ -89,7 +89,7 @@ public class BackupManager implements BackupService {
   private String[][] indexPatternsOrdered;
 
   @Override
-  public void deleteBackup(Integer backupId) {
+  public void deleteBackup(Long backupId) {
     validateRepositoryExists();
     String repositoryName = getRepositoryName();
     int count = getIndexPatternsOrdered().length;
@@ -214,7 +214,7 @@ public class BackupManager implements BackupService {
     return esClient.snapshot().getRepository(getRepositoriesRequest, RequestOptions.DEFAULT);
   }
 
-  private void validateNoDuplicateBackupId(final Integer backupId) {
+  private void validateNoDuplicateBackupId(final Long backupId) {
     final GetSnapshotsRequest snapshotsStatusRequest =
         new GetSnapshotsRequest()
             .repository(getRepositoryName())
@@ -316,13 +316,13 @@ public class BackupManager implements BackupService {
   }
 
   @Override
-  public GetBackupStateResponseDto getBackupState(Integer backupId) {
+  public GetBackupStateResponseDto getBackupState(Long backupId) {
     List<SnapshotInfo> snapshots = findSnapshots(backupId);
     GetBackupStateResponseDto response = getBackupResponse(backupId, snapshots);
     return response;
   }
 
-  private GetBackupStateResponseDto getBackupResponse(Integer backupId, List<SnapshotInfo> snapshots) {
+  private GetBackupStateResponseDto getBackupResponse(Long backupId, List<SnapshotInfo> snapshots) {
     GetBackupStateResponseDto response = new GetBackupStateResponseDto(backupId);
     Metadata metadata = objectMapper.convertValue(snapshots.get(0).userMetadata(), Metadata.class);
     final Integer expectedSnapshotsCount = metadata.getPartCount();
@@ -375,7 +375,7 @@ public class BackupManager implements BackupService {
     return response;
   }
 
-  private List<SnapshotInfo> findSnapshots(Integer backupId) {
+  private List<SnapshotInfo> findSnapshots(Long backupId) {
     final GetSnapshotsRequest snapshotsStatusRequest =
         new GetSnapshotsRequest()
             .repository(getRepositoryName())
@@ -420,9 +420,9 @@ public class BackupManager implements BackupService {
       List<SnapshotInfo> snapshots = response.getSnapshots().stream()
           .sorted(Comparator.comparing(SnapshotInfo::startTime).reversed()).collect(toList());
 
-      LinkedHashMap<Integer, List<SnapshotInfo>> groupedSnapshotInfos = snapshots.stream().collect(groupingBy(si -> {
+      LinkedHashMap<Long, List<SnapshotInfo>> groupedSnapshotInfos = snapshots.stream().collect(groupingBy(si -> {
         Metadata metadata = objectMapper.convertValue(si.userMetadata(), Metadata.class);
-        Integer backupId = metadata.getBackupId();
+        Long backupId = metadata.getBackupId();
         //backward compatibility with v. 8.1
         if (backupId == null) {
           backupId = Metadata.extractBackupIdFromSnapshotName(si.snapshotId().getName());

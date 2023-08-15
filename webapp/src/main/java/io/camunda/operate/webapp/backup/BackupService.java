@@ -15,11 +15,11 @@ import java.util.List;
 public interface BackupService {
     String SNAPSHOT_MISSING_EXCEPTION_TYPE = "type=snapshot_missing_exception";
 
-    void deleteBackup(Integer backupId);
+    void deleteBackup(Long backupId);
 
     TakeBackupResponseDto takeBackup(TakeBackupRequestDto request);
 
-    GetBackupStateResponseDto getBackupState(Integer backupId);
+    GetBackupStateResponseDto getBackupState(Long backupId);
 
     List<GetBackupStateResponseDto> getBackups();
 }

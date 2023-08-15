@@ -51,7 +51,7 @@ public class BackupController extends ErrorController {
   }
 
   @GetMapping("/{backupId}")
-  public GetBackupStateResponseDto getBackupState(@PathVariable Integer backupId) {
+  public GetBackupStateResponseDto getBackupState(@PathVariable Long backupId) {
     validateBackupId(backupId);
     validateRepositoryNameIsConfigured();
     return backupService.getBackupState(backupId);
@@ -65,7 +65,7 @@ public class BackupController extends ErrorController {
 
   @DeleteMapping("/{backupId}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
-  public void deleteBackup(@PathVariable Integer backupId) {
+  public void deleteBackup(@PathVariable Long backupId) {
     validateBackupId(backupId);
     validateRepositoryNameIsConfigured();
     backupService.deleteBackup(backupId);
@@ -78,7 +78,7 @@ public class BackupController extends ErrorController {
     validateBackupId(request.getBackupId());
   }
 
-  private void validateBackupId(Integer backupId) {
+  private void validateBackupId(Long backupId) {
     if (backupId < 0) {
       throw new InvalidRequestException(
           "BackupId must be a non-negative Integer. Received value: " + backupId);

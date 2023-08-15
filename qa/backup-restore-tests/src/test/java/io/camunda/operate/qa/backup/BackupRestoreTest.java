@@ -17,7 +17,6 @@ import io.camunda.operate.util.RetryOperation;
 import io.camunda.operate.webapp.management.dto.GetBackupStateResponseDto;
 import io.camunda.operate.webapp.management.dto.TakeBackupResponseDto;
 import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.ZeebeClientBuilder;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -53,7 +52,7 @@ public class BackupRestoreTest {
   private static final String OPERATE_TEST_DOCKER_IMAGE = "camunda/operate";
   public static final String VERSION = "SNAPSHOT";
   public static final String REPOSITORY_NAME = "testRepository";
-  public static final Integer BACKUP_ID = 123;
+  public static final Long BACKUP_ID = 123L;
 
   @Autowired
   private OperateAPICaller operateAPICaller;
