@@ -80,12 +80,10 @@ jobs:
         if: always()
         uses: actions/setup-python@v3
         with:
-          python-version: '3.x'
-      - name: Run tests and generate JUnit results
+          python-version: "3.x"
+      - name: Run tests
         working-directory: ./client
-        env:
-          PLAYWRIGHT_JUNIT_OUTPUT_NAME: "results.xml"
-        run: yarn run test:e2e:ci --reporter=junit
+        run: yarn run test:e2e:ci
       - name: Publish test results to TestRail
         if: always()
         working-directory: ./client

@@ -23,7 +23,17 @@ const config: PlaywrightTestConfig = {
   forbidOnly: IS_CI,
   retries: IS_CI ? 2 : 0,
   workers: IS_CI || IS_E2E ? 1 : undefined,
-  reporter: 'html',
+  reporter: IS_CI
+    ? [
+        ['html'],
+        [
+          'junit',
+          {
+            outputFile: 'results.xml',
+          },
+        ],
+      ]
+    : 'html',
   projects: [
     {
       name: 'chromium',
