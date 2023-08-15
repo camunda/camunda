@@ -26,9 +26,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(ZeebeStateExtension.class)
-public class JobBackoffCleanupTest {
+public class JobBackoffCleanupMigrationTest {
 
-  final JobBackoffCleanup jobBackoffCleanup = new JobBackoffCleanup();
+  final JobBackoffCleanupMigration jobBackoffCleanupMigration = new JobBackoffCleanupMigration();
 
   private ZeebeDb<ZbColumnFamilies> zeebeDb;
   private MutableZeebeState processingState;
@@ -68,7 +68,7 @@ public class JobBackoffCleanupTest {
     backoffColumnFamily.upsert(backoffJobKey, DbNil.INSTANCE);
 
     // when
-    jobBackoffCleanup.runMigration(processingState);
+    jobBackoffCleanupMigration.runMigration(processingState);
 
     // then
     assertThat(backoffColumnFamily.exists(backoffJobKey)).isTrue();
@@ -83,7 +83,7 @@ public class JobBackoffCleanupTest {
     jobsColumnFamily.deleteExisting(jobKey);
 
     // when
-    jobBackoffCleanup.runMigration(processingState);
+    jobBackoffCleanupMigration.runMigration(processingState);
 
     // then
     assertThat(backoffColumnFamily.exists(backoffJobKey)).isFalse();
@@ -101,7 +101,7 @@ public class JobBackoffCleanupTest {
     backoffColumnFamily.upsert(backoffJobKey, DbNil.INSTANCE);
 
     // when
-    jobBackoffCleanup.runMigration(processingState);
+    jobBackoffCleanupMigration.runMigration(processingState);
 
     // then
     backoffKey.wrapLong(firstRetryBackoff);

@@ -26,9 +26,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(ZeebeStateExtension.class)
-public class JobTimeoutCleanupTest {
+public class JobTimeoutCleanupMigrationTest {
 
-  final JobTimeoutCleanup jobTimeoutCleanup = new JobTimeoutCleanup();
+  final JobTimeoutCleanupMigration jobTimeoutCleanupMigration = new JobTimeoutCleanupMigration();
 
   private ZeebeDb<ZbColumnFamilies> zeebeDb;
   private MutableZeebeState processingState;
@@ -69,7 +69,7 @@ public class JobTimeoutCleanupTest {
     deadlinesColumnFamily.upsert(deadlineJobKey, DbNil.INSTANCE);
 
     // when
-    jobTimeoutCleanup.runMigration(processingState);
+    jobTimeoutCleanupMigration.runMigration(processingState);
 
     // then
     assertThat(deadlinesColumnFamily.exists(deadlineJobKey)).isTrue();
@@ -84,7 +84,7 @@ public class JobTimeoutCleanupTest {
     jobsColumnFamily.deleteExisting(jobKey);
 
     // when
-    jobTimeoutCleanup.runMigration(processingState);
+    jobTimeoutCleanupMigration.runMigration(processingState);
 
     // then
     assertThat(deadlinesColumnFamily.exists(deadlineJobKey)).isFalse();
@@ -102,7 +102,7 @@ public class JobTimeoutCleanupTest {
     deadlinesColumnFamily.upsert(deadlineJobKey, DbNil.INSTANCE);
 
     // when
-    jobTimeoutCleanup.runMigration(processingState);
+    jobTimeoutCleanupMigration.runMigration(processingState);
 
     // then
     deadlineKey.wrapLong(firstDeadline);
