@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.broker.clustering.topology;
+package io.camunda.zeebe.topology;
 
 record PartitionState(State state, int priority) {
   static PartitionState active(final int priority) {

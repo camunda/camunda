@@ -5,14 +5,15 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.broker.clustering.topology;
+package io.camunda.zeebe.topology;
 
-import io.camunda.zeebe.broker.partitioning.topology.PartitionDistribution;
+import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -35,7 +36,7 @@ final class ClusterTopologyManager {
     return executor.call(persistedClusterTopology::getTopology);
   }
 
-  ActorFuture<Void> start(final Supplier<PartitionDistribution> staticParitionResolver) {
+  ActorFuture<Void> start(final Supplier<Set<PartitionMetadata>> staticParitionResolver) {
     final ActorFuture<Void> startFuture = executor.createFuture();
 
     executor.run(
@@ -52,7 +53,7 @@ final class ClusterTopologyManager {
     return startFuture;
   }
 
-  private void initialize(final Supplier<PartitionDistribution> staticPartitionResolver)
+  private void initialize(final Supplier<Set<PartitionMetadata>> staticPartitionResolver)
       throws IOException {
     persistedClusterTopology.initialize();
     if (persistedClusterTopology.getTopology() == null) {
@@ -64,11 +65,11 @@ final class ClusterTopologyManager {
   }
 
   private ClusterTopology initializeFromConfig(
-      final Supplier<PartitionDistribution> staticPartitionResolver) throws IOException {
+      final Supplier<Set<PartitionMetadata>> staticPartitionResolver) throws IOException {
     final var partitionDistribution = staticPartitionResolver.get();
 
     final var partitionsOwnedByMembers =
-        partitionDistribution.partitions().stream()
+        partitionDistribution.stream()
             .flatMap(
                 p ->
                     p.members().stream()

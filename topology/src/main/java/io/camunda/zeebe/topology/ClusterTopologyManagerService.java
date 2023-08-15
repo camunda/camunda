@@ -5,14 +5,15 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.broker.clustering.topology;
+package io.camunda.zeebe.topology;
 
-import io.camunda.zeebe.broker.partitioning.topology.PartitionDistribution;
+import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.nio.file.Path;
+import java.util.Set;
 import java.util.function.Supplier;
 
 public final class ClusterTopologyManagerService extends Actor {
@@ -33,7 +34,7 @@ public final class ClusterTopologyManagerService extends Actor {
    */
   ActorFuture<Void> start(
       final ActorSchedulingService actorSchedulingService,
-      final Supplier<PartitionDistribution> partitionDistributionResolver) {
+      final Supplier<Set<PartitionMetadata>> partitionDistributionResolver) {
     final var startFuture = new CompletableActorFuture<Void>();
     actorSchedulingService
         .submitActor(this)
@@ -51,7 +52,7 @@ public final class ClusterTopologyManagerService extends Actor {
   }
 
   private void startClusterTopologyManager(
-      final Supplier<PartitionDistribution> partitionDistributionResolver,
+      final Supplier<Set<PartitionMetadata>> partitionDistributionResolver,
       final CompletableActorFuture<Void> startFuture) {
     clusterTopologyManager.start(partitionDistributionResolver).onComplete(startFuture);
   }
