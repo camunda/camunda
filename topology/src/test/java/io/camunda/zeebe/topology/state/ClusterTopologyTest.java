@@ -5,12 +5,12 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.topology;
+package io.camunda.zeebe.topology.state;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.zeebe.topology.MemberState.State;
+import io.camunda.zeebe.topology.state.MemberState.State;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 

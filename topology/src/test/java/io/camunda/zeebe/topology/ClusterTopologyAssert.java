@@ -10,6 +10,7 @@ package io.camunda.zeebe.topology;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.topology.state.ClusterTopology;
 import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Collectors;

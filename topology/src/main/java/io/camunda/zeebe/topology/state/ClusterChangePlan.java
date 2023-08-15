@@ -5,10 +5,10 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.topology;
+package io.camunda.zeebe.topology.state;
 
-record ClusterChangePlan() {
-  static ClusterChangePlan empty() {
+public record ClusterChangePlan() {
+  public static ClusterChangePlan empty() {
     return new ClusterChangePlan();
   }
 }

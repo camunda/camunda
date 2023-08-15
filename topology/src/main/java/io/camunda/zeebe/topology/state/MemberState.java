@@ -5,15 +5,16 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.topology;
+package io.camunda.zeebe.topology.state;
 
 import com.google.common.collect.ImmutableMap;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.UnaryOperator;
 
-record MemberState(long version, State state, Map<Integer, PartitionState> partitions) {
-  static MemberState initializeAsActive(final Map<Integer, PartitionState> initialPartitions) {
+public record MemberState(long version, State state, Map<Integer, PartitionState> partitions) {
+  public static MemberState initializeAsActive(
+      final Map<Integer, PartitionState> initialPartitions) {
     return new MemberState(0, State.ACTIVE, Map.copyOf(initialPartitions));
   }
 

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.topology;
 
+import io.camunda.zeebe.topology.state.ClusterTopology;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
