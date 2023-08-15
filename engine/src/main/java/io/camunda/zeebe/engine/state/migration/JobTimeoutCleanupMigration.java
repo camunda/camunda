@@ -9,7 +9,7 @@ package io.camunda.zeebe.engine.state.migration;
 
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 
-public class JobTimeoutCleanup implements MigrationTask {
+public class JobTimeoutCleanupMigration implements MigrationTask {
 
   @Override
   public String getIdentifier() {
@@ -18,6 +18,6 @@ public class JobTimeoutCleanup implements MigrationTask {
 
   @Override
   public void runMigration(final MutableProcessingState processingState) {
-    processingState.getJobState().cleanupTimeoutsWithoutJob();
+    processingState.getJobState().cleanupTimeoutsWithoutJobs();
   }
 }

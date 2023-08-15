@@ -9,7 +9,7 @@ package io.camunda.zeebe.engine.state.migration;
 
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 
-public class JobBackoffCleanup implements MigrationTask {
+public class JobBackoffCleanupMigration implements MigrationTask {
 
   @Override
   public String getIdentifier() {

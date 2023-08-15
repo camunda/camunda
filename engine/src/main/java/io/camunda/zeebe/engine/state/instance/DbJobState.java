@@ -212,7 +212,7 @@ public final class DbJobState implements JobState, MutableJobState {
   }
 
   @Override
-  public void cleanupTimeoutsWithoutJob() {
+  public void cleanupTimeoutsWithoutJobs() {
     deadlinesColumnFamily.whileTrue(
         (key, value) -> {
           final var jobKey = key.second().inner();
