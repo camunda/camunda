@@ -77,6 +77,7 @@ const Incident: React.FC<Props> = ({
               <Link
                 to={Paths.decisionInstance(rootCauseDecision.instanceId)}
                 title={`View root cause decision ${rootCauseDecision.decisionName} - ${rootCauseDecision.instanceId}`}
+                aria-label={`View root cause decision ${rootCauseDecision.decisionName} - ${rootCauseDecision.instanceId}`}
               >
                 {`${rootCauseDecision.decisionName} - ${rootCauseDecision.instanceId}`}
               </Link>

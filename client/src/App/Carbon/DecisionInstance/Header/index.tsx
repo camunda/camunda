@@ -99,6 +99,7 @@ const Header: React.FC = observer(() => {
                       decisionInstance.processInstanceId,
                     )}
                     title={`View process instance ${decisionInstance.processInstanceId}`}
+                    aria-label={`View process instance ${decisionInstance.processInstanceId}`}
                     onClick={() => {
                       tracking.track({
                         eventName: 'navigation',

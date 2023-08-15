@@ -12,6 +12,7 @@ import {Processes} from './pages/Processes';
 import fs from 'fs';
 import {Dashboard} from './pages/Dashboard';
 import {ProcessInstance} from './pages/ProcessInstance';
+import {Decisions} from './pages/Decisions';
 
 type Fixture = {
   resetData: () => Promise<void>;
@@ -37,6 +38,7 @@ const test = base.extend<
     processesPage: Processes;
     dashboardPage: Dashboard;
     processInstancePage: ProcessInstance;
+    decisionsPage: Decisions;
   },
   {workerStorageState: string}
 >({
@@ -80,6 +82,9 @@ const test = base.extend<
   },
   processInstancePage: async ({page}, use) => {
     await use(new ProcessInstance(page));
+  },
+  decisionsPage: async ({page}, use) => {
+    await use(new Decisions(page));
   },
 });
 
