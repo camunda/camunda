@@ -23,12 +23,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-/**
- * Manage how partitions are distributed among the brokers.
- *
- * <p>Note: Do not confuse it with the {@link TopologyManager}. {@link
- * StaticPartitionDistributionResolver} doesn't keep track of the current leader and followers.
- */
+/** Manage how partitions are distributed among the brokers. */
 public class StaticPartitionDistributionResolver {
 
   public PartitionDistribution resolveTopology(

@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.broker.clustering.topology;
 
-import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.broker.partitioning.topology.StaticPartitionDistributionResolver;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
@@ -58,7 +57,7 @@ final class ClusterTopologyManager {
     if (persistedClusterTopology.getTopology() == null) {
       final var topology = initializeFromConfig(brokerCfg);
       persistedClusterTopology.update(topology);
-      LOG.trace(
+      LOG.info(
           "Initialized ClusterTopology from BrokerCfg {}", persistedClusterTopology.getTopology());
     }
   }
@@ -83,13 +82,8 @@ final class ClusterTopologyManager {
 
     final var memberStates =
         partitionsOwnedByMembers.entrySet().stream()
-            .map(
-                entry -> {
-                  final MemberId memberId = entry.getKey();
-                  final Map<Integer, PartitionState> partitionInfo = entry.getValue();
-                  return Map.entry(memberId, MemberState.initializeAsActive(partitionInfo));
-                })
-            .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+            .collect(
+                Collectors.toMap(Entry::getKey, e -> MemberState.initializeAsActive(e.getValue())));
 
     final var topology = new ClusterTopology(0, memberStates, ClusterChangePlan.empty());
 
