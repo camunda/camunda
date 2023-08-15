@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.processing.common.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor.EvaluationException;
 import io.camunda.zeebe.engine.processing.common.Failure;
+import io.camunda.zeebe.engine.processing.deployment.StartEventSubscriptionManager;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -59,6 +60,7 @@ public class ResourceDeletionProcessor
   private final TimerInstanceState timerInstanceState;
   private final CatchEventBehavior catchEventBehavior;
   private final ExpressionProcessor expressionProcessor;
+  private final StartEventSubscriptionManager startEventSubscriptionManager;
 
   public ResourceDeletionProcessor(
       final Writers writers,
@@ -77,6 +79,8 @@ public class ResourceDeletionProcessor
     timerInstanceState = processingState.getTimerState();
     catchEventBehavior = bpmnBehaviors.catchEventBehavior();
     expressionProcessor = bpmnBehaviors.expressionBehavior();
+    startEventSubscriptionManager =
+        new StartEventSubscriptionManager(processingState, keyGenerator);
   }
 
   @Override
@@ -221,6 +225,10 @@ public class ResourceDeletionProcessor
               catchEventBehavior.unsubscribeFromTimerEvent(timer);
             }
           });
+    }
+    if (process.hasMessageStartEvent()) {
+      startEventSubscriptionManager.closeMessageStartEventSubscriptions(
+          deployedProcess, stateWriter);
     }
   }
 
