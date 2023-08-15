@@ -7,6 +7,9 @@
       "helm-camunda-io": "https://helm.camunda.io"
     }
   },
+  "reviewers": [
+    "team:hto-frontend"
+  ],
   "packageRules": [
     {
       "groupName": "definitelyTyped",
