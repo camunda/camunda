@@ -206,6 +206,34 @@ public final class DbJobState implements JobState, MutableJobState {
     return job;
   }
 
+  @Override
+  public void cleanupTimeoutsWithoutJobs() {
+    deadlinesColumnFamily.whileTrue(
+        (key, value) -> {
+          final var jobKey = key.second().inner();
+          final var deadline = key.first().getValue();
+          final var job = jobsColumnFamily.get(jobKey);
+          if (job == null || job.getRecord().getDeadline() != deadline) {
+            deadlinesColumnFamily.deleteExisting(key);
+          }
+          return true;
+        });
+  }
+
+  @Override
+  public void cleanupBackoffsWithoutJobs() {
+    backoffColumnFamily.whileTrue(
+        (key, value) -> {
+          final var jobKey = key.second().inner();
+          final var backoff = key.first().getValue();
+          final var job = jobsColumnFamily.get(jobKey);
+          if (job == null || job.getRecord().getRetryBackoff() != backoff) {
+            backoffColumnFamily.deleteExisting(key);
+          }
+          return true;
+        });
+  }
+
   private void createJob(final long key, final JobRecord record, final DirectBuffer type) {
     createJobRecord(key, record);
     initializeJobState();
