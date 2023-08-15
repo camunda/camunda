@@ -9,7 +9,7 @@ package io.camunda.zeebe.topology.gossip;
 
 import io.camunda.zeebe.topology.state.ClusterTopology;
 
-final class ClusterTopologyGossipState {
+public final class ClusterTopologyGossipState {
   // TODO: This should also tracks the BrokerInfo which is currently in SWIM member.properties
   private ClusterTopology clusterTopology;
 

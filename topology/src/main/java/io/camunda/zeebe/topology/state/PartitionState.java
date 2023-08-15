@@ -12,7 +12,7 @@ public record PartitionState(State state, int priority) {
     return new PartitionState(State.ACTIVE, priority);
   }
 
-  static PartitionState joining(final int priority) {
+  public static PartitionState joining(final int priority) {
     return new PartitionState(State.JOINING, priority);
   }
 
@@ -24,11 +24,12 @@ public record PartitionState(State state, int priority) {
     return new PartitionState(State.ACTIVE, priority);
   }
 
-  PartitionState toLeaving() {
+  public PartitionState toLeaving() {
     return new PartitionState(State.LEAVING, priority);
   }
 
-  enum State {
+  public enum State {
+    UNKNOWN,
     JOINING,
     ACTIVE,
     LEAVING

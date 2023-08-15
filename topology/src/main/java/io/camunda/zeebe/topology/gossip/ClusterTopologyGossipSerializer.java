@@ -12,4 +12,11 @@ interface ClusterTopologyGossipSerializer {
   byte[] encode(ClusterTopologyGossipState gossipState);
 
   ClusterTopologyGossipState decode(byte[] encodedState);
+
+  final class DecodingFailed extends RuntimeException {
+
+    public DecodingFailed(final Throwable cause) {
+      super(cause);
+    }
+  }
 }

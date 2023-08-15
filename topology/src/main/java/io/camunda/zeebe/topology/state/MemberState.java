@@ -38,7 +38,7 @@ public record MemberState(long version, State state, Map<Integer, PartitionState
     return update(State.ACTIVE, partitions);
   }
 
-  MemberState toLeaving() {
+  public MemberState toLeaving() {
     if (state == State.LEFT) {
       throw new IllegalStateException(
           String.format("Cannot transition to LEAVING when current state is %s", state));
@@ -46,7 +46,7 @@ public record MemberState(long version, State state, Map<Integer, PartitionState
     return update(State.LEAVING, partitions);
   }
 
-  MemberState toLeft() {
+  public MemberState toLeft() {
     return update(State.LEFT, partitions);
   }
 
@@ -122,7 +122,7 @@ public record MemberState(long version, State state, Map<Integer, PartitionState
     return new MemberState(version + 1, state, partitions);
   }
 
-  enum State {
+  public enum State {
     UNINITIALIZED,
     JOINING,
     ACTIVE,
