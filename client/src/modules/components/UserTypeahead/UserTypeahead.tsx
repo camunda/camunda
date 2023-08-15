@@ -21,7 +21,6 @@ interface UserTypeaheadProps
   collectionUsers?: User[] | null;
   users: User[] | null;
   onChange: (users: User[]) => void;
-  loading?: boolean;
 }
 
 export function UserTypeahead({
@@ -29,10 +28,9 @@ export function UserTypeahead({
   collectionUsers = [],
   onChange,
   mightFail,
-  loading,
   ...props
 }: UserTypeaheadProps) {
-  if (!users || !collectionUsers || loading) {
+  if (!users || !collectionUsers) {
     return <DropdownSkeleton />;
   }
 

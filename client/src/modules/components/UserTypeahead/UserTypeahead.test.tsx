@@ -111,17 +111,3 @@ it('should handle users and collectionUsers null values', () => {
   node.setProps({users: [], collectionUsers: []});
   expect(node.find(DropdownSkeleton)).not.toExist();
 });
-
-it('should display dropdown skeleton if loading prop is true', () => {
-  const node = shallow(
-    <UserTypeahead
-      {...props}
-      users={[]}
-      mightFail={jest.fn().mockImplementation((data, cb) => cb(data))}
-      onChange={jest.fn()}
-      loading
-    />
-  );
-
-  expect(node.find(DropdownSkeleton)).toExist();
-});

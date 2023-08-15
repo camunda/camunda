@@ -9,15 +9,7 @@ import {ReactNode, useCallback, useEffect, useState} from 'react';
 import classnames from 'classnames';
 import {Button} from '@carbon/react';
 
-import {
-  Modal,
-  Button as LegacyButton,
-  ButtonGroup,
-  Labeled,
-  Form,
-  UserTypeahead,
-  User,
-} from 'components';
+import {Modal, Button as LegacyButton, ButtonGroup, UserTypeahead, User, Form} from 'components';
 import {t} from 'translation';
 import {showError} from 'notifications';
 import {WithErrorHandlingProps, withErrorHandling} from 'HOC';
@@ -37,9 +29,9 @@ interface AssigneeFilterProps
     }> {
   filterType: 'assignee' | 'candidateGroup';
   filterLevel: 'view';
-  forceEnabled?: (users: User[], operator?: string) => boolean;
-  getPretext?: (users: User[], operator?: string) => ReactNode;
-  getPosttext?: (users: User[], operator?: string) => ReactNode;
+  forceEnabled?: () => boolean;
+  getPretext?: () => ReactNode;
+  getPosttext?: () => ReactNode;
 }
 
 export function AssigneeFilter(props: AssigneeFilterProps) {
@@ -60,18 +52,16 @@ export function AssigneeFilter(props: AssigneeFilterProps) {
     (definition) => definition.versions?.length && definition.tenantIds?.length
   );
 
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<User[] | null>(null);
   const [operator, setOperator] = useState<string | undefined>('in');
   const [applyTo, setApplyTo] = useState(
     validDefinitions?.find(({identifier}) => filterData?.appliedTo[0] === identifier) ||
       validDefinitions?.[0]
   );
-  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     (async () => {
       if (filterData) {
-        setLoading(true);
         setOperator(filterData.data.operator);
 
         const hasUnassigned = filterData.data.values?.includes(null);
@@ -102,17 +92,20 @@ export function AssigneeFilter(props: AssigneeFilterProps) {
         }
 
         setUsers(combined);
-        setLoading(false);
+      } else {
+        setUsers([]);
       }
     })();
   }, [filterData, filterType, mightFail]);
 
   const confirm = () => {
-    addFilter({
-      type: filterType,
-      data: {operator, values: users.map((user) => user.identity.id)},
-      appliedTo: [applyTo?.identifier].filter((definition): definition is string => !!definition),
-    });
+    if (users) {
+      addFilter({
+        type: filterType,
+        data: {operator, values: users.map((user) => user.identity.id)},
+        appliedTo: [applyTo?.identifier].filter((definition): definition is string => !!definition),
+      });
+    }
   };
 
   const fetchUsers = useCallback(
@@ -169,7 +162,7 @@ export function AssigneeFilter(props: AssigneeFilterProps) {
             }}
           />
         )}
-        {getPretext?.(users, operator)}
+        {getPretext?.()}
         <ButtonGroup>
           <LegacyButton active={operator === 'in'} onClick={() => setOperator('in')}>
             {t('common.filter.assigneeModal.includeOnly')}
@@ -180,18 +173,16 @@ export function AssigneeFilter(props: AssigneeFilterProps) {
         </ButtonGroup>
         <Form>
           <Form.InputGroup>
-            <Labeled label={t(`common.filter.assigneeModal.type.${filterType}`)}>
-              <UserTypeahead
-                users={users}
-                onChange={setUsers}
-                fetchUsers={fetchUsers}
-                loading={loading}
-                optionsOnly
-              />
-            </Labeled>
+            <UserTypeahead
+              titleText={t(`common.filter.assigneeModal.type.${filterType}`)}
+              users={users}
+              onChange={setUsers}
+              fetchUsers={fetchUsers}
+              optionsOnly
+            />
           </Form.InputGroup>
         </Form>
-        {getPosttext?.(users, operator)}
+        {getPosttext?.()}
       </Modal.Content>
       <Modal.Footer>
         <Button kind="secondary" className="cancel" onClick={close}>
@@ -199,7 +190,7 @@ export function AssigneeFilter(props: AssigneeFilterProps) {
         </Button>
         <Button
           className="confirm"
-          disabled={users.length === 0 && !forceEnabled?.(users, operator)}
+          disabled={(!users || users.length === 0) && !forceEnabled?.()}
           onClick={confirm}
         >
           {filterData ? t('common.filter.updateFilter') : t('common.filter.addFilter')}

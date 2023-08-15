@@ -106,13 +106,7 @@ it('should allow rendering a pretext if provided', async () => {
 
   await runLastEffect();
 
-  expect(spy).toHaveBeenCalledWith(
-    [
-      {id: 'USER:demo', identity: {id: 'demo', name: 'Demo Demo', type: 'user'}},
-      {id: 'USER:john', identity: {id: 'john', name: 'Johnny', type: 'user'}},
-    ],
-    'not in'
-  );
+  expect(spy).toHaveBeenCalledWith();
   expect(node.find('.pretext')).toExist();
 });
 
@@ -122,13 +116,7 @@ it('should allow rendering a posttext if provided', async () => {
 
   await runLastEffect();
 
-  expect(spy).toHaveBeenCalledWith(
-    [
-      {id: 'USER:demo', identity: {id: 'demo', name: 'Demo Demo', type: 'user'}},
-      {id: 'USER:john', identity: {id: 'john', name: 'Johnny', type: 'user'}},
-    ],
-    'not in'
-  );
+  expect(spy).toHaveBeenCalledWith();
   expect(node.find('.posttext')).toExist();
 });
 
