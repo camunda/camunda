@@ -27,6 +27,7 @@ import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
+import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.util.Environment;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -63,6 +64,7 @@ final class PartitionManagerImplTest {
     // when
     final var partitionManager =
         new PartitionManagerImpl(
+            mock(ConcurrencyControl.class),
             mock(ActorSchedulingService.class),
             brokerConfig,
             new BrokerInfo(1, "dummy"),
@@ -93,6 +95,7 @@ final class PartitionManagerImplTest {
     // when
     final var partitionManager =
         new PartitionManagerImpl(
+            mock(ConcurrencyControl.class),
             mock(ActorSchedulingService.class),
             brokerConfig,
             new BrokerInfo(1, "dummy"),
@@ -121,6 +124,7 @@ final class PartitionManagerImplTest {
     // when
     final var partitionManager =
         new PartitionManagerImpl(
+            mock(ConcurrencyControl.class),
             mock(ActorSchedulingService.class),
             brokerConfig,
             new BrokerInfo(1, "dummy"),
@@ -150,6 +154,7 @@ final class PartitionManagerImplTest {
     // when
     final var partitionManager =
         new PartitionManagerImpl(
+            mock(ConcurrencyControl.class),
             mock(ActorSchedulingService.class),
             brokerConfig,
             new BrokerInfo(1, "dummy"),

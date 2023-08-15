@@ -39,6 +39,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -138,22 +139,10 @@ public final class RaftPartitionGroup implements ManagedPartitionGroup {
   }
 
   @Override
-  public CompletableFuture<ManagedPartitionGroup> join(
+  public Map<Integer, CompletableFuture<RaftPartition>> join(
       final PartitionManagementService managementService) {
-    final var futures =
-        partitions.values().stream()
-            .map(p -> p.open(managementService))
-            .toArray(CompletableFuture[]::new);
-
-    return CompletableFuture.allOf(futures)
-        .thenRun(() -> LOGGER.info("Started RaftPartitionGroup {}", name))
-        .thenApply(ok -> this);
-  }
-
-  @Override
-  public CompletableFuture<ManagedPartitionGroup> connect(
-      final PartitionManagementService managementService) {
-    return join(managementService);
+    return partitions.values().stream()
+        .collect(Collectors.toMap(p -> p.id().id(), p -> p.open(managementService)));
   }
 
   @Override

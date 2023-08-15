@@ -23,16 +23,10 @@ import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.raft.zeebe.EntryValidator;
 import io.atomix.raft.zeebe.EntryValidator.NoopEntryValidator;
 import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
 
 /** Raft partition group configuration. */
 public class RaftPartitionGroupConfig extends PartitionGroupConfig<RaftPartitionGroupConfig> {
 
-  private static final int DEFAULT_PARTITIONS = 7;
-
-  private final Set<String> members = new HashSet<>();
-  private int replicationFactor;
   private RaftStorageConfig storageConfig = new RaftStorageConfig();
   private RaftPartitionConfig partitionConfig = new RaftPartitionConfig();
 
@@ -40,11 +34,6 @@ public class RaftPartitionGroupConfig extends PartitionGroupConfig<RaftPartition
 
   @Optional("EntryValidator")
   private EntryValidator entryValidator = new NoopEntryValidator();
-
-  @Override
-  protected int getDefaultPartitions() {
-    return DEFAULT_PARTITIONS;
-  }
 
   /**
    * @return the partition distribution
@@ -119,10 +108,6 @@ public class RaftPartitionGroupConfig extends PartitionGroupConfig<RaftPartition
   @Override
   public String toString() {
     return "RaftPartitionGroupConfig{"
-        + "members="
-        + members
-        + ", replicationFactor="
-        + replicationFactor
         + ", storageConfig="
         + storageConfig
         + ", partitionConfig="

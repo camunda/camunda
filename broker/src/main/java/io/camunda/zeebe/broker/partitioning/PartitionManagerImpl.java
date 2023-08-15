@@ -8,8 +8,7 @@
 package io.camunda.zeebe.broker.partitioning;
 
 import io.atomix.primitive.partition.ManagedPartitionGroup;
-import io.atomix.primitive.partition.ManagedPartitionService;
-import io.atomix.primitive.partition.impl.DefaultPartitionService;
+import io.atomix.primitive.partition.impl.DefaultPartitionManagementService;
 import io.atomix.raft.partition.RaftPartitionGroup;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
@@ -33,8 +32,10 @@ import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.health.HealthStatus;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,11 +48,11 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
   private volatile CompletableFuture<Void> closeFuture;
   private final BrokerHealthCheckService healthCheckService;
   private final ActorSchedulingService actorSchedulingService;
-  private ManagedPartitionService partitionService;
   private RaftPartitionGroup partitionGroup;
   private TopologyManagerImpl topologyManager;
 
-  private final List<ZeebePartition> partitions = new ArrayList<>();
+  private final List<ZeebePartition> partitions = new CopyOnWriteArrayList<>();
+  private final Map<Integer, PartitionAdminAccess> adminAccess = new ConcurrentHashMap<>();
   private final DiskSpaceUsageMonitor diskSpaceUsageMonitor;
   private final BrokerCfg brokerCfg;
   private final BrokerInfo localBroker;
@@ -60,10 +61,12 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
   private final ClusterServices clusterServices;
   private final CommandApiService commandApiService;
   private final ExporterRepository exporterRepository;
+  private final ConcurrencyControl concurrencyControl;
   private final AtomixServerTransport gatewayBrokerTransport;
   private final JobStreamer jobStreamer;
 
   public PartitionManagerImpl(
+      final ConcurrencyControl concurrencyControl,
       final ActorSchedulingService actorSchedulingService,
       final BrokerCfg brokerCfg,
       final BrokerInfo localBroker,
@@ -76,6 +79,7 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
       final AtomixServerTransport gatewayBrokerTransport,
       final JobStreamer jobStreamer,
       final PartitionDistribution partitionDistribution) {
+    this.concurrencyControl = concurrencyControl;
     this.gatewayBrokerTransport = gatewayBrokerTransport;
 
     snapshotStoreFactory =
@@ -95,14 +99,8 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
         new RaftPartitionGroupFactory()
             .buildRaftPartitionGroup(brokerCfg, partitionDistribution, snapshotStoreFactory);
 
-    final var membershipService = clusterServices.getMembershipService();
-    final var communicationService = clusterServices.getCommunicationService();
-
-    partitionService =
-        new DefaultPartitionService(membershipService, communicationService, partitionGroup);
-
     this.partitionListeners = new ArrayList<>(partitionListeners);
-    topologyManager = new TopologyManagerImpl(membershipService, localBroker);
+    topologyManager = new TopologyManagerImpl(clusterServices.getMembershipService(), localBroker);
     this.partitionListeners.add(topologyManager);
   }
 
@@ -112,12 +110,7 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
   }
 
   public PartitionAdminAccess createAdminAccess(final ConcurrencyControl concurrencyControl) {
-    return new MultiPartitionAdminAccess(
-        concurrencyControl,
-        partitions.stream()
-            .collect(
-                Collectors.toMap(
-                    ZeebePartition::getPartitionId, ZeebePartition::createAdminAccess)));
+    return new MultiPartitionAdminAccess(concurrencyControl, adminAccess);
   }
 
   public CompletableFuture<Void> start() {
@@ -126,73 +119,89 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
           new IllegalStateException("PartitionManager is closed"));
     }
 
+    LOGGER.info("Starting partitions");
+
     actorSchedulingService.submitActor(topologyManager);
+    healthCheckService.registerPartitionManager(this);
 
-    return partitionService
-        .start()
-        .thenApply(
-            ps -> {
-              LOGGER.info("Registering Partition Manager");
+    final var featureFlags = brokerCfg.getExperimental().getFeatures().toFeatureFlags();
+    final var partitionFactory =
+        new PartitionFactory(
+            actorSchedulingService,
+            brokerCfg,
+            localBroker,
+            commandApiService,
+            snapshotStoreFactory,
+            clusterServices,
+            exporterRepository,
+            healthCheckService,
+            diskSpaceUsageMonitor,
+            gatewayBrokerTransport,
+            jobStreamer);
+    final var managementService =
+        new DefaultPartitionManagementService(
+            clusterServices.getMembershipService(), clusterServices.getCommunicationService());
+    final var memberId = clusterServices.getMembershipService().getLocalMember().id();
+    partitionGroup
+        .join(managementService)
+        .forEach(
+            (partitionId, partitionStart) ->
+                partitionStart
+                    .thenAcceptAsync(
+                        partition -> {
+                          if (!partition.members().contains(memberId)) {
+                            return;
+                          }
+                          LOGGER.info("Started raft partition {}", partitionId);
+                          startPartition(
+                              partitionFactory.constructPartition(
+                                  partition, partitionListeners, topologyManager, featureFlags));
+                        })
+                    .exceptionally(
+                        error -> {
+                          LOGGER.error("Failed to start raft partition {}", partitionId, error);
+                          onHealthChanged(partitionId, HealthStatus.DEAD);
+                          return null;
+                        }));
 
-              /* this must be called here; it must be called after the members of the partition have been
-              populated which happens during start of bootstrap manager and before the partitions are registered */
-              healthCheckService.registerPartitionManager(this);
-
-              LOGGER.info("Starting partitions");
-
-              final var partitionFactory =
-                  new PartitionFactory(
-                      actorSchedulingService,
-                      brokerCfg,
-                      localBroker,
-                      commandApiService,
-                      snapshotStoreFactory,
-                      clusterServices,
-                      exporterRepository,
-                      healthCheckService,
-                      diskSpaceUsageMonitor,
-                      gatewayBrokerTransport,
-                      jobStreamer);
-
-              partitions.addAll(
-                  partitionFactory.constructPartitions(
-                      partitionGroup,
-                      partitionListeners,
-                      topologyManager,
-                      brokerCfg.getExperimental().getFeatures().toFeatureFlags()));
-
-              final var futures =
-                  partitions.stream()
-                      .map(partition -> CompletableFuture.runAsync(() -> startPartition(partition)))
-                      .toArray(CompletableFuture[]::new);
-
-              CompletableFuture.allOf(futures).join();
-              return null;
-            });
+    return CompletableFuture.completedFuture(null);
   }
 
   private void startPartition(final ZeebePartition zeebePartition) {
+    final var partitionId = zeebePartition.getPartitionId();
+    final var submit = actorSchedulingService.submitActor(zeebePartition);
+    concurrencyControl.run(
+        () ->
+            concurrencyControl.runOnCompletion(
+                submit,
+                (ok, error) -> {
+                  if (error != null) {
+                    LOGGER.error("Failed to start Zeebe partition {}", partitionId, error);
+                    onHealthChanged(partitionId, HealthStatus.DEAD);
+                    return;
+                  }
 
-    actorSchedulingService.submitActor(zeebePartition).join();
-    zeebePartition.addFailureListener(
-        new PartitionHealthBroadcaster(zeebePartition.getPartitionId(), this::onHealthChanged));
-    diskSpaceUsageMonitor.addDiskUsageListener(zeebePartition);
+                  LOGGER.info("Started Zeebe partition {}", partitionId);
+
+                  zeebePartition.addFailureListener(
+                      new PartitionHealthBroadcaster(partitionId, this::onHealthChanged));
+                  diskSpaceUsageMonitor.addDiskUsageListener(zeebePartition);
+                  adminAccess.put(partitionId, zeebePartition.getAdminAccess());
+                  partitions.add(zeebePartition);
+                }));
   }
 
   public CompletableFuture<Void> stop() {
     if (closeFuture == null) {
       closeFuture =
           CompletableFuture.runAsync(this::stopPartitions)
-              .whenComplete(
-                  (ok, error) -> {
-                    logErrorIfApplicable(error);
-                    partitionService.stop().join();
-                  })
+              .thenCompose((ignored) -> partitionGroup.close())
               .whenComplete(
                   (ok, error) -> {
                     logErrorIfApplicable(error);
                     partitionGroup = null;
-                    partitionService = null;
+                    partitions.clear();
+                    adminAccess.clear();
                     topologyManager.close();
                     topologyManager = null;
                   });
@@ -225,8 +234,6 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
   @Override
   public String toString() {
     return "PartitionManagerImpl{"
-        + "partitionService="
-        + partitionService
         + ", partitionGroup="
         + partitionGroup
         + ", partitions="

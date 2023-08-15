@@ -16,7 +16,7 @@ import io.atomix.cluster.MemberId;
 import io.atomix.cluster.NoopSnapshotStoreFactory;
 import io.atomix.primitive.partition.Partition;
 import io.atomix.primitive.partition.PartitionId;
-import io.atomix.primitive.partition.impl.DefaultPartitionService;
+import io.atomix.primitive.partition.impl.DefaultPartitionManagementService;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.partition.RaftPartitionGroup;
@@ -164,13 +164,14 @@ public final class RaftRolesTest {
     try {
       atomix = atomixFuture.get();
 
-      final var partitionService =
-          new DefaultPartitionService(
-              atomix.getMembershipService(), atomix.getCommunicationService(), partitionGroup);
-
       partitionGroup.getPartitions().forEach(partitionConsumer);
-
-      return partitionService.start().thenApply(ps -> null);
+      return CompletableFuture.allOf(
+          partitionGroup
+              .join(
+                  new DefaultPartitionManagementService(
+                      atomix.getMembershipService(), atomix.getCommunicationService()))
+              .values()
+              .toArray(CompletableFuture[]::new));
     } catch (final InterruptedException | ExecutionException e) {
       LangUtil.rethrowUnchecked(e);
       // won't be executed

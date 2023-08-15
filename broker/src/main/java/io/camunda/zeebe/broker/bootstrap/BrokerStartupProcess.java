@@ -65,7 +65,6 @@ public final class BrokerStartupProcess {
 
     result.add(new JobStreamServiceStep());
     result.add(new PartitionManagerStep());
-    result.add(new AdminApiServiceStep());
 
     return result;
   }
