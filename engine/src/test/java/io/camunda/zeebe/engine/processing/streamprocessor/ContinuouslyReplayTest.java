@@ -60,9 +60,11 @@ public class ContinuouslyReplayTest {
               final var softly = new SoftAssertions();
 
               processingState.entrySet().stream()
-                  .filter(entry -> entry.getKey() != ZbColumnFamilies.DEFAULT)
                   // ignores transient states
                   // this will happen anyway then on leader replay
+                  .filter(entry -> entry.getKey() != ZbColumnFamilies.DEFAULT)
+                  // Migrations ColumnFamily is not filled using events, but on broker start
+                  .filter(entry -> entry.getKey() != ZbColumnFamilies.MIGRATIONS_STATE)
                   .forEach(
                       entry -> {
                         final var column = entry.getKey();

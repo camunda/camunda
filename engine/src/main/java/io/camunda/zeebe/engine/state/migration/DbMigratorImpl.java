@@ -103,23 +103,43 @@ public class DbMigratorImpl implements DbMigrator {
 
   private boolean handleMigrationTask(
       final MigrationTask migrationTask, final int index, final int total) {
-    if (migrationTask.needsToRun(zeebeState)) {
-      try {
-        currentMigration = migrationTask;
-        runMigration(migrationTask, index, total);
-      } finally {
-        currentMigration = null;
-      }
-      return true;
-    } else {
-      logMigrationSkipped(migrationTask, index, total);
+    // The migration is already finished. We don't need to run it again.
+    if (zeebeState.getMigrationState().isMigrationFinished(migrationTask.getIdentifier())) {
+      logMigrationTaskAlreadyExecuted(migrationTask, index, total);
       return false;
     }
+
+    if (!migrationTask.needsToRun(zeebeState)) {
+      logMigrationSkipped(migrationTask, index, total);
+      zeebeState.getMigrationState().markMigrationFinished(migrationTask.getIdentifier());
+      return false;
+    }
+
+    try {
+      currentMigration = migrationTask;
+      runMigration(migrationTask, index, total);
+      zeebeState.getMigrationState().markMigrationFinished(migrationTask.getIdentifier());
+    } finally {
+      currentMigration = null;
+    }
+    return true;
+  }
+
+  private void logMigrationTaskAlreadyExecuted(
+      final MigrationTask migrationTask, final int index, final int total) {
+    LOGGER.debug(
+        "Migration was executed before "
+            + migrationTask.getIdentifier()
+            + " migration ("
+            + index
+            + "/"
+            + total
+            + ").  It does not need to run again.");
   }
 
   private void logMigrationSkipped(
       final MigrationTask migrationTask, final int index, final int total) {
-    LOGGER.info(
+    LOGGER.debug(
         "Skipping "
             + migrationTask.getIdentifier()
             + " migration ("
@@ -130,14 +150,14 @@ public class DbMigratorImpl implements DbMigrator {
   }
 
   private void runMigration(final MigrationTask migrationTask, final int index, final int total) {
-    LOGGER.info(
+    LOGGER.debug(
         "Starting " + migrationTask.getIdentifier() + " migration (" + index + "/" + total + ")");
     final var startTime = System.currentTimeMillis();
     migrationTask.runMigration(zeebeState);
     final var duration = System.currentTimeMillis() - startTime;
 
     LOGGER.debug(migrationTask.getIdentifier() + " migration completed in " + duration + " ms.");
-    LOGGER.info(
+    LOGGER.debug(
         "Finished " + migrationTask.getIdentifier() + " migration (" + index + "/" + total + ")");
   }
 }
