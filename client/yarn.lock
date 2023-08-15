@@ -1387,10 +1387,10 @@
   resolved "https://registry.yarnpkg.com/@csstools/selector-specificity/-/selector-specificity-2.0.2.tgz#1bfafe4b7ed0f3e4105837e056e0a89b108ebe36"
   integrity sha512-IkpVW/ehM1hWKln4fCA3NzJU8KwD+kIOvPZA4cqxoJHtE21CCzjyp+Kxbu0i5I4tBNOlXPL9mjwnWlL0VEG4Fg==
 
-"@devbookhq/splitter@1.4.0":
-  version "1.4.0"
-  resolved "https://registry.yarnpkg.com/@devbookhq/splitter/-/splitter-1.4.0.tgz#50592d080b91277c6ff94a923fc56df61bf2f438"
-  integrity sha512-/Wfh8YqbV9o0Dm2tNOshulZKGmN1ObcUYU0qsc8h1OlcvX62YGcINWRH9zZN70zGK7EflDkyiNPR5u7wOyY0Vg==
+"@devbookhq/splitter@1.4.2":
+  version "1.4.2"
+  resolved "https://registry.yarnpkg.com/@devbookhq/splitter/-/splitter-1.4.2.tgz#97fb5d015ca605847511f7420cb9d59d70b0eb89"
+  integrity sha512-DqJXsL7WNeDn/DyCeyoeeSpFHHoYBXscYlKNd3cJQ5d1xur73MPezHpyR2OID6Kh40TZ4KAb4hYjl5nL2+5M1g==
   dependencies:
     react-is "^17.0.2"
 
@@ -2501,10 +2501,10 @@
   dependencies:
     "@types/react" "*"
 
-"@types/lodash@4.14.195":
-  version "4.14.195"
-  resolved "https://registry.yarnpkg.com/@types/lodash/-/lodash-4.14.195.tgz#bafc975b252eb6cea78882ce8a7b6bf22a6de632"
-  integrity sha512-Hwx9EUgdwf2GLarOjQp5ZH8ZmblzcbTBC2wtQWNKARBSxM9ezRIAUpeDTgoQRAFB0+8CNWXVA9+MaSOzOF3nPg==
+"@types/lodash@4.14.197":
+  version "4.14.197"
+  resolved "https://registry.yarnpkg.com/@types/lodash/-/lodash-4.14.197.tgz#e95c5ddcc814ec3e84c891910a01e0c8a378c54b"
+  integrity sha512-BMVOiWs0uNxHVlHBgzTIqJYmj+PgCo4euloGF+5m4okL3rEYzM2EEv78mw8zWSMM57dM7kVIgJ2QDvwHSoCI5g==
 
 "@types/lodash@^4.14.72":
   version "4.14.191"
@@ -5064,10 +5064,10 @@ dmn-js-shared@^14.1.5:
     selection-update "^0.1.2"
     table-js "^8.0.2"
 
-dmn-js@14.1.5:
-  version "14.1.5"
-  resolved "https://registry.yarnpkg.com/dmn-js/-/dmn-js-14.1.5.tgz#1081c255a3a3b13c01625ef16ce003977b03f137"
-  integrity sha512-H7sj0fXg1ErC0E+WsxOAnSD+jKeKRm06ClgXfPf61YCncDY5lm5P1jCmwYQ2E3lYNLYFw90ZMLTW/y9sZHqK5A==
+dmn-js@14.1.6:
+  version "14.1.6"
+  resolved "https://registry.yarnpkg.com/dmn-js/-/dmn-js-14.1.6.tgz#8007dafc3b7a1f605384c7d027852956d0d462f7"
+  integrity sha512-t3LgBjCBYApRVe/DSjWHe9BWPpPJDWjr44nmuERPo9Cpc7aS2TZHPyXd7FeaL/uovERmDYzS1hxJci5qXxRSMQ==
   dependencies:
     dmn-js-decision-table "^14.1.5"
     dmn-js-drd "^14.1.5"
@@ -6052,10 +6052,10 @@ final-form-arrays@3.1.0:
   resolved "https://registry.yarnpkg.com/final-form-arrays/-/final-form-arrays-3.1.0.tgz#8bdace2fccedd61f3cbd032ae429813ae5ea37af"
   integrity sha512-TWBvun+AopgBLw9zfTFHBllnKMVNEwCEyDawphPuBGGqNsuhGzhT7yewHys64KFFwzIs6KEteGLpKOwvTQEscQ==
 
-final-form@4.20.9:
-  version "4.20.9"
-  resolved "https://registry.yarnpkg.com/final-form/-/final-form-4.20.9.tgz#647b459f8c504d77ec8f6e280015ab172982af2f"
-  integrity sha512-shA1X/7v8RmukWMNRHx0l7+Bm41hOivY78IvOiBrPVHjyWFIyqqIEMCz7yTVRc9Ea+EU4WkZ5r4MH6whSo5taw==
+final-form@4.20.10:
+  version "4.20.10"
+  resolved "https://registry.yarnpkg.com/final-form/-/final-form-4.20.10.tgz#1a484be6e9a91989121c054dcbd6f48bad051ecc"
+  integrity sha512-TL48Pi1oNHeMOHrKv1bCJUrWZDcD3DIG6AGYVNOnyZPr7Bd/pStN0pL+lfzF5BNoj/FclaoiaLenk4XUIFVYng==
   dependencies:
     "@babel/runtime" "^7.10.0"
 
@@ -9885,10 +9885,10 @@ prettier-linter-helpers@^1.0.0:
   dependencies:
     fast-diff "^1.1.2"
 
-prettier@3.0.0:
-  version "3.0.0"
-  resolved "https://registry.yarnpkg.com/prettier/-/prettier-3.0.0.tgz#e7b19f691245a21d618c68bc54dc06122f6105ae"
-  integrity sha512-zBf5eHpwHOGPC47h0zrPyNn+eAEIdEzfywMoYn2XPi0P44Zp0tSq64rq0xAREh4auw2cJZHo9QUob+NqCQky4g==
+prettier@3.0.1:
+  version "3.0.1"
+  resolved "https://registry.yarnpkg.com/prettier/-/prettier-3.0.1.tgz#65271fc9320ce4913c57747a70ce635b30beaa40"
+  integrity sha512-fcOWSnnpCrovBsmFZIGIy9UqK2FaI7Hqax+DIO0A9UxeVoY4iweyaFjS5TavZN97Hfehph0nhsZnjlVKzEQSrQ==
 
 pretty-bytes@^5.3.0, pretty-bytes@^5.4.1:
   version "5.6.0"
