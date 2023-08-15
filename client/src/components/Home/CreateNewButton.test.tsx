@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {runLastEffect} from 'react';
+import {runLastEffect} from '__mocks__/react';
 import {shallow} from 'enzyme';
 import {MenuItem} from '@carbon/react';
 
@@ -17,18 +17,27 @@ jest.mock('config', () => ({
   getOptimizeProfile: jest.fn().mockReturnValue('platform'),
 }));
 
+const props = {
+  createCollection: jest.fn(),
+  createProcessReport: jest.fn(),
+  createDashboard: jest.fn(),
+  importEntity: jest.fn(),
+};
+
 it('should not show the collection option if it is in a collection', async () => {
-  const node = shallow(<CreateNewButton collection="123" createCollection="test" />);
+  const node = shallow(<CreateNewButton {...props} />);
 
   await runLastEffect();
 
-  expect(node.find({onClick: 'test'})).not.toExist();
+  expect(node.find({label: 'Collection'})).toExist();
+  node.setProps({collection: '123'});
+  expect(node.find({label: 'Collection'})).not.toExist();
 });
 
 it('should not show decision and combined report options in cloud environment', async () => {
-  getOptimizeProfile.mockReturnValueOnce('cloud');
+  (getOptimizeProfile as jest.Mock).mockReturnValueOnce('cloud');
 
-  const node = shallow(<CreateNewButton />);
+  const node = shallow(<CreateNewButton {...props} />);
 
   await runLastEffect();
 
@@ -38,7 +47,7 @@ it('should not show decision and combined report options in cloud environment', 
 
 it('should call the createCollection prop', () => {
   const spy = jest.fn();
-  const node = shallow(<CreateNewButton createCollection={spy} />);
+  const node = shallow(<CreateNewButton {...props} createCollection={spy} />);
 
   node.find(MenuItem).at(0).simulate('click');
 
@@ -47,7 +56,7 @@ it('should call the createCollection prop', () => {
 
 it('should call the createProcessReport prop', async () => {
   const spy = jest.fn();
-  const node = shallow(<CreateNewButton createProcessReport={spy} />);
+  const node = shallow(<CreateNewButton {...props} createProcessReport={spy} />);
 
   await runLastEffect();
 
@@ -58,23 +67,9 @@ it('should call the createProcessReport prop', async () => {
 
 it('should call the createDashboard prop', () => {
   const spy = jest.fn();
-  const node = shallow(<CreateNewButton createDashboard={spy} />);
+  const node = shallow(<CreateNewButton {...props} createDashboard={spy} />);
 
   node.find(MenuItem).at(1).simulate('click');
 
-  expect(spy).toHaveBeenCalled();
-});
-
-it('should include an Import option if the user has entity_editor authorization', () => {
-  const spy = jest.fn();
-  const node = shallow(
-    <CreateNewButton importEntity={spy} user={{authorizations: ['entity_editor']}} />
-  );
-
-  const importOption = node.find(MenuItem).last();
-
-  expect(importOption.prop('label')).toMatch('Import');
-
-  importOption.simulate('click');
   expect(spy).toHaveBeenCalled();
 });

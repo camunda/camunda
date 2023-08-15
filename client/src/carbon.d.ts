@@ -665,4 +665,28 @@ declare module '@carbon/react' {
   ): JSX.Element;
 
   declare function Stack(props: {gap: number; children: ReactNode}): JSX.Element;
+
+  interface MenuItemProps {
+    children?: ReactNode;
+    className?: string;
+    disabled?: boolean;
+    kind?: 'default' | 'danger';
+    label: string;
+    onClick?: () => void;
+    renderIcon?: (() => ReactNode) | ReactNode;
+    shortcut?: string;
+  }
+
+  declare function MenuItem(props: ForwardRefProps<HTMLElement, MenuItemProps>): JSX.Element;
+
+  interface MenuButtonProps {
+    children: ReactNode;
+    className?: string;
+    disabled?: boolean;
+    kind?: 'primary' | 'tertiary' | 'ghost';
+    label: string;
+    size?: 'sm' | 'md' | 'lg';
+  }
+
+  declare function MenuButton(props: ForwardRefProps<HTMLElement, MenuButtonProps>): JSX.Element;
 }
