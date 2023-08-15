@@ -1338,6 +1338,8 @@
           <artifactId>maven-surefire-plugin</artifactId>
           <version>${plugin.version.surefire}</version>
           <configuration>
+            <!-- by default, exclude performance tests -->
+            <groups>!performance</groups>
             <failIfNoTests>false</failIfNoTests>
             <trimStackTrace>false</trimStackTrace>
             <redirectTestOutputToFile>true</redirectTestOutputToFile>
@@ -1858,12 +1860,7 @@
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-surefire-plugin</artifactId>
             <configuration>
-              <includes>
-                <include>**/*EnginePerformanceTest.java</include>
-              </includes>
-              <environmentVariables>
-                <ENGINE_PERFORMANCE_TESTS_ENABLED>true</ENGINE_PERFORMANCE_TESTS_ENABLED>
-              </environmentVariables>
+              <groups>performance</groups>
             </configuration>
           </plugin>
         </plugins>
