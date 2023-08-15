@@ -6,9 +6,7 @@
   ~ Licensed under the Zeebe Community License 1.1. You may not use this file
   ~ except in compliance with the Zeebe Community License 1.1.
   -->
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>io.camunda</groupId>
@@ -18,6 +16,10 @@
   </parent>
 
   <artifactId>zeebe-cluster-topology</artifactId>
+
+  <properties>
+    <proto.dir>${maven.multiModuleProjectDirectory}/topology/src/main/resources/proto</proto.dir>
+  </properties>
 
   <dependencies>
     <dependency>
@@ -41,13 +43,23 @@
     </dependency>
 
     <dependency>
-      <groupId>com.fasterxml.jackson.datatype</groupId>
-      <artifactId>jackson-datatype-jsr310</artifactId>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-annotations</artifactId>
     </dependency>
 
     <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-annotations</artifactId>
+      <groupId>com.google.protobuf</groupId>
+      <artifactId>protobuf-java</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
     </dependency>
 
     <dependency>
@@ -70,5 +82,17 @@
 
   </dependencies>
 
+  <build>
+    <plugins>
+      <!-- generate Java protobuf code -->
+      <plugin>
+        <groupId>org.xolstice.maven.plugins</groupId>
+        <artifactId>protobuf-maven-plugin</artifactId>
+        <configuration>
+          <protoSourceRoot>${proto.dir}</protoSourceRoot>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 
 </project>
