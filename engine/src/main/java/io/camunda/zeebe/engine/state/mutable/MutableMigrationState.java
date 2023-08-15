@@ -7,7 +7,9 @@
  */
 package io.camunda.zeebe.engine.state.mutable;
 
-public interface MutableMigrationState {
+import io.camunda.zeebe.engine.state.immutable.MigrationState;
+
+public interface MutableMigrationState extends MigrationState {
 
   void migrateMessageSubscriptionSentTime(
       final MutableMessageSubscriptionState messageSubscriptionState,
@@ -24,4 +26,11 @@ public interface MutableMigrationState {
   void migrateDecisionsPopulateDecisionVersionByDecisionIdAndDecisionKey();
 
   void migrateDrgPopulateDrgVersionByDrgIdAndKey();
+
+  /**
+   * Changes the state of a migration to FINISHED to indicate it has been executed.
+   *
+   * @param identifier the identifier of the migration
+   */
+  void markMigrationFinished(final String identifier);
 }
