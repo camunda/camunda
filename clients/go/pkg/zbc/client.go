@@ -143,6 +143,10 @@ func (c *ClientImpl) NewThrowErrorCommand() commands.ThrowErrorCommandStep1 {
 	return commands.NewThrowErrorCommand(c.gateway, c.credentialsProvider.ShouldRetryRequest)
 }
 
+func (c *ClientImpl) NewDeleteResourceCommand() commands.DeleteResourceCommandStep1 {
+	return commands.NewDeleteResourceCommand(c.gateway, c.credentialsProvider.ShouldRetryRequest)
+}
+
 func (c *ClientImpl) NewJobWorker() worker.JobWorkerBuilderStep1 {
 	return worker.NewJobWorkerBuilder(c.gateway, c, c.credentialsProvider.ShouldRetryRequest)
 }
