@@ -30,8 +30,8 @@ public class DbMigratorImpl implements DbMigrator {
           new TemporaryVariableMigration(),
           new DecisionMigration(),
           new DecisionRequirementsMigration(),
-          new JobTimeoutCleanup(),
-          new JobBackoffCleanup());
+          new JobTimeoutCleanupMigration(),
+          new JobBackoffCleanupMigration());
   // Be mindful of https://github.com/camunda/zeebe/issues/7248. In particular, that issue
   // should be solved first, before adding any migration that can take a long time
 
