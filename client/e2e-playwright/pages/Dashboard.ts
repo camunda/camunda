@@ -5,14 +5,16 @@
  * except in compliance with the proprietary license.
  */
 
-import {Page} from '@playwright/test';
+import {Page, Locator} from '@playwright/test';
 import {Paths} from 'modules/Routes';
 
 export class Dashboard {
   private page: Page;
+  readonly metricPanel: Locator;
 
   constructor(page: Page) {
     this.page = page;
+    this.metricPanel = page.getByTestId('metric-panel');
   }
 
   async navigateToDashboard() {

@@ -36,7 +36,7 @@ const Dashboard = observer(() => {
   return (
     <Grid $numberOfColumns={hasNoInstances ? 1 : 2}>
       <VisuallyHiddenH1>Operate Dashboard</VisuallyHiddenH1>
-      <Tile>
+      <Tile data-testid="metric-panel">
         <MetricPanel />
       </Tile>
       <Tile>
