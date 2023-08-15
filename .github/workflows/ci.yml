@@ -84,7 +84,7 @@ jobs:
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
       - name: Maven Test Build
         run: >
-          mvn -B -T ${{ matrix.maven-build-threads }} --no-snapshot-updates
+          ./mvnw -B -T ${{ matrix.maven-build-threads }} --no-snapshot-updates
           -D forkCount=${{ matrix.maven-test-fork-count }}
           -D maven.javadoc.skip=true
           -D skipUTs -D skipChecks
@@ -123,7 +123,7 @@ jobs:
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
       - name: Maven Test Build
         run: >
-          mvn -T2 -B --no-snapshot-updates
+          ./mvnw -T2 -B --no-snapshot-updates
           -D skipChecks
           -D junitThreadCount=16
           -P skip-random-tests,parallel-tests
@@ -163,7 +163,7 @@ jobs:
           maven-extra-args: -am -pl qa/integration-tests -T1C
       - name: Run smoke test
         run: >
-          mvn -B --no-snapshot-updates
+          ./mvnw -B --no-snapshot-updates
           -DskipUTs -DskipChecks
           -pl qa/integration-tests
           -P smoke-test
@@ -191,7 +191,7 @@ jobs:
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
       - name: Maven Test Build
         run: >
-          mvn -T1C -B
+          ./mvnw -T1C -B
           -P parallel-tests,include-random-tests
           -D junitThreadCount=16
           -D skipChecks
@@ -309,7 +309,7 @@ jobs:
           go: false
           maven-cache: 'true'
           maven-cache-key-modifier: java-checks
-      - run: mvn -T1C -B -D skipTests -P !autoFormat,checkFormat,spotbugs verify
+      - run: ./mvnw -T1C -B -D skipTests -P !autoFormat,checkFormat,spotbugs verify
   docker-checks:
     name: Docker checks
     runs-on: ubuntu-latest
@@ -413,7 +413,7 @@ jobs:
       # compile and generate-sources to ensure that the Javadoc can be properly generated; compile is
       # necessary when using annotation preprocessors for code generation, as otherwise the symbols are
       # not resolve-able by the Javadoc generator
-      - run: mvn -B -D skipTests -D skipChecks compile generate-sources source:jar javadoc:jar deploy
+      - run: ./mvnw -B -D skipTests -D skipChecks compile generate-sources source:jar javadoc:jar deploy
         env:
           MAVEN_USERNAME: ${{ steps.secrets.outputs.ARTIFACTS_USR }}
           MAVEN_PASSWORD: ${{ steps.secrets.outputs.ARTIFACTS_PSW }}
