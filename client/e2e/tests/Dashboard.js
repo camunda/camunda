@@ -15,6 +15,7 @@ import * as Common from './Common.elements.js';
 import * as Filter from './Filter.elements.js';
 import * as Alert from './Alerts.elements.js';
 import * as Report from './ProcessReport.elements.js';
+import * as Collection from './Collection.elements.js';
 
 fixture('Dashboard').page(config.endpoint).beforeEach(u.login).afterEach(cleanEntities);
 
@@ -526,4 +527,61 @@ test('add, edit and remove dashboards description', async (t) => {
   await u.save(t);
 
   await t.expect(Common.descriptionField.exists).notOk();
+});
+
+test('copy instant preview dashboard', async (t) => {
+  // Create a copy of the instant preview dashboard
+  await t.click(e.dashboardsLink);
+  await t.click(Common.processItem);
+
+  await t.click(e.createCopyButton);
+  await t.click(Common.modalConfirmButton);
+  await u.save(t);
+
+  await u.gotoOverview(t);
+
+  await t.expect(Common.collectionItem.textContent).contains('AnalysisTestingProcess');
+
+  await t.click(Common.collectionItem);
+  await t.expect(Common.dashboardItem.count).eql(1);
+  await t.expect(Common.dashboardItem.textContent).contains('Instant Preview Dashboard');
+
+  // Create another copy to check if only one collection is created
+  await t.click(e.dashboardsLink);
+  await t.click(Common.processItem);
+
+  await t.click(e.createCopyButton);
+  await t.click(Common.modalConfirmButton);
+  await t.typeText(Common.nameEditField, 'New Name', {replace: true});
+  await u.save(t);
+
+  await u.gotoOverview(t);
+  await t.click(Common.collectionItem);
+  await t.expect(Common.dashboardItem.count).eql(2);
+  await t.expect(Common.dashboardItem.nth(0).textContent).contains('New Name');
+  await t.expect(Common.dashboardItem.nth(1).textContent).contains('Instant Preview Dashboard');
+
+  // Create a new collection if the first one was renamed
+  await t.click(Collection.collectionContextMenu);
+  await t.click(Collection.editCollectionNameButton);
+
+  await t.typeText(Common.modalNameInput, 'another Collection Name', {replace: true});
+  await t.click(Common.modalConfirmButton);
+
+  await u.gotoOverview(t);
+  await t.expect(Common.collectionItem.count).eql(1);
+  await t.expect(Common.collectionItem.textContent).contains('another Collection Name');
+
+  await t.click(e.dashboardsLink);
+  await t.click(Common.processItem);
+
+  await t.click(e.createCopyButton);
+  await t.click(Common.modalConfirmButton);
+  await u.save(t);
+
+  await u.gotoOverview(t);
+
+  await t.expect(Common.collectionItem.count).eql(2);
+  await t.expect(Common.collectionItem.nth(0).textContent).contains('AnalysisTestingProcess');
+  await t.expect(Common.collectionItem.nth(1).textContent).contains('another Collection Name');
 });

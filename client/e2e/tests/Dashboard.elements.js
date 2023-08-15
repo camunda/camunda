@@ -51,3 +51,5 @@ export const typeaheadInput = Selector('.Typeahead .Input');
 export const alertsDropdown = Selector('.AlertsDropdown .Button');
 export const alertDeleteButton = Selector('.AlertModal .deleteButton');
 export const collectionLink = Selector('.NavItem a').withText('New Collection');
+export const dashboardsLink = Selector('.NavItem a').withText('Dashboards');
+export const createCopyButton = Selector('.create-copy');
