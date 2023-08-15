@@ -16,6 +16,7 @@ theme:
     favicon: favicon.ico
 extra_css:
     - css/extra.css
+    - css/tc-header.css
 repo_name: testcontainers-go
 repo_url: https://github.com/testcontainers/testcontainers-go
 markdown_extensions:
@@ -59,9 +60,12 @@ nav:
             - SQL: features/wait/sql.md
     - Modules:
         - modules/index.md
+        - modules/artemis.md
+        - modules/clickhouse.md
         - modules/couchbase.md
         - modules/k3s.md
         - modules/localstack.md
+        - modules/mongodb.md
         - modules/mysql.md
         - modules/neo4j.md
         - modules/postgres.md
@@ -76,7 +80,6 @@ nav:
         - examples/consul.md
         - examples/datastore.md
         - examples/firestore.md
-        - examples/mongodb.md
         - examples/nats.md
         - examples/nginx.md
         - examples/pubsub.md
@@ -103,4 +106,4 @@ nav:
     - Getting help: getting_help.md
 edit_uri: edit/main/docs/
 extra:
-    latest_version: v0.22.0
+    latest_version: v0.23.0
