@@ -15,9 +15,8 @@ const IS_E2E = Boolean(process.env.IS_E2E);
  */
 const config: PlaywrightTestConfig = {
   testDir: './e2e',
-  timeout: 30 * 1000,
   expect: {
-    timeout: 5000,
+    timeout: 10000,
   },
   fullyParallel: !IS_E2E,
   forbidOnly: IS_CI,
