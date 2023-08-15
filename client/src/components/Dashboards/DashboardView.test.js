@@ -265,6 +265,9 @@ it('should render the create copy button and modal for instant preview dashboard
   createCopyButton.simulate('click');
 
   expect(node.find('DashboardTemplateModal')).toExist();
+  expect(node.find('DashboardTemplateModal').prop('trackingEventName')).toBe(
+    'useInstantPreviewDashboardTemplate'
+  );
 });
 
 it('should create a collection with the current data source when copying instant dashboard if one fot this user doesnt exist', async () => {

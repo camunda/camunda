@@ -223,3 +223,25 @@ it('should invoke the onConfirm when when clicking the create button', async () 
   });
   expect(node.find('.confirm')).not.toBeDisabled();
 });
+
+it('should override the track event name if trackingEventName is passed', async () => {
+  const testDef = {key: 'def', versions: ['1'], tenantIds: [null]};
+  const node = shallow(
+    <TemplateModal
+      {...props}
+      initialDefinitions={[testDef]}
+      trackingEventName={'useInstantPreviewDashboardTemplate'}
+    />
+  );
+
+  expect(node.find('.confirm')).toBeDisabled();
+
+  runAllEffects();
+  await flushPromises();
+
+  node.find('.confirm').simulate('click');
+
+  expect(track).toHaveBeenCalledWith('useInstantPreviewDashboardTemplate', {
+    templateName: 'Locate bottlenecks on a Heatmap',
+  });
+});
