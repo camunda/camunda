@@ -29,6 +29,10 @@ public class TestContext<T extends TestContext<T>> {
   private Integer externalElsPort;
   private String internalElsHost;
   private Integer internalElsPort;
+  private String externalOsHost;
+  private Integer externalOsPort;
+  private String internalOsHost;
+  private Integer internalOsPort;
   private String externalKeycloakHost;
   private Integer externalKeycloakPort;
   private String internalKeycloakHost;
@@ -96,6 +100,42 @@ public class TestContext<T extends TestContext<T>> {
 
   public T setInternalElsPort(Integer internalElsPort) {
     this.internalElsPort = internalElsPort;
+    return (T) this;
+  }
+
+  public String getExternalOsHost() {
+    return externalOsHost;
+  }
+
+  public T setExternalOsHost(String externalOsHost) {
+    this.externalOsHost = externalOsHost;
+    return (T) this;
+  }
+
+  public Integer getExternalOsPort() {
+    return externalOsPort;
+  }
+
+  public T setExternalOsPort(Integer externalOsPort) {
+    this.externalOsPort = externalOsPort;
+    return (T) this;
+  }
+
+  public String getInternalOsHost() {
+    return internalOsHost;
+  }
+
+  public T setInternalOsHost(String internalOsHost) {
+    this.internalOsHost = internalOsHost;
+    return (T) this;
+  }
+
+  public Integer getInternalOsPort() {
+    return internalOsPort;
+  }
+
+  public T setInternalOsPort(Integer internalOsPort) {
+    this.internalOsPort = internalOsPort;
     return (T) this;
   }
 

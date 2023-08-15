@@ -17,6 +17,7 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
+import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.ElasticsearchProperties;
 import io.camunda.tasklist.property.SslProperties;
@@ -66,12 +67,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 @Component
 @Configuration
+@Conditional(ElasticSearchCondition.class)
 public class ElasticsearchConnector {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchConnector.class);
@@ -108,7 +111,7 @@ public class ElasticsearchConnector {
     return elasticsearchClient;
   }
 
-  @Bean
+  @Bean(destroyMethod = "close")
   public RestHighLevelClient esClient() {
     // some weird error when ELS sets available processors number for Netty - see
     // https://discuss.elastic.co/t/elasticsearch-5-4-1-availableprocessors-is-already-set/88036/3
@@ -116,22 +119,12 @@ public class ElasticsearchConnector {
     return createEsClient(tasklistProperties.getElasticsearch());
   }
 
-  @Bean("zeebeEsClient")
+  @Bean(name = "zeebeEsClient", destroyMethod = "close")
   public RestHighLevelClient zeebeEsClient() {
     // some weird error when ELS sets available processors number for Netty - see
     // https://discuss.elastic.co/t/elasticsearch-5-4-1-availableprocessors-is-already-set/88036/3
     System.setProperty("es.set.netty.runtime.available.processors", "false");
     return createEsClient(tasklistProperties.getZeebeElasticsearch());
-  }
-
-  public static void closeEsClient(RestHighLevelClient esClient) {
-    if (esClient != null) {
-      try {
-        esClient.close();
-      } catch (IOException e) {
-        LOGGER.error("Could not close esClient", e);
-      }
-    }
   }
 
   public RestHighLevelClient createEsClient(ElasticsearchProperties elsConfig) {

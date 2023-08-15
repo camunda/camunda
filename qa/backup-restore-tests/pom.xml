@@ -109,6 +109,7 @@
         <configuration>
           <systemPropertyVariables>
             <spring.profiles.active>test</spring.profiles.active>
+            <camunda.tasklist.database>${tasklistDatabase}</camunda.tasklist.database>
           </systemPropertyVariables>
         </configuration>
       </plugin>
@@ -125,6 +126,15 @@
       <properties>
         <skipTests>true</skipTests>
       </properties>
+    </profile>
+    <profile>
+      <id>Database name profile</id>
+      <activation>
+        <property>
+          <name>tasklistDatabase</name>
+          <value>[elasticsearch,opensearch]</value>
+        </property>
+      </activation>
     </profile>
   </profiles>
 

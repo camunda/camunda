@@ -15,6 +15,7 @@ import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
 import java.util.List;
 import java.util.regex.Pattern;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.endpoint.web.annotation.RestControllerEndpoint;
 import org.springframework.http.HttpStatus;
@@ -46,8 +47,7 @@ public class BackupService extends ManagementAPIErrorController {
 
   private void validateRepositoryNameIsConfigured() {
     if (tasklistProperties.getBackup() == null
-        || tasklistProperties.getBackup().getRepositoryName() == null
-        || tasklistProperties.getBackup().getRepositoryName().isEmpty()) {
+        || StringUtils.isBlank(tasklistProperties.getBackup().getRepositoryName())) {
       throw new NotFoundApiException("No backup repository configured.");
     }
   }

@@ -13,17 +13,17 @@ import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.stereotype.Component;
 
-@Component("elsIndicesCheck")
-public class ElsIndicesHealthIndicator implements HealthIndicator {
+@Component("searchEngineCheck")
+public class SearchEngineHealthIndicator implements HealthIndicator {
 
-  private static Logger logger = LoggerFactory.getLogger(ElsIndicesHealthIndicator.class);
+  private static Logger logger = LoggerFactory.getLogger(SearchEngineHealthIndicator.class);
 
-  @Autowired private ElsIndicesCheck elsIndicesCheck;
+  @Autowired private SearchEngineCheck searchEngineCheck;
 
   @Override
   public Health health() {
-    logger.debug("ELS indices check is called");
-    if (elsIndicesCheck.isHealthy() && elsIndicesCheck.indicesArePresent()) {
+    logger.debug("Search engine check is called");
+    if (searchEngineCheck.isHealthy() && searchEngineCheck.indicesArePresent()) {
       return Health.up().build();
     } else {
       return Health.down().build();

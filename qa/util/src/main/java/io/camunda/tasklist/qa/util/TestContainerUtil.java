@@ -10,13 +10,8 @@ import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.zeebe.containers.ZeebeContainer;
 import io.zeebe.containers.ZeebePort;
 import jakarta.annotation.PreDestroy;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.Duration;
-import java.util.Properties;
 import org.apache.http.HttpHost;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
@@ -26,6 +21,11 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.cluster.health.ClusterHealthStatus;
+import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch._types.HealthStatus;
+import org.opensearch.client.opensearch._types.OpenSearchException;
+import org.opensearch.client.opensearch.cluster.HealthResponse;
+import org.opensearch.testcontainers.OpensearchContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Configuration;
@@ -48,12 +48,14 @@ import org.testcontainers.utility.MountableFile;
 public class TestContainerUtil {
 
   public static final String ELS_NETWORK_ALIAS = "elasticsearch";
+  public static final String OS_NETWORK_ALIAS = "opensearch";
 
   public static final String KEYCLOAK_NETWORK_ALIAS = "keycloak";
 
   public static final String POSTGRES_NETWORK_ALIAS = "postgres";
   public static final String IDENTITY_NETWORK_ALIAS = "identity";
   public static final int ELS_PORT = 9200;
+  public static final int OS_PORT = 9200;
   public static final int POSTGRES_PORT = 5432;
   public static final Integer KEYCLOAK_PORT = 8080;
   public static final Integer IDENTITY_PORT = 8080;
@@ -75,8 +77,11 @@ public class TestContainerUtil {
   private static final Integer TASKLIST_HTTP_PORT = 8080;
   private static final String DOCKER_ELASTICSEARCH_IMAGE_NAME =
       "docker.elastic.co/elasticsearch/elasticsearch";
+  private static final String DOCKER_OPENSEARCH_IMAGE_NAME = "opensearchproject/opensearch";
+  private static final String DOCKER_OPENSEARCH_IMAGE_VERSION = "2.9.0";
   private Network network;
   private ElasticsearchContainer elsContainer;
+  private OpensearchContainer osContainer;
   private ZeebeContainer broker;
   private GenericContainer tasklistContainer;
   private GenericContainer identityContainer;
@@ -182,6 +187,32 @@ public class TestContainerUtil {
         testContext.getExternalPostgresPort());
   }
 
+  public void startOpenSearch(TestContext testContext) {
+    LOGGER.info("************ Starting OpenSearch ************");
+    osContainer =
+        new OpensearchContainer(
+                String.format(
+                    "%s:%s", DOCKER_OPENSEARCH_IMAGE_NAME, DOCKER_OPENSEARCH_IMAGE_VERSION))
+            .withNetwork(getNetwork())
+            .withEnv("path.repo", "~/")
+            .withNetworkAliases(OS_NETWORK_ALIAS)
+            .withExposedPorts(OS_PORT);
+    osContainer.setWaitStrategy(
+        new HostPortWaitStrategy().withStartupTimeout(Duration.ofSeconds(240L)));
+    osContainer.start();
+
+    testContext.setNetwork(getNetwork());
+    testContext.setExternalOsHost(osContainer.getContainerIpAddress());
+    testContext.setExternalOsPort(osContainer.getMappedPort(OS_PORT));
+    testContext.setInternalOsHost(OS_NETWORK_ALIAS);
+    testContext.setInternalOsPort(OS_PORT);
+
+    LOGGER.info(
+        "************ OpenSearch started on {}:{} ************",
+        testContext.getExternalOsHost(),
+        testContext.getExternalOsPort());
+  }
+
   public void startElasticsearch(TestContext testContext) {
     LOGGER.info("************ Starting Elasticsearch ************");
     elsContainer =
@@ -212,10 +243,10 @@ public class TestContainerUtil {
   }
 
   @Retryable(
-      value = TasklistRuntimeException.class,
+      retryFor = TasklistRuntimeException.class,
       maxAttempts = 5,
       backoff = @Backoff(delay = 3000))
-  public boolean checkElasctisearchHealth(TestContext testContext) {
+  public void checkElasctisearchHealth(TestContext testContext) {
     try {
       final RestHighLevelClient esClient =
           new RestHighLevelClient(
@@ -224,8 +255,33 @@ public class TestContainerUtil {
                       testContext.getExternalElsHost(), testContext.getExternalElsPort())));
       final ClusterHealthResponse clusterHealthResponse =
           esClient.cluster().health(new ClusterHealthRequest(), RequestOptions.DEFAULT);
-      return clusterHealthResponse.getStatus().equals(ClusterHealthStatus.GREEN);
+      final ClusterHealthStatus healthStatus = clusterHealthResponse.getStatus();
+      final boolean isHealth = healthStatus.equals(ClusterHealthStatus.GREEN);
+      if (isHealth) {
+        LOGGER.info("ElasticSearch cluster is up & running, health status: '{}'", healthStatus);
+      } else {
+        LOGGER.warn("ElasticSearch cluster health status is : '{}'", healthStatus);
+      }
     } catch (IOException | ElasticsearchException ex) {
+      throw new TasklistRuntimeException();
+    }
+  }
+
+  @Retryable(
+      retryFor = TasklistRuntimeException.class,
+      maxAttempts = 5,
+      backoff = @Backoff(delay = 3000))
+  public void checkOpenSearchHealth(OpenSearchClient osClient) {
+    try {
+      final HealthResponse healthResponse = osClient.cluster().health();
+      final HealthStatus healthStatus = healthResponse.status();
+      final boolean isHealth = HealthStatus.Green.equals(healthStatus);
+      if (isHealth) {
+        LOGGER.info("OpenSearch cluster is up & running, health status: '{}'", healthStatus);
+      } else {
+        LOGGER.warn("OpenSearch cluster health status is : '{}'", healthStatus);
+      }
+    } catch (IOException | OpenSearchException ex) {
       throw new TasklistRuntimeException();
     }
   }
@@ -248,9 +304,6 @@ public class TestContainerUtil {
         new GenericContainer<>(String.format("%s:%s", dockerImageName, version))
             .withExposedPorts(8080)
             .withNetwork(testContext.getNetwork())
-            .withCopyFileToContainer(
-                MountableFile.forHostPath(createConfigurationFile(testContext), 0775),
-                "/usr/local/tasklist/config/application.properties")
             .waitingFor(
                 new HttpWaitStrategy()
                     .forPort(8080)
@@ -275,61 +328,44 @@ public class TestContainerUtil {
   // for newer versions
   private void applyConfiguration(
       final GenericContainer<?> tasklistContainer, TestContext testContext) {
-    final String elsHost = testContext.getInternalElsHost();
-    final Integer elsPort = testContext.getInternalElsPort();
-    tasklistContainer
-        .withEnv(
-            "CAMUNDA_TASKLIST_ELASTICSEARCH_URL", String.format("http://%s:%s", elsHost, elsPort))
-        .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_HOST", elsHost)
-        .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_PORT", String.valueOf(elsPort))
-        .withEnv(
-            "CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL",
-            String.format("http://%s:%s", elsHost, elsPort))
-        .withEnv("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_UHOST", elsHost)
-        .withEnv("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_PORT", String.valueOf(elsPort));
+    if (TasklistPropertiesUtil.isOpenSearchDatabase()) {
+      final String osHost = testContext.getInternalOsHost();
+      final Integer osPort = testContext.getInternalOsPort();
+      tasklistContainer
+          .withEnv("CAMUNDA_TASKLIST_OPENSEARCH_URL", String.format("http://%s:%s", osHost, osPort))
+          .withEnv("CAMUNDA_TASKLIST_OPENSEARCH_HOST", osHost)
+          .withEnv("CAMUNDA_TASKLIST_OPENSEARCH_PORT", String.valueOf(osPort))
+          .withEnv(
+              "CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_URL", String.format("http://%s:%s", osHost, osPort))
+          .withEnv("CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_UHOST", osHost)
+          .withEnv("CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_PORT", String.valueOf(osPort));
+      if (testContext.getZeebeIndexPrefix() != null) {
+        tasklistContainer.withEnv(
+            "CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_PREFIX", testContext.getZeebeIndexPrefix());
+      }
+    } else {
+      final String elsHost = testContext.getInternalElsHost();
+      final Integer elsPort = testContext.getInternalElsPort();
+      tasklistContainer
+          .withEnv(
+              "CAMUNDA_TASKLIST_ELASTICSEARCH_URL", String.format("http://%s:%s", elsHost, elsPort))
+          .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_HOST", elsHost)
+          .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_PORT", String.valueOf(elsPort))
+          .withEnv(
+              "CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL",
+              String.format("http://%s:%s", elsHost, elsPort))
+          .withEnv("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_UHOST", elsHost)
+          .withEnv("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_PORT", String.valueOf(elsPort));
+      if (testContext.getZeebeIndexPrefix() != null) {
+        tasklistContainer.withEnv(
+            "CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_PREFIX", testContext.getZeebeIndexPrefix());
+      }
+    }
 
     final String zeebeContactPoint = testContext.getInternalZeebeContactPoint();
     if (zeebeContactPoint != null) {
       tasklistContainer.withEnv("CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS", zeebeContactPoint);
     }
-    if (testContext.getZeebeIndexPrefix() != null) {
-      tasklistContainer.withEnv(
-          "CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_PREFIX", testContext.getZeebeIndexPrefix());
-    }
-  }
-
-  protected Path createConfigurationFile(TestContext testContext) {
-    try {
-      final Properties properties =
-          getTasklistElsProperties(
-              testContext.getInternalElsHost(),
-              testContext.getInternalElsPort(),
-              testContext.getInternalZeebeContactPoint(),
-              testContext.getZeebeIndexPrefix());
-      final Path tempFile = Files.createTempFile(getClass().getPackage().getName(), ".tmp");
-      properties.store(new FileWriter(tempFile.toFile()), null);
-      return tempFile;
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
-    }
-  }
-
-  // for older versions
-  protected Properties getTasklistElsProperties(
-      String elsHost, Integer elsPort, String zeebeContactPoint, String zeebeIndexPrefix) {
-    final Properties properties = new Properties();
-    properties.setProperty(PROPERTIES_PREFIX + "elasticsearch.host", elsHost);
-    properties.setProperty(PROPERTIES_PREFIX + "elasticsearch.port", String.valueOf(elsPort));
-    properties.setProperty(PROPERTIES_PREFIX + "zeebeElasticsearch.host", elsHost);
-    properties.setProperty(PROPERTIES_PREFIX + "zeebeElasticsearch.port", String.valueOf(elsPort));
-    if (zeebeContactPoint != null) {
-      properties.setProperty(PROPERTIES_PREFIX + "zeebe.brokerContactPoint", zeebeContactPoint);
-    }
-    if (zeebeIndexPrefix != null) {
-      properties.setProperty(PROPERTIES_PREFIX + "zeebeElasticsearch.prefix", zeebeIndexPrefix);
-    }
-    properties.setProperty(PROPERTIES_PREFIX + "archiver.waitPeriodBeforeArchiving", "2m");
-    return properties;
   }
 
   public ZeebeContainer startZeebe(final String version, TestContext testContext) {
@@ -360,15 +396,31 @@ public class TestContainerUtil {
   }
 
   protected void addConfig(ZeebeContainer zeebeBroker, TestContext testContext) {
-    zeebeBroker
-        .withEnv(
-            "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME",
-            "io.camunda.zeebe.exporter.ElasticsearchExporter")
-        .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL", "http://elasticsearch:9200");
-    if (testContext.getZeebeIndexPrefix() != null) {
-      zeebeBroker.withEnv(
-          "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_PREFIX",
-          testContext.getZeebeIndexPrefix());
+    if (TasklistPropertiesUtil.isOpenSearchDatabase()) {
+      zeebeBroker
+          .withEnv(
+              "ZEEBE_BROKER_EXPORTERS_OPENSEARCH_CLASSNAME",
+              "io.camunda.zeebe.exporter.opensearch.OpensearchExporter")
+          .withEnv("ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_URL", "http://opensearch:" + OS_PORT)
+          .withEnv("ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_BULK_SIZE", "1");
+      if (testContext.getZeebeIndexPrefix() != null) {
+        zeebeBroker.withEnv(
+            "ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_INDEX_PREFIX",
+            testContext.getZeebeIndexPrefix());
+      }
+    } else {
+      zeebeBroker
+          .withEnv(
+              "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME",
+              "io.camunda.zeebe.exporter.ElasticsearchExporter")
+          .withEnv(
+              "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL", "http://elasticsearch:" + ELS_PORT)
+          .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_SIZE", "1");
+      if (testContext.getZeebeIndexPrefix() != null) {
+        zeebeBroker.withEnv(
+            "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_PREFIX",
+            testContext.getZeebeIndexPrefix());
+      }
     }
   }
 

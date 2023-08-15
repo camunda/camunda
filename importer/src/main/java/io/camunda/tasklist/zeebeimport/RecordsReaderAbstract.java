@@ -81,7 +81,7 @@ public abstract class RecordsReaderAbstract implements RecordsReader, Runnable {
   public int readAndScheduleNextBatch(boolean autoContinue) {
     final var readerBackoff = tasklistProperties.getImporter().getReaderBackoff();
     try {
-      ImportBatch importBatch = null;
+      final ImportBatch importBatch;
       final var latestPosition =
           importPositionHolder.getLatestScheduledPosition(
               importValueType.getAliasTemplate(), partitionId);

@@ -26,7 +26,11 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch.OpenSearchClient;
-import org.opensearch.client.opensearch._types.*;
+import org.opensearch.client.opensearch._types.FieldSort;
+import org.opensearch.client.opensearch._types.FieldValue;
+import org.opensearch.client.opensearch._types.OpenSearchException;
+import org.opensearch.client.opensearch._types.SortOrder;
+import org.opensearch.client.opensearch._types.Time;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch._types.query_dsl.RangeQuery;
 import org.opensearch.client.opensearch.core.ScrollRequest;
@@ -102,7 +106,7 @@ public class RecordsReaderOpenSearch extends RecordsReaderAbstract {
             .size(maxNumberOfHits >= QUERY_MAX_SIZE ? QUERY_MAX_SIZE : maxNumberOfHits)
             .routing(String.valueOf(partitionId))
             .requestCache(false)
-            .scroll(Time.of(t -> t.time(String.valueOf(SCROLL_KEEP_ALIVE_MS))))
+            .scroll(Time.of(t -> t.time(SCROLL_KEEP_ALIVE_MS)))
             .index(aliasName)
             .build();
 
@@ -159,14 +163,13 @@ public class RecordsReaderOpenSearch extends RecordsReaderAbstract {
   private Hit[] read(SearchRequest searchRequest, boolean scrollNeeded) throws IOException {
     String scrollId = null;
     try {
-      final List<Hit> searchHits = new ArrayList<>();
 
       if (scrollNeeded) {
         searchRequest.scroll();
       }
       SearchResponse<Object> response = zeebeOsClient.search(searchRequest, Object.class);
 
-      searchHits.addAll(response.hits().hits());
+      final List<Hit> searchHits = new ArrayList<>(response.hits().hits());
 
       if (scrollNeeded) {
         scrollId = response.scrollId();
@@ -174,7 +177,7 @@ public class RecordsReaderOpenSearch extends RecordsReaderAbstract {
           final ScrollRequest scrollRequest =
               new ScrollRequest.Builder()
                   .scrollId(scrollId)
-                  .scroll(Time.of(t -> t.time(String.valueOf(SCROLL_KEEP_ALIVE_MS))))
+                  .scroll(Time.of(t -> t.time(SCROLL_KEEP_ALIVE_MS)))
                   .build();
 
           response = zeebeOsClient.scroll(scrollRequest, Object.class);
@@ -205,7 +208,7 @@ public class RecordsReaderOpenSearch extends RecordsReaderAbstract {
 
     } catch (OpenSearchException ex) {
       if (ex.getMessage().contains("no such index")) {
-        LOGGER.debug("No index found for alias {}", aliasName);
+        LOGGER.warn("No index found for alias '{}'", aliasName);
         throw new NoSuchIndexException();
       } else {
         final String message =

@@ -10,6 +10,7 @@ import static io.camunda.tasklist.util.ElasticsearchUtil.joinWithAnd;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.es.RetryElasticsearchClient;
 import io.camunda.tasklist.exceptions.MigrationException;
 import io.camunda.tasklist.property.TasklistProperties;
@@ -30,6 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.stereotype.Component;
@@ -39,6 +41,7 @@ import org.springframework.stereotype.Component;
  * After creation it updates the repository index by looking in classpath folder for new steps.<br>
  */
 @Component
+@Conditional(ElasticSearchCondition.class)
 public class ElasticsearchStepsRepository implements StepsRepository {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchStepsRepository.class);

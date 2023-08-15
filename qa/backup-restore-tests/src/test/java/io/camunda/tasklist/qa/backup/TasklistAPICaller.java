@@ -36,6 +36,7 @@ import java.util.function.BiFunction;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.indices.GetIndexRequest;
+import org.opensearch.client.opensearch.OpenSearchClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -157,7 +158,7 @@ public class TasklistAPICaller {
   }
 
   @Retryable(
-      value = {TasklistRuntimeException.class},
+      retryFor = {TasklistRuntimeException.class},
       maxAttempts = 10,
       backoff = @Backoff(delay = 2000))
   public void checkIndicesAreDeleted(RestHighLevelClient esClient) throws IOException {
@@ -168,7 +169,24 @@ public class TasklistAPICaller {
             .getIndices()
             .length;
     if (count > 0) {
-      LOGGER.warn("Indices are not yet removed.");
+      LOGGER.warn("ElasticSearch indices are not yet removed.");
+      throw new TasklistRuntimeException("Indices are not yet deleted.");
+    }
+  }
+
+  @Retryable(
+      retryFor = {TasklistRuntimeException.class},
+      maxAttempts = 10,
+      backoff = @Backoff(delay = 2000))
+  public void checkIndicesAreDeleted(OpenSearchClient osClient) throws IOException {
+    final int count =
+        osClient
+            .indices()
+            .get(gir -> gir.index("tasklist*", ZEEBE_INDEX_PREFIX + "*"))
+            .result()
+            .size();
+    if (count > 0) {
+      LOGGER.warn("OpenSearch indices are not yet removed.");
       throw new TasklistRuntimeException("Indices are not yet deleted.");
     }
   }

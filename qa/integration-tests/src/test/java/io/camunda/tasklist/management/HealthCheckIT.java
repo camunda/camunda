@@ -51,7 +51,7 @@ import org.springframework.web.context.WebApplicationContext;
     classes = {
       TasklistProperties.class,
       TestApplicationWithNoBeans.class,
-      ElsIndicesHealthIndicator.class,
+      SearchEngineHealthIndicator.class,
       WebSecurityConfig.class,
       ElasticsearchSessionRepository.class,
       RetryElasticsearchClient.class,
@@ -65,7 +65,7 @@ public class HealthCheckIT {
 
   @Autowired private WebApplicationContext context;
 
-  @MockBean private ElsIndicesHealthIndicator probes;
+  @MockBean private SearchEngineHealthIndicator probes;
 
   private MockMvc mockMvc;
 

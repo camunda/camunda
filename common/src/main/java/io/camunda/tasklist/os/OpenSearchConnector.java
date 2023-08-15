@@ -77,14 +77,16 @@ public class OpenSearchConnector {
       final HealthResponse response = openSearchClient.cluster().health();
       LOGGER.info("OpenSearch cluster health: {}", response.status());
     } catch (IOException e) {
-      LOGGER.error("Error in getting health status from {}", "localhost:9205", e);
+      LOGGER.error(
+          "Error in getting health status from localhost:"
+              + tasklistProperties.getOpenSearch().getPort(),
+          e);
     }
     return openSearchClient;
   }
 
   @Bean
   public OpenSearchAsyncClient openSearchAsyncClient() {
-    final HttpHost host = getHttpHost(tasklistProperties.getOpenSearch());
     final OpenSearchAsyncClient openSearchClient =
         createAsyncOsClient(tasklistProperties.getOpenSearch());
     final CompletableFuture<HealthResponse> healthResponse;
@@ -93,7 +95,10 @@ public class OpenSearchConnector {
       healthResponse.whenComplete(
           (response, e) -> {
             if (e != null) {
-              LOGGER.error("Error in getting health status from {}", "localhost:9205", e);
+              LOGGER.error(
+                  "Error in getting health status from localhost:"
+                      + tasklistProperties.getOpenSearch().getPort(),
+                  e);
             } else {
               LOGGER.info("OpenSearch cluster health: {}", response.status());
             }
@@ -142,7 +147,10 @@ public class OpenSearchConnector {
       healthResponse.whenComplete(
           (response, e) -> {
             if (e != null) {
-              LOGGER.error("Error in getting health status from {}", "localhost:9205", e);
+              LOGGER.error(
+                  "Error in getting health status from localhost:"
+                      + tasklistProperties.getOpenSearch().getPort(),
+                  e);
             } else {
               LOGGER.info("OpenSearch cluster health: {}", response.status());
             }
@@ -186,7 +194,10 @@ public class OpenSearchConnector {
       final HealthResponse response = openSearchClient.cluster().health();
       LOGGER.info("OpenSearch cluster health: {}", response.status());
     } catch (IOException e) {
-      LOGGER.error("Error in getting health status from {}", "localhost:9205", e);
+      LOGGER.error(
+          "Error in getting health status from localhost:"
+              + tasklistProperties.getOpenSearch().getPort(),
+          e);
     }
 
     if (!checkHealth(openSearchClient)) {

@@ -9,9 +9,9 @@ package io.camunda.tasklist;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.tasklist.es.RetryElasticsearchClient;
-import io.camunda.tasklist.management.ElsIndicesCheck;
-import io.camunda.tasklist.management.ElsIndicesHealthIndicator;
+import io.camunda.tasklist.management.ElasticSearchCheck;
 import io.camunda.tasklist.management.HealthCheckIT.AddManagementPropertiesInitializer;
+import io.camunda.tasklist.management.SearchEngineHealthIndicator;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.TestElasticsearchSchemaManager;
 import io.camunda.tasklist.util.TasklistIntegrationTest;
@@ -35,7 +35,7 @@ import org.springframework.test.context.junit4.SpringRunner;
     classes = {
       TestElasticsearchSchemaManager.class,
       TestApplication.class,
-      ElsIndicesHealthIndicator.class,
+      SearchEngineHealthIndicator.class,
       WebSecurityConfig.class,
       OAuth2WebConfigurer.class,
       RetryElasticsearchClient.class,
@@ -52,7 +52,7 @@ public class ProbesTestIT extends TasklistIntegrationTest {
 
   @Autowired private TestElasticsearchSchemaManager schemaManager;
 
-  @Autowired private ElsIndicesCheck probes;
+  @Autowired private ElasticSearchCheck probes;
 
   @MockBean private PartitionHolder partitionHolder;
 

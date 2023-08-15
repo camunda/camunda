@@ -90,7 +90,7 @@ public class SearchEngineUserDetailsService implements UserDetailsService {
       final String displayName,
       final String password,
       final List<String> roles) {
-    LOGGER.info("Create user in Elasticsearch for userId {}", userId);
+    LOGGER.info("Create user with userId {}", userId);
     final String passwordEncoded = getPasswordEncoder().encode(password);
     final UserEntity userEntity =
         new UserEntity()

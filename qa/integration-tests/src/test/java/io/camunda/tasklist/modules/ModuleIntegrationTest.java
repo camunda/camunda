@@ -7,8 +7,8 @@
 package io.camunda.tasklist.modules;
 
 import io.camunda.tasklist.es.RetryElasticsearchClient;
-import io.camunda.tasklist.management.ElsIndicesHealthIndicator;
 import io.camunda.tasklist.management.HealthCheckIT.AddManagementPropertiesInitializer;
+import io.camunda.tasklist.management.SearchEngineHealthIndicator;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.TestElasticsearchSchemaManager;
 import io.camunda.tasklist.util.TestApplication;
@@ -28,7 +28,7 @@ import org.springframework.test.context.junit4.SpringRunner;
       ModulesTestApplication.class,
       TestElasticsearchSchemaManager.class,
       TestApplication.class,
-      ElsIndicesHealthIndicator.class,
+      SearchEngineHealthIndicator.class,
       WebSecurityConfig.class,
       OAuth2WebConfigurer.class,
       RetryElasticsearchClient.class,

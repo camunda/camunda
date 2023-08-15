@@ -39,6 +39,7 @@ public class ProcessInstanceStoreElasticSearch implements ProcessInstanceStore {
 
   @Autowired RetryElasticsearchClient retryElasticsearchClient;
 
+  @Override
   public DeletionStatus deleteProcessInstance(final String processInstanceId) {
     // Don't need to validate for canceled/completed process instances
     // because only completed will be imported by ProcessInstanceZeebeRecordProcessor

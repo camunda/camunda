@@ -4,7 +4,7 @@
  * See the License.txt file for more information. You may not use this file
  * except in compliance with the proprietary license.
  */
-package io.camunda.tasklist.qa.backup;
+package io.camunda.tasklist.qa.backup.generator;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
@@ -12,6 +12,8 @@ import static org.junit.Assert.assertTrue;
 
 import com.graphql.spring.boot.test.GraphQLResponse;
 import io.camunda.tasklist.entities.TaskState;
+import io.camunda.tasklist.qa.backup.BackupRestoreTestContext;
+import io.camunda.tasklist.qa.backup.TasklistAPICaller;
 import io.camunda.tasklist.qa.util.ZeebeTestUtil;
 import io.camunda.tasklist.schema.templates.DraftTaskVariableTemplate;
 import io.camunda.tasklist.schema.templates.TaskTemplate;
@@ -26,29 +28,13 @@ import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Random;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.elasticsearch.ElasticsearchException;
-import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.reindex.UpdateByQueryRequest;
-import org.elasticsearch.script.Script;
-import org.elasticsearch.script.ScriptType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Retryable;
-import org.springframework.stereotype.Component;
 
-@Component
-public class DataGenerator {
+public abstract class AbstractBackupRestoreDataGenerator implements BackupRestoreDataGenerator {
 
   public static final String PROCESS_BPMN_PROCESS_ID = "basicProcess";
   public static final String PROCESS_BPMN_PROCESS_ID_2 = "basicProcess2";
@@ -57,20 +43,16 @@ public class DataGenerator {
   private static final int COMPLETED_TASKS_COUNT = 11;
   private static final int DRAFT_TASK_VARIABLES_COUNT_AFTER_TASKS_COMPLETION =
       ALL_DRAFT_TASK_VARIABLES_COUNT - COMPLETED_TASKS_COUNT * 2;
-  private static final Logger LOGGER = LoggerFactory.getLogger(DataGenerator.class);
-  //  private static final DateTimeFormatter ARCHIVER_DATE_TIME_FORMATTER =
-  // DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(AbstractBackupRestoreDataGenerator.class);
+
   /**
    * ZeebeClient must not be reused between different test fixtures, as this may be different
    * versions of client in the future.
    */
   private ZeebeClient zeebeClient;
 
-  private RestHighLevelClient esClient;
-
   @Autowired private TasklistAPICaller tasklistAPICaller;
-
-  private Random random = new Random();
 
   private List<Long> processInstanceKeys = new ArrayList<>();
 
@@ -80,13 +62,13 @@ public class DataGenerator {
             .gatewayAddress(testContext.getExternalZeebeContactPoint())
             .usePlaintext()
             .build();
-    //    operateRestClient = new StatefulRestTemplate(testContext.getExternalOperateHost(),
-    // testContext.getExternalOperatePort(), testContext.getExternalOperateContextPath());
-    //    operateRestClient.loginWhenNeeded();
-    this.esClient = testContext.getEsClient();
-    //    this.operateRestClient = testContext.getOperateRestClient();
+
+    initClient(testContext);
   }
 
+  protected abstract void initClient(BackupRestoreTestContext testContext);
+
+  @Override
   public void createData(BackupRestoreTestContext testContext) throws Exception {
     init(testContext);
     try {
@@ -102,11 +84,7 @@ public class DataGenerator {
 
       addDraftVariablesForAllTasks();
 
-      try {
-        esClient.indices().refresh(new RefreshRequest("tasklist-*"), RequestOptions.DEFAULT);
-      } catch (IOException e) {
-        LOGGER.error("Error in refreshing indices", e);
-      }
+      refreshIndices();
       LOGGER.info(
           "Data generation completed in: {} s",
           ChronoUnit.SECONDS.between(dataGenerationStart, OffsetDateTime.now()));
@@ -114,6 +92,8 @@ public class DataGenerator {
       closeClients();
     }
   }
+
+  protected abstract void refreshIndices();
 
   private void addDraftVariablesForAllTasks() throws IOException {
     final var tasks = tasklistAPICaller.getAllTasks().getList("$.data.tasks", TaskDTO.class);
@@ -136,23 +116,7 @@ public class DataGenerator {
                                         "\"" + RandomStringUtils.randomAlphanumeric(10) + "\"")))));
   }
 
-  private void claimAllTasks() {
-    final UpdateByQueryRequest updateRequest =
-        new UpdateByQueryRequest(getMainIndexNameFor(TaskTemplate.INDEX_NAME))
-            .setQuery(QueryBuilders.matchAllQuery())
-            .setScript(
-                new Script(
-                    ScriptType.INLINE,
-                    "painless",
-                    "ctx._source.assignee = 'demo'",
-                    Collections.emptyMap()))
-            .setRefresh(true);
-    try {
-      esClient.updateByQuery(updateRequest, RequestOptions.DEFAULT);
-    } catch (ElasticsearchException | IOException e) {
-      throw new RuntimeException(e);
-    }
-  }
+  protected abstract void claimAllTasks();
 
   private void closeClients() {
     if (zeebeClient != null) {
@@ -163,13 +127,16 @@ public class DataGenerator {
 
   private void waitUntilAllDataAreImported() throws IOException {
     LOGGER.info("Wait till data is imported.");
-    final SearchRequest searchRequest = new SearchRequest(getAliasFor(TaskTemplate.INDEX_NAME));
     long loadedProcessInstances = 0;
     int count = 0;
     final int maxWait = 101;
     while (PROCESS_INSTANCE_COUNT > loadedProcessInstances && count < maxWait) {
       count++;
-      loadedProcessInstances = countEntitiesFor(searchRequest);
+      loadedProcessInstances = countEntitiesFor(TaskTemplate.INDEX_NAME);
+      LOGGER.info(
+          "Imported '{}' process instances of '{}'",
+          loadedProcessInstances,
+          PROCESS_INSTANCE_COUNT);
       ThreadUtil.sleepFor(1000L);
     }
     if (count == maxWait) {
@@ -214,21 +181,21 @@ public class DataGenerator {
         .done();
   }
 
-  private long countEntitiesFor(SearchRequest searchRequest) throws IOException {
-    searchRequest.source().size(1000);
-    final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
-    return searchResponse.getHits().getTotalHits().value;
+  private long countEntitiesFor(String indexName) throws IOException {
+    return countEntitiesForAlias(getAliasFor(indexName));
   }
+
+  protected abstract long countEntitiesForAlias(String alias) throws IOException;
 
   private String getAliasFor(String index) {
     return String.format("tasklist-%s-*_alias", index);
   }
 
-  private String getMainIndexNameFor(String index) {
+  protected String getMainIndexNameFor(String index) {
     return String.format("tasklist-%s-*_", index);
   }
 
-  @Retryable(value = AssertionError.class, maxAttempts = 10, backoff = @Backoff(delay = 2000))
+  @Override
   public void assertData() throws IOException {
     try {
       final GraphQLResponse response = tasklistAPICaller.getAllTasks();
@@ -236,10 +203,7 @@ public class DataGenerator {
       assertEquals(String.valueOf(PROCESS_INSTANCE_COUNT), response.get("$.data.tasks.length()"));
       assertEquals("task1", response.get("$.data.tasks[0].name"));
       assertEquals("CREATED", response.get("$.data.tasks[0].taskState"));
-
-      final var draftVariablesSearchRequest =
-          new SearchRequest(getAliasFor(DraftTaskVariableTemplate.INDEX_NAME));
-      assertThat(countEntitiesFor(draftVariablesSearchRequest))
+      assertThat(countEntitiesFor(DraftTaskVariableTemplate.INDEX_NAME))
           .isEqualTo(ALL_DRAFT_TASK_VARIABLES_COUNT);
     } catch (AssertionError er) {
       LOGGER.warn("Error when asserting data: " + er.getMessage());
@@ -247,7 +211,7 @@ public class DataGenerator {
     }
   }
 
-  @Retryable(value = AssertionError.class, maxAttempts = 10, backoff = @Backoff(delay = 2000))
+  @Override
   public void assertDataAfterChange() throws IOException {
     try {
       List<TaskDTO> tasks = tasklistAPICaller.getTasks("task1");
@@ -263,10 +227,8 @@ public class DataGenerator {
       assertThat(tasks).hasSize(PROCESS_INSTANCE_COUNT);
       assertThat(tasks).extracting("taskState").containsOnly(TaskState.CREATED);
 
-      final var draftVariablesSearchRequest =
-          new SearchRequest(getAliasFor(DraftTaskVariableTemplate.INDEX_NAME));
       // after task completion all draft variables associated with a task will be deleted
-      assertThat(countEntitiesFor(draftVariablesSearchRequest))
+      assertThat(countEntitiesFor(DraftTaskVariableTemplate.INDEX_NAME))
           .isEqualTo(DRAFT_TASK_VARIABLES_COUNT_AFTER_TASKS_COMPLETION);
     } catch (AssertionError er) {
       LOGGER.warn("Error when asserting data: " + er.getMessage());
@@ -274,6 +236,7 @@ public class DataGenerator {
     }
   }
 
+  @Override
   public void changeData(BackupRestoreTestContext testContext) throws IOException {
     init(testContext);
     try {
@@ -291,8 +254,8 @@ public class DataGenerator {
   }
 
   private void completeTasks(String taskBpmnId, int completedTasksCount) throws IOException {
-    final List<TaskDTO> tasks = tasklistAPICaller.getTasks("task1");
-    for (int i = 0; i < COMPLETED_TASKS_COUNT; i++) {
+    final List<TaskDTO> tasks = tasklistAPICaller.getTasks(taskBpmnId);
+    for (int i = 0; i < completedTasksCount; i++) {
       tasklistAPICaller.completeTask(tasks.get(i).getId(), "{name: \"varOut\", value: \"123\"}");
     }
   }

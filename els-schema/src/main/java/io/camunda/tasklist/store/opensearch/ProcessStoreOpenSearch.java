@@ -19,7 +19,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.apache.commons.lang3.StringUtils;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.FieldSort;
 import org.opensearch.client.opensearch._types.FieldValue;
@@ -398,15 +397,5 @@ public class ProcessStoreOpenSearch implements ProcessStore {
     }
 
     return response.hits().hits().stream().map(h -> h.source()).collect(Collectors.toList());
-  }
-
-  @Override
-  public String getStartEventFormIdByBpmnProcess(ProcessEntity process) {
-    if (process.isStartedByForm()) {
-      final String formId = StringUtils.substringAfterLast(process.getFormKey(), ":");
-      final var form = formStore.getForm(formId, process.getId());
-      return form.getId();
-    }
-    return null;
   }
 }

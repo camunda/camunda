@@ -39,6 +39,7 @@ public class ProcessInstanceStoreOpenSearch implements ProcessInstanceStore {
 
   @Autowired RetryOpenSearchClient retryOpenSearchClient;
 
+  @Override
   public DeletionStatus deleteProcessInstance(final String processInstanceId) {
     // Don't need to validate for canceled/completed process instances
     // because only completed will be imported by ProcessInstanceZeebeRecordProcessor

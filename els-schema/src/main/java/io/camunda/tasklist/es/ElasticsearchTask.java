@@ -6,6 +6,7 @@
  */
 package io.camunda.tasklist.es;
 
+import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import java.io.IOException;
 import java.util.List;
@@ -17,9 +18,11 @@ import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.tasks.GetTaskResponse;
 import org.elasticsearch.tasks.RawTaskStatus;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
+@Conditional(ElasticSearchCondition.class)
 public class ElasticsearchTask {
 
   public static final String ERROR = "error";

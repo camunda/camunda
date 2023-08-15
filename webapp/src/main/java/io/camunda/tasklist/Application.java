@@ -10,7 +10,6 @@ import static io.camunda.tasklist.webapp.security.TasklistProfileService.AUTH_PR
 import static io.camunda.tasklist.webapp.security.TasklistProfileService.DEFAULT_AUTH;
 
 import io.camunda.tasklist.data.DataGenerator;
-import io.camunda.tasklist.data.es.DevDataGeneratorElasticSearch;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import java.util.HashMap;
 import java.util.Map;
@@ -124,14 +123,14 @@ public class Application {
             "health, prometheus, loggers, usage-metrics, backups",
 
         // add custom check to standard readiness check
-        "management.endpoint.health.group.readiness.include", "readinessState,elsIndicesCheck");
+        "management.endpoint.health.group.readiness.include", "readinessState,searchEngineCheck");
   }
 
   @Bean(name = "dataGenerator")
   @ConditionalOnMissingBean
   public DataGenerator stubDataGenerator() {
     LOGGER.debug("Create Data generator stub");
-    return new DevDataGeneratorElasticSearch();
+    return DataGenerator.DO_NOTHING;
   }
 
   public static class ApplicationErrorListener

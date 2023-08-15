@@ -8,7 +8,10 @@ package io.camunda.tasklist.qa.backup;
 
 import static io.camunda.tasklist.util.CollectionUtil.asMap;
 
+import io.camunda.tasklist.CommonUtils;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
+import io.camunda.tasklist.qa.backup.generator.BackupRestoreDataGenerator;
+import io.camunda.tasklist.qa.util.TasklistPropertiesUtil;
 import io.camunda.tasklist.qa.util.TestContainerUtil;
 import io.camunda.tasklist.webapp.management.dto.TakeBackupResponseDto;
 import io.camunda.zeebe.client.ZeebeClient;
@@ -26,6 +29,11 @@ import org.elasticsearch.repositories.fs.FsRepository;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.opensearch.client.json.jackson.JacksonJsonpMapper;
+import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch._types.OpenSearchException;
+import org.opensearch.client.opensearch.snapshot.CreateRepositoryRequest;
+import org.opensearch.client.transport.httpclient5.ApacheHttpClient5TransportBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,7 +57,7 @@ public class BackupRestoreTest {
 
   @Autowired private TasklistAPICaller tasklistAPICaller;
 
-  @Autowired private DataGenerator dataGenerator;
+  @Autowired private BackupRestoreDataGenerator backupRestoreDataGenerator;
 
   private GenericContainer tasklistContainer;
 
@@ -67,16 +75,16 @@ public class BackupRestoreTest {
   @Test
   public void testBackupRestore() throws Exception {
     startAllApps();
-    dataGenerator.createData(testContext);
-    dataGenerator.assertData();
+    backupRestoreDataGenerator.createData(testContext);
+    backupRestoreDataGenerator.assertData();
     snapshots = createBackup();
-    dataGenerator.changeData(testContext);
-    dataGenerator.assertDataAfterChange();
+    backupRestoreDataGenerator.changeData(testContext);
+    backupRestoreDataGenerator.assertDataAfterChange();
     stopTasklist();
     deleteTasklistIndices();
     restoreBackup();
     startTasklist();
-    dataGenerator.assertData();
+    backupRestoreDataGenerator.assertData();
   }
 
   public List<String> createBackup() {
@@ -86,25 +94,61 @@ public class BackupRestoreTest {
   }
 
   private void startAllApps() throws IOException {
-    testContainerUtil.startElasticsearch(testContext);
-    testContainerUtil.checkElasctisearchHealth(testContext);
-    testContext.setEsClient(
-        new RestHighLevelClient(
-            RestClient.builder(
-                new HttpHost(testContext.getExternalElsHost(), testContext.getExternalElsPort()))));
-    createSnapshotRepository(testContext);
-
-    testContainerUtil.startZeebe(
-        ZeebeClient.class.getPackage().getImplementationVersion(), testContext);
-    createZeebeClient(testContext.getExternalZeebeContactPoint());
+    if (TasklistPropertiesUtil.isOpenSearchDatabase()) {
+      startOsApps();
+    } else {
+      startElsApps();
+    }
 
     tasklistContainer =
         testContainerUtil
             .createTasklistContainer(TASKLIST_TEST_DOCKER_IMAGE, VERSION, testContext)
             .withLogConsumer(new Slf4jLogConsumer(LOGGER));
     tasklistContainer.withEnv("CAMUNDA_TASKLIST_BACKUP_REPOSITORYNAME", REPOSITORY_NAME);
+    final String tasklistDatabase =
+        TasklistPropertiesUtil.isOpenSearchDatabase() ? "opensearch" : "elasticsearch";
+    tasklistContainer.withEnv("CAMUNDA_TASKLIST_DATABASE", tasklistDatabase);
 
     startTasklist();
+  }
+
+  private void startElsApps() throws IOException {
+    testContainerUtil.startElasticsearch(testContext);
+    testContainerUtil.checkElasctisearchHealth(testContext);
+    testContext.setEsClient(
+        new RestHighLevelClient(
+            RestClient.builder(
+                new HttpHost(testContext.getExternalElsHost(), testContext.getExternalElsPort()))));
+    createElsSnapshotRepository(testContext);
+
+    testContainerUtil.startZeebe(
+        ZeebeClient.class.getPackage().getImplementationVersion(), testContext);
+    createZeebeClient(testContext.getExternalZeebeContactPoint());
+  }
+
+  private OpenSearchClient createOsClient() {
+    final org.apache.hc.core5.http.HttpHost host =
+        new org.apache.hc.core5.http.HttpHost(
+            testContext.getExternalOsHost(), testContext.getExternalOsPort());
+    final ApacheHttpClient5TransportBuilder builder =
+        ApacheHttpClient5TransportBuilder.builder(host);
+
+    final JacksonJsonpMapper jsonpMapper = new JacksonJsonpMapper(CommonUtils.OBJECT_MAPPER);
+    builder.setMapper(jsonpMapper);
+
+    return new OpenSearchClient(builder.build());
+  }
+
+  private void startOsApps() throws IOException {
+    testContainerUtil.startOpenSearch(testContext);
+    final OpenSearchClient osClient = createOsClient();
+    testContainerUtil.checkOpenSearchHealth(osClient);
+    testContext.setOsClient(osClient);
+    createOsSnapshotRepository(testContext);
+
+    testContainerUtil.startZeebe(
+        ZeebeClient.class.getPackage().getImplementationVersion(), testContext);
+    createZeebeClient(testContext.getExternalZeebeContactPoint());
   }
 
   private void startTasklist() {
@@ -119,25 +163,69 @@ public class BackupRestoreTest {
   }
 
   private void restoreBackup() {
-    snapshots.stream()
-        .forEach(
-            snapshot -> {
-              try {
-                testContext
-                    .getEsClient()
-                    .snapshot()
-                    .restore(
-                        new RestoreSnapshotRequest(REPOSITORY_NAME, snapshot)
-                            .waitForCompletion(true),
-                        RequestOptions.DEFAULT);
-              } catch (IOException e) {
-                throw new TasklistRuntimeException(
-                    "Exception occurred while restoring the backup: " + e.getMessage(), e);
-              }
-            });
+    if (TasklistPropertiesUtil.isOpenSearchDatabase()) {
+      restoreOsBackup();
+    } else {
+      restoreElsBackup();
+    }
   }
 
-  private void deleteTasklistIndices() throws Exception {
+  private void restoreElsBackup() {
+    snapshots.forEach(
+        snapshot -> {
+          try {
+            testContext
+                .getEsClient()
+                .snapshot()
+                .restore(
+                    new RestoreSnapshotRequest(REPOSITORY_NAME, snapshot).waitForCompletion(true),
+                    RequestOptions.DEFAULT);
+          } catch (IOException e) {
+            throw new TasklistRuntimeException(
+                "Exception occurred while restoring the backup: " + e.getMessage(), e);
+          }
+        });
+  }
+
+  private void restoreOsBackup() {
+    snapshots.forEach(
+        snapshot -> {
+          try {
+            testContext
+                .getOsClient()
+                .snapshot()
+                .restore(
+                    r -> r.repository(REPOSITORY_NAME).snapshot(snapshot).waitForCompletion(true));
+          } catch (IOException | OpenSearchException e) {
+            throw new TasklistRuntimeException(
+                "Exception occurred while restoring the backup: " + e.getMessage(), e);
+          }
+        });
+  }
+
+  private void deleteTasklistIndices() {
+    if (TasklistPropertiesUtil.isOpenSearchDatabase()) {
+      deleteOsIndices();
+    } else {
+      deleteElsIndices();
+    }
+  }
+
+  private void deleteOsIndices() {
+    try {
+      testContext.getOsClient().indices().delete(dir -> dir.index("tasklist*"));
+      // we need to remove Zeebe indices as otherwise Tasklist will start importing data at once and
+      // we won't be able to assert the older state of data (from backup)
+      testContext.getOsClient().indices().delete(dir -> dir.index(ZEEBE_INDEX_PREFIX + "*"));
+      tasklistAPICaller.checkIndicesAreDeleted(testContext.getOsClient());
+      LOGGER.info("************ Tasklist OpenSearch indices deleted ************");
+    } catch (IOException e) {
+      throw new TasklistRuntimeException(
+          "Exception occurred while removing Tasklist and Zeebe indices: " + e.getMessage(), e);
+    }
+  }
+
+  private void deleteElsIndices() {
     try {
       testContext
           .getEsClient()
@@ -150,14 +238,15 @@ public class BackupRestoreTest {
           .indices()
           .delete(new DeleteIndexRequest(ZEEBE_INDEX_PREFIX + "*"), RequestOptions.DEFAULT);
       tasklistAPICaller.checkIndicesAreDeleted(testContext.getEsClient());
-      LOGGER.info("************ Tasklist indices deleted ************");
+      LOGGER.info("************ Tasklist ElasticSearch indices deleted ************");
     } catch (IOException e) {
       throw new TasklistRuntimeException(
           "Exception occurred while removing Tasklist and Zeebe indices: " + e.getMessage(), e);
     }
   }
 
-  private void createSnapshotRepository(BackupRestoreTestContext testContext) throws IOException {
+  private void createElsSnapshotRepository(BackupRestoreTestContext testContext)
+      throws IOException {
     testContext
         .getEsClient()
         .snapshot()
@@ -166,6 +255,18 @@ public class BackupRestoreTest {
                 .type(FsRepository.TYPE)
                 .settings(asMap("location", REPOSITORY_NAME)),
             RequestOptions.DEFAULT);
+  }
+
+  private void createOsSnapshotRepository(BackupRestoreTestContext testContext) throws IOException {
+    testContext
+        .getOsClient()
+        .snapshot()
+        .createRepository(
+            CreateRepositoryRequest.of(
+                r ->
+                    r.name(REPOSITORY_NAME)
+                        .type(FsRepository.TYPE)
+                        .settings(s -> s.location(REPOSITORY_NAME))));
   }
 
   private ZeebeClient createZeebeClient(String zeebeGateway) {

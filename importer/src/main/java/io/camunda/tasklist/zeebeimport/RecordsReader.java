@@ -12,23 +12,23 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 
 public interface RecordsReader extends Runnable {
-  public int readAndScheduleNextBatch(boolean autoContinue);
+  int readAndScheduleNextBatch(boolean autoContinue);
 
-  public int readAndScheduleNextBatch();
+  int readAndScheduleNextBatch();
 
-  public ImportBatch readNextBatchBySequence(final Long sequence) throws NoSuchIndexException;
+  ImportBatch readNextBatchBySequence(final Long sequence) throws NoSuchIndexException;
 
-  public boolean tryToScheduleImportJob(final ImportJob importJob, final boolean skipPendingJob);
+  boolean tryToScheduleImportJob(final ImportJob importJob, final boolean skipPendingJob);
 
-  public int getPartitionId();
+  int getPartitionId();
 
-  public ImportValueType getImportValueType();
+  ImportValueType getImportValueType();
 
-  public BlockingQueue<Callable<Boolean>> getImportJobs();
+  BlockingQueue<Callable<Boolean>> getImportJobs();
 
-  public ImportBatch readNextBatchByPositionAndPartition(long positionFrom, Long positionTo)
+  ImportBatch readNextBatchByPositionAndPartition(long positionFrom, Long positionTo)
       throws NoSuchIndexException;
 
-  public ImportBatch readNextBatchBySequence(final Long fromSequence, final Long toSequence)
+  ImportBatch readNextBatchBySequence(final Long fromSequence, final Long toSequence)
       throws NoSuchIndexException;
 }

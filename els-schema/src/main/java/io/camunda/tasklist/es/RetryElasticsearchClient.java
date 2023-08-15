@@ -10,6 +10,7 @@ import static io.camunda.tasklist.util.CollectionUtil.getOrDefaultForNullValue;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.util.CollectionUtil;
 import java.io.IOException;
@@ -79,9 +80,11 @@ import org.elasticsearch.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
+@Conditional(ElasticSearchCondition.class)
 public class RetryElasticsearchClient {
 
   public static final String REFRESH_INTERVAL = "index.refresh_interval";

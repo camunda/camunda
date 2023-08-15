@@ -59,6 +59,7 @@
 
     <zeebe-test-container.version>3.5.2</zeebe-test-container.version>
     <elasticsearch-test-container.version>1.17.6</elasticsearch-test-container.version>
+    <opensearch-testcontainers.version>2.0.0</opensearch-testcontainers.version>
     <postgres-test-container.version>1.17.6</postgres-test-container.version>
     <testcontainers.version>1.17.6</testcontainers.version>
 
@@ -206,6 +207,11 @@
         <groupId>org.testcontainers</groupId>
         <artifactId>elasticsearch</artifactId>
         <version>${elasticsearch-test-container.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.opensearch</groupId>
+        <artifactId>opensearch-testcontainers</artifactId>
+        <version>${opensearch-testcontainers.version}</version>
       </dependency>
       <dependency>
         <groupId>org.testcontainers</groupId>
@@ -554,6 +560,7 @@
               <sourceDirectory>${project.build.sourceDirectory}</sourceDirectory>
               <sourceDirectory>${project.build.testSourceDirectory}</sourceDirectory>
             </sourceDirectories>
+            <excludes>**/GetCustomSnapshotResponse.java</excludes>
           </configuration>
           <executions>
             <execution>

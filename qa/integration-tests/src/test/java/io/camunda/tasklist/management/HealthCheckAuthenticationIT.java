@@ -40,7 +40,7 @@ import org.springframework.test.context.junit4.SpringRunner;
     classes = {
       TasklistProperties.class,
       TestApplicationWithNoBeans.class,
-      ElsIndicesHealthIndicator.class,
+      SearchEngineHealthIndicator.class,
       WebSecurityConfig.class,
       TasklistProfileService.class,
       ElasticsearchSessionRepository.class,
@@ -56,7 +56,7 @@ public class HealthCheckAuthenticationIT {
 
   @Autowired private TestRestTemplate testRestTemplate;
 
-  @MockBean private ElsIndicesHealthIndicator probes;
+  @MockBean private SearchEngineHealthIndicator probes;
 
   @MockBean private OAuth2WebConfigurer oAuth2WebConfigurer;
 

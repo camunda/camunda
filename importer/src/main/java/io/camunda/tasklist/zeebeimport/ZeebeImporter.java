@@ -9,6 +9,7 @@ package io.camunda.tasklist.zeebeimport;
 import io.camunda.tasklist.property.TasklistProperties;
 import jakarta.annotation.PostConstruct;
 import java.util.Collection;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,9 +42,9 @@ public class ZeebeImporter {
   }
 
   public void scheduleReaders() {
-    LOGGER.info("INIT: Start importing data...");
-    recordsReaderHolder.getAllRecordsReaders().stream()
-        .forEach(recordsReader -> readersExecutor.submit(recordsReader));
+    final Set<RecordsReader> allRecordsReaders = recordsReaderHolder.getAllRecordsReaders();
+    LOGGER.info("INIT: Start importing data by '{}' importers", allRecordsReaders.size());
+    allRecordsReaders.forEach(recordsReader -> readersExecutor.submit(recordsReader));
   }
 
   public int performOneRoundOfImportFor(Collection<RecordsReader> readers) {

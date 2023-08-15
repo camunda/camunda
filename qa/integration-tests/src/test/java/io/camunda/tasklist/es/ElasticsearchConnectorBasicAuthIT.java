@@ -8,7 +8,7 @@ package io.camunda.tasklist.es;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.tasklist.management.ElsIndicesHealthIndicator;
+import io.camunda.tasklist.management.SearchEngineHealthIndicator;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.TestElasticsearchSchemaManager;
 import io.camunda.tasklist.util.TasklistIntegrationTest;
@@ -33,7 +33,7 @@ import org.testcontainers.elasticsearch.ElasticsearchContainer;
     classes = {
       TestElasticsearchSchemaManager.class,
       TestApplication.class,
-      ElsIndicesHealthIndicator.class,
+      SearchEngineHealthIndicator.class,
       WebSecurityConfig.class,
       OAuth2WebConfigurer.class,
       RetryElasticsearchClient.class,

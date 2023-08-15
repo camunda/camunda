@@ -7,7 +7,7 @@
 package io.camunda.tasklist.webapp;
 
 import static io.camunda.tasklist.util.CollectionUtil.asMap;
-import static io.camunda.tasklist.webapp.es.backup.BackupManager.SNAPSHOT_MISSING_EXCEPTION_TYPE;
+import static io.camunda.tasklist.webapp.es.backup.es.BackupManagerElasticSearch.SNAPSHOT_MISSING_EXCEPTION_TYPE;
 import static io.camunda.tasklist.webapp.management.dto.BackupStateDto.COMPLETED;
 import static io.camunda.tasklist.webapp.management.dto.BackupStateDto.FAILED;
 import static io.camunda.tasklist.webapp.management.dto.BackupStateDto.INCOMPATIBLE;
@@ -30,8 +30,8 @@ import io.camunda.tasklist.exceptions.TasklistElasticsearchConnectionException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.BackupProperties;
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.webapp.es.backup.BackupManager;
 import io.camunda.tasklist.webapp.es.backup.Metadata;
+import io.camunda.tasklist.webapp.es.backup.es.BackupManagerElasticSearch;
 import io.camunda.tasklist.webapp.management.BackupService;
 import io.camunda.tasklist.webapp.management.dto.GetBackupStateResponseDetailDto;
 import io.camunda.tasklist.webapp.management.dto.GetBackupStateResponseDto;
@@ -78,9 +78,9 @@ import org.springframework.test.context.junit4.SpringRunner;
       TasklistProfileService.class
     })
 @ActiveProfiles({"test", "backend-test"})
-public class BackupServiceTest {
+public class BackupServiceElasticSearchTest {
 
-  @SpyBean private BackupManager backupManager;
+  @SpyBean private BackupManagerElasticSearch backupManager;
 
   @Mock private SnapshotClient snapshotClient;
 

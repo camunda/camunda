@@ -6,20 +6,23 @@
  */
 package io.camunda.tasklist.webapp.es.cache;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.identity.sdk.Identity;
 import io.camunda.identity.sdk.authentication.Authentication;
-import io.camunda.tasklist.entities.FormEntity;
 import io.camunda.tasklist.entities.ProcessEntity;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.IdentityProperties;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.indices.ProcessIndex;
-import io.camunda.tasklist.store.FormStore;
 import io.camunda.tasklist.store.elasticsearch.ProcessStoreElasticSearch;
 import io.camunda.tasklist.util.ElasticsearchUtil;
 import io.camunda.tasklist.util.SpringContextHolder;
@@ -58,7 +61,6 @@ class ProcessStoreTest {
   @InjectMocks private IdentityAuthorizationService identityService;
   @Mock private ObjectMapper objectMapper;
   @InjectMocks private SpringContextHolder springContextHolder;
-  @Mock private FormStore formStore;
   @Mock private TasklistProperties tasklistProperties;
 
   @BeforeEach
@@ -112,65 +114,6 @@ class ProcessStoreTest {
             .contains(
                 "Exception occurred, while obtaining the process: "
                     + mockedException.getMessage()));
-  }
-
-  // ** Test Get Process by Processes started by event form ** //
-  @Test
-  public void shouldGetStartEventFormIdByBpmnProcessStartedByForm() {
-    // when
-    final String formId = "formId";
-    final String processId = "processId";
-    final ProcessEntity process = new ProcessEntity();
-    final FormEntity formEntity = new FormEntity();
-
-    process.setStartedByForm(true);
-    process.setFormKey("key:" + formId);
-    process.setId(processId);
-
-    formEntity.setId(formId);
-
-    when(formStore.getForm(formId, processId)).thenReturn(formEntity);
-
-    // given
-    final String result = processStore.getStartEventFormIdByBpmnProcess(process);
-
-    // then
-    assertEquals(formId, result);
-  }
-
-  @Test
-  public void shouldGetStartEventFormIdByBpmnProcessNotStartedByForm() {
-    // when
-    final ProcessEntity process = new ProcessEntity();
-    process.setStartedByForm(false);
-
-    // given
-    final String result = processStore.getStartEventFormIdByBpmnProcess(process);
-
-    // then
-    assertNull(result);
-  }
-
-  @Test
-  public void shouldGetStartEventFormIdByBpmnProcessByFormKeyNotContainsColon() {
-    // when
-    final String formKey = "formKey";
-    final String processId = "processId";
-    final ProcessEntity process = new ProcessEntity();
-    final FormEntity formEntity = new FormEntity();
-
-    process.setStartedByForm(true);
-    process.setFormKey(formKey);
-    process.setId(processId);
-    formEntity.setId("");
-
-    when(formStore.getForm("", processId)).thenReturn(formEntity);
-
-    // given
-    final String result = processStore.getStartEventFormIdByBpmnProcess(process);
-
-    // then
-    assertEquals("", result);
   }
 
   // ** Test Get Process by Process Id ** //

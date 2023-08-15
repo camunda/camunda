@@ -7,12 +7,9 @@
 package io.camunda.tasklist.webapp;
 
 import io.camunda.tasklist.data.DataGenerator;
-import io.camunda.tasklist.es.ElasticsearchConnector;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.webapp.security.se.SearchEngineUserDetailsService;
 import jakarta.annotation.PostConstruct;
-import jakarta.annotation.PreDestroy;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,8 +24,6 @@ public class StartupBean {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(StartupBean.class);
 
-  @Autowired private RestHighLevelClient esClient;
-
   // @Autowired private RestHighLevelClient zeebeEsClient;
 
   @Autowired(required = false)
@@ -41,7 +36,7 @@ public class StartupBean {
   @PostConstruct
   public void initApplication() {
     if (searchEngineUserDetailsService != null) {
-      LOGGER.info("INIT: Create users in elasticsearch if not exists ...");
+      LOGGER.info("INIT: Create users if not exists ...");
       searchEngineUserDetailsService.initializeUsers();
     }
     LOGGER.debug("INIT: Generate demo data...");
@@ -52,12 +47,5 @@ public class StartupBean {
       LOGGER.error("Error occurred when generating demo data.", ex);
     }
     LOGGER.info("INIT: DONE");
-  }
-
-  @PreDestroy
-  public void shutdown() {
-    LOGGER.info("Shutdown elasticsearch clients.");
-    ElasticsearchConnector.closeEsClient(esClient);
-    // ElasticsearchConnector.closeEsClient(zeebeEsClient);
   }
 }

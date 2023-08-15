@@ -9,7 +9,7 @@ package io.camunda.tasklist.es;
 import static io.camunda.tasklist.util.CollectionUtil.filter;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.tasklist.management.ElsIndicesCheck;
+import io.camunda.tasklist.management.ElasticSearchCheck;
 import io.camunda.tasklist.schema.indices.IndexDescriptor;
 import io.camunda.tasklist.schema.indices.MigrationRepositoryIndex;
 import io.camunda.tasklist.schema.indices.TasklistWebSessionIndex;
@@ -37,7 +37,7 @@ public class SchemaCreationIT extends TasklistIntegrationTest {
   @Autowired private RestHighLevelClient esClient;
   @Autowired private SchemaManager schemaManager;
   @Autowired private List<IndexDescriptor> indexDescriptors;
-  @Autowired private ElsIndicesCheck elsIndicesCheck;
+  @Autowired private ElasticSearchCheck elasticSearchCheck;
 
   @Test
   public void testIndexCreation() throws ExecutionException, InterruptedException, IOException {
@@ -46,7 +46,7 @@ public class SchemaCreationIT extends TasklistIntegrationTest {
     }
 
     // assert schema creation won't be performed for the second time
-    assertThat(elsIndicesCheck.indicesArePresent()).isTrue();
+    assertThat(elasticSearchCheck.indicesArePresent()).isTrue();
   }
 
   @Test // ZTL-1007

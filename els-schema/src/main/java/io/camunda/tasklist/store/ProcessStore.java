@@ -21,6 +21,4 @@ public interface ProcessStore {
   List<ProcessEntity> getProcesses(String search, final List<String> processDefinitions);
 
   List<ProcessEntity> getProcessesStartedByForm();
-
-  String getStartEventFormIdByBpmnProcess(ProcessEntity process);
 }

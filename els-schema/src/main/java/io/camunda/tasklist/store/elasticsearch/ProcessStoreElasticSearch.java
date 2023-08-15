@@ -14,14 +14,12 @@ import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.IdentityProperties;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.indices.ProcessIndex;
-import io.camunda.tasklist.store.FormStore;
 import io.camunda.tasklist.store.ProcessStore;
 import io.camunda.tasklist.util.ElasticsearchUtil;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -32,8 +30,6 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.collapse.CollapseBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -41,8 +37,6 @@ import org.springframework.stereotype.Component;
 @Component
 @Conditional(ElasticSearchCondition.class)
 public class ProcessStoreElasticSearch implements ProcessStore {
-
-  private static final Logger LOGGER = LoggerFactory.getLogger(ProcessStoreElasticSearch.class);
 
   private static final Boolean CASE_INSENSITIVE = true;
 
@@ -53,8 +47,6 @@ public class ProcessStoreElasticSearch implements ProcessStore {
   @Autowired private ObjectMapper objectMapper;
 
   @Autowired private TasklistProperties tasklistProperties;
-
-  @Autowired private FormStore formStore;
 
   public ProcessEntity getProcessByProcessDefinitionKey(String processDefinitionKey) {
     final QueryBuilder qb = QueryBuilders.termQuery(ProcessIndex.KEY, processDefinitionKey);
@@ -80,16 +72,6 @@ public class ProcessStoreElasticSearch implements ProcessStore {
     } catch (IOException e) {
       throw new TasklistRuntimeException(e);
     }
-  }
-
-  /** Uses form reader to retrieve the start event form id when exists. */
-  public String getStartEventFormIdByBpmnProcess(ProcessEntity process) {
-    if (process.isStartedByForm()) {
-      final String formId = StringUtils.substringAfterLast(process.getFormKey(), ":");
-      final var form = formStore.getForm(formId, process.getId());
-      return form.getId();
-    }
-    return null;
   }
 
   /** Gets the process by id. */
