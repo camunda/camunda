@@ -80,8 +80,13 @@ public class StartEventSubscriptionManager {
       return;
     }
 
+    closeMessageStartEventSubscriptions(lastMsgProcess, stateWriter);
+  }
+
+  public void closeMessageStartEventSubscriptions(
+      final DeployedProcess deployedProcess, final StateWriter stateWriter) {
     messageStartEventSubscriptionState.visitSubscriptionsByProcessDefinition(
-        lastMsgProcess.getKey(),
+        deployedProcess.getKey(),
         subscription ->
             stateWriter.appendFollowUpEvent(
                 subscription.getKey(),
