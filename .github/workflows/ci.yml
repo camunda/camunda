@@ -38,7 +38,7 @@ jobs:
             name: "QA Integration Tests"
             maven-modules: "qa/integration-tests"
             maven-build-threads: 1
-            maven-test-fork-count: 6
+            maven-test-fork-count: 10
             tcc-enabled: 'false'
             tcc-concurrency: 4
           - group: qa-update
@@ -84,7 +84,7 @@ jobs:
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
       - name: Maven Test Build
         run: >
-          mvn -B -T ${{ matrix.maven-build-threads }} --no-snapshot-updates
+          ./mvnw -B -T ${{ matrix.maven-build-threads }} --no-snapshot-updates
           -D forkCount=${{ matrix.maven-test-fork-count }}
           -D maven.javadoc.skip=true
           -D skipUTs -D skipChecks
@@ -125,7 +125,7 @@ jobs:
         # we use the verify goal here as flaky test extraction is bound to the post-integration-test
         # phase of Maven https://maven.apache.org/guides/introduction/introduction-to-the-lifecycle.html#default-lifecycle
         run: >
-          mvn -T2 -B --no-snapshot-updates
+          ./mvnw -T2 -B --no-snapshot-updates
           -D skipITs -D skipChecks -D surefire.rerunFailingTestsCount=3
           -D junitThreadCount=16
           -P skip-random-tests,parallel-tests,extract-flaky-tests
@@ -165,7 +165,7 @@ jobs:
           maven-extra-args: -am -pl qa/integration-tests -T1C
       - name: Run smoke test
         run: >
-          mvn -B --no-snapshot-updates
+          ./mvnw -B --no-snapshot-updates
           -DskipUTs -DskipChecks -Dsurefire.rerunFailingTestsCount=3
           -pl qa/integration-tests
           -P smoke-test,extract-flaky-tests
@@ -193,7 +193,7 @@ jobs:
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
       - name: Maven Test Build
         run: >
-          mvn -T1C -B --no-snapshot-updates
+          ./mvnw -T1C -B --no-snapshot-updates
           -P parallel-tests,include-random-tests
           -D junitThreadCount=16
           -D skipChecks
@@ -313,7 +313,7 @@ jobs:
           go: false
           maven-cache: 'true'
           maven-cache-key-modifier: java-checks
-      - run: mvn -T1C -B -D skipTests -P !autoFormat,checkFormat,spotbugs verify
+      - run: ./mvnw -T1C -B -D skipTests -P !autoFormat,checkFormat,spotbugs verify
   test-summary:
     # Used by bors to check all tests, including the unit test matrix.
     # New test jobs must be added to the `needs` lists!
@@ -383,7 +383,7 @@ jobs:
       # compile and generate-sources to ensure that the Javadoc can be properly generated; compile is
       # necessary when using annotation preprocessors for code generation, as otherwise the symbols are
       # not resolve-able by the Javadoc generator
-      - run: mvn -B -D skipTests -D skipChecks compile generate-sources source:jar javadoc:jar deploy
+      - run: ./mvnw -B -D skipTests -D skipChecks compile generate-sources source:jar javadoc:jar deploy
         env:
           MAVEN_USERNAME: ${{ steps.secrets.outputs.ARTIFACTS_USR }}
           MAVEN_PASSWORD: ${{ steps.secrets.outputs.ARTIFACTS_PSW }}
