@@ -73,12 +73,12 @@ RUN java -Xshare:dump;
 
 ### Build zeebe from scratch ###
 # hadolint ignore=DL3006
-FROM maven:3.9.3-eclipse-temurin-17-focal as build
+FROM java as build
 WORKDIR /zeebe
 ENV MAVEN_OPTS -XX:MaxRAMPercentage=80
 COPY --link . ./
 RUN --mount=type=cache,target=/root/.m2,rw \
-    mvn -B -am -pl dist package -T1C -D skipChecks -D skipTests && \
+    ./mvnw -B -am -pl dist package -T1C -D skipChecks -D skipTests && \
     mv dist/target/camunda-zeebe .
 
 ### Extract zeebe from distball ###
