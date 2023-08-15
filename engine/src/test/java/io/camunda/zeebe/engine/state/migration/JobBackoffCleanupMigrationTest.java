@@ -26,9 +26,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(ProcessingStateExtension.class)
-public class JobTimeoutCleanupTest {
+public class JobBackoffCleanupMigrationTest {
 
-  final JobTimeoutCleanup jobTimeoutCleanup = new JobTimeoutCleanup();
+  final JobBackoffCleanupMigration jobBackoffCleanupMigration = new JobBackoffCleanupMigration();
 
   private ZeebeDb<ZbColumnFamilies> zeebeDb;
   private MutableProcessingState processingState;
@@ -36,26 +36,25 @@ public class JobTimeoutCleanupTest {
 
   private final JobRecordValue jobRecordToRead = new JobRecordValue();
   private DbLong jobKey;
-  private DbForeignKey<DbLong> fkJob;
   private ColumnFamily<DbLong, JobRecordValue> jobsColumnFamily;
 
-  private DbLong deadlineKey;
-  private DbCompositeKey<DbLong, DbForeignKey<DbLong>> deadlineJobKey;
-  private ColumnFamily<DbCompositeKey<DbLong, DbForeignKey<DbLong>>, DbNil> deadlinesColumnFamily;
+  private DbLong backoffKey;
+  private DbCompositeKey<DbLong, DbForeignKey<DbLong>> backoffJobKey;
+  private ColumnFamily<DbCompositeKey<DbLong, DbForeignKey<DbLong>>, DbNil> backoffColumnFamily;
 
   @BeforeEach
   public void setup() {
     jobKey = new DbLong();
-    fkJob = new DbForeignKey<>(jobKey, ZbColumnFamilies.JOBS);
+    final DbForeignKey<DbLong> fkJob = new DbForeignKey<>(jobKey, ZbColumnFamilies.JOBS);
     jobsColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.JOBS, transactionContext, jobKey, jobRecordToRead);
 
-    deadlineKey = new DbLong();
-    deadlineJobKey = new DbCompositeKey<>(deadlineKey, fkJob);
-    deadlinesColumnFamily =
+    backoffKey = new DbLong();
+    backoffJobKey = new DbCompositeKey<>(backoffKey, fkJob);
+    backoffColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.JOB_DEADLINES, transactionContext, deadlineJobKey, DbNil.INSTANCE);
+            ZbColumnFamilies.JOB_BACKOFF, transactionContext, backoffJobKey, DbNil.INSTANCE);
 
     jobKey.wrapLong(1);
   }
@@ -65,55 +64,55 @@ public class JobTimeoutCleanupTest {
     // given
     final int deadline = 123;
     jobsColumnFamily.upsert(jobKey, createJobRecordValue(deadline));
-    deadlineKey.wrapLong(deadline);
-    deadlinesColumnFamily.upsert(deadlineJobKey, DbNil.INSTANCE);
+    backoffKey.wrapLong(deadline);
+    backoffColumnFamily.upsert(backoffJobKey, DbNil.INSTANCE);
 
     // when
-    jobTimeoutCleanup.runMigration(processingState);
+    jobBackoffCleanupMigration.runMigration(processingState);
 
     // then
-    assertThat(deadlinesColumnFamily.exists(deadlineJobKey)).isTrue();
+    assertThat(backoffColumnFamily.exists(backoffJobKey)).isTrue();
   }
 
   @Test
-  public void afterCleanupOrphanedTimeoutIsDeleted() {
+  public void afterCleanupOrphanedBackoffIsDeleted() {
     // given
     jobsColumnFamily.upsert(jobKey, new JobRecordValue());
-    deadlineKey.wrapLong(123);
-    deadlinesColumnFamily.upsert(deadlineJobKey, DbNil.INSTANCE);
+    backoffKey.wrapLong(123);
+    backoffColumnFamily.upsert(backoffJobKey, DbNil.INSTANCE);
     jobsColumnFamily.deleteExisting(jobKey);
 
     // when
-    jobTimeoutCleanup.runMigration(processingState);
+    jobBackoffCleanupMigration.runMigration(processingState);
 
     // then
-    assertThat(deadlinesColumnFamily.exists(deadlineJobKey)).isFalse();
+    assertThat(backoffColumnFamily.exists(backoffJobKey)).isFalse();
   }
 
   @Test
-  public void afterCleanupTimeoutWithNonMatchingDeadlineIsDeleted() {
+  public void afterCleanupTimeoutWithNonMatchingRetryBackoffIsDeleted() {
     // given
-    final int firstDeadline = 123;
-    final int secondDeadline = 456;
-    jobsColumnFamily.upsert(jobKey, createJobRecordValue(secondDeadline));
-    deadlineKey.wrapLong(firstDeadline);
-    deadlinesColumnFamily.upsert(deadlineJobKey, DbNil.INSTANCE);
-    deadlineKey.wrapLong(secondDeadline);
-    deadlinesColumnFamily.upsert(deadlineJobKey, DbNil.INSTANCE);
+    final int firstRetryBackoff = 123;
+    final int secondRetryBackoff = 456;
+    jobsColumnFamily.upsert(jobKey, createJobRecordValue(secondRetryBackoff));
+    backoffKey.wrapLong(firstRetryBackoff);
+    backoffColumnFamily.upsert(backoffJobKey, DbNil.INSTANCE);
+    backoffKey.wrapLong(secondRetryBackoff);
+    backoffColumnFamily.upsert(backoffJobKey, DbNil.INSTANCE);
 
     // when
-    jobTimeoutCleanup.runMigration(processingState);
+    jobBackoffCleanupMigration.runMigration(processingState);
 
     // then
-    deadlineKey.wrapLong(firstDeadline);
-    assertThat(deadlinesColumnFamily.exists(deadlineJobKey)).isFalse();
-    deadlineKey.wrapLong(secondDeadline);
-    assertThat(deadlinesColumnFamily.exists(deadlineJobKey)).isTrue();
+    backoffKey.wrapLong(firstRetryBackoff);
+    assertThat(backoffColumnFamily.exists(backoffJobKey)).isFalse();
+    backoffKey.wrapLong(secondRetryBackoff);
+    assertThat(backoffColumnFamily.exists(backoffJobKey)).isTrue();
   }
 
-  private static JobRecordValue createJobRecordValue(final long deadline) {
+  private static JobRecordValue createJobRecordValue(final long retryBackoff) {
     final JobRecordValue jobRecordValue = new JobRecordValue();
-    jobRecordValue.setRecordWithoutVariables(new JobRecord().setDeadline(deadline));
+    jobRecordValue.setRecordWithoutVariables(new JobRecord().setRetryBackoff(retryBackoff));
     return jobRecordValue;
   }
 }

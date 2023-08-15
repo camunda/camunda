@@ -38,7 +38,7 @@ public interface MutableJobState extends JobState {
 
   JobRecord updateJobRetries(long jobKey, int retries);
 
-  void cleanupTimeoutsWithoutJob();
+  void cleanupTimeoutsWithoutJobs();
 
   void cleanupBackoffsWithoutJobs();
 }
