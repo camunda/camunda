@@ -8,4 +8,6 @@ package io.camunda.operate.store;
 
 public interface ZeebeStore {
   void refreshIndex(String indexPattern);
+
+  boolean zeebeIndicesExists(String indexPattern);
 }

@@ -16,11 +16,11 @@ import io.camunda.operate.entities.dmn.DecisionType;
 import io.camunda.operate.entities.dmn.definition.DecisionDefinitionEntity;
 import io.camunda.operate.entities.dmn.definition.DecisionRequirementsEntity;
 import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.operate.property.ElasticsearchProperties;
 import io.camunda.operate.schema.indices.DecisionIndex;
 import io.camunda.operate.schema.indices.DecisionRequirementsIndex;
 import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
-import io.camunda.operate.util.ElasticsearchUtil;
+import io.camunda.operate.store.BatchRequest;
+import io.camunda.operate.store.DecisionStore;
 import io.camunda.operate.util.PayloadUtil;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -29,10 +29,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
-import org.elasticsearch.action.bulk.BulkRequest;
-import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.xcontent.XContentType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -58,7 +54,7 @@ public class DecisionDataUtil {
   private ObjectMapper objectMapper;
 
   @Autowired
-  protected RestHighLevelClient esClient;
+  protected DecisionStore decisionStore;
 
   @Autowired
   private DecisionInstanceTemplate decisionInstanceTemplate;
@@ -257,21 +253,17 @@ public class DecisionDataUtil {
         .setResult("{\"total\": 100.0}");
   }
 
-  public void persistOperateEntities(List<? extends OperateEntity> operateEntities)
-      throws PersistenceException {
+  public void persistOperateEntities(List<? extends OperateEntity> operateEntities) throws PersistenceException {
     try {
-      BulkRequest bulkRequest = new BulkRequest();
-      for (OperateEntity entity : operateEntities) {
+      BatchRequest batchRequest = decisionStore.newBatchRequest();
+      for (OperateEntity<?> entity : operateEntities) {
         final String alias = getEntityToESAliasMap().get(entity.getClass());
         if (alias == null) {
           throw new RuntimeException("Index not configured for " + entity.getClass().getName());
         }
-        final IndexRequest indexRequest = new IndexRequest(alias)
-            .id(entity.getId())
-            .source(objectMapper.writeValueAsString(entity), XContentType.JSON);
-        bulkRequest.add(indexRequest);
+        batchRequest.add(alias,entity);
       }
-      ElasticsearchUtil.processBulkRequest(esClient, bulkRequest, true, ElasticsearchProperties.BULK_REQUEST_MAX_SIZE_IN_BYTES_DEFAULT);
+      batchRequest.execute();
     } catch (Exception ex) {
       throw new PersistenceException(ex);
     }

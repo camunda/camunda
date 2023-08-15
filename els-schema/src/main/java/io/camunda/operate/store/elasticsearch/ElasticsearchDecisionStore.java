@@ -7,6 +7,7 @@
 package io.camunda.operate.store.elasticsearch;
 
 import io.camunda.operate.schema.indices.DecisionIndex;
+import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.store.DecisionStore;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -17,6 +18,7 @@ import org.elasticsearch.search.aggregations.metrics.Cardinality;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
@@ -35,6 +37,9 @@ public class ElasticsearchDecisionStore implements DecisionStore {
   private static final String DISTINCT_FIELD_COUNTS = "distinctFieldCounts";
   @Autowired
   private DecisionIndex decisionIndex;
+
+  @Autowired
+  private BeanFactory beanFactory;
 
   @Autowired
   private RestHighLevelClient esClient;
@@ -59,5 +64,10 @@ public class ElasticsearchDecisionStore implements DecisionStore {
       logger.error(String.format("Error in distinct count for field %s in index alias %s.", fieldName, indexAlias), e);
       return Optional.empty();
     }
+  }
+
+  @Override
+  public BatchRequest newBatchRequest() {
+    return beanFactory.getBean(BatchRequest.class);
   }
 }

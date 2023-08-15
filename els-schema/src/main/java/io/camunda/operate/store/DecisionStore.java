@@ -10,4 +10,6 @@ import java.util.Optional;
 
 public interface DecisionStore {
   Optional<Long> getDistinctCountFor(final String fieldName);
+
+  BatchRequest newBatchRequest();
 }

@@ -6,17 +6,22 @@
  */
 package io.camunda.operate.store.elasticsearch;
 
+import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.store.ZeebeStore;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.admin.indices.refresh.RefreshResponse;
+import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.indices.GetIndexRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
+
+import java.io.IOException;
 
 @Component
 @Profile("!opensearch")
@@ -28,6 +33,9 @@ public class ElasticsearchZeebeStore implements ZeebeStore {
   @Qualifier("zeebeEsClient")
   private RestHighLevelClient zeebeEsClient;
 
+  @Autowired
+  private OperateProperties operateProperties;
+
   @Override
   public void refreshIndex(String indexPattern) {
     RefreshRequest refreshRequest = new RefreshRequest(indexPattern);
@@ -38,6 +46,22 @@ public class ElasticsearchZeebeStore implements ZeebeStore {
       }
     } catch (Exception ex) {
       logger.warn(String.format("Unable to refresh indices: %s", indexPattern), ex);
+    }
+  }
+
+  @Override
+  public boolean zeebeIndicesExists(String indexPattern) {
+    try {
+      GetIndexRequest request = new GetIndexRequest(indexPattern);
+      request.indicesOptions(IndicesOptions.fromOptions(true, false, true, false));
+      boolean exists = zeebeEsClient.indices().exists(request, RequestOptions.DEFAULT);
+      if (exists) {
+        logger.debug("Data already exists in Zeebe.");
+      }
+      return exists;
+    } catch (IOException io) {
+      logger.debug("Error occurred while checking existence of data in Zeebe: {}. Demo data won't be created.", io.getMessage());
+      return false;
     }
   }
 }

@@ -6,19 +6,16 @@
  */
 package io.camunda.operate.data.develop;
 
-import static org.elasticsearch.xcontent.XContentFactory.jsonBuilder;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.camunda.operate.data.usertest.UserTestDataGenerator;
 import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.exceptions.OperateRuntimeException;
-import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
-import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.util.ZeebeTestUtil;
 import io.camunda.operate.util.rest.StatefulRestTemplate;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.worker.JobWorker;
-import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -28,9 +25,6 @@ import java.util.Random;
 import java.util.UUID;
 import java.util.function.BiFunction;
 import jakarta.annotation.PostConstruct;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.common.Strings;
-import org.elasticsearch.xcontent.XContentBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpMethod;
@@ -55,19 +49,6 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
   @Autowired
   private BiFunction<String, Integer, StatefulRestTemplate> statefulRestTemplateFactory;
   private StatefulRestTemplate restTemplate;
-
-  @Autowired
-  private RestHighLevelClient esClient;
-
-  @Autowired
-  private ObjectMapper objectMapper;
-
-  @Autowired
-  private FlowNodeInstanceTemplate flowNodeInstanceTemplate;
-
-  @Autowired
-  private ListViewTemplate listViewTemplate;
-
   private Random random = new Random();
 
   @PostConstruct
@@ -497,24 +478,15 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
   }
 
   private void createBigProcess(int loopCardinality, int numberOfClients) {
-    XContentBuilder builder = null;
-    try {
-      builder = jsonBuilder()
-        .startObject()
-          .field("loopCardinality", loopCardinality)
-          .field("clients")
-          .startArray();
-      for (int j = 0; j <= numberOfClients; j++) {
-        builder
-            .value(j);
-      }
-      builder
-          .endArray()
-        .endObject();
-      ZeebeTestUtil.startProcessInstance(client, "bigProcess", Strings.toString(builder));
-    } catch (IOException e) {
-      throw new RuntimeException(e);
+    ObjectMapper objectMapper = new ObjectMapper();
+    ObjectNode object = objectMapper.createObjectNode();
+    object.put("loopCardinality", loopCardinality);
+    ArrayNode arrayNode = object.putArray("clients");
+    for (int j = 0; j <= numberOfClients; j++) {
+      arrayNode.add(j);
     }
+    String jsonString = object.toString();
+    ZeebeTestUtil.startProcessInstance(client, "bigProcess", jsonString);
   }
 
   @Override
