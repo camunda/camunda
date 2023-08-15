@@ -12,7 +12,7 @@ import {t} from 'translation';
 import {showError} from 'notifications';
 
 import MultiUserInput, {MultiUserInputProps} from './MultiUserInput';
-import {getUser, User} from './service';
+import {getUser, User, getUserId} from './service';
 import {DropdownSkeleton} from '@carbon/react';
 
 interface UserTypeaheadProps
@@ -45,8 +45,7 @@ export function UserTypeahead({
         getUser(user.id),
         (user) => {
           const {type, id} = user;
-          const exists = (users: User[]) =>
-            users.some((user) => user.id === `${type.toUpperCase()}:${id}`);
+          const exists = (users: User[]) => users.some((user) => user.id === getUserId(id, type));
 
           if (exists(users)) {
             return showError(t('home.roles.existing-identity'));
@@ -69,7 +68,7 @@ export function UserTypeahead({
 
   const addUser = (user: {id: string} | User['identity']) => {
     getSelectedUser(user, ({id, type, name, memberCount, email}) => {
-      const newId = `${type.toUpperCase()}:${id}`;
+      const newId = getUserId(id, type);
       const newIdentity: User = {id: newId, identity: {id, name, type, memberCount, email}};
       onChange(update(users, {$push: [newIdentity]}));
     });

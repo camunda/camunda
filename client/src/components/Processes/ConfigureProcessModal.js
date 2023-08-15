@@ -25,7 +25,7 @@ export function ConfigureProcessModal({
   docsLink,
 }) {
   const [selectedUser, setSelectedUser] = useState(
-    owner?.id ? {id: 'USER:' + owner.id, identity: owner} : null
+    owner?.id ? {id: 'USER:' + owner.id, identity: {...owner, type: 'user'}} : null
   );
   const [digestEnabled, setDigestEnabled] = useState(enabled);
   const [optimizeProfile, setOptimizeProfile] = useState();

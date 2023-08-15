@@ -16,6 +16,7 @@ import {getUser} from './service';
 jest.mock('notifications', () => ({showError: jest.fn()}));
 
 jest.mock('./service', () => ({
+  ...jest.requireActual('./service'),
   getUser: jest.fn().mockReturnValue({id: 'kermit', type: 'user', name: 'Kermit'}),
 }));
 
