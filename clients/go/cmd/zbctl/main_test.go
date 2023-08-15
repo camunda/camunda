@@ -201,6 +201,14 @@ var tests = []testCase{
 		goldenFile: "testdata/broadcast_signal_with_variables_file.golden",
 		jsonOutput: true,
 	},
+	{
+		name: "delete resource",
+		setupCmds: [][]string{
+			strings.Fields("--insecure deploy resource testdata/model.bpmn"),
+		},
+		cmd:        strings.Fields("--insecure delete resource 2251799813685256"),
+		goldenFile: "testdata/delete_resource.golden",
+	},
 }
 
 func TestZbctlWithInsecureGateway(t *testing.T) {
