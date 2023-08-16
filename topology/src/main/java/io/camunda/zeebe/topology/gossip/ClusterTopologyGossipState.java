@@ -8,6 +8,7 @@
 package io.camunda.zeebe.topology.gossip;
 
 import io.camunda.zeebe.topology.state.ClusterTopology;
+import java.util.Objects;
 
 public final class ClusterTopologyGossipState {
   // TODO: This should also tracks the BrokerInfo which is currently in SWIM member.properties
@@ -19,5 +20,25 @@ public final class ClusterTopologyGossipState {
 
   void setClusterTopology(final ClusterTopology clusterTopology) {
     this.clusterTopology = clusterTopology;
+  }
+
+  @Override
+  public int hashCode() {
+    return clusterTopology != null ? clusterTopology.hashCode() : 0;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+
+    final ClusterTopologyGossipState that = (ClusterTopologyGossipState) o;
+
+    return Objects.equals(clusterTopology, that.clusterTopology);
+  }
+
+  @Override
+  public String toString() {
+    return "ClusterTopologyGossipState{" + "clusterTopology=" + clusterTopology + '}';
   }
 }

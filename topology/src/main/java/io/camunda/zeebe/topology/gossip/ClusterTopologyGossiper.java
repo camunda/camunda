@@ -17,8 +17,11 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.function.UnaryOperator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class ClusterTopologyGossiper {
+  private static final Logger LOGGER = LoggerFactory.getLogger(ClusterTopologyGossiper.class);
   private static final String SYNC_REQUEST_TOPIC = "cluster-topology-sync";
   private static final String GOSSIP_REQUEST_TOPIC = "cluster-topology-gossip";
 
@@ -86,6 +89,8 @@ public final class ClusterTopologyGossiper {
     }
 
     final var randomMemberToSync = reachableMembers.remove(0);
+
+    LOGGER.trace("Sending sync request to {}", randomMemberToSync);
     communicationService
         .send(
             SYNC_REQUEST_TOPIC,
@@ -94,7 +99,9 @@ public final class ClusterTopologyGossiper {
             serializer::decode,
             randomMemberToSync,
             config.syncRequestTimeout())
-        .whenCompleteAsync(this::handleSyncResponse, executor::run);
+        .whenCompleteAsync(
+            (response, error) -> handleSyncResponse(response, error, randomMemberToSync),
+            executor::run);
   }
 
   private void refreshReachableMembers() {
@@ -106,9 +113,11 @@ public final class ClusterTopologyGossiper {
   }
 
   private void handleSyncResponse(
-      final ClusterTopologyGossipState response, final Throwable error) {
+      final ClusterTopologyGossipState response, final Throwable error, final MemberId member) {
     if (error == null) {
       update(response);
+    } else {
+      LOGGER.debug("Failed to sync with {}", member, error);
     }
     scheduleSync();
   }
@@ -118,6 +127,7 @@ public final class ClusterTopologyGossiper {
     if (!response.equals(gossipState)) {
       final var updatedTopology = clusterTopologyUpdateHandler.apply(response.getClusterTopology());
       gossipState.setClusterTopology(updatedTopology);
+      LOGGER.trace("Updated local gossipState to {}", updatedTopology);
       return true;
     }
 
@@ -126,6 +136,8 @@ public final class ClusterTopologyGossiper {
 
   private ClusterTopologyGossipState handleSyncRequest(
       final MemberId memberId, final ClusterTopologyGossipState clusterSharedGossipState) {
+    LOGGER.trace(
+        "Received topology sync request from {} with state {}", memberId, clusterSharedGossipState);
     update(clusterSharedGossipState);
     return gossipState;
   }
@@ -144,14 +156,15 @@ public final class ClusterTopologyGossiper {
   }
 
   private void gossip() {
-    // Instead of selecting random members, we can also propagate via a tree topology to prevent
-    // duplicate gossip updates
+    // TODO: Instead of selecting random members, we can also propagate via a tree topology to
+    // prevent duplicate gossip updates
     refreshReachableMembers();
     if (reachableMembers.isEmpty()) {
       return;
     }
     final var gossipMembersList =
         reachableMembers.subList(0, Math.min(config.gossipFanout(), reachableMembers.size()));
+    LOGGER.trace("Gossiping {} to {}", gossipState, gossipMembersList);
     gossipMembersList.forEach(
         member ->
             communicationService.unicast(
@@ -159,7 +172,9 @@ public final class ClusterTopologyGossiper {
     gossipMembersList.clear();
   }
 
-  private void handleGossip(final ClusterTopologyGossipState receivedState) {
+  private void handleGossip(
+      final MemberId memberId, final ClusterTopologyGossipState receivedState) {
+    LOGGER.trace("Received {} from {}", gossipState, memberId);
     if (update(receivedState)) {
       // forward update to next set of members
       executor.run(this::gossip);
