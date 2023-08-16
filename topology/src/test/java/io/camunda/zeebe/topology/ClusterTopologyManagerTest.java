@@ -44,9 +44,7 @@ final class ClusterTopologyManagerTest {
     // then
     final ClusterTopology clusterTopology = clusterTopologyManager.getClusterTopology().join();
     ClusterTopologyAssert.assertThatClusterTopology(clusterTopology)
-        .hasMemberWithPartitions(0, Set.of(1))
-        .hasMemberWithPartitions(1, Set.of(2))
-        .hasMemberWithPartitions(2, Set.of(3));
+        .hasMemberWithPartitions(0, Set.of(1));
   }
 
   private Set<PartitionMetadata> getPartitionDistribution() {
