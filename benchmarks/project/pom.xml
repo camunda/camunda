@@ -136,7 +136,7 @@
             <version>${plugin.version.jib}</version>
             <configuration>
               <to>
-                <image>gcr.io/zeebe-io/starter</image>
+                <image>gcr.io/zeebe-io/starter:${project.version}</image>
               </to>
               <container>
                 <mainClass>io.camunda.zeebe.Starter</mainClass>
@@ -156,7 +156,7 @@
             <version>${plugin.version.jib}</version>
             <configuration>
               <to>
-                <image>gcr.io/zeebe-io/worker</image>
+                <image>gcr.io/zeebe-io/worker:${project.version}</image>
               </to>
               <container>
                 <mainClass>io.camunda.zeebe.Worker</mainClass>
