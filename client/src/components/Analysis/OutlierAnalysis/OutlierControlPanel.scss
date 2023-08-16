@@ -5,21 +5,17 @@
   padding: 12px;
   margin-bottom: 1em;
 
-  .list {
+  .list .item {
     display: inline;
+    position: relative;
+    padding-right: 20px;
+    line-height: 50px;
 
-    .item {
-      display: inline;
-      position: relative;
-      padding-right: 20px;
-      line-height: 50px;
-
-      .DefinitionSelection {
-        display: inline-block;
-        margin: 0 0.5em;
-        line-height: normal;
-        width: 220px;
-      }
+    .DefinitionSelection {
+      display: inline-block;
+      margin: 0 0.5em;
+      line-height: normal;
+      width: 220px;
     }
   }
 }

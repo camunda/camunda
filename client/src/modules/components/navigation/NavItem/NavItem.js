@@ -94,7 +94,7 @@ export default withRouter(
       const active = this.isActive();
 
       return (
-        <div className={classnames('NavItem', {activeBorder, active})}>
+        <li className={classnames('NavItem', {activeBorder, active})}>
           <Tooltip content={name} position="bottom" overflowOnly>
             <Link
               to={linksTo}
@@ -113,7 +113,7 @@ export default withRouter(
                 </Link>
               </Tooltip>
             ))}
-        </div>
+        </li>
       );
     }
   }
