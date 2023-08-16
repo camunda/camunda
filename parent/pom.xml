@@ -1338,6 +1338,8 @@
           <artifactId>maven-surefire-plugin</artifactId>
           <version>${plugin.version.surefire}</version>
           <configuration>
+            <!-- by default, exclude performance tests -->
+            <groups>!performance</groups>
             <failIfNoTests>false</failIfNoTests>
             <trimStackTrace>false</trimStackTrace>
             <redirectTestOutputToFile>true</redirectTestOutputToFile>
@@ -1660,6 +1662,7 @@
                   <dep>org.junit.jupiter:junit-jupiter-engine</dep>
                   <dep>org.junit.vintage:junit-vintage-engine</dep>
                   <dep>com.tngtech.archunit:archunit-junit5-engine</dep>
+                  <dep>org.openjdk.jmh:jmh-generator-annprocess</dep>
                 </ignoredUnusedDeclaredDependencies>
               </configuration>
             </execution>
@@ -1858,12 +1861,7 @@
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-surefire-plugin</artifactId>
             <configuration>
-              <includes>
-                <include>**/*EnginePerformanceTest.java</include>
-              </includes>
-              <environmentVariables>
-                <ENGINE_PERFORMANCE_TESTS_ENABLED>true</ENGINE_PERFORMANCE_TESTS_ENABLED>
-              </environmentVariables>
+              <groups>performance</groups>
             </configuration>
           </plugin>
         </plugins>

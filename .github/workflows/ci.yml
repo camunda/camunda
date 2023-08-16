@@ -265,8 +265,11 @@ jobs:
           ./mvnw -B --no-snapshot-updates
           -P include-performance-tests
           -D skipChecks
+          -T1C
           test
           | tee "${BUILD_OUTPUT_FILE_PATH}"
+        env:
+          LARGE_STATE_CONTROLLER_PERFORMANCE_TEST_SIZE_GB: "4"
       - name: Duplicate Test Check
         uses: ./.github/actions/check-duplicate-tests
         with:
