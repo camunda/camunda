@@ -185,6 +185,7 @@ const SortableTable: React.FC<Props> = ({
                           {row.cells.map((cell) => (
                             <TableCell
                               key={cell.id}
+                              data-testid={`cell-${cell.info.header}`}
                               $hideCellPadding={columnsWithNoContentPadding?.includes(
                                 cell.info.header,
                               )}

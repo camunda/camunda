@@ -27,11 +27,15 @@ export class Processes {
   readonly canceledCheckbox: Locator;
   readonly finishedInstancesCheckbox: Locator;
   readonly processNameFilter: Locator;
+  readonly processVersionFilter: Locator;
   readonly processInstanceKeysFilter: Locator;
+  readonly parentProcessInstanceKey: Locator;
   readonly flowNodeFilter: Locator;
   readonly operationSpinner: Locator;
   readonly operationIdFilter: Locator;
   readonly resetFiltersButton: Locator;
+  readonly errorMessageFilter: Locator;
+  readonly startDateFilter: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -50,9 +54,17 @@ export class Processes {
       name: 'Name',
     });
 
+    this.processVersionFilter = page.getByRole('combobox', {
+      name: 'Version',
+    });
+
     this.processInstanceKeysFilter = page.getByLabel(
       /^process instance key\(s\)$/i,
     );
+
+    this.parentProcessInstanceKey = page.getByRole('textbox', {
+      name: /parent process instance key/i,
+    });
 
     this.flowNodeFilter = page.getByRole('combobox', {
       name: /flow node/i,
@@ -64,6 +76,14 @@ export class Processes {
     });
     this.resetFiltersButton = page.getByRole('button', {
       name: /reset filters/i,
+    });
+
+    this.errorMessageFilter = page.getByRole('textbox', {
+      name: /error message/i,
+    });
+
+    this.startDateFilter = page.getByRole('textbox', {
+      name: /start date range/i,
     });
   }
 
@@ -84,15 +104,26 @@ export class Processes {
 
   async displayOptionalFilter(filterName: OptionalFilter) {
     await this.page.getByRole('button', {name: 'More Filters'}).click();
-    await this.page.getByText(filterName).click();
+    await this.page
+      .getByRole('menuitem', {
+        name: filterName,
+      })
+      .click();
   }
 
   async selectProcess(option: string) {
-    const processNameFilter = this.page.getByRole('combobox', {
-      name: 'Name',
-    });
-    await processNameFilter.click();
+    await this.processNameFilter.click();
     await this.page.getByTestId('expanded-panel').getByText(option).click();
+  }
+
+  async selectVersion(option: string) {
+    await this.processVersionFilter.click();
+    await this.page.getByTestId('expanded-panel').getByText(option).click();
+  }
+
+  async selectFlowNode(option: string) {
+    await this.flowNodeFilter.click();
+    await this.page.getByRole('option', {name: option}).click();
   }
 
   async navigateToProcesses(
@@ -107,4 +138,37 @@ export class Processes {
       `${Paths.processes()}?${convertToQueryString(searchParams)}`,
     );
   }
+
+  pickDateTimeRange = async ({
+    fromDay,
+    toDay,
+    fromTime,
+    toTime,
+  }: {
+    fromDay: string;
+    toDay: string;
+    fromTime?: string;
+    toTime?: string;
+  }) => {
+    await expect(this.page.getByRole('dialog')).toBeVisible();
+
+    const date = new Date();
+
+    const monthName = date.toLocaleString('default', {month: 'long'});
+    const year = date.getFullYear();
+
+    await this.page.getByText('From date').click();
+    await this.page.getByLabel(`${monthName} ${fromDay}, ${year}`).click();
+    await this.page.getByLabel(`${monthName} ${toDay}, ${year}`).click();
+
+    if (fromTime !== undefined) {
+      await this.page.getByTestId('fromTime').clear();
+      await this.page.getByTestId('fromTime').type(fromTime);
+    }
+
+    if (toTime !== undefined) {
+      await this.page.getByTestId('toTime').clear();
+      await this.page.getByTestId('toTime').type(toTime);
+    }
+  };
 }

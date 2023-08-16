@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Zeebe Modeler" exporterVersion="0.6.2">
+  <bpmn:process id="processWithMultipleVersions" name="Process With Multiple Versions" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1">
+      <bpmn:outgoing>SequenceFlow_0j6tsnn</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="SequenceFlow_0j6tsnn" sourceRef="StartEvent_1" targetRef="alwaysFails" />
+    <bpmn:serviceTask id="alwaysFails" name="Always fails">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="alwaysFails" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>SequenceFlow_0j6tsnn</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_0hiw19j</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="EndEvent_042s0oc">
+      <bpmn:incoming>SequenceFlow_0hiw19j</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="SequenceFlow_0hiw19j" sourceRef="alwaysFails" targetRef="EndEvent_042s0oc" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="processWithMultipleVersions">
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="156" y="103" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="-224" y="266" width="74" height="12" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_0j6tsnn_di" bpmnElement="SequenceFlow_0j6tsnn">
+        <di:waypoint x="192" y="121" />
+        <di:waypoint x="417" y="121" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="-169.5" y="227" width="90" height="12" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="ServiceTask_0c3g2sx_di" bpmnElement="alwaysFails">
+        <dc:Bounds x="417" y="81" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_042s0oc_di" bpmnElement="EndEvent_042s0oc">
+        <dc:Bounds x="773" y="103" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="385" y="270" width="90" height="12" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_0hiw19j_di" bpmnElement="SequenceFlow_0hiw19j">
+        <di:waypoint x="517" y="121" />
+        <di:waypoint x="773" y="121" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
