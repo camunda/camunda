@@ -25,12 +25,12 @@ type DeleteResourceResponseWrapper struct {
 	resp *pb.DeleteResourceResponse
 }
 
-func (c DeleteResourceResponseWrapper) human() (string, error) {
-	return fmt.Sprint("Deleted resource with key '", resourceKey, "'"), nil
-}
-
 func (c DeleteResourceResponseWrapper) json() (string, error) {
 	return toJSON(c.resp)
+}
+
+func (c DeleteResourceResponseWrapper) human() (string, error) {
+	return fmt.Sprint("Deleted resource with key '", resourceKey, "'"), nil
 }
 
 var resourceKey int64

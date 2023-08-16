@@ -19,17 +19,17 @@ import (
 	"github.com/camunda/zeebe/clients/go/v8/pkg/pb"
 )
 
-type DeleteResourceCommandStep1 interface {
-	ResourceKey(int64) DispatchDeleteResourceCommand
+type DeleteResourceCommand struct {
+	Command
+	request pb.DeleteResourceRequest
 }
 
 type DispatchDeleteResourceCommand interface {
 	Send(context.Context) (*pb.DeleteResourceResponse, error)
 }
 
-type DeleteResourceCommand struct {
-	Command
-	request pb.DeleteResourceRequest
+type DeleteResourceCommandStep1 interface {
+	ResourceKey(int64) DispatchDeleteResourceCommand
 }
 
 func (cmd *DeleteResourceCommand) Send(ctx context.Context) (*pb.DeleteResourceResponse, error) {
