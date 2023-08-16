@@ -33,7 +33,6 @@ import java.io.Closeable;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
 
 public final class JobWorkerBuilderImpl
@@ -152,7 +151,7 @@ public final class JobWorkerBuilderImpl
 
   @Override
   public JobWorkerBuilderStep3 metrics(final JobWorkerMetrics metrics) {
-    this.metrics = Optional.ofNullable(metrics).orElse(JobWorkerMetrics.noop());
+    this.metrics = metrics == null ? JobWorkerMetrics.noop() : metrics;
     return this;
   }
 
