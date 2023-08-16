@@ -10,6 +10,12 @@ permissions:
   contents: read
   id-token: write
 
+# Will limit the workflow to 1 concurrent run per ref (branch / PR)
+# If a new commits occurs, the current run will be canceled
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   trivy-check:
     name: Run trivy check
@@ -18,12 +24,11 @@ jobs:
       matrix:
         branch:
           [
-            "OPT-6770",
-            # "master",
-            # "maintenance/3.10",
-            # "maintenance/3.9",
-            # "maintenance/3.8",
-            # "maintenance/3.7",
+            "master",
+            "maintenance/3.10",
+            "maintenance/3.9",
+            "maintenance/3.8",
+            "maintenance/3.7",
           ]
     runs-on: ubuntu-latest
     steps:
@@ -69,7 +74,6 @@ jobs:
             echo "DOCKER_TAG=latest"
             echo "VERSION=${{ steps.pom-info.outputs.project_version }}"
             echo "REVISION=${{ github.sha }}"
-            echo "PUSH_PLATFORM_TAGS=true"
           } >> "$GITHUB_ENV"
 
       - name: Import secrets
@@ -98,11 +102,27 @@ jobs:
       - name: Build local image for testing
         run: ./.github/scripts/build-docker-images.sh
 
+      - name: Get image ids for amd and amr platforms
+        run: |
+          images=$(docker image ls -q)
+
+          for image in ${images[@]}; do
+              if [[ $(docker inspect $image | grep org.opencontainers.image.title) =~ "Camunda Optimize" ]]; then
+                  if [[ $(docker inspect $image | grep Architecture) =~ "arm" ]]; then
+                      echo "arm_image=$image" >> "$GITHUB_ENV"
+                  else
+                      echo "amd_image=$image" >> "$GITHUB_ENV"
+                  fi
+              fi
+          done
+
+          echo $amd_image $arm_image
+
       - name: Run Trivy vulnerability scanner AMD
         if: always()
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ env.DOCKER_IMAGE_TEAM }}:${{ env.DOCKER_TAG }}-AMD64
+          image-ref: ${{ env.amd_image }}
           exit-code: "1"
           ignore-unfixed: true
           hide-progress: true
@@ -114,7 +134,7 @@ jobs:
         if: always()
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ env.DOCKER_IMAGE_TEAM }}:${{ env.DOCKER_TAG }}-ARM64
+          image-ref: ${{ env.arm_image }}
           exit-code: "1"
           ignore-unfixed: true
           hide-progress: true
