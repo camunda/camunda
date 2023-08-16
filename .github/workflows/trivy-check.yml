@@ -18,11 +18,12 @@ jobs:
       matrix:
         branch:
           [
-            "master",
-            "maintenance/3.10",
-            "maintenance/3.9",
-            "maintenance/3.8",
-            "maintenance/3.7",
+            "OPT-6770",
+            # "master",
+            # "maintenance/3.10",
+            # "maintenance/3.9",
+            # "maintenance/3.8",
+            # "maintenance/3.7",
           ]
     runs-on: ubuntu-latest
     steps:
@@ -68,6 +69,7 @@ jobs:
             echo "DOCKER_TAG=latest"
             echo "VERSION=${{ steps.pom-info.outputs.project_version }}"
             echo "REVISION=${{ github.sha }}"
+            echo "PUSH_PLATFORM_TAGS=true"
           } >> "$GITHUB_ENV"
 
       - name: Import secrets
@@ -96,20 +98,35 @@ jobs:
       - name: Build local image for testing
         run: ./.github/scripts/build-docker-images.sh
 
-      - name: Run Trivy vulnerability scanner
+      - name: Run Trivy vulnerability scanner AMD
+        if: always()
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ env.DOCKER_IMAGE_TEAM }}:${{ env.DOCKER_TAG }}
+          image-ref: ${{ env.DOCKER_IMAGE_TEAM }}:${{ env.DOCKER_TAG }}-AMD64
           exit-code: "1"
           ignore-unfixed: true
           hide-progress: true
           severity: "CRITICAL,HIGH"
           format: table
-          output: ${{ steps.pom-info.outputs.project_version }}-trivy-log.txt
+          output: ${{ steps.pom-info.outputs.project_version }}-amd64-trivy-log.txt
+
+      - name: Run Trivy vulnerability scanner ARM
+        if: always()
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.DOCKER_IMAGE_TEAM }}:${{ env.DOCKER_TAG }}-ARM64
+          exit-code: "1"
+          ignore-unfixed: true
+          hide-progress: true
+          severity: "CRITICAL,HIGH"
+          format: table
+          output: ${{ steps.pom-info.outputs.project_version }}-arm64-trivy-log.txt
 
       - name: Print Test Results
         if: always()
-        run: cat ${{ steps.pom-info.outputs.project_version }}-trivy-log.txt
+        run: |
+          cat ${{ steps.pom-info.outputs.project_version }}-amd64-trivy-log.txt
+          cat ${{ steps.pom-info.outputs.project_version }}-arm64-trivy-log.txt
 
       - name: Upload Test Results
         if: always()
@@ -117,31 +134,32 @@ jobs:
         with:
           name: trivy-test-results
           path: |
-            **/${{ steps.pom-info.outputs.project_version }}-trivy-log.txt
+            **/${{ steps.pom-info.outputs.project_version }}-amd64-trivy-log.txt
+            **/${{ steps.pom-info.outputs.project_version }}-arm64-trivy-log.txt
           retention-days: 7
           if-no-files-found: ignore
 
-  post-results-on-slack:
-    name: Post results on slack
-    if: failure()
-    needs:
-      - trivy-check
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
+  # post-results-on-slack:
+  #   name: Post results on slack
+  #   if: failure()
+  #   needs:
+  #     - trivy-check
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v3
 
-      - name: Import secrets
-        id: secrets
-        uses: hashicorp/vault-action@62aa8bb4c43190676348ad2b146075f0421136db
-        with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secrets: |
-            secret/data/products/optimize/ci/camunda-optimize SLACK_BOT_URL;
+  #     - name: Import secrets
+  #       id: secrets
+  #       uses: hashicorp/vault-action@62aa8bb4c43190676348ad2b146075f0421136db
+  #       with:
+  #         url: ${{ secrets.VAULT_ADDR }}
+  #         method: approle
+  #         roleId: ${{ secrets.VAULT_ROLE_ID }}
+  #         secretId: ${{ secrets.VAULT_SECRET_ID }}
+  #         secrets: |
+  #           secret/data/products/optimize/ci/camunda-optimize SLACK_BOT_URL;
 
-      - name: Post results on slack
-        uses: ./.github/actions/notify-on-slack
-        with:
-          slack_webhook_url: ${{ steps.secrets.outputs.SLACK_BOT_URL}}
+  #     - name: Post results on slack
+  #       uses: ./.github/actions/notify-on-slack
+  #       with:
+  #         slack_webhook_url: ${{ steps.secrets.outputs.SLACK_BOT_URL}}

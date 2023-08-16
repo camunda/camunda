@@ -26,11 +26,19 @@ if [ "${CI}" = "true"  ]; then
     echo "tag_arguments=$tag_arguments" >> "$GITHUB_ENV"
 fi
 
+tag_arguments_amd=$tag_arguments
+tag_arguments_arm=$tag_arguments
+
+if [ "${PUSH_PLATFORM_TAGS}" = "true" ]; then
+    tag_arguments_amd+=" -t ${DOCKER_IMAGE_TEAM}:${DOCKER_TAG}-AMD64"
+    tag_arguments_arm+=" -t ${DOCKER_IMAGE_TEAM}:${DOCKER_TAG}-ARM64"
+fi
+
 # Since docker buildx doesn't allow to use --load for a multi-platform build, we do it one at a time to be
 # able to perform the checks before pushing
 # First arm64
 docker buildx build \
-    ${tag_arguments} \
+    ${tag_arguments_arm} \
     --build-arg VERSION="${VERSION}" \
     --build-arg DATE="${DATE}" \
     --build-arg REVISION="${REVISION}" \
@@ -42,7 +50,7 @@ export ARCHITECTURE=arm64
 
 # Now amd64
 docker buildx build \
-    ${tag_arguments} \
+    ${tag_arguments_amd} \
     --build-arg VERSION="${VERSION}" \
     --build-arg DATE="${DATE}" \
     --build-arg REVISION="${REVISION}" \
