@@ -16,6 +16,7 @@ import io.camunda.zeebe.topology.protocol.Topology.MMemberState;
 import io.camunda.zeebe.topology.protocol.Topology.MPartitionState;
 import io.camunda.zeebe.topology.protocol.Topology.MState;
 import io.camunda.zeebe.topology.state.ClusterChangePlan;
+import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.PartitionState;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -25,25 +26,34 @@ public class ProtoBufSerializer implements ClusterTopologyGossipSerializer {
 
   @Override
   public byte[] encode(final ClusterTopologyGossipState gossipState) {
-    final Topology.MClusterTopology clusterTopology =
-        encodeClusterTopology(gossipState.getClusterTopology());
-    final var message =
-        Topology.MGossipState.newBuilder().setClusterTopology(clusterTopology).build();
+    final var builder = MGossipState.newBuilder();
+
+    final ClusterTopology topologyToEncode = gossipState.getClusterTopology();
+    if (topologyToEncode != null) {
+      final Topology.MClusterTopology clusterTopology = encodeClusterTopology(topologyToEncode);
+      builder.setClusterTopology(clusterTopology);
+    }
+
+    final var message = builder.build();
     return message.toByteArray();
   }
 
   @Override
   public ClusterTopologyGossipState decode(final byte[] encodedState) {
+    final MGossipState gossipState;
 
-    final MClusterTopology clusterTopology;
     try {
-      clusterTopology = MGossipState.parseFrom(encodedState).getClusterTopology();
+      gossipState = MGossipState.parseFrom(encodedState);
+
     } catch (final InvalidProtocolBufferException e) {
       throw new DecodingFailed(e);
     }
-
     final ClusterTopologyGossipState clusterTopologyGossipState = new ClusterTopologyGossipState();
-    clusterTopologyGossipState.setClusterTopology(decodeClusterTopology(clusterTopology));
+
+    if (gossipState.hasClusterTopology()) {
+      clusterTopologyGossipState.setClusterTopology(
+          decodeClusterTopology(gossipState.getClusterTopology()));
+    }
     return clusterTopologyGossipState;
   }
 
