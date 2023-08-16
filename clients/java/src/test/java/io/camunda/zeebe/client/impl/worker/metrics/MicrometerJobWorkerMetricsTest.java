@@ -18,12 +18,16 @@ package io.camunda.zeebe.client.impl.worker.metrics;
 import io.camunda.zeebe.client.api.worker.JobWorkerMetrics;
 import io.camunda.zeebe.client.api.worker.metrics.MicrometerJobWorkerMetricsBuilder.Names;
 import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.util.Arrays;
+import java.util.List;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.Condition;
+import org.assertj.core.condition.VerboseCondition;
 import org.junit.jupiter.api.Test;
 
 final class MicrometerJobWorkerMetricsTest {
@@ -38,7 +42,9 @@ final class MicrometerJobWorkerMetricsTest {
     metrics.jobActivated(5);
 
     // then
-    Assertions.assertThat(meterRegistry).has(new HasMeter(Names.JOB_ACTIVATED, tags, 5));
+    Assertions.assertThat(meterRegistry).has(hasCounter(Names.JOB_ACTIVATED, tags));
+    Assertions.assertThat(meterRegistry.counter(Names.JOB_ACTIVATED.asString(), tags))
+        .has(hasCount(5));
   }
 
   @Test
@@ -47,31 +53,27 @@ final class MicrometerJobWorkerMetricsTest {
     metrics.jobHandled(3);
 
     // then
-    Assertions.assertThat(meterRegistry).has(new HasMeter(Names.JOB_HANDLED, tags, 3));
+    Assertions.assertThat(meterRegistry).has(hasCounter(Names.JOB_HANDLED, tags));
+    Assertions.assertThat(meterRegistry.counter(Names.JOB_HANDLED.asString(), tags))
+        .has(hasCount(3));
   }
 
-  private static final class HasMeter extends Condition<MeterRegistry> {
-    private final Names name;
-    private final Iterable<Tag> tags;
-    private final int count;
+  private Condition<MeterRegistry> hasCounter(final Names name, final Iterable<Tag> tags) {
+    return VerboseCondition.verboseCondition(
+        registry -> registry.find(name.asString()).tags(tags).counter() != null,
+        String.format("a counter named '%s', with tags %s", name.asString(), tags),
+        registry -> String.format(" but registered meters are %s", asString(registry.getMeters())));
+  }
 
-    private HasMeter(final Names name, final Iterable<Tag> tags, final int count) {
-      super(
-          String.format(
-              "counter named '%s', with tags %s, and count '%d'", name.asString(), tags, count));
-      this.name = name;
-      this.tags = tags;
-      this.count = count;
-    }
+  private String asString(final List<Meter> meters) {
+    return Arrays.toString(meters.stream().map(Meter::getId).toArray());
+  }
 
-    @Override
-    public boolean matches(final MeterRegistry value) {
-      final Counter counter = value.find(name.asString()).tags(tags).counter();
-      if (counter == null) {
-        return false;
-      }
-
-      return counter.count() == count;
-    }
+  // unfortunately meters have no String representation, so when they fail it's not super helpful
+  private Condition<Counter> hasCount(final int count) {
+    return VerboseCondition.verboseCondition(
+        counter -> counter.count() == count,
+        String.format("a count of '%d'", count),
+        counter -> String.format(" but actual count is '%f'", counter.count()));
   }
 }
