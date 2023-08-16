@@ -108,6 +108,12 @@ public final class SignalSubscriptionRecord extends UnifiedRecordValue
     return bpmnProcessIdProp.getValue();
   }
 
+  @JsonIgnore
+  public long getSubscriptionKey() {
+    final long catchEventInstanceKey = catchEventInstanceKeyProp.getValue();
+    return catchEventInstanceKey > -1 ? catchEventInstanceKey : processDefinitionKeyProp.getValue();
+  }
+
   @Override
   public String getTenantId() {
     // todo(#13336): replace dummy implementation

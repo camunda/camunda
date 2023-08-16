@@ -26,6 +26,14 @@ public interface SignalSubscriptionState {
   void visitStartEventSubscriptionsByProcessDefinitionKey(
       long processDefinitionKey, SignalSubscriptionVisitor visitor);
 
+  /**
+   * Visit all subscriptions with the given element instance key.
+   *
+   * @param elementInstanceKey the key of the element instance the subscription belongs to
+   * @param visitor the function that is called for each subscription
+   */
+  void visitByElementInstanceKey(long elementInstanceKey, SignalSubscriptionVisitor visitor);
+
   @FunctionalInterface
   interface SignalSubscriptionVisitor {
     void visit(SignalSubscription subscription);

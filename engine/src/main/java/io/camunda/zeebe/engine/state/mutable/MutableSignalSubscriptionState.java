@@ -15,5 +15,5 @@ public interface MutableSignalSubscriptionState extends SignalSubscriptionState 
 
   void put(final long key, SignalSubscriptionRecord subscription);
 
-  void remove(long processDefinitionKey, DirectBuffer signalName);
+  void remove(long subscriptionKey, DirectBuffer signalName);
 }

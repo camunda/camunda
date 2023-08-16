@@ -341,11 +341,9 @@ public final class EngineProcessors {
         new SignalBroadcastProcessor(
             writers,
             processingState.getKeyGenerator(),
-            processingState.getEventScopeInstanceState(),
-            processingState.getProcessState(),
+            processingState,
             bpmnBehaviors.stateBehavior(),
             bpmnBehaviors.eventTriggerBehavior(),
-            processingState.getSignalSubscriptionState(),
             commandDistributionBehavior);
     typedRecordProcessors.onCommand(
         ValueType.SIGNAL, SignalIntent.BROADCAST, signalBroadcastProcessor);
