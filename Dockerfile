@@ -1,4 +1,4 @@
-ARG BASE_IMAGE_NAME="alpine:3.18.3"
+ARG BASE_IMAGE_NAME="alpine:3"
 ARG BASE_IMAGE_SHA_AMD64="sha256:c5c5fda71656f28e49ac9c5416b3643eaa6a108a8093151d6d1afc9463be8e33"
 ARG BASE_IMAGE_SHA_ARM64="sha256:b312e4b0e2c665d634602411fcb7c2699ba748c36f59324457bc17de485f36f6"
 
@@ -31,6 +31,8 @@ RUN mkdir -p ${TMP_DIR} && \
     mkdir -p ${BUILD_DIR}
 
 COPY ${ARTIFACT_PATH}/camunda-optimize-${VERSION}-${DISTRO}.tar.gz ${BUILD_DIR}
+RUN tar -xzf ${BUILD_DIR}/camunda-optimize-${VERSION}-${DISTRO}.tar.gz -C ${BUILD_DIR} && \
+    rm ${BUILD_DIR}/camunda-optimize-${VERSION}-${DISTRO}.tar.gz
 COPY docker/bin/optimize.sh ${BUILD_DIR}/optimize.sh
 # Prevent environment-config.yaml from overriding service-config.yaml since the
 # service-config.yaml allows usage of OPTIMIZE_ environment variables
