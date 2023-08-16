@@ -1,0 +1,63 @@
+{
+  extends: ["config:base", ":rebaseStalePrs", ":dependencyDashboard"],
+  includePaths: [
+    ".github/**",
+    ".ci/**",
+    "docker/test/**",
+    "**/Dockerfile",
+  ],
+  // This ignores are the ones comming by default from config:base with exception to **/test/**
+  // We do this to be able to test files in docker/test directory
+  ignorePaths: [
+    "**/node_modules/**",
+    "**/bower_components/**",
+    "**/vendor/**",
+    "**/examples/**",
+    "**/__tests__/**",
+    "**/tests/**",
+    "**/__fixtures__/**",
+  ],
+  commitMessagePrefix: "chore(deps):",
+  branchPrefix: "renovate/",
+  helmv3: {
+    registryAliases: {
+      "helm-camunda-io": "https://helm.camunda.io",
+    },
+  },
+  packageRules: [
+    {
+      matchManagers: "dockerfile",
+      separateMajorMinor: true,
+      separateMinorPatch: true,
+    },
+    {
+      matchDatasources: ["docker"],
+      matchPackagePatterns: ["alpine", "docker.io/library/alpine"],
+      groupName: "Alpine dependencies",
+      separateMajorMinor: true,
+      separateMinorPatch: true,
+    },
+  ],
+  regexManagers: [
+    {
+      fileMatch: [
+        ".github/scripts/build-docker-images.sh",
+        ".ci/pipelines/release_optimize.groovy",
+      ],
+      matchStrings: [
+        "export BASE_IMAGE=(?<depName>.*?):(?<currentValue>.*?)\\s",
+      ],
+      datasourceTemplate: "docker",
+    },
+    {
+      fileMatch: [
+        "docker/test/verify.sh",
+        "docker/test/docker-labels.golden.json",
+      ],
+      matchStrings: [
+        "(?<depName>docker.io/library/alpine):(?<currentValue>\\d+\\.\\d+\\.\\d+)",
+      ],
+      datasourceTemplate: "docker",
+    },
+  ],
+}
