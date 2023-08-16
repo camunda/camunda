@@ -16,6 +16,7 @@
   </parent>
 
   <artifactId>zeebe-cluster-topology</artifactId>
+  <name>Zeebe Cluster Topology</name>
 
   <properties>
     <proto.dir>${maven.multiModuleProjectDirectory}/topology/src/main/resources/proto</proto.dir>
