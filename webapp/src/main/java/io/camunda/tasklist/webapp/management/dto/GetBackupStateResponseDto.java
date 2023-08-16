@@ -11,22 +11,22 @@ import java.util.Objects;
 
 public class GetBackupStateResponseDto {
 
-  private Integer backupId;
+  private Long backupId;
   private BackupStateDto state;
   private String failureReason;
   private List<GetBackupStateResponseDetailDto> details;
 
   public GetBackupStateResponseDto() {}
 
-  public GetBackupStateResponseDto(Integer backupId) {
+  public GetBackupStateResponseDto(Long backupId) {
     this.backupId = backupId;
   }
 
-  public Integer getBackupId() {
+  public Long getBackupId() {
     return backupId;
   }
 
-  public GetBackupStateResponseDto setBackupId(Integer backupId) {
+  public GetBackupStateResponseDto setBackupId(Long backupId) {
     this.backupId = backupId;
     return this;
   }

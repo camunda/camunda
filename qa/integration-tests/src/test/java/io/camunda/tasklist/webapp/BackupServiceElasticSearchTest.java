@@ -99,9 +99,7 @@ public class BackupServiceElasticSearchTest {
     final Exception exception =
         assertThrows(
             InvalidRequestException.class,
-            () -> {
-              backupService.takeBackup(new TakeBackupRequestDto());
-            });
+            () -> backupService.takeBackup(new TakeBackupRequestDto()));
     final String expectedMessage = "BackupId must be provided";
     final String actualMessage = exception.getMessage();
     assertTrue(actualMessage.contains(expectedMessage));
@@ -114,35 +112,22 @@ public class BackupServiceElasticSearchTest {
     Exception exception =
         assertThrows(
             InvalidRequestException.class,
-            () -> {
-              backupService.takeBackup(new TakeBackupRequestDto().setBackupId(null));
-            });
+            () -> backupService.takeBackup(new TakeBackupRequestDto().setBackupId(null)));
     assertTrue(exception.getMessage().contains(expectedMessage));
 
-    expectedMessage = "BackupId must be a non-negative Integer. Received value:";
+    expectedMessage = "BackupId must be a non-negative Long. Received value:";
 
     exception =
         assertThrows(
             InvalidRequestException.class,
-            () -> {
-              backupService.takeBackup(new TakeBackupRequestDto().setBackupId(-1));
-            });
+            () -> backupService.takeBackup(new TakeBackupRequestDto().setBackupId(-1L)));
     assertTrue(exception.getMessage().contains(expectedMessage));
 
     exception =
-        assertThrows(
-            InvalidRequestException.class,
-            () -> {
-              backupService.getBackupState(-1);
-            });
+        assertThrows(InvalidRequestException.class, () -> backupService.getBackupState(-1L));
     assertTrue(exception.getMessage().contains(expectedMessage));
 
-    exception =
-        assertThrows(
-            InvalidRequestException.class,
-            () -> {
-              backupService.deleteBackup(-1);
-            });
+    exception = assertThrows(InvalidRequestException.class, () -> backupService.deleteBackup(-1L));
     assertTrue(exception.getMessage().contains(expectedMessage));
   }
 
@@ -150,32 +135,22 @@ public class BackupServiceElasticSearchTest {
   public void shouldFailNoBackupRepositoryConfigured() {
     when(tasklistProperties.getBackup()).thenReturn(null);
     final String expectedMessage = "No backup repository configured.";
-    final Integer backupId = 100;
+    final Long backupId = 100L;
 
     Exception exception =
         assertThrows(
             NotFoundApiException.class,
-            () -> {
-              backupService.takeBackup(new TakeBackupRequestDto().setBackupId(backupId));
-            });
+            () -> backupService.takeBackup(new TakeBackupRequestDto().setBackupId(backupId)));
     String actualMessage = exception.getMessage();
     assertTrue(actualMessage.contains(expectedMessage));
 
     exception =
-        assertThrows(
-            NotFoundApiException.class,
-            () -> {
-              backupService.getBackupState(backupId);
-            });
+        assertThrows(NotFoundApiException.class, () -> backupService.getBackupState(backupId));
     actualMessage = exception.getMessage();
     assertTrue(actualMessage.contains(expectedMessage));
 
     exception =
-        assertThrows(
-            NotFoundApiException.class,
-            () -> {
-              backupService.deleteBackup(backupId);
-            });
+        assertThrows(NotFoundApiException.class, () -> backupService.deleteBackup(backupId));
     actualMessage = exception.getMessage();
     assertTrue(actualMessage.contains(expectedMessage));
 
@@ -183,27 +158,17 @@ public class BackupServiceElasticSearchTest {
     exception =
         assertThrows(
             NotFoundApiException.class,
-            () -> {
-              backupService.takeBackup(new TakeBackupRequestDto().setBackupId(backupId));
-            });
+            () -> backupService.takeBackup(new TakeBackupRequestDto().setBackupId(backupId)));
     actualMessage = exception.getMessage();
     assertTrue(actualMessage.contains(expectedMessage));
 
     exception =
-        assertThrows(
-            NotFoundApiException.class,
-            () -> {
-              backupService.getBackupState(backupId);
-            });
+        assertThrows(NotFoundApiException.class, () -> backupService.getBackupState(backupId));
     actualMessage = exception.getMessage();
     assertTrue(actualMessage.contains(expectedMessage));
 
     exception =
-        assertThrows(
-            NotFoundApiException.class,
-            () -> {
-              backupService.deleteBackup(backupId);
-            });
+        assertThrows(NotFoundApiException.class, () -> backupService.deleteBackup(backupId));
     actualMessage = exception.getMessage();
     assertTrue(actualMessage.contains(expectedMessage));
   }
@@ -222,19 +187,12 @@ public class BackupServiceElasticSearchTest {
     Exception exception =
         assertThrows(
             TasklistRuntimeException.class,
-            () -> {
-              backupService.takeBackup(new TakeBackupRequestDto().setBackupId(1));
-            });
+            () -> backupService.takeBackup(new TakeBackupRequestDto().setBackupId(1L)));
 
     String actualMessage = exception.getMessage();
     assertTrue(actualMessage.contains(expectedMessage));
 
-    exception =
-        assertThrows(
-            TasklistRuntimeException.class,
-            () -> {
-              backupService.deleteBackup(1);
-            });
+    exception = assertThrows(TasklistRuntimeException.class, () -> backupService.deleteBackup(1L));
     actualMessage = exception.getMessage();
     assertTrue(actualMessage.contains(expectedMessage));
 
@@ -244,7 +202,7 @@ public class BackupServiceElasticSearchTest {
   @Test
   public void shouldFailCreateBackupOn1stRequestFailedWithConnectionError() throws IOException {
     final String repoName = "repoName";
-    final Integer backupId = 2;
+    final Long backupId = 2L;
     when(tasklistProperties.getBackup())
         .thenReturn(new BackupProperties().setRepositoryName(repoName));
     when(snapshotClient.getRepository(any(), any()))
@@ -254,9 +212,7 @@ public class BackupServiceElasticSearchTest {
     final Exception exception =
         assertThrows(
             TasklistElasticsearchConnectionException.class,
-            () -> {
-              backupService.takeBackup(new TakeBackupRequestDto().setBackupId(backupId));
-            });
+            () -> backupService.takeBackup(new TakeBackupRequestDto().setBackupId(backupId)));
     final String expectedMessage =
         String.format(
             "Encountered an error connecting to Elasticsearch while retrieving repository with name [%s].",
@@ -268,7 +224,7 @@ public class BackupServiceElasticSearchTest {
   @Test
   public void shouldFailCreateBackupOn2ndRequestFailedWithConnectionError() throws IOException {
     final String repoName = "repoName";
-    final Integer backupId = 3;
+    final Long backupId = 3L;
     when(tasklistProperties.getBackup())
         .thenReturn(new BackupProperties().setRepositoryName(repoName));
     when(snapshotClient.getRepository(any(), any())).thenReturn(null);
@@ -279,9 +235,7 @@ public class BackupServiceElasticSearchTest {
     final Exception exception =
         assertThrows(
             TasklistElasticsearchConnectionException.class,
-            () -> {
-              backupService.takeBackup(new TakeBackupRequestDto().setBackupId(backupId));
-            });
+            () -> backupService.takeBackup(new TakeBackupRequestDto().setBackupId(backupId)));
     final String expectedMessage =
         String.format(
             "Encountered an error connecting to Elasticsearch while searching for duplicate backup. Repository name: [%s].",
@@ -293,7 +247,7 @@ public class BackupServiceElasticSearchTest {
   @Test
   public void shouldFailCreateBackupOnBackupIdAlreadyExists() throws IOException {
     final String repoName = "repoName";
-    final Integer backupid = 4;
+    final Long backupid = 4L;
     when(tasklistProperties.getBackup())
         .thenReturn(new BackupProperties().setRepositoryName(repoName));
     final SnapshotInfo snapshotInfo = mock(SnapshotInfo.class);
@@ -306,9 +260,7 @@ public class BackupServiceElasticSearchTest {
     final Exception exception =
         assertThrows(
             InvalidRequestException.class,
-            () -> {
-              backupService.takeBackup(new TakeBackupRequestDto().setBackupId(backupid));
-            });
+            () -> backupService.takeBackup(new TakeBackupRequestDto().setBackupId(backupid)));
     final String expectedMessage =
         String.format("A backup with ID [%s] already exists. Found snapshots:", backupid);
     final String actualMessage = exception.getMessage();
@@ -319,7 +271,7 @@ public class BackupServiceElasticSearchTest {
   @Test
   public void shouldFailGetStateOnBackupIdNotFound() throws IOException {
     final String repoName = "repoName";
-    final Integer backupId = 5;
+    final Long backupId = 5L;
     when(tasklistProperties.getBackup())
         .thenReturn(new BackupProperties().setRepositoryName(repoName));
     when(snapshotClient.get(any(), any()))
@@ -329,11 +281,7 @@ public class BackupServiceElasticSearchTest {
     when(esClient.snapshot()).thenReturn(snapshotClient);
 
     final Exception exception =
-        assertThrows(
-            NotFoundApiException.class,
-            () -> {
-              backupService.getBackupState(backupId);
-            });
+        assertThrows(NotFoundApiException.class, () -> backupService.getBackupState(backupId));
     final String expectedMessage = String.format("No backup with id [%s] found.", backupId);
     final String actualMessage = exception.getMessage();
     assertTrue(actualMessage.contains(expectedMessage));
@@ -341,9 +289,9 @@ public class BackupServiceElasticSearchTest {
   }
 
   @Test
-  public void shouldFailGetStateOnConnectionError() throws IOException {
+  public void shouldFailGetStateOnConnectionError() {
     final String repoName = "repoName";
-    final Integer backupId = 6;
+    final Long backupId = 6L;
     when(tasklistProperties.getBackup())
         .thenReturn(new BackupProperties().setRepositoryName(repoName));
     when(esClient.snapshot()).thenThrow(new TransportException("Elastic is not available"));
@@ -351,9 +299,7 @@ public class BackupServiceElasticSearchTest {
     final Exception exception =
         assertThrows(
             TasklistElasticsearchConnectionException.class,
-            () -> {
-              backupService.getBackupState(backupId);
-            });
+            () -> backupService.getBackupState(backupId));
     final String expectedMessage =
         String.format(
             "Encountered an error connecting to Elasticsearch while searching for snapshots. Repository name: [%s].",
@@ -365,7 +311,7 @@ public class BackupServiceElasticSearchTest {
   @Test
   public void shouldReturnCompletedState() throws IOException {
     final String repoName = "repoName";
-    final Integer backupId = 7;
+    final Long backupId = 7L;
     when(tasklistProperties.getBackup())
         .thenReturn(new BackupProperties().setRepositoryName(repoName));
     final SnapshotInfo snapshotInfo1 =
@@ -377,8 +323,7 @@ public class BackupServiceElasticSearchTest {
     final SnapshotInfo snapshotInfo3 =
         createSnapshotInfoMock(
             "snapshotName3", UUID.randomUUID().toString(), SnapshotState.SUCCESS);
-    final List<SnapshotInfo> snapshotInfos =
-        asList(new SnapshotInfo[] {snapshotInfo1, snapshotInfo2, snapshotInfo3});
+    final List<SnapshotInfo> snapshotInfos = asList(snapshotInfo1, snapshotInfo2, snapshotInfo3);
     when(snapshotClient.get(any(), any()))
         .thenReturn(new GetSnapshotsResponse(snapshotInfos, null, null, 1, 1));
     when(esClient.snapshot()).thenReturn(snapshotClient);
@@ -394,7 +339,7 @@ public class BackupServiceElasticSearchTest {
   @Test
   public void shouldReturnFailedState1() throws IOException {
     final String repoName = "repoName";
-    final Integer backupId = 8;
+    final Long backupId = 8L;
     when(tasklistProperties.getBackup())
         .thenReturn(new BackupProperties().setRepositoryName(repoName));
     final SnapshotInfo snapshotInfo1 =
@@ -417,8 +362,7 @@ public class BackupServiceElasticSearchTest {
     final SnapshotInfo snapshotInfo3 =
         createSnapshotInfoMock(
             "snapshotName3", UUID.randomUUID().toString(), SnapshotState.FAILED, shardFailures);
-    final List<SnapshotInfo> snapshotInfos =
-        asList(new SnapshotInfo[] {snapshotInfo1, snapshotInfo2, snapshotInfo3});
+    final List<SnapshotInfo> snapshotInfos = asList(snapshotInfo1, snapshotInfo2, snapshotInfo3);
     when(snapshotClient.get(any(), any()))
         .thenReturn(new GetSnapshotsResponse(snapshotInfos, null, null, 1, 1));
     when(esClient.snapshot()).thenReturn(snapshotClient);
@@ -437,14 +381,14 @@ public class BackupServiceElasticSearchTest {
             null,
             null,
             snapshotInfos.get(2).shardFailures().stream()
-                .map(si -> si.toString())
+                .map(SnapshotShardFailure::toString)
                 .toArray(String[]::new));
   }
 
   @Test
   public void shouldReturnFailedState2() throws IOException {
     final String repoName = "repoName";
-    final Integer backupId = 9;
+    final Long backupId = 9L;
     when(tasklistProperties.getBackup())
         .thenReturn(new BackupProperties().setRepositoryName(repoName));
     final SnapshotInfo snapshotInfo1 =
@@ -456,8 +400,7 @@ public class BackupServiceElasticSearchTest {
     final SnapshotInfo snapshotInfo3 =
         createSnapshotInfoMock(
             "snapshotName3", UUID.randomUUID().toString(), SnapshotState.PARTIAL);
-    final List<SnapshotInfo> snapshotInfos =
-        asList(new SnapshotInfo[] {snapshotInfo1, snapshotInfo2, snapshotInfo3});
+    final List<SnapshotInfo> snapshotInfos = asList(snapshotInfo1, snapshotInfo2, snapshotInfo3);
     when(snapshotClient.get(any(), any()))
         .thenReturn(new GetSnapshotsResponse(snapshotInfos, null, null, 1, 1));
     when(esClient.snapshot()).thenReturn(snapshotClient);
@@ -474,7 +417,7 @@ public class BackupServiceElasticSearchTest {
   @Test
   public void shouldReturnFailedState3WhenMoreSnapshotsThanExpected() throws IOException {
     final String repoName = "repoName";
-    final Integer backupId = 10;
+    final Long backupId = 10L;
     when(tasklistProperties.getBackup())
         .thenReturn(new BackupProperties().setRepositoryName(repoName));
     final SnapshotInfo snapshotInfo1 =
@@ -490,7 +433,7 @@ public class BackupServiceElasticSearchTest {
         createSnapshotInfoMock(
             "snapshotName4", UUID.randomUUID().toString(), SnapshotState.SUCCESS);
     final List<SnapshotInfo> snapshotInfos =
-        asList(new SnapshotInfo[] {snapshotInfo1, snapshotInfo2, snapshotInfo3, snapshotInfo4});
+        asList(snapshotInfo1, snapshotInfo2, snapshotInfo3, snapshotInfo4);
     when(snapshotClient.get(any(), any()))
         .thenReturn(new GetSnapshotsResponse(snapshotInfos, null, null, 1, 1));
     when(esClient.snapshot()).thenReturn(snapshotClient);
@@ -506,7 +449,7 @@ public class BackupServiceElasticSearchTest {
   @Test
   public void shouldReturnIncompatibleState() throws IOException {
     final String repoName = "repoName";
-    final Integer backupId = 11;
+    final Long backupId = 11L;
     when(tasklistProperties.getBackup())
         .thenReturn(new BackupProperties().setRepositoryName(repoName));
     final SnapshotInfo snapshotInfo1 =
@@ -518,8 +461,7 @@ public class BackupServiceElasticSearchTest {
     final SnapshotInfo snapshotInfo3 =
         createSnapshotInfoMock(
             "snapshotName3", UUID.randomUUID().toString(), SnapshotState.INCOMPATIBLE);
-    final List<SnapshotInfo> snapshotInfos =
-        asList(new SnapshotInfo[] {snapshotInfo1, snapshotInfo2, snapshotInfo3});
+    final List<SnapshotInfo> snapshotInfos = asList(snapshotInfo1, snapshotInfo2, snapshotInfo3);
     when(snapshotClient.get(any(), any()))
         .thenReturn(new GetSnapshotsResponse(snapshotInfos, null, null, 1, 1));
     when(esClient.snapshot()).thenReturn(snapshotClient);
@@ -535,7 +477,7 @@ public class BackupServiceElasticSearchTest {
   @Test
   public void shouldReturnIncompleteState() throws IOException {
     final String repoName = "repoName";
-    final Integer backupId = 12;
+    final Long backupId = 12L;
     when(tasklistProperties.getBackup())
         .thenReturn(new BackupProperties().setRepositoryName(repoName));
     // we have only 2 out of 3 snapshots
@@ -545,8 +487,7 @@ public class BackupServiceElasticSearchTest {
     final SnapshotInfo snapshotInfo2 =
         createSnapshotInfoMock(
             "snapshotName2", UUID.randomUUID().toString(), SnapshotState.SUCCESS);
-    final List<SnapshotInfo> snapshotInfos =
-        asList(new SnapshotInfo[] {snapshotInfo1, snapshotInfo2});
+    final List<SnapshotInfo> snapshotInfos = asList(snapshotInfo1, snapshotInfo2);
     when(snapshotClient.get(any(), any()))
         .thenReturn(new GetSnapshotsResponse(snapshotInfos, null, null, 1, 1));
     when(esClient.snapshot()).thenReturn(snapshotClient);
@@ -562,7 +503,7 @@ public class BackupServiceElasticSearchTest {
   @Test
   public void shouldReturnInProgressState1() throws IOException {
     final String repoName = "repoName";
-    final Integer backupId = 13;
+    final Long backupId = 13L;
     when(tasklistProperties.getBackup())
         .thenReturn(new BackupProperties().setRepositoryName(repoName));
     final SnapshotInfo snapshotInfo1 =
@@ -574,8 +515,7 @@ public class BackupServiceElasticSearchTest {
     final SnapshotInfo snapshotInfo3 =
         createSnapshotInfoMock(
             "snapshotName3", UUID.randomUUID().toString(), SnapshotState.IN_PROGRESS);
-    final List<SnapshotInfo> snapshotInfos =
-        asList(new SnapshotInfo[] {snapshotInfo1, snapshotInfo2, snapshotInfo3});
+    final List<SnapshotInfo> snapshotInfos = asList(snapshotInfo1, snapshotInfo2, snapshotInfo3);
     when(snapshotClient.get(any(), any()))
         .thenReturn(new GetSnapshotsResponse(snapshotInfos, null, null, 1, 1));
     when(esClient.snapshot()).thenReturn(snapshotClient);
@@ -591,7 +531,7 @@ public class BackupServiceElasticSearchTest {
   @Test
   public void shouldReturnInProgressState2() throws IOException {
     final String repoName = "repoName";
-    final Integer backupId = 14;
+    final Long backupId = 14L;
     when(tasklistProperties.getBackup())
         .thenReturn(new BackupProperties().setRepositoryName(repoName));
     // we have only 2 out of 3 snapshots
@@ -601,8 +541,7 @@ public class BackupServiceElasticSearchTest {
     final SnapshotInfo snapshotInfo2 =
         createSnapshotInfoMock(
             "snapshotName2", UUID.randomUUID().toString(), SnapshotState.IN_PROGRESS);
-    final List<SnapshotInfo> snapshotInfos =
-        asList(new SnapshotInfo[] {snapshotInfo1, snapshotInfo2});
+    final List<SnapshotInfo> snapshotInfos = asList(snapshotInfo1, snapshotInfo2);
     when(snapshotClient.get(any(), any()))
         .thenReturn(new GetSnapshotsResponse(snapshotInfos, null, null, 1, 1));
     when(esClient.snapshot()).thenReturn(snapshotClient);
@@ -625,11 +564,7 @@ public class BackupServiceElasticSearchTest {
     when(snapshotClient.getRepository(any(), any())).thenThrow(elsEx);
     when(esClient.snapshot()).thenReturn(snapshotClient);
     final Exception exception =
-        assertThrows(
-            TasklistRuntimeException.class,
-            () -> {
-              backupService.deleteBackup(3);
-            });
+        assertThrows(TasklistRuntimeException.class, () -> backupService.deleteBackup(3L));
 
     final String expectedMessage =
         String.format("No repository with name [%s] could be found.", repoName);
@@ -639,7 +574,7 @@ public class BackupServiceElasticSearchTest {
   }
 
   @Test
-  public void shouldFailGetBackupOnNonExistingRepository() throws IOException {
+  public void shouldFailGetBackupOnNonExistingRepository() {
     final String repoName = "repoName";
     when(tasklistProperties.getBackup())
         .thenReturn(new BackupProperties().setRepositoryName(repoName));
@@ -647,11 +582,7 @@ public class BackupServiceElasticSearchTest {
     when(elsEx.getDetailedMessage()).thenReturn("type=repository_missing_exception");
     when(esClient.snapshot()).thenThrow(elsEx);
     final Exception exception =
-        assertThrows(
-            TasklistRuntimeException.class,
-            () -> {
-              backupService.getBackupState(4);
-            });
+        assertThrows(TasklistRuntimeException.class, () -> backupService.getBackupState(4L));
 
     final String expectedMessage =
         String.format("No repository with name [%s] could be found.", repoName);
@@ -661,7 +592,7 @@ public class BackupServiceElasticSearchTest {
   }
 
   @Test
-  public void shouldFailGetBackupsOnNonExistingRepository() throws IOException {
+  public void shouldFailGetBackupsOnNonExistingRepository() {
     final String repoName = "repoName";
     when(tasklistProperties.getBackup())
         .thenReturn(new BackupProperties().setRepositoryName(repoName));
@@ -670,11 +601,7 @@ public class BackupServiceElasticSearchTest {
     when(esClient.snapshot()).thenThrow(elsEx);
 
     final Exception exception =
-        assertThrows(
-            TasklistRuntimeException.class,
-            () -> {
-              backupService.getBackups();
-            });
+        assertThrows(TasklistRuntimeException.class, () -> backupService.getBackups());
 
     final String expectedMessage =
         String.format("No repository with name [%s] could be found.", repoName);
@@ -698,7 +625,7 @@ public class BackupServiceElasticSearchTest {
   }
 
   @Test
-  public void shouldFailGetBackupsOnConnectionError() throws IOException {
+  public void shouldFailGetBackupsOnConnectionError() {
     final String repoName = "repoName";
     when(tasklistProperties.getBackup())
         .thenReturn(new BackupProperties().setRepositoryName(repoName));
@@ -706,10 +633,7 @@ public class BackupServiceElasticSearchTest {
 
     final Exception exception =
         assertThrows(
-            TasklistElasticsearchConnectionException.class,
-            () -> {
-              backupService.getBackups();
-            });
+            TasklistElasticsearchConnectionException.class, () -> backupService.getBackups());
     final String expectedMessage =
         String.format(
             "Encountered an error connecting to Elasticsearch while searching for snapshots. Repository name: [%s].",
@@ -721,9 +645,9 @@ public class BackupServiceElasticSearchTest {
   @Test
   public void shouldReturnThreeBackups() throws IOException {
     final String repoName = "repoName";
-    final Integer backupId1 = 1;
-    final Integer backupId2 = 2;
-    final Integer backupId3 = 3;
+    final Long backupId1 = 1L;
+    final Long backupId2 = 2L;
+    final Long backupId3 = 3L;
     when(tasklistProperties.getBackup())
         .thenReturn(new BackupProperties().setRepositoryName(repoName));
     // COMPLETED
@@ -761,14 +685,12 @@ public class BackupServiceElasticSearchTest {
             SnapshotState.IN_PROGRESS);
     final List<SnapshotInfo> snapshotInfos =
         asList(
-            new SnapshotInfo[] {
-              snapshotInfo11,
-              snapshotInfo12,
-              snapshotInfo21,
-              snapshotInfo22,
-              snapshotInfo31,
-              snapshotInfo32
-            });
+            snapshotInfo11,
+            snapshotInfo12,
+            snapshotInfo21,
+            snapshotInfo22,
+            snapshotInfo31,
+            snapshotInfo32);
     when(snapshotClient.get(any(), any()))
         .thenReturn(new GetSnapshotsResponse(snapshotInfos, null, null, 6, 1));
     when(esClient.snapshot()).thenReturn(snapshotClient);
@@ -795,9 +717,9 @@ public class BackupServiceElasticSearchTest {
   }
 
   @Test
-  public void shouldReturnVersion81Backup() throws IOException {
+  public void shouldReturnVersion81BackupByLongBackupId() throws IOException {
     final String repoName = "repoName";
-    final Integer backupId1 = 123;
+    final Long backupId1 = 1692175636514555512L;
     when(tasklistProperties.getBackup())
         .thenReturn(new BackupProperties().setRepositoryName(repoName));
     // COMPLETED
@@ -817,8 +739,7 @@ public class BackupServiceElasticSearchTest {
     metadata2.setBackupId(null);
     when(snapshotInfo12.userMetadata())
         .thenReturn(objectMapper.convertValue(metadata2, new TypeReference<>() {}));
-    final List<SnapshotInfo> snapshotInfos =
-        asList(new SnapshotInfo[] {snapshotInfo11, snapshotInfo12});
+    final List<SnapshotInfo> snapshotInfos = asList(snapshotInfo11, snapshotInfo12);
     when(snapshotClient.get(any(), any()))
         .thenReturn(new GetSnapshotsResponse(snapshotInfos, null, null, 6, 1));
     when(esClient.snapshot()).thenReturn(snapshotClient);
@@ -846,7 +767,7 @@ public class BackupServiceElasticSearchTest {
     assertThat(backupState.getDetails())
         .extracting(d -> d.getStartTime().toInstant().toEpochMilli())
         .containsExactlyInAnyOrder(
-            snapshotInfos.stream().map(si -> si.startTime()).toArray(Long[]::new));
+            snapshotInfos.stream().map(SnapshotInfo::startTime).toArray(Long[]::new));
   }
 
   private SnapshotInfo createSnapshotInfoMock(String name, String uuid, SnapshotState state) {

@@ -8,13 +8,13 @@ package io.camunda.tasklist.webapp.management.dto;
 
 public class TakeBackupRequestDto {
 
-  private Integer backupId;
+  private Long backupId;
 
-  public Integer getBackupId() {
+  public Long getBackupId() {
     return backupId;
   }
 
-  public TakeBackupRequestDto setBackupId(Integer backupId) {
+  public TakeBackupRequestDto setBackupId(Long backupId) {
     this.backupId = backupId;
     return this;
   }

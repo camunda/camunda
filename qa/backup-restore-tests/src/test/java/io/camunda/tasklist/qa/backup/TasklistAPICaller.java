@@ -143,7 +143,7 @@ public class TasklistAPICaller {
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
   }
 
-  public TakeBackupResponseDto backup(Integer backupId) {
+  public TakeBackupResponseDto backup(Long backupId) {
     final TakeBackupRequestDto takeBackupRequest = new TakeBackupRequestDto().setBackupId(backupId);
     return statefulRestTemplate.postForObject(
         statefulRestTemplate.getURL("actuator/backups"),
@@ -151,7 +151,7 @@ public class TasklistAPICaller {
         TakeBackupResponseDto.class);
   }
 
-  public GetBackupStateResponseDto getBackupState(Integer backupId) {
+  public GetBackupStateResponseDto getBackupState(Long backupId) {
     return statefulRestTemplate.getForObject(
         statefulRestTemplate.getURL("actuator/backups/" + backupId),
         GetBackupStateResponseDto.class);

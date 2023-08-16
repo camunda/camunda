@@ -18,16 +18,16 @@ public class Metadata {
   private static final String SNAPSHOT_NAME_PREFIX_PATTERN = SNAPSHOT_NAME_PREFIX + "{backupId}_";
   private static final Pattern BACKUPID_PATTERN =
       Pattern.compile(SNAPSHOT_NAME_PREFIX + "(\\d*)_.*");
-  private Integer backupId;
+  private Long backupId;
   private String version;
   private Integer partNo;
   private Integer partCount;
 
-  public Integer getBackupId() {
+  public Long getBackupId() {
     return backupId;
   }
 
-  public Metadata setBackupId(Integer backupId) {
+  public Metadata setBackupId(Long backupId) {
     this.backupId = backupId;
     return this;
   }
@@ -67,15 +67,15 @@ public class Metadata {
         .replace("{count}", partCount + "");
   }
 
-  public static String buildSnapshotNamePrefix(Integer backupId) {
+  public static String buildSnapshotNamePrefix(Long backupId) {
     return SNAPSHOT_NAME_PREFIX_PATTERN.replace("{backupId}", String.valueOf(backupId));
   }
 
   // backward compatibility with v. 8.1
-  public static Integer extractBackupIdFromSnapshotName(String snapshotName) {
+  public static Long extractBackupIdFromSnapshotName(String snapshotName) {
     final Matcher matcher = BACKUPID_PATTERN.matcher(snapshotName);
     if (matcher.matches()) {
-      return Integer.valueOf(matcher.group(1));
+      return Long.valueOf(matcher.group(1));
     } else {
       throw new TasklistRuntimeException(
           "Unable to extract backupId. Snapshot name: " + snapshotName);

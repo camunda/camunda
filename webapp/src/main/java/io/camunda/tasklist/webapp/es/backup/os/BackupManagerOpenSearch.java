@@ -75,7 +75,7 @@ public class BackupManagerOpenSearch extends BackupManager {
   @Autowired private OpenSearchClient openSearchClient;
 
   @Override
-  public void deleteBackup(Integer backupId) {
+  public void deleteBackup(Long backupId) {
     validateRepositoryExists();
     final String repositoryName = getRepositoryName();
     final int count = getIndexPatternsOrdered().length;
@@ -168,7 +168,7 @@ public class BackupManagerOpenSearch extends BackupManager {
     return e.getMessage().contains(REPOSITORY_MISSING_EXCEPTION_TYPE);
   }
 
-  private void validateNoDuplicateBackupId(final Integer backupId) {
+  private void validateNoDuplicateBackupId(final Long backupId) {
     final GetSnapshotRequest snapshotsStatusRequest =
         GetSnapshotRequest.of(
             gsr ->
@@ -300,12 +300,12 @@ public class BackupManagerOpenSearch extends BackupManager {
   }
 
   @Override
-  public GetBackupStateResponseDto getBackupState(Integer backupId) {
+  public GetBackupStateResponseDto getBackupState(Long backupId) {
     final List<SnapshotInfo> snapshots = findSnapshots(backupId);
     return getBackupResponse(backupId, snapshots);
   }
 
-  private List<SnapshotInfo> findSnapshots(Integer backupId) {
+  private List<SnapshotInfo> findSnapshots(Long backupId) {
     final GetSnapshotRequest snapshotStatusRequest =
         GetSnapshotRequest.of(
             gsr ->
@@ -354,8 +354,7 @@ public class BackupManagerOpenSearch extends BackupManager {
         .performRequest(request, endpoint, openSearchClient._transportOptions());
   }
 
-  private GetBackupStateResponseDto getBackupResponse(
-      Integer backupId, List<SnapshotInfo> snapshots) {
+  private GetBackupStateResponseDto getBackupResponse(Long backupId, List<SnapshotInfo> snapshots) {
     final GetBackupStateResponseDto response = new GetBackupStateResponseDto(backupId);
 
     final Map<String, JsonData> jsonDataMap = snapshots.get(0).metadata();
@@ -439,14 +438,14 @@ public class BackupManagerOpenSearch extends BackupManager {
               .sorted(Comparator.comparing(SnapshotInfo::startTimeInMillis).reversed())
               .toList();
 
-      final LinkedHashMap<Integer, List<SnapshotInfo>> groupedSnapshotInfos =
+      final LinkedHashMap<Long, List<SnapshotInfo>> groupedSnapshotInfos =
           snapshots.stream()
               .collect(
                   groupingBy(
                       si -> {
                         final var jsonDataMap = si.metadata();
                         final Metadata metadata = getMetadata(jsonDataMap);
-                        Integer backupId = metadata.getBackupId();
+                        Long backupId = metadata.getBackupId();
                         // backward compatibility with v. 8.1
                         if (backupId == null) {
                           backupId = Metadata.extractBackupIdFromSnapshotName(si.snapshot());
@@ -485,7 +484,7 @@ public class BackupManagerOpenSearch extends BackupManager {
 
   private static Metadata getMetadata(Map<String, JsonData> jsonDataMap) {
     return new Metadata()
-        .setBackupId(jsonDataMap.get("backupId").to(Integer.class))
+        .setBackupId(jsonDataMap.get("backupId").to(Long.class))
         .setPartCount(jsonDataMap.get("partCount").to(Integer.class))
         .setPartNo(jsonDataMap.get("partNo").to(Integer.class))
         .setVersion(jsonDataMap.get("version").to(String.class));

@@ -86,7 +86,7 @@ public class BackupManagerElasticSearch extends BackupManager {
   private Queue<CreateSnapshotRequest> requestsQueue = new ConcurrentLinkedQueue<>();
 
   @Override
-  public void deleteBackup(Integer backupId) {
+  public void deleteBackup(Long backupId) {
     validateRepositoryExists();
     final String repositoryName = getRepositoryName();
     final int count = getIndexPatternsOrdered().length;
@@ -231,7 +231,7 @@ public class BackupManagerElasticSearch extends BackupManager {
     return esClient.snapshot().getRepository(getRepositoriesRequest, RequestOptions.DEFAULT);
   }
 
-  private void validateNoDuplicateBackupId(final Integer backupId) {
+  private void validateNoDuplicateBackupId(final Long backupId) {
     final GetSnapshotsRequest snapshotsStatusRequest =
         new GetSnapshotsRequest()
             .repository(getRepositoryName())
@@ -275,13 +275,12 @@ public class BackupManagerElasticSearch extends BackupManager {
   }
 
   @Override
-  public GetBackupStateResponseDto getBackupState(Integer backupId) {
+  public GetBackupStateResponseDto getBackupState(Long backupId) {
     final List<SnapshotInfo> snapshots = findSnapshots(backupId);
     return getBackupResponse(backupId, snapshots);
   }
 
-  private GetBackupStateResponseDto getBackupResponse(
-      Integer backupId, List<SnapshotInfo> snapshots) {
+  private GetBackupStateResponseDto getBackupResponse(Long backupId, List<SnapshotInfo> snapshots) {
     final GetBackupStateResponseDto response = new GetBackupStateResponseDto(backupId);
 
     final Metadata metadata =
@@ -349,7 +348,7 @@ public class BackupManagerElasticSearch extends BackupManager {
     return response;
   }
 
-  private List<SnapshotInfo> findSnapshots(Integer backupId) {
+  private List<SnapshotInfo> findSnapshots(Long backupId) {
     final GetSnapshotsRequest snapshotsStatusRequest =
         new GetSnapshotsRequest()
             .repository(getRepositoryName())
@@ -400,14 +399,14 @@ public class BackupManagerElasticSearch extends BackupManager {
               .sorted(Comparator.comparing(SnapshotInfo::startTime).reversed())
               .collect(toList());
 
-      final LinkedHashMap<Integer, List<SnapshotInfo>> groupedSnapshotInfos =
+      final LinkedHashMap<Long, List<SnapshotInfo>> groupedSnapshotInfos =
           snapshots.stream()
               .collect(
                   groupingBy(
                       si -> {
                         final Metadata metadata =
                             objectMapper.convertValue(si.userMetadata(), Metadata.class);
-                        Integer backupId = metadata.getBackupId();
+                        Long backupId = metadata.getBackupId();
                         // backward compatibility with v. 8.1
                         if (backupId == null) {
                           backupId =

@@ -32,11 +32,11 @@ public abstract class BackupManager {
 
   private String[][] indexPatternsOrdered;
 
-  public abstract void deleteBackup(Integer backupId);
+  public abstract void deleteBackup(Long backupId);
 
   public abstract TakeBackupResponseDto takeBackup(TakeBackupRequestDto request);
 
-  public abstract GetBackupStateResponseDto getBackupState(Integer backupId);
+  public abstract GetBackupStateResponseDto getBackupState(Long backupId);
 
   public abstract List<GetBackupStateResponseDto> getBackups();
 
