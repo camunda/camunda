@@ -51,12 +51,6 @@ jobs:
         with:
           ref: ${{ matrix.branch}}
 
-      - name: Configure Google tools
-        id: auth
-        uses: camunda-cloud/action-setup-gcloud@v2
-        with:
-          account-alias: registry
-
       - name: Build a package
         uses: ./.github/actions/run-maven
         with:
@@ -102,7 +96,7 @@ jobs:
       - name: Build local image for testing
         run: ./.github/scripts/build-docker-images.sh
 
-      - name: Get image ids for amd and amr platforms
+      - name: Get image ids for amd and arm platforms
         run: |
           images=$(docker image ls -q)
 
