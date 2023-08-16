@@ -8,7 +8,7 @@ jobs:
   slack-notify:
     name: Send slack notification if java client issue has been closed
     runs-on: ubuntu-latest
-    if: ${{ github.event.label.name == 'scope/clients-java' }}
+    if: contains(github.event.issue.labels.*.name, 'scope/clients-java')
     steps:
       - id: slack-notify
         name: Send slack notification to DevEx
