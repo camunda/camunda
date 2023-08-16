@@ -81,7 +81,7 @@ public record ClusterTopology(
    * @param other ClusterTopology to merge
    * @return merged ClusterTopology
    */
-  ClusterTopology merge(final ClusterTopology other) {
+  public ClusterTopology merge(final ClusterTopology other) {
     if (version > other.version) {
       return this;
     } else if (other.version > version) {

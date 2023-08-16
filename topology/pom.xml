@@ -63,6 +63,11 @@
     </dependency>
 
     <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-atomix-utils</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-api</artifactId>
       <scope>test</scope>
@@ -79,6 +84,7 @@
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
+
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-params</artifactId>
@@ -87,6 +93,18 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-test-util</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.awaitility</groupId>
+      <artifactId>awaitility</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.agrona</groupId>
+      <artifactId>agrona</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -100,6 +118,17 @@
         <artifactId>protobuf-maven-plugin</artifactId>
         <configuration>
           <protoSourceRoot>${proto.dir}</protoSourceRoot>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <configuration>
+          <ignoredNonTestScopedDependencies>
+            <!-- When not set, we get error "Non-test scoped test only dependencies found". If we set the scope to test only, the build fails. -->
+            <ignoredNonTestScopedDependency>io.camunda:zeebe-atomix-utils</ignoredNonTestScopedDependency>
+          </ignoredNonTestScopedDependencies>
         </configuration>
       </plugin>
     </plugins>
