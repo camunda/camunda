@@ -8,7 +8,5 @@ package io.camunda.tasklist.management;
 
 public interface SearchEngineCheck {
 
-  boolean indicesArePresent();
-
   boolean isHealthy();
 }

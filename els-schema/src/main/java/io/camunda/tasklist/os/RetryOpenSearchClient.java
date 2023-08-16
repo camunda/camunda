@@ -73,10 +73,10 @@ public class RetryOpenSearchClient {
   public boolean isHealthy() {
     try {
       final HealthResponse response =
-          openSearchClient.cluster().health(h -> h.timeout(t -> t.time("500")));
+          openSearchClient.cluster().health(h -> h.timeout(t -> t.time("500ms")));
       final HealthStatus status = response.status();
       return !response.timedOut() && !status.equals(HealthStatus.Red);
-    } catch (IOException e) {
+    } catch (IOException | OpenSearchException e) {
       LOGGER.error(
           String.format(
               "Couldn't connect to OpenSearch due to %s. Return unhealthy state.", e.getMessage()),

@@ -6,6 +6,7 @@
  */
 package io.camunda.tasklist.management;
 
+import io.camunda.tasklist.schema.IndexSchemaValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,11 +20,12 @@ public class SearchEngineHealthIndicator implements HealthIndicator {
   private static Logger logger = LoggerFactory.getLogger(SearchEngineHealthIndicator.class);
 
   @Autowired private SearchEngineCheck searchEngineCheck;
+  @Autowired private IndexSchemaValidator indexSchemaValidator;
 
   @Override
   public Health health() {
     logger.debug("Search engine check is called");
-    if (searchEngineCheck.isHealthy() && searchEngineCheck.indicesArePresent()) {
+    if (searchEngineCheck.isHealthy() && indexSchemaValidator.schemaExists()) {
       return Health.up().build();
     } else {
       return Health.down().build();

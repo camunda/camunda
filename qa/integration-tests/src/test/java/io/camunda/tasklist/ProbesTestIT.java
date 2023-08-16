@@ -14,6 +14,7 @@ import io.camunda.tasklist.management.HealthCheckIT.AddManagementPropertiesIniti
 import io.camunda.tasklist.management.SearchEngineHealthIndicator;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.TestElasticsearchSchemaManager;
+import io.camunda.tasklist.schema.IndexSchemaValidator;
 import io.camunda.tasklist.util.TasklistIntegrationTest;
 import io.camunda.tasklist.util.TestApplication;
 import io.camunda.tasklist.util.TestUtil;
@@ -53,6 +54,7 @@ public class ProbesTestIT extends TasklistIntegrationTest {
   @Autowired private TestElasticsearchSchemaManager schemaManager;
 
   @Autowired private ElasticSearchCheck probes;
+  @Autowired private IndexSchemaValidator indexSchemaValidator;
 
   @MockBean private PartitionHolder partitionHolder;
 
@@ -72,16 +74,16 @@ public class ProbesTestIT extends TasklistIntegrationTest {
 
   @Test
   public void testIsReady() {
-    assertThat(probes.indicesArePresent()).isFalse();
+    assertThat(indexSchemaValidator.schemaExists()).isFalse();
     enableCreateSchema(true);
     schemaManager.createSchema();
-    assertThat(probes.indicesArePresent()).isTrue();
+    assertThat(indexSchemaValidator.schemaExists()).isTrue();
   }
 
   @Test
   public void testIsNotReady() {
     enableCreateSchema(false);
-    assertThat(probes.indicesArePresent()).isFalse();
+    assertThat(indexSchemaValidator.schemaExists()).isFalse();
   }
 
   protected void enableCreateSchema(boolean createSchema) {

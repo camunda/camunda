@@ -7,20 +7,19 @@
 package io.camunda.tasklist.management;
 
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
+import io.camunda.tasklist.os.RetryOpenSearchClient;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-/** TODO: implement in the scope of: https://github.com/camunda/tasklist/issues/3316 */
 @Component
 @Conditional(OpenSearchCondition.class)
 public class OpenSearchCheck implements SearchEngineCheck {
-  @Override
-  public boolean indicesArePresent() {
-    return true;
-  }
+
+  @Autowired private RetryOpenSearchClient retryOpenSearchClient;
 
   @Override
   public boolean isHealthy() {
-    return true;
+    return retryOpenSearchClient.isHealthy();
   }
 }

@@ -8,7 +8,6 @@ package io.camunda.tasklist.management;
 
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.es.RetryElasticsearchClient;
-import io.camunda.tasklist.schema.IndexSchemaValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -17,14 +16,7 @@ import org.springframework.stereotype.Component;
 @Conditional(ElasticSearchCondition.class)
 public class ElasticSearchCheck implements SearchEngineCheck {
 
-  @Autowired private IndexSchemaValidator indexSchemaValidator;
-
   @Autowired private RetryElasticsearchClient retryElasticsearchClient;
-
-  @Override
-  public boolean indicesArePresent() {
-    return indexSchemaValidator.schemaExists();
-  }
 
   @Override
   public boolean isHealthy() {

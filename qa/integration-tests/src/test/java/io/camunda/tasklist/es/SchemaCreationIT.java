@@ -9,18 +9,16 @@ package io.camunda.tasklist.es;
 import static io.camunda.tasklist.util.CollectionUtil.filter;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.tasklist.management.ElasticSearchCheck;
+import io.camunda.tasklist.schema.IndexSchemaValidator;
 import io.camunda.tasklist.schema.indices.IndexDescriptor;
 import io.camunda.tasklist.schema.indices.MigrationRepositoryIndex;
 import io.camunda.tasklist.schema.indices.TasklistWebSessionIndex;
-import io.camunda.tasklist.schema.manager.SchemaManager;
 import io.camunda.tasklist.schema.migration.ProcessorStep;
 import io.camunda.tasklist.util.ElasticsearchTestRule;
 import io.camunda.tasklist.util.TasklistIntegrationTest;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -35,18 +33,17 @@ public class SchemaCreationIT extends TasklistIntegrationTest {
 
   @Rule public ElasticsearchTestRule elasticsearchTestRule = new ElasticsearchTestRule();
   @Autowired private RestHighLevelClient esClient;
-  @Autowired private SchemaManager schemaManager;
   @Autowired private List<IndexDescriptor> indexDescriptors;
-  @Autowired private ElasticSearchCheck elasticSearchCheck;
+  @Autowired private IndexSchemaValidator indexSchemaValidator;
 
   @Test
-  public void testIndexCreation() throws ExecutionException, InterruptedException, IOException {
+  public void testIndexCreation() throws IOException {
     for (IndexDescriptor indexDescriptor : indexDescriptors) {
       assertIndexAndAlias(indexDescriptor.getFullQualifiedName(), indexDescriptor.getAlias());
     }
 
     // assert schema creation won't be performed for the second time
-    assertThat(elasticSearchCheck.indicesArePresent()).isTrue();
+    assertThat(indexSchemaValidator.schemaExists()).isTrue();
   }
 
   @Test // ZTL-1007
