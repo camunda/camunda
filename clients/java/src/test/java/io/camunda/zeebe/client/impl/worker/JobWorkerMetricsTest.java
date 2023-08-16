@@ -31,102 +31,31 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.IntConsumer;
 import org.jmock.lib.concurrent.DeterministicScheduler;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 final class JobWorkerMetricsTest {
 
+  private static final int AUTO_COMPLETE_ALL_JOBS = 0;
   private final DeterministicScheduler executor = new DeterministicScheduler();
-
-  @Test
-  void shouldCountActivatedStreamedJobs() {
-    // given
-    final TestJobStreamer streamer = new TestJobStreamer();
-    final TestJobWorkerMetrics metrics = new TestJobWorkerMetrics();
-
-    try (final JobWorkerImpl ignored = createWorker(0, streamer, metrics)) {
-      // when
-      streamer.streamJob();
-      streamer.streamJob();
-
-      // then
-      executor.runUntilIdle();
-      assertThat(metrics.jobsActivated).hasValue(2);
-    }
-  }
-
-  @Test
-  void shouldCountHandledStreamedJobs() {
-    // given
-    final TestJobStreamer streamer = new TestJobStreamer();
-    final TestJobWorkerMetrics metrics = new TestJobWorkerMetrics();
-
-    try (final JobWorkerImpl ignored = createWorker(2, streamer, metrics)) {
-      // when
-      streamer.streamJob();
-      streamer.streamJob();
-      streamer.streamJob();
-
-      // then
-      executor.runUntilIdle();
-      assertThat(metrics.jobsHandled).hasValue(2);
-    }
-  }
-
-  @Test
-  void shouldCountActivatedPolledJobs() {
-    // given
-    final TestJobPoller poller = new TestJobPoller();
-    final TestJobWorkerMetrics metrics = new TestJobWorkerMetrics();
-
-    try (final JobWorkerImpl ignored = createWorker(0, poller, metrics)) {
-      // when
-      executor.tick(1, TimeUnit.MINUTES);
-      poller.streamJob();
-      poller.streamJob();
-
-      // then
-      executor.runUntilIdle();
-      assertThat(metrics.jobsActivated).hasValue(2);
-    }
-  }
-
-  @Test
-  void shouldCountHandledPolledJobs() {
-    // given
-    final TestJobPoller poller = new TestJobPoller();
-    final TestJobWorkerMetrics metrics = new TestJobWorkerMetrics();
-
-    try (final JobWorkerImpl ignored = createWorker(3, poller, metrics)) {
-      // when
-      executor.tick(1, TimeUnit.MINUTES);
-      poller.streamJob();
-      poller.streamJob();
-      poller.streamJob();
-      poller.streamJob();
-
-      // then
-      executor.runUntilIdle();
-      assertThat(metrics.jobsHandled).hasValue(3);
-    }
-  }
 
   private JobWorkerImpl createWorker(
       final int autoCompleteCount,
       final TestJobStreamer streamer,
       final TestJobWorkerMetrics metrics) {
-    return createWorker(autoCompleteCount, new TestJobPoller(), streamer, metrics);
+    return createWorker(autoCompleteCount, createNoopJobPoller(), streamer, metrics);
   }
 
   private JobWorkerImpl createWorker(
       final int autoCompleteCount, final TestJobPoller poller, final TestJobWorkerMetrics metrics) {
-    return createWorker(autoCompleteCount, poller, new TestJobStreamer(), metrics);
+    return createWorker(autoCompleteCount, poller, JobStreamer.noop(), metrics);
   }
 
   private JobWorkerImpl createWorker(
       final int autoCompleteCount,
-      final TestJobPoller poller,
-      final TestJobStreamer streamer,
-      final TestJobWorkerMetrics metrics) {
+      final JobPoller poller,
+      final JobStreamer streamer,
+      final JobWorkerMetrics metrics) {
     return new JobWorkerImpl(
         1,
         executor,
@@ -136,6 +65,10 @@ final class JobWorkerMetricsTest {
         streamer,
         delay -> delay,
         metrics);
+  }
+
+  private JobPoller createNoopJobPoller() {
+    return (maxJobsToActivate, jobConsumer, doneCallback, errorCallback, openSupplier) -> {};
   }
 
   private static final class TestJobWorkerMetrics implements JobWorkerMetrics {
@@ -167,7 +100,7 @@ final class JobWorkerMetricsTest {
       consumerRef.set(jobConsumer);
     }
 
-    private void streamJob() {
+    private void produceJob() {
       final ActivatedJobImpl job = new ActivatedJobImpl(mapper, TestData.job());
       Optional.ofNullable(consumerRef.get()).ifPresent(c -> c.accept(job));
     }
@@ -184,7 +117,7 @@ final class JobWorkerMetricsTest {
 
     @Override
     public Runnable create(final ActivatedJob job, final Runnable doneCallback) {
-      if (autoCompleteCount <= 0 || counter.get() < autoCompleteCount) {
+      if (autoCompleteCount <= AUTO_COMPLETE_ALL_JOBS || counter.get() < autoCompleteCount) {
         counter.incrementAndGet();
         return doneCallback;
       }
@@ -210,6 +143,85 @@ final class JobWorkerMetricsTest {
     private void streamJob() {
       final ActivatedJobImpl job = new ActivatedJobImpl(mapper, TestData.job());
       Optional.ofNullable(consumerRef.get()).ifPresent(c -> c.accept(job));
+    }
+  }
+
+  @Nested
+  final class StreamingTest {
+    @Test
+    void shouldCountActivatedJobs() {
+      // given
+      final TestJobStreamer streamer = new TestJobStreamer();
+      final TestJobWorkerMetrics metrics = new TestJobWorkerMetrics();
+
+      try (final JobWorkerImpl ignored = createWorker(AUTO_COMPLETE_ALL_JOBS, streamer, metrics)) {
+        // when
+        streamer.streamJob();
+        streamer.streamJob();
+
+        // then
+        executor.runUntilIdle();
+        assertThat(metrics.jobsActivated).hasValue(2);
+      }
+    }
+
+    @Test
+    void shouldCountHandledJobs() {
+      // given
+      final TestJobStreamer streamer = new TestJobStreamer();
+      final TestJobWorkerMetrics metrics = new TestJobWorkerMetrics();
+
+      try (final JobWorkerImpl ignored = createWorker(2, streamer, metrics)) {
+        // when
+        streamer.streamJob();
+        streamer.streamJob();
+        streamer.streamJob();
+
+        // then
+        executor.runUntilIdle();
+        assertThat(metrics.jobsHandled).hasValue(2);
+      }
+    }
+  }
+
+  @Nested
+  final class PollingTest {
+    @Test
+    void shouldCountActivatedJobs() {
+      // given
+      final TestJobPoller poller = new TestJobPoller();
+      final TestJobWorkerMetrics metrics = new TestJobWorkerMetrics();
+
+      try (final JobWorkerImpl ignored = createWorker(AUTO_COMPLETE_ALL_JOBS, poller, metrics)) {
+        // when
+        executor.tick(1, TimeUnit.MINUTES);
+        poller.produceJob();
+        poller.produceJob();
+
+        // then
+        executor.runUntilIdle();
+        assertThat(metrics.jobsActivated).hasValue(2);
+      }
+    }
+
+    @Test
+    void shouldCountHandledJobs() {
+      // given
+      final TestJobPoller poller = new TestJobPoller();
+      final TestJobWorkerMetrics metrics = new TestJobWorkerMetrics();
+
+      try (final JobWorkerImpl ignored = createWorker(3, poller, metrics)) {
+        // when
+        executor.tick(1, TimeUnit.MINUTES);
+        poller.produceJob();
+        poller.produceJob();
+        poller.produceJob();
+        poller.produceJob();
+
+        // then
+        executor.runUntilIdle();
+        assertThat(metrics.jobsHandled).hasValue(3);
+      }
     }
   }
 }
