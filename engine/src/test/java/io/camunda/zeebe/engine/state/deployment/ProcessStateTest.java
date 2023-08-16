@@ -158,6 +158,48 @@ public final class ProcessStateTest {
   }
 
   @Test
+  public void shouldFindPreviousProcessVersion() {
+    // given
+    final var versionOneRecord = creatingProcessRecord(processingState).setVersion(1);
+    final var versionTwoRecord = creatingProcessRecord(processingState).setVersion(2);
+    processState.putProcess(versionOneRecord.getKey(), versionOneRecord);
+    processState.putProcess(versionTwoRecord.getKey(), versionTwoRecord);
+
+    // when
+    final var processVersion = processState.findProcessVersionBefore("processId", 2);
+
+    // then
+    assertThat(processVersion).isNotEmpty();
+    assertThat(processVersion.get()).isEqualTo(1);
+  }
+
+  @Test
+  public void shouldReturnEmptyOptionalWhenFindingVersionWithoutPrevious() {
+    // given
+    final var versionOneRecord = creatingProcessRecord(processingState).setVersion(1);
+    processState.putProcess(versionOneRecord.getKey(), versionOneRecord);
+
+    // when
+    final var processVersion = processState.findProcessVersionBefore("processId", 1);
+
+    // then
+    assertThat(processVersion).isEmpty();
+  }
+
+  @Test
+  public void shouldReturnEmptyOptionalWhenGivenVersionIsNotKnown() {
+    // given
+    final var versionOneRecord = creatingProcessRecord(processingState).setVersion(1);
+    processState.putProcess(versionOneRecord.getKey(), versionOneRecord);
+
+    // when
+    final var processVersion = processState.findProcessVersionBefore("processId", 2);
+
+    // then
+    assertThat(processVersion).isEmpty();
+  }
+
+  @Test
   public void shouldNotIncrementNextProcessVersionForDifferentProcessId() {
     // given
     final var processRecord = creatingProcessRecord(processingState);

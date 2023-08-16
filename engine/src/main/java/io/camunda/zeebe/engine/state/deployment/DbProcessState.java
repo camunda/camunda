@@ -37,6 +37,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.Long2ObjectHashMap;
@@ -320,6 +321,12 @@ public final class DbProcessState implements MutableProcessState {
   @Override
   public int getNextProcessVersion(final String bpmnProcessId) {
     return (int) versionManager.getHighestProcessVersion(bpmnProcessId) + 1;
+  }
+
+  @Override
+  public Optional<Integer> findProcessVersionBefore(
+      final String bpmnProcessId, final long version) {
+    return versionManager.findProcessVersionBefore(bpmnProcessId, version);
   }
 
   @Override

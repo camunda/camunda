@@ -13,6 +13,7 @@ import io.camunda.zeebe.dmn.DecisionEngineFactory;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviorsImpl;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
 import io.camunda.zeebe.engine.processing.common.CommandDistributionBehavior;
@@ -160,7 +161,11 @@ public final class EngineProcessors {
         writers,
         bpmnBehaviors.jobActivationBehavior());
     addResourceDeletionProcessors(
-        typedRecordProcessors, writers, processingState, commandDistributionBehavior);
+        typedRecordProcessors,
+        writers,
+        processingState,
+        commandDistributionBehavior,
+        bpmnBehaviors);
     addSignalBroadcastProcessors(
         typedRecordProcessors,
         bpmnBehaviors,
@@ -313,15 +318,15 @@ public final class EngineProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final Writers writers,
       final MutableProcessingState processingState,
-      final CommandDistributionBehavior commandDistributionBehavior) {
+      final CommandDistributionBehavior commandDistributionBehavior,
+      final BpmnBehaviors bpmnBehaviors) {
     final var resourceDeletionProcessor =
         new ResourceDeletionProcessor(
             writers,
             processingState.getKeyGenerator(),
-            processingState.getDecisionState(),
+            processingState,
             commandDistributionBehavior,
-            processingState.getProcessState(),
-            processingState.getElementInstanceState());
+            bpmnBehaviors);
     typedRecordProcessors.onCommand(
         ValueType.RESOURCE_DELETION, ResourceDeletionIntent.DELETE, resourceDeletionProcessor);
   }

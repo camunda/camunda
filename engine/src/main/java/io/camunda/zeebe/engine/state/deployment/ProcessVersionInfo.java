@@ -13,6 +13,7 @@ import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.value.LongValue;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.StreamSupport;
 
 public final class ProcessVersionInfo extends UnpackedObject implements DbValue {
@@ -65,6 +66,17 @@ public final class ProcessVersionInfo extends UnpackedObject implements DbValue 
         .map(LongValue::getValue)
         .sorted()
         .toList();
+  }
+
+  public Optional<Integer> findVersionBefore(final long version) {
+    final var knownVersions = getKnownVersions();
+    final var previousIndex = knownVersions.indexOf(version) - 1;
+
+    if (previousIndex >= knownVersions.size() || previousIndex < 0) {
+      return Optional.empty();
+    }
+
+    return Optional.of(knownVersions.get(previousIndex).intValue());
   }
 
   public void addKnownVersion(final long version) {

@@ -7,7 +7,15 @@
  */
 package io.camunda.zeebe.engine.processing.resource;
 
+import static io.camunda.zeebe.engine.state.instance.TimerInstance.NO_ELEMENT_INSTANCE;
+
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
+import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.common.CommandDistributionBehavior;
+import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
+import io.camunda.zeebe.engine.processing.common.ExpressionProcessor.EvaluationException;
+import io.camunda.zeebe.engine.processing.common.Failure;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -19,6 +27,9 @@ import io.camunda.zeebe.engine.state.deployment.PersistedDecision;
 import io.camunda.zeebe.engine.state.immutable.DecisionState;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.engine.state.immutable.TimerInstanceState;
+import io.camunda.zeebe.model.bpmn.util.time.Timer;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
@@ -30,6 +41,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Optional;
 
@@ -44,22 +56,27 @@ public class ResourceDeletionProcessor
   private final CommandDistributionBehavior commandDistributionBehavior;
   private final ProcessState processState;
   private final ElementInstanceState elementInstanceState;
+  private final TimerInstanceState timerInstanceState;
+  private final CatchEventBehavior catchEventBehavior;
+  private final ExpressionProcessor expressionProcessor;
 
   public ResourceDeletionProcessor(
       final Writers writers,
       final KeyGenerator keyGenerator,
-      final DecisionState decisionState,
+      final ProcessingState processingState,
       final CommandDistributionBehavior commandDistributionBehavior,
-      final ProcessState processState,
-      final ElementInstanceState elementInstanceState) {
+      final BpmnBehaviors bpmnBehaviors) {
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
     this.keyGenerator = keyGenerator;
-    this.decisionState = decisionState;
+    decisionState = processingState.getDecisionState();
     this.commandDistributionBehavior = commandDistributionBehavior;
-    this.processState = processState;
-    this.elementInstanceState = elementInstanceState;
+    processState = processingState.getProcessState();
+    elementInstanceState = processingState.getElementInstanceState();
+    timerInstanceState = processingState.getTimerState();
+    catchEventBehavior = bpmnBehaviors.catchEventBehavior();
+    expressionProcessor = bpmnBehaviors.expressionBehavior();
   }
 
   @Override
@@ -159,13 +176,30 @@ public class ResourceDeletionProcessor
   private void deleteProcess(final DeployedProcess process) {
     // We don't add the checksum or resource in this event. The checksum is not easily available
     // and the resources are left out to prevent exceeding the maximum batch size.
+    final var processIdBuffer = process.getBpmnProcessId();
     final var processRecord =
         new ProcessRecord()
-            .setBpmnProcessId(process.getBpmnProcessId())
+            .setBpmnProcessId(processIdBuffer)
             .setVersion(process.getVersion())
             .setKey(process.getKey())
             .setResourceName(process.getResourceName());
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), ProcessIntent.DELETING, processRecord);
+
+    final String processId = processRecord.getBpmnProcessId();
+    final var latestVersion = processState.getLatestProcessVersion(processId);
+
+    // If we are deleting the latest version we must unsubscribe the start events
+    if (latestVersion == process.getVersion()) {
+      unsubscribeStartEvents(process);
+
+      final var previousVersion = processState.findProcessVersionBefore(processId, latestVersion);
+      // If there is a previous version we must resubscribe to the previous version's start events.
+      if (previousVersion.isPresent()) {
+        final var previousProcess =
+            processState.getProcessByProcessIdAndVersion(processIdBuffer, previousVersion.get());
+        resubscribeStartEvents(previousProcess);
+      }
+    }
 
     final var hasRunningInstances =
         elementInstanceState.hasActiveProcessInstances(process.getKey());
@@ -174,6 +208,45 @@ public class ResourceDeletionProcessor
       stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), ProcessIntent.DELETED, processRecord);
     } else {
       throw new ActiveProcessInstancesException(process.getKey());
+    }
+  }
+
+  private void unsubscribeStartEvents(final DeployedProcess deployedProcess) {
+    final var process = deployedProcess.getProcess();
+    if (process.hasTimerStartEvent()) {
+      timerInstanceState.forEachTimerForElementInstance(
+          NO_ELEMENT_INSTANCE,
+          timer -> {
+            if (timer.getProcessDefinitionKey() == deployedProcess.getKey()) {
+              catchEventBehavior.unsubscribeFromTimerEvent(timer);
+            }
+          });
+    }
+  }
+
+  private void resubscribeStartEvents(final DeployedProcess deployedProcess) {
+    final var process = deployedProcess.getProcess();
+    if (process.hasTimerStartEvent()) {
+      process.getStartEvents().stream()
+          .filter(ExecutableCatchEventElement::isTimer)
+          .forEach(
+              timerStartEvent -> {
+                final Either<Failure, Timer> failureOrTimer =
+                    timerStartEvent
+                        .getTimerFactory()
+                        .apply(expressionProcessor, NO_ELEMENT_INSTANCE);
+
+                if (failureOrTimer.isLeft()) {
+                  throw new EvaluationException(failureOrTimer.getLeft().getMessage());
+                }
+
+                catchEventBehavior.subscribeToTimerEvent(
+                    NO_ELEMENT_INSTANCE,
+                    NO_ELEMENT_INSTANCE,
+                    deployedProcess.getKey(),
+                    timerStartEvent.getId(),
+                    failureOrTimer.get());
+              });
     }
   }
 
