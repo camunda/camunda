@@ -36,6 +36,8 @@ export class Processes {
   readonly resetFiltersButton: Locator;
   readonly errorMessageFilter: Locator;
   readonly startDateFilter: Locator;
+  readonly variableNameFilter: Locator;
+  readonly variableValueFilter: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -84,6 +86,14 @@ export class Processes {
 
     this.startDateFilter = page.getByRole('textbox', {
       name: /start date range/i,
+    });
+
+    this.variableNameFilter = page.getByRole('textbox', {
+      name: /name/i,
+    });
+
+    this.variableValueFilter = page.getByRole('textbox', {
+      name: /value/i,
     });
   }
 

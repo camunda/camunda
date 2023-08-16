@@ -150,6 +150,7 @@ const InstancesTable: React.FC = observer(() => {
               <Link
                 to={Paths.processInstance(instance.id)}
                 title={`View instance ${instance.id}`}
+                aria-label={`View instance ${instance.id}`}
                 onClick={() => {
                   tracking.track({
                     eventName: 'navigation',
