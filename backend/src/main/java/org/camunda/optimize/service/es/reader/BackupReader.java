@@ -82,7 +82,7 @@ public class BackupReader {
     }
   }
 
-  public void validateNoDuplicateBackupId(final Integer backupId) {
+  public void validateNoDuplicateBackupId(final Long backupId) {
     final List<SnapshotInfo> existingSnapshots = getOptimizeSnapshotsForBackupId(backupId);
     if (!existingSnapshots.isEmpty()) {
       final String reason = String.format(
@@ -95,7 +95,7 @@ public class BackupReader {
     }
   }
 
-  public Map<Integer, List<SnapshotInfo>> getAllOptimizeSnapshotsByBackupId() {
+  public Map<Long, List<SnapshotInfo>> getAllOptimizeSnapshotsByBackupId() {
     return getAllOptimizeSnapshots().stream()
       .collect(
         groupingBy(snapshotInfo -> SnapshotUtil.getBackupIdFromSnapshotName(snapshotInfo.snapshot().getSnapshotId().getName()))
@@ -106,7 +106,7 @@ public class BackupReader {
     return getOptimizeSnapshots(getAllWildcardedSnapshotNamesForWildcardedBackupId());
   }
 
-  public List<SnapshotInfo> getOptimizeSnapshotsForBackupId(final Integer backupId) {
+  public List<SnapshotInfo> getOptimizeSnapshotsForBackupId(final Long backupId) {
     return getOptimizeSnapshots(getAllWildcardedSnapshotNamesForBackupId(backupId));
   }
 

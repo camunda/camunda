@@ -66,7 +66,7 @@ public class BackupRestService {
   }
 
   @GetMapping(value = "/{backupId}")
-  public BackupInfoDto info(final @PathVariable @Nullable Integer backupId) {
+  public BackupInfoDto info(final @PathVariable @Nullable Long backupId) {
     return backupService.getSingleBackupInfo(backupId);
   }
 
@@ -77,7 +77,7 @@ public class BackupRestService {
 
   @DeleteMapping(value = "/{backupId}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
-  public void delete(final @PathVariable Integer backupId) {
+  public void delete(final @PathVariable Long backupId) {
     backupService.deleteBackup(backupId);
   }
 

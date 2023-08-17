@@ -1844,14 +1844,14 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildGetBackupStateRequest(final Integer backupId) {
+  public OptimizeRequestExecutor buildGetBackupStateRequest(final Long backupId) {
     setActuatorWebTarget();
     this.path = BACKUP_ENDPOINT + backupId;
     this.method = GET;
     return this;
   }
 
-  public OptimizeRequestExecutor buildDeleteBackupRequest(final Integer backupId) {
+  public OptimizeRequestExecutor buildDeleteBackupRequest(final Long backupId) {
     setActuatorWebTarget();
     this.path = BACKUP_ENDPOINT + backupId;
     this.method = DELETE;

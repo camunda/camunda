@@ -19,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.util.SuppressionConstants.UNUSED;
 
 public class BackupRestServiceIT extends AbstractPlatformIT {
-  private final static Integer VALID_BACKUP_ID = 123;
+  private final static Long VALID_BACKUP_ID = 123L;
 
   @ParameterizedTest
   @MethodSource("backupApiRequestExecutorSuppliers")

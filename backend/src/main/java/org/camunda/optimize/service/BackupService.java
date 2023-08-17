@@ -40,7 +40,7 @@ public class BackupService {
   private final ConfigurationService configurationService;
   private static final int EXPECTED_NUMBER_OF_SNAPSHOTS_PER_BACKUP = 2;
 
-  public synchronized void triggerBackup(final Integer backupId) {
+  public synchronized void triggerBackup(final Long backupId) {
     validateRepositoryExists();
     backupReader.validateNoDuplicateBackupId(backupId);
 
@@ -55,14 +55,14 @@ public class BackupService {
       .toList();
   }
 
-  public BackupInfoDto getSingleBackupInfo(final Integer backupId) {
+  public BackupInfoDto getSingleBackupInfo(final Long backupId) {
     validateRepositoryExists();
     return getSingleBackupInfo(backupId, backupReader.getOptimizeSnapshotsForBackupId(backupId)
       .stream()
       .collect(groupingBy(SnapshotInfo::state)));
   }
 
-  private BackupInfoDto getSingleBackupInfo(final Integer backupId,
+  private BackupInfoDto getSingleBackupInfo(final Long backupId,
                                             final Map<SnapshotState, List<SnapshotInfo>> snapshotInfosPerState) {
     if (snapshotInfosPerState.isEmpty()) {
       final String reason = String.format("No Optimize backup with ID [%d] could be found.", backupId);
@@ -72,7 +72,7 @@ public class BackupService {
     return getBackupInfoDto(backupId, snapshotInfosPerState);
   }
 
-  private BackupInfoDto getBackupInfoDto(final Integer backupId,
+  private BackupInfoDto getBackupInfoDto(final Long backupId,
                                          final Map<SnapshotState, List<SnapshotInfo>> snapshotInfosPerState) {
     final BackupState backupState = determineBackupState(snapshotInfosPerState);
     String failureReason = null;
@@ -101,7 +101,7 @@ public class BackupService {
     );
   }
 
-  public void deleteBackup(final Integer backupId) {
+  public void deleteBackup(final Long backupId) {
     validateRepositoryExists();
     backupWriter.deleteOptimizeSnapshots(backupId);
   }

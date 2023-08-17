@@ -18,5 +18,5 @@ import lombok.NoArgsConstructor;
 public class BackupRequestDto {
   @NotNull
   @Min(0)
-  private Integer backupId;
+  private Long backupId;
 }
