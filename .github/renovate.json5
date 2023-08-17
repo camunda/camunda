@@ -17,6 +17,15 @@
     "**/tests/**",
     "**/__fixtures__/**",
   ],
+  hostRules: [
+    {
+      matchHost: "https://api.github.com/repos/camunda-cloud/",
+      hostType: "github-tags",
+      encrypted: {
+        token: "wcFMA/xDdHCJBTolAQ//ZCDBjEcdT1ATZRSfzu3V7ot0bKFhzadLoUFd+bJ+F0Ylwv7b8kIEHZGpEy0qzz+fgmTeGq03JRHRu0jDgyJ394AzFHIav3j2AkPLpBWPQccQOCyjQ3poOn2wjwEEl5G+5jOCyswYoBvgNt+uaSutS7TKANgQXpuBAo0JCWxmjAKw1KvaOWNJTay7ec9ykBBaPH8iPlsrFRBupzjT+RT/CvjZNjQXrsq5monbkfPMyXlwDnlrffqiyxprOc9Z6heSSDMVEWqScJSUVBqlYNZZIYGHDN7MbDEwO4pcYKynzzotlZ6gjjA6gNY0ilMuxoP6wDHcH7L7YrV3pNMfl+QWX4SHs7EITAjI+WgM0O8zmWF4q8ILBXeFH0eLVTU4TgINJtyInIZ5eJht2oO8ZzmGM+t7bciIr1MY2dsOarwjkysX2ZtZ0aw5mEV2km9e52GScR8ZObf6VgaIDgasO9fPnybMqoWfzXLaGR5TSxNbS1B91Z7Cchxm2qWJAYdn7QpGNvjpVVxfROR4Sz7M35TgfGHRbFDnFpcIPcVdTqSb+BBiuL5J6SLEYDv6funibx75tommxPrGtcSF0y7ERf8mLO5h07xNLjFNXi5VeDStWDY/GeVJEdof6Lv0JN70TPILLWGrGJbEOdE7xwZZpE3iP5IZgqvRuogeik9qXdQLtqrSdgGNACmcEKkjG7j13R3KpubZFT/YX4LZWpTyYTBLjgP9+K7V3tsGQYGelKkX+1tg1jwEogC9koCAojTu5g8+8sGg8d7zNaHueP4gvcDsLC8cKxJ9Ood8COLHeE4/Cgg65QTSjogAQrf80x4Gr6TnV3rsh97DdsQ",
+      },
+    },
+  ],
   commitMessagePrefix: "chore(deps):",
   branchPrefix: "renovate/",
   helmv3: {
