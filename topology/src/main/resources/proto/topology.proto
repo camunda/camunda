@@ -9,7 +9,7 @@ message GossipState {
 
 message ClusterTopology {
   int64 version = 1;
-  map<int32, MemberState> members = 2;
+  map<string, MemberState> members = 2;
 }
 
 message MemberState {

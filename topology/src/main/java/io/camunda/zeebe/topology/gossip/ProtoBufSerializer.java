@@ -56,9 +56,7 @@ public class ProtoBufSerializer implements ClusterTopologyGossipSerializer {
       final io.camunda.zeebe.topology.state.ClusterTopology clusterTopology) {
     final var members =
         clusterTopology.members().entrySet().stream()
-            .collect(
-                Collectors.toMap(
-                    e -> Integer.valueOf(e.getKey().id()), e -> encodeMemberState(e.getValue())));
+            .collect(Collectors.toMap(e -> e.getKey().id(), e -> encodeMemberState(e.getValue())));
     return Topology.ClusterTopology.newBuilder()
         .setVersion(clusterTopology.version())
         .putAllMembers(members)
@@ -70,10 +68,7 @@ public class ProtoBufSerializer implements ClusterTopologyGossipSerializer {
 
     final var members =
         encodedClusterTopology.getMembersMap().entrySet().stream()
-            .map(
-                e ->
-                    Map.entry(
-                        MemberId.from(String.valueOf(e.getKey())), decodeMemberState(e.getValue())))
+            .map(e -> Map.entry(MemberId.from(e.getKey()), decodeMemberState(e.getValue())))
             .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
     return new io.camunda.zeebe.topology.state.ClusterTopology(
         encodedClusterTopology.getVersion(), members, ClusterChangePlan.empty());
