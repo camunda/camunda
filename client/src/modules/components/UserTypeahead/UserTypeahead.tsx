@@ -6,30 +6,30 @@
  */
 
 import update from 'immutability-helper';
+import {DropdownSkeleton} from '@carbon/react';
 
-import {withErrorHandling, WithErrorHandlingProps} from 'HOC';
 import {t} from 'translation';
 import {showError} from 'notifications';
+import {useErrorHandling} from 'hooks';
 
 import MultiUserInput, {MultiUserInputProps} from './MultiUserInput';
 import {getUser, User, getUserId} from './service';
-import {DropdownSkeleton} from '@carbon/react';
 
 interface UserTypeaheadProps
-  extends WithErrorHandlingProps,
-    Partial<Omit<MultiUserInputProps, 'users' | 'collectionUsers' | 'onChange'>> {
+  extends Partial<Omit<MultiUserInputProps, 'users' | 'collectionUsers' | 'onChange'>> {
   collectionUsers?: User[] | null;
   users: User[] | null;
   onChange: (users: User[]) => void;
 }
 
-export function UserTypeahead({
+export default function UserTypeahead({
   users = [],
   collectionUsers = [],
   onChange,
-  mightFail,
   ...props
 }: UserTypeaheadProps) {
+  const {mightFail} = useErrorHandling();
+
   if (!users || !collectionUsers) {
     return <DropdownSkeleton />;
   }
@@ -85,5 +85,3 @@ export function UserTypeahead({
     />
   );
 }
-
-export default withErrorHandling(UserTypeahead);

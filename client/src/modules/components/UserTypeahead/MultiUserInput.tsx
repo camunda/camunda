@@ -90,6 +90,7 @@ export default function MultiUserInput({
     function handleBlur() {
       setTextValue('');
       loadNewValues('');
+      setLoading(false);
     }
 
     const input = multiSelectRef.current?.querySelector('input');

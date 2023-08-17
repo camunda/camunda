@@ -53,6 +53,7 @@ export function AssigneeFilter(props: AssigneeFilterProps) {
   );
 
   const [users, setUsers] = useState<User[] | null>(null);
+  const [selectionResetIdx, setSelectionResetIdx] = useState(0);
   const [operator, setOperator] = useState<string | undefined>('in');
   const [applyTo, setApplyTo] = useState(
     validDefinitions?.find(({identifier}) => filterData?.appliedTo[0] === identifier) ||
@@ -139,6 +140,11 @@ export function AssigneeFilter(props: AssigneeFilterProps) {
     [applyTo?.key, applyTo?.tenantIds, filterType, mightFail, reportIds]
   );
 
+  function resetUserSelection() {
+    setUsers([]);
+    setSelectionResetIdx((key) => key + 1);
+  }
+
   return (
     <Modal
       open
@@ -158,7 +164,7 @@ export function AssigneeFilter(props: AssigneeFilterProps) {
             applyTo={applyTo}
             setApplyTo={(applyTo) => {
               setApplyTo(applyTo);
-              setUsers([]);
+              resetUserSelection();
             }}
           />
         )}
@@ -174,6 +180,9 @@ export function AssigneeFilter(props: AssigneeFilterProps) {
         <Form>
           <Form.InputGroup>
             <UserTypeahead
+              // The carbon multi-select cannot be controlled from outside
+              // Remove this when this issue get resolved: https://github.com/carbon-design-system/carbon/issues/10340
+              key={selectionResetIdx}
               titleText={t(`common.filter.assigneeModal.type.${filterType}`)}
               users={users}
               onChange={setUsers}
