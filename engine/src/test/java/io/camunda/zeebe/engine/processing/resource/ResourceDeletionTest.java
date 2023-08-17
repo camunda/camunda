@@ -24,6 +24,7 @@ import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionInte
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
+import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
@@ -500,6 +501,124 @@ public class ResourceDeletionTest {
     verifyResourceIsDeleted(versionTwoProcessDefinitionKey);
   }
 
+  @Test
+  public void shouldUnsubscribeSignalStartEventOnDeletion() {
+    // given
+    final var processId = helper.getBpmnProcessId();
+    final var processDefinitionKey = deployProcessWithSignalStartEvent(processId);
+
+    // when
+    engine.resourceDeletion().withResourceKey(processDefinitionKey).delete();
+
+    // then
+    verifySignalStartEventSubscriptionIsDeleted(processDefinitionKey);
+    verifyProcessIdWithVersionIsDeleted(processId, 1);
+    verifyResourceIsDeleted(processDefinitionKey);
+  }
+
+  @Test
+  public void shouldUnsubscribeAllSignalStartEventsOnDeletion() {
+    // given
+    final var processId = helper.getBpmnProcessId();
+    final var processDefinitionKey =
+        engine
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent("startEvent1")
+                    .signal("signal1")
+                    .endEvent("endEvent")
+                    .moveToProcess(processId)
+                    .startEvent("startEvent2")
+                    .signal("signal2")
+                    .connectTo("endEvent")
+                    .done())
+            .deploy()
+            .getValue()
+            .getProcessesMetadata()
+            .get(0)
+            .getProcessDefinitionKey();
+
+    // when
+    engine.resourceDeletion().withResourceKey(processDefinitionKey).delete();
+
+    // then
+    verifySignalStartEventSubscriptionIsDeleted(processDefinitionKey, 2);
+    verifyProcessIdWithVersionIsDeleted(processId, 1);
+    verifyResourceIsDeleted(processDefinitionKey);
+  }
+
+  @Test
+  public void shouldNotUnsubscribeSignalsIfDeletedVersionIsNotLatest() {
+    // given
+    final var processId = helper.getBpmnProcessId();
+    final long firstProcessDefinitionKey = deployProcess(processId);
+    deployProcessWithSignalStartEvent(processId);
+
+    // when
+    engine.resourceDeletion().withResourceKey(firstProcessDefinitionKey).delete();
+
+    // then
+    verifyProcessIdWithVersionIsDeleted(processId, 1);
+    verifyResourceIsDeleted(firstProcessDefinitionKey);
+    verifyNoSignalStartEventSubscriptionsAreDeleted();
+  }
+
+  @Test
+  public void shouldRecreateSignalSubscriptionOfPreviousVersion() {
+    // given
+    final var processId = helper.getBpmnProcessId();
+    final var versionOneProcessDefinitionKey = deployProcessWithSignalStartEvent(processId);
+    final var versionTwoProcessDefinitionKey = deployProcessWithSignalStartEvent(processId);
+
+    // when
+    engine.resourceDeletion().withResourceKey(versionTwoProcessDefinitionKey).delete();
+
+    // then
+    verifySignalStartEventSubscriptionIsDeleted(versionTwoProcessDefinitionKey);
+    // The subscription is created once on the first deployment and a second time after the deletion
+    verifySignalStartEventSubscriptionIsCreated(versionOneProcessDefinitionKey, 2);
+    verifyProcessIdWithVersionIsDeleted(processId, 2);
+    verifyResourceIsDeleted(versionTwoProcessDefinitionKey);
+  }
+
+  @Test
+  public void shouldRecreateAllSignalSubscriptionsOfPreviousVersion() {
+
+    // given
+    final var processId = helper.getBpmnProcessId();
+    final var versionOneProcessDefinitionKey =
+        engine
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent("startEvent1")
+                    .signal("signal1")
+                    .endEvent("endEvent")
+                    .moveToProcess(processId)
+                    .startEvent("startEvent2")
+                    .signal("signal2")
+                    .connectTo("endEvent")
+                    .done())
+            .deploy()
+            .getValue()
+            .getProcessesMetadata()
+            .get(0)
+            .getProcessDefinitionKey();
+    final var versionTwoProcessDefinitionKey = deployProcessWithSignalStartEvent(processId);
+
+    // when
+    engine.resourceDeletion().withResourceKey(versionTwoProcessDefinitionKey).delete();
+
+    // then
+    verifySignalStartEventSubscriptionIsDeleted(versionTwoProcessDefinitionKey);
+    // The subscription is created twice on the first deployment, and two more times after the
+    // deletion
+    verifySignalStartEventSubscriptionIsCreated(versionOneProcessDefinitionKey, 4);
+    verifyProcessIdWithVersionIsDeleted(processId, 2);
+    verifyResourceIsDeleted(versionTwoProcessDefinitionKey);
+  }
+
   private long deployDrg(final String drgResource) {
     return engine
         .deployment()
@@ -562,6 +681,18 @@ public class ResourceDeletionTest {
                 .message("message")
                 .endEvent()
                 .done())
+        .deploy()
+        .getValue()
+        .getProcessesMetadata()
+        .get(0)
+        .getProcessDefinitionKey();
+  }
+
+  private long deployProcessWithSignalStartEvent(final String processId) {
+    return engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId).startEvent().signal("signal").endEvent().done())
         .deploy()
         .getValue()
         .getProcessesMetadata()
@@ -795,5 +926,47 @@ public class ResourceDeletionTest {
         .hasSize(times)
         .extracting(t -> t.getValue().getProcessDefinitionKey())
         .containsOnly(processDefinitionKey);
+  }
+
+  private void verifySignalStartEventSubscriptionIsDeleted(final long processDefinitionKey) {
+    verifySignalStartEventSubscriptionIsDeleted(processDefinitionKey, 1);
+  }
+
+  private void verifySignalStartEventSubscriptionIsDeleted(
+      final long processDefinitionKey, final int times) {
+    assertThat(
+            RecordingExporter.signalSubscriptionRecords(SignalSubscriptionIntent.DELETED)
+                .withProcessDefinitionKey(processDefinitionKey)
+                .limit(times))
+        .describedAs("Signal start event subscription(s) should be deleted")
+        .hasSize(times)
+        .extracting(
+            t -> t.getValue().getProcessDefinitionKey(),
+            t -> t.getValue().getCatchEventInstanceKey())
+        .containsOnly(tuple(processDefinitionKey, NO_ELEMENT_INSTANCE));
+  }
+
+  private void verifyNoSignalStartEventSubscriptionsAreDeleted() {
+    assertThat(
+            RecordingExporter.records()
+                .limit(r -> r.getIntent() == ResourceDeletionIntent.DELETED)
+                .signalSubscriptionRecords()
+                .withIntent(SignalSubscriptionIntent.DELETED)
+                .exists())
+        .isFalse();
+  }
+
+  private void verifySignalStartEventSubscriptionIsCreated(
+      final long processDefinitionKey, final int times) {
+    assertThat(
+            RecordingExporter.signalSubscriptionRecords(SignalSubscriptionIntent.CREATED)
+                .withProcessDefinitionKey(processDefinitionKey)
+                .limit(times))
+        .describedAs("%d signal start event subscriptions should be created".formatted(times))
+        .hasSize(times)
+        .extracting(
+            t -> t.getValue().getProcessDefinitionKey(),
+            t -> t.getValue().getCatchEventInstanceKey())
+        .containsOnly(tuple(processDefinitionKey, NO_ELEMENT_INSTANCE));
   }
 }
