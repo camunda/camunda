@@ -56,8 +56,9 @@ public class ProtoBufSerializer implements ClusterTopologyGossipSerializer {
       final io.camunda.zeebe.topology.state.ClusterTopology clusterTopology) {
     final var members =
         clusterTopology.members().entrySet().stream()
-            .map(e -> Map.entry(Integer.valueOf(e.getKey().id()), encodeMemberState(e.getValue())))
-            .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+            .collect(
+                Collectors.toMap(
+                    e -> Integer.valueOf(e.getKey().id()), e -> encodeMemberState(e.getValue())));
     return Topology.ClusterTopology.newBuilder()
         .setVersion(clusterTopology.version())
         .putAllMembers(members)
@@ -114,7 +115,8 @@ public class ProtoBufSerializer implements ClusterTopologyGossipSerializer {
         .build();
   }
 
-  private Topology.State toSerializedState(final io.camunda.zeebe.topology.state.MemberState.State state) {
+  private Topology.State toSerializedState(
+      final io.camunda.zeebe.topology.state.MemberState.State state) {
     return switch (state) {
       case UNINITIALIZED -> Topology.State.UNKNOWN;
       case ACTIVE -> Topology.State.ACTIVE;
@@ -124,7 +126,8 @@ public class ProtoBufSerializer implements ClusterTopologyGossipSerializer {
     };
   }
 
-  private io.camunda.zeebe.topology.state.MemberState.State toMemberState(final Topology.State state) {
+  private io.camunda.zeebe.topology.state.MemberState.State toMemberState(
+      final Topology.State state) {
     return switch (state) {
       case UNRECOGNIZED, UNKNOWN -> io.camunda.zeebe.topology.state.MemberState.State.UNINITIALIZED;
       case ACTIVE -> io.camunda.zeebe.topology.state.MemberState.State.ACTIVE;

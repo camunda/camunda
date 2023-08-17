@@ -17,6 +17,7 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.function.UnaryOperator;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -108,8 +109,10 @@ public final class ClusterTopologyGossiper {
   private void refreshMembersToSync() {
     if (membersToSync.isEmpty()) {
       membersToSync =
-          new LinkedList<>(membershipService.getMembers().stream().map(Member::id).toList());
-      membersToSync.remove(membershipService.getLocalMember().id());
+          membershipService.getMembers().stream()
+              .map(Member::id)
+              .filter(id -> !id.equals(membershipService.getLocalMember().id()))
+              .collect(Collectors.toCollection(LinkedList::new));
       Collections.shuffle(membersToSync);
     }
   }
@@ -119,7 +122,7 @@ public final class ClusterTopologyGossiper {
     if (error == null) {
       update(response);
     } else {
-      LOGGER.debug("Failed to sync with {}", member, error);
+      LOGGER.warn("Failed to sync with {}", member, error);
     }
     scheduleSync();
   }
@@ -174,6 +177,8 @@ public final class ClusterTopologyGossiper {
         member ->
             communicationService.unicast(
                 SYNC_REQUEST_TOPIC, gossipState, serializer::encode, member, true));
+    // The list is backed by `membersToSync`. After gossip we remove them from the list so that in
+    // the next try it chooses a different set of members
     gossipMembersList.clear();
   }
 
