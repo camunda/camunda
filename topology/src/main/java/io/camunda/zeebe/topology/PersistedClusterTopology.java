@@ -41,6 +41,10 @@ final class PersistedClusterTopology {
   }
 
   void update(final ClusterTopology clusterTopology) throws IOException {
+    if (this.clusterTopology.equals(clusterTopology)) {
+      return;
+    }
+
     final var serializedTopology = serializer.encode(clusterTopology);
     Files.write(
         topologyFile,

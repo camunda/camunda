@@ -14,6 +14,9 @@ import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.topology.TopologyInitializer.FileInitializer;
+import io.camunda.zeebe.topology.TopologyInitializer.GossipInitializer;
+import io.camunda.zeebe.topology.TopologyInitializer.StaticInitializer;
 import io.camunda.zeebe.topology.gossip.ClusterTopologyGossiper;
 import io.camunda.zeebe.topology.gossip.ClusterTopologyGossiperConfig;
 import io.camunda.zeebe.topology.serializer.ProtoBufSerializer;
@@ -22,18 +25,22 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 public final class ClusterTopologyManagerService extends Actor {
-
+  // Use a node 0 as always the coordinator. Later we can make it configurable or allow changing it
+  // dynamically.
+  private static final String COORDINATOR_ID = "0";
   private final ClusterTopologyManager clusterTopologyManager;
   private final ClusterTopologyGossiper clusterTopologyGossiper;
+
+  private final boolean isCoordinator;
+  private final PersistedClusterTopology persistedClusterTopology;
 
   public ClusterTopologyManagerService(
       final Path topologyFile,
       final ClusterCommunicationService communicationService,
       final ClusterMembershipService memberShipService,
       final ClusterTopologyGossiperConfig config) {
-    clusterTopologyManager =
-        new ClusterTopologyManager(
-            this, new PersistedClusterTopology(topologyFile, new ProtoBufSerializer()));
+    persistedClusterTopology = new PersistedClusterTopology(topologyFile, new ProtoBufSerializer());
+    clusterTopologyManager = new ClusterTopologyManager(this, persistedClusterTopology);
     clusterTopologyGossiper =
         new ClusterTopologyGossiper(
             this,
@@ -43,6 +50,22 @@ public final class ClusterTopologyManagerService extends Actor {
             config,
             clusterTopologyManager::onGossipReceived);
     clusterTopologyManager.setTopologyGossiper(clusterTopologyGossiper::updateClusterTopology);
+
+    isCoordinator = memberShipService.getLocalMember().id().id().equals(COORDINATOR_ID);
+  }
+
+  private TopologyInitializer getNonCoordinatorInitializer() {
+    return new FileInitializer(persistedClusterTopology)
+        .orThen(
+            new GossipInitializer(
+                persistedClusterTopology, clusterTopologyGossiper::updateClusterTopology));
+  }
+
+  private TopologyInitializer getCoordinatorInitializer(
+      final Supplier<Set<PartitionMetadata>> staticPartitionResolver) {
+    // TODO: use SyncInitializer
+    return new FileInitializer(persistedClusterTopology)
+        .orThen(new StaticInitializer(staticPartitionResolver, persistedClusterTopology));
   }
 
   /**
@@ -74,7 +97,11 @@ public final class ClusterTopologyManagerService extends Actor {
   private void startClusterTopologyServices(
       final Supplier<Set<PartitionMetadata>> partitionDistributionResolver,
       final CompletableActorFuture<Void> startFuture) {
-    // Start gossiper first so that when ClusterToplogyManager initializes the topology, it can
+    final TopologyInitializer topologyInitializer =
+        isCoordinator
+            ? getCoordinatorInitializer(partitionDistributionResolver)
+            : getNonCoordinatorInitializer();
+    // Start gossiper first so that when ClusterTopologyManager initializes the topology, it can
     // immediately gossip it.
     clusterTopologyGossiper
         .start()
@@ -83,7 +110,7 @@ public final class ClusterTopologyManagerService extends Actor {
               if (error != null) {
                 startFuture.completeExceptionally(error);
               } else {
-                clusterTopologyManager.start(partitionDistributionResolver).onComplete(startFuture);
+                clusterTopologyManager.start(topologyInitializer).onComplete(startFuture);
               }
             });
   }
