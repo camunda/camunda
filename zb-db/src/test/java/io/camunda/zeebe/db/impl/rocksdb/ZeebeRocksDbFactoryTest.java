@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbFactory;
+import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.db.impl.DefaultColumnFamily;
 import io.camunda.zeebe.db.impl.DefaultZeebeDbFactory;
 import io.camunda.zeebe.util.ByteValue;
@@ -112,5 +113,52 @@ final class ZeebeRocksDbFactoryTest {
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining(
             "Expected to create column family options for RocksDB, but one or many values are undefined in the context of RocksDB");
+  }
+
+  @Test
+  void shouldOpenSnapshotOnlyDb(final @TempDir File path, final @TempDir File tempDir)
+      throws Exception {
+    // given
+    final var factory = DefaultZeebeDbFactory.<DefaultColumnFamily>getDefaultFactory();
+    final var key = new DbString();
+    final var value = new DbString();
+    key.wrapString("foo");
+    value.wrapString("bar");
+
+    try (final var db = factory.createDb(path)) {
+      final var column =
+          db.createColumnFamily(
+              DefaultColumnFamily.DEFAULT, db.createContext(), new DbString(), new DbString());
+      column.insert(key, value);
+    }
+
+    // when
+    final var snapshotPath = new File(tempDir, "snapshot");
+    try (final var db = factory.openSnapshotOnlyDb(path)) {
+      db.createSnapshot(snapshotPath);
+    }
+
+    // then
+    final String snapshotValue;
+    try (final var db = factory.createDb(snapshotPath)) {
+      final var column =
+          db.createColumnFamily(
+              DefaultColumnFamily.DEFAULT, db.createContext(), new DbString(), new DbString());
+      snapshotValue = column.get(key).toString();
+    }
+
+    assertThat(snapshotValue).isEqualTo("bar");
+  }
+
+  @Test
+  void shouldFailToOpenNonExistentSnapshotOnlyDb(final @TempDir File path) {
+    // given
+    final var factory = DefaultZeebeDbFactory.getDefaultFactory();
+    assertThat(path.delete()).isTrue();
+
+    // when - then
+    //noinspection resource
+    assertThatThrownBy(() -> factory.openSnapshotOnlyDb(path))
+        .isInstanceOf(IllegalStateException.class);
   }
 }
