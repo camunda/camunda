@@ -80,7 +80,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           ref: refs/heads/${{ inputs.branch }}
-          fetch-depth: 0  # fetches all history for all branches and tags
+          fetch-depth: 0 # fetches all history for all branches and tags
 
       # Setup: configure GitHub user
       - name: Configure GitHub user
@@ -180,7 +180,7 @@ jobs:
               echo "'${f}' file was created, skip upload in dryRun mode"
             elif ${{ inputs.githubUploadRelease }}; then
               echo "Uploading '${f}' file to zeebe repo on GitHub"
-              ./github-release upload --user camunda --repo zeebe --tag ${ZEEBE_VERSION} --name “${f}” --file “${f}”
+              ./github-release upload --user camunda --repo zeebe --tag ${ZEEBE_VERSION} --name "${f}" --file "${f}"
             else
               echo "'${f}' file was created, skip upload"
             fi
@@ -190,7 +190,7 @@ jobs:
       - name: Upload Docker Image
         if: ${{ inputs.dryRun == false }}
         env:
-          IMAGE_NAME: 'camunda/tasklist'
+          IMAGE_NAME: "camunda/tasklist"
           IMAGE_TAG: ${{ inputs.releaseVersion }}
           IS_LATEST: ${{ inputs.isLatest }}
         run: |
