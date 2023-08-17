@@ -8,6 +8,7 @@
 package io.camunda.zeebe.db.impl.rocksdb;
 
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
+import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.impl.rocksdb.transaction.ZeebeTransactionDb;
 import java.io.File;
@@ -56,31 +57,50 @@ public final class ZeebeRocksDbFactory<ColumnFamilyType extends Enum<ColumnFamil
 
   @Override
   public ZeebeTransactionDb<ColumnFamilyType> createDb(final File pathName) {
-    final ZeebeTransactionDb<ColumnFamilyType> db;
     final List<AutoCloseable> closeables = Collections.synchronizedList(new ArrayList<>());
     try {
-      // column family options have to be closed as last
-      final var columnFamilyOptions = createColumnFamilyOptions(closeables);
-      closeables.add(columnFamilyOptions);
-      final var dbOptions = createDefaultDbOptions(closeables);
-      closeables.add(dbOptions);
-
-      final var options = new Options(dbOptions, columnFamilyOptions);
-      closeables.add(options);
-
-      db =
-          ZeebeTransactionDb.openTransactionalDb(
-              options,
-              pathName.getAbsolutePath(),
-              closeables,
-              rocksDbConfiguration,
-              consistencyChecksSettings);
-
+      return ZeebeTransactionDb.openTransactionalDb(
+          prepareOptions(closeables),
+          pathName.getAbsolutePath(),
+          closeables,
+          rocksDbConfiguration,
+          consistencyChecksSettings);
     } catch (final RocksDBException e) {
       CloseHelper.quietCloseAll(closeables);
       throw new IllegalStateException("Unexpected error occurred trying to open the database", e);
     }
-    return db;
+  }
+
+  @Override
+  public ZeebeDb<ColumnFamilyType> openSnapshotOnlyDb(final File pathName) {
+    final List<AutoCloseable> managedResources = Collections.synchronizedList(new ArrayList<>());
+    final var options = prepareOptions(managedResources);
+    options
+        // only open existing databases
+        .setCreateIfMissing(false)
+        // this can slow down open significantly if there are many SST files
+        .setSkipCheckingSstFileSizesOnDbOpen(true);
+
+    try {
+      return SnapshotOnlyDb.openDb(options, pathName.getAbsolutePath(), managedResources);
+    } catch (final RocksDBException e) {
+      CloseHelper.quietCloseAll(managedResources);
+      throw new IllegalStateException(
+          "Unexpected error occurred trying to open a snapshot-only database", e);
+    }
+  }
+
+  private Options prepareOptions(final List<AutoCloseable> managedResources) {
+    // column family options have to be closed as last
+    final var columnFamilyOptions = createColumnFamilyOptions(managedResources);
+    managedResources.add(columnFamilyOptions);
+    final var dbOptions = createDefaultDbOptions(managedResources);
+    managedResources.add(dbOptions);
+
+    final var options = new Options(dbOptions, columnFamilyOptions);
+    managedResources.add(options);
+
+    return options;
   }
 
   private DBOptions createDefaultDbOptions(final List<AutoCloseable> closeables) {
