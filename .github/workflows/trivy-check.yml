@@ -1,7 +1,6 @@
 name: Trivy check docker image
 
 on:
-  push:
   workflow_dispatch:
   schedule:
     - cron: "0 2 * * 1-5"
@@ -139,7 +138,9 @@ jobs:
       - name: Print Test Results
         if: always()
         run: |
+          echo "${{ steps.pom-info.outputs.project_version }} Platform: AMD"
           cat ${{ steps.pom-info.outputs.project_version }}-amd64-trivy-log.txt
+          echo "${{ steps.pom-info.outputs.project_version }} Platform: ARM"
           cat ${{ steps.pom-info.outputs.project_version }}-arm64-trivy-log.txt
 
       - name: Upload Test Results
@@ -153,27 +154,27 @@ jobs:
           retention-days: 7
           if-no-files-found: ignore
 
-  # post-results-on-slack:
-  #   name: Post results on slack
-  #   if: failure()
-  #   needs:
-  #     - trivy-check
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v3
+  post-results-on-slack:
+    name: Post results on slack
+    if: failure()
+    needs:
+      - trivy-check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
 
-  #     - name: Import secrets
-  #       id: secrets
-  #       uses: hashicorp/vault-action@62aa8bb4c43190676348ad2b146075f0421136db
-  #       with:
-  #         url: ${{ secrets.VAULT_ADDR }}
-  #         method: approle
-  #         roleId: ${{ secrets.VAULT_ROLE_ID }}
-  #         secretId: ${{ secrets.VAULT_SECRET_ID }}
-  #         secrets: |
-  #           secret/data/products/optimize/ci/camunda-optimize SLACK_BOT_URL;
+      - name: Import secrets
+        id: secrets
+        uses: hashicorp/vault-action@62aa8bb4c43190676348ad2b146075f0421136db
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/optimize/ci/camunda-optimize SLACK_BOT_URL;
 
-  #     - name: Post results on slack
-  #       uses: ./.github/actions/notify-on-slack
-  #       with:
-  #         slack_webhook_url: ${{ steps.secrets.outputs.SLACK_BOT_URL}}
+      - name: Post results on slack
+        uses: ./.github/actions/notify-on-slack
+        with:
+          slack_webhook_url: ${{ steps.secrets.outputs.SLACK_BOT_URL}}
