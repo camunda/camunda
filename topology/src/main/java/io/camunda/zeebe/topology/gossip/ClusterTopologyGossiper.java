@@ -176,7 +176,7 @@ public final class ClusterTopologyGossiper {
     gossipMembersList.forEach(
         member ->
             communicationService.unicast(
-                SYNC_REQUEST_TOPIC, gossipState, serializer::encode, member, true));
+                GOSSIP_REQUEST_TOPIC, gossipState, serializer::encode, member, true));
     // The list is backed by `membersToSync`. After gossip we remove them from the list so that in
     // the next try it chooses a different set of members
     gossipMembersList.clear();
