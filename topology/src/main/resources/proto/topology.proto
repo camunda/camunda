@@ -3,27 +3,27 @@ package topology_protocol;
 
 option java_package = "io.camunda.zeebe.topology.protocol";
 
-message MGossipState {
-  MClusterTopology clusterTopology = 1;
+message GossipState {
+  ClusterTopology clusterTopology = 1;
 }
 
-message MClusterTopology {
+message ClusterTopology {
   int64 version = 1;
-  map<int32, MMemberState> members = 2;
+  map<int32, MemberState> members = 2;
 }
 
-message MMemberState {
+message MemberState {
   int64 version = 1;
-  MState state = 2;
-  map<int32, MPartitionState> partitions = 3;
+  State state = 2;
+  map<int32, PartitionState> partitions = 3;
 }
 
-message MPartitionState {
-  MState state = 1;
+message PartitionState {
+  State state = 1;
   int32 priority = 2;
 }
 
-enum MState {
+enum State {
   UNKNOWN = 0;
   JOINING = 1;
   ACTIVE = 2;

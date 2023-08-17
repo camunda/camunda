@@ -10,11 +10,6 @@ package io.camunda.zeebe.topology.gossip;
 import com.google.protobuf.InvalidProtocolBufferException;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.topology.protocol.Topology;
-import io.camunda.zeebe.topology.protocol.Topology.MClusterTopology;
-import io.camunda.zeebe.topology.protocol.Topology.MGossipState;
-import io.camunda.zeebe.topology.protocol.Topology.MMemberState;
-import io.camunda.zeebe.topology.protocol.Topology.MPartitionState;
-import io.camunda.zeebe.topology.protocol.Topology.MState;
 import io.camunda.zeebe.topology.state.ClusterChangePlan;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.PartitionState;
@@ -26,11 +21,11 @@ public class ProtoBufSerializer implements ClusterTopologyGossipSerializer {
 
   @Override
   public byte[] encode(final ClusterTopologyGossipState gossipState) {
-    final var builder = MGossipState.newBuilder();
+    final var builder = Topology.GossipState.newBuilder();
 
     final ClusterTopology topologyToEncode = gossipState.getClusterTopology();
     if (topologyToEncode != null) {
-      final Topology.MClusterTopology clusterTopology = encodeClusterTopology(topologyToEncode);
+      final Topology.ClusterTopology clusterTopology = encodeClusterTopology(topologyToEncode);
       builder.setClusterTopology(clusterTopology);
     }
 
@@ -40,10 +35,10 @@ public class ProtoBufSerializer implements ClusterTopologyGossipSerializer {
 
   @Override
   public ClusterTopologyGossipState decode(final byte[] encodedState) {
-    final MGossipState gossipState;
+    final Topology.GossipState gossipState;
 
     try {
-      gossipState = MGossipState.parseFrom(encodedState);
+      gossipState = Topology.GossipState.parseFrom(encodedState);
 
     } catch (final InvalidProtocolBufferException e) {
       throw new DecodingFailed(e);
@@ -57,20 +52,20 @@ public class ProtoBufSerializer implements ClusterTopologyGossipSerializer {
     return clusterTopologyGossipState;
   }
 
-  private MClusterTopology encodeClusterTopology(
+  private Topology.ClusterTopology encodeClusterTopology(
       final io.camunda.zeebe.topology.state.ClusterTopology clusterTopology) {
     final var members =
         clusterTopology.members().entrySet().stream()
             .map(e -> Map.entry(Integer.valueOf(e.getKey().id()), encodeMemberState(e.getValue())))
             .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
-    return MClusterTopology.newBuilder()
+    return Topology.ClusterTopology.newBuilder()
         .setVersion(clusterTopology.version())
         .putAllMembers(members)
         .build();
   }
 
   private io.camunda.zeebe.topology.state.ClusterTopology decodeClusterTopology(
-      final MClusterTopology encodedClusterTopology) {
+      final Topology.ClusterTopology encodedClusterTopology) {
 
     final var members =
         encodedClusterTopology.getMembersMap().entrySet().stream()
@@ -84,7 +79,7 @@ public class ProtoBufSerializer implements ClusterTopologyGossipSerializer {
   }
 
   private io.camunda.zeebe.topology.state.MemberState decodeMemberState(
-      final MMemberState memberState) {
+      final Topology.MemberState memberState) {
     final var partitions =
         memberState.getPartitionsMap().entrySet().stream()
             .map(e -> Map.entry(e.getKey(), decodePartitionState(e.getValue())))
@@ -94,42 +89,42 @@ public class ProtoBufSerializer implements ClusterTopologyGossipSerializer {
   }
 
   private io.camunda.zeebe.topology.state.PartitionState decodePartitionState(
-      final MPartitionState partitionState) {
+      final Topology.PartitionState partitionState) {
     return new io.camunda.zeebe.topology.state.PartitionState(
         toPartitionState(partitionState.getState()), partitionState.getPriority());
   }
 
-  private MMemberState encodeMemberState(
+  private Topology.MemberState encodeMemberState(
       final io.camunda.zeebe.topology.state.MemberState memberState) {
     final var partitions =
         memberState.partitions().entrySet().stream()
             .map(e -> Map.entry(e.getKey(), encodePartitions(e.getValue())))
             .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
-    return MMemberState.newBuilder()
+    return Topology.MemberState.newBuilder()
         .setVersion(memberState.version())
         .setState(toSerializedState(memberState.state()))
         .putAllPartitions(partitions)
         .build();
   }
 
-  private MPartitionState encodePartitions(final PartitionState partitionState) {
-    return MPartitionState.newBuilder()
+  private Topology.PartitionState encodePartitions(final PartitionState partitionState) {
+    return Topology.PartitionState.newBuilder()
         .setState(toSerializedState(partitionState.state()))
         .setPriority(partitionState.priority())
         .build();
   }
 
-  private MState toSerializedState(final io.camunda.zeebe.topology.state.MemberState.State state) {
+  private Topology.State toSerializedState(final io.camunda.zeebe.topology.state.MemberState.State state) {
     return switch (state) {
-      case UNINITIALIZED -> MState.UNKNOWN;
-      case ACTIVE -> MState.ACTIVE;
-      case JOINING -> MState.JOINING;
-      case LEAVING -> MState.LEAVING;
-      case LEFT -> MState.LEFT;
+      case UNINITIALIZED -> Topology.State.UNKNOWN;
+      case ACTIVE -> Topology.State.ACTIVE;
+      case JOINING -> Topology.State.JOINING;
+      case LEAVING -> Topology.State.LEAVING;
+      case LEFT -> Topology.State.LEFT;
     };
   }
 
-  private io.camunda.zeebe.topology.state.MemberState.State toMemberState(final MState state) {
+  private io.camunda.zeebe.topology.state.MemberState.State toMemberState(final Topology.State state) {
     return switch (state) {
       case UNRECOGNIZED, UNKNOWN -> io.camunda.zeebe.topology.state.MemberState.State.UNINITIALIZED;
       case ACTIVE -> io.camunda.zeebe.topology.state.MemberState.State.ACTIVE;
@@ -140,7 +135,7 @@ public class ProtoBufSerializer implements ClusterTopologyGossipSerializer {
   }
 
   private io.camunda.zeebe.topology.state.PartitionState.State toPartitionState(
-      final MState state) {
+      final Topology.State state) {
     return switch (state) {
       case UNRECOGNIZED, UNKNOWN, LEFT -> PartitionState.State.UNKNOWN;
       case ACTIVE -> PartitionState.State.ACTIVE;
@@ -149,13 +144,13 @@ public class ProtoBufSerializer implements ClusterTopologyGossipSerializer {
     };
   }
 
-  private MState toSerializedState(
+  private Topology.State toSerializedState(
       final io.camunda.zeebe.topology.state.PartitionState.State state) {
     return switch (state) {
-      case UNKNOWN -> MState.UNKNOWN;
-      case ACTIVE -> MState.ACTIVE;
-      case JOINING -> MState.JOINING;
-      case LEAVING -> MState.LEAVING;
+      case UNKNOWN -> Topology.State.UNKNOWN;
+      case ACTIVE -> Topology.State.ACTIVE;
+      case JOINING -> Topology.State.JOINING;
+      case LEAVING -> Topology.State.LEAVING;
     };
   }
 }
