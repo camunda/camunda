@@ -33,6 +33,16 @@ import java.util.stream.Stream;
 public record ClusterTopology(
     long version, Map<MemberId, MemberState> members, ClusterChangePlan changes) {
 
+  private static final int UNINITIALIZED_VERSION = -1;
+
+  public static ClusterTopology uninitialized() {
+    return new ClusterTopology(UNINITIALIZED_VERSION, Map.of(), ClusterChangePlan.empty());
+  }
+
+  public boolean isUninitialized() {
+    return version == UNINITIALIZED_VERSION;
+  }
+
   public static ClusterTopology init() {
     return new ClusterTopology(0, Map.of(), ClusterChangePlan.empty());
   }

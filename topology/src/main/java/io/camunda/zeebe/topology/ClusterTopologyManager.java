@@ -60,7 +60,7 @@ final class ClusterTopologyManager {
   private void initialize(final Supplier<Set<PartitionMetadata>> staticPartitionResolver)
       throws IOException {
     persistedClusterTopology.initialize();
-    if (persistedClusterTopology.getTopology() == null) {
+    if (persistedClusterTopology.isUninitialized()) {
       final var topology = initializeFromConfig(staticPartitionResolver);
       persistedClusterTopology.update(topology);
       LOG.info(
