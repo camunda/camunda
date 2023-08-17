@@ -143,6 +143,21 @@ public class StartEventSubscriptionManager {
     }
   }
 
+  public void openStartEventSubscriptions(
+      final DeployedProcess deployedProcess, final StateWriter stateWriter) {
+    final var process = deployedProcess.getProcess();
+
+    process
+        .getStartEvents()
+        .forEach(
+            startEvent -> {
+              if (startEvent.isMessage()) {
+                openMessageStartEventSubscription(
+                    deployedProcess, deployedProcess.getKey(), startEvent, stateWriter);
+              }
+            });
+  }
+
   private void openMessageStartEventSubscription(
       final DeployedProcess processDefinition,
       final long processDefinitionKey,

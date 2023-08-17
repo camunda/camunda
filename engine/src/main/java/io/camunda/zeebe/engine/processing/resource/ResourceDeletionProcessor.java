@@ -256,6 +256,8 @@ public class ResourceDeletionProcessor
                     failureOrTimer.get());
               });
     }
+
+    startEventSubscriptionManager.openStartEventSubscriptions(deployedProcess, stateWriter);
   }
 
   private static final class NoSuchResourceException extends IllegalStateException {
