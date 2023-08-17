@@ -74,6 +74,15 @@ public class StartEventSubscriptionManager {
     closeSignalExistingStartEventSubscriptions(processRecord);
   }
 
+  public void closeStartEventSubscriptions(final DeployedProcess deployedProcess) {
+    if (deployedProcess.getProcess().hasMessageStartEvent()) {
+      closeMessageStartEventSubscriptions(deployedProcess);
+    }
+    if (deployedProcess.getProcess().hasSignalStartEvent()) {
+      closeSignalStartEventSubscriptions(deployedProcess);
+    }
+  }
+
   private void closeMessageExistingStartEventSubscriptions(final ProcessMetadata processRecord) {
     final DeployedProcess lastMsgProcess =
         findLastStartProcess(processRecord, ExecutableCatchEventElement::isMessage);
@@ -84,7 +93,7 @@ public class StartEventSubscriptionManager {
     closeMessageStartEventSubscriptions(lastMsgProcess);
   }
 
-  public void closeMessageStartEventSubscriptions(final DeployedProcess deployedProcess) {
+  private void closeMessageStartEventSubscriptions(final DeployedProcess deployedProcess) {
     messageStartEventSubscriptionState.visitSubscriptionsByProcessDefinition(
         deployedProcess.getKey(),
         subscription ->
@@ -104,7 +113,7 @@ public class StartEventSubscriptionManager {
     closeSignalStartEventSubscriptions(lastSignalProcess);
   }
 
-  public void closeSignalStartEventSubscriptions(final DeployedProcess deployedProcess) {
+  private void closeSignalStartEventSubscriptions(final DeployedProcess deployedProcess) {
     signalSubscriptionState.visitStartEventSubscriptionsByProcessDefinitionKey(
         deployedProcess.getKey(),
         subscription ->
