@@ -63,14 +63,23 @@ public class DecisionRestService extends InternalAPIErrorController {
   @PreAuthorize("hasPermission('write')")
   public BatchOperationEntity deleteDecisionDefinition(@ValidLongId @PathVariable("id") String decisionDefinitionId){
     DecisionDefinitionEntity decisionDefinitionEntity = decisionReader.getDecision(Long.valueOf(decisionDefinitionId));
+    checkIdentityDeletePermission(decisionDefinitionEntity.getDecisionId());
     return batchOperationWriter.scheduleDeleteDecisionDefinition(decisionDefinitionEntity);
   }
 
   private void checkIdentityReadPermission(String decisionDefinitionId) {
     if (permissionsService != null) {
-      String bpmnDecisionId = decisionReader.getDecision(Long.valueOf(decisionDefinitionId)).getDecisionId();
-      if (!permissionsService.hasPermissionForDecision(bpmnDecisionId, IdentityPermission.READ)) {
-        throw new NotAuthorizedException(String.format("No read permission for decision %s", decisionDefinitionId));
+      String decisionId = decisionReader.getDecision(Long.valueOf(decisionDefinitionId)).getDecisionId();
+      if (!permissionsService.hasPermissionForDecision(decisionId, IdentityPermission.READ)) {
+        throw new NotAuthorizedException(String.format("No read permission for decision %s", decisionId));
+      }
+    }
+  }
+
+  private void checkIdentityDeletePermission(String decisionId) {
+    if (permissionsService != null) {
+      if (!permissionsService.hasPermissionForDecision(decisionId, IdentityPermission.DELETE)) {
+        throw new NotAuthorizedException(String.format("No delete permission for decision %s", decisionId));
       }
     }
   }

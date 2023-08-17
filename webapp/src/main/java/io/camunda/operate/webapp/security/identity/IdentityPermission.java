@@ -9,6 +9,7 @@ package io.camunda.operate.webapp.security.identity;
 public enum IdentityPermission {
 
   READ,
+  DELETE,
   UPDATE_PROCESS_INSTANCE,
   DELETE_PROCESS_INSTANCE;
 }

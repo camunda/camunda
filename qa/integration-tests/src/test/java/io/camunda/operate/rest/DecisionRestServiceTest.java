@@ -57,10 +57,10 @@ public class DecisionRestServiceTest extends OperateIntegrationTest {
   public void testDecisionDefinitionXmlFailsWhenNoPermissions() throws Exception {
     // given
     Long decisionDefinitionKey = 123L;
-    String bpmnDecisionId = "decisionId";
+    String decisionId = "decisionId";
     // when
-    when(decisionReader.getDecision(decisionDefinitionKey)).thenReturn(new DecisionDefinitionEntity().setDecisionId(bpmnDecisionId));
-    when(permissionsService.hasPermissionForDecision(bpmnDecisionId, IdentityPermission.READ)).thenReturn(false);
+    when(decisionReader.getDecision(decisionDefinitionKey)).thenReturn(new DecisionDefinitionEntity().setDecisionId(decisionId));
+    when(permissionsService.hasPermissionForDecision(decisionId, IdentityPermission.READ)).thenReturn(false);
     MvcResult mvcResult = getRequestShouldFailWithNoAuthorization(getDecisionXmlByIdUrl(decisionDefinitionKey.toString()));
     // then
     assertErrorMessageContains(mvcResult, "No read permission for decision");
@@ -68,26 +68,34 @@ public class DecisionRestServiceTest extends OperateIntegrationTest {
 
   @Test
   public void testDeleteDecisionDefinition() throws Exception {
-    when(decisionReader.getDecision(23L)).thenReturn(new DecisionDefinitionEntity().setDecisionId("23"));
+    // given
+    Long decisionDefinitionKey = 123L;
+    String decisionId = "decisionId";
+    // when
+    when(decisionReader.getDecision(decisionDefinitionKey)).thenReturn(new DecisionDefinitionEntity().setDecisionId(decisionId));
+    when(permissionsService.hasPermissionForDecision(decisionId, IdentityPermission.DELETE)).thenReturn(true);
     when(batchOperationWriter.scheduleDeleteDecisionDefinition(any())).thenReturn(new BatchOperationEntity());
-    MockHttpServletRequestBuilder request = MockMvcRequestBuilders.delete(DecisionRestService.DECISION_URL + "/23")
+    MockHttpServletRequestBuilder request = MockMvcRequestBuilders.delete(getDecisionByIdUrl(decisionDefinitionKey.toString()))
         .accept(mockMvcTestRule.getContentType());
     MvcResult mvcResult = mockMvc.perform(request).andExpect(status().isOk()).andReturn();
     BatchOperationEntity batchOperationEntity = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {
     });
+    // then
     assertThat(batchOperationEntity).isNotNull();
   }
 
   @Test
   public void testDeleteDecisionDefinitionFailsForMissingKey() throws Exception {
-    MockHttpServletRequestBuilder request = MockMvcRequestBuilders.delete(DecisionRestService.DECISION_URL).accept(mockMvcTestRule.getContentType());
+    MockHttpServletRequestBuilder request = MockMvcRequestBuilders.delete(DecisionRestService.DECISION_URL)
+        .accept(mockMvcTestRule.getContentType());
     MvcResult mvcResult = mockMvc.perform(request).andExpect(status().isNotFound()).andReturn();
   }
 
   @Test
   public void testDeleteDecisionDefinitionFailsForNotExistingDefinition() throws Exception {
-    when(decisionReader.getDecision(235L)).thenThrow(new NotFoundException("Not found"));
-    MockHttpServletRequestBuilder request = MockMvcRequestBuilders.delete(DecisionRestService.DECISION_URL + "/235")
+    Long decisionDefinitionKey = 123L;
+    when(decisionReader.getDecision(decisionDefinitionKey)).thenThrow(new NotFoundException("Not found"));
+    MockHttpServletRequestBuilder request = MockMvcRequestBuilders.delete(getDecisionByIdUrl(decisionDefinitionKey.toString()))
         .accept(mockMvcTestRule.getContentType());
     MvcResult mvcResult = mockMvc.perform(request)
         .andExpect(status().isNotFound())
@@ -95,7 +103,25 @@ public class DecisionRestServiceTest extends OperateIntegrationTest {
         .andReturn();
   }
 
-  public String getDecisionXmlByIdUrl(String id) {
+  @Test
+  public void testDeleteDecisionDefinitionFailsWhenNoPermissions() throws Exception {
+    // given
+    Long decisionDefinitionKey = 123L;
+    String decisionId = "decisionId";
+    // when
+    when(decisionReader.getDecision(decisionDefinitionKey)).thenReturn(new DecisionDefinitionEntity().setDecisionId(decisionId));
+    when(permissionsService.hasPermissionForDecision(decisionId, IdentityPermission.DELETE)).thenReturn(false);
+    when(batchOperationWriter.scheduleDeleteDecisionDefinition(any())).thenReturn(new BatchOperationEntity());
+    MvcResult mvcResult = deleteRequestShouldFailWithNoAuthorization(getDecisionByIdUrl(decisionDefinitionKey.toString()));
+    // then
+    assertErrorMessageContains(mvcResult, "No delete permission for decision");
+  }
+
+  private String getDecisionXmlByIdUrl(String id) {
     return DecisionRestService.DECISION_URL + "/" + id + "/xml";
+  }
+
+  private String getDecisionByIdUrl(String id) {
+    return DecisionRestService.DECISION_URL + "/" + id;
   }
 }

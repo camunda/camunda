@@ -8,8 +8,7 @@ package io.camunda.operate.util;
 
 import static io.camunda.operate.util.OperateIntegrationTest.DEFAULT_USER;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -148,6 +147,15 @@ public abstract class OperateIntegrationTest {
 
   protected MvcResult postRequestShouldFailWithNoAuthorization(String requestUrl, Object query) throws Exception {
     MockHttpServletRequestBuilder request = post(requestUrl).content(mockMvcTestRule.json(query)).contentType(mockMvcTestRule.getContentType());
+
+    return mockMvc.perform(request)
+        .andExpect(status().isForbidden())
+        .andExpect(result -> assertThat(result.getResolvedException()).isInstanceOf(NotAuthorizedException.class))
+        .andReturn();
+  }
+
+  protected MvcResult deleteRequestShouldFailWithNoAuthorization(String requestUrl) throws Exception {
+    MockHttpServletRequestBuilder request = delete(requestUrl).accept(mockMvcTestRule.getContentType());
 
     return mockMvc.perform(request)
         .andExpect(status().isForbidden())
