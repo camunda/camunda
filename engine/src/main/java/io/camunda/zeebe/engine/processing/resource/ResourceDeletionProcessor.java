@@ -80,7 +80,7 @@ public class ResourceDeletionProcessor
     catchEventBehavior = bpmnBehaviors.catchEventBehavior();
     expressionProcessor = bpmnBehaviors.expressionBehavior();
     startEventSubscriptionManager =
-        new StartEventSubscriptionManager(processingState, keyGenerator);
+        new StartEventSubscriptionManager(processingState, keyGenerator, stateWriter);
   }
 
   @Override
@@ -227,8 +227,7 @@ public class ResourceDeletionProcessor
           });
     }
     if (process.hasMessageStartEvent()) {
-      startEventSubscriptionManager.closeMessageStartEventSubscriptions(
-          deployedProcess, stateWriter);
+      startEventSubscriptionManager.closeMessageStartEventSubscriptions(deployedProcess);
     }
   }
 
@@ -257,7 +256,7 @@ public class ResourceDeletionProcessor
               });
     }
 
-    startEventSubscriptionManager.openStartEventSubscriptions(deployedProcess, stateWriter);
+    startEventSubscriptionManager.openStartEventSubscriptions(deployedProcess);
   }
 
   private static final class NoSuchResourceException extends IllegalStateException {

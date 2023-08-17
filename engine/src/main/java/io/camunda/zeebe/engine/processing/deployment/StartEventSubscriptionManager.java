@@ -39,22 +39,25 @@ public class StartEventSubscriptionManager {
   private final MessageStartEventSubscriptionState messageStartEventSubscriptionState;
   private final SignalSubscriptionState signalSubscriptionState;
   private final KeyGenerator keyGenerator;
+  private final StateWriter stateWriter;
 
   public StartEventSubscriptionManager(
-      final ProcessingState processingState, final KeyGenerator keyGenerator) {
+      final ProcessingState processingState,
+      final KeyGenerator keyGenerator,
+      final StateWriter stateWriter) {
     processState = processingState.getProcessState();
     messageStartEventSubscriptionState = processingState.getMessageStartEventSubscriptionState();
     signalSubscriptionState = processingState.getSignalSubscriptionState();
     this.keyGenerator = keyGenerator;
+    this.stateWriter = stateWriter;
   }
 
-  public void tryReOpenStartEventSubscription(
-      final DeploymentRecord deploymentRecord, final StateWriter stateWriter) {
+  public void tryReOpenStartEventSubscription(final DeploymentRecord deploymentRecord) {
 
     for (final ProcessMetadata processRecord : deploymentRecord.processesMetadata()) {
       if (!processRecord.isDuplicate() && isLatestProcess(processRecord)) {
-        closeExistingStartEventSubscriptions(processRecord, stateWriter);
-        openStartEventSubscriptions(processRecord, stateWriter);
+        closeExistingStartEventSubscriptions(processRecord);
+        openStartEventSubscriptions(processRecord);
       }
     }
   }
@@ -66,25 +69,22 @@ public class StartEventSubscriptionManager {
         == processRecord.getVersion();
   }
 
-  private void closeExistingStartEventSubscriptions(
-      final ProcessMetadata processRecord, final StateWriter stateWriter) {
-    closeMessageExistingStartEventSubscriptions(processRecord, stateWriter);
-    closeSignalExistingStartEventSubscriptions(processRecord, stateWriter);
+  private void closeExistingStartEventSubscriptions(final ProcessMetadata processRecord) {
+    closeMessageExistingStartEventSubscriptions(processRecord);
+    closeSignalExistingStartEventSubscriptions(processRecord);
   }
 
-  private void closeMessageExistingStartEventSubscriptions(
-      final ProcessMetadata processRecord, final StateWriter stateWriter) {
+  private void closeMessageExistingStartEventSubscriptions(final ProcessMetadata processRecord) {
     final DeployedProcess lastMsgProcess =
         findLastStartProcess(processRecord, ExecutableCatchEventElement::isMessage);
     if (lastMsgProcess == null) {
       return;
     }
 
-    closeMessageStartEventSubscriptions(lastMsgProcess, stateWriter);
+    closeMessageStartEventSubscriptions(lastMsgProcess);
   }
 
-  public void closeMessageStartEventSubscriptions(
-      final DeployedProcess deployedProcess, final StateWriter stateWriter) {
+  public void closeMessageStartEventSubscriptions(final DeployedProcess deployedProcess) {
     messageStartEventSubscriptionState.visitSubscriptionsByProcessDefinition(
         deployedProcess.getKey(),
         subscription ->
@@ -94,8 +94,7 @@ public class StartEventSubscriptionManager {
                 subscription.getRecord()));
   }
 
-  private void closeSignalExistingStartEventSubscriptions(
-      final ProcessMetadata processRecord, final StateWriter stateWriter) {
+  private void closeSignalExistingStartEventSubscriptions(final ProcessMetadata processRecord) {
     final DeployedProcess lastSignalProcess =
         findLastStartProcess(processRecord, ExecutableCatchEventElement::isSignal);
     if (lastSignalProcess == null) {
@@ -126,25 +125,21 @@ public class StartEventSubscriptionManager {
     return null;
   }
 
-  private void openStartEventSubscriptions(
-      final ProcessMetadata processRecord, final StateWriter stateWriter) {
+  private void openStartEventSubscriptions(final ProcessMetadata processRecord) {
     final long processDefinitionKey = processRecord.getKey();
     final DeployedProcess processDefinition = processState.getProcessByKey(processDefinitionKey);
     final ExecutableProcess process = processDefinition.getProcess();
     final List<ExecutableStartEvent> startEvents = process.getStartEvents();
     for (final ExecutableStartEvent startEvent : startEvents) {
       if (startEvent.isMessage()) {
-        openMessageStartEventSubscription(
-            processDefinition, processDefinitionKey, startEvent, stateWriter);
+        openMessageStartEventSubscription(processDefinition, processDefinitionKey, startEvent);
       } else if (startEvent.isSignal()) {
-        openSignalStartEventSubscription(
-            processDefinition, processDefinitionKey, startEvent, stateWriter);
+        openSignalStartEventSubscription(processDefinition, processDefinitionKey, startEvent);
       }
     }
   }
 
-  public void openStartEventSubscriptions(
-      final DeployedProcess deployedProcess, final StateWriter stateWriter) {
+  public void openStartEventSubscriptions(final DeployedProcess deployedProcess) {
     final var process = deployedProcess.getProcess();
 
     process
@@ -153,7 +148,7 @@ public class StartEventSubscriptionManager {
             startEvent -> {
               if (startEvent.isMessage()) {
                 openMessageStartEventSubscription(
-                    deployedProcess, deployedProcess.getKey(), startEvent, stateWriter);
+                    deployedProcess, deployedProcess.getKey(), startEvent);
               }
             });
   }
@@ -161,8 +156,7 @@ public class StartEventSubscriptionManager {
   private void openMessageStartEventSubscription(
       final DeployedProcess processDefinition,
       final long processDefinitionKey,
-      final ExecutableStartEvent startEvent,
-      final StateWriter stateWriter) {
+      final ExecutableStartEvent startEvent) {
     final ExecutableMessage message = startEvent.getMessage();
 
     message
@@ -188,8 +182,7 @@ public class StartEventSubscriptionManager {
   private void openSignalStartEventSubscription(
       final DeployedProcess processDefinition,
       final long processDefinitionKey,
-      final ExecutableStartEvent startEvent,
-      final StateWriter stateWriter) {
+      final ExecutableStartEvent startEvent) {
     final ExecutableSignal signal = startEvent.getSignal();
 
     signal
