@@ -69,7 +69,8 @@ final class OpensearchExporterIT {
     config.index.createTemplate = true;
     config.bulk.size = 1; // force flushing on the first record
     // here; enable all indexes that needed during the tests beforehand as they will be created once
-    config.index.jobBatch = true;
+    TestSupport.provideValueTypes()
+        .forEach(valueType -> TestSupport.setIndexingForValueType(config.index, valueType, true));
 
     testClient = new TestClient(config, indexRouter);
 
