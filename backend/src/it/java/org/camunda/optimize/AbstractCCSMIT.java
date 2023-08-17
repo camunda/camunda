@@ -16,6 +16,7 @@ import org.awaitility.Awaitility;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.dto.zeebe.definition.ZeebeProcessDefinitionRecordDto;
+import org.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceDataDto;
 import org.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceRecordDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
@@ -154,9 +155,11 @@ public abstract class AbstractCCSMIT extends AbstractIT {
     return zeebeVersionPreSequenceField.matcher(IntegrationTestConfigurationUtil.getZeebeDockerVersion()).matches();
   }
 
-  protected static boolean isZeebeVersionPre83() {
-    final Pattern zeebeVersionPreSequenceField = Pattern.compile("8.0.*|8.1.*|8.2.*");
-    return zeebeVersionPreSequenceField.matcher(IntegrationTestConfigurationUtil.getZeebeDockerVersion()).matches();
+  private BoolQueryBuilder getInstanceRecordIdQuery(final String expectedRecordId) {
+    return boolQuery().must(termQuery(
+      ZeebeProcessInstanceRecordDto.Fields.value + "." + ZeebeProcessInstanceDataDto.Fields.elementId,
+      expectedRecordId
+    ));
   }
 
   @SneakyThrows
