@@ -19,22 +19,17 @@ import io.camunda.zeebe.util.ByteValue;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Properties;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.rocksdb.ColumnFamilyOptions;
 import org.rocksdb.CompactionPriority;
 
-public final class ZeebeRocksDbFactoryTest {
-
-  @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
+final class ZeebeRocksDbFactoryTest {
 
   @Test
-  public void shouldCreateNewDb() throws Exception {
+  void shouldCreateNewDb(final @TempDir File pathName) throws Exception {
     // given
     final ZeebeDbFactory<DefaultColumnFamily> dbFactory = DefaultZeebeDbFactory.getDefaultFactory();
-
-    final File pathName = temporaryFolder.newFolder();
 
     // when
     final ZeebeDb<DefaultColumnFamily> db = dbFactory.createDb(pathName);
@@ -45,11 +40,10 @@ public final class ZeebeRocksDbFactoryTest {
   }
 
   @Test
-  public void shouldCreateTwoNewDbs() throws Exception {
+  void shouldCreateTwoNewDbs(final @TempDir File firstPath, final @TempDir File secondPath)
+      throws Exception {
     // given
     final ZeebeDbFactory<DefaultColumnFamily> dbFactory = DefaultZeebeDbFactory.getDefaultFactory();
-    final File firstPath = temporaryFolder.newFolder();
-    final File secondPath = temporaryFolder.newFolder();
 
     // when
     final ZeebeDb<DefaultColumnFamily> firstDb = dbFactory.createDb(firstPath);
@@ -66,12 +60,13 @@ public final class ZeebeRocksDbFactoryTest {
   }
 
   @Test
-  public void shouldOverwriteDefaultColumnFamilyOptions() {
+  void shouldOverwriteDefaultColumnFamilyOptions() {
     // given
     final var customProperties = new Properties();
     customProperties.put("write_buffer_size", String.valueOf(ByteValue.ofMegabytes(16)));
     customProperties.put("compaction_pri", "kByCompensatedSize");
 
+    //noinspection unchecked
     final var factoryWithDefaults =
         (ZeebeRocksDbFactory<DefaultColumnFamily>) DefaultZeebeDbFactory.getDefaultFactory();
     final var factoryWithCustomOptions =
@@ -101,11 +96,10 @@ public final class ZeebeRocksDbFactoryTest {
   }
 
   @Test
-  public void shouldFailIfPropertiesDoesntExist() throws Exception {
+  void shouldFailIfPropertiesDoesNotExist(final @TempDir File pathName) {
     // given
     final var customProperties = new Properties();
     customProperties.put("notExistingProperty", String.valueOf(ByteValue.ofMegabytes(16)));
-    final File pathName = temporaryFolder.newFolder();
 
     final var factoryWithCustomOptions =
         new ZeebeRocksDbFactory<>(
@@ -113,6 +107,7 @@ public final class ZeebeRocksDbFactoryTest {
             new ConsistencyChecksSettings());
 
     // expect
+    //noinspection resource
     assertThatThrownBy(() -> factoryWithCustomOptions.createDb(pathName))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining(
