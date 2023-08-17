@@ -153,6 +153,9 @@ public class StartEventSubscriptionManager {
               if (startEvent.isMessage()) {
                 openMessageStartEventSubscription(
                     deployedProcess, deployedProcess.getKey(), startEvent);
+              } else if (startEvent.isSignal()) {
+                openSignalStartEventSubscription(
+                    deployedProcess, deployedProcess.getKey(), startEvent);
               }
             });
   }
