@@ -58,6 +58,7 @@
     <module>backup-stores/s3</module>
     <module>backup-stores/gcs</module>
     <module>restore</module>
+    <module>topology</module>
   </modules>
 
   <scm>

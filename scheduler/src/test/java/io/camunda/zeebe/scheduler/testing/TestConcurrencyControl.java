@@ -36,6 +36,8 @@ import java.util.function.BiConsumer;
  */
 public class TestConcurrencyControl implements ConcurrencyControl {
 
+  private final Object lock = new Object();
+
   @Override
   public <T> void runOnCompletion(
       final ActorFuture<T> future, final BiConsumer<T, Throwable> callback) {
@@ -44,7 +46,9 @@ public class TestConcurrencyControl implements ConcurrencyControl {
 
   @Override
   public void run(final Runnable action) {
-    action.run();
+    synchronized (lock) {
+      action.run();
+    }
   }
 
   @Override

@@ -5,8 +5,9 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.broker.clustering.topology;
+package io.camunda.zeebe.topology;
 
+import io.camunda.zeebe.topology.state.ClusterTopology;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;

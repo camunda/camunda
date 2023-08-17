@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.broker.clustering.topology;
+package io.camunda.zeebe.topology.state;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -33,19 +33,19 @@ import java.util.stream.Stream;
 public record ClusterTopology(
     long version, Map<MemberId, MemberState> members, ClusterChangePlan changes) {
 
-  static ClusterTopology init() {
+  public static ClusterTopology init() {
     return new ClusterTopology(0, Map.of(), ClusterChangePlan.empty());
   }
 
-  static ClusterTopology decode(final byte[] serializedTopology) throws IOException {
+  public static ClusterTopology decode(final byte[] serializedTopology) throws IOException {
     return new ObjectMapper().readValue(serializedTopology, ClusterTopology.class);
   }
 
-  byte[] encode() throws JsonProcessingException {
+  public byte[] encode() throws JsonProcessingException {
     return new ObjectMapper().writeValueAsBytes(this);
   }
 
-  ClusterTopology addMember(final MemberId memberId, final MemberState state) {
+  public ClusterTopology addMember(final MemberId memberId, final MemberState state) {
     if (members.containsKey(memberId)) {
       throw new IllegalStateException(
           String.format(
@@ -81,7 +81,7 @@ public record ClusterTopology(
    * @param other ClusterTopology to merge
    * @return merged ClusterTopology
    */
-  ClusterTopology merge(final ClusterTopology other) {
+  public ClusterTopology merge(final ClusterTopology other) {
     if (version > other.version) {
       return this;
     } else if (other.version > version) {

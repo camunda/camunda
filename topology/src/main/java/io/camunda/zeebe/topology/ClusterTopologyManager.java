@@ -5,15 +5,20 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.broker.clustering.topology;
+package io.camunda.zeebe.topology;
 
-import io.camunda.zeebe.broker.partitioning.topology.StaticPartitionDistributionResolver;
-import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.topology.state.ClusterChangePlan;
+import io.camunda.zeebe.topology.state.ClusterTopology;
+import io.camunda.zeebe.topology.state.MemberState;
+import io.camunda.zeebe.topology.state.PartitionState;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,13 +40,13 @@ final class ClusterTopologyManager {
     return executor.call(persistedClusterTopology::getTopology);
   }
 
-  ActorFuture<Void> start(final BrokerCfg brokerCfg) {
+  ActorFuture<Void> start(final Supplier<Set<PartitionMetadata>> staticParitionResolver) {
     final ActorFuture<Void> startFuture = executor.createFuture();
 
     executor.run(
         () -> {
           try {
-            initialize(brokerCfg);
+            initialize(staticParitionResolver);
             startFuture.complete(null);
           } catch (final Exception e) {
             LOG.error("Failed to initialize ClusterTopology", e);
@@ -52,23 +57,23 @@ final class ClusterTopologyManager {
     return startFuture;
   }
 
-  private void initialize(final BrokerCfg brokerCfg) throws IOException {
+  private void initialize(final Supplier<Set<PartitionMetadata>> staticPartitionResolver)
+      throws IOException {
     persistedClusterTopology.initialize();
     if (persistedClusterTopology.getTopology() == null) {
-      final var topology = initializeFromConfig(brokerCfg);
+      final var topology = initializeFromConfig(staticPartitionResolver);
       persistedClusterTopology.update(topology);
       LOG.info(
           "Initialized ClusterTopology from BrokerCfg {}", persistedClusterTopology.getTopology());
     }
   }
 
-  private ClusterTopology initializeFromConfig(final BrokerCfg brokerCfg) throws IOException {
-    final var partitionDistribution =
-        new StaticPartitionDistributionResolver()
-            .resolveTopology(brokerCfg.getExperimental().getPartitioning(), brokerCfg.getCluster());
+  private ClusterTopology initializeFromConfig(
+      final Supplier<Set<PartitionMetadata>> staticPartitionResolver) throws IOException {
+    final var partitionDistribution = staticPartitionResolver.get();
 
     final var partitionsOwnedByMembers =
-        partitionDistribution.partitions().stream()
+        partitionDistribution.stream()
             .flatMap(
                 p ->
                     p.members().stream()

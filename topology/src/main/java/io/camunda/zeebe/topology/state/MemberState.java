@@ -5,15 +5,16 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.broker.clustering.topology;
+package io.camunda.zeebe.topology.state;
 
 import com.google.common.collect.ImmutableMap;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.UnaryOperator;
 
-record MemberState(long version, State state, Map<Integer, PartitionState> partitions) {
-  static MemberState initializeAsActive(final Map<Integer, PartitionState> initialPartitions) {
+public record MemberState(long version, State state, Map<Integer, PartitionState> partitions) {
+  public static MemberState initializeAsActive(
+      final Map<Integer, PartitionState> initialPartitions) {
     return new MemberState(0, State.ACTIVE, Map.copyOf(initialPartitions));
   }
 
@@ -37,7 +38,7 @@ record MemberState(long version, State state, Map<Integer, PartitionState> parti
     return update(State.ACTIVE, partitions);
   }
 
-  MemberState toLeaving() {
+  public MemberState toLeaving() {
     if (state == State.LEFT) {
       throw new IllegalStateException(
           String.format("Cannot transition to LEAVING when current state is %s", state));
@@ -45,7 +46,7 @@ record MemberState(long version, State state, Map<Integer, PartitionState> parti
     return update(State.LEAVING, partitions);
   }
 
-  MemberState toLeft() {
+  public MemberState toLeft() {
     return update(State.LEFT, partitions);
   }
 
@@ -121,7 +122,7 @@ record MemberState(long version, State state, Map<Integer, PartitionState> parti
     return new MemberState(version + 1, state, partitions);
   }
 
-  enum State {
+  public enum State {
     UNINITIALIZED,
     JOINING,
     ACTIVE,

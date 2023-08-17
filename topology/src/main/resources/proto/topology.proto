@@ -1,0 +1,32 @@
+syntax = 'proto3';
+package topology_protocol;
+
+option java_package = "io.camunda.zeebe.topology.protocol";
+
+message GossipState {
+  ClusterTopology clusterTopology = 1;
+}
+
+message ClusterTopology {
+  int64 version = 1;
+  map<string, MemberState> members = 2;
+}
+
+message MemberState {
+  int64 version = 1;
+  State state = 2;
+  map<int32, PartitionState> partitions = 3;
+}
+
+message PartitionState {
+  State state = 1;
+  int32 priority = 2;
+}
+
+enum State {
+  UNKNOWN = 0;
+  JOINING = 1;
+  ACTIVE = 2;
+  LEAVING = 3;
+  LEFT = 4;
+}

@@ -5,14 +5,14 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.broker.clustering.topology;
+package io.camunda.zeebe.topology.state;
 
-record PartitionState(State state, int priority) {
-  static PartitionState active(final int priority) {
+public record PartitionState(State state, int priority) {
+  public static PartitionState active(final int priority) {
     return new PartitionState(State.ACTIVE, priority);
   }
 
-  static PartitionState joining(final int priority) {
+  public static PartitionState joining(final int priority) {
     return new PartitionState(State.JOINING, priority);
   }
 
@@ -24,11 +24,12 @@ record PartitionState(State state, int priority) {
     return new PartitionState(State.ACTIVE, priority);
   }
 
-  PartitionState toLeaving() {
+  public PartitionState toLeaving() {
     return new PartitionState(State.LEAVING, priority);
   }
 
-  enum State {
+  public enum State {
+    UNKNOWN,
     JOINING,
     ACTIVE,
     LEAVING
