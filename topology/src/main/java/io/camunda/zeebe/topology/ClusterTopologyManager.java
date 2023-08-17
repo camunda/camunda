@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -29,6 +30,8 @@ final class ClusterTopologyManager {
 
   private final ConcurrencyControl executor;
   private final PersistedClusterTopology persistedClusterTopology;
+
+  private Consumer<ClusterTopology> topologyGossiper;
 
   ClusterTopologyManager(
       final ConcurrencyControl executor, final PersistedClusterTopology persistedClusterTopology) {
@@ -47,6 +50,7 @@ final class ClusterTopologyManager {
         () -> {
           try {
             initialize(staticParitionResolver);
+            topologyGossiper.accept(persistedClusterTopology.getTopology());
             startFuture.complete(null);
           } catch (final Exception e) {
             LOG.error("Failed to initialize ClusterTopology", e);
@@ -55,6 +59,29 @@ final class ClusterTopologyManager {
         });
 
     return startFuture;
+  }
+
+  ActorFuture<ClusterTopology> onGossipReceived(final ClusterTopology receivedTopology) {
+    final ActorFuture<ClusterTopology> result = executor.createFuture();
+    executor.run(
+        () -> {
+          try {
+            if (receivedTopology != null) {
+              final var mergedTopology =
+                  persistedClusterTopology.getTopology().merge(receivedTopology);
+              updateLocalTopology(mergedTopology);
+            }
+            result.complete(persistedClusterTopology.getTopology());
+          } catch (final IOException error) {
+            result.completeExceptionally(error);
+          }
+        });
+
+    return result;
+  }
+
+  public void setTopologyGossiper(final Consumer<ClusterTopology> topologyGossiper) {
+    this.topologyGossiper = topologyGossiper;
   }
 
   private void initialize(final Supplier<Set<PartitionMetadata>> staticPartitionResolver)

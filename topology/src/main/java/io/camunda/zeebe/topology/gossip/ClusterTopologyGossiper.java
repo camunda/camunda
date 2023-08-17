@@ -57,8 +57,14 @@ public final class ClusterTopologyGossiper {
     this.clusterTopologyUpdateHandler = clusterTopologyUpdateHandler;
   }
 
-  public void start() {
-    executor.run(this::internalStart);
+  public ActorFuture<Void> start() {
+    final ActorFuture<Void> startedFuture = executor.createFuture();
+    executor.run(
+        () -> {
+          internalStart();
+          startedFuture.complete(null);
+        });
+    return startedFuture;
   }
 
   private void internalStart() {
@@ -129,15 +135,15 @@ public final class ClusterTopologyGossiper {
     scheduleSync();
   }
 
-  // returns true if local state is changed
-  private void update(final ClusterTopologyGossipState response, final Runnable onUpdated) {
-    if (!response.equals(gossipState)) {
-      final ClusterTopology topology = response.getClusterTopology();
+  private void update(
+      final ClusterTopologyGossipState receivedGossipState, final Runnable onUpdated) {
+    if (!receivedGossipState.equals(gossipState)) {
+      final ClusterTopology topology = receivedGossipState.getClusterTopology();
       if (topology != null) {
         final var topologyUpdateFuture = clusterTopologyUpdateHandler.apply(topology);
         topologyUpdateFuture.onComplete(
             (updatedTopology, error) -> {
-              if (error != null) {
+              if (error != null && !updatedTopology.equals(gossipState.getClusterTopology())) {
                 gossipState.setClusterTopology(updatedTopology);
                 LOGGER.trace("Updated local gossipState to {}", updatedTopology);
                 onUpdated.run();

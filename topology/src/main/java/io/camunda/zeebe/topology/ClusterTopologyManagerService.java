@@ -7,11 +7,16 @@
  */
 package io.camunda.zeebe.topology;
 
+import io.atomix.cluster.ClusterMembershipService;
+import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.topology.gossip.ClusterTopologyGossiper;
+import io.camunda.zeebe.topology.gossip.ClusterTopologyGossiperConfig;
+import io.camunda.zeebe.topology.gossip.ProtoBufSerializer;
 import java.nio.file.Path;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -19,10 +24,24 @@ import java.util.function.Supplier;
 public final class ClusterTopologyManagerService extends Actor {
 
   private final ClusterTopologyManager clusterTopologyManager;
+  private final ClusterTopologyGossiper clusterTopologyGossiper;
 
-  public ClusterTopologyManagerService(final Path topologyFile) {
+  public ClusterTopologyManagerService(
+      final Path topologyFile,
+      final ClusterCommunicationService communicationService,
+      final ClusterMembershipService memberShipService,
+      final ClusterTopologyGossiperConfig config) {
     clusterTopologyManager =
         new ClusterTopologyManager(this, new PersistedClusterTopology(topologyFile));
+    clusterTopologyGossiper =
+        new ClusterTopologyGossiper(
+            this,
+            communicationService,
+            memberShipService,
+            new ProtoBufSerializer(),
+            config,
+            clusterTopologyManager::onGossipReceived);
+    clusterTopologyManager.setTopologyGossiper(clusterTopologyGossiper::updateClusterTopology);
   }
 
   /**
@@ -42,7 +61,7 @@ public final class ClusterTopologyManagerService extends Actor {
             (ignore, error) -> {
               if (error == null) {
                 actor.run(
-                    () -> startClusterTopologyManager(partitionDistributionResolver, startFuture));
+                    () -> startClusterTopologyServices(partitionDistributionResolver, startFuture));
               } else {
                 startFuture.completeExceptionally(error);
               }
@@ -51,9 +70,20 @@ public final class ClusterTopologyManagerService extends Actor {
     return startFuture;
   }
 
-  private void startClusterTopologyManager(
+  private void startClusterTopologyServices(
       final Supplier<Set<PartitionMetadata>> partitionDistributionResolver,
       final CompletableActorFuture<Void> startFuture) {
-    clusterTopologyManager.start(partitionDistributionResolver).onComplete(startFuture);
+    // Start gossiper first so that when ClusterToplogyManager initializes the topology, it can
+    // immediately gossip it.
+    clusterTopologyGossiper
+        .start()
+        .onComplete(
+            (ignore, error) -> {
+              if (error != null) {
+                startFuture.completeExceptionally(error);
+              } else {
+                clusterTopologyManager.start(partitionDistributionResolver).onComplete(startFuture);
+              }
+            });
   }
 }
