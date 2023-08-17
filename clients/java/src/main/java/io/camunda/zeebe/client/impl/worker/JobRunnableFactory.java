@@ -16,50 +16,9 @@
 package io.camunda.zeebe.client.impl.worker;
 
 import io.camunda.zeebe.client.api.response.ActivatedJob;
-import io.camunda.zeebe.client.api.worker.JobClient;
-import io.camunda.zeebe.client.api.worker.JobHandler;
-import io.camunda.zeebe.client.impl.Loggers;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import org.slf4j.Logger;
 
-public final class JobRunnableFactory {
+@FunctionalInterface
+public interface JobRunnableFactory {
 
-  private static final Logger LOG = Loggers.JOB_WORKER_LOGGER;
-
-  private final JobClient jobClient;
-  private final JobHandler handler;
-
-  public JobRunnableFactory(final JobClient jobClient, final JobHandler handler) {
-    this.jobClient = jobClient;
-    this.handler = handler;
-  }
-
-  public Runnable create(final ActivatedJob job, final Runnable doneCallback) {
-    return () -> executeJob(job, doneCallback);
-  }
-
-  private void executeJob(final ActivatedJob job, final Runnable doneCallback) {
-    try {
-      handler.handle(jobClient, job);
-    } catch (final Exception e) {
-      LOG.warn(
-          "Worker {} failed to handle job with key {} of type {}, sending fail command to broker",
-          job.getWorker(),
-          job.getKey(),
-          job.getType(),
-          e);
-      final StringWriter stringWriter = new StringWriter();
-      final PrintWriter printWriter = new PrintWriter(stringWriter);
-      e.printStackTrace(printWriter);
-      final String message = stringWriter.toString();
-      jobClient
-          .newFailCommand(job.getKey())
-          .retries(job.getRetries() - 1)
-          .errorMessage(message)
-          .send();
-    } finally {
-      doneCallback.run();
-    }
-  }
+  Runnable create(ActivatedJob job, Runnable doneCallback);
 }

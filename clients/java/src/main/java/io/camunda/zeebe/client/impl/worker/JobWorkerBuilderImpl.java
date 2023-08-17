@@ -28,6 +28,7 @@ import io.camunda.zeebe.client.api.worker.JobWorker;
 import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1;
 import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep2;
 import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep3;
+import io.camunda.zeebe.client.api.worker.JobWorkerMetrics;
 import java.io.Closeable;
 import java.time.Duration;
 import java.util.Arrays;
@@ -53,6 +54,7 @@ public final class JobWorkerBuilderImpl
   private BackoffSupplier backoffSupplier;
   private boolean enableStreaming;
   private Duration streamingTimeout;
+  private JobWorkerMetrics metrics = JobWorkerMetrics.noop();
 
   public JobWorkerBuilderImpl(
       final ZeebeClientConfiguration configuration,
@@ -148,6 +150,12 @@ public final class JobWorkerBuilderImpl
   }
 
   @Override
+  public JobWorkerBuilderStep3 metrics(final JobWorkerMetrics metrics) {
+    this.metrics = metrics == null ? JobWorkerMetrics.noop() : metrics;
+    return this;
+  }
+
+  @Override
   public JobWorker open() {
     ensureNotNullNorEmpty("jobType", jobType);
     ensureNotNull("jobHandler", handler);
@@ -156,9 +164,9 @@ public final class JobWorkerBuilderImpl
     ensureGreaterThan("maxJobsActive", maxJobsActive, 0);
 
     final JobStreamer jobStreamer;
-    final JobRunnableFactory jobRunnableFactory = new JobRunnableFactory(jobClient, handler);
+    final JobRunnableFactory jobRunnableFactory = new JobRunnableFactoryImpl(jobClient, handler);
     final JobPoller jobPoller =
-        new JobPoller(
+        new JobPollerImpl(
             jobClient, requestTimeout, jobType, workerName, timeout, fetchVariables, maxJobsActive);
 
     if (enableStreaming) {
@@ -176,7 +184,6 @@ public final class JobWorkerBuilderImpl
               streamingTimeout,
               backoffSupplier,
               executorService);
-
     } else {
       jobStreamer = JobStreamer.noop();
     }
@@ -189,7 +196,8 @@ public final class JobWorkerBuilderImpl
             jobRunnableFactory,
             jobPoller,
             jobStreamer,
-            backoffSupplier);
+            backoffSupplier,
+            metrics);
     closeables.add(jobWorker);
     return jobWorker;
   }

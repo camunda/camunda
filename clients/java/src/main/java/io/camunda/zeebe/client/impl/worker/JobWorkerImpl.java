@@ -18,6 +18,7 @@ package io.camunda.zeebe.client.impl.worker;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.api.worker.BackoffSupplier;
 import io.camunda.zeebe.client.api.worker.JobWorker;
+import io.camunda.zeebe.client.api.worker.JobWorkerMetrics;
 import io.camunda.zeebe.client.impl.Loggers;
 import java.io.Closeable;
 import java.time.Duration;
@@ -66,6 +67,7 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
   private final long initialPollInterval;
   private final JobStreamer jobStreamer;
   private final BackoffSupplier backoffSupplier;
+  private final JobWorkerMetrics metrics;
 
   // state synchronization
   private final AtomicBoolean acquiringJobs = new AtomicBoolean(true);
@@ -81,7 +83,8 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
       final JobRunnableFactory jobHandlerFactory,
       final JobPoller jobPoller,
       final JobStreamer jobStreamer,
-      final BackoffSupplier backoffSupplier) {
+      final BackoffSupplier backoffSupplier,
+      final JobWorkerMetrics metrics) {
     this.maxJobsActive = maxJobsActive;
     activationThreshold = Math.round(maxJobsActive * 0.3f);
     remainingJobs = new AtomicInteger(0);
@@ -91,6 +94,7 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
     this.jobStreamer = jobStreamer;
     initialPollInterval = pollInterval.toMillis();
     this.backoffSupplier = backoffSupplier;
+    this.metrics = metrics;
 
     claimableJobPoller = new AtomicReference<>(jobPoller);
     this.pollInterval = initialPollInterval;
@@ -100,7 +104,7 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
   }
 
   private void openStream() {
-    jobStreamer.openStreamer(this::handleJob);
+    jobStreamer.openStreamer(this::handleStreamedJob);
   }
 
   @Override
@@ -219,7 +223,13 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
   }
 
   private void handleJob(final ActivatedJob job) {
+    metrics.jobActivated(1);
     executor.execute(jobHandlerFactory.create(job, this::handleJobFinished));
+  }
+
+  private void handleStreamedJob(final ActivatedJob job) {
+    metrics.jobActivated(1);
+    executor.execute(jobHandlerFactory.create(job, this::handleStreamJobFinished));
   }
 
   private void handleJobFinished() {
@@ -227,5 +237,10 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
     if (!isPollScheduled.get() && shouldPoll(actualRemainingJobs)) {
       tryPoll();
     }
+    metrics.jobHandled(1);
+  }
+
+  private void handleStreamJobFinished() {
+    metrics.jobHandled(1);
   }
 }

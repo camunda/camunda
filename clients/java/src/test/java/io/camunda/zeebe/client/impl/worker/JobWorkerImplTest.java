@@ -25,7 +25,6 @@ import io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl;
 import io.camunda.zeebe.client.impl.ZeebeClientImpl;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayImplBase;
-import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
@@ -44,8 +43,6 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import org.awaitility.Awaitility;
 import org.junit.Before;
 import org.junit.Rule;
@@ -241,30 +238,6 @@ public final class JobWorkerImplTest {
       synchronized (metricsLock) {
         return countedPolls;
       }
-    }
-  }
-
-  private static final class TestData {
-    private static GatewayOuterClass.ActivatedJob job() {
-      return GatewayOuterClass.ActivatedJob.newBuilder()
-          .setKey(12)
-          .setType("foo")
-          .setProcessInstanceKey(123)
-          .setBpmnProcessId("test1")
-          .setProcessDefinitionVersion(2)
-          .setProcessDefinitionKey(23)
-          .setElementId("foo")
-          .setElementInstanceKey(23213)
-          .setCustomHeaders("{\"version\": \"1\"}")
-          .setWorker("worker1")
-          .setRetries(34)
-          .setDeadline(1231)
-          .setVariables("{\"key\": \"val\"}")
-          .build();
-    }
-
-    private static List<ActivatedJob> jobs(final int numberOfJobs) {
-      return IntStream.range(0, numberOfJobs).mapToObj(i -> job()).collect(Collectors.toList());
     }
   }
 }
