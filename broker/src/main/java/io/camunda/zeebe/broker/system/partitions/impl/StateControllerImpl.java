@@ -11,11 +11,13 @@ import io.camunda.zeebe.broker.system.partitions.AtomixRecordEntrySupplier;
 import io.camunda.zeebe.broker.system.partitions.NoEntryAtSnapshotPosition;
 import io.camunda.zeebe.broker.system.partitions.StateController;
 import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.db.ZeebeDbException;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.logstreams.impl.Loggers;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
+import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotException.StateClosedException;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
 import io.camunda.zeebe.util.FileUtil;
@@ -25,32 +27,30 @@ import java.util.function.ToLongFunction;
 import org.slf4j.Logger;
 
 /** Controls how snapshot/recovery operations are performed */
+@SuppressWarnings("rawtypes")
 public class StateControllerImpl implements StateController {
 
   private static final Logger LOG = Loggers.SNAPSHOT_LOGGER;
 
   private final Path runtimeDirectory;
 
-  @SuppressWarnings("rawtypes")
   private final ZeebeDbFactory zeebeDbFactory;
 
-  @SuppressWarnings("rawtypes")
   private final ToLongFunction<ZeebeDb> exporterPositionSupplier;
 
   private final AtomixRecordEntrySupplier entrySupplier;
 
-  @SuppressWarnings("rawtypes")
   private ZeebeDb db;
 
   private final ConstructableSnapshotStore constructableSnapshotStore;
   private final ConcurrencyControl concurrencyControl;
 
   public StateControllerImpl(
-      @SuppressWarnings("rawtypes") final ZeebeDbFactory zeebeDbFactory,
+      final ZeebeDbFactory zeebeDbFactory,
       final ConstructableSnapshotStore constructableSnapshotStore,
       final Path runtimeDirectory,
       final AtomixRecordEntrySupplier entrySupplier,
-      @SuppressWarnings("rawtypes") final ToLongFunction<ZeebeDb> exporterPositionSupplier,
+      final ToLongFunction<ZeebeDb> exporterPositionSupplier,
       final ConcurrencyControl concurrencyControl) {
     this.constructableSnapshotStore = constructableSnapshotStore;
     this.runtimeDirectory = runtimeDirectory;
@@ -108,26 +108,22 @@ public class StateControllerImpl implements StateController {
               "Failed to delete runtime folder. Cannot recover from snapshot.", e));
     }
 
-    final var optLatestSnapshot = constructableSnapshotStore.getLatestSnapshot();
-    if (optLatestSnapshot.isPresent()) {
-      final var snapshot = optLatestSnapshot.get();
-      LOG.debug("Recovering state from available snapshot: {}", snapshot);
-      constructableSnapshotStore
-          .copySnapshot(snapshot, runtimeDirectory)
-          .onComplete(
-              (ok, error) -> {
-                if (error != null) {
-                  future.completeExceptionally(
-                      new RuntimeException(
-                          String.format("Failed to recover from snapshot %s", snapshot.getId()),
-                          error));
-                } else {
-                  openDb(future);
-                }
-              });
-    } else {
-      // If there is no snapshot, open empty database
-      openDb(future);
+    constructableSnapshotStore
+        .getLatestSnapshot()
+        .ifPresent(snapshot -> recoverFromSnapshot(future, snapshot));
+    openDb(future);
+  }
+
+  private void recoverFromSnapshot(
+      final ActorFuture<ZeebeDb> future, final PersistedSnapshot snapshot) {
+    LOG.debug("Recovering state from available snapshot: {}", snapshot);
+
+    try (final var db = zeebeDbFactory.openSnapshotOnlyDb(snapshot.getPath().toFile())) {
+      db.createSnapshot(runtimeDirectory.toFile());
+    } catch (final Exception e) {
+      future.completeExceptionally(
+          new ZeebeDbException(
+              String.format("Failed to recover from snapshot %s", snapshot.getId()), e));
     }
   }
 
