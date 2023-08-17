@@ -101,8 +101,12 @@ public class StartEventSubscriptionManager {
       return;
     }
 
+    closeSignalStartEventSubscriptions(lastSignalProcess);
+  }
+
+  public void closeSignalStartEventSubscriptions(final DeployedProcess deployedProcess) {
     signalSubscriptionState.visitStartEventSubscriptionsByProcessDefinitionKey(
-        lastSignalProcess.getKey(),
+        deployedProcess.getKey(),
         subscription ->
             stateWriter.appendFollowUpEvent(
                 subscription.getKey(), SignalSubscriptionIntent.DELETED, subscription.getRecord()));
