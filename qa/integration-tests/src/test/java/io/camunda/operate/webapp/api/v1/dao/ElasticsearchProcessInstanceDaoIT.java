@@ -114,6 +114,20 @@ public class ElasticsearchProcessInstanceDaoIT extends OperateZeebeIntegrationTe
     });
   }
 
+  @Test
+  public void shouldReturnParentFlowNodeInstanceKey() throws Exception {
+    given(() -> {
+      deployProcesses("callActivityProcess.bpmn", "calledProcess.bpmn");
+      processInstanceKeys = startProcesses("CallActivityProcess");
+      processInstanceResults = dao.search(new Query<ProcessInstance>());
+    });
+    when(() -> processInstance = processInstanceResults.getItems().stream()
+        .filter(x -> x.getBpmnProcessId().equals("CalledProcess")).findFirst().orElseThrow());
+    then(() -> {
+      assertThat(processInstance.getParentFlowNodeInstanceKey()).isNotNull();
+    });
+  }
+
   @Test(expected = ResourceNotFoundException.class)
   public void shouldThrowForDeleteWhenKeyNotExists() throws Exception {
     given(() -> {
@@ -287,6 +301,24 @@ public class ElasticsearchProcessInstanceDaoIT extends OperateZeebeIntegrationTe
       assertThat(processInstances).hasSize(1);
       assertThat(processInstances).extracting(PROCESS_DEFINITION_KEY)
           .containsExactly(processDefinitionKey);
+    });
+  }
+
+  @Test
+  public void shouldFilterByParentFlowNodeInstanceKey() throws Exception {
+    given(() -> {
+      deployProcess("callActivityProcess.bpmn", "calledProcess.bpmn");
+      startProcesses("CallActivityProcess");
+    });
+    when(() -> {
+      processInstanceResults = dao.search(new Query<ProcessInstance>().setSort(Sort.listOf(BPMN_PROCESS_ID, Order.ASC)));
+      final Long parentFlowNodeInstanceKey = processInstanceResults.getItems().get(1).getParentFlowNodeInstanceKey();
+      processInstanceResults = dao.search(new Query<ProcessInstance>().setFilter(new ProcessInstance().setParentFlowNodeInstanceKey(parentFlowNodeInstanceKey)));
+    });
+    then(() -> {
+      assertThat(processInstanceResults.getTotal()).isEqualTo(1);
+      assertThat(processInstanceResults.getItems()).hasSize(1);
+      assertThat(processInstanceResults.getItems().get(0).getBpmnProcessId()).isEqualTo("CalledProcess");
     });
   }
 
