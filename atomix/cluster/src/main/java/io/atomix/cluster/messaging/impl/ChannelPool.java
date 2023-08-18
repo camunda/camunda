@@ -90,8 +90,8 @@ class ChannelPool {
    * @return a future to be completed with a channel from the pool
    */
   CompletableFuture<Channel> getChannel(final Address address, final String messageType) {
-    final InetSocketAddress inetAddress = address.socketAddress();
-    if (inetAddress == null) {
+    final InetSocketAddress inetAddress = address.getResolvedSocketAddress();
+    if (inetAddress == null || inetAddress.isUnresolved()) {
       final CompletableFuture<Channel> failedFuture = new OrderedFuture<>();
       failedFuture.completeExceptionally(
           new ConnectException("Failed to resolve address %s".formatted(address)));
