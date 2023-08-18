@@ -8,8 +8,10 @@
 package io.camunda.zeebe.qa.util.cluster;
 
 import io.camunda.zeebe.client.ZeebeClientBuilder;
+import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.qa.util.actuator.GatewayHealthActuator;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
+import java.util.function.Consumer;
 
 public interface TestGateway<T extends TestGateway<T>> extends TestStandalone<T> {
 
@@ -46,4 +48,10 @@ public interface TestGateway<T extends TestGateway<T>> extends TestStandalone<T>
 
   /** Returns a new pre-configured client builder for this gateway */
   ZeebeClientBuilder newClientBuilder();
+
+  /**
+   * Allows modifying the gateway configuration. Changes will not take effect until the node is
+   * restarted.
+   */
+  T withGatewayConfig(final Consumer<GatewayCfg> modifier);
 }

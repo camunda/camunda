@@ -139,6 +139,7 @@ public final class TestStandaloneGateway implements TestGateway<TestStandaloneGa
     return builder;
   }
 
+  @Override
   public TestStandaloneGateway withGatewayConfig(final Consumer<GatewayCfg> modifier) {
     modifier.accept(config);
     return this;

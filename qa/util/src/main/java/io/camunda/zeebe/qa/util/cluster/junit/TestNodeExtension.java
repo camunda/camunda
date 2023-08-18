@@ -8,7 +8,6 @@
 package io.camunda.zeebe.qa.util.cluster.junit;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.zeebe.broker.shared.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.zeebe.qa.util.cluster.TestStandalone;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneCluster;
@@ -31,8 +30,9 @@ import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
 import org.junit.jupiter.api.extension.ExtensionContext.Store;
 import org.junit.jupiter.api.extension.ExtensionContext.Store.CloseableResource;
 import org.junit.jupiter.api.extension.TestWatcher;
+import org.junit.platform.commons.support.AnnotationSupport;
 import org.junit.platform.commons.support.HierarchyTraversalMode;
-import org.junit.platform.commons.support.ReflectionSupport;
+import org.junit.platform.commons.support.ModifierSupport;
 import org.junit.platform.commons.util.ReflectionUtils;
 
 final class TestNodeExtension
@@ -40,8 +40,8 @@ final class TestNodeExtension
 
   @Override
   public void beforeAll(final ExtensionContext extensionContext) {
-    final var resources = lookupClusters(extensionContext, null, ReflectionUtils::isStatic);
-    final var nodes = lookupNodes(extensionContext, null, ReflectionUtils::isStatic);
+    final var resources = lookupClusters(extensionContext, null, ModifierSupport::isStatic);
+    final var nodes = lookupNodes(extensionContext, null, ModifierSupport::isStatic);
     manageClusters(extensionContext, resources);
     manageNodes(extensionContext, nodes);
   }
@@ -50,8 +50,8 @@ final class TestNodeExtension
   public void beforeEach(final ExtensionContext extensionContext) {
     final var testInstance = extensionContext.getRequiredTestInstance();
     final var clusters =
-        lookupClusters(extensionContext, testInstance, ReflectionUtils::isNotStatic);
-    final var nodes = lookupNodes(extensionContext, testInstance, ReflectionUtils::isNotStatic);
+        lookupClusters(extensionContext, testInstance, ModifierSupport::isNotStatic);
+    final var nodes = lookupNodes(extensionContext, testInstance, ModifierSupport::isNotStatic);
     manageClusters(extensionContext, clusters);
     manageNodes(extensionContext, nodes);
   }
@@ -70,14 +70,12 @@ final class TestNodeExtension
       final ExtensionContext extensionContext,
       final Object testInstance,
       final Predicate<Field> fieldType) {
-    return ReflectionSupport.findFields(
+    return AnnotationSupport.findAnnotatedFields(
             extensionContext.getRequiredTestClass(),
-            fieldType
-                .and(field -> field.isAnnotationPresent(TestCluster.class))
-                .and(
-                    field ->
-                        ReflectionUtils.isAssignableTo(
-                            field.getType(), TestStandaloneCluster.class)),
+            TestCluster.class,
+            fieldType.and(
+                field ->
+                    ReflectionUtils.isAssignableTo(field.getType(), TestStandaloneCluster.class)),
             HierarchyTraversalMode.TOP_DOWN)
         .stream()
         .map(field -> asClusterResource(testInstance, field))
@@ -88,12 +86,11 @@ final class TestNodeExtension
       final ExtensionContext extensionContext,
       final Object testInstance,
       final Predicate<Field> fieldType) {
-    return ReflectionSupport.findFields(
+    return AnnotationSupport.findAnnotatedFields(
             extensionContext.getRequiredTestClass(),
-            fieldType
-                .and(field -> field.isAnnotationPresent(ManageTestNodes.TestNode.class))
-                .and(
-                    field -> ReflectionUtils.isAssignableTo(field.getType(), TestStandalone.class)),
+            ManageTestNodes.TestNode.class,
+            fieldType.and(
+                field -> ReflectionUtils.isAssignableTo(field.getType(), TestStandalone.class)),
             HierarchyTraversalMode.TOP_DOWN)
         .stream()
         .map(field -> asNodeResource(testInstance, field))
@@ -182,8 +179,7 @@ final class TestNodeExtension
       throw new UncheckedIOException(e);
     }
 
-    broker.withBean(
-        "workingDirectory", new WorkingDirectory(workingDirectory, false), WorkingDirectory.class);
+    broker.withWorkingDirectory(workingDirectory);
   }
 
   private Path createManagedDirectory(final Store store, final String prefix) {

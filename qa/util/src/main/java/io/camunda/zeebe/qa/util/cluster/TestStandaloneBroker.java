@@ -9,10 +9,12 @@ package io.camunda.zeebe.qa.util.cluster;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.broker.StandaloneBroker;
+import io.camunda.zeebe.broker.shared.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
+import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.qa.util.actuator.BrokerHealthActuator;
 import io.camunda.zeebe.qa.util.actuator.GatewayHealthActuator;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
@@ -20,6 +22,7 @@ import io.camunda.zeebe.qa.util.cluster.spring.ContextOverrideInitializer.Bean;
 import io.camunda.zeebe.shared.Profile;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -166,6 +169,12 @@ public final class TestStandaloneBroker
     return builder;
   }
 
+  @Override
+  public TestStandaloneBroker withGatewayConfig(final Consumer<GatewayCfg> modifier) {
+    modifier.accept(config.getGateway());
+    return this;
+  }
+
   public boolean hasEmbeddedGateway() {
     return config.getGateway().isEnable();
   }
@@ -190,12 +199,25 @@ public final class TestStandaloneBroker
   public TestStandaloneBroker withRecordingExporter(final boolean useRecordingExporter) {
     if (!useRecordingExporter) {
       config.getExporters().remove(RECORDING_EXPORTER_ID);
-    } else {
-      final var exporterConfig = new ExporterCfg();
-      exporterConfig.setClassName(RecordingExporter.class.getName());
-      config.getExporters().put(RECORDING_EXPORTER_ID, exporterConfig);
+      return this;
     }
 
+    return withExporter(
+        RECORDING_EXPORTER_ID, cfg -> cfg.setClassName(RecordingExporter.class.getName()));
+  }
+
+  public TestStandaloneBroker withExporter(final String id, final Consumer<ExporterCfg> modifier) {
+    final var exporterConfig = new ExporterCfg();
+    modifier.accept(exporterConfig);
+    config.getExporters().put(id, exporterConfig);
+
+    return this;
+  }
+
+  public TestStandaloneBroker withWorkingDirectory(final Path directory) {
+    beans.put(
+        "workingDirectory",
+        new Bean<>(new WorkingDirectory(directory, false), WorkingDirectory.class));
     return this;
   }
 }

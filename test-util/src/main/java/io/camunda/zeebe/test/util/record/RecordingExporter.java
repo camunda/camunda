@@ -82,6 +82,7 @@ public final class RecordingExporter implements Exporter {
   private static final Condition IS_EMPTY = LOCK.newCondition();
 
   private static long maximumWaitTime = DEFAULT_MAX_WAIT_TIME;
+  private static boolean acknowledge = true;
 
   private Controller controller;
 
@@ -112,7 +113,7 @@ public final class RecordingExporter implements Exporter {
     try {
       RECORDS.put(RECORDS.size(), record.copyOf());
       IS_EMPTY.signal();
-      if (controller != null) { // the engine tests do not open the exporter
+      if (controller != null && acknowledge) { // the engine tests do not open the exporter
         controller.updateLastExportedRecordPosition(record.getPosition());
       }
     } finally {
@@ -128,6 +129,7 @@ public final class RecordingExporter implements Exporter {
     LOCK.lock();
     try {
       maximumWaitTime = DEFAULT_MAX_WAIT_TIME;
+      acknowledge = true;
       RECORDS.clear();
     } finally {
       LOCK.unlock();
@@ -375,6 +377,15 @@ public final class RecordingExporter implements Exporter {
 
   public static ErrorRecordStream errorRecords() {
     return new ErrorRecordStream(records(ValueType.ERROR, ErrorRecordValue.class));
+  }
+
+  public static void setAcknowledge(final boolean acknowledge) {
+    LOCK.lock();
+    try {
+      RecordingExporter.acknowledge = acknowledge;
+    } finally {
+      LOCK.unlock();
+    }
   }
 
   public static class AwaitingRecordIterator implements Iterator<Record<?>> {

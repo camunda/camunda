@@ -14,8 +14,7 @@ import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.time.Duration;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
-import org.rnorth.ducttape.unreliables.Unreliables;
+import org.awaitility.Awaitility;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.HostPortWaitStrategy;
 import org.testcontainers.containers.wait.strategy.WaitAllStrategy;
@@ -56,14 +55,9 @@ public final class GcsContainer extends GenericContainer<GcsContainer> {
     public void waitUntilReady(final WaitStrategyTarget waitStrategyTarget) {
       final var endpoint =
           "http://" + waitStrategyTarget.getHost() + ":" + waitStrategyTarget.getMappedPort(PORT);
-      Unreliables.retryUntilSuccess(
-          (int) startupTimeout.toSeconds(),
-          TimeUnit.SECONDS,
-          () -> {
-            // will throw an exception on success
-            refreshExternalURL(endpoint);
-            return true;
-          });
+      Awaitility.await("until the external URL has been changed")
+          .atMost(startupTimeout)
+          .untilAsserted(() -> refreshExternalURL(endpoint));
     }
 
     @Override

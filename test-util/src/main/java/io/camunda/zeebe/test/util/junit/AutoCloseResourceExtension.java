@@ -17,8 +17,11 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
 import org.junit.jupiter.api.extension.ExtensionContext.Store;
 import org.junit.jupiter.api.extension.ExtensionContext.Store.CloseableResource;
+import org.junit.platform.commons.support.AnnotationSupport;
 import org.junit.platform.commons.support.HierarchyTraversalMode;
+import org.junit.platform.commons.support.ModifierSupport;
 import org.junit.platform.commons.support.ReflectionSupport;
+import org.junit.platform.commons.support.SearchOption;
 import org.junit.platform.commons.util.ReflectionUtils;
 
 final class AutoCloseResourceExtension implements BeforeEachCallback, BeforeAllCallback {
@@ -26,11 +29,11 @@ final class AutoCloseResourceExtension implements BeforeEachCallback, BeforeAllC
   @Override
   public void beforeAll(final ExtensionContext extensionContext) {
     final var store = store(extensionContext);
-    lookupAnnotatedFields(extensionContext, null, ReflectionUtils::isStatic)
+    lookupAnnotatedFields(extensionContext, null, ModifierSupport::isStatic)
         .forEach(resource -> store.put(resource, resource));
 
     if (shouldManageNonAnnotatedFields(extensionContext)) {
-      lookupAutoCloseableFields(extensionContext, null, ReflectionUtils::isStatic)
+      lookupAutoCloseableFields(extensionContext, null, ModifierSupport::isStatic)
           .forEach(resource -> store.put(resource, resource));
     }
   }
@@ -39,11 +42,11 @@ final class AutoCloseResourceExtension implements BeforeEachCallback, BeforeAllC
   public void beforeEach(final ExtensionContext extensionContext) throws Exception {
     final var store = store(extensionContext);
     final var testInstance = extensionContext.getRequiredTestInstance();
-    lookupAnnotatedFields(extensionContext, testInstance, ReflectionUtils::isNotStatic)
+    lookupAnnotatedFields(extensionContext, testInstance, ModifierSupport::isNotStatic)
         .forEach(resource -> store.put(resource, resource));
 
     if (shouldManageNonAnnotatedFields(extensionContext)) {
-      lookupAutoCloseableFields(extensionContext, testInstance, ReflectionUtils::isNotStatic)
+      lookupAutoCloseableFields(extensionContext, testInstance, ModifierSupport::isNotStatic)
           .forEach(resource -> store.put(resource, resource));
     }
   }
@@ -67,9 +70,10 @@ final class AutoCloseResourceExtension implements BeforeEachCallback, BeforeAllC
       final ExtensionContext extensionContext,
       final Object testInstance,
       final Predicate<Field> fieldType) {
-    return ReflectionSupport.findFields(
+    return AnnotationSupport.findAnnotatedFields(
             extensionContext.getRequiredTestClass(),
-            fieldType.and(field -> field.isAnnotationPresent(AutoCloseResource.class)),
+            AutoCloseResource.class,
+            fieldType,
             HierarchyTraversalMode.TOP_DOWN)
         .stream()
         .map(field -> ofAnnotatedCloseable(testInstance, field))
@@ -79,7 +83,7 @@ final class AutoCloseResourceExtension implements BeforeEachCallback, BeforeAllC
   private CloseableResource ofAnnotatedCloseable(final Object testInstance, final Field field) {
     final var annotation = field.getAnnotation(AutoCloseResource.class);
     final var method =
-        ReflectionUtils.findMethod(field.getType(), annotation.closeMethod()).orElseThrow();
+        ReflectionSupport.findMethod(field.getType(), annotation.closeMethod()).orElseThrow();
 
     ReflectionUtils.makeAccessible(field);
     ReflectionUtils.makeAccessible(method);
@@ -104,10 +108,12 @@ final class AutoCloseResourceExtension implements BeforeEachCallback, BeforeAllC
   }
 
   private boolean shouldManageNonAnnotatedFields(final ExtensionContext extensionContext) {
-    return !extensionContext
-        .getRequiredTestClass()
-        .getAnnotation(AutoCloseResources.class)
-        .onlyAnnotated();
+    return AnnotationSupport.findAnnotation(
+            extensionContext.getRequiredTestClass(),
+            AutoCloseResources.class,
+            SearchOption.INCLUDE_ENCLOSING_CLASSES)
+        .map(AutoCloseResources::onlyAnnotated)
+        .orElse(false);
   }
 
   private record AnnotatedCloseable(Object testInstance, Field objectField, Method method)

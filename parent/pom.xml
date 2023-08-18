@@ -712,6 +712,12 @@
       </dependency>
 
       <dependency>
+        <groupId>io.zeebe</groupId>
+        <artifactId>zeebe-test-container-exporter</artifactId>
+        <version>${version.zeebe-test-container}</version>
+      </dependency>
+
+      <dependency>
         <groupId>com.google.errorprone</groupId>
         <artifactId>error_prone_annotations</artifactId>
         <version>${version.error-prone}</version>
