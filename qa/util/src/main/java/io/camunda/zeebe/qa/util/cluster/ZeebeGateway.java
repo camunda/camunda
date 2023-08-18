@@ -11,7 +11,7 @@ import io.camunda.zeebe.client.ZeebeClientBuilder;
 import io.camunda.zeebe.qa.util.actuator.GatewayHealthActuator;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
 
-public interface ZeebeGatewayNode<T extends ZeebeGatewayNode<T>> extends ZeebeNode<T> {
+public interface ZeebeGateway<T extends ZeebeGateway<T>> extends Zeebe<T> {
 
   /**
    * Returns the address used by clients to interact with the gateway.
@@ -46,9 +46,4 @@ public interface ZeebeGatewayNode<T extends ZeebeGatewayNode<T>> extends ZeebeNo
 
   /** Returns a new pre-configured client builder for this gateway */
   ZeebeClientBuilder newClientBuilder();
-
-  /** Convenience method to get this instance as a generic gateway */
-  default ZeebeGatewayNode<T> asGateway() {
-    return this;
-  }
 }

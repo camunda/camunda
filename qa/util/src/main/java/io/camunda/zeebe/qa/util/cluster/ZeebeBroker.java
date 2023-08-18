@@ -10,20 +10,10 @@ package io.camunda.zeebe.qa.util.cluster;
 import io.camunda.zeebe.qa.util.actuator.BrokerHealthActuator;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
 
-public interface ZeebeBrokerNode<T extends ZeebeBrokerNode<T>> extends ZeebeNode<T> {
+public interface ZeebeBroker<T extends ZeebeBroker<T>> extends Zeebe<T> {
 
   /** Returns true if this node has an embedded gateway. */
   boolean hasEmbeddedGateway();
-
-  /**
-   * Returns the address to access the command API of this node, over which gateways can communicate
-   * with the broker.
-   *
-   * @return the command address
-   */
-  default String commandAddress() {
-    return address(ZeebePort.COMMAND);
-  }
 
   /**
    * Returns the health actuator for this broker. You can use this to check for liveness, readiness,
@@ -36,10 +26,5 @@ public interface ZeebeBrokerNode<T extends ZeebeBrokerNode<T>> extends ZeebeNode
   @Override
   default HealthActuator healthActuator() {
     return brokerHealth();
-  }
-
-  /** Convenience method to return this instance as a generic broker */
-  default ZeebeBrokerNode<T> asBroker() {
-    return this;
   }
 }

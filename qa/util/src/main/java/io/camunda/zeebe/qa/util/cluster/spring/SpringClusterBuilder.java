@@ -37,11 +37,11 @@ public final class SpringClusterBuilder {
   private final boolean useRecordingExporter = true;
 
   private Consumer<AbstractSpringBuilder<?, ?, ?>> nodeConfig = builder -> {};
-  private BiConsumer<MemberId, SpringBrokerNode.Builder> brokerConfig = (id, builder) -> {};
-  private BiConsumer<MemberId, SpringGatewayNode.Builder> gatewayConfig = (memberId, builder) -> {};
+  private BiConsumer<MemberId, SpringBroker.Builder> brokerConfig = (id, builder) -> {};
+  private BiConsumer<MemberId, SpringGateway.Builder> gatewayConfig = (memberId, builder) -> {};
 
-  private final Map<MemberId, SpringGatewayNode.Builder> gateways = new HashMap<>();
-  private final Map<MemberId, SpringBrokerNode.Builder> brokers = new HashMap<>();
+  private final Map<MemberId, SpringGateway.Builder> gateways = new HashMap<>();
+  private final Map<MemberId, SpringBroker.Builder> brokers = new HashMap<>();
 
   /**
    * If true, the brokers created by this cluster will use embedded gateways. By default this is
@@ -189,7 +189,7 @@ public final class SpringClusterBuilder {
    * @return this builder instance for chaining
    */
   public SpringClusterBuilder withGatewayConfig(
-      final BiConsumer<MemberId, SpringGatewayNode.Builder> modifier) {
+      final BiConsumer<MemberId, SpringGateway.Builder> modifier) {
     gatewayConfig = modifier;
     return this;
   }
@@ -208,8 +208,7 @@ public final class SpringClusterBuilder {
    *     included)
    * @return this builder instance for chaining
    */
-  public SpringClusterBuilder withGatewayConfig(
-      final Consumer<SpringGatewayNode.Builder> modifier) {
+  public SpringClusterBuilder withGatewayConfig(final Consumer<SpringGateway.Builder> modifier) {
     gatewayConfig = (memberId, gateway) -> modifier.accept(gateway);
     return this;
   }
@@ -226,7 +225,7 @@ public final class SpringClusterBuilder {
    * @return this builder instance for chaining
    */
   public SpringClusterBuilder withBrokerConfig(
-      final BiConsumer<MemberId, SpringBrokerNode.Builder> modifier) {
+      final BiConsumer<MemberId, SpringBroker.Builder> modifier) {
     brokerConfig = modifier;
     return this;
   }
@@ -241,7 +240,7 @@ public final class SpringClusterBuilder {
    * @param modifier the function that will be applied on all cluster brokers
    * @return this builder instance for chaining
    */
-  public SpringClusterBuilder withBrokerConfig(final Consumer<SpringBrokerNode.Builder> modifier) {
+  public SpringClusterBuilder withBrokerConfig(final Consumer<SpringBroker.Builder> modifier) {
     brokerConfig = (id, broker) -> modifier.accept(broker);
     return this;
   }
@@ -298,11 +297,11 @@ public final class SpringClusterBuilder {
       final MemberId id, final AbstractSpringBuilder<?, ?, ?> builder) {
     nodeConfig.accept(builder);
 
-    if (builder instanceof final SpringGatewayNode.Builder gateway) {
+    if (builder instanceof final SpringGateway.Builder gateway) {
       gatewayConfig.accept(id, gateway);
     }
 
-    if (builder instanceof final SpringBrokerNode.Builder broker) {
+    if (builder instanceof final SpringBroker.Builder broker) {
       brokerConfig.accept(id, broker);
     }
   }
@@ -352,9 +351,9 @@ public final class SpringClusterBuilder {
                 builder.withConfig(cfg -> cfg.getCluster().setInitialContactPoints(contactPoints)));
   }
 
-  private SpringBrokerNode.Builder createBroker(final int index) {
+  private SpringBroker.Builder createBroker(final int index) {
     final var builder =
-        new SpringBrokerNode.Builder()
+        new SpringBroker.Builder()
             .withConfig(cfg -> cfg.getNetwork().getCommandApi().setPort(randomPort()))
             .withConfig(cfg -> cfg.getNetwork().getInternalApi().setPort(randomPort()))
             .withConfig(
@@ -404,8 +403,8 @@ public final class SpringClusterBuilder {
     }
   }
 
-  private SpringGatewayNode.Builder createGateway(final String id) {
-    return new SpringGatewayNode.Builder()
+  private SpringGateway.Builder createGateway(final String id) {
+    return new SpringGateway.Builder()
         .withConfig(cfg -> cfg.getNetwork().setPort(randomPort()))
         .withConfig(cfg -> cfg.getCluster().setInitialContactPoints(getInitialContactPoints()))
         .withConfig(

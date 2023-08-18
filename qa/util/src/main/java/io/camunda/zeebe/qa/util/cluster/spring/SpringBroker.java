@@ -9,28 +9,26 @@ package io.camunda.zeebe.qa.util.cluster.spring;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.broker.StandaloneBroker;
-import io.camunda.zeebe.broker.shared.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
 import io.camunda.zeebe.qa.util.actuator.GatewayHealthActuator;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
-import io.camunda.zeebe.qa.util.cluster.ZeebeBrokerNode;
-import io.camunda.zeebe.qa.util.cluster.ZeebeGatewayNode;
+import io.camunda.zeebe.qa.util.cluster.ZeebeBroker;
+import io.camunda.zeebe.qa.util.cluster.ZeebeGateway;
 import io.camunda.zeebe.qa.util.cluster.ZeebePort;
 import io.camunda.zeebe.shared.Profile;
-import java.nio.file.Path;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ConfigurableApplicationContext;
 
-public final class SpringBrokerNode
-    implements ZeebeBrokerNode<SpringBrokerNode>, ZeebeGatewayNode<SpringBrokerNode> {
+/** Represents an instance of the {@link StandaloneBroker} Spring application. */
+public final class SpringBroker implements ZeebeBroker<SpringBroker>, ZeebeGateway<SpringBroker> {
   private final BrokerCfg config;
   private final SpringApplicationBuilder springBuilder;
 
   private ConfigurableApplicationContext springContext;
 
-  public SpringBrokerNode(final BrokerCfg config, final SpringApplicationBuilder springBuilder) {
+  public SpringBroker(final BrokerCfg config, final SpringApplicationBuilder springBuilder) {
     this.config = config;
     this.springBuilder = springBuilder;
   }
@@ -87,7 +85,7 @@ public final class SpringBrokerNode
           "Expected to get the gateway address for this broker, but the embedded gateway is not enabled");
     }
 
-    return ZeebeGatewayNode.super.gatewayAddress();
+    return ZeebeGateway.super.gatewayAddress();
   }
 
   @Override
@@ -119,24 +117,17 @@ public final class SpringBrokerNode
   }
 
   public static final class Builder
-      extends AbstractSpringBuilder<SpringBrokerNode, BrokerCfg, Builder> {
-
-    private WorkingDirectory workingDirectory;
+      extends AbstractSpringBuilder<SpringBroker, BrokerCfg, Builder> {
 
     public Builder() {
       super(new BrokerCfg());
     }
 
-    public Builder withWorkingDirectory(final Path path) {
-      workingDirectory = new WorkingDirectory(path, false);
-      return this;
-    }
-
     @Override
-    protected SpringBrokerNode createNode(final SpringApplicationBuilder builder) {
+    protected SpringBroker createNode(final SpringApplicationBuilder builder) {
       builder.profiles(Profile.BROKER.getId()).sources(StandaloneBroker.class);
 
-      return new SpringBrokerNode(config, builder);
+      return new SpringBroker(config, builder);
     }
   }
 }

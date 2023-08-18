@@ -10,8 +10,8 @@ package io.camunda.zeebe.it;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.camunda.zeebe.qa.util.cluster.ZeebeClusters;
-import io.camunda.zeebe.qa.util.cluster.ZeebeClusters.ZeebeCluster;
+import io.camunda.zeebe.qa.util.cluster.ManageClusters;
+import io.camunda.zeebe.qa.util.cluster.ManageClusters.Cluster;
 import io.camunda.zeebe.qa.util.cluster.spring.SpringCluster;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
@@ -21,10 +21,10 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-@ZeebeClusters
+@ManageClusters
 @AutoCloseResources
 final class SpringClusteredTest {
-  @ZeebeCluster
+  @Cluster
   private final SpringCluster cluster =
       SpringCluster.builder()
           .withBrokersCount(3)

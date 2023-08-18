@@ -12,19 +12,20 @@ import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
 import io.camunda.zeebe.gateway.StandaloneGateway;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
-import io.camunda.zeebe.qa.util.cluster.ZeebeGatewayNode;
+import io.camunda.zeebe.qa.util.cluster.ZeebeGateway;
 import io.camunda.zeebe.qa.util.cluster.ZeebePort;
 import io.camunda.zeebe.shared.Profile;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ConfigurableApplicationContext;
 
-public final class SpringGatewayNode implements ZeebeGatewayNode<SpringGatewayNode> {
+/** Encapsulates an instance of the {@link StandaloneGateway} Spring application. */
+public final class SpringGateway implements ZeebeGateway<SpringGateway> {
   private final GatewayCfg config;
   private final SpringApplicationBuilder springBuilder;
 
   private ConfigurableApplicationContext springContext;
 
-  public SpringGatewayNode(final GatewayCfg config, final SpringApplicationBuilder springBuilder) {
+  public SpringGateway(final GatewayCfg config, final SpringApplicationBuilder springBuilder) {
     this.config = config;
     this.springBuilder = springBuilder;
   }
@@ -88,17 +89,17 @@ public final class SpringGatewayNode implements ZeebeGatewayNode<SpringGatewayNo
   }
 
   public static final class Builder
-      extends AbstractSpringBuilder<SpringGatewayNode, GatewayCfg, Builder> {
+      extends AbstractSpringBuilder<SpringGateway, GatewayCfg, Builder> {
 
     public Builder() {
       super(new GatewayCfg());
     }
 
     @Override
-    protected SpringGatewayNode createNode(final SpringApplicationBuilder builder) {
+    protected SpringGateway createNode(final SpringApplicationBuilder builder) {
       builder.profiles(Profile.GATEWAY.getId()).sources(StandaloneGateway.class);
 
-      return new SpringGatewayNode(config, builder);
+      return new SpringGateway(config, builder);
     }
   }
 }

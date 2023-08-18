@@ -10,17 +10,7 @@ package io.camunda.zeebe.qa.util.cluster;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
 
-public interface ZeebeNode<T extends ZeebeNode<T>> {
-
-  /**
-   * A convenience method to cast the generic type into it's actual concrete type
-   *
-   * @return itself
-   */
-  @SuppressWarnings("unchecked")
-  default T self() {
-    return (T) this;
-  }
+public interface Zeebe<T extends Zeebe<T>> {
 
   /** Returns this node's unique cluster ID */
   MemberId nodeId();
@@ -43,16 +33,6 @@ public interface ZeebeNode<T extends ZeebeNode<T>> {
    */
   default String address(final ZeebePort port) {
     return address(mappedPort(port));
-  }
-
-  /**
-   * Returns the address that a Zeebe node outside of the docker network can use to talk to this
-   * node.
-   *
-   * @return the external cluster address
-   */
-  default String clusterAddress() {
-    return address(ZeebePort.CLUSTER);
   }
 
   /**
@@ -97,10 +77,5 @@ public interface ZeebeNode<T extends ZeebeNode<T>> {
   /** Returns the actual port for the given logical port. */
   default int mappedPort(final ZeebePort port) {
     return port.port();
-  }
-
-  /** Convenience method which returns the object as a generic {@link ZeebeNode} */
-  default ZeebeNode<T> asNode() {
-    return this;
   }
 }

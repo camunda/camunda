@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.qa.util.cluster;
 
+/** Logical representation of the various health probes in Zeebe */
 public enum ZeebeHealthProbe {
   LIVE,
   READY,

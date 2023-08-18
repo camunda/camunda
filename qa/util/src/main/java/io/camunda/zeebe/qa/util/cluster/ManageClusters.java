@@ -16,7 +16,7 @@ import java.lang.annotation.Target;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
- * Registers the {@link ZeebeClusterExtension} extension, which will manage the lifecycle of one or
+ * Registers the {@link ManageClusterExtension} extension, which will manage the lifecycle of one or
  * more {@link io.camunda.zeebe.qa.util.cluster.spring.SpringCluster}
  *
  * <pre>{@code
@@ -49,14 +49,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 @Inherited
-@ExtendWith(ZeebeClusterExtension.class)
-public @interface ZeebeClusters {
+@ExtendWith(ManageClusterExtension.class)
+public @interface ManageClusters {
 
   @Target({ElementType.FIELD})
   @Retention(RetentionPolicy.RUNTIME)
   @Documented
   @Inherited
-  @interface ZeebeCluster {
+  @interface Cluster {
     /**
      * If true (the default), will block and wait until all nodes in the cluster are ready. Does
      * nothing if {@link #autoStart()} is false.

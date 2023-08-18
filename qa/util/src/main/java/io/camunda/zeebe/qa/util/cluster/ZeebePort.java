@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.qa.util.cluster;
 
+/** Represents the known ports in Zeebe and their default values. */
 public enum ZeebePort {
   /** Port of the command API, i.e. the port used by the gateway to communicate with the broker */
   COMMAND(26501),

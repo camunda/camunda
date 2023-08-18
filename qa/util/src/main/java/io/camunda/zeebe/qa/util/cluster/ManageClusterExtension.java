@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.qa.util.cluster;
 
-import io.camunda.zeebe.qa.util.cluster.ZeebeClusters.ZeebeCluster;
+import io.camunda.zeebe.qa.util.cluster.ManageClusters.Cluster;
 import io.camunda.zeebe.qa.util.cluster.spring.SpringCluster;
 import io.camunda.zeebe.test.util.record.RecordLogger;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -25,7 +25,7 @@ import org.junit.platform.commons.support.HierarchyTraversalMode;
 import org.junit.platform.commons.support.ReflectionSupport;
 import org.junit.platform.commons.util.ReflectionUtils;
 
-final class ZeebeClusterExtension
+final class ManageClusterExtension
     implements BeforeAllCallback, BeforeEachCallback, BeforeTestExecutionCallback, TestWatcher {
 
   @Override
@@ -59,7 +59,7 @@ final class ZeebeClusterExtension
     return ReflectionSupport.findFields(
             extensionContext.getRequiredTestClass(),
             fieldType
-                .and(field -> field.isAnnotationPresent(ZeebeCluster.class))
+                .and(field -> field.isAnnotationPresent(Cluster.class))
                 .and(field -> ReflectionUtils.isAssignableTo(field.getType(), SpringCluster.class)),
             HierarchyTraversalMode.TOP_DOWN)
         .stream()
@@ -105,14 +105,14 @@ final class ZeebeClusterExtension
       throw new UnsupportedOperationException(e);
     }
 
-    return new ClusterResource(value, field.getAnnotation(ZeebeCluster.class));
+    return new ClusterResource(value, field.getAnnotation(Cluster.class));
   }
 
   private Store store(final ExtensionContext extensionContext) {
-    return extensionContext.getStore(Namespace.create(ZeebeClusterExtension.class));
+    return extensionContext.getStore(Namespace.create(ManageClusterExtension.class));
   }
 
-  private record ClusterResource(SpringCluster cluster, ZeebeCluster annotation)
+  private record ClusterResource(SpringCluster cluster, Cluster annotation)
       implements CloseableResource {
 
     @Override
