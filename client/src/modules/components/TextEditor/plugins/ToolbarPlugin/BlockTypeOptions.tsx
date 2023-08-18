@@ -18,7 +18,7 @@ import {
   REMOVE_LIST_COMMAND,
 } from '@lexical/list';
 import {$createHeadingNode, HeadingTagType} from '@lexical/rich-text';
-import {$setBlocksType_experimental} from '@lexical/selection';
+import {$setBlocksType} from '@lexical/selection';
 
 import {Dropdown} from 'components';
 import {t} from 'translation';
@@ -39,7 +39,7 @@ export default function BlockTypeDropdown({
       editor.update(() => {
         const selection = $getSelection();
         if ($isRangeSelection(selection) || DEPRECATED_$isGridSelection(selection)) {
-          $setBlocksType_experimental(selection, () => $createParagraphNode());
+          $setBlocksType(selection, () => $createParagraphNode());
         }
       });
     }
@@ -50,7 +50,7 @@ export default function BlockTypeDropdown({
       editor.update(() => {
         const selection = $getSelection();
         if ($isRangeSelection(selection) || DEPRECATED_$isGridSelection(selection)) {
-          $setBlocksType_experimental(selection, () => $createHeadingNode(headingSize));
+          $setBlocksType(selection, () => $createHeadingNode(headingSize));
         }
       });
     }
