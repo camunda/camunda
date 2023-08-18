@@ -126,8 +126,8 @@ public final class Address {
    *
    * @return the IP address
    */
-  public InetAddress tryResolveAngGetAddress() {
-    return tryResolveAngGetAddress(false);
+  public InetAddress tryResolveAddress() {
+    return tryResolveAddress(false);
   }
 
   /**
@@ -136,7 +136,7 @@ public final class Address {
    * @param resolve whether to force resolve the hostname
    * @return the IP address
    */
-  public InetAddress tryResolveAngGetAddress(final boolean resolve) {
+  public InetAddress tryResolveAddress(final boolean resolve) {
     if (resolve || socketAddress.isUnresolved()) {
       // the constructor will by default attempt to resolve the host, and will fall back to the
       // unresolved address if it couldn't
@@ -156,7 +156,24 @@ public final class Address {
     return socketAddress.getAddress();
   }
 
+  /**
+   * Returns the socket address.
+   *
+   * @return the socket address
+   */
   public InetSocketAddress socketAddress() {
+    return socketAddress;
+  }
+
+  /**
+   * Returns the resolved socket address.
+   *
+   * @return the resolved socket address
+   */
+  public InetSocketAddress getResolvedSocketAddress() {
+    if (socketAddress.isUnresolved()) {
+      socketAddress = new InetSocketAddress(host, port);
+    }
     return socketAddress;
   }
 
