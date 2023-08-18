@@ -14,11 +14,11 @@ public final class ClusterTopologyGossipState {
   // TODO: This should also tracks the BrokerInfo which is currently in SWIM member.properties
   private ClusterTopology clusterTopology;
 
-  ClusterTopology getClusterTopology() {
+  public ClusterTopology getClusterTopology() {
     return clusterTopology;
   }
 
-  void setClusterTopology(final ClusterTopology clusterTopology) {
+  public void setClusterTopology(final ClusterTopology clusterTopology) {
     this.clusterTopology = clusterTopology;
   }
 
