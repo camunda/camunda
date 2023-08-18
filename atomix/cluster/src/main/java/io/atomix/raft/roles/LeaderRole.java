@@ -330,7 +330,8 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
                 entry.index(),
                 entry.term(),
                 configurationEntry.timestamp(),
-                configurationEntry.newMembers()));
+                configurationEntry.newMembers(),
+                configurationEntry.oldMembers()));
 
     return appender
         .appendEntries(entry.index())

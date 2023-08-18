@@ -16,79 +16,44 @@
  */
 package io.atomix.raft.storage.system;
 
-import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import io.atomix.raft.cluster.RaftMember;
-import io.atomix.utils.misc.TimestampPrinter;
 import java.util.Collection;
+import java.util.Collections;
 
-/** Represents a persisted server configuration. */
-public class Configuration {
+/**
+ * Represents a persisted server configuration.
+ *
+ * @param index The index is the index of the {@link
+ *     io.atomix.raft.storage.log.entry.ConfigurationEntry ConfigurationEntry} which resulted in
+ *     this configuration.
+ * @param term The term is the term of the leader at the time the configuration change was
+ *     committed.
+ * @param time The time at which the configuration was committed.
+ * @param members The cluster membership for this configuration.
+ * @param oldMembers The cluster membership for the previous configuration.
+ */
+public record Configuration(
+    long index,
+    long term,
+    long time,
+    Collection<RaftMember> members,
+    Collection<RaftMember> oldMembers) {
 
-  private final long index;
-  private final long term;
-  private final long time;
-  private final Collection<RaftMember> members;
+  public Configuration {
+    checkArgument(time > 0, "time must be positive");
+    checkNotNull(members, "members cannot be null");
+    checkNotNull(oldMembers, "oldMembers cannot be null");
+  }
 
   public Configuration(
       final long index, final long term, final long time, final Collection<RaftMember> members) {
-    checkArgument(time > 0, "time must be positive");
-    checkNotNull(members, "members cannot be null");
-    this.index = index;
-    this.term = term;
-    this.time = time;
-    this.members = members;
+    this(index, term, time, members, Collections.emptyList());
   }
 
-  /**
-   * Returns the configuration index.
-   *
-   * <p>The index is the index of the {@link io.atomix.raft.storage.log.entry.ConfigurationEntry
-   * ConfigurationEntry} which resulted in this configuration.
-   *
-   * @return The configuration index.
-   */
-  public long index() {
-    return index;
-  }
-
-  /**
-   * Returns the configuration term.
-   *
-   * <p>The term is the term of the leader at the time the configuration change was committed.
-   *
-   * @return The configuration term.
-   */
-  public long term() {
-    return term;
-  }
-
-  /**
-   * Returns the configuration time.
-   *
-   * @return The time at which the configuration was committed.
-   */
-  public long time() {
-    return time;
-  }
-
-  /**
-   * Returns the cluster membership for this configuration.
-   *
-   * @return The cluster membership.
-   */
-  public Collection<RaftMember> members() {
-    return members;
-  }
-
-  @Override
-  public String toString() {
-    return toStringHelper(this)
-        .add("index", index)
-        .add("time", new TimestampPrinter(time))
-        .add("members", members)
-        .toString();
+  public boolean requiresJointConsensus() {
+    return !oldMembers.isEmpty();
   }
 }
