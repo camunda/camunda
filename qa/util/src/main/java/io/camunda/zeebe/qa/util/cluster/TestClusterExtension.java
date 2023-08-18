@@ -7,11 +7,19 @@
  */
 package io.camunda.zeebe.qa.util.cluster;
 
-import io.camunda.zeebe.qa.util.cluster.ManageClusters.Cluster;
-import io.camunda.zeebe.qa.util.cluster.spring.SpringCluster;
+import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.broker.shared.WorkingDirectoryConfiguration.WorkingDirectory;
+import io.camunda.zeebe.qa.util.cluster.ManageTestCluster.TestCluster;
+import io.camunda.zeebe.qa.util.cluster.spring.TestSpringCluster;
+import io.camunda.zeebe.qa.util.cluster.spring.TestStandaloneBroker;
 import io.camunda.zeebe.test.util.record.RecordLogger;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import io.camunda.zeebe.util.FileUtil;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.lang.reflect.Field;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.function.Predicate;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
@@ -25,7 +33,7 @@ import org.junit.platform.commons.support.HierarchyTraversalMode;
 import org.junit.platform.commons.support.ReflectionSupport;
 import org.junit.platform.commons.util.ReflectionUtils;
 
-final class ManageClusterExtension
+final class TestClusterExtension
     implements BeforeAllCallback, BeforeEachCallback, BeforeTestExecutionCallback, TestWatcher {
 
   @Override
@@ -59,8 +67,10 @@ final class ManageClusterExtension
     return ReflectionSupport.findFields(
             extensionContext.getRequiredTestClass(),
             fieldType
-                .and(field -> field.isAnnotationPresent(Cluster.class))
-                .and(field -> ReflectionUtils.isAssignableTo(field.getType(), SpringCluster.class)),
+                .and(field -> field.isAnnotationPresent(TestCluster.class))
+                .and(
+                    field ->
+                        ReflectionUtils.isAssignableTo(field.getType(), TestSpringCluster.class)),
             HierarchyTraversalMode.TOP_DOWN)
         .stream()
         .map(field -> asResource(testInstance, field))
@@ -75,13 +85,19 @@ final class ManageClusterExtension
     // starting one fails
     resources.forEach(resource -> store.put(resource, resource));
     for (final var resource : resources) {
-      manageCluster(resource);
+      final var directory = createManagedDirectory(store, resource.cluster.name());
+      manageCluster(directory, resource);
     }
   }
 
-  private void manageCluster(final ClusterResource resource) {
+  private void manageCluster(final Path directory, final ClusterResource resource) {
     final var cluster = resource.cluster;
     final var annotation = resource.annotation;
+
+    // assign a working directory for each broker that gets deleted with the extension lifecycle,
+    // and not when the broker is shutdown. this allows to introspect or move the data around even
+    // after stopping a broker
+    cluster.brokers().forEach((id, broker) -> setWorkingDirectory(directory, id, broker));
 
     if (annotation.autoStart()) {
       cluster.start();
@@ -96,28 +112,59 @@ final class ManageClusterExtension
     }
   }
 
+  private void setWorkingDirectory(
+      final Path directory, final MemberId id, final TestStandaloneBroker broker) {
+    final Path workingDirectory = directory.resolve("broker-" + id.id());
+    try {
+      Files.createDirectory(workingDirectory);
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
+    }
+
+    broker.withBean(
+        "workingDirectory", new WorkingDirectory(workingDirectory, false), WorkingDirectory.class);
+  }
+
+  private Path createManagedDirectory(final Store store, final String prefix) {
+    try {
+      final var directory = Files.createTempDirectory(prefix);
+      store.put(directory, new DirectoryResource(directory));
+      return directory;
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
+    }
+  }
+
   private ClusterResource asResource(final Object testInstance, final Field field) {
-    final SpringCluster value;
+    final TestSpringCluster value;
 
     try {
-      value = (SpringCluster) ReflectionUtils.makeAccessible(field).get(testInstance);
+      value = (TestSpringCluster) ReflectionUtils.makeAccessible(field).get(testInstance);
     } catch (final IllegalAccessException e) {
       throw new UnsupportedOperationException(e);
     }
 
-    return new ClusterResource(value, field.getAnnotation(Cluster.class));
+    return new ClusterResource(value, field.getAnnotation(TestCluster.class));
   }
 
   private Store store(final ExtensionContext extensionContext) {
-    return extensionContext.getStore(Namespace.create(ManageClusterExtension.class));
+    return extensionContext.getStore(Namespace.create(TestClusterExtension.class));
   }
 
-  private record ClusterResource(SpringCluster cluster, Cluster annotation)
+  private record ClusterResource(TestSpringCluster cluster, TestCluster annotation)
       implements CloseableResource {
 
     @Override
     public void close() {
       cluster.close();
+    }
+  }
+
+  private record DirectoryResource(Path directory) implements CloseableResource {
+
+    @Override
+    public void close() throws Throwable {
+      FileUtil.deleteFolderIfExists(directory);
     }
   }
 }

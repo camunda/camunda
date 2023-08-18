@@ -13,8 +13,8 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
-import io.camunda.zeebe.qa.util.cluster.Zeebe;
-import io.camunda.zeebe.qa.util.cluster.ZeebeGateway;
+import io.camunda.zeebe.qa.util.cluster.TestGateway;
+import io.camunda.zeebe.qa.util.cluster.TestZeebe;
 import io.camunda.zeebe.qa.util.cluster.ZeebeHealthProbe;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
 import io.camunda.zeebe.util.CloseableSilently;
@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
 /**
  * A convenience class representing a one or more Spring applications that form a Zeebe cluster.
  *
- * <p>It's recommended to use the {@link SpringClusterBuilder} to build one.
+ * <p>It's recommended to use the {@link TestSpringClusterBuilder} to build one.
  *
  * <p>As the cluster is not started automatically, the nodes can still be modified/configured
  * beforehand. Be aware however that the replication factor and the partitions count cannot be
@@ -80,12 +80,12 @@ import org.slf4j.LoggerFactory;
  * }</pre>
  */
 @SuppressWarnings("ClassCanBeRecord")
-public final class SpringCluster implements CloseableSilently {
-  private static final Logger LOGGER = LoggerFactory.getLogger(SpringCluster.class);
+public final class TestSpringCluster implements CloseableSilently {
+  private static final Logger LOGGER = LoggerFactory.getLogger(TestSpringCluster.class);
 
   private final String name;
-  private final Map<MemberId, SpringGateway> gateways;
-  private final Map<MemberId, SpringBroker> brokers;
+  private final Map<MemberId, TestStandaloneGateway> gateways;
+  private final Map<MemberId, TestStandaloneBroker> brokers;
   private final int replicationFactor;
   private final int partitionsCount;
 
@@ -98,12 +98,12 @@ public final class SpringCluster implements CloseableSilently {
    * @param brokers the set of broker nodes, identified by their node ID
    * @param gateways the set of gateway nodes, identified by their member ID
    */
-  public SpringCluster(
+  public TestSpringCluster(
       final String name,
       final int replicationFactor,
       final int partitionsCount,
-      final Map<MemberId, SpringBroker> brokers,
-      final Map<MemberId, SpringGateway> gateways) {
+      final Map<MemberId, TestStandaloneBroker> brokers,
+      final Map<MemberId, TestStandaloneGateway> gateways) {
     this.name = name;
     this.replicationFactor = replicationFactor;
     this.partitionsCount = partitionsCount;
@@ -112,8 +112,8 @@ public final class SpringCluster implements CloseableSilently {
   }
 
   /** Returns a new cluster builder */
-  public static SpringClusterBuilder builder() {
-    return new SpringClusterBuilder();
+  public static TestSpringClusterBuilder builder() {
+    return new TestSpringClusterBuilder();
   }
 
   /**
@@ -187,7 +187,7 @@ public final class SpringCluster implements CloseableSilently {
    * @throws NoSuchElementException if there are no such gateways (e.g. none are started, or they
    *     are dead, etc.)
    */
-  public ZeebeGateway<?> availableGateway() {
+  public TestGateway<?> availableGateway() {
     return allGateways()
         .filter(this::isReady)
         .findFirst()
@@ -202,7 +202,7 @@ public final class SpringCluster implements CloseableSilently {
    *
    * @return the standalone gateways in this cluster
    */
-  public Map<MemberId, SpringGateway> gateways() {
+  public Map<MemberId, TestStandaloneGateway> gateways() {
     return gateways;
   }
 
@@ -212,7 +212,7 @@ public final class SpringCluster implements CloseableSilently {
    *
    * @return the brokers in this cluster
    */
-  public Map<MemberId, SpringBroker> brokers() {
+  public Map<MemberId, TestStandaloneBroker> brokers() {
     return brokers;
   }
 
@@ -222,8 +222,8 @@ public final class SpringCluster implements CloseableSilently {
    *
    * @return the nodes of this cluster
    */
-  public Map<MemberId, Zeebe<?>> nodes() {
-    final Map<MemberId, Zeebe<?>> nodes = new HashMap<>(brokers);
+  public Map<MemberId, TestZeebe<?>> nodes() {
+    final Map<MemberId, TestZeebe<?>> nodes = new HashMap<>(brokers);
     nodes.putAll(gateways);
 
     return nodes;
@@ -296,7 +296,7 @@ public final class SpringCluster implements CloseableSilently {
     shutdown();
   }
 
-  private boolean isReady(final Zeebe<?> node) {
+  private boolean isReady(final TestZeebe<?> node) {
     if (!node.isStarted()) {
       return false;
     }
@@ -311,7 +311,7 @@ public final class SpringCluster implements CloseableSilently {
     return true;
   }
 
-  private void assertCompleteTopology(final ZeebeGateway<?> node) {
+  private void assertCompleteTopology(final TestGateway<?> node) {
     assertThat(node.isStarted()).as("gateway '%s' is started", node.nodeId()).isTrue();
     try (final var client = node.newClientBuilder().build()) {
       TopologyAssert.assertThat(client.newTopologyRequest().send().join())
@@ -319,13 +319,13 @@ public final class SpringCluster implements CloseableSilently {
     }
   }
 
-  private void assertProbe(final Zeebe<?> node, final ZeebeHealthProbe probe) {
+  private void assertProbe(final TestZeebe<?> node, final ZeebeHealthProbe probe) {
     assertThatCode(() -> node.probe(probe)).doesNotThrowAnyException();
   }
 
-  private Stream<ZeebeGateway<?>> allGateways() {
+  private Stream<TestGateway<?>> allGateways() {
     return nodes().values().stream()
-        .filter(ZeebeGateway.class::isInstance)
-        .map(node -> (ZeebeGateway<?>) node);
+        .filter(TestGateway.class::isInstance)
+        .map(node -> (TestGateway<?>) node);
   }
 }

@@ -7,10 +7,11 @@
  */
 package io.camunda.zeebe.qa.util.cluster;
 
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.qa.util.actuator.BrokerHealthActuator;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
 
-public interface ZeebeBroker<T extends ZeebeBroker<T>> extends Zeebe<T> {
+public interface TestBroker<T extends TestBroker<T>> extends TestZeebe<T> {
 
   /** Returns true if this node has an embedded gateway. */
   boolean hasEmbeddedGateway();
@@ -27,4 +28,10 @@ public interface ZeebeBroker<T extends ZeebeBroker<T>> extends Zeebe<T> {
   default HealthActuator healthActuator() {
     return brokerHealth();
   }
+
+  /**
+   * The configuration for this broker. This is a mutable object, but changes to it will not take
+   * effect until the broker is started after.
+   */
+  BrokerCfg brokerConfig();
 }

@@ -8,20 +8,20 @@
 package io.camunda.zeebe.qa.util.cluster.spring;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
+import io.camunda.zeebe.qa.util.cluster.TestBroker;
+import io.camunda.zeebe.qa.util.cluster.TestGateway;
+import io.camunda.zeebe.qa.util.cluster.TestZeebe;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
-import io.camunda.zeebe.test.util.socket.SocketUtil;
-import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 @SuppressWarnings("unused")
-public final class SpringClusterBuilder {
+public final class TestSpringClusterBuilder {
 
   private static final String DEFAULT_CLUSTER_NAME = "zeebe-cluster";
 
@@ -33,15 +33,14 @@ public final class SpringClusterBuilder {
   private int partitionsCount = 1;
   private int replicationFactor = 1;
   private boolean useEmbeddedGateway = true;
-  private Path directory;
-  private final boolean useRecordingExporter = true;
+  private boolean useRecordingExporter = true;
 
-  private Consumer<AbstractSpringBuilder<?, ?, ?>> nodeConfig = builder -> {};
-  private BiConsumer<MemberId, SpringBroker.Builder> brokerConfig = (id, builder) -> {};
-  private BiConsumer<MemberId, SpringGateway.Builder> gatewayConfig = (memberId, builder) -> {};
+  private Consumer<TestZeebe<?>> nodeConfig = node -> {};
+  private BiConsumer<MemberId, TestBroker<?>> brokerConfig = (id, broker) -> {};
+  private BiConsumer<MemberId, TestGateway<?>> gatewayConfig = (id, gateway) -> {};
 
-  private final Map<MemberId, SpringGateway.Builder> gateways = new HashMap<>();
-  private final Map<MemberId, SpringBroker.Builder> brokers = new HashMap<>();
+  private final Map<MemberId, TestStandaloneGateway> gateways = new HashMap<>();
+  private final Map<MemberId, TestStandaloneBroker> brokers = new HashMap<>();
 
   /**
    * If true, the brokers created by this cluster will use embedded gateways. By default this is
@@ -50,7 +49,7 @@ public final class SpringClusterBuilder {
    * @param useEmbeddedGateway true or false to enable the embedded gateway on the brokers
    * @return this builder instance for chaining
    */
-  public SpringClusterBuilder withEmbeddedGateway(final boolean useEmbeddedGateway) {
+  public TestSpringClusterBuilder withEmbeddedGateway(final boolean useEmbeddedGateway) {
     this.useEmbeddedGateway = useEmbeddedGateway;
     return this;
   }
@@ -65,7 +64,7 @@ public final class SpringClusterBuilder {
    * @param gatewaysCount the number of standalone gateways to create
    * @return this builder instance for chaining
    */
-  public SpringClusterBuilder withGatewaysCount(final int gatewaysCount) {
+  public TestSpringClusterBuilder withGatewaysCount(final int gatewaysCount) {
     this.gatewaysCount = gatewaysCount;
     return this;
   }
@@ -83,7 +82,7 @@ public final class SpringClusterBuilder {
    * @param brokersCount the number of brokers to create
    * @return this builder instance for chaining
    */
-  public SpringClusterBuilder withBrokersCount(final int brokersCount) {
+  public TestSpringClusterBuilder withBrokersCount(final int brokersCount) {
     if (brokersCount < 0) {
       throw new IllegalArgumentException(
           "Expected brokersCount to be at least 0, but was " + brokersCount);
@@ -112,7 +111,7 @@ public final class SpringClusterBuilder {
    * @param partitionsCount the number of partitions to distribute across the cluster
    * @return this builder instance for chaining
    */
-  public SpringClusterBuilder withPartitionsCount(final int partitionsCount) {
+  public TestSpringClusterBuilder withPartitionsCount(final int partitionsCount) {
     if (partitionsCount <= 0) {
       throw new IllegalArgumentException(
           "Expected partitionsCount to be at least 1, but was " + partitionsCount);
@@ -129,7 +128,7 @@ public final class SpringClusterBuilder {
    * @param replicationFactor the replication factor for each partition
    * @return this builder instance for chaining
    */
-  public SpringClusterBuilder withReplicationFactor(final int replicationFactor) {
+  public TestSpringClusterBuilder withReplicationFactor(final int replicationFactor) {
     if (replicationFactor <= 0) {
       throw new IllegalArgumentException(
           "Expected replicationFactor to be at least 1, but was " + replicationFactor);
@@ -148,7 +147,7 @@ public final class SpringClusterBuilder {
    * @param name the cluster name
    * @return this builder instance for chaining
    */
-  public SpringClusterBuilder withName(final String name) {
+  public TestSpringClusterBuilder withName(final String name) {
     if (name == null || name.trim().length() < 3) {
       throw new IllegalArgumentException(
           "Expected cluster name to be at least 3 characters, but was " + name);
@@ -167,8 +166,7 @@ public final class SpringClusterBuilder {
    * @param modifier the function that will be applied on all cluster nodes
    * @return this builder instance for chaining
    */
-  public SpringClusterBuilder withNodeConfig(
-      final Consumer<AbstractSpringBuilder<?, ?, ?>> modifier) {
+  public TestSpringClusterBuilder withNodeConfig(final Consumer<TestZeebe<?>> modifier) {
     nodeConfig = modifier;
     return this;
   }
@@ -188,8 +186,8 @@ public final class SpringClusterBuilder {
    *     included)
    * @return this builder instance for chaining
    */
-  public SpringClusterBuilder withGatewayConfig(
-      final BiConsumer<MemberId, SpringGateway.Builder> modifier) {
+  public TestSpringClusterBuilder withGatewayConfig(
+      final BiConsumer<MemberId, TestGateway<?>> modifier) {
     gatewayConfig = modifier;
     return this;
   }
@@ -208,7 +206,7 @@ public final class SpringClusterBuilder {
    *     included)
    * @return this builder instance for chaining
    */
-  public SpringClusterBuilder withGatewayConfig(final Consumer<SpringGateway.Builder> modifier) {
+  public TestSpringClusterBuilder withGatewayConfig(final Consumer<TestGateway<?>> modifier) {
     gatewayConfig = (memberId, gateway) -> modifier.accept(gateway);
     return this;
   }
@@ -224,8 +222,8 @@ public final class SpringClusterBuilder {
    * @param modifier the function that will be applied on all cluster brokers
    * @return this builder instance for chaining
    */
-  public SpringClusterBuilder withBrokerConfig(
-      final BiConsumer<MemberId, SpringBroker.Builder> modifier) {
+  public TestSpringClusterBuilder withBrokerConfig(
+      final BiConsumer<MemberId, TestBroker<?>> modifier) {
     brokerConfig = modifier;
     return this;
   }
@@ -240,38 +238,38 @@ public final class SpringClusterBuilder {
    * @param modifier the function that will be applied on all cluster brokers
    * @return this builder instance for chaining
    */
-  public SpringClusterBuilder withBrokerConfig(final Consumer<SpringBroker.Builder> modifier) {
+  public TestSpringClusterBuilder withBrokerConfig(final Consumer<TestBroker<?>> modifier) {
     brokerConfig = (id, broker) -> modifier.accept(broker);
     return this;
   }
 
   /**
-   * Sets the working directory where all broker data will be stored. If non-null, then under this
-   * directory, you will have one folder per broker, e.g.: broker-0, broker-1, broker-2, etc.
+   * If true, registers the {@link RecordingExporter} for each broker. Defaults to true.
    *
-   * @param directory the root data directory for this cluster
+   * @param useRecordingExporter whether to enable the recording exporter
    * @return this builder instance for chaining
    */
-  public SpringClusterBuilder withDirectory(final Path directory) {
-    this.directory = directory;
+  public TestSpringClusterBuilder useRecordingExporter(final boolean useRecordingExporter) {
+    this.useRecordingExporter = useRecordingExporter;
     return this;
   }
 
   /**
    * Builds a new Zeebe cluster. Will create {@link #brokersCount} brokers (accessible later via
-   * {@link SpringCluster#brokers()}) and {@link #gatewaysCount} standalone gateways (accessible
-   * later via {@link SpringCluster#gateways()}).
+   * {@link TestSpringCluster#brokers()}) and {@link #gatewaysCount} standalone gateways (accessible
+   * later via {@link TestSpringCluster#gateways()}).
    *
    * <p>If {@link #useEmbeddedGateway} is true, then all brokers will have the embedded gateway
-   * enabled and the right topology check configured. Additionally, {@link SpringCluster#gateways()}
-   * will also include them, along with any other additional standalone gateway.
+   * enabled and the right topology check configured. Additionally, {@link
+   * TestSpringCluster#gateways()} will also include them, along with any other additional
+   * standalone gateway.
    *
    * <p>For standalone gateways, if {@link #brokersCount} is at least one, then a random broker is
    * picked as the contact point for all gateways.
    *
    * @return a new Zeebe cluster
    */
-  public SpringCluster build() {
+  public TestSpringCluster build() {
     gateways.clear();
     brokers.clear();
 
@@ -282,26 +280,18 @@ public final class SpringClusterBuilder {
     // is one
     createGateways();
 
-    // finalize building all the nodes, freezing configuration
-    final var brokerNodes =
-        brokers.entrySet().stream()
-            .collect(Collectors.toMap(Entry::getKey, entry -> entry.getValue().build()));
-    final var gatewayNodes =
-        gateways.entrySet().stream()
-            .collect(Collectors.toMap(Entry::getKey, entry -> entry.getValue().build()));
-
-    return new SpringCluster(name, replicationFactor, partitionsCount, brokerNodes, gatewayNodes);
+    return new TestSpringCluster(
+        name, replicationFactor, partitionsCount, new HashMap<>(brokers), new HashMap<>(gateways));
   }
 
-  private void applyConfigFunctions(
-      final MemberId id, final AbstractSpringBuilder<?, ?, ?> builder) {
-    nodeConfig.accept(builder);
+  private void applyConfigFunctions(final MemberId id, final TestZeebe<?> zeebe) {
+    nodeConfig.accept(zeebe);
 
-    if (builder instanceof final SpringGateway.Builder gateway) {
+    if (zeebe instanceof final TestGateway<?> gateway) {
       gatewayConfig.accept(id, gateway);
     }
 
-    if (builder instanceof final SpringBroker.Builder broker) {
+    if (zeebe instanceof final TestBroker<?> broker) {
       brokerConfig.accept(id, broker);
     }
   }
@@ -344,19 +334,16 @@ public final class SpringClusterBuilder {
     // since initial contact points has to container all known brokers, we can only configure it
     // AFTER the base broker configuration
     final var contactPoints = getInitialContactPoints();
-    brokers
-        .values()
-        .forEach(
-            builder ->
-                builder.withConfig(cfg -> cfg.getCluster().setInitialContactPoints(contactPoints)));
+    brokers.values().stream()
+        .map(TestStandaloneBroker::brokerConfig)
+        .map(BrokerCfg::getCluster)
+        .forEach(cfg -> cfg.setInitialContactPoints(contactPoints));
   }
 
-  private SpringBroker.Builder createBroker(final int index) {
+  private TestStandaloneBroker createBroker(final int index) {
     final var builder =
-        new SpringBroker.Builder()
-            .withConfig(cfg -> cfg.getNetwork().getCommandApi().setPort(randomPort()))
-            .withConfig(cfg -> cfg.getNetwork().getInternalApi().setPort(randomPort()))
-            .withConfig(
+        new TestStandaloneBroker()
+            .withBrokerConfig(
                 cfg -> {
                   final var cluster = cfg.getCluster();
                   cluster.setNodeId(index);
@@ -364,32 +351,16 @@ public final class SpringClusterBuilder {
                   cluster.setReplicationFactor(replicationFactor);
                   cluster.setClusterSize(brokersCount);
                   cluster.setClusterName(name);
-                });
-
-    if (useEmbeddedGateway) {
-      builder
-          .withConfig(cfg -> cfg.getGateway().setEnable(useEmbeddedGateway))
-          .withConfig(cfg -> cfg.getGateway().getNetwork().setPort(randomPort()));
-    }
+                })
+            .withBrokerConfig(cfg -> cfg.getGateway().setEnable(useEmbeddedGateway));
 
     if (useRecordingExporter) {
       final var exporterConfig = new ExporterCfg();
       exporterConfig.setClassName(RecordingExporter.class.getName());
-      builder.withConfig(cfg -> cfg.getExporters().put("recording", exporterConfig));
-    }
-
-    if (directory != null) {
-      final var workingDirectory = directory.resolve("broker-" + index);
-      //noinspection ResultOfMethodCallIgnored
-      workingDirectory.toFile().mkdir();
-      builder.withWorkingDirectory(workingDirectory);
+      builder.withBrokerConfig(cfg -> cfg.getExporters().put("recording", exporterConfig));
     }
 
     return builder;
-  }
-
-  private static int randomPort() {
-    return SocketUtil.getNextAddress().getPort();
   }
 
   private void createGateways() {
@@ -403,22 +374,22 @@ public final class SpringClusterBuilder {
     }
   }
 
-  private SpringGateway.Builder createGateway(final String id) {
-    return new SpringGateway.Builder()
-        .withConfig(cfg -> cfg.getNetwork().setPort(randomPort()))
-        .withConfig(cfg -> cfg.getCluster().setInitialContactPoints(getInitialContactPoints()))
-        .withConfig(
+  private TestStandaloneGateway createGateway(final String id) {
+    return new TestStandaloneGateway()
+        .withGatewayConfig(
             cfg -> {
               final var cluster = cfg.getCluster();
-              cluster.setPort(randomPort());
               cluster.setMemberId(id);
               cluster.setClusterName(name);
+              cluster.setInitialContactPoints(getInitialContactPoints());
             });
   }
 
   private List<String> getInitialContactPoints() {
     return brokers.values().stream()
-        .map(builder -> "localhost:" + builder.config().getNetwork().getInternalApi().getPort())
+        .map(
+            builder ->
+                "localhost:" + builder.brokerConfig().getNetwork().getInternalApi().getPort())
         .toList();
   }
 }

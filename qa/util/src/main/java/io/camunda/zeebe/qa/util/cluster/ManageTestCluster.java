@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.qa.util.cluster;
 
+import io.camunda.zeebe.qa.util.cluster.spring.TestSpringCluster;
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Inherited;
@@ -16,8 +17,8 @@ import java.lang.annotation.Target;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
- * Registers the {@link ManageClusterExtension} extension, which will manage the lifecycle of one or
- * more {@link io.camunda.zeebe.qa.util.cluster.spring.SpringCluster}
+ * Registers the {@link TestClusterExtension} extension, which will manage the lifecycle of one or
+ * more {@link TestSpringCluster}
  *
  * <pre>{@code
  * &#64;ZeebeClusters
@@ -49,14 +50,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 @Inherited
-@ExtendWith(ManageClusterExtension.class)
-public @interface ManageClusters {
+@ExtendWith(TestClusterExtension.class)
+public @interface ManageTestCluster {
 
   @Target({ElementType.FIELD})
   @Retention(RetentionPolicy.RUNTIME)
   @Documented
   @Inherited
-  @interface Cluster {
+  @interface TestCluster {
     /**
      * If true (the default), will block and wait until all nodes in the cluster are ready. Does
      * nothing if {@link #autoStart()} is false.

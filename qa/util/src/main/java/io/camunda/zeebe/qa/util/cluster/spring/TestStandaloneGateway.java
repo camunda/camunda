@@ -12,22 +12,61 @@ import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
 import io.camunda.zeebe.gateway.StandaloneGateway;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
-import io.camunda.zeebe.qa.util.cluster.ZeebeGateway;
+import io.camunda.zeebe.qa.util.cluster.TestGateway;
 import io.camunda.zeebe.qa.util.cluster.ZeebePort;
+import io.camunda.zeebe.qa.util.cluster.spring.ContextOverrideInitializer.Bean;
 import io.camunda.zeebe.shared.Profile;
+import io.camunda.zeebe.test.util.socket.SocketUtil;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.Consumer;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ConfigurableApplicationContext;
 
 /** Encapsulates an instance of the {@link StandaloneGateway} Spring application. */
-public final class SpringGateway implements ZeebeGateway<SpringGateway> {
+public final class TestStandaloneGateway implements TestGateway<TestStandaloneGateway> {
   private final GatewayCfg config;
+  private final Map<String, Bean<?>> beans;
+  private final Map<String, Object> propertyOverrides;
   private final SpringApplicationBuilder springBuilder;
 
   private ConfigurableApplicationContext springContext;
 
-  public SpringGateway(final GatewayCfg config, final SpringApplicationBuilder springBuilder) {
+  public TestStandaloneGateway() {
+    this(new GatewayCfg());
+  }
+
+  public TestStandaloneGateway(final GatewayCfg config) {
+    this(config, new HashMap<>(), new HashMap<>());
+  }
+
+  private TestStandaloneGateway(
+      final GatewayCfg config,
+      final Map<String, Bean<?>> beans,
+      final Map<String, Object> propertyOverrides) {
+    this(
+        config,
+        beans,
+        propertyOverrides,
+        TestSupport.defaultSpringBuilder(beans, propertyOverrides));
+  }
+
+  private TestStandaloneGateway(
+      final GatewayCfg config,
+      final Map<String, Bean<?>> beans,
+      final Map<String, Object> propertyOverrides,
+      final SpringApplicationBuilder springBuilder) {
     this.config = config;
+    this.beans = beans;
+    this.propertyOverrides = propertyOverrides;
     this.springBuilder = springBuilder;
+
+    springBuilder.profiles(Profile.GATEWAY.getId(), "test").sources(StandaloneGateway.class);
+    config.getNetwork().setPort(SocketUtil.getNextAddress().getPort());
+    config.getCluster().setPort(SocketUtil.getNextAddress().getPort());
+    propertyOverrides.put("server.port", SocketUtil.getNextAddress().getPort());
+    withBean("config", config, GatewayCfg.class);
   }
 
   @Override
@@ -68,11 +107,16 @@ public final class SpringGateway implements ZeebeGateway<SpringGateway> {
     return switch (port) {
       case GATEWAY -> config.getNetwork().getPort();
       case CLUSTER -> config.getCluster().getPort();
-      case MONITORING -> springContext
-          .getEnvironment()
-          .getProperty("server.port", int.class, port.port());
+      case MONITORING -> Optional.ofNullable(propertyOverrides.get("server.port"))
+          .map(int.class::cast)
+          .orElseGet(() -> springContext.getEnvironment().getProperty("server.port", int.class));
       default -> throw new IllegalStateException("Unexpected value: " + port);
     };
+  }
+
+  @Override
+  public TestStandaloneGateway withEnv(final String key, final Object value) {
+    return null;
   }
 
   @Override
@@ -88,18 +132,19 @@ public final class SpringGateway implements ZeebeGateway<SpringGateway> {
     return builder;
   }
 
-  public static final class Builder
-      extends AbstractSpringBuilder<SpringGateway, GatewayCfg, Builder> {
+  @Override
+  public GatewayCfg gatewayConfig() {
+    return config;
+  }
 
-    public Builder() {
-      super(new GatewayCfg());
-    }
+  public TestStandaloneGateway withGatewayConfig(final Consumer<GatewayCfg> modifier) {
+    modifier.accept(config);
+    return this;
+  }
 
-    @Override
-    protected SpringGateway createNode(final SpringApplicationBuilder builder) {
-      builder.profiles(Profile.GATEWAY.getId()).sources(StandaloneGateway.class);
-
-      return new SpringGateway(config, builder);
-    }
+  public <T> TestStandaloneGateway withBean(
+      final String qualifier, final T bean, final Class<T> type) {
+    beans.put(qualifier, new Bean<>(bean, type));
+    return this;
   }
 }

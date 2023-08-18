@@ -10,7 +10,7 @@ package io.camunda.zeebe.qa.util.cluster;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
 
-public interface Zeebe<T extends Zeebe<T>> {
+public interface TestZeebe<T extends TestZeebe<T>> {
 
   /** Returns this node's unique cluster ID */
   MemberId nodeId();
@@ -78,4 +78,6 @@ public interface Zeebe<T extends Zeebe<T>> {
   default int mappedPort(final ZeebePort port) {
     return port.port();
   }
+
+  T withEnv(final String key, final Object value);
 }
