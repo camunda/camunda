@@ -116,7 +116,7 @@
     "shelljs": "^0.8.5",
     "styled-components": "^5.3.11",
     "testcafe": "^3.2.0",
-    "testcafe-browser-provider-browserstack": "^1.15.0",
+    "testcafe-browser-provider-browserstack": "^1.15.1",
     "tree-kill": "^1.2.2",
     "typescript": "^5.1.6",
     "ws": "^8.13.0",
