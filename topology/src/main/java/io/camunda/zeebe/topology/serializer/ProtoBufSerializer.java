@@ -18,7 +18,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
-public class ProtoBufSerializer implements ClusterTopologyGossipSerializer {
+public class ProtoBufSerializer implements ClusterTopologySerializer {
 
   @Override
   public byte[] encode(final ClusterTopologyGossipState gossipState) {
@@ -40,7 +40,6 @@ public class ProtoBufSerializer implements ClusterTopologyGossipSerializer {
 
     try {
       gossipState = Topology.GossipState.parseFrom(encodedState);
-
     } catch (final InvalidProtocolBufferException e) {
       throw new DecodingFailed(e);
     }
@@ -51,6 +50,22 @@ public class ProtoBufSerializer implements ClusterTopologyGossipSerializer {
           decodeClusterTopology(gossipState.getClusterTopology()));
     }
     return clusterTopologyGossipState;
+  }
+
+  @Override
+  public byte[] encode(final ClusterTopology clusterTopology) {
+    return encodeClusterTopology(clusterTopology).toByteArray();
+  }
+
+  @Override
+  public ClusterTopology decodeClusterTopology(final byte[] encodedClusterTopology) {
+    try {
+      final var topology = Topology.ClusterTopology.parseFrom(encodedClusterTopology);
+      return decodeClusterTopology(topology);
+
+    } catch (final InvalidProtocolBufferException e) {
+      throw new DecodingFailed(e);
+    }
   }
 
   private io.camunda.zeebe.topology.state.ClusterTopology decodeClusterTopology(

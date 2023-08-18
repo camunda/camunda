@@ -17,6 +17,7 @@ import io.camunda.zeebe.topology.state.MemberState.State;
 import io.camunda.zeebe.topology.state.PartitionState;
 import java.util.Map;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -36,6 +37,21 @@ final class ProtoBufSerializerTest {
 
     // then
     assertThat(decodedState.getClusterTopology())
+        .describedAs("Decoded clusterTopology must be equal to initial one")
+        .isEqualTo(initialClusterTopology);
+  }
+
+  @Test
+  void shouldEncodeAndDecodeClusterTopology() {
+    // given
+    final var initialClusterTopology = topologyWithTwoMembers();
+
+    // when
+    final var decodedClusterTopology =
+        protoBufSerializer.decodeClusterTopology(protoBufSerializer.encode(initialClusterTopology));
+
+    // then
+    assertThat(decodedClusterTopology)
         .describedAs("Decoded clusterTopology must be equal to initial one")
         .isEqualTo(initialClusterTopology);
   }

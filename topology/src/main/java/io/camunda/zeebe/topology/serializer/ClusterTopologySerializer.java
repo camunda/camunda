@@ -8,10 +8,15 @@
 package io.camunda.zeebe.topology.serializer;
 
 import io.camunda.zeebe.topology.gossip.ClusterTopologyGossipState;
+import io.camunda.zeebe.topology.state.ClusterTopology;
 
-public interface ClusterTopologyGossipSerializer {
+public interface ClusterTopologySerializer {
 
   byte[] encode(ClusterTopologyGossipState gossipState);
 
   ClusterTopologyGossipState decode(byte[] encodedState);
+
+  byte[] encode(ClusterTopology clusterTopology);
+
+  ClusterTopology decodeClusterTopology(byte[] encodedClusterTopology);
 }
