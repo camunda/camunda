@@ -24,7 +24,6 @@ import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.util.Collections;
 import java.util.Map;
-import java.util.UUID;
 import org.agrona.CloseHelper;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assumptions;
@@ -62,8 +61,6 @@ final class ElasticsearchExporterIT {
 
   @BeforeAll
   public void beforeAll() {
-    // as all tests use the same endpoint, we need a per-test unique prefix
-    config.index.prefix = UUID.randomUUID() + "-test-record";
     config.url = CONTAINER.getHttpHostAddress();
     config.index.setNumberOfShards(1);
     config.index.setNumberOfReplicas(1);
