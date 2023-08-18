@@ -9,11 +9,13 @@ package io.camunda.zeebe.topology;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.fasterxml.jackson.core.JsonParseException;
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
+import io.camunda.zeebe.topology.serializer.ClusterTopologySerializer;
+import io.camunda.zeebe.topology.serializer.DecodingFailed;
+import io.camunda.zeebe.topology.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.MemberState;
 import io.camunda.zeebe.topology.state.PartitionState;
@@ -33,6 +35,7 @@ import org.junit.jupiter.api.io.TempDir;
 final class ClusterTopologyManagerTest {
 
   AtomicReference<ClusterTopology> gossipState = new AtomicReference<>();
+  private final ClusterTopologySerializer serializer = new ProtoBufSerializer();
   private final Consumer<ClusterTopology> gossipHandler = gossipState::set;
 
   @Test
@@ -41,7 +44,7 @@ final class ClusterTopologyManagerTest {
     final ClusterTopologyManager clusterTopologyManager =
         new ClusterTopologyManager(
             new TestConcurrencyControl(),
-            new PersistedClusterTopology(topologyFile.resolve("topology.temp")));
+            new PersistedClusterTopology(topologyFile.resolve("topology.temp"), serializer));
     clusterTopologyManager.setTopologyGossiper(gossipHandler);
 
     // when
@@ -59,7 +62,7 @@ final class ClusterTopologyManagerTest {
     final ClusterTopologyManager clusterTopologyManager =
         new ClusterTopologyManager(
             new TestConcurrencyControl(),
-            new PersistedClusterTopology(topologyFile.resolve("topology.temp")));
+            new PersistedClusterTopology(topologyFile.resolve("topology.temp"), serializer));
     clusterTopologyManager.setTopologyGossiper(gossipHandler);
 
     // when
@@ -93,10 +96,11 @@ final class ClusterTopologyManagerTest {
             .addMember(
                 MemberId.from("5"),
                 MemberState.initializeAsActive(Map.of(10, PartitionState.active(4))));
-    Files.write(existingTopologyFile, existingTopology.encode());
+    Files.write(existingTopologyFile, serializer.encode(existingTopology));
     final ClusterTopologyManager clusterTopologyManager =
         new ClusterTopologyManager(
-            new TestConcurrencyControl(), new PersistedClusterTopology(existingTopologyFile));
+            new TestConcurrencyControl(),
+            new PersistedClusterTopology(existingTopologyFile, serializer));
     clusterTopologyManager.setTopologyGossiper(gossipHandler);
 
     // when
@@ -116,13 +120,14 @@ final class ClusterTopologyManagerTest {
     Files.write(existingTopologyFile, new byte[10]); // write random string
     final ClusterTopologyManager clusterTopologyManager =
         new ClusterTopologyManager(
-            new TestConcurrencyControl(), new PersistedClusterTopology(existingTopologyFile));
+            new TestConcurrencyControl(),
+            new PersistedClusterTopology(existingTopologyFile, serializer));
 
     // when - then
     assertThat(clusterTopologyManager.start(this::getPartitionDistribution))
         .failsWithin(Duration.ofMillis(100))
         .withThrowableThat()
-        .withCauseInstanceOf(JsonParseException.class);
+        .withCauseInstanceOf(DecodingFailed.class);
   }
 
   @Test
@@ -131,7 +136,7 @@ final class ClusterTopologyManagerTest {
     final ClusterTopologyManager clusterTopologyManager =
         new ClusterTopologyManager(
             new TestConcurrencyControl(),
-            new PersistedClusterTopology(topologyFile.resolve("topology.temp")));
+            new PersistedClusterTopology(topologyFile.resolve("topology.temp"), serializer));
     clusterTopologyManager.setTopologyGossiper(gossipHandler);
 
     clusterTopologyManager.start(this::getPartitionDistribution).join();

@@ -7,12 +7,8 @@
  */
 package io.camunda.zeebe.topology.state;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import io.atomix.cluster.MemberId;
-import java.io.IOException;
 import java.util.Map;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
@@ -29,7 +25,6 @@ import java.util.stream.Stream;
  *
  * <p>changes - keeps track of the ongoing configuration changes
  */
-@JsonIgnoreProperties(ignoreUnknown = true)
 public record ClusterTopology(
     long version, Map<MemberId, MemberState> members, ClusterChangePlan changes) {
 
@@ -45,14 +40,6 @@ public record ClusterTopology(
 
   public static ClusterTopology init() {
     return new ClusterTopology(0, Map.of(), ClusterChangePlan.empty());
-  }
-
-  public static ClusterTopology decode(final byte[] serializedTopology) throws IOException {
-    return new ObjectMapper().readValue(serializedTopology, ClusterTopology.class);
-  }
-
-  public byte[] encode() throws JsonProcessingException {
-    return new ObjectMapper().writeValueAsBytes(this);
   }
 
   public ClusterTopology addMember(final MemberId memberId, final MemberState state) {

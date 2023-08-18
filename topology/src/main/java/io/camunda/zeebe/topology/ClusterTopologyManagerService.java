@@ -14,9 +14,9 @@ import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.topology.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.topology.gossip.ClusterTopologyGossiper;
 import io.camunda.zeebe.topology.gossip.ClusterTopologyGossiperConfig;
-import io.camunda.zeebe.topology.gossip.ProtoBufSerializer;
 import java.nio.file.Path;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -32,7 +32,8 @@ public final class ClusterTopologyManagerService extends Actor {
       final ClusterMembershipService memberShipService,
       final ClusterTopologyGossiperConfig config) {
     clusterTopologyManager =
-        new ClusterTopologyManager(this, new PersistedClusterTopology(topologyFile));
+        new ClusterTopologyManager(
+            this, new PersistedClusterTopology(topologyFile, new ProtoBufSerializer()));
     clusterTopologyGossiper =
         new ClusterTopologyGossiper(
             this,

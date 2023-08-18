@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.topology;
 
+import io.camunda.zeebe.topology.serializer.ClusterTopologySerializer;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -16,17 +17,19 @@ import java.nio.file.StandardOpenOption;
 /** Manages reading and updating ClusterTopology in a local persisted file * */
 final class PersistedClusterTopology {
   private final Path topologyFile;
+  private final ClusterTopologySerializer serializer;
   private ClusterTopology clusterTopology = ClusterTopology.uninitialized();
 
-  PersistedClusterTopology(final Path topologyFile) {
+  PersistedClusterTopology(final Path topologyFile, final ClusterTopologySerializer serializer) {
     this.topologyFile = topologyFile;
+    this.serializer = serializer;
   }
 
   void tryInitialize() throws IOException {
     if (Files.exists(topologyFile)) {
       final var serializedTopology = Files.readAllBytes(topologyFile);
       if (serializedTopology.length > 0) {
-        clusterTopology = ClusterTopology.decode(serializedTopology);
+        clusterTopology = serializer.decodeClusterTopology(serializedTopology);
       }
     }
   }
@@ -36,7 +39,7 @@ final class PersistedClusterTopology {
   }
 
   void update(final ClusterTopology clusterTopology) throws IOException {
-    final var serializedTopology = clusterTopology.encode();
+    final var serializedTopology = serializer.encode(clusterTopology);
     Files.write(
         topologyFile,
         serializedTopology,
