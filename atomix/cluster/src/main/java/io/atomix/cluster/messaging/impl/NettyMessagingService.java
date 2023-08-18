@@ -62,7 +62,7 @@ import io.netty.handler.ssl.SslProvider;
 import io.netty.util.concurrent.DefaultThreadFactory;
 import io.netty.util.concurrent.Future;
 import java.net.ConnectException;
-import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -698,7 +698,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
    */
   private CompletableFuture<Channel> bootstrapClient(final Address address) {
     final CompletableFuture<Channel> future = new OrderedFuture<>();
-    final InetAddress resolvedAddress = address.address(true);
+    final InetSocketAddress resolvedAddress = address.socketAddress();
     if (resolvedAddress == null) {
       future.completeExceptionally(
           new ConnectException(
@@ -722,7 +722,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
     // TODO: Make this faster:
     // http://normanmaurer.me/presentations/2014-facebook-eng-netty/slides.html#37.0
     bootstrap.channel(clientChannelClass);
-    bootstrap.remoteAddress(resolvedAddress, address.port());
+    bootstrap.remoteAddress(resolvedAddress);
     bootstrap.handler(new BasicClientChannelInitializer(future));
     final Channel channel =
         bootstrap
@@ -734,7 +734,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
                         new ConnectException(
                             String.format(
                                 "Failed to connect channel for address %s (resolved: %s) : %s",
-                                address, address.address(), onConnect.cause())));
+                                address, address.getAddress(), onConnect.cause())));
                   }
                 })
             .channel();

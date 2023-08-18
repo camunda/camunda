@@ -17,7 +17,6 @@
 package io.atomix.utils.net;
 
 import com.google.common.net.HostAndPort;
-import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
@@ -28,7 +27,6 @@ public final class Address {
   private static final int DEFAULT_PORT = 5679;
   private final String host;
   private final int port;
-  private transient volatile Type type;
   private volatile InetSocketAddress socketAddress;
 
   public Address(final String host, final int port) {
@@ -39,7 +37,6 @@ public final class Address {
     this.host = host;
     this.port = port;
     if (address != null) {
-      type = address instanceof Inet6Address ? Type.IPV6 : Type.IPV4;
       socketAddress = new InetSocketAddress(address, port);
     } else {
       socketAddress = InetSocketAddress.createUnresolved(host, port);
@@ -129,8 +126,8 @@ public final class Address {
    *
    * @return the IP address
    */
-  public InetAddress address() {
-    return address(false);
+  public InetAddress tryResolveAngGetAddress() {
+    return tryResolveAngGetAddress(false);
   }
 
   /**
@@ -139,14 +136,23 @@ public final class Address {
    * @param resolve whether to force resolve the hostname
    * @return the IP address
    */
-  public InetAddress address(final boolean resolve) {
+  public InetAddress tryResolveAngGetAddress(final boolean resolve) {
     if (resolve || socketAddress.isUnresolved()) {
-      // the constructor will by default attempt to resolve the host, and will fallback to the an
+      // the constructor will by default attempt to resolve the host, and will fall back to the
       // unresolved address if it couldn't
       socketAddress = new InetSocketAddress(host, port);
       return socketAddress.getAddress();
     }
 
+    return socketAddress.getAddress();
+  }
+
+  /**
+   * Returns the IP address or null if it is unresolved.
+   *
+   * @return the IP address
+   */
+  public InetAddress getAddress() {
     return socketAddress.getAddress();
   }
 

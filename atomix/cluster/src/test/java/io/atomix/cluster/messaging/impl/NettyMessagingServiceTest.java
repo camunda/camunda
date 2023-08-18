@@ -200,7 +200,7 @@ public class NettyMessagingServiceTest {
     assertTrue(Arrays.equals("hello there".getBytes(), response.join()));
     assertTrue(handlerInvoked.get());
     assertTrue(Arrays.equals(request.get(), "hello world".getBytes()));
-    assertEquals(address1.address(), sender.get().address());
+    assertEquals(address1.tryResolveAngGetAddress(), sender.get().tryResolveAngGetAddress());
   }
 
   @Test
@@ -313,7 +313,7 @@ public class NettyMessagingServiceTest {
     assertTrue(Arrays.equals("hello there".getBytes(), response.join()));
     assertTrue(handlerInvoked.get());
     assertTrue(Arrays.equals(request.get(), "hello world".getBytes()));
-    assertEquals(address1.address(), sender.get().address());
+    assertEquals(address1.tryResolveAngGetAddress(), sender.get().tryResolveAngGetAddress());
   }
 
   @Test
