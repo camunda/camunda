@@ -191,7 +191,6 @@ export class ReportEdit extends React.Component {
       ...this.state.report,
       data: newReport,
     };
-    delete query.result;
     await this.loadUpdatedReport(query);
   };
 
