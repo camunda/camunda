@@ -13,32 +13,28 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import feign.FeignException;
 import io.camunda.zeebe.backup.s3.S3BackupConfig.Builder;
 import io.camunda.zeebe.backup.s3.S3BackupStore;
+import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.BackupStoreType;
+import io.camunda.zeebe.broker.system.configuration.backup.S3BackupStoreConfig;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
+import io.camunda.zeebe.qa.util.cluster.TestStandalone;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneCluster;
+import io.camunda.zeebe.qa.util.cluster.junit.ManageTestNodes;
+import io.camunda.zeebe.qa.util.cluster.junit.ManageTestNodes.TestCluster;
 import io.camunda.zeebe.qa.util.testcontainers.MinioContainer;
-import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.camunda.zeebe.shared.management.openapi.models.BackupInfo;
 import io.camunda.zeebe.shared.management.openapi.models.PartitionBackupInfo;
 import io.camunda.zeebe.shared.management.openapi.models.StateCode;
 import io.camunda.zeebe.shared.management.openapi.models.TakeBackupResponse;
-import io.camunda.zeebe.test.util.socket.SocketUtil;
-import io.camunda.zeebe.test.util.testcontainers.ContainerLogsDumper;
-import io.zeebe.containers.ZeebeBrokerNode;
-import io.zeebe.containers.ZeebeNode;
-import io.zeebe.containers.ZeebePort;
-import io.zeebe.containers.cluster.ZeebeCluster;
-import io.zeebe.containers.engine.ContainerEngine;
 import java.time.Duration;
 import org.agrona.CloseHelper;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.assertj.core.groups.Tuple;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
-import org.testcontainers.containers.Network;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -54,55 +50,36 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  * maintain consistency via checkpoint records. Other test suites should be set up for this.
  */
 @Testcontainers
+@ManageTestNodes
 final class S3BackupAcceptanceIT {
-  private static final Network NETWORK = Network.newNetwork();
+  @Container
+  private static final MinioContainer MINIO = new MinioContainer().withDomain("minio.local");
 
   private final String bucketName = RandomStringUtils.randomAlphabetic(10).toLowerCase();
 
-  @Container
-  private final MinioContainer minio =
-      new MinioContainer().withNetwork(NETWORK).withDomain("minio.local", bucketName);
-
-  private final ZeebeCluster cluster =
-      ZeebeCluster.builder()
-          .withImage(ZeebeTestContainerDefaults.defaultTestImage())
-          .withNetwork(NETWORK)
+  @TestCluster
+  private final TestStandaloneCluster cluster =
+      TestStandaloneCluster.builder()
           .withBrokersCount(2)
           .withGatewaysCount(1)
           .withReplicationFactor(1)
           .withPartitionsCount(2)
           .withEmbeddedGateway(false)
+          .useRecordingExporter(true)
           .withBrokerConfig(this::configureBroker)
           .withNodeConfig(this::configureNode)
           .build();
 
-  @RegisterExtension
-  @SuppressWarnings("unused")
-  final ContainerLogsDumper logsWatcher = new ContainerLogsDumper(cluster::getNodes);
-
-  @Container
-  private final ContainerEngine engine =
-      ContainerEngine.builder()
-          .withDebugReceiverPort(SocketUtil.getNextAddress().getPort())
-          .withAutoAcknowledge(true)
-          .withCluster(cluster)
-          .build();
-
   private S3BackupStore store;
-
-  @AfterAll
-  static void afterAll() {
-    CloseHelper.quietCloseAll(NETWORK);
-  }
 
   @BeforeEach
   void beforeEach() {
     final var config =
         new Builder()
             .withBucketName(bucketName)
-            .withEndpoint(minio.externalEndpoint())
-            .withRegion(minio.region())
-            .withCredentials(minio.accessKey(), minio.secretKey())
+            .withEndpoint(MINIO.externalEndpoint())
+            .withRegion(MINIO.region())
+            .withCredentials(MINIO.accessKey(), MINIO.secretKey())
             .withApiCallTimeout(Duration.ofSeconds(25))
             .forcePathStyleAccess(true)
             .build();
@@ -121,8 +98,8 @@ final class S3BackupAcceptanceIT {
   @Test
   void shouldTakeBackup() {
     // given
-    final var actuator = BackupActuator.of(cluster.getAvailableGateway());
-    try (final var client = engine.createClient()) {
+    final var actuator = BackupActuator.ofAddress(cluster.availableGateway().monitoringAddress());
+    try (final var client = cluster.newClientBuilder().build()) {
       client.newPublishMessageCommand().messageName("name").correlationKey("key").send().join();
     }
 
@@ -154,8 +131,8 @@ final class S3BackupAcceptanceIT {
   @Test
   void shouldListBackups() {
     // given
-    final var actuator = BackupActuator.of(cluster.getAvailableGateway());
-    try (final var client = engine.createClient()) {
+    final var actuator = BackupActuator.ofAddress(cluster.availableGateway().monitoringAddress());
+    try (final var client = cluster.newClientBuilder().build()) {
       client.newPublishMessageCommand().messageName("name").correlationKey("key").send().join();
     }
 
@@ -178,7 +155,7 @@ final class S3BackupAcceptanceIT {
   @Test
   void shouldDeleteBackup() {
     // given
-    final var actuator = BackupActuator.of(cluster.getAvailableGateway());
+    final var actuator = BackupActuator.ofAddress(cluster.availableGateway().monitoringAddress());
     final long backupId = 1;
     actuator.take(backupId);
     waitUntilBackupIsCompleted(actuator, backupId);
@@ -197,19 +174,23 @@ final class S3BackupAcceptanceIT {
                     .isEqualTo(404));
   }
 
-  private void configureBroker(final ZeebeBrokerNode<?> broker) {
-    broker
-        .withEnv("ZEEBE_BROKER_DATA_BACKUP_STORE", "S3")
-        .withEnv("ZEEBE_BROKER_DATA_BACKUP_S3_BUCKETNAME", bucketName)
-        .withEnv("ZEEBE_BROKER_DATA_BACKUP_S3_ENDPOINT", minio.internalEndpoint())
-        .withEnv("ZEEBE_BROKER_DATA_BACKUP_S3_REGION", minio.region())
-        .withEnv("ZEEBE_BROKER_DATA_BACKUP_S3_ACCESSKEY", minio.accessKey())
-        .withEnv("ZEEBE_BROKER_DATA_BACKUP_S3_SECRETKEY", minio.secretKey())
-        .withEnv("ZEEBE_BROKER_DATA_BACKUP_S3_FORCEPATHSTYLEACCESS", "true");
+  private void configureBroker(final TestStandaloneBroker broker) {
+    broker.withBrokerConfig(
+        cfg -> {
+          final var config = new S3BackupStoreConfig();
+          config.setAccessKey(MINIO.accessKey());
+          config.setEndpoint(MINIO.externalEndpoint());
+          config.setBucketName(bucketName);
+          config.setSecretKey(MINIO.secretKey());
+          config.setRegion(MINIO.region());
+          config.setForcePathStyleAccess(true);
+
+          cfg.getData().getBackup().setStore(BackupStoreType.S3);
+          cfg.getData().getBackup().setS3(config);
+        });
   }
 
-  private void configureNode(final ZeebeNode<?> node) {
-    node.withEnv("MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE", "*").dependsOn(minio);
-    node.addExposedPort(ZeebePort.MONITORING.getPort());
+  private void configureNode(final TestStandalone<?> node) {
+    node.withEnv("management.endpoint.web.exposure.include", "*");
   }
 }

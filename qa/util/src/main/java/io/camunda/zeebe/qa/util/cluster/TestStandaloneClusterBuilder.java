@@ -5,14 +5,10 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.qa.util.cluster.spring;
+package io.camunda.zeebe.qa.util.cluster;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
-import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
-import io.camunda.zeebe.qa.util.cluster.TestBroker;
-import io.camunda.zeebe.qa.util.cluster.TestGateway;
-import io.camunda.zeebe.qa.util.cluster.TestZeebe;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.HashMap;
 import java.util.List;
@@ -20,8 +16,8 @@ import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-@SuppressWarnings("unused")
-public final class TestSpringClusterBuilder {
+@SuppressWarnings({"unused", "resource"})
+public final class TestStandaloneClusterBuilder {
 
   private static final String DEFAULT_CLUSTER_NAME = "zeebe-cluster";
 
@@ -35,8 +31,8 @@ public final class TestSpringClusterBuilder {
   private boolean useEmbeddedGateway = true;
   private boolean useRecordingExporter = true;
 
-  private Consumer<TestZeebe<?>> nodeConfig = node -> {};
-  private BiConsumer<MemberId, TestBroker<?>> brokerConfig = (id, broker) -> {};
+  private Consumer<TestStandalone<?>> nodeConfig = node -> {};
+  private BiConsumer<MemberId, TestStandaloneBroker> brokerConfig = (id, broker) -> {};
   private BiConsumer<MemberId, TestGateway<?>> gatewayConfig = (id, gateway) -> {};
 
   private final Map<MemberId, TestStandaloneGateway> gateways = new HashMap<>();
@@ -49,7 +45,7 @@ public final class TestSpringClusterBuilder {
    * @param useEmbeddedGateway true or false to enable the embedded gateway on the brokers
    * @return this builder instance for chaining
    */
-  public TestSpringClusterBuilder withEmbeddedGateway(final boolean useEmbeddedGateway) {
+  public TestStandaloneClusterBuilder withEmbeddedGateway(final boolean useEmbeddedGateway) {
     this.useEmbeddedGateway = useEmbeddedGateway;
     return this;
   }
@@ -64,7 +60,7 @@ public final class TestSpringClusterBuilder {
    * @param gatewaysCount the number of standalone gateways to create
    * @return this builder instance for chaining
    */
-  public TestSpringClusterBuilder withGatewaysCount(final int gatewaysCount) {
+  public TestStandaloneClusterBuilder withGatewaysCount(final int gatewaysCount) {
     this.gatewaysCount = gatewaysCount;
     return this;
   }
@@ -82,7 +78,7 @@ public final class TestSpringClusterBuilder {
    * @param brokersCount the number of brokers to create
    * @return this builder instance for chaining
    */
-  public TestSpringClusterBuilder withBrokersCount(final int brokersCount) {
+  public TestStandaloneClusterBuilder withBrokersCount(final int brokersCount) {
     if (brokersCount < 0) {
       throw new IllegalArgumentException(
           "Expected brokersCount to be at least 0, but was " + brokersCount);
@@ -111,7 +107,7 @@ public final class TestSpringClusterBuilder {
    * @param partitionsCount the number of partitions to distribute across the cluster
    * @return this builder instance for chaining
    */
-  public TestSpringClusterBuilder withPartitionsCount(final int partitionsCount) {
+  public TestStandaloneClusterBuilder withPartitionsCount(final int partitionsCount) {
     if (partitionsCount <= 0) {
       throw new IllegalArgumentException(
           "Expected partitionsCount to be at least 1, but was " + partitionsCount);
@@ -128,7 +124,7 @@ public final class TestSpringClusterBuilder {
    * @param replicationFactor the replication factor for each partition
    * @return this builder instance for chaining
    */
-  public TestSpringClusterBuilder withReplicationFactor(final int replicationFactor) {
+  public TestStandaloneClusterBuilder withReplicationFactor(final int replicationFactor) {
     if (replicationFactor <= 0) {
       throw new IllegalArgumentException(
           "Expected replicationFactor to be at least 1, but was " + replicationFactor);
@@ -147,7 +143,7 @@ public final class TestSpringClusterBuilder {
    * @param name the cluster name
    * @return this builder instance for chaining
    */
-  public TestSpringClusterBuilder withName(final String name) {
+  public TestStandaloneClusterBuilder withName(final String name) {
     if (name == null || name.trim().length() < 3) {
       throw new IllegalArgumentException(
           "Expected cluster name to be at least 3 characters, but was " + name);
@@ -166,7 +162,7 @@ public final class TestSpringClusterBuilder {
    * @param modifier the function that will be applied on all cluster nodes
    * @return this builder instance for chaining
    */
-  public TestSpringClusterBuilder withNodeConfig(final Consumer<TestZeebe<?>> modifier) {
+  public TestStandaloneClusterBuilder withNodeConfig(final Consumer<TestStandalone<?>> modifier) {
     nodeConfig = modifier;
     return this;
   }
@@ -186,7 +182,7 @@ public final class TestSpringClusterBuilder {
    *     included)
    * @return this builder instance for chaining
    */
-  public TestSpringClusterBuilder withGatewayConfig(
+  public TestStandaloneClusterBuilder withGatewayConfig(
       final BiConsumer<MemberId, TestGateway<?>> modifier) {
     gatewayConfig = modifier;
     return this;
@@ -206,7 +202,7 @@ public final class TestSpringClusterBuilder {
    *     included)
    * @return this builder instance for chaining
    */
-  public TestSpringClusterBuilder withGatewayConfig(final Consumer<TestGateway<?>> modifier) {
+  public TestStandaloneClusterBuilder withGatewayConfig(final Consumer<TestGateway<?>> modifier) {
     gatewayConfig = (memberId, gateway) -> modifier.accept(gateway);
     return this;
   }
@@ -222,8 +218,8 @@ public final class TestSpringClusterBuilder {
    * @param modifier the function that will be applied on all cluster brokers
    * @return this builder instance for chaining
    */
-  public TestSpringClusterBuilder withBrokerConfig(
-      final BiConsumer<MemberId, TestBroker<?>> modifier) {
+  public TestStandaloneClusterBuilder withBrokerConfig(
+      final BiConsumer<MemberId, TestStandaloneBroker> modifier) {
     brokerConfig = modifier;
     return this;
   }
@@ -238,7 +234,8 @@ public final class TestSpringClusterBuilder {
    * @param modifier the function that will be applied on all cluster brokers
    * @return this builder instance for chaining
    */
-  public TestSpringClusterBuilder withBrokerConfig(final Consumer<TestBroker<?>> modifier) {
+  public TestStandaloneClusterBuilder withBrokerConfig(
+      final Consumer<TestStandaloneBroker> modifier) {
     brokerConfig = (id, broker) -> modifier.accept(broker);
     return this;
   }
@@ -249,19 +246,19 @@ public final class TestSpringClusterBuilder {
    * @param useRecordingExporter whether to enable the recording exporter
    * @return this builder instance for chaining
    */
-  public TestSpringClusterBuilder useRecordingExporter(final boolean useRecordingExporter) {
+  public TestStandaloneClusterBuilder useRecordingExporter(final boolean useRecordingExporter) {
     this.useRecordingExporter = useRecordingExporter;
     return this;
   }
 
   /**
    * Builds a new Zeebe cluster. Will create {@link #brokersCount} brokers (accessible later via
-   * {@link TestSpringCluster#brokers()}) and {@link #gatewaysCount} standalone gateways (accessible
-   * later via {@link TestSpringCluster#gateways()}).
+   * {@link TestStandaloneCluster#brokers()}) and {@link #gatewaysCount} standalone gateways
+   * (accessible later via {@link TestStandaloneCluster#gateways()}).
    *
    * <p>If {@link #useEmbeddedGateway} is true, then all brokers will have the embedded gateway
    * enabled and the right topology check configured. Additionally, {@link
-   * TestSpringCluster#gateways()} will also include them, along with any other additional
+   * TestStandaloneCluster#gateways()} will also include them, along with any other additional
    * standalone gateway.
    *
    * <p>For standalone gateways, if {@link #brokersCount} is at least one, then a random broker is
@@ -269,7 +266,7 @@ public final class TestSpringClusterBuilder {
    *
    * @return a new Zeebe cluster
    */
-  public TestSpringCluster build() {
+  public TestStandaloneCluster build() {
     gateways.clear();
     brokers.clear();
 
@@ -280,18 +277,18 @@ public final class TestSpringClusterBuilder {
     // is one
     createGateways();
 
-    return new TestSpringCluster(
+    return new TestStandaloneCluster(
         name, replicationFactor, partitionsCount, new HashMap<>(brokers), new HashMap<>(gateways));
   }
 
-  private void applyConfigFunctions(final MemberId id, final TestZeebe<?> zeebe) {
+  private void applyConfigFunctions(final MemberId id, final TestStandalone<?> zeebe) {
     nodeConfig.accept(zeebe);
 
     if (zeebe instanceof final TestGateway<?> gateway) {
       gatewayConfig.accept(id, gateway);
     }
 
-    if (zeebe instanceof final TestBroker<?> broker) {
+    if (zeebe instanceof final TestStandaloneBroker broker) {
       brokerConfig.accept(id, broker);
     }
   }
@@ -341,26 +338,18 @@ public final class TestSpringClusterBuilder {
   }
 
   private TestStandaloneBroker createBroker(final int index) {
-    final var builder =
-        new TestStandaloneBroker()
-            .withBrokerConfig(
-                cfg -> {
-                  final var cluster = cfg.getCluster();
-                  cluster.setNodeId(index);
-                  cluster.setPartitionsCount(partitionsCount);
-                  cluster.setReplicationFactor(replicationFactor);
-                  cluster.setClusterSize(brokersCount);
-                  cluster.setClusterName(name);
-                })
-            .withBrokerConfig(cfg -> cfg.getGateway().setEnable(useEmbeddedGateway));
-
-    if (useRecordingExporter) {
-      final var exporterConfig = new ExporterCfg();
-      exporterConfig.setClassName(RecordingExporter.class.getName());
-      builder.withBrokerConfig(cfg -> cfg.getExporters().put("recording", exporterConfig));
-    }
-
-    return builder;
+    return new TestStandaloneBroker()
+        .withBrokerConfig(
+            cfg -> {
+              final var cluster = cfg.getCluster();
+              cluster.setNodeId(index);
+              cluster.setPartitionsCount(partitionsCount);
+              cluster.setReplicationFactor(replicationFactor);
+              cluster.setClusterSize(brokersCount);
+              cluster.setClusterName(name);
+            })
+        .withBrokerConfig(cfg -> cfg.getGateway().setEnable(useEmbeddedGateway))
+        .withRecordingExporter(useRecordingExporter);
   }
 
   private void createGateways() {

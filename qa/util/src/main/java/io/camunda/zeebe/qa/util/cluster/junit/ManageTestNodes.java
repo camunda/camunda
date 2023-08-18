@@ -5,9 +5,9 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.qa.util.cluster;
+package io.camunda.zeebe.qa.util.cluster.junit;
 
-import io.camunda.zeebe.qa.util.cluster.spring.TestSpringCluster;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneCluster;
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Inherited;
@@ -17,8 +17,8 @@ import java.lang.annotation.Target;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
- * Registers the {@link TestClusterExtension} extension, which will manage the lifecycle of one or
- * more {@link TestSpringCluster}
+ * Registers the {@link TestNodeExtension} extension, which will manage the lifecycle of one or
+ * more {@link TestStandaloneCluster}
  *
  * <pre>{@code
  * &#64;ZeebeClusters
@@ -50,8 +50,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 @Inherited
-@ExtendWith(TestClusterExtension.class)
-public @interface ManageTestCluster {
+@ExtendWith(TestNodeExtension.class)
+public @interface ManageTestNodes {
 
   @Target({ElementType.FIELD})
   @Retention(RetentionPolicy.RUNTIME)
@@ -72,5 +72,32 @@ public @interface ManageTestCluster {
 
     /** If true (the default), will automatically start the cluster before tests. */
     boolean autoStart() default true;
+
+    /**
+     * If true (the default), will block and wait until all nodes in the cluster are started. Does
+     * nothing if {@link #autoStart()} is false.
+     */
+    boolean awaitStarted() default true;
+  }
+
+  @Target({ElementType.FIELD})
+  @Retention(RetentionPolicy.RUNTIME)
+  @Documented
+  @Inherited
+  @interface TestNode {
+    /**
+     * If true (the default), will block and wait until the node is ready. Does nothing if {@link
+     * #autoStart()} is false.
+     */
+    boolean awaitReady() default true;
+
+    /** If true (the default), will automatically start the cluster before tests. */
+    boolean autoStart() default true;
+
+    /**
+     * If true (the default), will block and wait until the node is started. Does nothing if {@link
+     * #autoStart()} is false.
+     */
+    boolean awaitStarted() default true;
   }
 }

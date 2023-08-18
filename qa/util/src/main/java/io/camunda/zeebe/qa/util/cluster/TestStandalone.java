@@ -7,10 +7,14 @@
  */
 package io.camunda.zeebe.qa.util.cluster;
 
+import static org.assertj.core.api.Assertions.assertThatCode;
+
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
+import java.time.Duration;
+import org.awaitility.Awaitility;
 
-public interface TestZeebe<T extends TestZeebe<T>> {
+public interface TestStandalone<T extends TestStandalone<T>> extends AutoCloseable {
 
   /** Returns this node's unique cluster ID */
   MemberId nodeId();
@@ -54,10 +58,10 @@ public interface TestZeebe<T extends TestZeebe<T>> {
   String host();
 
   /** Starts the node in a blocking fashion. */
-  void start();
+  T start();
 
   /** Attempts to stop the container gracefully in a blocking fashion. */
-  void shutdown();
+  T stop();
 
   HealthActuator healthActuator();
 
@@ -66,7 +70,7 @@ public interface TestZeebe<T extends TestZeebe<T>> {
     switch (probe) {
       case LIVE -> healthActuator().live();
       case READY -> healthActuator().ready();
-      case STARTUP -> healthActuator().startup();
+      case STARTED -> healthActuator().startup();
       default -> throw new IllegalStateException("Unexpected value: " + probe);
     }
   }
@@ -80,4 +84,37 @@ public interface TestZeebe<T extends TestZeebe<T>> {
   }
 
   T withEnv(final String key, final Object value);
+
+  /** Returns true if this node can act as a gateway (e.g. broker with embedded gateway) */
+  boolean isGateway();
+
+  @Override
+  default void close() {
+    stop();
+  }
+
+  /**
+   * Blocks and waits until the given health probe succeeds, or the given timeout is reached.
+   *
+   * @param probe the type of probe to await
+   */
+  default T await(final ZeebeHealthProbe probe, final Duration timeout) {
+    Awaitility.await("until broker '%s' is '%s'".formatted(nodeId(), probe))
+        .atMost(timeout)
+        .untilAsserted(() -> assertThatCode(() -> probe(probe)).doesNotThrowAnyException());
+
+    return self();
+  }
+
+  /** Convenience method to return the appropriate concrete type */
+  T self();
+
+  /** Convenience method to wait for a probe for a default timeout of 30 seconds. */
+  default T await(final ZeebeHealthProbe probe) {
+    return await(probe, Duration.ofSeconds(30));
+  }
+
+  <V> T withBean(final String qualifier, final V bean, final Class<V> type);
+
+  <V> V bean(final Class<V> type);
 }

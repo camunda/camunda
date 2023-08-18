@@ -11,5 +11,5 @@ package io.camunda.zeebe.qa.util.cluster;
 public enum ZeebeHealthProbe {
   LIVE,
   READY,
-  STARTUP;
+  STARTED;
 }

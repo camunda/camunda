@@ -18,12 +18,12 @@ import org.springframework.core.env.MapPropertySource;
  * context, so to speak. That way, we can pre-register some beans so they will be autowired first,
  * e.g. programmatic configuration.
  */
-final class ContextOverrideInitializer
+public final class ContextOverrideInitializer
     implements ApplicationContextInitializer<ConfigurableApplicationContext> {
   private final Map<String, Bean<?>> beans;
   private final Map<String, Object> properties;
 
-  ContextOverrideInitializer(
+  public ContextOverrideInitializer(
       final Map<String, Bean<?>> beans, final Map<String, Object> properties) {
     this.beans = beans;
     this.properties = properties;
@@ -53,5 +53,5 @@ final class ContextOverrideInitializer
     beanFactory.registerSingleton(qualifier, object);
   }
 
-  record Bean<T>(T value, Class<T> type) {}
+  public record Bean<T>(T value, Class<T> type) {}
 }

@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.qa.util.cluster.spring;
+package io.camunda.zeebe.qa.util.cluster;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -13,9 +13,6 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
-import io.camunda.zeebe.qa.util.cluster.TestGateway;
-import io.camunda.zeebe.qa.util.cluster.TestZeebe;
-import io.camunda.zeebe.qa.util.cluster.ZeebeHealthProbe;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
 import io.camunda.zeebe.util.CloseableSilently;
 import java.time.Duration;
@@ -32,7 +29,7 @@ import org.slf4j.LoggerFactory;
 /**
  * A convenience class representing a one or more Spring applications that form a Zeebe cluster.
  *
- * <p>It's recommended to use the {@link TestSpringClusterBuilder} to build one.
+ * <p>It's recommended to use the {@link TestStandaloneClusterBuilder} to build one.
  *
  * <p>As the cluster is not started automatically, the nodes can still be modified/configured
  * beforehand. Be aware however that the replication factor and the partitions count cannot be
@@ -80,8 +77,8 @@ import org.slf4j.LoggerFactory;
  * }</pre>
  */
 @SuppressWarnings("ClassCanBeRecord")
-public final class TestSpringCluster implements CloseableSilently {
-  private static final Logger LOGGER = LoggerFactory.getLogger(TestSpringCluster.class);
+public final class TestStandaloneCluster implements CloseableSilently {
+  private static final Logger LOGGER = LoggerFactory.getLogger(TestStandaloneCluster.class);
 
   private final String name;
   private final Map<MemberId, TestStandaloneGateway> gateways;
@@ -98,7 +95,7 @@ public final class TestSpringCluster implements CloseableSilently {
    * @param brokers the set of broker nodes, identified by their node ID
    * @param gateways the set of gateway nodes, identified by their member ID
    */
-  public TestSpringCluster(
+  public TestStandaloneCluster(
       final String name,
       final int replicationFactor,
       final int partitionsCount,
@@ -112,8 +109,8 @@ public final class TestSpringCluster implements CloseableSilently {
   }
 
   /** Returns a new cluster builder */
-  public static TestSpringClusterBuilder builder() {
-    return new TestSpringClusterBuilder();
+  public static TestStandaloneClusterBuilder builder() {
+    return new TestStandaloneClusterBuilder();
   }
 
   /**
@@ -152,7 +149,7 @@ public final class TestSpringCluster implements CloseableSilently {
   public void shutdown() {
     final var stopped =
         nodes().values().stream()
-            .map(node -> CompletableFuture.runAsync(node::shutdown))
+            .map(node -> CompletableFuture.runAsync(node::stop))
             .toArray(CompletableFuture[]::new);
     CompletableFuture.allOf(stopped).join();
   }
@@ -222,8 +219,8 @@ public final class TestSpringCluster implements CloseableSilently {
    *
    * @return the nodes of this cluster
    */
-  public Map<MemberId, TestZeebe<?>> nodes() {
-    final Map<MemberId, TestZeebe<?>> nodes = new HashMap<>(brokers);
+  public Map<MemberId, TestStandalone<?>> nodes() {
+    final Map<MemberId, TestStandalone<?>> nodes = new HashMap<>(brokers);
     nodes.putAll(gateways);
 
     return nodes;
@@ -296,7 +293,7 @@ public final class TestSpringCluster implements CloseableSilently {
     shutdown();
   }
 
-  private boolean isReady(final TestZeebe<?> node) {
+  private boolean isReady(final TestStandalone<?> node) {
     if (!node.isStarted()) {
       return false;
     }
@@ -319,13 +316,14 @@ public final class TestSpringCluster implements CloseableSilently {
     }
   }
 
-  private void assertProbe(final TestZeebe<?> node, final ZeebeHealthProbe probe) {
+  private void assertProbe(final TestStandalone<?> node, final ZeebeHealthProbe probe) {
     assertThatCode(() -> node.probe(probe)).doesNotThrowAnyException();
   }
 
   private Stream<TestGateway<?>> allGateways() {
     return nodes().values().stream()
         .filter(TestGateway.class::isInstance)
+        .filter(TestStandalone::isGateway)
         .map(node -> (TestGateway<?>) node);
   }
 }

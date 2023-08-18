@@ -5,15 +5,18 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.qa.util.cluster.spring;
+package io.camunda.zeebe.qa.util.cluster;
 
+import io.camunda.zeebe.qa.util.cluster.spring.ContextOverrideInitializer;
 import io.camunda.zeebe.qa.util.cluster.spring.ContextOverrideInitializer.Bean;
+import io.camunda.zeebe.qa.util.cluster.spring.RelaxedCollectorRegistry;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.prometheus.client.CollectorRegistry;
 import java.util.Map;
 import org.springframework.boot.Banner.Mode;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.context.ApplicationContext;
 
 final class TestSupport {
   private TestSupport() {}
@@ -37,5 +40,25 @@ final class TestSupport {
         .registerShutdownHook(false)
         .initializers(new ContextOverrideInitializer(beans, properties))
         .profiles("test");
+  }
+
+  static int monitoringPort(final ApplicationContext context, final Map<String, Object> fallback) {
+    final Object portProperty;
+    if (context != null) {
+      portProperty = context.getEnvironment().getProperty("server.port");
+    } else {
+      portProperty = fallback.get("server.port");
+    }
+
+    if (portProperty == null) {
+      throw new IllegalStateException(
+          "No property server.port defined anywhere, cannot infer monitoring port");
+    }
+
+    if (portProperty instanceof final Integer port) {
+      return port;
+    }
+
+    return Integer.parseInt(portProperty.toString());
   }
 }

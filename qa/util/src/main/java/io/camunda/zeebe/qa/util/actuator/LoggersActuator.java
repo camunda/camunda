@@ -42,9 +42,17 @@ public interface LoggersActuator {
    * @return a new instance of {@link LoggersActuator}
    */
   static LoggersActuator of(final ZeebeNode<?> node) {
-    final var endpoint =
-        String.format("http://%s/actuator/loggers", node.getExternalMonitoringAddress());
-    return of(endpoint);
+    return ofAddress(node.getExternalMonitoringAddress());
+  }
+
+  /**
+   * Returns a {@link LoggersActuator} instance using the given base monitoring address.
+   *
+   * @param address the base monitoring address
+   * @return a new instance of {@link LoggersActuator}
+   */
+  static LoggersActuator ofAddress(final String address) {
+    return of("http://" + address + "/actuator/loggers");
   }
 
   /**

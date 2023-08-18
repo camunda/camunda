@@ -11,8 +11,12 @@ import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.gateway.StandaloneGateway;
-import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneGateway;
+import io.camunda.zeebe.qa.util.cluster.ZeebePort;
+import io.camunda.zeebe.qa.util.cluster.junit.ManageTestNodes;
+import io.camunda.zeebe.qa.util.cluster.junit.ManageTestNodes.TestNode;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.filter.log.RequestLoggingFilter;
 import io.restassured.filter.log.ResponseLoggingFilter;
@@ -20,54 +24,33 @@ import io.restassured.http.ContentType;
 import io.restassured.specification.RequestSpecification;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-@ExtendWith(SpringExtension.class)
-@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT, classes = StandaloneGateway.class)
-@ContextConfiguration(
-    initializers = {RandomPortInitializer.class, CollectorRegistryInitializer.class})
-@ActiveProfiles("test")
+@ManageTestNodes
+@AutoCloseResources
 final class StandaloneGatewayIT {
 
-  @SuppressWarnings("unused")
-  @Autowired
-  private GatewayCfg config;
+  @TestNode(awaitReady = false)
+  private static final TestStandaloneGateway GATEWAY = new TestStandaloneGateway();
 
-  @SuppressWarnings("unused")
-  @LocalServerPort
-  private int managementPort;
+  @AutoCloseResource private final ZeebeClient client = GATEWAY.newClientBuilder().build();
 
   /** A simple smoke test which checks that the gateway can start and accept requests. */
   @SmokeTest
   void smokeTest() {
-    // given
-    try (final var client =
-        ZeebeClient.newClientBuilder()
-            .usePlaintext()
-            .gatewayAddress("localhost:" + config.getNetwork().getPort())
-            .build()) {
-      // when
-      final var topology = client.newTopologyRequest().send();
+    // given - when
+    final var topology = client.newTopologyRequest().send();
 
-      // then
-      given()
-          .contentType(ContentType.JSON)
-          .port(managementPort)
-          .when()
-          .get("/actuator")
-          .then()
-          .statusCode(200);
+    // then
+    given()
+        .contentType(ContentType.JSON)
+        .port(GATEWAY.mappedPort(ZeebePort.MONITORING))
+        .when()
+        .get("/actuator")
+        .then()
+        .statusCode(200);
 
-      final var result = topology.join(5L, TimeUnit.SECONDS);
-      assertThat(result.getBrokers()).as("there are no known brokers").isEmpty();
-    }
+    final var result = topology.join(5L, TimeUnit.SECONDS);
+    assertThat(result.getBrokers()).as("there are no known brokers").isEmpty();
   }
 
   @Test
@@ -76,7 +59,7 @@ final class StandaloneGatewayIT {
     final RequestSpecification gatewayServerSpec =
         new RequestSpecBuilder()
             .setContentType(ContentType.JSON)
-            .setPort(managementPort)
+            .setPort(GATEWAY.mappedPort(ZeebePort.MONITORING))
             .addFilter(new ResponseLoggingFilter())
             .addFilter(new RequestLoggingFilter())
             .build();

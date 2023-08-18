@@ -11,7 +11,7 @@ import io.prometheus.client.Collector;
 import io.prometheus.client.CollectorRegistry;
 
 /** A {@link CollectorRegistry} which silently ignores duplicate metric registration. */
-final class RelaxedCollectorRegistry extends CollectorRegistry {
+public final class RelaxedCollectorRegistry extends CollectorRegistry {
 
   @Override
   public void register(final Collector m) {

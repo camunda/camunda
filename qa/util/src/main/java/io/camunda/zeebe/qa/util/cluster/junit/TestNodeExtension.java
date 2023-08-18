@@ -5,13 +5,15 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.qa.util.cluster;
+package io.camunda.zeebe.qa.util.cluster.junit;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.broker.shared.WorkingDirectoryConfiguration.WorkingDirectory;
-import io.camunda.zeebe.qa.util.cluster.ManageTestCluster.TestCluster;
-import io.camunda.zeebe.qa.util.cluster.spring.TestSpringCluster;
-import io.camunda.zeebe.qa.util.cluster.spring.TestStandaloneBroker;
+import io.camunda.zeebe.qa.util.cluster.TestStandalone;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneCluster;
+import io.camunda.zeebe.qa.util.cluster.ZeebeHealthProbe;
+import io.camunda.zeebe.qa.util.cluster.junit.ManageTestNodes.TestCluster;
 import io.camunda.zeebe.test.util.record.RecordLogger;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.util.FileUtil;
@@ -33,21 +35,25 @@ import org.junit.platform.commons.support.HierarchyTraversalMode;
 import org.junit.platform.commons.support.ReflectionSupport;
 import org.junit.platform.commons.util.ReflectionUtils;
 
-final class TestClusterExtension
+final class TestNodeExtension
     implements BeforeAllCallback, BeforeEachCallback, BeforeTestExecutionCallback, TestWatcher {
 
   @Override
   public void beforeAll(final ExtensionContext extensionContext) {
     final var resources = lookupClusters(extensionContext, null, ReflectionUtils::isStatic);
+    final var nodes = lookupNodes(extensionContext, null, ReflectionUtils::isStatic);
     manageClusters(extensionContext, resources);
+    manageNodes(extensionContext, nodes);
   }
 
   @Override
   public void beforeEach(final ExtensionContext extensionContext) {
     final var testInstance = extensionContext.getRequiredTestInstance();
-    final var resources =
+    final var clusters =
         lookupClusters(extensionContext, testInstance, ReflectionUtils::isNotStatic);
-    manageClusters(extensionContext, resources);
+    final var nodes = lookupNodes(extensionContext, testInstance, ReflectionUtils::isNotStatic);
+    manageClusters(extensionContext, clusters);
+    manageNodes(extensionContext, nodes);
   }
 
   @Override
@@ -70,10 +76,27 @@ final class TestClusterExtension
                 .and(field -> field.isAnnotationPresent(TestCluster.class))
                 .and(
                     field ->
-                        ReflectionUtils.isAssignableTo(field.getType(), TestSpringCluster.class)),
+                        ReflectionUtils.isAssignableTo(
+                            field.getType(), TestStandaloneCluster.class)),
             HierarchyTraversalMode.TOP_DOWN)
         .stream()
-        .map(field -> asResource(testInstance, field))
+        .map(field -> asClusterResource(testInstance, field))
+        .toList();
+  }
+
+  private Iterable<NodeResource> lookupNodes(
+      final ExtensionContext extensionContext,
+      final Object testInstance,
+      final Predicate<Field> fieldType) {
+    return ReflectionSupport.findFields(
+            extensionContext.getRequiredTestClass(),
+            fieldType
+                .and(field -> field.isAnnotationPresent(ManageTestNodes.TestNode.class))
+                .and(
+                    field -> ReflectionUtils.isAssignableTo(field.getType(), TestStandalone.class)),
+            HierarchyTraversalMode.TOP_DOWN)
+        .stream()
+        .map(field -> asNodeResource(testInstance, field))
         .toList();
   }
 
@@ -102,12 +125,50 @@ final class TestClusterExtension
     if (annotation.autoStart()) {
       cluster.start();
 
+      if (annotation.awaitStarted()) {
+        cluster.await(ZeebeHealthProbe.STARTED);
+      }
+
       if (annotation.awaitReady()) {
         cluster.await(ZeebeHealthProbe.READY);
       }
 
       if (annotation.awaitCompleteTopology()) {
         cluster.awaitCompleteTopology();
+      }
+    }
+  }
+
+  private void manageNodes(
+      final ExtensionContext extensionContext, final Iterable<NodeResource> resources) {
+    final var store = store(extensionContext);
+
+    // register all resources first to ensure we close them; this avoids leaking resource if
+    // starting one fails
+    resources.forEach(resource -> store.put(resource, resource));
+    for (final var resource : resources) {
+      manageNode(store, resource);
+    }
+  }
+
+  private void manageNode(final Store store, final NodeResource resource) {
+    final var node = resource.node;
+    final var annotation = resource.annotation;
+
+    if (node instanceof final TestStandaloneBroker broker) {
+      final var directory = createManagedDirectory(store, "broker-" + broker.nodeId().id());
+      setWorkingDirectory(directory, broker.nodeId(), broker);
+    }
+
+    if (annotation.autoStart()) {
+      node.start();
+
+      if (annotation.awaitStarted()) {
+        node.await(ZeebeHealthProbe.STARTED);
+      }
+
+      if (annotation.awaitReady()) {
+        node.await(ZeebeHealthProbe.READY);
       }
     }
   }
@@ -135,11 +196,11 @@ final class TestClusterExtension
     }
   }
 
-  private ClusterResource asResource(final Object testInstance, final Field field) {
-    final TestSpringCluster value;
+  private ClusterResource asClusterResource(final Object testInstance, final Field field) {
+    final TestStandaloneCluster value;
 
     try {
-      value = (TestSpringCluster) ReflectionUtils.makeAccessible(field).get(testInstance);
+      value = (TestStandaloneCluster) ReflectionUtils.makeAccessible(field).get(testInstance);
     } catch (final IllegalAccessException e) {
       throw new UnsupportedOperationException(e);
     }
@@ -147,16 +208,37 @@ final class TestClusterExtension
     return new ClusterResource(value, field.getAnnotation(TestCluster.class));
   }
 
-  private Store store(final ExtensionContext extensionContext) {
-    return extensionContext.getStore(Namespace.create(TestClusterExtension.class));
+  private NodeResource asNodeResource(final Object testInstance, final Field field) {
+    final TestStandalone<?> value;
+
+    try {
+      value = (TestStandalone<?>) ReflectionUtils.makeAccessible(field).get(testInstance);
+    } catch (final IllegalAccessException e) {
+      throw new UnsupportedOperationException(e);
+    }
+
+    return new NodeResource(value, field.getAnnotation(ManageTestNodes.TestNode.class));
   }
 
-  private record ClusterResource(TestSpringCluster cluster, TestCluster annotation)
+  private Store store(final ExtensionContext extensionContext) {
+    return extensionContext.getStore(Namespace.create(TestNodeExtension.class));
+  }
+
+  private record ClusterResource(TestStandaloneCluster cluster, TestCluster annotation)
       implements CloseableResource {
 
     @Override
     public void close() {
       cluster.close();
+    }
+  }
+
+  private record NodeResource(TestStandalone<?> node, ManageTestNodes.TestNode annotation)
+      implements CloseableResource {
+
+    @Override
+    public void close() {
+      node.stop();
     }
   }
 

@@ -9,155 +9,134 @@ package io.camunda.zeebe.it.gateway;
 
 import static io.restassured.RestAssured.given;
 
-import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneCluster;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneGateway;
+import io.camunda.zeebe.qa.util.cluster.ZeebePort;
+import io.camunda.zeebe.qa.util.cluster.junit.ManageTestNodes;
+import io.camunda.zeebe.qa.util.cluster.junit.ManageTestNodes.TestCluster;
+import io.camunda.zeebe.qa.util.cluster.junit.ManageTestNodes.TestNode;
 import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.filter.log.RequestLoggingFilter;
 import io.restassured.filter.log.ResponseLoggingFilter;
 import io.restassured.http.ContentType;
 import io.restassured.specification.RequestSpecification;
-import io.zeebe.containers.ZeebeBrokerContainer;
-import io.zeebe.containers.ZeebeGatewayContainer;
-import io.zeebe.containers.ZeebePort;
 import java.time.Duration;
-import java.util.stream.Stream;
 import org.awaitility.Awaitility;
 import org.awaitility.core.ConditionTimeoutException;
-import org.junit.Test;
-import org.testcontainers.containers.startupcheck.IsRunningStartupCheckStrategy;
-import org.testcontainers.lifecycle.Startable;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 
-public class GatewayHealthProbeIntegrationTest {
+@ManageTestNodes
+final class GatewayHealthProbeIntegrationTest {
 
-  public static final String PATH_LIVENESS_PROBE = "/actuator/health/liveness";
+  private static final String PATH_LIVENESS_PROBE = "/actuator/health/liveness";
   private static final String PATH_READINESS_PROBE = "/actuator/health/readiness";
 
-  @Test
-  public void shouldReportLivenessUpIfConnectedToBroker() {
-    // --- given ---------------------------------------
+  @Nested
+  final class GatewayTest {
+    @TestNode(awaitReady = false)
+    private final TestStandaloneGateway gateway = new TestStandaloneGateway();
 
-    // create a broker and a standalone gateway
-    final ZeebeBrokerContainer broker =
-        new ZeebeBrokerContainer(ZeebeTestContainerDefaults.defaultTestImage());
-    final ZeebeGatewayContainer gateway =
-        new ZeebeGatewayContainer(ZeebeTestContainerDefaults.defaultTestImage())
-            .withNetwork(broker.getNetwork())
-            .withEnv("ZEEBE_GATEWAY_CLUSTER_CONTACTPOINT", broker.getInternalClusterAddress());
-    gateway.addExposedPorts(ZeebePort.MONITORING.getPort());
+    @Test
+    void shouldReportLivenessDownIfNotConnectedToBroker() {
+      // --- given ---------------------------------------
+      final var actuatorPort = gateway.mappedPort(ZeebePort.MONITORING);
+      final RequestSpecification gatewayServerSpec =
+          new RequestSpecBuilder()
+              .setContentType(ContentType.JSON)
+              .setBaseUri("http://" + gateway.host())
+              .setPort(actuatorPort)
+              .addFilter(new ResponseLoggingFilter())
+              .addFilter(new RequestLoggingFilter())
+              .build();
 
-    // start both containers
-    Stream.of(gateway, broker).parallel().forEach(Startable::start);
-
-    final Integer actuatorPort = gateway.getMappedPort(ZeebePort.MONITORING.getPort());
-    final String containerIPAddress = gateway.getExternalHost();
-
-    final RequestSpecification gatewayServerSpec =
-        new RequestSpecBuilder()
-            .setContentType(ContentType.JSON)
-            .setBaseUri("http://" + containerIPAddress)
-            .setPort(actuatorPort)
-            .addFilter(new ResponseLoggingFilter())
-            .addFilter(new RequestLoggingFilter())
-            .build();
-
-    // --- when + then ---------------------------------------
-    // most of the liveness probes use a delayed health indicator which is scheduled at a fixed
-    // rate of 5 seconds, so it may take up to that and a bit more in the worst case once the
-    // gateway finds the broker
-    try {
-      Awaitility.await("wait until status turns UP")
-          .atMost(Duration.ofSeconds(10))
-          .pollInterval(Duration.ofMillis(100))
-          .untilAsserted(
-              () ->
-                  given()
-                      .spec(gatewayServerSpec)
-                      .when()
-                      .get(PATH_LIVENESS_PROBE)
-                      .then()
-                      .statusCode(200));
-    } catch (final ConditionTimeoutException e) {
-      // it can happen that a single request takes too long and causes awaitility to timeout,
-      // in which case we want to try a second time to run the request without timeout
-      given().spec(gatewayServerSpec).when().get(PATH_LIVENESS_PROBE).then().statusCode(200);
+      // --- when + then ---------------------------------------
+      given().spec(gatewayServerSpec).when().get(PATH_LIVENESS_PROBE).then().statusCode(503);
     }
 
-    // --- shutdown ------------------------------------------
-    Stream.of(gateway, broker).parallel().forEach(Startable::stop);
-  }
+    @Test
+    void shouldReportReadinessUpIfApplicationIsUp() {
+      // given
+      final var actuatorPort = gateway.mappedPort(ZeebePort.MONITORING);
+      final var gatewayServerSpec =
+          new RequestSpecBuilder()
+              .setContentType(ContentType.JSON)
+              .setBaseUri("http://" + gateway.host())
+              .setPort(actuatorPort)
+              .addFilter(new ResponseLoggingFilter())
+              .addFilter(new RequestLoggingFilter())
+              .build();
 
-  @Test
-  public void shouldReportLivenessDownIfNotConnectedToBroker() {
-    // --- given ---------------------------------------
-    final ZeebeGatewayContainer gateway =
-        new ZeebeGatewayContainer(ZeebeTestContainerDefaults.defaultTestImage())
-            .withoutTopologyCheck();
-    gateway.addExposedPorts(ZeebePort.MONITORING.getPort());
-    gateway.start();
-
-    final Integer actuatorPort = gateway.getMappedPort(ZeebePort.MONITORING.getPort());
-    final String containerIPAddress = gateway.getExternalHost();
-
-    final RequestSpecification gatewayServerSpec =
-        new RequestSpecBuilder()
-            .setContentType(ContentType.JSON)
-            .setBaseUri("http://" + containerIPAddress)
-            .setPort(actuatorPort)
-            .addFilter(new ResponseLoggingFilter())
-            .addFilter(new RequestLoggingFilter())
-            .build();
-
-    // --- when + then ---------------------------------------
-    given().spec(gatewayServerSpec).when().get(PATH_LIVENESS_PROBE).then().statusCode(503);
-
-    // --- shutdown ------------------------------------------
-    gateway.stop();
-  }
-
-  @Test
-  public void shouldReportReadinessUpIfApplicationIsUp() {
-    // given
-    final ZeebeGatewayContainer gateway =
-        new ZeebeGatewayContainer(ZeebeTestContainerDefaults.defaultTestImage())
-            .withExposedPorts(ZeebePort.MONITORING.getPort())
-            .withoutTopologyCheck()
-            .withStartupCheckStrategy(new IsRunningStartupCheckStrategy());
-    gateway.start();
-    final Integer actuatorPort = gateway.getMappedPort(ZeebePort.MONITORING.getPort());
-    final String containerIPAddress = gateway.getExternalHost();
-
-    final RequestSpecification gatewayServerSpec =
-        new RequestSpecBuilder()
-            .setContentType(ContentType.JSON)
-            .setBaseUri("http://" + containerIPAddress)
-            .setPort(actuatorPort)
-            .addFilter(new ResponseLoggingFilter())
-            .addFilter(new RequestLoggingFilter())
-            .build();
-
-    // when
-    // then
-    // most of the readiness probes use a delayed health indicator which is scheduled at a fixed
-    // rate of 5 seconds, so it may take up to that and a bit more in the worst case once the
-    // gateway finds the broker
-    try {
-      Awaitility.await("wait until status turns UP")
-          .atMost(Duration.ofSeconds(10))
-          .pollInterval(Duration.ofMillis(100))
-          .untilAsserted(
-              () ->
-                  given()
-                      .spec(gatewayServerSpec)
-                      .when()
-                      .get(PATH_READINESS_PROBE)
-                      .then()
-                      .statusCode(200));
-    } catch (final ConditionTimeoutException e) {
-      // it can happen that a single request takes too long and causes awaitility to timeout,
-      // in which case we want to try a second time to run the request without timeout
-      given().spec(gatewayServerSpec).when().get(PATH_READINESS_PROBE).then().statusCode(200);
+      // when
+      // then
+      // most of the readiness probes use a delayed health indicator which is scheduled at a fixed
+      // rate of 5 seconds, so it may take up to that and a bit more in the worst case once the
+      // gateway finds the broker
+      try {
+        Awaitility.await("wait until status turns UP")
+            .atMost(Duration.ofSeconds(10))
+            .pollInterval(Duration.ofMillis(100))
+            .untilAsserted(
+                () ->
+                    given()
+                        .spec(gatewayServerSpec)
+                        .when()
+                        .get(PATH_READINESS_PROBE)
+                        .then()
+                        .statusCode(200));
+      } catch (final ConditionTimeoutException e) {
+        // it can happen that a single request takes too long and causes awaitility to timeout,
+        // in which case we want to try a second time to run the request without timeout
+        given().spec(gatewayServerSpec).when().get(PATH_READINESS_PROBE).then().statusCode(200);
+      }
     }
+  }
 
-    // --- shutdown ------------------------------------------
-    gateway.stop();
+  @Nested
+  final class WithBrokerTest {
+    @TestCluster
+    private final TestStandaloneCluster cluster =
+        TestStandaloneCluster.builder()
+            .withBrokersCount(1)
+            .withGatewaysCount(1)
+            .withEmbeddedGateway(false)
+            .build();
+
+    @Test
+    void shouldReportLivenessUpIfConnectedToBroker() {
+      // --- given ---------------------------------------
+      final var gateway = cluster.availableGateway();
+      final var actuatorPort = gateway.mappedPort(ZeebePort.MONITORING);
+      final var gatewayServerSpec =
+          new RequestSpecBuilder()
+              .setContentType(ContentType.JSON)
+              .setBaseUri("http://" + gateway.host())
+              .setPort(actuatorPort)
+              .addFilter(new ResponseLoggingFilter())
+              .addFilter(new RequestLoggingFilter())
+              .build();
+
+      // --- when + then ---------------------------------------
+      // most of the liveness probes use a delayed health indicator which is scheduled at a fixed
+      // rate of 5 seconds, so it may take up to that and a bit more in the worst case once the
+      // gateway finds the broker
+      try {
+        Awaitility.await("wait until status turns UP")
+            .atMost(Duration.ofSeconds(10))
+            .pollInterval(Duration.ofMillis(100))
+            .untilAsserted(
+                () ->
+                    given()
+                        .spec(gatewayServerSpec)
+                        .when()
+                        .get(PATH_LIVENESS_PROBE)
+                        .then()
+                        .statusCode(200));
+      } catch (final ConditionTimeoutException e) {
+        // it can happen that a single request takes too long and causes awaitility to timeout,
+        // in which case we want to try a second time to run the request without timeout
+        given().spec(gatewayServerSpec).when().get(PATH_LIVENESS_PROBE).then().statusCode(200);
+      }
+    }
   }
 }

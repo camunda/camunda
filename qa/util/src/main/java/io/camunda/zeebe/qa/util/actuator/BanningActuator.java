@@ -19,9 +19,11 @@ import io.zeebe.containers.ZeebeNode;
 
 public interface BanningActuator {
   static BanningActuator of(final ZeebeNode<?> node) {
-    final var endpoint =
-        String.format("http://%s/actuator/banning", node.getExternalMonitoringAddress());
-    return of(endpoint);
+    return ofAddress(node.getExternalMonitoringAddress());
+  }
+
+  static BanningActuator ofAddress(final String address) {
+    return of("http://" + address + "/actuator/banning");
   }
 
   static BanningActuator of(final String endpoint) {

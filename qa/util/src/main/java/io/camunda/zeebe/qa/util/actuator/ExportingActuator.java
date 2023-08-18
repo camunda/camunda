@@ -18,9 +18,11 @@ import io.zeebe.containers.ZeebeNode;
 
 public interface ExportingActuator {
   static ExportingActuator of(final ZeebeNode<?> node) {
-    final var endpoint =
-        String.format("http://%s/actuator/exporting", node.getExternalMonitoringAddress());
-    return of(endpoint);
+    return ofAddress(node.getExternalMonitoringAddress());
+  }
+
+  static ExportingActuator ofAddress(final String address) {
+    return of("http://" + address + "/actuator/exporting");
   }
 
   static ExportingActuator of(final String endpoint) {

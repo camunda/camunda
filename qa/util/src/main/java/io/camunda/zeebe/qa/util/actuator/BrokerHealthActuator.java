@@ -33,8 +33,17 @@ public interface BrokerHealthActuator extends HealthActuator {
    * @return a new instance of {@link BrokerHealthActuator}
    */
   static BrokerHealthActuator of(final ZeebeNode<?> node) {
-    final var endpoint = String.format("http://%s/", node.getExternalMonitoringAddress());
-    return of(endpoint);
+    return ofAddress(node.getExternalMonitoringAddress());
+  }
+
+  /**
+   * Returns a {@link BrokerHealthActuator} instance using the given base monitoring address.
+   *
+   * @param address the base monitoring address
+   * @return a new instance of {@link BrokerHealthActuator}
+   */
+  static BrokerHealthActuator ofAddress(final String address) {
+    return of("http://" + address);
   }
 
   /**

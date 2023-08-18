@@ -49,9 +49,17 @@ public interface BackupActuator {
    * @return a new instance of {@link BackupActuator}
    */
   static BackupActuator of(final ZeebeNode<?> node) {
-    final var endpoint =
-        String.format("http://%s/actuator/backups", node.getExternalMonitoringAddress());
-    return of(endpoint);
+    return ofAddress(node.getExternalMonitoringAddress());
+  }
+
+  /**
+   * Returns a {@link BackupActuator} instance using the given monitoring address.
+   *
+   * @param address the base monitoring address
+   * @return a new instance of {@link BackupActuator}
+   */
+  static BackupActuator ofAddress(final String address) {
+    return of("http://" + address + "/actuator/backups");
   }
 
   /**

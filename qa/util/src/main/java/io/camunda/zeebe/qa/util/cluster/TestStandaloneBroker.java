@@ -5,35 +5,33 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.qa.util.cluster.spring;
+package io.camunda.zeebe.qa.util.cluster;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.broker.StandaloneBroker;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
-import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
+import io.camunda.zeebe.qa.util.actuator.BrokerHealthActuator;
 import io.camunda.zeebe.qa.util.actuator.GatewayHealthActuator;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
-import io.camunda.zeebe.qa.util.cluster.TestBroker;
-import io.camunda.zeebe.qa.util.cluster.TestGateway;
-import io.camunda.zeebe.qa.util.cluster.ZeebePort;
 import io.camunda.zeebe.qa.util.cluster.spring.ContextOverrideInitializer.Bean;
 import io.camunda.zeebe.shared.Profile;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Consumer;
-import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ConfigurableApplicationContext;
 
 /** Represents an instance of the {@link StandaloneBroker} Spring application. */
 @SuppressWarnings("UnusedReturnValue")
 public final class TestStandaloneBroker
-    implements TestBroker<TestStandaloneBroker>, TestGateway<TestStandaloneBroker> {
+    implements TestGateway<TestStandaloneBroker>, TestStandalone<TestStandaloneBroker> {
+
+  private static final String RECORDING_EXPORTER_ID = "recordingExporter";
   private final BrokerCfg config;
-  private final SpringApplicationBuilder springBuilder;
   private final Map<String, Bean<?>> beans;
   private final Map<String, Object> propertyOverrides;
 
@@ -47,24 +45,10 @@ public final class TestStandaloneBroker
       final BrokerCfg config,
       final Map<String, Bean<?>> beans,
       final Map<String, Object> propertyOverrides) {
-    this(
-        config,
-        beans,
-        propertyOverrides,
-        TestSupport.defaultSpringBuilder(beans, propertyOverrides));
-  }
-
-  private TestStandaloneBroker(
-      final BrokerCfg config,
-      final Map<String, Bean<?>> beans,
-      final Map<String, Object> propertyOverrides,
-      final SpringApplicationBuilder springBuilder) {
     this.config = config;
     this.beans = beans;
     this.propertyOverrides = propertyOverrides;
-    this.springBuilder = springBuilder;
 
-    springBuilder.profiles(Profile.BROKER.getId(), "test").sources(StandaloneBroker.class);
     config.getNetwork().getCommandApi().setPort(SocketUtil.getNextAddress().getPort());
     config.getNetwork().getInternalApi().setPort(SocketUtil.getNextAddress().getPort());
     config.getGateway().getNetwork().setPort(SocketUtil.getNextAddress().getPort());
@@ -84,21 +68,26 @@ public final class TestStandaloneBroker
   }
 
   @Override
-  public void start() {
-    if (isStarted()) {
-      return;
+  public TestStandaloneBroker start() {
+    if (!isStarted()) {
+      final var builder =
+          TestSupport.defaultSpringBuilder(beans, propertyOverrides)
+              .profiles(Profile.BROKER.getId(), "test")
+              .sources(StandaloneBroker.class);
+      springContext = builder.run();
     }
 
-    springContext = springBuilder.run();
+    return this;
   }
 
   @Override
-  public void shutdown() {
-    if (springContext == null) {
-      return;
+  public TestStandaloneBroker stop() {
+    if (springContext != null) {
+      springContext.close();
+      springContext = null;
     }
 
-    springContext.close();
+    return this;
   }
 
   @Override
@@ -112,10 +101,7 @@ public final class TestStandaloneBroker
       case COMMAND -> config.getNetwork().getCommandApi().getPort();
       case GATEWAY -> config.getGateway().getNetwork().getPort();
       case CLUSTER -> config.getNetwork().getInternalApi().getPort();
-      case MONITORING -> Optional.ofNullable(propertyOverrides.get("server.port"))
-          .map(Integer.class::cast)
-          .orElseGet(
-              () -> springContext.getEnvironment().getProperty("server.port", Integer.class));
+      case MONITORING -> TestSupport.monitoringPort(springContext, propertyOverrides);
     };
   }
 
@@ -123,6 +109,28 @@ public final class TestStandaloneBroker
   public TestStandaloneBroker withEnv(final String key, final Object value) {
     propertyOverrides.put(key, value);
     return this;
+  }
+
+  @Override
+  public boolean isGateway() {
+    return hasEmbeddedGateway();
+  }
+
+  @Override
+  public TestStandaloneBroker self() {
+    return this;
+  }
+
+  @Override
+  public <T> TestStandaloneBroker withBean(
+      final String qualifier, final T bean, final Class<T> type) {
+    beans.put(qualifier, new Bean<>(bean, type));
+    return this;
+  }
+
+  @Override
+  public <T> T bean(final Class<T> type) {
+    return springContext.getBean(type);
   }
 
   @Override
@@ -141,6 +149,11 @@ public final class TestStandaloneBroker
   }
 
   @Override
+  public HealthActuator healthActuator() {
+    return brokerHealth();
+  }
+
+  @Override
   public ZeebeClientBuilder newClientBuilder() {
     final var builder = ZeebeClient.newClientBuilder().gatewayAddress(gatewayAddress());
     final var security = config.getGateway().getSecurity();
@@ -153,22 +166,10 @@ public final class TestStandaloneBroker
     return builder;
   }
 
-  @Override
-  public GatewayCfg gatewayConfig() {
-    return config.getGateway();
-  }
-
-  @Override
   public boolean hasEmbeddedGateway() {
     return config.getGateway().isEnable();
   }
 
-  @Override
-  public HealthActuator healthActuator() {
-    return brokerHealth();
-  }
-
-  @Override
   public BrokerCfg brokerConfig() {
     return config;
   }
@@ -178,9 +179,23 @@ public final class TestStandaloneBroker
     return this;
   }
 
-  public <T> TestStandaloneBroker withBean(
-      final String qualifier, final T bean, final Class<T> type) {
-    beans.put(qualifier, new Bean<>(bean, type));
+  /**
+   * Returns the health actuator for this broker. You can use this to check for liveness, readiness,
+   * and startup.
+   */
+  public BrokerHealthActuator brokerHealth() {
+    return BrokerHealthActuator.ofAddress(monitoringAddress());
+  }
+
+  public TestStandaloneBroker withRecordingExporter(final boolean useRecordingExporter) {
+    if (!useRecordingExporter) {
+      config.getExporters().remove(RECORDING_EXPORTER_ID);
+    } else {
+      final var exporterConfig = new ExporterCfg();
+      exporterConfig.setClassName(RecordingExporter.class.getName());
+      config.getExporters().put(RECORDING_EXPORTER_ID, exporterConfig);
+    }
+
     return this;
   }
 }

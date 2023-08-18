@@ -16,7 +16,6 @@ import io.grpc.Metadata;
 import io.grpc.Metadata.Key;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpRequest.BodyPublishers;
@@ -51,7 +50,7 @@ final class OAuthCredentialsProviderTest {
           .withNetwork(NETWORK);
 
   @BeforeEach
-  void beforeEach() throws IOException, InterruptedException, URISyntaxException {
+  void beforeEach() throws IOException, InterruptedException {
     ensureOAuthClientExists();
   }
 

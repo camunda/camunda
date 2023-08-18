@@ -37,9 +37,17 @@ public interface JobStreamActuator {
    * @return a new instance of {@link JobStreamActuator}
    */
   static JobStreamActuator of(final ZeebeNode<?> node) {
-    final var endpoint =
-        String.format("http://%s/actuator/jobstreams", node.getExternalMonitoringAddress());
-    return of(endpoint);
+    return ofAddress(node.getExternalMonitoringAddress());
+  }
+
+  /**
+   * Returns a {@link JobStreamActuator} instance using the given node as upstream.
+   *
+   * @param address the base monitoring address
+   * @return a new instance of {@link JobStreamActuator}
+   */
+  static JobStreamActuator ofAddress(final String address) {
+    return of("http://" + address + "/actuator/jobstreams");
   }
 
   /**

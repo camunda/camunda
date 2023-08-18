@@ -34,7 +34,7 @@ public @interface AutoCloseResources {
    * If true, will only close resources which are annotated with {@link AutoCloseResource}.
    * Otherwise, it will close these and also any {@link AutoCloseable} it finds.
    */
-  boolean onlyAnnotated() default false;
+  boolean onlyAnnotated() default true;
 
   /**
    * Indicates a resource which may be closed by the {@link AutoCloseResourceExtension} extension.

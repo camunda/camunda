@@ -11,29 +11,27 @@ import static org.assertj.core.api.Assertions.as;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.client.CredentialsProvider;
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.ZeebeClientBuilder;
 import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder;
-import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
-import io.camunda.zeebe.test.util.testcontainers.ContainerLogsDumper;
+import io.camunda.zeebe.gateway.impl.configuration.AuthenticationCfg.AuthMode;
+import io.camunda.zeebe.gateway.impl.configuration.IdentityCfg;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.qa.util.cluster.junit.ManageTestNodes;
+import io.camunda.zeebe.qa.util.cluster.junit.ManageTestNodes.TestNode;
 import io.grpc.Metadata;
 import io.grpc.Metadata.Key;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
-import io.zeebe.containers.ZeebeContainer;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.time.Duration;
-import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
@@ -43,6 +41,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
 @Testcontainers
+@ManageTestNodes
 public class GatewayAuthenticationIdentityIT {
 
   public static final String KEYCLOAK_USER = "admin";
@@ -56,6 +55,7 @@ public class GatewayAuthenticationIdentityIT {
   private static final String ZEEBE_CLIENT_SECRET = "zecret";
   private static final Network NETWORK = Network.newNetwork();
 
+  @SuppressWarnings("resource")
   @Container
   private static final GenericContainer<?> KEYCLOAK =
       new GenericContainer<>("quay.io/keycloak/keycloak:19.0.3")
@@ -73,6 +73,7 @@ public class GatewayAuthenticationIdentityIT {
                   .allowInsecure()
                   .forStatusCode(200));
 
+  @SuppressWarnings({"unused", "resource"})
   @Container
   private static final GenericContainer<?> IDENTITY =
       new GenericContainer<>(
@@ -108,25 +109,24 @@ public class GatewayAuthenticationIdentityIT {
                   .forStatusCode(200))
           .withNetworkAliases("identity");
 
-  @Container
-  private static final ZeebeContainer ZEEBE =
-      new ZeebeContainer(ZeebeTestContainerDefaults.defaultTestImage())
-          .withNetwork(NETWORK)
-          .dependsOn(KEYCLOAK, IDENTITY)
-          .withoutTopologyCheck()
-          .withEnv("ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_MODE", "identity")
-          .withEnv(
-              "ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_ISSUERBACKENDURL",
-              "http://keycloak:8080" + KEYCLOAK_PATH_CAMUNDA_REALM)
-          .withEnv(
-              "ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_AUDIENCE",
-              ZEEBE_CLIENT_AUDIENCE);
+  @TestNode
+  private final TestStandaloneBroker zeebe =
+      new TestStandaloneBroker()
+          .withBrokerConfig(
+              cfg -> {
+                final var config = new IdentityCfg();
+                config.setAudience(ZEEBE_CLIENT_AUDIENCE);
+                config.setIssuerBackendUrl(
+                    "http://"
+                        + KEYCLOAK.getHost()
+                        + ":"
+                        + KEYCLOAK.getMappedPort(8080)
+                        + KEYCLOAK_PATH_CAMUNDA_REALM);
 
-  @SuppressWarnings("unused")
-  @RegisterExtension
-  final ContainerLogsDumper logsWatcher =
-      new ContainerLogsDumper(
-          () -> Map.of("keycloak", KEYCLOAK, "identity", IDENTITY, "zeebe", ZEEBE));
+                final var auth = cfg.getGateway().getSecurity().getAuthentication();
+                auth.setMode(AuthMode.IDENTITY);
+                auth.setIdentity(config);
+              });
 
   @BeforeAll
   static void beforeAll() {
@@ -136,7 +136,7 @@ public class GatewayAuthenticationIdentityIT {
   @Test
   void getTopologyRequestFailsWithoutAuthToken() {
     // given
-    try (final var client = createZeebeClientBuilder().build()) {
+    try (final var client = zeebe.newClientBuilder().build()) {
       // when
       final var topologyFuture = client.newTopologyRequest().send().toCompletableFuture();
 
@@ -162,7 +162,7 @@ public class GatewayAuthenticationIdentityIT {
   void getTopologyRequestFailsWithInvalidAuthToken() {
     // given
     try (final var client =
-        createZeebeClientBuilder().credentialsProvider(new InvalidAuthTokenProvider()).build()) {
+        zeebe.newClientBuilder().credentialsProvider(new InvalidAuthTokenProvider()).build()) {
       // when
       final var topologyFuture = client.newTopologyRequest().send().toCompletableFuture();
 
@@ -187,7 +187,8 @@ public class GatewayAuthenticationIdentityIT {
   void getTopologyRequestSucceedsWithValidAuthToken() {
     // given
     try (final var client =
-        createZeebeClientBuilder()
+        zeebe
+            .newClientBuilder()
             .credentialsProvider(
                 new OAuthCredentialsProviderBuilder()
                     .clientId(ZEEBE_CLIENT_ID)
@@ -233,13 +234,6 @@ public class GatewayAuthenticationIdentityIT {
 
   private static String getKeycloakRealmAddress() {
     return "http://localhost:" + KEYCLOAK.getFirstMappedPort() + KEYCLOAK_PATH_CAMUNDA_REALM;
-  }
-
-  private ZeebeClientBuilder createZeebeClientBuilder() {
-    return ZeebeClient.newClientBuilder()
-        .gatewayAddress(ZEEBE.getExternalGatewayAddress())
-        .defaultRequestTimeout(Duration.ofMinutes(1))
-        .usePlaintext();
   }
 
   private static String getIdentityImageTag() {

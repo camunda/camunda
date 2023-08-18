@@ -5,23 +5,19 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.qa.util.cluster.spring;
+package io.camunda.zeebe.qa.util.cluster;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
 import io.camunda.zeebe.gateway.StandaloneGateway;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
-import io.camunda.zeebe.qa.util.cluster.TestGateway;
-import io.camunda.zeebe.qa.util.cluster.ZeebePort;
 import io.camunda.zeebe.qa.util.cluster.spring.ContextOverrideInitializer.Bean;
 import io.camunda.zeebe.shared.Profile;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Consumer;
-import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ConfigurableApplicationContext;
 
 /** Encapsulates an instance of the {@link StandaloneGateway} Spring application. */
@@ -29,7 +25,6 @@ public final class TestStandaloneGateway implements TestGateway<TestStandaloneGa
   private final GatewayCfg config;
   private final Map<String, Bean<?>> beans;
   private final Map<String, Object> propertyOverrides;
-  private final SpringApplicationBuilder springBuilder;
 
   private ConfigurableApplicationContext springContext;
 
@@ -45,24 +40,10 @@ public final class TestStandaloneGateway implements TestGateway<TestStandaloneGa
       final GatewayCfg config,
       final Map<String, Bean<?>> beans,
       final Map<String, Object> propertyOverrides) {
-    this(
-        config,
-        beans,
-        propertyOverrides,
-        TestSupport.defaultSpringBuilder(beans, propertyOverrides));
-  }
-
-  private TestStandaloneGateway(
-      final GatewayCfg config,
-      final Map<String, Bean<?>> beans,
-      final Map<String, Object> propertyOverrides,
-      final SpringApplicationBuilder springBuilder) {
     this.config = config;
     this.beans = beans;
     this.propertyOverrides = propertyOverrides;
-    this.springBuilder = springBuilder;
 
-    springBuilder.profiles(Profile.GATEWAY.getId(), "test").sources(StandaloneGateway.class);
     config.getNetwork().setPort(SocketUtil.getNextAddress().getPort());
     config.getCluster().setPort(SocketUtil.getNextAddress().getPort());
     propertyOverrides.put("server.port", SocketUtil.getNextAddress().getPort());
@@ -80,21 +61,26 @@ public final class TestStandaloneGateway implements TestGateway<TestStandaloneGa
   }
 
   @Override
-  public void start() {
-    if (isStarted()) {
-      return;
+  public TestStandaloneGateway start() {
+    if (!isStarted()) {
+      final var builder =
+          TestSupport.defaultSpringBuilder(beans, propertyOverrides)
+              .profiles(Profile.GATEWAY.getId(), "test")
+              .sources(StandaloneGateway.class);
+      springContext = builder.run();
     }
 
-    springContext = springBuilder.run();
+    return this;
   }
 
   @Override
-  public void shutdown() {
-    if (springContext == null) {
-      return;
+  public TestStandaloneGateway stop() {
+    if (springContext != null) {
+      springContext.close();
+      springContext = null;
     }
 
-    springContext.close();
+    return this;
   }
 
   @Override
@@ -107,16 +93,37 @@ public final class TestStandaloneGateway implements TestGateway<TestStandaloneGa
     return switch (port) {
       case GATEWAY -> config.getNetwork().getPort();
       case CLUSTER -> config.getCluster().getPort();
-      case MONITORING -> Optional.ofNullable(propertyOverrides.get("server.port"))
-          .map(int.class::cast)
-          .orElseGet(() -> springContext.getEnvironment().getProperty("server.port", int.class));
+      case MONITORING -> TestSupport.monitoringPort(springContext, propertyOverrides);
       default -> throw new IllegalStateException("Unexpected value: " + port);
     };
   }
 
   @Override
   public TestStandaloneGateway withEnv(final String key, final Object value) {
-    return null;
+    propertyOverrides.put(key, value);
+    return this;
+  }
+
+  @Override
+  public boolean isGateway() {
+    return true;
+  }
+
+  @Override
+  public TestStandaloneGateway self() {
+    return this;
+  }
+
+  @Override
+  public <T> TestStandaloneGateway withBean(
+      final String qualifier, final T bean, final Class<T> type) {
+    beans.put(qualifier, new Bean<>(bean, type));
+    return this;
+  }
+
+  @Override
+  public <T> T bean(final Class<T> type) {
+    return springContext.getBean(type);
   }
 
   @Override
@@ -132,19 +139,8 @@ public final class TestStandaloneGateway implements TestGateway<TestStandaloneGa
     return builder;
   }
 
-  @Override
-  public GatewayCfg gatewayConfig() {
-    return config;
-  }
-
   public TestStandaloneGateway withGatewayConfig(final Consumer<GatewayCfg> modifier) {
     modifier.accept(config);
-    return this;
-  }
-
-  public <T> TestStandaloneGateway withBean(
-      final String qualifier, final T bean, final Class<T> type) {
-    beans.put(qualifier, new Bean<>(bean, type));
     return this;
   }
 }

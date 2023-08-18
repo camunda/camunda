@@ -37,9 +37,17 @@ public interface RebalanceActuator {
    * @return a new instance of {@link RebalanceActuator}
    */
   static RebalanceActuator of(final ZeebeNode<?> node) {
-    final var endpoint =
-        String.format("http://%s/actuator/rebalance", node.getExternalMonitoringAddress());
-    return of(endpoint);
+    return ofAddress(node.getExternalMonitoringAddress());
+  }
+
+  /**
+   * Returns a {@link RebalanceActuator} instance using the given base monitoring address.
+   *
+   * @param address the base monitoring address
+   * @return a new instance of {@link RebalanceActuator}
+   */
+  static RebalanceActuator ofAddress(final String address) {
+    return of("http://" + address + "/actuator/rebalance");
   }
 
   /**

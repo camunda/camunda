@@ -8,11 +8,10 @@
 package io.camunda.zeebe.qa.util.cluster;
 
 import io.camunda.zeebe.client.ZeebeClientBuilder;
-import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.qa.util.actuator.GatewayHealthActuator;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
 
-public interface TestGateway<T extends TestGateway<T>> extends TestZeebe<T> {
+public interface TestGateway<T extends TestGateway<T>> extends TestStandalone<T> {
 
   /**
    * Returns the address used by clients to interact with the gateway.
@@ -37,7 +36,7 @@ public interface TestGateway<T extends TestGateway<T>> extends TestZeebe<T> {
    * readiness, and startup.
    */
   default GatewayHealthActuator gatewayHealth() {
-    return GatewayHealthActuator.of("http://" + monitoringAddress());
+    return GatewayHealthActuator.ofAddress(monitoringAddress());
   }
 
   @Override
@@ -47,10 +46,4 @@ public interface TestGateway<T extends TestGateway<T>> extends TestZeebe<T> {
 
   /** Returns a new pre-configured client builder for this gateway */
   ZeebeClientBuilder newClientBuilder();
-
-  /**
-   * The configuration for this gateway. This is a mutable object, but changes to it will not take
-   * effect until the gateway is started after.
-   */
-  GatewayCfg gatewayConfig();
 }
