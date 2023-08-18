@@ -23,7 +23,7 @@ import io.atomix.utils.net.Address;
 import io.camunda.zeebe.util.collection.Tuple;
 import io.netty.channel.Channel;
 import java.net.ConnectException;
-import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -38,7 +38,7 @@ class ChannelPool {
 
   private final Function<Address, CompletableFuture<Channel>> factory;
   private final int size;
-  private final Map<Tuple<Address, InetAddress>, List<CompletableFuture<Channel>>> channels =
+  private final Map<Tuple<Address, InetSocketAddress>, List<CompletableFuture<Channel>>> channels =
       Maps.newConcurrentMap();
 
   ChannelPool(final Function<Address, CompletableFuture<Channel>> factory, final int size) {
@@ -53,8 +53,9 @@ class ChannelPool {
    * @return the channel pool for the given address
    */
   private List<CompletableFuture<Channel>> getChannelPool(
-      final Address address, final InetAddress inetAddress) {
-    final Tuple<Address, InetAddress> channelPoolIdentifier = new Tuple<>(address, inetAddress);
+      final Address address, final InetSocketAddress inetAddress) {
+    final Tuple<Address, InetSocketAddress> channelPoolIdentifier =
+        new Tuple<>(address, inetAddress);
 
     final List<CompletableFuture<Channel>> channelPool = channels.get(channelPoolIdentifier);
     if (channelPool != null) {
@@ -89,7 +90,7 @@ class ChannelPool {
    * @return a future to be completed with a channel from the pool
    */
   CompletableFuture<Channel> getChannel(final Address address, final String messageType) {
-    final InetAddress inetAddress = address.address();
+    final InetSocketAddress inetAddress = address.socketAddress();
     if (inetAddress == null) {
       final CompletableFuture<Channel> failedFuture = new OrderedFuture<>();
       failedFuture.completeExceptionally(
