@@ -111,8 +111,8 @@ class RaftLogTest {
     assertThat(entryRead.term()).isEqualTo(1);
     assertThat(entryRead.entry()).isInstanceOf(ConfigurationEntry.class);
     final var configurationRead = (ConfigurationEntry) entryRead.entry();
-    assertThat(configurationRead.members())
-        .containsExactlyInAnyOrderElementsOf(configurationEntry.members());
+    assertThat(configurationRead.newMembers())
+        .containsExactlyInAnyOrderElementsOf(configurationEntry.newMembers());
     assertThat(configurationRead.timestamp()).isEqualTo(configurationEntry.timestamp());
   }
 

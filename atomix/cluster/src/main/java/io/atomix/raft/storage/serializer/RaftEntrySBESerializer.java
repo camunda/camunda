@@ -15,7 +15,6 @@
  */
 package io.atomix.raft.storage.serializer;
 
-import static io.atomix.raft.storage.serializer.ConfigurationEntryEncoder.RaftMemberEncoder;
 import static io.atomix.raft.storage.serializer.SerializerUtil.getRaftMemberType;
 import static io.atomix.raft.storage.serializer.SerializerUtil.getSBEType;
 
@@ -25,10 +24,10 @@ import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
 import io.atomix.raft.storage.log.entry.ConfigurationEntry;
 import io.atomix.raft.storage.log.entry.InitialEntry;
-import io.atomix.raft.storage.log.entry.RaftEntry;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.storage.log.entry.SerializedApplicationEntry;
-import io.atomix.raft.storage.serializer.ConfigurationEntryDecoder.RaftMemberDecoder;
+import io.atomix.raft.storage.serializer.ConfigurationEntryDecoder.NewMembersDecoder;
+import io.atomix.raft.storage.serializer.ConfigurationEntryDecoder.OldMembersDecoder;
 import io.camunda.zeebe.journal.file.RecordDataEncoder;
 import io.camunda.zeebe.util.SbeUtil;
 import java.nio.ByteOrder;
@@ -74,13 +73,14 @@ public class RaftEntrySBESerializer implements RaftEntrySerializer {
         + headerEncoder.encodedLength()
         // timestamp
         + configurationEntryEncoder.sbeBlockLength()
-        // members header
-        + RaftMemberEncoder.sbeHeaderSize()
-        // member entries
-        + entry.members().stream()
-            .map(this::getConfigurationMemberEntryLength)
-            .mapToInt(Integer::intValue)
-            .sum();
+        // new members header
+        + NewMembersDecoder.sbeHeaderSize()
+        // new member entries
+        + entry.newMembers().stream().mapToInt(this::getNewMemberEntryLength).sum()
+        // old members header
+        + OldMembersDecoder.sbeHeaderSize()
+        // old member entries
+        + entry.oldMembers().stream().mapToInt(this::getOldMemberEntryLength).sum();
   }
 
   @Override
@@ -138,10 +138,22 @@ public class RaftEntrySBESerializer implements RaftEntrySerializer {
 
     configurationEntryEncoder.timestamp(entry.timestamp());
 
-    final var raftMemberEncoder = configurationEntryEncoder.raftMemberCount(entry.members().size());
-    for (final RaftMember member : entry.members()) {
+    final var newMembersEncoder =
+        configurationEntryEncoder.newMembersCount(entry.newMembers().size());
+    for (final RaftMember member : entry.newMembers()) {
       final var memberId = member.memberId().id();
-      raftMemberEncoder
+      newMembersEncoder
+          .next()
+          .type(getSBEType(member.getType()))
+          .updated(member.getLastUpdated().toEpochMilli())
+          .memberId(memberId);
+    }
+
+    final var oldMembersEncoder =
+        configurationEntryEncoder.oldMembersCount(entry.oldMembers().size());
+    for (final RaftMember member : entry.oldMembers()) {
+      final var memberId = member.memberId().id();
+      oldMembersEncoder
           .next()
           .type(getSBEType(member.getType()))
           .updated(member.getLastUpdated().toEpochMilli())
@@ -162,32 +174,36 @@ public class RaftEntrySBESerializer implements RaftEntrySerializer {
     final long term = raftLogEntryDecoder.term();
     final EntryType type = raftLogEntryDecoder.type();
 
-    final RaftEntry entry;
     final int entryOffset = headerDecoder.encodedLength() + raftLogEntryDecoder.encodedLength();
 
-    switch (type) {
-      case ApplicationEntry:
-        headerDecoder.wrap(buffer, entryOffset);
-        entry = readApplicationEntry(buffer, entryOffset);
-        break;
-      case ConfigurationEntry:
-        headerDecoder.wrap(buffer, entryOffset);
-        entry = readConfigurationEntry(buffer, entryOffset);
-        break;
-      case InitialEntry:
-        entry = new InitialEntry();
-        break;
-      default:
-        throw new IllegalStateException("Unexpected entry type " + type);
-    }
+    final var entry =
+        switch (type) {
+          case ApplicationEntry -> {
+            headerDecoder.wrap(buffer, entryOffset);
+            yield readApplicationEntry(buffer, entryOffset);
+          }
+          case ConfigurationEntry -> {
+            headerDecoder.wrap(buffer, entryOffset);
+            yield readConfigurationEntry(buffer, entryOffset);
+          }
+          case InitialEntry -> new InitialEntry();
+          default -> throw new IllegalStateException("Unexpected entry type " + type);
+        };
 
     return new RaftLogEntry(term, entry);
   }
 
-  private int getConfigurationMemberEntryLength(final RaftMember raftMember) {
+  private int getNewMemberEntryLength(final RaftMember raftMember) {
     final String id = raftMember.memberId().id();
-    return RaftMemberEncoder.sbeBlockLength()
-        + RaftMemberEncoder.memberIdHeaderLength()
+    return NewMembersDecoder.sbeBlockLength()
+        + NewMembersDecoder.memberIdHeaderLength()
+        + ((null == id || id.isEmpty()) ? 0 : id.length());
+  }
+
+  private int getOldMemberEntryLength(final RaftMember raftMember) {
+    final String id = raftMember.memberId().id();
+    return OldMembersDecoder.sbeBlockLength()
+        + OldMembersDecoder.memberIdHeaderLength()
         + ((null == id || id.isEmpty()) ? 0 : id.length());
   }
 
@@ -234,15 +250,24 @@ public class RaftEntrySBESerializer implements RaftEntrySerializer {
 
     final long timestamp = configurationEntryDecoder.timestamp();
 
-    final RaftMemberDecoder memberDecoder = configurationEntryDecoder.raftMember();
-    final ArrayList<RaftMember> members = new ArrayList<>(memberDecoder.count());
-    for (final RaftMemberDecoder member : memberDecoder) {
+    final NewMembersDecoder newMembersDecoder = configurationEntryDecoder.newMembers();
+    final ArrayList<RaftMember> newMembers = new ArrayList<>(newMembersDecoder.count());
+    for (final NewMembersDecoder member : newMembersDecoder) {
       final RaftMember.Type type = getRaftMemberType(member.type());
       final Instant updated = Instant.ofEpochMilli(member.updated());
       final var memberId = member.memberId();
-      members.add(new DefaultRaftMember(MemberId.from(memberId), type, updated));
+      newMembers.add(new DefaultRaftMember(MemberId.from(memberId), type, updated));
     }
 
-    return new ConfigurationEntry(timestamp, members);
+    final OldMembersDecoder oldMembersDecoder = configurationEntryDecoder.oldMembers();
+    final ArrayList<RaftMember> oldMembers = new ArrayList<>(oldMembersDecoder.count());
+    for (final OldMembersDecoder member : oldMembersDecoder) {
+      final RaftMember.Type type = getRaftMemberType(member.type());
+      final Instant updated = Instant.ofEpochMilli(member.updated());
+      final var memberId = member.memberId();
+      oldMembers.add(new DefaultRaftMember(MemberId.from(memberId), type, updated));
+    }
+
+    return new ConfigurationEntry(timestamp, newMembers, oldMembers);
   }
 }

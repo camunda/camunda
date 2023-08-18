@@ -16,22 +16,46 @@
  */
 package io.atomix.raft.storage.log.entry;
 
+import static io.netty.util.internal.ObjectUtil.checkNotNull;
+
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.storage.serializer.RaftEntrySerializer;
 import io.atomix.raft.storage.serializer.RaftEntrySerializer.SerializedBufferWriterAdapter;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.Collection;
+import java.util.Collections;
 
 /**
  * Stores a cluster configuration.
  *
  * <p>The {@code ConfigurationEntry} stores information relevant to a single cluster configuration
- * change. Configuration change entries store a collection of {@link RaftMember members} which each
- * represent a server in the cluster. Each time the set of members changes or a property of a single
- * member changes, a new {@code ConfigurationEntry} must be logged for the configuration change.
+ * change. Configuration change entries store a collection of {@link RaftMember newMembers} which
+ * each represent a server in the cluster. Each time the set of members changes or a property of a
+ * single member changes, a new {@code ConfigurationEntry} must be logged for the configuration
+ * change. If the set of members changes, the {@code ConfigurationEntry} must be committed by a
+ * quorum of the old members and a quorum of the new members.
  */
-public record ConfigurationEntry(long timestamp, Collection<RaftMember> members)
+public record ConfigurationEntry(
+    long timestamp, Collection<RaftMember> newMembers, Collection<RaftMember> oldMembers)
     implements RaftEntry {
+
+  public ConfigurationEntry {
+    checkNotNull(newMembers, "newMembers cannot be null");
+    checkNotNull(oldMembers, "oldMembers cannot be null");
+  }
+
+  public ConfigurationEntry(final long timestamp, final Collection<RaftMember> newMembers) {
+    this(timestamp, newMembers, Collections.emptyList());
+  }
+
+  /**
+   * @return true if the configuration change requires joint consensus, i.e. when the set of members
+   *     has changed.
+   */
+  public boolean requiresJointConsensus() {
+    return !oldMembers.isEmpty();
+  }
+
   @Override
   public BufferWriter toSerializable(final long term, final RaftEntrySerializer serializer) {
     return new SerializedBufferWriterAdapter(
