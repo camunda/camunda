@@ -154,22 +154,6 @@ public final class Address {
     return socketAddress;
   }
 
-  /**
-   * Returns the address type.
-   *
-   * @return the address type
-   */
-  public Type type() {
-    if (type == null) {
-      synchronized (this) {
-        if (type == null) {
-          type = address() instanceof Inet6Address ? Type.IPV6 : Type.IPV4;
-        }
-      }
-    }
-    return type;
-  }
-
   @Override
   public int hashCode() {
     return Objects.hash(host, port);
