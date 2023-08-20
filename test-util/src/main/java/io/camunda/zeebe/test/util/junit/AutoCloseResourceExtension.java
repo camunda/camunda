@@ -39,7 +39,7 @@ final class AutoCloseResourceExtension implements BeforeEachCallback, BeforeAllC
   }
 
   @Override
-  public void beforeEach(final ExtensionContext extensionContext) throws Exception {
+  public void beforeEach(final ExtensionContext extensionContext) {
     final var store = store(extensionContext);
     final var testInstance = extensionContext.getRequiredTestInstance();
     lookupAnnotatedFields(extensionContext, testInstance, ModifierSupport::isNotStatic)
@@ -59,6 +59,7 @@ final class AutoCloseResourceExtension implements BeforeEachCallback, BeforeAllC
             extensionContext.getRequiredTestClass(),
             fieldType
                 .and(field -> !field.isAnnotationPresent(AutoCloseResource.class))
+                .and(field -> !field.getType().isPrimitive())
                 .and(field -> ReflectionUtils.isAssignableTo(field.getType(), AutoCloseable.class)),
             HierarchyTraversalMode.TOP_DOWN)
         .stream()
@@ -108,12 +109,12 @@ final class AutoCloseResourceExtension implements BeforeEachCallback, BeforeAllC
   }
 
   private boolean shouldManageNonAnnotatedFields(final ExtensionContext extensionContext) {
-    return AnnotationSupport.findAnnotation(
+    return !AnnotationSupport.findAnnotation(
             extensionContext.getRequiredTestClass(),
             AutoCloseResources.class,
             SearchOption.INCLUDE_ENCLOSING_CLASSES)
         .map(AutoCloseResources::onlyAnnotated)
-        .orElse(false);
+        .orElse(true);
   }
 
   private record AnnotatedCloseable(Object testInstance, Field objectField, Method method)

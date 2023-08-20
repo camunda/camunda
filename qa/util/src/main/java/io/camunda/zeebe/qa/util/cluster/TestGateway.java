@@ -12,7 +12,10 @@ import io.camunda.zeebe.client.ZeebeClientBuilder;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.qa.util.actuator.GatewayHealthActuator;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
+import io.camunda.zeebe.test.util.asserts.TopologyAssert;
+import java.time.Duration;
 import java.util.function.Consumer;
+import org.awaitility.Awaitility;
 
 /**
  * Represents a Zeebe gateway, either standalone or embedded.
@@ -72,5 +75,38 @@ public interface TestGateway<T extends TestGateway<T>> extends TestStandalone<T>
     }
 
     return builder;
+  }
+
+  /**
+   * Blocks until the topology is complete. See {@link TopologyAssert#isComplete(int, int, int)} for
+   * semantics.
+   *
+   * @return itself for chaining
+   * @see TopologyAssert#isComplete(int, int, int)
+   */
+  default T awaitCompleteTopology(
+      final int clusterSize,
+      final int partitionCount,
+      final int replicationFactor,
+      final Duration timeout) {
+    try (final var client = newClientBuilder().build()) {
+      Awaitility.await("until cluster topology is complete")
+          .atMost(timeout)
+          .untilAsserted(
+              () ->
+                  TopologyAssert.assertThat(client.newTopologyRequest().send().join())
+                      .isComplete(clusterSize, partitionCount, replicationFactor));
+    }
+
+    return self();
+  }
+
+  /**
+   * Convenience method to await complete topology of single node clusters.
+   *
+   * @return itself for chaining
+   */
+  default T awaitCompleteTopology() {
+    return awaitCompleteTopology(1, 1, 1, Duration.ofSeconds(30));
   }
 }

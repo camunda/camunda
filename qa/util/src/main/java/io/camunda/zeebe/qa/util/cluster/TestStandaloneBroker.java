@@ -138,6 +138,14 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     return BrokerHealthActuator.ofAddress(monitoringAddress());
   }
 
+  /**
+   * Enables/disables usage of the recording exporter using {@link #RECORDING_EXPORTER_ID} as its
+   * unique ID.
+   *
+   * @param useRecordingExporter if true, will enable the exporter; if false, will remove it from
+   *     the config
+   * @return itself for chaining
+   */
   public TestStandaloneBroker withRecordingExporter(final boolean useRecordingExporter) {
     if (!useRecordingExporter) {
       config.getExporters().remove(RECORDING_EXPORTER_ID);
@@ -148,14 +156,29 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
         RECORDING_EXPORTER_ID, cfg -> cfg.setClassName(RecordingExporter.class.getName()));
   }
 
+  /**
+   * Adds or replaces a new exporter with the given ID. If it was already existing, the existing
+   * configuration is passed to the modifier. If it's new, a blank configuration is passed.
+   *
+   * @param id the ID of the exporter
+   * @param modifier a configuration function
+   * @return itself for chaining
+   */
   public TestStandaloneBroker withExporter(final String id, final Consumer<ExporterCfg> modifier) {
-    final var exporterConfig = new ExporterCfg();
+    final var exporterConfig =
+        config.getExporters().computeIfAbsent(id, ignored -> new ExporterCfg());
     modifier.accept(exporterConfig);
-    config.getExporters().put(id, exporterConfig);
 
     return this;
   }
 
+  /**
+   * Sets the broker's working directory, aka its data directory. If a path is given, the broker
+   * will not delete it on shutdown.
+   *
+   * @param directory path to the broker's root data directory
+   * @return itself for chaining
+   */
   public TestStandaloneBroker withWorkingDirectory(final Path directory) {
     return withBean(
         "workingDirectory", new WorkingDirectory(directory, false), WorkingDirectory.class);

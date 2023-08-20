@@ -99,5 +99,12 @@ public @interface ManageTestNodes {
      * #autoStart()} is false.
      */
     boolean awaitStarted() default true;
+
+    /**
+     * If true (the default), and the annotated node is a standalone broker with an embedded
+     * gateway, then the extension will block until the single node cluster is ready to serve
+     * request.
+     */
+    boolean awaitCompleteTopology() default true;
   }
 }

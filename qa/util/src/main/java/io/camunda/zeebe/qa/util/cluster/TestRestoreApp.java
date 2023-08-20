@@ -27,7 +27,7 @@ public final class TestRestoreApp extends TestSpringApplication<TestRestoreApp> 
 
   public TestRestoreApp(final BrokerCfg config) {
     super(RestoreApp.class);
-    this.config = new BrokerCfg();
+    this.config = config;
 
     //noinspection resource
     withBean("config", config, BrokerCfg.class);

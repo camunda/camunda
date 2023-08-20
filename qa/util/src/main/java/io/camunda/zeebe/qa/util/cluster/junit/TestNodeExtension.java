@@ -167,6 +167,12 @@ final class TestNodeExtension
       if (annotation.awaitReady()) {
         node.await(ZeebeHealthProbe.READY);
       }
+
+      if (annotation.awaitCompleteTopology()
+          && node.isGateway()
+          && node instanceof final TestStandaloneBroker broker) {
+        broker.awaitCompleteTopology();
+      }
     }
   }
 
