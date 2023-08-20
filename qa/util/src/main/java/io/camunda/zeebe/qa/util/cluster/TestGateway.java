@@ -7,12 +7,18 @@
  */
 package io.camunda.zeebe.qa.util.cluster;
 
+import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.qa.util.actuator.GatewayHealthActuator;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
 import java.util.function.Consumer;
 
+/**
+ * Represents a Zeebe gateway, either standalone or embedded.
+ *
+ * @param <T> the concrete type of the implementation
+ */
 public interface TestGateway<T extends TestGateway<T>> extends TestStandalone<T> {
 
   /**
@@ -46,12 +52,25 @@ public interface TestGateway<T extends TestGateway<T>> extends TestStandalone<T>
     return gatewayHealth();
   }
 
-  /** Returns a new pre-configured client builder for this gateway */
-  ZeebeClientBuilder newClientBuilder();
-
   /**
    * Allows modifying the gateway configuration. Changes will not take effect until the node is
    * restarted.
    */
   T withGatewayConfig(final Consumer<GatewayCfg> modifier);
+
+  /** Returns the gateway configuration for this node. */
+  GatewayCfg gatewayConfig();
+
+  /** Returns a new pre-configured client builder for this gateway */
+  default ZeebeClientBuilder newClientBuilder() {
+    final var builder = ZeebeClient.newClientBuilder().gatewayAddress(gatewayAddress());
+    final var security = gatewayConfig().getSecurity();
+    if (security.isEnabled()) {
+      builder.caCertificatePath(security.getCertificateChainPath().getAbsolutePath());
+    } else {
+      builder.usePlaintext();
+    }
+
+    return builder;
+  }
 }

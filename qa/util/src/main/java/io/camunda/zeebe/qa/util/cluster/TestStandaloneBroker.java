@@ -12,51 +12,36 @@ import io.camunda.zeebe.broker.StandaloneBroker;
 import io.camunda.zeebe.broker.shared.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
-import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.qa.util.actuator.BrokerHealthActuator;
 import io.camunda.zeebe.qa.util.actuator.GatewayHealthActuator;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
-import io.camunda.zeebe.qa.util.cluster.spring.ContextOverrideInitializer.Bean;
 import io.camunda.zeebe.shared.Profile;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.function.Consumer;
-import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.boot.builder.SpringApplicationBuilder;
 
 /** Represents an instance of the {@link StandaloneBroker} Spring application. */
 @SuppressWarnings("UnusedReturnValue")
-public final class TestStandaloneBroker
-    implements TestGateway<TestStandaloneBroker>, TestStandalone<TestStandaloneBroker> {
+public final class TestStandaloneBroker extends TestSpringApplication<TestStandaloneBroker>
+    implements TestGateway<TestStandaloneBroker> {
 
   private static final String RECORDING_EXPORTER_ID = "recordingExporter";
   private final BrokerCfg config;
-  private final Map<String, Bean<?>> beans;
-  private final Map<String, Object> propertyOverrides;
-
-  private ConfigurableApplicationContext springContext;
 
   public TestStandaloneBroker() {
-    this(new BrokerCfg(), new HashMap<>(), new HashMap<>());
-  }
+    super(StandaloneBroker.class);
 
-  private TestStandaloneBroker(
-      final BrokerCfg config,
-      final Map<String, Bean<?>> beans,
-      final Map<String, Object> propertyOverrides) {
-    this.config = config;
-    this.beans = beans;
-    this.propertyOverrides = propertyOverrides;
+    config = new BrokerCfg();
 
     config.getNetwork().getCommandApi().setPort(SocketUtil.getNextAddress().getPort());
     config.getNetwork().getInternalApi().setPort(SocketUtil.getNextAddress().getPort());
     config.getGateway().getNetwork().setPort(SocketUtil.getNextAddress().getPort());
-    propertyOverrides.put("server.port", SocketUtil.getNextAddress().getPort());
 
+    //noinspection resource
     withBean("uninitializedBrokerCfg", config, BrokerCfg.class);
   }
 
@@ -71,52 +56,13 @@ public final class TestStandaloneBroker
   }
 
   @Override
-  public TestStandaloneBroker start() {
-    if (!isStarted()) {
-      final var builder =
-          TestSupport.defaultSpringBuilder(beans, propertyOverrides)
-              .profiles(Profile.BROKER.getId(), "test")
-              .sources(StandaloneBroker.class);
-      springContext = builder.run();
-    }
-
-    return this;
-  }
-
-  @Override
-  public TestStandaloneBroker stop() {
-    if (springContext != null) {
-      springContext.close();
-      springContext = null;
-    }
-
-    return this;
-  }
-
-  @Override
-  public boolean isStarted() {
-    return springContext != null && springContext.isActive();
-  }
-
-  @Override
-  public int mappedPort(final ZeebePort port) {
-    return switch (port) {
-      case COMMAND -> config.getNetwork().getCommandApi().getPort();
-      case GATEWAY -> config.getGateway().getNetwork().getPort();
-      case CLUSTER -> config.getNetwork().getInternalApi().getPort();
-      case MONITORING -> TestSupport.monitoringPort(springContext, propertyOverrides);
-    };
-  }
-
-  @Override
-  public TestStandaloneBroker withEnv(final String key, final Object value) {
-    propertyOverrides.put(key, value);
-    return this;
+  public HealthActuator healthActuator() {
+    return brokerHealth();
   }
 
   @Override
   public boolean isGateway() {
-    return hasEmbeddedGateway();
+    return config.getGateway().isEnable();
   }
 
   @Override
@@ -125,20 +71,23 @@ public final class TestStandaloneBroker
   }
 
   @Override
-  public <T> TestStandaloneBroker withBean(
-      final String qualifier, final T bean, final Class<T> type) {
-    beans.put(qualifier, new Bean<>(bean, type));
-    return this;
+  public int mappedPort(final ZeebePort port) {
+    return switch (port) {
+      case COMMAND -> config.getNetwork().getCommandApi().getPort();
+      case GATEWAY -> config.getGateway().getNetwork().getPort();
+      case CLUSTER -> config.getNetwork().getInternalApi().getPort();
+      default -> super.mappedPort(port);
+    };
   }
 
   @Override
-  public <T> T bean(final Class<T> type) {
-    return springContext.getBean(type);
+  protected SpringApplicationBuilder createSpringBuilder() {
+    return super.createSpringBuilder().profiles(Profile.BROKER.getId());
   }
 
   @Override
   public String gatewayAddress() {
-    if (!hasEmbeddedGateway()) {
+    if (!isGateway()) {
       throw new IllegalStateException(
           "Expected to get the gateway address for this broker, but the embedded gateway is not enabled");
     }
@@ -152,31 +101,24 @@ public final class TestStandaloneBroker
   }
 
   @Override
-  public HealthActuator healthActuator() {
-    return brokerHealth();
-  }
-
-  @Override
-  public ZeebeClientBuilder newClientBuilder() {
-    final var builder = ZeebeClient.newClientBuilder().gatewayAddress(gatewayAddress());
-    final var security = config.getGateway().getSecurity();
-    if (security.isEnabled()) {
-      builder.caCertificatePath(security.getCertificateChainPath().getAbsolutePath());
-    } else {
-      builder.usePlaintext();
-    }
-
-    return builder;
-  }
-
-  @Override
   public TestStandaloneBroker withGatewayConfig(final Consumer<GatewayCfg> modifier) {
     modifier.accept(config.getGateway());
     return this;
   }
 
-  public boolean hasEmbeddedGateway() {
-    return config.getGateway().isEnable();
+  @Override
+  public GatewayCfg gatewayConfig() {
+    return config.getGateway();
+  }
+
+  @Override
+  public ZeebeClientBuilder newClientBuilder() {
+    if (!isGateway()) {
+      throw new IllegalStateException(
+          "Cannot create a new client for this broker, as it does not have an embedded gateway");
+    }
+
+    return TestGateway.super.newClientBuilder();
   }
 
   public BrokerCfg brokerConfig() {
@@ -215,9 +157,7 @@ public final class TestStandaloneBroker
   }
 
   public TestStandaloneBroker withWorkingDirectory(final Path directory) {
-    beans.put(
-        "workingDirectory",
-        new Bean<>(new WorkingDirectory(directory, false), WorkingDirectory.class));
-    return this;
+    return withBean(
+        "workingDirectory", new WorkingDirectory(directory, false), WorkingDirectory.class);
   }
 }

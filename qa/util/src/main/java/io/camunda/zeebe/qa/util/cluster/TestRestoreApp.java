@@ -11,21 +11,14 @@ import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator.NoopHealthActuator;
-import io.camunda.zeebe.qa.util.cluster.spring.ContextOverrideInitializer.Bean;
 import io.camunda.zeebe.restore.RestoreApp;
 import io.camunda.zeebe.shared.Profile;
-import io.camunda.zeebe.test.util.socket.SocketUtil;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.function.Consumer;
-import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.boot.builder.SpringApplicationBuilder;
 
-public final class TestRestoreApp implements TestStandalone<TestRestoreApp> {
+/** Represents an instance of the {@link RestoreApp} Spring application. */
+public final class TestRestoreApp extends TestSpringApplication<TestRestoreApp> {
   private final BrokerCfg config;
-  private final Map<String, Bean<?>> beans;
-  private final Map<String, Object> propertyOverrides;
-
-  private ConfigurableApplicationContext springContext;
   private long backupId;
 
   public TestRestoreApp() {
@@ -33,18 +26,10 @@ public final class TestRestoreApp implements TestStandalone<TestRestoreApp> {
   }
 
   public TestRestoreApp(final BrokerCfg config) {
-    this(config, new HashMap<>(), new HashMap<>());
-  }
+    super(RestoreApp.class);
+    this.config = new BrokerCfg();
 
-  private TestRestoreApp(
-      final BrokerCfg config,
-      final Map<String, Bean<?>> beans,
-      final Map<String, Object> propertyOverrides) {
-    this.config = config;
-    this.beans = beans;
-    this.propertyOverrides = propertyOverrides;
-
-    propertyOverrides.put("server.port", SocketUtil.getNextAddress().getPort());
+    //noinspection resource
     withBean("config", config, BrokerCfg.class);
   }
 
@@ -59,52 +44,9 @@ public final class TestRestoreApp implements TestStandalone<TestRestoreApp> {
   }
 
   @Override
-  public TestRestoreApp start() {
-    if (!isStarted()) {
-      final var builder =
-          TestSupport.defaultSpringBuilder(beans, propertyOverrides)
-              .profiles(Profile.RESTORE.getId(), "test")
-              .sources(RestoreApp.class);
-      springContext = builder.run("--backupId=" + backupId);
-    }
-
-    return this;
-  }
-
-  @Override
-  public TestRestoreApp stop() {
-    if (springContext != null) {
-      springContext.close();
-      springContext = null;
-    }
-
-    return this;
-  }
-
-  @Override
   public HealthActuator healthActuator() {
     // the restore app is a one shot app, so it exits once Spring is finished
     return new NoopHealthActuator();
-  }
-
-  @Override
-  public boolean isStarted() {
-    return springContext != null && springContext.isActive();
-  }
-
-  @Override
-  public int mappedPort(final ZeebePort port) {
-    if (port != ZeebePort.MONITORING) {
-      throw new IllegalStateException("Unexpected value: " + port);
-    }
-
-    return TestSupport.monitoringPort(springContext, propertyOverrides);
-  }
-
-  @Override
-  public TestRestoreApp withEnv(final String key, final Object value) {
-    propertyOverrides.put(key, value);
-    return this;
   }
 
   @Override
@@ -118,14 +60,13 @@ public final class TestRestoreApp implements TestStandalone<TestRestoreApp> {
   }
 
   @Override
-  public <T> TestRestoreApp withBean(final String qualifier, final T bean, final Class<T> type) {
-    beans.put(qualifier, new Bean<>(bean, type));
-    return this;
+  protected String[] commandLineArgs() {
+    return new String[] {"--backupId=" + backupId};
   }
 
   @Override
-  public <T> T bean(final Class<T> type) {
-    return springContext.getBean(type);
+  protected SpringApplicationBuilder createSpringBuilder() {
+    return super.createSpringBuilder().profiles(Profile.RESTORE.getId());
   }
 
   public TestRestoreApp withBrokerConfig(final Consumer<BrokerCfg> modifier) {

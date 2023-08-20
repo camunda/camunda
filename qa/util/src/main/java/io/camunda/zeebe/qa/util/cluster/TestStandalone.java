@@ -90,6 +90,7 @@ public interface TestStandalone<T extends TestStandalone<T>> extends AutoCloseab
 
   @Override
   default void close() {
+    //noinspection resource
     stop();
   }
 
@@ -114,7 +115,26 @@ public interface TestStandalone<T extends TestStandalone<T>> extends AutoCloseab
     return await(probe, Duration.ofSeconds(30));
   }
 
+  /**
+   * When the underlying application is started, all beans of the given type will resolve to the
+   * given value. The qualifier is useful for cases where more than one beans of the same type are
+   * defined with different qualifiers.
+   *
+   * @param qualifier the bean name/qualifier
+   * @param bean the object to inject as the bean value
+   * @param type the type to be resolved/autowired
+   * @return itself for chaining
+   * @param <V> the bean type
+   */
   <V> T withBean(final String qualifier, final V bean, final Class<V> type);
 
+  /**
+   * If the application is started (e.g. {@link #isStarted()}, resolves and returns (i.e.
+   * auto-wires) the first bean of the given type.
+   *
+   * @param type the expected bean type
+   * @return the bean (if any was resolved), or null
+   * @param <V> the expected bean type
+   */
   <V> V bean(final Class<V> type);
 }
