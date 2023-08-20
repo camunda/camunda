@@ -109,7 +109,8 @@ public class GatewayAuthenticationIdentityIT {
                   .forStatusCode(200))
           .withNetworkAliases("identity");
 
-  @TestNode
+  // can't wait for the topology to be complete here, as some of the tests are not authenticated
+  @TestNode(awaitCompleteTopology = false)
   private final TestStandaloneBroker zeebe =
       new TestStandaloneBroker()
           .withBrokerConfig(
