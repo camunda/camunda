@@ -11,6 +11,7 @@ import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.function.Predicate;
+import org.agrona.CloseHelper;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -23,8 +24,11 @@ import org.junit.platform.commons.support.ModifierSupport;
 import org.junit.platform.commons.support.ReflectionSupport;
 import org.junit.platform.commons.support.SearchOption;
 import org.junit.platform.commons.util.ReflectionUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 final class AutoCloseResourceExtension implements BeforeEachCallback, BeforeAllCallback {
+  private static final Logger LOG = LoggerFactory.getLogger(AutoCloseResourceExtension.class);
 
   @Override
   public void beforeAll(final ExtensionContext extensionContext) {
@@ -132,8 +136,9 @@ final class AutoCloseResourceExtension implements BeforeEachCallback, BeforeAllC
   private record AutoCloseableResource(AutoCloseable resource) implements CloseableResource {
 
     @Override
-    public void close() throws Exception {
-      resource.close();
+    public void close() {
+      CloseHelper.close(
+          error -> LOG.warn("Failed to close resource {}", resource, error), resource);
     }
   }
 }

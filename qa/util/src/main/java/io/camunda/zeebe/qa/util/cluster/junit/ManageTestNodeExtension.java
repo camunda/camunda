@@ -22,6 +22,7 @@ import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.function.Predicate;
+import org.agrona.CloseHelper;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
@@ -34,9 +35,13 @@ import org.junit.platform.commons.support.AnnotationSupport;
 import org.junit.platform.commons.support.HierarchyTraversalMode;
 import org.junit.platform.commons.support.ModifierSupport;
 import org.junit.platform.commons.util.ReflectionUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-final class TestNodeExtension
+final class ManageTestNodeExtension
     implements BeforeAllCallback, BeforeEachCallback, BeforeTestExecutionCallback, TestWatcher {
+
+  private static final Logger LOG = LoggerFactory.getLogger(ManageTestNodeExtension.class);
 
   @Override
   public void beforeAll(final ExtensionContext extensionContext) {
@@ -223,7 +228,7 @@ final class TestNodeExtension
   }
 
   private Store store(final ExtensionContext extensionContext) {
-    return extensionContext.getStore(Namespace.create(TestNodeExtension.class));
+    return extensionContext.getStore(Namespace.create(ManageTestNodeExtension.class));
   }
 
   private record ClusterResource(TestStandaloneCluster cluster, TestCluster annotation)
@@ -231,7 +236,9 @@ final class TestNodeExtension
 
     @Override
     public void close() {
-      cluster.close();
+      CloseHelper.close(
+          error -> LOG.warn("Failed to close cluster {}, leaking resources", cluster.name(), error),
+          cluster);
     }
   }
 
@@ -240,15 +247,21 @@ final class TestNodeExtension
 
     @Override
     public void close() {
-      node.stop();
+      CloseHelper.close(
+          error -> LOG.warn("Failed to close test node {}, leaking resources", node.nodeId()),
+          node);
     }
   }
 
   private record DirectoryResource(Path directory) implements CloseableResource {
 
     @Override
-    public void close() throws Throwable {
-      FileUtil.deleteFolderIfExists(directory);
+    public void close() {
+      try {
+        FileUtil.deleteFolderIfExists(directory);
+      } catch (final IOException e) {
+        LOG.warn("Failed to clean up temporary directory {}, leaking resources...", directory, e);
+      }
     }
   }
 }

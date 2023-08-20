@@ -17,7 +17,7 @@ import java.lang.annotation.Target;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
- * Registers the {@link TestNodeExtension} extension, which will manage the lifecycle of one or
+ * Registers the {@link ManageTestNodeExtension} extension, which will manage the lifecycle of one or
  * more {@link TestStandaloneCluster}
  *
  * <pre>{@code
@@ -50,7 +50,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 @Inherited
-@ExtendWith(TestNodeExtension.class)
+@ExtendWith(ManageTestNodeExtension.class)
 public @interface ManageTestNodes {
 
   @Target({ElementType.FIELD})
