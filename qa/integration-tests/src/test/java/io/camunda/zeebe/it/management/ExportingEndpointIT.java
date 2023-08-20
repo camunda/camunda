@@ -22,6 +22,7 @@ import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 @ManageTestNodes
@@ -39,10 +40,22 @@ final class ExportingEndpointIT {
 
   @AutoCloseResource private final ZeebeClient client = CLUSTER.newClientBuilder().build();
 
+  @BeforeAll
+  static void beforeAll() {
+    try (final var client = CLUSTER.newClientBuilder().build()) {
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(
+              Bpmn.createExecutableProcess("processId").startEvent().endEvent().done(),
+              "process.bpmn")
+          .send()
+          .join();
+    }
+  }
+
   @Test
   void shouldPauseExporting() {
     // given
-    deployProcess();
     startProcess();
 
     final var recordsBeforePause =
@@ -66,7 +79,6 @@ final class ExportingEndpointIT {
     final var actuator = getActuator();
     actuator.pause();
 
-    deployProcess();
     startProcess();
 
     final var recordsBeforePause =
@@ -94,16 +106,6 @@ final class ExportingEndpointIT {
         .bpmnProcessId("processId")
         .latestVersion()
         .withResult()
-        .send()
-        .join();
-  }
-
-  private void deployProcess() {
-    client
-        .newDeployResourceCommand()
-        .addProcessModel(
-            Bpmn.createExecutableProcess("processId").startEvent().endEvent().done(),
-            "process.bpmn")
         .send()
         .join();
   }

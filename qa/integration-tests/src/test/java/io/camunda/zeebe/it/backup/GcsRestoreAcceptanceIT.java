@@ -76,7 +76,10 @@ final class GcsRestoreAcceptanceIT {
 
   private void takeBackup(final long backupId) {
     try (final var zeebe =
-        new TestStandaloneBroker().withBrokerConfig(this::configureBackupStore).start()) {
+        new TestStandaloneBroker()
+            .withBrokerConfig(this::configureBackupStore)
+            .start()
+            .awaitCompleteTopology()) {
       final var actuator = BackupActuator.ofAddress(zeebe.monitoringAddress());
 
       try (final var client = zeebe.newClientBuilder().build()) {

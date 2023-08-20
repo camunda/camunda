@@ -13,7 +13,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
-import io.camunda.zeebe.qa.util.cluster.ZeebeHealthProbe;
 import io.camunda.zeebe.qa.util.cluster.junit.ManageTestNodes;
 import io.camunda.zeebe.qa.util.cluster.junit.ManageTestNodes.TestNode;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId;
@@ -131,7 +130,6 @@ final class SnapshotWithExportersTest {
           new TestStandaloneBroker()
               .withWorkingDirectory(directory)
               .start()
-              .await(ZeebeHealthProbe.READY)
               .awaitCompleteTopology()) {
         try (final var client = zeebeWithoutExporter.newClientBuilder().build()) {
           publishMessages(client);
@@ -158,7 +156,7 @@ final class SnapshotWithExportersTest {
               .withRecordingExporter(true)
               .withWorkingDirectory(directory)
               .start()
-              .await(ZeebeHealthProbe.READY)) {
+              .awaitCompleteTopology()) {
         final var partitions = PartitionsActuator.ofAddress(zeebeWithExporter.monitoringAddress());
 
         partitions.takeSnapshot();
