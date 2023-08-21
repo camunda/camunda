@@ -1,6 +1,7 @@
 name: Optimize health status report
 
 on:
+  push:
   workflow_dispatch:
   schedule:
     - cron: "0 7 * * 1-5"
@@ -28,6 +29,15 @@ jobs:
             secret/data/products/optimize/ci/camunda-optimize SLACK_API_KEY;
             secret/data/products/optimize/ci/camunda-optimize ARGOCD_TOKEN;
             secret/data/products/optimize/ci/camunda-optimize SNYK_TOKEN;
+      - name: check config generation
+        run: |
+          cd ${{ github.workspace }}/.github/scripts/healthStatusReport
+          yarn
+          echo "$(npx ts-node createHealtStatusConfig.ts)"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ARGOCD_TOKEN: ${{ steps.secrets.outputs.ARGOCD_TOKEN }}
+          SNYK_TOKEN: ${{ steps.secrets.outputs.SNYK_TOKEN }}
 
       - name: Get health status report
         id: get-report
@@ -45,7 +55,7 @@ jobs:
       - name: Send report to slack channel
         uses: slackapi/slack-github-action@v1.24.0
         with:
-          channel-id: "#optimize-health-status-update"
+          channel-id: "U0416NT76P3"
           slack-message: ${{ steps.get-report.outputs.health_status_report }}
         env:
           SLACK_BOT_TOKEN: ${{ steps.secrets.outputs.SLACK_API_KEY }}
