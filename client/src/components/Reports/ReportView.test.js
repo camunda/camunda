@@ -169,6 +169,14 @@ describe('Download CSV', () => {
     expect(node.find(DownloadButton)).not.toExist();
   });
 
+  it('should not show a download csv button if the visualization is number', () => {
+    const node = shallow(
+      <ReportView report={{...report, data: {...report.data, visualization: 'number'}}} />
+    );
+
+    expect(node.find(DownloadButton)).not.toExist();
+  });
+
   it('should calculate total entries correctly for different report types', () => {
     const node = shallow(
       <ReportView report={{...report, result: {type: 'number', measures: [{data: 12}]}}} />

@@ -56,7 +56,7 @@ export function ReportView({report, error, user, loadReport}) {
       return true;
     }
 
-    return report.result?.measures.length === 1;
+    return report?.data?.visualization !== 'number' && report.result?.measures.length === 1;
   };
 
   const constructCSVDownloadLink = () => {
