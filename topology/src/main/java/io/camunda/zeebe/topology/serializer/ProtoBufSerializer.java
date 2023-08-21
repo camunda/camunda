@@ -5,10 +5,11 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.topology.gossip;
+package io.camunda.zeebe.topology.serializer;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.topology.gossip.ClusterTopologyGossipState;
 import io.camunda.zeebe.topology.protocol.Topology;
 import io.camunda.zeebe.topology.state.ClusterChangePlan;
 import io.camunda.zeebe.topology.state.ClusterTopology;
@@ -17,7 +18,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
-public class ProtoBufSerializer implements ClusterTopologyGossipSerializer {
+public class ProtoBufSerializer implements ClusterTopologySerializer {
 
   @Override
   public byte[] encode(final ClusterTopologyGossipState gossipState) {
@@ -39,7 +40,6 @@ public class ProtoBufSerializer implements ClusterTopologyGossipSerializer {
 
     try {
       gossipState = Topology.GossipState.parseFrom(encodedState);
-
     } catch (final InvalidProtocolBufferException e) {
       throw new DecodingFailed(e);
     }
@@ -52,15 +52,20 @@ public class ProtoBufSerializer implements ClusterTopologyGossipSerializer {
     return clusterTopologyGossipState;
   }
 
-  private Topology.ClusterTopology encodeClusterTopology(
-      final io.camunda.zeebe.topology.state.ClusterTopology clusterTopology) {
-    final var members =
-        clusterTopology.members().entrySet().stream()
-            .collect(Collectors.toMap(e -> e.getKey().id(), e -> encodeMemberState(e.getValue())));
-    return Topology.ClusterTopology.newBuilder()
-        .setVersion(clusterTopology.version())
-        .putAllMembers(members)
-        .build();
+  @Override
+  public byte[] encode(final ClusterTopology clusterTopology) {
+    return encodeClusterTopology(clusterTopology).toByteArray();
+  }
+
+  @Override
+  public ClusterTopology decodeClusterTopology(final byte[] encodedClusterTopology) {
+    try {
+      final var topology = Topology.ClusterTopology.parseFrom(encodedClusterTopology);
+      return decodeClusterTopology(topology);
+
+    } catch (final InvalidProtocolBufferException e) {
+      throw new DecodingFailed(e);
+    }
   }
 
   private io.camunda.zeebe.topology.state.ClusterTopology decodeClusterTopology(
@@ -72,6 +77,17 @@ public class ProtoBufSerializer implements ClusterTopologyGossipSerializer {
             .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
     return new io.camunda.zeebe.topology.state.ClusterTopology(
         encodedClusterTopology.getVersion(), members, ClusterChangePlan.empty());
+  }
+
+  private Topology.ClusterTopology encodeClusterTopology(
+      final io.camunda.zeebe.topology.state.ClusterTopology clusterTopology) {
+    final var members =
+        clusterTopology.members().entrySet().stream()
+            .collect(Collectors.toMap(e -> e.getKey().id(), e -> encodeMemberState(e.getValue())));
+    return Topology.ClusterTopology.newBuilder()
+        .setVersion(clusterTopology.version())
+        .putAllMembers(members)
+        .build();
   }
 
   private io.camunda.zeebe.topology.state.MemberState decodeMemberState(

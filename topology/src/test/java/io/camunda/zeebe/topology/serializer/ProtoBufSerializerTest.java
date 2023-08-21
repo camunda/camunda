@@ -5,17 +5,19 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.topology.gossip;
+package io.camunda.zeebe.topology.serializer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.topology.gossip.ClusterTopologyGossipState;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.MemberState;
 import io.camunda.zeebe.topology.state.MemberState.State;
 import io.camunda.zeebe.topology.state.PartitionState;
 import java.util.Map;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -35,6 +37,21 @@ final class ProtoBufSerializerTest {
 
     // then
     assertThat(decodedState.getClusterTopology())
+        .describedAs("Decoded clusterTopology must be equal to initial one")
+        .isEqualTo(initialClusterTopology);
+  }
+
+  @Test
+  void shouldEncodeAndDecodeClusterTopology() {
+    // given
+    final var initialClusterTopology = topologyWithTwoMembers();
+
+    // when
+    final var decodedClusterTopology =
+        protoBufSerializer.decodeClusterTopology(protoBufSerializer.encode(initialClusterTopology));
+
+    // then
+    assertThat(decodedClusterTopology)
         .describedAs("Decoded clusterTopology must be equal to initial one")
         .isEqualTo(initialClusterTopology);
   }

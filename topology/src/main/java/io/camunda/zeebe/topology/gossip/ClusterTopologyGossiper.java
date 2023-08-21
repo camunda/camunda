@@ -13,6 +13,7 @@ import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.topology.serializer.ClusterTopologySerializer;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -33,7 +34,7 @@ public final class ClusterTopologyGossiper {
   private final ClusterCommunicationService communicationService;
   private final ClusterMembershipService membershipService;
   private final ClusterTopologyGossiperConfig config;
-  private final ClusterTopologyGossipSerializer serializer;
+  private final ClusterTopologySerializer serializer;
 
   // Reuse the same random ordered list for both sync and gossip
   private List<MemberId> membersToSync = List.of();
@@ -46,7 +47,7 @@ public final class ClusterTopologyGossiper {
       final ConcurrencyControl executor,
       final ClusterCommunicationService communicationService,
       final ClusterMembershipService membershipService,
-      final ClusterTopologyGossipSerializer serializer,
+      final ClusterTopologySerializer serializer,
       final ClusterTopologyGossiperConfig config,
       final Function<ClusterTopology, ActorFuture<ClusterTopology>> clusterTopologyUpdateHandler) {
     this.executor = executor;
