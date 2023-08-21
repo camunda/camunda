@@ -1,11 +1,16 @@
 {
-  extends: ["config:base", ":rebaseStalePrs", ":dependencyDashboard"],
-  includePaths: [
-    ".github/**",
-    ".ci/**",
-    "docker/test/**",
-    "**/Dockerfile",
+  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+  extends: [
+    "config:base",
+    ":rebaseStalePrs",
+    "docker:pinDigests",
+    "helpers:pinGitHubActionDigests",
+    ":disableRateLimiting",
+    ":dependencyDashboard",
   ],
+  separateMinorPatch: true,
+  schedule: ["every weekday"],
+  automergeType: "pr",
   // This ignores are the ones comming by default from config:base with exception to **/test/**
   // We do this to be able to test files in docker/test directory
   ignorePaths: [
@@ -17,6 +22,9 @@
     "**/tests/**",
     "**/__fixtures__/**",
   ],
+  // Branches to be checked
+  baseBranches: ["master", "/^maintenance\\/.*/"],
+  // Here are credentials to private repos that renovate could not access by default
   hostRules: [
     {
       matchHost: "https://api.github.com/repos/camunda-cloud/",
@@ -26,7 +34,11 @@
       },
     },
   ],
+  // Global labels to be added to each PR
+  labels: ["renovate", "dependencies"],
+  // Global prefix for all generated commits
   commitMessagePrefix: "chore(deps):",
+  // Global prefix for all generated branches
   branchPrefix: "renovate/",
   helmv3: {
     registryAliases: {
@@ -34,6 +46,22 @@
     },
   },
   packageRules: [
+    // Frontend deps
+    {
+      addLabels: ["frontend"],
+      languages: ["js"],
+    },
+    // Backend deps
+    {
+      addLabels: ["backend"],
+      languages: ["java"],
+    },
+    // Infra deps
+    {
+      addLabels: ["infra"],
+      managers: ["docker-compose", "dockerfile", "github-actions"],
+    },
+    // Docker deps
     {
       matchManagers: "dockerfile",
       separateMajorMinor: true,
@@ -46,8 +74,16 @@
       separateMajorMinor: true,
       separateMinorPatch: true,
     },
+    // Settings for patch versions update
+    // We enable here the automerge, so if all tests pass the patch versions will be auto merged
+    {
+      addLabels: ["patch"],
+      matchUpdateTypes: ["patch"],
+      automerge: true,
+    },
   ],
   regexManagers: [
+    // These two regex managers are checking for alpine image versions in files other than Dockerfile
     {
       fileMatch: [
         ".github/scripts/build-docker-images.sh",
