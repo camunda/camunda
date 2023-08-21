@@ -5,4 +5,5 @@
  * except in compliance with the proprietary license.
  */
 
+// eslint-disable-next-line import/no-anonymous-default-export
 export default {};

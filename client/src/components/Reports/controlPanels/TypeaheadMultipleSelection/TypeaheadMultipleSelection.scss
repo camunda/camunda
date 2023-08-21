@@ -78,8 +78,12 @@
         font-size: 20px;
         line-height: 10px;
         color: var(--grey-base-40);
-        text-shadow: 0 5px var(--grey-base-40), 0 10px var(--grey-base-40),
-          5px 0 var(--grey-base-40), 5px 5px var(--grey-base-40), 5px 10px var(--grey-base-40);
+        text-shadow:
+          0 5px var(--grey-base-40),
+          0 10px var(--grey-base-40),
+          5px 0 var(--grey-base-40),
+          5px 5px var(--grey-base-40),
+          5px 10px var(--grey-base-40);
       }
     }
   }

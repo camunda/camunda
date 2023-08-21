@@ -45,7 +45,7 @@ interface ChecklistProps<T> {
 }
 
 export default function Checklist<
-  T extends string | boolean | number | null | undefined | {id: string; key?: string}
+  T extends string | boolean | number | null | undefined | {id: string; key?: string},
 >({
   onSearch = () => {},
   selectedItems,
@@ -70,8 +70,8 @@ export default function Checklist<
   const isAllSelected = formattedData.every(({checked}) => checked);
   const isSomeSelected = !isAllSelected && formattedData.some(({checked}) => checked);
 
-  const searchFilteredData = formattedData.filter(({label, id}) =>
-    (label || id)?.toString().toLowerCase().includes(query.toLowerCase())
+  const searchFilteredData = formattedData.filter(
+    ({label, id}) => (label || id)?.toString().toLowerCase().includes(query.toLowerCase())
   );
 
   const isAllSelectedInSearch = searchFilteredData.every(({checked}) => checked);
