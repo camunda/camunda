@@ -20,6 +20,7 @@ type GithubWorkflow =
 type Config = {
   github: {
     title?: string;
+    defaultBranch?: string;
     organization: string;
     repository: string;
     workflows: GithubWorkflow[];
@@ -71,6 +72,7 @@ async function createHealtStatusConfig() {
     github: {
       organization: 'camunda',
       repository: 'camunda-optimize',
+      defaultBranch: 'master',
       workflows: [
         {
           name: 'ci',
@@ -102,8 +104,7 @@ async function createHealtStatusConfig() {
     },
   };
 
-  console.log(JSON.stringify(config));
-  return fs.writeFileSync('.config.json', JSON.stringify(config), 'utf-8');
+  return fs.writeFileSync('config.json', JSON.stringify(config), 'utf-8');
 }
 
 async function getCiBranches() {

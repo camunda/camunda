@@ -29,33 +29,32 @@ jobs:
             secret/data/products/optimize/ci/camunda-optimize SLACK_API_KEY;
             secret/data/products/optimize/ci/camunda-optimize ARGOCD_TOKEN;
             secret/data/products/optimize/ci/camunda-optimize SNYK_TOKEN;
-      - name: check config generation
+
+      - name: Genetare config file
         run: |
           cd ${{ github.workspace }}/.github/scripts/healthStatusReport
           yarn
-          echo "$(npx ts-node createHealtStatusConfig.ts)"
+          npx ts-node createHealtStatusConfig.ts
+          cat config.json
+
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ARGOCD_TOKEN: ${{ steps.secrets.outputs.ARGOCD_TOKEN }}
           SNYK_TOKEN: ${{ steps.secrets.outputs.SNYK_TOKEN }}
 
       - name: Get health status report
+        uses: misiekhardcore/infra-report-action@v1.0.0
         id: get-report
-        run: |
-          cd ${{ github.workspace }}/.github/scripts/healthStatusReport
-          yarn
-          echo "health_status_report<<EOF" >> "$GITHUB_OUTPUT"
-          echo "$(npx ts-node getHealthStatusMessage.ts)" >> "$GITHUB_OUTPUT"
-          echo "EOF" >> "$GITHUB_OUTPUT"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ARGOCD_TOKEN: ${{ steps.secrets.outputs.ARGOCD_TOKEN }}
-          SNYK_TOKEN: ${{ steps.secrets.outputs.SNYK_TOKEN }}
+        with:
+          config_file_path: ${{ github.workspace }}/.github/scripts/healthStatusReport/config.json
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          argocd_token: ${{ steps.secrets.outputs.ARGOCD_TOKEN }}
+          snyk_token: ${{ steps.secrets.outputs.SNYK_TOKEN }}
 
       - name: Send report to slack channel
         uses: slackapi/slack-github-action@v1.24.0
         with:
           channel-id: "U0416NT76P3"
-          slack-message: ${{ steps.get-report.outputs.health_status_report }}
+          slack-message: ${{ steps.get-report.outputs.infra_report }}
         env:
           SLACK_BOT_TOKEN: ${{ steps.secrets.outputs.SLACK_API_KEY }}
