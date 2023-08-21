@@ -43,7 +43,7 @@ jobs:
           SNYK_TOKEN: ${{ steps.secrets.outputs.SNYK_TOKEN }}
 
       - name: Get health status report
-        uses: misiekhardcore/infra-report-action@v1.0.0
+        uses: misiekhardcore/infra-report-action@v1.1.0
         id: get-report
         with:
           config_file_path: ${{ github.workspace }}/.github/scripts/healthStatusReport/config.json

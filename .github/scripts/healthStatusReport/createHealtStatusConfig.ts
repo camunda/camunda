@@ -190,14 +190,20 @@ function getHighestProjectVersions(projectVersions: string[]) {
 
   // Group versions by minor version
   for (const version of projectVersions) {
-    const [major, minor, patch = version] = version.split('.').map(Number);
+    const [major, minor, patch = version] = version.split('.');
     const minorVersionKey = major && minor ? `${major}.${minor}` : version;
-
+    let formatedPatch: number | string = +patch;
+    if (patch.includes('-')) {
+      continue;
+    } else if (Number.isNaN(formatedPatch)) {
+      formatedPatch = version;
+    }
     if (
       !minorVersionsMap.has(minorVersionKey) ||
-      patch > (minorVersionsMap.get(minorVersionKey) || 0)
+      (typeof formatedPatch === 'number' &&
+        formatedPatch > (+minorVersionsMap.get(minorVersionKey) || 0))
     ) {
-      minorVersionsMap.set(minorVersionKey, patch);
+      minorVersionsMap.set(minorVersionKey, formatedPatch);
     }
   }
 
