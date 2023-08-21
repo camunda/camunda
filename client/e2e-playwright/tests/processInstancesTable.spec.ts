@@ -37,7 +37,7 @@ test.beforeAll(async ({request}) => {
         },
         {timeout: SETUP_WAITING_TIME},
       )
-      .toBeGreaterThanOrEqual(30),
+      .toBe(30),
     expect
       .poll(
         async () => {
@@ -57,7 +57,7 @@ test.beforeAll(async ({request}) => {
         },
         {timeout: SETUP_WAITING_TIME},
       )
-      .toBeGreaterThanOrEqual(2),
+      .toBe(2),
     expect
       .poll(
         async () => {
@@ -77,7 +77,7 @@ test.beforeAll(async ({request}) => {
         },
         {timeout: SETUP_WAITING_TIME},
       )
-      .toBeGreaterThanOrEqual(300),
+      .toBe(300),
   ]);
 });
 
@@ -106,11 +106,15 @@ test.describe('Process Instances Table', () => {
     const instanceRows = page.getByTestId('data-list').getByRole('row');
 
     // test default Start Date sorting
-    await expect(await instanceRows.nth(0).innerText()).toContain(
-      instanceIds[2],
-    );
-    expect(await instanceRows.nth(1).innerText()).toContain(instanceIds[1]);
-    expect(await instanceRows.nth(2).innerText()).toContain(instanceIds[0]);
+    await expect
+      .poll(() => instanceRows.nth(0).innerText())
+      .toContain(instanceIds[2]);
+    await expect
+      .poll(() => instanceRows.nth(1).innerText())
+      .toContain(instanceIds[1]);
+    await expect
+      .poll(() => instanceRows.nth(2).innerText())
+      .toContain(instanceIds[0]);
 
     await page
       .getByRole('button', {
@@ -118,11 +122,15 @@ test.describe('Process Instances Table', () => {
       })
       .click();
 
-    await expect(await instanceRows.nth(0).innerText()).toContain(
-      instanceIds[0],
-    );
-    expect(await instanceRows.nth(1).innerText()).toContain(instanceIds[1]);
-    expect(await instanceRows.nth(2).innerText()).toContain(instanceIds[2]);
+    await expect
+      .poll(() => instanceRows.nth(0).innerText())
+      .toContain(instanceIds[0]);
+    await expect
+      .poll(() => instanceRows.nth(1).innerText())
+      .toContain(instanceIds[1]);
+    await expect
+      .poll(() => instanceRows.nth(2).innerText())
+      .toContain(instanceIds[2]);
 
     await page
       .getByRole('button', {
@@ -130,11 +138,15 @@ test.describe('Process Instances Table', () => {
       })
       .click();
 
-    await expect(await instanceRows.nth(0).innerText()).toContain(
-      instanceIds[2],
-    );
-    expect(await instanceRows.nth(1).innerText()).toContain(instanceIds[1]);
-    expect(await instanceRows.nth(2).innerText()).toContain(instanceIds[0]);
+    await expect
+      .poll(() => instanceRows.nth(0).innerText())
+      .toContain(instanceIds[2]);
+    await expect
+      .poll(() => instanceRows.nth(1).innerText())
+      .toContain(instanceIds[1]);
+    await expect
+      .poll(() => instanceRows.nth(2).innerText())
+      .toContain(instanceIds[0]);
 
     await page
       .getByRole('button', {
@@ -142,11 +154,15 @@ test.describe('Process Instances Table', () => {
       })
       .click();
 
-    await expect(await instanceRows.nth(0).innerText()).toContain(
-      instanceIds[2],
-    );
-    expect(await instanceRows.nth(1).innerText()).toContain(instanceIds[1]);
-    expect(await instanceRows.nth(2).innerText()).toContain(instanceIds[0]);
+    await expect
+      .poll(() => instanceRows.nth(0).innerText())
+      .toContain(instanceIds[2]);
+    await expect
+      .poll(() => instanceRows.nth(1).innerText())
+      .toContain(instanceIds[1]);
+    await expect
+      .poll(() => instanceRows.nth(2).innerText())
+      .toContain(instanceIds[0]);
 
     await page
       .getByRole('button', {
@@ -154,11 +170,15 @@ test.describe('Process Instances Table', () => {
       })
       .click();
 
-    await expect(await instanceRows.nth(0).innerText()).toContain(
-      instanceIds[0],
-    );
-    expect(await instanceRows.nth(1).innerText()).toContain(instanceIds[1]);
-    expect(await instanceRows.nth(2).innerText()).toContain(instanceIds[2]);
+    await expect
+      .poll(() => instanceRows.nth(0).innerText())
+      .toContain(instanceIds[0]);
+    await expect
+      .poll(() => instanceRows.nth(1).innerText())
+      .toContain(instanceIds[1]);
+    await expect
+      .poll(() => instanceRows.nth(2).innerText())
+      .toContain(instanceIds[2]);
 
     await page
       .getByRole('button', {
@@ -166,11 +186,15 @@ test.describe('Process Instances Table', () => {
       })
       .click();
 
-    await expect(await instanceRows.nth(0).innerText()).toContain(
-      instanceIds[2],
-    );
-    expect(await instanceRows.nth(1).innerText()).toContain(instanceIds[0]);
-    expect(await instanceRows.nth(2).innerText()).toContain(instanceIds[1]);
+    await expect
+      .poll(() => instanceRows.nth(0).innerText())
+      .toContain(instanceIds[2]);
+    await expect
+      .poll(() => instanceRows.nth(1).innerText())
+      .toContain(instanceIds[0]);
+    await expect
+      .poll(() => instanceRows.nth(2).innerText())
+      .toContain(instanceIds[1]);
 
     await page
       .getByRole('button', {
@@ -178,11 +202,15 @@ test.describe('Process Instances Table', () => {
       })
       .click();
 
-    await expect(await instanceRows.nth(0).innerText()).toContain(
-      instanceIds[0],
-    );
-    expect(await instanceRows.nth(1).innerText()).toContain(instanceIds[1]);
-    expect(await instanceRows.nth(2).innerText()).toContain(instanceIds[2]);
+    await expect
+      .poll(() => instanceRows.nth(0).innerText())
+      .toContain(instanceIds[0]);
+    await expect
+      .poll(() => instanceRows.nth(1).innerText())
+      .toContain(instanceIds[1]);
+    await expect
+      .poll(() => instanceRows.nth(2).innerText())
+      .toContain(instanceIds[2]);
 
     await page
       .getByRole('button', {
@@ -190,15 +218,15 @@ test.describe('Process Instances Table', () => {
       })
       .click();
 
-    await expect(await instanceRows.nth(0).innerText()).toContain(
-      'instancesTableProcessB',
-    );
-    expect(await instanceRows.nth(1).innerText()).toContain(
-      'instancesTableProcessB',
-    );
-    expect(await instanceRows.nth(2).innerText()).toContain(
-      'instancesTableProcessA',
-    );
+    await expect
+      .poll(() => instanceRows.nth(0).innerText())
+      .toContain('instancesTableProcessB');
+    await expect
+      .poll(() => instanceRows.nth(1).innerText())
+      .toContain('instancesTableProcessB');
+    await expect
+      .poll(() => instanceRows.nth(2).innerText())
+      .toContain('instancesTableProcessA');
 
     await page
       .getByRole('button', {
@@ -206,15 +234,15 @@ test.describe('Process Instances Table', () => {
       })
       .click();
 
-    await expect(await instanceRows.nth(0).innerText()).toContain(
-      'instancesTableProcessA',
-    );
-    expect(await instanceRows.nth(1).innerText()).toContain(
-      'instancesTableProcessB',
-    );
-    expect(await instanceRows.nth(2).innerText()).toContain(
-      'instancesTableProcessB',
-    );
+    await expect
+      .poll(() => instanceRows.nth(0).innerText())
+      .toContain('instancesTableProcessA');
+    await expect
+      .poll(() => instanceRows.nth(1).innerText())
+      .toContain('instancesTableProcessB');
+    await expect
+      .poll(() => instanceRows.nth(2).innerText())
+      .toContain('instancesTableProcessB');
   });
 
   test('Scrolling', async ({page, processesPage}) => {
@@ -238,12 +266,12 @@ test.describe('Process Instances Table', () => {
 
     await expect(instanceRows).toHaveCount(50);
 
-    await expect(await instanceRows.nth(0).innerText()).toContain(
-      descendingInstanceIds[0],
-    );
-    await expect(await instanceRows.nth(49).innerText()).toContain(
-      descendingInstanceIds[49],
-    );
+    await expect
+      .poll(() => instanceRows.nth(0).innerText())
+      .toContain(descendingInstanceIds[0]);
+    await expect
+      .poll(() => instanceRows.nth(49).innerText())
+      .toContain(descendingInstanceIds[49]);
 
     // scroll until max stored instances is reached (200)
     await page
@@ -262,12 +290,12 @@ test.describe('Process Instances Table', () => {
       .scrollIntoViewIfNeeded();
     await expect(instanceRows).toHaveCount(200);
 
-    await expect(await instanceRows.nth(0).innerText()).toContain(
-      descendingInstanceIds[0],
-    );
-    await expect(await instanceRows.nth(199).innerText()).toContain(
-      descendingInstanceIds[199],
-    );
+    await expect
+      .poll(() => instanceRows.nth(0).innerText())
+      .toContain(descendingInstanceIds[0]);
+    await expect
+      .poll(() => instanceRows.nth(199).innerText())
+      .toContain(descendingInstanceIds[199]);
 
     await page
       .getByRole('row', {name: `Instance ${descendingInstanceIds[199]}`})

@@ -74,7 +74,7 @@ test.describe('Process Instances Filters', () => {
 
     await processesPage.resetFiltersButton.click();
     await expect(processesPage.parentProcessInstanceKey).not.toBeVisible();
-    await expect(await allRows.count()).toBeGreaterThan(1);
+    await expect.poll(() => allRows.count()).toBeGreaterThan(1);
 
     await page.locator('label').filter({hasText: 'Completed'}).click();
 
