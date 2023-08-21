@@ -49,7 +49,7 @@ public final class CandidateRole extends ActiveRole {
 
   @Override
   public synchronized CompletableFuture<RaftRole> start() {
-    if (raft.getCluster().getActiveMemberStates().isEmpty()) {
+    if (raft.getCluster().getRemoteActiveMembers().isEmpty()) {
       log.info("Single member cluster. Transitioning directly to leader.");
       raft.setTerm(raft.getTerm() + 1);
       raft.setLastVotedFor(raft.getCluster().getLocalMember().memberId());
@@ -108,7 +108,7 @@ public final class CandidateRole extends ActiveRole {
 
     final AtomicBoolean complete = new AtomicBoolean();
     final Set<DefaultRaftMember> votingMembers =
-        raft.getCluster().getActiveMemberStates().stream()
+        raft.getCluster().getRemoteActiveMembers().stream()
             .map(RaftMemberContext::getMember)
             .collect(Collectors.toSet());
 

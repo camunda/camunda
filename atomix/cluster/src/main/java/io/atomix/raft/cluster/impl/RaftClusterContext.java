@@ -33,12 +33,14 @@ import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /** Manages the persistent state of the Raft cluster from the perspective of a single server. */
@@ -217,7 +219,7 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
    * @param id The member ID.
    * @return The member.
    */
-  public DefaultRaftMember getRemoteMember(final MemberId id) {
+  private DefaultRaftMember getRemoteMember(final MemberId id) {
     final RaftMemberContext member = membersMap.get(id);
     return member != null ? member.getMember() : null;
   }
@@ -233,35 +235,46 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
   }
 
   /**
-   * Returns a list of active members.
+   * Calculates the smallest value that is reported for a majority of this cluster, assuming that
+   * the local node always has the highest value.
    *
-   * @param comparator A comparator with which to sort the members list.
-   * @return The sorted members list.
+   * @param calculateMemberValue a function that calculates a value for a given member. Will be
+   *     evaluated at least once for every remote member.
+   * @return empty when no remote members are present, otherwise the smallest value that is reported
+   *     by enough remote members to form a quorum with the local member.
    */
-  public List<RaftMemberContext> getActiveMemberStates(
-      final Comparator<RaftMemberContext> comparator) {
-    final List<RaftMemberContext> activeMembers = new ArrayList<>(getActiveMemberStates());
-    activeMembers.sort(comparator);
-    return activeMembers;
+  public <T extends Comparable<T>> Optional<T> getQuorumFor(
+      final Function<RaftMemberContext, T> calculateMemberValue) {
+    final var remoteActiveMemberContexts = new ArrayList<>(memberTypes.get(Type.ACTIVE));
+    // TODO: Support joint consensus
+
+    if (remoteActiveMemberContexts.isEmpty()) {
+      return Optional.empty();
+    }
+
+    remoteActiveMemberContexts.sort(Comparator.comparing(calculateMemberValue).reversed());
+
+    final var remoteActiveMembers = remoteActiveMemberContexts.size();
+    final var totalActiveMembers = remoteActiveMembers + 1;
+    final var quorum = (totalActiveMembers / 2) + 1;
+    final var remoteQuorumIndex = quorum - 1 - 1;
+    final var context = remoteActiveMemberContexts.get(remoteQuorumIndex);
+    return Optional.of(calculateMemberValue.apply(context));
+  }
+  /**
+   * @return A list of remote, active members.
+   */
+  public List<RaftMemberContext> getRemoteActiveMembers() {
+    final var memberContexts = memberTypes.get(Type.ACTIVE);
+    return memberContexts != null ? memberContexts : List.of();
   }
 
   /**
-   * Returns a list of active members.
-   *
-   * @return A list of active members.
+   * @return A list of remote, active members.
    */
-  public List<RaftMemberContext> getActiveMemberStates() {
-    return getRemoteMemberStates(RaftMember.Type.ACTIVE);
-  }
-
-  /**
-   * Returns a list of member states for the given type.
-   *
-   * @param type The member type.
-   * @return A list of member states for the given type.
-   */
-  public List<RaftMemberContext> getRemoteMemberStates(final RaftMember.Type type) {
-    final List<RaftMemberContext> memberContexts = memberTypes.get(type);
+  public List<RaftMemberContext> getReplicationTargets() {
+    // TODO: Support joint consensus
+    final var memberContexts = memberTypes.get(Type.ACTIVE);
     return memberContexts != null ? memberContexts : List.of();
   }
 
@@ -290,9 +303,8 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
    * Configures the cluster state.
    *
    * @param configuration The cluster configuration.
-   * @return The cluster state.
    */
-  public RaftClusterContext configure(final Configuration configuration) {
+  public void configure(final Configuration configuration) {
     checkNotNull(configuration, "configuration cannot be null");
 
     // If the configuration index is less than the currently configured index, ignore it.
@@ -300,7 +312,7 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
     // configurations.
     final var currentConfig = configurationRef.get();
     if (currentConfig != null && configuration.index() <= currentConfig.index()) {
-      return this;
+      return;
     }
 
     final Instant time = Instant.ofEpochMilli(configuration.time());
@@ -330,8 +342,6 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
     if (raft.getCommitIndex() >= configuration.index()) {
       raft.getMetaStore().storeConfiguration(configuration);
     }
-
-    return this;
   }
 
   private boolean wasPromoted(final Configuration configuration) {
@@ -378,12 +388,8 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
     memberType.add(state);
   }
 
-  /**
-   * Commit the current configuration to disk.
-   *
-   * @return The cluster state.
-   */
-  public RaftClusterContext commit() {
+  /** Commit the current configuration to disk. */
+  public void commit() {
     // Apply the configuration to the local server state.
     raft.transition(localMember.getType());
 
@@ -392,7 +398,6 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
     if (raft.getMetaStore().loadConfiguration().index() < configuration.index()) {
       raft.getMetaStore().storeConfiguration(configuration);
     }
-    return this;
   }
 
   @Override
@@ -432,7 +437,7 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
    * @return The remote quorum count.
    */
   public int getQuorum() {
-    return (int) Math.floor((getActiveMemberStates().size() + 1) / 2.0) + 1;
+    return (int) Math.floor((getRemoteActiveMembers().size() + 1) / 2.0) + 1;
   }
 
   /**

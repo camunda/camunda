@@ -58,7 +58,7 @@ public final class FollowerRole extends ActiveRole {
   @Override
   public synchronized CompletableFuture<RaftRole> start() {
 
-    if (raft.getCluster().getActiveMemberStates().isEmpty()) {
+    if (raft.getCluster().getRemoteActiveMembers().isEmpty()) {
       log.info("Single member cluster. Transitioning directly to candidate.");
       raft.transition(RaftServer.Role.CANDIDATE);
       return CompletableFuture.completedFuture(this);
@@ -116,7 +116,7 @@ public final class FollowerRole extends ActiveRole {
     // Create a quorum that will track the number of nodes that have responded to the poll request.
     final AtomicBoolean complete = new AtomicBoolean();
     final Set<DefaultRaftMember> votingMembers =
-        raft.getCluster().getActiveMemberStates().stream()
+        raft.getCluster().getRemoteActiveMembers().stream()
             .map(RaftMemberContext::getMember)
             .collect(Collectors.toSet());
 

@@ -512,7 +512,7 @@ final class LeaderAppender {
     // If there are no other active members in the cluster, update the commit index and complete the
     // commit.
     // The updated commit index will be sent to passive/reserve members on heartbeats.
-    if (raft.getCluster().getActiveMemberStates().isEmpty()) {
+    if (raft.getCluster().getRemoteActiveMembers().isEmpty()) {
       final long previousCommitIndex = raft.getCommitIndex();
       raft.setCommitIndex(index);
       completeCommits(previousCommitIndex, index);
@@ -523,7 +523,7 @@ final class LeaderAppender {
     return appendFutures.computeIfAbsent(
         index,
         i -> {
-          for (final RaftMemberContext member : raft.getCluster().getActiveMemberStates()) {
+          for (final RaftMemberContext member : raft.getCluster().getReplicationTargets()) {
             appendEntries(member);
           }
           return new CompletableFuture<>();
@@ -923,15 +923,10 @@ final class LeaderAppender {
    * in a sorted members list.
    */
   private long computeHeartbeatTime() {
-    final int quorumIndex = getQuorumIndex();
-    if (quorumIndex >= 0) {
-      return raft.getCluster()
-          .getActiveMemberStates(
-              (m1, m2) -> Long.compare(m2.getHeartbeatTime(), m1.getHeartbeatTime()))
-          .get(quorumIndex)
-          .getHeartbeatTime();
-    }
-    return System.currentTimeMillis();
+    return raft.getCluster()
+        .getQuorumFor(RaftMemberContext::getHeartbeatTime)
+        // No remote members, use current time because the local member is always reachable.
+        .orElseGet(System::currentTimeMillis);
   }
 
   /** Attempts to send heartbeats to all followers. */
@@ -945,32 +940,11 @@ final class LeaderAppender {
   private void commitEntries() {
     raft.checkThread();
 
-    // Sort the list of replicas, order by the last index that was replicated
-    // to the replica. This will allow us to determine the median index
-    // for all known replicated entries across all cluster members.
-    final List<RaftMemberContext> members =
+    final long commitIndex =
         raft.getCluster()
-            .getActiveMemberStates(
-                (m1, m2) ->
-                    Long.compare(
-                        m2.getMatchIndex() != 0 ? m2.getMatchIndex() : 0L,
-                        m1.getMatchIndex() != 0 ? m1.getMatchIndex() : 0L));
-
-    // If the active members list is empty (a configuration change occurred between an append
-    // request/response)
-    // ensure all commit futures are completed and cleared.
-    if (members.isEmpty()) {
-      final long commitIndex = raft.getLog().getLastIndex();
-      final long previousCommitIndex = raft.setCommitIndex(commitIndex);
-      if (commitIndex > previousCommitIndex) {
-        log.trace("Committed entries up to {}", commitIndex);
-        completeCommits(previousCommitIndex, commitIndex);
-      }
-      return;
-    }
-
-    // Calculate the current commit index as the median matchIndex.
-    final long commitIndex = members.get(getQuorumIndex()).getMatchIndex();
+            .getQuorumFor(RaftMemberContext::getMatchIndex)
+            // If there are no remote members, commit up to the last log index.
+            .orElseGet(() -> raft.getLog().getLastIndex());
 
     // If the commit index has increased then update the commit index. Note that in order to ensure
     // the leader completeness property holds, we verify that the commit index is greater than or
@@ -987,15 +961,10 @@ final class LeaderAppender {
   }
 
   private long computeResponseTime() {
-    final int quorumIndex = getQuorumIndex();
-    if (quorumIndex >= 0) {
-      return raft.getCluster()
-          .getActiveMemberStates(
-              (m1, m2) -> Long.compare(m2.getResponseTime(), m1.getResponseTime()))
-          .get(quorumIndex)
-          .getResponseTime();
-    }
-    return System.currentTimeMillis();
+    return raft.getCluster()
+        .getQuorumFor(RaftMemberContext::getResponseTime)
+        // No remote members, use current time because the local member is always reachable.
+        .orElseGet(System::currentTimeMillis);
   }
 
   /**
