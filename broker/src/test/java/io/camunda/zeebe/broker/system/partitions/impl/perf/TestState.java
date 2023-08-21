@@ -27,11 +27,8 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 final class TestState {
-  private static final Logger LOGGER = LoggerFactory.getLogger(TestState.class);
 
   private static final int BATCH_INSERT_SIZE = 10_000;
   private static final int KEY_VALUE_SIZE = 8096;

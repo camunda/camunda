@@ -16,10 +16,8 @@ import io.camunda.zeebe.snapshots.SnapshotException.SnapshotNotFoundException;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
 import io.camunda.zeebe.test.util.asserts.DirectoryAssert;
 import io.camunda.zeebe.util.FileUtil;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -240,49 +238,6 @@ public class FileBasedSnapshotStoreTest {
 
     // then
     assertThat(pendingSnapshotsDir).isEmptyDirectory();
-  }
-
-  @Test
-  public void shouldCopySnapshot() {
-    // given
-    final var persistedSnapshot = (FileBasedSnapshot) takeTransientSnapshot().persist().join();
-    final var target = rootDirectory.resolve("runtime");
-
-    // when
-    snapshotStore.copySnapshot(persistedSnapshot, target).join();
-
-    // then
-    assertThat(target).isNotEmptyDirectory();
-    assertThat(target.toFile().list())
-        .containsExactlyInAnyOrder(persistedSnapshot.getDirectory().toFile().list());
-  }
-
-  @Test
-  public void shouldCompleteWithExceptionWhenCannotCopySnapshot() throws IOException {
-    // given
-    final var persistedSnapshot = (FileBasedSnapshot) takeTransientSnapshot().persist().join();
-    final var target = rootDirectory.resolve("runtime");
-    target.toFile().createNewFile();
-
-    // when
-    final var result = snapshotStore.copySnapshot(persistedSnapshot, target);
-
-    // then - should fail because targetDirectory already exists
-    assertThatThrownBy(result::join).hasCauseInstanceOf(FileAlreadyExistsException.class);
-  }
-
-  @Test
-  public void shouldCompleteWithExceptionWhenCopyingIfSnapshotDoesNotExists() {
-    // given
-    final var persistedSnapshot = (FileBasedSnapshot) takeTransientSnapshot().persist().join();
-    final var target = rootDirectory.resolve("runtime");
-
-    // when
-    persistedSnapshot.delete();
-    final var result = snapshotStore.copySnapshot(persistedSnapshot, target);
-
-    // then
-    assertThatThrownBy(result::join).hasCauseInstanceOf(FileNotFoundException.class);
   }
 
   @Test
