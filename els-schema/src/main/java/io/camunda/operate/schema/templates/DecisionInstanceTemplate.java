@@ -26,6 +26,7 @@ public class DecisionInstanceTemplate extends AbstractTemplateDescriptor impleme
   public static final String PROCESS_DEFINITION_KEY = "processDefinitionKey";
   public static final String BPMN_PROCESS_ID = "bpmnProcessId";
   public static final String ELEMENT_INSTANCE_KEY = "elementInstanceKey";
+  public static final String DECISION_REQUIREMENTS_KEY = "decisionRequirementsKey";
   public static final String DECISION_DEFINITION_ID = "decisionDefinitionId";
   public static final String DECISION_ID = "decisionId";
   public static final String DECISION_NAME = "decisionName";

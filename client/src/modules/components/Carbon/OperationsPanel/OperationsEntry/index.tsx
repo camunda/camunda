@@ -94,12 +94,7 @@ const OperationsEntry: React.FC<Props> = ({operation}) => {
 
         {['DELETE_PROCESS_DEFINITION', 'DELETE_DECISION_DEFINITION'].includes(
           type,
-        ) && (
-          <div>{`${pluralSuffix(
-            operationsFinishedCount,
-            'instance',
-          )} deleted`}</div>
-        )}
+        ) && <div>{`${pluralSuffix(instancesCount, 'instance')} deleted`}</div>}
 
         {endDate !== null && isComplete && <div>{formatDate(endDate)}</div>}
       </Details>

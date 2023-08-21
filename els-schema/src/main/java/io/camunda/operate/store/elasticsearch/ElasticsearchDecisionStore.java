@@ -14,6 +14,8 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.reindex.BulkByScrollResponse;
+import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 import org.elasticsearch.search.aggregations.metrics.Cardinality;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
@@ -23,18 +25,19 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
 import java.util.Optional;
 
 import static org.elasticsearch.search.aggregations.AggregationBuilders.cardinality;
-
 
 @Profile("!opensearch")
 @Component
 public class ElasticsearchDecisionStore implements DecisionStore {
 
+  private static final String DISTINCT_FIELD_COUNTS = "distinctFieldCounts";
+
   private static final Logger logger = LoggerFactory.getLogger(ElasticsearchDecisionStore.class);
 
-  private static final String DISTINCT_FIELD_COUNTS = "distinctFieldCounts";
   @Autowired
   private DecisionIndex decisionIndex;
 
@@ -43,7 +46,6 @@ public class ElasticsearchDecisionStore implements DecisionStore {
 
   @Autowired
   private RestHighLevelClient esClient;
-
 
   @Override
   public Optional<Long> getDistinctCountFor(String fieldName) {
@@ -69,5 +71,14 @@ public class ElasticsearchDecisionStore implements DecisionStore {
   @Override
   public BatchRequest newBatchRequest() {
     return beanFactory.getBean(BatchRequest.class);
+  }
+
+  @Override
+  public long deleteDocuments(String indexName, String idField, String id) throws IOException {
+    final DeleteByQueryRequest query = new DeleteByQueryRequest(indexName)
+        .setQuery(QueryBuilders.termsQuery(idField, id));
+    BulkByScrollResponse response = esClient.deleteByQuery(query, RequestOptions.DEFAULT);
+    logger.debug("Delete document {} in {} response: {}", id, indexName, response.getStatus());
+    return response.getDeleted();
   }
 }

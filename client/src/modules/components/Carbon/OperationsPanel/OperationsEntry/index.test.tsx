@@ -173,7 +173,7 @@ describe('OperationsEntry', () => {
       screen.getByText('Delete DecisionDefinitionA - version 1'),
     ).toBeInTheDocument();
     expect(screen.getByTestId('operation-delete-icon')).toBeInTheDocument();
-    expect(screen.getByText('10 instances deleted')).toBeInTheDocument();
+    expect(screen.getByText('23 instances deleted')).toBeInTheDocument();
   });
 
   it('should render instances count when there is one instance', () => {

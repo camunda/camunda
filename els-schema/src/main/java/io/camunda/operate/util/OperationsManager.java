@@ -59,6 +59,22 @@ public class OperationsManager {
     }
   }
 
+  public void updateInstancesInBatchOperation(String batchOperationId, long increment) throws PersistenceException {
+    this.updateInstancesInBatchOperation(batchOperationId, null, increment);
+  }
+
+  public void updateInstancesInBatchOperation(final String batchOperationId, final BatchRequest batchRequest, long increment) throws PersistenceException {
+    final Map<String, String> ids2indexNames = getIndexNameForAliasAndId(batchOperationTemplate.getAlias(), batchOperationId);
+    final String index = ids2indexNames.get(batchOperationId);
+    final String script = String.format("ctx._source.%s += %d;", BatchOperationTemplate.INSTANCES_COUNT, increment);
+    final Map<String, Object> parameters = Map.of();
+    if (batchRequest == null) {
+      operationStore.updateWithScript(index, batchOperationId, script, parameters);
+    } else {
+      batchRequest.updateWithScript(index, batchOperationId, script, parameters);
+    }
+  }
+
   public void completeOperation(final Long zeebeCommandKey, final Long processInstanceKey, final Long incidentKey,
                                 final OperationType operationType, final BatchRequest batchRequest)
       throws PersistenceException {

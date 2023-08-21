@@ -37,9 +37,6 @@ import io.camunda.operate.webapp.reader.DecisionInstanceReader;
 import io.camunda.operate.webapp.reader.IncidentReader;
 import io.camunda.operate.webapp.reader.ListViewReader;
 import io.camunda.operate.webapp.reader.OperationReader;
-import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListQueryDto;
-import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListRequestDto;
-import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListResponseDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
@@ -61,6 +58,7 @@ import java.util.stream.Collectors;
 
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.identity.PermissionsService;
+import io.camunda.operate.webapp.zeebe.operation.DeleteDecisionDefinitionHandler;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -343,24 +341,24 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
 
   @Override
   public BatchOperationEntity scheduleDeleteDecisionDefinition(DecisionDefinitionEntity decisionDefinitionEntity) {
-    Long decisionDefinitionKey = decisionDefinitionEntity.getKey();
 
-    // Collect all dependant data
-    DecisionInstanceListResponseDto decisionInstanceListResponseDto = decisionInstanceReader.queryDecisionInstances(
-        new DecisionInstanceListRequestDto().setQuery(
-            new DecisionInstanceListQueryDto().setDecisionDefinitionIds(List.of(decisionDefinitionEntity.getDecisionId()))));
+    Long decisionDefinitionKey = decisionDefinitionEntity.getKey();
+    OperationType operationType = OperationType.DELETE_DECISION_DEFINITION;
+
     // Create batch operation
-    final BatchOperationEntity batchOperation = createBatchOperationEntity(OperationType.DELETE_DECISION_DEFINITION,
-        "Decision Definition: " + decisionDefinitionEntity.getName() + " Version " + decisionDefinitionEntity.getVersion()).setOperationsTotalCount(
-        Long.valueOf(decisionInstanceListResponseDto.getTotalCount()).intValue()).setInstancesCount(1);
+    String batchOperationName = String.format("%s - Version %s", decisionDefinitionEntity.getName(), decisionDefinitionEntity.getVersion());
+    final BatchOperationEntity batchOperation = createBatchOperationEntity(operationType, batchOperationName)
+        .setOperationsTotalCount(DeleteDecisionDefinitionHandler.STEPS_COUNT).setInstancesCount(0);
+
     // Create operation
     final OperationEntity operationEntity = new OperationEntity();
     operationEntity.generateId();
     operationEntity.setDecisionDefinitionKey(decisionDefinitionKey);
-    operationEntity.setType(OperationType.DELETE_DECISION_DEFINITION);
+    operationEntity.setType(operationType);
     operationEntity.setState(OperationState.SCHEDULED);
     operationEntity.setBatchOperationId(batchOperation.getId());
     operationEntity.setUsername(userService.getCurrentUser().getUsername());
+
     // Create request
     try {
       var batchRequest = operationStore.newBatchRequest()

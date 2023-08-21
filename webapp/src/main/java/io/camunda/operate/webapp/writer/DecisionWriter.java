@@ -4,16 +4,15 @@
  * See the License.txt file for more information. You may not use this file
  * except in compliance with the proprietary license.
  */
-package io.camunda.operate.store;
+package io.camunda.operate.webapp.writer;
 
 import java.io.IOException;
-import java.util.Optional;
 
-public interface DecisionStore {
+public interface DecisionWriter {
 
-  Optional<Long> getDistinctCountFor(final String fieldName);
+    long deleteDecisionRequirements(long decisionRequirementsKey) throws IOException;
 
-  BatchRequest newBatchRequest();
+    long deleteDecisionDefinitionsFor(long decisionRequirementsKey) throws IOException;
 
-  long deleteDocuments(final String indexName, final String idField, String id) throws IOException;
+    long deleteDecisionInstancesFor(long decisionRequirementsKey) throws IOException;
 }
