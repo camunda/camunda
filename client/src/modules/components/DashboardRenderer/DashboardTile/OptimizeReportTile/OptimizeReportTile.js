@@ -6,6 +6,8 @@
  */
 
 import React from 'react';
+import {withRouter} from 'react-router';
+import classnames from 'classnames';
 
 import {
   ReportRenderer,
@@ -97,12 +99,36 @@ export class OptimizeReportTile extends React.Component {
       children = () => {},
     } = this.props;
 
+    const tileLink = customizeTileLink(data?.id);
+
+    let tileProps = {
+      className: 'OptimizeReportTile DashboardTile__wrapper',
+    };
+
+    if (!disableNameLink) {
+      const visualization = data?.data?.visualization;
+      const canOnlyClickTitle = visualization === 'pie' || visualization === 'table';
+      tileProps = {
+        role: 'link',
+        className: classnames(tileProps.className, {canOnlyClickTitle}),
+        onClick: (evt) => {
+          if (
+            !evt.target.closest('.DropdownOption') &&
+            !evt.target.closest('button') &&
+            !(evt.target.closest('.visualization') && canOnlyClickTitle)
+          ) {
+            this.props.history.push(tileLink);
+          }
+        },
+      };
+    }
+
     return (
-      <div className="OptimizeReportTile DashboardTile__wrapper">
+      <div {...tileProps}>
         {data && (
           <div className="titleBar" tabIndex="-1">
             <EntityName
-              linkTo={!disableNameLink && customizeTileLink(data.id)}
+              linkTo={!disableNameLink && tileLink}
               details={<ReportDetails report={data} />}
             >
               {data.name}
@@ -124,4 +150,4 @@ export class OptimizeReportTile extends React.Component {
   }
 }
 
-export default themed(withErrorHandling(OptimizeReportTile));
+export default themed(withErrorHandling(withRouter(OptimizeReportTile)));
