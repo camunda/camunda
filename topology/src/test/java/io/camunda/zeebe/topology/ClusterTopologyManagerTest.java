@@ -23,12 +23,17 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 final class ClusterTopologyManagerTest {
+
+  AtomicReference<ClusterTopology> gossipState = new AtomicReference<>();
+  private final Consumer<ClusterTopology> gossipHandler = gossipState::set;
 
   @Test
   void shouldInitializeClusterTopologyFromProvidedConfig(@TempDir final Path topologyFile) {
@@ -37,6 +42,7 @@ final class ClusterTopologyManagerTest {
         new ClusterTopologyManager(
             new TestConcurrencyControl(),
             new PersistedClusterTopology(topologyFile.resolve("topology.temp")));
+    clusterTopologyManager.setTopologyGossiper(gossipHandler);
 
     // when
     clusterTopologyManager.start(this::getPartitionDistribution).join();
@@ -45,6 +51,24 @@ final class ClusterTopologyManagerTest {
     final ClusterTopology clusterTopology = clusterTopologyManager.getClusterTopology().join();
     ClusterTopologyAssert.assertThatClusterTopology(clusterTopology)
         .hasMemberWithPartitions(0, Set.of(1));
+  }
+
+  @Test
+  void shouldGossipInitialTopology(@TempDir final Path topologyFile) {
+    // given
+    final ClusterTopologyManager clusterTopologyManager =
+        new ClusterTopologyManager(
+            new TestConcurrencyControl(),
+            new PersistedClusterTopology(topologyFile.resolve("topology.temp")));
+    clusterTopologyManager.setTopologyGossiper(gossipHandler);
+
+    // when
+    clusterTopologyManager.start(this::getPartitionDistribution).join();
+
+    // then
+    final ClusterTopology gossippedTopology = gossipState.get();
+    ClusterTopologyAssert.assertThatClusterTopology(gossippedTopology)
+        .hasOnlyMembers(Set.of(0, 1, 2));
   }
 
   private Set<PartitionMetadata> getPartitionDistribution() {
@@ -73,6 +97,7 @@ final class ClusterTopologyManagerTest {
     final ClusterTopologyManager clusterTopologyManager =
         new ClusterTopologyManager(
             new TestConcurrencyControl(), new PersistedClusterTopology(existingTopologyFile));
+    clusterTopologyManager.setTopologyGossiper(gossipHandler);
 
     // when
     clusterTopologyManager.start(this::getPartitionDistribution).join();
@@ -98,5 +123,34 @@ final class ClusterTopologyManagerTest {
         .failsWithin(Duration.ofMillis(100))
         .withThrowableThat()
         .withCauseInstanceOf(JsonParseException.class);
+  }
+
+  @Test
+  void shouldUpdateLocalTopologyOnGossipEvent(@TempDir final Path topologyFile) {
+    // given
+    final ClusterTopologyManager clusterTopologyManager =
+        new ClusterTopologyManager(
+            new TestConcurrencyControl(),
+            new PersistedClusterTopology(topologyFile.resolve("topology.temp")));
+    clusterTopologyManager.setTopologyGossiper(gossipHandler);
+
+    clusterTopologyManager.start(this::getPartitionDistribution).join();
+
+    // when
+    final ClusterTopology topologyFromOtherMember =
+        clusterTopologyManager
+            .getClusterTopology()
+            .join()
+            .addMember(MemberId.from("10"), MemberState.initializeAsActive(Map.of()));
+    final var gossipedTopology =
+        clusterTopologyManager.onGossipReceived(topologyFromOtherMember).join();
+
+    // then
+    final ClusterTopology clusterTopology = clusterTopologyManager.getClusterTopology().join();
+    ClusterTopologyAssert.assertThatClusterTopology(clusterTopology)
+        .hasOnlyMembers(Set.of(0, 1, 2, 10));
+    assertThat(gossipedTopology)
+        .describedAs("Gossip state contains same topology in topology manager")
+        .isEqualTo(clusterTopology);
   }
 }

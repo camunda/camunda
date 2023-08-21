@@ -12,11 +12,12 @@ import io.atomix.cluster.Member;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.function.UnaryOperator;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,7 +39,8 @@ public final class ClusterTopologyGossiper {
   private List<MemberId> membersToSync = List.of();
 
   // The handler which can merge topology updates and reacts to the changes.
-  private final UnaryOperator<ClusterTopology> clusterTopologyUpdateHandler;
+  private final Function<ClusterTopology, ActorFuture<ClusterTopology>>
+      clusterTopologyUpdateHandler;
 
   public ClusterTopologyGossiper(
       final ConcurrencyControl executor,
@@ -46,7 +48,7 @@ public final class ClusterTopologyGossiper {
       final ClusterMembershipService membershipService,
       final ClusterTopologyGossipSerializer serializer,
       final ClusterTopologyGossiperConfig config,
-      final UnaryOperator<ClusterTopology> clusterTopologyUpdateHandler) {
+      final Function<ClusterTopology, ActorFuture<ClusterTopology>> clusterTopologyUpdateHandler) {
     this.executor = executor;
     this.communicationService = communicationService;
     this.membershipService = membershipService;
@@ -55,8 +57,14 @@ public final class ClusterTopologyGossiper {
     this.clusterTopologyUpdateHandler = clusterTopologyUpdateHandler;
   }
 
-  public void start() {
-    executor.run(this::internalStart);
+  public ActorFuture<Void> start() {
+    final ActorFuture<Void> startedFuture = executor.createFuture();
+    executor.run(
+        () -> {
+          internalStart();
+          startedFuture.complete(null);
+        });
+    return startedFuture;
   }
 
   private void internalStart() {
@@ -120,33 +128,38 @@ public final class ClusterTopologyGossiper {
   private void handleSyncResponse(
       final ClusterTopologyGossipState response, final Throwable error, final MemberId member) {
     if (error == null) {
-      update(response);
+      update(response, () -> executor.run(this::gossip));
     } else {
       LOGGER.warn("Failed to sync with {}", member, error);
     }
     scheduleSync();
   }
 
-  // returns true if local state is changed
-  private boolean update(final ClusterTopologyGossipState response) {
-    if (!response.equals(gossipState)) {
-      final ClusterTopology topology = response.getClusterTopology();
+  private void update(
+      final ClusterTopologyGossipState receivedGossipState, final Runnable onUpdated) {
+    if (!receivedGossipState.equals(gossipState)) {
+      final ClusterTopology topology = receivedGossipState.getClusterTopology();
       if (topology != null) {
-        final var updatedTopology = clusterTopologyUpdateHandler.apply(topology);
-        gossipState.setClusterTopology(updatedTopology);
-        LOGGER.trace("Updated local gossipState to {}", updatedTopology);
-        return true;
+        final var topologyUpdateFuture = clusterTopologyUpdateHandler.apply(topology);
+        topologyUpdateFuture.onComplete(
+            (updatedTopology, error) -> {
+              if (error != null) {
+                LOGGER.warn("Failed to process cluster topology received via gossip", error);
+              } else if (!updatedTopology.equals(gossipState.getClusterTopology())) {
+                gossipState.setClusterTopology(updatedTopology);
+                LOGGER.trace("Updated local gossipState to {}", updatedTopology);
+                onUpdated.run();
+              }
+            });
       }
     }
-
-    return false;
   }
 
   private ClusterTopologyGossipState handleSyncRequest(
       final MemberId memberId, final ClusterTopologyGossipState clusterSharedGossipState) {
     LOGGER.trace(
         "Received topology sync request from {} with state {}", memberId, clusterSharedGossipState);
-    update(clusterSharedGossipState);
+    update(clusterSharedGossipState, () -> executor.run(this::gossip));
     return gossipState;
   }
 
@@ -185,9 +198,6 @@ public final class ClusterTopologyGossiper {
   private void handleGossip(
       final MemberId memberId, final ClusterTopologyGossipState receivedState) {
     LOGGER.trace("Received {} from {}", gossipState, memberId);
-    if (update(receivedState)) {
-      // forward update to next set of members
-      executor.run(this::gossip);
-    }
+    update(receivedState, () -> executor.run(this::gossip));
   }
 }

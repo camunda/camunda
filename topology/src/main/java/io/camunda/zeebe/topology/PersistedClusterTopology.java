@@ -16,21 +16,19 @@ import java.nio.file.StandardOpenOption;
 /** Manages reading and updating ClusterTopology in a local persisted file * */
 final class PersistedClusterTopology {
   private final Path topologyFile;
-  private ClusterTopology clusterTopology;
+  private ClusterTopology clusterTopology = ClusterTopology.uninitialized();
 
   PersistedClusterTopology(final Path topologyFile) {
     this.topologyFile = topologyFile;
   }
 
-  void initialize() throws IOException {
+  void tryInitialize() throws IOException {
     if (Files.exists(topologyFile)) {
       final var serializedTopology = Files.readAllBytes(topologyFile);
       if (serializedTopology.length > 0) {
         clusterTopology = ClusterTopology.decode(serializedTopology);
       }
-      return;
     }
-    clusterTopology = null;
   }
 
   ClusterTopology getTopology() {
@@ -47,5 +45,9 @@ final class PersistedClusterTopology {
         StandardOpenOption.DSYNC);
 
     this.clusterTopology = clusterTopology;
+  }
+
+  public boolean isUninitialized() {
+    return clusterTopology.isUninitialized();
   }
 }

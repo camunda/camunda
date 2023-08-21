@@ -16,6 +16,8 @@ import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.cluster.impl.DiscoveryMembershipProtocol;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.MemberState;
@@ -144,9 +146,9 @@ final class ClusterTopologyGossiperTest {
       gossiper.updateClusterTopology(clusterTopology);
     }
 
-    private ClusterTopology mergeTopology(final ClusterTopology t) {
+    private ActorFuture<ClusterTopology> mergeTopology(final ClusterTopology t) {
       clusterTopology = clusterTopology == null ? t : t.merge(clusterTopology);
-      return clusterTopology;
+      return TestActorFuture.completedFuture(clusterTopology);
     }
 
     public MemberId id() {
