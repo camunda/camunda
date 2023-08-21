@@ -14,6 +14,7 @@ public class ExecutableCallActivity extends ExecutableActivity {
   private Expression calledElementProcessId;
 
   private boolean propagateAllChildVariablesEnabled;
+  private boolean propagateAllParentVariablesEnabled;
 
   public ExecutableCallActivity(final String id) {
     super(id);
@@ -34,5 +35,13 @@ public class ExecutableCallActivity extends ExecutableActivity {
   public void setPropagateAllChildVariablesEnabled(
       final boolean propagateAllChildVariablesEnabled) {
     this.propagateAllChildVariablesEnabled = propagateAllChildVariablesEnabled;
+  }
+
+  public boolean isPropagateAllParentVariablesEnabled() {
+    return propagateAllParentVariablesEnabled;
+  }
+
+  public void setPropagateAllParentVariablesEnabled(boolean propagateAllParentVariablesEnabled) {
+    this.propagateAllParentVariablesEnabled = propagateAllParentVariablesEnabled;
   }
 }

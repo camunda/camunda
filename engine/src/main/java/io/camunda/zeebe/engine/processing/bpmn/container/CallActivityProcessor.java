@@ -72,9 +72,22 @@ public final class CallActivityProcessor
               final var childProcessInstanceKey =
                   stateTransitionBehavior.createChildProcessInstance(process, context);
 
+              final var propagateAllParentVariablesEnabled =
+                  element.isPropagateAllParentVariablesEnabled();
+              final var inputMappings = element.getInputMappings();
               final var callActivityInstanceKey = activated.getElementInstanceKey();
-              stateBehavior.copyVariablesToProcessInstance(
-                  callActivityInstanceKey, childProcessInstanceKey, process);
+
+              if (propagateAllParentVariablesEnabled) {
+                stateBehavior.copyAllVariablesToProcessInstance(
+                    callActivityInstanceKey, childProcessInstanceKey, process);
+              } else if (inputMappings.isPresent()) {
+                // when activating the call activity, the input mappings will be applied.
+                // Resulting in local variables in the (local) call activity scope.
+                // These local variables can simply be propagated to the called child
+                // process instance.
+                stateBehavior.copyLocalVariablesToProcessInstance(
+                    callActivityInstanceKey, childProcessInstanceKey, process);
+              }
             },
             failure -> incidentBehavior.createIncident(failure, context));
   }

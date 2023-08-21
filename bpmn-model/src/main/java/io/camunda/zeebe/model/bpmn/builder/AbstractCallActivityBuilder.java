@@ -62,4 +62,11 @@ public class AbstractCallActivityBuilder<B extends AbstractCallActivityBuilder<B
     calledElement.setPropagateAllChildVariablesEnabled(propagateAllChildVariables);
     return myself;
   }
+
+  public B zeebePropagateAllParentVariables(final boolean propagateAllParentVariables) {
+    final ZeebeCalledElement calledElement =
+        getCreateSingleExtensionElement(ZeebeCalledElement.class);
+    calledElement.setPropagateAllParentVariablesEnabled(propagateAllParentVariables);
+    return myself;
+  }
 }
