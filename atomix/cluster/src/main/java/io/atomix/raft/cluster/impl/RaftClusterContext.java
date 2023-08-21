@@ -19,6 +19,7 @@ package io.atomix.raft.cluster.impl;
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import com.google.common.collect.Comparators;
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.cluster.RaftCluster;
 import io.atomix.raft.cluster.RaftMember;
@@ -246,21 +247,50 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
   public <T extends Comparable<T>> Optional<T> getQuorumFor(
       final Function<RaftMemberContext, T> calculateMemberValue) {
     final var remoteActiveMemberContexts = new ArrayList<>(memberTypes.get(Type.ACTIVE));
-    // TODO: Support joint consensus
+    if (configurationRef.get().requiresJointConsensus()) {
+      final var contexts = new ArrayList<>(remoteActiveMemberContexts);
+      final var oldMembers = configurationRef.get().oldMembers();
+      final var newMembers = configurationRef.get().members();
+
+      final var oldContexts =
+          contexts.stream()
+              .filter(context -> oldMembers.contains(context.getMember()))
+              .collect(Collectors.toCollection(ArrayList::new));
+      final var newContexts =
+          contexts.stream()
+              .filter(context -> newMembers.contains(context.getMember()))
+              .collect(Collectors.toCollection(ArrayList::new));
+
+      final var oldQuorum = getQuorumFor(oldContexts, calculateMemberValue);
+      final var newQuorum = getQuorumFor(newContexts, calculateMemberValue);
+      if (oldQuorum.isPresent() && newQuorum.isPresent()) {
+        return Optional.of(Comparators.min(oldQuorum.get(), newQuorum.get()));
+      } else {
+        return Optional.empty();
+      }
+    }
 
     if (remoteActiveMemberContexts.isEmpty()) {
       return Optional.empty();
     }
 
-    remoteActiveMemberContexts.sort(Comparator.comparing(calculateMemberValue).reversed());
+    return getQuorumFor(remoteActiveMemberContexts, calculateMemberValue);
+  }
 
-    final var remoteActiveMembers = remoteActiveMemberContexts.size();
+  private <T extends Comparable<T>> Optional<T> getQuorumFor(
+      final List<RaftMemberContext> contexts,
+      final Function<RaftMemberContext, T> calculateMemberValue) {
+
+    contexts.sort(Comparator.comparing(calculateMemberValue).reversed());
+
+    final var remoteActiveMembers = contexts.size();
     final var totalActiveMembers = remoteActiveMembers + 1;
     final var quorum = (totalActiveMembers / 2) + 1;
     final var remoteQuorumIndex = quorum - 1 - 1;
-    final var context = remoteActiveMemberContexts.get(remoteQuorumIndex);
+    final var context = contexts.get(remoteQuorumIndex);
     return Optional.of(calculateMemberValue.apply(context));
   }
+
   /**
    * @return A list of remote, active members.
    */
@@ -273,7 +303,6 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
    * @return A list of remote, active members.
    */
   public List<RaftMemberContext> getReplicationTargets() {
-    // TODO: Support joint consensus
     final var memberContexts = memberTypes.get(Type.ACTIVE);
     return memberContexts != null ? memberContexts : List.of();
   }
@@ -437,6 +466,7 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
    * @return The remote quorum count.
    */
   public int getQuorum() {
+    // TODO: Support joint consensus.
     return (int) Math.floor((getRemoteActiveMembers().size() + 1) / 2.0) + 1;
   }
 

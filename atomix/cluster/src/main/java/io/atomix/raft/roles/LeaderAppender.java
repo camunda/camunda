@@ -968,15 +968,6 @@ final class LeaderAppender {
   }
 
   /**
-   * Returns the current quorum index.
-   *
-   * @return The current quorum index.
-   */
-  private int getQuorumIndex() {
-    return raft.getCluster().getQuorum() - 2;
-  }
-
-  /**
    * Returns the leader index.
    *
    * @return The leader index.
