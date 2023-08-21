@@ -22,7 +22,7 @@ final class PersistedClusterTopology {
     this.topologyFile = topologyFile;
   }
 
-  void initialize() throws IOException {
+  void tryInitialize() throws IOException {
     if (Files.exists(topologyFile)) {
       final var serializedTopology = Files.readAllBytes(topologyFile);
       if (serializedTopology.length > 0) {
