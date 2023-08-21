@@ -26,4 +26,8 @@ public interface ZeebeCalledElement extends BpmnModelElementInstance {
   boolean isPropagateAllChildVariablesEnabled();
 
   void setPropagateAllChildVariablesEnabled(boolean propagateAllChildVariablesEnabled);
+
+  boolean isPropagateAllParentVariablesEnabled();
+
+  void setPropagateAllParentVariablesEnabled(boolean propagateAllParentVariablesEnabled);
 }

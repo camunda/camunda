@@ -182,11 +182,26 @@ public final class BpmnStateBehavior {
         variablesAsDocument);
   }
 
-  public void copyVariablesToProcessInstance(
+  public void copyAllVariablesToProcessInstance(
       final long sourceScopeKey,
       final long targetProcessInstanceKey,
       final DeployedProcess targetProcess) {
     final var variables = variablesState.getVariablesAsDocument(sourceScopeKey);
+    copyVariablesToProcessInstance(targetProcessInstanceKey, targetProcess, variables);
+  }
+
+  public void copyLocalVariablesToProcessInstance(
+      final long sourceScopeKey,
+      final long targetProcessInstanceKey,
+      final DeployedProcess targetProcess) {
+    final var variables = variablesState.getVariablesLocalAsDocument(sourceScopeKey);
+    copyVariablesToProcessInstance(targetProcessInstanceKey, targetProcess, variables);
+  }
+
+  private void copyVariablesToProcessInstance(
+      final long targetProcessInstanceKey,
+      final DeployedProcess targetProcess,
+      final DirectBuffer variables) {
     variableBehavior.mergeDocument(
         targetProcessInstanceKey,
         targetProcess.getKey(),

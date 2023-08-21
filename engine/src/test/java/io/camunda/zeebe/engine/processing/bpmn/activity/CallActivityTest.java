@@ -280,6 +280,67 @@ public final class CallActivityTest {
   }
 
   @Test
+  public void shouldOnlyPropagateVariablesDefinedViaInputMappings() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            "wf-parent.bpmn",
+            parentProcess(
+                c -> c.zeebeInputExpression("x", "y").zeebePropagateAllParentVariables(false)))
+        .deploy();
+
+    // when
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID_PARENT)
+            .withVariables(Map.of("x", 1))
+            .create();
+
+    // then
+    final var childInstance = getChildInstanceOf(processInstanceKey);
+
+    assertThat(
+            RecordingExporter.variableRecords()
+                .withProcessInstanceKey(childInstance.getProcessInstanceKey())
+                .limit(2))
+        .extracting(Record::getValue)
+        .extracting(v -> tuple(v.getName(), v.getValue()))
+        .contains(tuple("y", "1"))
+        .doesNotContain(tuple("x", "1"));
+  }
+
+  @Test
+  public void shouldNotPropagateAnyVariable() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            "wf-parent.bpmn", parentProcess(c -> c.zeebePropagateAllParentVariables(false)))
+        .deploy();
+
+    // when
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID_PARENT)
+            .withVariables(Map.of("x", 1))
+            .create();
+
+    // then
+    final var childInstance = getChildInstanceOf(processInstanceKey);
+
+    assertThat(
+            RecordingExporter.variableRecords()
+                .withProcessInstanceKey(childInstance.getProcessInstanceKey())
+                .limit(2))
+        .extracting(Record::getValue)
+        .extracting(v -> tuple(v.getName(), v.getValue()))
+        .doesNotContain(tuple("x", "1"));
+  }
+
+  @Test
   public void shouldApplyOutputMappings() {
     // given
     ENGINE
