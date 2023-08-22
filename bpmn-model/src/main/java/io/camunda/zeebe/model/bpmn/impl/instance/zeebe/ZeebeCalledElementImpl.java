@@ -29,6 +29,7 @@ public class ZeebeCalledElementImpl extends BpmnModelElementInstanceImpl
 
   private static Attribute<String> processIdAttribute;
   private static Attribute<Boolean> propagateAllChildVariablesAttribute;
+  private static Attribute<Boolean> propagateAllParentVariablesAttribute;
 
   public ZeebeCalledElementImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
@@ -55,6 +56,16 @@ public class ZeebeCalledElementImpl extends BpmnModelElementInstanceImpl
     propagateAllChildVariablesAttribute.setValue(this, propagateAllChildVariablesEnabled);
   }
 
+  @Override
+  public boolean isPropagateAllParentVariablesEnabled() {
+    return propagateAllParentVariablesAttribute.getValue(this);
+  }
+
+  @Override
+  public void setPropagateAllParentVariablesEnabled(boolean propagateAllParentVariablesEnabled) {
+    propagateAllParentVariablesAttribute.setValue(this, propagateAllParentVariablesEnabled);
+  }
+
   public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -71,6 +82,13 @@ public class ZeebeCalledElementImpl extends BpmnModelElementInstanceImpl
     propagateAllChildVariablesAttribute =
         typeBuilder
             .booleanAttribute(ZeebeConstants.ATTRIBUTE_PROPAGATE_ALL_CHILD_VARIABLES)
+            .namespace(BpmnModelConstants.ZEEBE_NS)
+            .defaultValue(true)
+            .build();
+
+    propagateAllParentVariablesAttribute =
+        typeBuilder
+            .booleanAttribute(ZeebeConstants.ATTRIBUTE_PROPAGATE_ALL_PARENT_VARIABLES)
             .namespace(BpmnModelConstants.ZEEBE_NS)
             .defaultValue(true)
             .build();
