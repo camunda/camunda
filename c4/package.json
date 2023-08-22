@@ -37,7 +37,7 @@
 		"react-dom": "^18.2.0",
 		"sass": "^1.63.4",
 		"storybook": "^7.0.21",
-		"typescript": "5.0.4"
+		"typescript": "5.1.6"
 	},
 	"peerDependencies": {
 		"@carbon/react": "1.x",
