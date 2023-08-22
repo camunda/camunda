@@ -15,6 +15,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import java.util.Map;
 
 final class IncidentRecordWrapper implements TypedRecord<ProcessInstanceRecord> {
 
@@ -77,6 +78,11 @@ final class IncidentRecordWrapper implements TypedRecord<ProcessInstanceRecord> 
   @Override
   public String getBrokerVersion() {
     return null;
+  }
+
+  @Override
+  public Map<String, Object> getAuthorizations() {
+    return Map.of();
   }
 
   @Override
