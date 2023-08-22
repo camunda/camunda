@@ -46,11 +46,11 @@ import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
+import java.util.NavigableMap;
 import java.util.Optional;
+import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 
@@ -71,7 +71,7 @@ final class LeaderAppender {
   private final long leaderTime;
   private final long leaderIndex;
   private final long electionTimeout;
-  private final Map<Long, CompletableFuture<Long>> appendFutures = new HashMap<>();
+  private final NavigableMap<Long, CompletableFuture<Long>> appendFutures = new TreeMap<>();
   private final List<TimestampedFuture<Long>> heartbeatFutures = new ArrayList<>();
   private final long heartbeatTime;
   private final int minStepDownFailureCount;
@@ -515,7 +515,7 @@ final class LeaderAppender {
     if (raft.getCluster().getRemoteActiveMembers().isEmpty()) {
       final long previousCommitIndex = raft.getCommitIndex();
       raft.setCommitIndex(index);
-      completeCommits(previousCommitIndex, index);
+      completeCommits(index);
       return CompletableFuture.completedFuture(index);
     }
 
@@ -563,14 +563,14 @@ final class LeaderAppender {
   }
 
   /** Completes append entries attempts up to the given index. */
-  private void completeCommits(final long previousCommitIndex, final long commitIndex) {
-    for (long i = previousCommitIndex + 1; i <= commitIndex; i++) {
-      final CompletableFuture<Long> future = appendFutures.remove(i);
-      if (future != null) {
-        metrics.observeCommit();
-        future.complete(i);
-      }
-    }
+  private void completeCommits(final long commitIndex) {
+    final var completable = appendFutures.headMap(commitIndex, true);
+    completable.forEach(
+        (index, future) -> {
+          metrics.observeCommit();
+          future.complete(index);
+        });
+    completable.clear();
 
     observeNonCommittedEntries(commitIndex);
   }
@@ -795,6 +795,7 @@ final class LeaderAppender {
 
   public void close() {
     open = false;
+    completeCommits(raft.getCommitIndex());
     appendFutures
         .values()
         .forEach(
@@ -956,7 +957,7 @@ final class LeaderAppender {
         && (leaderIndex > 0 && commitIndex >= leaderIndex)) {
       log.trace("Committed entries up to {}", commitIndex);
       raft.setCommitIndex(commitIndex);
-      completeCommits(previousCommitIndex, commitIndex);
+      completeCommits(commitIndex);
     }
   }
 
