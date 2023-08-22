@@ -34,14 +34,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -51,10 +50,9 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
 
   private final RaftContext raft;
   private final DefaultRaftMember localMember;
-  private final Map<MemberId, RaftMemberContext> remoteMemberContexts = new ConcurrentHashMap<>();
-  private final AtomicReference<Configuration> configurationRef = new AtomicReference<>();
-  private final AtomicReference<CompletableFuture<Void>> bootstrapFutureRef =
-      new AtomicReference<>();
+  private final Map<MemberId, RaftMemberContext> remoteMemberContexts = new HashMap<>();
+  private Configuration configuration;
+  private CompletableFuture<Void> bootstrapFuture;
 
   public RaftClusterContext(final MemberId localMemberId, final RaftContext raft) {
     final Instant time = Instant.now();
@@ -64,10 +62,9 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
 
     // If a configuration is stored, use the stored configuration, otherwise configure the server
     // with the user provided configuration.
-    configurationRef.set(raft.getMetaStore().loadConfiguration());
+    configuration = raft.getMetaStore().loadConfiguration();
 
     // Iterate through members in the new configuration and add remote members.
-    final var configuration = configurationRef.get();
     if (configuration != null) {
       final Instant updateTime = Instant.ofEpochMilli(configuration.time());
       final var configuredMembers = new ArrayList<>(configuration.oldMembers());
@@ -105,15 +102,14 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
 
   @Override
   public CompletableFuture<Void> bootstrap(final Collection<MemberId> cluster) {
-    final var bootstrapFuture = bootstrapFutureRef.get();
     if (bootstrapFuture != null) {
       return bootstrapFuture;
     }
 
     ensureConfigurationIsConsistent(cluster);
 
-    bootstrapFutureRef.set(new CompletableFuture<>());
-    final var isOnBoostrapCluster = configurationRef.get() == null;
+    bootstrapFuture = new CompletableFuture<>();
+    final var isOnBoostrapCluster = configuration == null;
     if (isOnBoostrapCluster) {
       localMember.setType(Type.ACTIVE);
       createInitialConfig(cluster);
@@ -133,7 +129,7 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
               completeBootstrapFuture();
             });
 
-    return bootstrapFutureRef.get().whenComplete((result, error) -> bootstrapFutureRef.set(null));
+    return bootstrapFuture.whenComplete((result, error) -> bootstrapFuture = null);
   }
 
   @Override
@@ -162,7 +158,6 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
   }
 
   private void ensureConfigurationIsConsistent(final Collection<MemberId> cluster) {
-    final var configuration = configurationRef.get();
     final var hasPersistedConfiguration = configuration != null;
     if (hasPersistedConfiguration) {
       final var newClusterSize = cluster.size();
@@ -248,9 +243,9 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
       final Function<RaftMemberContext, T> calculateMemberValue) {
     final var contexts = new ArrayList<>(getRemoteActiveMembers());
 
-    if (configurationRef.get().requiresJointConsensus()) {
-      final var oldMembers = configurationRef.get().oldMembers();
-      final var newMembers = configurationRef.get().members();
+    if (configuration.requiresJointConsensus()) {
+      final var oldMembers = configuration.oldMembers();
+      final var newMembers = configuration.members();
 
       final var oldContexts =
           contexts.stream()
@@ -312,9 +307,8 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
   }
 
   private void completeBootstrapFuture() {
-    final var bootstrapFuture = bootstrapFutureRef.get();
     // If the local member is not present in the configuration, fail the future.
-    if (!configurationRef.get().members().contains(localMember)) {
+    if (!configuration.members().contains(localMember)) {
       bootstrapFuture.completeExceptionally(
           new IllegalStateException("not a member of the cluster"));
     } else {
@@ -346,7 +340,7 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
     // If the configuration index is less than the currently configured index, ignore it.
     // Configurations can be persisted and applying old configurations can revert newer
     // configurations.
-    final var currentConfig = configurationRef.get();
+    final var currentConfig = this.configuration;
     if (currentConfig != null && configuration.index() <= currentConfig.index()) {
       return;
     }
@@ -387,7 +381,7 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
       raft.transition(localMember.getType());
     }
 
-    configurationRef.set(configuration);
+    this.configuration = configuration;
 
     // Store the configuration if it's already committed.
     if (raft.getCommitIndex() >= configuration.index()) {
@@ -427,7 +421,6 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
   /** Commit the current configuration to disk. */
   public void commit() {
     // If the local stored configuration is older than the committed configuration, overwrite it.
-    final var configuration = configurationRef.get();
     if (raft.getMetaStore().loadConfiguration().index() < configuration.index()) {
       raft.getMetaStore().storeConfiguration(configuration);
     }
@@ -453,7 +446,7 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
    * @return The cluster configuration.
    */
   public Configuration getConfiguration() {
-    return configurationRef.get();
+    return configuration;
   }
 
   /**
@@ -467,13 +460,13 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
 
   public VoteQuorum getVoteQuorum(final Consumer<Boolean> callback) {
     final VoteQuorum quorum;
-    if (configurationRef.get().requiresJointConsensus()) {
+    if (configuration.requiresJointConsensus()) {
       quorum =
           new JointConsensusVoteQuorum(
-              configurationRef.get().oldMembers().stream()
+              configuration.oldMembers().stream()
                   .map(RaftMember::memberId)
                   .collect(Collectors.toSet()),
-              configurationRef.get().members().stream()
+              configuration.members().stream()
                   .map(RaftMember::memberId)
                   .collect(Collectors.toSet()),
               callback);
@@ -482,7 +475,7 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
       quorum =
           new SimpleVoteQuorum(
               callback,
-              configurationRef.get().members().stream()
+              configuration.members().stream()
                   .map(RaftMember::memberId)
                   .collect(Collectors.toSet()));
     }
@@ -491,11 +484,10 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
   }
 
   public boolean isMember(final MemberId memberId) {
-    return configurationRef.get().members().stream()
-        .anyMatch(member -> member.memberId().equals(memberId));
+    return configuration.members().stream().anyMatch(member -> member.memberId().equals(memberId));
   }
 
   public boolean inJointConsensus() {
-    return configurationRef.get().requiresJointConsensus();
+    return configuration.requiresJointConsensus();
   }
 }
