@@ -95,7 +95,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
   public synchronized CompletableFuture<Void> stop() {
     raft.resetLastHeartbeat();
     // Close open resources (eg:- journal readers) used for replication by the leader
-    raft.getCluster().getRemoteMemberStates().forEach(RaftMemberContext::closeReplicationContext);
+    raft.getCluster().getReplicationTargets().forEach(RaftMemberContext::closeReplicationContext);
 
     return super.stop()
         .thenRun(appender::close)

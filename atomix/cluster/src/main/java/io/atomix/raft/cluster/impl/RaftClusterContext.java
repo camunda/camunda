@@ -34,15 +34,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.EnumMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -53,11 +51,7 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
 
   private final RaftContext raft;
   private final DefaultRaftMember localMember;
-  private final Map<MemberId, RaftMemberContext> membersMap = new ConcurrentHashMap<>();
-  private final Set<RaftMember> members = new CopyOnWriteArraySet<>();
-  private final List<RaftMemberContext> remoteMembers = new CopyOnWriteArrayList<>();
-  private final Map<RaftMember.Type, List<RaftMemberContext>> memberTypes =
-      new EnumMap<>(RaftMember.Type.class);
+  private final Map<MemberId, RaftMemberContext> remoteMemberContexts = new ConcurrentHashMap<>();
   private final AtomicReference<Configuration> configurationRef = new AtomicReference<>();
   private final AtomicReference<CompletableFuture<Void>> bootstrapFutureRef =
       new AtomicReference<>();
@@ -76,31 +70,28 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
     final var configuration = configurationRef.get();
     if (configuration != null) {
       final Instant updateTime = Instant.ofEpochMilli(configuration.time());
-      for (final RaftMember member : configuration.members()) {
+      final var configuredMembers = new ArrayList<>(configuration.oldMembers());
+      configuredMembers.addAll(configuration.members());
+      for (final RaftMember member : configuredMembers) {
         if (member.equals(localMember)) {
           localMember.setType(member.getType());
-          members.add(localMember);
         } else {
           // If the member state doesn't already exist, create it.
-          final RaftMemberContext state =
+          remoteMemberContexts.put(
+              member.memberId(),
               new RaftMemberContext(
                   new DefaultRaftMember(member.memberId(), member.getType(), updateTime),
                   this,
-                  raft.getMaxAppendsPerFollower());
-          state.resetState(raft.getLog());
-          members.add(state.getMember());
-          remoteMembers.add(state);
-          membersMap.put(member.memberId(), state);
-
-          // Add the member to a type specific map.
-          List<RaftMemberContext> memberType = memberTypes.get(member.getType());
-          if (memberType == null) {
-            memberType = new CopyOnWriteArrayList<>();
-            memberTypes.put(member.getType(), memberType);
-          }
-          memberType.add(state);
+                  raft.getMaxAppendsPerFollower()));
         }
       }
+
+      remoteMemberContexts
+          .values()
+          .forEach(
+              context -> {
+                context.resetState(raft.getLog());
+              });
     }
   }
 
@@ -157,7 +148,12 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
 
   @Override
   public Collection<RaftMember> getMembers() {
-    return new ArrayList<>(members);
+    final var allMembers =
+        remoteMemberContexts.values().stream()
+            .map((context) -> (RaftMember) context.getMember())
+            .collect(Collectors.toCollection(ArrayList::new));
+    allMembers.add(localMember);
+    return allMembers;
   }
 
   @Override
@@ -225,7 +221,7 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
    * @return The member.
    */
   private DefaultRaftMember getRemoteMember(final MemberId id) {
-    final RaftMemberContext member = membersMap.get(id);
+    final RaftMemberContext member = remoteMemberContexts.get(id);
     return member != null ? member.getMember() : null;
   }
 
@@ -236,7 +232,7 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
    * @return The member state.
    */
   public RaftMemberContext getMemberState(final MemberId id) {
-    return membersMap.get(id);
+    return remoteMemberContexts.get(id);
   }
 
   /**
@@ -250,9 +246,9 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
    */
   public <T extends Comparable<T>> Optional<T> getQuorumFor(
       final Function<RaftMemberContext, T> calculateMemberValue) {
-    final var remoteActiveMemberContexts = new ArrayList<>(memberTypes.get(Type.ACTIVE));
+    final var contexts = new ArrayList<>(getRemoteActiveMembers());
+
     if (configurationRef.get().requiresJointConsensus()) {
-      final var contexts = new ArrayList<>(remoteActiveMemberContexts);
       final var oldMembers = configurationRef.get().oldMembers();
       final var newMembers = configurationRef.get().members();
 
@@ -276,11 +272,11 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
       }
     }
 
-    if (remoteActiveMemberContexts.isEmpty()) {
+    if (contexts.isEmpty()) {
       return Optional.empty();
     }
 
-    return getQuorumFor(remoteActiveMemberContexts, calculateMemberValue);
+    return getQuorumFor(contexts, calculateMemberValue);
   }
 
   private <T extends Comparable<T>> Optional<T> getQuorumFor(
@@ -301,22 +297,24 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
    * @return A list of remote, active members.
    */
   public List<RaftMemberContext> getRemoteActiveMembers() {
-    final var memberContexts = memberTypes.get(Type.ACTIVE);
-    return memberContexts != null ? memberContexts : List.of();
+    return remoteMemberContexts.values().stream()
+        .filter(context -> context.getMember().getType() == Type.ACTIVE)
+        .toList();
   }
 
   /**
    * @return A list of remote, active members.
    */
   public List<RaftMemberContext> getReplicationTargets() {
-    final var memberContexts = memberTypes.get(Type.ACTIVE);
-    return memberContexts != null ? memberContexts : List.of();
+    return remoteMemberContexts.values().stream()
+        .filter(context -> context.getMember().getType() != Type.INACTIVE)
+        .toList();
   }
 
   private void completeBootstrapFuture() {
     final var bootstrapFuture = bootstrapFutureRef.get();
     // If the local member is not present in the configuration, fail the future.
-    if (!members.contains(localMember)) {
+    if (!configurationRef.get().members().contains(localMember)) {
       bootstrapFuture.completeExceptionally(
           new IllegalStateException("not a member of the cluster"));
     } else {
@@ -330,7 +328,10 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
    * @return The cluster state.
    */
   public RaftClusterContext reset() {
-    configure(raft.getMetaStore().loadConfiguration());
+    final var configuration = raft.getMetaStore().loadConfiguration();
+    if (configuration != null) {
+      configure(configuration);
+    }
     return this;
   }
 
@@ -354,7 +355,27 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
 
     // Iterate through members in the new configuration, add any missing members, and update
     // existing members.
+    final var allMembers = new HashSet<RaftMember>();
+    for (final RaftMember member : configuration.oldMembers()) {
+      allMembers.remove(member);
+      allMembers.add(member);
+    }
     for (final RaftMember member : configuration.members()) {
+      allMembers.remove(member);
+      allMembers.add(member);
+    }
+
+    // 1. Remove contexts for members which aren't in the configuration
+    remoteMemberContexts.entrySet().stream()
+        .filter(entry -> !allMembers.contains(entry.getValue().getMember()))
+        .forEach(entry -> entry.getValue().closeReplicationContext());
+
+    remoteMemberContexts
+        .entrySet()
+        .removeIf(entry -> !allMembers.contains((entry.getValue().getMember())));
+
+    // 2. For all members in configuration, change type or create initial context
+    for (final var member : allMembers) {
       updateMember(member, time);
     }
 
@@ -364,11 +385,6 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
     // can commit the configuration change prior to shutting down.
     if (wasPromoted(configuration)) {
       raft.transition(localMember.getType());
-    }
-
-    // If the local member was removed from the cluster, remove it from the members list.
-    if (!configuration.members().contains(localMember)) {
-      members.remove(localMember);
     }
 
     configurationRef.set(configuration);
@@ -388,20 +404,17 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
   private void updateMember(final RaftMember member, final Instant time) {
     if (member.equals(localMember)) {
       localMember.update(member.getType(), time);
-      members.add(localMember);
       return;
     }
 
     // If the member state doesn't already exist, create it.
-    RaftMemberContext state = membersMap.get(member.memberId());
+    RaftMemberContext state = remoteMemberContexts.get(member.memberId());
     if (state == null) {
       final DefaultRaftMember defaultMember =
           new DefaultRaftMember(member.memberId(), member.getType(), time);
       state = new RaftMemberContext(defaultMember, this, raft.getMaxAppendsPerFollower());
       state.resetState(raft.getLog());
-      members.add(state.getMember());
-      remoteMembers.add(state);
-      membersMap.put(member.memberId(), state);
+      remoteMemberContexts.put(member.memberId(), state);
     }
 
     // If the member type has changed, update the member type and reset its state.
@@ -409,37 +422,23 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
       state.getMember().update(member.getType(), time);
       state.resetState(raft.getLog());
     }
-
-    // Update the optimized member collections according to the member type.
-    for (final List<RaftMemberContext> memberType : memberTypes.values()) {
-      memberType.remove(state);
-    }
-
-    List<RaftMemberContext> memberType = memberTypes.get(member.getType());
-    if (memberType == null) {
-      memberType = new CopyOnWriteArrayList<>();
-      memberTypes.put(member.getType(), memberType);
-    }
-    memberType.add(state);
   }
 
   /** Commit the current configuration to disk. */
   public void commit() {
-    // Apply the configuration to the local server state.
-    raft.transition(localMember.getType());
-
     // If the local stored configuration is older than the committed configuration, overwrite it.
     final var configuration = configurationRef.get();
     if (raft.getMetaStore().loadConfiguration().index() < configuration.index()) {
       raft.getMetaStore().storeConfiguration(configuration);
     }
+
+    // Apply the configuration to the local server state.
+    raft.transition(localMember.getType());
   }
 
   @Override
   public void close() {
-    for (final RaftMemberContext member : remoteMembers) {
-      member.getMember().close();
-    }
+    remoteMemberContexts.values().forEach(context -> context.getMember().close());
     localMember.close();
   }
 
@@ -491,12 +490,12 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
     return quorum;
   }
 
-  /**
-   * Returns a list of all member states.
-   *
-   * @return A list of all member states.
-   */
-  public List<RaftMemberContext> getRemoteMemberStates() {
-    return remoteMembers;
+  public boolean isMember(final MemberId memberId) {
+    return configurationRef.get().members().stream()
+        .anyMatch(member -> member.memberId().equals(memberId));
+  }
+
+  public boolean inJointConsensus() {
+    return configurationRef.get().requiresJointConsensus();
   }
 }

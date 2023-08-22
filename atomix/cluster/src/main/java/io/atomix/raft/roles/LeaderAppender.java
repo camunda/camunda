@@ -546,7 +546,7 @@ final class LeaderAppender {
     raft.checkThread();
 
     // If there are no other active members in the cluster, simply complete the append operation.
-    if (raft.getCluster().getRemoteMemberStates().isEmpty()) {
+    if (raft.getCluster().getReplicationTargets().isEmpty()) {
       return CompletableFuture.completedFuture(null);
     }
 
@@ -556,7 +556,7 @@ final class LeaderAppender {
 
     // Iterate through members and append entries. Futures will be completed on responses from
     // followers.
-    for (final RaftMemberContext member : raft.getCluster().getRemoteMemberStates()) {
+    for (final RaftMemberContext member : raft.getCluster().getReplicationTargets()) {
       appendEntries(member);
     }
     return future;
@@ -931,7 +931,7 @@ final class LeaderAppender {
 
   /** Attempts to send heartbeats to all followers. */
   private void sendHeartbeats() {
-    for (final RaftMemberContext member : raft.getCluster().getRemoteMemberStates()) {
+    for (final RaftMemberContext member : raft.getCluster().getReplicationTargets()) {
       appendEntries(member);
     }
   }

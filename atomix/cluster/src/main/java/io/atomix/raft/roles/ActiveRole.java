@@ -28,7 +28,6 @@ import io.atomix.raft.protocol.VoteRequest;
 import io.atomix.raft.protocol.VoteResponse;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 
 /** Abstract active state. */
 public abstract class ActiveRole extends PassiveRole {
@@ -180,10 +179,7 @@ public abstract class ActiveRole extends PassiveRole {
     }
     // If the requesting candidate is not a known member of the cluster (to this
     // node) then don't vote for it. Only vote for candidates that we know about.
-    else if (!raft.getCluster().getRemoteMemberStates().stream()
-        .map(m -> m.getMember().memberId())
-        .collect(Collectors.toSet())
-        .contains(request.candidate())) {
+    else if (!raft.getCluster().isMember(request.candidate())) {
       log.debug("Rejected {}: candidate is not known to the local member", request);
       return VoteResponse.builder()
           .withStatus(RaftResponse.Status.OK)
