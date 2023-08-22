@@ -20,6 +20,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.withSettings;
 
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.MemberId;
@@ -186,7 +187,7 @@ public final class ControllableRaftContexts {
             memberId.id() + "-partition-1",
             1,
             memberId,
-            mock(ClusterMembershipService.class),
+            mock(ClusterMembershipService.class, withSettings().stubOnly()),
             new ControllableRaftServerProtocol(memberId, serverProtocols, messageQueue),
             storage,
             getRaftThreadContextFactory(memberId),
@@ -318,7 +319,7 @@ public final class ControllableRaftContexts {
   private void clientAppend(final MemberId memberId) {
     final var role = getRaftContext(memberId).getRaftRole();
     if (role instanceof final LeaderRole leaderRole) {
-      LoggerFactory.getLogger("TEST").info("Appending on leader {}", memberId.id());
+      LOG.info("Appending on leader {}", memberId.id());
       final ByteBuffer data = ByteBuffer.allocate(Integer.BYTES).putInt(0, nextEntry++);
       leaderRole.appendEntry(nextEntry, nextEntry, data, dataLossChecker);
     }
@@ -478,8 +479,9 @@ public final class ControllableRaftContexts {
 
       assertThat(entries.values().stream().distinct().count())
           .withFailMessage(
-              "Expected to find the same entry at a committed index on all nodes, but found %s",
-              entries)
+              () ->
+                  "Expected to find the same entry at a committed index on all nodes, but found %s"
+                      .formatted(entries))
           .isLessThanOrEqualTo(1);
       index++;
     }

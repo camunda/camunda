@@ -28,6 +28,7 @@ import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -35,6 +36,7 @@ import org.slf4j.LoggerFactory;
  * messages can be dropped.
  */
 public class ControllableRaftServerProtocol implements RaftServerProtocol {
+  private static final Logger LOG = LoggerFactory.getLogger(ControllableRaftServerProtocol.class);
 
   private Function<ConfigureRequest, CompletableFuture<ConfigureResponse>> configureHandler;
   private Function<ReconfigureRequest, CompletableFuture<ReconfigureResponse>> reconfigureHandler;
@@ -88,10 +90,12 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
       Optional.ofNullable(nextMessage.getRight())
           .ifPresent(
               f -> {
-                LoggerFactory.getLogger("TEST:")
-                    .info("Dropped a message to {}", localMemberId.id());
+                LOG.info("Dropped a message to {}", localMemberId.id());
                 // RaftServers excepts exceptions from the messaging layer to detect timeouts
-                f.completeExceptionally(new TimeoutException());
+                final var e = new TimeoutException();
+                // Hide the stack trace to avoid polluting the logs
+                e.setStackTrace(new StackTraceElement[0]);
+                f.completeExceptionally(e);
               });
     }
   }
@@ -126,7 +130,10 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
       if (currentTime >= deadline) {
         final CompletableFuture<?> messageFuture = entry.getKey();
         if (!messageFuture.isDone()) {
-          messageFuture.completeExceptionally(new TimeoutException());
+          final var timeout = new TimeoutException();
+          // Hide the stack trace to avoid polluting the logs
+          timeout.setStackTrace(new StackTraceElement[0]);
+          messageFuture.completeExceptionally(timeout);
         }
         iter.remove();
       }
