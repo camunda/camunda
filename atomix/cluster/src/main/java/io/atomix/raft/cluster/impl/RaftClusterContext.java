@@ -269,8 +269,10 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
       final var newQuorum = getQuorumFor(newContexts, calculateMemberValue);
       if (oldQuorum.isPresent() && newQuorum.isPresent()) {
         return Optional.of(Comparators.min(oldQuorum.get(), newQuorum.get()));
+      } else if (oldQuorum.isPresent()) {
+        return oldQuorum;
       } else {
-        return Optional.empty();
+        return newQuorum;
       }
     }
 
