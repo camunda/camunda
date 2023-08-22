@@ -37,7 +37,7 @@ import io.atomix.raft.protocol.PollResponse;
 import io.atomix.raft.protocol.VoteRequest;
 import io.atomix.raft.protocol.VoteResponse;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
-import io.atomix.raft.utils.Quorum;
+import io.atomix.raft.utils.VoteQuorum;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -129,19 +129,20 @@ public final class FollowerRole extends ActiveRole {
 
     log.info("Sending poll requests to all active members: {}", votingMembers);
 
-    final Quorum quorum =
-        new Quorum(
-            raft.getCluster().getQuorum(),
-            elected -> {
-              // If a majority of the cluster indicated they would vote for us then transition to
-              // candidate.
-              complete.set(true);
-              if (raft.getLeader() == null && elected) {
-                raft.transition(RaftServer.Role.CANDIDATE);
-              } else {
-                electionTimer.reset();
-              }
-            });
+    final var quorum =
+        raft.getCluster()
+            .getVoteQuorum(
+                elected -> {
+                  // If a majority of the cluster indicated they would vote for us then transition
+                  // to
+                  // candidate.
+                  complete.set(true);
+                  if (raft.getLeader() == null && elected) {
+                    raft.transition(RaftServer.Role.CANDIDATE);
+                  } else {
+                    electionTimer.reset();
+                  }
+                });
 
     // First, load the last log entry to get its term. We load the entry
     // by its index since the index is required by the protocol.
@@ -262,7 +263,7 @@ public final class FollowerRole extends ActiveRole {
 
   private void handlePollResponse(
       final AtomicBoolean complete,
-      final Quorum quorum,
+      final VoteQuorum quorum,
       final DefaultRaftMember member,
       final PollResponse response,
       final Throwable error) {
@@ -271,7 +272,7 @@ public final class FollowerRole extends ActiveRole {
     if (isRunning() && !complete.get()) {
       if (error != null) {
         log.warn("Poll request to {} failed: {}", member.memberId(), error.getMessage());
-        quorum.fail();
+        quorum.fail(member.memberId());
       } else {
         if (response.term() > raft.getTerm()) {
           raft.setTerm(response.term());
@@ -279,13 +280,13 @@ public final class FollowerRole extends ActiveRole {
 
         if (!response.accepted()) {
           log.debug("Received rejected poll from {}", member);
-          quorum.fail();
+          quorum.fail(member.memberId());
         } else if (response.term() != raft.getTerm()) {
           log.debug("Received accepted poll for a different term from {}", member);
-          quorum.fail();
+          quorum.fail(member.memberId());
         } else {
           log.debug("Received accepted poll from {}", member);
-          quorum.succeed();
+          quorum.succeed(member.memberId());
         }
       }
     }

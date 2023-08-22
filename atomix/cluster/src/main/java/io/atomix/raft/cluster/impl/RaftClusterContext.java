@@ -26,6 +26,9 @@ import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.RaftMember.Type;
 import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.storage.system.Configuration;
+import io.atomix.raft.utils.JointConsensusVoteQuorum;
+import io.atomix.raft.utils.SimpleVoteQuorum;
+import io.atomix.raft.utils.VoteQuorum;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -41,6 +44,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -460,14 +464,29 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
     return raft;
   }
 
-  /**
-   * Returns the remote quorum count.
-   *
-   * @return The remote quorum count.
-   */
-  public int getQuorum() {
-    // TODO: Support joint consensus.
-    return (int) Math.floor((getRemoteActiveMembers().size() + 1) / 2.0) + 1;
+  public VoteQuorum getVoteQuorum(final Consumer<Boolean> callback) {
+    final VoteQuorum quorum;
+    if (configurationRef.get().requiresJointConsensus()) {
+      quorum =
+          new JointConsensusVoteQuorum(
+              configurationRef.get().oldMembers().stream()
+                  .map(RaftMember::memberId)
+                  .collect(Collectors.toSet()),
+              configurationRef.get().members().stream()
+                  .map(RaftMember::memberId)
+                  .collect(Collectors.toSet()),
+              callback);
+      return quorum;
+    } else {
+      quorum =
+          new SimpleVoteQuorum(
+              callback,
+              configurationRef.get().members().stream()
+                  .map(RaftMember::memberId)
+                  .collect(Collectors.toSet()));
+    }
+    quorum.succeed(localMember.memberId());
+    return quorum;
   }
 
   /**
