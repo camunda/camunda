@@ -9,7 +9,7 @@
     "@carbon/elements": "11.28.0",
     "@carbon/react": "1.36.0",
     "@monaco-editor/react": "4.5.1",
-    "@tanstack/react-query": "4.32.6",
+    "@tanstack/react-query": "4.33.0",
     "date-fns": "2.30.0",
     "event-source-polyfill": "1.0.31",
     "final-form": "4.20.10",
@@ -59,7 +59,7 @@
   "devDependencies": {
     "@axe-core/playwright": "4.7.3",
     "@playwright/test": "1.35.1",
-    "@tanstack/react-query-devtools": "4.32.6",
+    "@tanstack/react-query-devtools": "4.33.0",
     "@testing-library/jest-dom": "5.17.0",
     "@testing-library/react": "14.0.0",
     "@testing-library/user-event": "14.4.3",
