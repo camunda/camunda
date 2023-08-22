@@ -79,7 +79,7 @@
     "eslint-plugin-prettier": "^5.0.0-alpha.1",
     "http-proxy-middleware": "2.0.6",
     "husky": "8.0.3",
-    "lint-staged": "13.2.3",
+    "lint-staged": "13.3.0",
     "monaco-editor": "0.40.0",
     "msw": "1.2.3",
     "prettier": "3.0.1",
