@@ -103,6 +103,8 @@
     <field name="valueType" id="5" type="ValueType"/>
     <field name="intent" id="6" type="uint8"/>
     <data name="value" id="7" type="varDataEncoding"/>
+    <!-- populated when RecordType is COMMAND -->
+    <data name="authorization" id="8" type="varDataEncoding" sinceVersion="3"/>
   </sbe:message>
 
   <sbe:message name="ExecuteCommandResponse" id="21">
@@ -144,6 +146,8 @@
     <field name="rejectionType" id="7" type="RejectionType"/>
     <!-- populated when RecordType is COMMAND_REJECTION, UTF-8-encoded String -->
     <data name="rejectionReason" id="8" type="varDataEncoding"/>
+    <!-- populated when RecordType is COMMAND -->
+    <data name="authorization" id="11" type="varDataEncoding" sinceVersion="3"/>
   </sbe:message>
 
   <sbe:message name="BrokerInfo" id="201" description="Broker topology information">

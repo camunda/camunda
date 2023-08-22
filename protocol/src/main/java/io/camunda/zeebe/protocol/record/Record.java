@@ -16,6 +16,7 @@
 package io.camunda.zeebe.protocol.record;
 
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import java.util.Map;
 import org.immutables.value.Value;
 
 /** Represents a record published to the log stream. */
@@ -86,6 +87,11 @@ public interface Record<T extends RecordValue> extends JsonSerializable {
    * @return the version of the broker that wrote this record
    */
   String getBrokerVersion();
+
+  /**
+   * @return a Map of authorization data for this record or an empty Map if not set.
+   */
+  Map<String, Object> getAuthorizations();
 
   /**
    * A record version is an integer starting from 1. The version of a record is defined when it is
