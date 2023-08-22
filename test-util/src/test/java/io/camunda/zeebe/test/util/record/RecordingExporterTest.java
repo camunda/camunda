@@ -105,6 +105,11 @@ public final class RecordingExporterTest {
     }
 
     @Override
+    public String getAuthorization() {
+      return null;
+    }
+
+    @Override
     public int getRecordVersion() {
       return 1;
     }
