@@ -48,5 +48,9 @@ public final class CallActivityTransformer implements ModelElementTransformer<Ca
     final var propagateAllChildVariablesEnabled =
         calledElement.isPropagateAllChildVariablesEnabled();
     callActivity.setPropagateAllChildVariablesEnabled(propagateAllChildVariablesEnabled);
+
+    final var propagateAllParentVariablesEnabled =
+        calledElement.isPropagateAllParentVariablesEnabled();
+    callActivity.setPropagateAllParentVariablesEnabled(propagateAllParentVariablesEnabled);
   }
 }

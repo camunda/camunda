@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
@@ -277,6 +278,99 @@ public final class CallActivityTest {
         .extracting(Record::getValue)
         .extracting(v -> tuple(v.getName(), v.getValue()))
         .contains(tuple("x", "1"), tuple("y", "1"));
+  }
+
+  @Test
+  public void shouldPropagateAllVariablesWhenEnablingPropagateAllParentVariablesExplicitly() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            "wf-parent.bpmn",
+            parentProcess(
+                c -> c.zeebeInputExpression("x", "y").zeebePropagateAllParentVariables(true)))
+        .deploy();
+
+    // when
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID_PARENT)
+            .withVariables(Map.of("x", 1))
+            .create();
+
+    // then
+    final var childInstance = getChildInstanceOf(processInstanceKey);
+
+    assertThat(
+            RecordingExporter.variableRecords()
+                .withProcessInstanceKey(childInstance.getProcessInstanceKey())
+                .limit(2))
+        .extracting(Record::getValue)
+        .extracting(v -> tuple(v.getName(), v.getValue()))
+        .contains(tuple("x", "1"), tuple("y", "1"));
+  }
+
+  @Test
+  public void shouldOnlyPropagateVariablesDefinedViaInputMappings() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            "wf-parent.bpmn",
+            parentProcess(
+                c -> c.zeebeInputExpression("x", "y").zeebePropagateAllParentVariables(false)))
+        .deploy();
+
+    // when
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID_PARENT)
+            .withVariables(Map.of("x", 1))
+            .create();
+
+    // then
+    final var childInstance = getChildInstanceOf(processInstanceKey);
+
+    assertThat(
+            RecordingExporter.records()
+                .limit(r -> r.getIntent() == JobIntent.CREATED)
+                .variableRecords()
+                .withIntent(VariableIntent.CREATED)
+                .withProcessInstanceKey(childInstance.getProcessInstanceKey()))
+        .extracting(Record::getValue)
+        .extracting(v -> tuple(v.getName(), v.getValue()))
+        .containsExactly(tuple("y", "1"));
+  }
+
+  @Test
+  public void shouldNotPropagateAnyVariable() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            "wf-parent.bpmn", parentProcess(c -> c.zeebePropagateAllParentVariables(false)))
+        .deploy();
+
+    // when
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID_PARENT)
+            .withVariables(Map.of("x", 1))
+            .create();
+
+    // then
+    final var childInstance = getChildInstanceOf(processInstanceKey);
+
+    assertThat(
+            RecordingExporter.records()
+                .limit(r -> r.getIntent() == JobIntent.CREATED)
+                .variableRecords()
+                .withIntent(VariableIntent.CREATED)
+                .withProcessInstanceKey(childInstance.getProcessInstanceKey()))
+        .isEmpty();
   }
 
   @Test
