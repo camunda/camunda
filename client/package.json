@@ -28,7 +28,7 @@
     "sass": "1.66.1",
     "styled-components": "5.3.11",
     "ts-pattern": "5.0.5",
-    "zod": "3.21.4"
+    "zod": "3.22.2"
   },
   "scripts": {
     "start": "TSC_COMPILE_ON_ERROR=true react-scripts start",
