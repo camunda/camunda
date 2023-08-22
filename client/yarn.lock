@@ -1156,14 +1156,7 @@
   resolved "https://registry.yarnpkg.com/@carbon/feature-flags/-/feature-flags-0.16.0.tgz#0896249e14d6e581639608a3061b7f38e1810bf8"
   integrity sha512-hCrfVZ6oVnPjjupelbvQX4D0i6GlZuKVverAf0LkOydXHrPjSyuEmg+czsylyCBg4r/hxtSTu91Tq6aqz/DsHg==
 
-"@carbon/grid@^11.11.0":
-  version "11.18.0"
-  resolved "https://registry.yarnpkg.com/@carbon/grid/-/grid-11.18.0.tgz#144e51afbf93841b9145b222ba495be5e9a5e1a4"
-  integrity sha512-WntZneDoxBUtP4DkxpkxxNUYjkZSql9NBqAEyI2kW7iwl8UbfCwidtyHExoJtpIVoiRVEX0IQZfgXwL41c2SlA==
-  dependencies:
-    "@carbon/layout" "^11.18.0"
-
-"@carbon/grid@^11.19.0":
+"@carbon/grid@^11.11.0", "@carbon/grid@^11.19.0":
   version "11.19.0"
   resolved "https://registry.yarnpkg.com/@carbon/grid/-/grid-11.19.0.tgz#a0af90b4625fd60bb9ad947b7f8360af09488e3f"
   integrity sha512-Ie8C0yifTPOF58rhkeRhINJ6KPiTVbdJwPCE+aEWTpUrwGSnuqIYZ8zQBlYQtNGQX72TSfnGY0qijPmpnIwNsg==
@@ -1188,11 +1181,6 @@
   version "11.25.0"
   resolved "https://registry.yarnpkg.com/@carbon/icons/-/icons-11.25.0.tgz#9cbc5e0075790d910842f61514e16510fb76e6c1"
   integrity sha512-Pdd/6lY7v/c0dk3HVr+XteAc0PyumIA7WrdcSipaICivxuSiD2Wxzo8dO1aoB4OAqNOzLnODODAiDHr5xqCGkg==
-
-"@carbon/layout@^11.18.0":
-  version "11.18.0"
-  resolved "https://registry.yarnpkg.com/@carbon/layout/-/layout-11.18.0.tgz#252d4a69f71cd7bcaf9cafd1c79c8227aa67a475"
-  integrity sha512-Xryaw94vaOUJdAp+WgWD0SZumxqImc9CCEYMnnXpbRwEtxQ9BzfWHr/sBWg0pB1IkR+8zE2vfxaez473TZtjXQ==
 
 "@carbon/layout@^11.19.0":
   version "11.19.0"
@@ -7835,10 +7823,10 @@ mobx@6.10.0:
   resolved "https://registry.yarnpkg.com/mobx/-/mobx-6.10.0.tgz#3537680fe98d45232cc19cc8f76280bd8bb6b0b7"
   integrity sha512-WMbVpCMFtolbB8swQ5E2YRrU+Yu8iLozCVx3CdGjbBKlP7dFiCSuiG06uea3JCFN5DnvtAX7+G5Bp82e2xu0ww==
 
-monaco-editor@0.40.0:
-  version "0.40.0"
-  resolved "https://registry.yarnpkg.com/monaco-editor/-/monaco-editor-0.40.0.tgz#d10834e15ad50a15ec61fd01892e508464ebe2fe"
-  integrity sha512-1wymccLEuFSMBvCk/jT1YDW/GuxMLYwnFwF9CDyYCxoTw2Pt379J3FUhwy9c43j51JdcxVPjwk0jm0EVDsBS2g==
+monaco-editor@0.41.0:
+  version "0.41.0"
+  resolved "https://registry.yarnpkg.com/monaco-editor/-/monaco-editor-0.41.0.tgz#2ba31e5af7e3ae93ac5d7467ec2772ef9b3d967f"
+  integrity sha512-1o4olnZJsiLmv5pwLEAmzHTE/5geLKQ07BrGxlF4Ri/AXAc2yyDGZwHjiTqD8D/ROKUZmwMA28A+yEowLNOEcA==
 
 ms@2.0.0:
   version "2.0.0"
