@@ -214,6 +214,20 @@ public interface JobWorkerBuilderStep1 {
     JobWorkerBuilderStep3 enableStreaming();
 
     /**
+     * Opt-in feature flag to disable job streaming.
+     *
+     * <p>If the stream is closed, e.g. the server closed the connection, was restarted, etc., it
+     * will be immediately recreated as long as the worker is opened.
+     *
+     * <p>NOTE: Job streaming is still under active development, and should be disabled if you
+     * notice any issues.
+     *
+     * @return the builder for this worker
+     */
+    @ExperimentalApi("https://github.com/camunda/zeebe/issues/11231")
+    JobWorkerBuilderStep3 disableStreaming();
+
+    /**
      * If streaming is enabled, sets a maximum lifetime for a given stream. Once this timeout is
      * reached, the stream is closed, such that no more jobs are activated and received. If the
      * worker is still open, then it will immediately open a new stream.

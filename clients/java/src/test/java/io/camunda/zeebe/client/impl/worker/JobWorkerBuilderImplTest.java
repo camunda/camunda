@@ -150,4 +150,26 @@ class JobWorkerBuilderImplTest {
     // then
     verify(lastStep, atLeast(1)).requestTimeout(Duration.ofHours(5));
   }
+
+  @Test
+  void shouldTimeoutStreamAfterEightHours() {
+    // given
+    final StreamJobsCommandStep3 lastStep = Mockito.mock(Answers.RETURNS_SELF);
+    Mockito.when(jobClient.newStreamJobsCommand().jobType(anyString()).consumer(any()))
+        .thenReturn(lastStep);
+    Mockito.when(lastStep.send()).thenReturn(Mockito.mock());
+
+    // when
+    jobWorkerBuilder
+        .jobType("type")
+        .handler((c, j) -> {})
+        .timeout(1)
+        .name("test")
+        .maxJobsActive(30)
+        .enableStreaming()
+        .open();
+
+    // then
+    verify(lastStep, atLeast(1)).requestTimeout(Duration.ofHours(8));
+  }
 }

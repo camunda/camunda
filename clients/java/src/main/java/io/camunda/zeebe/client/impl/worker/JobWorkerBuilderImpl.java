@@ -40,6 +40,7 @@ public final class JobWorkerBuilderImpl
 
   public static final BackoffSupplier DEFAULT_BACKOFF_SUPPLIER =
       BackoffSupplier.newBackoffBuilder().build();
+  public static final Duration DEFAULT_STREAMING_TIMEOUT = Duration.ofHours(8);
   private final JobClient jobClient;
   private final ScheduledExecutorService executorService;
   private final List<Closeable> closeables;
@@ -71,6 +72,7 @@ public final class JobWorkerBuilderImpl
     pollInterval = configuration.getDefaultJobPollInterval();
     requestTimeout = configuration.getDefaultRequestTimeout();
     backoffSupplier = DEFAULT_BACKOFF_SUPPLIER;
+    streamingTimeout = DEFAULT_STREAMING_TIMEOUT;
   }
 
   @Override
@@ -140,6 +142,12 @@ public final class JobWorkerBuilderImpl
   @Override
   public JobWorkerBuilderStep3 enableStreaming() {
     enableStreaming = true;
+    return this;
+  }
+
+  @Override
+  public JobWorkerBuilderStep3 disableStreaming() {
+    enableStreaming = false;
     return this;
   }
 
