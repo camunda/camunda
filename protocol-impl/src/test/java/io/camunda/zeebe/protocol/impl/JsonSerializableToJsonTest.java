@@ -12,6 +12,8 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo.AuthDataFormat;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.CopiedRecord;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
@@ -128,6 +130,12 @@ final class JsonSerializableToJsonTest {
               final int requestId = 23;
               final int requestStreamId = 1;
 
+              final AuthInfo authInfo =
+                  new AuthInfo()
+                      .setFormatProp(AuthDataFormat.JWT)
+                      .setAuthData(
+                          "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJpc3MiOiJ6ZWViZS1nYXRld2F5IiwiYXVkIjoiemVlYmUtYnJva2VyIiwic3ViIjoiQXV0aG9yaXphdGlvbiIsImlhdCI6MTY5MzIxNTc1NiwiYXV0aG9yaXplZF90ZW5hbnRzIjpbInRlbmFudC0xIiwidGVuYW50LTIiLCJ0ZW5hbnQtMyJdfQ.");
+
               recordMetadata
                   .intent(intent)
                   .protocolVersion(protocolVersion)
@@ -138,7 +146,8 @@ final class JsonSerializableToJsonTest {
                   .rejectionReason(rejectionReason)
                   .rejectionType(rejectionType)
                   .requestId(requestId)
-                  .requestStreamId(requestStreamId);
+                  .requestStreamId(requestStreamId)
+                  .authorization(authInfo);
 
               final String resourceName = "resource";
               final DirectBuffer resource = wrapString("contents");
@@ -182,6 +191,13 @@ final class JsonSerializableToJsonTest {
           "rejectionType": "INVALID_ARGUMENT",
           "rejectionReason": "fails",
           "brokerVersion": "1.2.3",
+          "authorizations": {
+            "authorized_tenants":[
+              "tenant-1",
+              "tenant-2",
+              "tenant-3"
+            ]
+          },
           "recordVersion": 10,
           "sourceRecordPosition": 231,
           "value": {
@@ -239,6 +255,7 @@ final class JsonSerializableToJsonTest {
           "rejectionType": "NULL_VAL",
           "rejectionReason": "",
           "brokerVersion": "0.0.0",
+          "authorizations": {},
           "recordVersion": 1,
           "value": {
               "resources": [],
