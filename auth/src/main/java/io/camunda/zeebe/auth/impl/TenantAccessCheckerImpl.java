@@ -12,25 +12,28 @@ import java.util.List;
 
 public class TenantAccessCheckerImpl implements TenantAccessChecker {
 
-  private final List<TenantImpl> authorizedTenants;
+  private final List<String> authorizedTenants;
 
-  public TenantAccessCheckerImpl(final List<TenantImpl> authorizedTenants) {
+  public TenantAccessCheckerImpl(final List<String> authorizedTenants) {
     this.authorizedTenants = authorizedTenants;
   }
 
   @Override
   public Boolean hasAccess(final String tenantId) {
-    return authorizedTenants.stream().anyMatch(tenant -> tenant.getId().equals(tenantId));
+    return authorizedTenants.stream().anyMatch(tenant -> tenant.equals(tenantId));
   }
 
   @Override
   public Boolean hasFullAccess(final List<String> tenantIds) {
-    return authorizedTenants.stream().map(TenantImpl::getId).toList().containsAll(tenantIds);
+    return authorizedTenants.containsAll(tenantIds);
   }
 
-  public static TenantAccessChecker from(final List<String> authorizedTenantIds) {
-    final List<TenantImpl> authorizedTenants =
-        authorizedTenantIds.stream().map(TenantImpl::new).toList();
+  public static TenantAccessChecker fromJwtDecoder(final JwtAuthorizationDecoder decoder) {
+    final List<String> authorizedTenants =
+        decoder
+            .getAuthorizations()
+            .get(JwtAuthorizationDecoder.AUTHORIZED_TENANTS_CLAIM)
+            .asList(String.class);
     return new TenantAccessCheckerImpl(authorizedTenants);
   }
 }

@@ -21,7 +21,7 @@ public class TenantAccessCheckerTest {
 
   @Before
   public void setUp() {
-    accessChecker = TenantAccessCheckerImpl.from(List.of("tenant-1", "tenant-2", "tenant-3"));
+    accessChecker = new TenantAccessCheckerImpl(List.of("tenant-1", "tenant-2", "tenant-3"));
   }
 
   @Test
