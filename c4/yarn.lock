@@ -3073,9 +3073,9 @@
     "@types/node" "*"
 
 "@types/carbon__icons-react@^11.20.0":
-  version "11.20.0"
-  resolved "https://registry.yarnpkg.com/@types/carbon__icons-react/-/carbon__icons-react-11.20.0.tgz#c179d73d3db17e293e54ca568c8401fe57f72188"
-  integrity sha512-tGRW9rtEjOdh2puC1ltQ5LYqeL/fjqkYAuvCLkxuEO/8sh0dVhHqbLySvCzlH62304/r6Cw8ugW3484p52PJhA==
+  version "11.25.0"
+  resolved "https://registry.yarnpkg.com/@types/carbon__icons-react/-/carbon__icons-react-11.25.0.tgz#18bc3970bcee4cbb05adbcbdf2f515213befdadc"
+  integrity sha512-npUQ6mhvDu911h7S+dM824tJdX5dq2ZtCaebi9dTO36hBPBs/ex4vI6Db3me88prQzQeHcdE8rdH5Vjs3H5Vmw==
 
 "@types/connect@*":
   version "3.4.35"
