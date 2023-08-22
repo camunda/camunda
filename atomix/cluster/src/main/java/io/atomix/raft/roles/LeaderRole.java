@@ -56,6 +56,7 @@ import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 
@@ -88,6 +89,15 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     commitInitialEntriesFuture = commitInitialEntries();
     lastZbEntry = findLastZeebeEntry();
 
+    if (raft.getCluster().inJointConsensus()) {
+      raft.getThreadContext()
+          .execute(
+              () -> {
+                final var currentMembers = raft.getCluster().getConfiguration().members();
+                configure(currentMembers, List.of());
+              });
+    }
+
     return super.start().thenRun(this::startTimers).thenApply(v -> this);
   }
 
@@ -117,7 +127,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     // If the leader index is 0 or is greater than the commitIndex, reject the promote requests.
     // Configuration changes should not be allowed until the leader has committed a no-op entry.
     // See https://groups.google.com/forum/#!topic/raft-dev/t4xj6dJTP6E
-    if (configuring() || initializing()) {
+    if (configuring() || initializing() || raft.getCluster().inJointConsensus()) {
       return CompletableFuture.completedFuture(
           logResponse(ReconfigureResponse.builder().withStatus(RaftResponse.Status.ERROR).build()));
     }
@@ -141,23 +151,39 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     final CompletableFuture<ReconfigureResponse> future = new CompletableFuture<>();
     configure(updatedMembers, currentMembers)
         .whenComplete(
-            (index, error) -> {
-              if (error == null) {
-                future.complete(
-                    logResponse(
-                        ReconfigureResponse.builder()
-                            .withStatus(RaftResponse.Status.OK)
-                            .withIndex(index)
-                            .withTerm(raft.getCluster().getConfiguration().term())
-                            .withTime(raft.getCluster().getConfiguration().time())
-                            .withMembers(updatedMembers)
-                            .build()));
+            (jointConsensusIndex, jointConsensusError) -> {
+              if (jointConsensusError == null) {
+                configure(updatedMembers, List.of())
+                    .whenComplete(
+                        (leftJointConsensusIndex, leftJointConsensusError) -> {
+                          if (leftJointConsensusError == null) {
+                            future.complete(
+                                logResponse(
+                                    ReconfigureResponse.builder()
+                                        .withStatus(RaftResponse.Status.OK)
+                                        .withIndex(leftJointConsensusIndex)
+                                        .withTerm(raft.getCluster().getConfiguration().term())
+                                        .withTime(raft.getCluster().getConfiguration().time())
+                                        .withMembers(updatedMembers)
+                                        .build()));
+                          } else {
+                            future.complete(
+                                logResponse(
+                                    ReconfigureResponse.builder()
+                                        .withStatus(RaftResponse.Status.ERROR)
+                                        .withError(
+                                            RaftError.Type.PROTOCOL_ERROR,
+                                            leftJointConsensusError.getMessage())
+                                        .build()));
+                          }
+                        });
               } else {
                 future.complete(
                     logResponse(
                         ReconfigureResponse.builder()
                             .withStatus(RaftResponse.Status.ERROR)
-                            .withError(RaftError.Type.PROTOCOL_ERROR, error.getMessage())
+                            .withError(
+                                RaftError.Type.PROTOCOL_ERROR, jointConsensusError.getMessage())
                             .build()));
               }
             });
@@ -196,8 +222,9 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
   /** Sets the current node as the cluster leader. */
   private void takeLeadership() {
     raft.setLeader(raft.getCluster().getLocalMember().memberId());
+    raft.getCluster().reset();
     raft.getCluster()
-        .getRemoteMemberStates()
+        .getReplicationTargets()
         .forEach(member -> member.openReplicationContext(raft.getLog()));
   }
 
@@ -279,13 +306,13 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
 
   /** Commits the given configuration. */
   private CompletableFuture<Long> configure(
-      final Collection<RaftMember> updatedMembers, final Collection<RaftMember> currentMembers) {
+      final Collection<RaftMember> newMembers, final Collection<RaftMember> oldMembers) {
     raft.checkThread();
 
     final long term = raft.getTerm();
 
     final var configurationEntry =
-        new ConfigurationEntry(System.currentTimeMillis(), updatedMembers, currentMembers);
+        new ConfigurationEntry(System.currentTimeMillis(), newMembers, oldMembers);
     final IndexedRaftLogEntry entry;
     try {
       entry = appendEntry(new RaftLogEntry(term, configurationEntry));
