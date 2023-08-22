@@ -88,6 +88,11 @@ public interface Record<T extends RecordValue> extends JsonSerializable {
   String getBrokerVersion();
 
   /**
+   * @return the encoded authorization data for this record or <code>UNKNOWN</code> if not set.
+   */
+  String getAuthorization();
+
+  /**
    * A record version is an integer starting from 1. The version of a record is defined when it is
    * written. It allows different versions of the same record to be processed or applied
    * differently.
