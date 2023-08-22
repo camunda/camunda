@@ -871,9 +871,8 @@ describe('<Variables />', () => {
 
     await user.click(screen.getByDisplayValue('"000'));
 
-    const firstVariableValueTextarea = await screen.findByDisplayValue(
-      '"0001"',
-    );
+    const firstVariableValueTextarea =
+      await screen.findByDisplayValue('"0001"');
     expect(firstVariableValueTextarea).toBeInTheDocument();
     expect(screen.getByDisplayValue('"111')).toBeInTheDocument();
 
