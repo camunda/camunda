@@ -97,8 +97,8 @@ export async function selectReportDefinition(t, name, version) {
 export async function selectDefinition(t, name, version = 'Specific version') {
   await t
     .click('.Popover.DefinitionSelection')
-    .typeText('.Typeahead input', name, {replace: true})
-    .click(Common.typeaheadOption(name));
+    .typeText('.popoverContent input[type="text"]', name, {replace: true})
+    .click(Common.carbonOption(name));
 
   await t.expect(Selector('.VersionPopover button').hasAttribute('disabled')).notOk();
 

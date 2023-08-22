@@ -8,18 +8,11 @@
 import React from 'react';
 import classnames from 'classnames';
 import {withRouter} from 'react-router-dom';
+import {ComboBox} from '@carbon/react';
 
-import {
-  Message,
-  BPMNDiagram,
-  LoadingIndicator,
-  Popover,
-  Typeahead,
-  Labeled,
-  TenantInfo,
-} from 'components';
+import {Message, BPMNDiagram, LoadingIndicator, Popover, TenantInfo} from 'components';
 import {withErrorHandling} from 'HOC';
-import {getCollection} from 'services';
+import {getCollection, getRandomId} from 'services';
 import {t} from 'translation';
 import {showError} from 'notifications';
 import debouncePromise from 'debouncePromise';
@@ -348,22 +341,31 @@ export class DefinitionSelection extends React.Component {
                   onChange={onChange}
                 />
               ) : (
-                <Labeled className="entry" label={processSelectLabel}>
-                  <Typeahead
-                    className="name"
-                    initialValue={def ? def.key : null}
-                    disabled={noDefinitions || disableDefinition}
-                    placeholder={t('common.select')}
-                    onChange={this.changeDefinition}
-                    noValuesMessage={t('common.definitionSelection.noDefinition')}
-                  >
-                    {availableDefinitions.map(({name, key}) => (
-                      <Typeahead.Option key={key} value={key}>
-                        {name || key}
-                      </Typeahead.Option>
-                    ))}
-                  </Typeahead>
-                </Labeled>
+                <ComboBox
+                  id={getRandomId()}
+                  size="sm"
+                  className="entry"
+                  items={availableDefinitions}
+                  initialSelectedItem={
+                    def ? availableDefinitions.find(({key}) => key === def.key) : null
+                  }
+                  disabled={noDefinitions || disableDefinition}
+                  placeholder={t('common.select')}
+                  onChange={({selectedItem}) => {
+                    if (selectedItem) {
+                      this.changeDefinition(selectedItem.key);
+                    }
+                  }}
+                  itemToString={(item) => (item ? item.name || item.key : '')}
+                  titleText={processSelectLabel}
+                  shouldFilterItem={(data) => {
+                    const {inputValue, item} = data;
+                    return (
+                      typeof inputValue !== 'undefined' &&
+                      (item.name || item.key).toLowerCase().includes(inputValue?.toLowerCase())
+                    );
+                  }}
+                />
               )}
               <div className="version entry">
                 <VersionPopover
@@ -375,14 +377,11 @@ export class DefinitionSelection extends React.Component {
                   onChange={this.changeVersions}
                   loading={isLoadingVersions}
                   label={t('common.definitionSelection.version.label')}
-                  useCarbonTrigger={selectedDefinitions}
+                  useCarbonTrigger
                 />
               </div>
               {this.isOnlyTenant() ? (
-                <TenantInfo
-                  tenant={this.getAvailableTenants()[0]}
-                  useCarbonVariant={selectedDefinitions}
-                />
+                <TenantInfo tenant={this.getAvailableTenants()[0]} useCarbonVariant />
               ) : (
                 <div className="tenant entry">
                   <TenantPopover
@@ -391,7 +390,7 @@ export class DefinitionSelection extends React.Component {
                     onChange={this.changeTenants}
                     loading={isLoadingTenants}
                     label={t('common.tenant.label')}
-                    useCarbonTrigger={selectedDefinitions}
+                    useCarbonTrigger
                   />
                 </div>
               )}

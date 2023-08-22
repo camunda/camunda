@@ -174,10 +174,3 @@ a[disabled] {
   // support to disable links: https://github.com/ReactTraining/react-router/issues/1082
   pointer-events: none;
 }
-
-// TODO: Remove this once carbon-inputs branch is merged into master
-ul.cds--list-box__menu {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
