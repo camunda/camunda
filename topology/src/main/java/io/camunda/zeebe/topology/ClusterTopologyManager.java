@@ -86,7 +86,9 @@ final class ClusterTopologyManager {
                 startFuture.completeExceptionally(new IllegalStateException(errorMessage));
               } else {
                 try {
-                  persistedClusterTopology.update(topology);
+                  // merge in case there was a concurrent update via gossip
+                  persistedClusterTopology.update(
+                      topology.merge(persistedClusterTopology.getTopology()));
                   topologyGossiper.accept(persistedClusterTopology.getTopology());
                   setStarted();
                 } catch (final IOException e) {

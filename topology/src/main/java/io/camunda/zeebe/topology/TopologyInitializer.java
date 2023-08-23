@@ -12,12 +12,14 @@ import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
-import io.camunda.zeebe.topology.PersistedClusterTopology.Listener;
+import io.camunda.zeebe.topology.TopologyUpdateNotifier.TopologyUpdateListener;
+import io.camunda.zeebe.topology.serializer.ClusterTopologySerializer;
 import io.camunda.zeebe.topology.state.ClusterChangePlan;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.MemberState;
 import io.camunda.zeebe.topology.state.PartitionState;
-import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -36,8 +38,7 @@ public interface TopologyInitializer {
   /**
    * Initializes the cluster topology.
    *
-   * @return a future when completed with true indicates that the cluster topology is initialized
-   *     successfully. Otherwise, the topology is not initialized.
+   * @return a future that completes with a topology which can be initialized or uninitialized
    */
   ActorFuture<ClusterTopology> initialize();
 
@@ -70,20 +71,29 @@ public interface TopologyInitializer {
   /** Initialized topology from the locally persisted topology */
   class FileInitializer implements TopologyInitializer {
 
-    private final PersistedClusterTopology persistedClusterTopology;
+    private final Path topologyFile;
+    private final ClusterTopologySerializer serializer;
 
-    public FileInitializer(final PersistedClusterTopology persistedClusterTopology) {
-      this.persistedClusterTopology = persistedClusterTopology;
+    public FileInitializer(final Path topologyFile, final ClusterTopologySerializer serializer) {
+      this.topologyFile = topologyFile;
+      this.serializer = serializer;
     }
 
     @Override
     public ActorFuture<ClusterTopology> initialize() {
       try {
-        persistedClusterTopology.tryInitialize();
-        return CompletableActorFuture.completed(persistedClusterTopology.getTopology());
+        if (Files.exists(topologyFile)) {
+          final var serializedTopology = Files.readAllBytes(topologyFile);
+          if (serializedTopology.length > 0) {
+            final var clusterTopology = serializer.decodeClusterTopology(serializedTopology);
+            return CompletableActorFuture.completed(clusterTopology);
+          }
+        }
       } catch (final Exception e) {
         return CompletableActorFuture.completedExceptionally(e);
       }
+
+      return CompletableActorFuture.completed(ClusterTopology.uninitialized());
     }
   }
 
@@ -93,28 +103,37 @@ public interface TopologyInitializer {
    * member. The future returned by initialize is never completed until a valid topology is
    * received.
    */
-  class GossipInitializer implements TopologyInitializer, Listener {
+  class GossipInitializer implements TopologyInitializer, TopologyUpdateListener {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GossipInitializer.class);
+    private final io.camunda.zeebe.topology.TopologyUpdateNotifier topologyUpdateNotifier;
     private final PersistedClusterTopology persistedClusterTopology;
     private final Consumer<ClusterTopology> topologyGossiper;
     private final ActorFuture<ClusterTopology> initialized;
 
+    private final ConcurrencyControl executor;
+
     public GossipInitializer(
+        final TopologyUpdateNotifier topologyUpdateNotifier,
         final PersistedClusterTopology persistedClusterTopology,
-        final Consumer<ClusterTopology> topologyGossiper) {
+        final Consumer<ClusterTopology> topologyGossiper,
+        final ConcurrencyControl executor) {
+      this.topologyUpdateNotifier = topologyUpdateNotifier;
       this.persistedClusterTopology = persistedClusterTopology;
       this.topologyGossiper = topologyGossiper;
+      this.executor = executor;
       initialized = new CompletableActorFuture<>();
     }
 
     @Override
     public ActorFuture<ClusterTopology> initialize() {
-      persistedClusterTopology.addUpdateListener(this);
-      onTopologyUpdated(persistedClusterTopology.getTopology());
+      topologyUpdateNotifier.addUpdateListener(this);
       if (persistedClusterTopology.isUninitialized()) {
         // When uninitialized, the member should gossip uninitialized topology so that the
         // coordinator is not waiting in SyncInitializer forever.
+
+        // Check persisted cluster topology directly, so as not to overwrite and concurrently
+        // received gossip
         topologyGossiper.accept(persistedClusterTopology.getTopology());
       }
       return initialized;
@@ -122,11 +141,17 @@ public interface TopologyInitializer {
 
     @Override
     public void onTopologyUpdated(final ClusterTopology clusterTopology) {
-      if (!clusterTopology.isUninitialized()) {
-        LOGGER.debug("Received cluster topology {} via gossip.", clusterTopology);
-        initialized.complete(clusterTopology);
-        persistedClusterTopology.removeUpdateListener(this);
-      }
+      executor.run(
+          () -> {
+            if (initialized.isDone()) {
+              return;
+            }
+            if (!clusterTopology.isUninitialized()) {
+              LOGGER.debug("Received cluster topology {} via gossip.", clusterTopology);
+              initialized.complete(clusterTopology);
+              topologyUpdateNotifier.removeUpdateListener(this);
+            }
+          });
     }
   }
 
@@ -135,22 +160,22 @@ public interface TopologyInitializer {
    * topology, it will be initialized. If any of them returns an uninitialized topology, the future
    * returned by initialize completes as failed.
    */
-  class SyncInitializer implements TopologyInitializer, Listener {
+  class SyncInitializer implements TopologyInitializer, TopologyUpdateListener {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SyncInitializer.class);
     private static final Duration SYNC_QUERY_RETRY_DELAY = Duration.ofSeconds(5);
-    private final PersistedClusterTopology persistedClusterTopology;
+    private final TopologyUpdateNotifier topologyUpdateNotifier;
     private final ActorFuture<ClusterTopology> initialized;
     private final List<MemberId> knownMembersToSync;
     private final ConcurrencyControl executor;
     private final Function<MemberId, ActorFuture<ClusterTopology>> syncRequester;
 
     public SyncInitializer(
-        final PersistedClusterTopology persistedClusterTopology,
+        final TopologyUpdateNotifier topologyUpdateNotifier,
         final List<MemberId> knownMembersToSync,
         final ConcurrencyControl executor,
         final Function<MemberId, ActorFuture<ClusterTopology>> syncRequester) {
-      this.persistedClusterTopology = persistedClusterTopology;
+      this.topologyUpdateNotifier = topologyUpdateNotifier;
       this.knownMembersToSync = knownMembersToSync;
       this.executor = executor;
       this.syncRequester = syncRequester;
@@ -163,8 +188,7 @@ public interface TopologyInitializer {
         initialized.complete(ClusterTopology.uninitialized());
       } else {
         LOGGER.debug("Querying members {} before initializing ClusterTopology", knownMembersToSync);
-        persistedClusterTopology.addUpdateListener(this);
-        onTopologyUpdated(persistedClusterTopology.getTopology());
+        topologyUpdateNotifier.addUpdateListener(this);
         knownMembersToSync.forEach(this::tryInitializeFrom);
       }
       return initialized;
@@ -183,14 +207,9 @@ public interface TopologyInitializer {
                     initialized.complete(topology);
                     return;
                   }
-                  try {
-                    LOGGER.debug("Received cluster topology {} from {}", topology, memberId);
-                    persistedClusterTopology.update(topology);
-                    onTopologyUpdated(topology);
-                    return;
-                  } catch (final IOException e) {
-                    LOGGER.warn("Failed to persist received topology");
-                  }
+                  LOGGER.debug("Received cluster topology {} from {}", topology, memberId);
+                  onTopologyUpdated(topology);
+                  return;
                 }
                 // retry
                 if (!initialized.isDone()) {
@@ -209,13 +228,16 @@ public interface TopologyInitializer {
 
     @Override
     public void onTopologyUpdated(final ClusterTopology clusterTopology) {
-      if (initialized.isDone()) {
-        return;
-      }
-      if (!clusterTopology.isUninitialized()) {
-        initialized.complete(clusterTopology);
-        persistedClusterTopology.removeUpdateListener(this);
-      }
+      executor.run(
+          () -> {
+            if (initialized.isDone()) {
+              return;
+            }
+            if (!clusterTopology.isUninitialized()) {
+              initialized.complete(clusterTopology);
+              topologyUpdateNotifier.removeUpdateListener(this);
+            }
+          });
     }
   }
 
@@ -224,13 +246,9 @@ public interface TopologyInitializer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(StaticInitializer.class);
     private final Supplier<Set<PartitionMetadata>> staticPartitionResolver;
-    private final PersistedClusterTopology persistedClusterTopology;
 
-    public StaticInitializer(
-        final Supplier<Set<PartitionMetadata>> staticPartitionResolver,
-        final PersistedClusterTopology persistedClusterTopology) {
+    public StaticInitializer(final Supplier<Set<PartitionMetadata>> staticPartitionResolver) {
       this.staticPartitionResolver = staticPartitionResolver;
-      this.persistedClusterTopology = persistedClusterTopology;
     }
 
     @Override
@@ -258,12 +276,6 @@ public interface TopologyInitializer {
 
       final var topology = new ClusterTopology(0, memberStates, ClusterChangePlan.empty());
       LOGGER.debug("Generated cluster topology from provided configuration. {}", topology);
-      try {
-        persistedClusterTopology.update(topology);
-      } catch (final IOException e) {
-        return CompletableActorFuture.completedExceptionally(e);
-      }
-
       return CompletableActorFuture.completed(topology);
     }
   }

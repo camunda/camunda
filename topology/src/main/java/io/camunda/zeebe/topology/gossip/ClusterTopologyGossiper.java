@@ -13,18 +13,21 @@ import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.topology.TopologyUpdateNotifier;
 import io.camunda.zeebe.topology.serializer.ClusterTopologySerializer;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class ClusterTopologyGossiper {
+public final class ClusterTopologyGossiper implements TopologyUpdateNotifier {
   private static final Logger LOGGER = LoggerFactory.getLogger(ClusterTopologyGossiper.class);
   private static final String SYNC_REQUEST_TOPIC = "cluster-topology-sync";
   private static final String GOSSIP_REQUEST_TOPIC = "cluster-topology-gossip";
@@ -36,6 +39,8 @@ public final class ClusterTopologyGossiper {
   private final ClusterMembershipService membershipService;
   private final ClusterTopologyGossiperConfig config;
   private final ClusterTopologySerializer serializer;
+
+  private final Set<TopologyUpdateListener> topologyUpdateListeners = new HashSet<>();
 
   // Reuse the same random ordered list for both sync and gossip
   private List<MemberId> membersToSync = List.of();
@@ -144,10 +149,15 @@ public final class ClusterTopologyGossiper {
                 gossipState.setClusterTopology(updatedTopology);
                 LOGGER.trace("Updated local gossipState to {}", updatedTopology);
                 onUpdated.run();
+                notifyListeners(updatedTopology);
               }
             });
       }
     }
+  }
+
+  private void notifyListeners(final ClusterTopology updatedTopology) {
+    topologyUpdateListeners.forEach(listener -> listener.onTopologyUpdated(updatedTopology));
   }
 
   private ClusterTopologyGossipState handleSyncRequest(
@@ -167,6 +177,7 @@ public final class ClusterTopologyGossiper {
           if (!clusterTopology.equals(gossipState.getClusterTopology())) {
             gossipState.setClusterTopology(clusterTopology);
             gossip();
+            notifyListeners(clusterTopology);
           }
         });
   }
@@ -219,5 +230,21 @@ public final class ClusterTopologyGossiper {
       final MemberId memberId, final ClusterTopologyGossipState receivedState) {
     LOGGER.trace("Received {} from {}", gossipState, memberId);
     update(receivedState, () -> executor.run(this::gossip));
+  }
+
+  @Override
+  public void addUpdateListener(final TopologyUpdateListener listener) {
+    executor.run(
+        () -> {
+          topologyUpdateListeners.add(listener);
+          if (gossipState.getClusterTopology() != null) {
+            listener.onTopologyUpdated(gossipState.getClusterTopology());
+          }
+        });
+  }
+
+  @Override
+  public void removeUpdateListener(final TopologyUpdateListener listener) {
+    executor.run(() -> topologyUpdateListeners.remove(listener));
   }
 }

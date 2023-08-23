@@ -19,7 +19,6 @@ import io.camunda.zeebe.topology.serializer.ClusterTopologySerializer;
 import io.camunda.zeebe.topology.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.MemberState;
-import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Map;
@@ -42,14 +41,7 @@ final class ClusterTopologyManagerTest {
           .addMember(MemberId.from("1"), MemberState.initializeAsActive(Map.of()));
   private PersistedClusterTopology persistedClusterTopology;
   private final TopologyInitializer successInitializer =
-      () -> {
-        try {
-          persistedClusterTopology.update(initialTopology);
-        } catch (IOException e) {
-          return CompletableActorFuture.completedExceptionally(e);
-        }
-        return CompletableActorFuture.completed(initialTopology);
-      };
+      () -> CompletableActorFuture.completed(initialTopology);
 
   @BeforeEach
   void init() {
@@ -81,6 +73,16 @@ final class ClusterTopologyManagerTest {
         new ClusterTopologyManager(new TestConcurrencyControl(), persistedClusterTopology);
     clusterTopologyManager.setTopologyGossiper(gossipHandler);
     return clusterTopologyManager;
+  }
+
+  @Test
+  void shouldUpdatePersistedClusterTopologyAfterInitialization() {
+    // given
+    startTopologyManager(successInitializer).join();
+
+    // then
+    final ClusterTopology topology = persistedClusterTopology.getTopology();
+    assertThat(topology).isEqualTo(initialTopology);
   }
 
   @Test

@@ -60,7 +60,7 @@ final class TopologyInitializerTest {
   @Test
   void shouldInitializeFromExistingFile() throws IOException {
     // given
-    final var fileInitializer = new FileInitializer(persistedClusterTopology);
+    final var fileInitializer = new FileInitializer(topologyFile, new ProtoBufSerializer());
     // write initial topology to the file
     persistedClusterTopology.update(initialClusterTopology);
     // when
@@ -73,7 +73,7 @@ final class TopologyInitializerTest {
   @Test
   void shouldNotInitializeFromEmptyFile() {
     // given
-    final var fileInitializer = new FileInitializer(persistedClusterTopology);
+    final var fileInitializer = new FileInitializer(topologyFile, new ProtoBufSerializer());
 
     // when
     final var initializeFuture = fileInitializer.initialize();
@@ -85,7 +85,7 @@ final class TopologyInitializerTest {
   @Test
   void shouldNotInitializeFromCorruptedFile() throws IOException {
     // given
-    final var fileInitializer = new FileInitializer(persistedClusterTopology);
+    final var fileInitializer = new FileInitializer(topologyFile, new ProtoBufSerializer());
     // Corrupt file
     Files.write(
         topologyFile, "random".getBytes(), StandardOpenOption.WRITE, StandardOpenOption.CREATE);
@@ -108,22 +108,22 @@ final class TopologyInitializerTest {
 
     // then
     assertThatClusterTopology(initializeFuture.join()).isInitialized();
-    assertThat(persistedClusterTopology.getTopology())
-        .describedAs("should update persisted topology after initialization")
-        .isEqualTo(initialClusterTopology);
   }
 
   @Test
-  void shouldInitializeFromGossip() throws IOException {
+  void shouldInitializeFromGossip() {
     // given
-    final var initializer = new GossipInitializer(persistedClusterTopology, ignore -> {});
+    final TestTopologyNotifier topologyNotifier = new TestTopologyNotifier();
+    final var initializer =
+        new GossipInitializer(
+            topologyNotifier, persistedClusterTopology, ignore -> {}, new TestConcurrencyControl());
 
     // when
     final var initializeFuture = initializer.initialize();
     assertThat(initializeFuture.isDone()).isFalse();
 
     // Simulate gossip received
-    persistedClusterTopology.update(initialClusterTopology);
+    topologyNotifier.updateTopology(initialClusterTopology);
 
     // then
     assertThatClusterTopology(initializeFuture.join()).isInitialized();
@@ -137,7 +137,7 @@ final class TopologyInitializerTest {
     final Function<MemberId, ActorFuture<ClusterTopology>> syncRequester = id -> syncResponseFuture;
     final var initializer =
         new SyncInitializer(
-            persistedClusterTopology, knownMembers, new TestConcurrencyControl(), syncRequester);
+            new TestTopologyNotifier(), knownMembers, new TestConcurrencyControl(), syncRequester);
 
     // when
     final var initializeFuture = initializer.initialize();
@@ -162,7 +162,7 @@ final class TopologyInitializerTest {
     final Function<MemberId, ActorFuture<ClusterTopology>> syncRequester = id -> syncResponseFuture;
     final var initializer =
         new SyncInitializer(
-            persistedClusterTopology, knownMembers, new TestConcurrencyControl(), syncRequester);
+            new TestTopologyNotifier(), knownMembers, new TestConcurrencyControl(), syncRequester);
 
     // when
     final var initializeFuture = initializer.initialize();
@@ -182,7 +182,26 @@ final class TopologyInitializerTest {
         Set.of(
             new PartitionMetadata(
                 PartitionId.from("test", 1), Set.of(member), Map.of(member, 1), 1, member));
-    return new StaticInitializer(() -> partitions, persistedClusterTopology);
+    return new StaticInitializer(() -> partitions);
+  }
+
+  private static class TestTopologyNotifier implements TopologyUpdateNotifier {
+
+    private TopologyUpdateListener listener;
+
+    @Override
+    public void addUpdateListener(final TopologyUpdateListener listener) {
+      this.listener = listener;
+    }
+
+    @Override
+    public void removeUpdateListener(final TopologyUpdateListener listener) {
+      this.listener = null;
+    }
+
+    void updateTopology(final ClusterTopology topology) {
+      listener.onTopologyUpdated(topology);
+    }
   }
 
   @Nested
@@ -191,8 +210,13 @@ final class TopologyInitializerTest {
     void shouldInitializeFromFileWhenNotEmpty() throws IOException {
       // given
       final var fileInitializer =
-          new FileInitializer(persistedClusterTopology)
-              .orThen(new GossipInitializer(persistedClusterTopology, ignore -> {}));
+          new FileInitializer(topologyFile, new ProtoBufSerializer())
+              .orThen(
+                  new GossipInitializer(
+                      new TestTopologyNotifier(),
+                      persistedClusterTopology,
+                      ignore -> {},
+                      new TestConcurrencyControl()));
       // write initial topology to the file
       persistedClusterTopology.update(initialClusterTopology);
       // when
@@ -203,12 +227,18 @@ final class TopologyInitializerTest {
     }
 
     @Test
-    void shouldInitializeFromGossipWhenFileIsEmpty() throws IOException {
+    void shouldInitializeFromGossipWhenFileIsEmpty() {
       // given
       final AtomicReference<ClusterTopology> gossipedTopology = new AtomicReference<>();
+      final TestTopologyNotifier topologyUpdateNotifier = new TestTopologyNotifier();
       final var initializer =
-          new FileInitializer(persistedClusterTopology)
-              .orThen(new GossipInitializer(persistedClusterTopology, gossipedTopology::set));
+          new FileInitializer(topologyFile, new ProtoBufSerializer())
+              .orThen(
+                  new GossipInitializer(
+                      topologyUpdateNotifier,
+                      persistedClusterTopology,
+                      gossipedTopology::set,
+                      new TestConcurrencyControl()));
 
       // when
       final var initializeFuture = initializer.initialize();
@@ -218,7 +248,7 @@ final class TopologyInitializerTest {
           .isEqualTo(ClusterTopology.uninitialized());
 
       // Simulate gossip received
-      persistedClusterTopology.update(initialClusterTopology);
+      topologyUpdateNotifier.updateTopology(initialClusterTopology);
 
       // then
       assertThatClusterTopology(initializeFuture.join()).isInitialized();
@@ -228,9 +258,15 @@ final class TopologyInitializerTest {
     void shouldInitializeFromGossipWhenFileIsCorrupted() throws IOException {
       // given
       final AtomicReference<ClusterTopology> gossipedTopology = new AtomicReference<>();
+      final TestTopologyNotifier topologyUpdateNotifier = new TestTopologyNotifier();
       final var initializer =
-          new FileInitializer(persistedClusterTopology)
-              .orThen(new GossipInitializer(persistedClusterTopology, gossipedTopology::set));
+          new FileInitializer(topologyFile, new ProtoBufSerializer())
+              .orThen(
+                  new GossipInitializer(
+                      topologyUpdateNotifier,
+                      persistedClusterTopology,
+                      gossipedTopology::set,
+                      new TestConcurrencyControl()));
       // Corrupt file
       Files.write(
           topologyFile, "random".getBytes(), StandardOpenOption.WRITE, StandardOpenOption.CREATE);
@@ -243,7 +279,7 @@ final class TopologyInitializerTest {
           .isEqualTo(ClusterTopology.uninitialized());
 
       // Simulate gossip received
-      persistedClusterTopology.update(initialClusterTopology);
+      topologyUpdateNotifier.updateTopology(initialClusterTopology);
 
       // then
       assertThatClusterTopology(initializeFuture.join()).isInitialized();
@@ -258,9 +294,13 @@ final class TopologyInitializerTest {
           id -> syncResponseFuture;
       final var syncInitializer =
           new SyncInitializer(
-              persistedClusterTopology, knownMembers, new TestConcurrencyControl(), syncRequester);
+              new TestTopologyNotifier(),
+              knownMembers,
+              new TestConcurrencyControl(),
+              syncRequester);
 
-      final var initializer = new FileInitializer(persistedClusterTopology).orThen(syncInitializer);
+      final var initializer =
+          new FileInitializer(topologyFile, new ProtoBufSerializer()).orThen(syncInitializer);
 
       // when
       final var initializeFuture = initializer.initialize();
@@ -282,10 +322,13 @@ final class TopologyInitializerTest {
           id -> syncResponseFuture;
       final var syncInitializer =
           new SyncInitializer(
-              persistedClusterTopology, knownMembers, new TestConcurrencyControl(), syncRequester);
+              new TestTopologyNotifier(),
+              knownMembers,
+              new TestConcurrencyControl(),
+              syncRequester);
 
       final var initializer =
-          new FileInitializer(persistedClusterTopology)
+          new FileInitializer(topologyFile, new ProtoBufSerializer())
               .orThen(syncInitializer)
               .orThen(getStaticInitializer());
 

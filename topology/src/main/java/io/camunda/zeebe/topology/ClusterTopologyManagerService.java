@@ -36,6 +36,7 @@ public final class ClusterTopologyManagerService extends Actor {
 
   private final boolean isCoordinator;
   private final PersistedClusterTopology persistedClusterTopology;
+  private final Path topologyFile;
 
   public ClusterTopologyManagerService(
       final Path topologyFile,
@@ -43,6 +44,7 @@ public final class ClusterTopologyManagerService extends Actor {
       final ClusterMembershipService memberShipService,
       final ClusterTopologyGossiperConfig config) {
     persistedClusterTopology = new PersistedClusterTopology(topologyFile, new ProtoBufSerializer());
+    this.topologyFile = topologyFile;
     clusterTopologyManager = new ClusterTopologyManager(this, persistedClusterTopology);
     clusterTopologyGossiper =
         new ClusterTopologyGossiper(
@@ -58,23 +60,26 @@ public final class ClusterTopologyManagerService extends Actor {
   }
 
   private TopologyInitializer getNonCoordinatorInitializer() {
-    return new FileInitializer(persistedClusterTopology)
+    return new FileInitializer(topologyFile, new ProtoBufSerializer())
         .orThen(
             new GossipInitializer(
-                persistedClusterTopology, clusterTopologyGossiper::updateClusterTopology));
+                clusterTopologyGossiper,
+                persistedClusterTopology,
+                clusterTopologyGossiper::updateClusterTopology,
+                this));
   }
 
   private TopologyInitializer getCoordinatorInitializer(
       final Supplier<Set<PartitionMetadata>> staticPartitionResolver,
       final List<MemberId> knownMembers) {
-    return new FileInitializer(persistedClusterTopology)
+    return new FileInitializer(topologyFile, new ProtoBufSerializer())
         .orThen(
             new SyncInitializer(
-                persistedClusterTopology,
+                clusterTopologyGossiper,
                 knownMembers,
                 this,
                 clusterTopologyGossiper::queryClusterTopology))
-        .orThen(new StaticInitializer(staticPartitionResolver, persistedClusterTopology));
+        .orThen(new StaticInitializer(staticPartitionResolver));
   }
 
   /**
