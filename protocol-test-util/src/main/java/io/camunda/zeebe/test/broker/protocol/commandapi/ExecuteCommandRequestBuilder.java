@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.test.broker.protocol.commandapi;
 
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.test.broker.protocol.MsgPackHelper;
@@ -49,6 +50,11 @@ public final class ExecuteCommandRequestBuilder {
 
   public ExecuteCommandRequestBuilder intent(final Intent intent) {
     request.intent(intent);
+    return this;
+  }
+
+  public ExecuteCommandRequestBuilder authorization(final AuthInfo authorization) {
+    request.setAuthorization(authorization);
     return this;
   }
 
