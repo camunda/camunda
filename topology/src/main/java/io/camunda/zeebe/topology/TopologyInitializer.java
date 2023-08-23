@@ -125,7 +125,7 @@ public interface TopologyInitializer {
       if (!clusterTopology.isUninitialized()) {
         LOGGER.debug("Received cluster topology {} via gossip.", clusterTopology);
         initialized.complete(true);
-        persistedClusterTopology.removeInitializeListener(this);
+        persistedClusterTopology.removeUpdateListener(this);
       }
     }
   }
@@ -215,7 +215,7 @@ public interface TopologyInitializer {
       }
       if (!clusterTopology.isUninitialized()) {
         initialized.complete(true);
-        persistedClusterTopology.removeInitializeListener(this);
+        persistedClusterTopology.removeUpdateListener(this);
       }
     }
   }

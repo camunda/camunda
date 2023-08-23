@@ -67,7 +67,7 @@ final class PersistedClusterTopology {
     topologyUpdateListener = updateListener;
   }
 
-  public void removeInitializeListener(final Listener updateListener) {
+  public void removeUpdateListener(final Listener updateListener) {
     if (topologyUpdateListener == updateListener) {
       topologyUpdateListener = null;
     }
