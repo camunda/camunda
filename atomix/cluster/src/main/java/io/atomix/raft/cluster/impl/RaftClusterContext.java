@@ -51,8 +51,11 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
   private final RaftContext raft;
   private final DefaultRaftMember localMember;
   private final Map<MemberId, RaftMemberContext> remoteMemberContexts = new HashMap<>();
-  private Configuration configuration;
-  private CompletableFuture<Void> bootstrapFuture;
+  private List<RaftMemberContext> replicationTargets = new ArrayList<>();
+  private List<RaftMemberContext> activeMembers = new ArrayList<>();
+  private boolean hasRemoteActiveMembers = false;
+  private volatile Configuration configuration;
+  private volatile CompletableFuture<Void> bootstrapFuture;
 
   public RaftClusterContext(final MemberId localMemberId, final RaftContext raft) {
     final Instant time = Instant.now();
@@ -83,12 +86,17 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
         }
       }
 
-      remoteMemberContexts
-          .values()
-          .forEach(
-              context -> {
-                context.resetState(raft.getLog());
-              });
+      remoteMemberContexts.values().forEach(context -> context.resetState(raft.getLog()));
+      activeMembers =
+          remoteMemberContexts.values().stream()
+              .filter(context -> context.getMember().getType() == Type.ACTIVE)
+              .toList();
+      replicationTargets =
+          remoteMemberContexts.values().stream()
+              .filter(context -> context.getMember().getType() != Type.INACTIVE)
+              .toList();
+
+      hasRemoteActiveMembers = !activeMembers.isEmpty();
     }
   }
 
@@ -241,7 +249,7 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
    */
   public <T extends Comparable<T>> Optional<T> getQuorumFor(
       final Function<RaftMemberContext, T> calculateMemberValue) {
-    final var contexts = new ArrayList<>(getRemoteActiveMembers());
+    final var contexts = new ArrayList<>(activeMembers);
 
     if (configuration.requiresJointConsensus()) {
       final var oldMembers = configuration.oldMembers();
@@ -288,22 +296,22 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
     return Optional.of(calculateMemberValue.apply(context));
   }
 
+  public boolean isSingleMemberCluster() {
+    return !hasRemoteActiveMembers;
+  }
+
   /**
-   * @return A list of remote, active members.
+   * @return A list remote members which participate in voting, i.e. are active.
    */
-  public List<RaftMemberContext> getRemoteActiveMembers() {
-    return remoteMemberContexts.values().stream()
-        .filter(context -> context.getMember().getType() == Type.ACTIVE)
-        .toList();
+  public Set<RaftMember> getVotingMembers() {
+    return activeMembers.stream().map(RaftMemberContext::getMember).collect(Collectors.toSet());
   }
 
   /**
    * @return A list of remote, active members.
    */
   public List<RaftMemberContext> getReplicationTargets() {
-    return remoteMemberContexts.values().stream()
-        .filter(context -> context.getMember().getType() != Type.INACTIVE)
-        .toList();
+    return replicationTargets;
   }
 
   private void completeBootstrapFuture() {
@@ -372,6 +380,18 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
     for (final var member : allMembers) {
       updateMember(member, time);
     }
+
+    activeMembers =
+        remoteMemberContexts.values().stream()
+            .filter(context -> context.getMember().getType() == Type.ACTIVE)
+            .toList();
+
+    replicationTargets =
+        remoteMemberContexts.values().stream()
+            .filter(context -> context.getMember().getType() != Type.INACTIVE)
+            .toList();
+
+    hasRemoteActiveMembers = !activeMembers.isEmpty();
 
     // Transition the local member only if the member is being promoted and not demoted.
     // Configuration changes that demote the local member are only applied to the local server

@@ -512,8 +512,7 @@ final class LeaderAppender {
     // If there are no other active members in the cluster, update the commit index and complete the
     // commit.
     // The updated commit index will be sent to passive/reserve members on heartbeats.
-    if (raft.getCluster().getRemoteActiveMembers().isEmpty()) {
-      final long previousCommitIndex = raft.getCommitIndex();
+    if (raft.getCluster().isSingleMemberCluster()) {
       raft.setCommitIndex(index);
       completeCommits(index);
       return CompletableFuture.completedFuture(index);
