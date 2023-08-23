@@ -441,7 +441,7 @@
         <plugin>
           <groupId>org.codehaus.cargo</groupId>
           <artifactId>cargo-maven2-plugin</artifactId>
-          <version>1.8.5</version>
+          <version>1.9.0</version>
         </plugin>
         <plugin>
           <groupId>org.sonatype.plugins</groupId>
