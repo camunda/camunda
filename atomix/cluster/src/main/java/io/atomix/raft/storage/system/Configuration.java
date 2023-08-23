@@ -22,6 +22,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import io.atomix.raft.cluster.RaftMember;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Represents a persisted server configuration.
@@ -55,5 +57,13 @@ public record Configuration(
 
   public boolean requiresJointConsensus() {
     return !oldMembers.isEmpty();
+  }
+
+  public Set<RaftMember> allMembers() {
+    return new HashSet<>(members) {
+      {
+        addAll(oldMembers);
+      }
+    };
   }
 }

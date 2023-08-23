@@ -134,10 +134,9 @@ public interface RaftMember {
    * Indicates how the member participates in voting and replication.
    *
    * <p>The member type defines how a member interacts with the other members of the cluster and,
-   * more importantly, how the cluster {@link RaftCluster#getLeader() leader} interacts with the
-   * member server. Members can be {@link #promote() promoted} and {@link #demote() demoted} to
-   * alter member states. See the specific member types for descriptions of their implications on
-   * the cluster.
+   * more importantly, how the cluster leader interacts with the member server. Members can be
+   * {@link #promote() promoted} and {@link #demote() demoted} to alter member states. See the
+   * specific member types for descriptions of their implications on the cluster.
    */
   enum Type {
 

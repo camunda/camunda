@@ -89,7 +89,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     commitInitialEntriesFuture = commitInitialEntries();
     lastZbEntry = findLastZeebeEntry();
 
-    if (raft.getCluster().inJointConsensus()) {
+    if (jointConsensus()) {
       raft.getThreadContext()
           .execute(
               () -> {
@@ -127,7 +127,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     // If the leader index is 0 or is greater than the commitIndex, reject the promote requests.
     // Configuration changes should not be allowed until the leader has committed a no-op entry.
     // See https://groups.google.com/forum/#!topic/raft-dev/t4xj6dJTP6E
-    if (configuring() || initializing() || raft.getCluster().inJointConsensus()) {
+    if (configuring() || initializing() || jointConsensus()) {
       return CompletableFuture.completedFuture(
           logResponse(ReconfigureResponse.builder().withStatus(RaftResponse.Status.ERROR).build()));
     }
@@ -304,6 +304,10 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     return appender.getIndex() == 0 || raft.getCommitIndex() < appender.getIndex();
   }
 
+  private boolean jointConsensus() {
+    return raft.getCluster().inJointConsensus();
+  }
+
   /** Commits the given configuration. */
   private CompletableFuture<Long> configure(
       final Collection<RaftMember> newMembers, final Collection<RaftMember> oldMembers) {
@@ -349,8 +353,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
   public CompletableFuture<TransferResponse> onTransfer(final TransferRequest request) {
     logRequest(request);
 
-    final RaftMemberContext member = raft.getCluster().getMemberState(request.member());
-    if (member == null) {
+    if (!raft.getCluster().isMember(request.member())) {
       return CompletableFuture.completedFuture(
           logResponse(
               TransferResponse.builder()
@@ -439,7 +442,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     // If a member sends a PollRequest to the leader, that indicates that it likely healed from
     // a network partition and may have had its status set to UNAVAILABLE by the leader. In order
     // to ensure heartbeats are immediately stored to the member, update its status if necessary.
-    final RaftMemberContext member = raft.getCluster().getMemberState(request.candidate());
+    final RaftMemberContext member = raft.getCluster().getMemberContext(request.candidate());
     if (member != null) {
       member.resetFailureCount();
     }
