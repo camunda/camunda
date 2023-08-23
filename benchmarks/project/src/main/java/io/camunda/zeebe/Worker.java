@@ -40,6 +40,7 @@ public class Worker extends App {
     final WorkerCfg workerCfg = appCfg.getWorker();
     final String jobType = workerCfg.getJobType();
     final long completionDelay = workerCfg.getCompletionDelay().toMillis();
+    final boolean isStreamEnabled = workerCfg.isStreamEnabled();
     final var variables = readVariables(workerCfg.getPayloadPath());
     final BlockingQueue<Future<?>> requestFutures = new ArrayBlockingQueue<>(10_000);
     final BlockingDeque<DelayedCommand> delayedCommands = new LinkedBlockingDeque<>(10_000);
@@ -67,6 +68,7 @@ public class Worker extends App {
                     requestFutures.add(command.send());
                   }
                 })
+            .streamEnabled(isStreamEnabled)
             .open();
 
     final ResponseChecker responseChecker = new ResponseChecker(requestFutures);

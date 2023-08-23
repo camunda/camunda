@@ -18,7 +18,7 @@ on:
         default: europe-west1-b
         required: false
       benchmark-load:
-        description: 'Specifies which benchmark components to deploy. `starter`, `timer` and `publisher` can be assigned with the rate at which they publish. Allows arbitary helm arguments, like --set starter.rate=100'
+        description: 'Specifies which benchmark components to deploy. `starter`, `timer` and `publisher` can be assigned with the rate at which they publish. Allows arbitrary helm arguments, like --set starter.rate=100'
         required: false
       publish:
         description: 'Where to publish the results, can be "slack" or "comment"'
@@ -58,7 +58,7 @@ on:
         type: string
         required: false
       benchmark-load:
-        description: 'Specifies which benchmark components to deploy. `starter`, `timer` and `publisher` can be assigned with the rate at which they publish. Allows arbitary helm arguments, like --set starter.rate=100'
+        description: 'Specifies which benchmark components to deploy. `starter`, `timer` and `publisher` can be assigned with the rate at which they publish. Allows arbitrary helm arguments, like --set starter.rate=100'
         type: string
         required: false
       measure:

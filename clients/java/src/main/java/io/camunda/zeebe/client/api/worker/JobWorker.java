@@ -16,7 +16,7 @@
 package io.camunda.zeebe.client.api.worker;
 
 /**
- * Represents an active job worker that perfors jobs of a certain type. While a registration is
+ * Represents an active job worker that performs jobs of a certain type. While a registration is
  * open, the client continuously receives jobs from the broker and hands them to a registered {@link
  * JobHandler}.
  */
