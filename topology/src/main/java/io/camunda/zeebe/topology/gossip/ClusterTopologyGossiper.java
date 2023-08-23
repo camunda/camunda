@@ -18,6 +18,7 @@ import io.camunda.zeebe.topology.state.ClusterTopology;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -102,14 +103,7 @@ public final class ClusterTopologyGossiper {
     final var randomMemberToSync = membersToSync.remove(0);
 
     LOGGER.trace("Sending sync request to {}", randomMemberToSync);
-    communicationService
-        .send(
-            SYNC_REQUEST_TOPIC,
-            gossipState,
-            serializer::encode,
-            serializer::decode,
-            randomMemberToSync,
-            config.syncRequestTimeout())
+    sendSyncRequest(randomMemberToSync)
         .whenCompleteAsync(
             (response, error) -> handleSyncResponse(response, error, randomMemberToSync),
             executor::run);
@@ -175,6 +169,31 @@ public final class ClusterTopologyGossiper {
             gossip();
           }
         });
+  }
+
+  public ActorFuture<ClusterTopology> queryClusterTopology(final MemberId memberId) {
+    final ActorFuture<ClusterTopology> responseFuture = executor.createFuture();
+    sendSyncRequest(memberId)
+        .whenCompleteAsync(
+            (response, error) -> {
+              if (error == null) {
+                responseFuture.complete(response.getClusterTopology());
+              } else {
+                responseFuture.completeExceptionally(error);
+              }
+            },
+            executor::run);
+    return responseFuture;
+  }
+
+  private CompletableFuture<ClusterTopologyGossipState> sendSyncRequest(final MemberId memberId) {
+    return communicationService.send(
+        SYNC_REQUEST_TOPIC,
+        gossipState,
+        serializer::encode,
+        serializer::decode,
+        memberId,
+        config.syncRequestTimeout());
   }
 
   private void gossip() {

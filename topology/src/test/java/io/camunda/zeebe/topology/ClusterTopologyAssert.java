@@ -26,6 +26,16 @@ final class ClusterTopologyAssert extends AbstractAssert<ClusterTopologyAssert, 
     return new ClusterTopologyAssert(actual, ClusterTopologyAssert.class);
   }
 
+  ClusterTopologyAssert isUninitialized() {
+    assertThat(actual.isUninitialized()).isTrue();
+    return this;
+  }
+
+  ClusterTopologyAssert isInitialized() {
+    assertThat(actual.isUninitialized()).isFalse();
+    return this;
+  }
+
   ClusterTopologyAssert hasMemberWithPartitions(
       final int member, final Collection<Integer> partitionIds) {
     final var memberId = MemberId.from(Integer.toString(member));

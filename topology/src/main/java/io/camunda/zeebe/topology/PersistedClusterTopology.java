@@ -20,6 +20,8 @@ final class PersistedClusterTopology {
   private final ClusterTopologySerializer serializer;
   private ClusterTopology clusterTopology = ClusterTopology.uninitialized();
 
+  private Listener topologyUpdateListener;
+
   PersistedClusterTopology(final Path topologyFile, final ClusterTopologySerializer serializer) {
     this.topologyFile = topologyFile;
     this.serializer = serializer;
@@ -39,6 +41,10 @@ final class PersistedClusterTopology {
   }
 
   void update(final ClusterTopology clusterTopology) throws IOException {
+    if (this.clusterTopology.equals(clusterTopology)) {
+      return;
+    }
+
     final var serializedTopology = serializer.encode(clusterTopology);
     Files.write(
         topologyFile,
@@ -48,9 +54,27 @@ final class PersistedClusterTopology {
         StandardOpenOption.DSYNC);
 
     this.clusterTopology = clusterTopology;
+    if (topologyUpdateListener != null) {
+      topologyUpdateListener.onTopologyUpdated(clusterTopology);
+    }
   }
 
   public boolean isUninitialized() {
     return clusterTopology.isUninitialized();
+  }
+
+  public void addUpdateListener(final Listener updateListener) {
+    topologyUpdateListener = updateListener;
+  }
+
+  public void removeUpdateListener(final Listener updateListener) {
+    if (topologyUpdateListener == updateListener) {
+      topologyUpdateListener = null;
+    }
+  }
+
+  @FunctionalInterface
+  interface Listener {
+    void onTopologyUpdated(ClusterTopology clusterTopology);
   }
 }
