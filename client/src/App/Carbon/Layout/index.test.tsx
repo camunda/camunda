@@ -7,7 +7,6 @@
 
 import {MemoryRouter} from 'react-router-dom';
 import {act, render, screen} from 'modules/testing-library';
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {modificationsStore} from 'modules/stores/modifications';
 import {Layout} from '.';
 import {useEffect} from 'react';
@@ -25,9 +24,7 @@ function getWrapper(initialPath: string = '/') {
     }, []);
 
     return (
-      <ThemeProvider>
-        <MemoryRouter initialEntries={[initialPath]}>{children}</MemoryRouter>
-      </ThemeProvider>
+      <MemoryRouter initialEntries={[initialPath]}>{children}</MemoryRouter>
     );
   };
 

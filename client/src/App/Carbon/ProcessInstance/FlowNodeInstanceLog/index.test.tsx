@@ -15,7 +15,6 @@ import {
 import {FlowNodeInstanceLog} from './index';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {
   createInstance,
@@ -39,7 +38,7 @@ const Wrapper = ({children}: {children?: React.ReactNode}) => {
     };
   }, []);
 
-  return <ThemeProvider>{children}</ThemeProvider>;
+  return <>{children}</>;
 };
 
 describe('FlowNodeInstanceLog', () => {

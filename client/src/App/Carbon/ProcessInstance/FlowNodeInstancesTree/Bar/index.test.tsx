@@ -6,7 +6,6 @@
  */
 
 import {act, render, screen} from 'modules/testing-library';
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {Bar} from './index';
 import {mockStartNode, mockStartEventBusinessObject} from './index.setup';
 import {flowNodeTimeStampStore} from 'modules/stores/flowNodeTimeStamp';
@@ -16,7 +15,7 @@ import {useEffect} from 'react';
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   useEffect(() => flowNodeTimeStampStore.reset, []);
 
-  return <ThemeProvider>{children}</ThemeProvider>;
+  return <>{children}</>;
 };
 
 describe('<Bar />', () => {

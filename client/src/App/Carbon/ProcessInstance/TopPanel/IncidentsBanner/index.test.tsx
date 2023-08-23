@@ -6,7 +6,6 @@
  */
 
 import {IncidentsBanner} from './index';
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {render, screen} from 'modules/testing-library';
 import {incidentsStore} from 'modules/stores/incidents';
@@ -28,13 +27,11 @@ const {fetchIncidents} = incidentsStore;
 
 const Wrapper: React.FC<Props> = ({children}) => {
   return (
-    <ThemeProvider>
-      <MemoryRouter initialEntries={[Paths.processInstance('1')]}>
-        <Routes>
-          <Route path={Paths.processInstance()} element={children} />
-        </Routes>
-      </MemoryRouter>
-    </ThemeProvider>
+    <MemoryRouter initialEntries={[Paths.processInstance('1')]}>
+      <Routes>
+        <Route path={Paths.processInstance()} element={children} />
+      </Routes>
+    </MemoryRouter>
   );
 };
 

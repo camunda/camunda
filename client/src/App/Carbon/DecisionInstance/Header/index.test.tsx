@@ -12,7 +12,6 @@ import {
 } from 'modules/testing-library';
 import {invoiceClassification} from 'modules/mocks/mockDecisionInstance';
 import {decisionInstanceDetailsStore} from 'modules/stores/decisionInstanceDetails';
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {Header} from './index';
 import {mockFetchDecisionInstance} from 'modules/mocks/api/decisionInstances/fetchDecisionInstance';
@@ -21,15 +20,13 @@ import {Paths} from 'modules/Routes';
 const MOCK_DECISION_INSTANCE_ID = '123567';
 
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => (
-  <ThemeProvider>
-    <MemoryRouter
-      initialEntries={[Paths.decisionInstance(MOCK_DECISION_INSTANCE_ID)]}
-    >
-      <Routes>
-        <Route path={Paths.decisionInstance()} element={children} />
-      </Routes>
-    </MemoryRouter>
-  </ThemeProvider>
+  <MemoryRouter
+    initialEntries={[Paths.decisionInstance(MOCK_DECISION_INSTANCE_ID)]}
+  >
+    <Routes>
+      <Route path={Paths.decisionInstance()} element={children} />
+    </Routes>
+  </MemoryRouter>
 );
 
 describe('<Header />', () => {

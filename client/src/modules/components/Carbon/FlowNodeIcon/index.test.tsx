@@ -6,7 +6,6 @@
  */
 
 import {render, screen} from 'modules/testing-library';
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {FlowNodeIcon} from '.';
 
 describe('FlowNodeIcon', () => {
@@ -20,9 +19,6 @@ describe('FlowNodeIcon', () => {
           $type: 'bpmn:SequenceFlow',
         }}
       />,
-      {
-        wrapper: ThemeProvider,
-      },
     );
 
     expect(
@@ -44,10 +40,6 @@ describe('FlowNodeIcon', () => {
           },
         }}
       />,
-
-      {
-        wrapper: ThemeProvider,
-      },
     );
 
     expect(
@@ -69,9 +61,6 @@ describe('FlowNodeIcon', () => {
           },
         }}
       />,
-      {
-        wrapper: ThemeProvider,
-      },
     );
 
     expect(
@@ -94,9 +83,6 @@ describe('FlowNodeIcon', () => {
           ],
         }}
       />,
-      {
-        wrapper: ThemeProvider,
-      },
     );
 
     expect(
@@ -120,9 +106,6 @@ describe('FlowNodeIcon', () => {
           cancelActivity: false,
         }}
       />,
-      {
-        wrapper: ThemeProvider,
-      },
     );
 
     expect(
@@ -141,9 +124,6 @@ describe('FlowNodeIcon', () => {
           triggeredByEvent: true,
         }}
       />,
-      {
-        wrapper: ThemeProvider,
-      },
     );
 
     expect(

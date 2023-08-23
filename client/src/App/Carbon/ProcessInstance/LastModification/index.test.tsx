@@ -7,7 +7,6 @@
 
 import {render, screen} from 'modules/testing-library';
 import {LastModification} from './index';
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {MemoryRouter} from 'react-router-dom';
 import {modificationsStore} from 'modules/stores/modifications';
 import {generateUniqueID} from 'modules/utils/generateUniqueID';
@@ -27,11 +26,7 @@ type Props = {
 };
 
 const Wrapper = ({children}: Props) => {
-  return (
-    <ThemeProvider>
-      <MemoryRouter>{children}</MemoryRouter>
-    </ThemeProvider>
-  );
+  return <MemoryRouter>{children}</MemoryRouter>;
 };
 
 describe('LastModification', () => {

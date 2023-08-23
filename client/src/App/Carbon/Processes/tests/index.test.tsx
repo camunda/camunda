@@ -13,7 +13,6 @@ import {
   within,
 } from 'modules/testing-library';
 import {Route, MemoryRouter, Routes, Link} from 'react-router-dom';
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {Processes} from '../index';
 import {
   groupedProcessesMock,
@@ -48,21 +47,19 @@ function getWrapper(initialPath: string = Paths.processes()) {
       };
     }, []);
     return (
-      <ThemeProvider>
-        <MemoryRouter initialEntries={[initialPath]}>
-          <Routes>
-            <Route path={Paths.processes()} element={children} />
-          </Routes>
-          <Link to={`${Paths.processes()}?active=true`}>go to active</Link>
-          <Link
-            to={`${Paths.processes()}?process=eventBasedGatewayProcess&version=1`}
-          >
-            go to event based
-          </Link>
-          <Link to={Paths.processes()}>go to no filters</Link>
-          <LocationLog />
-        </MemoryRouter>
-      </ThemeProvider>
+      <MemoryRouter initialEntries={[initialPath]}>
+        <Routes>
+          <Route path={Paths.processes()} element={children} />
+        </Routes>
+        <Link to={`${Paths.processes()}?active=true`}>go to active</Link>
+        <Link
+          to={`${Paths.processes()}?process=eventBasedGatewayProcess&version=1`}
+        >
+          go to event based
+        </Link>
+        <Link to={Paths.processes()}>go to no filters</Link>
+        <LocationLog />
+      </MemoryRouter>
     );
   };
 

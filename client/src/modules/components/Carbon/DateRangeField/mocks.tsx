@@ -6,7 +6,6 @@
  */
 
 import {dateRangePopoverStore} from 'modules/stores/dateRangePopover';
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {useEffect, useState} from 'react';
 import {Form} from 'react-final-form';
 import {DateRangeField} from '.';
@@ -40,12 +39,12 @@ const getWrapper = (initialValues?: {[key: string]: string}) => {
     }, []);
 
     return (
-      <ThemeProvider>
+      <>
         <Form onSubmit={() => {}} initialValues={initialValues}>
           {() => children}
         </Form>
         <div>Outside element</div>
-      </ThemeProvider>
+      </>
     );
   };
 

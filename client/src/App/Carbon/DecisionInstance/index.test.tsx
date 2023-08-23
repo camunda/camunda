@@ -15,7 +15,6 @@ import {
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {invoiceClassification} from 'modules/mocks/mockDecisionInstance';
 import {mockDrdData} from 'modules/mocks/mockDrdData';
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {DecisionInstance} from './';
 import {drdStore} from 'modules/stores/drd';
 import {mockDmnXml} from 'modules/mocks/mockDmnXml';
@@ -36,15 +35,13 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   }, []);
 
   return (
-    <ThemeProvider>
-      <MemoryRouter
-        initialEntries={[LegacyPaths.decisionInstance(DECISION_INSTANCE_ID)]}
-      >
-        <Routes>
-          <Route path={LegacyPaths.decisionInstance()} element={children} />
-        </Routes>
-      </MemoryRouter>
-    </ThemeProvider>
+    <MemoryRouter
+      initialEntries={[LegacyPaths.decisionInstance(DECISION_INSTANCE_ID)]}
+    >
+      <Routes>
+        <Route path={LegacyPaths.decisionInstance()} element={children} />
+      </Routes>
+    </MemoryRouter>
   );
 };
 

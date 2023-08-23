@@ -13,7 +13,6 @@ import {
 } from 'modules/mocks/mockDecisionInstance';
 import {mockDmnXml} from 'modules/mocks/mockDmnXml';
 import {decisionInstanceDetailsStore} from 'modules/stores/decisionInstanceDetails';
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {DecisionPanel} from '.';
 import {decisionXmlStore} from 'modules/stores/decisionXml';
 import {mockFetchDecisionXML} from 'modules/mocks/api/decisions/fetchDecisionXML';
@@ -28,7 +27,7 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
       decisionInstanceDetailsStore.reset();
     };
   }, []);
-  return <ThemeProvider>{children}</ThemeProvider>;
+  return <>{children}</>;
 };
 
 describe('<DecisionPanel />', () => {

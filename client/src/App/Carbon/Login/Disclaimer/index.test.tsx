@@ -6,7 +6,6 @@
  */
 
 import {render, screen} from 'modules/testing-library';
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {Disclaimer} from './index';
 
 const DISCLAIMER_TEXT =
@@ -18,7 +17,7 @@ describe('<Disclaimer />', () => {
   });
 
   it('should show the disclaimer', () => {
-    const {rerender} = render(<Disclaimer />, {wrapper: ThemeProvider});
+    const {rerender} = render(<Disclaimer />);
 
     // we need this custom selector because the text contains a link
     expect(

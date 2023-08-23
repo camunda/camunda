@@ -5,7 +5,6 @@
  * except in compliance with the proprietary license.
  */
 
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {InputOutputMappings} from './index';
 import {render, screen, waitFor} from 'modules/testing-library';
 import {mockProcessWithInputOutputMappingsXML} from 'modules/testUtils';
@@ -22,7 +21,7 @@ const Wrapper = ({children}: {children?: React.ReactNode}) => {
     };
   }, []);
 
-  return <ThemeProvider>{children}</ThemeProvider>;
+  return <>{children}</>;
 };
 
 describe('Input Mappings', () => {

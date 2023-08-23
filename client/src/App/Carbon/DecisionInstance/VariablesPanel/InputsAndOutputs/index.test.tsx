@@ -17,7 +17,6 @@ import {
   invoiceClassification,
 } from 'modules/mocks/mockDecisionInstance';
 import {decisionInstanceDetailsStore} from 'modules/stores/decisionInstanceDetails';
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {InputsAndOutputs} from './index';
 import {mockFetchDecisionInstance} from 'modules/mocks/api/decisionInstances/fetchDecisionInstance';
 import {useEffect} from 'react';
@@ -27,7 +26,7 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     return decisionInstanceDetailsStore.reset;
   }, []);
 
-  return <ThemeProvider>{children}</ThemeProvider>;
+  return <>{children}</>;
 };
 
 describe('<InputsAndOutputs />', () => {

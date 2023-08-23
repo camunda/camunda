@@ -11,7 +11,6 @@ import {
   waitForElementToBeRemoved,
   screen,
 } from 'modules/testing-library';
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {MetricPanel} from './index';
 import {statistics} from 'modules/mocks/statistics';
 import {panelStatesStore} from 'modules/stores/panelStates';
@@ -22,15 +21,13 @@ import {Paths} from 'modules/Routes';
 function createWrapper(initialPath: string = Paths.dashboard()) {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     return (
-      <ThemeProvider>
-        <MemoryRouter initialEntries={[initialPath]}>
-          <Routes>
-            <Route path={Paths.processes()} element={<div>Processes</div>} />
-            <Route path={Paths.dashboard()} element={children} />
-          </Routes>
-          <LocationLog />
-        </MemoryRouter>
-      </ThemeProvider>
+      <MemoryRouter initialEntries={[initialPath]}>
+        <Routes>
+          <Route path={Paths.processes()} element={<div>Processes</div>} />
+          <Route path={Paths.dashboard()} element={children} />
+        </Routes>
+        <LocationLog />
+      </MemoryRouter>
     );
   };
 

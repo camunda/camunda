@@ -11,7 +11,6 @@ import {
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
 import {MemoryRouter} from 'react-router-dom';
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {
   groupedProcessesMock,
   mockProcessStatistics,
@@ -40,9 +39,7 @@ function getWrapper(initialPath: string = Paths.dashboard()) {
     }, []);
 
     return (
-      <MemoryRouter initialEntries={[initialPath]}>
-        <ThemeProvider>{children}</ThemeProvider>
-      </MemoryRouter>
+      <MemoryRouter initialEntries={[initialPath]}>{children}</MemoryRouter>
     );
   };
 

@@ -7,12 +7,7 @@
 
 import {render, screen} from 'modules/testing-library';
 import {ReactComponent as EmptyStateProcessIncidents} from 'modules/components/Icon/empty-state-process-incidents.svg';
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {EmptyState} from '.';
-
-const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
-  return <ThemeProvider>{children}</ThemeProvider>;
-};
 
 describe('EmptyState', () => {
   it('should render EmptyState with button and link', async () => {
@@ -26,7 +21,6 @@ describe('EmptyState', () => {
         icon={<EmptyStateProcessIncidents title="Alt Text" />}
         link={{href: '/link-to-home', label: 'Go Home', onClick: linkSpy}}
       />,
-      {wrapper: Wrapper},
     );
 
     expect(screen.getByText('Nothing to see')).toBeInTheDocument();
@@ -49,7 +43,6 @@ describe('EmptyState', () => {
         description="Please move on"
         icon={<EmptyStateProcessIncidents title="Alt Text" />}
       />,
-      {wrapper: Wrapper},
     );
 
     expect(screen.getByText('Nothing to see')).toBeInTheDocument();

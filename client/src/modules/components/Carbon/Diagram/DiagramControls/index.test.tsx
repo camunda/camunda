@@ -6,7 +6,6 @@
  */
 
 import {render, screen} from 'modules/testing-library';
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import DiagramControls from './index';
 
 describe('<DiagramControls />', () => {
@@ -20,7 +19,6 @@ describe('<DiagramControls />', () => {
         handleZoomOut={handleZoomOut}
         handleZoomReset={handleZoomReset}
       />,
-      {wrapper: ThemeProvider},
     );
 
     await user.click(

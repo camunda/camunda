@@ -8,7 +8,6 @@
 import {render, screen, waitFor} from 'modules/testing-library';
 import {observer} from 'mobx-react';
 import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {createPortal} from 'react-dom';
 import {Diagram} from './index';
 
@@ -26,7 +25,7 @@ describe('<Diagram />', () => {
   });
 
   it('should render diagram controls', async () => {
-    render(<Diagram xml={'<bpmn:definitions/>'} />, {wrapper: ThemeProvider});
+    render(<Diagram xml={'<bpmn:definitions/>'} />);
 
     expect(await screen.findByText('Diagram mock')).toBeInTheDocument();
 
@@ -62,9 +61,7 @@ describe('<Diagram />', () => {
       </Diagram>
     );
 
-    const {rerender} = render(<DiagramComponent />, {
-      wrapper: ThemeProvider,
-    });
+    const {rerender} = render(<DiagramComponent />);
 
     await waitFor(() => diagramOverlaysStore.state.overlays.length > 0);
 

@@ -5,7 +5,6 @@
  * except in compliance with the proprietary license.
  */
 
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {MemoryRouter} from 'react-router-dom';
 import {useEffect} from 'react';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
@@ -28,9 +27,7 @@ function createWrapper(initialPath: string = LegacyPaths.dashboard()) {
     }, []);
 
     return (
-      <ThemeProvider>
-        <MemoryRouter initialEntries={[initialPath]}>{children}</MemoryRouter>
-      </ThemeProvider>
+      <MemoryRouter initialEntries={[initialPath]}>{children}</MemoryRouter>
     );
   };
 

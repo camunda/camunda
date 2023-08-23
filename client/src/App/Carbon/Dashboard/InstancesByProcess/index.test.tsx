@@ -15,7 +15,6 @@ import {
 } from 'modules/testing-library';
 import {InstancesByProcess} from './index';
 import {mockWithSingleVersion, mockWithMultipleVersions} from './index.setup';
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {mockFetchProcessInstancesByName} from 'modules/mocks/api/incidents/fetchProcessInstancesByName';
@@ -35,15 +34,13 @@ function createWrapper(initialPath: string = Paths.dashboard()) {
     }, []);
 
     return (
-      <ThemeProvider>
-        <MemoryRouter initialEntries={[initialPath]}>
-          <Routes>
-            <Route path={Paths.processes()} element={<div>Processes</div>} />
-            <Route path={Paths.dashboard()} element={children} />
-          </Routes>
-          <LocationLog />
-        </MemoryRouter>
-      </ThemeProvider>
+      <MemoryRouter initialEntries={[initialPath]}>
+        <Routes>
+          <Route path={Paths.processes()} element={<div>Processes</div>} />
+          <Route path={Paths.dashboard()} element={children} />
+        </Routes>
+        <LocationLog />
+      </MemoryRouter>
     );
   };
 

@@ -11,7 +11,6 @@ import {
   within,
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {OperationsPanel} from './index';
 import * as CONSTANTS from './constants';
 import {mockOperationFinished, mockOperationRunning} from './index.setup';
@@ -25,11 +24,7 @@ jest.mock('modules/utils/localStorage', () => ({
 }));
 
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
-  return (
-    <ThemeProvider>
-      <MemoryRouter>{children}</MemoryRouter>
-    </ThemeProvider>
-  );
+  return <MemoryRouter>{children}</MemoryRouter>;
 };
 
 describe('OperationsPanel', () => {

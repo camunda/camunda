@@ -15,7 +15,6 @@ import {
 } from 'modules/testing-library';
 import {OPERATIONS, mockProps} from './index.setup';
 import OperationsEntry from './index';
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {LocationLog} from 'modules/utils/LocationLog';
@@ -24,12 +23,10 @@ import {Filters} from 'App/Carbon/Processes/Filters';
 function createWrapper() {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     return (
-      <ThemeProvider>
-        <MemoryRouter>
-          {children}
-          <LocationLog />
-        </MemoryRouter>
-      </ThemeProvider>
+      <MemoryRouter>
+        {children}
+        <LocationLog />
+      </MemoryRouter>
     );
   };
 

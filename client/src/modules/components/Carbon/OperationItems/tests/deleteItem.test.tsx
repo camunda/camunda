@@ -7,7 +7,6 @@
 
 import {render, screen} from 'modules/testing-library';
 import noop from 'lodash/noop';
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {OperationItems} from '../';
 import {DangerButton} from '../../OperationItem/DangerButton';
 
@@ -21,7 +20,6 @@ describe('Delete Item', () => {
           title="delete process instance"
         />
       </OperationItems>,
-      {wrapper: ThemeProvider},
     );
 
     expect(screen.getByTestId('delete-operation')).toBeInTheDocument();
@@ -33,7 +31,6 @@ describe('Delete Item', () => {
       <OperationItems>
         <DangerButton type="DELETE" onClick={noop} title={BUTTON_TITLE} />
       </OperationItems>,
-      {wrapper: ThemeProvider},
     );
 
     expect(screen.getByRole('button', {name: /delete/i})).toBeInTheDocument();
@@ -50,7 +47,6 @@ describe('Delete Item', () => {
           title={BUTTON_TITLE}
         />
       </OperationItems>,
-      {wrapper: ThemeProvider},
     );
 
     await user.click(screen.getByRole('button', {name: /delete/i}));

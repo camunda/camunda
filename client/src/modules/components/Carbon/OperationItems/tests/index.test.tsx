@@ -7,7 +7,6 @@
 
 import {render, screen} from 'modules/testing-library';
 import noop from 'lodash/noop';
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {OperationItems} from '../';
 import {OperationItem} from '../../OperationItem';
 
@@ -21,7 +20,6 @@ describe('OperationItems', () => {
           title="resolve incident"
         />
       </OperationItems>,
-      {wrapper: ThemeProvider},
     );
 
     expect(screen.getByRole('listitem')).toBeInTheDocument();

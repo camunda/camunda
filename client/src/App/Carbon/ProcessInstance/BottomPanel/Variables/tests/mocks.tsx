@@ -7,7 +7,6 @@
 
 import {MetaDataDto} from 'modules/api/processInstances/fetchFlowNodeMetaData';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {Form} from 'react-final-form';
 import arrayMutators from 'final-form-arrays';
 import {useEffect} from 'react';
@@ -36,22 +35,20 @@ const Wrapper: React.FC<Props> = ({children}) => {
   });
 
   return (
-    <ThemeProvider>
-      <MemoryRouter initialEntries={[Paths.processInstance('1')]}>
-        <Routes>
-          <Route
-            path={Paths.processInstance()}
-            element={
-              <Form onSubmit={() => {}} mutators={{...arrayMutators}}>
-                {({handleSubmit}) => {
-                  return <form onSubmit={handleSubmit}>{children} </form>;
-                }}
-              </Form>
-            }
-          />
-        </Routes>
-      </MemoryRouter>
-    </ThemeProvider>
+    <MemoryRouter initialEntries={[Paths.processInstance('1')]}>
+      <Routes>
+        <Route
+          path={Paths.processInstance()}
+          element={
+            <Form onSubmit={() => {}} mutators={{...arrayMutators}}>
+              {({handleSubmit}) => {
+                return <form onSubmit={handleSubmit}>{children} </form>;
+              }}
+            </Form>
+          }
+        />
+      </Routes>
+    </MemoryRouter>
   );
 };
 

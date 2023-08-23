@@ -15,7 +15,6 @@ import {
   invoiceClassification,
 } from 'modules/mocks/mockDecisionInstance';
 import {decisionInstanceDetailsStore} from 'modules/stores/decisionInstanceDetails';
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {Result} from './index';
 import {mockFetchDecisionInstance} from 'modules/mocks/api/decisionInstances/fetchDecisionInstance';
 
@@ -29,7 +28,7 @@ describe('<Result />', () => {
 
     decisionInstanceDetailsStore.fetchDecisionInstance('1');
 
-    render(<Result />, {wrapper: ThemeProvider});
+    render(<Result />);
 
     expect(
       await screen.findByText(/data could not be fetched/i),
@@ -39,9 +38,7 @@ describe('<Result />', () => {
   it('should show a loading spinner', async () => {
     mockFetchDecisionInstance().withServerError();
 
-    render(<Result />, {
-      wrapper: ThemeProvider,
-    });
+    render(<Result />);
 
     decisionInstanceDetailsStore.fetchDecisionInstance('1');
 
@@ -57,7 +54,7 @@ describe('<Result />', () => {
 
     decisionInstanceDetailsStore.fetchDecisionInstance('1');
 
-    render(<Result />, {wrapper: ThemeProvider});
+    render(<Result />);
 
     expect(
       await screen.findByTestId('results-json-viewer'),
@@ -69,7 +66,7 @@ describe('<Result />', () => {
 
     decisionInstanceDetailsStore.fetchDecisionInstance('1');
 
-    render(<Result />, {wrapper: ThemeProvider});
+    render(<Result />);
 
     expect(
       await screen.findByText(

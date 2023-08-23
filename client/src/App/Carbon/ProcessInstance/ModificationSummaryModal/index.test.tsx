@@ -12,7 +12,6 @@ import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstance
 import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 import {render, screen, waitFor} from 'modules/testing-library';
 import {createBatchOperation, createInstance} from 'modules/testUtils';
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {ModificationSummaryModal} from './index';
 import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
@@ -37,7 +36,7 @@ const Wrapper = ({children}: {children?: React.ReactNode}) => {
     };
   }, []);
 
-  return <ThemeProvider>{children}</ThemeProvider>;
+  return <>{children}</>;
 };
 
 describe('Modification Summary Modal', () => {
@@ -603,9 +602,6 @@ describe('Modification Summary Modal', () => {
 
     const {user} = render(
       <ModificationSummaryModal open setOpen={mockOnClose} />,
-      {
-        wrapper: ThemeProvider,
-      },
     );
 
     await user.click(screen.getByRole('button', {name: 'Apply'}));

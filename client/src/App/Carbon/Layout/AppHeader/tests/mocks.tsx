@@ -6,16 +6,13 @@
  */
 
 import {MemoryRouter} from 'react-router-dom';
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {LocationLog} from 'modules/utils/LocationLog';
 
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => (
-  <ThemeProvider>
-    <MemoryRouter>
-      {children}
-      <LocationLog />
-    </MemoryRouter>
-  </ThemeProvider>
+  <MemoryRouter>
+    {children}
+    <LocationLog />
+  </MemoryRouter>
 );
 
 export {Wrapper};

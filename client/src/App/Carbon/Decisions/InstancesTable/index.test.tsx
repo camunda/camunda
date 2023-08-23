@@ -12,7 +12,6 @@ import {
   waitForElementToBeRemoved,
   waitFor,
 } from 'modules/testing-library';
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {InstancesTable} from './index';
 import {decisionInstancesStore} from 'modules/stores/decisionInstances';
 import {mockDecisionInstances} from 'modules/mocks/mockDecisionInstances';
@@ -37,16 +36,14 @@ const createWrapper = (initialPath: string = Paths.decisions()) => {
     }, []);
 
     return (
-      <ThemeProvider>
-        <MemoryRouter initialEntries={[initialPath]}>
-          <Routes>
-            <Route path={Paths.decisions()} element={children} />
-            <Route path={Paths.processInstance()} element={<></>} />
-            <Route path={Paths.decisionInstance()} element={<></>} />
-          </Routes>
-          <LocationLog />
-        </MemoryRouter>
-      </ThemeProvider>
+      <MemoryRouter initialEntries={[initialPath]}>
+        <Routes>
+          <Route path={Paths.decisions()} element={children} />
+          <Route path={Paths.processInstance()} element={<></>} />
+          <Route path={Paths.decisionInstance()} element={<></>} />
+        </Routes>
+        <LocationLog />
+      </MemoryRouter>
     );
   };
 

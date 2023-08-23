@@ -10,7 +10,6 @@ import {TimeStampPill} from './index';
 import {flowNodeTimeStampStore} from 'modules/stores/flowNodeTimeStamp';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {useEffect} from 'react';
 import {mockFetchFlowNodeInstances} from 'modules/mocks/api/fetchFlowNodeInstances';
@@ -31,7 +30,7 @@ const Wrapper = ({children}: {children?: React.ReactNode}) => {
     };
   }, []);
 
-  return <ThemeProvider>{children}</ThemeProvider>;
+  return <>{children}</>;
 };
 
 describe('TimeStampPill', () => {

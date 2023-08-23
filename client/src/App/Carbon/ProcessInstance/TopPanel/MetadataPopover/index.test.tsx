@@ -9,7 +9,6 @@ import {render, screen, waitFor} from 'modules/testing-library';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {MetadataPopover} from '.';
 import {
   createInstance,
@@ -62,15 +61,13 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   }, []);
 
   return (
-    <ThemeProvider>
-      <MemoryRouter initialEntries={[Paths.processInstance('1')]}>
-        <Routes>
-          <Route path={Paths.processInstance()} element={children} />
-          <Route path={Paths.decisionInstance()} element={<></>} />
-        </Routes>
-        <LocationLog />
-      </MemoryRouter>
-    </ThemeProvider>
+    <MemoryRouter initialEntries={[Paths.processInstance('1')]}>
+      <Routes>
+        <Route path={Paths.processInstance()} element={children} />
+        <Route path={Paths.decisionInstance()} element={<></>} />
+      </Routes>
+      <LocationLog />
+    </MemoryRouter>
   );
 };
 

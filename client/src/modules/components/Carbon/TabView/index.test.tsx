@@ -6,7 +6,6 @@
  */
 
 import {render, screen} from 'modules/testing-library';
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {TabView} from './index';
 
 describe('TabView', () => {
@@ -21,7 +20,6 @@ describe('TabView', () => {
           },
         ]}
       />,
-      {wrapper: ThemeProvider},
     );
 
     expect(
@@ -49,7 +47,6 @@ describe('TabView', () => {
           },
         ]}
       />,
-      {wrapper: ThemeProvider},
     );
 
     expect(screen.getByRole('tab', {name: 'First Tab'})).toBeInTheDocument();
@@ -74,7 +71,6 @@ describe('TabView', () => {
           },
         ]}
       />,
-      {wrapper: ThemeProvider},
     );
 
     expect(screen.getByText('Content of the first tab')).toBeVisible();

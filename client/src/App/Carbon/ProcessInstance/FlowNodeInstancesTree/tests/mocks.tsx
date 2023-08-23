@@ -20,7 +20,6 @@ import {
   createMultiInstanceFlowNodeInstances,
 } from 'modules/testUtils';
 import {useEffect} from 'react';
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 import {TreeView} from '@carbon/react';
 
@@ -697,11 +696,9 @@ const Wrapper = ({children}: {children?: React.ReactNode}) => {
   }, []);
 
   return (
-    <ThemeProvider>
-      <TreeView label={'instance history'} hideLabel>
-        {children}
-      </TreeView>
-    </ThemeProvider>
+    <TreeView label={'instance history'} hideLabel>
+      {children}
+    </TreeView>
   );
 };
 

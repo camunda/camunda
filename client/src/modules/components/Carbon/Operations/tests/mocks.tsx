@@ -10,7 +10,6 @@ import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {createInstance, createOperation} from 'modules/testUtils';
 import {modificationsStore} from 'modules/stores/modifications';
 import {processInstancesStore} from 'modules/stores/processInstances';
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {Paths} from 'modules/Routes';
 
@@ -23,15 +22,13 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   }, []);
 
   return (
-    <ThemeProvider>
-      <MemoryRouter initialEntries={[Paths.processes()]}>
-        <Routes>
-          <Route path={Paths.processInstance()} element={children} />
-          <Route path={Paths.processes()} element={children} />
-        </Routes>
-        <LocationLog />
-      </MemoryRouter>
-    </ThemeProvider>
+    <MemoryRouter initialEntries={[Paths.processes()]}>
+      <Routes>
+        <Route path={Paths.processInstance()} element={children} />
+        <Route path={Paths.processes()} element={children} />
+      </Routes>
+      <LocationLog />
+    </MemoryRouter>
   );
 };
 

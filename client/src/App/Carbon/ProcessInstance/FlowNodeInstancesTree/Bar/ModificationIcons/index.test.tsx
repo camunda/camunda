@@ -6,7 +6,6 @@
  */
 
 import {act, render, screen} from 'modules/testing-library';
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {ModificationIcons} from './index';
 import {modificationsStore} from 'modules/stores/modifications';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
@@ -24,7 +23,7 @@ const Wrapper = ({children}: Props) => {
     return modificationsStore.reset;
   }, []);
 
-  return <ThemeProvider>{children}</ThemeProvider>;
+  return <>{children}</>;
 };
 
 describe('<ModificationIcons />', () => {

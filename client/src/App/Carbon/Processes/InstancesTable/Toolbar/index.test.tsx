@@ -6,14 +6,11 @@
  */
 
 import {render, screen} from 'modules/testing-library';
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {Toolbar} from '.';
 
 describe('<ProcessOperations />', () => {
   it('should not display toolbar if selected instances count is 0 ', async () => {
-    render(<Toolbar selectedInstancesCount={0} />, {
-      wrapper: ThemeProvider,
-    });
+    render(<Toolbar selectedInstancesCount={0} />);
 
     expect(screen.queryByText(/items selected/i)).not.toBeInTheDocument();
     expect(
@@ -28,9 +25,7 @@ describe('<ProcessOperations />', () => {
   });
 
   it('should display toolbar with action buttons', async () => {
-    const {rerender} = render(<Toolbar selectedInstancesCount={1} />, {
-      wrapper: ThemeProvider,
-    });
+    const {rerender} = render(<Toolbar selectedInstancesCount={1} />);
 
     expect(screen.getAllByRole('button', {name: 'Cancel'}).length).toBe(2);
     expect(screen.getByRole('button', {name: 'Retry'}));

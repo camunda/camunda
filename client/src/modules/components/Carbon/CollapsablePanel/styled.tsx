@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import styled, {ThemedInterpolationFunction, css} from 'styled-components';
+import styled, {css} from 'styled-components';
 import {
   RowCollapse as BaseRowCollapse,
   RowExpand as BaseRowExpand,
@@ -97,20 +97,20 @@ type IconProps = {
   $panelPosition: 'RIGHT' | 'LEFT';
 };
 
-const IconStyles: ThemedInterpolationFunction<IconProps> = ({
-  $panelPosition,
-}) => {
-  return css`
-    ${$panelPosition === 'LEFT' &&
-    css`
-      transform: rotate(-90deg);
-    `}
-    ${$panelPosition === 'RIGHT' &&
-    css`
-      transform: rotate(90deg);
-    `}
-  `;
-};
+const IconStyles = css<Props>`
+  ${({$panelPosition}) => {
+    return css`
+      ${$panelPosition === 'LEFT' &&
+      css`
+        transform: rotate(-90deg);
+      `}
+      ${$panelPosition === 'RIGHT' &&
+      css`
+        transform: rotate(90deg);
+      `}
+    `;
+  }}
+`;
 
 const ExpandIcon = styled(BaseRowExpand)<IconProps>`
   ${IconStyles}

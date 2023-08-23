@@ -6,7 +6,6 @@
  */
 
 import {SortableTable} from '../';
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {MemoryRouter} from 'react-router-dom';
 
 const mockTableData = [
@@ -74,11 +73,7 @@ const mockSelectableProps: Pick<
 };
 
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
-  return (
-    <ThemeProvider>
-      <MemoryRouter>{children}</MemoryRouter>
-    </ThemeProvider>
-  );
+  return <MemoryRouter>{children}</MemoryRouter>;
 };
 
 export {mockProps, mockSelectableProps, Wrapper};

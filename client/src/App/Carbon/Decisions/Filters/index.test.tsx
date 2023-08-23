@@ -9,7 +9,6 @@ import {AppHeader} from 'App/Carbon/Layout/AppHeader';
 import {render, screen, waitFor, within} from 'modules/testing-library';
 import {groupedDecisions} from 'modules/mocks/groupedDecisions';
 import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {MemoryRouter} from 'react-router-dom';
 import {Filters} from './index';
@@ -38,13 +37,11 @@ function getWrapper(initialPath: string = Paths.decisions()) {
     }, []);
 
     return (
-      <ThemeProvider>
-        <MemoryRouter initialEntries={[initialPath]}>
-          <AppHeader />
-          {children}
-          <LocationLog />
-        </MemoryRouter>
-      </ThemeProvider>
+      <MemoryRouter initialEntries={[initialPath]}>
+        <AppHeader />
+        {children}
+        <LocationLog />
+      </MemoryRouter>
     );
   };
 

@@ -18,7 +18,6 @@ import {
   waitFor,
   within,
 } from 'modules/testing-library';
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {testData} from './index.setup';
 import {mockSequenceFlows} from './TopPanel/index.setup';
 import {ProcessInstance} from './index';
@@ -79,21 +78,19 @@ function getWrapper(
 ) {
   const Wrapper: React.FC<Props> = ({children}) => {
     return (
-      <ThemeProvider>
-        <HistoryRouter
-          history={createMemoryHistory({
-            initialEntries: [initialPath],
-          })}
-          basename={contextPath ?? ''}
-        >
-          <Routes>
-            <Route path={Paths.processInstance()} element={children} />
-            <Route path={Paths.processes()} element={<>instances page</>} />
-            <Route path={Paths.dashboard()} element={<>dashboard page</>} />
-          </Routes>
-          <LocationLog />
-        </HistoryRouter>
-      </ThemeProvider>
+      <HistoryRouter
+        history={createMemoryHistory({
+          initialEntries: [initialPath],
+        })}
+        basename={contextPath ?? ''}
+      >
+        <Routes>
+          <Route path={Paths.processInstance()} element={children} />
+          <Route path={Paths.processes()} element={<>instances page</>} />
+          <Route path={Paths.dashboard()} element={<>dashboard page</>} />
+        </Routes>
+        <LocationLog />
+      </HistoryRouter>
     );
   };
 

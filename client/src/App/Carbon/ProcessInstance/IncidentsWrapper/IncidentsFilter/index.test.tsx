@@ -10,7 +10,6 @@ import {render, screen} from 'modules/testing-library';
 
 import {mockIncidents} from './index.setup';
 import {incidentsStore} from 'modules/stores/incidents';
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {mockFetchProcessInstanceIncidents} from 'modules/mocks/api/processInstances/fetchProcessInstanceIncidents';
 import {useEffect} from 'react';
 
@@ -21,7 +20,7 @@ const Wrapper = ({children}: {children?: React.ReactNode}) => {
     return reset;
   }, []);
 
-  return <ThemeProvider>{children}</ThemeProvider>;
+  return <>{children}</>;
 };
 
 describe('IncidentsFilter', () => {

@@ -6,7 +6,6 @@
  */
 
 import {Route, MemoryRouter, Routes} from 'react-router-dom';
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {useEffect} from 'react';
 import {processesStore} from 'modules/stores/processes';
@@ -36,14 +35,12 @@ function getWrapper(initialPath: string = Paths.dashboard()) {
     }, []);
 
     return (
-      <ThemeProvider>
-        <MemoryRouter initialEntries={[initialPath]}>
-          <Routes>
-            <Route path={Paths.dashboard()} element={children} />
-          </Routes>
-          <LocationLog />
-        </MemoryRouter>
-      </ThemeProvider>
+      <MemoryRouter initialEntries={[initialPath]}>
+        <Routes>
+          <Route path={Paths.dashboard()} element={children} />
+        </Routes>
+        <LocationLog />
+      </MemoryRouter>
     );
   };
 

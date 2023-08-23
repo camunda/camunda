@@ -6,7 +6,6 @@
  */
 
 import {render, screen} from 'modules/testing-library';
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {Breadcrumb} from './index';
 import {createInstance} from 'modules/testUtils';
 import {Route, MemoryRouter, Routes} from 'react-router-dom';
@@ -15,14 +14,12 @@ import {Paths} from 'modules/Routes';
 
 const createWrapper = (initialPath: string = Paths.processInstance('123')) => {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => (
-    <ThemeProvider>
-      <MemoryRouter initialEntries={[initialPath]}>
-        <Routes>
-          <Route path={Paths.processInstance()} element={children} />
-        </Routes>
-        <LocationLog />
-      </MemoryRouter>
-    </ThemeProvider>
+    <MemoryRouter initialEntries={[initialPath]}>
+      <Routes>
+        <Route path={Paths.processInstance()} element={children} />
+      </Routes>
+      <LocationLog />
+    </MemoryRouter>
   );
 
   return Wrapper;

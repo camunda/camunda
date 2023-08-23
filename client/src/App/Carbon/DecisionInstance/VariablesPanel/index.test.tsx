@@ -10,7 +10,6 @@ import {
   screen,
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {VariablesPanel} from './index';
 import {
   invoiceClassification,
@@ -21,7 +20,7 @@ import {mockFetchDecisionInstance} from 'modules/mocks/api/decisionInstances/fet
 
 describe('<VariablesPanel />', () => {
   it('should have 2 tabs', () => {
-    render(<VariablesPanel />, {wrapper: ThemeProvider});
+    render(<VariablesPanel />);
 
     expect(
       screen.getByRole('tab', {
@@ -36,7 +35,7 @@ describe('<VariablesPanel />', () => {
   });
 
   it('should render the default tab content', () => {
-    render(<VariablesPanel />, {wrapper: ThemeProvider});
+    render(<VariablesPanel />);
 
     expect(
       screen.getByRole('heading', {
@@ -55,7 +54,7 @@ describe('<VariablesPanel />', () => {
 
     decisionInstanceDetailsStore.fetchDecisionInstance('1');
 
-    const {user} = render(<VariablesPanel />, {wrapper: ThemeProvider});
+    const {user} = render(<VariablesPanel />);
 
     await waitForElementToBeRemoved(() =>
       screen.getByTestId('inputs-skeleton'),
@@ -92,7 +91,7 @@ describe('<VariablesPanel />', () => {
 
     decisionInstanceDetailsStore.fetchDecisionInstance('1');
 
-    render(<VariablesPanel />, {wrapper: ThemeProvider});
+    render(<VariablesPanel />);
 
     expect(
       await screen.findByTestId('results-json-viewer'),

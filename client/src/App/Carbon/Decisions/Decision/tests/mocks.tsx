@@ -5,7 +5,6 @@
  * except in compliance with the proprietary license.
  */
 
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {decisionXmlStore} from 'modules/stores/decisionXml';
 import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
 import {MemoryRouter} from 'react-router-dom';
@@ -27,9 +26,7 @@ function createWrapper(initialPath: string = Paths.dashboard()) {
     }, []);
 
     return (
-      <ThemeProvider>
-        <MemoryRouter initialEntries={[initialPath]}>{children}</MemoryRouter>
-      </ThemeProvider>
+      <MemoryRouter initialEntries={[initialPath]}>{children}</MemoryRouter>
     );
   };
 

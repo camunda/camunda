@@ -12,7 +12,6 @@ import {
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
 import {MemoryRouter} from 'react-router-dom';
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {Decisions} from './';
 import {groupedDecisions} from 'modules/mocks/groupedDecisions';
 import {LocationLog} from 'modules/utils/LocationLog';
@@ -46,12 +45,10 @@ function createWrapper(initialPath: string = Paths.decisions()) {
       };
     }, []);
     return (
-      <ThemeProvider>
-        <MemoryRouter initialEntries={[initialPath]}>
-          {children}
-          <LocationLog />
-        </MemoryRouter>
-      </ThemeProvider>
+      <MemoryRouter initialEntries={[initialPath]}>
+        {children}
+        <LocationLog />
+      </MemoryRouter>
     );
   };
 

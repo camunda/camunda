@@ -7,13 +7,10 @@
 
 import {JSONEditorModal} from './index';
 import {render, screen} from 'modules/testing-library';
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
 
 describe('<JSONEditorModal />', () => {
   it('should not render the modal', () => {
-    render(<JSONEditorModal isVisible={false} value="" />, {
-      wrapper: ThemeProvider,
-    });
+    render(<JSONEditorModal isVisible={false} value="" />);
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
@@ -24,9 +21,6 @@ describe('<JSONEditorModal />', () => {
 
     const {rerender} = render(
       <JSONEditorModal isVisible value={mockValue} title={mockTitle} />,
-      {
-        wrapper: ThemeProvider,
-      },
     );
 
     expect(
@@ -64,9 +58,6 @@ describe('<JSONEditorModal />', () => {
 
     const {user, rerender} = render(
       <JSONEditorModal isVisible value="" onClose={mockOnClose} />,
-      {
-        wrapper: ThemeProvider,
-      },
     );
 
     await user.click(screen.getByRole('button', {name: /close/i}));
@@ -88,9 +79,6 @@ describe('<JSONEditorModal />', () => {
 
     const {user} = render(
       <JSONEditorModal isVisible value={mockValue} onApply={mockOnApply} />,
-      {
-        wrapper: ThemeProvider,
-      },
     );
 
     await user.click(screen.getByRole('button', {name: /apply/i}));
@@ -109,9 +97,6 @@ describe('<JSONEditorModal />', () => {
         value={mockInitialValue}
         onApply={mockOnApply}
       />,
-      {
-        wrapper: ThemeProvider,
-      },
     );
 
     const editor = screen.getByDisplayValue(mockInitialValue);

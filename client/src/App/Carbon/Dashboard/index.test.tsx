@@ -11,7 +11,6 @@ import {MemoryRouter} from 'react-router-dom';
 import {PAGE_TITLE} from 'modules/constants';
 import {statisticsStore} from 'modules/stores/statistics';
 import {Dashboard} from './index';
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {mockIncidentsByError} from './IncidentsByError/index.setup';
 import {mockWithSingleVersion} from './InstancesByProcess/index.setup';
 import {statistics} from 'modules/mocks/statistics';
@@ -24,11 +23,7 @@ type Props = {
 };
 
 const Wrapper = ({children}: Props) => {
-  return (
-    <ThemeProvider>
-      <MemoryRouter>{children}</MemoryRouter>
-    </ThemeProvider>
-  );
+  return <MemoryRouter>{children}</MemoryRouter>;
 };
 
 describe('Dashboard', () => {

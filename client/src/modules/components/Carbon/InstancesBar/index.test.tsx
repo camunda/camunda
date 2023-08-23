@@ -6,7 +6,6 @@
  */
 
 import {render, screen, within} from 'modules/testing-library';
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {InstancesBar} from './index';
 
 describe('InstancesBar', () => {
@@ -24,7 +23,6 @@ describe('InstancesBar', () => {
           activeInstancesCount={activeInstancesCount}
           size="small"
         />,
-        {wrapper: ThemeProvider},
       );
 
       expect(
@@ -51,7 +49,6 @@ describe('InstancesBar', () => {
           size="small"
           activeInstancesCount={activeInstancesCount}
         />,
-        {wrapper: ThemeProvider},
       );
 
       expect(
@@ -72,7 +69,6 @@ describe('InstancesBar', () => {
         activeInstancesCount={-1}
         size="small"
       />,
-      {wrapper: ThemeProvider},
     );
 
     expect(

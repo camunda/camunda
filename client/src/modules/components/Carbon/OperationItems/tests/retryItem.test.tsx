@@ -7,7 +7,6 @@
 
 import {render, screen} from 'modules/testing-library';
 import noop from 'lodash/noop';
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {OperationItems} from '../';
 import {OperationItem} from '../../OperationItem';
 
@@ -21,7 +20,6 @@ describe('Retry Item', () => {
           title="resolve incident"
         />
       </OperationItems>,
-      {wrapper: ThemeProvider},
     );
 
     expect(screen.getByTestId('retry-operation')).toBeInTheDocument();
@@ -37,7 +35,6 @@ describe('Retry Item', () => {
           title={BUTTON_TITLE}
         />
       </OperationItems>,
-      {wrapper: ThemeProvider},
     );
 
     expect(
@@ -56,7 +53,6 @@ describe('Retry Item', () => {
           title={BUTTON_TITLE}
         />
       </OperationItems>,
-      {wrapper: ThemeProvider},
     );
 
     await user.click(screen.getByRole('button', {name: BUTTON_TITLE}));

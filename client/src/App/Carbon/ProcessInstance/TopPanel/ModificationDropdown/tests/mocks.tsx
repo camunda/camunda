@@ -11,7 +11,6 @@ import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {createInstance} from 'modules/testUtils';
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {createRef, useEffect} from 'react';
 import {MemoryRouter} from 'react-router-dom';
 import {ModificationDropdown} from '..';
@@ -28,11 +27,9 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   }, []);
 
   return (
-    <ThemeProvider>
-      <MemoryRouter initialEntries={[Paths.processInstance('1')]}>
-        {children}
-      </MemoryRouter>
-    </ThemeProvider>
+    <MemoryRouter initialEntries={[Paths.processInstance('1')]}>
+      {children}
+    </MemoryRouter>
   );
 };
 

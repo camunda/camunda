@@ -13,7 +13,6 @@ import {mockDrdData} from 'modules/mocks/mockDrdData';
 import {decisionInstanceDetailsStore} from 'modules/stores/decisionInstanceDetails';
 import {decisionXmlStore} from 'modules/stores/decisionXml';
 import {drdDataStore} from 'modules/stores/drdData';
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {Drd} from '.';
 import {MemoryRouter} from 'react-router-dom';
 import {mockFetchDecisionXML} from 'modules/mocks/api/decisions/fetchDecisionXML';
@@ -32,11 +31,7 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
       drdDataStore.reset();
     };
   }, []);
-  return (
-    <ThemeProvider>
-      <MemoryRouter>{children}</MemoryRouter>
-    </ThemeProvider>
-  );
+  return <MemoryRouter>{children}</MemoryRouter>;
 };
 
 describe('<Drd />', () => {

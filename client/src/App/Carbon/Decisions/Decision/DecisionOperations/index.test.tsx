@@ -13,7 +13,6 @@ import {
   waitFor,
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {useEffect} from 'react';
 import {DecisionOperations} from '.';
 import {panelStatesStore} from 'modules/stores/panelStates';
@@ -50,7 +49,7 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
       operationsStore.reset();
     };
   }, []);
-  return <ThemeProvider>{children}</ThemeProvider>;
+  return <>{children}</>;
 };
 
 describe('<DecisionOperations />', () => {

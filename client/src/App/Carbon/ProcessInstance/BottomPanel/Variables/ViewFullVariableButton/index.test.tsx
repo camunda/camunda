@@ -10,7 +10,6 @@ import {
   screen,
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {ViewFullVariableButton} from './index';
 
 describe('<ViewFullVariableButton />', () => {
@@ -28,9 +27,6 @@ describe('<ViewFullVariableButton />', () => {
         onClick={mockOnClick}
         variableName={mockVariableName}
       />,
-      {
-        wrapper: ThemeProvider,
-      },
     );
 
     await user.click(

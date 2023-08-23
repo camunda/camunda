@@ -14,7 +14,6 @@ import {
   waitFor,
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {useEffect} from 'react';
 import {ProcessOperations} from '.';
 import {notificationsStore} from 'modules/stores/carbonNotifications';
@@ -44,7 +43,7 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     };
   }, []);
 
-  return <ThemeProvider>{children}</ThemeProvider>;
+  return <>{children}</>;
 };
 
 describe('<ProcessOperations />', () => {

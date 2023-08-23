@@ -12,7 +12,6 @@ import {
   waitFor,
 } from 'modules/testing-library';
 import {Link, MemoryRouter, To} from 'react-router-dom';
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {Login} from './index';
 import {LOGIN_ERROR, GENERIC_ERROR} from './constants';
 import {LocationLog} from 'modules/utils/LocationLog';
@@ -26,20 +25,18 @@ function createWrapper(
 ) {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     return (
-      <ThemeProvider>
-        <MemoryRouter initialEntries={[initialPath]}>
-          {children}
-          <Link
-            to={Paths.login()}
-            state={{
-              referrer,
-            }}
-          >
-            emulate auth check
-          </Link>
-          <LocationLog />
-        </MemoryRouter>
-      </ThemeProvider>
+      <MemoryRouter initialEntries={[initialPath]}>
+        {children}
+        <Link
+          to={Paths.login()}
+          state={{
+            referrer,
+          }}
+        >
+          emulate auth check
+        </Link>
+        <LocationLog />
+      </MemoryRouter>
     );
   };
 

@@ -7,7 +7,6 @@
 
 import {ModificationBadgeOverlay} from './index';
 import {render, screen} from 'modules/testing-library';
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
 
 describe('ModificationBadgeOverlay', () => {
   const createOverlayContainer = () => {
@@ -27,7 +26,6 @@ describe('ModificationBadgeOverlay', () => {
         newTokenCount={0}
         cancelledTokenCount={3}
       />,
-      {wrapper: ThemeProvider},
     );
 
     expect(screen.getByTestId('badge-minus-icon')).toBeInTheDocument();
@@ -42,7 +40,6 @@ describe('ModificationBadgeOverlay', () => {
         newTokenCount={2}
         cancelledTokenCount={0}
       />,
-      {wrapper: ThemeProvider},
     );
 
     expect(screen.getByTestId('badge-plus-icon')).toBeInTheDocument();
@@ -57,7 +54,6 @@ describe('ModificationBadgeOverlay', () => {
         newTokenCount={2}
         cancelledTokenCount={3}
       />,
-      {wrapper: ThemeProvider},
     );
 
     expect(screen.getByTestId('badge-minus-icon')).toBeInTheDocument();
