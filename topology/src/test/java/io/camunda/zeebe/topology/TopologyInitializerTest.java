@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.topology;
 
+import static io.camunda.zeebe.topology.ClusterTopologyAssert.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
@@ -66,7 +67,7 @@ final class TopologyInitializerTest {
     final var initializeFuture = fileInitializer.initialize();
 
     // then
-    assertThat(initializeFuture.join()).isTrue();
+    assertThatClusterTopology(initializeFuture.join()).isInitialized();
   }
 
   @Test
@@ -78,7 +79,7 @@ final class TopologyInitializerTest {
     final var initializeFuture = fileInitializer.initialize();
 
     // then
-    assertThat(initializeFuture.join()).isFalse();
+    assertThatClusterTopology(initializeFuture.join()).isUninitialized();
   }
 
   @Test
@@ -106,7 +107,7 @@ final class TopologyInitializerTest {
     final var initializeFuture = initializer.initialize();
 
     // then
-    assertThat(initializeFuture.join()).isTrue();
+    assertThatClusterTopology(initializeFuture.join()).isInitialized();
     assertThat(persistedClusterTopology.getTopology())
         .describedAs("should update persisted topology after initialization")
         .isEqualTo(initialClusterTopology);
@@ -125,7 +126,7 @@ final class TopologyInitializerTest {
     persistedClusterTopology.update(initialClusterTopology);
 
     // then
-    assertThat(initializeFuture.join()).isTrue();
+    assertThatClusterTopology(initializeFuture.join()).isInitialized();
   }
 
   @Test
@@ -147,7 +148,7 @@ final class TopologyInitializerTest {
     persistedClusterTopology.update(initialClusterTopology);
 
     // then
-    assertThat(initializeFuture.join()).isTrue();
+    assertThatClusterTopology(initializeFuture.join()).isInitialized();
     assertThat(persistedClusterTopology.getTopology())
         .describedAs("should update persisted topology after initialization")
         .isEqualTo(initialClusterTopology);
@@ -172,7 +173,7 @@ final class TopologyInitializerTest {
     persistedClusterTopology.update(initialClusterTopology);
 
     // then
-    assertThat(initializeFuture.join()).isFalse();
+    assertThatClusterTopology(initializeFuture.join()).isUninitialized();
   }
 
   private TopologyInitializer getStaticInitializer() {
@@ -198,7 +199,7 @@ final class TopologyInitializerTest {
       final var initializeFuture = fileInitializer.initialize();
 
       // then
-      assertThat(initializeFuture.join()).isTrue();
+      assertThatClusterTopology(initializeFuture.join()).isInitialized();
     }
 
     @Test
@@ -220,7 +221,7 @@ final class TopologyInitializerTest {
       persistedClusterTopology.update(initialClusterTopology);
 
       // then
-      assertThat(initializeFuture.join()).isTrue();
+      assertThatClusterTopology(initializeFuture.join()).isInitialized();
     }
 
     @Test
@@ -245,7 +246,7 @@ final class TopologyInitializerTest {
       persistedClusterTopology.update(initialClusterTopology);
 
       // then
-      assertThat(initializeFuture.join()).isTrue();
+      assertThatClusterTopology(initializeFuture.join()).isInitialized();
     }
 
     @Test
@@ -269,7 +270,7 @@ final class TopologyInitializerTest {
       syncResponseFuture.complete(initialClusterTopology);
 
       // then
-      assertThat(initializeFuture.join()).isTrue();
+      assertThatClusterTopology(initializeFuture.join()).isInitialized();
     }
 
     @Test
@@ -296,7 +297,7 @@ final class TopologyInitializerTest {
       syncResponseFuture.complete(ClusterTopology.uninitialized());
 
       // then
-      assertThat(initializeFuture.join()).isTrue();
+      assertThatClusterTopology(initializeFuture.join()).isInitialized();
     }
   }
 }

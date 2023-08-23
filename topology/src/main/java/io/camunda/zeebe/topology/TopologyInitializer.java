@@ -39,7 +39,7 @@ public interface TopologyInitializer {
    * @return a future when completed with true indicates that the cluster topology is initialized
    *     successfully. Otherwise, the topology is not initialized.
    */
-  ActorFuture<Boolean> initialize();
+  ActorFuture<ClusterTopology> initialize();
 
   /**
    * Chain initializers in oder. If this.initialize did not successfully initialize, then the
@@ -52,15 +52,15 @@ public interface TopologyInitializer {
   default TopologyInitializer orThen(final TopologyInitializer after) {
     final TopologyInitializer actual = this;
     return () -> {
-      final ActorFuture<Boolean> chainedInitialize = new CompletableActorFuture<>();
+      final ActorFuture<ClusterTopology> chainedInitialize = new CompletableActorFuture<>();
       actual
           .initialize()
           .onComplete(
-              (initialized, error) -> {
-                if (error != null || !initialized) {
+              (topology, error) -> {
+                if (error != null || topology.isUninitialized()) {
                   after.initialize().onComplete(chainedInitialize);
                 } else {
-                  chainedInitialize.complete(initialized);
+                  chainedInitialize.complete(topology);
                 }
               });
       return chainedInitialize;
@@ -77,10 +77,10 @@ public interface TopologyInitializer {
     }
 
     @Override
-    public ActorFuture<Boolean> initialize() {
+    public ActorFuture<ClusterTopology> initialize() {
       try {
         persistedClusterTopology.tryInitialize();
-        return CompletableActorFuture.completed(!persistedClusterTopology.isUninitialized());
+        return CompletableActorFuture.completed(persistedClusterTopology.getTopology());
       } catch (final Exception e) {
         return CompletableActorFuture.completedExceptionally(e);
       }
@@ -98,7 +98,7 @@ public interface TopologyInitializer {
     private static final Logger LOGGER = LoggerFactory.getLogger(GossipInitializer.class);
     private final PersistedClusterTopology persistedClusterTopology;
     private final Consumer<ClusterTopology> topologyGossiper;
-    private final ActorFuture<Boolean> initialized;
+    private final ActorFuture<ClusterTopology> initialized;
 
     public GossipInitializer(
         final PersistedClusterTopology persistedClusterTopology,
@@ -109,7 +109,7 @@ public interface TopologyInitializer {
     }
 
     @Override
-    public ActorFuture<Boolean> initialize() {
+    public ActorFuture<ClusterTopology> initialize() {
       persistedClusterTopology.addUpdateListener(this);
       onTopologyUpdated(persistedClusterTopology.getTopology());
       if (persistedClusterTopology.isUninitialized()) {
@@ -124,7 +124,7 @@ public interface TopologyInitializer {
     public void onTopologyUpdated(final ClusterTopology clusterTopology) {
       if (!clusterTopology.isUninitialized()) {
         LOGGER.debug("Received cluster topology {} via gossip.", clusterTopology);
-        initialized.complete(true);
+        initialized.complete(clusterTopology);
         persistedClusterTopology.removeUpdateListener(this);
       }
     }
@@ -140,7 +140,7 @@ public interface TopologyInitializer {
     private static final Logger LOGGER = LoggerFactory.getLogger(SyncInitializer.class);
     private static final Duration SYNC_QUERY_RETRY_DELAY = Duration.ofSeconds(5);
     private final PersistedClusterTopology persistedClusterTopology;
-    private final ActorFuture<Boolean> initialized;
+    private final ActorFuture<ClusterTopology> initialized;
     private final List<MemberId> knownMembersToSync;
     private final ConcurrencyControl executor;
     private final Function<MemberId, ActorFuture<ClusterTopology>> syncRequester;
@@ -158,9 +158,9 @@ public interface TopologyInitializer {
     }
 
     @Override
-    public ActorFuture<Boolean> initialize() {
+    public ActorFuture<ClusterTopology> initialize() {
       if (knownMembersToSync.isEmpty()) {
-        initialized.complete(false);
+        initialized.complete(ClusterTopology.uninitialized());
       } else {
         LOGGER.debug("Querying members {} before initializing ClusterTopology", knownMembersToSync);
         persistedClusterTopology.addUpdateListener(this);
@@ -180,7 +180,7 @@ public interface TopologyInitializer {
                 if (error == null && topology != null) {
                   if (topology.isUninitialized()) {
                     LOGGER.trace("Cluster topology is uninitialized in {}", memberId);
-                    initialized.complete(false);
+                    initialized.complete(topology);
                     return;
                   }
                   try {
@@ -213,7 +213,7 @@ public interface TopologyInitializer {
         return;
       }
       if (!clusterTopology.isUninitialized()) {
-        initialized.complete(true);
+        initialized.complete(clusterTopology);
         persistedClusterTopology.removeUpdateListener(this);
       }
     }
@@ -234,7 +234,7 @@ public interface TopologyInitializer {
     }
 
     @Override
-    public ActorFuture<Boolean> initialize() {
+    public ActorFuture<ClusterTopology> initialize() {
       final var partitionDistribution = staticPartitionResolver.get();
 
       final var partitionsOwnedByMembers =
@@ -264,7 +264,7 @@ public interface TopologyInitializer {
         return CompletableActorFuture.completedExceptionally(e);
       }
 
-      return CompletableActorFuture.completed(true);
+      return CompletableActorFuture.completed(topology);
     }
   }
 }

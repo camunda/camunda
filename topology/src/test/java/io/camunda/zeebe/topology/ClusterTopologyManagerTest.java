@@ -48,7 +48,7 @@ final class ClusterTopologyManagerTest {
         } catch (IOException e) {
           return CompletableActorFuture.completedExceptionally(e);
         }
-        return CompletableActorFuture.completed(true);
+        return CompletableActorFuture.completed(initialTopology);
       };
 
   @BeforeEach
@@ -107,7 +107,8 @@ final class ClusterTopologyManagerTest {
   @Test
   void shouldFailToStartIfTopologyIsNotInitialized() {
     // given
-    final TopologyInitializer failingInitializer = () -> CompletableActorFuture.completed(false);
+    final TopologyInitializer failingInitializer =
+        () -> CompletableActorFuture.completed(ClusterTopology.uninitialized());
     final var startFuture = startTopologyManager(failingInitializer);
 
     // when - then
