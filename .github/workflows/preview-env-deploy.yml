@@ -10,8 +10,8 @@ on:
 
 jobs:
   deploy-preview:
-    # checks whether it was a push event = master or stable branch || check whether the labeled event was deploy-preview || check whether on new commit of PR the label deploy-preview exists
-    if: github.event_name == 'push' || github.event.label.name == 'deploy-preview' || contains( github.event.pull_request.labels.*.name, 'deploy-preview')
+    # checks whether it was a push event = master or stable branch || check that the PR isn't closed AND (check whether the labeled event was deploy-preview || check whether on new commit of PR the label deploy-preview exists)
+    if: github.event_name == 'push' || (github.event.pull_request.state != 'closed' && (github.event.label.name == 'deploy-preview' || contains( github.event.pull_request.labels.*.name, 'deploy-preview')))
     runs-on: ubuntu-22.04
     env:
       BRANCH_NAME: ${{ github.head_ref || github.ref_name }} # head_ref = branch on PR, ref_name if master / stable/**
