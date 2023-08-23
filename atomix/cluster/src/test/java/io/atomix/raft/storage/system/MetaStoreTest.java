@@ -56,8 +56,8 @@ public class MetaStoreTest {
     assertThat(readConfig.index()).isEqualTo(config.index());
     assertThat(readConfig.term()).isEqualTo(config.term());
     assertThat(readConfig.time()).isEqualTo(config.time());
-    assertThat(readConfig.members())
-        .containsExactlyInAnyOrder(config.members().toArray(new RaftMember[0]));
+    assertThat(readConfig.newMembers())
+        .containsExactlyInAnyOrder(config.newMembers().toArray(new RaftMember[0]));
   }
 
   private Configuration getConfiguration(final long index, final long term) {
@@ -106,8 +106,8 @@ public class MetaStoreTest {
     assertThat(readConfig.index()).isEqualTo(config.index());
     assertThat(readConfig.term()).isEqualTo(config.term());
     assertThat(readConfig.time()).isEqualTo(config.time());
-    assertThat(readConfig.members())
-        .containsExactlyInAnyOrder(config.members().toArray(new RaftMember[0]));
+    assertThat(readConfig.newMembers())
+        .containsExactlyInAnyOrder(config.newMembers().toArray(new RaftMember[0]));
   }
 
   @Test
@@ -192,8 +192,8 @@ public class MetaStoreTest {
     assertThat(readConfig.index()).isEqualTo(secondConfig.index());
     assertThat(readConfig.term()).isEqualTo(secondConfig.term());
     assertThat(readConfig.time()).isEqualTo(secondConfig.time());
-    assertThat(readConfig.members())
-        .containsExactlyInAnyOrder(secondConfig.members().toArray(new RaftMember[0]));
+    assertThat(readConfig.newMembers())
+        .containsExactlyInAnyOrder(secondConfig.newMembers().toArray(new RaftMember[0]));
   }
 
   @Test
@@ -213,8 +213,8 @@ public class MetaStoreTest {
     assertThat(readConfig.index()).isEqualTo(secondConfig.index());
     assertThat(readConfig.term()).isEqualTo(secondConfig.term());
     assertThat(readConfig.time()).isEqualTo(secondConfig.time());
-    assertThat(readConfig.members())
-        .containsExactlyInAnyOrder(secondConfig.members().toArray(new RaftMember[0]));
+    assertThat(readConfig.newMembers())
+        .containsExactlyInAnyOrder(secondConfig.newMembers().toArray(new RaftMember[0]));
   }
 
   @Test

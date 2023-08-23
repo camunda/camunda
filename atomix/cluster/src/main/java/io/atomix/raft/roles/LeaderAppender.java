@@ -292,7 +292,7 @@ final class LeaderAppender {
         .withLeader(leader.memberId())
         .withIndex(raft.getCluster().getConfiguration().index())
         .withTime(raft.getCluster().getConfiguration().time())
-        .withMembers(raft.getCluster().getConfiguration().members())
+        .withMembers(raft.getCluster().getConfiguration().newMembers())
         .build();
   }
 

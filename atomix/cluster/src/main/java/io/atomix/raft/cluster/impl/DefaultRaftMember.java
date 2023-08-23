@@ -164,7 +164,7 @@ public final class DefaultRaftMember implements RaftMember, AutoCloseable {
             ReconfigureRequest.builder()
                 .withIndex(currentConfiguration.index())
                 .withTerm(currentConfiguration.term())
-                .withMembers(currentConfiguration.members())
+                .withMembers(currentConfiguration.newMembers())
                 // Override local member with the new type.
                 .withMember(new DefaultRaftMember(id, type, updated))
                 .build())

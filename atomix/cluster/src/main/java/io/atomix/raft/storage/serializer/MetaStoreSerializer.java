@@ -55,8 +55,8 @@ public class MetaStoreSerializer {
         .timestamp(configuration.time());
 
     final var newMembersEncoder =
-        configurationEncoder.newMembersCount(configuration.members().size());
-    for (final RaftMember member : configuration.members()) {
+        configurationEncoder.newMembersCount(configuration.newMembers().size());
+    for (final RaftMember member : configuration.newMembers()) {
       final var memberId = member.memberId().id();
       newMembersEncoder
           .next()

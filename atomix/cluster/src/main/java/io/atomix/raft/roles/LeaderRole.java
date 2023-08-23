@@ -93,7 +93,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
       raft.getThreadContext()
           .execute(
               () -> {
-                final var currentMembers = raft.getCluster().getConfiguration().members();
+                final var currentMembers = raft.getCluster().getConfiguration().newMembers();
                 configure(currentMembers, List.of());
               });
     }

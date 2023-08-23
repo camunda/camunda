@@ -117,7 +117,7 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
     final var hasPersistedConfiguration = configuration != null;
     if (hasPersistedConfiguration) {
       final var newClusterSize = cluster.size();
-      final var persistedClusterSize = configuration.members().size();
+      final var persistedClusterSize = configuration.newMembers().size();
 
       if (persistedClusterSize != newClusterSize) {
         throw new IllegalStateException(
@@ -131,7 +131,7 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
                 Arrays.toString(cluster.toArray())));
       }
 
-      final var persistedMembers = configuration.members();
+      final var persistedMembers = configuration.newMembers();
       for (final MemberId memberId : cluster) {
         final var noMatch =
             persistedMembers.stream()
@@ -190,7 +190,7 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
 
     if (configuration.requiresJointConsensus()) {
       final var oldMembers = configuration.oldMembers();
-      final var newMembers = configuration.members();
+      final var newMembers = configuration.newMembers();
 
       final var oldContexts =
           contexts.stream()
@@ -286,7 +286,7 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
               configuration.oldMembers().stream()
                   .map(RaftMember::memberId)
                   .collect(Collectors.toSet()),
-              configuration.members().stream()
+              configuration.newMembers().stream()
                   .map(RaftMember::memberId)
                   .collect(Collectors.toSet()),
               callback);
@@ -295,7 +295,7 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
       quorum =
           new SimpleVoteQuorum(
               callback,
-              configuration.members().stream()
+              configuration.newMembers().stream()
                   .map(RaftMember::memberId)
                   .collect(Collectors.toSet()));
     }
@@ -355,8 +355,8 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
       return false;
     }
 
-    final var previousMembers = previousConfig.members();
-    final var updatedMembers = updatedConfig.members();
+    final var previousMembers = previousConfig.newMembers();
+    final var updatedMembers = updatedConfig.newMembers();
 
     final var previousMember = previousMembers.stream().filter(m -> m.equals(member)).findFirst();
     final var updatedMember = updatedMembers.stream().filter(m -> m.equals(member)).findFirst();

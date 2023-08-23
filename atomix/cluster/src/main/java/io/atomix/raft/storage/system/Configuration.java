@@ -34,19 +34,19 @@ import java.util.Set;
  * @param term The term is the term of the leader at the time the configuration change was
  *     committed.
  * @param time The time at which the configuration was committed.
- * @param members The cluster membership for this configuration.
+ * @param newMembers The cluster membership for this configuration.
  * @param oldMembers The cluster membership for the previous configuration.
  */
 public record Configuration(
     long index,
     long term,
     long time,
-    Collection<RaftMember> members,
+    Collection<RaftMember> newMembers,
     Collection<RaftMember> oldMembers) {
 
   public Configuration {
     checkArgument(time > 0, "time must be positive");
-    checkNotNull(members, "members cannot be null");
+    checkNotNull(newMembers, "members cannot be null");
     checkNotNull(oldMembers, "oldMembers cannot be null");
   }
 
@@ -60,7 +60,7 @@ public record Configuration(
   }
 
   public Set<RaftMember> allMembers() {
-    return new HashSet<>(members) {
+    return new HashSet<>(newMembers) {
       {
         addAll(oldMembers);
       }
