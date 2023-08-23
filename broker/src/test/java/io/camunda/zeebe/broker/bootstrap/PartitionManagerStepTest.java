@@ -94,7 +94,8 @@ class PartitionManagerStepTest {
       testBrokerStartupContext.setBrokerAdminService(mock(BrokerAdminServiceImpl.class));
       testBrokerStartupContext.setJobStreamService(mock(JobStreamService.class));
       final ClusterTopologyService mockClusterTopology = mock(ClusterTopologyService.class);
-      when(mockClusterTopology.getPartitionDistribution()).thenReturn(PartitionDistribution.NO_PARTITIONS);
+      when(mockClusterTopology.getPartitionDistribution())
+          .thenReturn(PartitionDistribution.NO_PARTITIONS);
       testBrokerStartupContext.setClusterTopology(mockClusterTopology);
 
       final var memberConfig = new MemberConfig();
