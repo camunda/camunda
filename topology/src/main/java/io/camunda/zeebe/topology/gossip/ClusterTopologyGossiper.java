@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.topology.gossip;
 
+import io.atomix.cluster.ClusterMembershipEvent;
+import io.atomix.cluster.ClusterMembershipEvent.Type;
+import io.atomix.cluster.ClusterMembershipEventListener;
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.Member;
 import io.atomix.cluster.MemberId;
@@ -27,7 +30,8 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class ClusterTopologyGossiper implements TopologyUpdateNotifier {
+public final class ClusterTopologyGossiper
+    implements TopologyUpdateNotifier, ClusterMembershipEventListener {
   private static final Logger LOGGER = LoggerFactory.getLogger(ClusterTopologyGossiper.class);
   private static final String SYNC_REQUEST_TOPIC = "cluster-topology-sync";
   private static final String GOSSIP_REQUEST_TOPIC = "cluster-topology-gossip";
@@ -78,6 +82,11 @@ public final class ClusterTopologyGossiper implements TopologyUpdateNotifier {
     scheduleSync();
     registerSyncHandler();
     registerGossipHandler();
+    registerMemberAddedListener();
+  }
+
+  private void registerMemberAddedListener() {
+    membershipService.addListener(this);
   }
 
   private void registerSyncHandler() {
@@ -107,11 +116,14 @@ public final class ClusterTopologyGossiper implements TopologyUpdateNotifier {
 
     final var randomMemberToSync = membersToSync.remove(0);
 
-    LOGGER.trace("Sending sync request to {}", randomMemberToSync);
-    sendSyncRequest(randomMemberToSync)
+    sync(randomMemberToSync);
+  }
+
+  private void sync(final MemberId toMember) {
+    LOGGER.trace("Sending sync request to {}", toMember);
+    sendSyncRequest(toMember)
         .whenCompleteAsync(
-            (response, error) -> handleSyncResponse(response, error, randomMemberToSync),
-            executor::run);
+            (response, error) -> handleSyncResponse(response, error, toMember), executor::run);
   }
 
   private void refreshMembersToSync() {
@@ -247,5 +259,17 @@ public final class ClusterTopologyGossiper implements TopologyUpdateNotifier {
   @Override
   public void removeUpdateListener(final TopologyUpdateListener listener) {
     executor.run(() -> topologyUpdateListeners.remove(listener));
+  }
+
+  @Override
+  public boolean isRelevant(final ClusterMembershipEvent event) {
+    return event.type() == Type.MEMBER_ADDED;
+  }
+
+  @Override
+  public void event(final ClusterMembershipEvent event) {
+    // When a new member is added to the cluster, immediately sync with it so that the new member
+    // receives the latest topology as fast as possible.
+    executor.run(() -> sync(event.subject().id()));
   }
 }
