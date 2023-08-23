@@ -128,15 +128,14 @@ public final class ClusterTopologyGossiper implements TopologyUpdateNotifier {
   private void handleSyncResponse(
       final ClusterTopologyGossipState response, final Throwable error, final MemberId member) {
     if (error == null) {
-      update(response, () -> executor.run(this::gossip));
+      update(response);
     } else {
       LOGGER.warn("Failed to sync with {}", member, error);
     }
     scheduleSync();
   }
 
-  private void update(
-      final ClusterTopologyGossipState receivedGossipState, final Runnable onUpdated) {
+  private void update(final ClusterTopologyGossipState receivedGossipState) {
     if (!receivedGossipState.equals(gossipState)) {
       final ClusterTopology topology = receivedGossipState.getClusterTopology();
       if (topology != null) {
@@ -146,14 +145,18 @@ public final class ClusterTopologyGossiper implements TopologyUpdateNotifier {
               if (error != null) {
                 LOGGER.warn("Failed to process cluster topology received via gossip", error);
               } else if (!updatedTopology.equals(gossipState.getClusterTopology())) {
-                gossipState.setClusterTopology(updatedTopology);
-                LOGGER.trace("Updated local gossipState to {}", updatedTopology);
-                onUpdated.run();
-                notifyListeners(updatedTopology);
+                onTopologyUpdated(updatedTopology);
               }
             });
       }
     }
+  }
+
+  private void onTopologyUpdated(final ClusterTopology updatedTopology) {
+    gossipState.setClusterTopology(updatedTopology);
+    LOGGER.trace("Updated local gossipState to {}", updatedTopology);
+    gossip();
+    notifyListeners(updatedTopology);
   }
 
   private void notifyListeners(final ClusterTopology updatedTopology) {
@@ -164,7 +167,7 @@ public final class ClusterTopologyGossiper implements TopologyUpdateNotifier {
       final MemberId memberId, final ClusterTopologyGossipState clusterSharedGossipState) {
     LOGGER.trace(
         "Received topology sync request from {} with state {}", memberId, clusterSharedGossipState);
-    update(clusterSharedGossipState, () -> executor.run(this::gossip));
+    update(clusterSharedGossipState);
     return gossipState;
   }
 
@@ -175,9 +178,7 @@ public final class ClusterTopologyGossiper implements TopologyUpdateNotifier {
     executor.run(
         () -> {
           if (!clusterTopology.equals(gossipState.getClusterTopology())) {
-            gossipState.setClusterTopology(clusterTopology);
-            gossip();
-            notifyListeners(clusterTopology);
+            onTopologyUpdated(clusterTopology);
           }
         });
   }
@@ -229,7 +230,7 @@ public final class ClusterTopologyGossiper implements TopologyUpdateNotifier {
   private void handleGossip(
       final MemberId memberId, final ClusterTopologyGossipState receivedState) {
     LOGGER.trace("Received {} from {}", gossipState, memberId);
-    update(receivedState, () -> executor.run(this::gossip));
+    update(receivedState);
   }
 
   @Override
