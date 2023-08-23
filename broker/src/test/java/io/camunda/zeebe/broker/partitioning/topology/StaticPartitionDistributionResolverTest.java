@@ -50,7 +50,8 @@ class StaticPartitionDistributionResolverTest {
 
     // when
     final var topology =
-        new StaticPartitionDistributionResolver().resolveTopology(partitioningCfg, clusterCfg);
+        new PartitionDistributionResolver()
+            .resolvePartitionDistribution(partitioningCfg, clusterCfg);
     final Set<PartitionMetadata> partitionDistribution = topology.partitions();
 
     // then
@@ -113,7 +114,8 @@ fixed:
 
     // when
     final var topology =
-        new StaticPartitionDistributionResolver().resolveTopology(partitioningCfg, clusterCfg);
+        new PartitionDistributionResolver()
+            .resolvePartitionDistribution(partitioningCfg, clusterCfg);
     final Set<PartitionMetadata> partitionDistribution = topology.partitions();
 
     // then
