@@ -125,7 +125,7 @@ public final class JobWorkerImplTest {
   public void shouldOpenStreamIfOptedIn() {
     // given
     final JobWorkerBuilderStep3 builder =
-        client.newWorker().jobType("test").handler(NOOP_JOB_HANDLER).enableStreaming();
+        client.newWorker().jobType("test").handler(NOOP_JOB_HANDLER).streamEnabled(true);
 
     // when
     try (final JobWorker ignored = builder.open()) {

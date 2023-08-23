@@ -140,14 +140,8 @@ public final class JobWorkerBuilderImpl
   }
 
   @Override
-  public JobWorkerBuilderStep3 enableStreaming() {
-    enableStreaming = true;
-    return this;
-  }
-
-  @Override
-  public JobWorkerBuilderStep3 disableStreaming() {
-    enableStreaming = false;
+  public JobWorkerBuilderStep3 streamEnabled(final boolean isStreamEnabled) {
+    enableStreaming = isStreamEnabled;
     return this;
   }
 

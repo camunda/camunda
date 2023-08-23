@@ -121,7 +121,7 @@ class JobWorkerBuilderImplTest {
             .maxJobsActive(30);
 
     // when
-    builder.enableStreaming().open();
+    builder.streamEnabled(true).open();
 
     // then
     verify(jobClient, atLeast(1)).newStreamJobsCommand();
@@ -144,7 +144,7 @@ class JobWorkerBuilderImplTest {
         .timeout(1)
         .name("test")
         .maxJobsActive(30)
-        .enableStreaming()
+        .streamEnabled(true)
         .open();
 
     // then
@@ -166,7 +166,7 @@ class JobWorkerBuilderImplTest {
         .timeout(1)
         .name("test")
         .maxJobsActive(30)
-        .enableStreaming()
+        .streamEnabled(true)
         .open();
 
     // then

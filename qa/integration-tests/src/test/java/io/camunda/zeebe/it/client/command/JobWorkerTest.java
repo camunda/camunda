@@ -162,7 +162,7 @@ final class JobWorkerTest {
     // when - create a worker that streams, and create a new job after the stream is registered
     final var jobHandler = new RecordingJobHandler();
     final var builder =
-        client.getClient().newWorker().jobType(jobType).handler(jobHandler).enableStreaming();
+        client.getClient().newWorker().jobType(jobType).handler(jobHandler).streamEnabled(true);
     try (final var ignored = builder.open()) {
       awaitStreamRegistered(jobType);
       client.createSingleJob(jobType, b -> {});
@@ -178,7 +178,7 @@ final class JobWorkerTest {
     // given
     final var jobHandler = new RecordingJobHandler();
     final var builder =
-        client.getClient().newWorker().jobType(jobType).handler(jobHandler).enableStreaming();
+        client.getClient().newWorker().jobType(jobType).handler(jobHandler).streamEnabled(true);
 
     // when
     try (final var ignored = builder.open()) {
@@ -209,7 +209,7 @@ final class JobWorkerTest {
 
   private static JobWorker prepareStreamingWorker(
       final String jobType, final JobWorkerBuilderStep3 builder) {
-    final var worker = builder.enableStreaming().open();
+    final var worker = builder.streamEnabled(true).open();
     awaitStreamRegistered(jobType);
     return worker;
   }

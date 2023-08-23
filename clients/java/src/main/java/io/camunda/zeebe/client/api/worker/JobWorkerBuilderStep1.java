@@ -197,10 +197,10 @@ public interface JobWorkerBuilderStep1 {
     JobWorkerBuilderStep3 backoffSupplier(BackoffSupplier backoffSupplier);
 
     /**
-     * Opt-in feature flag to enable job streaming. If called, the job worker will use a mix of
-     * streaming and polling to activate jobs. A long living stream will be opened onto which jobs
-     * will be eagerly pushed, and the polling mechanism will be used strictly to fetch jobs created
-     * <em>before</em> any streams were opened.
+     * Opt-in feature flag to enable job streaming. If set as enabled, the job worker will use a mix
+     * of streaming and polling to activate jobs. A long living stream will be opened onto which
+     * jobs will be eagerly pushed, and the polling mechanism will be used strictly to fetch jobs
+     * created <em>before</em> any streams were opened.
      *
      * <p>If the stream is closed, e.g. the server closed the connection, was restarted, etc., it
      * will be immediately recreated as long as the worker is opened.
@@ -211,21 +211,7 @@ public interface JobWorkerBuilderStep1 {
      * @return the builder for this worker
      */
     @ExperimentalApi("https://github.com/camunda/zeebe/issues/11231")
-    JobWorkerBuilderStep3 enableStreaming();
-
-    /**
-     * Opt-in feature flag to disable job streaming.
-     *
-     * <p>If the stream is closed, e.g. the server closed the connection, was restarted, etc., it
-     * will be immediately recreated as long as the worker is opened.
-     *
-     * <p>NOTE: Job streaming is still under active development, and should be disabled if you
-     * notice any issues.
-     *
-     * @return the builder for this worker
-     */
-    @ExperimentalApi("https://github.com/camunda/zeebe/issues/11231")
-    JobWorkerBuilderStep3 disableStreaming();
+    JobWorkerBuilderStep3 streamEnabled(boolean isStreamEnabled);
 
     /**
      * If streaming is enabled, sets a maximum lifetime for a given stream. Once this timeout is
