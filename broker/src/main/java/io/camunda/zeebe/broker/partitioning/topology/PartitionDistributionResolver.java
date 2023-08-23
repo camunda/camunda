@@ -79,13 +79,12 @@ public class PartitionDistributionResolver {
         .toList();
   }
 
-  public PartitionDistribution resolveParitionDistribution(final ClusterTopology clusterTopology) {
-    // TODO: Add tests, error checks, edge cases etc.
+  public PartitionDistribution resolvePartitionDistribution(final ClusterTopology clusterTopology) {
     if (clusterTopology.isUninitialized()) {
       throw new IllegalStateException(
           "Cannot generated partition distribution from uninitialized topology");
     }
-    final var tempStream =
+    final var partitionsToMembersMap =
         clusterTopology.members().entrySet().stream()
             .flatMap(
                 memberEntry ->
@@ -94,12 +93,11 @@ public class PartitionDistributionResolver {
                             p ->
                                 Map.entry(
                                     p.getKey(),
-                                    Map.entry(memberEntry.getKey(), p.getValue().priority()))));
-    final var partitionsToMembersMap =
-        tempStream.collect(
-            Collectors.groupingBy(
-                Entry::getKey,
-                Collectors.toMap(e -> e.getValue().getKey(), e -> e.getValue().getValue())));
+                                    Map.entry(memberEntry.getKey(), p.getValue().priority()))))
+            .collect(
+                Collectors.groupingBy(
+                    Entry::getKey,
+                    Collectors.toMap(e -> e.getValue().getKey(), e -> e.getValue().getValue())));
 
     final var partitionDistribution =
         partitionsToMembersMap.entrySet().stream()

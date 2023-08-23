@@ -23,11 +23,11 @@ public class StaticClusterTopologyService implements ClusterTopologyService {
   @Override
   public ActorFuture<Void> start(final BrokerStartupContext brokerStartupContext) {
     try {
-    partitionDistribution =
-        new PartitionDistributionResolver()
-            .resolvePartitionDistribution(
-                brokerStartupContext.getBrokerConfiguration().getExperimental().getPartitioning(),
-                brokerStartupContext.getBrokerConfiguration().getCluster());
+      partitionDistribution =
+          new PartitionDistributionResolver()
+              .resolvePartitionDistribution(
+                  brokerStartupContext.getBrokerConfiguration().getExperimental().getPartitioning(),
+                  brokerStartupContext.getBrokerConfiguration().getCluster());
     } catch (final Exception e) {
       return CompletableActorFuture.completedExceptionally(e);
     }
