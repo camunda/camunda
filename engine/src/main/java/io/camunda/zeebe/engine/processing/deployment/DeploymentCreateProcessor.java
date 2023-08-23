@@ -195,14 +195,15 @@ public final class DeploymentCreateProcessor
         .forEach(
             decisionRequirementsRecord ->
                 stateWriter.appendFollowUpEvent(
-                    command.getKey(),
+                    decisionRequirementsRecord.getDecisionRequirementsKey(),
                     DecisionRequirementsIntent.CREATED,
                     decisionRequirementsRecord));
     deploymentEvent.decisionsMetadata().stream()
         .filter(not(DecisionRecord::isDuplicate))
         .forEach(
             (record) ->
-                stateWriter.appendFollowUpEvent(command.getKey(), DecisionIntent.CREATED, record));
+                stateWriter.appendFollowUpEvent(
+                    record.getDecisionKey(), DecisionIntent.CREATED, record));
   }
 
   /**
