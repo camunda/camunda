@@ -184,8 +184,7 @@ public interface TopologyInitializer {
                     return;
                   }
                   try {
-                    LOGGER.debug(
-                        "Received cluster topology {} from {}", knownMembersToSync, memberId);
+                    LOGGER.debug("Received cluster topology {} from {}", topology, memberId);
                     persistedClusterTopology.update(topology);
                     onTopologyUpdated(topology);
                     return;
