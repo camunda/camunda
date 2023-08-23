@@ -230,6 +230,21 @@ describe('<DecisionOperations />', () => {
         name: /^delete decision definition "myDecision - version 2"$/i,
       }),
     ).toBeDisabled();
+
+    await waitForElementToBeRemoved(() =>
+      screen.getByTestId('delete-operation-spinner'),
+    );
+
+    expect(
+      screen.getByRole('button', {
+        name: /^delete decision definition "myDecision - version 2"$/i,
+      }),
+    ).toBeEnabled();
+    expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+      kind: 'success',
+      title: 'Operation created',
+      isDismissable: true,
+    });
   });
 
   it('should enable button and remove spinner when delete operation failed', async () => {

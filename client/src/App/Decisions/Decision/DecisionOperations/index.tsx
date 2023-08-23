@@ -112,7 +112,14 @@ const DecisionOperations: React.FC<Props> = ({
 
           operationsStore.applyDeleteDecisionDefinitionOperation({
             decisionDefinitionId,
-            onSuccess: panelStatesStore.expandOperationsPanel,
+            onSuccess: () => {
+              setIsOperationRunning(false);
+              panelStatesStore.expandOperationsPanel();
+
+              notifications.displayNotification('success', {
+                headline: 'Operation created',
+              });
+            },
             onError: (statusCode: number) => {
               setIsOperationRunning(false);
 

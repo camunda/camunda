@@ -114,7 +114,16 @@ const ProcessOperations: React.FC<Props> = ({
           setIsDeleteModalVisible(false);
           operationsStore.applyDeleteProcessDefinitionOperation({
             processDefinitionId,
-            onSuccess: panelStatesStore.expandOperationsPanel,
+            onSuccess: () => {
+              setIsOperationRunning(false);
+              panelStatesStore.expandOperationsPanel();
+
+              notificationsStore.displayNotification({
+                kind: 'success',
+                title: 'Operation created',
+                isDismissable: true,
+              });
+            },
             onError: (statusCode: number) => {
               setIsOperationRunning(false);
 
