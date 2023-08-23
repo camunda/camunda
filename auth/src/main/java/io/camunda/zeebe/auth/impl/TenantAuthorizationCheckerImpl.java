@@ -27,4 +27,13 @@ public class TenantAuthorizationCheckerImpl implements TenantAuthorizationChecke
   public Boolean isFullyAuthorized(final List<String> tenantIds) {
     return authorizedTenants.containsAll(tenantIds);
   }
+
+  public static TenantAuthorizationChecker fromJwtDecoder(final JwtAuthorizationDecoder decoder) {
+    final List<String> authorizedTenants =
+        decoder
+            .getAuthorizations()
+            .get(JwtAuthorizationDecoder.AUTHORIZED_TENANTS_CLAIM)
+            .asList(String.class);
+    return new TenantAuthorizationCheckerImpl(authorizedTenants);
+  }
 }
