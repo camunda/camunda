@@ -1,4 +1,11 @@
 #!/bin/bash -eu
+#
+# Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+# one or more contributor license agreements. See the NOTICE file distributed
+# with this work for additional information regarding copyright ownership.
+# Licensed under the Zeebe Community License 1.1. You may not use this file
+# except in compliance with the Zeebe Community License 1.1.
+#
 # Usage: ./release.sh [-p] VERSION
 # Example usage:
 #   $ ./release.sh 1.2.4
@@ -64,15 +71,18 @@ VERSION=${1:-}
 if [ -n "$VERSION" ]; then
 	echo "Checking out release worktree under ${WORKTREE}. In case of interruption, make sure to manually clean it up afterwards"
 	git worktree add -q "${WORKTREE}" "${VERSION}"
-	pushd "${WORKTREE}/benchmarks/project" > /dev/null 2>&1
+	pushd "${WORKTREE}" > /dev/null 2>&1
 fi
+
+echo "Building benchmark project"
+./mvnw -B -D skipTests -D skipChecks -am -pl benchmarks/project package
 
 TAG=${VERSION:-SNAPSHOT}
 echo "Building gcr.io/zeebe-io/starter:${TAG}"
-docker build -t "gcr.io/zeebe-io/starter:${TAG}" --target starter .
+./mvnw -B -D skipTests -D skipChecks -D image="gcr.io/zeebe-io/starter:${TAG}" -P starter -pl benchmarks/project jib:buildDocker
 
 echo "Building gcr.io/zeebe-io/worker:${TAG}"
-docker build -t "gcr.io/zeebe-io/worker:${TAG}" --target worker .
+./mvnw -B -D skipTests -D skipChecks -D image="gcr.io/zeebe-io/worker:${TAG}" -P worker -pl benchmarks/project jib:buildDocker
 
 PUSH=${PUSH:-0}
 if [ "${PUSH}" -ne "1" ]; then
