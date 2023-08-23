@@ -65,7 +65,10 @@
         "columns": null
       },
       "id": "Field_0msuoi3",
-      "key": "field_1prtdvl"
+      "key": "field_1prtdvl",
+      "validate": {
+        "required": true
+      }
     }
   ],
   "type": "default",

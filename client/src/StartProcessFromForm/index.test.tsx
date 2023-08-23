@@ -9,6 +9,7 @@ import {
   fireEvent,
   render,
   screen,
+  waitFor,
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
 import {StartProcessFromForm} from './index';
@@ -103,6 +104,34 @@ describe('<StartProcessFromForm />', () => {
         'Your form has been successfully submitted.You can close this window now.',
       ),
     ).toBeInTheDocument();
+  });
+
+  it('should show validation error', async () => {
+    nodeMockServer.use(
+      rest.get('/v1/external/process/:bpmnProcessId/form', (_, res, ctx) =>
+        res(ctx.json(formMocks.form)),
+      ),
+    );
+
+    render(<StartProcessFromForm />, {
+      wrapper: getWrapper({
+        initialEntries: ['/new/foo'],
+      }),
+    });
+
+    await waitForElementToBeRemoved(screen.getByTestId('public-form-skeleton'));
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Submit',
+      }),
+    );
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole('textbox', {name: /my variable \*/i}),
+      ).toHaveAccessibleDescription('Field is required.'),
+    );
   });
 
   it('should handle a submit error', async () => {

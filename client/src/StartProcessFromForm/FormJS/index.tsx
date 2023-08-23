@@ -76,7 +76,7 @@ const FormJS: React.FC<Props> = ({
               setSubmissionState('error');
             }}
             onValidationError={() => {
-              setSubmissionState('error');
+              setSubmissionState('inactive');
             }}
           />
         )}
