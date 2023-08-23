@@ -164,7 +164,7 @@ public final class DeploymentCreateProcessor
   private void processDistributedRecord(final TypedRecord<DeploymentRecord> command) {
     final var deploymentEvent = command.getValue();
     createBpmnResources(deploymentEvent);
-    createDmnResources(command, deploymentEvent);
+    createDmnResources(deploymentEvent);
     final var recordWithoutResource = createDeploymentWithoutResources(deploymentEvent);
     stateWriter.appendFollowUpEvent(
         command.getKey(), DeploymentIntent.CREATED, recordWithoutResource);
@@ -187,22 +187,22 @@ public final class DeploymentCreateProcessor
             });
   }
 
-  private void createDmnResources(
-      final TypedRecord<DeploymentRecord> command, final DeploymentRecord deploymentEvent) {
+  private void createDmnResources(final DeploymentRecord deploymentEvent) {
     deploymentEvent.decisionRequirementsMetadata().stream()
         .filter(not(DecisionRequirementsMetadataRecord::isDuplicate))
         .map(drg -> createDrgRecord(deploymentEvent, drg))
         .forEach(
             decisionRequirementsRecord ->
                 stateWriter.appendFollowUpEvent(
-                    command.getKey(),
+                    decisionRequirementsRecord.getDecisionRequirementsKey(),
                     DecisionRequirementsIntent.CREATED,
                     decisionRequirementsRecord));
     deploymentEvent.decisionsMetadata().stream()
         .filter(not(DecisionRecord::isDuplicate))
         .forEach(
             (record) ->
-                stateWriter.appendFollowUpEvent(command.getKey(), DecisionIntent.CREATED, record));
+                stateWriter.appendFollowUpEvent(
+                    record.getDecisionKey(), DecisionIntent.CREATED, record));
   }
 
   /**

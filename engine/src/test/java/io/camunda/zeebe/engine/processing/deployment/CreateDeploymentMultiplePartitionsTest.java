@@ -17,12 +17,16 @@ import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
+import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
+import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsMetadataValue;
 import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
+import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.io.ByteArrayOutputStream;
@@ -406,6 +410,60 @@ public final class CreateDeploymentMultiplePartitionsTest {
 
     assertThat(repeatedDrgs.size()).isEqualTo(PARTITION_COUNT - 1);
     repeatedDrgs.forEach(r -> assertDifferentDrg(originalDrg.get(0), r));
+  }
+
+  @Test
+  public void shouldWriteProcessCreatedEventsWithSameKeys() {
+    // given
+    final var processId = Strings.newRandomValidBpmnId();
+
+    // when
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            "process.bpmn", Bpmn.createExecutableProcess(processId).startEvent().endEvent().done())
+        .deploy();
+
+    // then
+    assertThat(
+            RecordingExporter.processRecords()
+                .withIntents(ProcessIntent.CREATED)
+                .withBpmnProcessId(processId)
+                .limit(3)
+                .map(Record::getKey)
+                .distinct())
+        .describedAs("All created events get the same key")
+        .hasSize(1);
+  }
+
+  @Test
+  public void shouldWriteDrgAndDecisionCreatedEventsWithSameKeys() {
+    // given
+    final var drgId = "force_users";
+    final var decisionId = "jedi_or_sith";
+
+    // when
+    ENGINE.deployment().withXmlClasspathResource(DMN_DECISION_TABLE).deploy();
+
+    // then
+    assertThat(
+            RecordingExporter.decisionRequirementsRecords()
+                .withIntents(DecisionRequirementsIntent.CREATED)
+                .withDecisionRequirementsId(drgId)
+                .limit(3)
+                .map(Record::getKey)
+                .distinct())
+        .describedAs("All created events get the same key")
+        .hasSize(1);
+    assertThat(
+            RecordingExporter.decisionRecords()
+                .withIntents(DecisionIntent.CREATED)
+                .withDecisionId(decisionId)
+                .limit(3)
+                .map(Record::getKey)
+                .distinct())
+        .describedAs("All created events get the same key")
+        .hasSize(1);
   }
 
   private void assertDeploymentRecordWithoutResources(
