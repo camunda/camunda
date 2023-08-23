@@ -19,8 +19,10 @@ import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.client.api.worker.JobWorker;
+import io.camunda.zeebe.client.api.worker.JobWorkerMetrics;
 import io.camunda.zeebe.config.AppCfg;
 import io.camunda.zeebe.config.WorkerCfg;
+import io.micrometer.core.instrument.Tags;
 import java.time.Instant;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingDeque;
@@ -44,8 +46,12 @@ public class Worker extends App {
     final var variables = readVariables(workerCfg.getPayloadPath());
     final BlockingQueue<Future<?>> requestFutures = new ArrayBlockingQueue<>(10_000);
     final BlockingDeque<DelayedCommand> delayedCommands = new LinkedBlockingDeque<>(10_000);
-
     final ZeebeClient client = createZeebeClient();
+    final JobWorkerMetrics metrics =
+        JobWorkerMetrics.micrometer()
+            .withMeterRegistry(prometheusRegistry)
+            .withTags(Tags.of("WorkerName", workerCfg.getWorkerName(), "JobType", jobType))
+            .build();
     printTopology(client);
 
     final JobWorker worker =
@@ -69,6 +75,7 @@ public class Worker extends App {
                   }
                 })
             .streamEnabled(isStreamEnabled)
+            .metrics(metrics)
             .open();
 
     final ResponseChecker responseChecker = new ResponseChecker(requestFutures);
