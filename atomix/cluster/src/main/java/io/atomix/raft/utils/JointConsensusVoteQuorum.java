@@ -21,9 +21,9 @@ public class JointConsensusVoteQuorum implements VoteQuorum {
   private boolean completed;
 
   public JointConsensusVoteQuorum(
+      final Consumer<Boolean> callback,
       final Collection<MemberId> oldMembers,
-      final Collection<MemberId> newMembers,
-      final Consumer<Boolean> callback) {
+      final Collection<MemberId> newMembers) {
     oldQuorum = new SimpleVoteQuorum(this::finishOldQuorum, oldMembers);
     newQuorum = new SimpleVoteQuorum(this::finishNewQuorum, newMembers);
     this.callback = callback;

@@ -283,14 +283,13 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
     if (configuration.requiresJointConsensus()) {
       quorum =
           new JointConsensusVoteQuorum(
+              callback,
               configuration.oldMembers().stream()
                   .map(RaftMember::memberId)
                   .collect(Collectors.toSet()),
               configuration.newMembers().stream()
                   .map(RaftMember::memberId)
-                  .collect(Collectors.toSet()),
-              callback);
-      return quorum;
+                  .collect(Collectors.toSet()));
     } else {
       quorum =
           new SimpleVoteQuorum(

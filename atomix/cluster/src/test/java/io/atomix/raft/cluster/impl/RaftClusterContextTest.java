@@ -9,6 +9,8 @@ package io.atomix.raft.cluster.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
 
@@ -20,6 +22,7 @@ import io.atomix.raft.storage.system.Configuration;
 import io.atomix.raft.storage.system.MetaStore;
 import java.time.Instant;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
@@ -122,6 +125,64 @@ final class RaftClusterContextTest {
         .allSatisfy(member -> assertThat(context.getMember(member.memberId())).isNull());
     assertThat(remoteMembers)
         .allSatisfy(member -> assertThat(context.getMemberContext(member.memberId())).isNull());
+  }
+
+  @Test
+  void shouldCountVoteFromLocalMember() {
+    // given
+    final var localMember = new DefaultRaftMember(new MemberId("1"), Type.ACTIVE, Instant.now());
+    final var remoteMembers =
+        List.<RaftMember>of(
+            new DefaultRaftMember(new MemberId("2"), Type.ACTIVE, Instant.now()),
+            new DefaultRaftMember(new MemberId("3"), Type.ACTIVE, Instant.now()));
+    final var members = Stream.concat(Stream.of(localMember), remoteMembers.stream()).toList();
+
+    final var raft =
+        raftWithStoredConfiguration(new Configuration(1, 1, Instant.now().toEpochMilli(), members));
+    final var context = new RaftClusterContext(localMember.memberId(), raft);
+
+    // when
+    final Consumer<Boolean> callback = mock();
+    final var quorum = context.getVoteQuorum(callback);
+
+    quorum.succeed(new MemberId("2"));
+
+    // then
+    verify(callback).accept(true);
+  }
+
+  @Test
+  void shouldRequireJointConsensusVotes() {
+    // given
+    final var localMember = new DefaultRaftMember(new MemberId("1"), Type.ACTIVE, Instant.now());
+    final var oldRemoteMembers =
+        List.<RaftMember>of(
+            new DefaultRaftMember(new MemberId("2"), Type.ACTIVE, Instant.now()),
+            new DefaultRaftMember(new MemberId("3"), Type.ACTIVE, Instant.now()));
+    final var oldMembers =
+        Stream.concat(Stream.of(localMember), oldRemoteMembers.stream()).toList();
+    final var newRemoteMembers =
+        List.<RaftMember>of(
+            new DefaultRaftMember(new MemberId("2"), Type.ACTIVE, Instant.now()),
+            new DefaultRaftMember(new MemberId("4"), Type.ACTIVE, Instant.now()));
+    final var newMembers =
+        Stream.concat(Stream.of(localMember), newRemoteMembers.stream()).toList();
+
+    final var raft =
+        raftWithStoredConfiguration(
+            new Configuration(1, 1, Instant.now().toEpochMilli(), newMembers, oldMembers));
+    final var context = new RaftClusterContext(localMember.memberId(), raft);
+
+    // when
+    final Consumer<Boolean> callback = mock();
+    final var quorum = context.getVoteQuorum(callback);
+
+    // then
+    quorum.succeed(new MemberId("4"));
+    verifyNoInteractions(callback);
+
+    quorum.succeed(new MemberId("2"));
+    verify(callback).accept(true);
   }
 
   private RaftContext raftWithStoredConfiguration(final Configuration configuration) {

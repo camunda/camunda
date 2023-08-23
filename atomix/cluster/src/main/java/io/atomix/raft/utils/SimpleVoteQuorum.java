@@ -9,6 +9,7 @@ package io.atomix.raft.utils;
 
 import io.atomix.cluster.MemberId;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Consumer;
 
@@ -26,13 +27,13 @@ public class SimpleVoteQuorum implements VoteQuorum {
    */
   public SimpleVoteQuorum(final Consumer<Boolean> callback, final Collection<MemberId> members) {
     this.callback = callback;
-    this.members = Set.copyOf(members);
+    this.members = new HashSet<>(members);
     quorum = members.size() / 2 + 1;
   }
 
   @Override
   public void succeed(final MemberId member) {
-    if (members.contains(member)) {
+    if (members.remove(member)) {
       succeeded++;
       checkComplete();
     }
@@ -40,7 +41,7 @@ public class SimpleVoteQuorum implements VoteQuorum {
 
   @Override
   public void fail(final MemberId member) {
-    if (members.contains(member)) {
+    if (members.remove(member)) {
       failed++;
       checkComplete();
     }
