@@ -231,7 +231,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   }
 
   @Override
-  public void setClusterTopology(final ClusterTopologyService partitionDistribution) {
-    this.partitionDistribution = partitionDistribution;
+  public void setClusterTopology(final ClusterTopologyService clusterTopologyService) {
+    partitionDistribution = clusterTopologyService;
   }
 }

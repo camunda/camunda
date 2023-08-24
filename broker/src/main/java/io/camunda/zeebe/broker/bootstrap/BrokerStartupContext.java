@@ -95,5 +95,5 @@ public interface BrokerStartupContext {
 
   ClusterTopologyService getClusterTopology();
 
-  void setClusterTopology(ClusterTopologyService partitionDistribution);
+  void setClusterTopology(ClusterTopologyService clusterTopologyService);
 }
