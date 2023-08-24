@@ -10,7 +10,7 @@ import {observer} from 'mobx-react-lite';
 import {useLocation} from 'react-router-dom';
 import {Paths} from 'modules/Routes';
 import {authenticationStore} from 'modules/stores/authentication';
-import {notificationsStore} from 'modules/stores/carbonNotifications';
+import {notificationsStore} from 'modules/stores/notifications';
 
 const SessionWatcher: React.FC = observer(() => {
   const removeNotification = useRef<(() => void) | null>(null);

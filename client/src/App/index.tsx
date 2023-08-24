@@ -11,7 +11,7 @@ import {
   Routes,
 } from 'react-router-dom';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
-import {Notifications} from 'modules/carbonNotifications';
+import {Notifications} from 'modules/notifications';
 import {NetworkStatusWatcher} from './NetworkStatusWatcher';
 import {Paths} from 'modules/Routes';
 import {RedirectDeprecatedRoutes} from './RedirectDeprecatedRoutes';
@@ -25,35 +25,35 @@ import {createBrowserHistory} from 'history';
 import {ThemeSwitcher} from 'modules/components/ThemeSwitcher';
 import loadable from '@loadable/component';
 
-const CarbonLogin = loadable(() => import('./Carbon/Login/index'), {
+const CarbonLogin = loadable(() => import('./Login/index'), {
   resolveComponent: (components) => components.Login,
 });
 
-const CarbonLayout = loadable(() => import('./Carbon/Layout/index'), {
+const CarbonLayout = loadable(() => import('./Layout/index'), {
   resolveComponent: (components) => components.Layout,
 });
 
-const CarbonDashboard = loadable(() => import('./Carbon/Dashboard/index'), {
+const CarbonDashboard = loadable(() => import('./Dashboard/index'), {
   resolveComponent: (components) => components.Dashboard,
 });
 
-const CarbonDecisions = loadable(() => import('./Carbon/Decisions/index'), {
+const CarbonDecisions = loadable(() => import('./Decisions/index'), {
   resolveComponent: (components) => components.Decisions,
 });
 
-const CarbonProcesses = loadable(() => import('./Carbon/Processes/index'), {
+const CarbonProcesses = loadable(() => import('./Processes/index'), {
   resolveComponent: (components) => components.Processes,
 });
 
 const CarbonProcessInstance = loadable(
-  () => import('./Carbon/ProcessInstance/index'),
+  () => import('./ProcessInstance/index'),
   {
     resolveComponent: (components) => components.ProcessInstance,
   },
 );
 
 const CarbonDecisionInstance = loadable(
-  () => import('./Carbon/DecisionInstance/index'),
+  () => import('./DecisionInstance/index'),
   {
     resolveComponent: (components) => components.DecisionInstance,
   },

@@ -12,9 +12,9 @@ import {SessionWatcher} from './SessionWatcher';
 import {useEffect} from 'react';
 import {act} from 'react-dom/test-utils';
 import {Paths} from 'modules/Routes';
-import {notificationsStore} from 'modules/stores/carbonNotifications';
+import {notificationsStore} from 'modules/stores/notifications';
 
-jest.mock('modules/stores/carbonNotifications', () => {
+jest.mock('modules/stores/notifications', () => {
   const hideNotificationMock = jest.fn();
   return {
     notificationsStore: {

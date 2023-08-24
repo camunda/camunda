@@ -6,7 +6,7 @@
  */
 
 import React, {useEffect, useRef} from 'react';
-import {notificationsStore} from 'modules/stores/carbonNotifications';
+import {notificationsStore} from 'modules/stores/notifications';
 
 const NetworkStatusWatcher: React.FC = () => {
   const notificationRef = useRef<{remove: () => void} | null>(null);
