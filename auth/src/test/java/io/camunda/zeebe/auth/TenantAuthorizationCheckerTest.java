@@ -12,15 +12,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.auth.api.TenantAuthorizationChecker;
 import io.camunda.zeebe.auth.impl.TenantAuthorizationCheckerImpl;
 import java.util.List;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 public class TenantAuthorizationCheckerTest {
 
-  private TenantAuthorizationChecker accessChecker;
+  private static TenantAuthorizationChecker accessChecker;
 
-  @Before
-  public void setUp() {
+  @BeforeAll
+  public static void setUp() {
     accessChecker = new TenantAuthorizationCheckerImpl(List.of("tenant-1", "tenant-2", "tenant-3"));
   }
 
