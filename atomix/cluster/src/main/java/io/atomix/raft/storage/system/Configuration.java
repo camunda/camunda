@@ -60,10 +60,9 @@ public record Configuration(
   }
 
   public Set<RaftMember> allMembers() {
-    return new HashSet<>(newMembers) {
-      {
-        addAll(oldMembers);
-      }
-    };
+    final var all = new HashSet<RaftMember>(oldMembers.size() + newMembers.size());
+    all.addAll(newMembers);
+    all.addAll(oldMembers);
+    return all;
   }
 }
