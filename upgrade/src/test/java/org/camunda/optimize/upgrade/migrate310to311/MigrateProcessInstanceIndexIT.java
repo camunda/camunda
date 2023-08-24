@@ -7,12 +7,11 @@ package org.camunda.optimize.upgrade.migrate310to311;
 
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.persistence.incident.IncidentDto;
+import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.junit.jupiter.api.Test;
 
-import java.util.Collection;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -33,33 +32,37 @@ public class MigrateProcessInstanceIndexIT extends AbstractUpgrade311IT {
     // then
     List<ProcessInstanceDto> alwaysCompletingProcessInstances = getAllDocumentsOfIndexAs(new ProcessInstanceIndex(
       ALWAYS_COMPLETING_PROCESS).getIndexName(), ProcessInstanceDto.class);
-    List<IncidentDto> alwaysCompletingInstanceIncidentDtos = alwaysCompletingProcessInstances.stream()
-      .map(ProcessInstanceDto::getIncidents)
-      .flatMap(Collection::stream)
-      .collect(Collectors.toList());
     assertThat(alwaysCompletingProcessInstances)
-      .hasSize(4)
       .extracting(ProcessInstanceDto::getTenantId)
-      .containsExactlyInAnyOrder("<default>", "<default>", "<default>", "<default>");
-    assertThat(alwaysCompletingInstanceIncidentDtos)
       .hasSize(4)
+      .containsOnly("<default>");
+    assertThat(alwaysCompletingProcessInstances)
+      .flatExtracting(ProcessInstanceDto::getIncidents)
       .extracting(IncidentDto::getTenantId)
-      .containsExactlyInAnyOrder("<default>", "<default>", "<default>", "<default>");
+      .hasSize(4)
+      .containsOnly("<default>");
+    assertThat(alwaysCompletingProcessInstances)
+      .flatExtracting(ProcessInstanceDto::getFlowNodeInstances)
+      .extracting(FlowNodeInstanceDto::getTenantId)
+      .hasSize(4)
+      .containsOnly("<default>");
 
     List<ProcessInstanceDto> onlyIncidentsProcessInstances = getAllDocumentsOfIndexAs(new ProcessInstanceIndex(
       ONLY_INCIDENT_PROCESS).getIndexName(), ProcessInstanceDto.class);
-    List<IncidentDto> onlyIncidentsInstanceIncidentDtos = alwaysCompletingProcessInstances.stream()
-      .map(ProcessInstanceDto::getIncidents)
-      .flatMap(Collection::stream)
-      .collect(Collectors.toList());
     assertThat(onlyIncidentsProcessInstances)
-      .hasSize(4)
       .extracting(ProcessInstanceDto::getTenantId)
-      .containsExactlyInAnyOrder("<default>", "<default>", "<default>", "<default>");
-    assertThat(onlyIncidentsInstanceIncidentDtos)
       .hasSize(4)
+      .containsOnly("<default>");
+    assertThat(onlyIncidentsProcessInstances)
+      .flatExtracting(ProcessInstanceDto::getIncidents)
       .extracting(IncidentDto::getTenantId)
-      .containsExactlyInAnyOrder("<default>", "<default>", "<default>", "<default>");
+      .hasSize(4)
+      .containsOnly("<default>");
+    assertThat(onlyIncidentsProcessInstances)
+      .flatExtracting(ProcessInstanceDto::getFlowNodeInstances)
+      .extracting(FlowNodeInstanceDto::getTenantId)
+      .hasSize(8)
+      .containsOnly("<default>");
   }
 
   @Test
@@ -71,19 +74,23 @@ public class MigrateProcessInstanceIndexIT extends AbstractUpgrade311IT {
     performUpgrade();
 
     // then
-    List<ProcessInstanceDto> reviewinvoiceProcessInstances = getAllDocumentsOfIndexAs(new ProcessInstanceIndex(
-      REVIEW_INVOICE_PROCESS).getIndexName(), ProcessInstanceDto.class);
-    List<IncidentDto> incidentDtos = reviewinvoiceProcessInstances.stream()
-      .map(ProcessInstanceDto::getIncidents)
-      .flatMap(Collection::stream)
-      .collect(Collectors.toList());
-    assertThat(reviewinvoiceProcessInstances)
+    List<ProcessInstanceDto> instances = getAllDocumentsOfIndexAs(
+      new ProcessInstanceIndex(REVIEW_INVOICE_PROCESS).getIndexName(),
+      ProcessInstanceDto.class
+    );
+    assertThat(instances)
       .hasSize(2)
       .extracting(ProcessInstanceDto::getTenantId)
       .containsExactlyInAnyOrder(null, "someTenant");
-    assertThat(incidentDtos)
+    assertThat(instances)
+      .flatExtracting(ProcessInstanceDto::getIncidents)
       .hasSize(4)
       .extracting(IncidentDto::getTenantId)
+      .containsExactlyInAnyOrder(null, null, "someTenant", "someTenant");
+    assertThat(instances)
+      .flatExtracting(ProcessInstanceDto::getFlowNodeInstances)
+      .hasSize(4)
+      .extracting(FlowNodeInstanceDto::getTenantId)
       .containsExactlyInAnyOrder(null, null, "someTenant", "someTenant");
   }
 

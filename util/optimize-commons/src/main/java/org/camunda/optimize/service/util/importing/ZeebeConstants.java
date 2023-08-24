@@ -12,5 +12,6 @@ import lombok.NoArgsConstructor;
 public class ZeebeConstants {
 
   public static final String ZEEBE_RECORD_TEST_PREFIX = "zeebe-record";
+  public static final String ZEEBE_DEFAULT_TENANT= "<default>";
 
 }

@@ -5,10 +5,12 @@
  */
 package org.camunda.optimize.upgrade.plan.factories;
 
-import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import com.google.common.collect.ImmutableMap;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.zeebe.variable.ZeebeVariableRecordDto;
+import org.apache.commons.text.StringSubstitutor;
+import org.camunda.optimize.dto.optimize.datasource.DataSourceDto;
 import org.camunda.optimize.service.es.schema.MappingMetadataUtil;
+import org.camunda.optimize.service.es.schema.index.AbstractDefinitionIndex;
 import org.camunda.optimize.service.es.schema.index.DashboardIndex;
 import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
@@ -26,11 +28,11 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ZEEBE_DATA_SOURCE;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
-import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 @Slf4j
 public class Upgrade310To311PlanFactory implements UpgradePlanFactory {
@@ -59,37 +61,41 @@ public class Upgrade310To311PlanFactory implements UpgradePlanFactory {
   }
 
   private UpgradeStep updateTenantIdInProcessDefinitionDocumentC8() {
-   final BoolQueryBuilder query = boolQuery().mustNot(existsQuery(ProcessDefinitionIndex.TENANT_ID));
-    final String script =
-      // Only data sources with type == 'zeebe' will get migrated.
-      // In case the data source has name == 'zeebe' it wont get migrated
-      // In practice this should migrate all definitions for C8 environments only, and not affect C7 environments
-      "if (ctx._source.dataSource.type == 'zeebe') {\n" +
-      "  ctx._source.tenantId = '<default>';\n" +
-      "}\n";
-    return new UpdateDataStep(new ProcessDefinitionIndex(), query, script);
+    final BoolQueryBuilder query = boolQuery()
+      .must(termQuery(AbstractDefinitionIndex.DATA_SOURCE + "." + DataSourceDto.Fields.type, ZEEBE_DATA_SOURCE))
+      .mustNot(existsQuery(ProcessDefinitionIndex.TENANT_ID));
+    return new UpdateDataStep(
+      new ProcessDefinitionIndex(),
+      query,
+      String.format("ctx._source.tenantId = '%s';", ZEEBE_DEFAULT_TENANT)
+    );
   }
 
   private List<UpgradeStep> updateTenantIdInProcessInstanceDocumentC8(final UpgradeExecutionDependencies upgradeExecutionDependencies) {
-    List<String> processDefinitionKeys = MappingMetadataUtil.retrieveProcessInstanceIndexIdentifiers(
+    final BoolQueryBuilder query = boolQuery()
+      .must(termQuery(ProcessInstanceIndex.DATA_SOURCE + "." + DataSourceDto.Fields.type, ZEEBE_DATA_SOURCE))
+      .mustNot(existsQuery(ProcessInstanceIndex.TENANT_ID));
+    final StringSubstitutor substitutor = new StringSubstitutor(
+      ImmutableMap.<String, String>builder()
+        .put("defaultTenantId", ZEEBE_DEFAULT_TENANT)
+        .build()
+    );
+    final String script = substitutor.replace(
+      "  ctx._source.tenantId = '${defaultTenantId}';\n" +
+        "  for (incident in ctx._source.incidents) {\n" +
+        "      incident.tenantId = '${defaultTenantId}';\n" +
+        "  }\n" +
+        "  for (flowNode in ctx._source.flowNodeInstances) {\n" +
+        "      flowNode.tenantId = '${defaultTenantId}';\n" +
+        "  }\n");
+    final List<String> processDefinitionKeys = MappingMetadataUtil.retrieveProcessInstanceIndexIdentifiers(
       upgradeExecutionDependencies.getEsClient(),
       false
     );
-    final BoolQueryBuilder query =  boolQuery().mustNot(existsQuery(ProcessInstanceIndex.TENANT_ID));
-    final String script =
-      // Only data sources with type == 'zeebe' will get migrated.
-      // In case the data source has name == 'zeebe' it wont get migrated
-      // In practice this should migrate all definitions for C8 environments only, and not affect C7 environments
-      "if (ctx._source.dataSource.type == 'zeebe') {\n" +
-      "  ctx._source.tenantId = '<default>';\n" +
-      "  for (incident in ctx._source.incidents) {\n" +
-      "      incident.tenantId = '<default>';\n" +
-      "  }\n" +
-      "}\n";
     List<UpgradeStep> updateDataSteps = new ArrayList<>();
     for (String processDefinitionKey : processDefinitionKeys) {
-        updateDataSteps.add(new UpdateDataStep(new ProcessInstanceIndex(processDefinitionKey),query, script));
-      }
+      updateDataSteps.add(new UpdateDataStep(new ProcessInstanceIndex(processDefinitionKey), query, script));
+    }
     return updateDataSteps;
   }
 
