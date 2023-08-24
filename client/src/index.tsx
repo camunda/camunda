@@ -7,7 +7,6 @@
 
 import {App} from './App';
 import './index.scss';
-import '@camunda-cloud/common-ui/dist/common-ui/common-ui.css';
 import 'dmn-js/dist/assets/dmn-js-decision-table.css';
 import 'dmn-js/dist/assets/dmn-js-shared.css';
 import 'dmn-js/dist/assets/dmn-js-drd.css';

@@ -4,8 +4,6 @@
   "private": true,
   "dependencies": {
     "@bpmn-io/element-template-icon-renderer": "0.5.1",
-    "@camunda-cloud/common-ui": "0.0.18-rc13",
-    "@camunda-cloud/common-ui-react": "0.0.18-rc13",
     "@camunda/camunda-composite-components": "0.0.42",
     "@carbon/elements": "11.27.0",
     "@carbon/react": "1.35.0",
@@ -59,7 +57,7 @@
   },
   "jest": {
     "transformIgnorePatterns": [
-      "/node_modules/(?!@camunda-cloud/common-ui.*|@camunda/camunda-composite-components)"
+      "/node_modules/(?!@camunda/camunda-composite-components)"
     ]
   },
   "devDependencies": {

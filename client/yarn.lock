@@ -1112,18 +1112,6 @@
     inherits-browser "^0.1.0"
     tiny-svg "^3.0.1"
 
-"@camunda-cloud/common-ui-react@0.0.18-rc13":
-  version "0.0.18-rc13"
-  resolved "https://registry.yarnpkg.com/@camunda-cloud/common-ui-react/-/common-ui-react-0.0.18-rc13.tgz#b17e8b46f20ca6e9b4c15ee31f43fe8a3fcf7acc"
-  integrity sha512-sSQWEPcJwo9XXKfMsm4ndxfHCy+2lfmZk7oEJE9V/UeZ6sVEVHFWDyTILEzpfCrqDTX64fgTzwiWx9OdkRiZtg==
-  dependencies:
-    "@camunda-cloud/common-ui" "0.0.18-rc13"
-
-"@camunda-cloud/common-ui@0.0.18-rc13":
-  version "0.0.18-rc13"
-  resolved "https://registry.yarnpkg.com/@camunda-cloud/common-ui/-/common-ui-0.0.18-rc13.tgz#2d80f9750a3b3c83a5d942cd998fb4259aebe8c9"
-  integrity sha512-yonxwiRNxh36oSCkdoOo6OvTK8uccD53K0VXhfvHcyxn2+MnnkTeLxWD29cRqaMrMklnZe00W6sXO4o0Oh00Rg==
-
 "@camunda/camunda-composite-components@0.0.42":
   version "0.0.42"
   resolved "https://registry.yarnpkg.com/@camunda/camunda-composite-components/-/camunda-composite-components-0.0.42.tgz#1ed05cc0c04ef3f854d85edd94f100241138e5f9"

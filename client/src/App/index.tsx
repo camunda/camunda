@@ -13,7 +13,6 @@ import {
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {Notifications} from 'modules/carbonNotifications';
 import {NetworkStatusWatcher} from './NetworkStatusWatcher';
-import {CommonUiContext} from 'modules/CommonUiContext';
 import {Paths} from 'modules/Routes';
 import {RedirectDeprecatedRoutes} from './RedirectDeprecatedRoutes';
 import {AuthenticationCheck} from './AuthenticationCheck';
@@ -73,7 +72,6 @@ const App: React.FC = () => {
       <ThemeSwitcher />
       <Notifications />
       <NetworkStatusWatcher />
-      <CommonUiContext />
       <HistoryRouter
         history={createBrowserHistory({window})}
         basename={window.clientConfig?.contextPath ?? '/'}
