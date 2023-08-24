@@ -185,6 +185,67 @@ final class RaftClusterContextTest {
     verify(callback).accept(true);
   }
 
+  @Test
+  void shouldCalculateQuorum() {
+    // given
+    final var localMember = new DefaultRaftMember(new MemberId("1"), Type.ACTIVE, Instant.now());
+    final var remoteMembers =
+        List.<RaftMember>of(
+            new DefaultRaftMember(new MemberId("2"), Type.ACTIVE, Instant.now()),
+            new DefaultRaftMember(new MemberId("3"), Type.ACTIVE, Instant.now()),
+            new DefaultRaftMember(new MemberId("4"), Type.ACTIVE, Instant.now()),
+            new DefaultRaftMember(new MemberId("5"), Type.ACTIVE, Instant.now()));
+    final var members = Stream.concat(Stream.of(localMember), remoteMembers.stream()).toList();
+
+    final var raft =
+        raftWithStoredConfiguration(new Configuration(1, 1, Instant.now().toEpochMilli(), members));
+    final var context = new RaftClusterContext(localMember.memberId(), raft);
+
+    // when
+    context.getMemberContext(new MemberId("2")).setMatchIndex(2);
+    context.getMemberContext(new MemberId("3")).setMatchIndex(3);
+    context.getMemberContext(new MemberId("4")).setMatchIndex(4);
+    context.getMemberContext(new MemberId("5")).setMatchIndex(5);
+
+    // then
+    assertThat(context.getQuorumFor(RaftMemberContext::getMatchIndex)).hasValue(4L);
+  }
+
+  @Test
+  void shouldCalculateQuorumDuringJointConsensus() {
+    // given
+    final var localMember = new DefaultRaftMember(new MemberId("1"), Type.ACTIVE, Instant.now());
+    final var oldRemoteMembers =
+        List.<RaftMember>of(
+            new DefaultRaftMember(new MemberId("2"), Type.ACTIVE, Instant.now()),
+            new DefaultRaftMember(new MemberId("3"), Type.ACTIVE, Instant.now()));
+    final var oldMembers =
+        Stream.concat(Stream.of(localMember), oldRemoteMembers.stream()).toList();
+    final var newRemoteMembers =
+        List.<RaftMember>of(
+            new DefaultRaftMember(new MemberId("2"), Type.ACTIVE, Instant.now()),
+            new DefaultRaftMember(new MemberId("4"), Type.ACTIVE, Instant.now()));
+    final var newMembers =
+        Stream.concat(Stream.of(localMember), newRemoteMembers.stream()).toList();
+
+    final var raft =
+        raftWithStoredConfiguration(
+            new Configuration(1, 1, Instant.now().toEpochMilli(), newMembers, oldMembers));
+    final var context = new RaftClusterContext(localMember.memberId(), raft);
+
+    // when
+    for (final var member : newRemoteMembers) {
+      context.getMemberContext(member.memberId()).setMatchIndex(5);
+    }
+
+    for (final var member : oldRemoteMembers) {
+      context.getMemberContext(member.memberId()).setMatchIndex(2);
+    }
+
+    // then
+    assertThat(context.getQuorumFor(RaftMemberContext::getMatchIndex)).hasValue(2L);
+  }
+
   private RaftContext raftWithStoredConfiguration(final Configuration configuration) {
     final var raft = mock(RaftContext.class, withSettings().stubOnly());
     final var metaStore = mock(MetaStore.class, withSettings().stubOnly());
