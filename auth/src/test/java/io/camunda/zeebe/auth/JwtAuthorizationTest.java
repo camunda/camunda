@@ -20,7 +20,7 @@ import io.camunda.zeebe.auth.impl.JwtAuthorizationEncoder;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
 import java.util.List;
 import java.util.Map;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class JwtAuthorizationTest {
 
