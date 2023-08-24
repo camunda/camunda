@@ -212,17 +212,15 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
       }
     }
 
-    if (contexts.isEmpty()) {
-      return Optional.empty();
-    }
-
     return getQuorumFor(contexts, calculateMemberValue);
   }
 
   private <T extends Comparable<T>> Optional<T> getQuorumFor(
       final List<RaftMemberContext> contexts,
       final Function<RaftMemberContext, T> calculateMemberValue) {
-
+    if (contexts.isEmpty()) {
+      return Optional.empty();
+    }
     contexts.sort(Comparator.comparing(calculateMemberValue).reversed());
 
     final var remoteActiveMembers = contexts.size();
