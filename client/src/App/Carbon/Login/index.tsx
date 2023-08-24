@@ -34,7 +34,6 @@ import {
 } from '@carbon/react';
 import {Paths} from 'modules/Routes';
 import {LoadingSpinner} from './LoadingSpinner';
-import 'index-carbon.scss';
 
 function stateHasReferrer(state: unknown): state is {referrer: Location} {
   if (typeof state === 'object' && state?.hasOwnProperty('referrer')) {
