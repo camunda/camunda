@@ -7,8 +7,6 @@
 
 import {rgba} from 'polished';
 
-import darkZeebraStripe from 'modules/components/ZeebraStripe/tree-view-bg-dark.png';
-import lightZeebraStripe from 'modules/components/ZeebraStripe/tree-view-bg-light.png';
 import incidentsOverlayDarkBackgroundImage from './images/bg-dark@2x.png';
 import incidentsOverlayLightBackgroundImage from './images/bg-light@2x.png';
 
@@ -1062,7 +1060,6 @@ const theme = {
       },
     },
     images: {
-      zeebraStripe: darkZeebraStripe,
       incidentsOverlay: incidentsOverlayDarkBackgroundImage,
     },
   },
@@ -2018,7 +2015,6 @@ const theme = {
       },
     },
     images: {
-      zeebraStripe: lightZeebraStripe,
       incidentsOverlay: incidentsOverlayLightBackgroundImage,
     },
   },

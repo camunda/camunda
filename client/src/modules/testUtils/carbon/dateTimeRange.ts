@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {formatISODate} from 'modules/components/DateRangeField/formatDate';
+import {formatISODate} from 'modules/components/Carbon/DateRangeField/formatDate';
 import {UserEvent, Screen, waitFor} from 'modules/testing-library';
 
 const pad = (value: String | Number) => {

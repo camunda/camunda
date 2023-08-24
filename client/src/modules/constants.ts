@@ -32,9 +32,6 @@ const PERMISSIONS: ResourceBasedPermissionDto[] = [
   'DELETE_PROCESS_INSTANCE',
 ];
 
-const FLOW_NODE_STATE_OVERLAY_ID = 'flow-node-state';
-const STATISTICS_OVERLAY_ID = 'flow-nodes-statistics';
-
 const PAGE_TITLE = {
   LOGIN: 'Operate: Log In',
   DASHBOARD: 'Operate: Dashboard',
@@ -46,17 +43,7 @@ const PAGE_TITLE = {
     `Operate: Decision Instance ${id} of ${name}`,
 };
 
-const PILL_TYPE = {
-  TIMESTAMP: 'TIMESTAMP',
-  FILTER: 'FILTER',
-} as const;
-
-const INCIDENTS_BAR_HEIGHT = 42;
-
 const PAGE_TOP_PADDING = 48;
-
-const MODIFICATION_HEADER_HEIGHT = 34;
-const FOOTER_HEIGHT = 38;
 const COLLAPSABLE_PANEL_MIN_WIDTH = 'var(--cds-spacing-09)';
 const INSTANCE_HISTORY_LEFT_PADDING = 'var(--cds-spacing-05)';
 const COLLAPSABLE_PANEL_HEADER_HEIGHT = 'var(--cds-spacing-09)';
@@ -65,14 +52,8 @@ const ARROW_ICON_WIDTH = 'var(--cds-spacing-08)';
 export {
   ACTIVE_OPERATION_STATES,
   SORT_ORDER,
-  FLOW_NODE_STATE_OVERLAY_ID,
-  STATISTICS_OVERLAY_ID,
   PAGE_TITLE,
-  PILL_TYPE,
-  INCIDENTS_BAR_HEIGHT,
   NON_APPENDABLE_FLOW_NODES,
-  MODIFICATION_HEADER_HEIGHT,
-  FOOTER_HEIGHT,
   PAGE_TOP_PADDING,
   PERMISSIONS,
   COLLAPSABLE_PANEL_MIN_WIDTH,
