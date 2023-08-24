@@ -6,6 +6,7 @@
  */
 package io.camunda.operate.webapp.api.v1.dao;
 
+import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
@@ -84,11 +85,13 @@ public class ElasticsearchVariableDaoIT extends OperateZeebeIntegrationTest {
           .extracting(
               "processInstanceKey",
               "name",
-              "value")
+              "value",
+              "tenantId")
           .containsExactly(
               processInstanceKey,
               "customerId",
-              "\"23\""
+              "\"23\"",
+              DEFAULT_TENANT_ID
           );
     });
   }

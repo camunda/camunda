@@ -35,6 +35,7 @@ public class DecisionDefinition {
   private Long decisionRequirementsKey;
   private String decisionRequirementsName;
   private Integer decisionRequirementsVersion;
+  private String tenantId;
 
   public String getId() {
     return id;
@@ -117,6 +118,15 @@ public class DecisionDefinition {
     return this;
   }
 
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  public DecisionDefinition setTenantId(String tenantId) {
+    this.tenantId = tenantId;
+    return this;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o)
@@ -124,22 +134,25 @@ public class DecisionDefinition {
     if (o == null || getClass() != o.getClass())
       return false;
     DecisionDefinition that = (DecisionDefinition) o;
-    return Objects.equals(id, that.id) && Objects.equals(key, that.key) && Objects.equals(decisionId, that.decisionId) && Objects.equals(name, that.name)
-        && Objects.equals(version, that.version) && Objects.equals(decisionRequirementsId, that.decisionRequirementsId) && Objects.equals(
-        decisionRequirementsKey, that.decisionRequirementsKey) && Objects.equals(decisionRequirementsName, that.decisionRequirementsName) && Objects.equals(
-        decisionRequirementsVersion, that.decisionRequirementsVersion);
+    return Objects.equals(id, that.id) && Objects.equals(key, that.key) && Objects.equals(decisionId,
+        that.decisionId) && Objects.equals(name, that.name) && Objects.equals(version, that.version) && Objects.equals(
+        decisionRequirementsId, that.decisionRequirementsId) && Objects.equals(decisionRequirementsKey,
+        that.decisionRequirementsKey) && Objects.equals(decisionRequirementsName,
+        that.decisionRequirementsName) && Objects.equals(decisionRequirementsVersion,
+        that.decisionRequirementsVersion) && Objects.equals(tenantId, that.tenantId);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, key, decisionId, name, version, decisionRequirementsId, decisionRequirementsKey, decisionRequirementsName,
-        decisionRequirementsVersion);
+    return Objects.hash(id, key, decisionId, name, version, decisionRequirementsId, decisionRequirementsKey,
+        decisionRequirementsName, decisionRequirementsVersion, tenantId);
   }
 
   @Override
   public String toString() {
-    return "DecisionDefinition{" + "id='" + id + '\'' + ", key=" + key + ", decisionId='" + decisionId + '\'' + ", name='" + name + '\'' + ", version="
-        + version + ", decisionRequirementsId='" + decisionRequirementsId + '\'' + ", decisionRequirementsKey=" + decisionRequirementsKey
-        + ", decisionRequirementsName='" + decisionRequirementsName + '\'' + ", decisionRequirementsVersion=" + decisionRequirementsVersion + '}';
+    return "DecisionDefinition{" + "id='" + id + '\'' + ", key=" + key + ", decisionId='" + decisionId + '\'' + ", name='"
+        + name + '\'' + ", version=" + version + ", decisionRequirementsId='" + decisionRequirementsId + '\''
+        + ", decisionRequirementsKey=" + decisionRequirementsKey + ", decisionRequirementsName='" + decisionRequirementsName
+        + '\'' + ", decisionRequirementsVersion=" + decisionRequirementsVersion + ", tenantId='" + tenantId + '\'' + '}';
   }
 }

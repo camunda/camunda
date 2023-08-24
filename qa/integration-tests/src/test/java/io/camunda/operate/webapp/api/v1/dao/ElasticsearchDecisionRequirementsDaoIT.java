@@ -10,6 +10,7 @@ import static io.camunda.operate.schema.indices.DecisionRequirementsIndex.DECISI
 import static io.camunda.operate.schema.indices.DecisionRequirementsIndex.NAME;
 import static io.camunda.operate.schema.indices.DecisionRequirementsIndex.RESOURCE_NAME;
 import static io.camunda.operate.schema.indices.DecisionRequirementsIndex.VERSION;
+import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
@@ -72,6 +73,7 @@ public class ElasticsearchDecisionRequirementsDaoIT extends OperateZeebeIntegrat
     then(() -> {
       assertThat(decisionRequirements.getKey()).isEqualTo(key);
       assertThat(decisionRequirements.getDecisionRequirementsId()).isEqualTo("invoiceBusinessDecisions");
+      assertThat(decisionRequirements.getTenantId()).isEqualTo(DEFAULT_TENANT_ID);
     });
   }
 

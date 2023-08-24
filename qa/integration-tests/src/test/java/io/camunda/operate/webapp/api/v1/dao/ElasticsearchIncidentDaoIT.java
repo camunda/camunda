@@ -6,6 +6,7 @@
  */
 package io.camunda.operate.webapp.api.v1.dao;
 
+import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.operate.util.OperateZeebeIntegrationTest;
@@ -80,13 +81,15 @@ public class ElasticsearchIncidentDaoIT extends OperateZeebeIntegrationTest {
               "processInstanceKey",
               "type",
               "state",
-              "message")
+              "message",
+              "tenantId")
           .containsExactly(
               demoProcessKey,
               processInstanceKey,
               "JOB_NO_RETRIES",
               "ACTIVE",
-              "Some error"
+              "Some error",
+              DEFAULT_TENANT_ID
           );
     });
   }

@@ -126,7 +126,8 @@ public class ElasticsearchFlowNodeInstanceDao extends ElasticsearchDao<FlowNodeI
         .setState((String) searchHitAsMap.get(FlowNodeInstance.STATE))
         .setFlowNodeId((String) searchHitAsMap.get(FlowNodeInstance.FLOW_NODE_ID))
         .setIncident((Boolean) searchHitAsMap.get(FlowNodeInstance.INCIDENT))
-        .setIncidentKey((Long) searchHitAsMap.get(FlowNodeInstance.INCIDENT_KEY));
+        .setIncidentKey((Long) searchHitAsMap.get(FlowNodeInstance.INCIDENT_KEY))
+        .setTenantId((String) searchHitAsMap.get(FlowNodeInstance.TENANT_ID));
 
      if(flowNodeInstance.getFlowNodeId() != null) {
        String flowNodeName = processCache.getFlowNodeNameOrDefaultValue(flowNodeInstance.getProcessDefinitionKey(),

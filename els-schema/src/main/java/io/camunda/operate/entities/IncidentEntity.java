@@ -11,6 +11,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.time.OffsetDateTime;
 import java.util.Objects;
 
+import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
+
 public class IncidentEntity extends OperateZeebeEntity<IncidentEntity> {
 
   private ErrorType errorType;
@@ -38,7 +40,7 @@ public class IncidentEntity extends OperateZeebeEntity<IncidentEntity> {
 
   private String treePath;
 
-  private String tenantId;
+  private String tenantId = DEFAULT_TENANT_ID;;
 
   @Deprecated
   @JsonIgnore

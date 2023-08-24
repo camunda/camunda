@@ -35,6 +35,7 @@ public class ProcessInstance {
   private String endDate;
   private String state;
   private Long processDefinitionKey;
+  private String tenantId;
 
   public Long getKey() {
     return key;
@@ -119,6 +120,15 @@ public class ProcessInstance {
     return this;
   }
 
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  public ProcessInstance setTenantId(String tenantId) {
+    this.tenantId = tenantId;
+    return this;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o)
@@ -126,21 +136,22 @@ public class ProcessInstance {
     if (o == null || getClass() != o.getClass())
       return false;
     ProcessInstance that = (ProcessInstance) o;
-    return Objects.equals(key, that.key) && Objects.equals(processVersion, that.processVersion) && Objects.equals(bpmnProcessId, that.bpmnProcessId)
-        && Objects.equals(parentKey, that.parentKey) && Objects.equals(parentFlowNodeInstanceKey, that.parentFlowNodeInstanceKey) && Objects.equals(startDate,
-        that.startDate) && Objects.equals(endDate, that.endDate) && Objects.equals(state, that.state) && Objects.equals(processDefinitionKey,
-        that.processDefinitionKey);
+    return Objects.equals(key, that.key) && Objects.equals(processVersion, that.processVersion) && Objects.equals(
+        bpmnProcessId, that.bpmnProcessId) && Objects.equals(parentKey, that.parentKey) && Objects.equals(startDate,
+        that.startDate) && Objects.equals(endDate, that.endDate) && Objects.equals(state, that.state) && Objects.equals(
+        processDefinitionKey, that.processDefinitionKey) && Objects.equals(tenantId, that.tenantId);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(key, processVersion, bpmnProcessId, parentKey, parentFlowNodeInstanceKey, startDate, endDate, state, processDefinitionKey);
+    return Objects.hash(key, processVersion, bpmnProcessId, parentKey, startDate, endDate, state, processDefinitionKey,
+        tenantId);
   }
 
   @Override
   public String toString() {
-    return "ProcessInstance{" + "key=" + key + ", processVersion=" + processVersion + ", bpmnProcessId='" + bpmnProcessId + '\'' + ", parentKey=" + parentKey
-        + ", parentFlowNodeInstanceKey=" + parentFlowNodeInstanceKey + ", startDate='" + startDate + '\'' + ", endDate='" + endDate + '\'' + ", state='" + state
-        + '\'' + ", processDefinitionKey=" + processDefinitionKey + '}';
+    return "ProcessInstance{" + "key=" + key + ", processVersion=" + processVersion + ", bpmnProcessId='" + bpmnProcessId
+        + '\'' + ", parentKey=" + parentKey + ", startDate='" + startDate + '\'' + ", endDate='" + endDate + '\'' + ", state='"
+        + state + '\'' + ", processDefinitionKey=" + processDefinitionKey + ", tenantId='" + tenantId + '\'' + '}';
   }
 }

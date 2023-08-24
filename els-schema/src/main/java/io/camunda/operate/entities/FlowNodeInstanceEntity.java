@@ -11,6 +11,8 @@ import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.Objects;
 
+import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
+
 public class FlowNodeInstanceEntity extends OperateZeebeEntity<FlowNodeInstanceEntity> {
 
   private String flowNodeId;
@@ -32,7 +34,7 @@ public class FlowNodeInstanceEntity extends OperateZeebeEntity<FlowNodeInstanceE
   private int level;
   private Long position;
   private boolean incident;
-  private String tenantId;
+  private String tenantId = DEFAULT_TENANT_ID;;
   @JsonIgnore
   private Object[] sortValues;
 

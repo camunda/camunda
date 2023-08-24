@@ -15,6 +15,8 @@ import io.camunda.operate.entities.OperateZeebeEntity;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import java.util.Objects;
 
+import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
+
 public class ProcessInstanceForListViewEntity extends OperateZeebeEntity<ProcessInstanceForListViewEntity> {
 
   private Long processDefinitionKey;
@@ -37,7 +39,7 @@ public class ProcessInstanceForListViewEntity extends OperateZeebeEntity<Process
 
   private boolean incident;
 
-  private String tenantId;
+  private String tenantId = DEFAULT_TENANT_ID;
 
   private ListViewJoinRelation joinRelation = new ListViewJoinRelation(ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION);
 

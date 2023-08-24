@@ -6,6 +6,7 @@
  */
 package io.camunda.operate.webapp.api.v1.dao;
 
+import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
 import static io.camunda.operate.webapp.api.v1.entities.ProcessInstance.BPMN_PROCESS_ID;
 import static io.camunda.operate.webapp.api.v1.entities.ProcessInstance.PROCESS_DEFINITION_KEY;
 import static io.camunda.operate.webapp.api.v1.entities.ProcessInstance.VERSION;
@@ -73,6 +74,7 @@ public class ElasticsearchProcessInstanceDaoIT extends OperateZeebeIntegrationTe
     then(() -> {
       assertThat(processInstance.getKey()).isEqualTo(key);
       assertThat(processInstance.getBpmnProcessId()).isEqualTo("complexProcess");
+      assertThat(processInstance.getTenantId()).isEqualTo(DEFAULT_TENANT_ID);
     });
   }
 

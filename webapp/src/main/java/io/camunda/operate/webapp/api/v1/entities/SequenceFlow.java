@@ -19,6 +19,10 @@ public class SequenceFlow {
   private String id;
   private String activityId;
   private Long processInstanceKey;
+  private String tenantId;
+
+  public SequenceFlow() {
+  }
 
   public String getId() {
     return id;
@@ -47,7 +51,13 @@ public class SequenceFlow {
     return this;
   }
 
-  public SequenceFlow() {
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  public SequenceFlow setTenantId(String tenantId) {
+    this.tenantId = tenantId;
+    return this;
   }
 
   @Override
@@ -57,16 +67,18 @@ public class SequenceFlow {
     if (o == null || getClass() != o.getClass())
       return false;
     SequenceFlow that = (SequenceFlow) o;
-    return Objects.equals(id, that.id) && Objects.equals(activityId, that.activityId) && Objects.equals(processInstanceKey, that.processInstanceKey);
+    return Objects.equals(id, that.id) && Objects.equals(activityId, that.activityId) && Objects.equals(
+        processInstanceKey, that.processInstanceKey) && Objects.equals(tenantId, that.tenantId);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, activityId, processInstanceKey);
+    return Objects.hash(id, activityId, processInstanceKey, tenantId);
   }
 
   @Override
   public String toString() {
-    return "SequenceFlow{" + "id='" + id + '\'' + ", activityId='" + activityId + '\'' + ", processInstanceKey=" + processInstanceKey + '}';
+    return "SequenceFlow{" + "id='" + id + '\'' + ", activityId='" + activityId + '\'' + ", processInstanceKey="
+        + processInstanceKey + ", tenantId='" + tenantId + '\'' + '}';
   }
 }

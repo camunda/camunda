@@ -9,6 +9,7 @@ package io.camunda.operate.webapp.api.v1.dao;
 import static io.camunda.operate.schema.indices.DecisionIndex.NAME;
 import static io.camunda.operate.schema.indices.DecisionIndex.VERSION;
 import static io.camunda.operate.schema.indices.DecisionIndex.DECISION_ID;
+import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
 import static io.camunda.operate.webapp.api.v1.entities.DecisionDefinition.DECISION_REQUIREMENTS_NAME;
 import static io.camunda.operate.webapp.api.v1.entities.DecisionDefinition.DECISION_REQUIREMENTS_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -70,6 +71,7 @@ public class ElasticsearchDecisionDefinitionDaoIT extends OperateZeebeIntegratio
       assertThat(decisionDefinition.getDecisionId()).isEqualTo("invoiceClassification");
       assertThat(decisionDefinition.getDecisionRequirementsId()).isEqualTo("invoiceBusinessDecisions");
       assertThat(decisionDefinition.getDecisionRequirementsName()).isEqualTo("Invoice Business Decisions");
+      assertThat(decisionDefinition.getTenantId()).isEqualTo(DEFAULT_TENANT_ID);
     });
   }
 

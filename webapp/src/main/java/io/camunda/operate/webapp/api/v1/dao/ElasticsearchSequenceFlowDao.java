@@ -10,6 +10,7 @@ import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 
 import io.camunda.operate.schema.templates.SequenceFlowTemplate;
 import io.camunda.operate.util.ElasticsearchUtil;
+import io.camunda.operate.webapp.api.v1.entities.Incident;
 import io.camunda.operate.webapp.api.v1.entities.SequenceFlow;
 import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.Results;
@@ -83,6 +84,7 @@ public class ElasticsearchSequenceFlowDao extends ElasticsearchDao<SequenceFlow>
     return new SequenceFlow()
         .setId((String) searchHitAsMap.get(SequenceFlowTemplate.ID))
         .setActivityId((String) searchHitAsMap.get(SequenceFlowTemplate.ACTIVITY_ID))
-        .setProcessInstanceKey((Long) searchHitAsMap.get(SequenceFlowTemplate.PROCESS_INSTANCE_KEY));
+        .setProcessInstanceKey((Long) searchHitAsMap.get(SequenceFlowTemplate.PROCESS_INSTANCE_KEY))
+        .setTenantId((String) searchHitAsMap.get(Incident.TENANT_ID));
   }
 }

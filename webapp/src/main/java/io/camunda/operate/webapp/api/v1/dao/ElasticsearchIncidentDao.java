@@ -11,6 +11,7 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import io.camunda.operate.schema.templates.IncidentTemplate;
 import io.camunda.operate.util.ElasticsearchUtil;
+import io.camunda.operate.webapp.api.v1.entities.FlowNodeInstance;
 import io.camunda.operate.webapp.api.v1.entities.Incident;
 import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.Results;
@@ -122,7 +123,8 @@ public class ElasticsearchIncidentDao extends ElasticsearchDao<Incident> impleme
         .setType((String) searchHitAsMap.get(IncidentTemplate.ERROR_TYPE))
         .setMessage((String) searchHitAsMap.get(IncidentTemplate.ERROR_MSG))
         .setCreationTime((String) searchHitAsMap.get(Incident.CREATION_TIME))
-        .setState((String) searchHitAsMap.get(Incident.STATE));
+        .setState((String) searchHitAsMap.get(Incident.STATE))
+        .setTenantId((String) searchHitAsMap.get(Incident.TENANT_ID));
   }
 
   protected List<Incident> searchFor(final SearchSourceBuilder searchSourceBuilder){

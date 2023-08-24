@@ -11,6 +11,7 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import io.camunda.operate.schema.templates.VariableTemplate;
 import io.camunda.operate.util.ElasticsearchUtil;
+import io.camunda.operate.webapp.api.v1.entities.Incident;
 import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.Results;
 import io.camunda.operate.webapp.api.v1.entities.Variable;
@@ -116,6 +117,7 @@ public class ElasticsearchVariableDao extends ElasticsearchDao<Variable> impleme
         .setKey((Long) searchHitAsMap.get(Variable.KEY))
         .setProcessInstanceKey((Long) searchHitAsMap.get(Variable.PROCESS_INSTANCE_KEY))
         .setScopeKey((Long) searchHitAsMap.get(Variable.SCOPE_KEY))
+        .setTenantId((String) searchHitAsMap.get(Variable.TENANT_ID))
         .setName((String) searchHitAsMap.get(Variable.NAME))
         .setValue((String) searchHitAsMap.get(Variable.VALUE))
         .setTruncated((Boolean) searchHitAsMap.get(Variable.TRUNCATED));

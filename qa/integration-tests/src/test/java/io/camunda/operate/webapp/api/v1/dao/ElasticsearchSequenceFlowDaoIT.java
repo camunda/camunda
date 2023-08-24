@@ -6,6 +6,7 @@
  */
 package io.camunda.operate.webapp.api.v1.dao;
 
+import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.operate.util.OperateZeebeIntegrationTest;
@@ -77,10 +78,12 @@ public class ElasticsearchSequenceFlowDaoIT extends OperateZeebeIntegrationTest 
       assertThat(sequenceFlowResults.getItems()).hasSize(4);
       assertThat(sequenceFlowResults.getItems().get(0))
           .extracting("processInstanceKey",
-             "activityId")
+             "activityId",
+              "tenantId")
           .containsExactly(
               processInstanceKey,
-              "sequenceFlow_01"
+              "sequenceFlow_01",
+              DEFAULT_TENANT_ID
           );
     });
   }

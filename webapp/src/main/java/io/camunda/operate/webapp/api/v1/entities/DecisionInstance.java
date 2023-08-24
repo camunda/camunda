@@ -46,6 +46,7 @@ public class DecisionInstance {
   private String result;
   private List<DecisionInstanceInput> evaluatedInputs;
   private List<DecisionInstanceOutput> evaluatedOutputs;
+  private String tenantId;
 
   public String getId() {
     return id;
@@ -182,44 +183,48 @@ public class DecisionInstance {
     return this;
   }
 
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  public DecisionInstance setTenantId(String tenantId) {
+    this.tenantId = tenantId;
+    return this;
+  }
+
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
+    if (this == o)
+      return true;
+    if (o == null || getClass() != o.getClass())
+      return false;
     DecisionInstance that = (DecisionInstance) o;
-    return Objects.equals(id, that.id) && Objects.equals(key, that.key) && state == that.state
-        && Objects.equals(evaluationDate, that.evaluationDate) && Objects.equals(evaluationFailure, that.evaluationFailure) &&
-        Objects.equals(processDefinitionKey, that.processDefinitionKey) && Objects.equals(processInstanceKey, that.processInstanceKey) &&
-        Objects.equals(decisionId, that.decisionId) && Objects.equals(decisionDefinitionId, that.decisionDefinitionId) &&
-        Objects.equals(decisionName, that.decisionName) && Objects.equals(decisionVersion, that.decisionVersion) &&
-        decisionType == that.decisionType && Objects.equals(result, that.result) && Objects.equals(evaluatedInputs, that.evaluatedInputs) &&
-        Objects.equals(evaluatedOutputs, that.evaluatedOutputs);
+    return Objects.equals(id, that.id) && Objects.equals(key, that.key) && state == that.state && Objects.equals(
+        evaluationDate, that.evaluationDate) && Objects.equals(evaluationFailure,
+        that.evaluationFailure) && Objects.equals(processDefinitionKey, that.processDefinitionKey) && Objects.equals(
+        processInstanceKey, that.processInstanceKey) && Objects.equals(decisionId, that.decisionId) && Objects.equals(
+        decisionDefinitionId, that.decisionDefinitionId) && Objects.equals(decisionName,
+        that.decisionName) && Objects.equals(decisionVersion,
+        that.decisionVersion) && decisionType == that.decisionType && Objects.equals(result,
+        that.result) && Objects.equals(evaluatedInputs, that.evaluatedInputs) && Objects.equals(evaluatedOutputs,
+        that.evaluatedOutputs) && Objects.equals(tenantId, that.tenantId);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, key, state, evaluationDate, evaluationFailure, processDefinitionKey, processInstanceKey, decisionId,
-        decisionDefinitionId, decisionName, decisionVersion, decisionType, result, evaluatedInputs, evaluatedOutputs);
+    return Objects.hash(id, key, state, evaluationDate, evaluationFailure, processDefinitionKey, processInstanceKey,
+        decisionId, decisionDefinitionId, decisionName, decisionVersion, decisionType, result, evaluatedInputs,
+        evaluatedOutputs, tenantId);
   }
 
   @Override
   public String toString() {
-    return "DecisionInstance{" +
-        "id='" + id + '\'' +
-        ", key=" + key +
-        ", state=" + state +
-        ", evaluationDate='" + evaluationDate + '\'' +
-        ", evaluationFailure='" + evaluationFailure + '\'' +
-        ", processDefinitionKey=" + processDefinitionKey +
-        ", processInstanceKey=" + processInstanceKey +
-        ", decisionId='" + decisionId + '\'' +
-        ", decisionDefinitionId='" + decisionDefinitionId + '\'' +
-        ", decisionName='" + decisionName + '\'' +
-        ", decisionVersion=" + decisionVersion +
-        ", decisionType=" + decisionType +
-        ", result='" + result + '\'' +
-        ", evaluatedInputs=" + evaluatedInputs +
-        ", evaluatedOutputs=" + evaluatedOutputs +
-        '}';
+    return "DecisionInstance{" + "id='" + id + '\'' + ", key=" + key + ", state=" + state + ", evaluationDate='"
+        + evaluationDate + '\'' + ", evaluationFailure='" + evaluationFailure + '\'' + ", processDefinitionKey="
+        + processDefinitionKey + ", processInstanceKey=" + processInstanceKey + ", decisionId='" + decisionId + '\''
+        + ", decisionDefinitionId='" + decisionDefinitionId + '\'' + ", decisionName='" + decisionName + '\''
+        + ", decisionVersion=" + decisionVersion + ", decisionType=" + decisionType + ", result='" + result + '\''
+        + ", evaluatedInputs=" + evaluatedInputs + ", evaluatedOutputs=" + evaluatedOutputs + ", tenantId='" + tenantId
+        + '\'' + '}';
   }
 }

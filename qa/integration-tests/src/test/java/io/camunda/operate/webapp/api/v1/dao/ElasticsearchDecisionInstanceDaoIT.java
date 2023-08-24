@@ -75,6 +75,7 @@ public class ElasticsearchDecisionInstanceDaoIT extends OperateZeebeIntegrationT
       assertThat(decisionInstance.getDecisionId()).isEqualTo("invoiceClassification");
       assertThat(decisionInstance.getDecisionName()).isEqualTo("Invoice Classification");
       assertThat(decisionInstance.getDecisionVersion()).isEqualTo(1);
+      assertThat(decisionInstance.getTenantId()).isEqualTo(DEFAULT_TENANT_ID);
       assertThat(decisionInstance.getEvaluatedInputs()).isEmpty();
       assertThat(decisionInstance.getEvaluatedOutputs()).isEmpty();
     });
@@ -103,6 +104,7 @@ public class ElasticsearchDecisionInstanceDaoIT extends OperateZeebeIntegrationT
       assertThat(decisionInstance.getDecisionId()).isEqualTo("invoiceClassification");
       assertThat(decisionInstance.getDecisionName()).isEqualTo("Invoice Classification");
       assertThat(decisionInstance.getDecisionVersion()).isEqualTo(1);
+      assertThat(decisionInstance.getTenantId()).isEqualTo(DEFAULT_TENANT_ID);
       assertThat(decisionInstance.getEvaluatedInputs().size()).isEqualTo(2);
       assertThat(decisionInstance.getEvaluatedInputs()).extracting("value").containsExactly("1200", "\"Travel Expenses\"");
       assertThat(decisionInstance.getEvaluatedOutputs().size()).isEqualTo(1);

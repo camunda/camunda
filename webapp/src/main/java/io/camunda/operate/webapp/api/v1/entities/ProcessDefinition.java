@@ -25,6 +25,7 @@ public class ProcessDefinition {
   private String name;
   private Integer version;
   private String bpmnProcessId;
+  private String tenantId;
 
   public Long getKey() {
     return key;
@@ -62,32 +63,34 @@ public class ProcessDefinition {
     return this;
   }
 
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  public ProcessDefinition setTenantId(String tenantId) {
+    this.tenantId = tenantId;
+    return this;
+  }
+
   @Override
-  public boolean equals(final Object o) {
-    if (this == o) {
+  public boolean equals(Object o) {
+    if (this == o)
       return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
+    if (o == null || getClass() != o.getClass())
       return false;
-    }
-    final ProcessDefinition that = (ProcessDefinition) o;
-    return Objects.equals(key, that.key) && Objects.equals(name, that.name)
-        && Objects.equals(version, that.version) && Objects.equals(bpmnProcessId,
-        that.bpmnProcessId);
+    ProcessDefinition that = (ProcessDefinition) o;
+    return Objects.equals(key, that.key) && Objects.equals(name, that.name) && Objects.equals(version,
+        that.version) && Objects.equals(bpmnProcessId, that.bpmnProcessId) && Objects.equals(tenantId, that.tenantId);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(key, name, version, bpmnProcessId);
+    return Objects.hash(key, name, version, bpmnProcessId, tenantId);
   }
 
   @Override
   public String toString() {
-    return "ProcessDefinition{" +
-        "key=" + key +
-        ", name='" + name + '\'' +
-        ", version=" + version +
-        ", bpmnProcessId='" + bpmnProcessId + '\'' +
-        '}';
+    return "ProcessDefinition{" + "key=" + key + ", name='" + name + '\'' + ", version=" + version + ", bpmnProcessId='"
+        + bpmnProcessId + '\'' + ", tenantId='" + tenantId + '\'' + '}';
   }
 }

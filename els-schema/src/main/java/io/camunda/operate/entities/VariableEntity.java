@@ -10,6 +10,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.Arrays;
 import java.util.Objects;
 
+import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
+
 public class VariableEntity extends OperateZeebeEntity<VariableEntity> {
 
   private String name;
@@ -26,7 +28,7 @@ public class VariableEntity extends OperateZeebeEntity<VariableEntity> {
    * Attention! This field will be filled in only for data imported after v. 8.2.0.
    */
   private String bpmnProcessId;
-  private String tenantId;
+  private String tenantId = DEFAULT_TENANT_ID;;
 
   @JsonIgnore
   private Object[] sortValues;

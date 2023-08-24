@@ -12,6 +12,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
+
 public class ProcessEntity extends OperateZeebeEntity<ProcessEntity> {
 
   private String name;
@@ -20,7 +22,7 @@ public class ProcessEntity extends OperateZeebeEntity<ProcessEntity> {
   private String bpmnXml;
   private String resourceName;
   private List<ProcessFlowNodeEntity> flowNodes = new ArrayList<>();
-  private String tenantId;
+  private String tenantId = DEFAULT_TENANT_ID;;
 
   public String getName() {
     return name;

@@ -8,6 +8,8 @@ package io.camunda.operate.entities;
 
 import java.util.Objects;
 
+import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
+
 public class SequenceFlowEntity extends OperateEntity<SequenceFlowEntity> {
 
   private Long processInstanceKey;
@@ -20,7 +22,7 @@ public class SequenceFlowEntity extends OperateEntity<SequenceFlowEntity> {
    */
   private String bpmnProcessId;
   private String activityId;
-  private String tenantId;
+  private String tenantId = DEFAULT_TENANT_ID;;
 
   public Long getProcessInstanceKey() {
     return processInstanceKey;

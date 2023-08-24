@@ -9,6 +9,8 @@ package io.camunda.operate.entities;
 import java.time.OffsetDateTime;
 import java.util.Objects;
 
+import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
+
 public class EventEntity extends OperateZeebeEntity<EventEntity> {
 
   /**
@@ -35,7 +37,7 @@ public class EventEntity extends OperateZeebeEntity<EventEntity> {
    * Metadata
    */
   private EventMetadataEntity metadata;
-  private String tenantId;
+  private String tenantId = DEFAULT_TENANT_ID;;
 
   public Long getProcessDefinitionKey() {
     return processDefinitionKey;

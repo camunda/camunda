@@ -9,6 +9,8 @@ package io.camunda.operate.entities.dmn.definition;
 import io.camunda.operate.entities.OperateZeebeEntity;
 import java.util.Objects;
 
+import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
+
 public class DecisionRequirementsEntity extends OperateZeebeEntity<DecisionRequirementsEntity> {
 
   private String decisionRequirementsId;
@@ -16,7 +18,7 @@ public class DecisionRequirementsEntity extends OperateZeebeEntity<DecisionRequi
   private int version;
   private String xml;
   private String resourceName;
-  private String tenantId;
+  private String tenantId = DEFAULT_TENANT_ID;;
 
   public String getDecisionRequirementsId() {
     return decisionRequirementsId;

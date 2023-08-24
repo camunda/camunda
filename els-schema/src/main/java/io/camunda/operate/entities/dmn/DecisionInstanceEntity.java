@@ -14,6 +14,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
+import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
+
 public class DecisionInstanceEntity extends OperateZeebeEntity<DecisionInstanceEntity> {
 
   private Integer executionIndex;
@@ -42,7 +44,7 @@ public class DecisionInstanceEntity extends OperateZeebeEntity<DecisionInstanceE
   private String result;
   private List<DecisionInstanceInputEntity> evaluatedInputs = new ArrayList<>();
   private List<DecisionInstanceOutputEntity> evaluatedOutputs = new ArrayList<>();
-  private String tenantId;
+  private String tenantId = DEFAULT_TENANT_ID;;
   @JsonIgnore
   private Object[] sortValues;
 

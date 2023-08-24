@@ -6,6 +6,7 @@
  */
 package io.camunda.operate.webapp.api.v1.dao;
 
+import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.operate.util.OperateZeebeIntegrationTest;
@@ -80,13 +81,15 @@ public class ElasticsearchFlowNodeInstanceDaoIT extends OperateZeebeIntegrationT
               "flowNodeId",
               "flowNodeName",
               "type",
-              "state")
+              "state",
+              "tenantId")
           .containsExactly(
               processInstanceKey,
               "start",
               "start",
               "START_EVENT",
-              "COMPLETED"
+              "COMPLETED",
+              DEFAULT_TENANT_ID
           );
       assertThat(flowNodeInstanceResults.getItems().get(0).getProcessDefinitionKey()).isNotNull();
     });

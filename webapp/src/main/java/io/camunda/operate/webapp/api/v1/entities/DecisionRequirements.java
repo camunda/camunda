@@ -29,6 +29,7 @@ public class DecisionRequirements {
   private String name;
   private Integer version;
   private String resourceName;
+  private String tenantId;
 
   public String getId() {
     return id;
@@ -84,6 +85,15 @@ public class DecisionRequirements {
     return this;
   }
 
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  public DecisionRequirements setTenantId(String tenantId) {
+    this.tenantId = tenantId;
+    return this;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o)
@@ -91,18 +101,20 @@ public class DecisionRequirements {
     if (o == null || getClass() != o.getClass())
       return false;
     DecisionRequirements that = (DecisionRequirements) o;
-    return Objects.equals(id, that.id) && Objects.equals(key, that.key) && Objects.equals(decisionRequirementsId, that.decisionRequirementsId)
-        && Objects.equals(name, that.name) && Objects.equals(version, that.version) && Objects.equals(resourceName, that.resourceName);
+    return Objects.equals(id, that.id) && Objects.equals(key, that.key) && Objects.equals(decisionRequirementsId,
+        that.decisionRequirementsId) && Objects.equals(name, that.name) && Objects.equals(version,
+        that.version) && Objects.equals(resourceName, that.resourceName) && Objects.equals(tenantId, that.tenantId);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, key, decisionRequirementsId, name, version, resourceName);
+    return Objects.hash(id, key, decisionRequirementsId, name, version, resourceName, tenantId);
   }
 
   @Override
   public String toString() {
-    return "DecisionRequirements{" + "id='" + id + '\'' + ", key=" + key + ", decisionRequirementsId='" + decisionRequirementsId + '\'' + ", name='" + name
-        + '\'' + ", version=" + version + ", resourceName='" + resourceName + '\'' + '}';
+    return "DecisionRequirements{" + "id='" + id + '\'' + ", key=" + key + ", decisionRequirementsId='" + decisionRequirementsId
+        + '\'' + ", name='" + name + '\'' + ", version=" + version + ", resourceName='" + resourceName + '\'' + ", tenantId='"
+        + tenantId + '\'' + '}';
   }
 }

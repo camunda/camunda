@@ -13,8 +13,6 @@ import org.springframework.stereotype.Component;
 @Component
 public abstract class AbstractIndexDescriptor implements IndexDescriptor {
 
-  public static final String PARTITION_ID = "partitionId";
-
   @Autowired
   protected OperateProperties operateProperties;
 

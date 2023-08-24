@@ -22,7 +22,8 @@ public class Incident {
     TYPE = IncidentTemplate.ERROR_TYPE,
     MESSAGE = IncidentTemplate.ERROR_MSG,
     CREATION_TIME = IncidentTemplate.CREATION_TIME,
-    STATE = IncidentTemplate.STATE;
+    STATE = IncidentTemplate.STATE,
+    TENANT_ID = IncidentTemplate.TENANT_ID;
 
   public static final String MESSAGE_FIELD = "message";
   public static final String TYPE_FIELD = "type";
@@ -35,6 +36,7 @@ public class Incident {
   private String message;
   private String creationTime;
   private String state;
+  private String tenantId;
 
   public Long getKey() {
     return key;
@@ -99,39 +101,38 @@ public class Incident {
     return this;
   }
 
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  public Incident setTenantId(String tenantId) {
+    this.tenantId = tenantId;
+    return this;
+  }
+
   @Override
-  public boolean equals(final Object o) {
-    if (this == o) {
+  public boolean equals(Object o) {
+    if (this == o)
       return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
+    if (o == null || getClass() != o.getClass())
       return false;
-    }
-    final Incident incident = (Incident) o;
-    return Objects.equals(key, incident.key) && Objects.equals(
-        processDefinitionKey, incident.processDefinitionKey) && Objects.equals(
-        processInstanceKey, incident.processInstanceKey) && Objects.equals(type,
-        incident.type) && Objects.equals(message, incident.message)
-        && Objects.equals(creationTime, incident.creationTime) && Objects.equals(
-        state, incident.state);
+    Incident incident = (Incident) o;
+    return Objects.equals(key, incident.key) && Objects.equals(processDefinitionKey,
+        incident.processDefinitionKey) && Objects.equals(processInstanceKey,
+        incident.processInstanceKey) && Objects.equals(type, incident.type) && Objects.equals(message,
+        incident.message) && Objects.equals(creationTime, incident.creationTime) && Objects.equals(state,
+        incident.state) && Objects.equals(tenantId, incident.tenantId);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(key, processDefinitionKey, processInstanceKey, type, message, creationTime,
-        state);
+    return Objects.hash(key, processDefinitionKey, processInstanceKey, type, message, creationTime, state, tenantId);
   }
 
   @Override
   public String toString() {
-    return "Incident{" +
-        "key=" + key +
-        ", processDefinitionKey=" + processDefinitionKey +
-        ", processInstanceKey=" + processInstanceKey +
-        ", type='" + type + '\'' +
-        ", message='" + message + '\'' +
-        ", creationTime=" + creationTime +
-        ", state='" + state + '\'' +
-        '}';
+    return "Incident{" + "key=" + key + ", processDefinitionKey=" + processDefinitionKey + ", processInstanceKey="
+        + processInstanceKey + ", type='" + type + '\'' + ", message='" + message + '\'' + ", creationTime='" + creationTime
+        + '\'' + ", state='" + state + '\'' + ", tenantId='" + tenantId + '\'' + '}';
   }
 }

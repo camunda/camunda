@@ -17,6 +17,7 @@ public class Variable {
   public static final String KEY = VariableTemplate.KEY,
       PROCESS_INSTANCE_KEY = VariableTemplate.PROCESS_INSTANCE_KEY,
       SCOPE_KEY = VariableTemplate.SCOPE_KEY,
+      TENANT_ID = VariableTemplate.TENANT_ID,
       NAME = VariableTemplate.NAME,
       VALUE = VariableTemplate.VALUE,
       FULL_VALUE = VariableTemplate.FULL_VALUE,
@@ -28,6 +29,7 @@ public class Variable {
   private String name;
   private String value;
   private Boolean truncated;
+  private String tenantId;
 
   public Long getKey() {
     return key;
@@ -82,36 +84,37 @@ public class Variable {
     return this;
   }
 
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  public Variable setTenantId(String tenantId) {
+    this.tenantId = tenantId;
+    return this;
+  }
+
   @Override
-  public boolean equals(final Object o) {
-    if (this == o) {
+  public boolean equals(Object o) {
+    if (this == o)
       return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
+    if (o == null || getClass() != o.getClass())
       return false;
-    }
-    final Variable variable = (Variable) o;
+    Variable variable = (Variable) o;
     return Objects.equals(key, variable.key) && Objects.equals(processInstanceKey,
-        variable.processInstanceKey) && Objects.equals(scopeKey, variable.scopeKey)
-        && Objects.equals(name, variable.name) && Objects.equals(value,
-        variable.value)
-        && Objects.equals(truncated, variable.truncated);
+        variable.processInstanceKey) && Objects.equals(scopeKey, variable.scopeKey) && Objects.equals(name,
+        variable.name) && Objects.equals(value, variable.value) && Objects.equals(truncated,
+        variable.truncated) && Objects.equals(tenantId, variable.tenantId);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(key, processInstanceKey, scopeKey, name, value, truncated);
+    return Objects.hash(key, processInstanceKey, scopeKey, name, value, truncated, tenantId);
   }
 
   @Override
   public String toString() {
-    return "Variable{" +
-        "key=" + key +
-        ", processInstanceKey=" + processInstanceKey +
-        ", scopeKey=" + scopeKey +
-        ", name='" + name + '\'' +
-        ", value='" + value + '\'' +
-        ", truncated=" + truncated +
-        '}';
+    return "Variable{" + "key=" + key + ", processInstanceKey=" + processInstanceKey + ", scopeKey=" + scopeKey
+        + ", name='" + name + '\'' + ", value='" + value + '\'' + ", truncated=" + truncated + ", tenantId='"
+        + tenantId + '\'' + '}';
   }
 }
