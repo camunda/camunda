@@ -118,7 +118,6 @@ const ArrowPopover: React.FC<Props> = ({
                     y: getValueWhenValidNumber(arrowY),
                   }),
                 }}
-                $side={getSide(actualPlacement)}
               />
               <div>{children}</div>
             </>

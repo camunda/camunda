@@ -8,11 +8,11 @@
 import styled, {css} from 'styled-components';
 
 type ContainerProps = {
-  highlightableRows: number[];
+  $highlightableRows: number[];
 };
 
 const Container = styled.div<ContainerProps>`
-  ${({highlightableRows}) => {
+  ${({$highlightableRows}) => {
     return css`
       width: 100%;
       padding: var(--cds-spacing-07) var(--cds-spacing-06);
@@ -50,7 +50,7 @@ const Container = styled.div<ContainerProps>`
           border-width: 2px 2px 1px 2px;
 
           tbody {
-            ${highlightableRows.map((rowIndex) => {
+            ${$highlightableRows.map((rowIndex) => {
               return css`
                 tr:nth-child(${rowIndex}) {
                   background-color: var(--cds-highlight);

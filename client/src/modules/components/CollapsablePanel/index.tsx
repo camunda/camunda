@@ -54,7 +54,7 @@ const CollapsablePanel = forwardRef<HTMLDivElement, Props>(
     return (
       <Collapsable
         {...props}
-        isCollapsed={isCollapsed}
+        $isCollapsed={isCollapsed}
         $panelPosition={panelPosition}
         $isOverlay={isOverlay}
         $maxWidth={maxWidth}

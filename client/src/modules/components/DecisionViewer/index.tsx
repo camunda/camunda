@@ -49,7 +49,7 @@ const DecisionViewer: React.FC<Props> = observer(
 
     return (
       <Container
-        highlightableRows={highlightableRules}
+        $highlightableRows={highlightableRules}
         data-testid="decision-viewer"
       >
         <ViewerCanvas ref={decisionViewerRef} />

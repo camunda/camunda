@@ -28,16 +28,16 @@ const VariableName = styled.div`
   white-space: nowrap;
 `;
 
-type VariableValueProps = {hasBackdrop?: boolean};
+type VariableValueProps = {$hasBackdrop?: boolean};
 const VariableValue = styled.div<VariableValueProps>`
-  ${({hasBackdrop}) => {
+  ${({$hasBackdrop}) => {
     return css`
       ${styles.bodyShort01};
       margin: var(--cds-spacing-02) 0;
       max-height: 78px;
       overflow-y: auto;
       overflow-wrap: break-word;
-      ${hasBackdrop &&
+      ${$hasBackdrop &&
       css`
         position: relative;
       `}

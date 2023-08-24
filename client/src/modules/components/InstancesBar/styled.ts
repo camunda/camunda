@@ -44,14 +44,14 @@ const Wrapper = styled.div<WrapperProps>`
 `;
 
 type IncidentsCountProps = {
-  hasIncidents?: boolean;
+  $hasIncidents?: boolean;
 };
 
 const IncidentsCount = styled.div<IncidentsCountProps>`
-  ${({hasIncidents}) => {
+  ${({$hasIncidents}) => {
     return css`
       min-width: var(--cds-spacing-09);
-      ${hasIncidents
+      ${$hasIncidents
         ? css`
             color: var(--cds-text-error);
           `

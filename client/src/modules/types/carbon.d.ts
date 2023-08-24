@@ -29,6 +29,7 @@ declare module '@carbon/react' {
   export const Theme: React.FunctionComponent<{
     children: React.ReactNode;
     theme?: 'white' | 'g10' | 'g90' | 'g100';
+    className?: string;
   }>;
 
   type StackProps<C extends React.ElementType> =

@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import styled, {css} from 'styled-components';
+import styled from 'styled-components';
 import type {Side} from '@floating-ui/react-dom';
 
 const ARROW_SIZE = 18;
@@ -49,20 +49,12 @@ function getArrowPosition({
   };
 }
 
-type Props = {
-  $side: Side;
-};
-
-const Arrow = styled.div<Props>`
-  ${({$side}) => {
-    return css`
-      position: absolute;
-      width: ${ARROW_SIZE}px;
-      height: ${ARROW_SIZE}px;
-      background-color: var(--cds-layer);
-      transform: rotate(45deg);
-    `;
-  }}
+const Arrow = styled.div`
+  position: absolute;
+  width: ${ARROW_SIZE}px;
+  height: ${ARROW_SIZE}px;
+  background-color: var(--cds-layer);
+  transform: rotate(45deg);
 `;
 
 const Container = styled.div`

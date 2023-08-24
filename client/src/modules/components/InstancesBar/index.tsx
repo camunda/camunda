@@ -47,7 +47,7 @@ const InstancesBar: React.FC<Props> = ({
       <Wrapper $size={size}>
         <IncidentsCount
           data-testid="incident-instances-badge"
-          hasIncidents={hasIncidents}
+          $hasIncidents={hasIncidents}
         >
           {incidentsCount}
         </IncidentsCount>

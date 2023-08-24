@@ -9,11 +9,7 @@ import styled from 'styled-components';
 import {styles} from '@carbon/elements';
 import {ProgressBar as BaseProgressBar} from '@carbon/react';
 
-type Props = {
-  isRunning?: boolean;
-};
-
-const Container = styled.li<Props>`
+const Container = styled.li`
   padding: var(--cds-spacing-05);
   ${styles.bodyCompact01};
   border-bottom: 1px solid var(--cds-border-subtle-01);

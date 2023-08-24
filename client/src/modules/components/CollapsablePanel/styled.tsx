@@ -16,21 +16,21 @@ import {COLLAPSABLE_PANEL_MIN_WIDTH} from 'modules/constants';
 import {zOverlayCollapsable} from 'modules/constants/componentHierarchy';
 
 type CollapsableProps = {
-  isCollapsed: boolean;
+  $isCollapsed: boolean;
   $panelPosition: 'LEFT' | 'RIGHT';
   $isOverlay?: boolean;
   $maxWidth: number;
 };
 
 const Collapsable = styled.div<CollapsableProps>`
-  ${({isCollapsed, $isOverlay, $panelPosition, $maxWidth}) => {
+  ${({$isCollapsed, $isOverlay, $panelPosition, $maxWidth}) => {
     const isLeft = $panelPosition === 'LEFT';
     const isRight = $panelPosition === 'RIGHT';
 
     return css`
       height: 100%;
 
-      ${isCollapsed
+      ${$isCollapsed
         ? css`
             min-width: ${COLLAPSABLE_PANEL_MIN_WIDTH};
           `

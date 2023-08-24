@@ -232,7 +232,7 @@ const VariablesTable: React.FC<Props> = observer(
                     }}
                   />
                 ) : (
-                  <VariableValue hasBackdrop={true}>
+                  <VariableValue $hasBackdrop={true}>
                     {loadingItemId === id && (
                       <Loading small data-testid="full-variable-loader" />
                     )}

@@ -70,7 +70,13 @@ const backgroundColors = {
 
 type ContainerProps = {
   $theme: 'dark' | 'light';
-  $state: 'active' | 'incidents' | 'completed' | 'canceled';
+  $state:
+    | 'active'
+    | 'incidents'
+    | 'completed'
+    | 'canceled'
+    | 'EVALUATED'
+    | 'FAILED';
   $isFaded: boolean;
   $showStatistic?: boolean;
 };
