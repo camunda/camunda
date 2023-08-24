@@ -7,24 +7,24 @@
  */
 package io.camunda.zeebe.auth.impl;
 
-import io.camunda.zeebe.auth.api.TenantAccessChecker;
+import io.camunda.zeebe.auth.api.TenantAuthorizationChecker;
 import java.util.List;
 
-public class TenantAccessCheckerImpl implements TenantAccessChecker {
+public class TenantAuthorizationCheckerImpl implements TenantAuthorizationChecker {
 
   private final List<String> authorizedTenants;
 
-  public TenantAccessCheckerImpl(final List<String> authorizedTenants) {
+  public TenantAuthorizationCheckerImpl(final List<String> authorizedTenants) {
     this.authorizedTenants = authorizedTenants;
   }
 
   @Override
-  public Boolean hasAccess(final String tenantId) {
-    return authorizedTenants.stream().anyMatch(tenant -> tenant.equals(tenantId));
+  public Boolean isAuthorized(final String tenantId) {
+    return authorizedTenants.contains(tenantId);
   }
 
   @Override
-  public Boolean hasFullAccess(final List<String> tenantIds) {
+  public Boolean isFullyAuthorized(final List<String> tenantIds) {
     return authorizedTenants.containsAll(tenantIds);
   }
 }

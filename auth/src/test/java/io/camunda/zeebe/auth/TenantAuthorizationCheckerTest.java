@@ -9,19 +9,19 @@ package io.camunda.zeebe.auth;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.auth.api.TenantAccessChecker;
-import io.camunda.zeebe.auth.impl.TenantAccessCheckerImpl;
+import io.camunda.zeebe.auth.api.TenantAuthorizationChecker;
+import io.camunda.zeebe.auth.impl.TenantAuthorizationCheckerImpl;
 import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
 
-public class TenantAccessCheckerTest {
+public class TenantAuthorizationCheckerTest {
 
-  private TenantAccessChecker accessChecker;
+  private TenantAuthorizationChecker accessChecker;
 
   @Before
   public void setUp() {
-    accessChecker = new TenantAccessCheckerImpl(List.of("tenant-1", "tenant-2", "tenant-3"));
+    accessChecker = new TenantAuthorizationCheckerImpl(List.of("tenant-1", "tenant-2", "tenant-3"));
   }
 
   @Test
@@ -30,7 +30,7 @@ public class TenantAccessCheckerTest {
     final String tenantId = "tenant-1";
 
     // then
-    assertThat(accessChecker.hasAccess(tenantId)).isTrue();
+    assertThat(accessChecker.isAuthorized(tenantId)).isTrue();
   }
 
   @Test
@@ -39,7 +39,7 @@ public class TenantAccessCheckerTest {
     final String falseTenantId = "false-tenant";
 
     // then
-    assertThat(accessChecker.hasAccess(falseTenantId)).isFalse();
+    assertThat(accessChecker.isAuthorized(falseTenantId)).isFalse();
   }
 
   @Test
@@ -48,7 +48,7 @@ public class TenantAccessCheckerTest {
     final List<String> tenantIds = List.of("tenant-1", "tenant-2");
 
     // then
-    assertThat(accessChecker.hasFullAccess(tenantIds)).isTrue();
+    assertThat(accessChecker.isFullyAuthorized(tenantIds)).isTrue();
   }
 
   @Test
@@ -57,6 +57,6 @@ public class TenantAccessCheckerTest {
     final List<String> tenantIds = List.of("tenant-1", "tenant-2", "false-tenant");
 
     // then
-    assertThat(accessChecker.hasFullAccess(tenantIds)).isFalse();
+    assertThat(accessChecker.isFullyAuthorized(tenantIds)).isFalse();
   }
 }

@@ -9,7 +9,7 @@ package io.camunda.zeebe.auth.api;
 
 import java.util.List;
 
-public interface TenantAccessChecker {
+public interface TenantAuthorizationChecker {
 
   /**
    * Verifies if data can be accessed for the tenant whose identifier was provided.
@@ -17,7 +17,7 @@ public interface TenantAccessChecker {
    * @param tenantId the tenant identifier to be checked
    * @return <code>true</code>
    */
-  Boolean hasAccess(String tenantId);
+  Boolean isAuthorized(String tenantId);
 
   /**
    * Verifies if data can be accessed for the list of tenants whose identifiers were provided.
@@ -25,5 +25,5 @@ public interface TenantAccessChecker {
    * @param tenantId the tenant identifier to be checked
    * @return <code>true</code>
    */
-  Boolean hasFullAccess(List<String> tenantId);
+  Boolean isFullyAuthorized(List<String> tenantId);
 }
