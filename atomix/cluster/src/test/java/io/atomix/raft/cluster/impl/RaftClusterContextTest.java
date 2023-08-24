@@ -127,6 +127,48 @@ final class RaftClusterContextTest {
   }
 
   @Test
+  void shouldUpdateMemberType() {
+    // given -- stored configuration that contains all members
+    final var localMember = new DefaultRaftMember(new MemberId("1"), Type.ACTIVE, Instant.now());
+    final var oldRemoteMembers =
+        List.<RaftMember>of(
+            new DefaultRaftMember(new MemberId("2"), Type.ACTIVE, Instant.now()),
+            new DefaultRaftMember(new MemberId("3"), Type.ACTIVE, Instant.now()));
+    final var oldMembers =
+        Stream.concat(Stream.of(localMember), oldRemoteMembers.stream()).toList();
+
+    final var raft =
+        raftWithStoredConfiguration(
+            new Configuration(1, 1, Instant.now().toEpochMilli(), oldMembers));
+    final var context = new RaftClusterContext(localMember.memberId(), raft);
+
+    // when -- reconfigure with a new configuration only contains the local member
+    final var newLocalMember =
+        new DefaultRaftMember(new MemberId("1"), Type.PASSIVE, Instant.now());
+    final var newRemoteMembers =
+        List.<RaftMember>of(
+            new DefaultRaftMember(new MemberId("2"), Type.PASSIVE, Instant.now()),
+            new DefaultRaftMember(new MemberId("3"), Type.PASSIVE, Instant.now()));
+    final var newMembers =
+        Stream.concat(Stream.of(newLocalMember), newRemoteMembers.stream()).toList();
+
+    context.configure(
+        new Configuration(2, 1, Instant.now().toEpochMilli(), newMembers, oldMembers));
+
+    // then -- new configuration is used
+    assertThat(context.getLocalMember().memberId()).isEqualTo(MemberId.from("1"));
+    assertThat(context.getLocalMember().getType()).isEqualTo(Type.PASSIVE);
+    assertThat(context.isSingleMemberCluster()).isFalse();
+    assertThat(context.inJointConsensus()).isTrue();
+    assertThat(context.getMembers()).containsExactlyInAnyOrderElementsOf(newMembers);
+    assertThat(newMembers)
+        .allMatch(member -> context.isMember(member.memberId()))
+        .allSatisfy(
+            member ->
+                assertThat(context.getMember(member.memberId()).getType()).isEqualTo(Type.PASSIVE));
+  }
+
+  @Test
   void shouldCountVoteFromLocalMember() {
     // given
     final var localMember = new DefaultRaftMember(new MemberId("1"), Type.ACTIVE, Instant.now());
