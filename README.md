@@ -141,8 +141,6 @@ Sometimes the visual regression tests might fail in the CI and you want to check
 
 ## Running e2e tests
 
-On Operate we use Testcafe for e2e testing ([see docs](e2e/README.md)). But we started to migrate some tests to Playwright.
-
 Playwright e2e tests run on every push on every branch through Github Actions.
 
 To run these locally you can follow the steps below:
