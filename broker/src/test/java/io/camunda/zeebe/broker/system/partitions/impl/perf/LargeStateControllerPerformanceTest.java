@@ -79,7 +79,7 @@ public class LargeStateControllerPerformanceTest {
   }
 
   @Benchmark
-  public void measureStateRecovery() throws Exception {
+  public Optional<String> measureStateRecovery() throws Exception {
     // given
     //noinspection deprecation
     final var controller =
@@ -92,7 +92,9 @@ public class LargeStateControllerPerformanceTest {
             context.snapshotStoreFactory().getSnapshotStoreConcurrencyControl(1));
 
     // when
-    //noinspection EmptyTryBlock
-    try (final var ignored = controller.recover().join()) {}
+    try (final var db = controller.recover().join()) {
+      //noinspection unchecked
+      return db.getProperty("rocksdb.estimate-live-data-size");
+    }
   }
 }
