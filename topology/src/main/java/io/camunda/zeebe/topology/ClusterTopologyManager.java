@@ -75,18 +75,25 @@ final class ClusterTopologyManager {
     topologyInitializer
         .initialize()
         .onComplete(
-            (initialized, error) -> {
+            (topology, error) -> {
               if (error != null) {
                 LOG.error("Failed to initialize topology", error);
                 startFuture.completeExceptionally(error);
-              } else if (!initialized) {
+              } else if (topology.isUninitialized()) {
                 final String errorMessage =
-                    "Expected to initialize topology, but initializer return false";
+                    "Expected to initialize topology, but got uninitialized topology";
                 LOG.error(errorMessage);
                 startFuture.completeExceptionally(new IllegalStateException(errorMessage));
               } else {
-                topologyGossiper.accept(persistedClusterTopology.getTopology());
-                setStarted();
+                try {
+                  // merge in case there was a concurrent update via gossip
+                  persistedClusterTopology.update(
+                      topology.merge(persistedClusterTopology.getTopology()));
+                  topologyGossiper.accept(persistedClusterTopology.getTopology());
+                  setStarted();
+                } catch (final IOException e) {
+                  startFuture.completeExceptionally("Failed to start update cluster topology", e);
+                }
               }
             });
   }

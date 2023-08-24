@@ -19,7 +19,6 @@ import io.camunda.zeebe.topology.serializer.ClusterTopologySerializer;
 import io.camunda.zeebe.topology.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.MemberState;
-import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Map;
@@ -42,14 +41,7 @@ final class ClusterTopologyManagerTest {
           .addMember(MemberId.from("1"), MemberState.initializeAsActive(Map.of()));
   private PersistedClusterTopology persistedClusterTopology;
   private final TopologyInitializer successInitializer =
-      () -> {
-        try {
-          persistedClusterTopology.update(initialTopology);
-        } catch (IOException e) {
-          return CompletableActorFuture.completedExceptionally(e);
-        }
-        return CompletableActorFuture.completed(true);
-      };
+      () -> CompletableActorFuture.completed(initialTopology);
 
   @BeforeEach
   void init() {
@@ -84,6 +76,16 @@ final class ClusterTopologyManagerTest {
   }
 
   @Test
+  void shouldUpdatePersistedClusterTopologyAfterInitialization() {
+    // given
+    startTopologyManager(successInitializer).join();
+
+    // then
+    final ClusterTopology topology = persistedClusterTopology.getTopology();
+    assertThat(topology).isEqualTo(initialTopology);
+  }
+
+  @Test
   void shouldGossipInitialTopology() {
     // given
     startTopologyManager(successInitializer).join();
@@ -107,7 +109,8 @@ final class ClusterTopologyManagerTest {
   @Test
   void shouldFailToStartIfTopologyIsNotInitialized() {
     // given
-    final TopologyInitializer failingInitializer = () -> CompletableActorFuture.completed(false);
+    final TopologyInitializer failingInitializer =
+        () -> CompletableActorFuture.completed(ClusterTopology.uninitialized());
     final var startFuture = startTopologyManager(failingInitializer);
 
     // when - then
