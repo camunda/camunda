@@ -33,7 +33,7 @@ function getWrapper(initialPath: string = '/') {
 
 const OperationsPanelMock: React.FC = () => <div>OperationsPanelMock</div>;
 
-jest.mock('modules/components/OperationsPanel', () => ({
+jest.mock('modules/components/Carbon/OperationsPanel', () => ({
   OperationsPanel: OperationsPanelMock,
 }));
 

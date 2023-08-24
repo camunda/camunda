@@ -15,7 +15,7 @@ import {
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
 
-import {LastModification} from 'App/ProcessInstance/LastModification';
+import {LastModification} from 'App/Carbon/ProcessInstance/LastModification';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {variablesStore} from 'modules/stores/variables';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';

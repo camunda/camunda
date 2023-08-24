@@ -5,13 +5,10 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {useEffect, useRef, useState} from 'react';
-import {Notification, useNotifications} from 'modules/notifications';
+import React, {useEffect, useRef} from 'react';
 import {notificationsStore} from 'modules/stores/carbonNotifications';
 
 const NetworkStatusWatcher: React.FC = () => {
-  const {displayNotification} = useNotifications();
-  const [notification] = useState<Notification | undefined>();
   const notificationRef = useRef<{remove: () => void} | null>(null);
 
   useEffect(() => {
@@ -34,7 +31,7 @@ const NetworkStatusWatcher: React.FC = () => {
     return () => {
       window.removeEventListener('offline', handleDisconnection);
     };
-  }, [displayNotification]);
+  }, []);
 
   useEffect(() => {
     function handleReconnection() {
@@ -46,7 +43,7 @@ const NetworkStatusWatcher: React.FC = () => {
     return () => {
       window.removeEventListener('online', handleReconnection);
     };
-  }, [notification]);
+  }, []);
 
   return null;
 };

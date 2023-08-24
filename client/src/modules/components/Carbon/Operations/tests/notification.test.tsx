@@ -10,12 +10,12 @@ import {mockApplyOperation} from 'modules/mocks/api/processInstances/operations'
 import {createBatchOperation} from 'modules/testUtils';
 import {Operations} from '../index';
 import {INSTANCE, Wrapper} from './mocks';
+import {notificationsStore} from 'modules/stores/carbonNotifications';
 
-const mockDisplayNotification = jest.fn();
-jest.mock('modules/notifications', () => ({
-  useNotifications: () => ({
-    displayNotification: mockDisplayNotification,
-  }),
+jest.mock('modules/stores/carbonNotifications', () => ({
+  notificationsStore: {
+    displayNotification: jest.fn(() => () => {}),
+  },
 }));
 
 describe('Operations - Notification', () => {
@@ -51,7 +51,7 @@ describe('Operations - Notification', () => {
       screen.queryByText(/About to delete Instance/),
     ).not.toBeInTheDocument();
 
-    expect(mockDisplayNotification).not.toHaveBeenCalled();
+    expect(notificationsStore.displayNotification).not.toHaveBeenCalled();
     expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/processes$/);
   });
 });

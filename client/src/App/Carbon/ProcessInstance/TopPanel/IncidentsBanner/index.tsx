@@ -14,7 +14,7 @@ import {
 } from './styled';
 import {incidentsStore} from 'modules/stores/incidents';
 import {observer} from 'mobx-react';
-import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
+import {useProcessInstancePageParams} from '../../useProcessInstancePageParams';
 
 type Props = {
   onClick: () => void;

@@ -11,12 +11,12 @@ import {getSortParams} from 'modules/utils/filter';
 import {sortIncidents} from './service';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {observer} from 'mobx-react';
-import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
+import {useProcessInstancePageParams} from '../../useProcessInstancePageParams';
 import {FlexContainer, ErrorMessageCell} from './styled';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {Incident, incidentsStore} from 'modules/stores/incidents';
-import {Link} from 'modules/components/Link';
-import {LegacyPaths} from 'modules/legacyRoutes';
+import {Link} from 'modules/components/Carbon/Link';
+import {Paths} from 'modules/Routes';
 import {useLocation} from 'react-router-dom';
 import {tracking} from 'modules/tracking';
 import {authenticationStore} from 'modules/stores/authentication';
@@ -187,7 +187,7 @@ const IncidentsTable: React.FC = observer(function IncidentsTable() {
                 ) : (
                   <Link
                     to={{
-                      pathname: LegacyPaths.processInstance(
+                      pathname: Paths.processInstance(
                         rootCauseInstance.instanceId,
                       ),
                     }}

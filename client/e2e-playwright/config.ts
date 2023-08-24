@@ -9,7 +9,6 @@ const endpoint = `http://localhost:${process.env.PORT}`;
 
 const config = {
   endpoint,
-  legacyEndpoint: `${endpoint}/legacy`,
   agentUser: {
     username: 'demo',
     password: 'demo',

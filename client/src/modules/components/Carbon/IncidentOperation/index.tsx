@@ -8,7 +8,6 @@
 import React, {useState} from 'react';
 
 import {ErrorHandler, operationsStore} from 'modules/stores/operations';
-import {useNotifications} from 'modules/notifications';
 
 import {Incident} from 'modules/stores/incidents';
 import {OperationItems} from 'modules/components/Carbon/OperationItems';
@@ -18,6 +17,7 @@ import {observer} from 'mobx-react';
 import {tracking} from 'modules/tracking';
 import {InlineLoading} from '@carbon/react';
 import {Container} from './styled';
+import {notificationsStore} from 'modules/stores/carbonNotifications';
 
 type Props = {
   incident: Incident;
@@ -28,14 +28,14 @@ type Props = {
 const IncidentOperation: React.FC<Props> = observer(
   ({instanceId, incident, showSpinner}) => {
     const [hasActiveOperation, setHasActiveOperation] = useState(false);
-    const notifications = useNotifications();
 
     const handleError: ErrorHandler = ({statusCode}) => {
       setHasActiveOperation(false);
-      notifications.displayNotification('error', {
-        headline: 'Operation could not be created',
-        description:
-          statusCode === 403 ? 'You do not have permission' : undefined,
+      notificationsStore.displayNotification({
+        kind: 'error',
+        title: 'Operation could not be created',
+        subtitle: statusCode === 403 ? 'You do not have permission' : undefined,
+        isDismissable: true,
       });
     };
 

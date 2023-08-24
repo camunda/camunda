@@ -11,7 +11,7 @@ import {decisionInstanceDetailsStore} from 'modules/stores/decisionInstanceDetai
 import {
   ResizablePanel,
   SplitDirection,
-} from 'modules/components/ResizablePanel';
+} from 'modules/components/Carbon/ResizablePanel';
 import {
   Container,
   Panel,

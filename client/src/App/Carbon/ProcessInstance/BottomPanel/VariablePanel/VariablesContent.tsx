@@ -7,7 +7,7 @@
 
 import {variablesStore} from 'modules/stores/variables';
 import {observer} from 'mobx-react';
-import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
+import {useProcessInstancePageParams} from '../../useProcessInstancePageParams';
 import {Form as ReactFinalForm} from 'react-final-form';
 import {VariableFormValues} from 'modules/types/variables';
 

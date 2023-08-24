@@ -14,7 +14,7 @@ import {ExistingVariableValue} from '../ExistingVariableValue';
 import {Form} from 'react-final-form';
 import arrayMutators from 'final-form-arrays';
 import {modificationsStore} from 'modules/stores/modifications';
-import {LastModification} from 'App/ProcessInstance/LastModification';
+import {LastModification} from 'App/Carbon/ProcessInstance/LastModification';
 import {OnLastVariableModificationRemoved} from '../OnLastVariableModificationRemoved';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {createInstance} from 'modules/testUtils';

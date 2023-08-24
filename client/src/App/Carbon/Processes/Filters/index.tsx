@@ -14,9 +14,9 @@ import isEqual from 'lodash/isEqual';
 import {ProcessInstanceFilters} from 'modules/utils/filter';
 import {AutoSubmit} from 'modules/components/AutoSubmit';
 import {useFilters} from 'modules/hooks/useFilters';
-import {ProcessField} from 'App/Processes/Filters/ProcessField';
-import {ProcessVersionField} from 'App/Processes/Filters/ProcessVersionField';
-import {FlowNodeField} from 'App/Processes/Filters/FlowNodeField';
+import {ProcessField} from './ProcessField';
+import {ProcessVersionField} from './ProcessVersionField';
+import {FlowNodeField} from './FlowNodeField';
 import {
   Container,
   Title,

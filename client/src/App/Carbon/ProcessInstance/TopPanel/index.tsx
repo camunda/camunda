@@ -7,7 +7,7 @@
 
 import {useEffect, useState} from 'react';
 import {observer} from 'mobx-react';
-import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
+import {useProcessInstancePageParams} from '../useProcessInstancePageParams';
 import {sequenceFlowsStore} from 'modules/stores/sequenceFlows';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';

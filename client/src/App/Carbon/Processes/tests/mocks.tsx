@@ -12,9 +12,9 @@ import {processInstancesStore} from 'modules/stores/processInstances';
 import {processDiagramStore} from 'modules/stores/processDiagram';
 import {operationsStore} from 'modules/stores/operations';
 import {processesStore} from 'modules/stores/processes';
-import {LegacyPaths} from 'modules/legacyRoutes';
+import {Paths} from 'modules/Routes';
 
-function createWrapper(initialPath: string = LegacyPaths.dashboard()) {
+function createWrapper(initialPath: string = Paths.dashboard()) {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     useEffect(() => {
       return () => {
