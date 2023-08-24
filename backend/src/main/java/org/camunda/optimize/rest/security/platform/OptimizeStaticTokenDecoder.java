@@ -42,9 +42,9 @@ public class OptimizeStaticTokenDecoder implements JwtDecoder {
   private Optional<OAuth2Error> validateToken(final String providedToken) {
     String expectedAccessToken = configurationService.getOptimizeApiConfiguration().getAccessToken();
     if (expectedAccessToken == null || expectedAccessToken.isEmpty()) {
-     return Optional.of(new OAuth2Error("The config property 'api.accessToken' is not configured, therefore" +
-                                          " all public API requests will be blocked. Please check the documentation " +
-                                          "to set this property appropriately and restart the server."));
+      return Optional.of(new OAuth2Error("The config property 'api.accessToken' is not configured, therefore " +
+                                           "all public API requests will be blocked. Please check the documentation " +
+                                           "to set this property appropriately and restart the server."));
     } else if (!expectedAccessToken.equals(providedToken)) {
       return Optional.of(new OAuth2Error("Provided authorization token is invalid."));
     }
