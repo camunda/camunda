@@ -37,7 +37,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController("FlowNodeInstanceControllerV1")
 @RequestMapping(URI)
-@Tag(name = "Flownode-instance", description = "Flownode Instances API")
+@Tag(name = "FlownodeInstance", description = "Flownode Instance API")
 @Validated
 public class FlowNodeInstanceController extends ErrorController implements SearchController<FlowNodeInstance> {
 

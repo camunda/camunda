@@ -51,7 +51,7 @@ import java.util.stream.Collectors;
 
 @RestController("ProcessInstanceControllerV1")
 @RequestMapping(URI)
-@Tag(name = "ProcessInstance", description = "Process instance API")
+@Tag(name = "ProcessInstance", description = "Process Instance API")
 @Validated
 public class ProcessInstanceController extends ErrorController implements SearchController<ProcessInstance> {
 

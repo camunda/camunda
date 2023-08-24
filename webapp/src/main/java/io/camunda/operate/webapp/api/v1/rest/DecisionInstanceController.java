@@ -32,7 +32,7 @@ import static io.camunda.operate.webapp.api.v1.rest.DecisionInstanceController.U
 
 @RestController("DecisionInstanceControllerV1")
 @RequestMapping(URI)
-@Tag(name = "DecisionInstance", description = "Decision instance API")
+@Tag(name = "DecisionInstance", description = "Decision Instance API")
 @Validated
 public class DecisionInstanceController extends ErrorController {
 
@@ -44,8 +44,8 @@ public class DecisionInstanceController extends ErrorController {
   private DecisionInstanceDao decisionInstanceDao;
 
   @Operation(
-      summary = "Get decision instance by id", security = {@SecurityRequirement(name = "bearer-key"), @SecurityRequirement(name = "cookie")}, tags = {
-      "Decision"}, responses = {@ApiResponse(description = "Success", responseCode = "200"),
+      summary = "Get decision instance by id", security = {@SecurityRequirement(name = "bearer-key"), @SecurityRequirement(name = "cookie")},
+      responses = {@ApiResponse(description = "Success", responseCode = "200"),
       @ApiResponse(description = ServerException.TYPE, responseCode = "500", content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
           schema = @Schema(implementation = Error.class))),
       @ApiResponse(description = ClientException.TYPE, responseCode = "400", content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
@@ -63,7 +63,7 @@ public class DecisionInstanceController extends ErrorController {
   }
 
   @Operation(summary = "Search decision instances", security = {@SecurityRequirement(name = "bearer-key"), @SecurityRequirement(name = "cookie")},
-      tags = {"Decision"}, responses = {@ApiResponse(description = "Success", responseCode = "200"),
+      responses = {@ApiResponse(description = "Success", responseCode = "200"),
       @ApiResponse(description = ServerException.TYPE, responseCode = "500", content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
           schema = @Schema(implementation = Error.class))),
       @ApiResponse(description = ClientException.TYPE, responseCode = "400", content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,

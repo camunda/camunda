@@ -40,7 +40,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController("ProcessDefinitionControllerV1")
 @RequestMapping(URI)
-@Tag(name = "ProcessDefinition", description = "Process definition API")
+@Tag(name = "ProcessDefinition", description = "Process Definition API")
 @Validated
 public class ProcessDefinitionController extends ErrorController
     implements SearchController<ProcessDefinition> {
@@ -113,7 +113,6 @@ public class ProcessDefinitionController extends ErrorController
   @Operation(
       summary = "Get process definition by key",
       security = { @SecurityRequirement(name = "bearer-key") , @SecurityRequirement(name = "cookie")},
-      tags = {"Process"},
       responses = {
           @ApiResponse(
               description = "Success",
@@ -143,7 +142,6 @@ public class ProcessDefinitionController extends ErrorController
   @Operation(
       summary = "Get process definition as XML by key",
       security = { @SecurityRequirement(name = "bearer-key") , @SecurityRequirement(name = "cookie")},
-      tags = {"Process"},
       responses = {
           @ApiResponse(
               description = "Success",

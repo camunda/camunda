@@ -34,7 +34,7 @@ import static io.camunda.operate.webapp.api.v1.rest.DecisionRequirementsControll
 
 @RestController("DecisionRequirementsControllerV1")
 @RequestMapping(URI)
-@Tag(name = "DecisionRequirements", description = "Decision requirements API")
+@Tag(name = "DecisionRequirements", description = "Decision Requirements API")
 @Validated
 public class DecisionRequirementsController extends ErrorController
     implements SearchController<DecisionRequirements> {
@@ -46,7 +46,7 @@ public class DecisionRequirementsController extends ErrorController
   private DecisionRequirementsDao decisionRequirementsDao;
 
   @Operation(summary = "Get decision requirements by key", security = {@SecurityRequirement(name = "bearer-key"), @SecurityRequirement(name = "cookie")},
-      tags = {"Decision"}, responses = {@ApiResponse(description = "Success", responseCode = "200"),
+      responses = {@ApiResponse(description = "Success", responseCode = "200"),
       @ApiResponse(description = ServerException.TYPE, responseCode = "500", content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
           schema = @Schema(implementation = Error.class))),
       @ApiResponse(description = ClientException.TYPE, responseCode = "400", content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
@@ -59,7 +59,7 @@ public class DecisionRequirementsController extends ErrorController
   }
 
   @Operation(summary = "Get decision requirements as XML by key", security = {@SecurityRequirement(name = "bearer-key"), @SecurityRequirement(name = "cookie")},
-      tags = {"Decision"}, responses = {@ApiResponse(description = "Success", responseCode = "200"),
+      responses = {@ApiResponse(description = "Success", responseCode = "200"),
       @ApiResponse(description = ServerException.TYPE, responseCode = "500", content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
           schema = @Schema(implementation = Error.class))),
       @ApiResponse(description = ClientException.TYPE, responseCode = "400", content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
@@ -74,7 +74,7 @@ public class DecisionRequirementsController extends ErrorController
   }
 
   @Operation(summary = "Search decision requirements", security = {@SecurityRequirement(name = "bearer-key"), @SecurityRequirement(name = "cookie")},
-      tags = {"Decision"}, responses = {@ApiResponse(description = "Success", responseCode = "200"),
+      responses = {@ApiResponse(description = "Success", responseCode = "200"),
       @ApiResponse(description = ServerException.TYPE, responseCode = "500", content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
           schema = @Schema(implementation = Error.class))),
       @ApiResponse(description = ClientException.TYPE, responseCode = "400", content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
