@@ -22,6 +22,10 @@ import io.camunda.zeebe.topology.TopologyInitializer.SyncInitializer;
 import io.camunda.zeebe.topology.gossip.ClusterTopologyGossiper;
 import io.camunda.zeebe.topology.gossip.ClusterTopologyGossiperConfig;
 import io.camunda.zeebe.topology.serializer.ProtoBufSerializer;
+import io.camunda.zeebe.topology.state.ClusterTopology;
+import io.camunda.zeebe.util.FileUtil;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
@@ -31,6 +35,7 @@ public final class ClusterTopologyManagerService extends Actor {
   // Use a node 0 as always the coordinator. Later we can make it configurable or allow changing it
   // dynamically.
   private static final String COORDINATOR_ID = "0";
+  private static final String TOPOLOGY_FILE_NAME = ".topology.meta";
   private final ClusterTopologyManager clusterTopologyManager;
   private final ClusterTopologyGossiper clusterTopologyGossiper;
 
@@ -39,10 +44,17 @@ public final class ClusterTopologyManagerService extends Actor {
   private final Path topologyFile;
 
   public ClusterTopologyManagerService(
-      final Path topologyFile,
+      final Path dataRootDirectory,
       final ClusterCommunicationService communicationService,
       final ClusterMembershipService memberShipService,
       final ClusterTopologyGossiperConfig config) {
+    try {
+      FileUtil.ensureDirectoryExists(dataRootDirectory);
+    } catch (final IOException e) {
+      throw new UncheckedIOException("Failed to create data directory", e);
+    }
+
+    final var topologyFile = dataRootDirectory.resolve(TOPOLOGY_FILE_NAME);
     persistedClusterTopology = new PersistedClusterTopology(topologyFile, new ProtoBufSerializer());
     this.topologyFile = topologyFile;
     clusterTopologyManager = new ClusterTopologyManager(this, persistedClusterTopology);
@@ -82,14 +94,8 @@ public final class ClusterTopologyManagerService extends Actor {
         .orThen(new StaticInitializer(staticPartitionResolver));
   }
 
-  /**
-   * NOTE: Do not integrate this into Broker startup steps until data layout and serialization
-   * `ClusterTopology` is finalized. This is to prevent any backward incompatible changes to be
-   * included in a released version.
-   *
-   * <p>Starts ClusterTopologyManager which initializes ClusterTopology
-   */
-  ActorFuture<Void> start(
+  /** Starts ClusterTopologyManager which initializes ClusterTopology */
+  public ActorFuture<Void> start(
       final ActorSchedulingService actorSchedulingService,
       final List<MemberId> clusterMembers,
       final Supplier<Set<PartitionMetadata>> partitionDistributionResolver) {
@@ -131,5 +137,9 @@ public final class ClusterTopologyManagerService extends Actor {
                 clusterTopologyManager.start(topologyInitializer).onComplete(startFuture);
               }
             });
+  }
+
+  public ActorFuture<ClusterTopology> getClusterTopology() {
+    return clusterTopologyManager.getClusterTopology();
   }
 }
