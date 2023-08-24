@@ -17,6 +17,9 @@ const ENDPOINTS = Object.freeze({
   login() {
     return new URL('/api/login', config.endpoint).toString();
   },
+  getFlowNodeInstances() {
+    return new URL('/api/flow-node-instances', config.endpoint).toString();
+  },
 });
 
 export {ENDPOINTS};

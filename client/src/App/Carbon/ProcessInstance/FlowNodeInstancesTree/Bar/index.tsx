@@ -23,7 +23,7 @@ type Props = {
 const Bar = React.forwardRef<HTMLDivElement, Props>(
   ({nodeName, flowNodeInstance, isTimestampLabelVisible = false}, ref) => {
     return (
-      <Container ref={ref}>
+      <Container ref={ref} data-testid={`node-details-${flowNodeInstance.id}`}>
         <Stack orientation="horizontal" gap={5}>
           {flowNodeInstance.state !== undefined && (
             <StateIcon state={flowNodeInstance.state} size={16} />

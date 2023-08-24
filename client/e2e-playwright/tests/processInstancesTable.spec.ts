@@ -8,14 +8,14 @@
 import {setup} from './processInstancesTable.mocks';
 import {test} from '../test-fixtures';
 import {expect} from '@playwright/test';
-import {SETUP_WAITING_TIME} from './constants';
+import {SETUP_WAITING_TIME_LONG} from './constants';
 import {config} from '../config';
 
 let initialData: Awaited<ReturnType<typeof setup>>;
 
 test.beforeAll(async ({request}) => {
   initialData = await setup();
-  test.setTimeout(SETUP_WAITING_TIME);
+  test.setTimeout(SETUP_WAITING_TIME_LONG);
 
   await Promise.all([
     expect
@@ -35,7 +35,7 @@ test.beforeAll(async ({request}) => {
           const instances: {total: number} = await response.json();
           return instances.total;
         },
-        {timeout: SETUP_WAITING_TIME},
+        {timeout: SETUP_WAITING_TIME_LONG},
       )
       .toBe(30),
     expect
@@ -55,7 +55,7 @@ test.beforeAll(async ({request}) => {
           const instances: {total: number} = await response.json();
           return instances.total;
         },
-        {timeout: SETUP_WAITING_TIME},
+        {timeout: SETUP_WAITING_TIME_LONG},
       )
       .toBe(2),
     expect
@@ -75,7 +75,7 @@ test.beforeAll(async ({request}) => {
           const instances: {total: number} = await response.json();
           return instances.total;
         },
-        {timeout: SETUP_WAITING_TIME},
+        {timeout: SETUP_WAITING_TIME_LONG},
       )
       .toBe(300),
   ]);

@@ -82,4 +82,11 @@ export class ProcessInstance {
   async selectFlowNode(flowNodeName: string) {
     await this.diagram.getByText(flowNodeName).click();
   }
+
+  async getNthTreeNodeTestId(n: number) {
+    return this.page
+      .getByTestId(/^tree-node-/)
+      .nth(n)
+      .getAttribute('data-testid');
+  }
 }
