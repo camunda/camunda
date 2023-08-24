@@ -5,7 +5,6 @@
  * except in compliance with the proprietary license.
  */
 
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {VariablePanel} from '../index';
 import {
   render,
@@ -84,13 +83,11 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   }, []);
 
   return (
-    <ThemeProvider>
-      <MemoryRouter initialEntries={[Paths.processInstance('1')]}>
-        <Routes>
-          <Route path={Paths.processInstance()} element={children} />
-        </Routes>
-      </MemoryRouter>
-    </ThemeProvider>
+    <MemoryRouter initialEntries={[Paths.processInstance('1')]}>
+      <Routes>
+        <Route path={Paths.processInstance()} element={children} />
+      </Routes>
+    </MemoryRouter>
   );
 };
 

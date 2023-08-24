@@ -7,7 +7,6 @@
 
 import {MemoryRouter} from 'react-router-dom';
 import {render, screen, UserEvent, waitFor} from 'modules/testing-library';
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {variablesStore} from 'modules/stores/variables';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {ExistingVariableValue} from '../ExistingVariableValue';
@@ -35,21 +34,19 @@ const Wrapper: React.FC<Props> = ({children}) => {
   }, []);
 
   return (
-    <ThemeProvider>
-      <MemoryRouter>
-        <Form onSubmit={() => {}} mutators={{...arrayMutators}}>
-          {({handleSubmit}) => {
-            return (
-              <>
-                <form onSubmit={handleSubmit}>{children} </form>
-                <OnLastVariableModificationRemoved />
-                <LastModification />
-              </>
-            );
-          }}
-        </Form>
-      </MemoryRouter>
-    </ThemeProvider>
+    <MemoryRouter>
+      <Form onSubmit={() => {}} mutators={{...arrayMutators}}>
+        {({handleSubmit}) => {
+          return (
+            <>
+              <form onSubmit={handleSubmit}>{children} </form>
+              <OnLastVariableModificationRemoved />
+              <LastModification />
+            </>
+          );
+        }}
+      </Form>
+    </MemoryRouter>
   );
 };
 
