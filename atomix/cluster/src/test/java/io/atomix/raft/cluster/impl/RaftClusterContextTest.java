@@ -53,8 +53,8 @@ final class RaftClusterContextTest {
                 .map(RaftMemberContext::getMember)
                 .map(RaftMember.class::cast))
         .containsAll(remoteMembers);
-    assertThat(members).allMatch(member -> context.isMember(member.memberId()));
     assertThat(members)
+        .allMatch(member -> context.isMember(member.memberId()))
         .allSatisfy(member -> assertThat(context.getMember(member.memberId())).isNotNull());
     assertThat(remoteMembers)
         .allSatisfy(member -> assertThat(context.getMemberContext(member.memberId())).isNotNull());
@@ -89,8 +89,8 @@ final class RaftClusterContextTest {
                 .map(RaftMemberContext::getMember)
                 .map(RaftMember.class::cast))
         .containsAll(remoteMembers);
-    assertThat(members).allMatch(member -> context.isMember(member.memberId()));
     assertThat(members)
+        .allMatch(member -> context.isMember(member.memberId()))
         .allSatisfy(member -> assertThat(context.getMember(member.memberId())).isNotNull());
     assertThat(remoteMembers)
         .allSatisfy(member -> assertThat(context.getMemberContext(member.memberId())).isNotNull());
@@ -120,10 +120,9 @@ final class RaftClusterContextTest {
     assertThat(context.isSingleMemberCluster()).isTrue();
     assertThat(context.getVotingMembers()).isEmpty();
     assertThat(context.getReplicationTargets()).isEmpty();
-    assertThat(remoteMembers).noneMatch(member -> context.isMember(member.memberId()));
     assertThat(remoteMembers)
-        .allSatisfy(member -> assertThat(context.getMember(member.memberId())).isNull());
-    assertThat(remoteMembers)
+        .noneMatch(member -> context.isMember(member.memberId()))
+        .allSatisfy(member -> assertThat(context.getMember(member.memberId())).isNull())
         .allSatisfy(member -> assertThat(context.getMemberContext(member.memberId())).isNull());
   }
 
@@ -212,7 +211,7 @@ final class RaftClusterContextTest {
   }
 
   @Test
-  void shouldCalculateQuorumDuringJointConsensus() {
+  void quorumWhenNewMembersAreAhead() {
     // given
     final var localMember = new DefaultRaftMember(new MemberId("1"), Type.ACTIVE, Instant.now());
     final var oldRemoteMembers =
@@ -240,6 +239,41 @@ final class RaftClusterContextTest {
 
     for (final var member : oldRemoteMembers) {
       context.getMemberContext(member.memberId()).setMatchIndex(2);
+    }
+
+    // then
+    assertThat(context.getQuorumFor(RaftMemberContext::getMatchIndex)).hasValue(2L);
+  }
+
+  @Test
+  void quorumWhenOldMembersAreAhead() {
+    // given
+    final var localMember = new DefaultRaftMember(new MemberId("1"), Type.ACTIVE, Instant.now());
+    final var oldRemoteMembers =
+        List.<RaftMember>of(
+            new DefaultRaftMember(new MemberId("2"), Type.ACTIVE, Instant.now()),
+            new DefaultRaftMember(new MemberId("3"), Type.ACTIVE, Instant.now()));
+    final var oldMembers =
+        Stream.concat(Stream.of(localMember), oldRemoteMembers.stream()).toList();
+    final var newRemoteMembers =
+        List.<RaftMember>of(
+            new DefaultRaftMember(new MemberId("4"), Type.ACTIVE, Instant.now()),
+            new DefaultRaftMember(new MemberId("5"), Type.ACTIVE, Instant.now()));
+    final var newMembers =
+        Stream.concat(Stream.of(localMember), newRemoteMembers.stream()).toList();
+
+    final var raft =
+        raftWithStoredConfiguration(
+            new Configuration(1, 1, Instant.now().toEpochMilli(), newMembers, oldMembers));
+    final var context = new RaftClusterContext(localMember.memberId(), raft);
+
+    // when
+    for (final var member : newRemoteMembers) {
+      context.getMemberContext(member.memberId()).setMatchIndex(2);
+    }
+
+    for (final var member : oldRemoteMembers) {
+      context.getMemberContext(member.memberId()).setMatchIndex(5);
     }
 
     // then

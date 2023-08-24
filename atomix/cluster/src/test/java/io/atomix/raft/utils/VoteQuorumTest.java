@@ -187,7 +187,7 @@ final class VoteQuorumTest {
     }
 
     @Test
-    void shouldWaitWithPartialQuorum() {
+    void shouldWaitWithQuorumOfOldMembers() {
       // given
       final Consumer<Boolean> callback = mock();
 
@@ -200,6 +200,25 @@ final class VoteQuorumTest {
       // when
       quorum.succeed(new MemberId("1"));
       quorum.succeed(new MemberId("4"));
+
+      // then
+      verifyNoInteractions(callback);
+    }
+
+    @Test
+    void shouldWaitWithQuorumOfNewMembers() {
+      // given
+      final Consumer<Boolean> callback = mock();
+
+      final var quorum =
+          new JointConsensusVoteQuorum(
+              callback,
+              Set.of(MemberId.from("1"), MemberId.from("2"), MemberId.from("4")),
+              Set.of(MemberId.from("1"), MemberId.from("2"), MemberId.from("3")));
+
+      // when
+      quorum.succeed(new MemberId("1"));
+      quorum.succeed(new MemberId("3"));
 
       // then
       verifyNoInteractions(callback);
