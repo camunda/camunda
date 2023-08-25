@@ -77,9 +77,8 @@ class ProcessInstanceDetailsStatistics extends NetworkReconnectionHandler {
 
   fetchFlowNodeStatistics = this.retryOnConnectionLost(
     async (processInstanceId: string) => {
-      const response = await fetchProcessInstanceDetailStatistics(
-        processInstanceId,
-      );
+      const response =
+        await fetchProcessInstanceDetailStatistics(processInstanceId);
 
       if (response.isSuccess) {
         this.handleFetchSuccess(response.data);
@@ -91,9 +90,8 @@ class ProcessInstanceDetailsStatistics extends NetworkReconnectionHandler {
 
   handlePolling = async (processInstanceId: string) => {
     this.isPollRequestRunning = true;
-    const response = await fetchProcessInstanceDetailStatistics(
-      processInstanceId,
-    );
+    const response =
+      await fetchProcessInstanceDetailStatistics(processInstanceId);
 
     if (this.intervalId !== null) {
       if (response.isSuccess) {
