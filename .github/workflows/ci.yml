@@ -73,7 +73,7 @@ jobs:
     - name: Install
       uses: ./.github/actions/run-maven
       with:
-        parameters: install -Dskip.docker -Dskip.fe.build -DskipTests -pl backend,upgrade,qa/engine-it-plugin,qa/data-generation,qa/optimize-data-generator -am -Pengine-latest
+        parameters: install -Pengine-latest -Dskip.fe.build -Dskip.docker -DskipTests
     - name: Verify upgrade
       uses: ./.github/actions/run-maven
       with:
@@ -149,7 +149,7 @@ jobs:
     - name: Install
       uses: ./.github/actions/run-maven
       with:
-        parameters: install -Dskip.docker -Dskip.fe.build -DskipTests -pl backend,upgrade,qa/data-generation,qa/optimize-data-generator -am -Pengine-latest
+        parameters: install -Pengine-latest -Dskip.fe.build -Dskip.docker -DskipTests
     - name: Verify qa/upgrade-tests
       uses: ./.github/actions/run-maven
       with:
