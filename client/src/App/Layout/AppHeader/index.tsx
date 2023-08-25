@@ -42,7 +42,6 @@ const AppHeader: React.FC = observer(() => {
       app={{
         ariaLabel: 'Camunda Operate',
         name: 'Operate',
-        prefix: 'Camunda',
         routeProps: {
           to: Paths.dashboard(),
           onClick: () => {
@@ -224,9 +223,9 @@ const AppHeader: React.FC = observer(() => {
             },
           },
         ],
-        version: process.env.REACT_APP_VERSION,
       }}
       userSideBar={{
+        version: process.env.REACT_APP_VERSION,
         ariaLabel: 'Settings',
         customElements: {
           profile: {

@@ -71,9 +71,11 @@ svg {
   display: none;
 }
 
-p {
-  @include type-style('body-01');
-  margin: var(--cds-spacing-05) 0;
+.cds--modal {
+  p {
+    @include type-style('body-01');
+    margin: var(--cds-spacing-05) 0;
+  }
 }
 
 .cds--g10 {

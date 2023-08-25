@@ -2035,10 +2035,10 @@
     inherits-browser "^0.1.0"
     tiny-svg "^3.0.1"
 
-"@camunda/camunda-composite-components@0.0.42":
-  version "0.0.42"
-  resolved "https://registry.yarnpkg.com/@camunda/camunda-composite-components/-/camunda-composite-components-0.0.42.tgz#1ed05cc0c04ef3f854d85edd94f100241138e5f9"
-  integrity sha512-CGTknF5Mp6O+wvAlZO0TwDfpRREiYfbLr3AdoRMCj9Y8h4PbnttCFOxvGdMNc+p2JIEhCmuGnRzV+f9szBabCA==
+"@camunda/camunda-composite-components@0.1.3":
+  version "0.1.3"
+  resolved "https://registry.yarnpkg.com/@camunda/camunda-composite-components/-/camunda-composite-components-0.1.3.tgz#4a66378d020ab7956f3dabf9d22f759dd4cf2f7a"
+  integrity sha512-7UGL6Xd6I9mUFi0MNThQG0UUKwTChyyNkZSVHruEKgVWtkaOO588O6PXCOcyb9uDJDt/9J+CgqgM8/WXshFrYQ==
 
 "@carbon/colors@^11.19.0":
   version "11.19.0"
