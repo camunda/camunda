@@ -50,7 +50,7 @@ public class Worker extends App {
     final JobWorkerMetrics metrics =
         JobWorkerMetrics.micrometer()
             .withMeterRegistry(prometheusRegistry)
-            .withTags(Tags.of("WorkerName", workerCfg.getWorkerName(), "JobType", jobType))
+            .withTags(Tags.of("workerName", workerCfg.getWorkerName(), "jobType", jobType))
             .build();
     printTopology(client);
 
