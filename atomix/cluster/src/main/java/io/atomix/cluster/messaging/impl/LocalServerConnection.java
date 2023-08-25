@@ -16,29 +16,24 @@
  */
 package io.atomix.cluster.messaging.impl;
 
+import java.util.Objects;
 import java.util.Optional;
 
 /** Local server-side connection. */
 final class LocalServerConnection extends AbstractServerConnection {
   private static final byte[] EMPTY_PAYLOAD = new byte[0];
 
-  private volatile LocalClientConnection clientConnection;
+  private final LocalClientConnection clientConnection;
 
   LocalServerConnection(
       final HandlerRegistry handlers, final LocalClientConnection clientConnection) {
     super(handlers);
-    this.clientConnection = clientConnection;
+    this.clientConnection = Objects.requireNonNull(clientConnection);
   }
 
   @Override
   public void reply(
-      final ProtocolRequest message,
-      final ProtocolReply.Status status,
-      final Optional<byte[]> payload) {
-    final LocalClientConnection clientConnection = this.clientConnection;
-    if (clientConnection != null) {
-      clientConnection.dispatch(
-          new ProtocolReply(message.id(), payload.orElse(EMPTY_PAYLOAD), status));
-    }
+      final long messageId, final ProtocolReply.Status status, final Optional<byte[]> payload) {
+    clientConnection.dispatch(new ProtocolReply(messageId, payload.orElse(EMPTY_PAYLOAD), status));
   }
 }

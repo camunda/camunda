@@ -46,7 +46,7 @@ abstract class AbstractServerConnection implements ServerConnection {
         subjectBytes = StringUtil.getBytes(subject);
       }
 
-      reply(message, ProtocolReply.Status.ERROR_NO_HANDLER, Optional.ofNullable(subjectBytes));
+      reply(message.id(), ProtocolReply.Status.ERROR_NO_HANDLER, Optional.ofNullable(subjectBytes));
     }
   }
 }
