@@ -10,5 +10,5 @@ package io.camunda.zeebe.auth.api;
 public interface AuthorizationEncoder {
 
   /** Returns a user's authorizations encoded in a String. */
-  String getEncodedString();
+  String encode();
 }

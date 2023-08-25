@@ -16,7 +16,6 @@ import com.auth0.jwt.interfaces.DecodedJWT;
 import com.auth0.jwt.interfaces.Verification;
 import io.camunda.zeebe.auth.api.AuthorizationDecoder;
 import io.camunda.zeebe.auth.api.JwtAuthorizationBuilder;
-import io.camunda.zeebe.util.EnsureUtil;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
 import java.util.HashSet;
 import java.util.Map;
@@ -38,6 +37,10 @@ public class JwtAuthorizationDecoder
   private String jwtToken;
 
   public JwtAuthorizationDecoder() {}
+
+  public JwtAuthorizationDecoder(final String jwtToken) {
+    this.jwtToken = jwtToken;
+  }
 
   @Override
   public JwtAuthorizationDecoder withSubject(final String subject) {
@@ -83,7 +86,6 @@ public class JwtAuthorizationDecoder
     final JWTVerifier jwtVerification = verificationBuilder.build();
 
     try {
-      EnsureUtil.ensureNotNullOrEmpty("JWT token", jwtToken);
       return jwtVerification.verify(jwtToken);
     } catch (final JWTVerificationException | NullPointerException ex) {
       LOGGER.error("Authorization data unavailable: {}", ex.getMessage());
@@ -92,7 +94,7 @@ public class JwtAuthorizationDecoder
   }
 
   @Override
-  public Map<String, Claim> getAuthorizations() {
+  public Map<String, Claim> decode() {
     return build().getClaims();
   }
 

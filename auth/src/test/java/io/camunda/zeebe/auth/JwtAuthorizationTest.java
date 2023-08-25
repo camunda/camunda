@@ -24,15 +24,15 @@ import org.junit.jupiter.api.Test;
 
 public class JwtAuthorizationTest {
 
-  private final String defaultIssuer = "zeebe-gateway";
-  private final String defaultAudience = "zeebe-broker";
-  private final String defaultSubject = "Authorization";
+  private static final String DEFAULT_ISSUER = "zeebe-gateway";
+  private static final String DEFAULT_AUDIENCE = "zeebe-broker";
+  private static final String DEFAULT_SUBJECT = "Authorization";
 
   @Test
   public void shouldEncodeJwtTokenWithDefaultClaims() {
     // when
-    final AuthorizationEncoder encoder = Authorization.encodeWithJwt();
-    final String jwtToken = encoder.getEncodedString();
+    final AuthorizationEncoder encoder = Authorization.jwtEncoder();
+    final String jwtToken = encoder.encode();
 
     // then
     final Map<String, Claim> claims = JWT.decode(jwtToken).getClaims();
@@ -46,9 +46,9 @@ public class JwtAuthorizationTest {
 
     // when
     final AuthorizationEncoder encoder =
-        Authorization.encodeWithJwt()
+        Authorization.jwtEncoder()
             .withClaim(JwtAuthorizationEncoder.AUTHORIZED_TENANTS_CLAIM, authorizedTenants);
-    final String jwtToken = encoder.getEncodedString();
+    final String jwtToken = encoder.encode();
 
     // then
     final Map<String, Claim> claims = JWT.decode(jwtToken).getClaims();
@@ -66,14 +66,14 @@ public class JwtAuthorizationTest {
     // given
     final String jwtToken =
         JWT.create()
-            .withIssuer(defaultIssuer)
-            .withAudience(defaultAudience)
-            .withSubject(defaultSubject)
+            .withIssuer(DEFAULT_ISSUER)
+            .withAudience(DEFAULT_AUDIENCE)
+            .withSubject(DEFAULT_SUBJECT)
             .sign(Algorithm.none());
 
     // when
-    final JwtAuthorizationDecoder decoder = Authorization.decodeWithJwt().withJwtToken(jwtToken);
-    final Map<String, Claim> claims = decoder.getAuthorizations();
+    final JwtAuthorizationDecoder decoder = Authorization.jwtDecoder(jwtToken);
+    final Map<String, Claim> claims = decoder.decode();
 
     // then
     assertDefaultClaims(claims);
@@ -85,18 +85,17 @@ public class JwtAuthorizationTest {
     final List<String> authorizedTenants = List.of("tenant-1", "tenant-2", "tenant-3");
     final String jwtToken =
         JWT.create()
-            .withIssuer(defaultIssuer)
-            .withAudience(defaultAudience)
-            .withSubject(defaultSubject)
+            .withIssuer(DEFAULT_ISSUER)
+            .withAudience(DEFAULT_AUDIENCE)
+            .withSubject(DEFAULT_SUBJECT)
             .withClaim(JwtAuthorizationEncoder.AUTHORIZED_TENANTS_CLAIM, authorizedTenants)
             .sign(Algorithm.none());
 
     // when
     final JwtAuthorizationDecoder decoder =
-        Authorization.decodeWithJwt()
-            .withClaim(JwtAuthorizationEncoder.AUTHORIZED_TENANTS_CLAIM)
-            .withJwtToken(jwtToken);
-    final Map<String, Claim> claims = decoder.getAuthorizations();
+        Authorization.jwtDecoder(jwtToken)
+            .withClaim(JwtAuthorizationEncoder.AUTHORIZED_TENANTS_CLAIM);
+    final Map<String, Claim> claims = decoder.decode();
 
     // then
     assertDefaultClaims(claims);
@@ -110,42 +109,56 @@ public class JwtAuthorizationTest {
     // given
     final String jwtToken =
         JWT.create()
-            .withIssuer(defaultIssuer)
-            .withAudience(defaultAudience)
-            .withSubject(defaultSubject)
+            .withIssuer(DEFAULT_ISSUER)
+            .withAudience(DEFAULT_AUDIENCE)
+            .withSubject(DEFAULT_SUBJECT)
             .sign(Algorithm.none());
 
     // when
     final JwtAuthorizationDecoder decoder =
-        Authorization.decodeWithJwt()
-            .withClaim(JwtAuthorizationEncoder.AUTHORIZED_TENANTS_CLAIM)
-            .withJwtToken(jwtToken);
+        Authorization.jwtDecoder(jwtToken)
+            .withClaim(JwtAuthorizationEncoder.AUTHORIZED_TENANTS_CLAIM);
 
     // then
-    assertThatThrownBy(() -> decoder.getAuthorizations())
+    assertThatThrownBy(() -> decoder.decode())
         .isInstanceOf(UnrecoverableException.class)
         .hasMessage(
             "Authorization data unavailable: The Claim 'authorized_tenants' is not present in the JWT.");
   }
 
   @Test
+  public void shouldFailJwtTokenDecodingWithInvalidJwtToken() {
+    // given
+    final String invalidJwtToken = "invalid.jwt.token";
+
+    // when
+    final JwtAuthorizationDecoder decoder = Authorization.jwtDecoder(invalidJwtToken);
+
+    // then
+    assertThatThrownBy(() -> decoder.decode())
+        .isInstanceOf(UnrecoverableException.class)
+        .hasMessageContaining("Authorization data unavailable")
+        .hasMessageContaining("doesn't have a valid JSON format");
+  }
+
+  @Test
   public void shouldFailJwtTokenDecodingWithoutJwtToken() {
     // when
     final JwtAuthorizationDecoder decoder =
-        Authorization.decodeWithJwt().withClaim(JwtAuthorizationEncoder.AUTHORIZED_TENANTS_CLAIM);
+        Authorization.jwtDecoder(null).withClaim(JwtAuthorizationEncoder.AUTHORIZED_TENANTS_CLAIM);
 
     // then
-    assertThatThrownBy(() -> decoder.getAuthorizations())
+    assertThatThrownBy(() -> decoder.decode())
         .isInstanceOf(UnrecoverableException.class)
-        .hasMessage("Authorization data unavailable: JWT token");
+        .hasMessage("Authorization data unavailable: The token is null.");
   }
 
   private void assertDefaultClaims(final Map<String, Claim> claims) {
     assertThat(claims).containsKey("iss");
-    assertThat(claims.get("iss").as(String.class)).isEqualTo(defaultIssuer);
+    assertThat(claims.get("iss").as(String.class)).isEqualTo(DEFAULT_ISSUER);
     assertThat(claims).containsKey("aud");
-    assertThat(claims.get("aud").as(String.class)).isEqualTo(defaultAudience);
+    assertThat(claims.get("aud").as(String.class)).isEqualTo(DEFAULT_AUDIENCE);
     assertThat(claims).containsKey("sub");
-    assertThat(claims.get("sub").as(String.class)).isEqualTo(defaultSubject);
+    assertThat(claims.get("sub").as(String.class)).isEqualTo(DEFAULT_SUBJECT);
   }
 }

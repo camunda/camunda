@@ -30,10 +30,7 @@ public class TenantAuthorizationCheckerImpl implements TenantAuthorizationChecke
 
   public static TenantAuthorizationChecker fromJwtDecoder(final JwtAuthorizationDecoder decoder) {
     final List<String> authorizedTenants =
-        decoder
-            .getAuthorizations()
-            .get(JwtAuthorizationDecoder.AUTHORIZED_TENANTS_CLAIM)
-            .asList(String.class);
+        decoder.decode().get(JwtAuthorizationDecoder.AUTHORIZED_TENANTS_CLAIM).asList(String.class);
     return new TenantAuthorizationCheckerImpl(authorizedTenants);
   }
 }

@@ -79,7 +79,7 @@ public class JwtAuthorizationEncoder
   }
 
   @Override
-  public String getEncodedString() {
+  public String encode() {
     return build();
   }
 }

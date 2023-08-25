@@ -9,11 +9,11 @@ package io.camunda.zeebe.auth.impl;
 
 public class Authorization {
 
-  public static JwtAuthorizationEncoder encodeWithJwt() {
+  public static JwtAuthorizationEncoder jwtEncoder() {
     return new JwtAuthorizationEncoder();
   }
 
-  public static JwtAuthorizationDecoder decodeWithJwt() {
-    return new JwtAuthorizationDecoder();
+  public static JwtAuthorizationDecoder jwtDecoder(final String jwtToken) {
+    return new JwtAuthorizationDecoder(jwtToken);
   }
 }

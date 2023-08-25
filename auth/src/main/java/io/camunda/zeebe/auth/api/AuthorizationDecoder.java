@@ -10,5 +10,5 @@ package io.camunda.zeebe.auth.api;
 public interface AuthorizationDecoder<T> {
 
   /** Returns an instance of <T> containing the user's authorizations. */
-  T getAuthorizations();
+  T decode();
 }
