@@ -18,7 +18,7 @@ export const activityTask = Selector('.bpmn-icon-task');
 export const saveButton = Selector('.save-button');
 export const processName = Selector('.ProcessView .name');
 export const addSource = Selector('button.addProcess');
-export const processTypeahead = Selector('.selectionPanel input[type=text]');
+export const processTypeahead = Selector('.DefinitionSelection input[type=text]');
 export const variableTypeahead = Selector('.FormGroup .Typeahead');
 export const optionsButton = (typeahead) => typeahead.find('.optionsButton');
 export const typeaheadInput = (typeahead) => typeahead.find('input');

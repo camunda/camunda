@@ -10,28 +10,36 @@ import {shallow} from 'enzyme';
 
 import {LabeledInput} from 'components';
 
+import {Version} from './service';
 import VersionPopover from './VersionPopover';
 
-const versions = [
+const versions: Version[] = [
   {version: '3', versionTag: 'v3'},
   {version: '2', versionTag: null},
   {version: '1', versionTag: 'v1'},
 ];
 
+const props = {
+  onChange: jest.fn(),
+};
+
+beforeEach(() => {
+  jest.clearAllMocks();
+});
+
 it('should call the provided onChange function', () => {
-  const spy = jest.fn();
-  const node = shallow(<VersionPopover onChange={spy} versions={versions} selected={['3']} />);
+  const node = shallow(<VersionPopover {...props} versions={versions} selected={['3']} />);
 
   node
     .find(LabeledInput)
     .first()
     .simulate('change', {target: {checked: true}});
 
-  expect(spy).toHaveBeenCalledWith(['all']);
+  expect(props.onChange).toHaveBeenCalledWith(['all']);
 });
 
 it('should disable the specific selection when all or latest is selected', () => {
-  const node = shallow(<VersionPopover versions={versions} selected={['all']} />);
+  const node = shallow(<VersionPopover {...props} versions={versions} selected={['all']} />);
   expect(node.find('.specificVersions')).toHaveClassName('disabled');
 
   node.setProps({selected: ['latest']});
@@ -42,7 +50,7 @@ it('should disable the specific selection when all or latest is selected', () =>
 });
 
 it('should construct the label based on the selected versions', () => {
-  const node = shallow(<VersionPopover versions={versions} selected={[]} />);
+  const node = shallow(<VersionPopover {...props} versions={versions} selected={[]} />);
 
   expect(node.find('.VersionPopover').prop('title')).toBe('None');
 
@@ -66,6 +74,7 @@ it('should construct the label based on the selected versions', () => {
 it('should check the versions based on the selected specific versions', () => {
   const node = shallow(
     <VersionPopover
+      {...props}
       versions={versions}
       selected={['latest']}
       selectedSpecificVersions={['3', '1']}
@@ -76,12 +85,12 @@ it('should check the versions based on the selected specific versions', () => {
 });
 
 it('should not crash, but be disabled if no versions are provided', () => {
-  const node = shallow(<VersionPopover selected={[]} />);
+  const node = shallow(<VersionPopover {...props} selected={[]} />);
   expect(node.find('.VersionPopover').prop('disabled')).toBe(true);
 });
 
 it('should diplay a loading indicator and disable the inputs while loading', () => {
-  const node = shallow(<VersionPopover selected={[]} loading />);
+  const node = shallow(<VersionPopover {...props} selected={[]} loading />);
 
   expect(node.find('LoadingIndicator')).toExist();
   expect(node.find(LabeledInput).at(0).prop('disabled')).toBe(true);

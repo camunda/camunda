@@ -12,9 +12,9 @@ export type Definition = {
   name: string | null;
 };
 
-type Version = {
+export type Version = {
   version: string;
-  versionTag: string;
+  versionTag: string | null;
 };
 
 export type Tenant = {id: string | null; name?: string};

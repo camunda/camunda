@@ -5,13 +5,27 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import {ReactNode} from 'react';
 import classnames from 'classnames';
 
 import {t} from 'translation';
 import {Popover, LabeledInput, Form, Badge, LoadingIndicator} from 'components';
 
+import {Version} from './service';
+
 import './VersionPopover.scss';
+
+interface VersionPopoverProps {
+  versions?: Version[];
+  selected: Version['version'][];
+  selectedSpecificVersions?: Version['version'][];
+  onChange: (versions: Version['version'][]) => void;
+  disabled?: boolean;
+  tooltip?: ReactNode;
+  loading?: boolean;
+  useCarbonTrigger?: boolean;
+  label?: ReactNode;
+}
 
 export default function VersionPopover({
   versions,
@@ -23,14 +37,16 @@ export default function VersionPopover({
   loading,
   useCarbonTrigger,
   label,
-}) {
+}: VersionPopoverProps) {
   const specific = usesSpecificVersions(selected);
 
   let title = t('common.none');
   if (selected.length === 1 && selected[0] === 'all') {
     title = t('common.all');
   } else if (selected.length === 1 && selected[0] === 'latest') {
-    title = t('common.definitionSelection.latest') + ' : ' + versions[0]?.version;
+    title = versions
+      ? t('common.definitionSelection.latest') + ' : ' + versions[0]?.version
+      : t('common.definitionSelection.latest');
   } else if (selected.length) {
     title = selected.join(', ');
   }
@@ -94,7 +110,7 @@ export default function VersionPopover({
                   disabled={!specific || loading}
                   onChange={({target}) => {
                     if (target.checked) {
-                      onChange(selected.concat([version]).sort((a, b) => b - a));
+                      onChange(selected.concat([version]).sort((a, b) => Number(b) - Number(a)));
                     } else {
                       onChange(selected.filter((selected) => selected !== version));
                     }
@@ -109,6 +125,9 @@ export default function VersionPopover({
   );
 }
 
-function usesSpecificVersions(selection) {
-  return !(selection.length === 1 && (selection[0] === 'all' || selection[0] === 'latest'));
+function usesSpecificVersions(selectedVersions: Version['version'][]) {
+  return !(
+    selectedVersions.length === 1 &&
+    (selectedVersions[0] === 'all' || selectedVersions[0] === 'latest')
+  );
 }
