@@ -7,6 +7,13 @@ import MenuDropdown from "./MenuDropdown"
 
 const meta: Meta<typeof MenuDropdown> = {
 	component: MenuDropdown,
+	argTypes: {
+		size: {
+			options: ["sm", "md", "lg"],
+			control: { type: "select" },
+		},
+		disabled: { control: "boolean" },
+	},
 }
 
 export default meta
@@ -23,6 +30,8 @@ export const mainStory: Story = {
 			</MenuItemSelectable>,
 		],
 		label: "Dropdown with submenu",
+		size: "sm",
+		disabled: false,
 	},
 	play: async ({ canvasElement }) => {
 		const canvas = within(canvasElement)
@@ -45,6 +54,8 @@ export const tooManyOptions: Story = {
 			</MenuItemSelectable>,
 		],
 		label: "Dropdown with submenu",
+		size: "sm",
+		disabled: false,
 	},
 	play: async ({ canvasElement }) => {
 		const canvas = within(canvasElement)
