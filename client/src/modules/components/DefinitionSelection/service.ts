@@ -17,10 +17,12 @@ type Version = {
   versionTag: string;
 };
 
+export type Tenant = {id: string | null; name?: string};
+
 type DefintionWithTenants = {
   key: string;
   versions: string[];
-  tenants: {id: string | null; name: string}[];
+  tenants: Tenant[];
 };
 
 type DefintionWithVersions = {key: string; versions: string[]};

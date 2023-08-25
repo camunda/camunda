@@ -5,26 +5,43 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import {ComponentProps} from 'react';
 
 import {t} from 'translation';
 import {formatters} from 'services';
 import {Popover, ButtonGroup, Button, Switch, Form, LoadingIndicator} from 'components';
 
+import {Tenant} from './service';
+
 import './TenantPopover.scss';
 
 const {formatTenantName} = formatters;
 
-export default function TenantPopover({loading, tenants, selected, disabled, onChange, ...props}) {
+interface TenantPopoverProps extends Omit<ComponentProps<typeof Popover>, 'onChange' | 'children'> {
+  loading?: boolean;
+  tenants: Tenant[];
+  selected: Tenant['id'][];
+  disabled?: boolean;
+  onChange: (tenants: Tenant['id'][]) => void;
+}
+
+export default function TenantPopover({
+  loading,
+  tenants,
+  selected,
+  disabled,
+  onChange,
+  ...props
+}: TenantPopoverProps) {
   const allSelected = tenants && tenants.length === selected.length;
   const noneSelected = selected.length === 0;
 
-  let label = t('common.definitionSelection.multiple');
+  let label: string | undefined = t('common.definitionSelection.multiple').toString();
   if (allSelected) {
-    label = t('common.all');
+    label = t('common.all').toString();
   }
   if (noneSelected) {
-    label = t('common.select');
+    label = t('common.select').toString();
   }
   if (selected?.length === 1 && tenants?.length !== 0) {
     label = tenants?.find(({id}) => id === selected[0])?.name;

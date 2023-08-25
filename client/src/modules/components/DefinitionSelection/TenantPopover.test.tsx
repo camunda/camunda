@@ -5,7 +5,6 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import {shallow} from 'enzyme';
 
 import {Button} from 'components';
@@ -19,28 +18,35 @@ const tenants = [
   {id: null, name: 'Not defined'},
 ];
 
+const props = {
+  onChange: jest.fn(),
+};
+
+beforeEach(() => {
+  jest.clearAllMocks();
+});
+
 it('should call the provided onChange function', () => {
-  const spy = jest.fn();
-  const node = shallow(<TenantPopover onChange={spy} tenants={tenants} selected={[null]} />);
+  const node = shallow(<TenantPopover {...props} tenants={tenants} selected={[null]} />);
 
   node
     .find('Switch')
     .first()
     .simulate('change', {target: {checked: true}});
 
-  expect(spy).toHaveBeenCalledWith([null, 'a']);
+  expect(props.onChange).toHaveBeenCalledWith([null, 'a']);
 
   node.find(Button).first().simulate('click');
 
-  expect(spy).toHaveBeenCalledWith(['a', 'b', 'c', null]);
+  expect(props.onChange).toHaveBeenCalledWith(['a', 'b', 'c', null]);
 
   node.find(Button).last().simulate('click');
 
-  expect(spy).toHaveBeenCalledWith([]);
+  expect(props.onChange).toHaveBeenCalledWith([]);
 });
 
 it('should construct the label based on the selected tenants', () => {
-  const node = shallow(<TenantPopover tenants={tenants} selected={[]} />);
+  const node = shallow(<TenantPopover {...props} tenants={tenants} selected={[]} />);
 
   expect(node.find('.TenantPopover').prop('title')).toBe('Select...');
 
@@ -63,17 +69,17 @@ it('should construct the label based on the selected tenants', () => {
 });
 
 it('should not crash, but be disabled if no tenants are provided', () => {
-  const node = shallow(<TenantPopover selected={[]} />);
+  const node = shallow(<TenantPopover {...props} selected={[]} tenants={[]} />);
   expect(node.find('.TenantPopover').prop('disabled')).toBe(true);
 });
 
 it('should allow manual disabling', () => {
-  const node = shallow(<TenantPopover tenants={tenants} selected={[null]} disabled />);
+  const node = shallow(<TenantPopover {...props} tenants={tenants} selected={[null]} disabled />);
   expect(node.find('.TenantPopover').prop('disabled')).toBe(true);
 });
 
 it('should diplay a loading indicator and disable the switches while loading', () => {
-  const node = shallow(<TenantPopover tenants={tenants} selected={[null]} loading />);
+  const node = shallow(<TenantPopover {...props} tenants={tenants} selected={[null]} loading />);
 
   expect(node.find('LoadingIndicator')).toExist();
   expect(node.find('Switch').at(0).prop('disabled')).toBe(true);
