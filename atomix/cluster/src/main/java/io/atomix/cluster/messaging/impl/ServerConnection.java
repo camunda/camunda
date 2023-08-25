@@ -24,12 +24,13 @@ interface ServerConnection extends Connection<ProtocolRequest> {
   /**
    * Sends a reply to the other side of the connection.
    *
-   * @param message the message to which to reply
+   * @param messageId the message to which to reply
    * @param status the reply status
    * @param payload the response payload
    */
-  void reply(ProtocolRequest message, ProtocolReply.Status status, Optional<byte[]> payload);
+  void reply(long messageId, ProtocolReply.Status status, Optional<byte[]> payload);
 
   /** Closes the connection. */
+  @Override
   default void close() {}
 }

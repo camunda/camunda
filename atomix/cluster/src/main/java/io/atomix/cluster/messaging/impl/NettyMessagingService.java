@@ -292,7 +292,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
                       responsePayload = StringUtil.getBytes(exceptionMessage);
                     }
                   }
-                  connection.reply(message, status, Optional.ofNullable(responsePayload));
+                  connection.reply(message.id(), status, Optional.ofNullable(responsePayload));
                 }));
   }
 
@@ -301,32 +301,40 @@ public final class NettyMessagingService implements ManagedMessagingService {
       final String type, final BiFunction<Address, byte[], CompletableFuture<byte[]>> handler) {
     handlers.register(
         type,
-        (message, connection) ->
-            handler
-                .apply(message.sender(), message.payload())
-                .whenComplete(
-                    (result, error) -> {
-                      byte[] responsePayload = null;
-                      final ProtocolReply.Status status;
+        (message, connection) -> {
+          // Extract message components here to avoid retaining a reference to the entire message.
+          // This means we don't need to retain the message payload until the response callback is
+          // completed.
+          final var id = message.id();
+          final var subject = message.subject();
+          final var sender = message.sender();
+          final var payload = message.payload();
+          handler
+              .apply(sender, payload)
+              .whenComplete(
+                  (result, error) -> {
+                    byte[] responsePayload = null;
+                    final ProtocolReply.Status status;
 
-                      if (error == null) {
-                        status = ProtocolReply.Status.OK;
-                        responsePayload = result;
-                      } else {
-                        log.warn(
-                            "Unexpected error while handling message {} from {}",
-                            message.subject(),
-                            message.sender(),
-                            error);
+                    if (error == null) {
+                      status = ProtocolReply.Status.OK;
+                      responsePayload = result;
+                    } else {
+                      log.warn(
+                          "Unexpected error while handling message {} from {}",
+                          subject,
+                          sender,
+                          error);
 
-                        status = ProtocolReply.Status.ERROR_HANDLER_EXCEPTION;
-                        final String exceptionMessage = error.getMessage();
-                        if (exceptionMessage != null) {
-                          responsePayload = StringUtil.getBytes(error.getMessage());
-                        }
+                      status = ProtocolReply.Status.ERROR_HANDLER_EXCEPTION;
+                      final String exceptionMessage = error.getMessage();
+                      if (exceptionMessage != null) {
+                        responsePayload = StringUtil.getBytes(error.getMessage());
                       }
-                      connection.reply(message, status, Optional.ofNullable(responsePayload));
-                    }));
+                    }
+                    connection.reply(id, status, Optional.ofNullable(responsePayload));
+                  });
+        });
   }
 
   @Override
