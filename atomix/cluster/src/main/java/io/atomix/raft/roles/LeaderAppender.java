@@ -46,11 +46,11 @@ import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
+import java.util.NavigableMap;
 import java.util.Optional;
+import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 
@@ -71,7 +71,7 @@ final class LeaderAppender {
   private final long leaderTime;
   private final long leaderIndex;
   private final long electionTimeout;
-  private final Map<Long, CompletableFuture<Long>> appendFutures = new HashMap<>();
+  private final NavigableMap<Long, CompletableFuture<Long>> appendFutures = new TreeMap<>();
   private final List<TimestampedFuture<Long>> heartbeatFutures = new ArrayList<>();
   private final long heartbeatTime;
   private final int minStepDownFailureCount;
@@ -292,7 +292,7 @@ final class LeaderAppender {
         .withLeader(leader.memberId())
         .withIndex(raft.getCluster().getConfiguration().index())
         .withTime(raft.getCluster().getConfiguration().time())
-        .withMembers(raft.getCluster().getConfiguration().members())
+        .withMembers(raft.getCluster().getConfiguration().newMembers())
         .build();
   }
 
@@ -512,10 +512,9 @@ final class LeaderAppender {
     // If there are no other active members in the cluster, update the commit index and complete the
     // commit.
     // The updated commit index will be sent to passive/reserve members on heartbeats.
-    if (raft.getCluster().getActiveMemberStates().isEmpty()) {
-      final long previousCommitIndex = raft.getCommitIndex();
+    if (raft.getCluster().isSingleMemberCluster()) {
       raft.setCommitIndex(index);
-      completeCommits(previousCommitIndex, index);
+      completeCommits(index);
       return CompletableFuture.completedFuture(index);
     }
 
@@ -523,7 +522,7 @@ final class LeaderAppender {
     return appendFutures.computeIfAbsent(
         index,
         i -> {
-          for (final RaftMemberContext member : raft.getCluster().getActiveMemberStates()) {
+          for (final RaftMemberContext member : raft.getCluster().getReplicationTargets()) {
             appendEntries(member);
           }
           return new CompletableFuture<>();
@@ -546,7 +545,7 @@ final class LeaderAppender {
     raft.checkThread();
 
     // If there are no other active members in the cluster, simply complete the append operation.
-    if (raft.getCluster().getRemoteMemberStates().isEmpty()) {
+    if (raft.getCluster().getReplicationTargets().isEmpty()) {
       return CompletableFuture.completedFuture(null);
     }
 
@@ -556,21 +555,21 @@ final class LeaderAppender {
 
     // Iterate through members and append entries. Futures will be completed on responses from
     // followers.
-    for (final RaftMemberContext member : raft.getCluster().getRemoteMemberStates()) {
+    for (final RaftMemberContext member : raft.getCluster().getReplicationTargets()) {
       appendEntries(member);
     }
     return future;
   }
 
   /** Completes append entries attempts up to the given index. */
-  private void completeCommits(final long previousCommitIndex, final long commitIndex) {
-    for (long i = previousCommitIndex + 1; i <= commitIndex; i++) {
-      final CompletableFuture<Long> future = appendFutures.remove(i);
-      if (future != null) {
-        metrics.observeCommit();
-        future.complete(i);
-      }
-    }
+  private void completeCommits(final long commitIndex) {
+    final var completable = appendFutures.headMap(commitIndex, true);
+    completable.forEach(
+        (index, future) -> {
+          metrics.observeCommit();
+          future.complete(index);
+        });
+    completable.clear();
 
     observeNonCommittedEntries(commitIndex);
   }
@@ -795,6 +794,7 @@ final class LeaderAppender {
 
   public void close() {
     open = false;
+    completeCommits(raft.getCommitIndex());
     appendFutures
         .values()
         .forEach(
@@ -923,20 +923,15 @@ final class LeaderAppender {
    * in a sorted members list.
    */
   private long computeHeartbeatTime() {
-    final int quorumIndex = getQuorumIndex();
-    if (quorumIndex >= 0) {
-      return raft.getCluster()
-          .getActiveMemberStates(
-              (m1, m2) -> Long.compare(m2.getHeartbeatTime(), m1.getHeartbeatTime()))
-          .get(quorumIndex)
-          .getHeartbeatTime();
-    }
-    return System.currentTimeMillis();
+    return raft.getCluster()
+        .getQuorumFor(RaftMemberContext::getHeartbeatTime)
+        // No remote members, use current time because the local member is always reachable.
+        .orElseGet(System::currentTimeMillis);
   }
 
   /** Attempts to send heartbeats to all followers. */
   private void sendHeartbeats() {
-    for (final RaftMemberContext member : raft.getCluster().getRemoteMemberStates()) {
+    for (final RaftMemberContext member : raft.getCluster().getReplicationTargets()) {
       appendEntries(member);
     }
   }
@@ -945,32 +940,11 @@ final class LeaderAppender {
   private void commitEntries() {
     raft.checkThread();
 
-    // Sort the list of replicas, order by the last index that was replicated
-    // to the replica. This will allow us to determine the median index
-    // for all known replicated entries across all cluster members.
-    final List<RaftMemberContext> members =
+    final long commitIndex =
         raft.getCluster()
-            .getActiveMemberStates(
-                (m1, m2) ->
-                    Long.compare(
-                        m2.getMatchIndex() != 0 ? m2.getMatchIndex() : 0L,
-                        m1.getMatchIndex() != 0 ? m1.getMatchIndex() : 0L));
-
-    // If the active members list is empty (a configuration change occurred between an append
-    // request/response)
-    // ensure all commit futures are completed and cleared.
-    if (members.isEmpty()) {
-      final long commitIndex = raft.getLog().getLastIndex();
-      final long previousCommitIndex = raft.setCommitIndex(commitIndex);
-      if (commitIndex > previousCommitIndex) {
-        log.trace("Committed entries up to {}", commitIndex);
-        completeCommits(previousCommitIndex, commitIndex);
-      }
-      return;
-    }
-
-    // Calculate the current commit index as the median matchIndex.
-    final long commitIndex = members.get(getQuorumIndex()).getMatchIndex();
+            .getQuorumFor(RaftMemberContext::getMatchIndex)
+            // If there are no remote members, commit up to the last log index.
+            .orElseGet(() -> raft.getLog().getLastIndex());
 
     // If the commit index has increased then update the commit index. Note that in order to ensure
     // the leader completeness property holds, we verify that the commit index is greater than or
@@ -982,29 +956,15 @@ final class LeaderAppender {
         && (leaderIndex > 0 && commitIndex >= leaderIndex)) {
       log.trace("Committed entries up to {}", commitIndex);
       raft.setCommitIndex(commitIndex);
-      completeCommits(previousCommitIndex, commitIndex);
+      completeCommits(commitIndex);
     }
   }
 
   private long computeResponseTime() {
-    final int quorumIndex = getQuorumIndex();
-    if (quorumIndex >= 0) {
-      return raft.getCluster()
-          .getActiveMemberStates(
-              (m1, m2) -> Long.compare(m2.getResponseTime(), m1.getResponseTime()))
-          .get(quorumIndex)
-          .getResponseTime();
-    }
-    return System.currentTimeMillis();
-  }
-
-  /**
-   * Returns the current quorum index.
-   *
-   * @return The current quorum index.
-   */
-  private int getQuorumIndex() {
-    return raft.getCluster().getQuorum() - 2;
+    return raft.getCluster()
+        .getQuorumFor(RaftMemberContext::getResponseTime)
+        // No remote members, use current time because the local member is always reachable.
+        .orElseGet(System::currentTimeMillis);
   }
 
   /**

@@ -18,18 +18,25 @@ package io.atomix.raft.protocol;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 import io.atomix.raft.cluster.RaftMember;
+import io.atomix.utils.Builder;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
 
-/** Member configuration change request. */
-public class ReconfigureRequest extends ConfigurationRequest {
+/** Request a change of members. Members can change type, be removed or added. */
+public class ReconfigureRequest extends AbstractRaftRequest {
 
   private final long index;
   private final long term;
+  private final Collection<RaftMember> members;
 
-  public ReconfigureRequest(final RaftMember member, final long index, final long term) {
-    super(member);
+  public ReconfigureRequest(
+      final Collection<RaftMember> members, final long index, final long term) {
+    this.members = members;
     this.index = index;
     this.term = term;
   }
@@ -41,6 +48,15 @@ public class ReconfigureRequest extends ConfigurationRequest {
    */
   public static Builder builder() {
     return new Builder();
+  }
+
+  /**
+   * Returns the request members.
+   *
+   * @return The request members.
+   */
+  public Collection<RaftMember> members() {
+    return members;
   }
 
   /**
@@ -63,14 +79,13 @@ public class ReconfigureRequest extends ConfigurationRequest {
 
   @Override
   public int hashCode() {
-    return Objects.hash(getClass(), index, member);
+    return Objects.hash(getClass(), index, members);
   }
 
   @Override
   public boolean equals(final Object object) {
-    if (object instanceof ReconfigureRequest) {
-      final ReconfigureRequest request = (ReconfigureRequest) object;
-      return request.index == index && request.term == term && request.member.equals(member);
+    if (object instanceof final ReconfigureRequest request) {
+      return request.index == index && request.term == term && request.members.equals(members);
     }
     return false;
   }
@@ -80,15 +95,43 @@ public class ReconfigureRequest extends ConfigurationRequest {
     return toStringHelper(this)
         .add("index", index)
         .add("term", term)
-        .add("member", member)
+        .add("members", members)
         .toString();
   }
 
   /** Reconfigure request builder. */
-  public static class Builder extends ConfigurationRequest.Builder<Builder, ReconfigureRequest> {
+  public static class Builder extends AbstractRaftRequest.Builder<Builder, ReconfigureRequest> {
 
+    private Set<RaftMember> members;
     private long index = -1;
     private long term = -1;
+
+    /**
+     * Sets the request members.
+     *
+     * @param members The request members.
+     * @return The request builder.
+     * @throws NullPointerException if {@code members} is null
+     */
+    public Builder withMembers(final Collection<RaftMember> members) {
+      checkNotNull(members, "members cannot be null");
+      this.members = new HashSet<>(members);
+      return this;
+    }
+
+    /**
+     * Updates a single member.
+     *
+     * @param member The member to update.
+     * @return The request builder.
+     * @throws NullPointerException if {@code members} is null
+     */
+    public Builder withMember(final RaftMember member) {
+      checkNotNull(member, "member cannot be null");
+      members.remove(member);
+      members.add(member);
+      return this;
+    }
 
     /**
      * Sets the request index.
@@ -117,12 +160,13 @@ public class ReconfigureRequest extends ConfigurationRequest {
     @Override
     public ReconfigureRequest build() {
       validate();
-      return new ReconfigureRequest(member, index, term);
+      return new ReconfigureRequest(members, index, term);
     }
 
     @Override
     protected void validate() {
       super.validate();
+      checkNotNull(members, "members cannot be null");
       checkArgument(index >= 0, "index must be positive");
       checkArgument(term >= 0, "term must be positive");
     }

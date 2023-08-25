@@ -42,7 +42,7 @@ import java.util.concurrent.CompletableFuture;
  *
  * Membership exposed via this interface is provided from the perspective of the local server and
  * may not necessarily be consistent with cluster membership from the perspective of other nodes.
- * The only consistent membership list is on the {@link #getLeader() leader} node.
+ * The only consistent membership list is on the leader node.
  *
  * <h2>Cluster management</h2>
  *
@@ -72,16 +72,6 @@ import java.util.concurrent.CompletableFuture;
  * full cluster shutdown.
  */
 public interface RaftCluster {
-
-  /**
-   * Returns a member by ID.
-   *
-   * <p>The returned {@link RaftMember} is referenced by the unique {@link RaftMember#memberId()}.
-   *
-   * @param id The member ID.
-   * @return The member or {@code null} if no member with the given {@code id} exists.
-   */
-  RaftMember getMember(MemberId id);
 
   /**
    * Bootstraps the cluster.
@@ -146,17 +136,14 @@ public interface RaftCluster {
   CompletableFuture<Void> bootstrap(Collection<MemberId> cluster);
 
   /**
-   * Returns the current cluster leader.
+   * Returns a member by ID.
    *
-   * <p>If no leader has been elected for the current {@link #getTerm() term}, the leader will be
-   * {@code null}. Once a leader is elected, the leader must be known to the local server's
-   * configuration. If the returned {@link RaftMember} is {@code null} then that does not
-   * necessarily indicate that no leader yet exists for the current term, only that the local server
-   * has not learned of a valid leader for the term.
+   * <p>The returned {@link RaftMember} is referenced by the unique {@link RaftMember#memberId()}.
    *
-   * @return The current cluster leader or {@code null} if no leader is known for the current term.
+   * @param id The member ID.
+   * @return The member or {@code null} if no member with the given {@code id} exists.
    */
-  RaftMember getLeader();
+  RaftMember getMember(MemberId id);
 
   /**
    * Returns the local cluster member.
@@ -176,17 +163,4 @@ public interface RaftCluster {
    * @return A collection of all cluster members.
    */
   Collection<RaftMember> getMembers();
-
-  /**
-   * Returns the current cluster term.
-   *
-   * <p>The term is representative of the epoch determined by the underlying Raft consensus
-   * algorithm. The term is a monotonically increasing number used by Raft to represent a point in
-   * logical time. The term is guaranteed to be unique and monotonically increasing even across
-   * cluster restarts. Additionally, for any given term, Raft guarantees that only a single {@link
-   * #getLeader() leader} can be elected.
-   *
-   * @return The current cluster term.
-   */
-  long getTerm();
 }

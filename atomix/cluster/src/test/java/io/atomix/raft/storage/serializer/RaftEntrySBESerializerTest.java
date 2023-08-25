@@ -178,6 +178,7 @@ public class RaftEntrySBESerializerTest {
     // then
     assertThat(entryRead.isConfigurationEntry()).isTrue();
     final var configurationEntryRead = entryRead.getConfigurationEntry();
+    assertThat(configurationEntryRead.requiresJointConsensus()).isFalse();
     assertThat(configurationEntryRead.timestamp()).isEqualTo(configurationEntryWritten.timestamp());
     assertThat(configurationEntryRead.toString()).isEqualTo(configurationEntryWritten.toString());
   }
@@ -205,5 +206,62 @@ public class RaftEntrySBESerializerTest {
     final var configurationEntryRead = entryRead.getConfigurationEntry();
     assertThat(configurationEntryRead.timestamp()).isEqualTo(configurationEntryWritten.timestamp());
     assertThat(configurationEntryRead.toString()).isEqualTo(configurationEntryWritten.toString());
+  }
+
+  @Test
+  public void shouldWriteConfigurationEntryWithChangedMembers() {
+    // given
+    final Set<RaftMember> oldMembers =
+        Set.of(
+            new DefaultRaftMember(MemberId.from("1"), Type.ACTIVE, Instant.ofEpochMilli(123456L)),
+            new DefaultRaftMember(MemberId.from("2"), Type.ACTIVE, Instant.ofEpochMilli(123457L)),
+            new DefaultRaftMember(MemberId.from("3"), Type.ACTIVE, Instant.ofEpochMilli(123458L)));
+    final Set<RaftMember> newMembers =
+        Set.of(
+            new DefaultRaftMember(MemberId.from("1"), Type.ACTIVE, Instant.ofEpochMilli(123456L)),
+            new DefaultRaftMember(MemberId.from("2"), Type.ACTIVE, Instant.ofEpochMilli(123457L)),
+            new DefaultRaftMember(MemberId.from("3"), Type.ACTIVE, Instant.ofEpochMilli(123458L)),
+            new DefaultRaftMember(MemberId.from("4"), Type.ACTIVE, Instant.ofEpochMilli(123459L)));
+
+    final ConfigurationEntry configurationEntryWritten =
+        new ConfigurationEntry(1234L, oldMembers, newMembers);
+
+    // when
+    serializer.writeConfigurationEntry(5, configurationEntryWritten, buffer, 0);
+    final RaftLogEntry entryRead = serializer.readRaftLogEntry(buffer);
+
+    // then
+    assertThat(entryRead.isConfigurationEntry()).isTrue();
+    final var configurationEntryRead = entryRead.getConfigurationEntry();
+    assertThat(configurationEntryRead.requiresJointConsensus()).isTrue();
+    assertThat(configurationEntryRead.timestamp()).isEqualTo(configurationEntryWritten.timestamp());
+    assertThat(configurationEntryRead.toString()).isEqualTo(configurationEntryWritten.toString());
+  }
+
+  @Test
+  public void shouldCalculateActualConfigurationEntrySizeWithOldAndNewMembers() {
+    // given
+    final Set<RaftMember> oldMembers =
+        Set.of(
+            new DefaultRaftMember(MemberId.from("1"), Type.ACTIVE, Instant.ofEpochMilli(123456L)),
+            new DefaultRaftMember(MemberId.from("2"), Type.PASSIVE, Instant.ofEpochMilli(123457L)),
+            new DefaultRaftMember(MemberId.from("3"), Type.PASSIVE, Instant.ofEpochMilli(123457L)));
+
+    final Set<RaftMember> newMembers =
+        Set.of(
+            new DefaultRaftMember(MemberId.from("2"), Type.ACTIVE, Instant.ofEpochMilli(123457L)),
+            new DefaultRaftMember(MemberId.from("3"), Type.ACTIVE, Instant.ofEpochMilli(123457L)),
+            new DefaultRaftMember(MemberId.from("4"), Type.ACTIVE, Instant.ofEpochMilli(123457L)),
+            new DefaultRaftMember(MemberId.from("5"), Type.ACTIVE, Instant.ofEpochMilli(123457L)));
+
+    final ConfigurationEntry configurationEntry =
+        new ConfigurationEntry(1234L, newMembers, oldMembers);
+
+    // when
+    final int writtenBytes = serializer.writeConfigurationEntry(5, configurationEntry, buffer, 0);
+
+    // then
+    assertThat(serializer.getConfigurationEntrySerializedLength(configurationEntry))
+        .isEqualTo(writtenBytes);
   }
 }

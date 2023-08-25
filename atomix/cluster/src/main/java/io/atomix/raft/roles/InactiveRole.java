@@ -67,7 +67,7 @@ public class InactiveRole extends AbstractRole {
     // Check against the actual cluster Configuration rather than the received configuration in
     // case the received configuration was an older configuration that was not applied.
     if (raft.getCommitIndex() >= raft.getCluster().getConfiguration().index()) {
-      raft.getCluster().commit();
+      raft.getCluster().commitCurrentConfiguration();
     }
 
     return CompletableFuture.completedFuture(

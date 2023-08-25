@@ -97,8 +97,6 @@ public class LeaderRoleTest {
     // since we mock RaftContext we should simulate leader close on transition
     doAnswer(i -> leaderRole.stop().join()).when(context).transition(Role.FOLLOWER);
     when(context.getMembershipService()).thenReturn(mock(ClusterMembershipService.class));
-
-    when(context.getCluster().getRemoteMemberStates()).thenReturn(List.of());
   }
 
   @Test

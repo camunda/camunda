@@ -554,7 +554,7 @@ public interface RaftServer {
      *
      * <p>Leaders are responsible for handling and replicating writes from clients. Note that more
      * than one leader can exist at any given time, but Raft guarantees that no two leaders will
-     * exist for the same {@link RaftCluster#getTerm()}.
+     * exist for the same term.
      */
     LEADER(true);
 

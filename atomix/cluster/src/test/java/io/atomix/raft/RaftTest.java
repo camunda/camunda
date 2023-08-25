@@ -221,16 +221,10 @@ public class RaftTest extends ConcurrentTestCase {
     final List<RaftServer> servers = createServers(3);
 
     final RaftServer leader =
-        servers.stream()
-            .filter(s -> s.cluster().getLocalMember().equals(s.cluster().getLeader()))
-            .findFirst()
-            .orElseThrow();
+        servers.stream().filter(RaftServer::isLeader).findFirst().orElseThrow();
 
     final RaftServer follower =
-        servers.stream()
-            .filter(s -> !s.cluster().getLocalMember().equals(s.cluster().getLeader()))
-            .findFirst()
-            .orElseThrow();
+        servers.stream().filter(RaftServer::isFollower).findFirst().orElseThrow();
 
     follower
         .cluster()

@@ -19,8 +19,7 @@ package io.atomix.raft.roles;
 import io.atomix.cluster.messaging.MessagingException.NoRemoteHandler;
 import io.atomix.raft.RaftServer;
 import io.atomix.raft.RaftServer.Role;
-import io.atomix.raft.cluster.impl.DefaultRaftMember;
-import io.atomix.raft.cluster.impl.RaftMemberContext;
+import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.protocol.AppendResponse;
 import io.atomix.raft.protocol.InternalAppendRequest;
@@ -28,13 +27,11 @@ import io.atomix.raft.protocol.RaftResponse;
 import io.atomix.raft.protocol.VoteRequest;
 import io.atomix.raft.protocol.VoteResponse;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
-import io.atomix.raft.utils.Quorum;
+import io.atomix.raft.utils.VoteQuorum;
 import io.atomix.utils.concurrent.Scheduled;
 import java.time.Duration;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
 
 /** Candidate state. */
 public final class CandidateRole extends ActiveRole {
@@ -49,7 +46,7 @@ public final class CandidateRole extends ActiveRole {
 
   @Override
   public synchronized CompletableFuture<RaftRole> start() {
-    if (raft.getCluster().getActiveMemberStates().isEmpty()) {
+    if (raft.getCluster().isSingleMemberCluster()) {
       log.info("Single member cluster. Transitioning directly to leader.");
       raft.setTerm(raft.getTerm() + 1);
       raft.setLastVotedFor(raft.getCluster().getLocalMember().memberId());
@@ -107,30 +104,27 @@ public final class CandidateRole extends ActiveRole {
     raft.setLastVotedFor(raft.getCluster().getLocalMember().memberId());
 
     final AtomicBoolean complete = new AtomicBoolean();
-    final Set<DefaultRaftMember> votingMembers =
-        raft.getCluster().getActiveMemberStates().stream()
-            .map(RaftMemberContext::getMember)
-            .collect(Collectors.toSet());
+    final var votingMembers = raft.getCluster().getVotingMembers();
 
     // Send vote requests to all nodes. The vote request that is sent
     // to this node will be automatically successful.
     // First check if the quorum is null. If the quorum isn't null then that
     // indicates that another vote is already going on.
-    final Quorum quorum =
-        new Quorum(
-            raft.getCluster().getQuorum(),
-            elected -> {
-              if (!isRunning()) {
-                return;
-              }
+    final var quorum =
+        raft.getCluster()
+            .getVoteQuorum(
+                elected -> {
+                  if (!isRunning()) {
+                    return;
+                  }
 
-              complete.set(true);
-              if (elected) {
-                raft.transition(RaftServer.Role.LEADER);
-              } else {
-                raft.transition(RaftServer.Role.FOLLOWER);
-              }
-            });
+                  complete.set(true);
+                  if (elected) {
+                    raft.transition(RaftServer.Role.LEADER);
+                  } else {
+                    raft.transition(RaftServer.Role.FOLLOWER);
+                  }
+                });
 
     final Duration delay =
         raft.getElectionTimeout()
@@ -183,7 +177,7 @@ public final class CandidateRole extends ActiveRole {
 
     // Once we got the last log term, iterate through each current member
     // of the cluster and vote each member for a vote.
-    for (final DefaultRaftMember member : votingMembers) {
+    for (final var member : votingMembers) {
       log.debug("Requesting vote from {} for term {}", member, raft.getTerm());
       final VoteRequest request =
           VoteRequest.builder()
@@ -199,8 +193,8 @@ public final class CandidateRole extends ActiveRole {
 
   private void sendVoteRequestToMember(
       final AtomicBoolean complete,
-      final Quorum quorum,
-      final DefaultRaftMember member,
+      final VoteQuorum quorum,
+      final RaftMember member,
       final VoteRequest request) {
     raft.getProtocol()
         .vote(member.memberId(), request)
@@ -216,8 +210,8 @@ public final class CandidateRole extends ActiveRole {
 
   private void onVoteResponse(
       final AtomicBoolean complete,
-      final Quorum quorum,
-      final DefaultRaftMember member,
+      final VoteQuorum quorum,
+      final RaftMember member,
       final VoteRequest request,
       final VoteResponse response,
       final Throwable error) {
@@ -231,21 +225,21 @@ public final class CandidateRole extends ActiveRole {
         raft.transition(RaftServer.Role.FOLLOWER);
       } else if (!response.voted()) {
         log.debug("Received rejected vote from {}", member);
-        quorum.fail();
+        quorum.fail(member.memberId());
       } else if (response.term() != raft.getTerm()) {
         log.debug("Received successful vote for a different term from {}", member);
-        quorum.fail();
+        quorum.fail(member.memberId());
       } else {
         log.debug("Received successful vote from {}", member);
-        quorum.succeed();
+        quorum.succeed(member.memberId());
       }
     }
   }
 
   private void onVoteResponseError(
       final AtomicBoolean complete,
-      final Quorum quorum,
-      final DefaultRaftMember member,
+      final VoteQuorum quorum,
+      final RaftMember member,
       final VoteRequest request,
       final Throwable error) {
     if (error.getCause() instanceof NoRemoteHandler) {
@@ -259,7 +253,7 @@ public final class CandidateRole extends ActiveRole {
       }
     } else {
       log.warn(error.getMessage());
-      quorum.fail();
+      quorum.fail(member.memberId());
     }
   }
 

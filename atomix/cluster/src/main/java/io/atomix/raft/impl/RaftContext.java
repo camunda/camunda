@@ -474,7 +474,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
       }
       final long configurationIndex = cluster.getConfiguration().index();
       if (configurationIndex > previousCommitIndex && configurationIndex <= commitIndex) {
-        cluster.commit();
+        cluster.commitCurrentConfiguration();
       }
       replicationMetrics.setCommitIndex(commitIndex);
       notifyCommitListeners(commitIndex);
@@ -919,13 +919,11 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     // If we've already voted for another candidate in this term then the last voted for candidate
     // cannot be overridden.
     checkState(!(lastVotedFor != null && candidate != null), "Already voted for another candidate");
-    final DefaultRaftMember member = cluster.getMember(candidate);
-    checkState(member != null, "Unknown candidate: %d", candidate);
     lastVotedFor = candidate;
     meta.storeVote(lastVotedFor);
 
     if (candidate != null) {
-      log.debug("Voted for {}", member.memberId());
+      log.debug("Voted for {}", candidate);
     } else {
       log.trace("Reset last voted for");
     }
@@ -1108,10 +1106,8 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
       } else {
         // If a valid leader ID was specified, it must be a member that's currently a member of the
         // ACTIVE members configuration. Note that we don't throw exceptions for unknown members.
-        // It's
-        // possible that a failure following a configuration change could result in an unknown
-        // leader
-        // sending AppendRequest to this server. Simply configure the leader if it's known.
+        // It's possible that a failure following a configuration change could result in an unknown
+        // leader sending AppendRequest to this server. Simply configure the leader if it's known.
         final DefaultRaftMember member = cluster.getMember(leader);
         if (member != null) {
           this.leader = leader;
