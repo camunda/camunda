@@ -81,14 +81,18 @@
     </dependency>
 
     <dependency>
-      <groupId>me.dinowernli</groupId>
-      <artifactId>java-grpc-prometheus</artifactId>
-      <exclusions>
-        <exclusion>
-          <groupId>io.grpc</groupId>
-          <artifactId>grpc-all</artifactId>
-        </exclusion>
-      </exclusions>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-core</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-registry-prometheus</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.prometheus</groupId>
+      <artifactId>simpleclient</artifactId>
     </dependency>
   </dependencies>
 

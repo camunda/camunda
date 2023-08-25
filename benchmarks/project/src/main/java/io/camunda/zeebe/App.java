@@ -22,21 +22,26 @@ import com.typesafe.config.ConfigFactory;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.response.Topology;
 import io.camunda.zeebe.config.AppCfg;
+import io.grpc.ClientInterceptor;
+import io.micrometer.core.instrument.binder.grpc.MetricCollectingClientInterceptor;
+import io.micrometer.prometheus.PrometheusConfig;
+import io.micrometer.prometheus.PrometheusMeterRegistry;
+import io.micrometer.prometheus.PrometheusRenameFilter;
 import io.prometheus.client.exporter.HTTPServer;
 import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.InetSocketAddress;
 import java.util.function.Function;
-import me.dinowernli.grpc.prometheus.Configuration;
-import me.dinowernli.grpc.prometheus.MonitoringClientInterceptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 abstract class App implements Runnable {
 
-  protected static MonitoringClientInterceptor monitoringInterceptor;
+  protected static ClientInterceptor monitoringInterceptor;
+  protected static PrometheusMeterRegistry prometheusRegistry;
   private static final Logger LOG = LoggerFactory.getLogger(App.class);
   private static HTTPServer monitoringServer;
 
@@ -46,16 +51,26 @@ abstract class App implements Runnable {
     final AppCfg appCfg = ConfigBeanFactory.create(config, AppCfg.class);
     startMonitoringServer(appCfg);
     Runtime.getRuntime().addShutdownHook(new Thread(App::stopMonitoringServer));
-    monitoringInterceptor = MonitoringClientInterceptor.create(Configuration.allMetrics());
+
     appFactory.apply(appCfg).run();
   }
 
   private static void startMonitoringServer(final AppCfg appCfg) {
+    prometheusRegistry = new PrometheusMeterRegistry(PrometheusConfig.DEFAULT);
+    prometheusRegistry.config().meterFilter(new PrometheusRenameFilter());
+
     try {
-      monitoringServer = new HTTPServer(appCfg.getMonitoringPort());
+      // you can set the daemon flag to false if you want the server to block
+      monitoringServer =
+          new HTTPServer(
+              new InetSocketAddress(appCfg.getMonitoringPort()),
+              prometheusRegistry.getPrometheusRegistry(),
+              true);
     } catch (final IOException e) {
       LOG.error("Problem on starting monitoring server.", e);
     }
+
+    monitoringInterceptor = new MetricCollectingClientInterceptor(prometheusRegistry);
   }
 
   private static void stopMonitoringServer() {
