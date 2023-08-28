@@ -136,4 +136,157 @@ public final class DbTenantAwareKeyColumnFamilyTest {
 
     assertThat(zbString).isNull();
   }
+
+  @Test
+  void shouldUseForeachValue() {
+    // given
+    upsertKeyValuePair(123L, "foo", "tenantId");
+    upsertKeyValuePair(124L, "bar", "tenantId");
+    upsertKeyValuePair(125L, "baz", "otherTenantId");
+    upsertKeyValuePair(777L, "jackpot", "tenantId");
+    upsertKeyValuePair(888L, "lastOne", "otherTenantId");
+
+    // when
+    final var values = new ArrayList<>();
+    columnFamily.forEach((value) -> values.add(value.toString()));
+
+    // then
+    assertThat(values).containsExactly("foo", "bar", "baz", "jackpot", "lastOne");
+  }
+
+  @Test
+  void shouldUseForeachPair() {
+    // given
+    upsertKeyValuePair(123L, "foo", "tenantId");
+    upsertKeyValuePair(124L, "bar", "tenantId");
+    upsertKeyValuePair(125L, "baz", "otherTenantId");
+    upsertKeyValuePair(777L, "jackpot", "tenantId");
+    upsertKeyValuePair(888L, "lastOne", "otherTenantId");
+
+    // when
+    final var keys = new ArrayList<>();
+    final var values = new ArrayList<>();
+    final var tenants = new ArrayList<>();
+    columnFamily.forEach(
+        (key, value) -> {
+          keys.add(key.wrappedKey().getValue());
+          values.add(value.toString());
+          tenants.add(key.tenantKey().toString());
+        });
+
+    // then
+    assertThat(keys).containsExactly(123L, 124L, 125L, 777L, 888L);
+    assertThat(values).containsExactly("foo", "bar", "baz", "jackpot", "lastOne");
+    assertThat(tenants)
+        .containsExactly("tenantId", "tenantId", "otherTenantId", "tenantId", "otherTenantId");
+  }
+
+  @Test
+  void shouldUseWhileTrue() {
+    // given
+    upsertKeyValuePair(123L, "foo", "tenantId");
+    upsertKeyValuePair(777L, "jackpot", "tenantId");
+    upsertKeyValuePair(124L, "bar", "tenantId");
+    upsertKeyValuePair(888L, "lastOne", "otherTenantId");
+    upsertKeyValuePair(125L, "baz", "otherTenantId");
+
+    // when
+    final var keys = new ArrayList<>();
+    final var values = new ArrayList<>();
+    final var tenants = new ArrayList<>();
+    columnFamily.whileTrue(
+        (key, value) -> {
+          keys.add(key.wrappedKey().getValue());
+          values.add(value.toString());
+          tenants.add(key.tenantKey().toString());
+
+          return key.wrappedKey().getValue() != 125L;
+        });
+
+    // then
+    assertThat(keys).containsExactly(123L, 124L, 125L);
+    assertThat(values).containsExactly("foo", "bar", "baz");
+    assertThat(tenants).containsExactly("tenantId", "tenantId", "otherTenantId");
+  }
+
+  @Test
+  void shouldUseWhileTrueWithStartAt() {
+    // given
+    upsertKeyValuePair(123L, "foo", "tenantId");
+    upsertKeyValuePair(777L, "jackpot", "tenantId");
+    upsertKeyValuePair(124L, "bar", "tenantId");
+    upsertKeyValuePair(888L, "lastOne", "otherTenantId");
+    upsertKeyValuePair(125L, "baz", "otherTenantId");
+    final var startAtWrappedKey = new DbLong();
+    startAtWrappedKey.wrapLong(124L);
+    tenantKey.wrapString("tenantId");
+    final var startAt = new DbTenantAwareKey<>(tenantKey, startAtWrappedKey);
+
+    // when
+    final var keys = new ArrayList<>();
+    final var values = new ArrayList<>();
+    final var tenants = new ArrayList<>();
+    columnFamily.whileTrue(
+        startAt,
+        (key, value) -> {
+          keys.add(key.wrappedKey().getValue());
+          values.add(value.toString());
+          tenants.add(key.tenantKey().toString());
+
+          return key.wrappedKey().getValue() != 125L;
+        });
+
+    // then
+    assertThat(keys).containsExactly(124L, 125L);
+    assertThat(values).containsExactly("bar", "baz");
+    assertThat(tenants).containsExactly("tenantId", "otherTenantId");
+  }
+
+  @Test
+  void shouldUseWhileEqualPrefix() {
+    // given
+    upsertCompositeKeyValuePair(123L, 111L, "foo", "tenantId");
+    upsertCompositeKeyValuePair(321L, 333L, "jackpot", "tenantId");
+    upsertCompositeKeyValuePair(123L, 333L, "bar", "tenantId");
+    upsertCompositeKeyValuePair(321L, 222L, "lastOne", "otherTenantId");
+    upsertCompositeKeyValuePair(123L, 222L, "baz", "otherTenantId");
+    final var prefix = new DbLong();
+    prefix.wrapLong(123L);
+
+    // when
+    final var firstKeys = new ArrayList<>();
+    final var secondKeys = new ArrayList<>();
+    final var values = new ArrayList<>();
+    final var tenants = new ArrayList<>();
+    compositeColumnFamily.whileEqualPrefix(
+        prefix,
+        (key, value) -> {
+          firstKeys.add(key.wrappedKey().first().getValue());
+          secondKeys.add(key.wrappedKey().second().getValue());
+          values.add(value.toString());
+          tenants.add(key.tenantKey().toString());
+        });
+
+    // then
+    assertThat(firstKeys).containsExactly(123L, 123L, 123L);
+    assertThat(secondKeys).containsExactly(111L, 222L, 333L);
+    assertThat(values).containsExactly("foo", "baz", "bar");
+    assertThat(tenants).containsExactly("tenantId", "otherTenantId", "tenantId");
+  }
+
+  private void upsertKeyValuePair(final long key, final String value, final String tenantId) {
+    firstKey.wrapLong(key);
+    this.value.wrapString(value);
+    tenantKey.wrapString(tenantId);
+    columnFamily.upsert(tenantAwareKey, this.value);
+  }
+
+  private void upsertCompositeKeyValuePair(
+      final long firstKey, final long secondKey, final String value, final String tenantId) {
+    this.firstKey.wrapLong(firstKey);
+    this.secondKey.wrapLong(secondKey);
+    this.value.wrapString(value);
+    tenantKey.wrapString(tenantId);
+    compositeColumnFamily.upsert(compositeTenantAwareKey, this.value);
+  }
 }
