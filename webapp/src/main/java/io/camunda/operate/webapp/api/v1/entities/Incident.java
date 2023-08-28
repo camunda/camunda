@@ -8,7 +8,12 @@ package io.camunda.operate.webapp.api.v1.entities;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+
+import io.camunda.operate.entities.ErrorType;
+import io.camunda.operate.entities.IncidentState;
 import io.camunda.operate.schema.templates.IncidentTemplate;
+import io.swagger.v3.oas.annotations.media.Schema;
+
 import java.util.Map;
 import java.util.Objects;
 
@@ -32,9 +37,11 @@ public class Incident {
   private Long key;
   private Long processDefinitionKey;
   private Long processInstanceKey;
+  @Schema(implementation = ErrorType.class)
   private String type;
   private String message;
   private String creationTime;
+  @Schema(implementation = IncidentState.class)
   private String state;
   private String tenantId;
 

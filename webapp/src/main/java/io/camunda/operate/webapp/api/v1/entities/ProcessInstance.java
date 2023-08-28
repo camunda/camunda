@@ -9,7 +9,11 @@ package io.camunda.operate.webapp.api.v1.entities;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
+import io.camunda.operate.entities.listview.ProcessInstanceState;
 import io.camunda.operate.schema.templates.ListViewTemplate;
+import io.swagger.v3.oas.annotations.media.Schema;
+
 import java.util.Objects;
 
 @JsonInclude(Include.NON_NULL)
@@ -33,6 +37,7 @@ public class ProcessInstance {
   private Long parentFlowNodeInstanceKey;
   private String startDate;
   private String endDate;
+  @Schema(implementation = ProcessInstanceState.class)
   private String state;
   private Long processDefinitionKey;
   private String tenantId;
