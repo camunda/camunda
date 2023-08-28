@@ -2554,10 +2554,10 @@
   resolved "https://registry.yarnpkg.com/@types/node/-/node-20.5.1.tgz#178d58ee7e4834152b0e8b4d30cbfab578b9bb30"
   integrity sha512-4tT2UrL5LBqDwoed9wZ6N3umC4Yhz3W3FloMmiiG4JwmUJWpie0c7lcnUNd4gtMKuDEO4wRVS8B6Xa0uMRsMKg==
 
-"@types/node@18.17.9":
-  version "18.17.9"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-18.17.9.tgz#b219fa0da3c574399f4a44455ea4b388029afd56"
-  integrity sha512-fxaKquqYcPOGwE7tC1anJaPJ0GHyOVzfA2oUoXECjBjrtsIz4YJvtNYsq8LUcjEUehEF+jGpx8Z+lFrtT6z0tg==
+"@types/node@18.17.12":
+  version "18.17.12"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-18.17.12.tgz#c6bd7413a13e6ad9cfb7e97dd5c4e904c1821e50"
+  integrity sha512-d6xjC9fJ/nSnfDeU0AMDsaJyb1iHsqCSOdi84w4u+SlN/UgQdY5tRhpMzaFYsI4mnpvgTivEaQd0yOUhAtOnEQ==
 
 "@types/parse-json@^4.0.0":
   version "4.0.0"
@@ -3750,14 +3750,6 @@ chalk-template@0.4.0:
   integrity sha512-/ghrgmhfY8RaSdeo43hNXxpoHAtxdbskUHjPpfqUWGttFgycUhYPGx3YZBCnUCvOa7Doivn1IZec3DEGFoMgLg==
   dependencies:
     chalk "^4.1.2"
-
-chalk@4.1.1:
-  version "4.1.1"
-  resolved "https://registry.yarnpkg.com/chalk/-/chalk-4.1.1.tgz#c80b3fab28bf6371e6863325eee67e618b77e6ad"
-  integrity sha512-diHzdDKxcU+bAsUboHLPEDQiw0qEe0qd7SYUn3HgcFlWgbDcfLGswOHYeGrHKzG9z6UYf01d9VFMfZxPM1xZSg==
-  dependencies:
-    ansi-styles "^4.1.0"
-    supports-color "^7.1.0"
 
 chalk@5.0.1:
   version "5.0.1"
@@ -7828,10 +7820,10 @@ mkdirp@^0.5.1, mkdirp@~0.5.1:
   dependencies:
     minimist "^1.2.6"
 
-mobx-react-lite@4.0.3:
-  version "4.0.3"
-  resolved "https://registry.yarnpkg.com/mobx-react-lite/-/mobx-react-lite-4.0.3.tgz#f7aa5ac3be558ca19a53b2929d9599679769c2a8"
-  integrity sha512-wEE1oT5zvDdvplG4HnRrFgPwg5GFVVrEtl42Er85k23zeu3om8H8wbDPgdbQP88zAihVsik6xJfw6VnzUl8fQw==
+mobx-react-lite@4.0.4:
+  version "4.0.4"
+  resolved "https://registry.yarnpkg.com/mobx-react-lite/-/mobx-react-lite-4.0.4.tgz#eee3c55dfa6841365d5a7764971c456db12570fb"
+  integrity sha512-68uNYvQC/5Dazs3sIBv+bnpzRwcWde8y4ujHiLizhq8yeQtJ2tlNUGSh4r40gyE5M0utACIofBDsAj2hplcovQ==
   dependencies:
     use-sync-external-store "^1.2.0"
 
@@ -7860,17 +7852,17 @@ ms@2.1.3, ms@^2.1.1:
   resolved "https://registry.yarnpkg.com/ms/-/ms-2.1.3.tgz#574c8138ce1d2b5861f0b44579dbadd60c6615b2"
   integrity sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==
 
-msw@1.2.3:
-  version "1.2.3"
-  resolved "https://registry.yarnpkg.com/msw/-/msw-1.2.3.tgz#750d6c53ac611732b243c82a87dad960ed832a37"
-  integrity sha512-Fqy/TaLKR32x4IkMwudJHJysBzVM/v/lSoMPS9f3QaHLOmb3xHN9YurSUnRt+2eEvNXLjVPij1wMBQtLmTbKsg==
+msw@1.2.5:
+  version "1.2.5"
+  resolved "https://registry.yarnpkg.com/msw/-/msw-1.2.5.tgz#797a23e5cef7b6cad22a4a6948a9c91a3ffa1ede"
+  integrity sha512-Y3MwnAHX3d162eSWrEUeRdCv3+8hmgz/+Wh7OUkE6VB55+YTswxrep3yU3evZnKWHJGAM63G1s+olAgzIFdYtQ==
   dependencies:
     "@mswjs/cookies" "^0.2.2"
     "@mswjs/interceptors" "^0.17.5"
     "@open-draft/until" "^1.0.3"
     "@types/cookie" "^0.4.1"
     "@types/js-levenshtein" "^1.1.1"
-    chalk "4.1.1"
+    chalk "^4.1.1"
     chokidar "^3.4.2"
     cookie "^0.4.2"
     graphql "^15.0.0 || ^16.0.0"
