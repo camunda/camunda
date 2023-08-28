@@ -10,6 +10,8 @@ package io.camunda.zeebe.transport.stream.impl;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.AtomixCluster;
+import io.atomix.cluster.ClusterMembershipEvent;
+import io.atomix.cluster.ClusterMembershipEvent.Type;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.Node;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
@@ -38,6 +40,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -59,7 +62,10 @@ final class StreamIntegrationTest {
           .setIoBoundActorThreadCount(1)
           .build();
   private final List<Node> clusterNodes =
-      List.of(createNode("server1"), createNode("server2"), createNode("client"));
+      List.of(
+          createNode(UUID.randomUUID().toString()),
+          createNode(UUID.randomUUID().toString()),
+          createNode(UUID.randomUUID().toString()));
   private final TestServer server1 =
       new TestServer(createClusterNode(clusterNodes.get(0), clusterNodes));
   private final TestServer server2 =
@@ -199,6 +205,30 @@ final class StreamIntegrationTest {
         .withMembershipProvider(new BootstrapDiscoveryProvider(nodes))
         .withMembershipProtocol(new DiscoveryMembershipProtocol())
         .build();
+  }
+
+  @Test
+  void shouldRegisterStreamsAgainInCaseOfAsymmetricPartition() {
+    // given
+    final var streamType = BufferUtil.wrapString("foo");
+    final var properties = new TestSerializableData();
+    final var streamId =
+        clientStreamer
+            .add(streamType, properties, p -> CompletableFuture.completedFuture(null))
+            .join();
+    awaitStreamAdded(streamType, streamId, server1, server2);
+
+    // when - remove client from server's members, then add it back, and expect it to be
+    // re-registered
+    server1.streamService.event(
+        new ClusterMembershipEvent(
+            Type.MEMBER_REMOVED, client.cluster.getMembershipService().getLocalMember()));
+    awaitStreamOnServer(streamType, server1, stream -> assertThat(stream).isEmpty());
+    server1.streamService.event(
+        new ClusterMembershipEvent(
+            Type.MEMBER_ADDED, client.cluster.getMembershipService().getLocalMember()));
+
+    awaitStreamAdded(streamType, streamId, server1, server2);
   }
 
   @Nested
@@ -371,7 +401,8 @@ final class StreamIntegrationTest {
               cluster.getCommunicationService(),
               TestSerializableData::new,
               dynamicErrorHandler,
-              RemoteStreamMetrics.noop());
+              RemoteStreamMetrics.noop(),
+              cluster.getMembershipService());
     }
 
     private void start() {
