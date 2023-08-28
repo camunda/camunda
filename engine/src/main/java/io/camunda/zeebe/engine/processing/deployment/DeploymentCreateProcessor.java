@@ -91,21 +91,21 @@ public final class DeploymentCreateProcessor
         new DeploymentTransformer(
             stateWriter, processingState, expressionProcessor, keyGenerator, featureFlags);
     startEventSubscriptionManager =
-        new StartEventSubscriptionManager(processingState, keyGenerator);
+        new StartEventSubscriptionManager(processingState, keyGenerator, stateWriter);
   }
 
   @Override
   public void processNewCommand(final TypedRecord<DeploymentRecord> command) {
     transformAndDistributeDeployment(command);
     // manage the top-level start event subscriptions except for timers
-    startEventSubscriptionManager.tryReOpenStartEventSubscription(command.getValue(), stateWriter);
+    startEventSubscriptionManager.tryReOpenStartEventSubscription(command.getValue());
   }
 
   @Override
   public void processDistributedCommand(final TypedRecord<DeploymentRecord> command) {
     processDistributedRecord(command);
     // manage the top-level start event subscriptions except for timers
-    startEventSubscriptionManager.tryReOpenStartEventSubscription(command.getValue(), stateWriter);
+    startEventSubscriptionManager.tryReOpenStartEventSubscription(command.getValue());
   }
 
   @Override

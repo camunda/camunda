@@ -30,9 +30,9 @@ public final class DeploymentDistributeProcessor implements TypedRecordProcessor
       final Writers writers,
       final KeyGenerator keyGenerator) {
     this.deploymentDistributionCommandSender = deploymentDistributionCommandSender;
-    startEventSubscriptionManager =
-        new StartEventSubscriptionManager(processingState, keyGenerator);
     stateWriter = writers.state();
+    startEventSubscriptionManager =
+        new StartEventSubscriptionManager(processingState, keyGenerator, stateWriter);
   }
 
   @Override
@@ -43,6 +43,6 @@ public final class DeploymentDistributeProcessor implements TypedRecordProcessor
     stateWriter.appendFollowUpEvent(deploymentKey, DeploymentIntent.DISTRIBUTED, deploymentEvent);
     deploymentDistributionCommandSender.completeOnPartition(deploymentKey);
 
-    startEventSubscriptionManager.tryReOpenStartEventSubscription(deploymentEvent, stateWriter);
+    startEventSubscriptionManager.tryReOpenStartEventSubscription(deploymentEvent);
   }
 }
