@@ -29,6 +29,7 @@ import {
   ChangeEventHandler,
   AnchorHTMLAttributes,
   InputHTMLAttributes,
+  UIEvent,
 } from 'react';
 
 declare module '@carbon/react' {
@@ -689,4 +690,16 @@ declare module '@carbon/react' {
   }
 
   declare function MenuButton(props: ForwardRefProps<HTMLElement, MenuButtonProps>): JSX.Element;
+
+  function MenuItemSelectable(
+    props: ForwardRefProps<
+      HTMLElement,
+      {
+        label: string;
+        selected?: boolean;
+        className?: string;
+        onChange?: (evt: UIEvent<HTMLElement>) => void;
+      } & Omit<MenuItemProps, 'renderIcon'>
+    >
+  ): JSX.Element;
 }

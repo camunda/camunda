@@ -16,7 +16,7 @@ import {
   Labeled,
   Input,
   LabeledInput,
-  Select,
+  CarbonSelect,
   Typeahead,
   MessageBox,
   Form,
@@ -308,13 +308,13 @@ export class AlertModal extends React.Component {
             <Form.Group>
               <span>{t('alert.form.threshold')}</span>
               <Form.InputGroup>
-                <Select
+                <CarbonSelect
                   value={thresholdOperator}
                   onChange={(value) => this.setState({thresholdOperator: value})}
                 >
-                  <Select.Option value=">">{t('common.above')}</Select.Option>
-                  <Select.Option value="<">{t('common.below')}</Select.Option>
-                </Select>
+                  <CarbonSelect.Option value=">" label={t('common.above')} />
+                  <CarbonSelect.Option value="<" label={t('common.below')} />
+                </CarbonSelect>
                 <ThresholdInput
                   value={threshold}
                   onChange={(threshold) => this.setState({threshold})}
@@ -340,29 +340,28 @@ export class AlertModal extends React.Component {
                     }
                     maxLength="8"
                   />
-                  <Select
+                  <CarbonSelect
                     value={checkInterval.unit}
                     onChange={(value) =>
                       this.setState(update(this.state, {checkInterval: {unit: {$set: value}}}))
                     }
                   >
-                    <Select.Option value="seconds">
-                      {t('common.unit.second.label-plural')}
-                    </Select.Option>
-                    <Select.Option value="minutes">
-                      {t('common.unit.minute.label-plural')}
-                    </Select.Option>
-                    <Select.Option value="hours">
-                      {t('common.unit.hour.label-plural')}
-                    </Select.Option>
-                    <Select.Option value="days">{t('common.unit.day.label-plural')}</Select.Option>
-                    <Select.Option value="weeks">
-                      {t('common.unit.week.label-plural')}
-                    </Select.Option>
-                    <Select.Option value="months">
-                      {t('common.unit.month.label-plural')}
-                    </Select.Option>
-                  </Select>
+                    <CarbonSelect.Option
+                      value="seconds"
+                      label={t('common.unit.second.label-plural')}
+                    />
+                    <CarbonSelect.Option
+                      value="minutes"
+                      label={t('common.unit.minute.label-plural')}
+                    />
+                    <CarbonSelect.Option value="hours" label={t('common.unit.hour.label-plural')} />
+                    <CarbonSelect.Option value="days" label={t('common.unit.day.label-plural')} />
+                    <CarbonSelect.Option value="weeks" label={t('common.unit.week.label-plural')} />
+                    <CarbonSelect.Option
+                      value="months"
+                      label={t('common.unit.month.label-plural')}
+                    />
+                  </CarbonSelect>
                 </Form.InputGroup>
               </Labeled>
               {!numberParser.isPositiveInt(checkInterval.value) && (
@@ -431,28 +430,28 @@ export class AlertModal extends React.Component {
                       }
                       maxLength="8"
                     />
-                    <Select
+                    <CarbonSelect
                       value={reminder.unit}
                       onChange={(value) =>
                         this.setState(update(this.state, {reminder: {unit: {$set: value}}}))
                       }
                     >
-                      <Select.Option value="minutes">
+                      <CarbonSelect.Option value="minutes">
                         {t('common.unit.minute.label-plural')}
-                      </Select.Option>
-                      <Select.Option value="hours">
+                      </CarbonSelect.Option>
+                      <CarbonSelect.Option value="hours">
                         {t('common.unit.hour.label-plural')}
-                      </Select.Option>
-                      <Select.Option value="days">
+                      </CarbonSelect.Option>
+                      <CarbonSelect.Option value="days">
                         {t('common.unit.day.label-plural')}
-                      </Select.Option>
-                      <Select.Option value="weeks">
+                      </CarbonSelect.Option>
+                      <CarbonSelect.Option value="weeks">
                         {t('common.unit.week.label-plural')}
-                      </Select.Option>
-                      <Select.Option value="months">
+                      </CarbonSelect.Option>
+                      <CarbonSelect.Option value="months">
                         {t('common.unit.month.label-plural')}
-                      </Select.Option>
-                    </Select>
+                      </CarbonSelect.Option>
+                    </CarbonSelect>
                   </Form.InputGroup>
                 </Labeled>
               </Form.Group>

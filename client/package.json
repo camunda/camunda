@@ -7,6 +7,7 @@
     "@bpmn-io/dmn-migrate": "^0.4.3",
     "@bpmn-io/element-templates-icons-renderer": "^0.3.0",
     "@camunda/camunda-composite-components": "^0.2.4",
+    "@camunda/camunda-optimize-composite-components": "^0.0.8",
     "@carbon/icons-react": "^11.25.0",
     "@carbon/react": "^1.38.0",
     "@lexical/react": "^0.12.0",
@@ -130,7 +131,7 @@
   "jest": {
     "resetMocks": false,
     "transformIgnorePatterns": [
-      "/node_modules/(?!@camunda/camunda-composite-components)"
+      "/node_modules/(?!@camunda/camunda-.*?)"
     ],
     "moduleNameMapper": {
       "\\.(css|scss)$": "<rootDir>/src/__mocks__/styleMock.js"

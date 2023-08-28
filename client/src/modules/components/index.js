@@ -12,7 +12,7 @@ export {MessageBox} from './MessageBox';
 export {Dropdown} from './Dropdown';
 export {Deleter} from './Deleter';
 export {Input} from './Input';
-export {Select} from './Select';
+export {Select, CarbonSelect} from './Select';
 export {ButtonGroup} from './ButtonGroup';
 export {BPMNDiagram, ClickBehavior, PartHighlight} from './BPMNDiagram';
 export {DMNDiagram} from './DMNDiagram';

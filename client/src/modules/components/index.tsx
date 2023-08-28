@@ -20,7 +20,7 @@ export {Labeled} from './Labeled';
 export {Tooltip} from './Tooltip';
 export {Modal} from './Modal';
 export {Dropdown} from './Dropdown';
-export {Select} from './Select';
+export {Select, CarbonSelect} from './Select';
 export {TextEditor} from './TextEditor';
 export {PageTitle} from './PageTitle';
 export {EntityDescription} from './EntityDescription';

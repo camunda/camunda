@@ -5,5 +5,4 @@
  * except in compliance with the proprietary license.
  */
 
-export {default as Select} from './Select';
-export {CarbonSelect} from './CarbonSelect';
+export {default as CarbonSelect} from './CarbonSelect';
