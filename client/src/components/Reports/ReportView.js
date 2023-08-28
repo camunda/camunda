@@ -6,7 +6,7 @@
  */
 
 import React, {useEffect, useState} from 'react';
-import {Link, Redirect} from 'react-router-dom';
+import {Link, Redirect, useLocation} from 'react-router-dom';
 import {Button} from '@carbon/react';
 import {RowCollapse, RowExpand} from '@carbon/icons-react';
 import classnames from 'classnames';
@@ -40,8 +40,9 @@ export function ReportView({report, error, user, loadReport}) {
   const [sharingEnabled, setSharingEnabled] = useState(false);
   const [optimizeProfile, setOptimizeProfile] = useState(null);
   const [redirect, setRedirect] = useState(false);
-  const [collapsed, setCollapsed] = useState(false);
-  const [expanded, setExpanded] = useState(false);
+  const [bottomPanelState, setBottomPanelState] = useState('neutral');
+  const location = useLocation();
+  const isProcessReport = location.pathname.includes('processes/report');
 
   useEffect(() => {
     (async () => {
@@ -134,36 +135,48 @@ export function ReportView({report, error, user, loadReport}) {
         </div>
         <InstanceCount report={report} />
       </div>
-      <div className="Report__view">
-        <div className="Report__content">
-          {!expanded && <ReportRenderer error={error} report={report} loadReport={loadReport} />}
+      {bottomPanelState !== 'expanded' && (
+        <div className="Report__view">
+          <div className="Report__content">
+            <ReportRenderer error={error} report={report} loadReport={loadReport} />
+          </div>
         </div>
-      </div>
-      {!combined && report.data?.visualization !== 'table' && (
-        <div className={classnames('bottomPanel', {collapsed, expanded})}>
+      )}
+      {!isProcessReport && !combined && report.data?.visualization !== 'table' && (
+        <div className={classnames('bottomPanel', bottomPanelState)}>
           <div className="toolbar">
             <b>{t('report.view.rawData')}</b>
             <div>
-              {!collapsed && (
+              {bottomPanelState !== 'expanded' && (
                 <Button
                   hasIconOnly
-                  label={t(expanded ? 'common.collapse' : 'common.expand')}
+                  label={t('common.expand')}
                   kind="ghost"
-                  onClick={() => setExpanded(!expanded)}
+                  onClick={() =>
+                    setBottomPanelState((prevState) =>
+                      prevState === 'collapsed' ? 'neutral' : 'expanded'
+                    )
+                  }
                   className="expandButton"
+                  tooltipPosition="left"
                 >
-                  {expanded ? <RowExpand /> : <RowCollapse />}
+                  <RowCollapse />
                 </Button>
               )}
-              {!expanded && (
+              {bottomPanelState !== 'collapsed' && (
                 <Button
                   hasIconOnly
-                  label={t(collapsed ? 'common.expand' : 'common.collapse')}
+                  label={t('common.collapse')}
                   kind="ghost"
-                  onClick={() => setCollapsed(!collapsed)}
+                  onClick={() =>
+                    setBottomPanelState((prevState) =>
+                      prevState === 'expanded' ? 'neutral' : 'collapsed'
+                    )
+                  }
                   className="collapseButton"
+                  tooltipPosition="left"
                 >
-                  {collapsed ? <RowCollapse /> : <RowExpand />}
+                  <RowExpand />
                 </Button>
               )}
             </div>

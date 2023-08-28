@@ -31,7 +31,7 @@ export default function RawDataTable({
   } = report;
 
   const [error, setError] = useState(false);
-  const [Pageloading, setPageLoading] = useState(false);
+  const [pageLoading, setPageLoading] = useState(false);
   const [objectVariable, setObjectVariable] = useState();
   const [camundaEndpoints, setCamundaEndpoints] = useState(null);
 
@@ -76,7 +76,7 @@ export default function RawDataTable({
   const tableProps = {
     ...processRawData({report, camundaEndpoints, processVariables, onVariableView}),
     fetchData,
-    loading: Pageloading || loading,
+    loading: pageLoading || loading,
     defaultPageSize: result.pagination.limit,
     defaultPage: result.pagination.offset / result.pagination.limit,
     totalEntries: result.instanceCount,

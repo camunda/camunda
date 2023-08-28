@@ -12,7 +12,7 @@ import {t} from 'translation';
 
 import './RawDataModal.scss';
 
-export function RawDataModal({name, report, open, onClose}) {
+export default function RawDataModal({name, report, open, onClose}) {
   return (
     <Modal className="RawDataModal" open={open} size="lg" onClose={onClose}>
       <Modal.Header>{name}</Modal.Header>
@@ -27,5 +27,3 @@ export function RawDataModal({name, report, open, onClose}) {
     </Modal>
   );
 }
-
-export default RawDataModal;

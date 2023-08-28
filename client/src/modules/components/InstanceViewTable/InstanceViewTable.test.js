@@ -7,6 +7,7 @@
 
 import React, {runLastEffect} from 'react';
 import {shallow} from 'enzyme';
+import {DataTableSkeleton} from '@carbon/react';
 
 import {ReportRenderer} from 'components';
 import {evaluateReport} from 'services';
@@ -31,7 +32,14 @@ jest.mock('hooks', () => ({
   })),
 }));
 
-it('should contain ReportRenderer', () => {
+it('should load a table seleton while loading the data', () => {
+  const node = shallow(<InstanceViewTable {...props} />);
+
+  expect(node.find(DataTableSkeleton)).toExist();
+  expect(node.find(ReportRenderer)).not.toExist();
+});
+
+it('should display the ReportRenderer when the data is loaded', () => {
   const node = shallow(<InstanceViewTable {...props} />);
   runLastEffect();
   expect(node.find(ReportRenderer)).toExist();

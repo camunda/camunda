@@ -7,6 +7,7 @@
 
 import React, {runLastEffect} from 'react';
 import {shallow} from 'enzyme';
+import {useLocation} from 'react-router';
 
 import {Deleter, ReportRenderer, InstanceCount, DownloadButton, AlertsDropdown} from 'components';
 import {checkDeleteConflict} from 'services';
@@ -35,6 +36,13 @@ jest.mock('./service', () => {
 
 jest.mock('dates', () => ({
   format: () => 'some date',
+}));
+
+jest.mock('react-router', () => ({
+  ...jest.requireActual('react-router'),
+  useLocation: jest.fn().mockImplementation(() => {
+    return {pathname: '/report'};
+  }),
 }));
 
 const report = {
@@ -196,7 +204,7 @@ it('should hide share, edit and delete buttons for instant preview report', () =
   expect(node.find('.tool-button.delete-button')).not.toExist();
 });
 
-it('should hide bottom raw data panel for number reports', async () => {
+it('should hide bottom raw data panel for table reports', async () => {
   const node = await shallow(<ReportView report={report} />);
 
   await node.update();
@@ -204,7 +212,19 @@ it('should hide bottom raw data panel for number reports', async () => {
   expect(node.find('.bottomPanel')).not.toExist();
 });
 
-it('should hide collapseButton & report renderer when expanding bottom panel', async () => {
+it('should hide bottom raw data panel for processes page reports', async () => {
+  useLocation.mockReturnValueOnce({pathname: '/processes/report'});
+
+  const node = await shallow(
+    <ReportView report={{...report, data: {...report.data, visualization: 'number'}}} />
+  );
+
+  await node.update();
+
+  expect(node.find('.bottomPanel')).not.toExist();
+});
+
+it('should hide expandButton & report renderer when expanding bottom panel', async () => {
   const node = await shallow(
     <ReportView report={{...report, data: {...report.data, visualization: 'number'}}} />
   );
@@ -212,6 +232,6 @@ it('should hide collapseButton & report renderer when expanding bottom panel', a
   await node.update();
 
   node.find('.expandButton').simulate('click');
-  expect(node.find('.collapseButton')).not.toExist();
+  expect(node.find('.expandButton')).not.toExist();
   expect(node.find(ReportRenderer)).not.toExist();
 });

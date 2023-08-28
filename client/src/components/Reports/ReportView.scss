@@ -34,11 +34,9 @@
     &.collapsed {
       height: 48px;
       transition: height 0.25s;
-      overflow: hidden;
     }
 
     &.expanded {
-      overflow: hidden;
       height: 100%;
     }
 
@@ -46,7 +44,8 @@
       background-color: var(--cds-layer);
       display: flex;
       justify-content: space-between;
-      line-height: 48px;
+      height: 48px;
+      align-items: center;
       padding-left: 16px;
       font-size: 14px;
     }
