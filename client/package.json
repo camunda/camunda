@@ -111,7 +111,7 @@
     "old-bpmn-js": "npm:bpmn-js@8.10",
     "opn": "^6.0.0",
     "prettier": "^3.0.2",
-    "react-scripts": "5.0.0",
+    "react-scripts": "5.0.1",
     "sass": "^1.66.1",
     "shelljs": "^0.8.5",
     "styled-components": "^6.0.0",
