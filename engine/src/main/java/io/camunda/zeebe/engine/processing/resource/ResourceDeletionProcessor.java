@@ -226,9 +226,8 @@ public class ResourceDeletionProcessor
             }
           });
     }
-    if (process.hasMessageStartEvent()) {
-      startEventSubscriptionManager.closeMessageStartEventSubscriptions(deployedProcess);
-    }
+
+    startEventSubscriptionManager.closeStartEventSubscriptions(deployedProcess);
   }
 
   private void resubscribeStartEvents(final DeployedProcess deployedProcess) {

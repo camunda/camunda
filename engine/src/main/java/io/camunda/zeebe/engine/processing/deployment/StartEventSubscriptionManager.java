@@ -74,6 +74,15 @@ public class StartEventSubscriptionManager {
     closeSignalExistingStartEventSubscriptions(processRecord);
   }
 
+  public void closeStartEventSubscriptions(final DeployedProcess deployedProcess) {
+    if (deployedProcess.getProcess().hasMessageStartEvent()) {
+      closeMessageStartEventSubscriptions(deployedProcess);
+    }
+    if (deployedProcess.getProcess().hasSignalStartEvent()) {
+      closeSignalStartEventSubscriptions(deployedProcess);
+    }
+  }
+
   private void closeMessageExistingStartEventSubscriptions(final ProcessMetadata processRecord) {
     final DeployedProcess lastMsgProcess =
         findLastStartProcess(processRecord, ExecutableCatchEventElement::isMessage);
@@ -84,7 +93,7 @@ public class StartEventSubscriptionManager {
     closeMessageStartEventSubscriptions(lastMsgProcess);
   }
 
-  public void closeMessageStartEventSubscriptions(final DeployedProcess deployedProcess) {
+  private void closeMessageStartEventSubscriptions(final DeployedProcess deployedProcess) {
     messageStartEventSubscriptionState.visitSubscriptionsByProcessDefinition(
         deployedProcess.getKey(),
         subscription ->
@@ -101,8 +110,12 @@ public class StartEventSubscriptionManager {
       return;
     }
 
+    closeSignalStartEventSubscriptions(lastSignalProcess);
+  }
+
+  private void closeSignalStartEventSubscriptions(final DeployedProcess deployedProcess) {
     signalSubscriptionState.visitStartEventSubscriptionsByProcessDefinitionKey(
-        lastSignalProcess.getKey(),
+        deployedProcess.getKey(),
         subscription ->
             stateWriter.appendFollowUpEvent(
                 subscription.getKey(), SignalSubscriptionIntent.DELETED, subscription.getRecord()));
@@ -132,9 +145,9 @@ public class StartEventSubscriptionManager {
     final List<ExecutableStartEvent> startEvents = process.getStartEvents();
     for (final ExecutableStartEvent startEvent : startEvents) {
       if (startEvent.isMessage()) {
-        openMessageStartEventSubscription(processDefinition, processDefinitionKey, startEvent);
+        openMessageStartEventSubscription(processDefinition, startEvent);
       } else if (startEvent.isSignal()) {
-        openSignalStartEventSubscription(processDefinition, processDefinitionKey, startEvent);
+        openSignalStartEventSubscription(processDefinition, startEvent);
       }
     }
   }
@@ -147,16 +160,15 @@ public class StartEventSubscriptionManager {
         .forEach(
             startEvent -> {
               if (startEvent.isMessage()) {
-                openMessageStartEventSubscription(
-                    deployedProcess, deployedProcess.getKey(), startEvent);
+                openMessageStartEventSubscription(deployedProcess, startEvent);
+              } else if (startEvent.isSignal()) {
+                openSignalStartEventSubscription(deployedProcess, startEvent);
               }
             });
   }
 
   private void openMessageStartEventSubscription(
-      final DeployedProcess processDefinition,
-      final long processDefinitionKey,
-      final ExecutableStartEvent startEvent) {
+      final DeployedProcess processDefinition, final ExecutableStartEvent startEvent) {
     final ExecutableMessage message = startEvent.getMessage();
 
     message
@@ -167,7 +179,7 @@ public class StartEventSubscriptionManager {
               messageSubscriptionRecord.reset();
               messageSubscriptionRecord
                   .setMessageName(messageNameBuffer)
-                  .setProcessDefinitionKey(processDefinitionKey)
+                  .setProcessDefinitionKey(processDefinition.getKey())
                   .setBpmnProcessId(processDefinition.getBpmnProcessId())
                   .setStartEventId(startEvent.getId());
 
@@ -180,9 +192,7 @@ public class StartEventSubscriptionManager {
   }
 
   private void openSignalStartEventSubscription(
-      final DeployedProcess processDefinition,
-      final long processDefinitionKey,
-      final ExecutableStartEvent startEvent) {
+      final DeployedProcess processDefinition, final ExecutableStartEvent startEvent) {
     final ExecutableSignal signal = startEvent.getSignal();
 
     signal
@@ -193,7 +203,7 @@ public class StartEventSubscriptionManager {
               signalSubscriptionRecord.reset();
               signalSubscriptionRecord
                   .setSignalName(signalNameBuffer)
-                  .setProcessDefinitionKey(processDefinitionKey)
+                  .setProcessDefinitionKey(processDefinition.getKey())
                   .setBpmnProcessId(processDefinition.getBpmnProcessId())
                   .setCatchEventId(startEvent.getId());
 
