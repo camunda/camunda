@@ -116,7 +116,6 @@ export function Header({user, mightFail, docsLink, noActions}) {
 
 function createAppProps(location) {
   return {
-    prefix: t('companyName'),
     name: t('appName'),
     ariaLabel: t('appFullName'),
     routeProps: {

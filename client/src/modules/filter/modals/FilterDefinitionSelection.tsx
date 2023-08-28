@@ -50,7 +50,6 @@ export default function FilterDefinitionSelection({
         initialSelectedItems={selectedItems}
         items={allItems}
         onChange={({selectedItems}) => handleSelectionChange(selectedItems)}
-        aria-label={t('common.definitionSelection.select.process')}
         titleText={t('common.definitionSelection.select.process')}
       />
     </div>
