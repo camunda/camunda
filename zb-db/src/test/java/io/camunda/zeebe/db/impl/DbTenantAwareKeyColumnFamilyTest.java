@@ -13,13 +13,14 @@ import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import java.io.File;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import java.util.ArrayList;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 public final class DbTenantAwareKeyColumnFamilyTest {
-  @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
+
+  @TempDir public File temporaryFolder;
   private final ZeebeDbFactory<DefaultColumnFamily> dbFactory =
       DefaultZeebeDbFactory.getDefaultFactory();
   private ZeebeDb<DefaultColumnFamily> zeebeDb;
@@ -36,10 +37,9 @@ public final class DbTenantAwareKeyColumnFamilyTest {
   private DbTenantAwareKey<DbLong> tenantAwareKey;
   private DbTenantAwareKey<DbCompositeKey<DbLong, DbLong>> compositeTenantAwareKey;
 
-  @Before
-  public void setup() throws Exception {
-    final File pathName = temporaryFolder.newFolder();
-    zeebeDb = dbFactory.createDb(pathName);
+  @BeforeEach
+  void beforeEach() throws Exception {
+    zeebeDb = dbFactory.createDb(temporaryFolder);
 
     tenantKey = new DbString();
     firstKey = new DbLong();
@@ -59,7 +59,7 @@ public final class DbTenantAwareKeyColumnFamilyTest {
   }
 
   @Test
-  public void shouldInsertValue() {
+  void shouldInsertValue() {
     // given
     tenantKey.wrapString("tenant");
     firstKey.wrapLong(1);
@@ -80,7 +80,7 @@ public final class DbTenantAwareKeyColumnFamilyTest {
   }
 
   @Test
-  public void shouldUpsertValue() {
+  void shouldUpsertValue() {
     // given
     tenantKey.wrapString("tenant");
     firstKey.wrapLong(1);
@@ -124,12 +124,9 @@ public final class DbTenantAwareKeyColumnFamilyTest {
   }
 
   @Test
-  public void shouldDeleteValue() {
+  void shouldDeleteValue() {
     // given
-    tenantKey.wrapString("tenant");
-    firstKey.wrapLong(1);
-    value.wrapString("foo");
-    columnFamily.insert(tenantAwareKey, value);
+    upsertKeyValuePair(123L, "foo", "tenantId");
 
     // when
     columnFamily.deleteExisting(tenantAwareKey);
