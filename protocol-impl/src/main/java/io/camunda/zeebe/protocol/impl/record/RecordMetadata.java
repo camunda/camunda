@@ -101,13 +101,17 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     final int rejectionReasonLength = decoder.rejectionReasonLength();
     if (rejectionReasonLength > 0) {
       decoder.wrapRejectionReason(rejectionReason);
+    } else {
+      decoder.skipRejectionReason();
     }
 
     final int authorizationLength = decoder.authorizationLength();
     if (authorizationLength > 0) {
-      final DirectBuffer authBuffer = new UnsafeBuffer(new byte[authorizationLength]);
+      final DirectBuffer authBuffer = new UnsafeBuffer();
       decoder.wrapAuthorization(authBuffer);
       authorization.wrap(authBuffer);
+    } else {
+      decoder.skipAuthorization();
     }
   }
 
