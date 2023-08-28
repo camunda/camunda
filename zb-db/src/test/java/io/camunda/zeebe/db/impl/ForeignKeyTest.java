@@ -46,6 +46,29 @@ final class ForeignKeyTest {
     assertThat(composite.containedForeignKeys()).containsExactly(key1, key2, key3);
   }
 
+  @Test
+  void shouldCollectForeignKeysFromTenantAwareKey() {
+    // given
+    final var foreignKey =
+        new DbForeignKey<>(mock(DbKey.class), TestColumnFamilies.TEST_COLUMN_FAMILY);
+    final var tenantAwareKey = new DbTenantAwareKey<>(mock(DbString.class), foreignKey);
+
+    // then
+    assertThat(tenantAwareKey.containedForeignKeys()).singleElement().isEqualTo(foreignKey);
+  }
+
+  @Test
+  void shouldCollectForeignKeysFromTenantAwareComposite() {
+    // given
+    final var key1 = new DbForeignKey<>(mock(DbKey.class), TestColumnFamilies.TEST_COLUMN_FAMILY);
+    final var key2 = new DbForeignKey<>(mock(DbKey.class), TestColumnFamilies.TEST_COLUMN_FAMILY);
+    final var compositeKey = new DbCompositeKey<>(key1, key2);
+    final var tenantAwareKey = new DbTenantAwareKey<>(mock(DbString.class), compositeKey);
+
+    // then
+    assertThat(tenantAwareKey.containedForeignKeys()).containsExactly(key1, key2);
+  }
+
   private enum TestColumnFamilies {
     TEST_COLUMN_FAMILY
   }
