@@ -2,7 +2,7 @@ zeebe:
   broker:
     experimental:
       features:
-        enableYieldingDueDateChecker: true
+        enableYieldingDueDateChecker: false
         enableActorMetrics: true
         enableMessageTTLCheckerAsync: true
         enableTimerDueDateCheckerAsync: true
