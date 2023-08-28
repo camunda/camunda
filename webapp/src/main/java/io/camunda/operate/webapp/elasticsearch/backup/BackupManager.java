@@ -17,6 +17,7 @@ import io.camunda.operate.schema.backup.Prio3Backup;
 import io.camunda.operate.schema.backup.Prio4Backup;
 import io.camunda.operate.schema.indices.IndexDescriptor;
 import io.camunda.operate.schema.templates.TemplateDescriptor;
+import io.camunda.operate.util.ThreadUtil;
 import io.camunda.operate.webapp.backup.BackupService;
 import io.camunda.operate.webapp.backup.Metadata;
 import io.camunda.operate.webapp.management.dto.*;
@@ -43,13 +44,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.net.SocketTimeoutException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
@@ -251,7 +252,7 @@ public class BackupManager implements BackupService {
   }
 
   private void executeSnapshotting(CreateSnapshotRequest snapshotRequest) {
-    esClient.snapshot().createAsync(snapshotRequest, RequestOptions.DEFAULT, getSnapshotActionListener());
+    esClient.snapshot().createAsync(snapshotRequest, RequestOptions.DEFAULT, new CreateSnapshotListener(snapshotRequest.snapshot()));
   }
 
   private String[][] getIndexPatternsOrdered() {
@@ -282,37 +283,67 @@ public class BackupManager implements BackupService {
     return operateProperties.getVersion().toLowerCase();
   }
 
-  @Bean
-  protected ActionListener<CreateSnapshotResponse> getSnapshotActionListener() {
-    return new ActionListener<>() {
-      @Override
-      public void onResponse(CreateSnapshotResponse response) {
-        switch (response.getSnapshotInfo().state()) {
-          case SUCCESS:
-            logger.info("Snapshot done: " + response.getSnapshotInfo().snapshotId());
-            scheduleNextSnapshot();
-            break;
-          case FAILED:
-            logger.error("Snapshot taking failed for {}, reason {}", response.getSnapshotInfo().snapshotId(),
-                response.getSnapshotInfo().reason());
-            //no need to continue
-            requestsQueue.clear();
-            return;
-          default:
-            logger.warn("Snapshot status {} for the {}", response.getSnapshotInfo().state(),
-                response.getSnapshotInfo().snapshotId());
-            scheduleNextSnapshot();
-            break;
-        }
-      }
+  /**
+   * CreateSnapshotListener
+   */
+  private class CreateSnapshotListener implements ActionListener<CreateSnapshotResponse> {
 
-      @Override
-      public void onFailure(Exception e) {
-        logger.error("Exception occurred while creating snapshot: " + e.getMessage(), e);
-        //no need to continue
+    private final String snapshotName;
+    private final long backupId;
+
+    public CreateSnapshotListener(String snapshotName) {
+      this.snapshotName = snapshotName;
+      this.backupId = Metadata.extractBackupIdFromSnapshotName(snapshotName);
+    }
+
+    @Override
+    public void onResponse(CreateSnapshotResponse response) {
+      handleSnapshotReceived(response.getSnapshotInfo());
+    }
+
+    @Override
+    public void onFailure(Exception ex) {
+      if (ex instanceof SocketTimeoutException) {
+        // This is thrown even if the backup is still running
+        logger.warn(String.format("Timeout while creating snapshot [%s] for backup id [%d]. Need to keep waiting with polling...",
+            snapshotName, backupId));
+        // Keep waiting
+        while (true) {
+          List<SnapshotInfo> snapshotInfos = findSnapshots(backupId);
+          SnapshotInfo currentSnapshot = snapshotInfos.stream().filter(x -> Objects.equals(x.snapshotId().getName(), snapshotName)).findFirst().orElse(null);
+          if (currentSnapshot == null) {
+            logger.error(String.format("Expected (but not found) snapshot [%s] for backupId [%d].", snapshotName, backupId));
+            // No need to continue
+            requestsQueue.clear();
+            break;
+          }
+          if (currentSnapshot.state() == IN_PROGRESS) {
+            ThreadUtil.sleepFor(100);
+          } else {
+            handleSnapshotReceived(currentSnapshot);
+            break;
+          }
+        }
+      } else {
+        logger.error(String.format("Exception while creating snapshot [%s] for backup id [%d].", snapshotName, backupId), ex);
+        // No need to continue
         requestsQueue.clear();
       }
-    };
+    }
+
+    private void handleSnapshotReceived(SnapshotInfo snapshotInfo) {
+      if (snapshotInfo.state() == SUCCESS) {
+        logger.info("Snapshot done: " + snapshotInfo.snapshotId());
+        scheduleNextSnapshot();
+      } else if (snapshotInfo.state() == FAILED) {
+        logger.error(String.format("Snapshot taking failed for %s, reason %s", snapshotInfo.snapshotId(), snapshotInfo.reason()));
+        // No need to continue
+        requestsQueue.clear();
+      } else {
+        logger.warn(String.format("Snapshot state is %s for snapshot %s", snapshotInfo.state(), snapshotInfo.snapshotId()));
+        scheduleNextSnapshot();
+      }
+    }
   }
 
   @Override
