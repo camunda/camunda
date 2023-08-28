@@ -52,6 +52,16 @@ public interface ProcessInstanceResult {
    */
   <T> T getVariablesAsType(Class<T> variableType);
 
+  /**
+   * Variable returned by name after the process is completed.
+   *
+   * @param name the name of the variable
+   * @return de-serialized variable value or null if the provided variable name is present among the
+   *     available variables, otherwise throw a {@link
+   *     io.camunda.zeebe.client.api.command.ClientException}
+   */
+  Object getVariable(String name);
+
   /** Tenant identifier that owns this process instance */
   @ExperimentalApi("https://github.com/camunda/zeebe/issues/13321")
   String getTenantId();

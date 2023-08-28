@@ -298,6 +298,73 @@ public final class ActivateJobsTest extends ClientTest {
         .isEqualTo(builder);
   }
 
+  @Test
+  public void shouldGetSingleVariable() {
+    final String variablesJob1 = "{\"key\" : \"val\", \"foo\" : \"bar\", \"joe\" : \"doe\"}";
+    final String variablesJob2 = "{\"key\" : \"val2\", \"foo\" : \"bar2\", \"joe\" : \"doe2\"}";
+    // given
+    final ActivatedJob activatedJob1 =
+        ActivatedJob.newBuilder().setVariables(variablesJob1).build();
+
+    final ActivatedJob activatedJob2 =
+        ActivatedJob.newBuilder().setVariables(variablesJob2).build();
+
+    gatewayService.onActivateJobsRequest(activatedJob1, activatedJob2);
+
+    // when
+    final ActivateJobsResponse response =
+        client.newActivateJobsCommand().jobType("foo").maxJobsToActivate(3).send().join();
+
+    assertThat(response.getJobs()).hasSize(2);
+
+    final io.camunda.zeebe.client.api.response.ActivatedJob job1 = response.getJobs().get(0);
+    assertThat(job1.getVariable("key")).isEqualTo("val");
+    assertThat(job1.getVariable("foo")).isEqualTo("bar");
+    assertThat(job1.getVariable("joe")).isEqualTo("doe");
+
+    final io.camunda.zeebe.client.api.response.ActivatedJob job2 = response.getJobs().get(1);
+    assertThat(job2.getVariable("key")).isEqualTo("val2");
+    assertThat(job2.getVariable("foo")).isEqualTo("bar2");
+    assertThat(job2.getVariable("joe")).isEqualTo("doe2");
+  }
+
+  @Test
+  public void shouldThrowAnErrorIfVariableNameIsNotPresent() {
+    final String variables = "{\"key\" : \"val\", \"foo\" : \"bar\", \"joe\" : \"doe\"}";
+    // given
+    final ActivatedJob activatedJob1 = ActivatedJob.newBuilder().setVariables(variables).build();
+
+    gatewayService.onActivateJobsRequest(activatedJob1);
+
+    // when
+    final ActivateJobsResponse response =
+        client.newActivateJobsCommand().jobType("foo").maxJobsToActivate(3).send().join();
+
+    assertThat(response.getJobs()).hasSize(1);
+
+    final io.camunda.zeebe.client.api.response.ActivatedJob job1 = response.getJobs().get(0);
+    assertThatThrownBy(() -> job1.getVariable("notPresentName"))
+        .isInstanceOf(ClientException.class);
+  }
+
+  @Test
+  public void shouldReturnNullIfVariableValueIsNull() {
+    final String variables = "{\"key\" : null}";
+    // given
+    final ActivatedJob activatedJob1 = ActivatedJob.newBuilder().setVariables(variables).build();
+
+    gatewayService.onActivateJobsRequest(activatedJob1);
+
+    // when
+    final ActivateJobsResponse response =
+        client.newActivateJobsCommand().jobType("foo").maxJobsToActivate(3).send().join();
+
+    assertThat(response.getJobs()).hasSize(1);
+
+    final io.camunda.zeebe.client.api.response.ActivatedJob job1 = response.getJobs().get(0);
+    assertThat(job1.getVariable("key")).isNull();
+  }
+
   static class VariablesPojo {
 
     int a;

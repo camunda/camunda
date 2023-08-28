@@ -16,6 +16,7 @@
 package io.camunda.zeebe.client.impl.response;
 
 import io.camunda.zeebe.client.api.JsonMapper;
+import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.response.ProcessInstanceResult;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultResponse;
 import java.util.Map;
@@ -28,6 +29,8 @@ public final class CreateProcessInstanceWithResultResponseImpl implements Proces
   private final int version;
   private final long processInstanceKey;
   private final String variables;
+
+  private Map<String, Object> variablesAsMap;
 
   public CreateProcessInstanceWithResultResponseImpl(
       final JsonMapper jsonMapper, final CreateProcessInstanceWithResultResponse response) {
@@ -66,12 +69,24 @@ public final class CreateProcessInstanceWithResultResponseImpl implements Proces
 
   @Override
   public Map<String, Object> getVariablesAsMap() {
-    return jsonMapper.fromJsonAsMap(variables);
+    if (variablesAsMap == null) {
+      variablesAsMap = jsonMapper.fromJsonAsMap(variables);
+    }
+    return variablesAsMap;
   }
 
   @Override
   public <T> T getVariablesAsType(final Class<T> variableType) {
     return jsonMapper.fromJson(variables, variableType);
+  }
+
+  @Override
+  public Object getVariable(final String name) {
+    final Map<String, Object> variables = getVariablesAsMap();
+    if (!variables.containsKey(name)) {
+      throw new ClientException(String.format("The variable %s is not available", name));
+    }
+    return getVariablesAsMap().get(name);
   }
 
   @Override
