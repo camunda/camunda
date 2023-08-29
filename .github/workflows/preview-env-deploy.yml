@@ -71,3 +71,11 @@ jobs:
         app_name: tasklist-${{ steps.sanitize.outputs.branch_name == 'master' && 'stage' || steps.sanitize.outputs.branch_name }}
         app_url: https://${{ steps.sanitize.outputs.branch_name == 'master' && 'stage' || steps.sanitize.outputs.branch_name }}.tasklist.camunda.cloud
         argocd_arguments: ${{ env.argocd_arguments }}
+  clean:
+    if: always() && needs.deploy-preview.result != 'skipped'
+    uses: camunda/tasklist/.github/workflows/preview-env-clean.yml@master
+    needs:
+    - deploy-preview
+    secrets: inherit
+    with:
+      pull-request: ${{ github.event.pull_request.number }}
