@@ -127,7 +127,7 @@ public final class DbTenantAwareKeyColumnFamilyTest {
   @Test
   void shouldDeleteValue() {
     // given
-    upsertKeyValuePair(123L, "foo", "tenantId");
+    upsertKeyValuePair(123L, "tenantId", "foo");
 
     // when
     columnFamily.deleteExisting(tenantAwareKey);
@@ -141,11 +141,11 @@ public final class DbTenantAwareKeyColumnFamilyTest {
   @Test
   void shouldUseForeachValue() {
     // given
-    upsertKeyValuePair(123L, "foo", "tenantId");
-    upsertKeyValuePair(124L, "bar", "tenantId");
-    upsertKeyValuePair(125L, "baz", "otherTenantId");
-    upsertKeyValuePair(777L, "jackpot", "tenantId");
-    upsertKeyValuePair(888L, "lastOne", "otherTenantId");
+    upsertKeyValuePair(123L, "tenantId", "foo");
+    upsertKeyValuePair(124L, "tenantId", "bar");
+    upsertKeyValuePair(125L, "otherTenantId", "baz");
+    upsertKeyValuePair(777L, "tenantId", "jackpot");
+    upsertKeyValuePair(888L, "otherTenantId", "lastOne");
 
     // when
     final var values = new ArrayList<>();
@@ -158,11 +158,11 @@ public final class DbTenantAwareKeyColumnFamilyTest {
   @Test
   void shouldUseForeachPair() {
     // given
-    upsertKeyValuePair(123L, "foo", "tenantId");
-    upsertKeyValuePair(124L, "bar", "tenantId");
-    upsertKeyValuePair(125L, "baz", "otherTenantId");
-    upsertKeyValuePair(777L, "jackpot", "tenantId");
-    upsertKeyValuePair(888L, "lastOne", "otherTenantId");
+    upsertKeyValuePair(123L, "tenantId", "foo");
+    upsertKeyValuePair(124L, "tenantId", "bar");
+    upsertKeyValuePair(125L, "otherTenantId", "baz");
+    upsertKeyValuePair(777L, "tenantId", "jackpot");
+    upsertKeyValuePair(888L, "otherTenantId", "lastOne");
 
     // when
     final var keys = new ArrayList<>();
@@ -185,11 +185,11 @@ public final class DbTenantAwareKeyColumnFamilyTest {
   @Test
   void shouldUseWhileTrue() {
     // given
-    upsertKeyValuePair(123L, "foo", "tenantId");
-    upsertKeyValuePair(777L, "jackpot", "tenantId");
-    upsertKeyValuePair(124L, "bar", "tenantId");
-    upsertKeyValuePair(888L, "lastOne", "otherTenantId");
-    upsertKeyValuePair(125L, "baz", "otherTenantId");
+    upsertKeyValuePair(123L, "tenantId", "foo");
+    upsertKeyValuePair(777L, "tenantId", "jackpot");
+    upsertKeyValuePair(124L, "tenantId", "bar");
+    upsertKeyValuePair(888L, "otherTenantId", "lastOne");
+    upsertKeyValuePair(125L, "otherTenantId", "baz");
 
     // when
     final var keys = new ArrayList<>();
@@ -213,11 +213,11 @@ public final class DbTenantAwareKeyColumnFamilyTest {
   @Test
   void shouldUseWhileTrueWithStartAt() {
     // given
-    upsertKeyValuePair(123L, "foo", "tenantId");
-    upsertKeyValuePair(777L, "jackpot", "tenantId");
-    upsertKeyValuePair(124L, "bar", "tenantId");
-    upsertKeyValuePair(888L, "lastOne", "otherTenantId");
-    upsertKeyValuePair(125L, "baz", "otherTenantId");
+    upsertKeyValuePair(123L, "tenantId", "foo");
+    upsertKeyValuePair(777L, "tenantId", "jackpot");
+    upsertKeyValuePair(124L, "tenantId", "bar");
+    upsertKeyValuePair(888L, "otherTenantId", "lastOne");
+    upsertKeyValuePair(125L, "otherTenantId", "baz");
     final var startAtWrappedKey = new DbLong();
     startAtWrappedKey.wrapLong(124L);
     tenantKey.wrapString("tenantId");
@@ -246,11 +246,11 @@ public final class DbTenantAwareKeyColumnFamilyTest {
   @Test
   void shouldUseWhileEqualPrefix() {
     // given
-    upsertCompositeKeyValuePair(123L, 111L, "foo", "tenantId");
-    upsertCompositeKeyValuePair(321L, 333L, "jackpot", "tenantId");
-    upsertCompositeKeyValuePair(123L, 333L, "bar", "tenantId");
-    upsertCompositeKeyValuePair(321L, 222L, "lastOne", "otherTenantId");
-    upsertCompositeKeyValuePair(123L, 222L, "baz", "otherTenantId");
+    upsertCompositeKeyValuePair(123L, 111L, "tenantId", "foo");
+    upsertCompositeKeyValuePair(321L, 333L, "tenantId", "jackpot");
+    upsertCompositeKeyValuePair(123L, 333L, "tenantId", "bar");
+    upsertCompositeKeyValuePair(321L, 222L, "otherTenantId", "lastOne");
+    upsertCompositeKeyValuePair(123L, 222L, "otherTenantId", "baz");
     final var prefix = new DbLong();
     prefix.wrapLong(123L);
 
@@ -275,7 +275,7 @@ public final class DbTenantAwareKeyColumnFamilyTest {
     assertThat(tenants).containsExactly("tenantId", "otherTenantId", "tenantId");
   }
 
-  private void upsertKeyValuePair(final long key, final String value, final String tenantId) {
+  private void upsertKeyValuePair(final long key, final String tenantId, final String value) {
     firstKey.wrapLong(key);
     this.value.wrapString(value);
     tenantKey.wrapString(tenantId);
@@ -283,7 +283,7 @@ public final class DbTenantAwareKeyColumnFamilyTest {
   }
 
   private void upsertCompositeKeyValuePair(
-      final long firstKey, final long secondKey, final String value, final String tenantId) {
+      final long firstKey, final long secondKey, final String tenantId, final String value) {
     this.firstKey.wrapLong(firstKey);
     this.secondKey.wrapLong(secondKey);
     this.value.wrapString(value);
