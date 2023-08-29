@@ -48,3 +48,11 @@ jobs:
           app_name: operate-${{ steps.sanitize.outputs.branch_name }}
           revision: ${{ env.BRANCH_NAME }}
           argocd_token: ${{ steps.secrets.outputs.ARGOCD_TOKEN }}
+  clean:
+    if: always() && needs.teardown.result != 'skipped'
+    uses: camunda/operate/.github/workflows/preview-env-clean.yml@master
+    needs:
+    - teardown
+    secrets: inherit
+    with:
+      pull-request: ${{ github.event.pull_request.number }}
