@@ -26,12 +26,12 @@ import java.util.stream.Stream;
 public class RemoteStreamServiceImpl<M extends BufferReader, P extends BufferWriter>
     implements RemoteStreamService<M, P> {
   private final RemoteStreamerImpl<M, P> streamer;
-  private final RemoteStreamEndpoint<M> apiServer;
+  private final RemoteStreamTransport<M> apiServer;
   private final RemoteStreamRegistry<M> registry;
 
   public RemoteStreamServiceImpl(
       final RemoteStreamerImpl<M, P> streamer,
-      final RemoteStreamEndpoint<M> apiServer,
+      final RemoteStreamTransport<M> apiServer,
       final RemoteStreamRegistry<M> registry) {
     this.streamer = streamer;
     this.apiServer = apiServer;
@@ -90,5 +90,8 @@ public class RemoteStreamServiceImpl<M extends BufferReader, P extends BufferWri
   @Override
   public void event(final ClusterMembershipEvent event) {
     apiServer.removeAll(event.subject().id());
+    if (event.type() == Type.MEMBER_ADDED) {
+      apiServer.recreateStreams(event.subject().id());
+    }
   }
 }

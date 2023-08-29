@@ -40,7 +40,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -62,10 +61,7 @@ final class StreamIntegrationTest {
           .setIoBoundActorThreadCount(1)
           .build();
   private final List<Node> clusterNodes =
-      List.of(
-          createNode(UUID.randomUUID().toString()),
-          createNode(UUID.randomUUID().toString()),
-          createNode(UUID.randomUUID().toString()));
+      List.of(createNode("server1"), createNode("server2"), createNode("client"));
   private final TestServer server1 =
       new TestServer(createClusterNode(clusterNodes.get(0), clusterNodes));
   private final TestServer server2 =
@@ -401,8 +397,7 @@ final class StreamIntegrationTest {
               cluster.getCommunicationService(),
               TestSerializableData::new,
               dynamicErrorHandler,
-              RemoteStreamMetrics.noop(),
-              cluster.getMembershipService());
+              RemoteStreamMetrics.noop());
     }
 
     private void start() {

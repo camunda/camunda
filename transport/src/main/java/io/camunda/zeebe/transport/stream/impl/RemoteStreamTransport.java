@@ -15,15 +15,22 @@ import io.camunda.zeebe.transport.stream.impl.messages.MessageUtil;
 import io.camunda.zeebe.transport.stream.impl.messages.RemoveStreamRequest;
 import io.camunda.zeebe.transport.stream.impl.messages.StreamTopics;
 import io.camunda.zeebe.util.buffer.BufferReader;
+import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.time.Duration;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public final class RemoteStreamEndpoint<M extends BufferReader> extends Actor {
+public final class RemoteStreamTransport<M extends BufferReader> extends Actor {
   private static final byte[] EMPTY_RESPONSE = new byte[0];
-
+  private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(5);
+  private static final Logger LOG = LoggerFactory.getLogger(RemoteStreamTransport.class);
   private final ClusterCommunicationService transport;
   private final RemoteStreamApiHandler<M> requestHandler;
 
-  public RemoteStreamEndpoint(
+  public RemoteStreamTransport(
       final ClusterCommunicationService transport, final RemoteStreamApiHandler<M> requestHandler) {
     this.transport = transport;
     this.requestHandler = requestHandler;
@@ -76,5 +83,26 @@ public final class RemoteStreamEndpoint<M extends BufferReader> extends Actor {
   private byte[] onRemoveAll(final MemberId sender, final byte[] ignored) {
     requestHandler.removeAll(sender);
     return EMPTY_RESPONSE;
+  }
+
+  public void recreateStreams(final MemberId receiver) {
+    try {
+      sendRestartStreamsCommand(receiver);
+      LOG.trace("Tried to restart streams with member: {}", receiver);
+    } catch (final Exception e) {
+      LOG.debug("Failed to restart streams with member: {}", receiver);
+    }
+  }
+
+  private CompletableFuture<Void> sendRestartStreamsCommand(final MemberId receiver) {
+    return transport
+        .send(
+            StreamTopics.RESTART_STREAMS.topic(),
+            new UnsafeBuffer(),
+            BufferUtil::bufferAsArray,
+            Function.identity(),
+            receiver,
+            REQUEST_TIMEOUT)
+        .thenApply(ok -> null);
   }
 }

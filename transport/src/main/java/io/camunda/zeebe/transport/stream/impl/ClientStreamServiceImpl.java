@@ -25,6 +25,7 @@ import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 import org.agrona.DirectBuffer;
 
 /**
@@ -81,6 +82,17 @@ public final class ClientStreamServiceImpl<M extends BufferWriter> extends Actor
           return responseFuture;
         },
         ignore -> new byte[0]);
+
+    communicationService.replyTo(
+        StreamTopics.RESTART_STREAMS.topic(),
+        Function.identity(),
+        (memberId, ignore) -> {
+          clientStreamManager.onServerRemoved(MemberId.from(memberId.id()));
+          clientStreamManager.onServerJoined(MemberId.from(memberId.id()));
+          return null;
+        },
+        ignore -> new byte[0],
+        actor::run);
   }
 
   @Override
