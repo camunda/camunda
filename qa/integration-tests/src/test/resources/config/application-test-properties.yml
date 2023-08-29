@@ -27,5 +27,7 @@ camunda.operate:
     clientSecret: jahktewpofsdifhsdg
     audience: operateAudience
     resourcePermissionsEnabled: true
+  multiTenancy:
+    enabled: true
 #Spring Boot Actuator endpoints to be exposed
 management.endpoints.web.exposure.include: health,info,conditions,configprops,prometheus,usage-metrics

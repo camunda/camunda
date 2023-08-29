@@ -54,6 +54,7 @@ public class PropertiesTest {
     assertThat(operateProperties.getIdentity().getClientSecret()).isEqualTo("jahktewpofsdifhsdg");
     assertThat(operateProperties.getIdentity().getAudience()).isEqualTo("operateAudience");
     assertThat(operateProperties.getIdentity().isResourcePermissionsEnabled()).isTrue();
+    assertThat(operateProperties.getMultiTenancy().isEnabled()).isTrue();
   }
 
 }
