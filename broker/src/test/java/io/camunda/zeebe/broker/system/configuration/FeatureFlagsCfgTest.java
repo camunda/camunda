@@ -18,26 +18,26 @@ final class FeatureFlagsCfgTest {
   public final Map<String, String> environment = new HashMap<>();
 
   @Test
-  void shouldSetEnableYieldingDueDateCheckerFromConfig() {
-    // when
-    final BrokerCfg cfg = TestConfigReader.readConfig("feature-flags-cfg", environment);
-    final var featureFlagsCfg = cfg.getExperimental().getFeatures();
-
-    // then
-    assertThat(featureFlagsCfg.isEnableYieldingDueDateChecker()).isTrue();
-  }
-
-  @Test
-  void shouldSetEnableYieldingDueDateCheckerFromEnv() {
-    // given
-    environment.put("zeebe.broker.experimental.features.enableYieldingDueDateChecker", "false");
-
+  void shouldDisableYieldingDueDateCheckerFromConfig() {
     // when
     final BrokerCfg cfg = TestConfigReader.readConfig("feature-flags-cfg", environment);
     final var featureFlagsCfg = cfg.getExperimental().getFeatures();
 
     // then
     assertThat(featureFlagsCfg.isEnableYieldingDueDateChecker()).isFalse();
+  }
+
+  @Test
+  void shouldEnableYieldingDueDateCheckerFromEnv() {
+    // given
+    environment.put("zeebe.broker.experimental.features.enableYieldingDueDateChecker", "true");
+
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("feature-flags-cfg", environment);
+    final var featureFlagsCfg = cfg.getExperimental().getFeatures();
+
+    // then
+    assertThat(featureFlagsCfg.isEnableYieldingDueDateChecker()).isTrue();
   }
 
   @Test

@@ -19,7 +19,7 @@ class FeatureFlagsTest {
     final var sut = FeatureFlags.createDefault();
 
     // then
-    assertThat(sut.yieldingDueDateChecker()).isFalse();
+    assertThat(sut.yieldingDueDateChecker()).isTrue();
     assertThat(sut.enableActorMetrics()).isFalse();
     assertThat(sut.enableMessageTTLCheckerAsync()).isFalse();
   }
