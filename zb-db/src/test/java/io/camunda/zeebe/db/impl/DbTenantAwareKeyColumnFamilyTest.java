@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbFactory;
+import io.camunda.zeebe.db.impl.DbTenantAwareKey.PlacementType;
 import java.io.File;
 import java.util.ArrayList;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,11 +44,11 @@ public final class DbTenantAwareKeyColumnFamilyTest {
 
     tenantKey = new DbString();
     firstKey = new DbLong();
-    tenantAwareKey = new DbTenantAwareKey<>(tenantKey, firstKey);
+    tenantAwareKey = new DbTenantAwareKey<>(tenantKey, firstKey, PlacementType.SUFFIX);
 
     secondKey = new DbLong();
     compositeKey = new DbCompositeKey<>(firstKey, secondKey);
-    compositeTenantAwareKey = new DbTenantAwareKey<>(tenantKey, compositeKey);
+    compositeTenantAwareKey = new DbTenantAwareKey<>(tenantKey, compositeKey, PlacementType.SUFFIX);
 
     value = new DbString();
     columnFamily =
@@ -220,7 +221,7 @@ public final class DbTenantAwareKeyColumnFamilyTest {
     final var startAtWrappedKey = new DbLong();
     startAtWrappedKey.wrapLong(124L);
     tenantKey.wrapString("tenantId");
-    final var startAt = new DbTenantAwareKey<>(tenantKey, startAtWrappedKey);
+    final var startAt = new DbTenantAwareKey<>(tenantKey, startAtWrappedKey, PlacementType.SUFFIX);
 
     // when
     final var keys = new ArrayList<>();

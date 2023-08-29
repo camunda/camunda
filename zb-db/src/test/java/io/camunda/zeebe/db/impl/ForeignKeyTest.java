@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 import io.camunda.zeebe.db.DbKey;
+import io.camunda.zeebe.db.impl.DbTenantAwareKey.PlacementType;
 import org.junit.jupiter.api.Test;
 
 final class ForeignKeyTest {
@@ -51,7 +52,8 @@ final class ForeignKeyTest {
     // given
     final var foreignKey =
         new DbForeignKey<>(mock(DbKey.class), TestColumnFamilies.TEST_COLUMN_FAMILY);
-    final var tenantAwareKey = new DbTenantAwareKey<>(mock(DbString.class), foreignKey);
+    final var tenantAwareKey =
+        new DbTenantAwareKey<>(mock(DbString.class), foreignKey, PlacementType.SUFFIX);
 
     // then
     assertThat(tenantAwareKey.containedForeignKeys()).singleElement().isEqualTo(foreignKey);
@@ -63,7 +65,8 @@ final class ForeignKeyTest {
     final var key1 = new DbForeignKey<>(mock(DbKey.class), TestColumnFamilies.TEST_COLUMN_FAMILY);
     final var key2 = new DbForeignKey<>(mock(DbKey.class), TestColumnFamilies.TEST_COLUMN_FAMILY);
     final var compositeKey = new DbCompositeKey<>(key1, key2);
-    final var tenantAwareKey = new DbTenantAwareKey<>(mock(DbString.class), compositeKey);
+    final var tenantAwareKey =
+        new DbTenantAwareKey<>(mock(DbString.class), compositeKey, PlacementType.SUFFIX);
 
     // then
     assertThat(tenantAwareKey.containedForeignKeys()).containsExactly(key1, key2);

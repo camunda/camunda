@@ -10,6 +10,7 @@ package io.camunda.zeebe.db.impl;
 import static io.camunda.zeebe.db.impl.ZeebeDbConstants.ZB_DB_BYTE_ORDER;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.db.impl.DbTenantAwareKey.PlacementType;
 import org.agrona.ExpandableArrayBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,7 +37,7 @@ public class DbTenantAwareKeyTest {
     final var wrappedKey = new DbString();
     final var value = "foo";
     wrappedKey.wrapString(value);
-    final var tenantAwareKey = new DbTenantAwareKey<>(TENANT_KEY, wrappedKey);
+    final var tenantAwareKey = new DbTenantAwareKey<>(TENANT_KEY, wrappedKey, PlacementType.SUFFIX);
 
     // when
     final var buffer = new ExpandableArrayBuffer();
@@ -73,7 +74,7 @@ public class DbTenantAwareKeyTest {
     final var wrappedKey = new DbString();
     final var value = "foo";
     wrappedKey.wrapString(value);
-    final var tenantAwareKey = new DbTenantAwareKey<>(TENANT_KEY, wrappedKey);
+    final var tenantAwareKey = new DbTenantAwareKey<>(TENANT_KEY, wrappedKey, PlacementType.SUFFIX);
 
     // when
     final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
@@ -96,7 +97,7 @@ public class DbTenantAwareKeyTest {
     final var wrappedKey = new DbLong();
     final var value = 123L;
     wrappedKey.wrapLong(value);
-    final var tenantAwareKey = new DbTenantAwareKey<>(TENANT_KEY, wrappedKey);
+    final var tenantAwareKey = new DbTenantAwareKey<>(TENANT_KEY, wrappedKey, PlacementType.SUFFIX);
 
     // when
     final var buffer = new ExpandableArrayBuffer();
@@ -120,7 +121,7 @@ public class DbTenantAwareKeyTest {
     final var wrappedKey = new DbLong();
     final var value = 123L;
     wrappedKey.wrapLong(value);
-    final var tenantAwareKey = new DbTenantAwareKey<>(TENANT_KEY, wrappedKey);
+    final var tenantAwareKey = new DbTenantAwareKey<>(TENANT_KEY, wrappedKey, PlacementType.SUFFIX);
 
     // when
     final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
@@ -147,7 +148,7 @@ public class DbTenantAwareKeyTest {
     final var longValue = 123L;
     stringKey.wrapString(stringValue);
     longKey.wrapLong(longValue);
-    final var tenantAwareKey = new DbTenantAwareKey<>(TENANT_KEY, wrappedKey);
+    final var tenantAwareKey = new DbTenantAwareKey<>(TENANT_KEY, wrappedKey, PlacementType.SUFFIX);
 
     // when
     final var buffer = new ExpandableArrayBuffer();
@@ -185,7 +186,7 @@ public class DbTenantAwareKeyTest {
     final var longValue = 123L;
     stringKey.wrapString(stringValue);
     longKey.wrapLong(longValue);
-    final var tenantAwareKey = new DbTenantAwareKey<>(TENANT_KEY, wrappedKey);
+    final var tenantAwareKey = new DbTenantAwareKey<>(TENANT_KEY, wrappedKey, PlacementType.SUFFIX);
 
     // when
     final var buffer = new ExpandableArrayBuffer();
@@ -210,7 +211,7 @@ public class DbTenantAwareKeyTest {
     // given
     final var longKey = new DbLong();
     final var foreignKey = new DbForeignKey<>(longKey, DefaultColumnFamily.DEFAULT);
-    final var tenantAwareKey = new DbTenantAwareKey<>(TENANT_KEY, foreignKey);
+    final var tenantAwareKey = new DbTenantAwareKey<>(TENANT_KEY, foreignKey, PlacementType.SUFFIX);
     final var longValue = 123L;
     longKey.wrapLong(longValue);
 
@@ -235,7 +236,7 @@ public class DbTenantAwareKeyTest {
     // given
     final var longKey = new DbLong();
     final var foreignKey = new DbForeignKey<>(longKey, DefaultColumnFamily.DEFAULT);
-    final var tenantAwareKey = new DbTenantAwareKey<>(TENANT_KEY, foreignKey);
+    final var tenantAwareKey = new DbTenantAwareKey<>(TENANT_KEY, foreignKey, PlacementType.SUFFIX);
     final var longValue = 123L;
     longKey.wrapLong(longValue);
 
