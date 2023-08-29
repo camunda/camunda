@@ -127,6 +127,8 @@
     <version.jackson-annotations>2.15.2</version.jackson-annotations>
     <version.swagger-annotations>2.2.15</version.swagger-annotations>
     <version.checker-qual>3.37.0</version.checker-qual>
+    <!-- java-jwt version is aligned with the one in identity-sdk -->
+    <version.java-jwt>4.4.0</version.java-jwt>
 
     <!-- maven plugins -->
     <plugin.version.antrun>3.1.0</plugin.version.antrun>
@@ -1067,6 +1069,12 @@
         <groupId>io.github.acm19</groupId>
         <artifactId>aws-request-signing-apache-interceptor</artifactId>
         <version>2.3.1</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.auth0</groupId>
+        <artifactId>java-jwt</artifactId>
+        <version>${version.java-jwt}</version>
       </dependency>
 
       <!-- Dependencies present for convergence only -->
