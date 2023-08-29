@@ -19,6 +19,7 @@ import io.camunda.operate.entities.IncidentEntity;
 import io.camunda.operate.entities.OperationEntity;
 import io.camunda.operate.entities.OperationState;
 import io.camunda.operate.entities.OperationType;
+import io.camunda.operate.entities.ProcessEntity;
 import io.camunda.operate.entities.dmn.definition.DecisionDefinitionEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.exceptions.OperateRuntimeException;
@@ -368,6 +369,38 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
       return batchOperation;
     } catch (Exception ex) {
       throw new OperateRuntimeException(String.format("Exception occurred, while scheduling 'delete decision definition' operation: %s", ex.getMessage()), ex);
+    }
+  }
+
+  @Override
+  public BatchOperationEntity scheduleDeleteProcessDefinition(ProcessEntity processEntity) {
+
+    Long processDefinitionKey = processEntity.getKey();
+    OperationType operationType = OperationType.DELETE_PROCESS_DEFINITION;
+
+    // Create batch operation
+    String batchOperationName = String.format("%s - Version %s", processEntity.getName(), processEntity.getVersion());
+    final BatchOperationEntity batchOperation = createBatchOperationEntity(operationType, batchOperationName)
+        .setOperationsTotalCount(1).setInstancesCount(0);
+
+    // Create operation
+    final OperationEntity operationEntity = new OperationEntity();
+    operationEntity.generateId();
+    operationEntity.setProcessDefinitionKey(processDefinitionKey);
+    operationEntity.setType(operationType);
+    operationEntity.setState(OperationState.SCHEDULED);
+    operationEntity.setBatchOperationId(batchOperation.getId());
+    operationEntity.setUsername(userService.getCurrentUser().getUsername());
+
+    // Create request
+    try {
+      var batchRequest = operationStore.newBatchRequest()
+          .add(operationTemplate.getFullQualifiedName(), operationEntity)
+          .add(batchOperationTemplate.getFullQualifiedName(), batchOperation);
+      batchRequest.execute();
+      return batchOperation;
+    } catch (Exception ex) {
+      throw new OperateRuntimeException(String.format("Exception occurred, while scheduling 'delete process definition' operation: %s", ex.getMessage()), ex);
     }
   }
 
