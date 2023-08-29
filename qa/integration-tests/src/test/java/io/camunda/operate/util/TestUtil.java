@@ -8,6 +8,7 @@ package io.camunda.operate.util;
 
 import static io.camunda.operate.entities.ErrorType.JOB_NO_RETRIES;
 import static io.camunda.operate.property.OperationExecutorProperties.LOCK_TIMEOUT_DEFAULT;
+import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
 import static io.camunda.operate.util.OperateIntegrationTest.DEFAULT_USER;
 
 import io.camunda.operate.entities.BatchOperationEntity;
@@ -58,28 +59,38 @@ public abstract class TestUtil {
   }
 
   public static ProcessInstanceForListViewEntity createProcessInstance(ProcessInstanceState state) {
-    return createProcessInstance(state, null, false);
+    return createProcessInstance(state, null, false, null);
   }
 
-  public static ProcessInstanceForListViewEntity createProcessInstance(ProcessInstanceState state, boolean incident) {
-    return createProcessInstance(state, null, incident);
+  public static ProcessInstanceForListViewEntity createProcessInstance(ProcessInstanceState state, boolean incident, String tenantId) {
+    return createProcessInstance(state, null, incident, tenantId);
+  }
+
+  public static ProcessInstanceForListViewEntity createProcessInstance(ProcessInstanceState state, Long processId, String tenantId) {
+    return createProcessInstance(state, processId, null, null, false, tenantId);
   }
 
   public static ProcessInstanceForListViewEntity createProcessInstance(ProcessInstanceState state, Long processId) {
-    return createProcessInstance(state, processId, null, null, false);
-  }
-
-  public static ProcessInstanceForListViewEntity createProcessInstance(ProcessInstanceState state, Long processId, boolean incident) {
-    return createProcessInstance(state, processId, null, null, incident);
+    return createProcessInstance(state, processId, null, null, false, null);
   }
 
   public static ProcessInstanceForListViewEntity createProcessInstance(ProcessInstanceState state, Long processId,
-      Long parentInstanceKey, String treePath) {
-    return createProcessInstance(state, processId,parentInstanceKey, treePath, false);
+      boolean incident) {
+    return createProcessInstance(state, processId, null, null, incident, null);
   }
 
   public static ProcessInstanceForListViewEntity createProcessInstance(ProcessInstanceState state, Long processId,
-      Long parentInstanceKey, String treePath, boolean incident) {
+      boolean incident, String tenantId) {
+    return createProcessInstance(state, processId, null, null, incident, tenantId);
+  }
+
+  public static ProcessInstanceForListViewEntity createProcessInstance(ProcessInstanceState state, Long processId,
+      Long parentInstanceKey, String treePath, String tenantId) {
+    return createProcessInstance(state, processId,parentInstanceKey, treePath, false, tenantId);
+  }
+
+  public static ProcessInstanceForListViewEntity createProcessInstance(ProcessInstanceState state, Long processId,
+      Long parentInstanceKey, String treePath, boolean incident, String tenantId) {
     ProcessInstanceForListViewEntity processInstance = createProcessInstanceEntityWithIds();
 
     processInstance.setStartDate(DateUtil.getRandomStartDate());
@@ -111,6 +122,7 @@ public abstract class TestUtil {
       processInstance.setTreePath(new TreePath().startTreePath(processInstance.getId()).toString());
     }
     processInstance.setIncident(incident);
+    processInstance.setTenantId(tenantId == null ? DEFAULT_TENANT_ID : tenantId);
     return processInstance;
   }
 

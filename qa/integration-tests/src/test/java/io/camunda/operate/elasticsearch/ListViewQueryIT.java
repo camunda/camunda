@@ -76,6 +76,9 @@ public class ListViewQueryIT extends OperateIntegrationTest {
   private Long parentInstanceKey2 = 222L;
   private String rootInstanceId = "333";
 
+  private String tenant1 = "tenant1";
+  private String tenant2 = "tenant2";
+
   @Test
   public void testVariousQueries() throws Exception {
     createData();
@@ -95,6 +98,35 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     testParamsAreEmptyStringsInsteadOfNull();
     testPagination();
     testQueryByNonExistingParentProcessId();
+
+    testQueryByTenantId();
+
+  }
+
+  private void testQueryByTenantId() throws Exception {
+    ListViewRequestDto query = createGetAllProcessInstancesRequest(
+        q -> q.setTenantId(tenant1));
+
+    //when
+    MvcResult mvcResult = postRequest(query(), query);
+
+    ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() { });
+
+    //then
+    assertThat(response.getProcessInstances().size()).isEqualTo(3);
+    assertThat(response.getProcessInstances()).extracting(ListViewTemplate.TENANT_ID).containsOnly(tenant1);
+
+    query = createGetAllProcessInstancesRequest(
+        q -> q.setTenantId(tenant2));
+
+    //when
+    mvcResult = postRequest(query(), query);
+
+    response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() { });
+
+    //then
+    assertThat(response.getProcessInstances().size()).isEqualTo(2);
+    assertThat(response.getProcessInstances()).extracting(ListViewTemplate.TENANT_ID).containsOnly(tenant2);
 
   }
 
@@ -195,11 +227,11 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     final String errorMessage = "No more retries left.";
 
     //given we have 2 process instances: one with active activity with given error msg, another with active activity with another error message
-    final ProcessInstanceForListViewEntity processInstance1 = createProcessInstance(ProcessInstanceState.ACTIVE, true);
+    final ProcessInstanceForListViewEntity processInstance1 = createProcessInstance(ProcessInstanceState.ACTIVE, true, null);
     final FlowNodeInstanceForListViewEntity activityInstance1 = createFlowNodeInstanceWithIncident(processInstance1.getProcessInstanceKey(), FlowNodeState.ACTIVE,
       errorMessage);
 
-    final ProcessInstanceForListViewEntity processInstance2 = createProcessInstance(ProcessInstanceState.ACTIVE, true);
+    final ProcessInstanceForListViewEntity processInstance2 = createProcessInstance(ProcessInstanceState.ACTIVE, true, null);
     final FlowNodeInstanceForListViewEntity activityInstance2 = createFlowNodeInstanceWithIncident(processInstance2.getProcessInstanceKey(), FlowNodeState.ACTIVE,
       "other error message");
 
@@ -297,7 +329,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     activityInstances.addAll(Arrays.asList(activeWithIdActivityInstance, completedWithoutIdActivityInstance));
 
     //pi 2: active with active activity with another id and incident activity with given id
-    final ProcessInstanceForListViewEntity processInstance2 = createProcessInstance(ProcessInstanceState.ACTIVE, true);
+    final ProcessInstanceForListViewEntity processInstance2 = createProcessInstance(ProcessInstanceState.ACTIVE, true, null);
 
     final FlowNodeInstanceForListViewEntity activeWithoutIdActivityInstance = createFlowNodeInstance(processInstance2.getProcessInstanceKey(), FlowNodeState.ACTIVE, "otherActivityId");
 
@@ -346,7 +378,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     List<OperateEntity> activityInstances = new ArrayList<>();
 
     //wi1: active with activity in INCIDENT state with given id
-    final ProcessInstanceForListViewEntity processInstance1 = createProcessInstance(ProcessInstanceState.ACTIVE, true);
+    final ProcessInstanceForListViewEntity processInstance1 = createProcessInstance(ProcessInstanceState.ACTIVE, true, null);
 
     final FlowNodeInstanceForListViewEntity incidentWithIdActivityInstance = createFlowNodeInstanceWithIncident(processInstance1.getProcessInstanceKey(), FlowNodeState.ACTIVE, "error");
     incidentWithIdActivityInstance.setActivityId(activityId);
@@ -357,7 +389,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     activityInstances.addAll(Arrays.asList(incidentWithIdActivityInstance, completedWithoutIdActivityInstance));
 
     //wi2: active with activity in INCIDENT state with another id
-    final ProcessInstanceForListViewEntity processInstance2 = createProcessInstance(ProcessInstanceState.ACTIVE, true);
+    final ProcessInstanceForListViewEntity processInstance2 = createProcessInstance(ProcessInstanceState.ACTIVE, true, null);
 
     final FlowNodeInstanceForListViewEntity incidentWithoutIdActivityInstance = createFlowNodeInstanceWithIncident(processInstance2.getProcessInstanceKey(), FlowNodeState.ACTIVE, "error");
     incidentWithoutIdActivityInstance.setActivityId("otherActivityId");
@@ -1249,17 +1281,17 @@ public class ListViewQueryIT extends OperateIntegrationTest {
   }
 
   private void createProcessInstanceWithUpperLowerCaseProcessname() {
-    ProcessInstanceForListViewEntity upperProcess = createProcessInstance(ProcessInstanceState.ACTIVE, 42L);
+    ProcessInstanceForListViewEntity upperProcess = createProcessInstance(ProcessInstanceState.ACTIVE, 42L, null);
     upperProcess.setProcessName("UPPER_LOWER_PROCESS_NAME");
 
-    ProcessInstanceForListViewEntity lowerProcess = createProcessInstance(ProcessInstanceState.ACTIVE, 23L);
+    ProcessInstanceForListViewEntity lowerProcess = createProcessInstance(ProcessInstanceState.ACTIVE, 23L, null);
     lowerProcess.setProcessName("upper_lower_process_name");
 
     elasticsearchTestRule.persistNew(upperProcess,lowerProcess);
   }
 
   private void createProcessInstanceWithoutProcessname() {
-    ProcessInstanceForListViewEntity processWithoutName = createProcessInstance(ProcessInstanceState.ACTIVE, 27L);
+    ProcessInstanceForListViewEntity processWithoutName = createProcessInstance(ProcessInstanceState.ACTIVE, 27L, null);
     processWithoutName.setBpmnProcessId("lower_process_id");
     processWithoutName.setProcessName(processWithoutName.getBpmnProcessId());
 
@@ -1276,7 +1308,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     runningInstance = createProcessInstance(ProcessInstanceState.ACTIVE, processDefinitionKey,
         parentInstanceKey1, "PI_" + rootInstanceId
             + "/FI_someFlowNode/FNI_958398/PI_" + parentInstanceKey1
-            + "/FI_anotherFlowNode/FNI_45345/PI_9898");
+            + "/FI_anotherFlowNode/FNI_45345/PI_9898", tenant1);
     runningInstance.setBatchOperationIds(Arrays.asList("a", batchOperationId));
     final FlowNodeInstanceForListViewEntity activityInstance1 = TestUtil
         .createFlowNodeInstance(runningInstance.getProcessInstanceKey(), FlowNodeState.ACTIVE);
@@ -1287,7 +1319,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     completedInstance = createProcessInstance(ProcessInstanceState.COMPLETED, processDefinitionKey,
         parentInstanceKey1, "PI_" + rootInstanceId
             + "/FI_someFlowNode/FNI_958398/PI_" + parentInstanceKey1
-            + "/FI_anotherFlowNode/FNI_45345/PI_9898");
+            + "/FI_anotherFlowNode/FNI_45345/PI_9898", tenant2);
     completedInstance.setBatchOperationIds(Arrays.asList("b", batchOperationId));
     final FlowNodeInstanceForListViewEntity activityInstance2 = TestUtil
         .createFlowNodeInstance(completedInstance.getProcessInstanceKey(), FlowNodeState.COMPLETED);
@@ -1296,6 +1328,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
 
     //canceled instance with two activities and without incidents
     canceledInstance = createProcessInstance(ProcessInstanceState.CANCELED);
+    canceledInstance.setTenantId(tenant1);
     canceledInstance.setBatchOperationIds(Arrays.asList("c", "d"));
     final FlowNodeInstanceForListViewEntity activityInstance3 = TestUtil
         .createFlowNodeInstance(canceledInstance.getProcessInstanceKey(), FlowNodeState.COMPLETED);
@@ -1305,7 +1338,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     vars.add(createVariableForListView(canceledInstance.getProcessInstanceKey(), canceledInstance.getProcessInstanceKey(), "var2", "W"));
 
     //instance with incidents (one resolved and one active) and one active activity
-    final ProcessInstanceForListViewEntity instanceWithIncident = createProcessInstance(ProcessInstanceState.ACTIVE, true);
+    final ProcessInstanceForListViewEntity instanceWithIncident = createProcessInstance(ProcessInstanceState.ACTIVE, true, tenant2);
     final FlowNodeInstanceForListViewEntity activityInstance5 = TestUtil
         .createFlowNodeInstance(instanceWithIncident.getProcessInstanceKey(), FlowNodeState.ACTIVE);
     vars.add(createVariableForListView(instanceWithIncident.getProcessInstanceKey(), instanceWithIncident.getProcessInstanceKey(), "var1", "Y"));
@@ -1313,6 +1346,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
 
     //instance with one resolved incident and one completed activity
     instanceWithoutIncident = createProcessInstance(ProcessInstanceState.ACTIVE);
+    instanceWithoutIncident.setTenantId(tenant1);
     instanceWithoutIncident.setParentProcessInstanceKey(parentInstanceKey2);
     final FlowNodeInstanceForListViewEntity activityInstance6 = TestUtil
         .createFlowNodeInstance(instanceWithoutIncident.getProcessInstanceKey(), FlowNodeState.COMPLETED);

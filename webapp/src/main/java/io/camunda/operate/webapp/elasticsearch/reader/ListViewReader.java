@@ -268,7 +268,9 @@ public class ListViewReader implements io.camunda.operate.webapp.reader.ListView
         createVariablesQuery(query),
         createBatchOperatioIdQuery(query),
         createParentInstanceIdQuery(query),
+        createTenantIdQuery(query),
         createReadPermissionQuery()
+        //TODO filter by tenants assigned to current user #4858
     );
   }
 
@@ -289,6 +291,13 @@ public class ListViewReader implements io.camunda.operate.webapp.reader.ListView
   private QueryBuilder createParentInstanceIdQuery(ListViewQueryDto query) {
     if (query.getParentInstanceId() != null) {
       return termQuery(ListViewTemplate.PARENT_PROCESS_INSTANCE_KEY, query.getParentInstanceId());
+    }
+    return null;
+  }
+
+  private QueryBuilder createTenantIdQuery(ListViewQueryDto query) {
+    if (query.getTenantId() != null) {
+      return termQuery(ListViewTemplate.TENANT_ID, query.getTenantId());
     }
     return null;
   }

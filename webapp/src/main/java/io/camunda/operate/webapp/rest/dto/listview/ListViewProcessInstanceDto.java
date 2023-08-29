@@ -47,6 +47,8 @@ public class ListViewProcessInstanceDto {
 
   private List<ProcessInstanceReferenceDto> callHierarchy = new ArrayList<>();
 
+  private String tenantId;
+
   /**
    * Sort values, define the position of process instance in the list and may be used to search
    * for previous or following page.
@@ -173,6 +175,15 @@ public class ListViewProcessInstanceDto {
     return this;
   }
 
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  public ListViewProcessInstanceDto setTenantId(String tenantId) {
+    this.tenantId = tenantId;
+    return this;
+  }
+
   public SortValuesWrapper[] getSortValues() {
     return sortValues;
   }
@@ -221,7 +232,8 @@ public class ListViewProcessInstanceDto {
       .setBpmnProcessId(processInstanceEntity.getBpmnProcessId())
       .setProcessName(processInstanceEntity.getProcessName())
       .setProcessVersion(processInstanceEntity.getProcessVersion())
-      .setOperations(DtoCreator.create(operations, OperationDto.class));
+      .setOperations(DtoCreator.create(operations, OperationDto.class))
+      .setTenantId(processInstanceEntity.getTenantId());
     if (operations != null) {
       processInstance.setHasActiveOperation(operations.stream().anyMatch(
         o ->
@@ -264,36 +276,26 @@ public class ListViewProcessInstanceDto {
   }
 
   @Override
-  public boolean equals(final Object o) {
-    if (this == o) {
+  public boolean equals(Object o) {
+    if (this == o)
       return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
+    if (o == null || getClass() != o.getClass())
       return false;
-    }
-    final ListViewProcessInstanceDto that = (ListViewProcessInstanceDto) o;
-    return hasActiveOperation == that.hasActiveOperation &&
-        Objects.equals(id, that.id) &&
-        Objects.equals(processId, that.processId) &&
-        Objects.equals(processName, that.processName) &&
-        Objects.equals(processVersion, that.processVersion) &&
-        Objects.equals(startDate, that.startDate) &&
-        Objects.equals(endDate, that.endDate) &&
-        state == that.state &&
-        Objects.equals(bpmnProcessId, that.bpmnProcessId) &&
-        Objects.equals(operations, that.operations) &&
-        Objects.equals(parentInstanceId, that.parentInstanceId) &&
-        Objects.equals(rootInstanceId, that.rootInstanceId) &&
-        Objects.equals(callHierarchy, that.callHierarchy) &&
-        Arrays.equals(sortValues, that.sortValues) &&
-        Objects.equals(permissions, that.permissions);
+    ListViewProcessInstanceDto that = (ListViewProcessInstanceDto) o;
+    return hasActiveOperation == that.hasActiveOperation && Objects.equals(id, that.id) && Objects.equals(processId,
+        that.processId) && Objects.equals(processName, that.processName) && Objects.equals(processVersion,
+        that.processVersion) && Objects.equals(startDate, that.startDate) && Objects.equals(endDate,
+        that.endDate) && state == that.state && Objects.equals(bpmnProcessId, that.bpmnProcessId) && Objects.equals(
+        operations, that.operations) && Objects.equals(parentInstanceId, that.parentInstanceId) && Objects.equals(
+        rootInstanceId, that.rootInstanceId) && Objects.equals(callHierarchy, that.callHierarchy) && Objects.equals(
+        tenantId, that.tenantId) && Arrays.equals(sortValues, that.sortValues) && Objects.equals(permissions,
+        that.permissions);
   }
 
   @Override
   public int hashCode() {
-    int result = Objects
-        .hash(id, processId, processName, processVersion, startDate, endDate, state, bpmnProcessId,
-            hasActiveOperation, operations, parentInstanceId, rootInstanceId, callHierarchy, permissions);
+    int result = Objects.hash(id, processId, processName, processVersion, startDate, endDate, state, bpmnProcessId,
+        hasActiveOperation, operations, parentInstanceId, rootInstanceId, callHierarchy, tenantId, permissions);
     result = 31 * result + Arrays.hashCode(sortValues);
     return result;
   }
