@@ -76,7 +76,7 @@ public final class DbTenantAwareKeyColumnFamilyTest {
     assertThat(zbString).isNotNull();
     assertThat(zbString.toString()).isEqualTo("foo");
 
-    // zbLong and value are referencing the same object
+    // zbString and value are referencing the same object
     assertThat(value.toString()).isEqualTo("foo");
   }
 
@@ -97,8 +97,40 @@ public final class DbTenantAwareKeyColumnFamilyTest {
     assertThat(zbString).isNotNull();
     assertThat(zbString.toString()).isEqualTo("foo");
 
-    // zbLong and value are referencing the same object
+    // zbString and value are referencing the same object
     assertThat(value.toString()).isEqualTo("foo");
+  }
+
+  @Test
+  void shouldUpsertValueForMultipleTenants() {
+    // given
+    final String tenant = "tenant";
+    final String otherTenant = "otherTenant";
+    tenantKey.wrapString(tenant);
+    firstKey.wrapLong(1);
+    value.wrapString("foo");
+
+    // when
+    columnFamily.upsert(tenantAwareKey, value);
+    tenantKey.wrapString(otherTenant);
+    columnFamily.upsert(tenantAwareKey, value);
+    value.wrapString("bar");
+
+    // then
+    final var keys = new ArrayList<>();
+    final var values = new ArrayList<>();
+    final var tenants = new ArrayList<>();
+    columnFamily.forEach(
+        (key, value) -> {
+          keys.add(key.wrappedKey().getValue());
+          values.add(value.toString());
+          tenants.add(key.tenantKey().toString());
+        });
+
+    // then
+    assertThat(keys).containsOnly(1L);
+    assertThat(tenants).containsExactly("tenant", "otherTenant");
+    assertThat(values).containsOnly("foo");
   }
 
   @Test
@@ -120,7 +152,7 @@ public final class DbTenantAwareKeyColumnFamilyTest {
     assertThat(zbString).isNotNull();
     assertThat(zbString.toString()).isEqualTo("bar");
 
-    // zbLong and value are referencing the same object
+    // zbString and value are referencing the same object
     assertThat(value.toString()).isEqualTo("bar");
   }
 
