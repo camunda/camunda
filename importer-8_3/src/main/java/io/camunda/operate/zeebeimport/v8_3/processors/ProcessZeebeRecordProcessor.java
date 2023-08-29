@@ -11,8 +11,8 @@ import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.schema.indices.ProcessIndex;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.store.BatchRequest;
+import io.camunda.operate.store.ListViewStore;
 import io.camunda.operate.util.ConversionUtils;
-import io.camunda.operate.zeebeimport.ElasticsearchQueries;
 import io.camunda.operate.zeebeimport.util.XMLUtil;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
@@ -42,7 +42,7 @@ public class ProcessZeebeRecordProcessor {
   private ListViewTemplate listViewTemplate;
 
   @Autowired
-  private ElasticsearchQueries elasticsearchQueries;
+  private ListViewStore listViewStore;
 
   @Autowired
   private ProcessIndex processIndex;
@@ -69,7 +69,7 @@ public class ProcessZeebeRecordProcessor {
 
   private void updateFieldsInInstancesFor(final ProcessEntity processEntity, BatchRequest batchRequest)
       throws PersistenceException {
-    List<Long> processInstanceKeys = elasticsearchQueries.queryProcessInstancesWithEmptyProcessVersion(processEntity.getKey());
+    List<Long> processInstanceKeys = listViewStore.getProcessInstanceKeysWithEmptyProcessVersionFor(processEntity.getKey());
     for (Long processInstanceKey : processInstanceKeys) {
       Map<String, Object> updateFields = new HashMap<>();
       updateFields.put( ListViewTemplate.PROCESS_NAME, processEntity.getName());

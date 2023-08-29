@@ -36,7 +36,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import io.camunda.operate.zeebeimport.v8_3.processors.ElasticsearchBulkProcessor;
+import io.camunda.operate.zeebeimport.v8_3.processors.ImportBulkProcessor;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.TermQueryBuilder;
 import org.junit.*;
@@ -86,7 +86,7 @@ public class ImportSeveralVersionsIT extends OperateIntegrationTest {
   private int incidentCount;
 
   @SpyBean
-  private ElasticsearchBulkProcessor importerv2;
+  private ImportBulkProcessor importerv2;
 
   @SpyBean
   private io.camunda.operate.zeebeimport.v8_2.processors.ElasticsearchBulkProcessor importerv1;

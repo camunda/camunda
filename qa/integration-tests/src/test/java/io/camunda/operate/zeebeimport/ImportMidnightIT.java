@@ -27,6 +27,7 @@ import io.camunda.operate.util.ElasticsearchTestRule;
 import io.camunda.operate.util.OperateZeebeIntegrationTest;
 import io.camunda.operate.util.ZeebeTestUtil;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
+import io.camunda.operate.zeebeimport.elasticsearch.ElasticsearchRecordsReader;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.reindex.ReindexRequest;
@@ -154,7 +155,7 @@ public class ImportMidnightIT extends OperateZeebeIntegrationTest {
    */
   private void mockRecordsReaderToImitateNPE() {
     RecordsReader processInstanceRecordsReader = recordsReaderHolder.getRecordsReader(1, PROCESS_INSTANCE);
-    when(recordsReaderHolder.getRecordsReader(eq(1), eq(PROCESS_INSTANCE))).thenReturn(new RecordsReader(1, PROCESS_INSTANCE, 5) {
+    when(recordsReaderHolder.getRecordsReader(eq(1), eq(PROCESS_INSTANCE))).thenReturn(new ElasticsearchRecordsReader(1, PROCESS_INSTANCE, 5) {
       boolean calledOnce = false;
 
       @Override

@@ -14,6 +14,11 @@ import io.camunda.operate.store.elasticsearch.RetryElasticsearchClient;
 import io.camunda.operate.util.OperateIntegrationTest;
 import org.apache.logging.log4j.junit.LoggerContextRule;
 import org.apache.logging.log4j.test.appender.ListAppender;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+import io.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;

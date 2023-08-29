@@ -7,7 +7,6 @@
 package io.camunda.operate.zeebeimport;
 
 import io.camunda.operate.zeebe.PartitionHolder;
-import io.camunda.operate.zeebeimport.post.IncidentPostImportAction;
 import io.camunda.operate.zeebeimport.post.PostImportAction;
 import java.util.ArrayList;
 import java.util.List;
@@ -43,7 +42,7 @@ public class ZeebePostImporter {
     partitionHolder.getPartitionIds().stream().forEach(p ->
         {
           final PostImportAction postImportAction = beanFactory
-              .getBean(IncidentPostImportAction.class, p);
+              .getBean(PostImportAction.class, p);
           postImportActions.add(postImportAction);
         }
     );

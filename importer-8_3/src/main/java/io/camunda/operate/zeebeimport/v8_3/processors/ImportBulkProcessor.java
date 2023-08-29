@@ -6,14 +6,16 @@
  */
 package io.camunda.operate.zeebeimport.v8_3.processors;
 
+import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.SimpleType;
 
 import io.camunda.operate.Metrics;
+import io.camunda.operate.entities.HitEntity;
+import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.util.CollectionUtil;
-import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.zeebe.ImportValueType;
 import io.camunda.operate.zeebeimport.AbstractImportBatchProcessor;
 import io.camunda.operate.zeebeimport.ImportBatch;
@@ -25,6 +27,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 
+import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -36,10 +39,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-@Component
-public class ElasticsearchBulkProcessor extends AbstractImportBatchProcessor {
+import static io.camunda.operate.util.CollectionUtil.map;
 
-  private static final Logger logger = LoggerFactory.getLogger(ElasticsearchBulkProcessor.class);
+@Component
+public class ImportBulkProcessor extends AbstractImportBatchProcessor {
+
+  private static final Logger logger = LoggerFactory.getLogger(ImportBulkProcessor.class);
 
   @Autowired
   private ListViewZeebeRecordProcessor listViewZeebeRecordProcessor;
@@ -82,13 +87,26 @@ public class ElasticsearchBulkProcessor extends AbstractImportBatchProcessor {
 
   private ObjectMapper localObjectMapper;
 
+  private static <T> T fromSearchHit(String searchHitString, ObjectMapper objectMapper, JavaType valueType) {
+    T entity;
+    try {
+      entity = objectMapper.readValue(searchHitString, valueType);
+    } catch (IOException e) {
+      logger.error(String.format("Error while reading entity of type %s from indices!", valueType.toString()), e);
+      throw new OperateRuntimeException(String.format("Error while reading entity of type %s from indices!", valueType), e);
+    }
+    return entity;
+  }
+
   @Override
   protected void processZeebeRecords(ImportBatch importBatch, BatchRequest batchRequest) throws PersistenceException {
-    final List<Record> zeebeRecords = ElasticsearchUtil
-        .mapSearchHits(importBatch.getHits(), getLocalObjectMapper(), SimpleType.constructUnsafe(Record.class));
+    final List<HitEntity> hits = importBatch.getHits();
+    final List<Record> zeebeRecords = map(hits, hit ->
+        fromSearchHit(hit.getSourceAsString(), getLocalObjectMapper() , SimpleType.constructUnsafe(Record.class))
+    );
 
     logger.debug(
-        "Writing {} Zeebe records to Elasticsearch, version={}, importValueType={}, partition={}",
+        "Writing {} Zeebe records to indices, version={}, importValueType={}, partition={}",
         zeebeRecords.size(), getZeebeVersion(), importBatch.getImportValueType(),
         importBatch.getPartitionId());
 

@@ -16,7 +16,6 @@ import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.util.OperateZeebeIntegrationTest;
 import io.camunda.operate.util.PayloadUtil;
 import io.camunda.operate.webapp.zeebe.operation.UpdateVariableHandler;
-import io.camunda.operate.zeebeimport.RecordsReader;
 import org.elasticsearch.client.RequestOptions;
 import org.junit.Before;
 import org.junit.Test;

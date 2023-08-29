@@ -38,6 +38,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Profile;
 import org.springframework.context.annotation.Scope;
 import org.springframework.lang.Nullable;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
@@ -65,11 +66,12 @@ import static java.util.stream.Collectors.toMap;
 import static org.elasticsearch.index.query.QueryBuilders.*;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
+@Profile("!opensearch")
 @Component
 @Scope(SCOPE_PROTOTYPE)
-public class IncidentPostImportAction implements PostImportAction {
+public class ElasticsearchIncidentPostImportAction implements PostImportAction {
 
-  private static final Logger logger = LoggerFactory.getLogger(IncidentPostImportAction.class);
+  private static final Logger logger = LoggerFactory.getLogger(ElasticsearchIncidentPostImportAction.class);
   public static final long BACKOFF = 2000L;
 
   private int partitionId;
@@ -107,7 +109,7 @@ public class IncidentPostImportAction implements PostImportAction {
 
   private ImportPositionEntity lastProcessedPosition;
 
-  public IncidentPostImportAction(final int partitionId) {
+  public ElasticsearchIncidentPostImportAction(final int partitionId) {
     this.partitionId = partitionId;
   }
 

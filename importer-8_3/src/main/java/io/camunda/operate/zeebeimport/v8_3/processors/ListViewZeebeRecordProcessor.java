@@ -25,13 +25,13 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.store.FlowNodeStore;
+import io.camunda.operate.store.ListViewStore;
 import io.camunda.operate.util.ConversionUtils;
 import io.camunda.operate.util.DateUtil;
 import io.camunda.operate.util.OperationsManager;
 import io.camunda.operate.util.SoftHashMap;
 import io.camunda.operate.util.Tuple;
 import io.camunda.operate.zeebe.PartitionHolder;
-import io.camunda.operate.zeebeimport.ElasticsearchQueries;
 import io.camunda.operate.zeebeimport.ImportBatch;
 import io.camunda.operate.util.TreePath;
 import io.camunda.zeebe.protocol.record.Record;
@@ -82,7 +82,7 @@ public class ListViewZeebeRecordProcessor {
   private OperationsManager operationsManager;
 
   @Autowired
-  private ElasticsearchQueries elasticsearchQueries;
+  private ListViewStore listViewStore;
 
   @Autowired
   private OperateProperties operateProperties;
@@ -336,9 +336,7 @@ public class ListViewZeebeRecordProcessor {
     }
     //query from ELS
     if (parentTreePath == null) {
-      parentTreePath = elasticsearchQueries
-          .findProcessInstanceTreePath(recordValue.getParentProcessInstanceKey());
-
+      parentTreePath = listViewStore.findProcessInstanceTreePathFor(recordValue.getParentProcessInstanceKey());
     }
     //still not found - smth is wrong
     if (parentTreePath == null) {

@@ -11,11 +11,13 @@ import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.store.FlowNodeStore;
 import io.camunda.operate.util.ElasticsearchUtil;
+import io.camunda.operate.util.ThreadUtil;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
@@ -90,5 +92,35 @@ public class ElasticsearchFlowNodeStore implements FlowNodeStore {
           "Exception occurred when searching for flow node ids: " + e.getMessage(), e);
     }
     return flowNodeIdsMap;
+  }
+
+  @Override
+  public String findParentTreePathFor(long parentFlowNodeInstanceKey) {
+    return findParentTreePath(parentFlowNodeInstanceKey, 0);
+  }
+
+  private String findParentTreePath(final long parentFlowNodeInstanceKey, int attemptCount) {
+    final SearchRequest searchRequest = ElasticsearchUtil
+        .createSearchRequest(flowNodeInstanceTemplate, ElasticsearchUtil.QueryType.ONLY_RUNTIME)
+        .source(new SearchSourceBuilder()
+            .query(termQuery(FlowNodeInstanceTemplate.KEY, parentFlowNodeInstanceKey))
+            .fetchSource(FlowNodeInstanceTemplate.TREE_PATH, null));
+    try {
+      final SearchHits hits = esClient.search(searchRequest, RequestOptions.DEFAULT).getHits();
+      if (hits.getTotalHits().value > 0) {
+        return (String)hits.getHits()[0].getSourceAsMap().get(FlowNodeInstanceTemplate.TREE_PATH);
+      } else if (attemptCount < 1){
+        //retry for the case, when ELS has not yet refreshed the indices
+        ThreadUtil.sleepFor(2000L);
+        return findParentTreePath(parentFlowNodeInstanceKey, attemptCount + 1);
+      } else {
+        return null;
+      }
+    } catch (IOException e) {
+      final String message = String
+          .format("Exception occurred, while searching for parent flow node instance processes: %s",
+              e.getMessage());
+      throw new OperateRuntimeException(message, e);
+    }
   }
 }
