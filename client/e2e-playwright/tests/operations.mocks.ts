@@ -10,7 +10,6 @@ import {
   createInstances,
   createSingleInstance,
 } from '../setup-utils';
-import {createOperation} from './api/operations';
 
 async function createDemoInstances() {
   await deployProcess(['operationsProcessA.bpmn', 'operationsProcessB.bpmn']);
@@ -23,15 +22,4 @@ async function createDemoInstances() {
   return {singleOperationInstance, batchOperationInstances};
 }
 
-async function createDemoOperations(processInstanceKey: string) {
-  await Promise.all(
-    [...new Array(50)].map(() =>
-      createOperation({
-        id: processInstanceKey,
-        operationType: 'RESOLVE_INCIDENT',
-      }),
-    ),
-  );
-}
-
-export {createDemoInstances, createDemoOperations};
+export {createDemoInstances};

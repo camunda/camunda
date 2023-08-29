@@ -6,10 +6,11 @@
  */
 
 import {DATE_REGEX, SETUP_WAITING_TIME} from './constants';
-import {createDemoInstances, createDemoOperations} from './operations.mocks';
+import {createDemoInstances} from './operations.mocks';
 import {test} from '../test-fixtures';
 import {expect} from '@playwright/test';
 import {config} from '../config';
+import {ENDPOINTS} from './api/endpoints';
 
 let initialData: Awaited<ReturnType<typeof createDemoInstances>>;
 
@@ -39,9 +40,25 @@ test.beforeAll(async ({request}) => {
           .toBe(200),
     ),
   );
-  await createDemoOperations(
-    initialData.singleOperationInstance.processInstanceKey,
+
+  // create demo operations
+  await Promise.all(
+    [...new Array(50)].map(async () => {
+      const response = await request.post(
+        ENDPOINTS.createOperation(
+          initialData.singleOperationInstance.processInstanceKey,
+        ),
+        {
+          data: {
+            operationType: 'RESOLVE_INCIDENT',
+          },
+        },
+      );
+
+      return response;
+    }),
   );
+
   // wait until all operations are created
   await expect
     .poll(
