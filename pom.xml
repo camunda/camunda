@@ -46,7 +46,7 @@
     <version.gson>2.10.1</version.gson>
     <version.node>v18.17.1</version.node>
     <version.yarn>v1.22.10</version.yarn>
-    <version.snakeyaml>2.0</version.snakeyaml>
+    <version.snakeyaml>2.2</version.snakeyaml>
     <version.apache.http5>5.2.1</version.apache.http5>
     <version.thymeleaf>3.1.2.RELEASE</version.thymeleaf>
 
