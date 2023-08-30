@@ -12,13 +12,13 @@ import static io.camunda.zeebe.broker.system.configuration.partitioning.Scheme.F
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
-import io.atomix.raft.partition.PartitionDistributor;
-import io.atomix.raft.partition.RoundRobinPartitionDistributor;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.partitioning.distribution.FixedPartitionDistributor;
 import io.camunda.zeebe.broker.partitioning.distribution.FixedPartitionDistributorBuilder;
+import io.camunda.zeebe.broker.partitioning.distribution.RoundRobinPartitionDistributor;
 import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
 import io.camunda.zeebe.broker.system.configuration.PartitioningCfg;
+import io.camunda.zeebe.topology.PartitionDistributor;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import java.util.List;
 import java.util.Map;
