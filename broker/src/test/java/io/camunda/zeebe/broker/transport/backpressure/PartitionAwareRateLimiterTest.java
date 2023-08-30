@@ -71,4 +71,20 @@ final class PartitionAwareRateLimiterTest {
     // then
     assertThat(partitionedLimiter.tryAcquire(mainPartitionId, 0, 2, context)).isFalse();
   }
+
+  @Test
+  void shouldCreateNewLimiterOnReAddingPartitionWithoutExplicitRemove() {
+    // given
+    final int partitionId = 0;
+    partitionedLimiter.tryAcquire(partitionId, 0, 1, context);
+    assertThat(partitionedLimiter.tryAcquire(partitionId, 0, 2, context)).isFalse();
+
+    // when
+    partitionedLimiter.addPartition(partitionId);
+
+    // then
+    assertThat(partitionedLimiter.tryAcquire(partitionId, 0, 2, context))
+        .describedAs("Should not reject request on re-added partition")
+        .isTrue();
+  }
 }
