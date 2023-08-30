@@ -54,6 +54,7 @@ public record DbTenantAwareKey<WrappedKey extends DbKey>(
         final var wrappedKeyLength = wrappedKey.getLength();
         tenantKey.wrap(buffer, offset + wrappedKeyLength, length - wrappedKeyLength);
       }
+      default -> throw new IllegalStateException("Unexpected value: " + placementType);
     }
   }
 
@@ -75,6 +76,7 @@ public record DbTenantAwareKey<WrappedKey extends DbKey>(
         final var wrappedKeyLength = wrappedKey.getLength();
         tenantKey.write(buffer, offset + wrappedKeyLength);
       }
+      default -> throw new IllegalStateException("Unexpected value: " + placementType);
     }
   }
 
