@@ -36,7 +36,7 @@ import org.agrona.DirectBuffer;
  */
 public final class ClientStreamServiceImpl<M extends BufferWriter> extends Actor
     implements ClientStreamer<M>, ClientStreamService<M> {
-
+  private static final byte[] SUCCESS_RESPONSE = new byte[0];
   private final ClientStreamManager<M> clientStreamManager;
   private final ClusterCommunicationService communicationService;
   private final ClientStreamRegistry<M> registry;
@@ -81,7 +81,7 @@ public final class ClientStreamServiceImpl<M extends BufferWriter> extends Actor
               });
           return responseFuture;
         },
-        ignore -> new byte[0]);
+        ignore -> SUCCESS_RESPONSE);
 
     communicationService.replyTo(
         StreamTopics.RESTART_STREAMS.topic(),
@@ -89,9 +89,9 @@ public final class ClientStreamServiceImpl<M extends BufferWriter> extends Actor
         (memberId, ignore) -> {
           clientStreamManager.onServerRemoved(MemberId.from(memberId.id()));
           clientStreamManager.onServerJoined(MemberId.from(memberId.id()));
-          return null;
+          return SUCCESS_RESPONSE;
         },
-        ignore -> new byte[0],
+        Function.identity(),
         actor::run);
   }
 
