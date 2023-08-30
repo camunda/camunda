@@ -157,3 +157,50 @@ it('should display multi-measure reports', () => {
 
   expect(table).toMatchSnapshot();
 });
+
+it('should handle undefined processVariables for variable reports', () => {
+  const result = processDefaultData({
+    report: {
+      ...props.report,
+      data: {
+        ...props.report.data,
+        groupBy: {type: 'variable', value: {name: 'variable1', type: 'string'}},
+      },
+    },
+  });
+
+  expect(result).toEqual({
+    body: [
+      ['a name', 1],
+      ['b', 2],
+      ['c', 3],
+    ],
+    head: ['Process Instance Var: variable1', {id: 'Count', label: 'Count', sortable: true}],
+  });
+});
+
+it('should handle processVariables with a matching variable', () => {
+  const variableReportProps = {
+    report: {
+      ...props.report,
+      data: {
+        ...props.report.data,
+        groupBy: {type: 'variable', value: {name: 'variable1', type: 'string'}},
+      },
+    },
+  };
+
+  const result = processDefaultData(variableReportProps, [
+    {name: 'variable1', type: 'string', label: 'Variable One'},
+    {name: 'variable2', type: 'number', label: 'Variable Two'},
+  ]);
+
+  expect(result).toEqual({
+    body: [
+      ['a name', 1],
+      ['b', 2],
+      ['c', 3],
+    ],
+    head: ['Process Instance Var: Variable One', {id: 'Count', label: 'Count', sortable: true}],
+  });
+});

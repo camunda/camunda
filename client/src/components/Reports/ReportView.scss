@@ -30,14 +30,16 @@
 
   .bottomPanel {
     height: 348px;
+    transition: height 0.25s;
 
     &.collapsed {
       height: 48px;
-      transition: height 0.25s;
+      overflow: hidden;
     }
 
     &.expanded {
       height: 100%;
+      overflow: hidden;
     }
 
     .toolbar {
