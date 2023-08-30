@@ -27,13 +27,13 @@ import io.atomix.primitive.partition.impl.DefaultPartitionManagementService;
 import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.partition.RaftPartitionConfig;
 import io.atomix.raft.partition.RaftStorageConfig;
-import io.atomix.raft.partition.RoundRobinPartitionDistributor;
 import io.atomix.raft.partition.impl.RaftPartitionServer;
 import io.atomix.raft.snapshot.TestSnapshotStore;
 import io.atomix.raft.zeebe.EntryValidator.NoopEntryValidator;
 import java.io.File;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
@@ -72,9 +72,16 @@ public class ZeebeTestNode {
         nodes.stream().map(ZeebeTestNode::getMember).map(Member::id).collect(Collectors.toSet());
     members.add(member.id());
 
+    final PartitionId partitionId = PartitionId.from("test", 1);
+    final var priorityMap =
+        members.stream()
+            .collect(
+                Collectors.toMap(memberId -> memberId, memberId -> Integer.valueOf(memberId.id())));
+    final var primary = priorityMap.entrySet().stream().min(Entry.comparingByValue()).orElseThrow();
     final var partitionDistribution =
-        new RoundRobinPartitionDistributor()
-            .distributePartitions(members, List.of(PartitionId.from("test", 1)), members.size());
+        Set.of(
+            new PartitionMetadata(
+                partitionId, members, priorityMap, primary.getValue(), primary.getKey()));
 
     partitions = buildPartitions(partitionDistribution);
     final var managementService =
