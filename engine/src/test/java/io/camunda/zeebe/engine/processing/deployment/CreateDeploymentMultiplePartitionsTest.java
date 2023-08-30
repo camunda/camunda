@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.deployment;
 
 import static io.camunda.zeebe.protocol.Protocol.DEPLOYMENT_PARTITION;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -23,6 +24,7 @@ import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsMetadataValue;
 import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
@@ -464,6 +466,39 @@ public final class CreateDeploymentMultiplePartitionsTest {
                 .distinct())
         .describedAs("All created events get the same key")
         .hasSize(1);
+  }
+
+  @Test
+  public void shouldCreateProcessForTenant() {
+    // given
+    final String tenant = "tenant";
+
+    // when
+    final var deployment =
+        ENGINE.deployment().withXmlResource(PROCESS).withTenantId(tenant).deploy();
+
+    // then
+    assertThat(deployment.getValue().getTenantId()).isEqualTo(tenant);
+    for (int partitionId = 1; partitionId <= PARTITION_COUNT; partitionId++) {
+      assertThat(
+              RecordingExporter.processRecords()
+                  .withIntent(ProcessIntent.CREATED)
+                  .withPartitionId(partitionId)
+                  .limit(1))
+          .extracting(Record::getValue)
+          .extracting(
+              ProcessMetadataValue::getBpmnProcessId,
+              ProcessMetadataValue::getVersion,
+              ProcessMetadataValue::getProcessDefinitionKey,
+              TenantOwned::getTenantId)
+          .describedAs("Processes are created for correct tenant")
+          .containsExactly(
+              tuple(
+                  PROCESS_ID,
+                  1,
+                  deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey(),
+                  tenant));
+    }
   }
 
   private void assertDeploymentRecordWithoutResources(

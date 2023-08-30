@@ -23,6 +23,7 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -32,6 +33,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -534,6 +536,116 @@ public final class CreateDeploymentTest {
         .describedAs("The ProcessRecord only contains executable process.")
         .containsExactly("Process_Executable")
         .doesNotContain("Process_NonExecutable");
+  }
+
+  @Test
+  public void shouldCreateProcessForTenant() {
+    // given
+    final String tenant = "tenant";
+
+    // when
+    final var deployment =
+        ENGINE.deployment().withXmlResource(process).withTenantId(tenant).deploy();
+
+    // then
+    assertThat(deployment.getValue().getTenantId()).isEqualTo(tenant);
+    assertThat(
+            RecordingExporter.processRecords()
+                .withIntent(ProcessIntent.CREATED)
+                .withBpmnProcessId(processId)
+                .limit(1))
+        .extracting(Record::getValue)
+        .extracting(
+            ProcessMetadataValue::getBpmnProcessId,
+            ProcessMetadataValue::getVersion,
+            ProcessMetadataValue::getProcessDefinitionKey,
+            TenantOwned::getTenantId)
+        .describedAs("Process is created for correct tenant")
+        .containsExactly(
+            tuple(
+                processId,
+                1,
+                deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey(),
+                tenant));
+  }
+
+  @Test
+  public void shouldCreateProcessesForTenant() {
+    // given
+    final String tenant = "tenant";
+
+    // when
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(process)
+            .withXmlResource(process2)
+            .withTenantId(tenant)
+            .deploy();
+
+    // then
+    assertThat(deployment.getValue().getTenantId()).isEqualTo(tenant);
+    assertThat(RecordingExporter.processRecords().withIntent(ProcessIntent.CREATED).limit(2))
+        .extracting(Record::getValue)
+        .extracting(
+            ProcessMetadataValue::getBpmnProcessId,
+            ProcessMetadataValue::getVersion,
+            ProcessMetadataValue::getProcessDefinitionKey,
+            TenantOwned::getTenantId)
+        .describedAs("Processes are created for correct tenant")
+        .containsExactly(
+            tuple(
+                processId,
+                1,
+                deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey(),
+                tenant),
+            tuple(
+                processId2,
+                1,
+                deployment.getValue().getProcessesMetadata().get(1).getProcessDefinitionKey(),
+                tenant));
+  }
+
+  @Test
+  @Ignore(
+      "Unignore in 13320 part 2. Currently 2nd deployment is marked as duplicate as the state is not supporting tenants yet.")
+  public void shouldCreateProcessesForTenants() {
+    // given
+    final String tenant = "tenant";
+    final String tenant2 = "tenant2";
+
+    // when
+    final var deployment =
+        ENGINE.deployment().withXmlResource(process).withTenantId(tenant).deploy();
+    final var deployment2 =
+        ENGINE.deployment().withXmlResource(process).withTenantId(tenant2).deploy();
+
+    // then
+    assertThat(deployment.getValue().getTenantId()).isEqualTo(tenant);
+    assertThat(deployment2.getValue().getTenantId()).isEqualTo(tenant2);
+    assertThat(
+            RecordingExporter.processRecords()
+                .withIntent(ProcessIntent.CREATED)
+                .withBpmnProcessId(processId)
+                .limit(2))
+        .extracting(Record::getValue)
+        .extracting(
+            ProcessMetadataValue::getBpmnProcessId,
+            ProcessMetadataValue::getVersion,
+            ProcessMetadataValue::getProcessDefinitionKey,
+            TenantOwned::getTenantId)
+        .describedAs("Processes are created for correct tenants")
+        .containsExactly(
+            tuple(
+                processId,
+                1,
+                deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey(),
+                tenant),
+            tuple(
+                processId,
+                1,
+                deployment2.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey(),
+                tenant2));
   }
 
   private ProcessMetadataValue findProcess(
