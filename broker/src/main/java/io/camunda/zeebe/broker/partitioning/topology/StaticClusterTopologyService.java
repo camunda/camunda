@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.partitioning.topology;
 
 import io.camunda.zeebe.broker.bootstrap.BrokerStartupContext;
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 
@@ -23,11 +24,18 @@ public class StaticClusterTopologyService implements ClusterTopologyService {
   @Override
   public ActorFuture<Void> start(final BrokerStartupContext brokerStartupContext) {
     try {
+      final BrokerCfg brokerConfiguration = brokerStartupContext.getBrokerConfiguration();
+      final var localMember =
+          brokerStartupContext.getClusterServices().getMembershipService().getLocalMember().id();
+
+      final var staticConfiguration =
+          PartitionDistributionResolver.getStaticConfiguration(
+              brokerConfiguration.getCluster(),
+              brokerConfiguration.getExperimental().getPartitioning(),
+              localMember);
+
       partitionDistribution =
-          new PartitionDistributionResolver()
-              .resolvePartitionDistribution(
-                  brokerStartupContext.getBrokerConfiguration().getExperimental().getPartitioning(),
-                  brokerStartupContext.getBrokerConfiguration().getCluster());
+          new PartitionDistribution(staticConfiguration.generatePartitionDistribution());
     } catch (final Exception e) {
       return CompletableActorFuture.completedExceptionally(e);
     }

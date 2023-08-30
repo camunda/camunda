@@ -21,6 +21,8 @@ import java.util.stream.Collectors;
 
 public final class TopologyUtil {
 
+  private TopologyUtil() {}
+
   public static ClusterTopology getClusterTopologyFrom(
       final Set<PartitionMetadata> partitionDistribution) {
     final var partitionsOwnedByMembers =

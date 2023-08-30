@@ -8,11 +8,13 @@
 package io.camunda.zeebe.broker.partitioning.topology;
 
 import io.camunda.zeebe.broker.bootstrap.BrokerStartupContext;
+import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.topology.ClusterTopologyManagerService;
 import io.camunda.zeebe.topology.gossip.ClusterTopologyGossiperConfig;
+import io.camunda.zeebe.topology.util.TopologyUtil;
 import java.nio.file.Path;
 import java.time.Duration;
 
@@ -31,14 +33,10 @@ public class DynamicClusterTopologyService implements ClusterTopologyService {
   public ActorFuture<Void> start(final BrokerStartupContext brokerStartupContext) {
     final CompletableActorFuture<Void> started = new CompletableActorFuture<>();
 
-    final PartitionDistributionResolver partitionDistributionResolver =
-        new PartitionDistributionResolver();
-
     clusterTopologyManagerService = getClusterTopologyManagerService(brokerStartupContext);
 
     final var topologyManagerStartedFuture =
-        startClusterTopologyManager(
-            brokerStartupContext, clusterTopologyManagerService, partitionDistributionResolver);
+        startClusterTopologyManager(brokerStartupContext, clusterTopologyManagerService);
 
     topologyManagerStartedFuture.onComplete(
         (ignore, topologyManagerFailed) -> {
@@ -54,7 +52,9 @@ public class DynamicClusterTopologyService implements ClusterTopologyService {
                       } else {
                         try {
                           partitionDistribution =
-                              partitionDistributionResolver.resolvePartitionDistribution(topology);
+                              new PartitionDistribution(
+                                  TopologyUtil.getPartitionDistributionFrom(
+                                      topology, PartitionManagerImpl.GROUP_NAME));
                           started.complete(null);
                         } catch (final Exception topologyConversionFailed) {
                           started.completeExceptionally(topologyConversionFailed);
@@ -78,25 +78,19 @@ public class DynamicClusterTopologyService implements ClusterTopologyService {
 
   private static ActorFuture<Void> startClusterTopologyManager(
       final BrokerStartupContext brokerStartupContext,
-      final ClusterTopologyManagerService clusterTopologyManagerService,
-      final PartitionDistributionResolver partitionDistributionResolver) {
+      final ClusterTopologyManagerService clusterTopologyManagerService) {
     final BrokerCfg brokerConfiguration = brokerStartupContext.getBrokerConfiguration();
-    final var allMembers =
-        PartitionDistributionResolver.getRaftGroupMembers(brokerConfiguration.getCluster());
-    final var localMemberId =
+    final var localMember =
         brokerStartupContext.getClusterServices().getMembershipService().getLocalMember().id();
 
-    final var otherMembers = allMembers.stream().filter(id -> !id.equals(localMemberId)).toList();
+    final var staticConfiguration =
+        PartitionDistributionResolver.getStaticConfiguration(
+            brokerConfiguration.getCluster(),
+            brokerConfiguration.getExperimental().getPartitioning(),
+            localMember);
 
     return clusterTopologyManagerService.start(
-        brokerStartupContext.getActorSchedulingService(),
-        otherMembers,
-        () ->
-            partitionDistributionResolver
-                .resolvePartitionDistribution(
-                    brokerConfiguration.getExperimental().getPartitioning(),
-                    brokerConfiguration.getCluster())
-                .partitions());
+        brokerStartupContext.getActorSchedulingService(), staticConfiguration);
   }
 
   private ClusterTopologyManagerService getClusterTopologyManagerService(

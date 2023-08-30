@@ -11,7 +11,6 @@ import static io.camunda.zeebe.broker.system.configuration.partitioning.Scheme.F
 
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionId;
-import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.partitioning.distribution.FixedPartitionDistributor;
 import io.camunda.zeebe.broker.partitioning.distribution.FixedPartitionDistributorBuilder;
@@ -19,27 +18,31 @@ import io.camunda.zeebe.broker.partitioning.distribution.RoundRobinPartitionDist
 import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
 import io.camunda.zeebe.broker.system.configuration.PartitioningCfg;
 import io.camunda.zeebe.topology.PartitionDistributor;
-import io.camunda.zeebe.topology.state.ClusterTopology;
+import io.camunda.zeebe.topology.StaticConfiguration;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 /** Manage how partitions are distributed among the brokers. */
-public class PartitionDistributionResolver {
+public final class PartitionDistributionResolver {
 
-  public PartitionDistribution resolvePartitionDistribution(
-      final PartitioningCfg partitionCfg, final ClusterCfg clusterCfg) {
-    final var partitionDistributor = buildPartitionDistributor(partitionCfg);
-    final var clusterMembers = getRaftGroupMembers(clusterCfg);
-    final var partitionDistribution =
-        partitionDistributor.distributePartitions(
-            clusterMembers,
-            getSortedPartitionIds(clusterCfg.getPartitionsCount()),
-            clusterCfg.getReplicationFactor());
-    return new PartitionDistribution(partitionDistribution);
+  public static StaticConfiguration getStaticConfiguration(
+      final ClusterCfg clusterCfg,
+      final PartitioningCfg partitioningCfg,
+      final MemberId localMemberId) {
+    final var allMembers = PartitionDistributionResolver.getRaftGroupMembers(clusterCfg);
+
+    return new StaticConfiguration(
+        PartitionDistributionResolver.getPartitionDistributor(partitioningCfg),
+        allMembers,
+        localMemberId,
+        PartitionDistributionResolver.getSortedPartitionIds(clusterCfg.getPartitionsCount()),
+        clusterCfg.getReplicationFactor());
+  }
+
+  static PartitionDistributor getPartitionDistributor(final PartitioningCfg partitionCfg) {
+    return buildPartitionDistributor(partitionCfg);
   }
 
   private static PartitionDistributor buildPartitionDistributor(final PartitioningCfg config) {
@@ -63,7 +66,7 @@ public class PartitionDistributionResolver {
     return distributionBuilder.build();
   }
 
-  public static Set<MemberId> getRaftGroupMembers(final ClusterCfg clusterCfg) {
+  private static Set<MemberId> getRaftGroupMembers(final ClusterCfg clusterCfg) {
     final int clusterSize = clusterCfg.getClusterSize();
     // node ids are always 0 to clusterSize - 1
     return IntStream.range(0, clusterSize)
@@ -71,57 +74,11 @@ public class PartitionDistributionResolver {
         .collect(Collectors.toSet());
   }
 
-  private static List<PartitionId> getSortedPartitionIds(final int partitionCount) {
+  static List<PartitionId> getSortedPartitionIds(final int partitionCount) {
     // partition ids start from 1
     return IntStream.rangeClosed(1, partitionCount)
         .mapToObj(p -> PartitionId.from(PartitionManagerImpl.GROUP_NAME, p))
         .sorted()
         .toList();
-  }
-
-  public PartitionDistribution resolvePartitionDistribution(final ClusterTopology clusterTopology) {
-    if (clusterTopology.isUninitialized()) {
-      throw new IllegalStateException(
-          "Cannot generated partition distribution from uninitialized topology");
-    }
-    final var partitionsToMembersMap =
-        clusterTopology.members().entrySet().stream()
-            .flatMap(
-                memberEntry ->
-                    memberEntry.getValue().partitions().entrySet().stream()
-                        .map(
-                            p ->
-                                Map.entry(
-                                    p.getKey(),
-                                    Map.entry(memberEntry.getKey(), p.getValue().priority()))))
-            .collect(
-                Collectors.groupingBy(
-                    Entry::getKey,
-                    Collectors.toMap(e -> e.getValue().getKey(), e -> e.getValue().getValue())));
-
-    final var partitionDistribution =
-        partitionsToMembersMap.entrySet().stream()
-            .map(this::getPartitionMetadata)
-            .collect(Collectors.toSet());
-
-    return new PartitionDistribution(partitionDistribution);
-  }
-
-  private PartitionMetadata getPartitionMetadata(final Entry<Integer, Map<MemberId, Integer>> e) {
-    final Map<MemberId, Integer> memberPriorities = e.getValue();
-    final var optionalPrimary = memberPriorities.entrySet().stream().max(Entry.comparingByValue());
-    if (optionalPrimary.isEmpty()) {
-      throw new IllegalStateException("Found partition with no members");
-    }
-    return new PartitionMetadata(
-        partitionId(e.getKey()),
-        memberPriorities.keySet(),
-        memberPriorities,
-        optionalPrimary.get().getValue(),
-        optionalPrimary.get().getKey());
-  }
-
-  private PartitionId partitionId(final Integer key) {
-    return PartitionId.from(PartitionManagerImpl.GROUP_NAME, key);
   }
 }

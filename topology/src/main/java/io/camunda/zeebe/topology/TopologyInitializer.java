@@ -8,27 +8,18 @@
 package io.camunda.zeebe.topology;
 
 import io.atomix.cluster.MemberId;
-import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.topology.TopologyUpdateNotifier.TopologyUpdateListener;
 import io.camunda.zeebe.topology.serializer.ClusterTopologySerializer;
-import io.camunda.zeebe.topology.state.ClusterChangePlan;
 import io.camunda.zeebe.topology.state.ClusterTopology;
-import io.camunda.zeebe.topology.state.MemberState;
-import io.camunda.zeebe.topology.state.PartitionState;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -247,38 +238,22 @@ public interface TopologyInitializer {
   class StaticInitializer implements TopologyInitializer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(StaticInitializer.class);
-    private final Supplier<Set<PartitionMetadata>> staticPartitionResolver;
 
-    public StaticInitializer(final Supplier<Set<PartitionMetadata>> staticPartitionResolver) {
-      this.staticPartitionResolver = staticPartitionResolver;
+    private final StaticConfiguration staticConfiguration;
+
+    public StaticInitializer(final StaticConfiguration staticConfiguration) {
+      this.staticConfiguration = staticConfiguration;
     }
 
     @Override
     public ActorFuture<ClusterTopology> initialize() {
-      final var partitionDistribution = staticPartitionResolver.get();
-
-      final var partitionsOwnedByMembers =
-          partitionDistribution.stream()
-              .flatMap(
-                  p ->
-                      p.members().stream()
-                          .map(m -> Map.entry(m, Map.entry(p.id().id(), p.getPriority(m)))))
-              .collect(
-                  Collectors.groupingBy(
-                      Entry::getKey,
-                      Collectors.toMap(
-                          e -> e.getValue().getKey(),
-                          e -> PartitionState.active(e.getValue().getValue()))));
-
-      final var memberStates =
-          partitionsOwnedByMembers.entrySet().stream()
-              .collect(
-                  Collectors.toMap(
-                      Entry::getKey, e -> MemberState.initializeAsActive(e.getValue())));
-
-      final var topology = new ClusterTopology(0, memberStates, ClusterChangePlan.empty());
-      LOGGER.debug("Generated cluster topology from provided configuration. {}", topology);
-      return CompletableActorFuture.completed(topology);
+      try {
+        final var topology = staticConfiguration.generateTopology();
+        LOGGER.debug("Generated cluster topology from provided configuration. {}", topology);
+        return CompletableActorFuture.completed(topology);
+      } catch (final Exception e) {
+        return CompletableActorFuture.completedExceptionally(e);
+      }
     }
   }
 }

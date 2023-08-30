@@ -22,11 +22,14 @@ public record StaticConfiguration(
     List<PartitionId> partitionIds,
     int replicationFactor) {
 
-  ClusterTopology generateTopology() {
-    final var sortedPartitionIds = partitionIds.stream().sorted().toList();
-    final Set<PartitionMetadata> partitionDistribution =
-        partitionDistributor.distributePartitions(
-            clusterMembers, sortedPartitionIds, replicationFactor);
+  public ClusterTopology generateTopology() {
+    final Set<PartitionMetadata> partitionDistribution = generatePartitionDistribution();
     return TopologyUtil.getClusterTopologyFrom(partitionDistribution);
+  }
+
+  public Set<PartitionMetadata> generatePartitionDistribution() {
+    final var sortedPartitionIds = partitionIds.stream().sorted().toList();
+    return partitionDistributor.distributePartitions(
+        clusterMembers, sortedPartitionIds, replicationFactor);
   }
 }
