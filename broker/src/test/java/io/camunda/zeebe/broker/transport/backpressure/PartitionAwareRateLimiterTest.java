@@ -13,16 +13,16 @@ import io.camunda.zeebe.broker.system.configuration.backpressure.BackpressureCfg
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import java.util.stream.IntStream;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-public final class PartitionAwareRateLimiterTest {
+final class PartitionAwareRateLimiterTest {
   private static final int PARTITIONS = 3;
   private final Intent context = ProcessInstanceCreationIntent.CREATE;
   private PartitionAwareRequestLimiter partitionedLimiter;
 
-  @Before
-  public void setUp() {
+  @BeforeEach
+  void setUp() {
     final var backpressureCfg = new BackpressureCfg();
     backpressureCfg.setAlgorithm("fixed");
     backpressureCfg.getFixed().setLimit(1);
@@ -33,7 +33,7 @@ public final class PartitionAwareRateLimiterTest {
   }
 
   @Test
-  public void shouldNotBlockRequestsOnOtherPartitionsWhenOnePartitionIsFull() {
+  void shouldNotBlockRequestsOnOtherPartitionsWhenOnePartitionIsFull() {
     // when
     assertThat(partitionedLimiter.tryAcquire(0, 0, 1, context)).isTrue();
     assertThat(partitionedLimiter.tryAcquire(0, 0, 2, context)).isFalse();
@@ -44,7 +44,7 @@ public final class PartitionAwareRateLimiterTest {
   }
 
   @Test
-  public void shouldUpdateOnResponse() {
+  void shouldUpdateOnResponse() {
     // given
     partitionedLimiter.tryAcquire(0, 0, 1, context);
     assertThat(partitionedLimiter.tryAcquire(0, 0, 2, context)).isFalse();
@@ -57,7 +57,7 @@ public final class PartitionAwareRateLimiterTest {
   }
 
   @Test
-  public void shouldNotUpdateOnResponseDifferentPartition() {
+  void shouldNotUpdateOnResponseDifferentPartition() {
     final int mainPartitionId = 0;
     final int otherPartitionId = 1;
     // given
