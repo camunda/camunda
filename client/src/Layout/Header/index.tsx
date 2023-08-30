@@ -16,7 +16,6 @@ import capitalize from 'lodash/capitalize';
 import {ArrowRight} from '@carbon/react/icons';
 import {themeStore} from 'modules/stores/theme';
 import {observer} from 'mobx-react-lite';
-import {usePermissions} from 'modules/hooks/usePermissions';
 import {useCurrentUser} from 'modules/queries/useCurrentUser';
 
 const orderedApps = [
@@ -32,11 +31,8 @@ type AppSwitcherElementType = NonNullable<
 >[number];
 
 const Header: React.FC = observer(() => {
-  const APP_VERSION = process.env.REACT_APP_VERSION ?? '';
   const IS_SAAS = typeof window.clientConfig?.organizationId === 'string';
   const IS_ENTERPRISE = window.clientConfig?.isEnterprise === true;
-  const IS_RESOURCE_PERMISSIONS_ENABLED =
-    window.clientConfig?.isResourcePermissionsEnabled === true;
   const location = useLocation();
   const isProcessesPage =
     matchPath(pages.processes, location.pathname) !== null;
@@ -53,7 +49,6 @@ const Header: React.FC = observer(() => {
     (typeof orderedApps)[number],
     string
   >;
-  const {hasPermission} = usePermissions(['write']);
   const switcherElements = orderedApps
     .map<AppSwitcherElementType | undefined>((appName) =>
       parsedC8Links[appName] === undefined
@@ -69,11 +64,6 @@ const Header: React.FC = observer(() => {
           },
     )
     .filter((entry): entry is AppSwitcherElementType => entry !== undefined);
-  const isProcessesPageEnabled =
-    hasPermission &&
-    (IS_SAAS ||
-      IS_RESOURCE_PERMISSIONS_ENABLED ||
-      APP_VERSION.includes('SNAPSHOT'));
   useEffect(() => {
     if (currentUser) {
       tracking.identifyUser(currentUser);
@@ -85,7 +75,6 @@ const Header: React.FC = observer(() => {
       app={{
         ariaLabel: 'Camunda Tasklist',
         name: 'Tasklist',
-        prefix: 'Camunda',
         routeProps: {
           to: pages.initial,
           onClick: () => {
@@ -98,38 +87,36 @@ const Header: React.FC = observer(() => {
       }}
       forwardRef={Link}
       navbar={{
-        elements: isProcessesPageEnabled
-          ? [
-              {
-                isCurrentPage: !isProcessesPage,
-                key: 'tasks',
-                label: 'Tasks',
-                routeProps: {
-                  to: pages.initial,
-                  onClick: () => {
-                    tracking.track({
-                      eventName: 'navigation',
-                      link: 'header-tasks',
-                    });
-                  },
-                },
+        elements: [
+          {
+            isCurrentPage: !isProcessesPage,
+            key: 'tasks',
+            label: 'Tasks',
+            routeProps: {
+              to: pages.initial,
+              onClick: () => {
+                tracking.track({
+                  eventName: 'navigation',
+                  link: 'header-tasks',
+                });
               },
-              {
-                isCurrentPage: isProcessesPage,
-                key: 'processes',
-                label: 'Processes',
-                routeProps: {
-                  to: pages.processes,
-                  onClick: () => {
-                    tracking.track({
-                      eventName: 'navigation',
-                      link: 'header-processes',
-                    });
-                  },
-                },
+            },
+          },
+          {
+            isCurrentPage: isProcessesPage,
+            key: 'processes',
+            label: 'Processes',
+            routeProps: {
+              to: pages.processes,
+              onClick: () => {
+                tracking.track({
+                  eventName: 'navigation',
+                  link: 'header-processes',
+                });
               },
-            ]
-          : [],
+            },
+          },
+        ],
         tags:
           IS_ENTERPRISE || IS_SAAS
             ? []
@@ -240,10 +227,10 @@ const Header: React.FC = observer(() => {
             },
           },
         ],
-        version: process.env.REACT_APP_VERSION,
       }}
       userSideBar={{
         ariaLabel: 'Settings',
+        version: process.env.REACT_APP_VERSION,
         customElements: {
           profile: {
             label: 'Profile',

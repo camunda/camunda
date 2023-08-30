@@ -26,9 +26,11 @@ import {logger} from 'modules/utils/logger';
 import {NewProcessInstanceTasksPolling} from './NewProcessInstanceTasksPolling';
 import {tracking} from 'modules/tracking';
 import {useProcesses} from 'modules/queries/useProcesses';
+import {usePermissions} from 'modules/hooks/usePermissions';
 
 const Processes: React.FC = observer(() => {
   const {instance} = newProcessInstance;
+  const {hasPermission} = usePermissions(['write']);
   const location = useLocation();
   const navigate = useNavigate();
   const searchParam =
@@ -130,7 +132,9 @@ const Processes: React.FC = observer(() => {
                     key={process.bpmnProcessId}
                     isFirst={idx === 0}
                     isStartButtonDisabled={
-                      instance !== null && instance.id !== process.bpmnProcessId
+                      (instance !== null &&
+                        instance.id !== process.bpmnProcessId) ||
+                      !hasPermission
                     }
                     data-testid="process-tile"
                   />

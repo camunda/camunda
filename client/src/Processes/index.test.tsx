@@ -22,6 +22,7 @@ import {Processes} from './index';
 import {notificationsStore} from 'modules/stores/notifications';
 import {ReactQueryProvider} from 'modules/ReactQueryProvider';
 import * as formMocks from 'modules/mock-schema/mocks/form';
+import * as userMocks from 'modules/mock-schema/mocks/current-user';
 
 jest.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -51,6 +52,14 @@ describe('Processes', () => {
   afterEach(() => {
     mockedNotificationsStore.displayNotification.mockClear();
     process.env.REACT_APP_VERSION = '1.2.3';
+  });
+
+  beforeEach(() => {
+    nodeMockServer.use(
+      rest.get('/v1/internal/users/current', (_, res, ctx) => {
+        return res.once(ctx.json(userMocks.currentUser));
+      }),
+    );
   });
 
   it('should render an empty state message', async () => {
@@ -170,5 +179,31 @@ describe('Processes', () => {
         title: 'Processes could not be fetched',
       }),
     );
+  });
+
+  it('should disable the start button', async () => {
+    window.localStorage.setItem('hasConsentedToStartProcess', 'true');
+    nodeMockServer.use(
+      rest.get('/v1/internal/processes', (_, res, ctx) => {
+        return res(ctx.json([createMockProcess('process-0')]));
+      }),
+      rest.get('/v1/internal/users/current', (_, res, ctx) => {
+        return res.once(ctx.json(userMocks.currentRestrictedUser));
+      }),
+    );
+
+    render(<Processes />, {
+      wrapper: Wrapper,
+    });
+
+    await waitForElementToBeRemoved(() =>
+      screen.getAllByTestId('process-skeleton'),
+    );
+
+    expect(
+      within(screen.getByTestId('process-tile')).getByRole('button', {
+        name: 'Start process',
+      }),
+    ).toBeDisabled();
   });
 });

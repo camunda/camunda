@@ -14,14 +14,6 @@ import {Wrapper} from './mocks';
 import * as userMocks from 'modules/mock-schema/mocks/current-user';
 
 describe('license note', () => {
-  beforeAll(() => {
-    global.IS_REACT_ACT_ENVIRONMENT = false;
-  });
-
-  afterAll(() => {
-    global.IS_REACT_ACT_ENVIRONMENT = true;
-  });
-
   afterEach(() => {
     window.clientConfig = DEFAULT_MOCK_CLIENT_CONFIG;
   });
