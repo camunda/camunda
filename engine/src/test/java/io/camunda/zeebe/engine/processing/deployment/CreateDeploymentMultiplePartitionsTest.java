@@ -501,6 +501,76 @@ public final class CreateDeploymentMultiplePartitionsTest {
     }
   }
 
+  @Test
+  public void shouldCreateDmnForTenant() {
+    // given
+    final String tenant = "tenant";
+    final var drgId = "force_users";
+    final var decisionId = "jedi_or_sith";
+
+    // when
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlClasspathResource(DMN_DECISION_TABLE)
+            .withTenantId(tenant)
+            .deploy();
+
+    // then
+    assertThat(deployment.getValue().getTenantId()).isEqualTo(tenant);
+    for (int partitionId = 1; partitionId <= PARTITION_COUNT; partitionId++) {
+      assertThat(
+              RecordingExporter.decisionRequirementsRecords()
+                  .withIntent(DecisionRequirementsIntent.CREATED)
+                  .withPartitionId(partitionId)
+                  .limit(1))
+          .extracting(Record::getValue)
+          .extracting(
+              DecisionRequirementsMetadataValue::getDecisionRequirementsId,
+              DecisionRequirementsMetadataValue::getDecisionRequirementsVersion,
+              DecisionRequirementsMetadataValue::getDecisionRequirementsKey,
+              TenantOwned::getTenantId)
+          .describedAs("DRGs are created for correct tenant")
+          .containsExactly(
+              tuple(
+                  drgId,
+                  1,
+                  deployment
+                      .getValue()
+                      .getDecisionRequirementsMetadata()
+                      .get(0)
+                      .getDecisionRequirementsKey(),
+                  tenant));
+
+      assertThat(
+              RecordingExporter.decisionRecords()
+                  .withIntent(DecisionIntent.CREATED)
+                  .withPartitionId(partitionId)
+                  .limit(1))
+          .extracting(Record::getValue)
+          .extracting(
+              DecisionRecordValue::getDecisionId,
+              DecisionRecordValue::getVersion,
+              DecisionRecordValue::getDecisionKey,
+              DecisionRecordValue::getDecisionRequirementsId,
+              DecisionRecordValue::getDecisionRequirementsKey,
+              TenantOwned::getTenantId)
+          .describedAs("Decisions are created for correct tenant")
+          .containsExactly(
+              tuple(
+                  decisionId,
+                  1,
+                  deployment.getValue().getDecisionsMetadata().get(0).getDecisionKey(),
+                  drgId,
+                  deployment
+                      .getValue()
+                      .getDecisionRequirementsMetadata()
+                      .get(0)
+                      .getDecisionRequirementsKey(),
+                  tenant));
+    }
+  }
+
   private void assertDeploymentRecordWithoutResources(
       final Record<DeploymentRecordValue> deployment,
       final Record<DeploymentRecordValue> createdDeployment) {

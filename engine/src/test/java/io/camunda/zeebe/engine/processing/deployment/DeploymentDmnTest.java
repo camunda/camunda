@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsMetadataValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -27,6 +28,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -52,8 +54,13 @@ public final class DeploymentDmnTest {
   @Test
   public void shouldDeployDmnResource() {
     // when
+    final var tenant = "tenant";
     final var deploymentEvent =
-        engine.deployment().withXmlClasspathResource(DMN_DECISION_TABLE).deploy();
+        engine
+            .deployment()
+            .withXmlClasspathResource(DMN_DECISION_TABLE)
+            .withTenantId(tenant)
+            .deploy();
 
     // then
     Assertions.assertThat(deploymentEvent)
@@ -61,31 +68,37 @@ public final class DeploymentDmnTest {
         .hasValueType(ValueType.DEPLOYMENT)
         .hasRecordType(RecordType.EVENT);
 
-    assertThat(deploymentEvent.getValue().getDecisionRequirementsMetadata()).hasSize(1);
+    verifyDeploymentForTenant(deploymentEvent, tenant);
+  }
 
-    final var drgMetadata = deploymentEvent.getValue().getDecisionRequirementsMetadata().get(0);
-    Assertions.assertThat(drgMetadata)
-        .hasDecisionRequirementsId("force_users")
-        .hasDecisionRequirementsName("Force Users")
-        .hasDecisionRequirementsVersion(1)
-        .hasNamespace("http://camunda.org/schema/1.0/dmn")
-        .hasResourceName(DMN_DECISION_TABLE);
-    assertThat(drgMetadata.getDecisionRequirementsKey()).isPositive();
-    assertThat(drgMetadata.getChecksum())
-        .describedAs("Expect the MD5 checksum of the DMN resource")
-        .isEqualTo(getChecksum(DMN_DECISION_TABLE));
+  @Test
+  @Ignore(
+      "Unignore in 13320 part 2. Currently 2nd deployment is marked as duplicate as the state is not supporting tenants yet.")
+  public void shouldDeployDmnResourceForTenants() {
+    // when
+    final var tenant = "tenant";
+    final var tenant2 = "tenant2";
+    final var deploymentEvent =
+        engine
+            .deployment()
+            .withXmlClasspathResource(DMN_DECISION_TABLE)
+            .withTenantId(tenant)
+            .deploy();
+    final var deploymentEvent2 =
+        engine
+            .deployment()
+            .withXmlClasspathResource(DMN_DECISION_TABLE)
+            .withTenantId(tenant2)
+            .deploy();
 
-    assertThat(deploymentEvent.getValue().getDecisionsMetadata()).hasSize(1);
+    // then
+    Assertions.assertThat(deploymentEvent)
+        .hasIntent(DeploymentIntent.CREATED)
+        .hasValueType(ValueType.DEPLOYMENT)
+        .hasRecordType(RecordType.EVENT);
 
-    final var decisionMetadata = deploymentEvent.getValue().getDecisionsMetadata().get(0);
-    Assertions.assertThat(decisionMetadata)
-        .hasDecisionId("jedi_or_sith")
-        .hasDecisionName("Jedi or Sith")
-        .hasDecisionRequirementsId("force_users")
-        .hasVersion(1)
-        .hasDecisionRequirementsId("force_users")
-        .hasDecisionRequirementsKey(drgMetadata.getDecisionRequirementsKey());
-    assertThat(decisionMetadata.getDecisionKey()).isPositive();
+    verifyDeploymentForTenant(deploymentEvent, tenant);
+    verifyDeploymentForTenant(deploymentEvent2, tenant2);
   }
 
   @Test
@@ -497,5 +510,37 @@ public final class DeploymentDmnTest {
       fail("Failed to read resource '{}'", resourceName, e);
       return new byte[0];
     }
+  }
+
+  private void verifyDeploymentForTenant(
+      final Record<DeploymentRecordValue> deploymentEvent, final String tenant) {
+    assertThat(deploymentEvent.getValue().getDecisionRequirementsMetadata()).hasSize(1);
+    final var drgMetadata = deploymentEvent.getValue().getDecisionRequirementsMetadata().get(0);
+    Assertions.assertThat(drgMetadata)
+        .hasDecisionRequirementsId("force_users")
+        .hasDecisionRequirementsName("Force Users")
+        .hasDecisionRequirementsVersion(1)
+        .hasNamespace("http://camunda.org/schema/1.0/dmn")
+        .hasResourceName(DMN_DECISION_TABLE)
+        .hasTenantId(tenant)
+        .isNotDuplicate();
+    assertThat(drgMetadata.getDecisionRequirementsKey()).isPositive();
+    assertThat(drgMetadata.getChecksum())
+        .describedAs("Expect the MD5 checksum of the DMN resource")
+        .isEqualTo(getChecksum(DMN_DECISION_TABLE));
+
+    assertThat(deploymentEvent.getValue().getDecisionsMetadata()).hasSize(1);
+
+    final var decisionMetadata = deploymentEvent.getValue().getDecisionsMetadata().get(0);
+    Assertions.assertThat(decisionMetadata)
+        .hasDecisionId("jedi_or_sith")
+        .hasDecisionName("Jedi or Sith")
+        .hasDecisionRequirementsId("force_users")
+        .hasVersion(1)
+        .hasDecisionRequirementsId("force_users")
+        .hasDecisionRequirementsKey(drgMetadata.getDecisionRequirementsKey())
+        .hasTenantId(tenant)
+        .isNotDuplicate();
+    assertThat(decisionMetadata.getDecisionKey()).isPositive();
   }
 }
