@@ -34,7 +34,6 @@ import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.io.ByteArrayOutputStream;
 import java.util.List;
 import java.util.function.Consumer;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -43,13 +42,13 @@ public final class CreateDeploymentMultiplePartitionsTest {
   public static final String PROCESS_ID = "process";
   public static final int PARTITION_ID = DEPLOYMENT_PARTITION;
   public static final int PARTITION_COUNT = 3;
-  @ClassRule public static final EngineRule ENGINE = EngineRule.multiplePartition(PARTITION_COUNT);
   private static final BpmnModelInstance PROCESS =
       Bpmn.createExecutableProcess(PROCESS_ID).startEvent().endEvent().done();
   private static final BpmnModelInstance PROCESS_2 =
       Bpmn.createExecutableProcess("process2").startEvent().endEvent().done();
   private static final String DMN_DECISION_TABLE = "/dmn/decision-table.dmn";
   private static final String DMN_DECISION_TABLE_V2 = "/dmn/decision-table_v2.dmn";
+  @Rule public final EngineRule engine = EngineRule.multiplePartition(PARTITION_COUNT);
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -69,9 +68,9 @@ public final class CreateDeploymentMultiplePartitionsTest {
             .endEvent()
             .done();
     final Record<DeploymentRecordValue> deployment =
-        ENGINE.deployment().withXmlResource("process.bpmn", modelInstance).deploy();
+        engine.deployment().withXmlResource("process.bpmn", modelInstance).deploy();
     final Record<DeploymentRecordValue> secondDeployment =
-        ENGINE.deployment().withXmlResource("secondNoopModel.bpmn", secondNoopModel).deploy();
+        engine.deployment().withXmlResource("secondNoopModel.bpmn", secondNoopModel).deploy();
 
     // then
     assertThat(deployment.getKey()).isNotNegative();
@@ -120,7 +119,7 @@ public final class CreateDeploymentMultiplePartitionsTest {
                 .count())
         .isEqualTo(PARTITION_COUNT - 1);
 
-    ENGINE
+    engine
         .getPartitionIds()
         .forEach(
             partitionId -> {
@@ -136,7 +135,7 @@ public final class CreateDeploymentMultiplePartitionsTest {
   @Test
   public void shouldOnlyDistributeFromDeploymentPartition() {
     // when
-    final long deploymentKey1 = ENGINE.deployment().withXmlResource(PROCESS).deploy().getKey();
+    final long deploymentKey1 = engine.deployment().withXmlResource(PROCESS).deploy().getKey();
 
     // then
     final var distributionRecords =
@@ -156,7 +155,7 @@ public final class CreateDeploymentMultiplePartitionsTest {
   @Test
   public void shouldWriteDistributingRecordsForOtherPartitions() {
     // when
-    final long deploymentKey = ENGINE.deployment().withXmlResource(PROCESS).deploy().getKey();
+    final long deploymentKey = engine.deployment().withXmlResource(PROCESS).deploy().getKey();
 
     // then
     final var commandDistributionRecords =
@@ -183,7 +182,7 @@ public final class CreateDeploymentMultiplePartitionsTest {
 
     // when
     final Record<DeploymentRecordValue> deployment =
-        ENGINE
+        engine
             .deployment()
             .withXmlResource("process.bpmn", PROCESS)
             .withXmlResource("process2.bpmn", PROCESS_2)
@@ -217,11 +216,11 @@ public final class CreateDeploymentMultiplePartitionsTest {
             .endEvent()
             .done();
     final Record<DeploymentRecordValue> firstDeployment =
-        ENGINE.deployment().withXmlResource("process1.bpmn", modelInstance).deploy();
+        engine.deployment().withXmlResource("process1.bpmn", modelInstance).deploy();
 
     // when
     final Record<DeploymentRecordValue> secondDeployment =
-        ENGINE.deployment().withXmlResource("process2.bpmn", modelInstance).deploy();
+        engine.deployment().withXmlResource("process2.bpmn", modelInstance).deploy();
 
     // then
     final Record<DeploymentRecordValue> firstCreatedDeployment =
@@ -249,11 +248,11 @@ public final class CreateDeploymentMultiplePartitionsTest {
   public void shouldFilterDuplicateProcess() {
     // given
     final Record<DeploymentRecordValue> original =
-        ENGINE.deployment().withXmlResource("process.bpmn", PROCESS).deploy();
+        engine.deployment().withXmlResource("process.bpmn", PROCESS).deploy();
 
     // when
     final Record<DeploymentRecordValue> repeated =
-        ENGINE.deployment().withXmlResource("process.bpmn", PROCESS).deploy();
+        engine.deployment().withXmlResource("process.bpmn", PROCESS).deploy();
 
     // then
     assertThat(repeated.getKey()).isGreaterThan(original.getKey());
@@ -284,13 +283,13 @@ public final class CreateDeploymentMultiplePartitionsTest {
   public void shouldNotFilterDifferentProcesses() {
     // given
     final Record<DeploymentRecordValue> original =
-        ENGINE.deployment().withXmlResource("process.bpmn", PROCESS).deploy();
+        engine.deployment().withXmlResource("process.bpmn", PROCESS).deploy();
 
     // when
     final BpmnModelInstance sameBpmnIdModel =
         Bpmn.createExecutableProcess(PROCESS_ID).startEvent().endEvent().done();
     final Record<DeploymentRecordValue> repeated =
-        ENGINE.deployment().withXmlResource("process.bpmn", sameBpmnIdModel).deploy();
+        engine.deployment().withXmlResource("process.bpmn", sameBpmnIdModel).deploy();
 
     // then
     final var originalProcesses = original.getValue().getProcessesMetadata();
@@ -322,11 +321,11 @@ public final class CreateDeploymentMultiplePartitionsTest {
   public void shouldFilterDuplicateDmnResource() {
     // given
     final Record<DeploymentRecordValue> original =
-        ENGINE.deployment().withXmlClasspathResource(DMN_DECISION_TABLE).deploy();
+        engine.deployment().withXmlClasspathResource(DMN_DECISION_TABLE).deploy();
 
     // when
     final Record<DeploymentRecordValue> repeated =
-        ENGINE.deployment().withXmlClasspathResource(DMN_DECISION_TABLE).deploy();
+        engine.deployment().withXmlClasspathResource(DMN_DECISION_TABLE).deploy();
 
     // then
     assertThat(repeated.getKey()).isGreaterThan(original.getKey());
@@ -370,11 +369,11 @@ public final class CreateDeploymentMultiplePartitionsTest {
   public void shouldNotFilterDifferentDmnResource() {
     // given
     final Record<DeploymentRecordValue> original =
-        ENGINE.deployment().withXmlClasspathResource(DMN_DECISION_TABLE).deploy();
+        engine.deployment().withXmlClasspathResource(DMN_DECISION_TABLE).deploy();
 
     // when
     final Record<DeploymentRecordValue> repeated =
-        ENGINE.deployment().withXmlClasspathResource(DMN_DECISION_TABLE_V2).deploy();
+        engine.deployment().withXmlClasspathResource(DMN_DECISION_TABLE_V2).deploy();
 
     // then
     assertThat(repeated.getKey()).isGreaterThan(original.getKey());
@@ -420,7 +419,7 @@ public final class CreateDeploymentMultiplePartitionsTest {
     final var processId = Strings.newRandomValidBpmnId();
 
     // when
-    ENGINE
+    engine
         .deployment()
         .withXmlResource(
             "process.bpmn", Bpmn.createExecutableProcess(processId).startEvent().endEvent().done())
@@ -445,7 +444,7 @@ public final class CreateDeploymentMultiplePartitionsTest {
     final var decisionId = "jedi_or_sith";
 
     // when
-    ENGINE.deployment().withXmlClasspathResource(DMN_DECISION_TABLE).deploy();
+    engine.deployment().withXmlClasspathResource(DMN_DECISION_TABLE).deploy();
 
     // then
     assertThat(
@@ -475,7 +474,7 @@ public final class CreateDeploymentMultiplePartitionsTest {
 
     // when
     final var deployment =
-        ENGINE.deployment().withXmlResource(PROCESS).withTenantId(tenant).deploy();
+        engine.deployment().withXmlResource(PROCESS).withTenantId(tenant).deploy();
 
     // then
     assertThat(deployment.getValue().getTenantId()).isEqualTo(tenant);
@@ -510,7 +509,7 @@ public final class CreateDeploymentMultiplePartitionsTest {
 
     // when
     final var deployment =
-        ENGINE
+        engine
             .deployment()
             .withXmlClasspathResource(DMN_DECISION_TABLE)
             .withTenantId(tenant)
