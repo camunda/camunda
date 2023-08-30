@@ -36,7 +36,8 @@ public final class ParallelGatewayProcessor implements BpmnElementProcessor<Exec
     // the joining of the incoming sequence flows into the parallel gateway happens in the
     // sequence flow processor. The activating event of the parallel gateway is written when all
     // incoming sequence flows are taken
-    final var activated = stateTransitionBehavior.transitionToActivated(context);
+    final var activated =
+        stateTransitionBehavior.transitionToActivated(context, element.getEventType());
     final var completing = stateTransitionBehavior.transitionToCompleting(activated);
     stateTransitionBehavior
         .transitionToCompleted(element, completing)
@@ -58,7 +59,8 @@ public final class ParallelGatewayProcessor implements BpmnElementProcessor<Exec
 
   @Override
   public void onTerminate(final ExecutableFlowNode element, final BpmnElementContext context) {
-    final var terminated = stateTransitionBehavior.transitionToTerminated(context);
+    final var terminated =
+        stateTransitionBehavior.transitionToTerminated(context, element.getEventType());
     stateTransitionBehavior.onElementTerminated(element, terminated);
   }
 }

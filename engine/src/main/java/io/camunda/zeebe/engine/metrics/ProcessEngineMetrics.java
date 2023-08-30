@@ -98,8 +98,7 @@ public final class ProcessEngineMetrics {
   public void elementInstanceActivated(
       final BpmnElementContext context, final BpmnEventType eventType) {
     final var elementType = context.getBpmnElementType();
-    final String eventTypeName =
-        eventType != null ? eventType.name() : BpmnEventType.UNSPECIFIED.name();
+    final String eventTypeName = extractEventTypeName(eventType);
     elementInstanceEvent(ACTION_ACTIVATED, elementType, eventTypeName);
 
     if (isRootProcessInstance(elementType, context.getParentProcessInstanceKey())) {
@@ -110,8 +109,7 @@ public final class ProcessEngineMetrics {
   public void elementInstanceCompleted(
       final BpmnElementContext context, final BpmnEventType eventType) {
     final var elementType = context.getBpmnElementType();
-    final String eventTypeName =
-        eventType != null ? eventType.name() : BpmnEventType.UNSPECIFIED.name();
+    final String eventTypeName = extractEventTypeName(eventType);
     elementInstanceEvent(ACTION_COMPLETED, elementType, eventTypeName);
 
     if (isRootProcessInstance(elementType, context.getParentProcessInstanceKey())) {
@@ -122,8 +120,7 @@ public final class ProcessEngineMetrics {
   public void elementInstanceTerminated(
       final BpmnElementContext context, final BpmnEventType eventType) {
     final var elementType = context.getBpmnElementType();
-    final String eventTypeName =
-        eventType != null ? eventType.name() : BpmnEventType.UNSPECIFIED.name();
+    final String eventTypeName = extractEventTypeName(eventType);
     elementInstanceEvent(ACTION_TERMINATED, elementType, eventTypeName);
 
     if (isRootProcessInstance(elementType, context.getParentProcessInstanceKey())) {
@@ -150,6 +147,10 @@ public final class ProcessEngineMetrics {
 
   private void increaseEvaluatedDmnElements(final String action, final int amount) {
     EVALUATED_DMN_ELEMENTS.labels(ORGANIZATION_ID, action, partitionIdLabel).inc(amount);
+  }
+
+  private String extractEventTypeName(final BpmnEventType eventType) {
+    return eventType != null ? eventType.name() : BpmnEventType.UNSPECIFIED.name();
   }
 
   private enum CreationMode {

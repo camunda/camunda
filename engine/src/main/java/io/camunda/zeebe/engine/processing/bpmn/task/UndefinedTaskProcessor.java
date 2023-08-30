@@ -33,7 +33,8 @@ public class UndefinedTaskProcessor implements BpmnElementProcessor<ExecutableAc
 
   @Override
   public void onActivate(final ExecutableActivity element, final BpmnElementContext context) {
-    final var activated = stateTransitionBehavior.transitionToActivated(context);
+    final var activated =
+        stateTransitionBehavior.transitionToActivated(context, element.getEventType());
     stateTransitionBehavior.completeElement(activated);
   }
 
@@ -48,7 +49,8 @@ public class UndefinedTaskProcessor implements BpmnElementProcessor<ExecutableAc
 
   @Override
   public void onTerminate(final ExecutableActivity element, final BpmnElementContext context) {
-    final var terminated = stateTransitionBehavior.transitionToTerminated(context);
+    final var terminated =
+        stateTransitionBehavior.transitionToTerminated(context, element.getEventType());
     incidentBehavior.resolveIncidents(context);
     stateTransitionBehavior.onElementTerminated(element, terminated);
   }

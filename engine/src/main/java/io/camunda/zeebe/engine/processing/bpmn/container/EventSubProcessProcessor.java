@@ -45,7 +45,8 @@ public final class EventSubProcessProcessor
         .applyInputMappings(activating, element)
         .ifRightOrLeft(
             ok -> {
-              final var activated = stateTransitionBehavior.transitionToActivated(activating);
+              final var activated =
+                  stateTransitionBehavior.transitionToActivated(activating, element.getEventType());
               stateTransitionBehavior.activateChildInstance(
                   activated, element.getStartEvents().get(0));
             },
@@ -98,7 +99,9 @@ public final class EventSubProcessProcessor
 
       if (flowScopeInstance.isTerminating()) {
         // the event subprocess was terminated by its flow scope
-        final var terminated = stateTransitionBehavior.transitionToTerminated(flowScopeContext);
+        final var terminated =
+            stateTransitionBehavior.transitionToTerminated(
+                flowScopeContext, element.getEventType());
         stateTransitionBehavior.onElementTerminated(element, terminated);
 
       } else if (stateBehavior.isInterruptedByTerminateEndEvent(

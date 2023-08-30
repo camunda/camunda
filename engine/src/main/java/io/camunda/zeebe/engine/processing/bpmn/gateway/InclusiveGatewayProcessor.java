@@ -52,7 +52,8 @@ public final class InclusiveGatewayProcessor
     findSequenceFlowsToTake(element, activating)
         .ifRightOrLeft(
             optFlows -> {
-              final var activated = stateTransitionBehavior.transitionToActivated(activating);
+              final var activated =
+                  stateTransitionBehavior.transitionToActivated(activating, element.getEventType());
               final var completing = stateTransitionBehavior.transitionToCompleting(activated);
               stateTransitionBehavior
                   .transitionToCompleted(element, completing)
@@ -81,7 +82,8 @@ public final class InclusiveGatewayProcessor
   public void onTerminate(
       final ExecutableInclusiveGateway element, final BpmnElementContext context) {
     incidentBehavior.resolveIncidents(context);
-    final var terminated = stateTransitionBehavior.transitionToTerminated(context);
+    final var terminated =
+        stateTransitionBehavior.transitionToTerminated(context, element.getEventType());
     stateTransitionBehavior.onElementTerminated(element, terminated);
   }
 

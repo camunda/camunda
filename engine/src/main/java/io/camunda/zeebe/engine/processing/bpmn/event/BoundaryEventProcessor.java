@@ -60,7 +60,8 @@ public final class BoundaryEventProcessor implements BpmnElementProcessor<Execut
 
     incidentBehavior.resolveIncidents(context);
 
-    final var terminated = stateTransitionBehavior.transitionToTerminated(context);
+    final var terminated =
+        stateTransitionBehavior.transitionToTerminated(context, element.getEventType());
     stateTransitionBehavior.onElementTerminated(element, terminated);
   }
 }

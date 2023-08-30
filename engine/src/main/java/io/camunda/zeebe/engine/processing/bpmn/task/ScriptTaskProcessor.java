@@ -100,7 +100,8 @@ public final class ScriptTaskProcessor implements BpmnElementProcessor<Executabl
           .flatMap(ok -> evaluateScript(element, context))
           .ifRightOrLeft(
               ok -> {
-                final var activated = stateTransitionBehavior.transitionToActivated(context);
+                final var activated =
+                    stateTransitionBehavior.transitionToActivated(context, element.getEventType());
                 stateTransitionBehavior.completeElement(activated);
               },
               failure -> incidentBehavior.createIncident(failure, context));
@@ -127,7 +128,8 @@ public final class ScriptTaskProcessor implements BpmnElementProcessor<Executabl
           .filter(eventTrigger -> flowScopeInstance.isActive())
           .ifPresentOrElse(
               eventTrigger -> {
-                final var terminated = stateTransitionBehavior.transitionToTerminated(context);
+                final var terminated =
+                    stateTransitionBehavior.transitionToTerminated(context, element.getEventType());
                 eventSubscriptionBehavior.activateTriggeredEvent(
                     context.getElementInstanceKey(),
                     terminated.getFlowScopeKey(),
@@ -135,7 +137,8 @@ public final class ScriptTaskProcessor implements BpmnElementProcessor<Executabl
                     terminated);
               },
               () -> {
-                final var terminated = stateTransitionBehavior.transitionToTerminated(context);
+                final var terminated =
+                    stateTransitionBehavior.transitionToTerminated(context, element.getEventType());
                 stateTransitionBehavior.onElementTerminated(element, terminated);
               });
     }

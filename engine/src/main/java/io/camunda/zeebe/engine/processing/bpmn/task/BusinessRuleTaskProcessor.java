@@ -96,7 +96,8 @@ public final class BusinessRuleTaskProcessor
           .flatMap(ok -> decisionBehavior.evaluateDecision(element, context))
           .ifRightOrLeft(
               ok -> {
-                final var activated = stateTransitionBehavior.transitionToActivated(context);
+                final var activated =
+                    stateTransitionBehavior.transitionToActivated(context, element.getEventType());
                 stateTransitionBehavior.completeElement(activated);
               },
               failure -> incidentBehavior.createIncident(failure, context));
@@ -126,7 +127,8 @@ public final class BusinessRuleTaskProcessor
           .filter(eventTrigger -> !flowScopeInstance.isInterrupted())
           .ifPresentOrElse(
               eventTrigger -> {
-                final var terminated = stateTransitionBehavior.transitionToTerminated(context);
+                final var terminated =
+                    stateTransitionBehavior.transitionToTerminated(context, element.getEventType());
                 eventSubscriptionBehavior.activateTriggeredEvent(
                     context.getElementInstanceKey(),
                     terminated.getFlowScopeKey(),
@@ -134,7 +136,8 @@ public final class BusinessRuleTaskProcessor
                     terminated);
               },
               () -> {
-                final var terminated = stateTransitionBehavior.transitionToTerminated(context);
+                final var terminated =
+                    stateTransitionBehavior.transitionToTerminated(context, element.getEventType());
                 stateTransitionBehavior.onElementTerminated(element, terminated);
               });
     }

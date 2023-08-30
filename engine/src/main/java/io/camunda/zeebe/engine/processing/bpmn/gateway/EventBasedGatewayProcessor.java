@@ -43,7 +43,7 @@ public final class EventBasedGatewayProcessor
     eventSubscriptionBehavior
         .subscribeToEvents(element, context)
         .ifRightOrLeft(
-            ok -> stateTransitionBehavior.transitionToActivated(context),
+            ok -> stateTransitionBehavior.transitionToActivated(context, element.getEventType()),
             failure -> incidentBehavior.createIncident(failure, context));
   }
 
@@ -83,7 +83,8 @@ public final class EventBasedGatewayProcessor
     eventSubscriptionBehavior.unsubscribeFromEvents(context);
     incidentBehavior.resolveIncidents(context);
 
-    final var terminated = stateTransitionBehavior.transitionToTerminated(context);
+    final var terminated =
+        stateTransitionBehavior.transitionToTerminated(context, element.getEventType());
     stateTransitionBehavior.onElementTerminated(element, terminated);
   }
 }

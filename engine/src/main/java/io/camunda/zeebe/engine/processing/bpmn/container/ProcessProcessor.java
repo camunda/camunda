@@ -55,7 +55,8 @@ public final class ProcessProcessor
   @Override
   public void onActivate(
       final ExecutableFlowElementContainer element, final BpmnElementContext context) {
-    final var activatedContext = stateTransitionBehavior.transitionToActivated(context);
+    final var activatedContext =
+        stateTransitionBehavior.transitionToActivated(context, element.getEventType());
     activateStartEvent(element, activatedContext);
   }
 
@@ -88,7 +89,10 @@ public final class ProcessProcessor
       transitionTo(
           element,
           context,
-          terminating -> Either.right(stateTransitionBehavior.transitionToTerminated(terminating)));
+          terminating ->
+              Either.right(
+                  stateTransitionBehavior.transitionToTerminated(
+                      terminating, element.getEventType())));
     }
   }
 
@@ -167,7 +171,10 @@ public final class ProcessProcessor
         transitionTo(
             element,
             flowScopeContext,
-            context -> Either.right(stateTransitionBehavior.transitionToTerminated(context)));
+            context ->
+                Either.right(
+                    stateTransitionBehavior.transitionToTerminated(
+                        context, element.getEventType())));
       }
     }
   }
