@@ -201,22 +201,24 @@ public interface TopologyInitializer {
                 if (initialized.isDone()) {
                   return;
                 }
-                if (error == null && topology != null) {
-                  if (topology.isUninitialized()) {
-                    LOGGER.trace("Cluster topology is uninitialized in {}", memberId);
-                    initialized.complete(topology);
-                    return;
-                  }
+                if (error != null) {
+                  LOGGER.trace(
+                      "Failed to get a response for cluster topology sync query to {}. Will retry.",
+                      memberId,
+                      error);
+                } else if (topology == null) {
+                  LOGGER.trace("Received null cluster topology from {}. Will retry.", memberId);
+                } else if (topology.isUninitialized()) {
+                  LOGGER.trace("Cluster topology is uninitialized in {}", memberId);
+                  initialized.complete(topology);
+                  return;
+                } else {
                   LOGGER.debug("Received cluster topology {} from {}", topology, memberId);
                   onTopologyUpdated(topology);
                   return;
                 }
                 // retry
                 if (!initialized.isDone()) {
-                  LOGGER.trace(
-                      "Failed to get a response for cluster topology sync query to {}. Will retry.",
-                      memberId);
-
                   executor.schedule(SYNC_QUERY_RETRY_DELAY, () -> tryInitializeFrom(memberId));
                 }
               });
