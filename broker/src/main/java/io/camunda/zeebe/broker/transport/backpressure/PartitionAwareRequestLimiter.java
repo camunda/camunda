@@ -137,6 +137,7 @@ public final class PartitionAwareRequestLimiter {
   }
 
   public void addPartition(final int partitionId) {
+    removePartition(partitionId);
     getOrCreateLimiter(partitionId);
   }
 
