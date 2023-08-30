@@ -37,7 +37,7 @@
     <version.opensearch>2.4.0</version.opensearch>
     <version.spring.boot>3.1.2</version.spring.boot>
     <version.junit>4.13.2</version.junit>
-    <version.springdoc>2.1.0</version.springdoc>
+    <version.springdoc>2.2.0</version.springdoc>
     <version.jakarta.json>2.0.1</version.jakarta.json>
     <version.micrometer>1.11.2</version.micrometer>
     <version.mockito>5.4.0</version.mockito>
