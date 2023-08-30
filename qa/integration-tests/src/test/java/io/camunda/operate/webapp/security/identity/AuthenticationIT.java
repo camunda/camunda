@@ -13,10 +13,15 @@ import io.camunda.identity.sdk.authentication.Tokens;
 import io.camunda.identity.sdk.authorizations.Authorizations;
 import io.camunda.identity.sdk.authorizations.dto.Authorization;
 import io.camunda.identity.sdk.impl.rest.exception.RestException;
+import io.camunda.identity.sdk.tenants.Tenants;
+import io.camunda.identity.sdk.tenants.dto.Tenant;
 import io.camunda.operate.property.IdentityProperties;
+import io.camunda.operate.property.MultiTenancyProperties;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.SpringContextHolder;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
+import io.camunda.operate.webapp.security.tenant.OperateTenant;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -60,6 +65,9 @@ public class AuthenticationIT {
   @MockBean
   private Authorizations authorizations;
 
+  @MockBean
+  private Tenants tenants;
+
   @Mock
   private Tokens tokens;
 
@@ -79,7 +87,9 @@ public class AuthenticationIT {
     doReturn(null).when(tokens).getAccessToken();
     ReflectionTestUtils.setField(identityAuthentication, "tokens", tokens);
     ReflectionTestUtils.setField(identityAuthentication, "authorizations", null);
+    ReflectionTestUtils.setField(identityAuthentication, "tenants", null);
     doReturn(authorizations).when(identity).authorizations();
+    doReturn(tenants).when(identity).tenants();
   }
 
   public void cleanup() {
@@ -134,5 +144,50 @@ public class AuthenticationIT {
     assertThat(identityAuthentication.getAuthorizations()).hasSize(0);
   }
 
+  @Test
+  public void shouldReturnTenantsWhenMultiTenancyIsEnabled() throws IOException {
+    final var multiTenancyProperties = mock(MultiTenancyProperties.class);
+    doReturn(multiTenancyProperties).when(operateProperties).getMultiTenancy();
+    doReturn(true).when(multiTenancyProperties).isEnabled();
 
+    List<Tenant> tenants = new ObjectMapper().readValue(
+        this.getClass().getResource("/security/identity/tenants.json"), new TypeReference<>() {
+        });
+    doReturn(tenants).when(this.tenants).forToken(any());
+
+    //then tenants are properly converted and returned by identityAuthentication
+    List<OperateTenant> returnedTenants = identityAuthentication.getTenants();
+    assertThat(returnedTenants).hasSize(3);
+
+    assertThat(returnedTenants).filteredOn(
+            t -> t.getTenantId().equals("<default>") && t.getName().equals("Default")).hasSize(1);
+
+    assertThat(returnedTenants).filteredOn(
+        t -> t.getTenantId().equals("tenant-a") && t.getName().equals("Tenant A")).hasSize(1);
+
+    assertThat(returnedTenants).filteredOn(
+        t -> t.getTenantId().equals("tenant-b") && t.getName().equals("Tenant B")).hasSize(1);
+  }
+
+  @Test
+  public void shouldReturnNullAsTenantsWhenMultiTenancyIsDisabled() {
+    final var multiTenancyProperties = mock(MultiTenancyProperties.class);
+    doReturn(multiTenancyProperties).when(operateProperties).getMultiTenancy();
+    doReturn(false).when(multiTenancyProperties).isEnabled();
+
+    //then no Identity is called
+    assertThat(identityAuthentication.getTenants()).isNull();
+    verifyNoInteractions(authorizations);
+    verifyNoInteractions(tenants);
+  }
+
+  @Test
+  public void shouldReturnEmptyListOfTenantsWhenIdentityThrowsException() {
+    final var multiTenancyProperties = mock(MultiTenancyProperties.class);
+    doReturn(multiTenancyProperties).when(operateProperties).getMultiTenancy();
+    doReturn(true).when(multiTenancyProperties).isEnabled();
+    doThrow(new RestException("smth went wrong")).when(tenants).forToken(any());
+
+    assertThat(identityAuthentication.getTenants()).hasSize(0);
+  }
 }

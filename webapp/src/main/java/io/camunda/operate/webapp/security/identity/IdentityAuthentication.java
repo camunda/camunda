@@ -16,6 +16,7 @@ import io.camunda.identity.sdk.impl.rest.exception.RestException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.SpringContextHolder;
 import io.camunda.operate.webapp.security.Permission;
+import io.camunda.operate.webapp.security.tenant.OperateTenant;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -42,6 +43,8 @@ public class IdentityAuthentication extends AbstractAuthenticationToken implemen
   private List<IdentityAuthorization> authorizations;
   private String subject;
   private Date expires;
+
+  private List<OperateTenant> tenants;
 
   public IdentityAuthentication() {
     super(null);
@@ -119,6 +122,17 @@ public class IdentityAuthentication extends AbstractAuthenticationToken implemen
     return authorizations;
   }
 
+  public List<OperateTenant> getTenants() {
+    if (tenants == null) {
+      synchronized (this) {
+        if (tenants == null) {
+          retrieveTenants();
+        }
+      }
+    }
+    return tenants;
+  }
+
   private void retrieveResourcePermissions() {
     if (getOperateProperties().getIdentity().isResourcePermissionsEnabled()) {
       try {
@@ -127,6 +141,27 @@ public class IdentityAuthentication extends AbstractAuthenticationToken implemen
       } catch (RestException ex) {
         logger.warn("Unable to retrieve resource base permissions from Identity. Error: " + ex.getMessage(), ex);
         authorizations = new ArrayList<>();
+      }
+    }
+  }
+
+  private void retrieveTenants() {
+    if (getOperateProperties().getMultiTenancy().isEnabled()) {
+      try {
+        final var accessToken = tokens.getAccessToken();
+        final var identityTenants = getIdentity().tenants().forToken(accessToken);
+
+        if (identityTenants != null) {
+          tenants = identityTenants.stream()
+              .map((t) -> new OperateTenant(t.getTenantId(), t.getName()))
+              .collect(Collectors.toList());
+        } else {
+          tenants = new ArrayList<>();
+        }
+
+      } catch (RestException ex) {
+        logger.warn("Unable to retrieve tenants from Identity. Error: " + ex.getMessage(), ex);
+        tenants = new ArrayList<>();
       }
     }
   }
@@ -145,6 +180,9 @@ public class IdentityAuthentication extends AbstractAuthenticationToken implemen
     if (!getPermissions().contains(Permission.READ)) {
       throw new InsufficientAuthenticationException("No read permissions");
     }
+
+    retrieveTenants();
+
     subject = accessToken.getToken().getSubject();
     expires = accessToken.getToken().getExpiresAt();
     logger.info("Access token will expire at {}", expires);
