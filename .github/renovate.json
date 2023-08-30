@@ -23,6 +23,13 @@
         "patch"
       ],
       "enabled": false
+    },
+    {
+      "matchManagers": [
+        "dockerfile"
+      ],
+      "packageNames": [ "ubuntu" ],
+      "versioning": "regex:^(?<compatibility>[a-z]+)-(?<patch>\\d+)$"
     }
   ],
   "dockerfile": {
