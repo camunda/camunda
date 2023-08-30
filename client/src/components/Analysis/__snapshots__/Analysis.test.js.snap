@@ -5,7 +5,7 @@ exports[`should render sub navigation 1`] = `
   className="Analysis"
 >
   <SubNav>
-    <withRouter(NavItem)
+    <SubNavItem
       active={
         Array [
           "/analysis",
@@ -15,7 +15,7 @@ exports[`should render sub navigation 1`] = `
       linksTo="/analysis/outlierAnalysis"
       name="Outlier Analysis"
     />
-    <withRouter(NavItem)
+    <SubNavItem
       active={
         Array [
           "/analysis/branchAnalysis",

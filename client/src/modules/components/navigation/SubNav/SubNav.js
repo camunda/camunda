@@ -18,4 +18,10 @@ export default function SubNav(props) {
   );
 }
 
-SubNav.Item = NavItem;
+SubNav.Item = function SubNavItem(props) {
+  return (
+    <li>
+      <NavItem {...props} />
+    </li>
+  );
+};
