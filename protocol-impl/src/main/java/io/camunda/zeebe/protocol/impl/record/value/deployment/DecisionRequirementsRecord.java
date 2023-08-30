@@ -35,6 +35,7 @@ public final class DecisionRequirementsRecord extends UnifiedRecordValue
   private final StringProperty resourceNameProp = new StringProperty("resourceName");
   private final BinaryProperty checksumProp = new BinaryProperty("checksum");
   private final BinaryProperty resourceProp = new BinaryProperty("resource");
+  private final StringProperty tenantIdProp = new StringProperty("tenantId", "");
 
   public DecisionRequirementsRecord() {
     declareProperty(decisionRequirementsIdProp)
@@ -44,7 +45,8 @@ public final class DecisionRequirementsRecord extends UnifiedRecordValue
         .declareProperty(namespaceProp)
         .declareProperty(resourceNameProp)
         .declareProperty(checksumProp)
-        .declareProperty(resourceProp);
+        .declareProperty(resourceProp)
+        .declareProperty(tenantIdProp);
   }
 
   @Override
@@ -166,7 +168,11 @@ public final class DecisionRequirementsRecord extends UnifiedRecordValue
 
   @Override
   public String getTenantId() {
-    // todo(#13320): replace dummy implementation
-    return "";
+    return bufferAsString(tenantIdProp.getValue());
+  }
+
+  public DecisionRequirementsRecord setTenantId(final String tenantId) {
+    tenantIdProp.setValue(tenantId);
+    return this;
   }
 }

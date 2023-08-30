@@ -29,6 +29,7 @@ public final class ProcessRecord extends UnifiedRecordValue implements Process {
   private final StringProperty resourceNameProp = new StringProperty("resourceName");
   private final BinaryProperty checksumProp = new BinaryProperty("checksum", new UnsafeBuffer());
   private final BinaryProperty resourceProp = new BinaryProperty("resource", new UnsafeBuffer());
+  private final StringProperty tenantIdProp = new StringProperty("tenantId", "");
 
   public ProcessRecord() {
     declareProperty(bpmnProcessIdProp)
@@ -36,7 +37,8 @@ public final class ProcessRecord extends UnifiedRecordValue implements Process {
         .declareProperty(keyProp)
         .declareProperty(resourceNameProp)
         .declareProperty(checksumProp)
-        .declareProperty(resourceProp);
+        .declareProperty(resourceProp)
+        .declareProperty(tenantIdProp);
   }
 
   public ProcessRecord wrap(final ProcessMetadata metadata, final byte[] resource) {
@@ -46,6 +48,7 @@ public final class ProcessRecord extends UnifiedRecordValue implements Process {
     keyProp.setValue(metadata.getKey());
     resourceNameProp.setValue(metadata.getResourceNameBuffer());
     resourceProp.setValue(BufferUtil.wrapArray(resource));
+    tenantIdProp.setValue(metadata.getTenantId());
     return this;
   }
 
@@ -174,7 +177,6 @@ public final class ProcessRecord extends UnifiedRecordValue implements Process {
 
   @Override
   public String getTenantId() {
-    // todo(#13320): replace dummy implementation
-    return "";
+    return BufferUtil.bufferAsString(tenantIdProp.getValue());
   }
 }

@@ -7,7 +7,10 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.deployment;
 
+import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
+
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
+import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.ValueArray;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
@@ -35,11 +38,14 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
   private final ArrayProperty<DecisionRequirementsMetadataRecord> decisionRequirementsMetadataProp =
       new ArrayProperty<>("decisionRequirementsMetadata", new DecisionRequirementsMetadataRecord());
 
+  private final StringProperty tenantIdProp = new StringProperty("tenantId", "");
+
   public DeploymentRecord() {
     declareProperty(resourcesProp)
         .declareProperty(processesMetadataProp)
         .declareProperty(decisionRequirementsMetadataProp)
-        .declareProperty(decisionMetadataProp);
+        .declareProperty(decisionMetadataProp)
+        .declareProperty(tenantIdProp);
   }
 
   public ValueArray<ProcessMetadata> processesMetadata() {
@@ -121,8 +127,12 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
 
   @Override
   public String getTenantId() {
-    // todo(#13320): replace dummy implementation
-    return "";
+    return bufferAsString(tenantIdProp.getValue());
+  }
+
+  public DeploymentRecord setTenantId(final String tenantId) {
+    tenantIdProp.setValue(tenantId);
+    return this;
   }
 
   public boolean hasBpmnResources() {
