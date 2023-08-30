@@ -16,13 +16,14 @@
  */
 package io.atomix.raft.protocol;
 
-import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.cluster.RaftMember;
 import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
 
 /**
  * Configuration installation request.
@@ -39,18 +40,62 @@ public class ConfigureRequest extends AbstractRaftRequest {
   private final long index;
   private final long timestamp;
   private final Collection<RaftMember> members;
+  private final Collection<RaftMember> oldMembers;
 
   public ConfigureRequest(
       final long term,
       final String leader,
       final long index,
       final long timestamp,
-      final Collection<RaftMember> members) {
+      final Collection<RaftMember> newMembers,
+      final Collection<RaftMember> oldMembers) {
     this.term = term;
     this.leader = leader;
     this.index = index;
     this.timestamp = timestamp;
-    this.members = members;
+    members = newMembers;
+    this.oldMembers = oldMembers;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(term, leader, index, timestamp, members, oldMembers);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final ConfigureRequest that = (ConfigureRequest) o;
+    return term == that.term
+        && index == that.index
+        && timestamp == that.timestamp
+        && Objects.equals(leader, that.leader)
+        && Objects.equals(members, that.members)
+        && Objects.equals(oldMembers, that.oldMembers);
+  }
+
+  @Override
+  public String toString() {
+    return "ConfigureRequest{"
+        + "term="
+        + term
+        + ", leader='"
+        + leader
+        + '\''
+        + ", index="
+        + index
+        + ", timestamp="
+        + timestamp
+        + ", newMembers="
+        + members
+        + ", oldMembers="
+        + oldMembers
+        + '}';
   }
 
   /**
@@ -103,55 +148,17 @@ public class ConfigureRequest extends AbstractRaftRequest {
    *
    * @return The configuration members.
    */
-  public Collection<RaftMember> members() {
+  public Collection<RaftMember> newMembers() {
     return members;
   }
 
-  @Override
-  public int hashCode() {
-    int result = (int) (term ^ (term >>> 32));
-    result = 31 * result + leader.hashCode();
-    result = 31 * result + (int) (index ^ (index >>> 32));
-    result = 31 * result + (int) (timestamp ^ (timestamp >>> 32));
-    result = 31 * result + members.hashCode();
-    return result;
-  }
-
-  @Override
-  public boolean equals(final Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-
-    final ConfigureRequest that = (ConfigureRequest) o;
-
-    if (term != that.term) {
-      return false;
-    }
-    if (index != that.index) {
-      return false;
-    }
-    if (timestamp != that.timestamp) {
-      return false;
-    }
-    if (!leader.equals(that.leader)) {
-      return false;
-    }
-    return members.equals(that.members);
-  }
-
-  @Override
-  public String toString() {
-    return toStringHelper(this)
-        .add("term", term)
-        .add("leader", leader)
-        .add("index", index)
-        .add("timestamp", timestamp)
-        .add("members", members)
-        .toString();
+  /**
+   * Returns the configuration members.
+   *
+   * @return The configuration members.
+   */
+  public Collection<RaftMember> oldMembers() {
+    return oldMembers;
   }
 
   /** Heartbeat request builder. */
@@ -161,7 +168,8 @@ public class ConfigureRequest extends AbstractRaftRequest {
     private String leader;
     private long index;
     private long timestamp;
-    private Collection<RaftMember> members;
+    private Collection<RaftMember> newMembers;
+    private Collection<RaftMember> oldMembers = List.of();
 
     /**
      * Sets the request term.
@@ -215,12 +223,24 @@ public class ConfigureRequest extends AbstractRaftRequest {
     /**
      * Sets the request members.
      *
-     * @param members The request members.
+     * @param newMembers The request members.
      * @return The request builder.
      * @throws NullPointerException if {@code member} is null
      */
-    public Builder withMembers(final Collection<RaftMember> members) {
-      this.members = checkNotNull(members, "members cannot be null");
+    public Builder withNewMembers(final Collection<RaftMember> newMembers) {
+      this.newMembers = checkNotNull(newMembers, "members cannot be null");
+      return this;
+    }
+
+    /**
+     * Sets the request members.
+     *
+     * @param oldMembers The request members.
+     * @return The request builder.
+     * @throws NullPointerException if {@code member} is null
+     */
+    public Builder withOldMembers(final Collection<RaftMember> oldMembers) {
+      this.oldMembers = checkNotNull(oldMembers, "members cannot be null");
       return this;
     }
 
@@ -230,7 +250,7 @@ public class ConfigureRequest extends AbstractRaftRequest {
     @Override
     public ConfigureRequest build() {
       validate();
-      return new ConfigureRequest(term, leader, index, timestamp, members);
+      return new ConfigureRequest(term, leader, index, timestamp, newMembers, oldMembers);
     }
 
     @Override
@@ -240,7 +260,8 @@ public class ConfigureRequest extends AbstractRaftRequest {
       checkNotNull(leader, "leader cannot be null");
       checkArgument(index >= 0, "index must be positive");
       checkArgument(timestamp > 0, "timestamp must be positive");
-      checkNotNull(members, "members cannot be null");
+      checkNotNull(newMembers, "newMembers cannot be null");
+      checkNotNull(oldMembers, "oldMembers cannot be null");
     }
   }
 }

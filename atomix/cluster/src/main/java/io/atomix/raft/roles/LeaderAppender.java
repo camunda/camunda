@@ -286,13 +286,15 @@ final class LeaderAppender {
 
   /** Builds a configure request for the given member. */
   private ConfigureRequest buildConfigureRequest() {
-    final DefaultRaftMember leader = raft.getLeader();
+    final var leader = raft.getLeader();
+    final var configuration = raft.getCluster().getConfiguration();
     return ConfigureRequest.builder()
         .withTerm(raft.getTerm())
         .withLeader(leader.memberId())
-        .withIndex(raft.getCluster().getConfiguration().index())
-        .withTime(raft.getCluster().getConfiguration().time())
-        .withMembers(raft.getCluster().getConfiguration().newMembers())
+        .withIndex(configuration.index())
+        .withTime(configuration.time())
+        .withNewMembers(configuration.newMembers())
+        .withOldMembers(configuration.oldMembers())
         .build();
   }
 
