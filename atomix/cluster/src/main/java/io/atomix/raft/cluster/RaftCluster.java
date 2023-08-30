@@ -135,6 +135,8 @@ public interface RaftCluster {
    */
   CompletableFuture<Void> bootstrap(Collection<MemberId> cluster);
 
+  CompletableFuture<Void> join();
+
   /**
    * Returns a member by ID.
    *

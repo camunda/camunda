@@ -40,6 +40,7 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
 
   private Function<ConfigureRequest, CompletableFuture<ConfigureResponse>> configureHandler;
   private Function<ReconfigureRequest, CompletableFuture<ReconfigureResponse>> reconfigureHandler;
+  private Function<JoinRequest, CompletableFuture<JoinResponse>> joinHandler;
   private Function<InstallRequest, CompletableFuture<InstallResponse>> installHandler;
   private Function<TransferRequest, CompletableFuture<TransferResponse>> transferHandler;
   private Function<PollRequest, CompletableFuture<PollResponse>> pollHandler;
@@ -171,6 +172,20 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
   }
 
   @Override
+  public CompletableFuture<JoinResponse> join(final MemberId memberId, final JoinRequest request) {
+    final var responseFuture = new CompletableFuture<JoinResponse>();
+    send(
+        memberId,
+        () ->
+            getServer(memberId)
+                .thenCompose(listener -> listener.join(request))
+                .thenAccept(
+                    response -> send(localMemberId, () -> responseFuture.complete(response), null)),
+        responseFuture);
+    return responseFuture;
+  }
+
+  @Override
   public CompletableFuture<InstallResponse> install(
       final MemberId memberId, final InstallRequest request) {
     final var responseFuture = new CompletableFuture<InstallResponse>();
@@ -283,6 +298,17 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
   }
 
   @Override
+  public void registerJoinHandler(
+      final Function<JoinRequest, CompletableFuture<JoinResponse>> handler) {
+    joinHandler = handler;
+  }
+
+  @Override
+  public void unregisterJoinHandler() {
+    joinHandler = null;
+  }
+
+  @Override
   public void registerInstallHandler(
       final Function<InstallRequest, CompletableFuture<InstallResponse>> handler) {
     installHandler = handler;
@@ -382,6 +408,14 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
   CompletableFuture<ReconfigureResponse> reconfigure(final ReconfigureRequest request) {
     if (reconfigureHandler != null) {
       return reconfigureHandler.apply(request);
+    } else {
+      return CompletableFuture.failedFuture(new ConnectException());
+    }
+  }
+
+  CompletableFuture<JoinResponse> join(final JoinRequest request) {
+    if (joinHandler != null) {
+      return joinHandler.apply(request);
     } else {
       return CompletableFuture.failedFuture(new ConnectException());
     }

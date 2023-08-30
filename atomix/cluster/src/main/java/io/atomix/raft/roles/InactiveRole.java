@@ -17,6 +17,7 @@
 package io.atomix.raft.roles;
 
 import io.atomix.raft.RaftError;
+import io.atomix.raft.RaftError.Type;
 import io.atomix.raft.RaftServer;
 import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.protocol.AppendResponse;
@@ -25,6 +26,8 @@ import io.atomix.raft.protocol.ConfigureResponse;
 import io.atomix.raft.protocol.InstallRequest;
 import io.atomix.raft.protocol.InstallResponse;
 import io.atomix.raft.protocol.InternalAppendRequest;
+import io.atomix.raft.protocol.JoinRequest;
+import io.atomix.raft.protocol.JoinResponse;
 import io.atomix.raft.protocol.PollRequest;
 import io.atomix.raft.protocol.PollResponse;
 import io.atomix.raft.protocol.RaftResponse;
@@ -101,6 +104,15 @@ public class InactiveRole extends AbstractRole {
                 .withStatus(Status.ERROR)
                 .withError(RaftError.Type.UNAVAILABLE)
                 .build());
+    return CompletableFuture.completedFuture(result);
+  }
+
+  @Override
+  public CompletableFuture<JoinResponse> onJoin(final JoinRequest request) {
+    logRequest(request);
+    final var result =
+        logResponse(
+            JoinResponse.builder().withStatus(Status.ERROR).withError(Type.UNAVAILABLE).build());
     return CompletableFuture.completedFuture(result);
   }
 

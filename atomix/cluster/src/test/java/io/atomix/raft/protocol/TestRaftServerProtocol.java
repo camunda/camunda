@@ -30,6 +30,7 @@ public class TestRaftServerProtocol extends TestRaftProtocol implements RaftServ
 
   private Function<ConfigureRequest, CompletableFuture<ConfigureResponse>> configureHandler;
   private Function<ReconfigureRequest, CompletableFuture<ReconfigureResponse>> reconfigureHandler;
+  private Function<JoinRequest, CompletableFuture<JoinResponse>> joinHandler;
   private Function<InstallRequest, CompletableFuture<InstallResponse>> installHandler;
   private Function<TransferRequest, CompletableFuture<TransferResponse>> transferHandler;
   private Function<PollRequest, CompletableFuture<PollResponse>> pollHandler;
@@ -73,6 +74,11 @@ public class TestRaftServerProtocol extends TestRaftProtocol implements RaftServ
       final MemberId memberId, final ReconfigureRequest request) {
     return scheduleTimeout(
         getServer(memberId).thenCompose(listener -> listener.reconfigure(request)));
+  }
+
+  @Override
+  public CompletableFuture<JoinResponse> join(final MemberId memberId, final JoinRequest request) {
+    return scheduleTimeout(getServer(memberId).thenCompose(listener -> listener.join(request)));
   }
 
   @Override
@@ -140,6 +146,17 @@ public class TestRaftServerProtocol extends TestRaftProtocol implements RaftServ
   @Override
   public void unregisterReconfigureHandler() {
     reconfigureHandler = null;
+  }
+
+  @Override
+  public void registerJoinHandler(
+      final Function<JoinRequest, CompletableFuture<JoinResponse>> handler) {
+    joinHandler = handler;
+  }
+
+  @Override
+  public void unregisterJoinHandler() {
+    joinHandler = null;
   }
 
   @Override
@@ -244,6 +261,14 @@ public class TestRaftServerProtocol extends TestRaftProtocol implements RaftServ
   CompletableFuture<ReconfigureResponse> reconfigure(final ReconfigureRequest request) {
     if (reconfigureHandler != null) {
       return reconfigureHandler.apply(request);
+    } else {
+      return CompletableFuture.failedFuture(new ConnectException());
+    }
+  }
+
+  CompletableFuture<JoinResponse> join(final JoinRequest request) {
+    if (joinHandler != null) {
+      return joinHandler.apply(request);
     } else {
       return CompletableFuture.failedFuture(new ConnectException());
     }

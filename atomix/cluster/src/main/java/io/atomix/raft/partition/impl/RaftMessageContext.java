@@ -28,6 +28,7 @@ class RaftMessageContext {
   final String metadataSubject;
   final String configureSubject;
   final String reconfigureSubject;
+  final String joinSubject;
   final String installSubject;
   final String transferSubject;
   final String pollSubject;
@@ -35,10 +36,8 @@ class RaftMessageContext {
   final String appendV1subject;
   final String appendV2subject;
   final String leaderHeartbeatSubject;
-  private final String prefix;
 
   RaftMessageContext(final String prefix) {
-    this.prefix = prefix;
     heartbeatSubject = getSubject(prefix, "heartbeat");
     openSessionSubject = getSubject(prefix, "open");
     closeSessionSubject = getSubject(prefix, "close");
@@ -48,6 +47,7 @@ class RaftMessageContext {
     metadataSubject = getSubject(prefix, "metadata");
     configureSubject = getSubject(prefix, "configure");
     reconfigureSubject = getSubject(prefix, "reconfigure");
+    joinSubject = getSubject(prefix, "join");
     installSubject = getSubject(prefix, "install");
     transferSubject = getSubject(prefix, "transfer");
     pollSubject = getSubject(prefix, "poll");

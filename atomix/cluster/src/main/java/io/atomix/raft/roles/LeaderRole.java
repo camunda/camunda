@@ -18,6 +18,7 @@ package io.atomix.raft.roles;
 
 import com.google.common.base.Throwables;
 import io.atomix.raft.RaftError;
+import io.atomix.raft.RaftError.Type;
 import io.atomix.raft.RaftException;
 import io.atomix.raft.RaftException.NoLeader;
 import io.atomix.raft.RaftServer;
@@ -29,9 +30,12 @@ import io.atomix.raft.protocol.AppendResponse;
 import io.atomix.raft.protocol.ConfigureRequest;
 import io.atomix.raft.protocol.ConfigureResponse;
 import io.atomix.raft.protocol.InternalAppendRequest;
+import io.atomix.raft.protocol.JoinRequest;
+import io.atomix.raft.protocol.JoinResponse;
 import io.atomix.raft.protocol.PollRequest;
 import io.atomix.raft.protocol.PollResponse;
 import io.atomix.raft.protocol.RaftResponse;
+import io.atomix.raft.protocol.RaftResponse.Status;
 import io.atomix.raft.protocol.ReconfigureRequest;
 import io.atomix.raft.protocol.ReconfigureResponse;
 import io.atomix.raft.protocol.TransferRequest;
@@ -188,6 +192,30 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
               }
             });
     return future;
+  }
+
+  @Override
+  public CompletableFuture<JoinResponse> onJoin(final JoinRequest request) {
+    raft.checkThread();
+    final var currentConfiguration = raft.getCluster().getConfiguration();
+    return onReconfigure(
+            ReconfigureRequest.builder()
+                .withIndex(currentConfiguration.index())
+                .withTerm(currentConfiguration.term())
+                .withMembers(currentConfiguration.newMembers())
+                // Override local member with the new type.
+                .withMember(request.joiningMember())
+                .build())
+        .handle(
+            (reconfigureResponse, throwable) -> {
+              if (throwable != null) {
+                return JoinResponse.builder()
+                    .withStatus(Status.ERROR)
+                    .withError(Type.PROTOCOL_ERROR, throwable.getMessage())
+                    .build();
+              }
+              return JoinResponse.builder().withStatus(Status.OK).build();
+            });
   }
 
   private ApplicationEntry findLastZeebeEntry() {
