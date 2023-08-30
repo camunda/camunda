@@ -204,6 +204,9 @@ public class ElasticsearchExporter implements Exporter {
       if (index.process) {
         createValueIndexTemplate(ValueType.PROCESS);
       }
+      if (index.form) {
+        createValueIndexTemplate(ValueType.FORM);
+      }
       if (index.error) {
         createValueIndexTemplate(ValueType.ERROR);
       }

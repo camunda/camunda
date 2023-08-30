@@ -27,6 +27,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluatedDecision;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluatedDecisionInput;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluatedDecisionOutput;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.FailJobResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.FormMetadata;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.MatchedDecisionRule;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ProcessMetadata;
@@ -113,6 +114,27 @@ public final class ResponseMapper {
                     .setResourceName(drg.getResourceName())
                     .build())
         .forEach(drg -> responseBuilder.addDeploymentsBuilder().setDecisionRequirements(drg));
+
+    System.out.println("HERE1");
+    brokerResponse.formMetadata().stream()
+        .map(
+            form -> {
+              System.out.println("HERE2");
+              System.out.println(form.getFormId());
+              System.out.println(form.getFormKey());
+              final FormMetadata build =
+                  FormMetadata.newBuilder()
+                      .setFormId(form.getFormId())
+                      .setFormKey(form.getFormKey())
+                      .setVersion(form.getVersion())
+                      .setResourceName(form.getResourceName())
+                      .build();
+
+              System.out.println(build.toString());
+
+              return build;
+            })
+        .forEach(form -> responseBuilder.addDeploymentsBuilder().setForm(form));
 
     return responseBuilder.build();
   }

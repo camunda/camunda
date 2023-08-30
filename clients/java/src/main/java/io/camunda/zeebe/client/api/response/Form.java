@@ -15,38 +15,24 @@
  */
 package io.camunda.zeebe.client.api.response;
 
-import io.camunda.zeebe.client.api.ExperimentalApi;
-import java.util.List;
-
-public interface DeploymentEvent {
+public interface Form {
   /**
-   * @return the unique key of the deployment
+   * @return the BPMN process id of the process
    */
-  long getKey();
+  String getFormId();
 
   /**
-   * @return the processes which are deployed
+   * @return the version of the deployed process
    */
-  List<Process> getProcesses();
+  int getVersion();
 
   /**
-   * @return the decisions which are deployed
+   * @return the key of the deployed process
    */
-  List<Decision> getDecisions();
+  long getFormKey();
 
   /**
-   * @return the decision requirements which are deployed
+   * @return the name of the deployment resource which contains the process
    */
-  List<DecisionRequirements> getDecisionRequirements();
-
-  /**
-   * @return the processes which are deployed
-   */
-  List<Form> getForms();
-
-  /**
-   * @return the tenant identifier that owns this deployment
-   */
-  @ExperimentalApi("https://github.com/camunda/zeebe/issues/13321")
-  String getTenantId();
+  String getResourceName();
 }

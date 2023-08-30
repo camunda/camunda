@@ -14,6 +14,7 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.state.deployment.DbDecisionState;
 import io.camunda.zeebe.engine.state.deployment.DbDeploymentState;
+import io.camunda.zeebe.engine.state.deployment.DbFormState;
 import io.camunda.zeebe.engine.state.deployment.DbProcessState;
 import io.camunda.zeebe.engine.state.distribution.DbDistributionState;
 import io.camunda.zeebe.engine.state.immutable.PendingMessageSubscriptionState;
@@ -35,6 +36,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableDeploymentState;
 import io.camunda.zeebe.engine.state.mutable.MutableDistributionState;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
+import io.camunda.zeebe.engine.state.mutable.MutableFormState;
 import io.camunda.zeebe.engine.state.mutable.MutableIncidentState;
 import io.camunda.zeebe.engine.state.mutable.MutableJobState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageStartEventSubscriptionState;
@@ -62,6 +64,8 @@ public class ProcessingDbState implements MutableProcessingState {
   private final KeyGenerator keyGenerator;
 
   private final MutableProcessState processState;
+
+  private final MutableFormState formState;
   private final MutableTimerInstanceState timerInstanceState;
   private final MutableElementInstanceState elementInstanceState;
   private final MutableEventScopeInstanceState eventScopeInstanceState;
@@ -95,6 +99,7 @@ public class ProcessingDbState implements MutableProcessingState {
 
     variableState = new DbVariableState(zeebeDb, transactionContext);
     processState = new DbProcessState(zeebeDb, transactionContext);
+    formState = new DbFormState();
     timerInstanceState = new DbTimerInstanceState(zeebeDb, transactionContext);
     elementInstanceState = new DbElementInstanceState(zeebeDb, transactionContext, variableState);
     eventScopeInstanceState = new DbEventScopeInstanceState(zeebeDb, transactionContext);
@@ -135,6 +140,11 @@ public class ProcessingDbState implements MutableProcessingState {
   @Override
   public MutableProcessState getProcessState() {
     return processState;
+  }
+
+  @Override
+  public MutableFormState getFormState() {
+    return formState;
   }
 
   @Override

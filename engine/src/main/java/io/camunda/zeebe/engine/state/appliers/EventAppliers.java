@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
+import io.camunda.zeebe.protocol.record.intent.FormIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
@@ -57,6 +58,7 @@ public final class EventAppliers implements EventApplier {
     registerProcessInstanceModificationAppliers(state);
 
     registerProcessAppliers(state);
+    registerFormAppliers(state);
     register(ErrorIntent.CREATED, new ErrorCreatedApplier(state.getBannedInstanceState()));
     registerDeploymentAppliers(state);
 
@@ -85,6 +87,10 @@ public final class EventAppliers implements EventApplier {
     register(ProcessIntent.CREATED, new ProcessCreatedApplier(state));
     register(ProcessIntent.DELETING, new ProcessDeletingApplier(state));
     register(ProcessIntent.DELETED, new ProcessDeletedApplier(state));
+  }
+
+  private void registerFormAppliers(final MutableProcessingState state) {
+    register(FormIntent.CREATED, new FormCreatedApplier(state));
   }
 
   private void registerTimeEventAppliers(final MutableProcessingState state) {

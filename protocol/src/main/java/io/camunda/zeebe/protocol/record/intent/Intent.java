@@ -52,7 +52,8 @@ public interface Intent {
           SignalSubscriptionIntent.class,
           ResourceDeletionIntent.class,
           CommandDistributionIntent.class,
-          ProcessInstanceBatchIntent.class);
+          ProcessInstanceBatchIntent.class,
+          FormIntent.class);
   short NULL_VAL = 255;
   Intent UNKNOWN = UnknownIntent.UNKNOWN;
 
@@ -123,6 +124,8 @@ public interface Intent {
         return CommandDistributionIntent.from(intent);
       case PROCESS_INSTANCE_BATCH:
         return ProcessInstanceBatchIntent.from(intent);
+      case FORM:
+        return FormIntent.from(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;
@@ -190,6 +193,8 @@ public interface Intent {
         return SignalSubscriptionIntent.valueOf(intent);
       case RESOURCE_DELETION:
         return ResourceDeletionIntent.valueOf(intent);
+      case FORM:
+        return FormIntent.valueOf(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;

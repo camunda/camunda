@@ -19,6 +19,9 @@ public interface MutableProcessingState extends ProcessingState {
   MutableProcessState getProcessState();
 
   @Override
+  MutableFormState getFormState();
+
+  @Override
   MutableJobState getJobState();
 
   @Override

@@ -18,6 +18,7 @@ package io.camunda.zeebe.client.impl.response;
 import io.camunda.zeebe.client.api.response.Decision;
 import io.camunda.zeebe.client.api.response.DecisionRequirements;
 import io.camunda.zeebe.client.api.response.DeploymentEvent;
+import io.camunda.zeebe.client.api.response.Form;
 import io.camunda.zeebe.client.api.response.Process;
 import io.camunda.zeebe.client.impl.Loggers;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessResponse;
@@ -40,6 +41,8 @@ public final class DeploymentEventImpl implements DeploymentEvent {
   private final List<Decision> decisions = new ArrayList<>();
   private final List<DecisionRequirements> decisionRequirements = new ArrayList<>();
 
+  private final List<Form> forms = new ArrayList<>();
+
   public DeploymentEventImpl(final DeployProcessResponse response) {
     key = response.getKey();
     response.getProcessesList().stream().map(ProcessImpl::new).forEach(processes::add);
@@ -49,6 +52,9 @@ public final class DeploymentEventImpl implements DeploymentEvent {
     key = response.getKey();
     for (final Deployment deployment : response.getDeploymentsList()) {
       switch (deployment.getMetadataCase()) {
+        case FORM:
+          forms.add(new FormImpl(deployment.getForm()));
+          break;
         case PROCESS:
           processes.add(new ProcessImpl(deployment.getProcess()));
           break;
@@ -85,6 +91,11 @@ public final class DeploymentEventImpl implements DeploymentEvent {
   @Override
   public List<DecisionRequirements> getDecisionRequirements() {
     return decisionRequirements;
+  }
+
+  @Override
+  public List<Form> getForms() {
+    return forms;
   }
 
   @Override

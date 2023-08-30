@@ -13,6 +13,7 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentDistributionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.FormRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
@@ -78,6 +79,7 @@ public final class TypedEventRegistry {
     registry.put(ValueType.DECISION_EVALUATION, DecisionEvaluationRecord.class);
     registry.put(ValueType.RESOURCE_DELETION, ResourceDeletionRecord.class);
     registry.put(ValueType.COMMAND_DISTRIBUTION, CommandDistributionRecord.class);
+    registry.put(ValueType.FORM, FormRecord.class);
 
     registry.put(ValueType.CHECKPOINT, CheckpointRecord.class);
     registry.put(ValueType.ESCALATION, EscalationRecord.class);

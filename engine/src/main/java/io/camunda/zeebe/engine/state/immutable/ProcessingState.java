@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.state.immutable;
 
+import io.camunda.zeebe.engine.state.mutable.MutableFormState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 
@@ -15,6 +16,8 @@ public interface ProcessingState extends StreamProcessorLifecycleAware {
   DeploymentState getDeploymentState();
 
   ProcessState getProcessState();
+
+  MutableFormState getFormState();
 
   JobState getJobState();
 

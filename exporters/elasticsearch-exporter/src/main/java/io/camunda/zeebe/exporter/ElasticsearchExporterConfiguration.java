@@ -64,6 +64,8 @@ public class ElasticsearchExporterConfiguration {
         return index.deployment;
       case PROCESS:
         return index.process;
+      case FORM:
+        return index.form;
       case ERROR:
         return index.error;
       case INCIDENT:
@@ -161,6 +163,7 @@ public class ElasticsearchExporterConfiguration {
     public boolean messageBatch = false;
     public boolean messageSubscription = true;
     public boolean process = true;
+    public boolean form = true;
     public boolean processInstance = true;
     public boolean processInstanceBatch = false;
     public boolean processInstanceCreation = true;
@@ -238,6 +241,8 @@ public class ElasticsearchExporterConfiguration {
           + messageSubscription
           + ", process="
           + process
+          + ", form="
+          + form
           + ", processInstance="
           + processInstance
           + ", processInstanceBatch="

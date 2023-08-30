@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.response.DeploymentEvent;
+import io.camunda.zeebe.client.api.response.Form;
 import io.camunda.zeebe.client.api.response.Process;
 import io.camunda.zeebe.it.util.GrpcClientRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -111,6 +112,47 @@ public final class CreateDeploymentTest {
     assertThat(decision2.getDecisionKey()).isPositive();
     assertThat(decision2.getDmnDecisionRequirementsId()).isEqualTo("force_users");
     assertThat(decision2.getDecisionRequirementsKey()).isPositive();
+  }
+
+  @Test
+  public void shouldDeployForm() {
+    // given
+    final String resourceName = "testForm.form";
+    final String formJSON =
+        """
+          {
+            "components": [
+            ],
+            "type": "default",
+            "id": "Form_0w7r08e",
+            "executionPlatform": "Camunda Cloud",
+            "executionPlatformVersion": "8.1.0",
+            "exporter": {
+              "name": "Camunda Modeler",
+              "version": "5.9.0"
+            },
+            "schemaVersion": 7
+          }
+          """;
+
+    // when
+    final DeploymentEvent result =
+        CLIENT_RULE
+            .getClient()
+            .newDeployResourceCommand()
+            .addResourceStringUtf8(formJSON, resourceName)
+            .send()
+            .join();
+
+    // then
+    assertThat(result.getKey()).isGreaterThan(0);
+    assertThat(result.getForms()).hasSize(1);
+
+    final Form deployedForm = result.getForms().get(0);
+    assertThat(deployedForm.getFormId()).isEqualTo("Form_0w7r08e");
+    assertThat(deployedForm.getVersion()).isEqualTo(1);
+    assertThat(deployedForm.getFormKey()).isGreaterThan(0);
+    assertThat(deployedForm.getResourceName()).isEqualTo(resourceName);
   }
 
   @Test
