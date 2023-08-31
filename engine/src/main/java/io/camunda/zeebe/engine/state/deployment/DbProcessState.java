@@ -182,7 +182,8 @@ public final class DbProcessState implements MutableProcessState {
         .remove(processRecord.getProcessDefinitionKey());
 
     final long latestVersion =
-        versionManager.getLatestProcessVersion(processRecord.getBpmnProcessId());
+        versionManager.getLatestProcessVersion(
+            processRecord.getBpmnProcessId(), processRecord.getTenantId());
     if (latestVersion == processRecord.getVersion()) {
       // As we don't set the digest to the digest of the previous there is a chance it does not
       // exist. This happens when deleting the latest version two times in a row. To be safe we must
@@ -191,7 +192,7 @@ public final class DbProcessState implements MutableProcessState {
     }
 
     versionManager.deleteProcessVersion(
-        processRecord.getBpmnProcessId(), processRecord.getVersion());
+        processRecord.getBpmnProcessId(), processRecord.getVersion(), processRecord.getTenantId());
   }
 
   private void persistProcess(final long processDefinitionKey, final ProcessRecord processRecord) {
@@ -211,7 +212,7 @@ public final class DbProcessState implements MutableProcessState {
     processId.wrapBuffer(processRecord.getBpmnProcessIdBuffer());
     final var bpmnProcessId = processRecord.getBpmnProcessId();
     final var version = processRecord.getVersion();
-    versionManager.addProcessVersion(bpmnProcessId, version);
+    versionManager.addProcessVersion(bpmnProcessId, version, processRecord.getTenantId());
   }
 
   // is called on getters, if process is not in memory
@@ -281,7 +282,7 @@ public final class DbProcessState implements MutableProcessState {
             .get(processIdBuffer);
 
     processId.wrapBuffer(processIdBuffer);
-    final long latestVersion = versionManager.getLatestProcessVersion(processIdBuffer);
+    final long latestVersion = versionManager.getLatestProcessVersion(processIdBuffer, tenantId);
 
     DeployedProcess deployedProcess;
     if (versionMap == null) {
