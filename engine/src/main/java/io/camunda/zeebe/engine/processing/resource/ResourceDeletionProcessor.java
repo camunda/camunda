@@ -192,7 +192,8 @@ public class ResourceDeletionProcessor
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), ProcessIntent.DELETING, processRecord);
 
     final String processId = processRecord.getBpmnProcessId();
-    final var latestVersion = processState.getLatestProcessVersion(processId);
+    final var latestVersion =
+        processState.getLatestProcessVersion(processId, processRecord.getTenantId());
 
     // If we are deleting the latest version we must unsubscribe the start events
     if (latestVersion == process.getVersion()) {

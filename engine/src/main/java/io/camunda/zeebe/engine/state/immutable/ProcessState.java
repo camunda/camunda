@@ -30,7 +30,7 @@ public interface ProcessState {
    *
    * @param bpmnProcessId the id of the process
    */
-  int getLatestProcessVersion(String bpmnProcessId);
+  int getLatestProcessVersion(String bpmnProcessId, final String tenantId);
 
   /**
    * Gets the next version a process of a given id will receive. This is used, for example, when a
