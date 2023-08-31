@@ -93,9 +93,10 @@ public final class InclusiveGatewayProcessor
       return Either.right(null);
     }
 
-    if (element.getOutgoing().size() == 1) {
-      // only one flow can just be taken
-      executableSequenceFlows.add(element.getOutgoing().get(0));
+    final var outgoingSequenceFlows = element.getOutgoing();
+    if (outgoingSequenceFlows.size() == 1 && outgoingSequenceFlows.get(0).getCondition() == null) {
+      // only one flow without a condition, can just be taken
+      executableSequenceFlows.add(outgoingSequenceFlows.get(0));
       return Either.right(executableSequenceFlows);
     }
 
