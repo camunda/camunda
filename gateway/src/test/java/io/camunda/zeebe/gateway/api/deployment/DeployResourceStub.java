@@ -46,6 +46,7 @@ public final class DeployResourceStub
   public BrokerResponse<DeploymentRecord> handle(final BrokerDeployResourceRequest request)
       throws Exception {
     final DeploymentRecord deploymentRecord = request.getRequestWriter();
+    final String tenantId = deploymentRecord.getTenantId();
     deploymentRecord
         .resources()
         .iterator()
@@ -59,7 +60,8 @@ public final class DeployResourceStub
                     .setResourceName(r.getResourceNameBuffer())
                     .setVersion(PROCESS_VERSION)
                     .setKey(PROCESS_KEY)
-                    .setChecksum(CHECKSUM);
+                    .setChecksum(CHECKSUM)
+                    .setTenantId(tenantId);
               } else if (r.getResourceName().endsWith(".dmn")) {
                 deploymentRecord
                     .decisionsMetadata()
@@ -69,7 +71,8 @@ public final class DeployResourceStub
                     .setVersion(456)
                     .setDecisionKey(567)
                     .setDecisionRequirementsId(r.getResourceName())
-                    .setDecisionRequirementsKey(678);
+                    .setDecisionRequirementsKey(678)
+                    .setTenantId(tenantId);
                 deploymentRecord
                     .decisionRequirementsMetadata()
                     .add()
@@ -79,7 +82,8 @@ public final class DeployResourceStub
                     .setDecisionRequirementsKey(678)
                     .setNamespace(r.getResourceName())
                     .setResourceName(r.getResourceName())
-                    .setChecksum(BufferUtil.wrapString("checksum"));
+                    .setChecksum(BufferUtil.wrapString("checksum"))
+                    .setTenantId(tenantId);
               }
             });
     return new BrokerResponse<>(deploymentRecord, 0, KEY);

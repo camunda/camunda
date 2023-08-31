@@ -57,7 +57,8 @@ public final class DeployProcessStub
                   .setResourceName(r.getResourceNameBuffer())
                   .setVersion(PROCESS_VERSION)
                   .setKey(PROCESS_KEY)
-                  .setChecksum(CHECKSUM);
+                  .setChecksum(CHECKSUM)
+                  .setTenantId(deploymentRecord.getTenantId());
             });
     return new BrokerResponse<>(deploymentRecord, 0, KEY);
   }
