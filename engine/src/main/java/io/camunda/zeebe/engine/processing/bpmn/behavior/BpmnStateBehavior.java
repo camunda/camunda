@@ -128,8 +128,9 @@ public final class BpmnStateBehavior {
         processState.getProcessByKeyAndTenant(processDefinitionKey, tenantId));
   }
 
-  public Optional<DeployedProcess> getLatestProcessVersion(final DirectBuffer processId) {
-    final var process = processState.getLatestProcessVersionByProcessId(processId);
+  public Optional<DeployedProcess> getLatestProcessVersion(
+      final DirectBuffer processId, final String tenantId) {
+    final var process = processState.getLatestProcessVersionByProcessId(processId, tenantId);
     return Optional.ofNullable(process);
   }
 

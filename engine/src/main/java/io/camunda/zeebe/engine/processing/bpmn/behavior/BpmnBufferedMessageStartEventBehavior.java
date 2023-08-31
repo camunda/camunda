@@ -71,7 +71,8 @@ public final class BpmnBufferedMessageStartEventBehavior {
       final DirectBuffer correlationKey, final BpmnElementContext context) {
 
     final var bpmnProcessId = context.getBpmnProcessId();
-    final var process = processState.getLatestProcessVersionByProcessId(bpmnProcessId);
+    final var process =
+        processState.getLatestProcessVersionByProcessId(bpmnProcessId, context.getTenantId());
 
     findNextMessageToCorrelate(process, correlationKey)
         .ifPresent(

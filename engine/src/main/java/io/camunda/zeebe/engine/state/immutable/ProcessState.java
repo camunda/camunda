@@ -15,7 +15,7 @@ import org.agrona.DirectBuffer;
 
 public interface ProcessState {
 
-  DeployedProcess getLatestProcessVersionByProcessId(DirectBuffer processId);
+  DeployedProcess getLatestProcessVersionByProcessId(DirectBuffer processId, final String tenantId);
 
   DeployedProcess getProcessByProcessIdAndVersion(
       DirectBuffer processId, int version, final String tenantId);

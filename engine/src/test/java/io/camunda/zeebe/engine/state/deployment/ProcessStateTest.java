@@ -222,7 +222,7 @@ public final class ProcessStateTest {
 
     // when
     final DeployedProcess deployedProcess =
-        processState.getLatestProcessVersionByProcessId(wrapString("deployedProcess"));
+        processState.getLatestProcessVersionByProcessId(wrapString("deployedProcess"), "");
 
     // then
     Assertions.assertThat(deployedProcess).isNull();
@@ -341,7 +341,7 @@ public final class ProcessStateTest {
 
     // then
     final DeployedProcess deployedProcess =
-        processState.getLatestProcessVersionByProcessId(wrapString("processId"));
+        processState.getLatestProcessVersionByProcessId(wrapString("processId"), "");
 
     assertThat(deployedProcess).isNotNull();
     assertThat(deployedProcess.getBpmnProcessId()).isEqualTo(wrapString("processId"));
@@ -435,7 +435,7 @@ public final class ProcessStateTest {
 
     // when
     final DeployedProcess latestProcess =
-        processState.getLatestProcessVersionByProcessId(wrapString("processId"));
+        processState.getLatestProcessVersionByProcessId(wrapString("processId"), "");
 
     // then
     final DeployedProcess firstProcess =
@@ -467,14 +467,14 @@ public final class ProcessStateTest {
     // given
     processState.putDeployment(creatingDeploymentRecord(processingState));
     final DeployedProcess firstLatest =
-        processState.getLatestProcessVersionByProcessId(wrapString("processId"));
+        processState.getLatestProcessVersionByProcessId(wrapString("processId"), "");
 
     // when
     processState.putDeployment(creatingDeploymentRecord(processingState));
 
     // then
     final DeployedProcess latestProcess =
-        processState.getLatestProcessVersionByProcessId(wrapString("processId"));
+        processState.getLatestProcessVersionByProcessId(wrapString("processId"), "");
 
     Assertions.assertThat(firstLatest).isNotNull();
     Assertions.assertThat(latestProcess).isNotNull();
@@ -533,7 +533,7 @@ public final class ProcessStateTest {
 
     // when
     final DeployedProcess deployedProcess =
-        processState.getLatestProcessVersionByProcessId(wrapString("processId"));
+        processState.getLatestProcessVersionByProcessId(wrapString("processId"), "");
 
     // then
     final ExecutableProcess process = deployedProcess.getProcess();
@@ -618,7 +618,7 @@ public final class ProcessStateTest {
 
     // when
     final DeployedProcess latestProcess =
-        processState.getLatestProcessVersionByProcessId(wrapString(processId));
+        processState.getLatestProcessVersionByProcessId(wrapString(processId), "");
 
     // then
     Assertions.assertThat(latestProcess.getVersion()).isEqualTo(2);
@@ -662,7 +662,8 @@ public final class ProcessStateTest {
     assertThat(processState.getProcesses()).isEmpty();
     assertThat(processState.getProcessesByBpmnProcessId(BufferUtil.wrapString(processId)))
         .isEmpty();
-    assertThat(processState.getLatestProcessVersionByProcessId(BufferUtil.wrapString(processId)))
+    assertThat(
+            processState.getLatestProcessVersionByProcessId(BufferUtil.wrapString(processId), ""))
         .isNull();
     assertThat(
             processState.getProcessByProcessIdAndVersion(BufferUtil.wrapString(processId), 1, ""))
@@ -697,7 +698,8 @@ public final class ProcessStateTest {
     assertThat(processState.getProcessesByBpmnProcessId(BufferUtil.wrapString(processId)))
         .extracting(DeployedProcess::getKey)
         .containsOnly(newDefinitionKey);
-    assertThat(processState.getLatestProcessVersionByProcessId(BufferUtil.wrapString(processId)))
+    assertThat(
+            processState.getLatestProcessVersionByProcessId(BufferUtil.wrapString(processId), ""))
         .extracting(DeployedProcess::getKey)
         .isEqualTo(newDefinitionKey);
     assertThat(
@@ -737,7 +739,8 @@ public final class ProcessStateTest {
     assertThat(processState.getProcessesByBpmnProcessId(BufferUtil.wrapString(processId)))
         .extracting(DeployedProcess::getKey)
         .containsOnly(oldDefinitionKey);
-    assertThat(processState.getLatestProcessVersionByProcessId(BufferUtil.wrapString(processId)))
+    assertThat(
+            processState.getLatestProcessVersionByProcessId(BufferUtil.wrapString(processId), ""))
         .extracting(DeployedProcess::getKey)
         .isEqualTo(oldDefinitionKey);
     assertThat(
@@ -783,7 +786,8 @@ public final class ProcessStateTest {
     assertThat(processState.getProcessesByBpmnProcessId(BufferUtil.wrapString(processId)))
         .extracting(DeployedProcess::getKey)
         .containsOnly(oldDefinitionKey);
-    assertThat(processState.getLatestProcessVersionByProcessId(BufferUtil.wrapString(processId)))
+    assertThat(
+            processState.getLatestProcessVersionByProcessId(BufferUtil.wrapString(processId), ""))
         .extracting(DeployedProcess::getKey)
         .isEqualTo(oldDefinitionKey);
     assertThat(

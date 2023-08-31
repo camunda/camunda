@@ -63,7 +63,7 @@ public final class CallActivityProcessor
         .applyInputMappings(context, element)
         .flatMap(ok -> eventSubscriptionBehavior.subscribeToEvents(element, context))
         .flatMap(ok -> evaluateProcessId(context, element))
-        .flatMap(this::getProcessForProcessId)
+        .flatMap(processId -> getProcessForProcessId(processId, context.getTenantId()))
         .flatMap(this::checkProcessHasNoneStartEvent)
         .ifRightOrLeft(
             process -> {
@@ -179,8 +179,9 @@ public final class CallActivityProcessor
         processIdExpression, scopeKey);
   }
 
-  private Either<Failure, DeployedProcess> getProcessForProcessId(final DirectBuffer processId) {
-    final var process = stateBehavior.getLatestProcessVersion(processId);
+  private Either<Failure, DeployedProcess> getProcessForProcessId(
+      final DirectBuffer processId, final String tenantId) {
+    final var process = stateBehavior.getLatestProcessVersion(processId, tenantId);
     if (process.isPresent()) {
       return Either.right(process.get());
     }

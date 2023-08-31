@@ -64,7 +64,8 @@ public class StartEventSubscriptionManager {
 
   private boolean isLatestProcess(final ProcessMetadata processRecord) {
     return processState
-            .getLatestProcessVersionByProcessId(processRecord.getBpmnProcessIdBuffer())
+            .getLatestProcessVersionByProcessId(
+                processRecord.getBpmnProcessIdBuffer(), processRecord.getTenantId())
             .getVersion()
         == processRecord.getVersion();
   }

@@ -147,7 +147,8 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
       if (process.isExecutable()) {
         final String bpmnProcessId = process.getId();
         final DeployedProcess lastProcess =
-            processState.getLatestProcessVersionByProcessId(BufferUtil.wrapString(bpmnProcessId));
+            processState.getLatestProcessVersionByProcessId(
+                BufferUtil.wrapString(bpmnProcessId), deploymentEvent.getTenantId());
 
         final DirectBuffer lastDigest =
             processState.getLatestVersionDigest(wrapString(bpmnProcessId));
