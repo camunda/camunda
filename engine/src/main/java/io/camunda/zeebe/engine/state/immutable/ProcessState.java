@@ -57,7 +57,7 @@ public interface ProcessState {
   Optional<Integer> findProcessVersionBefore(String bpmnProcessId, long version);
 
   <T extends ExecutableFlowElement> T getFlowElement(
-      long processDefinitionKey, DirectBuffer elementId, Class<T> elementType);
+      long processDefinitionKey, String tenantId, DirectBuffer elementId, Class<T> elementType);
 
   /** TODO: Remove the cache entirely from the immutable state */
   void clearCache();
