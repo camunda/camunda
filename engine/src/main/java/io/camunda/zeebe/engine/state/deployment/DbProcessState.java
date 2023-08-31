@@ -17,6 +17,8 @@ import io.camunda.zeebe.db.impl.DbForeignKey;
 import io.camunda.zeebe.db.impl.DbForeignKey.MatchType;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbString;
+import io.camunda.zeebe.db.impl.DbTenantAwareKey;
+import io.camunda.zeebe.db.impl.DbTenantAwareKey.PlacementType;
 import io.camunda.zeebe.engine.processing.deployment.model.BpmnFactory;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
@@ -56,9 +58,11 @@ public final class DbProcessState implements MutableProcessState {
   private final Long2ObjectHashMap<DeployedProcess> processesByKey;
 
   // process
-  private final ColumnFamily<DbLong, PersistedProcess> processColumnFamily;
+  private final ColumnFamily<DbTenantAwareKey<DbLong>, PersistedProcess> processColumnFamily;
   private final DbLong processDefinitionKey;
   private final PersistedProcess persistedProcess;
+  private final DbString tenantIdKey;
+  private final DbTenantAwareKey<DbLong> tenantAwareProcessDefinitionKey;
 
   private final ColumnFamily<DbCompositeKey<DbString, DbLong>, PersistedProcess>
       processByIdAndVersionColumnFamily;
@@ -77,11 +81,14 @@ public final class DbProcessState implements MutableProcessState {
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     processDefinitionKey = new DbLong();
     persistedProcess = new PersistedProcess();
+    tenantIdKey = new DbString();
+    tenantAwareProcessDefinitionKey =
+        new DbTenantAwareKey<>(tenantIdKey, processDefinitionKey, PlacementType.PREFIX);
     processColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.PROCESS_CACHE,
             transactionContext,
-            processDefinitionKey,
+            tenantAwareProcessDefinitionKey,
             persistedProcess);
 
     processId = new DbString();
@@ -151,8 +158,9 @@ public final class DbProcessState implements MutableProcessState {
     processDefinitionKey.wrapLong(processRecord.getProcessDefinitionKey());
     processId.wrapString(processRecord.getBpmnProcessId());
     processVersion.wrapLong(processRecord.getVersion());
+    tenantIdKey.wrapString(processRecord.getTenantId());
 
-    processColumnFamily.deleteExisting(processDefinitionKey);
+    processColumnFamily.deleteExisting(tenantAwareProcessDefinitionKey);
     processByIdAndVersionColumnFamily.deleteExisting(idAndVersionKey);
 
     processesByProcessIdAndVersion.remove(processRecord.getBpmnProcessIdBuffer());
