@@ -124,7 +124,10 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
   private ExecutableFlowElement getCatchEvent(
       final ProcessInstanceRecord elementRecord, final DirectBuffer elementId) {
     return processState.getFlowElement(
-        elementRecord.getProcessDefinitionKey(), elementId, ExecutableFlowElement.class);
+        elementRecord.getProcessDefinitionKey(),
+        elementRecord.getTenantId(),
+        elementId,
+        ExecutableFlowElement.class);
   }
 
   private void rejectCommand(

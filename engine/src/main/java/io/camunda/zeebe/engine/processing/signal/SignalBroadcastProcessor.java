@@ -47,11 +47,11 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
       final CommandDistributionBehavior commandDistributionBehavior) {
     stateWriter = writers.state();
     responseWriter = writers.response();
-    this.processState = processingState.getProcessState();
-    this.signalSubscriptionState = processingState.getSignalSubscriptionState();
+    processState = processingState.getProcessState();
+    signalSubscriptionState = processingState.getSignalSubscriptionState();
     this.keyGenerator = keyGenerator;
     this.commandDistributionBehavior = commandDistributionBehavior;
-    this.elementInstanceState = processingState.getElementInstanceState();
+    elementInstanceState = processingState.getElementInstanceState();
     eventHandle =
         new EventHandle(
             keyGenerator,
@@ -79,7 +79,8 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
                 subscriptionRecord.getProcessDefinitionKey(),
                 keyGenerator.nextKey(),
                 subscriptionRecord.getCatchEventIdBuffer(),
-                signalRecord.getVariablesBuffer());
+                signalRecord.getVariablesBuffer(),
+                signalRecord.getTenantId());
           } else {
             activateElement(subscriptionRecord, signalRecord.getVariablesBuffer());
           }
@@ -105,7 +106,11 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
     final var catchEventInstanceKey = subscription.getCatchEventInstanceKey();
     final var catchEventId = subscription.getCatchEventIdBuffer();
     final var catchEvent =
-        processState.getFlowElement(processDefinitionKey, catchEventId, ExecutableCatchEvent.class);
+        processState.getFlowElement(
+            processDefinitionKey,
+            subscription.getTenantId(),
+            catchEventId,
+            ExecutableCatchEvent.class);
 
     final var elementInstance = elementInstanceState.getInstance(catchEventInstanceKey);
     final var canTriggerElement = eventHandle.canTriggerElement(elementInstance, catchEventId);
