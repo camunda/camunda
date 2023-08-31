@@ -37,9 +37,11 @@ public class EventSubProcessInterruptionMarker {
   public void markInstanceIfInterrupted(
       final long flowScopeElementInstanceKey,
       final long processDefinitionKey,
+      final String tenantId,
       final DirectBuffer elementId) {
     final var flowElement =
-        processState.getFlowElement(processDefinitionKey, elementId, ExecutableFlowElement.class);
+        processState.getFlowElement(
+            processDefinitionKey, tenantId, elementId, ExecutableFlowElement.class);
     if (!isRootStartEvent(flowScopeElementInstanceKey)
         && flowElement.getFlowScope().getElementType() == BpmnElementType.EVENT_SUB_PROCESS
         && flowElement instanceof ExecutableStartEvent

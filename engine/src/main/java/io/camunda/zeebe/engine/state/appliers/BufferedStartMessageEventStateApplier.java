@@ -46,6 +46,7 @@ public final class BufferedStartMessageEventStateApplier {
   private ExecutableFlowElementContainer getProcessElement(final ProcessInstanceRecord record) {
     return processState.getFlowElement(
         record.getProcessDefinitionKey(),
+        record.getTenantId(),
         record.getElementIdBuffer(),
         ExecutableFlowElementContainer.class);
   }

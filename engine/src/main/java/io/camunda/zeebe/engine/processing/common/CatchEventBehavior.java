@@ -117,7 +117,10 @@ public final class CatchEventBehavior {
 
     final var element =
         processState.getFlowElement(
-            context.getProcessDefinitionKey(), elementId, ExecutableFlowElement.class);
+            context.getProcessDefinitionKey(),
+            context.getTenantId(),
+            elementId,
+            ExecutableFlowElement.class);
 
     return element.getElementType() == BpmnElementType.START_EVENT
         && element.getFlowScope().getElementType() == BpmnElementType.EVENT_SUB_PROCESS;

@@ -91,7 +91,10 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
 
     final var catchEvent =
         processState.getFlowElement(
-            processDefinitionKey, timer.getTargetElementIdBuffer(), ExecutableCatchEvent.class);
+            processDefinitionKey,
+            timer.getTenantId(),
+            timer.getTargetElementIdBuffer(),
+            ExecutableCatchEvent.class);
     if (isStartEvent(elementInstanceKey)) {
       final long processInstanceKey = keyGenerator.nextKey();
       timer.setProcessInstanceKey(processInstanceKey);

@@ -83,6 +83,7 @@ final class ProcessInstanceElementActivatingApplier
       final var gateway =
           processState.getFlowElement(
               value.getProcessDefinitionKey(),
+              value.getTenantId(),
               value.getElementIdBuffer(),
               ExecutableFlowNode.class);
 
@@ -169,6 +170,7 @@ final class ProcessInstanceElementActivatingApplier
     final var executableCatchEventElement =
         processState.getFlowElement(
             value.getProcessDefinitionKey(),
+            value.getTenantId(),
             value.getElementIdBuffer(),
             ExecutableCatchEventElement.class);
 
@@ -192,7 +194,10 @@ final class ProcessInstanceElementActivatingApplier
 
     final var executableFlowNode =
         processState.getFlowElement(
-            value.getProcessDefinitionKey(), value.getElementIdBuffer(), ExecutableFlowNode.class);
+            value.getProcessDefinitionKey(),
+            value.getTenantId(),
+            value.getElementIdBuffer(),
+            ExecutableFlowNode.class);
     final var size = executableFlowNode.getIncoming().size();
     IntStream.range(0, size).forEach(i -> flowScopeInstance.decrementActiveSequenceFlows());
     elementInstanceState.updateInstance(flowScopeInstance);
@@ -224,6 +229,7 @@ final class ProcessInstanceElementActivatingApplier
       final ProcessInstanceRecord value) {
     return processState.getFlowElement(
         value.getProcessDefinitionKey(),
+        value.getTenantId(),
         value.getElementIdBuffer(),
         ExecutableFlowElementContainer.class);
   }
@@ -260,6 +266,7 @@ final class ProcessInstanceElementActivatingApplier
     final var flowElement =
         processState.getFlowElement(
             elementRecord.getProcessDefinitionKey(),
+            elementRecord.getTenantId(),
             elementRecord.getElementIdBuffer(),
             flowElementClass);
 
