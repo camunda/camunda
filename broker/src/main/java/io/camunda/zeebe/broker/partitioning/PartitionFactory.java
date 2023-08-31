@@ -12,7 +12,7 @@ import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.logstreams.state.StatePositionSupplier;
-import io.camunda.zeebe.broker.partitioning.topology.TopologyManager;
+import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
@@ -93,6 +93,9 @@ final class PartitionFactory {
   private final DiskSpaceUsageMonitor diskSpaceUsageMonitor;
   private final AtomixServerTransport gatewayBrokerTransport;
   private final JobStreamer jobStreamer;
+  private final List<PartitionListener> partitionListeners;
+  private final TopologyManagerImpl topologyManager;
+  private final FeatureFlags featureFlags;
 
   PartitionFactory(
       final ActorSchedulingService actorSchedulingService,
@@ -105,7 +108,10 @@ final class PartitionFactory {
       final BrokerHealthCheckService healthCheckService,
       final DiskSpaceUsageMonitor diskSpaceUsageMonitor,
       final AtomixServerTransport gatewayBrokerTransport,
-      final JobStreamer jobStreamer) {
+      final JobStreamer jobStreamer,
+      final List<PartitionListener> partitionListeners,
+      final TopologyManagerImpl topologyManager,
+      final FeatureFlags featureFlags) {
     this.actorSchedulingService = actorSchedulingService;
     this.brokerCfg = brokerCfg;
     this.localBroker = localBroker;
@@ -117,13 +123,12 @@ final class PartitionFactory {
     this.diskSpaceUsageMonitor = diskSpaceUsageMonitor;
     this.gatewayBrokerTransport = gatewayBrokerTransport;
     this.jobStreamer = jobStreamer;
+    this.partitionListeners = partitionListeners;
+    this.topologyManager = topologyManager;
+    this.featureFlags = featureFlags;
   }
 
-  ZeebePartition constructPartition(
-      final RaftPartition raftPartition,
-      final List<PartitionListener> partitionListeners,
-      final TopologyManager topologyManager,
-      final FeatureFlags featureFlags) {
+  ZeebePartition constructPartition(final RaftPartition raftPartition) {
     final var communicationService = clusterServices.getCommunicationService();
     final var membershipService = clusterServices.getMembershipService();
     final var typedRecordProcessorsFactory = createFactory(localBroker, featureFlags);
