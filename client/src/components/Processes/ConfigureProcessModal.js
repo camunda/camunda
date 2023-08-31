@@ -66,6 +66,7 @@ export function ConfigureProcessModal({
           }
         >
           <UserTypeahead
+            key={selectedUser?.id}
             users={selectedUser ? [selectedUser] : []}
             onChange={(users) => {
               const newSelection = users[users.length - 1];
@@ -76,7 +77,6 @@ export function ConfigureProcessModal({
             }}
             excludeGroups
             optionsOnly={optimizeProfile === 'cloud'}
-            persistMenu={false}
           />
         </Labeled>
         <Switch

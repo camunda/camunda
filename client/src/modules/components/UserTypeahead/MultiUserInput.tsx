@@ -31,7 +31,6 @@ export interface MultiUserInputProps {
   onRemove: (id: string) => void;
   onClear: () => void;
   excludeGroups?: boolean;
-  persistMenu?: boolean;
 }
 
 type Item = {
@@ -51,7 +50,6 @@ export default function MultiUserInput({
   onRemove,
   onClear,
   excludeGroups = false,
-  persistMenu,
   titleText,
 }: MultiUserInputProps): JSX.Element {
   const [loading, setLoading] = useState(true);
@@ -164,9 +162,6 @@ export default function MultiUserInput({
             onRemove(userToRemove.id);
           } else {
             addIdentity(item.id);
-            if (persistMenu === false) {
-              multiSelectRef.current?.querySelector<HTMLElement>('[data-toggle="true"]')?.click();
-            }
           }
         },
       }}
