@@ -72,9 +72,11 @@ public final class DbProcessState implements MutableProcessState {
       tenantAwareProcessIdAndVersionKey;
 
   private final DbString processId;
-  private final DbForeignKey<DbString> fkProcessId;
+  private final DbTenantAwareKey<DbString> tenantAwareProcessId;
+  private final DbForeignKey<DbTenantAwareKey<DbString>> fkTenantAwareProcessId;
 
-  private final ColumnFamily<DbForeignKey<DbString>, Digest> digestByIdColumnFamily;
+  private final ColumnFamily<DbForeignKey<DbTenantAwareKey<DbString>>, Digest>
+      digestByIdColumnFamily;
   private final Digest digest = new Digest();
 
   private final ProcessVersionManager versionManager;
@@ -105,12 +107,18 @@ public final class DbProcessState implements MutableProcessState {
             tenantAwareProcessIdAndVersionKey,
             persistedProcess);
 
-    fkProcessId =
+    tenantAwareProcessId = new DbTenantAwareKey<>(tenantIdKey, processId, PlacementType.PREFIX);
+    fkTenantAwareProcessId =
         new DbForeignKey<>(
-            processId, ZbColumnFamilies.PROCESS_CACHE_BY_ID_AND_VERSION, MatchType.Prefix);
+            tenantAwareProcessId,
+            ZbColumnFamilies.PROCESS_CACHE_BY_ID_AND_VERSION,
+            MatchType.Prefix);
     digestByIdColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.PROCESS_CACHE_DIGEST_BY_ID, transactionContext, fkProcessId, digest);
+            ZbColumnFamilies.PROCESS_CACHE_DIGEST_BY_ID,
+            transactionContext,
+            fkTenantAwareProcessId,
+            digest);
 
     processesByKey = new Long2ObjectHashMap<>();
 
@@ -131,20 +139,19 @@ public final class DbProcessState implements MutableProcessState {
   }
 
   @Override
-  public void putLatestVersionDigest(
-      final DirectBuffer processIdBuffer, final DirectBuffer digest) {
-    processId.wrapBuffer(processIdBuffer);
-    this.digest.set(digest);
+  public void putLatestVersionDigest(final ProcessRecord processRecord) {
+    processId.wrapBuffer(processRecord.getBpmnProcessIdBuffer());
+    tenantIdKey.wrapString(processRecord.getTenantId());
+    digest.set(processRecord.getChecksumBuffer());
 
-    digestByIdColumnFamily.upsert(fkProcessId, this.digest);
+    digestByIdColumnFamily.upsert(fkTenantAwareProcessId, digest);
   }
 
   @Override
   public void putProcess(final long key, final ProcessRecord processRecord) {
     persistProcess(key, processRecord);
     updateLatestVersion(processRecord);
-    putLatestVersionDigest(
-        processRecord.getBpmnProcessIdBuffer(), processRecord.getChecksumBuffer());
+    putLatestVersionDigest(processRecord);
   }
 
   @Override
@@ -178,7 +185,7 @@ public final class DbProcessState implements MutableProcessState {
       // As we don't set the digest to the digest of the previous there is a chance it does not
       // exist. This happens when deleting the latest version two times in a row. To be safe we must
       // use deleteIfExists.
-      digestByIdColumnFamily.deleteIfExists(fkProcessId);
+      digestByIdColumnFamily.deleteIfExists(fkTenantAwareProcessId);
     }
 
     versionManager.deleteProcessVersion(
@@ -326,9 +333,11 @@ public final class DbProcessState implements MutableProcessState {
   }
 
   @Override
-  public DirectBuffer getLatestVersionDigest(final DirectBuffer processIdBuffer) {
+  public DirectBuffer getLatestVersionDigest(
+      final DirectBuffer processIdBuffer, final String tenantId) {
     processId.wrapBuffer(processIdBuffer);
-    final Digest latestDigest = digestByIdColumnFamily.get(fkProcessId);
+    tenantIdKey.wrapString(tenantId);
+    final Digest latestDigest = digestByIdColumnFamily.get(fkTenantAwareProcessId);
     return latestDigest == null || digest.get().byteArray() == null ? null : latestDigest.get();
   }
 
