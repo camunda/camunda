@@ -321,19 +321,6 @@ public final class DbProcessState implements MutableProcessState {
   }
 
   @Override
-  public Collection<DeployedProcess> getProcessesByBpmnProcessId(final DirectBuffer bpmnProcessId) {
-    updateCompleteInMemoryState();
-
-    final Long2ObjectHashMap<DeployedProcess> processesByVersions =
-        processesByProcessIdAndVersion.get(bpmnProcessId);
-
-    if (processesByVersions != null) {
-      return processesByVersions.values();
-    }
-    return Collections.emptyList();
-  }
-
-  @Override
   public DirectBuffer getLatestVersionDigest(
       final DirectBuffer processIdBuffer, final String tenantId) {
     processId.wrapBuffer(processIdBuffer);
