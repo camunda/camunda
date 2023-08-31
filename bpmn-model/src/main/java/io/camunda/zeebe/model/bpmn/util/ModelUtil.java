@@ -20,6 +20,7 @@ import static java.util.stream.Collectors.groupingBy;
 
 import io.camunda.zeebe.model.bpmn.instance.Activity;
 import io.camunda.zeebe.model.bpmn.instance.BoundaryEvent;
+import io.camunda.zeebe.model.bpmn.instance.BpmnModelElementInstance;
 import io.camunda.zeebe.model.bpmn.instance.CallActivity;
 import io.camunda.zeebe.model.bpmn.instance.Error;
 import io.camunda.zeebe.model.bpmn.instance.ErrorEventDefinition;
@@ -38,6 +39,7 @@ import io.camunda.zeebe.model.bpmn.instance.SubProcess;
 import io.camunda.zeebe.model.bpmn.instance.TimerEventDefinition;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -138,24 +140,40 @@ public class ModelUtil {
     // get link throw events definition
     final List<EventDefinition> linkThrowEvents = getEventDefinitionsForLinkThrowEvents(element);
 
-    // get link catch events names
-    final Set<String> linkCatchList =
-        getEventDefinition(linkCatchEvents, LinkEventDefinition.class)
-            .filter(def -> def.getName() != null && !def.getName().isEmpty())
-            .map(LinkEventDefinition::getName)
-            .collect(Collectors.toSet());
+    // link catch events names group by scope
+    final Map<BpmnModelElementInstance, Set<String>> catchEventsGroupByScope =
+        groupEventsByScope(linkCatchEvents);
 
-    // get link throw events names
-    final Set<String> linkThrowList =
-        getEventDefinition(linkThrowEvents, LinkEventDefinition.class)
-            .filter(def -> def.getName() != null && !def.getName().isEmpty())
-            .map(LinkEventDefinition::getName)
-            .collect(Collectors.toSet());
+    // link throw events names group by scope
+    final Map<BpmnModelElementInstance, Set<String>> throwEventsGroupByScope =
+        groupEventsByScope(linkThrowEvents);
 
-    linkThrowList.forEach(
-        item -> {
-          if (!linkCatchList.contains(item)) {
-            errorCollector.accept(noPairedLinkNames(item));
+    verifyCatchEventExistsInThrowEventScope(
+        catchEventsGroupByScope, throwEventsGroupByScope, errorCollector);
+  }
+
+  private static Map<BpmnModelElementInstance, Set<String>> groupEventsByScope(
+      List<EventDefinition> events) {
+    return getEventDefinition(events, LinkEventDefinition.class)
+        .filter(def -> def.getName() != null && !def.getName().isEmpty())
+        .collect(
+            Collectors.groupingBy(
+                LinkEventDefinition::getScope,
+                Collectors.mapping(LinkEventDefinition::getName, Collectors.toSet())));
+  }
+
+  private static void verifyCatchEventExistsInThrowEventScope(
+      final Map<BpmnModelElementInstance, Set<String>> catchEventsGroupByScope,
+      final Map<BpmnModelElementInstance, Set<String>> throwEventsGroupByScope,
+      final Consumer<String> errorCollector) {
+    throwEventsGroupByScope.forEach(
+        (scope, items) -> {
+          for (String item : items) {
+            if (!catchEventsGroupByScope
+                .getOrDefault(scope, Collections.emptySet())
+                .contains(item)) {
+              errorCollector.accept(noPairedLinkNames(item));
+            }
           }
         });
   }
