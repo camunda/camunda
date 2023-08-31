@@ -15,28 +15,44 @@ import io.atomix.cluster.Member;
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.cluster.RaftMember.Type;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
+import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.partition.RaftPartitionConfig;
 import io.atomix.raft.protocol.TestRaftProtocolFactory;
+import io.atomix.raft.roles.LeaderRole;
 import io.atomix.raft.snapshot.TestSnapshotStore;
 import io.atomix.raft.storage.RaftStorage;
+import io.atomix.raft.storage.log.IndexedRaftLogEntry;
+import io.atomix.raft.zeebe.ZeebeLogAppender.AppendListener;
 import io.atomix.utils.concurrent.SingleThreadContext;
 import io.atomix.utils.net.Address;
+import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
+import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 final class MemberJoinTest {
-  final SingleThreadContext context = new SingleThreadContext("raft-%d");
+  private final SingleThreadContext context = new SingleThreadContext("raft-%d");
+  private final TestRaftProtocolFactory protocolFactory = new TestRaftProtocolFactory(context);
+  private final List<RaftServer> servers = new LinkedList<>();
 
-  final TestRaftProtocolFactory protocolFactory = new TestRaftProtocolFactory(context);
+  @AfterEach
+  void cleanup() {
+    for (final var server : servers) {
+      server.shutdown().join();
+    }
+    context.close();
+  }
 
   @Test
   void shouldJoinExistingMembers(@TempDir final Path tmp) {
@@ -70,6 +86,51 @@ final class MemberJoinTest {
     assertThat(m2.cluster().getMembers()).containsExactlyInAnyOrderElementsOf(expected);
     assertThat(m3.cluster().getMembers()).containsExactlyInAnyOrderElementsOf(expected);
     assertThat(m4.cluster().getMembers()).containsExactlyInAnyOrderElementsOf(expected);
+  }
+
+  @Test
+  void shouldCommitOnAllMembers(@TempDir final Path tmp) {
+    // given - a cluster with 3 members and one new member joining
+    final var id1 = MemberId.from("1");
+    final var id2 = MemberId.from("2");
+    final var id3 = MemberId.from("3");
+    final var id4 = MemberId.from("4");
+
+    final var m1 = createServer(tmp, createMembershipService(id1, id2, id3));
+    final var m2 = createServer(tmp, createMembershipService(id2, id1, id3));
+    final var m3 = createServer(tmp, createMembershipService(id3, id1, id2));
+    final var m4 = createServer(tmp, createMembershipService(id4, id1, id2, id3));
+
+    CompletableFuture.allOf(
+            m1.bootstrap(id1, id2, id3), m2.bootstrap(id1, id2, id3), m3.bootstrap(id1, id2, id3))
+        .join();
+    m4.join().join();
+
+    // when - appending a new entry
+    final var index = appendEntry(m1, m2, m3, m4).write().join();
+
+    // then - all members received the entry
+    Awaitility.await("All members have committed the entry")
+        .untilAsserted(
+            () ->
+                assertThat(List.of(m1, m2, m3, m4))
+                    .allSatisfy(
+                        server ->
+                            assertThat(server.getContext().getCommitIndex()).isEqualTo(index)));
+  }
+
+  private static AppendResult appendEntry(final RaftServer... servers) {
+    final var leader =
+        Arrays.stream(servers)
+            .filter(RaftServer::isLeader)
+            .map(RaftServer::getContext)
+            .map(RaftContext::getRaftRole)
+            .map(LeaderRole.class::cast)
+            .findAny()
+            .orElseThrow();
+    final var result = new AppendResult();
+    leader.appendEntry(0, 1, ByteBuffer.wrap(new byte[0]), result);
+    return result;
   }
 
   private ClusterMembershipService createMembershipService(
@@ -114,14 +175,64 @@ final class MemberJoinTest {
             .withSnapshotStore(new TestSnapshotStore(new AtomicReference<>()))
             .withMaxSegmentSize(1024 * 10)
             .build();
-    return RaftServer.builder(memberId)
-        .withMembershipService(membershipService)
-        .withProtocol(protocol)
-        .withStorage(storage)
-        .withPartitionConfig(
-            new RaftPartitionConfig()
-                .setElectionTimeout(Duration.ofMillis(1000))
-                .setHeartbeatInterval(Duration.ofMillis(500)))
-        .build();
+    final var server =
+        RaftServer.builder(memberId)
+            .withMembershipService(membershipService)
+            .withProtocol(protocol)
+            .withStorage(storage)
+            .withPartitionConfig(
+                new RaftPartitionConfig()
+                    .setElectionTimeout(Duration.ofMillis(1000))
+                    .setHeartbeatInterval(Duration.ofMillis(500)))
+            .build();
+    servers.add(server);
+    return server;
+  }
+
+  /**
+   * Tracks the result of an append operation. Provides two futures, {@link #write()} and {@link
+   * #commit()} that are completed when the entry is written and committed respectively.
+   */
+  private static final class AppendResult implements AppendListener {
+    private final CompletableFuture<Long> write = new CompletableFuture<>();
+    private final CompletableFuture<Long> commit = new CompletableFuture<>();
+
+    /**
+     * @return a future that is completed with the entry index when it is committed. If the write or
+     *     commit fails, the future is completed exceptionally.
+     */
+    CompletableFuture<Long> commit() {
+      return commit;
+    }
+
+    /**
+     * @return a future that is completed with the entry index when it is written. If the write
+     *     fails, the future is completed exceptionally.
+     */
+    CompletableFuture<Long> write() {
+      return write;
+    }
+
+    @Override
+    public void onWrite(final IndexedRaftLogEntry indexed) {
+      write.complete(indexed.index());
+    }
+
+    @Override
+    public void onWriteError(final Throwable error) {
+      write.completeExceptionally(error);
+      // If write fails, the entry cannot be committed either.
+      commit.completeExceptionally(error);
+    }
+
+    @Override
+    public void onCommit(final IndexedRaftLogEntry indexed) {
+      commit.complete(indexed.index());
+    }
+
+    @Override
+    public void onCommitError(final IndexedRaftLogEntry indexed, final Throwable error) {
+      commit.completeExceptionally(error);
+    }
   }
 }
