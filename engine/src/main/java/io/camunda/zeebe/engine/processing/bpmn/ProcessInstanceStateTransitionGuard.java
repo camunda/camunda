@@ -223,7 +223,7 @@ public final class ProcessInstanceStateTransitionGuard {
   private boolean doesPathExist(
       final BpmnElementContext context, final ExecutableFlowElement executableFlowElement) {
     final Optional<DeployedProcess> deployedProcess =
-        stateBehavior.getProcess(context.getProcessDefinitionKey());
+        stateBehavior.getProcess(context.getProcessDefinitionKey(), context.getTenantId());
 
     return deployedProcess
         .map(

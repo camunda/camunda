@@ -129,7 +129,8 @@ public class ResourceDeletionProcessor
     final var value = command.getValue();
 
     final var processOptional =
-        Optional.ofNullable(processState.getProcessByKey(value.getResourceKey()));
+        Optional.ofNullable(
+            processState.getProcessByKeyAndTenant(value.getResourceKey(), value.getTenantId()));
     if (processOptional.isPresent()) {
       deleteProcess(processOptional.get());
       return;

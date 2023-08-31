@@ -196,14 +196,16 @@ public final class EventHandle {
         subscription.getProcessDefinitionKey(),
         newProcessInstanceKey,
         startEventSubscriptionRecord.getStartEventIdBuffer(),
-        message.getVariablesBuffer());
+        message.getVariablesBuffer(),
+        subscription.getTenantId());
   }
 
   public void activateProcessInstanceForStartEvent(
       final long processDefinitionKey,
       final long processInstanceKey,
       final DirectBuffer targetElementId,
-      final DirectBuffer variablesBuffer) {
+      final DirectBuffer variablesBuffer,
+      final String tenantId) {
 
     triggeringProcessEvent(
         processDefinitionKey,
@@ -212,7 +214,7 @@ public final class EventHandle {
         targetElementId,
         variablesBuffer);
 
-    final var process = processState.getProcessByKey(processDefinitionKey);
+    final var process = processState.getProcessByKeyAndTenant(processDefinitionKey, tenantId);
 
     recordForPICreation
         .setBpmnProcessId(process.getBpmnProcessId())

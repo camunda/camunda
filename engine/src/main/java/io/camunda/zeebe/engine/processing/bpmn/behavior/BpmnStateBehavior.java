@@ -122,8 +122,10 @@ public final class BpmnStateBehavior {
         parentElementInstance.getState());
   }
 
-  public Optional<DeployedProcess> getProcess(final long processDefinitionKey) {
-    return Optional.ofNullable(processState.getProcessByKey(processDefinitionKey));
+  public Optional<DeployedProcess> getProcess(
+      final long processDefinitionKey, final String tenantId) {
+    return Optional.ofNullable(
+        processState.getProcessByKeyAndTenant(processDefinitionKey, tenantId));
   }
 
   public Optional<DeployedProcess> getLatestProcessVersion(final DirectBuffer processId) {
@@ -220,7 +222,8 @@ public final class BpmnStateBehavior {
 
   public boolean isInterruptedByTerminateEndEvent(
       final BpmnElementContext flowScopeContext, final ElementInstance flowScopeInstance) {
-    final var process = getProcess(flowScopeContext.getProcessDefinitionKey());
+    final var process =
+        getProcess(flowScopeContext.getProcessDefinitionKey(), flowScopeContext.getTenantId());
     if (process.isEmpty() || !isInterrupted(flowScopeContext)) {
       return false;
     }
