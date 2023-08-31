@@ -36,6 +36,7 @@ import io.atomix.raft.protocol.TransferResponse;
 import io.atomix.raft.protocol.VoteRequest;
 import io.atomix.raft.protocol.VoteResponse;
 import io.atomix.raft.storage.system.Configuration;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 /** Inactive state. */
@@ -57,7 +58,12 @@ public class InactiveRole extends AbstractRole {
     updateTermAndLeader(request.term(), request.leader());
 
     final Configuration configuration =
-        new Configuration(request.index(), request.term(), request.timestamp(), request.members());
+        new Configuration(
+            request.index(),
+            request.term(),
+            request.timestamp(),
+            request.newMembers(),
+            request.oldMembers() != null ? request.oldMembers() : List.of());
 
     // Configure the cluster membership. This will cause this server to transition to the
     // appropriate state if its type has changed.
