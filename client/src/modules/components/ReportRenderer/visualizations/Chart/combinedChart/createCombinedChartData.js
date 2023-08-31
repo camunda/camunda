@@ -26,6 +26,7 @@ export default function createCombinedChartData(props) {
 
   const datasets = unitedResults.map((report, index) => {
     return {
+      yAxisID: 'axis-0',
       label: reportsNames && reportsNames[index],
       data: report.map(({value}) => value),
       ...createDatasetOptions({

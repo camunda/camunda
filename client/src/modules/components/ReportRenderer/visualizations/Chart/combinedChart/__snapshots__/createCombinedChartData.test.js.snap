@@ -10,6 +10,7 @@ Object {
         null,
       ],
       "label": "report A",
+      "yAxisID": "axis-0",
     },
     Object {
       "data": Array [
@@ -18,6 +19,7 @@ Object {
         3,
       ],
       "label": "report B",
+      "yAxisID": "axis-0",
     },
   ],
   "labels": Array [
@@ -37,6 +39,7 @@ Object {
         123,
       ],
       "label": "report A",
+      "yAxisID": "axis-0",
     },
     Object {
       "data": Array [
@@ -44,6 +47,7 @@ Object {
         null,
       ],
       "label": "report B",
+      "yAxisID": "axis-0",
     },
   ],
   "labels": Array [
