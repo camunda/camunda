@@ -118,7 +118,7 @@ test('user permissions', async (t) => {
   await t.click(Common.carbonOption('mary'));
   await t.typeText(Common.usersTypeahead, 'peter', {replace: true});
   await t.click(Common.carbonOption('peter')).pressKey('tab');
-  await t.click(e.roleOption('Editor'));
+  await t.click(e.carbonRoleOption('Editor'));
   await t.takeElementScreenshot(Common.modalContainer, 'img/addUser.png');
   await t.click(Common.modalConfirmButton);
 
@@ -140,7 +140,7 @@ test('user permissions', async (t) => {
   await t.click(e.addButton);
   await t.typeText(Common.usersTypeahead, username, {replace: true});
   await t.click(Common.carbonOption(username));
-  await t.click(e.roleOption('Manager'));
+  await t.click(e.carbonRoleOption('Manager'));
   await t.click(Common.modalConfirmButton);
 
   await t.hover(e.userItem(managerName));

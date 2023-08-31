@@ -22,10 +22,16 @@ const props = {
   onConfirm: jest.fn(),
 };
 
-it('should match snapshot', () => {
+it('should render the modal properly', () => {
   const node = shallow(<AddUserModal {...props} />);
 
-  expect(node).toMatchSnapshot();
+  const radioButtons = node.find('RadioButton');
+
+  expect(node.find('UserTypeahead').prop('titleText')).toEqual('Users and User Groups');
+
+  expect(radioButtons.at(0).dive().find('span').at(1).text()).toBe('Viewer');
+  expect(radioButtons.at(1).dive().find('span').at(1).text()).toBe('Editor');
+  expect(radioButtons.at(2).dive().find('span').at(1).text()).toBe('Manager');
 });
 
 it('should call the onConfirm prop', () => {
@@ -35,11 +41,18 @@ it('should call the onConfirm prop', () => {
     {id: 'USER:testUser', identity: {id: 'testUser', type: 'user', name: ''}},
   ]);
 
-  node.find({type: 'radio'}).at(1).simulate('change');
+  node.find('RadioButton').at(1).simulate('click');
 
   node.find('.confirm').simulate('click');
 
   expect(props.onConfirm).toHaveBeenCalledWith([
     {identity: {id: 'testUser', type: 'user', name: ''}, role: 'editor'},
   ]);
+});
+
+it('should call onClose when the cancel button is clicked', () => {
+  const wrapper = shallow(<AddUserModal {...props} />);
+  const cancelButton = wrapper.find('.cancel');
+  cancelButton.simulate('click');
+  expect(props.onClose).toHaveBeenCalled();
 });

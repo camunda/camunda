@@ -6,9 +6,9 @@
  */
 
 import {useState} from 'react';
-import {Button} from '@carbon/react';
+import {Button, Form, RadioButton, RadioButtonGroup, Stack} from '@carbon/react';
 
-import {LabeledInput, Modal, Form, UserTypeahead, User} from 'components';
+import {Modal, UserTypeahead, User} from 'components';
 import {getOptimizeProfile} from 'config';
 import {t} from 'translation';
 
@@ -58,51 +58,56 @@ export default function AddUserModal(props: AddUserModalProps) {
       </Modal.Header>
       <Modal.Content>
         <Form>
-          {optimizeProfile === 'platform' ? t('home.userGroupsTitle') : t('home.userTitle')}
-          <Form.Group>
+          <Stack gap={6}>
             <UserTypeahead
+              titleText={
+                optimizeProfile === 'platform' ? t('home.userGroupsTitle') : t('home.userTitle')
+              }
               users={users}
               collectionUsers={existingUsers}
               onChange={(users: User[]) => setUsers(users)}
               optionsOnly={optimizeProfile === 'cloud'}
             />
-          </Form.Group>
-          {t('home.roles.userRole')}
-          <Form.Group>
-            <LabeledInput
-              checked={activeRole === 'viewer'}
-              onChange={() => setActiveRole('viewer')}
-              label={
-                <>
-                  <h2>{t('home.roles.viewer')}</h2>
-                  <p>{t('home.roles.viewer-description')}</p>
-                </>
-              }
-              type="radio"
-            />
-            <LabeledInput
-              checked={activeRole === 'editor'}
-              onChange={() => setActiveRole('editor')}
-              label={
-                <>
-                  <h2>{t('home.roles.editor')}</h2>
-                  <p>{t('home.roles.editor-description')}</p>
-                </>
-              }
-              type="radio"
-            />
-            <LabeledInput
-              checked={activeRole === 'manager'}
-              onChange={() => setActiveRole('manager')}
-              label={
-                <>
-                  <h2>{t('home.roles.manager')}</h2>
-                  <p>{t('home.roles.manager-description')}</p>
-                </>
-              }
-              type="radio"
-            />
-          </Form.Group>
+            <RadioButtonGroup
+              name="userRole"
+              legendText={t('home.roles.userRole')}
+              orientation="vertical"
+            >
+              <RadioButton
+                value="viewer"
+                checked={activeRole === 'viewer'}
+                onClick={() => setActiveRole('viewer')}
+                labelText={
+                  <>
+                    <span>{t('home.roles.viewer')}</span>
+                    <span className="subtitle">{t('home.roles.viewer-description')}</span>
+                  </>
+                }
+              />
+              <RadioButton
+                value="editor"
+                checked={activeRole === 'editor'}
+                onClick={(a) => setActiveRole('editor')}
+                labelText={
+                  <>
+                    <span>{t('home.roles.editor')}</span>
+                    <span className="subtitle">{t('home.roles.editor-description')}</span>
+                  </>
+                }
+              />
+              <RadioButton
+                value="manager"
+                checked={activeRole === 'manager'}
+                onClick={() => setActiveRole('manager')}
+                labelText={
+                  <>
+                    <span>{t('home.roles.manager')}</span>
+                    <span className="subtitle">{t('home.roles.manager-description')}</span>
+                  </>
+                }
+              />
+            </RadioButtonGroup>
+          </Stack>
         </Form>
       </Modal.Content>
       <Modal.Footer>

@@ -4,25 +4,7 @@
   height: 100%;
 }
 
-.AddUserModal {
-  .FormGroup {
-    .LabeledInput {
-      display: inline-block;
-      width: 90%;
-
-      .checkLabel {
-        align-items: unset;
-      }
-
-      label p {
-        font-size: 0.8em;
-        color: var(--grey-lighten-50);
-        margin-top: 0;
-      }
-    }
-  }
-}
-
+.AddUserModal,
 .EditUserModal {
   .cds--radio-button-group {
     .cds--radio-button-wrapper {
