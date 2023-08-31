@@ -341,8 +341,8 @@ public final class DbProcessState implements MutableProcessState {
   }
 
   @Override
-  public int getNextProcessVersion(final String bpmnProcessId) {
-    return (int) versionManager.getHighestProcessVersion(bpmnProcessId) + 1;
+  public int getNextProcessVersion(final String bpmnProcessId, final String tenantId) {
+    return (int) versionManager.getHighestProcessVersion(bpmnProcessId, tenantId) + 1;
   }
 
   @Override
