@@ -626,12 +626,12 @@ public final class ProcessStateTest {
   public void shouldUpdateProcessState() {
     // given
     final long processDefinitionKey = 100L;
-    final var processRecord = creatingProcessRecord(processingState);
+    final var processRecord = creatingProcessRecord(processingState).setKey(processDefinitionKey);
     processState.putProcess(processDefinitionKey, processRecord);
     final var initialProcess = processState.getProcessByKey(processDefinitionKey);
 
     // when
-    processState.updateProcessState(processDefinitionKey, PersistedProcessState.PENDING_DELETION);
+    processState.updateProcessState(processRecord, PersistedProcessState.PENDING_DELETION);
 
     // then
     assertThat(initialProcess.getState()).isEqualTo(PersistedProcessState.ACTIVE);
