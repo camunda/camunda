@@ -149,7 +149,7 @@ test('user permissions', async (t) => {
   await t.click(Common.contextMenu(e.userItem(managerName)));
   await t.click(Common.edit(e.userItem(managerName)));
 
-  await t.click(e.roleOption('Viewer'));
+  await t.click(e.carbonRoleOption('Viewer'));
   await t.click(Common.modalConfirmButton);
 
   await t.expect(e.addButton.exists).notOk();

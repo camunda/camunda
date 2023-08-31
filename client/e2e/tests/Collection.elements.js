@@ -38,6 +38,8 @@ export const processItem = Selector('.ListItem').withText('Process');
 export const decisionItem = Selector('.ListItem').withText('Decision');
 export const roleOption = (text) =>
   Selector('.Modal.is-visible .LabeledInput .label.after').withText(text);
+export const carbonRoleOption = (text) =>
+  Selector('.Modal.is-visible .cds--radio-button-wrapper').withText(text);
 export const userList = Selector('.UserList');
 export const addUserModal = Selector('.AddUserModal');
 export const logoutButton = Selector('header button').withText('Logout');
