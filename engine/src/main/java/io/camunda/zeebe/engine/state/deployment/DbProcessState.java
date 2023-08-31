@@ -64,10 +64,12 @@ public final class DbProcessState implements MutableProcessState {
   private final DbString tenantIdKey;
   private final DbTenantAwareKey<DbLong> tenantAwareProcessDefinitionKey;
 
-  private final ColumnFamily<DbCompositeKey<DbString, DbLong>, PersistedProcess>
+  private final ColumnFamily<DbTenantAwareKey<DbCompositeKey<DbString, DbLong>>, PersistedProcess>
       processByIdAndVersionColumnFamily;
   private final DbLong processVersion;
   private final DbCompositeKey<DbString, DbLong> idAndVersionKey;
+  private final DbTenantAwareKey<DbCompositeKey<DbString, DbLong>>
+      tenantAwareProcessIdAndVersionKey;
 
   private final DbString processId;
   private final DbForeignKey<DbString> fkProcessId;
@@ -94,11 +96,13 @@ public final class DbProcessState implements MutableProcessState {
     processId = new DbString();
     processVersion = new DbLong();
     idAndVersionKey = new DbCompositeKey<>(processId, processVersion);
+    tenantAwareProcessIdAndVersionKey =
+        new DbTenantAwareKey<>(tenantIdKey, idAndVersionKey, PlacementType.PREFIX);
     processByIdAndVersionColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.PROCESS_CACHE_BY_ID_AND_VERSION,
             transactionContext,
-            idAndVersionKey,
+            tenantAwareProcessIdAndVersionKey,
             persistedProcess);
 
     fkProcessId =
@@ -163,7 +167,7 @@ public final class DbProcessState implements MutableProcessState {
     tenantIdKey.wrapString(processRecord.getTenantId());
 
     processColumnFamily.deleteExisting(tenantAwareProcessDefinitionKey);
-    processByIdAndVersionColumnFamily.deleteExisting(idAndVersionKey);
+    processByIdAndVersionColumnFamily.deleteExisting(tenantAwareProcessIdAndVersionKey);
 
     processesByProcessIdAndVersion.remove(processRecord.getBpmnProcessIdBuffer());
     processesByKey.remove(processRecord.getProcessDefinitionKey());
@@ -191,7 +195,7 @@ public final class DbProcessState implements MutableProcessState {
     processId.wrapBuffer(processRecord.getBpmnProcessIdBuffer());
     processVersion.wrapLong(processRecord.getVersion());
 
-    processByIdAndVersionColumnFamily.upsert(idAndVersionKey, persistedProcess);
+    processByIdAndVersionColumnFamily.upsert(tenantAwareProcessIdAndVersionKey, persistedProcess);
   }
 
   private void updateLatestVersion(final ProcessRecord processRecord) {
