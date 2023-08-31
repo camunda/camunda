@@ -28,6 +28,11 @@ public final class BrokerDeployResourceRequest extends BrokerExecuteCommand<Depl
     return this;
   }
 
+  public BrokerDeployResourceRequest setTenantId(final String tenantId) {
+    requestDto.setTenantId(tenantId);
+    return this;
+  }
+
   @Override
   public DeploymentRecord getRequestWriter() {
     return requestDto;

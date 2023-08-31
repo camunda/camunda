@@ -57,6 +57,9 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 public final class RequestMapper {
 
+  // TODO: replace with TenantOwned.DEFAULT_TENANT constant
+  private static final String DEFAULT_TENANT = "<default>";
+
   public static BrokerDeployResourceRequest toDeployProcessRequest(
       final DeployProcessRequest grpcRequest) {
     final BrokerDeployResourceRequest brokerRequest = new BrokerDeployResourceRequest();
@@ -64,6 +67,7 @@ public final class RequestMapper {
     for (final ProcessRequestObject process : grpcRequest.getProcessesList()) {
       brokerRequest.addResource(process.getDefinition().toByteArray(), process.getName());
     }
+    brokerRequest.setTenantId(DEFAULT_TENANT);
 
     return brokerRequest;
   }
@@ -75,6 +79,7 @@ public final class RequestMapper {
     for (final Resource resource : grpcRequest.getResourcesList()) {
       brokerRequest.addResource(resource.getContent().toByteArray(), resource.getName());
     }
+    brokerRequest.setTenantId(grpcRequest.getTenantId());
 
     return brokerRequest;
   }
