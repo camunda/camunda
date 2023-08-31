@@ -343,9 +343,12 @@ public final class DbProcessState implements MutableProcessState {
 
   @Override
   public <T extends ExecutableFlowElement> T getFlowElement(
-      final long processDefinitionKey, final DirectBuffer elementId, final Class<T> elementType) {
+      final long processDefinitionKey,
+      final String tenantId,
+      final DirectBuffer elementId,
+      final Class<T> elementType) {
 
-    final var deployedProcess = getProcessByKey(processDefinitionKey);
+    final var deployedProcess = getProcessByKeyAndTenant(processDefinitionKey, tenantId);
     if (deployedProcess == null) {
       throw new IllegalStateException(
           String.format(
