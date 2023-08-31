@@ -17,7 +17,12 @@ import io.camunda.zeebe.client.api.response.Process;
 import io.camunda.zeebe.it.util.GrpcClientRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
+import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -36,6 +41,10 @@ public final class CreateDeploymentTest {
   public static RuleChain ruleChain = RuleChain.outerRule(BROKER_RULE).around(CLIENT_RULE);
 
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
+
+  @Rule
+  public final RecordingExporterTestWatcher recordingExporterTestWatcher =
+      new RecordingExporterTestWatcher();
 
   @Test
   public void shouldDeployProcessModel() {
@@ -152,5 +161,36 @@ public final class CreateDeploymentTest {
     assertThatThrownBy(command::join)
         .isInstanceOf(ClientException.class)
         .hasMessageContaining("rejected with code 'EXCEEDED_BATCH_RECORD_SIZE'");
+  }
+
+  @Test
+  public void shouldNotWriteResourcesInformationInRejectedRecords() {
+    // when
+    final var modelThatFitsJustWithinMaxMessageSize =
+        Bpmn.createExecutableProcess("PROCESS")
+            .startEvent()
+            .documentation("x".repeat((1046900)))
+            .done();
+    final var command =
+        CLIENT_RULE
+            .getClient()
+            .newDeployResourceCommand()
+            .addProcessModel(modelThatFitsJustWithinMaxMessageSize, "too_large_process.bpmn")
+            .send();
+
+    // then
+    final var rejectedRecords =
+        RecordingExporter.records()
+            .filter(record -> RecordType.COMMAND_REJECTION.equals(record.getRecordType()))
+            .toList();
+
+    rejectedRecords.stream()
+        .map(Record::getValue)
+        .forEach(
+            recordValue -> {
+              if (recordValue instanceof DeploymentRecord) {
+                assertThat(((DeploymentRecord) recordValue).getResources()).isEmpty();
+              }
+            });
   }
 }

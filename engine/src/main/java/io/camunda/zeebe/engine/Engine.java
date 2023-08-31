@@ -18,6 +18,7 @@ import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.appliers.EventAppliers;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.processing.DbBannedInstanceState;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -154,7 +155,8 @@ public class Engine implements RecordProcessor {
               : processor.tryHandleError(record, processingException);
 
       if (error == ProcessingError.UNEXPECTED_ERROR) {
-        handleUnexpectedError(processingException, record);
+        final var errorRecord = getRejectionRecord(record);
+        handleUnexpectedError(processingException, errorRecord);
       }
     }
     return processingResultBuilder.build();
@@ -193,6 +195,25 @@ public class Engine implements RecordProcessor {
 
       writers.state().appendFollowUpEvent(record.getKey(), ErrorIntent.CREATED, errorRecord);
     }
+  }
+
+  /**
+   * This method removes redundant information from rejected records in order to avoid the {@link
+   * ExceededBatchRecordSizeException} when writing the rejection event.
+   *
+   * <ul>
+   *   <li>Commands of type {@link DeploymentRecord}: for those records the resources information
+   *       are not necessary
+   * </ul>
+   *
+   * @param record the record to transform
+   * @return the {@link TypedRecord} with only necessary information
+   */
+  private TypedRecord getRejectionRecord(final TypedRecord record) {
+    if (record.getValue() instanceof final DeploymentRecord deploymentRecord) {
+      deploymentRecord.resetResources();
+    }
+    return record;
   }
 
   private static final class ProcessingResultBuilderMutex
