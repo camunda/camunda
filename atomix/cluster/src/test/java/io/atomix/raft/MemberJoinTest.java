@@ -33,6 +33,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
@@ -107,7 +108,8 @@ final class MemberJoinTest {
     m4.join().join();
 
     // when - appending a new entry
-    final var index = appendEntry(m1, m2, m3, m4).write().join();
+    final var leader = awaitLeader(m1, m2, m3, m4);
+    final var index = appendEntry(leader).write().join();
 
     // then - all members received the entry
     Awaitility.await("All members have committed the entry")
@@ -119,15 +121,54 @@ final class MemberJoinTest {
                             assertThat(server.getContext().getCommitIndex()).isEqualTo(index)));
   }
 
-  private static AppendResult appendEntry(final RaftServer... servers) {
-    final var leader =
-        Arrays.stream(servers)
-            .filter(RaftServer::isLeader)
-            .map(RaftServer::getContext)
-            .map(RaftContext::getRaftRole)
-            .map(LeaderRole.class::cast)
-            .findAny()
-            .orElseThrow();
+  @Test
+  void shouldFormNewQuorum(@TempDir final Path tmp) {
+    // given - a cluster with 3 members and two new members joining
+    final var id1 = MemberId.from("1");
+    final var id2 = MemberId.from("2");
+    final var id3 = MemberId.from("3");
+    final var id4 = MemberId.from("4");
+    final var id5 = MemberId.from("5");
+
+    final var m1 = createServer(tmp, createMembershipService(id1, id2, id3));
+    final var m2 = createServer(tmp, createMembershipService(id2, id1, id3));
+    final var m3 = createServer(tmp, createMembershipService(id3, id1, id2));
+    final var m4 = createServer(tmp, createMembershipService(id4, id1, id2, id3));
+    final var m5 = createServer(tmp, createMembershipService(id5, id1, id2, id3));
+
+    CompletableFuture.allOf(
+            m1.bootstrap(id1, id2, id3), m2.bootstrap(id1, id2, id3), m3.bootstrap(id1, id2, id3))
+        .join();
+
+    m4.join().join();
+    m5.join().join();
+
+    // when - original members fail so that quorum depends on new members
+    m1.shutdown().join();
+    m2.shutdown().join();
+
+    // then - cluster still has a leader and can commit entries
+    final var leader = awaitLeader(m1, m2, m3, m4, m5);
+    assertThat(appendEntry(leader).commit()).succeedsWithin(Duration.ofSeconds(1));
+  }
+
+  private static LeaderRole awaitLeader(final RaftServer... servers) {
+    //noinspection OptionalGetWithoutIsPresent
+    return Awaitility.await("Leader is known")
+        .until(() -> getLeader(servers), Optional::isPresent)
+        .get();
+  }
+
+  private static Optional<LeaderRole> getLeader(final RaftServer... servers) {
+    return Arrays.stream(servers)
+        .filter(RaftServer::isLeader)
+        .map(RaftServer::getContext)
+        .map(RaftContext::getRaftRole)
+        .map(LeaderRole.class::cast)
+        .findAny();
+  }
+
+  private static AppendResult appendEntry(final LeaderRole leader) {
     final var result = new AppendResult();
     leader.appendEntry(0, 1, ByteBuffer.wrap(new byte[0]), result);
     return result;
