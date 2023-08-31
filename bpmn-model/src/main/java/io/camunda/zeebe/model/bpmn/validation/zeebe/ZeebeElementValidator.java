@@ -17,7 +17,9 @@ package io.camunda.zeebe.model.bpmn.validation.zeebe;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
@@ -27,6 +29,8 @@ public final class ZeebeElementValidator<T extends ModelElementInstance>
 
   private final Class<T> elementType;
   private final List<AttributeAssertion<T>> attributeAssertions = new ArrayList<>();
+
+  private final List<AttributeAssertion<T>> oneOfAttributeAssertions = new ArrayList<>();
 
   private ZeebeElementValidator(final Class<T> elementType) {
     this.elementType = elementType;
@@ -50,11 +54,39 @@ public final class ZeebeElementValidator<T extends ModelElementInstance>
                     "Attribute '%s' must be present and not empty", assertions.attributeName));
           }
         });
+
+    final long matchCount =
+        oneOfAttributeAssertions.stream()
+            .filter(
+                assertion -> {
+                  final String attributeValue = assertion.attributeSupplier.apply(element);
+                  return attributeValue != null && !attributeValue.isEmpty();
+                })
+            .count();
+
+    if (matchCount != 1) {
+      final String attributes =
+          oneOfAttributeAssertions.stream()
+              .map(assertion -> assertion.attributeName)
+              .collect(Collectors.joining(", "));
+      validationResultCollector.addError(
+          0,
+          String.format(
+              "Exactly one of the attributes '%s' must be present and not empty", attributes));
+    }
   }
 
   public ZeebeElementValidator<T> hasNonEmptyAttribute(
       final Function<T, String> attributeSupplier, final String attributeName) {
     attributeAssertions.add(new AttributeAssertion<>(attributeSupplier, attributeName));
+    return this;
+  }
+
+  public ZeebeElementValidator<T> hasOneOfNonEmptyAttribute(
+      final Map<Function<T, String>, String> attributeSupplierToName) {
+    for (final Map.Entry<Function<T, String>, String> entry : attributeSupplierToName.entrySet()) {
+      oneOfAttributeAssertions.add(new AttributeAssertion<>(entry.getKey(), entry.getValue()));
+    }
     return this;
   }
 
