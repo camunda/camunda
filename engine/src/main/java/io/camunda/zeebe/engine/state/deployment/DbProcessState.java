@@ -55,7 +55,7 @@ public final class DbProcessState implements MutableProcessState {
 
   private final Map<DirectBuffer, Long2ObjectHashMap<DeployedProcess>>
       processesByProcessIdAndVersion = new HashMap<>();
-  private final Long2ObjectHashMap<DeployedProcess> processesByKey;
+  private final Map<String, Long2ObjectHashMap<DeployedProcess>> processByTenantAndKey;
 
   // process
   private final ColumnFamily<DbTenantAwareKey<DbLong>, PersistedProcess> processColumnFamily;
@@ -120,7 +120,7 @@ public final class DbProcessState implements MutableProcessState {
             fkTenantAwareProcessId,
             digest);
 
-    processesByKey = new Long2ObjectHashMap<>();
+    processByTenantAndKey = new HashMap<>();
 
     versionManager = new ProcessVersionManager(DEFAULT_VERSION_VALUE, zeebeDb, transactionContext);
   }
@@ -177,7 +177,9 @@ public final class DbProcessState implements MutableProcessState {
     processByIdAndVersionColumnFamily.deleteExisting(tenantAwareProcessIdAndVersionKey);
 
     processesByProcessIdAndVersion.remove(processRecord.getBpmnProcessIdBuffer());
-    processesByKey.remove(processRecord.getProcessDefinitionKey());
+    processByTenantAndKey
+        .getOrDefault(processRecord.getTenantId(), new Long2ObjectHashMap<>())
+        .remove(processRecord.getProcessDefinitionKey());
 
     final long latestVersion =
         versionManager.getLatestProcessVersion(processRecord.getBpmnProcessId());
@@ -255,7 +257,11 @@ public final class DbProcessState implements MutableProcessState {
 
   private void addProcessToInMemoryState(final DeployedProcess deployedProcess) {
     final DirectBuffer bpmnProcessId = deployedProcess.getBpmnProcessId();
-    processesByKey.put(deployedProcess.getKey(), deployedProcess);
+
+    final Long2ObjectHashMap<DeployedProcess> keyMap =
+        processByTenantAndKey.computeIfAbsent(
+            deployedProcess.getTenantId(), key -> new Long2ObjectHashMap<>());
+    keyMap.put(deployedProcess.getKey(), deployedProcess);
 
     final Long2ObjectHashMap<DeployedProcess> versionMap =
         processesByProcessIdAndVersion.computeIfAbsent(
@@ -304,7 +310,8 @@ public final class DbProcessState implements MutableProcessState {
 
   @Override
   public DeployedProcess getProcessByKeyAndTenant(final long key, final String tenantId) {
-    final DeployedProcess deployedProcess = processesByKey.get(key);
+    final DeployedProcess deployedProcess =
+        processByTenantAndKey.getOrDefault(tenantId, new Long2ObjectHashMap<>()).get(key);
 
     if (deployedProcess != null) {
       return deployedProcess;
@@ -380,7 +387,7 @@ public final class DbProcessState implements MutableProcessState {
 
   @Override
   public void clearCache() {
-    processesByKey.clear();
+    processByTenantAndKey.clear();
     processesByProcessIdAndVersion.clear();
     versionManager.clear();
   }
@@ -432,7 +439,9 @@ public final class DbProcessState implements MutableProcessState {
     if (processWithKey != null) {
       updateInMemoryState(processWithKey);
 
-      return processesByKey.get(processDefinitionKey);
+      return processByTenantAndKey
+          .getOrDefault(tenantId, new Long2ObjectHashMap<>())
+          .get(processDefinitionKey);
     }
     // does not exist in persistence and in memory state
     return null;
