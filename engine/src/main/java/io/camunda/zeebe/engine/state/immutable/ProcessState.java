@@ -19,7 +19,7 @@ public interface ProcessState {
 
   DeployedProcess getProcessByProcessIdAndVersion(DirectBuffer processId, int version);
 
-  DeployedProcess getProcessByKey(long key);
+  DeployedProcess getProcessByKeyAndTenant(long key, String tenantId);
 
   Collection<DeployedProcess> getProcesses();
 

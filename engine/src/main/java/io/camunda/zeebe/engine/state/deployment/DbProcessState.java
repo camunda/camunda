@@ -289,13 +289,13 @@ public final class DbProcessState implements MutableProcessState {
   }
 
   @Override
-  public DeployedProcess getProcessByKey(final long key) {
+  public DeployedProcess getProcessByKeyAndTenant(final long key, final String tenantId) {
     final DeployedProcess deployedProcess = processesByKey.get(key);
 
     if (deployedProcess != null) {
       return deployedProcess;
     } else {
-      return lookupPersistenceStateForProcessByKey(key);
+      return lookupPersistenceStateForProcessByKey(key, tenantId);
     }
   }
 
