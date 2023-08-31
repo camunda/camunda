@@ -165,7 +165,7 @@ public final class ProcessStateTest {
     processState.putProcess(versionTwoRecord.getKey(), versionTwoRecord);
 
     // when
-    final var processVersion = processState.findProcessVersionBefore("processId", 2);
+    final var processVersion = processState.findProcessVersionBefore("processId", 2, "");
 
     // then
     assertThat(processVersion).isNotEmpty();
@@ -179,7 +179,7 @@ public final class ProcessStateTest {
     processState.putProcess(versionOneRecord.getKey(), versionOneRecord);
 
     // when
-    final var processVersion = processState.findProcessVersionBefore("processId", 1);
+    final var processVersion = processState.findProcessVersionBefore("processId", 1, "");
 
     // then
     assertThat(processVersion).isEmpty();
@@ -192,7 +192,7 @@ public final class ProcessStateTest {
     processState.putProcess(versionOneRecord.getKey(), versionOneRecord);
 
     // when
-    final var processVersion = processState.findProcessVersionBefore("processId", 2);
+    final var processVersion = processState.findProcessVersionBefore("processId", 2, "");
 
     // then
     assertThat(processVersion).isEmpty();

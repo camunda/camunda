@@ -347,8 +347,8 @@ public final class DbProcessState implements MutableProcessState {
 
   @Override
   public Optional<Integer> findProcessVersionBefore(
-      final String bpmnProcessId, final long version) {
-    return versionManager.findProcessVersionBefore(bpmnProcessId, version);
+      final String bpmnProcessId, final long version, final String tenantId) {
+    return versionManager.findProcessVersionBefore(bpmnProcessId, version, tenantId);
   }
 
   @Override

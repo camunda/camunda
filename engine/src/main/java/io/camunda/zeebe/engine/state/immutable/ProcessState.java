@@ -50,7 +50,8 @@ public interface ProcessState {
    * @param bpmnProcessId the id of the process
    * @param version the version for which we want to find the previous version
    */
-  Optional<Integer> findProcessVersionBefore(String bpmnProcessId, long version);
+  Optional<Integer> findProcessVersionBefore(
+      String bpmnProcessId, long version, final String tenantId);
 
   <T extends ExecutableFlowElement> T getFlowElement(
       long processDefinitionKey, String tenantId, DirectBuffer elementId, Class<T> elementType);
