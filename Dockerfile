@@ -2,7 +2,9 @@
 # This Dockerfile requires BuildKit to be enabled, by setting the environment variable
 # DOCKER_BUILDKIT=1
 # see https://docs.docker.com/build/buildkit/#getting-started
-ARG BASE_IMAGE="ubuntu:jammy-20230624"
+# We use the ubuntu release name only as otherwise renovate fails to update the tag & both digests
+# see https://github.com/camunda/zeebe/pull/14071#discussion_r1311176361
+ARG BASE_IMAGE="ubuntu:jammy"
 ARG BASE_DIGEST_AMD64="sha256:b060fffe8e1561c9c3e6dea6db487b900100fc26830b9ea2ec966c151ab4c020"
 ARG BASE_DIGEST_ARM64="sha256:fb4a67ec973b2995214edd101e37a83787b175a16750b372789c8f6314dc20ca"
 ARG JDK_IMAGE="eclipse-temurin:17-jdk-jammy"
