@@ -187,7 +187,8 @@ public class ResourceDeletionProcessor
             .setBpmnProcessId(processIdBuffer)
             .setVersion(process.getVersion())
             .setKey(process.getKey())
-            .setResourceName(process.getResourceName());
+            .setResourceName(process.getResourceName())
+            .setTenantId(process.getTenantId());
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), ProcessIntent.DELETING, processRecord);
 
     final String processId = processRecord.getBpmnProcessId();
@@ -201,7 +202,8 @@ public class ResourceDeletionProcessor
       // If there is a previous version we must resubscribe to the previous version's start events.
       if (previousVersion.isPresent()) {
         final var previousProcess =
-            processState.getProcessByProcessIdAndVersion(processIdBuffer, previousVersion.get());
+            processState.getProcessByProcessIdAndVersion(
+                processIdBuffer, previousVersion.get(), process.getTenantId());
         resubscribeStartEvents(previousProcess);
       }
     }

@@ -127,7 +127,7 @@ public class StartEventSubscriptionManager {
     for (int version = processRecord.getVersion() - 1; version > 0; --version) {
       final DeployedProcess lastStartProcess =
           processState.getProcessByProcessIdAndVersion(
-              processRecord.getBpmnProcessIdBuffer(), version);
+              processRecord.getBpmnProcessIdBuffer(), version, processRecord.getTenantId());
       if (lastStartProcess != null
           && lastStartProcess.getProcess().getStartEvents().stream()
               .anyMatch(hasStartEventMatching)) {
