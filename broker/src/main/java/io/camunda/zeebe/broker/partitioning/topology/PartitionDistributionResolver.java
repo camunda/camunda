@@ -24,8 +24,10 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-/** Manage how partitions are distributed among the brokers. */
+/** Utility class to determine partition distribution from the given cluster configuration. */
 public final class PartitionDistributionResolver {
+
+  private PartitionDistributionResolver() {}
 
   public static StaticConfiguration getStaticConfiguration(
       final ClusterCfg clusterCfg,
