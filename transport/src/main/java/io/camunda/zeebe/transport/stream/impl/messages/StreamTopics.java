@@ -11,7 +11,8 @@ public enum StreamTopics {
   ADD("stream-add"),
   PUSH("stream-push"),
   REMOVE("stream-remove"),
-  REMOVE_ALL("stream-remove-all");
+  REMOVE_ALL("stream-remove-all"),
+  RESTART_STREAMS("stream-recreate");
 
   private final String topic;
 
