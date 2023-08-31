@@ -145,11 +145,13 @@ public final class DbProcessState implements MutableProcessState {
 
   @Override
   public void updateProcessState(
-      final long processDefinitionKey, final PersistedProcessState state) {
-    this.processDefinitionKey.wrapLong(processDefinitionKey);
-    final var process = processColumnFamily.get(this.processDefinitionKey);
+      final ProcessRecord processRecord, final PersistedProcessState state) {
+    processDefinitionKey.wrapLong(processRecord.getProcessDefinitionKey());
+    tenantIdKey.wrapString(processRecord.getTenantId());
+
+    final var process = processColumnFamily.get(tenantAwareProcessDefinitionKey);
     process.setState(state);
-    processColumnFamily.update(this.processDefinitionKey, process);
+    processColumnFamily.update(tenantAwareProcessDefinitionKey, process);
     updateInMemoryState(process);
   }
 

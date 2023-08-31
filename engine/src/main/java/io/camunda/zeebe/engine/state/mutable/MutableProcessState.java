@@ -25,10 +25,10 @@ public interface MutableProcessState extends ProcessState {
    * Updates the state of a process. This method updates both the ColumnFamily and the in memory
    * cache.
    *
-   * @param processDefinitionKey the key of the process definition
+   * @param processRecord the record of the process that is updated
    * @param state the new state
    */
-  void updateProcessState(final long processDefinitionKey, final PersistedProcessState state);
+  void updateProcessState(final ProcessRecord processRecord, final PersistedProcessState state);
 
   /**
    * Deletes a process fromm the state and cache
