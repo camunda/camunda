@@ -134,6 +134,11 @@ public final class DeploymentClient {
     return this;
   }
 
+  public DeploymentClient withTenantId(final String tenantId) {
+    deploymentRecord.setTenantId(tenantId);
+    return this;
+  }
+
   public DeploymentClient expectRejection() {
     expectation = REJECTION_EXPECTATION;
     return this;

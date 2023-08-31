@@ -37,6 +37,7 @@ public class DecisionRequirementsMetadataRecord extends UnifiedRecordValue
   private final BinaryProperty checksumProp = new BinaryProperty("checksum");
 
   private final BooleanProperty isDuplicateProp = new BooleanProperty("isDuplicate", false);
+  private final StringProperty tenantIdProp = new StringProperty("tenantId", "");
 
   public DecisionRequirementsMetadataRecord() {
     declareProperty(decisionRequirementsIdProp)
@@ -46,7 +47,8 @@ public class DecisionRequirementsMetadataRecord extends UnifiedRecordValue
         .declareProperty(namespaceProp)
         .declareProperty(resourceNameProp)
         .declareProperty(checksumProp)
-        .declareProperty(isDuplicateProp);
+        .declareProperty(isDuplicateProp)
+        .declareProperty(tenantIdProp);
   }
 
   @Override
@@ -160,7 +162,11 @@ public class DecisionRequirementsMetadataRecord extends UnifiedRecordValue
 
   @Override
   public String getTenantId() {
-    // todo(#13320): replace dummy implementation
-    return "";
+    return bufferAsString(tenantIdProp.getValue());
+  }
+
+  public DecisionRequirementsMetadataRecord setTenantId(final String tenantId) {
+    tenantIdProp.setValue(tenantId);
+    return this;
   }
 }

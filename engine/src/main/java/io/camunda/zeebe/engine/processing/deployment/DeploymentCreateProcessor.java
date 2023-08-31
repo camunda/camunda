@@ -287,7 +287,8 @@ public final class DeploymentCreateProcessor
         .setNamespace(drg.getNamespace())
         .setResourceName(drg.getResourceName())
         .setChecksum(wrapArray(drg.getChecksum()))
-        .setResource(resource);
+        .setResource(resource)
+        .setTenantId(drg.getTenantId());
   }
 
   /**

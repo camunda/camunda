@@ -10,6 +10,7 @@ package io.camunda.zeebe.protocol.impl.record.value.deployment;
 import static io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord.PROP_PROCESS_BPMN_PROCESS_ID;
 import static io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord.PROP_PROCESS_KEY;
 import static io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord.PROP_PROCESS_VERSION;
+import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.BinaryProperty;
@@ -35,6 +36,7 @@ public final class ProcessMetadata extends UnifiedRecordValue implements Process
 
   // should be set to true if the process was already deployed - property should not be exported
   private final BooleanProperty isDuplicateProp = new BooleanProperty("isDuplicate", false);
+  private final StringProperty tenantIdProp = new StringProperty("tenantId", "");
 
   public ProcessMetadata() {
     declareProperty(bpmnProcessIdProp)
@@ -42,7 +44,8 @@ public final class ProcessMetadata extends UnifiedRecordValue implements Process
         .declareProperty(keyProp)
         .declareProperty(resourceNameProp)
         .declareProperty(checksumProp)
-        .declareProperty(isDuplicateProp);
+        .declareProperty(isDuplicateProp)
+        .declareProperty(tenantIdProp);
   }
 
   @Override
@@ -155,7 +158,11 @@ public final class ProcessMetadata extends UnifiedRecordValue implements Process
 
   @Override
   public String getTenantId() {
-    // todo(#13320): replace dummy implementation
-    return "";
+    return bufferAsString(tenantIdProp.getValue());
+  }
+
+  public ProcessMetadata setTenantId(final String tenantId) {
+    tenantIdProp.setValue(tenantId);
+    return this;
   }
 }

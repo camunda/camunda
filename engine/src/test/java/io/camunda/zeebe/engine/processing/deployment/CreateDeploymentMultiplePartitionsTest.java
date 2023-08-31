@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.deployment;
 
 import static io.camunda.zeebe.protocol.Protocol.DEPLOYMENT_PARTITION;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -23,6 +24,7 @@ import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsMetadataValue;
 import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
@@ -48,6 +50,8 @@ public final class CreateDeploymentMultiplePartitionsTest {
       Bpmn.createExecutableProcess("process2").startEvent().endEvent().done();
   private static final String DMN_DECISION_TABLE = "/dmn/decision-table.dmn";
   private static final String DMN_DECISION_TABLE_V2 = "/dmn/decision-table_v2.dmn";
+  private static final String DMN_DECISION_TABLE_RENAMED =
+      "/dmn/decision-table-with-renamed-drg-and-decision.dmn";
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -464,6 +468,116 @@ public final class CreateDeploymentMultiplePartitionsTest {
                 .distinct())
         .describedAs("All created events get the same key")
         .hasSize(1);
+  }
+
+  @Test
+  public void shouldCreateProcessForTenant() {
+    // given
+    final String tenant = "tenant";
+    final String processId = Strings.newRandomValidBpmnId();
+
+    // when
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                "process.xml",
+                Bpmn.createExecutableProcess(processId).startEvent().endEvent().done())
+            .withTenantId(tenant)
+            .deploy();
+
+    // then
+    assertThat(deployment.getValue().getTenantId()).isEqualTo(tenant);
+    for (int partitionId = 1; partitionId <= PARTITION_COUNT; partitionId++) {
+      assertThat(
+              RecordingExporter.processRecords()
+                  .withIntent(ProcessIntent.CREATED)
+                  .withPartitionId(partitionId)
+                  .limit(1))
+          .extracting(Record::getValue)
+          .extracting(
+              ProcessMetadataValue::getBpmnProcessId,
+              ProcessMetadataValue::getVersion,
+              ProcessMetadataValue::getProcessDefinitionKey,
+              TenantOwned::getTenantId)
+          .describedAs("Processes are created for correct tenant")
+          .containsExactly(
+              tuple(
+                  processId,
+                  1,
+                  deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey(),
+                  tenant));
+    }
+  }
+
+  @Test
+  public void shouldCreateDmnForTenant() {
+    // given
+    final String tenant = "tenant";
+    final var drgId = "star-wars";
+    final var decisionId = "sith_or_jedi";
+
+    // when
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlClasspathResource(DMN_DECISION_TABLE_RENAMED)
+            .withTenantId(tenant)
+            .deploy();
+
+    // then
+    assertThat(deployment.getValue().getTenantId()).isEqualTo(tenant);
+    for (int partitionId = 1; partitionId <= PARTITION_COUNT; partitionId++) {
+      assertThat(
+              RecordingExporter.decisionRequirementsRecords()
+                  .withIntent(DecisionRequirementsIntent.CREATED)
+                  .withPartitionId(partitionId)
+                  .limit(1))
+          .extracting(Record::getValue)
+          .extracting(
+              DecisionRequirementsMetadataValue::getDecisionRequirementsId,
+              DecisionRequirementsMetadataValue::getDecisionRequirementsVersion,
+              DecisionRequirementsMetadataValue::getDecisionRequirementsKey,
+              TenantOwned::getTenantId)
+          .describedAs("DRGs are created for correct tenant")
+          .containsExactly(
+              tuple(
+                  drgId,
+                  1,
+                  deployment
+                      .getValue()
+                      .getDecisionRequirementsMetadata()
+                      .get(0)
+                      .getDecisionRequirementsKey(),
+                  tenant));
+
+      assertThat(
+              RecordingExporter.decisionRecords()
+                  .withIntent(DecisionIntent.CREATED)
+                  .withPartitionId(partitionId)
+                  .limit(1))
+          .extracting(Record::getValue)
+          .extracting(
+              DecisionRecordValue::getDecisionId,
+              DecisionRecordValue::getVersion,
+              DecisionRecordValue::getDecisionKey,
+              DecisionRecordValue::getDecisionRequirementsId,
+              DecisionRecordValue::getDecisionRequirementsKey,
+              TenantOwned::getTenantId)
+          .describedAs("Decisions are created for correct tenant")
+          .containsExactly(
+              tuple(
+                  decisionId,
+                  1,
+                  deployment.getValue().getDecisionsMetadata().get(0).getDecisionKey(),
+                  drgId,
+                  deployment
+                      .getValue()
+                      .getDecisionRequirementsMetadata()
+                      .get(0)
+                      .getDecisionRequirementsKey(),
+                  tenant));
+    }
   }
 
   private void assertDeploymentRecordWithoutResources(

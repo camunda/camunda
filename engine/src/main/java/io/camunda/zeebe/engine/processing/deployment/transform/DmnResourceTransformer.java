@@ -168,7 +168,8 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
         .setDecisionRequirementsName(parsedDrg.getName())
         .setNamespace(parsedDrg.getNamespace())
         .setResourceName(resource.getResourceName())
-        .setChecksum(checksum);
+        .setChecksum(checksum)
+        .setTenantId(deploymentEvent.getTenantId());
 
     decisionState
         .findLatestDecisionRequirementsById(wrapString(parsedDrg.getId()))
@@ -207,7 +208,8 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
                   .setDecisionId(decision.getId())
                   .setDecisionName(decision.getName())
                   .setDecisionRequirementsId(parsedDrg.getId())
-                  .setDecisionRequirementsKey(drgRecord.getDecisionRequirementsKey());
+                  .setDecisionRequirementsKey(drgRecord.getDecisionRequirementsKey())
+                  .setTenantId(drgRecord.getTenantId());
 
               decisionState
                   .findLatestDecisionById(wrapString(decision.getId()))
@@ -281,7 +283,8 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
                         .setNamespace(drg.getNamespace())
                         .setResourceName(drg.getResourceName())
                         .setChecksum(drg.getChecksumBuffer())
-                        .setResource(resource.getResourceBuffer())));
+                        .setResource(resource.getResourceBuffer())
+                        .setTenantId(drg.getTenantId())));
 
     deployment.decisionsMetadata().stream()
         .filter(decision -> decision.getDecisionRequirementsKey() == decisionRequirementsKey)
@@ -297,6 +300,7 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
                         .setDecisionName(decision.getDecisionName())
                         .setVersion(decision.getVersion())
                         .setDecisionRequirementsId(decision.getDecisionRequirementsId())
-                        .setDecisionRequirementsKey(decision.getDecisionRequirementsKey())));
+                        .setDecisionRequirementsKey(decision.getDecisionRequirementsKey())
+                        .setTenantId(decision.getTenantId())));
   }
 }
