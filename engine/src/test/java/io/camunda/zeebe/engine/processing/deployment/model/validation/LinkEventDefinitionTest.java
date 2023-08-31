@@ -285,6 +285,29 @@ public class LinkEventDefinitionTest {
             "ERROR: Multiple intermediate catch link event definitions with the same name 'link' are not allowed.");
   }
 
+  @Test
+  public void shouldRejectDeploymentIfThereIsNoCatchEventInTheSameScope() throws Exception {
+    // given
+    final Path path =
+        Paths.get(getClass().getResource("/processes/invalid_link_event_subprocess.bpmn").toURI());
+    final byte[] resource = Files.readAllBytes(path);
+
+    // when
+    final Record<DeploymentRecordValue> rejectedDeployment =
+        ENGINE.deployment().withXmlResource(resource).expectRejection().deploy();
+
+    // then
+    Assertions.assertThat(rejectedDeployment)
+        .hasKey(ExecuteCommandResponseDecoder.keyNullValue())
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasIntent(DeploymentIntent.CREATE)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejectedDeployment.getRejectionReason())
+        .contains("Element: process")
+        .contains(
+            "ERROR: Can't find an catch link event for the throw link event with the name 'foo'");
+  }
+
   public static BpmnModelInstance getLinkEventProcess() {
     final ProcessBuilder process = Bpmn.createExecutableProcess("process");
     process.startEvent().manualTask("manualTask1").intermediateThrowEvent().link("LinkA");
