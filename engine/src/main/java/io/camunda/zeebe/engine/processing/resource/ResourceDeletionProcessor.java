@@ -199,7 +199,9 @@ public class ResourceDeletionProcessor
     if (latestVersion == process.getVersion()) {
       unsubscribeStartEvents(process);
 
-      final var previousVersion = processState.findProcessVersionBefore(processId, latestVersion);
+      final var previousVersion =
+          processState.findProcessVersionBefore(
+              processId, latestVersion, processRecord.getTenantId());
       // If there is a previous version we must resubscribe to the previous version's start events.
       if (previousVersion.isPresent()) {
         final var previousProcess =
