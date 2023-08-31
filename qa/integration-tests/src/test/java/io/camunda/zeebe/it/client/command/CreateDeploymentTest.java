@@ -20,12 +20,9 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
-import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
-import java.util.List;
-import java.util.stream.Collectors;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -44,6 +41,7 @@ public final class CreateDeploymentTest {
   public static RuleChain ruleChain = RuleChain.outerRule(BROKER_RULE).around(CLIENT_RULE);
 
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
+
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
@@ -181,9 +179,10 @@ public final class CreateDeploymentTest {
             .send();
 
     // then
-    final var rejectedRecords = RecordingExporter.records()
-        .filter(record -> RecordType.COMMAND_REJECTION.equals(record.getRecordType()))
-        .toList();
+    final var rejectedRecords =
+        RecordingExporter.records()
+            .filter(record -> RecordType.COMMAND_REJECTION.equals(record.getRecordType()))
+            .toList();
 
     rejectedRecords.stream()
         .map(Record::getValue)
@@ -192,7 +191,6 @@ public final class CreateDeploymentTest {
               if (recordValue instanceof DeploymentRecord) {
                 assertThat(((DeploymentRecord) recordValue).getResources()).isEmpty();
               }
-            }
-        );
+            });
   }
 }
