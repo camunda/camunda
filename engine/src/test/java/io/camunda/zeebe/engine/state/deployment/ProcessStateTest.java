@@ -107,7 +107,7 @@ public final class ProcessStateTest {
     // given
 
     // when
-    final long nextProcessVersion = processState.getNextProcessVersion("foo");
+    final long nextProcessVersion = processState.getNextProcessVersion("foo", "");
 
     // then
     assertThat(nextProcessVersion).isEqualTo(1L);
@@ -120,7 +120,7 @@ public final class ProcessStateTest {
     processState.putProcess(processRecord.getKey(), processRecord);
 
     // when
-    final long processVersion = processState.getNextProcessVersion("processId");
+    final long processVersion = processState.getNextProcessVersion("processId", "");
 
     // then
     assertThat(processVersion).isEqualTo(2L);
@@ -138,7 +138,7 @@ public final class ProcessStateTest {
     processState.putProcess(processRecord2.getKey(), processRecord2);
 
     // then
-    final long processVersion = processState.getNextProcessVersion("processId");
+    final long processVersion = processState.getNextProcessVersion("processId", "");
     assertThat(processVersion).isEqualTo(3L);
   }
 
@@ -152,7 +152,7 @@ public final class ProcessStateTest {
     processState.putProcess(processRecord.getKey(), processRecord);
 
     // then
-    final long processVersion = processState.getNextProcessVersion("processId");
+    final long processVersion = processState.getNextProcessVersion("processId", "");
     assertThat(processVersion).isEqualTo(2L);
   }
 
@@ -209,9 +209,9 @@ public final class ProcessStateTest {
     processState.putProcess(processRecord2.getKey(), processRecord2);
 
     // then
-    final long processVersion = processState.getNextProcessVersion("processId");
+    final long processVersion = processState.getNextProcessVersion("processId", "");
     assertThat(processVersion).isEqualTo(2L);
-    final long otherversion = processState.getNextProcessVersion("other");
+    final long otherversion = processState.getNextProcessVersion("other", "");
     assertThat(otherversion).isEqualTo(2L);
   }
 
@@ -576,7 +576,7 @@ public final class ProcessStateTest {
         .isNull();
     assertThat(processState.getLatestVersionDigest(BufferUtil.wrapString(processId), "")).isNull();
     assertThat(processState.getLatestProcessVersion(processId, "")).isEqualTo(0);
-    assertThat(processState.getNextProcessVersion(processId)).isEqualTo(2);
+    assertThat(processState.getNextProcessVersion(processId, "")).isEqualTo(2);
   }
 
   @Test
@@ -611,7 +611,7 @@ public final class ProcessStateTest {
     assertThat(processState.getLatestVersionDigest(BufferUtil.wrapString(processId), ""))
         .isEqualTo(wrapString("newChecksum"));
     assertThat(processState.getLatestProcessVersion(processId, "")).isEqualTo(2);
-    assertThat(processState.getNextProcessVersion(processId)).isEqualTo(3);
+    assertThat(processState.getNextProcessVersion(processId, "")).isEqualTo(3);
   }
 
   @Test
@@ -645,7 +645,7 @@ public final class ProcessStateTest {
         .isNull();
     assertThat(processState.getLatestVersionDigest(BufferUtil.wrapString(processId), "")).isNull();
     assertThat(processState.getLatestProcessVersion(processId, "")).isEqualTo(1);
-    assertThat(processState.getNextProcessVersion(processId)).isEqualTo(3);
+    assertThat(processState.getNextProcessVersion(processId, "")).isEqualTo(3);
   }
 
   @Test
@@ -689,7 +689,7 @@ public final class ProcessStateTest {
         .isNull();
     assertThat(processState.getLatestVersionDigest(BufferUtil.wrapString(processId), "")).isNull();
     assertThat(processState.getLatestProcessVersion(processId, "")).isEqualTo(1);
-    assertThat(processState.getNextProcessVersion(processId)).isEqualTo(4);
+    assertThat(processState.getNextProcessVersion(processId, "")).isEqualTo(4);
   }
 
   @Test
@@ -729,7 +729,7 @@ public final class ProcessStateTest {
     assertThat(processByKey.getResourceName()).isEqualTo(newProcessRecord.getResourceNameBuffer());
 
     assertThat(processState.getLatestProcessVersion(processId, "")).isEqualTo(2);
-    assertThat(processState.getNextProcessVersion(processId)).isEqualTo(3);
+    assertThat(processState.getNextProcessVersion(processId, "")).isEqualTo(3);
   }
 
   public static DeploymentRecord creatingDeploymentRecord(
@@ -740,7 +740,7 @@ public final class ProcessStateTest {
   public static DeploymentRecord creatingDeploymentRecord(
       final MutableProcessingState processingState, final String processId) {
     final MutableProcessState processState = processingState.getProcessState();
-    final int version = processState.getNextProcessVersion(processId);
+    final int version = processState.getNextProcessVersion(processId, "");
     return creatingDeploymentRecord(processingState, processId, version);
   }
 
@@ -789,7 +789,7 @@ public final class ProcessStateTest {
   public static ProcessRecord creatingProcessRecord(
       final MutableProcessingState processingState, final String processId) {
     final MutableProcessState processState = processingState.getProcessState();
-    final int version = processState.getNextProcessVersion(processId);
+    final int version = processState.getNextProcessVersion(processId, "");
     return creatingProcessRecord(processingState, processId, version);
   }
 
