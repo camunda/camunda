@@ -286,9 +286,11 @@ public final class DbProcessState implements MutableProcessState {
 
     if (versionMap != null) {
       final DeployedProcess deployedProcess = versionMap.get(version);
-      return deployedProcess != null ? deployedProcess : lookupPersistenceState(processId, version);
+      return deployedProcess != null
+          ? deployedProcess
+          : lookupPersistenceState(processId, version, tenantId);
     } else {
-      return lookupPersistenceState(processId, version);
+      return lookupPersistenceState(processId, version, tenantId);
     }
   }
 
@@ -392,12 +394,13 @@ public final class DbProcessState implements MutableProcessState {
   }
 
   private DeployedProcess lookupPersistenceState(
-      final DirectBuffer processIdBuffer, final int version) {
+      final DirectBuffer processIdBuffer, final int version, final String tenantId) {
     processId.wrapBuffer(processIdBuffer);
     processVersion.wrapLong(version);
+    tenantIdKey.wrapString(tenantId);
 
     final PersistedProcess processWithVersionAndId =
-        processByIdAndVersionColumnFamily.get(idAndVersionKey);
+        processByIdAndVersionColumnFamily.get(tenantAwareProcessIdAndVersionKey);
 
     if (processWithVersionAndId != null) {
       updateInMemoryState(processWithVersionAndId);
