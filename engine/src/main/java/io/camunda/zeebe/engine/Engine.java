@@ -198,7 +198,7 @@ public class Engine implements RecordProcessor {
   }
 
   /**
-   * This method remove unuseful information from rejected records in order to not encounter the
+   * This method removes redundant information from rejected records in order to avoid the
    * {@link ExceededBatchRecordSizeException} when writing the rejection event.
    *
    * <ul>
