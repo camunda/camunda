@@ -7,9 +7,11 @@
  */
 package io.camunda.zeebe.broker.partitioning;
 
-import io.atomix.primitive.partition.ManagedPartitionGroup;
 import io.atomix.primitive.partition.impl.DefaultPartitionManagementService;
+import io.atomix.raft.partition.RaftPartition;
+import io.atomix.raft.partition.RaftPartitionConfig;
 import io.atomix.raft.partition.RaftPartitionGroup;
+import io.atomix.raft.partition.RaftStorageConfig;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
@@ -31,6 +33,7 @@ import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreFactory;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.health.HealthStatus;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -102,11 +105,6 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
     this.partitionListeners = new ArrayList<>(partitionListeners);
     topologyManager = new TopologyManagerImpl(clusterServices.getMembershipService(), localBroker);
     this.partitionListeners.add(topologyManager);
-  }
-
-  @Override
-  public ManagedPartitionGroup getPartitionGroup() {
-    return partitionGroup;
   }
 
   public PartitionAdminAccess createAdminAccess(final ConcurrencyControl concurrencyControl) {
@@ -255,7 +253,28 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
     topologyManager.addTopologyPartitionListener(listener);
   }
 
-  public List<ZeebePartition> getPartitions() {
+  @Override
+  public RaftStorageConfig getRaftStorageConfig() {
+    return partitionGroup.config().getStorageConfig();
+  }
+
+  @Override
+  public RaftPartitionConfig getRaftPartitionConfig() {
+    return partitionGroup.config().getPartitionConfig();
+  }
+
+  @Override
+  public RaftPartition getRaftPartition(final int partitionId) {
+    return partitionGroup.getPartition(partitionId);
+  }
+
+  @Override
+  public Collection<RaftPartition> getRaftPartitions() {
+    return partitionGroup.getPartitions().stream().map(RaftPartition.class::cast).toList();
+  }
+
+  @Override
+  public Collection<ZeebePartition> getZeebePartitions() {
     return partitions;
   }
 }

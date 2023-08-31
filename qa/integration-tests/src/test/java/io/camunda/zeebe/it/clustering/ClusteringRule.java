@@ -19,10 +19,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.Member;
-import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.impl.NettyMessagingService;
 import io.atomix.cluster.messaging.impl.NettyUnicastService;
-import io.atomix.raft.partition.RaftPartition;
 import io.atomix.utils.Version;
 import io.camunda.zeebe.broker.ActorSchedulerConfiguration;
 import io.camunda.zeebe.broker.Broker;
@@ -646,18 +644,13 @@ public class ClusteringRule extends ExternalResource {
   }
 
   public void stepDown(final Broker broker, final int partitionId) {
-    final var atomix = broker.getBrokerContext().getClusterServices();
-    final MemberId nodeId = atomix.getMembershipService().getLocalMember().id();
-
-    final var raftPartition =
-        broker.getBrokerContext().getPartitionManager().getPartitionGroup().getPartitions().stream()
-            .filter(partition -> partition.members().contains(nodeId))
-            .filter(partition -> partition.id().id() == partitionId)
-            .map(RaftPartition.class::cast)
-            .findFirst()
-            .orElseThrow();
-
-    raftPartition.getServer().stepDown().join();
+    broker
+        .getBrokerContext()
+        .getPartitionManager()
+        .getRaftPartition(partitionId)
+        .getServer()
+        .stepDown()
+        .join();
   }
 
   public void disconnect(final Broker broker) {
@@ -715,12 +708,10 @@ public class ClusteringRule extends ExternalResource {
     }
 
     final var serverOfExpectedLeader =
-        ((RaftPartition)
-                expectedLeader
-                    .getBrokerContext()
-                    .getPartitionManager()
-                    .getPartitionGroup()
-                    .getPartition(partitionId))
+        expectedLeader
+            .getBrokerContext()
+            .getPartitionManager()
+            .getRaftPartition(partitionId)
             .getServer();
 
     Awaitility.await("Promote request is successful")

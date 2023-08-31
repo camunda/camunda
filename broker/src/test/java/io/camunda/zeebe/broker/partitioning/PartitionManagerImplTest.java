@@ -12,7 +12,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.atomix.cluster.ClusterMembershipService;
-import io.atomix.raft.partition.RaftPartitionGroupConfig;
 import io.atomix.raft.storage.log.DelayedFlusher;
 import io.atomix.raft.storage.log.RaftLogFlusher.DirectFlusher;
 import io.atomix.raft.storage.log.RaftLogFlusher.NoopFlusher;
@@ -79,8 +78,11 @@ final class PartitionManagerImplTest {
             PartitionDistribution.NO_PARTITIONS);
 
     // then
-    final var config = getPartitionGroupConfig(partitionManager);
-    assertThat(config.getStorageConfig().flusherFactory().createFlusher(NoopContext::new))
+    assertThat(
+            partitionManager
+                .getRaftStorageConfig()
+                .flusherFactory()
+                .createFlusher(NoopContext::new))
         .isInstanceOf(DelayedFlusher.class)
         .asInstanceOf(InstanceOfAssertFactories.type(DelayedFlusher.class))
         .hasFieldOrPropertyWithValue("delayTime", Duration.ofSeconds(5));
@@ -110,8 +112,7 @@ final class PartitionManagerImplTest {
             PartitionDistribution.NO_PARTITIONS);
 
     // then
-    final var config = getPartitionGroupConfig(partitionManager);
-    assertThat(config.getStorageConfig().flusherFactory().createFlusher(() -> null))
+    assertThat(partitionManager.getRaftStorageConfig().flusherFactory().createFlusher(() -> null))
         .isInstanceOf(DirectFlusher.class);
   }
 
@@ -139,8 +140,7 @@ final class PartitionManagerImplTest {
             PartitionDistribution.NO_PARTITIONS);
 
     // then
-    final var config = getPartitionGroupConfig(partitionManager);
-    assertThat(config.getStorageConfig().flusherFactory().createFlusher(() -> null))
+    assertThat(partitionManager.getRaftStorageConfig().flusherFactory().createFlusher(() -> null))
         .isInstanceOf(NoopFlusher.class);
   }
 
@@ -169,14 +169,8 @@ final class PartitionManagerImplTest {
             PartitionDistribution.NO_PARTITIONS);
 
     // then
-    final var config = getPartitionGroupConfig(partitionManager);
-    assertThat(config.getStorageConfig().flusherFactory().createFlusher(() -> null))
+    assertThat(partitionManager.getRaftStorageConfig().flusherFactory().createFlusher(() -> null))
         .isInstanceOf(NoopFlusher.class);
-  }
-
-  private RaftPartitionGroupConfig getPartitionGroupConfig(
-      final PartitionManager partitionManager) {
-    return (RaftPartitionGroupConfig) partitionManager.getPartitionGroup().config();
   }
 
   private BrokerCfg newConfig() {

@@ -20,6 +20,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -41,7 +42,7 @@ public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminSe
 
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
   private PartitionAdminAccess adminAccess = new NoOpPartitionAdminAccess();
-  private List<ZeebePartition> partitions = Collections.emptyList();
+  private Collection<ZeebePartition> partitions = Collections.emptyList();
 
   public BrokerAdminServiceImpl() {}
 
@@ -50,7 +51,7 @@ public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminSe
   }
 
   public void injectPartitionInfoSource(
-      @Deprecated /* TODO find smaller interface */ final List<ZeebePartition> partitions) {
+      @Deprecated /* TODO find smaller interface */ final Collection<ZeebePartition> partitions) {
     this.partitions = partitions;
   }
 

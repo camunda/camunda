@@ -60,7 +60,7 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
                                     adminService.injectAdminAccess(
                                         partitionManager.createAdminAccess(adminService));
                                     adminService.injectPartitionInfoSource(
-                                        partitionManager.getPartitions());
+                                        partitionManager.getZeebePartitions());
 
                                     brokerStartupContext.setPartitionManager(partitionManager);
 

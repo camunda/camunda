@@ -9,10 +9,8 @@ package io.camunda.zeebe.broker.system.partitions;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.atomix.primitive.partition.PartitionId;
 import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.storage.log.RaftLogReader;
-import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.system.management.BrokerAdminService;
 import io.camunda.zeebe.broker.system.management.PartitionStatus;
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
@@ -44,13 +42,11 @@ public class BrokerSnapshotTest {
   @Before
   public void setup() {
     final RaftPartition raftPartition =
-        (RaftPartition)
-            brokerRule
-                .getBroker()
-                .getBrokerContext()
-                .getPartitionManager()
-                .getPartitionGroup()
-                .getPartition(PartitionId.from(PartitionManagerImpl.GROUP_NAME, PARTITION_ID));
+        brokerRule
+            .getBroker()
+            .getBrokerContext()
+            .getPartitionManager()
+            .getRaftPartition(PARTITION_ID);
     journalReader = raftPartition.getServer().openReader();
     brokerAdminService = brokerRule.getBroker().getBrokerContext().getBrokerAdminService();
 

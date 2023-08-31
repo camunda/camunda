@@ -8,7 +8,6 @@
 package io.camunda.zeebe.broker.system.monitoring;
 
 import io.atomix.cluster.MemberId;
-import io.atomix.primitive.partition.PartitionGroup;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.partitioning.PartitionManager;
@@ -108,14 +107,12 @@ public final class BrokerHealthCheckService extends Actor implements PartitionLi
   }
 
   public void registerPartitionManager(final PartitionManager partitionManager) {
-    final var partitionGroup = partitionManager.getPartitionGroup();
-
-    initializePartitionInstallStatus(partitionGroup);
-    initializePartitionHealthStatus(partitionGroup);
+    initializePartitionInstallStatus(partitionManager);
+    initializePartitionHealthStatus(partitionManager);
   }
 
-  private void initializePartitionHealthStatus(final PartitionGroup partitionGroup) {
-    partitionGroup.getPartitionsWithMember(nodeId).stream()
+  private void initializePartitionHealthStatus(final PartitionManager partitionManager) {
+    partitionManager.getRaftPartitionsWithMember(nodeId).stream()
         .map(partition -> partition.id().id())
         .forEach(
             partitionId ->
@@ -169,9 +166,9 @@ public final class BrokerHealthCheckService extends Actor implements PartitionLi
         });
   }
 
-  private void initializePartitionInstallStatus(final PartitionGroup partitionGroup) {
+  private void initializePartitionInstallStatus(final PartitionManager partitionManager) {
     partitionInstallStatus =
-        partitionGroup.getPartitions().stream()
+        partitionManager.getRaftPartitions().stream()
             .filter(partition -> partition.members().contains(nodeId))
             .map(partition -> partition.id().id())
             .collect(Collectors.toMap(Function.identity(), p -> false));
