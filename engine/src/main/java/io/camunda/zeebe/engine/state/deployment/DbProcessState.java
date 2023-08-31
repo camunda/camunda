@@ -184,7 +184,9 @@ public final class DbProcessState implements MutableProcessState {
   private void persistProcess(final long processDefinitionKey, final ProcessRecord processRecord) {
     persistedProcess.wrap(processRecord, processDefinitionKey);
     this.processDefinitionKey.wrapLong(processDefinitionKey);
-    processColumnFamily.upsert(this.processDefinitionKey, persistedProcess);
+    tenantIdKey.wrapString(processRecord.getTenantId());
+
+    processColumnFamily.upsert(tenantAwareProcessDefinitionKey, persistedProcess);
 
     processId.wrapBuffer(processRecord.getBpmnProcessIdBuffer());
     processVersion.wrapLong(processRecord.getVersion());
