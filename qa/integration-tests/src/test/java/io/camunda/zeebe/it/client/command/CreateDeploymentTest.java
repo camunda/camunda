@@ -42,6 +42,7 @@ public final class CreateDeploymentTest {
   public static RuleChain ruleChain = RuleChain.outerRule(BROKER_RULE).around(CLIENT_RULE);
 
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
+
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
@@ -182,9 +183,10 @@ public final class CreateDeploymentTest {
             .send();
 
     // then
-    final var rejectedRecords = RecordingExporter.records()
-        .filter(record -> RecordType.COMMAND_REJECTION.equals(record.getRecordType()))
-        .toList();
+    final var rejectedRecords =
+        RecordingExporter.records()
+            .filter(record -> RecordType.COMMAND_REJECTION.equals(record.getRecordType()))
+            .toList();
 
     rejectedRecords.stream()
         .map(Record::getValue)
@@ -193,7 +195,6 @@ public final class CreateDeploymentTest {
               if (recordValue instanceof DeploymentRecord) {
                 assertThat(((DeploymentRecord) recordValue).getResources()).isEmpty();
               }
-            }
-        );
+            });
   }
 }

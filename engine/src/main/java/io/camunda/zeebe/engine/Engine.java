@@ -212,8 +212,8 @@ public class Engine implements RecordProcessor {
   }
 
   /**
-   * This method removes redundant information from rejected records in order to avoid the
-   * {@link ExceededBatchRecordSizeException} when writing the rejection event.
+   * This method removes redundant information from rejected records in order to avoid the {@link
+   * ExceededBatchRecordSizeException} when writing the rejection event.
    *
    * <ul>
    *   <li>Commands of type {@link DeploymentRecord}: for those records the resources information
