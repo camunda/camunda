@@ -621,6 +621,13 @@ public final class CreateDeploymentTest {
         ENGINE.deployment().withXmlResource(process).withTenantId(tenant2).deploy();
 
     // then
+    assertThat(deployment.getKey())
+        .describedAs("Does two different deployments")
+        .isNotEqualTo(deployment2.getKey());
+    assertThat(deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey())
+        .describedAs("Creates 2 different process definitions")
+        .isNotEqualTo(
+            deployment2.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey());
     assertThat(deployment.getValue().getTenantId()).isEqualTo(tenant);
     assertThat(deployment2.getValue().getTenantId()).isEqualTo(tenant2);
     assertThat(
