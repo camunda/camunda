@@ -314,12 +314,6 @@ public final class DbProcessState implements MutableProcessState {
   }
 
   @Override
-  public Collection<DeployedProcess> getProcesses() {
-    updateCompleteInMemoryState();
-    return processesByKey.values();
-  }
-
-  @Override
   public Collection<DeployedProcess> getProcessesByBpmnProcessId(final DirectBuffer bpmnProcessId) {
     updateCompleteInMemoryState();
 

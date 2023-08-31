@@ -22,8 +22,6 @@ public interface ProcessState {
 
   DeployedProcess getProcessByKeyAndTenant(long key, String tenantId);
 
-  Collection<DeployedProcess> getProcesses();
-
   Collection<DeployedProcess> getProcessesByBpmnProcessId(DirectBuffer bpmnProcessId);
 
   DirectBuffer getLatestVersionDigest(DirectBuffer processId, final String tenantId);

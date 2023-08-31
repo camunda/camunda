@@ -252,17 +252,6 @@ public final class ProcessStateTest {
   }
 
   @Test
-  public void shouldReturnEmptyListOnGetProcesses() {
-    // given
-
-    // when
-    final Collection<DeployedProcess> deployedProcess = processState.getProcesses();
-
-    // then
-    Assertions.assertThat(deployedProcess).isEmpty();
-  }
-
-  @Test
   public void shouldReturnEmptyListOnGetProcessesByProcessId() {
     // given
 
@@ -543,28 +532,6 @@ public final class ProcessStateTest {
   }
 
   @Test
-  public void shouldGetAllProcesses() {
-    // given
-    processState.putDeployment(creatingDeploymentRecord(processingState));
-    processState.putDeployment(creatingDeploymentRecord(processingState));
-    processState.putDeployment(creatingDeploymentRecord(processingState, "otherId"));
-
-    // when
-    final Collection<DeployedProcess> processes = processState.getProcesses();
-
-    // then
-    assertThat(processes.size()).isEqualTo(3);
-    Assertions.assertThat(processes)
-        .extracting(DeployedProcess::getBpmnProcessId)
-        .contains(wrapString("processId"), wrapString("otherId"));
-    Assertions.assertThat(processes).extracting(DeployedProcess::getVersion).contains(1, 2, 1);
-
-    Assertions.assertThat(processes)
-        .extracting(DeployedProcess::getKey)
-        .containsOnly(FIRST_PROCESS_KEY, FIRST_PROCESS_KEY + 1, FIRST_PROCESS_KEY + 2);
-  }
-
-  @Test
   public void shouldGetAllProcessesWithProcessId() {
     // given
     processState.putDeployment(creatingDeploymentRecord(processingState));
@@ -659,7 +626,6 @@ public final class ProcessStateTest {
             processState.getProcessByKeyAndTenant(
                 processDefinitionKey, processRecord.getTenantId()))
         .isNull();
-    assertThat(processState.getProcesses()).isEmpty();
     assertThat(processState.getProcessesByBpmnProcessId(BufferUtil.wrapString(processId)))
         .isEmpty();
     assertThat(
@@ -692,9 +658,6 @@ public final class ProcessStateTest {
     // then
     assertThat(processState.getProcessByKeyAndTenant(oldDefinitionKey, oldProcess.getTenantId()))
         .isNull();
-    assertThat(processState.getProcesses())
-        .extracting(DeployedProcess::getKey)
-        .containsOnly(newDefinitionKey);
     assertThat(processState.getProcessesByBpmnProcessId(BufferUtil.wrapString(processId)))
         .extracting(DeployedProcess::getKey)
         .containsOnly(newDefinitionKey);
@@ -733,9 +696,6 @@ public final class ProcessStateTest {
     // then
     assertThat(processState.getProcessByKeyAndTenant(newDefinitionKey, newProcess.getTenantId()))
         .isNull();
-    assertThat(processState.getProcesses())
-        .extracting(DeployedProcess::getKey)
-        .containsOnly(oldDefinitionKey);
     assertThat(processState.getProcessesByBpmnProcessId(BufferUtil.wrapString(processId)))
         .extracting(DeployedProcess::getKey)
         .containsOnly(oldDefinitionKey);
@@ -780,9 +740,6 @@ public final class ProcessStateTest {
         .isNull();
     assertThat(processState.getProcessByKeyAndTenant(newDefinitionKey, midProcess.getTenantId()))
         .isNull();
-    assertThat(processState.getProcesses())
-        .extracting(DeployedProcess::getKey)
-        .containsOnly(oldDefinitionKey);
     assertThat(processState.getProcessesByBpmnProcessId(BufferUtil.wrapString(processId)))
         .extracting(DeployedProcess::getKey)
         .containsOnly(oldDefinitionKey);
