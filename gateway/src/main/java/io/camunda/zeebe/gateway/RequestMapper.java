@@ -11,6 +11,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.agrona.LangUtil.rethrowUnchecked;
 
 import com.fasterxml.jackson.core.JsonParseException;
+import io.camunda.zeebe.gateway.cmd.InvalidTenantRequestException;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerBroadcastSignalRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCancelProcessInstanceRequest;
@@ -52,13 +53,16 @@ import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationPropertiesImpl;
+import java.util.regex.Pattern;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.springframework.util.StringUtils;
 
 public final class RequestMapper {
 
-  // TODO: replace with TenantOwned.DEFAULT_TENANT constant
+  // TODO: replace with TenantOwned.DEFAULT_TENANT constant after #13989
   private static final String DEFAULT_TENANT = "<default>";
+  private static final Pattern TENANT_ID_MASK = Pattern.compile("^[\\w\\.-]{1,31}$");
 
   public static BrokerDeployResourceRequest toDeployProcessRequest(
       final DeployProcessRequest grpcRequest) {
@@ -76,10 +80,13 @@ public final class RequestMapper {
       final DeployResourceRequest grpcRequest) {
     final BrokerDeployResourceRequest brokerRequest = new BrokerDeployResourceRequest();
 
+    // TODO: pass multi-tenancy config property (#14041)
+    final String tenantId = grpcRequest.getTenantId();
+    brokerRequest.setTenantId(ensureTenantIdSet("deployment", tenantId, false));
+
     for (final Resource resource : grpcRequest.getResourcesList()) {
       brokerRequest.addResource(resource.getContent().toByteArray(), resource.getName());
     }
-    brokerRequest.setTenantId(grpcRequest.getTenantId());
 
     return brokerRequest;
   }
@@ -258,6 +265,32 @@ public final class RequestMapper {
           throw e;
         }
       }
+    }
+  }
+
+  public static String ensureTenantIdSet(
+      final String requestName, final String tenantId, final boolean isMultiTenancyEnabled) {
+
+    final boolean hasTenantId = StringUtils.hasText(tenantId);
+    if (isMultiTenancyEnabled) {
+
+      if (!hasTenantId) {
+        throw new InvalidTenantRequestException(requestName, "Client didn't provide a tenant ID.");
+      }
+
+      if (!TENANT_ID_MASK.matcher(tenantId).matches()) {
+        throw new InvalidTenantRequestException(
+            requestName, "Client sent a tenant ID which includes invalid characters.");
+      }
+
+      return tenantId;
+    } else {
+      if (hasTenantId) {
+        throw new InvalidTenantRequestException(
+            requestName, "Client sent a tenant ID while multi-tenancy is disabled.");
+      }
+
+      return DEFAULT_TENANT;
     }
   }
 }
