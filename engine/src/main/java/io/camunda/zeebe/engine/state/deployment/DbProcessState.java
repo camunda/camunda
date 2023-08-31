@@ -33,8 +33,6 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -53,8 +51,8 @@ public final class DbProcessState implements MutableProcessState {
   private final BpmnTransformer transformer = BpmnFactory.createTransformer();
   private final ProcessRecord processRecordForDeployments = new ProcessRecord();
 
-  private final Map<DirectBuffer, Long2ObjectHashMap<DeployedProcess>>
-      processesByProcessIdAndVersion = new HashMap<>();
+  private final Map<String, Map<DirectBuffer, Long2ObjectHashMap<DeployedProcess>>>
+      processesByTenantAndProcessIdAndVersionCache = new HashMap<>();
   private final Map<String, Long2ObjectHashMap<DeployedProcess>> processByTenantAndKeyCache;
 
   // process
@@ -176,7 +174,9 @@ public final class DbProcessState implements MutableProcessState {
     processColumnFamily.deleteExisting(tenantAwareProcessDefinitionKey);
     processByIdAndVersionColumnFamily.deleteExisting(tenantAwareProcessIdAndVersionKey);
 
-    processesByProcessIdAndVersion.remove(processRecord.getBpmnProcessIdBuffer());
+    processesByTenantAndProcessIdAndVersionCache
+        .getOrDefault(processRecord.getTenantId(), new HashMap<>())
+        .remove(processRecord.getBpmnProcessIdBuffer());
     processByTenantAndKeyCache
         .getOrDefault(processRecord.getTenantId(), new Long2ObjectHashMap<>())
         .remove(processRecord.getProcessDefinitionKey());
@@ -264,8 +264,9 @@ public final class DbProcessState implements MutableProcessState {
     keyMap.put(deployedProcess.getKey(), deployedProcess);
 
     final Long2ObjectHashMap<DeployedProcess> versionMap =
-        processesByProcessIdAndVersion.computeIfAbsent(
-            bpmnProcessId, id -> new Long2ObjectHashMap<>());
+        processesByTenantAndProcessIdAndVersionCache
+            .computeIfAbsent(deployedProcess.getTenantId(), key -> new HashMap<>())
+            .computeIfAbsent(bpmnProcessId, key -> new Long2ObjectHashMap<>());
 
     final int version = deployedProcess.getVersion();
     versionMap.put(version, deployedProcess);
@@ -275,7 +276,9 @@ public final class DbProcessState implements MutableProcessState {
   public DeployedProcess getLatestProcessVersionByProcessId(
       final DirectBuffer processIdBuffer, final String tenantId) {
     final Long2ObjectHashMap<DeployedProcess> versionMap =
-        processesByProcessIdAndVersion.get(processIdBuffer);
+        processesByTenantAndProcessIdAndVersionCache
+            .getOrDefault(tenantId, new HashMap<>())
+            .get(processIdBuffer);
 
     processId.wrapBuffer(processIdBuffer);
     final long latestVersion = versionManager.getLatestProcessVersion(processIdBuffer);
@@ -296,7 +299,9 @@ public final class DbProcessState implements MutableProcessState {
   public DeployedProcess getProcessByProcessIdAndVersion(
       final DirectBuffer processId, final int version, final String tenantId) {
     final Long2ObjectHashMap<DeployedProcess> versionMap =
-        processesByProcessIdAndVersion.get(processId);
+        processesByTenantAndProcessIdAndVersionCache
+            .getOrDefault(tenantId, new HashMap<>())
+            .get(processId);
 
     if (versionMap != null) {
       final DeployedProcess deployedProcess = versionMap.get(version);
@@ -375,7 +380,7 @@ public final class DbProcessState implements MutableProcessState {
   @Override
   public void clearCache() {
     processByTenantAndKeyCache.clear();
-    processesByProcessIdAndVersion.clear();
+    processesByTenantAndProcessIdAndVersionCache.clear();
     versionManager.clear();
   }
 
@@ -406,7 +411,9 @@ public final class DbProcessState implements MutableProcessState {
       updateInMemoryState(processWithVersionAndId);
 
       final Long2ObjectHashMap<DeployedProcess> newVersionMap =
-          processesByProcessIdAndVersion.get(processIdBuffer);
+          processesByTenantAndProcessIdAndVersionCache
+              .getOrDefault(tenantId, new HashMap<>())
+              .get(processIdBuffer);
 
       if (newVersionMap != null) {
         return newVersionMap.get(version);
