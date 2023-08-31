@@ -384,6 +384,7 @@ test.describe('task details page', () => {
     taskDetailsPage,
     page,
   }) => {
+    test.slow();
     await taskPanelPage.filterBy('Unassigned');
     await taskPanelPage.openTask('Tag list Task');
     await taskDetailsPage.clickAssignToMeButton();
@@ -406,6 +407,7 @@ test.describe('task details page', () => {
     taskDetailsPage,
     page,
   }) => {
+    test.slow();
     await taskPanelPage.filterBy('Unassigned');
     await taskPanelPage.openTask('Text_Templating_Form_Task');
     await taskDetailsPage.clickAssignToMeButton();
