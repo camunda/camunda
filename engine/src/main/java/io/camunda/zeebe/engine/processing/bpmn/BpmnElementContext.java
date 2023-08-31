@@ -45,6 +45,8 @@ public interface BpmnElementContext {
 
   ProcessInstanceIntent getIntent();
 
+  String getTenantId();
+
   BpmnElementContext copy(
       long elementInstanceKey, ProcessInstanceRecord recordValue, ProcessInstanceIntent intent);
 }
