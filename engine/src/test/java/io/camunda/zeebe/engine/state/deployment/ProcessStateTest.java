@@ -24,7 +24,6 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import java.util.Collection;
 import org.assertj.core.api.Assertions;
 import org.junit.Before;
 import org.junit.Rule;
@@ -249,18 +248,6 @@ public final class ProcessStateTest {
 
     // then
     Assertions.assertThat(deployedProcess).isNull();
-  }
-
-  @Test
-  public void shouldReturnEmptyListOnGetProcessesByProcessId() {
-    // given
-
-    // when
-    final Collection<DeployedProcess> deployedProcess =
-        processState.getProcessesByBpmnProcessId(wrapString("foo"));
-
-    // then
-    Assertions.assertThat(deployedProcess).isEmpty();
   }
 
   @Test
@@ -532,51 +519,6 @@ public final class ProcessStateTest {
   }
 
   @Test
-  public void shouldGetAllProcessesWithProcessId() {
-    // given
-    processState.putDeployment(creatingDeploymentRecord(processingState));
-    processState.putDeployment(creatingDeploymentRecord(processingState));
-
-    // when
-    final Collection<DeployedProcess> processes =
-        processState.getProcessesByBpmnProcessId(wrapString("processId"));
-
-    // then
-    Assertions.assertThat(processes)
-        .extracting(DeployedProcess::getBpmnProcessId)
-        .containsOnly(wrapString("processId"));
-    Assertions.assertThat(processes).extracting(DeployedProcess::getVersion).containsOnly(1, 2);
-
-    Assertions.assertThat(processes)
-        .extracting(DeployedProcess::getKey)
-        .containsOnly(FIRST_PROCESS_KEY, FIRST_PROCESS_KEY + 1);
-  }
-
-  @Test
-  public void shouldNotGetProcessesWithOtherProcessId() {
-    // given
-    processState.putDeployment(creatingDeploymentRecord(processingState));
-    processState.putDeployment(creatingDeploymentRecord(processingState, "otherId"));
-
-    // when
-    final Collection<DeployedProcess> processes =
-        processState.getProcessesByBpmnProcessId(wrapString("otherId"));
-
-    // then
-    assertThat(processes.size()).isEqualTo(1);
-    Assertions.assertThat(processes)
-        .extracting(DeployedProcess::getBpmnProcessId)
-        .containsOnly(wrapString("otherId"));
-    Assertions.assertThat(processes).extracting(DeployedProcess::getVersion).containsOnly(1);
-
-    final long expectedProcessDefinitionKey =
-        Protocol.encodePartitionId(Protocol.DEPLOYMENT_PARTITION, 2);
-    Assertions.assertThat(processes)
-        .extracting(DeployedProcess::getKey)
-        .containsOnly(expectedProcessDefinitionKey);
-  }
-
-  @Test
   public void shouldReturnHighestVersionInsteadOfMostRecent() {
     // given
     final String processId = "process";
@@ -626,8 +568,6 @@ public final class ProcessStateTest {
             processState.getProcessByKeyAndTenant(
                 processDefinitionKey, processRecord.getTenantId()))
         .isNull();
-    assertThat(processState.getProcessesByBpmnProcessId(BufferUtil.wrapString(processId)))
-        .isEmpty();
     assertThat(
             processState.getLatestProcessVersionByProcessId(BufferUtil.wrapString(processId), ""))
         .isNull();
@@ -658,9 +598,6 @@ public final class ProcessStateTest {
     // then
     assertThat(processState.getProcessByKeyAndTenant(oldDefinitionKey, oldProcess.getTenantId()))
         .isNull();
-    assertThat(processState.getProcessesByBpmnProcessId(BufferUtil.wrapString(processId)))
-        .extracting(DeployedProcess::getKey)
-        .containsOnly(newDefinitionKey);
     assertThat(
             processState.getLatestProcessVersionByProcessId(BufferUtil.wrapString(processId), ""))
         .extracting(DeployedProcess::getKey)
@@ -696,9 +633,6 @@ public final class ProcessStateTest {
     // then
     assertThat(processState.getProcessByKeyAndTenant(newDefinitionKey, newProcess.getTenantId()))
         .isNull();
-    assertThat(processState.getProcessesByBpmnProcessId(BufferUtil.wrapString(processId)))
-        .extracting(DeployedProcess::getKey)
-        .containsOnly(oldDefinitionKey);
     assertThat(
             processState.getLatestProcessVersionByProcessId(BufferUtil.wrapString(processId), ""))
         .extracting(DeployedProcess::getKey)
@@ -740,9 +674,6 @@ public final class ProcessStateTest {
         .isNull();
     assertThat(processState.getProcessByKeyAndTenant(newDefinitionKey, midProcess.getTenantId()))
         .isNull();
-    assertThat(processState.getProcessesByBpmnProcessId(BufferUtil.wrapString(processId)))
-        .extracting(DeployedProcess::getKey)
-        .containsOnly(oldDefinitionKey);
     assertThat(
             processState.getLatestProcessVersionByProcessId(BufferUtil.wrapString(processId), ""))
         .extracting(DeployedProcess::getKey)

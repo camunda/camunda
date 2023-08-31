@@ -9,7 +9,6 @@ package io.camunda.zeebe.engine.state.immutable;
 
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
-import java.util.Collection;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
 
@@ -21,8 +20,6 @@ public interface ProcessState {
       DirectBuffer processId, int version, final String tenantId);
 
   DeployedProcess getProcessByKeyAndTenant(long key, String tenantId);
-
-  Collection<DeployedProcess> getProcessesByBpmnProcessId(DirectBuffer bpmnProcessId);
 
   DirectBuffer getLatestVersionDigest(DirectBuffer processId, final String tenantId);
 
