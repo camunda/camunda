@@ -6,6 +6,7 @@
  */
 package io.camunda.tasklist.zeebe;
 
+import io.camunda.tasklist.ApplicationShutdownService;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.CollectionUtil;
 import io.camunda.tasklist.util.ThreadUtil;
@@ -35,12 +36,21 @@ public class PartitionHolder {
 
   @Autowired private ZeebeClient zeebeClient;
 
+  @Autowired(required = false)
+  private ApplicationShutdownService applicationShutdownService;
+
   /**
    * Retrieves PartitionIds with waiting time of {@value #WAIT_TIME_IN_MS} milliseconds and retries
    * for {@value #MAX_RETRY} times.
    */
   public List<Integer> getPartitionIds() {
-    return getPartitionIdsWithWaitingTimeAndRetries(WAIT_TIME_IN_MS, MAX_RETRY);
+    final List<Integer> ids = getPartitionIdsWithWaitingTimeAndRetries(WAIT_TIME_IN_MS, MAX_RETRY);
+    if (ids.isEmpty() && applicationShutdownService != null) {
+      LOGGER.error(
+          "Tasklist needs an established connection to Zeebe in order to retrieve Zeebe Partitions. Shutting down...");
+      applicationShutdownService.shutdown();
+    }
+    return ids;
   }
 
   public List<Integer> getPartitionIdsWithWaitingTimeAndRetries(
