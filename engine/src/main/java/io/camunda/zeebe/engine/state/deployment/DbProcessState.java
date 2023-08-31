@@ -280,7 +280,7 @@ public final class DbProcessState implements MutableProcessState {
 
   @Override
   public DeployedProcess getProcessByProcessIdAndVersion(
-      final DirectBuffer processId, final int version) {
+      final DirectBuffer processId, final int version, final String tenantId) {
     final Long2ObjectHashMap<DeployedProcess> versionMap =
         processesByProcessIdAndVersion.get(processId);
 

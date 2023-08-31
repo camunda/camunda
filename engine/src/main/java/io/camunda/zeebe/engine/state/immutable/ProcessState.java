@@ -17,7 +17,8 @@ public interface ProcessState {
 
   DeployedProcess getLatestProcessVersionByProcessId(DirectBuffer processId);
 
-  DeployedProcess getProcessByProcessIdAndVersion(DirectBuffer processId, int version);
+  DeployedProcess getProcessByProcessIdAndVersion(
+      DirectBuffer processId, int version, final String tenantId);
 
   DeployedProcess getProcessByKeyAndTenant(long key, String tenantId);
 
