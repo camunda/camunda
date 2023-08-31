@@ -11,13 +11,12 @@ import io.camunda.zeebe.engine.state.deployment.PersistedProcess.PersistedProces
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
-import org.agrona.DirectBuffer;
 
 public interface MutableProcessState extends ProcessState {
 
   void putDeployment(DeploymentRecord deploymentRecord);
 
-  void putLatestVersionDigest(DirectBuffer processId, DirectBuffer digest);
+  void putLatestVersionDigest(final ProcessRecord processRecord);
 
   void putProcess(long key, ProcessRecord value);
 

@@ -26,7 +26,7 @@ public interface ProcessState {
 
   Collection<DeployedProcess> getProcessesByBpmnProcessId(DirectBuffer bpmnProcessId);
 
-  DirectBuffer getLatestVersionDigest(DirectBuffer processId);
+  DirectBuffer getLatestVersionDigest(DirectBuffer processId, final String tenantId);
 
   /**
    * Gets the latest process version. This is the latest version for which we have a process in the

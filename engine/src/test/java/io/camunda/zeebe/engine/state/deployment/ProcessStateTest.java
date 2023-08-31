@@ -327,7 +327,7 @@ public final class ProcessStateTest {
     processState.putProcess(processRecord.getKey(), processRecord);
 
     // then
-    final var checksum = processState.getLatestVersionDigest(wrapString("processId"));
+    final var checksum = processState.getLatestVersionDigest(wrapString("processId"), "");
     assertThat(checksum).isEqualTo(processRecord.getChecksumBuffer());
   }
 
@@ -668,7 +668,7 @@ public final class ProcessStateTest {
     assertThat(
             processState.getProcessByProcessIdAndVersion(BufferUtil.wrapString(processId), 1, ""))
         .isNull();
-    assertThat(processState.getLatestVersionDigest(BufferUtil.wrapString(processId))).isNull();
+    assertThat(processState.getLatestVersionDigest(BufferUtil.wrapString(processId), "")).isNull();
     assertThat(processState.getLatestProcessVersion(processId)).isEqualTo(0);
     assertThat(processState.getNextProcessVersion(processId)).isEqualTo(2);
   }
@@ -708,7 +708,7 @@ public final class ProcessStateTest {
     assertThat(
             processState.getProcessByProcessIdAndVersion(BufferUtil.wrapString(processId), 2, ""))
         .isNotNull();
-    assertThat(processState.getLatestVersionDigest(BufferUtil.wrapString(processId)))
+    assertThat(processState.getLatestVersionDigest(BufferUtil.wrapString(processId), ""))
         .isEqualTo(wrapString("newChecksum"));
     assertThat(processState.getLatestProcessVersion(processId)).isEqualTo(2);
     assertThat(processState.getNextProcessVersion(processId)).isEqualTo(3);
@@ -749,7 +749,7 @@ public final class ProcessStateTest {
     assertThat(
             processState.getProcessByProcessIdAndVersion(BufferUtil.wrapString(processId), 2, ""))
         .isNull();
-    assertThat(processState.getLatestVersionDigest(BufferUtil.wrapString(processId))).isNull();
+    assertThat(processState.getLatestVersionDigest(BufferUtil.wrapString(processId), "")).isNull();
     assertThat(processState.getLatestProcessVersion(processId)).isEqualTo(1);
     assertThat(processState.getNextProcessVersion(processId)).isEqualTo(3);
   }
@@ -799,7 +799,7 @@ public final class ProcessStateTest {
     assertThat(
             processState.getProcessByProcessIdAndVersion(BufferUtil.wrapString(processId), 3, ""))
         .isNull();
-    assertThat(processState.getLatestVersionDigest(BufferUtil.wrapString(processId))).isNull();
+    assertThat(processState.getLatestVersionDigest(BufferUtil.wrapString(processId), "")).isNull();
     assertThat(processState.getLatestProcessVersion(processId)).isEqualTo(1);
     assertThat(processState.getNextProcessVersion(processId)).isEqualTo(4);
   }

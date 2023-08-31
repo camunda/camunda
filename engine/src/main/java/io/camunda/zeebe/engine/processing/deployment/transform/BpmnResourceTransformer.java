@@ -146,12 +146,13 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
     for (final Process process : processes) {
       if (process.isExecutable()) {
         final String bpmnProcessId = process.getId();
+        final String tenantId = deploymentEvent.getTenantId();
         final DeployedProcess lastProcess =
             processState.getLatestProcessVersionByProcessId(
-                BufferUtil.wrapString(bpmnProcessId), deploymentEvent.getTenantId());
+                BufferUtil.wrapString(bpmnProcessId), tenantId);
 
         final DirectBuffer lastDigest =
-            processState.getLatestVersionDigest(wrapString(bpmnProcessId));
+            processState.getLatestVersionDigest(wrapString(bpmnProcessId), tenantId);
         final DirectBuffer resourceDigest = checksumGenerator.apply(deploymentResource);
 
         // adds process record to deployment record
@@ -160,7 +161,7 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
             .setBpmnProcessId(BufferUtil.wrapString(process.getId()))
             .setChecksum(resourceDigest)
             .setResourceName(deploymentResource.getResourceNameBuffer())
-            .setTenantId(deploymentEvent.getTenantId());
+            .setTenantId(tenantId);
 
         final var isDuplicate =
             isDuplicateOfLatest(deploymentResource, resourceDigest, lastProcess, lastDigest);
