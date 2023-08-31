@@ -41,7 +41,8 @@ public final class StateQueryService implements QueryService {
   public Optional<DirectBuffer> getBpmnProcessIdForProcess(final long key) {
     ensureServiceIsOpened();
 
-    return Optional.ofNullable(state.getProcessState().getProcessByKey(key))
+    // TODO tenant always should be default
+    return Optional.ofNullable(state.getProcessState().getProcessByKeyAndTenant(key, ""))
         .map(DeployedProcess::getBpmnProcessId);
   }
 

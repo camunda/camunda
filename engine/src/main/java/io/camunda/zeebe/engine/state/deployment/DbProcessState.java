@@ -406,10 +406,13 @@ public final class DbProcessState implements MutableProcessState {
     return null;
   }
 
-  private DeployedProcess lookupPersistenceStateForProcessByKey(final long processDefinitionKey) {
+  private DeployedProcess lookupPersistenceStateForProcessByKey(
+      final long processDefinitionKey, final String tenantId) {
     this.processDefinitionKey.wrapLong(processDefinitionKey);
+    tenantIdKey.wrapString(tenantId);
 
-    final PersistedProcess processWithKey = processColumnFamily.get(this.processDefinitionKey);
+    final PersistedProcess processWithKey =
+        processColumnFamily.get(tenantAwareProcessDefinitionKey);
     if (processWithKey != null) {
       updateInMemoryState(processWithKey);
 

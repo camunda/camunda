@@ -179,7 +179,8 @@ public final class ProcessInstanceModificationProcessor
 
     final var processInstanceRecord = processInstance.getValue();
     final var process =
-        processState.getProcessByKey(processInstanceRecord.getProcessDefinitionKey());
+        processState.getProcessByKeyAndTenant(
+            processInstanceRecord.getProcessDefinitionKey(), processInstanceRecord.getTenantId());
 
     final var validationResult = validateCommand(command, process);
     if (validationResult.isLeft()) {
@@ -250,14 +251,14 @@ public final class ProcessInstanceModificationProcessor
   @Override
   public ProcessingError tryHandleError(
       final TypedRecord<ProcessInstanceModificationRecord> typedCommand, final Throwable error) {
-    if (error instanceof EventSubscriptionException exception) {
+    if (error instanceof final EventSubscriptionException exception) {
       rejectionWriter.appendRejection(
           typedCommand, RejectionType.INVALID_ARGUMENT, exception.getMessage());
       responseWriter.writeRejectionOnCommand(
           typedCommand, RejectionType.INVALID_ARGUMENT, exception.getMessage());
       return ProcessingError.EXPECTED_ERROR;
 
-    } else if (error instanceof MultipleFlowScopeInstancesFoundException exception) {
+    } else if (error instanceof final MultipleFlowScopeInstancesFoundException exception) {
       final var rejectionReason =
           ERROR_MESSAGE_MORE_THAN_ONE_FLOW_SCOPE_INSTANCE.formatted(
               exception.getBpmnProcessId(), exception.getFlowScopeId());
@@ -274,14 +275,14 @@ public final class ProcessInstanceModificationProcessor
       responseWriter.writeRejectionOnCommand(typedCommand, RejectionType.INVALID_ARGUMENT, message);
       return ProcessingError.EXPECTED_ERROR;
 
-    } else if (error instanceof TerminatedChildProcessException exception) {
+    } else if (error instanceof final TerminatedChildProcessException exception) {
       rejectionWriter.appendRejection(
           typedCommand, RejectionType.INVALID_ARGUMENT, exception.getMessage());
       responseWriter.writeRejectionOnCommand(
           typedCommand, RejectionType.INVALID_ARGUMENT, exception.getMessage());
       return ProcessingError.EXPECTED_ERROR;
 
-    } else if (error instanceof UnsupportedMultiInstanceBodyActivationException exception) {
+    } else if (error instanceof final UnsupportedMultiInstanceBodyActivationException exception) {
       final var message =
           ERROR_MESSAGE_ATTEMPTED_TO_ACTIVATE_MULTI_INSTANCE.formatted(
               exception.getBpmnProcessId(), exception.getMultiInstanceId());
@@ -347,7 +348,7 @@ public final class ProcessInstanceModificationProcessor
             .filter(
                 elementId -> {
                   final var element = process.getProcess().getElementById(elementId);
-                  return element instanceof ExecutableCatchEventElement event
+                  return element instanceof final ExecutableCatchEventElement event
                       && event.isConnectedToEventBasedGateway();
                 })
             .toList();
@@ -646,7 +647,7 @@ public final class ProcessInstanceModificationProcessor
                         && elementId.equals(processInstance.getValue().getBpmnProcessId())))
         .map(
             instruction -> {
-              if (instruction instanceof ProcessInstanceModificationVariableInstruction vi) {
+              if (instruction instanceof final ProcessInstanceModificationVariableInstruction vi) {
                 return vi.getVariablesBuffer();
               }
               throw new UnsupportedOperationException(
