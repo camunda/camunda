@@ -122,6 +122,39 @@ final class MemberJoinTest {
   }
 
   @Test
+  void shouldRequireAdjustedQuorum(@TempDir final Path tmp) {
+    // given - a cluster with 3 members and two new members joining
+    final var id1 = MemberId.from("1");
+    final var id2 = MemberId.from("2");
+    final var id3 = MemberId.from("3");
+    final var id4 = MemberId.from("4");
+    final var id5 = MemberId.from("5");
+
+    final var m1 = createServer(tmp, createMembershipService(id1, id2, id3));
+    final var m2 = createServer(tmp, createMembershipService(id2, id1, id3));
+    final var m3 = createServer(tmp, createMembershipService(id3, id1, id2));
+    final var m4 = createServer(tmp, createMembershipService(id4, id1, id2, id3));
+    final var m5 = createServer(tmp, createMembershipService(id5, id1, id2, id3));
+
+    CompletableFuture.allOf(
+            m1.bootstrap(id1, id2, id3), m2.bootstrap(id1, id2, id3), m3.bootstrap(id1, id2, id3))
+        .join();
+
+    m4.join().join();
+    m5.join().join();
+
+    // when - no quorum possible because three out of five members are down
+    m1.shutdown().join();
+    m4.shutdown().join();
+    m5.shutdown().join();
+
+    // then - cluster will not find a leader because two members are not enough for a quorum
+    Awaitility.await("No leader is elected")
+        .during(Duration.ofSeconds(5))
+        .until(() -> getLeader(m1, m2, m3, m4, m5), Optional::isEmpty);
+  }
+
+  @Test
   void shouldFormNewQuorum(@TempDir final Path tmp) {
     // given - a cluster with 3 members and two new members joining
     final var id1 = MemberId.from("1");
