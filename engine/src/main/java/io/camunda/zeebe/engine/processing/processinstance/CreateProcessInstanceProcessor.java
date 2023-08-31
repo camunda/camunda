@@ -331,7 +331,7 @@ public final class CreateProcessInstanceProcessor
       if (record.getVersion() >= 0) {
         return getProcess(bpmnProcessId, record.getVersion(), record.getTenantId());
       } else {
-        return getProcess(bpmnProcessId);
+        return getProcess(bpmnProcessId, record.getTenantId());
       }
     } else if (record.getProcessDefinitionKey() >= 0) {
       return getProcess(record.getProcessDefinitionKey(), record.getTenantId());
@@ -341,8 +341,10 @@ public final class CreateProcessInstanceProcessor
     }
   }
 
-  private Either<Rejection, DeployedProcess> getProcess(final DirectBuffer bpmnProcessId) {
-    final DeployedProcess process = processState.getLatestProcessVersionByProcessId(bpmnProcessId);
+  private Either<Rejection, DeployedProcess> getProcess(
+      final DirectBuffer bpmnProcessId, final String tenantId) {
+    final DeployedProcess process =
+        processState.getLatestProcessVersionByProcessId(bpmnProcessId, tenantId);
     if (process != null) {
       return Either.right(process);
     } else {
