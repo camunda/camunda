@@ -13,7 +13,9 @@ import static org.assertj.core.api.Assertions.fail;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.rpc.Status;
+import io.camunda.zeebe.gateway.RequestMapper;
 import io.camunda.zeebe.gateway.cmd.BrokerErrorException;
+import io.camunda.zeebe.gateway.cmd.InvalidTenantRequestException;
 import io.camunda.zeebe.gateway.impl.broker.RequestRetriesExhaustedException;
 import io.camunda.zeebe.gateway.impl.broker.response.BrokerError;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
@@ -155,6 +157,30 @@ final class GrpcErrorMapperTest {
       assertThat(runtimeException.getCause()).isInstanceOf(IllegalArgumentException.class);
       final IllegalArgumentException exception =
           (IllegalArgumentException) runtimeException.getCause();
+
+      // when
+      log.setLevel(Level.DEBUG);
+      final StatusRuntimeException statusException = errorMapper.mapError(exception, logger);
+
+      // then
+      assertThat(statusException.getStatus().getCode()).isEqualTo(Code.INVALID_ARGUMENT);
+      assertThat(recorder.getAppendedEvents()).hasSize(1);
+      final LogEvent event = recorder.getAppendedEvents().get(0);
+      assertThat(event.getLevel()).isEqualTo(Level.DEBUG);
+    }
+  }
+
+  @Test
+  void shouldLogInvalidTenantRequestException() {
+    // given
+    final String invalidTenantId = "tenant!@#";
+    final String requestName = "deployment";
+    final boolean multiTenancyEnabled = true;
+    try {
+      RequestMapper.ensureTenantIdSet(requestName, invalidTenantId, multiTenancyEnabled);
+      fail("Expected to throw exception");
+    } catch (final RuntimeException exception) {
+      assertThat(exception).isInstanceOf(InvalidTenantRequestException.class);
 
       // when
       log.setLevel(Level.DEBUG);
