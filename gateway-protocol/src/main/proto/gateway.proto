@@ -292,6 +292,8 @@ message DeployProcessResponse {
 message DeployResourceRequest {
   // list of resources to deploy
   repeated Resource resources = 1;
+  // the tenant id of the resources to deploy
+  string tenantId = 2;
 }
 
 message Resource {
@@ -306,6 +308,8 @@ message DeployResourceResponse {
   int64 key = 1;
   // a list of deployed resources, e.g. processes
   repeated Deployment deployments = 2;
+  // the tenant id of the deployed resources
+  string tenantId = 3;
 }
 
 message Deployment {
@@ -331,6 +335,8 @@ message ProcessMetadata {
   // the resource name (see: ProcessRequestObject.name) from which this process was
   // parsed
   string resourceName = 4;
+  // the tenant id of the deployed process
+  string tenantId = 5;
 }
 
 message DecisionMetadata {
@@ -350,6 +356,8 @@ message DecisionMetadata {
   // the assigned key of the decision requirements graph that this decision is
   // part of
   int64 decisionRequirementsKey = 6;
+  // the tenant id of the deployed decision
+  string tenantId = 7;
 }
 
 message DecisionRequirementsMetadata {
@@ -366,6 +374,8 @@ message DecisionRequirementsMetadata {
   // the resource name (see: Resource.name) from which this decision
   // requirements was parsed
   string resourceName = 5;
+  // the tenant id of the deployed decision requirements
+  string tenantId = 6;
 }
 
 message FailJobRequest {
@@ -705,11 +715,17 @@ service Gateway {
     Note that this is an atomic call, i.e. either all resources are deployed, or none of them are.
 
     Errors:
+      PERMISSION_DENIED:
+        - if a deployment to an unauthorized tenant is performed
       INVALID_ARGUMENT:
         - no resources given.
         - if at least one resource is invalid. A resource is considered invalid if:
           - the content is not deserializable (e.g. detected as BPMN, but it's broken XML)
           - the content is invalid (e.g. an event-based gateway has an outgoing sequence flow to a task)
+        - if multi-tenancy is enabled, and:
+          - a tenant id is not provided
+          - a tenant id with an invalid format is provided
+        - if multi-tenancy is disabled and a tenant id is provided
   */
   rpc DeployResource (DeployResourceRequest) returns (DeployResourceResponse) {
   }
