@@ -14,12 +14,15 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.ServiceTask;
+import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
+import io.camunda.zeebe.protocol.record.value.ErrorType;
+import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -504,6 +507,47 @@ public final class InclusiveGatewayTest {
             tuple(PROCESS_ID, ProcessInstanceIntent.COMPLETE_ELEMENT),
             tuple(PROCESS_ID, ProcessInstanceIntent.ELEMENT_COMPLETING),
             tuple(PROCESS_ID, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
+  public void shouldCreateIncidentIfInclusiveGatewayWithSingleSequenceFlowHasNoMatchingCondition() {
+    // given
+    final var process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .inclusiveGateway()
+            .condition("= false")
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    final Record<ProcessInstanceRecordValue> failingEvent =
+        RecordingExporter.processInstanceRecords()
+            .withElementType(BpmnElementType.INCLUSIVE_GATEWAY)
+            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    final Record<IncidentRecordValue> incidentEvent =
+        RecordingExporter.incidentRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withIntent(IncidentIntent.CREATED)
+            .getFirst();
+
+    Assertions.assertThat(incidentEvent.getValue())
+        .hasErrorType(ErrorType.CONDITION_ERROR)
+        .hasErrorMessage(
+            "Expected at least one condition to evaluate to true, or to have a default flow")
+        .hasBpmnProcessId(failingEvent.getValue().getBpmnProcessId())
+        .hasProcessInstanceKey(failingEvent.getValue().getProcessInstanceKey())
+        .hasElementId(failingEvent.getValue().getElementId())
+        .hasElementInstanceKey(failingEvent.getKey())
+        .hasVariableScopeKey(failingEvent.getKey());
   }
 
   @Test
