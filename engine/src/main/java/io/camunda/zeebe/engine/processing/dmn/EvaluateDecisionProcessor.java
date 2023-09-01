@@ -95,7 +95,7 @@ public class EvaluateDecisionProcessor implements TypedRecordProcessor<DecisionE
       return decisionBehavior.findDecisionById(decisionId);
       // TODO: expand DecisionState API to find decisions by ID AND VERSION (#11230)
     } else if (decisionKey > -1L) {
-      return decisionBehavior.findDecisionByKey(decisionKey);
+      return decisionBehavior.findDecisionByKeyAndTenant(decisionKey, record.getTenantId());
     } else {
       // if both ID and KEY are missing
       return Either.left(new Failure(ERROR_MESSAGE_NO_IDENTIFIER_SPECIFIED));

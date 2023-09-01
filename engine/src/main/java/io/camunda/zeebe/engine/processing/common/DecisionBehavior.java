@@ -57,8 +57,9 @@ public class DecisionBehavior {
         .mapLeft(failure -> formatDecisionLookupFailure(failure, decisionId));
   }
 
-  public Either<Failure, PersistedDecision> findDecisionByKey(final long decisionKey) {
-    return Either.ofOptional(decisionState.findDecisionByKey(decisionKey))
+  public Either<Failure, PersistedDecision> findDecisionByKeyAndTenant(
+      final long decisionKey, final String tenantId) {
+    return Either.ofOptional(decisionState.findDecisionByKeyAndTenant(decisionKey, tenantId))
         .orElse(new Failure("no decision found for key '%s'".formatted(decisionKey)))
         .mapLeft(failure -> formatDecisionLookupFailure(failure, decisionKey));
   }

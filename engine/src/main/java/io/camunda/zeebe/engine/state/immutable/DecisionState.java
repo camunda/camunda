@@ -28,9 +28,10 @@ public interface DecisionState {
    * Query decisions by the given decision key and return the decision.
    *
    * @param decisionKey the key of the decision
+   * @param tenantId the tenant the decision belongs to
    * @return the decision, or {@link Optional#empty()} if no decision is deployed with the given key
    */
-  Optional<PersistedDecision> findDecisionByKey(long decisionKey);
+  Optional<PersistedDecision> findDecisionByKeyAndTenant(long decisionKey, final String tenantId);
 
   /**
    * Query decision requirements (DRGs) by the given decision requirements id and return the latest
