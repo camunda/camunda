@@ -147,7 +147,8 @@ public class ResourceDeletionProcessor
 
   private void deleteDecisionRequirements(final DeployedDrg drg) {
     decisionState
-        .findDecisionsByDecisionRequirementsKey(drg.getDecisionRequirementsKey())
+        .findDecisionsByTenantAndDecisionRequirementsKey(
+            drg.getTenantId(), drg.getDecisionRequirementsKey())
         .forEach(this::deleteDecision);
 
     final var drgRecord =

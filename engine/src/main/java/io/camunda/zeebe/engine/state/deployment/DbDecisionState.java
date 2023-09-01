@@ -200,8 +200,8 @@ public final class DbDecisionState implements MutableDecisionState {
   }
 
   @Override
-  public List<PersistedDecision> findDecisionsByDecisionRequirementsKey(
-      final long decisionRequirementsKey) {
+  public List<PersistedDecision> findDecisionsByTenantAndDecisionRequirementsKey(
+      final String tenantId, final long decisionRequirementsKey) {
     final List<PersistedDecision> decisions = new ArrayList<>();
 
     dbDecisionRequirementsKey.wrapLong(decisionRequirementsKey);
@@ -209,7 +209,8 @@ public final class DbDecisionState implements MutableDecisionState {
         dbDecisionRequirementsKey,
         ((key, nil) -> {
           final var decisionKey = key.second();
-          findDecisionByTenantAndKey("", decisionKey.inner().getValue()).ifPresent(decisions::add);
+          findDecisionByTenantAndKey(tenantId, decisionKey.inner().getValue())
+              .ifPresent(decisions::add);
         }));
 
     return decisions;

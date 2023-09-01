@@ -56,11 +56,13 @@ public interface DecisionState {
   /**
    * Query decisions by the given decision requirements (DRG) key.
    *
+   * @param tenantId the tenant the DRG belongs to
    * @param decisionRequirementsKey the key of the DRG
    * @return all decisions that belong to the given DRG, or an empty list if no decision belongs to
    *     it
    */
-  List<PersistedDecision> findDecisionsByDecisionRequirementsKey(long decisionRequirementsKey);
+  List<PersistedDecision> findDecisionsByTenantAndDecisionRequirementsKey(
+      final String tenantId, long decisionRequirementsKey);
 
   /** Completely clears all caches. */
   void clearCache();

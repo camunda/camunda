@@ -112,7 +112,8 @@ public class DecisionBehavior {
 
     final var decisionKeysByDecisionId =
         decisionState
-            .findDecisionsByDecisionRequirementsKey(decision.getDecisionRequirementsKey())
+            .findDecisionsByTenantAndDecisionRequirementsKey(
+                decision.getTenantId(), decision.getDecisionRequirementsKey())
             .stream()
             .collect(
                 Collectors.toMap(
