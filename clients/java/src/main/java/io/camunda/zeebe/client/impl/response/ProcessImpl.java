@@ -25,24 +25,28 @@ public final class ProcessImpl implements Process {
   private final String bpmnProcessId;
   private final int version;
   private final String resourceName;
+  private final String tenantId;
 
   public ProcessImpl(final ProcessMetadata process) {
     this(
         process.getProcessDefinitionKey(),
         process.getBpmnProcessId(),
         process.getVersion(),
-        process.getResourceName());
+        process.getResourceName(),
+        process.getTenantId());
   }
 
   public ProcessImpl(
       final long processDefinitionKey,
       final String bpmnProcessId,
       final int version,
-      final String resourceName) {
+      final String resourceName,
+      final String tenantId) {
     this.processDefinitionKey = processDefinitionKey;
     this.bpmnProcessId = bpmnProcessId;
     this.version = version;
     this.resourceName = resourceName;
+    this.tenantId = tenantId;
   }
 
   @Override
@@ -66,8 +70,13 @@ public final class ProcessImpl implements Process {
   }
 
   @Override
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  @Override
   public int hashCode() {
-    return Objects.hash(processDefinitionKey, bpmnProcessId, version, resourceName);
+    return Objects.hash(processDefinitionKey, bpmnProcessId, version, resourceName, tenantId);
   }
 
   @Override
@@ -82,7 +91,8 @@ public final class ProcessImpl implements Process {
     return processDefinitionKey == process.processDefinitionKey
         && version == process.version
         && Objects.equals(bpmnProcessId, process.bpmnProcessId)
-        && Objects.equals(resourceName, process.resourceName);
+        && Objects.equals(resourceName, process.resourceName)
+        && Objects.equals(tenantId, process.tenantId);
   }
 
   @Override
@@ -97,6 +107,9 @@ public final class ProcessImpl implements Process {
         + version
         + ", resourceName='"
         + resourceName
+        + '\''
+        + ", tenantId='"
+        + tenantId
         + '\''
         + '}';
   }

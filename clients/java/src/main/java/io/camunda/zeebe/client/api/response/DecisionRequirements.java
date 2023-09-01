@@ -43,4 +43,9 @@ public interface DecisionRequirements {
    * @return the resource name (i.e. filename) from which this decision requirements was parsed
    */
   String getResourceName();
+
+  /**
+   * @return the tenant identifier that owns this decision requirements
+   */
+  String getTenantId();
 }

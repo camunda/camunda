@@ -35,4 +35,9 @@ public interface Process {
    * @return the name of the deployment resource which contains the process
    */
   String getResourceName();
+
+  /**
+   * @return the tenant identifier that owns this process
+   */
+  String getTenantId();
 }

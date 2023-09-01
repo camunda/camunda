@@ -169,7 +169,7 @@ public final class DeployResourceCommandImpl
 
   @Override
   public DeployResourceCommandStep2 tenantId(final String tenantId) {
-    // todo(#13321): replace dummy implementation
+    requestBuilder.setTenantId(tenantId);
     return this;
   }
 

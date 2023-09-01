@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.client.impl.response;
 
+import io.camunda.zeebe.client.api.command.CommandWithTenantStep;
 import io.camunda.zeebe.client.api.response.Decision;
 import io.camunda.zeebe.client.api.response.DecisionRequirements;
 import io.camunda.zeebe.client.api.response.DeploymentEvent;
@@ -36,17 +37,20 @@ public final class DeploymentEventImpl implements DeploymentEvent {
           + " You may have to update the version of your zeebe-client-java dependency to resolve the issue.";
 
   private final long key;
+  private final String tenantId;
   private final List<Process> processes = new ArrayList<>();
   private final List<Decision> decisions = new ArrayList<>();
   private final List<DecisionRequirements> decisionRequirements = new ArrayList<>();
 
   public DeploymentEventImpl(final DeployProcessResponse response) {
     key = response.getKey();
+    tenantId = CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER;
     response.getProcessesList().stream().map(ProcessImpl::new).forEach(processes::add);
   }
 
   public DeploymentEventImpl(final DeployResourceResponse response) {
     key = response.getKey();
+    tenantId = response.getTenantId();
     for (final Deployment deployment : response.getDeploymentsList()) {
       switch (deployment.getMetadataCase()) {
         case PROCESS:
@@ -89,8 +93,7 @@ public final class DeploymentEventImpl implements DeploymentEvent {
 
   @Override
   public String getTenantId() {
-    // todo(#13321): replace dummy implementation
-    return "";
+    return tenantId;
   }
 
   @Override

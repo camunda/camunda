@@ -26,6 +26,7 @@ public final class DecisionRequirementsImpl implements DecisionRequirements {
   private final int version;
   private final long decisionRequirementsKey;
   private final String resourceName;
+  private final String tenantId;
 
   public DecisionRequirementsImpl(final DecisionRequirementsMetadata metadata) {
     this(
@@ -33,7 +34,8 @@ public final class DecisionRequirementsImpl implements DecisionRequirements {
         metadata.getDmnDecisionRequirementsName(),
         metadata.getVersion(),
         metadata.getDecisionRequirementsKey(),
-        metadata.getResourceName());
+        metadata.getResourceName(),
+        metadata.getTenantId());
   }
 
   public DecisionRequirementsImpl(
@@ -41,12 +43,14 @@ public final class DecisionRequirementsImpl implements DecisionRequirements {
       final String dmnDecisionRequirementsName,
       final int version,
       final long decisionRequirementsKey,
-      final String resourceName) {
+      final String resourceName,
+      final String tenantId) {
     this.dmnDecisionRequirementsId = dmnDecisionRequirementsId;
     this.dmnDecisionRequirementsName = dmnDecisionRequirementsName;
     this.version = version;
     this.decisionRequirementsKey = decisionRequirementsKey;
     this.resourceName = resourceName;
+    this.tenantId = tenantId;
   }
 
   @Override
@@ -75,13 +79,19 @@ public final class DecisionRequirementsImpl implements DecisionRequirements {
   }
 
   @Override
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  @Override
   public int hashCode() {
     return Objects.hash(
         dmnDecisionRequirementsId,
         dmnDecisionRequirementsName,
         version,
         decisionRequirementsKey,
-        resourceName);
+        resourceName,
+        tenantId);
   }
 
   @Override
@@ -97,7 +107,8 @@ public final class DecisionRequirementsImpl implements DecisionRequirements {
         && decisionRequirementsKey == that.decisionRequirementsKey
         && Objects.equals(dmnDecisionRequirementsId, that.dmnDecisionRequirementsId)
         && Objects.equals(dmnDecisionRequirementsName, that.dmnDecisionRequirementsName)
-        && Objects.equals(resourceName, that.resourceName);
+        && Objects.equals(resourceName, that.resourceName)
+        && Objects.equals(tenantId, that.tenantId);
   }
 
   @Override
@@ -115,6 +126,9 @@ public final class DecisionRequirementsImpl implements DecisionRequirements {
         + decisionRequirementsKey
         + ", resourceName='"
         + resourceName
+        + '\''
+        + ", tenantId='"
+        + tenantId
         + '\''
         + '}';
   }

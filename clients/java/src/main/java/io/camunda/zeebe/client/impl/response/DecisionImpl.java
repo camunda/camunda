@@ -27,6 +27,7 @@ public final class DecisionImpl implements Decision {
   private final long decisionKey;
   private final String dmnDecisionRequirementsId;
   private final long decisionRequirementsKey;
+  private final String tenantId;
 
   public DecisionImpl(final DecisionMetadata metadata) {
     this(
@@ -35,7 +36,8 @@ public final class DecisionImpl implements Decision {
         metadata.getVersion(),
         metadata.getDecisionKey(),
         metadata.getDmnDecisionRequirementsId(),
-        metadata.getDecisionRequirementsKey());
+        metadata.getDecisionRequirementsKey(),
+        metadata.getTenantId());
   }
 
   public DecisionImpl(
@@ -44,13 +46,15 @@ public final class DecisionImpl implements Decision {
       final int version,
       final long decisionKey,
       final String dmnDecisionRequirementsId,
-      final long decisionRequirementsKey) {
+      final long decisionRequirementsKey,
+      final String tenantId) {
     this.dmnDecisionId = dmnDecisionId;
     this.dmnDecisionName = dmnDecisionName;
     this.version = version;
     this.decisionKey = decisionKey;
     this.dmnDecisionRequirementsId = dmnDecisionRequirementsId;
     this.decisionRequirementsKey = decisionRequirementsKey;
+    this.tenantId = tenantId;
   }
 
   @Override
@@ -84,6 +88,11 @@ public final class DecisionImpl implements Decision {
   }
 
   @Override
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  @Override
   public int hashCode() {
     return Objects.hash(
         dmnDecisionId,
@@ -91,7 +100,8 @@ public final class DecisionImpl implements Decision {
         version,
         decisionKey,
         dmnDecisionRequirementsId,
-        decisionRequirementsKey);
+        decisionRequirementsKey,
+        tenantId);
   }
 
   @Override
@@ -108,7 +118,8 @@ public final class DecisionImpl implements Decision {
         && decisionRequirementsKey == decision.decisionRequirementsKey
         && Objects.equals(dmnDecisionId, decision.dmnDecisionId)
         && Objects.equals(dmnDecisionName, decision.dmnDecisionName)
-        && Objects.equals(dmnDecisionRequirementsId, decision.dmnDecisionRequirementsId);
+        && Objects.equals(dmnDecisionRequirementsId, decision.dmnDecisionRequirementsId)
+        && Objects.equals(tenantId, decision.tenantId);
   }
 
   @Override
@@ -129,6 +140,9 @@ public final class DecisionImpl implements Decision {
         + '\''
         + ", decisionRequirementsKey="
         + decisionRequirementsKey
+        + ", tenantId='"
+        + tenantId
+        + '\''
         + '}';
   }
 }
