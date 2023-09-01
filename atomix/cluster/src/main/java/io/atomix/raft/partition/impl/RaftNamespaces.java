@@ -27,6 +27,8 @@ import io.atomix.raft.protocol.ConfigureRequest;
 import io.atomix.raft.protocol.ConfigureResponse;
 import io.atomix.raft.protocol.InstallRequest;
 import io.atomix.raft.protocol.InstallResponse;
+import io.atomix.raft.protocol.JoinRequest;
+import io.atomix.raft.protocol.JoinResponse;
 import io.atomix.raft.protocol.PersistedRaftRecord;
 import io.atomix.raft.protocol.PollRequest;
 import io.atomix.raft.protocol.PollResponse;
@@ -86,6 +88,8 @@ public final class RaftNamespaces {
           .register(TransferResponse.class)
           .register(VersionedAppendRequest.class)
           .register(ReplicatableJournalRecord.class)
+          .register(JoinRequest.class)
+          .register(JoinResponse.class)
           .name("RaftProtocol")
           .build();
 

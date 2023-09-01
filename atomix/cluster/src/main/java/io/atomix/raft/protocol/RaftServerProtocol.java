@@ -42,6 +42,15 @@ public interface RaftServerProtocol {
   CompletableFuture<ReconfigureResponse> reconfigure(MemberId memberId, ReconfigureRequest request);
 
   /**
+   * Sends a join request to the given node.
+   *
+   * @param memberId the node to which to send the request
+   * @param request the request to send
+   * @return a future to be completed with the response
+   */
+  CompletableFuture<JoinResponse> join(MemberId memberId, JoinRequest request);
+
+  /**
    * Sends an install request to the given node.
    *
    * @param memberId the node to which to send the request
@@ -120,6 +129,10 @@ public interface RaftServerProtocol {
 
   /** Unregisters the reconfigure request handler. */
   void unregisterReconfigureHandler();
+
+  void registerJoinHandler(Function<JoinRequest, CompletableFuture<JoinResponse>> handler);
+
+  void unregisterJoinHandler();
 
   /**
    * Registers a install request callback.

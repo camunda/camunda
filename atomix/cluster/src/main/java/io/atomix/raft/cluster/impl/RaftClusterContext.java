@@ -95,6 +95,12 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
   }
 
   @Override
+  public CompletableFuture<Void> join() {
+    return raft.join()
+        .thenRunAsync(() -> raft.transition(localMember.getType()), raft.getThreadContext());
+  }
+
+  @Override
   public DefaultRaftMember getMember(final MemberId id) {
     if (localMember.memberId().equals(id)) {
       return localMember;

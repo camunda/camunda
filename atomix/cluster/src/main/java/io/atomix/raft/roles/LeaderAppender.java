@@ -109,7 +109,7 @@ final class LeaderAppender {
     // If the next index is greater than the last index then send an empty commit.
     // If the member failed to respond to recent communication send an empty commit. This
     // helps avoid doing expensive work until we can ascertain the member is back up.
-    if (!member.hasNextEntry()) {
+    if (!hasMoreEntries(member)) {
       return buildAppendEmptyRequest(member);
     } else if (member.getFailureCount() > 0) {
       return buildAppendEmptyRequest(member);
@@ -179,7 +179,7 @@ final class LeaderAppender {
     int size = 0;
 
     // Iterate through the log until the last index or the end of the log is reached.
-    while (member.hasNextEntry()) {
+    while (hasMoreEntries(member)) {
       // Otherwise, read the next entry and add it to the batch.
       final IndexedRaftLogEntry entry = member.nextEntry();
       final var replicatableRecord = entry.getReplicatableJournalRecord();
@@ -694,6 +694,10 @@ final class LeaderAppender {
       return;
     }
 
+    if (!member.hasReplicationContext()) {
+      member.openReplicationContext(raft.getLog());
+    }
+
     // If prior requests to the member have failed, build an empty append request to send to the
     // member
     // to prevent having to read from disk to configure, install, or append to an unavailable
@@ -731,7 +735,7 @@ final class LeaderAppender {
 
   private boolean hasMoreEntries(final RaftMemberContext member) {
     // If the member's nextIndex is an entry in the local log then more entries can be sent.
-    return member.hasNextEntry();
+    return !member.hasReplicationContext() || member.hasNextEntry();
   }
 
   private void handleAppendResponseError(

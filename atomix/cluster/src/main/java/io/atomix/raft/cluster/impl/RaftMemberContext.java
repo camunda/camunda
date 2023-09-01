@@ -91,6 +91,10 @@ public final class RaftMemberContext {
     }
   }
 
+  public boolean hasReplicationContext() {
+    return reader != null;
+  }
+
   public void openReplicationContext(final RaftLog log) {
     resetState(log);
     openReader(log);

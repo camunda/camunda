@@ -26,6 +26,8 @@ import io.atomix.raft.protocol.ConfigureRequest;
 import io.atomix.raft.protocol.ConfigureResponse;
 import io.atomix.raft.protocol.InstallRequest;
 import io.atomix.raft.protocol.InstallResponse;
+import io.atomix.raft.protocol.JoinRequest;
+import io.atomix.raft.protocol.JoinResponse;
 import io.atomix.raft.protocol.PollRequest;
 import io.atomix.raft.protocol.PollResponse;
 import io.atomix.raft.protocol.RaftMessage;
@@ -79,6 +81,11 @@ public class RaftServerCommunicator implements RaftServerProtocol {
   public CompletableFuture<ReconfigureResponse> reconfigure(
       final MemberId memberId, final ReconfigureRequest request) {
     return sendAndReceive(context.reconfigureSubject, request, memberId);
+  }
+
+  @Override
+  public CompletableFuture<JoinResponse> join(final MemberId memberId, final JoinRequest request) {
+    return sendAndReceive(context.joinSubject, request, memberId);
   }
 
   @Override
@@ -161,6 +168,21 @@ public class RaftServerCommunicator implements RaftServerProtocol {
   }
 
   @Override
+  public void registerJoinHandler(
+      final Function<JoinRequest, CompletableFuture<JoinResponse>> handler) {
+    clusterCommunicator.replyTo(
+        context.joinSubject,
+        serializer::decode,
+        handler.<JoinRequest>compose(this::recordReceivedMetrics),
+        serializer::encode);
+  }
+
+  @Override
+  public void unregisterJoinHandler() {
+    clusterCommunicator.unsubscribe(context.joinSubject);
+  }
+
+  @Override
   public void registerInstallHandler(
       final Function<InstallRequest, CompletableFuture<InstallResponse>> handler) {
     clusterCommunicator.replyTo(
@@ -240,12 +262,7 @@ public class RaftServerCommunicator implements RaftServerProtocol {
       final String subject, final T request, final MemberId memberId, final Duration timeout) {
     metrics.sendMessage(memberId.id(), request.getClass().getSimpleName());
     return clusterCommunicator.send(
-        subject,
-        request,
-        serializer::encode,
-        serializer::decode,
-        MemberId.from(memberId.id()),
-        timeout);
+        subject, request, serializer::encode, serializer::decode, memberId, timeout);
   }
 
   private <T extends RaftMessage> T recordReceivedMetrics(final T m) {

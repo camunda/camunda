@@ -99,6 +99,11 @@ public class DefaultRaftServer implements RaftServer {
   }
 
   @Override
+  public CompletableFuture<RaftServer> join() {
+    return start(() -> cluster().join());
+  }
+
+  @Override
   public CompletableFuture<RaftServer> promote() {
     return context.anoint().thenApply(v -> this);
   }

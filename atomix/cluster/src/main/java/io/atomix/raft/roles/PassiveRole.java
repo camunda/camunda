@@ -17,6 +17,7 @@
 package io.atomix.raft.roles;
 
 import io.atomix.raft.RaftError;
+import io.atomix.raft.RaftError.Type;
 import io.atomix.raft.RaftServer;
 import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.metrics.SnapshotReplicationMetrics;
@@ -24,10 +25,13 @@ import io.atomix.raft.protocol.AppendResponse;
 import io.atomix.raft.protocol.InstallRequest;
 import io.atomix.raft.protocol.InstallResponse;
 import io.atomix.raft.protocol.InternalAppendRequest;
+import io.atomix.raft.protocol.JoinRequest;
+import io.atomix.raft.protocol.JoinResponse;
 import io.atomix.raft.protocol.PersistedRaftRecord;
 import io.atomix.raft.protocol.PollRequest;
 import io.atomix.raft.protocol.PollResponse;
 import io.atomix.raft.protocol.RaftResponse;
+import io.atomix.raft.protocol.RaftResponse.Status;
 import io.atomix.raft.protocol.ReconfigureRequest;
 import io.atomix.raft.protocol.ReconfigureResponse;
 import io.atomix.raft.protocol.ReplicatableJournalRecord;
@@ -280,6 +284,24 @@ public class PassiveRole extends InactiveRole {
                       .withStatus(RaftResponse.Status.ERROR)
                       .withError(RaftError.Type.NO_LEADER)
                       .build())
+          .thenApply(this::logResponse);
+    }
+  }
+
+  @Override
+  public CompletableFuture<JoinResponse> onJoin(final JoinRequest request) {
+    raft.checkThread();
+    logRequest(request);
+
+    if (raft.getLeader() == null) {
+      return CompletableFuture.completedFuture(
+          logResponse(
+              JoinResponse.builder().withStatus(Status.ERROR).withError(Type.NO_LEADER).build()));
+    } else {
+      return forward(request, raft.getProtocol()::join)
+          .exceptionally(
+              error ->
+                  JoinResponse.builder().withStatus(Status.ERROR).withError(Type.NO_LEADER).build())
           .thenApply(this::logResponse);
     }
   }
@@ -633,9 +655,9 @@ public class PassiveRole extends InactiveRole {
       final CompletableFuture<AppendResponse> future) {
     try {
       final IndexedRaftLogEntry indexed;
-      if (entry instanceof PersistedRaftRecord raftRecord) {
+      if (entry instanceof final PersistedRaftRecord raftRecord) {
         indexed = raft.getLog().append(raftRecord);
-      } else if (entry instanceof ReplicatableJournalRecord serializedJournalRecord) {
+      } else if (entry instanceof final ReplicatableJournalRecord serializedJournalRecord) {
         indexed = raft.getLog().append(serializedJournalRecord);
       } else {
         throw new IllegalStateException(
