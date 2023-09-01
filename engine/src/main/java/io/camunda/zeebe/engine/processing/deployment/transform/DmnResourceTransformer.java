@@ -172,7 +172,8 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
         .setTenantId(deploymentEvent.getTenantId());
 
     decisionState
-        .findLatestDecisionRequirementsById(wrapString(parsedDrg.getId()))
+        .findLatestDecisionRequirementsByTenantAndId(
+            deploymentEvent.getTenantId(), wrapString(parsedDrg.getId()))
         .ifPresentOrElse(
             latestDrg -> {
               final int latestVersion = latestDrg.getDecisionRequirementsVersion();

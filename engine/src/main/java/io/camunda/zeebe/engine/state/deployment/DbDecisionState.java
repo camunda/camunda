@@ -198,11 +198,13 @@ public final class DbDecisionState implements MutableDecisionState {
   }
 
   @Override
-  public Optional<DeployedDrg> findLatestDecisionRequirementsById(
-      final DirectBuffer decisionRequirementsId) {
+  public Optional<DeployedDrg> findLatestDecisionRequirementsByTenantAndId(
+      final String tenantId, final DirectBuffer decisionRequirementsId) {
+    tenantIdKey.wrapString(tenantId);
     dbDecisionRequirementsId.wrapBuffer(decisionRequirementsId);
 
-    return Optional.ofNullable(latestDecisionRequirementsKeysById.get(dbDecisionRequirementsId))
+    return Optional.ofNullable(
+            latestDecisionRequirementsKeysById.get(tenantAwareDecisionRequirementsId))
         .map((requirementsKey) -> requirementsKey.inner().getValue())
         .flatMap(
             decisionRequirementsKey ->
@@ -392,7 +394,8 @@ public final class DbDecisionState implements MutableDecisionState {
   public void deleteDecisionRequirements(final DecisionRequirementsRecord record) {
     tenantIdKey.wrapString(record.getTenantId());
 
-    findLatestDecisionRequirementsById(record.getDecisionRequirementsIdBuffer())
+    findLatestDecisionRequirementsByTenantAndId(
+            record.getTenantId(), record.getDecisionRequirementsIdBuffer())
         .map(DeployedDrg::getDecisionRequirementsVersion)
         .ifPresent(
             latestVersion -> {
@@ -452,7 +455,8 @@ public final class DbDecisionState implements MutableDecisionState {
   }
 
   private void updateLatestDecisionRequirementsVersion(final DecisionRequirementsRecord record) {
-    findLatestDecisionRequirementsById(record.getDecisionRequirementsIdBuffer())
+    findLatestDecisionRequirementsByTenantAndId(
+            record.getTenantId(), record.getDecisionRequirementsIdBuffer())
         .ifPresentOrElse(
             previousVersion -> {
               if (record.getDecisionRequirementsVersion()
