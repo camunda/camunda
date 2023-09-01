@@ -197,9 +197,10 @@ public final class DeployProcessTest extends ClientTest {
   public void shouldReceiveDeployedProcessMetadataInResponse() {
     // given
     final long key = 123L;
+    final String testTenantId = "test-tenant";
     final String filename = DeployProcessTest.class.getResource(BPMN_1_FILENAME).getPath();
     gatewayService.onDeployProcessRequest(
-        key, deployedProcess(BPMN_1_PROCESS_ID, 12, 423, filename));
+        key, deployedProcess(BPMN_1_PROCESS_ID, 12, 423, filename, testTenantId));
 
     // when
     final DeploymentEvent response =
@@ -208,7 +209,7 @@ public final class DeployProcessTest extends ClientTest {
     // then
     assertThat(response.getKey()).isEqualTo(key);
     assertThat(response.getProcesses())
-        .containsExactly(new ProcessImpl(423, BPMN_1_PROCESS_ID, 12, filename));
+        .containsExactly(new ProcessImpl(423, BPMN_1_PROCESS_ID, 12, filename, testTenantId));
   }
 
   @Test
