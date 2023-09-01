@@ -57,6 +57,7 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
     transformAssignmentDefinition(element, jobWorkerProperties);
     transformTaskSchedule(element, jobWorkerProperties);
     transformTaskHeaders(element, jobWorkerProperties);
+    transformUserTaskFormId(element, jobWorkerProperties);
   }
 
   private void transformTaskDefinition(final JobWorkerProperties jobWorkerProperties) {
@@ -144,8 +145,18 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
     final ZeebeFormDefinition formDefinition =
         element.getSingleExtensionElement(ZeebeFormDefinition.class);
 
-    if (formDefinition != null) {
+    if (formDefinition != null && formDefinition.getFormKey() != null) {
       taskHeaders.put(Protocol.USER_TASK_FORM_KEY_HEADER_NAME, formDefinition.getFormKey());
+    }
+  }
+
+  private void transformUserTaskFormId(
+      final UserTask element, final JobWorkerProperties jobWorkerProperties) {
+    final ZeebeFormDefinition formDefinition =
+        element.getSingleExtensionElement(ZeebeFormDefinition.class);
+
+    if (formDefinition != null && formDefinition.getFormId() != null) {
+      jobWorkerProperties.setFormId(expressionLanguage.parseExpression(formDefinition.getFormId()));
     }
   }
 

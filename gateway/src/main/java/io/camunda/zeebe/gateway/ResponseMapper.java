@@ -115,13 +115,9 @@ public final class ResponseMapper {
                     .build())
         .forEach(drg -> responseBuilder.addDeploymentsBuilder().setDecisionRequirements(drg));
 
-    System.out.println("HERE1");
     brokerResponse.formMetadata().stream()
         .map(
             form -> {
-              System.out.println("HERE2");
-              System.out.println(form.getFormId());
-              System.out.println(form.getFormKey());
               final FormMetadata build =
                   FormMetadata.newBuilder()
                       .setFormId(form.getFormId())
@@ -129,9 +125,6 @@ public final class ResponseMapper {
                       .setVersion(form.getVersion())
                       .setResourceName(form.getResourceName())
                       .build();
-
-              System.out.println(build.toString());
-
               return build;
             })
         .forEach(form -> responseBuilder.addDeploymentsBuilder().setForm(form));

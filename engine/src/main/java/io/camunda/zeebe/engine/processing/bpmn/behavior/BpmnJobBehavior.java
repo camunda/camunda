@@ -19,6 +19,8 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.JobWorkerProp
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.ExpressionTransformer;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.deployment.PersistedForm;
+import io.camunda.zeebe.engine.state.immutable.FormState;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.JobState.State;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
@@ -34,6 +36,7 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
@@ -62,6 +65,8 @@ public final class BpmnJobBehavior {
   private final JobMetrics jobMetrics;
   private final BpmnJobActivationBehavior jobActivationBehavior;
 
+  private final FormState formState;
+
   public BpmnJobBehavior(
       final KeyGenerator keyGenerator,
       final JobState jobState,
@@ -70,7 +75,8 @@ public final class BpmnJobBehavior {
       final BpmnStateBehavior stateBehavior,
       final BpmnIncidentBehavior incidentBehavior,
       final BpmnJobActivationBehavior jobActivationBehavior,
-      final JobMetrics jobMetrics) {
+      final JobMetrics jobMetrics,
+      final FormState formState) {
     this.keyGenerator = keyGenerator;
     this.jobState = jobState;
     this.expressionBehavior = expressionBehavior;
@@ -79,6 +85,7 @@ public final class BpmnJobBehavior {
     this.incidentBehavior = incidentBehavior;
     this.jobMetrics = jobMetrics;
     this.jobActivationBehavior = jobActivationBehavior;
+    this.formState = formState;
   }
 
   public Either<Failure, ?> createNewJob(
@@ -103,7 +110,8 @@ public final class BpmnJobBehavior {
         .flatMap(p -> evalCandidateGroupsExp(jobWorkerProps, scopeKey).map(p::candidateGroups))
         .flatMap(p -> evalCandidateUsersExp(jobWorkerProps, scopeKey).map(p::candidateUsers))
         .flatMap(p -> evalDateExp(jobWorkerProps.getDueDate(), scopeKey).map(p::dueDate))
-        .flatMap(p -> evalDateExp(jobWorkerProps.getFollowUpDate(), scopeKey).map(p::followUpDate));
+        .flatMap(p -> evalDateExp(jobWorkerProps.getFollowUpDate(), scopeKey).map(p::followUpDate))
+        .flatMap(p -> evalFormIdExp(jobWorkerProps, scopeKey).map(p::formId));
   }
 
   private Either<Failure, String> evalTypeExp(
@@ -158,6 +166,15 @@ public final class BpmnJobBehavior {
         .map(optionalDate -> optionalDate.map(ZonedDateTime::toString).orElse(null));
   }
 
+  private Either<Failure, String> evalFormIdExp(
+      final JobWorkerProperties jobWorkerProperties, final long scopeKey) {
+    final Expression formId = jobWorkerProperties.getFormId();
+    if (formId == null) {
+      return Either.right(null);
+    }
+    return expressionBehavior.evaluateStringExpression(formId, scopeKey);
+  }
+
   private void writeJobCreatedEvent(
       final BpmnElementContext context,
       final ExecutableJobWorkerElement jobWorkerElement,
@@ -191,6 +208,7 @@ public final class BpmnJobBehavior {
     final String candidateUsers = props.getCandidateUsers();
     final String dueDate = props.getDueDate();
     final String followUpDate = props.getFollowUpDate();
+    final String formId = props.getFormId();
     if (assignee != null && !assignee.isEmpty()) {
       headers.put(Protocol.USER_TASK_ASSIGNEE_HEADER_NAME, assignee);
     }
@@ -205,6 +223,15 @@ public final class BpmnJobBehavior {
     }
     if (followUpDate != null && !followUpDate.isEmpty()) {
       headers.put(Protocol.USER_TASK_FOLLOW_UP_DATE_HEADER_NAME, followUpDate);
+    }
+    if (formId != null && !formId.isEmpty()) {
+      final Optional<PersistedForm> latestFormById =
+          formState.findLatestFormById(wrapString(formId));
+      latestFormById.ifPresent(
+          persistedForm ->
+              headers.put(
+                  Protocol.USER_TASK_FORM_KEY_HEADER_NAME,
+                  String.valueOf(persistedForm.getFormKeyProp())));
     }
     return headerEncoder.encode(headers);
   }
@@ -242,6 +269,7 @@ public final class BpmnJobBehavior {
     private String candidateUsers;
     private String dueDate;
     private String followUpDate;
+    private String formId;
 
     public JobProperties type(final String type) {
       this.type = type;
@@ -304,6 +332,15 @@ public final class BpmnJobBehavior {
 
     public String getFollowUpDate() {
       return followUpDate;
+    }
+
+    public String getFormId() {
+      return formId;
+    }
+
+    public JobProperties formId(final String formId) {
+      this.formId = formId;
+      return this;
     }
   }
 

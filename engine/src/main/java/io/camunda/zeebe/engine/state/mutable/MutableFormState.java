@@ -7,9 +7,10 @@
  */
 package io.camunda.zeebe.engine.state.mutable;
 
+import io.camunda.zeebe.engine.state.immutable.FormState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.FormRecord;
 
-public interface MutableFormState {
+public interface MutableFormState extends FormState {
 
   /**
    * Put the given decision in the state. Update the latest version of the decision if it is newer.

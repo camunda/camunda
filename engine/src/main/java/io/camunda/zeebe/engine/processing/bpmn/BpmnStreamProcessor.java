@@ -18,6 +18,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerTask;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -83,6 +84,11 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
     final var bpmnElementType = recordValue.getBpmnElementType();
     final var processor = processors.getProcessor(bpmnElementType);
     final ExecutableFlowElement element = getElement(recordValue, processor);
+
+    if (element.getElementType() == BpmnElementType.USER_TASK) {
+      final var jobWorkerTask = (ExecutableJobWorkerTask) element;
+      // jobWorkerTask.getJobWorkerProperties()
+    }
 
     stateTransitionGuard
         .isValidStateTransition(context, element)
