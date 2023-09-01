@@ -158,7 +158,8 @@ public class DecisionBehavior {
   private Either<Failure, DeployedDrg> findDrgByDecision(final PersistedDecision decision) {
     final var key = decision.getDecisionRequirementsKey();
     final var id = decision.getDecisionRequirementsId();
-    return Either.ofOptional(decisionState.findDecisionRequirementsByKey(key))
+    return Either.ofOptional(
+            decisionState.findDecisionRequirementsByTenantAndKey(decision.getTenantId(), key))
         .orElse(new Failure("no drg found for id '%s'".formatted(bufferAsString(id))));
   }
 

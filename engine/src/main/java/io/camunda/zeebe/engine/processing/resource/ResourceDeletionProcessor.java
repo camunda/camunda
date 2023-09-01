@@ -136,7 +136,9 @@ public class ResourceDeletionProcessor
       return;
     }
 
-    final var drgOptional = decisionState.findDecisionRequirementsByKey(value.getResourceKey());
+    final var drgOptional =
+        decisionState.findDecisionRequirementsByTenantAndKey(
+            value.getTenantId(), value.getResourceKey());
     if (drgOptional.isPresent()) {
       deleteDecisionRequirements(drgOptional.get());
       return;

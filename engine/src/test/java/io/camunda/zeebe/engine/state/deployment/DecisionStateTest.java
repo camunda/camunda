@@ -68,7 +68,7 @@ public final class DecisionStateTest {
   @Test
   void shouldReturnEmptyIfNoDrgIsDeployedByKey() {
     // when
-    final var persistedDrg = decisionState.findDecisionRequirementsByKey(1L);
+    final var persistedDrg = decisionState.findDecisionRequirementsByTenantAndKey("", 1L);
 
     // then
     assertThat(persistedDrg).isEmpty();
@@ -308,9 +308,9 @@ public final class DecisionStateTest {
 
     // when
     final var persistedDrg1 =
-        decisionState.findDecisionRequirementsByKey(drg1.getDecisionRequirementsKey());
+        decisionState.findDecisionRequirementsByTenantAndKey("", drg1.getDecisionRequirementsKey());
     final var persistedDrg2 =
-        decisionState.findDecisionRequirementsByKey(drg2.getDecisionRequirementsKey());
+        decisionState.findDecisionRequirementsByTenantAndKey("", drg2.getDecisionRequirementsKey());
 
     // then
     assertThat(persistedDrg1).isNotEmpty();
@@ -521,8 +521,10 @@ public final class DecisionStateTest {
     decisionState.deleteDecisionRequirements(drg);
 
     // then
-    assertThat(decisionState.findDecisionRequirementsByKey(drg.getDecisionRequirementsKey()))
-        .isEmpty();
+    assertThat(
+        decisionState
+            .findDecisionRequirementsByTenantAndKey("", drg.getDecisionRequirementsKey()))
+            .isEmpty();
     assertThat(
             decisionState.findLatestDecisionByIdAndTenant(
                 drg.getDecisionRequirementsIdBuffer(), ""))

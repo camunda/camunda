@@ -48,10 +48,12 @@ public interface DecisionState {
   /**
    * Query decision requirements (DRGs) by the given decision requirements key.
    *
+   * @param tenantId the tenant the DRG belongs to
    * @param decisionRequirementsKey the key of the DRG
    * @return the DRG, or {@link Optional#empty()} if no DRG is deployed with the given key
    */
-  Optional<DeployedDrg> findDecisionRequirementsByKey(long decisionRequirementsKey);
+  Optional<DeployedDrg> findDecisionRequirementsByTenantAndKey(
+      final String tenantId, long decisionRequirementsKey);
 
   /**
    * Query decisions by the given decision requirements (DRG) key.

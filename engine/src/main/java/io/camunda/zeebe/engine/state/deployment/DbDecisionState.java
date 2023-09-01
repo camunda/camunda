@@ -200,12 +200,15 @@ public final class DbDecisionState implements MutableDecisionState {
 
     return Optional.ofNullable(latestDecisionRequirementsKeysById.get(dbDecisionRequirementsId))
         .map((requirementsKey) -> requirementsKey.inner().getValue())
-        .flatMap(this::findDecisionRequirementsByKey);
+        .flatMap(
+            decisionRequirementsKey ->
+                findDecisionRequirementsByTenantAndKey("", decisionRequirementsKey));
   }
 
   @Override
-  public Optional<DeployedDrg> findDecisionRequirementsByKey(final long decisionRequirementsKey) {
-    return findDeployedDrg(decisionRequirementsKey, "");
+  public Optional<DeployedDrg> findDecisionRequirementsByTenantAndKey(
+      final String tenantId, final long decisionRequirementsKey) {
+    return findDeployedDrg(decisionRequirementsKey, tenantId);
   }
 
   @Override
