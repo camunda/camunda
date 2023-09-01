@@ -53,6 +53,7 @@ public final class DbDecisionState implements MutableDecisionState {
   private final DbTenantAwareKey<DbString> tenantAwareDecisionId;
 
   private final DbLong dbDecisionRequirementsKey;
+  private final DbTenantAwareKey<DbLong> tenantAwareDecisionRequirementsKey;
   private final DbForeignKey<DbLong> fkDecisionRequirements;
   private final PersistedDecisionRequirements dbPersistedDecisionRequirements;
   private final DbString dbDecisionRequirementsId;
@@ -71,7 +72,8 @@ public final class DbDecisionState implements MutableDecisionState {
   private final ColumnFamily<DbCompositeKey<DbString, DbInt>, DbForeignKey<DbLong>>
       decisionKeyByDecisionIdAndVersion;
 
-  private final ColumnFamily<DbLong, PersistedDecisionRequirements> decisionRequirementsByKey;
+  private final ColumnFamily<DbTenantAwareKey<DbLong>, PersistedDecisionRequirements>
+      decisionRequirementsByKey;
   private final ColumnFamily<DbString, DbForeignKey<DbLong>> latestDecisionRequirementsKeysById;
 
   private final DbInt dbDecisionRequirementsVersion;
@@ -79,7 +81,7 @@ public final class DbDecisionState implements MutableDecisionState {
   private final ColumnFamily<DbCompositeKey<DbString, DbInt>, DbForeignKey<DbLong>>
       decisionRequirementsKeyByIdAndVersion;
 
-  private final LoadingCache<Long, DeployedDrg> drgCache;
+  private final LoadingCache<TenantIdAndDrgKey, DeployedDrg> drgCache;
 
   public DbDecisionState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
@@ -109,6 +111,8 @@ public final class DbDecisionState implements MutableDecisionState {
             fkDecision);
 
     dbDecisionRequirementsKey = new DbLong();
+    tenantAwareDecisionRequirementsKey =
+        new DbTenantAwareKey<>(tenantIdKey, dbDecisionRequirementsKey, PlacementType.PREFIX);
     fkDecisionRequirements =
         new DbForeignKey<>(dbDecisionRequirementsKey, ZbColumnFamilies.DMN_DECISION_REQUIREMENTS);
     dbPersistedDecisionRequirements = new PersistedDecisionRequirements();
@@ -116,7 +120,7 @@ public final class DbDecisionState implements MutableDecisionState {
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.DMN_DECISION_REQUIREMENTS,
             transactionContext,
-            dbDecisionRequirementsKey,
+            tenantAwareDecisionRequirementsKey,
             dbPersistedDecisionRequirements);
 
     dbDecisionRequirementsId = new DbString();
@@ -161,8 +165,10 @@ public final class DbDecisionState implements MutableDecisionState {
             .build(
                 new CacheLoader<>() {
                   @Override
-                  public DeployedDrg load(final Long key) throws DrgNotFoundException {
-                    return findAndParseDecisionRequirementsByKeyFromDb(key);
+                  public DeployedDrg load(final TenantIdAndDrgKey tenantIdAndDrgKey)
+                      throws DrgNotFoundException {
+                    return findAndParseDecisionRequirementsByKeyFromDb(
+                        tenantIdAndDrgKey.drgKey, tenantIdAndDrgKey.tenantId);
                   }
                 });
   }
@@ -199,7 +205,7 @@ public final class DbDecisionState implements MutableDecisionState {
 
   @Override
   public Optional<DeployedDrg> findDecisionRequirementsByKey(final long decisionRequirementsKey) {
-    return findDeployedDrg(decisionRequirementsKey);
+    return findDeployedDrg(decisionRequirementsKey, "");
   }
 
   @Override
@@ -225,11 +231,12 @@ public final class DbDecisionState implements MutableDecisionState {
   }
 
   private DeployedDrg findAndParseDecisionRequirementsByKeyFromDb(
-      final long decisionRequirementsKey) throws DrgNotFoundException {
+      final long decisionRequirementsKey, final String tenantId) throws DrgNotFoundException {
+    tenantIdKey.wrapString(tenantId);
     dbDecisionRequirementsKey.wrapLong(decisionRequirementsKey);
 
     final PersistedDecisionRequirements persistedDrg =
-        decisionRequirementsByKey.get(dbDecisionRequirementsKey);
+        decisionRequirementsByKey.get(tenantAwareDecisionRequirementsKey);
     if (persistedDrg == null) {
       throw new DrgNotFoundException();
     }
@@ -243,10 +250,11 @@ public final class DbDecisionState implements MutableDecisionState {
     return new DeployedDrg(parsedDrg, copiedDrg);
   }
 
-  private Optional<DeployedDrg> findDeployedDrg(final long decisionRequirementsKey) {
+  private Optional<DeployedDrg> findDeployedDrg(
+      final long decisionRequirementsKey, final String tenantId) {
     try {
       // The cache automatically fetches it from the state if the key does not exist.
-      return Optional.of(drgCache.get(decisionRequirementsKey));
+      return Optional.of(drgCache.get(new TenantIdAndDrgKey(tenantId, decisionRequirementsKey)));
     } catch (final ExecutionException e) {
       // We reach this when we couldn't load the DRG from the state.
       return Optional.empty();
@@ -325,9 +333,11 @@ public final class DbDecisionState implements MutableDecisionState {
 
   @Override
   public void storeDecisionRequirements(final DecisionRequirementsRecord record) {
+    tenantIdKey.wrapString(record.getTenantId());
     dbDecisionRequirementsKey.wrapLong(record.getDecisionRequirementsKey());
     dbPersistedDecisionRequirements.wrap(record);
-    decisionRequirementsByKey.upsert(dbDecisionRequirementsKey, dbPersistedDecisionRequirements);
+    decisionRequirementsByKey.upsert(
+        tenantAwareDecisionRequirementsKey, dbPersistedDecisionRequirements);
 
     dbDecisionRequirementsId.wrapString(record.getDecisionRequirementsId());
     dbDecisionRequirementsVersion.wrapInt(record.getDecisionRequirementsVersion());
@@ -373,6 +383,8 @@ public final class DbDecisionState implements MutableDecisionState {
 
   @Override
   public void deleteDecisionRequirements(final DecisionRequirementsRecord record) {
+    tenantIdKey.wrapString(record.getTenantId());
+
     findLatestDecisionRequirementsById(record.getDecisionRequirementsIdBuffer())
         .map(DeployedDrg::getDecisionRequirementsVersion)
         .ifPresent(
@@ -401,9 +413,10 @@ public final class DbDecisionState implements MutableDecisionState {
     dbDecisionRequirementsId.wrapBuffer(record.getDecisionRequirementsIdBuffer());
     dbDecisionRequirementsVersion.wrapInt(record.getDecisionRequirementsVersion());
 
-    decisionRequirementsByKey.deleteExisting(dbDecisionRequirementsKey);
+    decisionRequirementsByKey.deleteExisting(tenantAwareDecisionRequirementsKey);
     decisionRequirementsKeyByIdAndVersion.deleteExisting(decisionRequirementsIdAndVersion);
-    drgCache.invalidate(record.getDecisionRequirementsKey());
+    drgCache.invalidate(
+        new TenantIdAndDrgKey(record.getTenantId(), record.getDecisionRequirementsKey()));
   }
 
   private void updateLatestDecisionVersion(final DecisionRecord record) {
@@ -454,6 +467,8 @@ public final class DbDecisionState implements MutableDecisionState {
     dbDecisionRequirementsKey.wrapLong(record.getDecisionRequirementsKey());
     latestDecisionRequirementsKeysById.upsert(dbDecisionRequirementsId, fkDecisionRequirements);
   }
+
+  private record TenantIdAndDrgKey(String tenantId, Long drgKey) {}
 
   /**
    * This exception is thrown when the drgCache can't find a DRG in the state for a given key. This
