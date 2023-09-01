@@ -165,11 +165,14 @@ public final class DbDecisionState implements MutableDecisionState {
   }
 
   @Override
-  public Optional<PersistedDecision> findLatestDecisionById(final DirectBuffer decisionId) {
+  public Optional<PersistedDecision> findLatestDecisionByIdAndTenant(
+      final DirectBuffer decisionId, final String tenantId) {
     dbDecisionId.wrapBuffer(decisionId);
+    tenantIdKey.wrapString(tenantId);
 
     return Optional.ofNullable(latestDecisionKeysByDecisionId.get(dbDecisionId))
-        .flatMap(decisionKey -> findDecisionByKeyAndTenant(decisionKey.inner().getValue(), ""));
+        .flatMap(
+            decisionKey -> findDecisionByKeyAndTenant(decisionKey.inner().getValue(), tenantId));
   }
 
   @Override
@@ -331,7 +334,7 @@ public final class DbDecisionState implements MutableDecisionState {
 
   @Override
   public void deleteDecision(final DecisionRecord record) {
-    findLatestDecisionById(record.getDecisionIdBuffer())
+    findLatestDecisionByIdAndTenant(record.getDecisionIdBuffer(), "")
         .map(PersistedDecision::getVersion)
         .ifPresent(
             latestVersion -> {
@@ -397,7 +400,7 @@ public final class DbDecisionState implements MutableDecisionState {
   }
 
   private void updateLatestDecisionVersion(final DecisionRecord record) {
-    findLatestDecisionById(record.getDecisionIdBuffer())
+    findLatestDecisionByIdAndTenant(record.getDecisionIdBuffer(), "")
         .ifPresentOrElse(
             previousVersion -> {
               if (record.getVersion() > previousVersion.getVersion()) {

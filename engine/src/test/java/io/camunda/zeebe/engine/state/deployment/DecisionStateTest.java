@@ -37,7 +37,8 @@ public final class DecisionStateTest {
   @Test
   void shouldReturnEmptyIfNoDecisionIsDeployedForDeploymentId() {
     // when
-    final var persistedDecision = decisionState.findLatestDecisionById(wrapString("decision-1"));
+    final var persistedDecision =
+        decisionState.findLatestDecisionByIdAndTenant(wrapString("decision-1"), "");
 
     // then
     assertThat(persistedDecision).isEmpty();
@@ -85,7 +86,7 @@ public final class DecisionStateTest {
 
     // when
     final var persistedDecision =
-        decisionState.findLatestDecisionById(decisionRecord.getDecisionIdBuffer());
+        decisionState.findLatestDecisionByIdAndTenant(decisionRecord.getDecisionIdBuffer(), "");
 
     // then
     assertThat(persistedDecision).isNotEmpty();
@@ -117,9 +118,9 @@ public final class DecisionStateTest {
 
     // when
     final var persistedDecision1 =
-        decisionState.findLatestDecisionById(decisionRecord1.getDecisionIdBuffer());
+        decisionState.findLatestDecisionByIdAndTenant(decisionRecord1.getDecisionIdBuffer(), "");
     final var persistedDecision2 =
-        decisionState.findLatestDecisionById(decisionRecord2.getDecisionIdBuffer());
+        decisionState.findLatestDecisionByIdAndTenant(decisionRecord2.getDecisionIdBuffer(), "");
 
     // then
     assertThat(persistedDecision1).isNotEmpty();
@@ -193,7 +194,7 @@ public final class DecisionStateTest {
 
     // when
     final var persistedDecision =
-        decisionState.findLatestDecisionById(decisionRecordV1.getDecisionIdBuffer());
+        decisionState.findLatestDecisionByIdAndTenant(decisionRecordV1.getDecisionIdBuffer(), "");
 
     // then
     assertThat(persistedDecision).isNotEmpty();
@@ -396,7 +397,8 @@ public final class DecisionStateTest {
     // then
     assertThat(
         decisionState.findDecisionByKeyAndTenant(decisionRecord.getDecisionKey(), "")).isEmpty();
-    assertThat(decisionState.findLatestDecisionById(decisionRecord.getDecisionIdBuffer()))
+    assertThat(
+            decisionState.findLatestDecisionByIdAndTenant(decisionRecord.getDecisionIdBuffer(), ""))
         .isEmpty();
     assertThat(
             decisionState.findDecisionsByDecisionRequirementsKey(
@@ -430,7 +432,7 @@ public final class DecisionStateTest {
     assertThat(
         decisionState.findDecisionByKeyAndTenant(decisionRecord1.getDecisionKey(), "")).isEmpty();
     final var latestDecisionById =
-        decisionState.findLatestDecisionById(decisionRecord1.getDecisionIdBuffer());
+        decisionState.findLatestDecisionByIdAndTenant(decisionRecord1.getDecisionIdBuffer(), "");
     assertThat(latestDecisionById).isNotEmpty();
     assertThat(latestDecisionById.get().getDecisionId())
         .isEqualTo(decisionRecord2.getDecisionIdBuffer());
@@ -463,7 +465,7 @@ public final class DecisionStateTest {
     assertThat(
         decisionState.findDecisionByKeyAndTenant(decisionRecord2.getDecisionKey(), "")).isEmpty();
     final var latestDecisionById =
-        decisionState.findLatestDecisionById(decisionRecord2.getDecisionIdBuffer());
+        decisionState.findLatestDecisionByIdAndTenant(decisionRecord2.getDecisionIdBuffer(), "");
     assertThat(latestDecisionById).isNotEmpty();
     assertThat(latestDecisionById.get().getDecisionId())
         .isEqualTo(decisionRecord1.getDecisionIdBuffer());
@@ -498,7 +500,7 @@ public final class DecisionStateTest {
     assertThat(
         decisionState.findDecisionByKeyAndTenant(decisionRecord3.getDecisionKey(), "")).isEmpty();
     final var latestDecisionById =
-        decisionState.findLatestDecisionById(decisionRecord3.getDecisionIdBuffer());
+        decisionState.findLatestDecisionByIdAndTenant(decisionRecord3.getDecisionIdBuffer(), "");
     assertThat(latestDecisionById).isNotEmpty();
     assertThat(latestDecisionById.get().getDecisionId())
         .isEqualTo(decisionRecord1.getDecisionIdBuffer());
@@ -518,7 +520,9 @@ public final class DecisionStateTest {
     // then
     assertThat(decisionState.findDecisionRequirementsByKey(drg.getDecisionRequirementsKey()))
         .isEmpty();
-    assertThat(decisionState.findLatestDecisionById(drg.getDecisionRequirementsIdBuffer()))
+    assertThat(
+            decisionState.findLatestDecisionByIdAndTenant(
+                drg.getDecisionRequirementsIdBuffer(), ""))
         .isEmpty();
   }
 

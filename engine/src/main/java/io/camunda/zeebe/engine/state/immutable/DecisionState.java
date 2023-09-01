@@ -19,10 +19,12 @@ public interface DecisionState {
    * Query decisions by the given decision id and return the latest version of the decision.
    *
    * @param decisionId the id of the decision
+   * @param tenantId the tenant the decision belongs to
    * @return the latest version of the decision, or {@link Optional#empty()} if no decision is
    *     deployed with the given id
    */
-  Optional<PersistedDecision> findLatestDecisionById(DirectBuffer decisionId);
+  Optional<PersistedDecision> findLatestDecisionByIdAndTenant(
+      DirectBuffer decisionId, final String tenantId);
 
   /**
    * Query decisions by the given decision key and return the decision.

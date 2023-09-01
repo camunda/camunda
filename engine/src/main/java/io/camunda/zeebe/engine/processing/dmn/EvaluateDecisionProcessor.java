@@ -92,7 +92,7 @@ public class EvaluateDecisionProcessor implements TypedRecordProcessor<DecisionE
     final long decisionKey = record.getDecisionKey();
 
     if (!decisionId.isEmpty()) {
-      return decisionBehavior.findDecisionById(decisionId);
+      return decisionBehavior.findDecisionByIdAndTenant(decisionId, record.getTenantId());
       // TODO: expand DecisionState API to find decisions by ID AND VERSION (#11230)
     } else if (decisionKey > -1L) {
       return decisionBehavior.findDecisionByKeyAndTenant(decisionKey, record.getTenantId());
