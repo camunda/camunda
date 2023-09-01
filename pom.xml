@@ -51,7 +51,7 @@
     <version.thymeleaf>3.1.2.RELEASE</version.thymeleaf>
 
     <zeebe-test-container.version>3.6.0</zeebe-test-container.version>
-    <elasticsearch-test-container.version>1.18.3</elasticsearch-test-container.version>
+    <elasticsearch-test-container.version>1.19.0</elasticsearch-test-container.version>
 
     <maven.compiler.target>17</maven.compiler.target>
     <maven.compiler.source>17</maven.compiler.source>
