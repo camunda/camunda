@@ -175,12 +175,12 @@ public final class CreateDeploymentTest {
             .startEvent()
             .documentation("x".repeat((1046900)))
             .done();
-    final var command =
-        CLIENT_RULE
-            .getClient()
-            .newDeployResourceCommand()
-            .addProcessModel(modelThatFitsJustWithinMaxMessageSize, "too_large_process.bpmn")
-            .send();
+
+    CLIENT_RULE
+        .getClient()
+        .newDeployResourceCommand()
+        .addProcessModel(modelThatFitsJustWithinMaxMessageSize, "too_large_process.bpmn")
+        .send();
 
     // then
     final var rejectedRecords =
