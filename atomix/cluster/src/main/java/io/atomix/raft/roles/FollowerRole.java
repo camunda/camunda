@@ -54,6 +54,7 @@ public final class FollowerRole extends ActiveRole {
 
   @Override
   public synchronized CompletableFuture<RaftRole> start() {
+    raft.getMembershipService().addListener(clusterListener);
 
     if (raft.getCluster().isSingleMemberCluster()) {
       log.info("Single member cluster. Transitioning directly to candidate.");
@@ -61,7 +62,6 @@ public final class FollowerRole extends ActiveRole {
       return CompletableFuture.completedFuture(this);
     }
 
-    raft.getMembershipService().addListener(clusterListener);
     return super.start().thenRun(electionTimer::reset).thenApply(v -> this);
   }
 
