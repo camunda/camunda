@@ -62,7 +62,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 
-final class PartitionFactory {
+final class ZeebePartitionFactory {
 
   private static final List<StartupStep<PartitionStartupContext>> STARTUP_STEPS =
       List.of(new RockDbMetricExporterPartitionStartupStep());
@@ -97,7 +97,7 @@ final class PartitionFactory {
   private final TopologyManagerImpl topologyManager;
   private final FeatureFlags featureFlags;
 
-  PartitionFactory(
+  ZeebePartitionFactory(
       final ActorSchedulingService actorSchedulingService,
       final BrokerCfg brokerCfg,
       final BrokerInfo localBroker,

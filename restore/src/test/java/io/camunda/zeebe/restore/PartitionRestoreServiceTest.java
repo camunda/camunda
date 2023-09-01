@@ -11,7 +11,9 @@ import static java.nio.file.StandardOpenOption.CREATE_NEW;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
+import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionId;
+import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
@@ -31,6 +33,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.Duration;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -90,9 +93,11 @@ class PartitionRestoreServiceTest {
             path -> path.toString().endsWith(".log"));
     actorScheduler.submitActor(backupService);
 
+    final var partitionMetadata =
+        new PartitionMetadata(
+            PartitionId.from("raft", partitionId), Set.of(), Map.of(), 1, new MemberId("1"));
     final var raftPartition =
-        new RaftPartition(
-            PartitionId.from("raft", partitionId), null, dataDirectoryToRestore.toFile());
+        new RaftPartition(partitionMetadata, null, dataDirectoryToRestore.toFile());
     restoreService = new PartitionRestoreService(backupStore, raftPartition, Set.of(1, 2), nodeId);
 
     journal =

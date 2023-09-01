@@ -16,6 +16,7 @@
  */
 package io.atomix.raft.partition;
 
+import io.atomix.raft.zeebe.EntryValidator;
 import java.time.Duration;
 
 /** Configurations for a single partition. */
@@ -43,6 +44,8 @@ public class RaftPartitionConfig {
   private Duration maxQuorumResponseTimeout = DEFAULT_MAX_QUORUM_RESPONSE_TIMEOUT;
   private PartitionDistributor partitionDistributor = DEFAULT_PARTITION_DISTRIBUTOR;
   private int preferSnapshotReplicationThreshold = DEFAULT_SNAPSHOT_REPLICATION_THRESHOLD;
+  private RaftStorageConfig storageConfig;
+  private EntryValidator entryValidator;
 
   /**
    * Returns the Raft leader election timeout.
@@ -181,6 +184,22 @@ public class RaftPartitionConfig {
 
   public void setPreferSnapshotReplicationThreshold(final int preferSnapshotReplicationThreshold) {
     this.preferSnapshotReplicationThreshold = preferSnapshotReplicationThreshold;
+  }
+
+  public RaftStorageConfig getStorageConfig() {
+    return storageConfig;
+  }
+
+  public void setStorageConfig(final RaftStorageConfig storageConfig) {
+    this.storageConfig = storageConfig;
+  }
+
+  public EntryValidator getEntryValidator() {
+    return entryValidator;
+  }
+
+  public void setEntryValidator(final EntryValidator entryValidator) {
+    this.entryValidator = entryValidator;
   }
 
   @Override

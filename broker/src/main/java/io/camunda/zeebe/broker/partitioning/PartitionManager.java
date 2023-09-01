@@ -10,18 +10,11 @@ package io.camunda.zeebe.broker.partitioning;
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.raft.partition.RaftPartition;
-import io.atomix.raft.partition.RaftPartitionConfig;
-import io.atomix.raft.partition.RaftStorageConfig;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
 import java.util.Collection;
 import java.util.stream.Collectors;
 
 public interface PartitionManager {
-
-  RaftStorageConfig getRaftStorageConfig();
-
-  RaftPartitionConfig getRaftPartitionConfig();
-
   /**
    * @return the partition with the given id or null if partition does not exist
    */

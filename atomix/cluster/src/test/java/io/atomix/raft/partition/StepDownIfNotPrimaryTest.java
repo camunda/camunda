@@ -22,16 +22,14 @@ import org.mockito.Mockito;
 
 final class StepDownIfNotPrimaryTest {
   @Test
-  void shouldStepDownIfNotPrimary(@TempDir Path tempDir) throws IllegalAccessException {
+  void shouldStepDownIfNotPrimary(@TempDir final Path tempDir) throws IllegalAccessException {
     // given
     final var primaryMemberId = new MemberId("2");
     final var partitionId = new PartitionId("group", 1);
+    final var metadata = new PartitionMetadata(partitionId, Set.of(), Map.of(), 1, primaryMemberId);
+
     final var raftPartitionConfig = new RaftPartitionConfig();
-    final var partition =
-        new RaftPartition(
-            partitionId,
-            new RaftPartitionGroupConfig().setPartitionConfig(raftPartitionConfig),
-            tempDir.toFile());
+    final var partition = new RaftPartition(metadata, raftPartitionConfig, tempDir.toFile());
     final var mockRaftPartitionServer = Mockito.mock(RaftPartitionServer.class);
     Mockito.when(mockRaftPartitionServer.getMemberId()).thenReturn(new MemberId("1"));
 
@@ -40,23 +38,19 @@ final class StepDownIfNotPrimaryTest {
 
     // when -- enabling priority election and marking a different member as primary
     raftPartitionConfig.setPriorityElectionEnabled(true);
-    partition.setMetadata(
-        new PartitionMetadata(partitionId, Set.of(), Map.of(), 1, primaryMemberId));
 
     // then -- current member should step down
     Assertions.assertThat(partition.shouldStepDown()).isTrue();
   }
 
   @Test
-  void shouldNotStepDownIfPrimary(@TempDir Path tempDir) throws IllegalAccessException {
+  void shouldNotStepDownIfPrimary(@TempDir final Path tempDir) throws IllegalAccessException {
     // given
     final var partitionId = new PartitionId("group", 1);
+    final var primaryMemberId = new MemberId("1");
     final var raftPartitionConfig = new RaftPartitionConfig();
-    final var partition =
-        new RaftPartition(
-            partitionId,
-            new RaftPartitionGroupConfig().setPartitionConfig(raftPartitionConfig),
-            tempDir.toFile());
+    final var metadata = new PartitionMetadata(partitionId, Set.of(), Map.of(), 1, primaryMemberId);
+    final var partition = new RaftPartition(metadata, raftPartitionConfig, tempDir.toFile());
 
     final var mockRaftPartitionServer = Mockito.mock(RaftPartitionServer.class);
     Mockito.when(mockRaftPartitionServer.getMemberId()).thenReturn(new MemberId("1"));
@@ -64,27 +58,22 @@ final class StepDownIfNotPrimaryTest {
     // To avoid having to start a server, just mock one.
     FieldUtils.writeField(partition, "server", mockRaftPartitionServer, true);
 
-    // when -- enabling priority election and marking the current member as primary
-    final var primaryMemberId = new MemberId("1");
+    // when -- enabling priority election and with current member as primary
     raftPartitionConfig.setPriorityElectionEnabled(true);
-    partition.setMetadata(
-        new PartitionMetadata(partitionId, Set.of(), Map.of(), 1, primaryMemberId));
 
     // then -- current member should not step down
     Assertions.assertThat(partition.shouldStepDown()).isFalse();
   }
 
   @Test
-  void shouldNotStepDownIfPriorityElectionDisabled(@TempDir Path tempDir)
+  void shouldNotStepDownIfPriorityElectionDisabled(@TempDir final Path tempDir)
       throws IllegalAccessException {
     // given
     final var partitionId = new PartitionId("group", 1);
     final var raftPartitionConfig = new RaftPartitionConfig();
-    final var partition =
-        new RaftPartition(
-            partitionId,
-            new RaftPartitionGroupConfig().setPartitionConfig(raftPartitionConfig),
-            tempDir.toFile());
+    final var primaryMemberId = new MemberId("2");
+    final var metadata = new PartitionMetadata(partitionId, Set.of(), Map.of(), 1, primaryMemberId);
+    final var partition = new RaftPartition(metadata, raftPartitionConfig, tempDir.toFile());
     final var mockRaftPartitionServer = Mockito.mock(RaftPartitionServer.class);
     Mockito.when(mockRaftPartitionServer.getMemberId()).thenReturn(new MemberId("1"));
 
@@ -92,26 +81,21 @@ final class StepDownIfNotPrimaryTest {
     FieldUtils.writeField(partition, "server", mockRaftPartitionServer, true);
 
     // when -- disabling priority election
-    final var primaryMemberId = new MemberId("2");
     raftPartitionConfig.setPriorityElectionEnabled(false);
-    partition.setMetadata(
-        new PartitionMetadata(partitionId, Set.of(), Map.of(), 1, primaryMemberId));
 
     // then -- current member should not step down
     Assertions.assertThat(partition.shouldStepDown()).isFalse();
   }
 
   @Test
-  void shouldNotStepDownIfPartitionHasNoPrimary(@TempDir Path tempDir)
+  void shouldNotStepDownIfPartitionHasNoPrimary(@TempDir final Path tempDir)
       throws IllegalAccessException {
     // given
     final var partitionId = new PartitionId("group", 1);
+    final MemberId primaryMemberId = null;
     final var raftPartitionConfig = new RaftPartitionConfig();
-    final var partition =
-        new RaftPartition(
-            partitionId,
-            new RaftPartitionGroupConfig().setPartitionConfig(raftPartitionConfig),
-            tempDir.toFile());
+    final var metadata = new PartitionMetadata(partitionId, Set.of(), Map.of(), 1, primaryMemberId);
+    final var partition = new RaftPartition(metadata, raftPartitionConfig, tempDir.toFile());
     final var mockRaftPartitionServer = Mockito.mock(RaftPartitionServer.class);
     Mockito.when(mockRaftPartitionServer.getMemberId()).thenReturn(new MemberId("1"));
 
@@ -119,10 +103,7 @@ final class StepDownIfNotPrimaryTest {
     FieldUtils.writeField(partition, "server", mockRaftPartitionServer, true);
 
     // when -- no primary known for this partition
-    final MemberId primaryMemberId = null;
     raftPartitionConfig.setPriorityElectionEnabled(true);
-    partition.setMetadata(
-        new PartitionMetadata(partitionId, Set.of(), Map.of(), 1, primaryMemberId));
 
     // then -- current member should not step down
     Assertions.assertThat(partition.shouldStepDown()).isFalse();

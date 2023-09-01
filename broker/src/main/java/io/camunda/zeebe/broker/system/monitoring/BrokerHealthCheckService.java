@@ -8,9 +8,9 @@
 package io.camunda.zeebe.broker.system.monitoring;
 
 import io.atomix.cluster.MemberId;
+import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.PartitionListener;
-import io.camunda.zeebe.broker.partitioning.PartitionManager;
 import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
@@ -21,8 +21,8 @@ import io.camunda.zeebe.scheduler.health.CriticalComponentsHealthMonitor;
 import io.camunda.zeebe.util.health.HealthMonitor;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthStatus;
+import java.util.Collection;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 
@@ -106,18 +106,13 @@ public final class BrokerHealthCheckService extends Actor implements PartitionLi
     healthMonitor = new CriticalComponentsHealthMonitor("Broker-" + nodeId, actor, LOG);
   }
 
-  public void registerPartitionManager(final PartitionManager partitionManager) {
-    initializePartitionInstallStatus(partitionManager);
-    initializePartitionHealthStatus(partitionManager);
-  }
-
-  private void initializePartitionHealthStatus(final PartitionManager partitionManager) {
-    partitionManager.getRaftPartitionsWithMember(nodeId).stream()
-        .map(partition -> partition.id().id())
-        .forEach(
-            partitionId ->
-                healthMonitor.monitorComponent(
-                    String.format(PARTITION_COMPONENT_NAME_FORMAT, partitionId)));
+  public void registerBootstrapPartitions(final Collection<PartitionMetadata> partitions) {
+    partitionInstallStatus =
+        partitions.stream().collect(Collectors.toMap(metadata -> metadata.id().id(), p -> false));
+    partitions.forEach(
+        metadata ->
+            healthMonitor.monitorComponent(
+                String.format(PARTITION_COMPONENT_NAME_FORMAT, metadata.id().id())));
   }
 
   boolean isBrokerReady() {
@@ -164,14 +159,6 @@ public final class BrokerHealthCheckService extends Actor implements PartitionLi
             }
           }
         });
-  }
-
-  private void initializePartitionInstallStatus(final PartitionManager partitionManager) {
-    partitionInstallStatus =
-        partitionManager.getRaftPartitions().stream()
-            .filter(partition -> partition.members().contains(nodeId))
-            .map(partition -> partition.id().id())
-            .collect(Collectors.toMap(Function.identity(), p -> false));
   }
 
   @Override
