@@ -115,8 +115,13 @@ public final class BrokerClientImpl implements BrokerClient {
     }
 
     isClosed = true;
-
     LOG.debug("Closing gateway broker client ...");
+
+    doAndLogException(requestManager::close);
+    LOG.debug("request manager closed");
+
+    doAndLogException(atomixTransportAdapter::close);
+    LOG.debug("transport client closed");
 
     doAndLogException(topologyManager::close);
     LOG.debug("topology manager closed");
