@@ -38,6 +38,32 @@ public final class DecisionRequirementsImpl implements DecisionRequirements {
         metadata.getTenantId());
   }
 
+  /**
+   * A constructor that provides an instance with an empty String for a tenantId.
+   *
+   * <p>From version 8.3.0, the java client supports multi-tenancy for this command, which requires
+   * the <code>tenantId</code> property to be defined. This constructor is only intended for
+   * backwards compatibility in tests.
+   *
+   * @deprecated since 8.3.0, use {@link DecisionRequirementsImpl#DecisionRequirementsImpl(String
+   *     dmnDecisionRequirementsId, String dmnDecisionRequirementsName, int version, long
+   *     decisionRequirementsKey, String resourceName, String tenantId)}
+   */
+  public DecisionRequirementsImpl(
+      final String dmnDecisionRequirementsId,
+      final String dmnDecisionRequirementsName,
+      final int version,
+      final long decisionRequirementsKey,
+      final String resourceName) {
+    this(
+        dmnDecisionRequirementsId,
+        dmnDecisionRequirementsName,
+        version,
+        decisionRequirementsKey,
+        resourceName,
+        "");
+  }
+
   public DecisionRequirementsImpl(
       final String dmnDecisionRequirementsId,
       final String dmnDecisionRequirementsName,

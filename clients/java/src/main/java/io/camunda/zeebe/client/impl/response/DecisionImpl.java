@@ -40,6 +40,34 @@ public final class DecisionImpl implements Decision {
         metadata.getTenantId());
   }
 
+  /**
+   * A constructor that provides an instance with an empty String for a tenantId.
+   *
+   * <p>From version 8.3.0, the java client supports multi-tenancy for this command, which requires
+   * the <code>tenantId</code> property to be defined. This constructor is only intended for
+   * backwards compatibility in tests.
+   *
+   * @deprecated since 8.3.0, use {@link DecisionImpl#DecisionImpl(String dmnDecisionId, String
+   *     dmnDecisionName, int version, long decisionKey, String dmnDecisionRequirementsId, long
+   *     decisionRequirementsKey, String tenantId)}
+   */
+  public DecisionImpl(
+      final String dmnDecisionId,
+      final String dmnDecisionName,
+      final int version,
+      final long decisionKey,
+      final String dmnDecisionRequirementsId,
+      final long decisionRequirementsKey) {
+    this(
+        dmnDecisionId,
+        dmnDecisionName,
+        version,
+        decisionKey,
+        dmnDecisionRequirementsId,
+        decisionRequirementsKey,
+        "");
+  }
+
   public DecisionImpl(
       final String dmnDecisionId,
       final String dmnDecisionName,

@@ -36,6 +36,25 @@ public final class ProcessImpl implements Process {
         process.getTenantId());
   }
 
+  /**
+   * A constructor that provides an instance with an empty String for a tenantId.
+   *
+   * <p>From version 8.3.0, the java client supports multi-tenancy for this command, which requires
+   * the <code>tenantId</code> property to be defined. This constructor is only intended for
+   * backwards compatibility in tests.
+   *
+   * @deprecated since 8.3.0, use {@link ProcessImpl#ProcessImpl(long processDefinitionKey, String
+   *     bpmnProcessId, int version, String resourceName, String tenantId)}
+   */
+  @Deprecated
+  public ProcessImpl(
+      final long processDefinitionKey,
+      final String bpmnProcessId,
+      final int version,
+      final String resourceName) {
+    this(processDefinitionKey, bpmnProcessId, version, resourceName, "");
+  }
+
   public ProcessImpl(
       final long processDefinitionKey,
       final String bpmnProcessId,
