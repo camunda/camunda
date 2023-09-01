@@ -302,9 +302,10 @@ public final class DbDecisionState implements MutableDecisionState {
 
   @Override
   public void storeDecisionRecord(final DecisionRecord record) {
+    tenantIdKey.wrapString(record.getTenantId());
     dbDecisionKey.wrapLong(record.getDecisionKey());
     dbPersistedDecision.wrap(record);
-    decisionsByKey.upsert(dbDecisionKey, dbPersistedDecision);
+    decisionsByKey.upsert(tenantAwareDecisionKey, dbPersistedDecision);
 
     dbDecisionKey.wrapLong(record.getDecisionKey());
     dbDecisionRequirementsKey.wrapLong(record.getDecisionRequirementsKey());
@@ -334,7 +335,7 @@ public final class DbDecisionState implements MutableDecisionState {
 
   @Override
   public void deleteDecision(final DecisionRecord record) {
-    findLatestDecisionByIdAndTenant(record.getDecisionIdBuffer(), "")
+    findLatestDecisionByIdAndTenant(record.getDecisionIdBuffer(), record.getTenantId())
         .map(PersistedDecision::getVersion)
         .ifPresent(
             latestVersion -> {
@@ -354,13 +355,14 @@ public final class DbDecisionState implements MutableDecisionState {
               }
             });
 
+    tenantIdKey.wrapString(record.getTenantId());
     dbDecisionRequirementsKey.wrapLong(record.getDecisionRequirementsKey());
     dbDecisionKey.wrapLong(record.getDecisionKey());
     dbDecisionId.wrapBuffer(record.getDecisionIdBuffer());
     dbDecisionVersion.wrapInt(record.getVersion());
 
     decisionKeyByDecisionRequirementsKey.deleteExisting(dbDecisionRequirementsKeyAndDecisionKey);
-    decisionsByKey.deleteExisting(dbDecisionKey);
+    decisionsByKey.deleteExisting(tenantAwareDecisionKey);
     decisionKeyByDecisionIdAndVersion.deleteExisting(decisionIdAndVersion);
   }
 
@@ -400,7 +402,7 @@ public final class DbDecisionState implements MutableDecisionState {
   }
 
   private void updateLatestDecisionVersion(final DecisionRecord record) {
-    findLatestDecisionByIdAndTenant(record.getDecisionIdBuffer(), "")
+    findLatestDecisionByIdAndTenant(record.getDecisionIdBuffer(), record.getTenantId())
         .ifPresentOrElse(
             previousVersion -> {
               if (record.getVersion() > previousVersion.getVersion()) {
