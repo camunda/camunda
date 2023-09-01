@@ -50,6 +50,7 @@ public final class DbDecisionState implements MutableDecisionState {
   private final DbForeignKey<DbLong> fkDecision;
   private final PersistedDecision dbPersistedDecision;
   private final DbString dbDecisionId;
+  private final DbTenantAwareKey<DbString> tenantAwareDecisionId;
 
   private final DbLong dbDecisionRequirementsKey;
   private final DbForeignKey<DbLong> fkDecisionRequirements;
@@ -62,7 +63,8 @@ public final class DbDecisionState implements MutableDecisionState {
       decisionKeyByDecisionRequirementsKey;
 
   private final ColumnFamily<DbTenantAwareKey<DbLong>, PersistedDecision> decisionsByKey;
-  private final ColumnFamily<DbString, DbForeignKey<DbLong>> latestDecisionKeysByDecisionId;
+  private final ColumnFamily<DbTenantAwareKey<DbString>, DbForeignKey<DbLong>>
+      latestDecisionKeysByDecisionId;
 
   private final DbInt dbDecisionVersion;
   private final DbCompositeKey<DbString, DbInt> decisionIdAndVersion;
@@ -98,11 +100,12 @@ public final class DbDecisionState implements MutableDecisionState {
             dbPersistedDecision);
 
     dbDecisionId = new DbString();
+    tenantAwareDecisionId = new DbTenantAwareKey<>(tenantIdKey, dbDecisionId, PlacementType.PREFIX);
     latestDecisionKeysByDecisionId =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.DMN_LATEST_DECISION_BY_ID,
             transactionContext,
-            dbDecisionId,
+            tenantAwareDecisionId,
             fkDecision);
 
     dbDecisionRequirementsKey = new DbLong();
@@ -170,7 +173,7 @@ public final class DbDecisionState implements MutableDecisionState {
     dbDecisionId.wrapBuffer(decisionId);
     tenantIdKey.wrapString(tenantId);
 
-    return Optional.ofNullable(latestDecisionKeysByDecisionId.get(dbDecisionId))
+    return Optional.ofNullable(latestDecisionKeysByDecisionId.get(tenantAwareDecisionId))
         .flatMap(
             decisionKey -> findDecisionByTenantAndKey(tenantId, decisionKey.inner().getValue()));
   }
@@ -336,6 +339,8 @@ public final class DbDecisionState implements MutableDecisionState {
 
   @Override
   public void deleteDecision(final DecisionRecord record) {
+    tenantIdKey.wrapString(record.getTenantId());
+
     findLatestDecisionByIdAndTenant(record.getDecisionIdBuffer(), record.getTenantId())
         .map(PersistedDecision::getVersion)
         .ifPresent(
@@ -347,16 +352,15 @@ public final class DbDecisionState implements MutableDecisionState {
                         previousDecisionKey -> {
                           // Update the latest decision version
                           dbDecisionKey.wrapLong(previousDecisionKey);
-                          latestDecisionKeysByDecisionId.update(dbDecisionId, fkDecision);
+                          latestDecisionKeysByDecisionId.update(tenantAwareDecisionId, fkDecision);
                         },
                         () -> {
                           // Clear the latest decision version
-                          latestDecisionKeysByDecisionId.deleteExisting(dbDecisionId);
+                          latestDecisionKeysByDecisionId.deleteExisting(tenantAwareDecisionId);
                         });
               }
             });
 
-    tenantIdKey.wrapString(record.getTenantId());
     dbDecisionRequirementsKey.wrapLong(record.getDecisionRequirementsKey());
     dbDecisionKey.wrapLong(record.getDecisionKey());
     dbDecisionId.wrapBuffer(record.getDecisionIdBuffer());
@@ -414,15 +418,17 @@ public final class DbDecisionState implements MutableDecisionState {
   }
 
   private void updateDecisionAsLatestVersion(final DecisionRecord record) {
+    tenantIdKey.wrapString(record.getTenantId());
     dbDecisionId.wrapBuffer(record.getDecisionIdBuffer());
     dbDecisionKey.wrapLong(record.getDecisionKey());
-    latestDecisionKeysByDecisionId.update(dbDecisionId, fkDecision);
+    latestDecisionKeysByDecisionId.update(tenantAwareDecisionId, fkDecision);
   }
 
   private void insertDecisionAsLatestVersion(final DecisionRecord record) {
+    tenantIdKey.wrapString(record.getTenantId());
     dbDecisionId.wrapBuffer(record.getDecisionIdBuffer());
     dbDecisionKey.wrapLong(record.getDecisionKey());
-    latestDecisionKeysByDecisionId.upsert(dbDecisionId, fkDecision);
+    latestDecisionKeysByDecisionId.upsert(tenantAwareDecisionId, fkDecision);
   }
 
   private void updateLatestDecisionRequirementsVersion(final DecisionRequirementsRecord record) {
