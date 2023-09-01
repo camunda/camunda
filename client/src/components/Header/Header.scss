@@ -1,10 +1,13 @@
 .cds--header {
   z-index: var(--z-header);
 
-  .appLink {
-    &,
-    &:visited {
-      color: var(--grey-base-40);
-    }
+  // TODO: Remove this after enabling the carbon css reset
+  a:hover {
+    text-decoration: none;
+  }
+
+  // TODO: Remove this after enabling the carbon css reset
+  .cds--side-nav__items li {
+    list-style: none;
   }
 }
