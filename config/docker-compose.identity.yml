@@ -74,6 +74,7 @@ services:
       KEYCLOAK_INIT_OPERATE_ROOT_URL: http://localhost:8081/operate
       KEYCLOAK_INIT_TASKLIST_SECRET: the-cake-is-alive
       KEYCLOAK_INIT_TASKLIST_ROOT_URL: http://localhost:8082/tasklist
+      MULTI_TENANCY_ENABLED: true
     env_file: .env.test
     healthcheck:
       test:
@@ -105,7 +106,7 @@ services:
       - 8000:8000
     restart: always
   operate:
-    image: camunda/operate:8.3.0-alpha4
+    image: camunda/operate:SNAPSHOT
     container_name: operate
     environment:
       - SERVER_PORT=8081
@@ -120,6 +121,7 @@ services:
       - CAMUNDA_OPERATE_IDENTITY_AUDIENCE=operate-api
       - CAMUNDA_OPERATE_IDENTITY_BASEURL=http://identity:8080
       - CAMUNDA_OPERATE_IDENTITY_RESOURCEPERMISSIONSENABLED=true
+      - CAMUNDA_OPERATE_MULTITENANCY_ENABLED=true
       - CAMUNDA_OPERATE_TASKLIST_URL=http://localhost:8082/tasklist
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUERURI=http://localhost:18080/auth/realms/camunda-platform
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWKSETURI=http://keycloak:8080/auth/realms/camunda-platform/protocol/openid-connect/certs

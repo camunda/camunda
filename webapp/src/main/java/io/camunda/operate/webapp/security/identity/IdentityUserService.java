@@ -37,7 +37,8 @@ public class IdentityUserService implements UserService<AbstractAuthenticationTo
           .setUserId(((IdentityAuthentication)authentication).getId())
           .setDisplayName(authentication.getName())
           .setCanLogout(true)
-          .setPermissions(((IdentityAuthentication)authentication).getPermissions());
+          .setPermissions(((IdentityAuthentication)authentication).getPermissions())
+          .setTenants(((IdentityAuthentication)authentication).getTenants());
     } else if (authentication instanceof JwtAuthenticationToken){
       final AccessToken accessToken = identity.authentication()
           .verifyToken(((Jwt)authentication.getPrincipal()).getTokenValue());
