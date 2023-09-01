@@ -182,7 +182,7 @@ export class ReportEdit extends React.Component {
     }
 
     if (needsReevaluation && this.state.shouldAutoReloadPreview) {
-      this.reEvaluateReport(newReport);
+      await this.reEvaluateReport(newReport);
     }
   };
 
