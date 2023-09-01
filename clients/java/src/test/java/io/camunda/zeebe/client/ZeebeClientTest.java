@@ -16,6 +16,7 @@
 package io.camunda.zeebe.client;
 
 import static io.camunda.zeebe.client.ClientProperties.CLOUD_REGION;
+import static io.camunda.zeebe.client.ClientProperties.DEFAULT_TENANT_ID;
 import static io.camunda.zeebe.client.ClientProperties.MAX_MESSAGE_SIZE;
 import static io.camunda.zeebe.client.ClientProperties.USE_PLAINTEXT_CONNECTION;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.CA_CERTIFICATE_VAR;
@@ -33,6 +34,7 @@ import static org.mockito.Mockito.verify;
 import io.camunda.zeebe.client.api.worker.JobWorker;
 import io.camunda.zeebe.client.impl.NoopCredentialsProvider;
 import io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl;
+import io.camunda.zeebe.client.impl.ZeebeClientCloudBuilderImpl;
 import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProvider;
 import io.camunda.zeebe.client.impl.util.Environment;
 import io.camunda.zeebe.client.impl.util.EnvironmentRule;
@@ -76,6 +78,7 @@ public final class ZeebeClientTest extends ClientTest {
       assertThat(configuration.getDefaultRequestTimeout()).isEqualTo(Duration.ofSeconds(10));
       assertThat(configuration.getMaxMessageSize()).isEqualTo(4 * 1024 * 1024);
       assertThat(configuration.getOverrideAuthority()).isNull();
+      assertThat(configuration.getDefaultTenantId()).isEmpty();
     }
   }
 
@@ -430,5 +433,61 @@ public final class ZeebeClientTest extends ClientTest {
       verify(executor)
           .schedule(any(Runnable.class), eq(pollInterval.toMillis()), eq(TimeUnit.MILLISECONDS));
     }
+  }
+
+  @Test
+  public void shouldSetDefaultTenantIdFromPropertyWithClientBuilder() {
+    // given
+    final String tenantId = "test-tenant";
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+    final Properties properties = new Properties();
+    properties.setProperty(DEFAULT_TENANT_ID, tenantId);
+    builder.withProperties(properties);
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getDefaultTenantId()).isEqualTo(tenantId);
+  }
+
+  @Test
+  public void shouldNotSetDefaultTenantIdFromPropertyWithCloudClientBuilder() {
+    // given
+    final String tenantId = "test-tenant";
+    final ZeebeClientCloudBuilderImpl builder = new ZeebeClientCloudBuilderImpl();
+    final Properties properties = new Properties();
+    properties.setProperty(DEFAULT_TENANT_ID, tenantId);
+    builder.withProperties(properties);
+
+    // when
+    final ZeebeClient client =
+        builder
+            .withClusterId("clusterId")
+            .withClientId("clientId")
+            .withClientSecret("clientSecret")
+            .build();
+
+    // then
+    // todo(#13321): verify that tenant id is set in the request
+    assertThat(client.getConfiguration().getDefaultTenantId()).isEqualTo("");
+  }
+
+  @Test
+  public void shouldNotSetDefaultTenantIdFromSetterWithCloudClientBuilder() {
+    // given
+    final String tenantId = "test-tenant";
+    final ZeebeClientCloudBuilderImpl builder = new ZeebeClientCloudBuilderImpl();
+
+    // when
+    final ZeebeClientCloudBuilderImpl builderWithTenantId =
+        (ZeebeClientCloudBuilderImpl) builder.defaultTenantId(tenantId);
+
+    // then
+    // todo(#14106): verify that tenant id is set in the builder
+    assertThat(builderWithTenantId)
+        .describedAs(
+            "This method has no effect on the cloud client builder while under development")
+        .isEqualTo(builder);
   }
 }
