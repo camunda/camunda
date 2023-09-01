@@ -26,6 +26,7 @@ public class DecisionInstanceForListDto {
   private Integer decisionVersion;
   private OffsetDateTime evaluationDate;
   private String processInstanceId;
+  private String tenantId;
 
   /**
    * Sort values, define the position of process instance in the list and may be used to search
@@ -88,6 +89,15 @@ public class DecisionInstanceForListDto {
     return this;
   }
 
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  public DecisionInstanceForListDto setTenantId(String tenantId) {
+    this.tenantId = tenantId;
+    return this;
+  }
+
   public SortValuesWrapper[] getSortValues() {
     return sortValues;
   }
@@ -104,7 +114,8 @@ public class DecisionInstanceForListDto {
         .setId(entity.getId())
         .setProcessInstanceId(String.valueOf(entity.getProcessInstanceKey()))
         .setState(DecisionInstanceStateDto.getState(entity.getState()))
-        .setSortValues(SortValuesWrapper.createFrom(entity.getSortValues(), objectMapper));
+        .setSortValues(SortValuesWrapper.createFrom(entity.getSortValues(), objectMapper))
+        .setTenantId(entity.getTenantId());
   }
 
   public static List<DecisionInstanceForListDto> createFrom(
@@ -118,41 +129,28 @@ public class DecisionInstanceForListDto {
   }
 
   @Override
-  public boolean equals(final Object o) {
-    if (this == o) {
+  public boolean equals(Object o) {
+    if (this == o)
       return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
+    if (o == null || getClass() != o.getClass())
       return false;
-    }
-    final DecisionInstanceForListDto that = (DecisionInstanceForListDto) o;
-    return Objects.equals(id, that.id) &&
-        state == that.state &&
-        Objects.equals(decisionName, that.decisionName) &&
-        Objects.equals(decisionVersion, that.decisionVersion) &&
-        Objects.equals(evaluationDate, that.evaluationDate) &&
-        Objects.equals(processInstanceId, that.processInstanceId) &&
-        Arrays.equals(sortValues, that.sortValues);
+    DecisionInstanceForListDto that = (DecisionInstanceForListDto) o;
+    return Objects.equals(id, that.id) && state == that.state && Objects.equals(decisionName,
+        that.decisionName) && Objects.equals(decisionVersion, that.decisionVersion) && Objects.equals(evaluationDate,
+        that.evaluationDate) && Objects.equals(processInstanceId, that.processInstanceId) && Objects.equals(tenantId,
+        that.tenantId) && Arrays.equals(sortValues, that.sortValues);
   }
 
   @Override
   public int hashCode() {
-    int result = Objects
-        .hash(id, state, decisionName, decisionVersion, evaluationDate, processInstanceId);
+    int result = Objects.hash(id, state, decisionName, decisionVersion, evaluationDate, processInstanceId, tenantId);
     result = 31 * result + Arrays.hashCode(sortValues);
     return result;
   }
 
   @Override
   public String toString() {
-    return "DecisionInstanceForListDto{" +
-        "id='" + id + '\'' +
-        ", state=" + state +
-        ", decisionName='" + decisionName + '\'' +
-        ", decisionVersion=" + decisionVersion +
-        ", evaluationDate=" + evaluationDate +
-        ", processInstanceId='" + processInstanceId + '\'' +
-        ", sortValues=" + Arrays.toString(sortValues) +
-        '}';
+    return "DecisionInstanceForListDto{" + "id='" + id + '\'' + ", state=" + state + ", decisionName='" + decisionName + '\'' + ", decisionVersion=" + decisionVersion + ", evaluationDate=" + evaluationDate + ", processInstanceId='" + processInstanceId + '\'' + ", tenantId='" + tenantId + '\'' + ", sortValues=" + Arrays.toString(
+        sortValues) + '}';
   }
 }

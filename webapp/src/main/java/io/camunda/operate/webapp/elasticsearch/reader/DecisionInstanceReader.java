@@ -37,6 +37,7 @@ import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.indices.DecisionIndex;
 import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
+import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.webapp.rest.dto.DtoCreator;
@@ -46,6 +47,7 @@ import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceForListDto;
 import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListQueryDto;
 import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListRequestDto;
 import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListResponseDto;
+import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
 import java.io.IOException;
 import java.time.format.DateTimeFormatter;
@@ -242,12 +244,20 @@ public class DecisionInstanceReader extends AbstractReader implements io.camunda
         createIdsQuery(query),
         createProcessInstanceIdQuery(query),
         createEvaluationDateQuery(query),
-        createReadPermissionQuery()
+        createReadPermissionQuery(),
+        createTenantIdQuery(query)
     );
     if (queryBuilder == null) {
       queryBuilder = matchAllQuery();
     }
     return queryBuilder;
+  }
+
+  private QueryBuilder createTenantIdQuery(DecisionInstanceListQueryDto query) {
+    if (query.getTenantId() != null) {
+      return termQuery(DecisionInstanceTemplate.TENANT_ID, query.getTenantId());
+    }
+    return null;
   }
 
   private QueryBuilder createReadPermissionQuery() {

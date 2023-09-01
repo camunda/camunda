@@ -47,6 +47,9 @@ public class DecisionDataUtil {
   public static final String DECISION_ID_1 = "invoice-assign-approver";
   public static final String DECISION_ID_2 = "invoiceClassification";
 
+  public static final String TENANT1 = "tenant1";
+  public static final String TENANT2 = "tenant2";
+
   private Map<Class<? extends OperateEntity>, String> entityToESAliasMap;
   private Random random = new Random();
 
@@ -139,22 +142,22 @@ public class DecisionDataUtil {
     result.add(createDecisionInstance(DECISION_INSTANCE_ID_1_1, DecisionInstanceState.EVALUATED,
         DECISION_DEFINITION_NAME_1,
         OffsetDateTime.now(), DECISION_DEFINITION_ID_1, 1, DECISION_ID_1, 35467,
-        PROCESS_INSTANCE_ID)
+        PROCESS_INSTANCE_ID, TENANT1)
     );
     result.add(createDecisionInstance(DECISION_INSTANCE_ID_1_2, DecisionInstanceState.EVALUATED, "Invoice Classification",
         OffsetDateTime.now(), DECISION_DEFINITION_ID_2, 1, DECISION_ID_2, 35467,
-        random.nextInt(1000))
+        random.nextInt(1000), TENANT2)
     );
     result.add(createDecisionInstance(DECISION_INSTANCE_ID_1_3, DecisionInstanceState.EVALUATED, "Invoice Classification",
         OffsetDateTime.now(), DECISION_DEFINITION_ID_2, 2, DECISION_ID_2, 35467,
-        random.nextInt(1000))
+        random.nextInt(1000), TENANT1)
     );
     //2 FAILED
     result.add(createDecisionInstance(DECISION_INSTANCE_ID_2_1, DecisionInstanceState.FAILED, DECISION_DEFINITION_NAME_1,
-        OffsetDateTime.now(), DECISION_DEFINITION_ID_1, 1, DECISION_ID_1, 35467, PROCESS_INSTANCE_ID)
+        OffsetDateTime.now(), DECISION_DEFINITION_ID_1, 1, DECISION_ID_1, 35467, PROCESS_INSTANCE_ID, TENANT2)
     );
     result.add(createDecisionInstance(DECISION_INSTANCE_ID_2_2, DecisionInstanceState.FAILED, "Invoice Classification",
-        OffsetDateTime.now(), DECISION_DEFINITION_ID_2, 2, DECISION_ID_2, 35467, random.nextInt(1000))
+        OffsetDateTime.now(), DECISION_DEFINITION_ID_2, 2, DECISION_ID_2, 35467, random.nextInt(1000), TENANT1)
     );
 
     return result;
@@ -180,14 +183,14 @@ public class DecisionDataUtil {
     return createDecisionInstance(String.valueOf(random.nextInt(1000)) + "-1", state, decisionName,
         evaluationDate, decisionDefinitionId,
         decisionVersion, decisionId, processDefinitionKey,
-        processInstanceKey);
+        processInstanceKey, null);
   }
 
   private DecisionInstanceEntity createDecisionInstance(final String decisionInstanceId,
       final DecisionInstanceState state, final String decisionName,
       final OffsetDateTime evaluationDate, final String decisionDefinitionId,
       final int decisionVersion, final String decisionId, final long processDefinitionKey,
-      final long processInstanceKey) {
+      final long processInstanceKey, final String tenantId) {
 
 
     final List<DecisionInstanceInputEntity> inputs = new ArrayList<>();
@@ -250,7 +253,8 @@ public class DecisionDataUtil {
         .setPosition(1000L)
         .setProcessDefinitionKey(processDefinitionKey)
         .setProcessInstanceKey(processInstanceKey)
-        .setResult("{\"total\": 100.0}");
+        .setResult("{\"total\": 100.0}")
+        .setTenantId(tenantId);
   }
 
   public void persistOperateEntities(List<? extends OperateEntity> operateEntities) throws PersistenceException {

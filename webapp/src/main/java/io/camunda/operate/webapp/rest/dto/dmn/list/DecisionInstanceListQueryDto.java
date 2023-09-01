@@ -27,6 +27,8 @@ public class DecisionInstanceListQueryDto {
   @Schema(description = "Evaluation date after (inclusive)", nullable = true)
   private OffsetDateTime evaluationDateBefore;
 
+  private String tenantId;
+
   public List<String> getDecisionDefinitionIds() {
     return decisionDefinitionIds;
   }
@@ -93,41 +95,36 @@ public class DecisionInstanceListQueryDto {
     return this;
   }
 
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  public DecisionInstanceListQueryDto setTenantId(String tenantId) {
+    this.tenantId = tenantId;
+    return this;
+  }
+
   @Override
-  public boolean equals(final Object o) {
-    if (this == o) {
+  public boolean equals(Object o) {
+    if (this == o)
       return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
+    if (o == null || getClass() != o.getClass())
       return false;
-    }
-    final DecisionInstanceListQueryDto that = (DecisionInstanceListQueryDto) o;
-    return evaluated == that.evaluated &&
-        failed == that.failed &&
-        Objects.equals(decisionDefinitionIds, that.decisionDefinitionIds) &&
-        Objects.equals(ids, that.ids) &&
-        Objects.equals(processInstanceId, that.processInstanceId) &&
-        Objects.equals(evaluationDateAfter, that.evaluationDateAfter) &&
-        Objects.equals(evaluationDateBefore, that.evaluationDateBefore);
+    DecisionInstanceListQueryDto that = (DecisionInstanceListQueryDto) o;
+    return evaluated == that.evaluated && failed == that.failed && Objects.equals(decisionDefinitionIds,
+        that.decisionDefinitionIds) && Objects.equals(ids, that.ids) && Objects.equals(processInstanceId,
+        that.processInstanceId) && Objects.equals(evaluationDateAfter, that.evaluationDateAfter) && Objects.equals(
+        evaluationDateBefore, that.evaluationDateBefore) && Objects.equals(tenantId, that.tenantId);
   }
 
   @Override
   public int hashCode() {
-    return Objects
-        .hash(decisionDefinitionIds, evaluated, failed, ids, processInstanceId, evaluationDateAfter,
-            evaluationDateBefore);
+    return Objects.hash(decisionDefinitionIds, evaluated, failed, ids, processInstanceId, evaluationDateAfter,
+        evaluationDateBefore, tenantId);
   }
 
   @Override
   public String toString() {
-    return "DecisionInstanceListQueryDto{" +
-        "decisionDefinitionIds=" + decisionDefinitionIds +
-        ", evaluated=" + evaluated +
-        ", failed=" + failed +
-        ", ids=" + ids +
-        ", processInstanceId='" + processInstanceId + '\'' +
-        ", evaluationDateAfter=" + evaluationDateAfter +
-        ", evaluationDateBefore=" + evaluationDateBefore +
-        '}';
+    return "DecisionInstanceListQueryDto{" + "decisionDefinitionIds=" + decisionDefinitionIds + ", evaluated=" + evaluated + ", failed=" + failed + ", ids=" + ids + ", processInstanceId='" + processInstanceId + '\'' + ", evaluationDateAfter=" + evaluationDateAfter + ", evaluationDateBefore=" + evaluationDateBefore + ", tenantId='" + tenantId + '\'' + '}';
   }
 }
