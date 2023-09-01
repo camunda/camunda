@@ -28,6 +28,12 @@ public interface ZeebeClientConfiguration {
   String getGatewayAddress();
 
   /**
+   * @see ZeebeClientBuilder#defaultTenantId(String)
+   * @return
+   */
+  String getDefaultTenantId();
+
+  /**
    * @see ZeebeClientBuilder#numJobWorkerExecutionThreads(int)
    */
   int getNumJobWorkerExecutionThreads();

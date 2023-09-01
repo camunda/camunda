@@ -26,6 +26,7 @@ import io.camunda.zeebe.client.ZeebeClientCloudBuilderStep1;
 import io.camunda.zeebe.client.ZeebeClientCloudBuilderStep1.ZeebeClientCloudBuilderStep2;
 import io.camunda.zeebe.client.ZeebeClientCloudBuilderStep1.ZeebeClientCloudBuilderStep2.ZeebeClientCloudBuilderStep3;
 import io.camunda.zeebe.client.ZeebeClientCloudBuilderStep1.ZeebeClientCloudBuilderStep2.ZeebeClientCloudBuilderStep3.ZeebeClientCloudBuilderStep4;
+import io.camunda.zeebe.client.api.ExperimentalApi;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder;
 import io.grpc.ClientInterceptor;
@@ -91,6 +92,10 @@ public class ZeebeClientCloudBuilderImpl
       withRegion(properties.getProperty(ClientProperties.CLOUD_REGION));
     }
     innerBuilder.withProperties(properties);
+
+    // todo(#13321): allow default tenant id setting for cloud client
+    innerBuilder.defaultTenantId("");
+
     return this;
   }
 
@@ -104,6 +109,13 @@ public class ZeebeClientCloudBuilderImpl
   @Override
   public ZeebeClientCloudBuilderStep4 gatewayAddress(final String gatewayAddress) {
     innerBuilder.gatewayAddress(gatewayAddress);
+    return this;
+  }
+
+  @Override
+  @ExperimentalApi("https://github.com/camunda/zeebe/issues/14106")
+  public ZeebeClientCloudBuilderStep4 defaultTenantId(final String tenantId) {
+    Loggers.LOGGER.debug("Multi-tenancy is currently not supported in Camunda Cloud.");
     return this;
   }
 

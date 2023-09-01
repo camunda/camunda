@@ -53,6 +53,7 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
 
   private final List<ClientInterceptor> interceptors = new ArrayList<>();
   private String gatewayAddress = DEFAULT_GATEWAY_ADDRESS;
+  private String defaultTenantId = "";
   private int jobWorkerMaxJobsActive = 32;
   private int numJobWorkerExecutionThreads = 1;
   private String defaultJobWorkerName = "default";
@@ -73,6 +74,11 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   @Override
   public String getGatewayAddress() {
     return gatewayAddress;
+  }
+
+  @Override
+  public String getDefaultTenantId() {
+    return defaultTenantId;
   }
 
   @Override
@@ -170,6 +176,9 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
     if (properties.containsKey(ClientProperties.GATEWAY_ADDRESS)) {
       gatewayAddress(properties.getProperty(ClientProperties.GATEWAY_ADDRESS));
     }
+    if (properties.containsKey(ClientProperties.DEFAULT_TENANT_ID)) {
+      defaultTenantId(properties.getProperty(ClientProperties.DEFAULT_TENANT_ID));
+    }
 
     if (properties.containsKey(ClientProperties.JOB_WORKER_EXECUTION_THREADS)) {
       numJobWorkerExecutionThreads(
@@ -239,6 +248,12 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   @Override
   public ZeebeClientBuilder gatewayAddress(final String gatewayAddress) {
     this.gatewayAddress = gatewayAddress;
+    return this;
+  }
+
+  @Override
+  public ZeebeClientBuilder defaultTenantId(final String tenantId) {
+    defaultTenantId = tenantId;
     return this;
   }
 
@@ -388,6 +403,7 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
     final StringBuilder sb = new StringBuilder();
 
     appendProperty(sb, "gatewayAddress", gatewayAddress);
+    appendProperty(sb, "defaultTenantId", defaultTenantId);
     appendProperty(sb, "jobWorkerMaxJobsActive", jobWorkerMaxJobsActive);
     appendProperty(sb, "numJobWorkerExecutionThreads", numJobWorkerExecutionThreads);
     appendProperty(sb, "defaultJobWorkerName", defaultJobWorkerName);

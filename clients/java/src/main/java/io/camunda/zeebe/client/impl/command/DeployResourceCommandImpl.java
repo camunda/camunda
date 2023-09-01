@@ -19,6 +19,7 @@ import static io.camunda.zeebe.client.impl.command.ArgumentUtil.ensureNotNull;
 import static io.camunda.zeebe.client.impl.command.StreamUtil.readInputStream;
 
 import com.google.protobuf.ByteString;
+import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.command.DeployResourceCommandStep1;
@@ -55,11 +56,12 @@ public final class DeployResourceCommandImpl
 
   public DeployResourceCommandImpl(
       final GatewayStub asyncStub,
-      final Duration requestTimeout,
+      final ZeebeClientConfiguration config,
       final Predicate<Throwable> retryPredicate) {
     this.asyncStub = asyncStub;
-    this.requestTimeout = requestTimeout;
+    requestTimeout = config.getDefaultRequestTimeout();
     this.retryPredicate = retryPredicate;
+    tenantId(config.getDefaultTenantId());
   }
 
   @Override
