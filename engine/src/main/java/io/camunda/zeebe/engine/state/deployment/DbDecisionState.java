@@ -19,6 +19,8 @@ import io.camunda.zeebe.db.impl.DbInt;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
+import io.camunda.zeebe.db.impl.DbTenantAwareKey;
+import io.camunda.zeebe.db.impl.DbTenantAwareKey.PlacementType;
 import io.camunda.zeebe.dmn.DecisionEngine;
 import io.camunda.zeebe.dmn.DecisionEngineFactory;
 import io.camunda.zeebe.dmn.ParsedDecisionRequirementsGraph;
@@ -42,7 +44,9 @@ public final class DbDecisionState implements MutableDecisionState {
 
   private final DecisionEngine decisionEngine = DecisionEngineFactory.createDecisionEngine();
 
+  private final DbString tenantIdKey;
   private final DbLong dbDecisionKey;
+  private final DbTenantAwareKey<DbLong> tenantAwareDecisionKey;
   private final DbForeignKey<DbLong> fkDecision;
   private final PersistedDecision dbPersistedDecision;
   private final DbString dbDecisionId;
@@ -57,7 +61,7 @@ public final class DbDecisionState implements MutableDecisionState {
   private final ColumnFamily<DbCompositeKey<DbForeignKey<DbLong>, DbForeignKey<DbLong>>, DbNil>
       decisionKeyByDecisionRequirementsKey;
 
-  private final ColumnFamily<DbLong, PersistedDecision> decisionsByKey;
+  private final ColumnFamily<DbTenantAwareKey<DbLong>, PersistedDecision> decisionsByKey;
   private final ColumnFamily<DbString, DbForeignKey<DbLong>> latestDecisionKeysByDecisionId;
 
   private final DbInt dbDecisionVersion;
@@ -79,13 +83,19 @@ public final class DbDecisionState implements MutableDecisionState {
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
       final TransactionContext transactionContext,
       final EngineConfiguration config) {
+    tenantIdKey = new DbString();
     dbDecisionKey = new DbLong();
+    tenantAwareDecisionKey =
+        new DbTenantAwareKey<>(tenantIdKey, dbDecisionKey, PlacementType.PREFIX);
     fkDecision = new DbForeignKey<>(dbDecisionKey, ZbColumnFamilies.DMN_DECISIONS);
 
     dbPersistedDecision = new PersistedDecision();
     decisionsByKey =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.DMN_DECISIONS, transactionContext, dbDecisionKey, dbPersistedDecision);
+            ZbColumnFamilies.DMN_DECISIONS,
+            transactionContext,
+            tenantAwareDecisionKey,
+            dbPersistedDecision);
 
     dbDecisionId = new DbString();
     latestDecisionKeysByDecisionId =
