@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.state.deployment;
 
+import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
+
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.BinaryProperty;
@@ -14,6 +16,7 @@ import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import org.agrona.DirectBuffer;
 
 public final class PersistedDecisionRequirements extends UnpackedObject implements DbValue {
@@ -30,6 +33,8 @@ public final class PersistedDecisionRequirements extends UnpackedObject implemen
   private final StringProperty resourceNameProp = new StringProperty("resourceName");
   private final BinaryProperty checksumProp = new BinaryProperty("checksum");
   private final BinaryProperty resourceProp = new BinaryProperty("resource");
+  private final StringProperty tenantIdProp =
+      new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
   public PersistedDecisionRequirements() {
     declareProperty(decisionRequirementsIdProp)
@@ -38,7 +43,8 @@ public final class PersistedDecisionRequirements extends UnpackedObject implemen
         .declareProperty(decisionRequirementsKeyProp)
         .declareProperty(resourceNameProp)
         .declareProperty(checksumProp)
-        .declareProperty(resourceProp);
+        .declareProperty(resourceProp)
+        .declareProperty(tenantIdProp);
   }
 
   public void wrap(final DecisionRequirementsRecord record) {
@@ -49,6 +55,7 @@ public final class PersistedDecisionRequirements extends UnpackedObject implemen
     resourceNameProp.setValue(record.getResourceNameBuffer());
     checksumProp.setValue(record.getChecksumBuffer());
     resourceProp.setValue(record.getResourceBuffer());
+    tenantIdProp.setValue(record.getTenantId());
   }
 
   public PersistedDecisionRequirements copy() {
@@ -60,6 +67,7 @@ public final class PersistedDecisionRequirements extends UnpackedObject implemen
     copy.resourceNameProp.setValue(getResourceName());
     copy.checksumProp.setValue(getChecksum());
     copy.resourceProp.setValue(getResource());
+    copy.tenantIdProp.setValue(getTenantId());
     return copy;
   }
 
@@ -89,5 +97,9 @@ public final class PersistedDecisionRequirements extends UnpackedObject implemen
 
   public DirectBuffer getResource() {
     return resourceProp.getValue();
+  }
+
+  public String getTenantId() {
+    return bufferAsString(tenantIdProp.getValue());
   }
 }
