@@ -63,11 +63,11 @@ public final class DbElementInstanceState implements MutableElementInstanceState
 
   private final MutableVariableState variableState;
 
-  private final DbLong processDefinitionKey;
-  private final DbCompositeKey<DbLong, DbLong> processInstanceKeyByProcessDefinitionKey;
+  private final DbForeignKey<DbLong> processDefinitionKey;
+  private final DbCompositeKey<DbForeignKey<DbLong>, DbLong> processInstanceKeyByProcessDefinitionKey;
 
   /** [process definition key | process instance key] => [Nil] */
-  private final ColumnFamily<DbCompositeKey<DbLong, DbLong>, DbNil>
+  private final ColumnFamily<DbCompositeKey<DbForeignKey<DbLong>, DbLong>, DbNil>
       processInstanceKeyByProcessDefinitionKeyColumnFamily;
 
   public DbElementInstanceState(
@@ -121,7 +121,12 @@ public final class DbElementInstanceState implements MutableElementInstanceState
             numberOfTakenSequenceFlowsKey,
             numberOfTakenSequenceFlows);
 
-    processDefinitionKey = new DbLong();
+    processDefinitionKey = new DbForeignKey<>(
+        new DbLong(),
+        ZbColumnFamilies.PROCESS_CACHE,
+        MatchType.Full,
+        (k) -> k.getValue() == -1
+    );
     processInstanceKeyByProcessDefinitionKey =
         new DbCompositeKey<>(processDefinitionKey, elementInstanceKey);
     processInstanceKeyByProcessDefinitionKeyColumnFamily =
@@ -174,7 +179,7 @@ public final class DbElementInstanceState implements MutableElementInstanceState
 
     final var recordValue = instance.getValue();
     if (recordValue.getBpmnElementType() == BpmnElementType.PROCESS) {
-      processDefinitionKey.wrapLong(recordValue.getProcessDefinitionKey());
+      processDefinitionKey.inner().wrapLong(recordValue.getProcessDefinitionKey());
       processInstanceKeyByProcessDefinitionKeyColumnFamily.deleteExisting(
           processInstanceKeyByProcessDefinitionKey);
     }
@@ -203,7 +208,7 @@ public final class DbElementInstanceState implements MutableElementInstanceState
 
     final var recordValue = instance.getValue();
     if (recordValue.getBpmnElementType() == BpmnElementType.PROCESS) {
-      processDefinitionKey.wrapLong(recordValue.getProcessDefinitionKey());
+      processDefinitionKey.inner().wrapLong(recordValue.getProcessDefinitionKey());
       processInstanceKeyByProcessDefinitionKeyColumnFamily.insert(
           processInstanceKeyByProcessDefinitionKey, DbNil.INSTANCE);
     }
@@ -364,7 +369,7 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   @Override
   public List<Long> getProcessInstanceKeysByDefinitionKey(final long processDefinitionKey) {
     final List<Long> processInstanceKeys = new ArrayList<>();
-    this.processDefinitionKey.wrapLong(processDefinitionKey);
+    this.processDefinitionKey.inner().wrapLong(processDefinitionKey);
 
     processInstanceKeyByProcessDefinitionKeyColumnFamily.whileEqualPrefix(
         this.processDefinitionKey,
@@ -378,7 +383,7 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   @Override
   public boolean hasActiveProcessInstances(
       final long processDefinitionKey, final List<Long> bannedInstances) {
-    this.processDefinitionKey.wrapLong(processDefinitionKey);
+    this.processDefinitionKey.inner().wrapLong(processDefinitionKey);
     final AtomicBoolean hasActiveInstances = new AtomicBoolean(false);
 
     processInstanceKeyByProcessDefinitionKeyColumnFamily.whileEqualPrefix(
