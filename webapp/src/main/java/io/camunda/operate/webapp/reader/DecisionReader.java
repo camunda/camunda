@@ -7,6 +7,7 @@
 package io.camunda.operate.webapp.reader;
 
 import io.camunda.operate.entities.dmn.definition.DecisionDefinitionEntity;
+import io.camunda.operate.webapp.rest.dto.DecisionRequestDto;
 
 import java.util.List;
 import java.util.Map;
@@ -16,5 +17,5 @@ public interface DecisionReader {
 
     DecisionDefinitionEntity getDecision(Long decisionDefinitionKey);
 
-    Map<String, List<DecisionDefinitionEntity>> getDecisionsGrouped();
+    Map<String, List<DecisionDefinitionEntity>> getDecisionsGrouped(DecisionRequestDto request);
 }

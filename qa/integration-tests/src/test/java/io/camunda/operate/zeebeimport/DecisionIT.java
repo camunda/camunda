@@ -22,6 +22,7 @@ import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.util.ElasticsearchTestRule;
 import io.camunda.operate.util.OperateZeebeIntegrationTest;
 import io.camunda.operate.webapp.reader.DecisionReader;
+import io.camunda.operate.webapp.rest.dto.DecisionRequestDto;
 import io.camunda.operate.webapp.rest.dto.dmn.DecisionGroupDto;
 import java.util.List;
 import java.util.Map;
@@ -192,8 +193,8 @@ public class DecisionIT extends OperateZeebeIntegrationTest {
         .decisionsAreDeployed(2);
 
     //when
-    Map<String, List<DecisionDefinitionEntity>> decisionsGrouped = decisionReader.getDecisionsGrouped();
-    DecisionDefinitionEntity entity1 = decisionsGrouped.get(demoDecisionId1).get(0);
+    Map<String, List<DecisionDefinitionEntity>> decisionsGrouped = decisionReader.getDecisionsGrouped(new DecisionRequestDto());
+    DecisionDefinitionEntity entity1 = decisionsGrouped.values().iterator().next().get(0);
     Long decisionDefinitionKey = Long.valueOf(entity1.getId());
     DecisionDefinitionEntity entity2 = decisionReader.getDecision(decisionDefinitionKey);
 

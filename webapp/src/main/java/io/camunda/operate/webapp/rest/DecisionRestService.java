@@ -11,6 +11,7 @@ import io.camunda.operate.entities.dmn.definition.DecisionDefinitionEntity;
 import io.camunda.operate.util.rest.ValidLongId;
 import io.camunda.operate.webapp.InternalAPIErrorController;
 import io.camunda.operate.webapp.reader.DecisionReader;
+import io.camunda.operate.webapp.rest.dto.DecisionRequestDto;
 import io.camunda.operate.webapp.rest.dto.dmn.DecisionGroupDto;
 import io.camunda.operate.webapp.rest.exception.NotAuthorizedException;
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
@@ -22,11 +23,7 @@ import java.util.List;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "Decisions")
 @RestController
@@ -53,8 +50,17 @@ public class DecisionRestService extends InternalAPIErrorController {
 
   @Operation(summary = "List decisions grouped by decisionId")
   @GetMapping(path = "/grouped")
+  @Deprecated
   public List<DecisionGroupDto> getDecisionsGrouped() {
-    final Map<String, List<DecisionDefinitionEntity>> decisionsGrouped = decisionReader.getDecisionsGrouped();
+    final Map<String, List<DecisionDefinitionEntity>> decisionsGrouped = decisionReader.getDecisionsGrouped(
+        new DecisionRequestDto());
+    return DecisionGroupDto.createFrom(decisionsGrouped, permissionsService);
+  }
+
+  @Operation(summary = "List decisions grouped by decisionId")
+  @PostMapping(path = "/grouped")
+  public List<DecisionGroupDto> getDecisionsGrouped(@RequestBody DecisionRequestDto request) {
+    final Map<String, List<DecisionDefinitionEntity>> decisionsGrouped = decisionReader.getDecisionsGrouped(request);
     return DecisionGroupDto.createFrom(decisionsGrouped, permissionsService);
   }
 

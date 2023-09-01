@@ -10,17 +10,15 @@ import io.camunda.operate.entities.dmn.definition.DecisionDefinitionEntity;
 import io.camunda.operate.webapp.rest.dto.DtoCreator;
 import io.camunda.operate.webapp.security.identity.PermissionsService;
 import io.swagger.v3.oas.annotations.media.Schema;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+
+import java.util.*;
 
 @Schema(name = "Decision group object", description = "Group of decisions with the same decisionId with all versions included")
 public class DecisionGroupDto {
 
   private String decisionId;
+
+  private String tenantId;
 
   private String name;
 
@@ -34,6 +32,15 @@ public class DecisionGroupDto {
 
   public void setDecisionId(String decisionId) {
     this.decisionId = decisionId;
+  }
+
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  public DecisionGroupDto setTenantId(String tenantId) {
+    this.tenantId = tenantId;
+    return this;
   }
 
   public String getName() {
@@ -66,12 +73,14 @@ public class DecisionGroupDto {
 
   public static List<DecisionGroupDto> createFrom(Map<String, List<DecisionDefinitionEntity>> decisionsGrouped, PermissionsService permissionsService) {
     List<DecisionGroupDto> groups = new ArrayList<>();
-    decisionsGrouped.entrySet().stream().forEach(groupEntry -> {
+    decisionsGrouped.values().stream().forEach(group -> {
         DecisionGroupDto groupDto = new DecisionGroupDto();
-        groupDto.setDecisionId(groupEntry.getKey());
-        groupDto.setName(groupEntry.getValue().get(0).getName());
-        groupDto.setPermissions(permissionsService == null ? new HashSet<>() : permissionsService.getDecisionDefinitionPermission(groupEntry.getKey()));
-        groupDto.setDecisions(DtoCreator.create(groupEntry.getValue(), DecisionDto.class));
+        DecisionDefinitionEntity decision0 = group.get(0);
+        groupDto.setDecisionId(decision0.getDecisionId());
+        groupDto.setTenantId(decision0.getTenantId());
+        groupDto.setName(decision0.getName());
+        groupDto.setPermissions(permissionsService == null ? new HashSet<>() : permissionsService.getDecisionDefinitionPermission(decision0.getDecisionId()));
+        groupDto.setDecisions(DtoCreator.create(group, DecisionDto.class));
         groups.add(groupDto);
       }
     );
@@ -85,15 +94,14 @@ public class DecisionGroupDto {
       return true;
     if (o == null || getClass() != o.getClass())
       return false;
-
     DecisionGroupDto that = (DecisionGroupDto) o;
-
-    return decisionId != null ? decisionId.equals(that.decisionId) : that.decisionId == null;
+    return Objects.equals(decisionId, that.decisionId) && Objects.equals(tenantId, that.tenantId) && Objects.equals(
+        name, that.name) && Objects.equals(permissions, that.permissions) && Objects.equals(decisions, that.decisions);
   }
 
   @Override
   public int hashCode() {
-    return decisionId != null ? decisionId.hashCode() : 0;
+    return Objects.hash(decisionId, tenantId, name, permissions, decisions);
   }
 
   public static class DecisionGroupComparator implements Comparator<DecisionGroupDto> {
