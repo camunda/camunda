@@ -441,8 +441,4 @@ public final class DbProcessState implements MutableProcessState {
     // does not exist in persistence and in memory state
     return null;
   }
-
-  private void updateCompleteInMemoryState() {
-    processColumnFamily.forEach(this::updateInMemoryState);
-  }
 }
