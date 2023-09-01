@@ -172,12 +172,12 @@ public final class DbDecisionState implements MutableDecisionState {
 
     return Optional.ofNullable(latestDecisionKeysByDecisionId.get(dbDecisionId))
         .flatMap(
-            decisionKey -> findDecisionByKeyAndTenant(decisionKey.inner().getValue(), tenantId));
+            decisionKey -> findDecisionByTenantAndKey(tenantId, decisionKey.inner().getValue()));
   }
 
   @Override
-  public Optional<PersistedDecision> findDecisionByKeyAndTenant(
-      final long decisionKey, final String tenantId) {
+  public Optional<PersistedDecision> findDecisionByTenantAndKey(
+      final String tenantId, final long decisionKey) {
     dbDecisionKey.wrapLong(decisionKey);
     tenantIdKey.wrapString(tenantId);
     return Optional.ofNullable(decisionsByKey.get(tenantAwareDecisionKey))
@@ -209,7 +209,7 @@ public final class DbDecisionState implements MutableDecisionState {
         dbDecisionRequirementsKey,
         ((key, nil) -> {
           final var decisionKey = key.second();
-          findDecisionByKeyAndTenant(decisionKey.inner().getValue(), "").ifPresent(decisions::add);
+          findDecisionByTenantAndKey("", decisionKey.inner().getValue()).ifPresent(decisions::add);
         }));
 
     return decisions;
