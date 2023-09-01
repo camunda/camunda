@@ -7,12 +7,15 @@
  */
 package io.camunda.zeebe.engine.state.deployment;
 
+import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
+
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import org.agrona.DirectBuffer;
 
 public final class PersistedDecision extends UnpackedObject implements DbValue {
@@ -27,22 +30,27 @@ public final class PersistedDecision extends UnpackedObject implements DbValue {
   private final LongProperty decisionRequirementsKeyProp =
       new LongProperty("decisionRequirementsKey");
 
+  private final StringProperty tenantIdProp =
+      new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+
   public PersistedDecision() {
     declareProperty(decisionIdProp)
         .declareProperty(decisionNameProp)
         .declareProperty(versionProp)
         .declareProperty(decisionKeyProp)
         .declareProperty(decisionRequirementsIdProp)
-        .declareProperty(decisionRequirementsKeyProp);
+        .declareProperty(decisionRequirementsKeyProp)
+        .declareProperty(tenantIdProp);
   }
 
-  public void wrap(DecisionRecord record) {
+  public void wrap(final DecisionRecord record) {
     decisionIdProp.setValue(record.getDecisionId());
     decisionNameProp.setValue(record.getDecisionName());
     versionProp.setValue(record.getVersion());
     decisionKeyProp.setValue(record.getDecisionKey());
     decisionRequirementsIdProp.setValue(record.getDecisionRequirementsIdBuffer());
     decisionRequirementsKeyProp.setValue(record.getDecisionRequirementsKey());
+    tenantIdProp.setValue(record.getTenantId());
   }
 
   public PersistedDecision copy() {
@@ -53,6 +61,7 @@ public final class PersistedDecision extends UnpackedObject implements DbValue {
     copy.versionProp.setValue(getVersion());
     copy.decisionRequirementsIdProp.setValue(getDecisionRequirementsId());
     copy.decisionRequirementsKeyProp.setValue(getDecisionRequirementsKey());
+    copy.tenantIdProp.setValue(getTenantId());
     return copy;
   }
 
@@ -78,5 +87,9 @@ public final class PersistedDecision extends UnpackedObject implements DbValue {
 
   public long getDecisionRequirementsKey() {
     return decisionRequirementsKeyProp.getValue();
+  }
+
+  public String getTenantId() {
+    return bufferAsString(tenantIdProp.getValue());
   }
 }
