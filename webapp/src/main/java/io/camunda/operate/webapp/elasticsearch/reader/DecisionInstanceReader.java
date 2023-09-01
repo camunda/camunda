@@ -245,6 +245,7 @@ public class DecisionInstanceReader extends AbstractReader implements io.camunda
         createProcessInstanceIdQuery(query),
         createEvaluationDateQuery(query),
         createReadPermissionQuery(),
+        //TODO Elasticsearch changes
         createTenantIdQuery(query)
     );
     if (queryBuilder == null) {

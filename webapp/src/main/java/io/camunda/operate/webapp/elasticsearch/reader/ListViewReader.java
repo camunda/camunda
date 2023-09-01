@@ -268,6 +268,7 @@ public class ListViewReader implements io.camunda.operate.webapp.reader.ListView
         createVariablesQuery(query),
         createBatchOperatioIdQuery(query),
         createParentInstanceIdQuery(query),
+        //TODO Elasticsearch changes
         createTenantIdQuery(query),
         createReadPermissionQuery()
         //TODO filter by tenants assigned to current user #4858
