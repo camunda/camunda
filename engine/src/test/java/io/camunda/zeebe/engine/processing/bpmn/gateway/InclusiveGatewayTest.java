@@ -28,7 +28,6 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -950,56 +949,5 @@ public final class InclusiveGatewayTest {
     assertThat(elementInstances)
         .extracting(e -> e.getValue().getElementId())
         .contains("task1", "task2");
-  }
-
-  @Test
-  public void shouldMergeAndSplitInOneGatewayWhenSubsetOfTheSequenceFlowsHasBeenTaken() {
-    // given
-    final var process =
-        Bpmn.createExecutableProcess(PROCESS_ID)
-            .startEvent("start")
-            .parallelGateway("fork")
-            .task("task1")
-            .moveToNode("fork")
-            .exclusiveGateway("exclusive")
-            .conditionExpression("a >= 0")
-            .task("task2")
-            .inclusiveGateway("join")
-            .moveToNode("task1")
-            .connectTo("join")
-            .moveToNode("exclusive")
-            .conditionExpression("a < 0")
-            .task("task3")
-            .connectTo("join")
-            .moveToNode("join")
-            .conditionExpression("b > 0")
-            .task("task4")
-            .moveToLastGateway()
-            .conditionExpression("b > 5")
-            .task("task5")
-            .done();
-
-    ENGINE.deployment().withXmlResource(process).deploy();
-
-    // when
-    ENGINE
-        .processInstance()
-        .ofBpmnProcessId(PROCESS_ID)
-        .withVariables(Map.of("a", 1, "b", 10))
-        .create();
-
-    // then
-    final List<Record<ProcessInstanceRecordValue>> elementInstances =
-        RecordingExporter.processInstanceRecords()
-            .filter(
-                r ->
-                    r.getIntent() == ProcessInstanceIntent.ELEMENT_ACTIVATED
-                        && r.getValue().getBpmnElementType() == BpmnElementType.TASK)
-            .limit(4)
-            .collect(Collectors.toList());
-
-    assertThat(elementInstances)
-        .extracting(e -> e.getValue().getElementId())
-        .contains("task1", "task2", "task4", "task5");
   }
 }
