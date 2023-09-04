@@ -134,7 +134,7 @@ final class JsonSerializableToJsonTest {
                   new AuthInfo()
                       .setFormatProp(AuthDataFormat.JWT)
                       .setAuthData(
-                          "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJpc3MiOiJ6ZWViZS1nYXRld2F5IiwiYXVkIjoiemVlYmUtYnJva2VyIiwic3ViIjoiQXV0aG9yaXphdGlvbiIsImlhdCI6MTY5MzIxNTc1NiwiYXV0aG9yaXplZF90ZW5hbnRzIjpbInRlbmFudC0xIiwidGVuYW50LTIiLCJ0ZW5hbnQtMyJdfQ.");
+                          "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJpc3MiOiJ6ZWViZS1nYXRld2F5IiwiYXVkIjoiemVlYmUtYnJva2VyIiwic3ViIjoiemVlYmUtY2xpZW50IiwiYXV0aG9yaXplZF90ZW5hbnRzIjpbInRlbmFudC0xIiwidGVuYW50LTIiLCJ0ZW5hbnQtMyJdfQ.");
 
               recordMetadata
                   .intent(intent)

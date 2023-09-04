@@ -17,6 +17,9 @@ package io.camunda.zeebe.auth.api;
 public interface JwtAuthorizationBuilder<T extends JwtAuthorizationBuilder<T, A, U>, A, U> {
 
   public static final String AUTHORIZED_TENANTS_CLAIM = "authorized_tenants";
+  public static String DEFAULT_ISSUER = "zeebe-gateway";
+  public static String DEFAULT_AUDIENCE = "zeebe-broker";
+  public static String DEFAULT_SUBJECT = "zeebe-client";
 
   /**
    * Sets the token subject.

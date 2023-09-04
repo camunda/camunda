@@ -127,7 +127,6 @@
     <version.jackson-annotations>2.15.2</version.jackson-annotations>
     <version.swagger-annotations>2.2.15</version.swagger-annotations>
     <version.checker-qual>3.38.0</version.checker-qual>
-    <!-- java-jwt version is aligned with the one in identity-sdk -->
     <version.java-jwt>4.4.0</version.java-jwt>
 
     <!-- maven plugins -->

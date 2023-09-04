@@ -29,9 +29,9 @@ public class JwtAuthorizationDecoder
 
   private static final Logger LOGGER = LoggerFactory.getLogger(JwtAuthorizationDecoder.class);
 
-  private String issuer = "zeebe-gateway";
-  private String audience = "zeebe-broker";
-  private String subject = "Authorization";
+  private String issuer = DEFAULT_ISSUER;
+  private String audience = DEFAULT_AUDIENCE;
+  private String subject = DEFAULT_SUBJECT;
   private Algorithm signingAlgorithm = Algorithm.none();
   private final Set<String> claims = new HashSet<>();
   private String jwtToken;

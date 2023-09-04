@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.auth;
 
+import static io.camunda.zeebe.auth.api.JwtAuthorizationBuilder.DEFAULT_AUDIENCE;
+import static io.camunda.zeebe.auth.api.JwtAuthorizationBuilder.DEFAULT_ISSUER;
+import static io.camunda.zeebe.auth.api.JwtAuthorizationBuilder.DEFAULT_SUBJECT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -23,10 +26,6 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 public class JwtAuthorizationTest {
-
-  private static final String DEFAULT_ISSUER = "zeebe-gateway";
-  private static final String DEFAULT_AUDIENCE = "zeebe-broker";
-  private static final String DEFAULT_SUBJECT = "Authorization";
 
   @Test
   public void shouldEncodeJwtTokenWithDefaultClaims() {
