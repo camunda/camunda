@@ -1,11 +1,12 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`should show create Alert button 1`] = `
-<ForwardRef(Button)
-  main={true}
+<Button
+  className="createAlert"
+  kind="primary"
   onClick={[Function]}
-  primary={true}
+  size="md"
 >
   Create New Alert
-</ForwardRef(Button)>
+</Button>
 `;

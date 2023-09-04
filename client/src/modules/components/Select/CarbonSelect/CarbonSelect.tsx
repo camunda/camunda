@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {Children, cloneElement, ComponentProps, ReactNode, UIEvent} from 'react';
+import {BaseSyntheticEvent, Children, cloneElement, ComponentProps, ReactNode} from 'react';
 import {MenuItemSelectable} from '@carbon/react';
 import {MenuDropdown} from '@camunda/camunda-optimize-composite-components';
 
@@ -14,15 +14,17 @@ import classnames from 'classnames';
 import {t} from 'translation';
 
 export interface CarbonSelectProps<T extends object | string | number = string>
-  extends Omit<ComponentProps<typeof MenuDropdown>, 'label'> {
+  extends Omit<ComponentProps<typeof MenuDropdown>, 'label' | 'onChange'> {
+  id: string;
   value?: T;
   onChange?: (value: T) => void;
-  label?: string | JSX.Element[];
+  labelText?: string | JSX.Element[];
 }
 
 export default function CarbonSelect<T extends object | string | number>(
   props: CarbonSelectProps<T>
 ) {
+  const {labelText, ...rest} = props;
   const renderChildrenWithProps = (children: ReactNode) => {
     return Children.toArray(children)
       .filter(isReactElement)
@@ -67,7 +69,7 @@ export default function CarbonSelect<T extends object | string | number>(
     return label;
   };
 
-  const onChange = (evt: UIEvent<HTMLElement>) => {
+  const onChange = (evt: BaseSyntheticEvent) => {
     const value = (evt.target as HTMLElement | null)
       ?.closest('[value]')
       ?.getAttribute('value') as T | null;
@@ -79,13 +81,22 @@ export default function CarbonSelect<T extends object | string | number>(
   const children = ignoreFragments(props.children);
 
   return (
-    <MenuDropdown
-      {...props}
-      label={props.label || getLabel() || t('common.select')}
-      className={classnames('CarbonSelect', props.className)}
-    >
-      {renderChildrenWithProps(children)}
-    </MenuDropdown>
+    <div className={classnames('CarbonSelect', props.className)}>
+      {props.labelText && (
+        <div className="cds--text-input__label-wrapper">
+          <label htmlFor={props.id} className="cds--label">
+            {props.labelText}
+          </label>
+        </div>
+      )}
+      <MenuDropdown
+        {...rest}
+        onChange={(e: any) => onChange(e)}
+        label={getLabel() || t('common.select')}
+      >
+        {renderChildrenWithProps(children)}
+      </MenuDropdown>
+    </div>
   );
 }
 

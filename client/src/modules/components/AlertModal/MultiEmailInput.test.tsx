@@ -5,10 +5,9 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import {ChangeEvent, KeyboardEvent} from 'react';
 import {shallow} from 'enzyme';
-
-import {MultiValueInput} from 'components';
+import {MultiValueInput} from '@camunda/camunda-optimize-composite-components';
 
 import MultiEmailInput from './MultiEmailInput';
 
@@ -19,22 +18,36 @@ const props = {
 
 beforeEach(() => props.onChange.mockClear());
 
-it('should match snapshot', () => {
+it('should render email tags', () => {
   const node = shallow(<MultiEmailInput {...props} />);
 
-  expect(node).toMatchSnapshot();
+  const tags = node.find(MultiValueInput).dive().find('RemovableTag');
+  expect(tags.at(0).prop('title')).toBe('email1@hotmail.com');
+  expect(tags.at(1).prop('title')).toBe('email2@gmail.com');
 });
 
 it('should add an email', () => {
   const node = shallow(<MultiEmailInput {...props} />);
 
-  node.find(MultiValueInput).prop('onAdd')('test@test.com');
+  node.find(MultiValueInput).prop('onChange')?.({
+    target: {value: 'test@test.com'},
+  } as unknown as ChangeEvent<HTMLInputElement>);
+  node.find(MultiValueInput).prop('onKeyDown')?.({
+    key: ',',
+    preventDefault: jest.fn(),
+  } as unknown as KeyboardEvent<HTMLInputElement>);
 
   expect(props.onChange).toHaveBeenCalledWith([...props.emails, 'test@test.com'], true);
 
   props.onChange.mockClear();
 
-  node.find(MultiValueInput).prop('onAdd')('invalid');
+  node.find(MultiValueInput).prop('onChange')?.({
+    target: {value: 'invalid'},
+  } as unknown as ChangeEvent<HTMLInputElement>);
+  node.find(MultiValueInput).prop('onKeyDown')?.({
+    key: ',',
+    preventDefault: jest.fn(),
+  } as unknown as KeyboardEvent<HTMLInputElement>);
 
   expect(props.onChange).toHaveBeenCalledWith([...props.emails, 'invalid'], false);
 });
@@ -61,15 +74,10 @@ it('should remove an email', () => {
   expect(props.onChange).toHaveBeenCalledWith(['email2@gmail.com'], true);
 });
 
-it('should clear all emails when MultiValueInput is cleared', () => {
+it('should remove email when remove button is clicked on removable tag', () => {
   const node = shallow(<MultiEmailInput {...props} />);
 
-  node.find(MultiValueInput).simulate('paste', {
-    preventDefault: jest.fn(),
-    clipboardData: {getData: () => `email1@test.com;email2@test.com email3@test.com`},
-  });
-
-  node.find(MultiValueInput).prop('onClear')();
-
-  expect(props.onChange).toHaveBeenCalledWith([], true);
+  props.onChange.mockClear();
+  node.find(MultiValueInput).dive().find('RemovableTag').at(0).prop<Function>('onRemove')();
+  expect(props.onChange).toHaveBeenCalledWith(['email2@gmail.com'], true);
 });

@@ -48,10 +48,10 @@ test('create, edit, copy and remove an alert', async (t) => {
   });
 
   await t.click(Alert.webhookDropdown);
-  await t.click(Common.typeaheadOption('testWebhook'));
+  await t.click(Common.carbonOption('testWebhook'));
 
-  await t.click(Common.typeahead);
-  await t.click(Common.typeaheadOption('Number Report'));
+  await t.click(Common.comboBox);
+  await t.click(Common.carbonOption('Number Report'));
 
   await t.takeElementScreenshot(
     Common.modalContainer,

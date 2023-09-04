@@ -98,7 +98,7 @@ it('should call the onConfirm method and not include duplicate emails', () => {
 
   node.setProps({initialAlert});
 
-  node.find('Button').at(1).simulate('click');
+  node.find('.confirm').simulate('click');
 
   expect(spy).toHaveBeenCalled();
   expect(spy.mock.calls[0][0].emails).toEqual(['test@camunda.com']);
@@ -110,7 +110,7 @@ it('should disable the submit button if the name is empty', () => {
   node.setProps({initialAlert});
   node.setState({name: ''});
 
-  expect(node.find('Button').at(1)).toBeDisabled();
+  expect(node.find('.confirm')).toBeDisabled();
 });
 
 it('should disable the submit button if the email is not valid', () => {
@@ -118,7 +118,7 @@ it('should disable the submit button if the email is not valid', () => {
 
   node.setProps({initialAlert});
   node.find('MultiEmailInput').prop('onChange')(['this is not a valid email'], false);
-  expect(node.find('Button').at(1)).toBeDisabled();
+  expect(node.find('.confirm')).toBeDisabled();
 });
 
 it('should disable the submit button if no report is selected', () => {
@@ -126,7 +126,7 @@ it('should disable the submit button if no report is selected', () => {
 
   node.setProps({initialAlert});
   node.setState({reportId: ''});
-  expect(node.find('Button').at(1)).toBeDisabled();
+  expect(node.find('.confirm')).toBeDisabled();
 });
 
 it('should disable the submit button if the threshold is not a number', () => {
@@ -134,19 +134,19 @@ it('should disable the submit button if the threshold is not a number', () => {
 
   node.setProps({initialAlert});
   node.setState({threshold: 'five'});
-  expect(node.find('Button').at(1)).toBeDisabled();
+  expect(node.find('.confirm')).toBeDisabled();
 });
 
 it('should disable the submit button if the threshold is not a percentage', () => {
   const node = shallow(<AlertModal {...props} initialAlert={{...initialAlert, reportId: '10'}} />);
 
   node.setState({threshold: '101'});
-  expect(node.find(ThresholdInput).prop('isInvalid')).toBe(true);
-  expect(node.find('Button').at(1)).toBeDisabled();
+  expect(node.find(ThresholdInput).prop('invalid')).toBe(true);
+  expect(node.find('.confirm')).toBeDisabled();
 
   node.setState({threshold: '100'});
-  expect(node.find(ThresholdInput).prop('isInvalid')).toBe(false);
-  expect(node.find('Button').at(1)).not.toBeDisabled();
+  expect(node.find(ThresholdInput).prop('invalid')).toBe(false);
+  expect(node.find('.confirm')).not.toBeDisabled();
 });
 
 it('should disable the submit button if the check interval is negative', () => {
@@ -159,7 +159,7 @@ it('should disable the submit button if the check interval is negative', () => {
       unit: 'seconds',
     },
   });
-  expect(node.find('Button').at(1)).toBeDisabled();
+  expect(node.find('.confirm')).toBeDisabled();
 });
 
 it('should enable the submit button if webhook is selected', () => {
@@ -167,23 +167,23 @@ it('should enable the submit button if webhook is selected', () => {
 
   node.setProps({initialAlert});
   node.setState({emails: ['']});
-  node.find('Typeahead').at(1).prop('onChange')('testWebhook');
+  node.find('#webhooks').prop('onChange')('testWebhook');
 
-  expect(node.find('Button').at(1)).not.toBeDisabled();
+  expect(node.find('.confirm')).not.toBeDisabled();
 });
 
 it('should show warning if alert is inactive due to missing webhook', async () => {
   const node = await shallow(<AlertModal {...props} webhooks={[]} />);
   node.setProps({initialAlert: {...initialAlert, emails: [], webhook: 'nonExistingWebhook'}});
 
-  expect(node.find('MessageBox').exists()).toBe(true);
+  expect(node.find('ActionableNotification').exists()).toBe(true);
 });
 
 it('should show warning that email is not configured', async () => {
   isEmailEnabled.mockReturnValue(false);
   const node = await shallow(<AlertModal {...props} />);
 
-  expect(node.find('MessageBox').exists()).toBe(true);
+  expect(node.find('ActionableNotification').exists()).toBe(true);
 });
 
 it('should not display warning if email is configured', async () => {
@@ -192,7 +192,7 @@ it('should not display warning if email is configured', async () => {
   await node.instance().componentDidMount();
   await node.update();
 
-  expect(node.find('.AlertModal__configuration-warning').exists()).toBe(false);
+  expect(node.find('ActionableNotification').exists()).toBe(false);
 });
 
 it('should convert a duration threshold when opening', async () => {
@@ -238,34 +238,34 @@ it('should contain a threshold input', () => {
   expect(node.find(ThresholdInput)).toExist();
 });
 
-it('should pass the selected report as initial value to the typeahead', () => {
+it('should pass the selected report as initial value to the combobox', () => {
   const node = shallow(<AlertModal {...props} initialAlert={initialAlert} />);
 
-  expect(node.find('Typeahead').props().initialValue).toBe(initialAlert.reportId);
+  expect(node.find('#report').props().selectedItem).toBe(reports[1]);
 });
 
 it('should display report value', () => {
   const node = shallow(<AlertModal {...props} />);
   evaluateReport.mockClear();
 
-  node.find('Typeahead').at(0).prop('onChange')('6');
+  node.find('#report').prop('onChange')({selectedItem: {id: '6'}});
 
   expect(evaluateReport).toHaveBeenCalledWith('6');
-  expect(node.find('Message').at(0).dive()).toIncludeText('123');
+  expect(node.find('#report').prop('helperText')).toContain('123');
 });
 
 it('should load an initial report if specified', () => {
   const node = shallow(<AlertModal {...props} initialReport="5" />);
 
-  expect(node.find('Typeahead').prop('initialValue')).toBe('5');
-  expect(node.find('Typeahead').prop('disabled')).toBe(true);
+  expect(node.find('#report').prop('selectedItem')).toBe(reports[0]);
+  expect(node.find('#report').prop('disabled')).toBe(true);
 });
 
 it('should not load the report twice if both initialAlert and initialReport are defined', () => {
   const node = shallow(<AlertModal {...props} initialReport="5" initialAlert={initialAlert} />);
 
   expect(evaluateReport.mock.calls.length).toBe(1);
-  expect(node.find('Typeahead').prop('initialValue')).toBe('8');
+  expect(node.find('#report').prop('selectedItem')).toBe(reports[1]);
 });
 
 it('should allow to remove an alert from inside the modal if onRemove prop is provided', () => {

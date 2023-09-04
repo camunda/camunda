@@ -69,3 +69,4 @@ export const shareOptimizeIcon = Selector('.Sharing.compact .iconLink');
 export const addButton = Selector('.AddButton');
 export const deleteButton = Selector('.delete-button');
 export const usersTypeahead = Selector('.MultiUserInput input');
+export const comboBox = Selector('.cds--combo-box input');

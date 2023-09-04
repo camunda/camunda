@@ -6,9 +6,10 @@
  */
 
 import React from 'react';
+import {Button} from '@carbon/react';
 
 import {t} from 'translation';
-import {Button, EntityList, Deleter, BulkDeleter, AlertModal} from 'components';
+import {EntityList, Deleter, BulkDeleter, AlertModal} from 'components';
 import {showError} from 'notifications';
 import {
   loadAlerts,
@@ -131,7 +132,12 @@ export default withErrorHandling(
             name={t('alert.label-plural')}
             action={(bulkActive) =>
               !readOnly && (
-                <Button main primary={!bulkActive} onClick={this.openAddAlertModal}>
+                <Button
+                  className="createAlert"
+                  size="md"
+                  kind={bulkActive ? 'tertiary' : 'primary'}
+                  onClick={this.openAddAlertModal}
+                >
                   {t('alert.createNew')}
                 </Button>
               )

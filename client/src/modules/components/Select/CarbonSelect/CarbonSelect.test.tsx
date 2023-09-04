@@ -25,9 +25,11 @@ beforeEach(() => {
   jest.clearAllMocks();
 });
 
+const props = {id: 'id'};
+
 it('should render without crashing', () => {
   shallow(
-    <CarbonSelect>
+    <CarbonSelect {...props}>
       <CarbonSelect.Option />
     </CarbonSelect>
   );
@@ -35,7 +37,7 @@ it('should render without crashing', () => {
 
 it('should render a .CarbonSelect className by default', () => {
   const node = shallow(
-    <CarbonSelect>
+    <CarbonSelect {...props}>
       <CarbonSelect.Option />
     </CarbonSelect>
   );
@@ -45,7 +47,7 @@ it('should render a .CarbonSelect className by default', () => {
 
 it('should merge and render additional classNames as provided as a property', () => {
   const node = shallow(
-    <CarbonSelect className="foo">
+    <CarbonSelect {...props} className="foo">
       <CarbonSelect.Option />
     </CarbonSelect>
   );
@@ -55,7 +57,7 @@ it('should merge and render additional classNames as provided as a property', ()
 
 it('should render child elements and their props', () => {
   const node = shallow(
-    <CarbonSelect>
+    <CarbonSelect {...props}>
       <CarbonSelect.Option label="test_option" value="1" />
     </CarbonSelect>
   );
@@ -67,7 +69,7 @@ it('should render child elements and their props', () => {
 it('should select option onClick and add checked property', () => {
   const spy = jest.fn();
   const node = shallow<CarbonSelectProps>(
-    <CarbonSelect onChange={spy}>
+    <CarbonSelect {...props} onChange={spy}>
       <CarbonSelect.Option value="1" label="Option One" />
     </CarbonSelect>
   );
@@ -80,13 +82,13 @@ it('should select option onClick and add checked property', () => {
   node.setProps({value: '1'});
 
   expect(node.find(CarbonSelect.Option).prop('selected')).toBeTruthy();
-  expect(node.find('.CarbonSelect').prop('label')).toBe('Option One');
+  expect(node.find('ForwardRef(MenuDropdown)').prop('label')).toBe('Option One');
 });
 
 it('should select submenu option onClick and set checked property on the submenu and the option', () => {
   const spy = jest.fn();
   const node = shallow(
-    <CarbonSelect onChange={spy}>
+    <CarbonSelect {...props} onChange={spy}>
       <CarbonSelect.Submenu label="submenu">
         <CarbonSelect.Option value="1" label="Option One" />
       </CarbonSelect.Submenu>
@@ -102,22 +104,22 @@ it('should select submenu option onClick and set checked property on the submenu
 
   expect(node.find(CarbonSelect.Submenu).prop('selected')).toBeTruthy();
   expect(node.find(CarbonSelect.Option).prop('selected')).toBeTruthy();
-  expect(node.find('.CarbonSelect').prop('label')).toBe('submenu : Option One');
+  expect(node.find('ForwardRef(MenuDropdown)').prop('label')).toBe('submenu : Option One');
 });
 
 it('should allow a custom label', () => {
   const node = shallow(
-    <CarbonSelect label="Custom Select Label">
+    <CarbonSelect {...props} labelText="Custom Select Label">
       <CarbonSelect.Option />
     </CarbonSelect>
   );
 
-  expect(node.find(MenuDropdown).prop('label')).toBe('Custom Select Label');
+  expect(node.find('label').text()).toBe('Custom Select Label');
 });
 
 it('should use label attribute to calculate Select button label if provided', () => {
   const node = shallow(
-    <CarbonSelect>
+    <CarbonSelect {...props}>
       <CarbonSelect.Submenu label="submenu">
         <CarbonSelect.Option value="1" label="Option One">
           <b>Option</b>One
@@ -132,7 +134,7 @@ it('should use label attribute to calculate Select button label if provided', ()
 
 it('should invoke ignoreFragments when rendering the list', async () => {
   const children = [<CarbonSelect.Submenu key="1" />, <CarbonSelect.Option key="2" />];
-  shallow(<CarbonSelect>{children}</CarbonSelect>);
+  shallow(<CarbonSelect {...props}>{children}</CarbonSelect>);
 
   expect(ignoreFragments).toHaveBeenCalledWith(children);
 });
