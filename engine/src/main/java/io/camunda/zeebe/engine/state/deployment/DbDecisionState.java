@@ -60,9 +60,11 @@ public final class DbDecisionState implements MutableDecisionState {
   private final DbTenantAwareKey<DbString> tenantAwareDecisionRequirementsId;
   private final DbCompositeKey<DbForeignKey<DbLong>, DbForeignKey<DbLong>>
       dbDecisionRequirementsKeyAndDecisionKey;
+  private final DbTenantAwareKey<DbCompositeKey<DbForeignKey<DbLong>, DbForeignKey<DbLong>>>
+      tenantAwareDecisionRequirementsKeyAndDecisionKey;
 
-  // TODO
-  private final ColumnFamily<DbCompositeKey<DbForeignKey<DbLong>, DbForeignKey<DbLong>>, DbNil>
+  private final ColumnFamily<
+          DbTenantAwareKey<DbCompositeKey<DbForeignKey<DbLong>, DbForeignKey<DbLong>>>, DbNil>
       decisionKeyByDecisionRequirementsKey;
 
   private final ColumnFamily<DbTenantAwareKey<DbLong>, PersistedDecision> decisionsByKey;
@@ -145,11 +147,14 @@ public final class DbDecisionState implements MutableDecisionState {
 
     dbDecisionRequirementsKeyAndDecisionKey =
         new DbCompositeKey<>(fkDecisionRequirements, fkDecision);
+    tenantAwareDecisionRequirementsKeyAndDecisionKey =
+        new DbTenantAwareKey<>(
+            tenantIdKey, dbDecisionRequirementsKeyAndDecisionKey, PlacementType.PREFIX);
     decisionKeyByDecisionRequirementsKey =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.DMN_DECISION_KEY_BY_DECISION_REQUIREMENTS_KEY,
             transactionContext,
-            dbDecisionRequirementsKeyAndDecisionKey,
+            tenantAwareDecisionRequirementsKeyAndDecisionKey,
             DbNil.INSTANCE);
 
     dbDecisionVersion = new DbInt();
@@ -234,11 +239,12 @@ public final class DbDecisionState implements MutableDecisionState {
       final String tenantId, final long decisionRequirementsKey) {
     final List<PersistedDecision> decisions = new ArrayList<>();
 
+    tenantIdKey.wrapString(tenantId);
     dbDecisionRequirementsKey.wrapLong(decisionRequirementsKey);
     decisionKeyByDecisionRequirementsKey.whileEqualPrefix(
-        dbDecisionRequirementsKey,
+        new DbCompositeKey<>(tenantIdKey, dbDecisionRequirementsKey),
         ((key, nil) -> {
-          final var decisionKey = key.second();
+          final var decisionKey = key.wrappedKey().second();
           findDecisionByTenantAndKey(tenantId, decisionKey.inner().getValue())
               .ifPresent(decisions::add);
         }));
@@ -347,7 +353,7 @@ public final class DbDecisionState implements MutableDecisionState {
     dbDecisionKey.wrapLong(record.getDecisionKey());
     dbDecisionRequirementsKey.wrapLong(record.getDecisionRequirementsKey());
     decisionKeyByDecisionRequirementsKey.upsert(
-        dbDecisionRequirementsKeyAndDecisionKey, DbNil.INSTANCE);
+        tenantAwareDecisionRequirementsKeyAndDecisionKey, DbNil.INSTANCE);
 
     dbDecisionId.wrapString(record.getDecisionId());
     dbDecisionVersion.wrapInt(record.getVersion());
@@ -402,7 +408,8 @@ public final class DbDecisionState implements MutableDecisionState {
     dbDecisionId.wrapBuffer(record.getDecisionIdBuffer());
     dbDecisionVersion.wrapInt(record.getVersion());
 
-    decisionKeyByDecisionRequirementsKey.deleteExisting(dbDecisionRequirementsKeyAndDecisionKey);
+    decisionKeyByDecisionRequirementsKey.deleteExisting(
+        tenantAwareDecisionRequirementsKeyAndDecisionKey);
     decisionsByKey.deleteExisting(tenantAwareDecisionKey);
     decisionKeyByDecisionIdAndVersion.deleteExisting(tenantAwareDecisionIdAndVersion);
   }
