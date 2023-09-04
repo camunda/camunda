@@ -64,7 +64,8 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   private final MutableVariableState variableState;
 
   private final DbForeignKey<DbLong> processDefinitionKey;
-  private final DbCompositeKey<DbForeignKey<DbLong>, DbLong> processInstanceKeyByProcessDefinitionKey;
+  private final DbCompositeKey<DbForeignKey<DbLong>, DbLong>
+      processInstanceKeyByProcessDefinitionKey;
 
   /** [process definition key | process instance key] => [Nil] */
   private final ColumnFamily<DbCompositeKey<DbForeignKey<DbLong>, DbLong>, DbNil>
@@ -121,12 +122,12 @@ public final class DbElementInstanceState implements MutableElementInstanceState
             numberOfTakenSequenceFlowsKey,
             numberOfTakenSequenceFlows);
 
-    processDefinitionKey = new DbForeignKey<>(
-        new DbLong(),
-        ZbColumnFamilies.PROCESS_CACHE,
-        MatchType.Full,
-        (k) -> k.getValue() == -1
-    );
+    processDefinitionKey =
+        new DbForeignKey<>(
+            new DbLong(),
+            ZbColumnFamilies.PROCESS_CACHE,
+            MatchType.Full,
+            (k) -> k.getValue() == -1);
     processInstanceKeyByProcessDefinitionKey =
         new DbCompositeKey<>(processDefinitionKey, elementInstanceKey);
     processInstanceKeyByProcessDefinitionKeyColumnFamily =
