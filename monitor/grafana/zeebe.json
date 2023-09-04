@@ -4243,7 +4243,7 @@
             "max": false,
             "min": false,
             "rightSide": false,
-            "show": false,
+            "show": true,
             "total": false,
             "values": false
           },
@@ -4346,212 +4346,13 @@
           "dashes": false,
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "description": "Shows the number of garbage collections (GC) per second, aggregated per pod and GC type.",
-          "fill": 1,
-          "fillGradient": 0,
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 0,
-            "y": 12
-          },
-          "hiddenSeries": false,
-          "id": 285,
-          "legend": {
-            "avg": false,
-            "current": false,
-            "max": false,
-            "min": false,
-            "show": false,
-            "total": false,
-            "values": false
-          },
-          "lines": true,
-          "linewidth": 1,
-          "nullPointMode": "null",
-          "options": {
-            "alertThreshold": true
-          },
-          "percentage": false,
-          "pluginVersion": "9.5.2",
-          "pointradius": 2,
-          "points": false,
-          "renderer": "flot",
-          "seriesOverrides": [],
-          "spaceLength": 10,
-          "stack": false,
-          "steppedLine": false,
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
-              },
-              "editorMode": "code",
-              "expr": "sum(rate(jvm_gc_collection_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (gc, pod)",
-              "interval": "",
-              "legendFormat": "{{pod}} {{gc}}",
-              "range": true,
-              "refId": "A"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
-              },
-              "editorMode": "code",
-              "expr": "sum(rate(jvm_gc_pause_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (gc, pod)",
-              "hide": false,
-              "legendFormat": "{{pod}} {{gc}}",
-              "range": true,
-              "refId": "B"
-            }
-          ],
-          "thresholds": [],
-          "timeRegions": [],
-          "title": "GC Count per second",
-          "tooltip": {
-            "shared": true,
-            "sort": 2,
-            "value_type": "individual"
-          },
-          "type": "graph",
-          "xaxis": {
-            "mode": "time",
-            "show": true,
-            "values": []
-          },
-          "yaxes": [
-            {
-              "format": "short",
-              "logBase": 1,
-              "show": true
-            },
-            {
-              "format": "short",
-              "logBase": 1,
-              "show": true
-            }
-          ],
-          "yaxis": {
-            "align": false
-          }
-        },
-        {
-          "aliasColors": {},
-          "bars": false,
-          "dashLength": 10,
-          "dashes": false,
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "description": "Shows the garbage collection (GC) time proportion per second. Means shows the rate which is spent in GC in a second.",
-          "fill": 1,
-          "fillGradient": 0,
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 12,
-            "y": 12
-          },
-          "hiddenSeries": false,
-          "id": 286,
-          "legend": {
-            "avg": false,
-            "current": false,
-            "max": false,
-            "min": false,
-            "show": false,
-            "total": false,
-            "values": false
-          },
-          "lines": true,
-          "linewidth": 1,
-          "nullPointMode": "null",
-          "options": {
-            "alertThreshold": true
-          },
-          "percentage": false,
-          "pluginVersion": "9.5.2",
-          "pointradius": 2,
-          "points": false,
-          "renderer": "flot",
-          "seriesOverrides": [],
-          "spaceLength": 10,
-          "stack": false,
-          "steppedLine": false,
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
-              },
-              "editorMode": "code",
-              "expr": "rate(jvm_gc_collection_seconds_sum{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])",
-              "instant": false,
-              "interval": "",
-              "legendFormat": "{{pod}} {{gc}}",
-              "refId": "A"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
-              },
-              "editorMode": "code",
-              "expr": "rate(jvm_gc_pause_seconds_sum{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])",
-              "hide": false,
-              "instant": false,
-              "interval": "",
-              "legendFormat": "{{pod}} {{gc}}",
-              "refId": "B"
-            }
-          ],
-          "thresholds": [],
-          "timeRegions": [],
-          "title": "GC proportion per second",
-          "tooltip": {
-            "shared": true,
-            "sort": 2,
-            "value_type": "individual"
-          },
-          "type": "graph",
-          "xaxis": {
-            "mode": "time",
-            "show": true,
-            "values": []
-          },
-          "yaxes": [
-            {
-              "format": "s",
-              "logBase": 1,
-              "show": true
-            },
-            {
-              "format": "short",
-              "logBase": 1,
-              "show": true
-            }
-          ],
-          "yaxis": {
-            "align": false
-          }
-        },
-        {
-          "aliasColors": {},
-          "bars": false,
-          "dashLength": 10,
-          "dashes": false,
-          "datasource": {
-            "type": "prometheus",
             "uid": "$DS_PROMETHEUS"
           },
+          "description": "Total amount of memory reserved for the JVM, where:\n\n- Used means currently in use by live objects\n- Committed means allocated to the JVM by the OS, and guaranteed to be available for usage\n- Max means maximum possible committed memory, but not guaranteed",
           "fieldConfig": {
             "defaults": {
-              "links": []
+              "links": [],
+              "unit": "decbytes"
             },
             "overrides": []
           },
@@ -4561,7 +4362,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 20
+            "y": 12
           },
           "hiddenSeries": false,
           "id": 98,
@@ -4573,7 +4374,7 @@
             "max": false,
             "min": false,
             "rightSide": false,
-            "show": false,
+            "show": true,
             "total": false,
             "values": false
           },
@@ -4598,35 +4399,14 @@
               "datasource": {
                 "uid": "$DS_PROMETHEUS"
               },
-              "expr": "sum(jvm_memory_bytes_used{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\",area=\"nonheap\"}) by (pod)",
-              "format": "time_series",
-              "hide": true,
-              "intervalFactor": 1,
-              "legendFormat": "{{pod}} JVM direct",
-              "refId": "B"
-            },
-            {
-              "datasource": {
-                "uid": "$DS_PROMETHEUS"
-              },
+              "editorMode": "code",
               "expr": "sum(jvm_memory_bytes_used{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\",area=\"heap\"}) by (pod)",
               "format": "time_series",
+              "hide": false,
               "intervalFactor": 1,
-              "legendFormat": "{{pod}} JVM heap",
-              "refId": "C"
-            },
-            {
-              "datasource": {
-                "uid": "$DS_PROMETHEUS"
-              },
-              "editorMode": "code",
-              "expr": "sum(jvm_memory_used_bytes{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\",area=\"nonheap\"}) by (pod)",
-              "format": "time_series",
-              "hide": true,
-              "intervalFactor": 1,
-              "legendFormat": "{{pod}} JVM direct",
+              "legendFormat": "{{pod}} used",
               "range": true,
-              "refId": "A"
+              "refId": "C"
             },
             {
               "datasource": {
@@ -4637,9 +4417,34 @@
               "format": "time_series",
               "hide": false,
               "intervalFactor": 1,
-              "legendFormat": "{{pod}} JVM heap",
+              "legendFormat": "{{pod}} used",
               "range": true,
               "refId": "D"
+            },
+            {
+              "datasource": {
+                "uid": "$DS_PROMETHEUS"
+              },
+              "editorMode": "code",
+              "expr": "sum(jvm_memory_committed_bytes{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\",area=\"heap\"}) by (pod)",
+              "format": "time_series",
+              "hide": false,
+              "intervalFactor": 1,
+              "legendFormat": "{{pod}} committed",
+              "range": true,
+              "refId": "E"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "$DS_PROMETHEUS"
+              },
+              "editorMode": "code",
+              "expr": "sum(jvm_memory_max_bytes{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", area=\"heap\"}) by (pod)",
+              "hide": false,
+              "legendFormat": "{{pod}} max",
+              "range": true,
+              "refId": "F"
             }
           ],
           "thresholds": [
@@ -4704,7 +4509,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 20
+            "y": 12
           },
           "hiddenSeries": false,
           "id": 35,
@@ -4713,7 +4518,7 @@
             "current": false,
             "max": false,
             "min": false,
-            "show": false,
+            "show": true,
             "total": false,
             "values": false
           },
@@ -4841,13 +4646,39 @@
               },
               "unit": "bytes"
             },
-            "overrides": []
+            "overrides": [
+              {
+                "__systemRef": "hideSeriesFrom",
+                "matcher": {
+                  "id": "byNames",
+                  "options": {
+                    "mode": "exclude",
+                    "names": [
+                      "np-metrics-zeebe-gateway-648d886fdb-4gkc5",
+                      "np-metrics-zeebe-gateway-648d886fdb-r74d5"
+                    ],
+                    "prefix": "All except:",
+                    "readOnly": true
+                  }
+                },
+                "properties": [
+                  {
+                    "id": "custom.hideFrom",
+                    "value": {
+                      "legend": false,
+                      "tooltip": false,
+                      "viz": true
+                    }
+                  }
+                ]
+              }
+            ]
           },
           "gridPos": {
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 28
+            "y": 20
           },
           "id": 579,
           "options": {
@@ -4931,13 +4762,39 @@
               },
               "unit": "bytes"
             },
-            "overrides": []
+            "overrides": [
+              {
+                "__systemRef": "hideSeriesFrom",
+                "matcher": {
+                  "id": "byNames",
+                  "options": {
+                    "mode": "exclude",
+                    "names": [
+                      "np-metrics-zeebe-gateway-648d886fdb-4gkc5",
+                      "np-metrics-zeebe-gateway-648d886fdb-r74d5"
+                    ],
+                    "prefix": "All except:",
+                    "readOnly": true
+                  }
+                },
+                "properties": [
+                  {
+                    "id": "custom.hideFrom",
+                    "value": {
+                      "legend": false,
+                      "tooltip": false,
+                      "viz": true
+                    }
+                  }
+                ]
+              }
+            ]
           },
           "gridPos": {
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 28
+            "y": 20
           },
           "id": 580,
           "options": {
@@ -4967,6 +4824,207 @@
           ],
           "title": "Netty unpooled allocated bytes",
           "type": "timeseries"
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "description": "Shows the number of garbage collections (GC) per second, aggregated per pod and GC type.",
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 28
+          },
+          "hiddenSeries": false,
+          "id": 285,
+          "legend": {
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "show": false,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 1,
+          "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
+          "percentage": false,
+          "pluginVersion": "9.5.2",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "sum(rate(jvm_gc_collection_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (gc, pod)",
+              "interval": "",
+              "legendFormat": "{{pod}} {{gc}}",
+              "range": true,
+              "refId": "A"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "sum(rate(jvm_gc_pause_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (gc, pod)",
+              "hide": false,
+              "legendFormat": "{{pod}} {{gc}}",
+              "range": true,
+              "refId": "B"
+            }
+          ],
+          "thresholds": [],
+          "timeRegions": [],
+          "title": "GC Count per second",
+          "tooltip": {
+            "shared": true,
+            "sort": 2,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "mode": "time",
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "format": "short",
+              "logBase": 1,
+              "show": true
+            },
+            {
+              "format": "short",
+              "logBase": 1,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false
+          }
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "description": "Shows the garbage collection (GC) time proportion per second. Means shows the rate which is spent in GC in a second.",
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 28
+          },
+          "hiddenSeries": false,
+          "id": 286,
+          "legend": {
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "show": false,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 1,
+          "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
+          "percentage": false,
+          "pluginVersion": "9.5.2",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "rate(jvm_gc_collection_seconds_sum{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])",
+              "instant": false,
+              "interval": "",
+              "legendFormat": "{{pod}} {{gc}}",
+              "refId": "A"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "rate(jvm_gc_pause_seconds_sum{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])",
+              "hide": false,
+              "instant": false,
+              "interval": "",
+              "legendFormat": "{{pod}} {{gc}}",
+              "refId": "B"
+            }
+          ],
+          "thresholds": [],
+          "timeRegions": [],
+          "title": "GC proportion per second",
+          "tooltip": {
+            "shared": true,
+            "sort": 2,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "mode": "time",
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "format": "s",
+              "logBase": 1,
+              "show": true
+            },
+            {
+              "format": "short",
+              "logBase": 1,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false
+          }
         }
       ],
       "targets": [
