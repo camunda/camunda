@@ -28,7 +28,6 @@ import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -72,8 +71,6 @@ public final class DeploymentDmnTest {
   }
 
   @Test
-  @Ignore(
-      "Unignore in 13320 part 2. Currently 2nd deployment is marked as duplicate as the state is not supporting tenants yet.")
   public void shouldDeployDmnResourceForTenants() {
     // when
     final var tenant = "tenant";
