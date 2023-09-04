@@ -83,6 +83,7 @@ async function createHealtStatusConfig() {
         'upgrade-data-performance',
         'cluster-test',
         'java-compatibility',
+        'import-dynamic-data-performance',
         'e2e-tests',
       ],
     },

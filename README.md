@@ -37,6 +37,8 @@ business processes.
 
 [![e2e tests](https://github.com/camunda/camunda-optimize/actions/workflows/e2e-tests.yml/badge.svg)](https://github.com/camunda/camunda-optimize/actions/workflows/e2e-tests.yml)
 
+[![import dynamic dataset performance](https://github.com/camunda/camunda-optimize/actions/workflows/import-dynamic-data-performance.yml/badge.svg)](https://github.com/camunda/camunda-optimize/actions/workflows/import-dynamic-data-performance.yml)
+
 ## Building Optimize
 
 Apache Maven 3 and Java JDK 8 are prerequisites for building Camunda
