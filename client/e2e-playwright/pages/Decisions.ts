@@ -7,12 +7,19 @@
 
 import {Page, Locator} from '@playwright/test';
 import {Paths} from 'modules/Routes';
+import {convertToQueryString} from '../utils/convertToQueryString';
+
+type OptionalFilter =
+  | 'Process Instance Key'
+  | 'Decision Instance Key(s)'
+  | 'Evaluation Date Range';
 
 export class Decisions {
   private page: Page;
   readonly decisionNameFilter: Locator;
   readonly decisionVersionFilter: Locator;
   readonly decisionViewer: Locator;
+  readonly decisionInstanceKeysFilter: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -23,7 +30,9 @@ export class Decisions {
     this.decisionVersionFilter = page.getByRole('combobox', {
       name: 'Version',
     });
-
+    this.decisionInstanceKeysFilter = page.getByLabel(
+      /^decision instance key\(s\)$/i,
+    );
     this.decisionViewer = page.getByTestId('decision-viewer');
   }
 
@@ -37,8 +46,31 @@ export class Decisions {
     await this.page.getByTestId('expanded-panel').getByText(option).click();
   }
 
-  async navigateToDecisions(searchParams: string = '') {
-    await this.page.goto(`${Paths.decisions()}${searchParams}`);
+  async displayOptionalFilter(filterName: OptionalFilter) {
+    await this.page.getByRole('button', {name: 'More Filters'}).click();
+    await this.page
+      .getByRole('menuitem', {
+        name: filterName,
+      })
+      .click();
+  }
+
+  async navigateToDecisions({
+    searchParams,
+    options,
+  }: {
+    searchParams?: Parameters<typeof convertToQueryString>[0];
+    options?: Parameters<Page['goto']>[1];
+  }) {
+    if (searchParams === undefined) {
+      await this.page.goto(Paths.decisions());
+      return;
+    }
+
+    await this.page.goto(
+      `${Paths.decisions()}?${convertToQueryString(searchParams)}`,
+      options,
+    );
   }
 
   async clearComboBox() {

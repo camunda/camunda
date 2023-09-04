@@ -8,7 +8,6 @@
 import {setup} from './decisionInstances.mocks';
 import {test} from '../test-fixtures';
 import {SETUP_WAITING_TIME} from './constants';
-import {convertToQueryString} from '../utils/convertToQueryString';
 import {expect} from '@playwright/test';
 import {config} from '../config';
 
@@ -37,12 +36,12 @@ test.beforeAll(async ({request}) => {
 
 test.describe('Decision Instances', () => {
   test('Switch between Decision versions', async ({decisionsPage}) => {
-    await decisionsPage.navigateToDecisions(
-      `?${convertToQueryString({
+    await decisionsPage.navigateToDecisions({
+      searchParams: {
         evaluated: 'true',
         failed: 'true',
-      })}`,
-    );
+      },
+    });
 
     await decisionsPage.selectDecision('Decision 1');
     await decisionsPage.selectVersion('1');
