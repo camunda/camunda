@@ -58,9 +58,10 @@ public final class DbDecisionState implements MutableDecisionState {
   private final PersistedDecisionRequirements dbPersistedDecisionRequirements;
   private final DbString dbDecisionRequirementsId;
   private final DbTenantAwareKey<DbString> tenantAwareDecisionRequirementsId;
-
   private final DbCompositeKey<DbForeignKey<DbLong>, DbForeignKey<DbLong>>
       dbDecisionRequirementsKeyAndDecisionKey;
+
+  // TODO
   private final ColumnFamily<DbCompositeKey<DbForeignKey<DbLong>, DbForeignKey<DbLong>>, DbNil>
       decisionKeyByDecisionRequirementsKey;
 
@@ -70,6 +71,8 @@ public final class DbDecisionState implements MutableDecisionState {
 
   private final DbInt dbDecisionVersion;
   private final DbCompositeKey<DbString, DbInt> decisionIdAndVersion;
+
+  // TODO
   private final ColumnFamily<DbCompositeKey<DbString, DbInt>, DbForeignKey<DbLong>>
       decisionKeyByDecisionIdAndVersion;
 
@@ -80,7 +83,11 @@ public final class DbDecisionState implements MutableDecisionState {
 
   private final DbInt dbDecisionRequirementsVersion;
   private final DbCompositeKey<DbString, DbInt> decisionRequirementsIdAndVersion;
-  private final ColumnFamily<DbCompositeKey<DbString, DbInt>, DbForeignKey<DbLong>>
+  private final DbTenantAwareKey<DbCompositeKey<DbString, DbInt>>
+      tenantAwareDecisionRequirementsIdAndVersion;
+
+  private final ColumnFamily<
+          DbTenantAwareKey<DbCompositeKey<DbString, DbInt>>, DbForeignKey<DbLong>>
       decisionRequirementsKeyByIdAndVersion;
 
   private final LoadingCache<TenantIdAndDrgKey, DeployedDrg> drgCache;
@@ -156,11 +163,13 @@ public final class DbDecisionState implements MutableDecisionState {
     dbDecisionRequirementsVersion = new DbInt();
     decisionRequirementsIdAndVersion =
         new DbCompositeKey<>(dbDecisionRequirementsId, dbDecisionRequirementsVersion);
+    tenantAwareDecisionRequirementsIdAndVersion =
+        new DbTenantAwareKey<>(tenantIdKey, decisionRequirementsIdAndVersion, PlacementType.PREFIX);
     decisionRequirementsKeyByIdAndVersion =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.DMN_DECISION_REQUIREMENTS_KEY_BY_DECISION_REQUIREMENT_ID_AND_VERSION,
             transactionContext,
-            decisionRequirementsIdAndVersion,
+            tenantAwareDecisionRequirementsIdAndVersion,
             fkDecisionRequirements);
 
     drgCache =
@@ -300,16 +309,17 @@ public final class DbDecisionState implements MutableDecisionState {
   }
 
   private Optional<Long> findPreviousVersionDecisionRequirementsKey(
-      final DirectBuffer decisionRequirementsId, final int currentVersion) {
+      final DirectBuffer decisionRequirementsId, final int currentVersion, final String tenantId) {
     final Map<Integer, Long> decisionRequirementsKeysByVersion = new HashMap<>();
 
+    tenantIdKey.wrapString(tenantId);
     dbDecisionRequirementsId.wrapBuffer(decisionRequirementsId);
     decisionRequirementsKeyByIdAndVersion.whileEqualPrefix(
-        dbDecisionRequirementsId,
+        new DbCompositeKey<>(tenantIdKey, dbDecisionRequirementsId),
         ((key, drgKey) -> {
-          if (key.second().getValue() < currentVersion) {
+          if (key.wrappedKey().second().getValue() < currentVersion) {
             decisionRequirementsKeysByVersion.put(
-                key.second().getValue(), drgKey.inner().getValue());
+                key.wrappedKey().second().getValue(), drgKey.inner().getValue());
           }
         }));
 
@@ -351,7 +361,7 @@ public final class DbDecisionState implements MutableDecisionState {
     dbDecisionRequirementsId.wrapString(record.getDecisionRequirementsId());
     dbDecisionRequirementsVersion.wrapInt(record.getDecisionRequirementsVersion());
     decisionRequirementsKeyByIdAndVersion.upsert(
-        decisionRequirementsIdAndVersion, fkDecisionRequirements);
+        tenantAwareDecisionRequirementsIdAndVersion, fkDecisionRequirements);
 
     updateLatestDecisionRequirementsVersion(record);
   }
@@ -403,7 +413,8 @@ public final class DbDecisionState implements MutableDecisionState {
                 dbDecisionRequirementsId.wrapBuffer(record.getDecisionRequirementsIdBuffer());
                 findPreviousVersionDecisionRequirementsKey(
                         record.getDecisionRequirementsIdBuffer(),
-                        record.getDecisionRequirementsVersion())
+                        record.getDecisionRequirementsVersion(),
+                        record.getTenantId())
                     .ifPresentOrElse(
                         previousDrgKey -> {
                           // Update the latest decision version
@@ -424,7 +435,8 @@ public final class DbDecisionState implements MutableDecisionState {
     dbDecisionRequirementsVersion.wrapInt(record.getDecisionRequirementsVersion());
 
     decisionRequirementsByKey.deleteExisting(tenantAwareDecisionRequirementsKey);
-    decisionRequirementsKeyByIdAndVersion.deleteExisting(decisionRequirementsIdAndVersion);
+    decisionRequirementsKeyByIdAndVersion.deleteExisting(
+        tenantAwareDecisionRequirementsIdAndVersion);
     drgCache.invalidate(
         new TenantIdAndDrgKey(record.getTenantId(), record.getDecisionRequirementsKey()));
   }
