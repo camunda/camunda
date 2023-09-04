@@ -153,7 +153,7 @@ public final class JobPollerImpl implements JobPoller {
         // Log RESOURCE_EXHAUSTED status exceptions only as trace, otherwise it is just too
         // noisy. Furthermore it is not worth to be a warning since it is expected on a fully
         // loaded cluster. It should be handled by our backoff mechanism, but if there is an
-        // issue or an configuration mistake the user can turn on trace logging to see this.
+        // issue or a configuration mistake the user can turn on trace logging to see this.
         LOG.trace(errorMsg, workerName, jobType, throwable);
         return;
       }

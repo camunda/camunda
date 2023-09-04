@@ -44,7 +44,7 @@ import org.slf4j.Logger;
  * {@code remainingJobs} with the {@code activationThreshold}.
  *
  * <p>If a poll fails with an error response, a retry is scheduled with a delay using the {@code
- * retryDelaySupplier} to ask for a new {@code pollInterval}. By default this retry delay supplier
+ * retryDelaySupplier} to ask for a new {@code pollInterval}. By default, this retry delay supplier
  * is the {@link ExponentialBackoff}. This default is also used as a fallback for the user provided
  * backoff. On the next success, the {@code pollInterval} is reset to its original value.
  */
@@ -194,11 +194,16 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
     // first release, then lookup remaining jobs, to allow handleJobFinished() to poll
     releaseJobPoller(jobPoller);
     final int actualRemainingJobs = remainingJobs.addAndGet(activatedJobs);
-    pollInterval = initialPollInterval;
-    if (actualRemainingJobs <= 0) {
-      schedulePoll();
+
+    if (jobStreamer.isOpen()) {
+      backoff(jobPoller, null);
+    } else {
+      pollInterval = initialPollInterval;
+      if (actualRemainingJobs <= 0) {
+        schedulePoll();
+      }
+      // if jobs were activated, then successive polling happens due to handleJobFinished
     }
-    // if jobs were activated, then successive polling happens due to handleJobFinished
   }
 
   private void onPollError(final JobPoller jobPoller, final Throwable error) {
@@ -214,10 +219,14 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
       LOG.warn(SUPPLY_RETRY_DELAY_FAILURE_MESSAGE, e);
       pollInterval = DEFAULT_BACKOFF_SUPPLIER.supplyRetryDelay(prevInterval);
     }
-    LOG.debug(
-        "Failed to activate jobs due to {}, delay retry for {} ms",
-        error.getMessage(),
-        pollInterval);
+    if (error != null) {
+      // If the job stream is open then the backoff is expected, and it is not an actual error.
+      LOG.debug(
+          "Failed to activate jobs due to {}, delay retry for {} ms",
+          error.getMessage(),
+          pollInterval);
+    }
+
     releaseJobPoller(jobPoller);
     schedulePoll();
   }
