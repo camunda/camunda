@@ -394,7 +394,7 @@ public final class DecisionStateTest {
     decisionState.deleteDecision(decisionRecord);
 
     // then
-    assertThat(decisionState.findDecisionByKey(decisionRecord.getDecisionKey()).isEmpty());
+    assertThat(decisionState.findDecisionByKey(decisionRecord.getDecisionKey())).isEmpty();
     assertThat(decisionState.findLatestDecisionById(decisionRecord.getDecisionIdBuffer()))
         .isEmpty();
     assertThat(
@@ -426,7 +426,7 @@ public final class DecisionStateTest {
     decisionState.deleteDecision(decisionRecord1);
 
     // then
-    assertThat(decisionState.findDecisionByKey(decisionRecord1.getDecisionKey()).isEmpty());
+    assertThat(decisionState.findDecisionByKey(decisionRecord1.getDecisionKey())).isEmpty();
     final var latestDecisionById =
         decisionState.findLatestDecisionById(decisionRecord1.getDecisionIdBuffer());
     assertThat(latestDecisionById).isNotEmpty();
@@ -458,7 +458,7 @@ public final class DecisionStateTest {
     decisionState.deleteDecision(decisionRecord2);
 
     // then
-    assertThat(decisionState.findDecisionByKey(decisionRecord2.getDecisionKey()).isEmpty());
+    assertThat(decisionState.findDecisionByKey(decisionRecord2.getDecisionKey())).isEmpty();
     final var latestDecisionById =
         decisionState.findLatestDecisionById(decisionRecord2.getDecisionIdBuffer());
     assertThat(latestDecisionById).isNotEmpty();
@@ -492,7 +492,7 @@ public final class DecisionStateTest {
     decisionState.deleteDecision(decisionRecord3);
 
     // then
-    assertThat(decisionState.findDecisionByKey(decisionRecord3.getDecisionKey()).isEmpty());
+    assertThat(decisionState.findDecisionByKey(decisionRecord3.getDecisionKey())).isEmpty();
     final var latestDecisionById =
         decisionState.findLatestDecisionById(decisionRecord3.getDecisionIdBuffer());
     assertThat(latestDecisionById).isNotEmpty();
@@ -512,8 +512,8 @@ public final class DecisionStateTest {
     decisionState.deleteDecisionRequirements(drg);
 
     // then
-    assertThat(
-        decisionState.findDecisionRequirementsByKey(drg.getDecisionRequirementsKey()).isEmpty());
+    assertThat(decisionState.findDecisionRequirementsByKey(drg.getDecisionRequirementsKey()))
+        .isEmpty();
     assertThat(decisionState.findLatestDecisionById(drg.getDecisionRequirementsIdBuffer()))
         .isEmpty();
   }
@@ -538,9 +538,8 @@ public final class DecisionStateTest {
 
     // then
     assertThat(
-        decisionState
-            .findDecisionsByDecisionRequirementsKey(drg1.getDecisionRequirementsKey())
-            .isEmpty());
+            decisionState.findDecisionsByDecisionRequirementsKey(drg1.getDecisionRequirementsKey()))
+        .isEmpty();
     final var latestDrg =
         decisionState.findLatestDecisionRequirementsById(drg1.getDecisionRequirementsIdBuffer());
     assertThat(latestDrg).isNotEmpty();
@@ -569,7 +568,7 @@ public final class DecisionStateTest {
     decisionState.deleteDecisionRequirements(drg2);
 
     // then
-    assertThat(decisionState.findDecisionByKey(drg2.getDecisionRequirementsKey()).isEmpty());
+    assertThat(decisionState.findDecisionByKey(drg2.getDecisionRequirementsKey())).isEmpty();
     final var latestDrg =
         decisionState.findLatestDecisionRequirementsById(drg2.getDecisionRequirementsIdBuffer());
     assertThat(latestDrg).isNotEmpty();
@@ -598,7 +597,7 @@ public final class DecisionStateTest {
     decisionState.deleteDecisionRequirements(drg3);
 
     // then
-    assertThat(decisionState.findDecisionByKey(drg3.getDecisionRequirementsKey()).isEmpty());
+    assertThat(decisionState.findDecisionByKey(drg3.getDecisionRequirementsKey())).isEmpty();
     final var latestDrg =
         decisionState.findLatestDecisionRequirementsById(drg3.getDecisionRequirementsIdBuffer());
     assertThat(latestDrg).isNotEmpty();

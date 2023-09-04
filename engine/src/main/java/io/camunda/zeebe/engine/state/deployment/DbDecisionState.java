@@ -380,6 +380,7 @@ public final class DbDecisionState implements MutableDecisionState {
 
     decisionRequirementsByKey.deleteExisting(dbDecisionRequirementsKey);
     decisionRequirementsKeyByIdAndVersion.deleteExisting(decisionRequirementsIdAndVersion);
+    drgCache.invalidate(record.getDecisionRequirementsKey());
   }
 
   private void updateLatestDecisionVersion(final DecisionRecord record) {
