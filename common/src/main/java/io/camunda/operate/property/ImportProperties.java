@@ -60,6 +60,15 @@ public class ImportProperties {
    */
   private int variableSizeThreshold = DEFAULT_VARIABLE_SIZE_THRESHOLD;
 
+  /**
+   * When we build hierarchies for flow node instances (e.g. subprocess -> task inside subprocess) and for process instances
+   * parent instance -> child instance), we normally read data only from runtime indices. But it may occur that data was partially archived already.
+   * In this case import process will be stuck with errors "Unable to find parent tree path for flow node instance" or
+   * "Unable to find parent tree path for parent instance". This parameter allows to read parent instances from archived indices.
+   * Should not be set true forever for performance reasons.
+   */
+  private boolean readArchivedParents = false;
+
   public boolean isStartLoadingDataOnStartup() {
     return startLoadingDataOnStartup;
   }
@@ -152,4 +161,12 @@ public class ImportProperties {
     this.importPositionUpdateInterval = importPositionUpdateInterval;
   }
 
+  public boolean isReadArchivedParents() {
+    return readArchivedParents;
+  }
+
+  public ImportProperties setReadArchivedParents(boolean readArchivedParents) {
+    this.readArchivedParents = readArchivedParents;
+    return this;
+  }
 }

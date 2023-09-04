@@ -7,6 +7,7 @@
 package io.camunda.operate.store.elasticsearch;
 
 import io.camunda.operate.exceptions.OperateRuntimeException;
+import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.store.ListViewStore;
 import io.camunda.operate.store.NotFoundException;
@@ -44,6 +45,9 @@ public class ElasticsearchListViewStore implements ListViewStore {
   @Autowired
   private RestHighLevelClient esClient;
 
+  @Autowired
+  private OperateProperties operateProperties;
+
   @Override
   public Map<Long, String> getListViewIndicesForProcessInstances(List<Long> processInstanceIds) throws IOException {
     final List<String> processInstanceIdsAsStrings = map(processInstanceIds, Object::toString);
@@ -68,8 +72,11 @@ public class ElasticsearchListViewStore implements ListViewStore {
 
   @Override
   public String findProcessInstanceTreePathFor(long processInstanceKey) {
+    final ElasticsearchUtil.QueryType queryType = operateProperties.getImporter().isReadArchivedParents() ?
+        ElasticsearchUtil.QueryType.ALL :
+        ElasticsearchUtil.QueryType.ONLY_RUNTIME;
     final SearchRequest searchRequest = ElasticsearchUtil
-        .createSearchRequest(listViewTemplate, ElasticsearchUtil.QueryType.ONLY_RUNTIME)
+        .createSearchRequest(listViewTemplate, queryType)
         .source(new SearchSourceBuilder()
             .query(termQuery(ListViewTemplate.KEY, processInstanceKey))
             .fetchSource(ListViewTemplate.TREE_PATH, null));

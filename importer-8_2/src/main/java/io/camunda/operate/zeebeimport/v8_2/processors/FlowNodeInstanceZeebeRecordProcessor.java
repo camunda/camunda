@@ -230,8 +230,10 @@ public class FlowNodeInstanceZeebeRecordProcessor {
   }
 
   private String findParentTreePath(final long parentFlowNodeInstanceKey, int attemptCount) {
+    //TODO Elasticsearch changes
+    final QueryType queryType = operateProperties.getImporter().isReadArchivedParents() ? QueryType.ALL : QueryType.ONLY_RUNTIME;
     final SearchRequest searchRequest = ElasticsearchUtil
-        .createSearchRequest(flowNodeInstanceTemplate, QueryType.ONLY_RUNTIME)
+        .createSearchRequest(flowNodeInstanceTemplate, queryType)
         .source(new SearchSourceBuilder()
             .query(termQuery(FlowNodeInstanceTemplate.KEY, parentFlowNodeInstanceKey))
             .fetchSource(FlowNodeInstanceTemplate.TREE_PATH, null));

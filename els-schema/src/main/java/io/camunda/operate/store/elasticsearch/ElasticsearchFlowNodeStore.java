@@ -7,6 +7,7 @@
 package io.camunda.operate.store.elasticsearch;
 
 import io.camunda.operate.exceptions.OperateRuntimeException;
+import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.store.FlowNodeStore;
@@ -50,12 +51,17 @@ public class ElasticsearchFlowNodeStore implements FlowNodeStore {
   @Autowired
   private RestHighLevelClient esClient;
 
+  @Autowired
+  private OperateProperties operateProperties;
+
   @Override
   public String getFlowNodeIdByFlowNodeInstanceId(String flowNodeInstanceId) {
+    //TODO Elasticsearch changes
+    final ElasticsearchUtil.QueryType queryType = operateProperties.getImporter().isReadArchivedParents() ? ElasticsearchUtil.QueryType.ALL : ElasticsearchUtil.QueryType.ONLY_RUNTIME;
     final QueryBuilder query = joinWithAnd(termQuery(JOIN_RELATION, ACTIVITIES_JOIN_RELATION),
         termQuery(ListViewTemplate.ID, flowNodeInstanceId));
     final SearchRequest request = ElasticsearchUtil
-        .createSearchRequest(listViewTemplate, ElasticsearchUtil.QueryType.ONLY_RUNTIME)
+        .createSearchRequest(listViewTemplate, queryType)
         .source(new SearchSourceBuilder()
             .query(query).fetchSource(ACTIVITY_ID, null));
     final SearchResponse response;
@@ -100,8 +106,11 @@ public class ElasticsearchFlowNodeStore implements FlowNodeStore {
   }
 
   private String findParentTreePath(final long parentFlowNodeInstanceKey, int attemptCount) {
+    final ElasticsearchUtil.QueryType queryType = operateProperties.getImporter().isReadArchivedParents() ?
+        ElasticsearchUtil.QueryType.ALL :
+        ElasticsearchUtil.QueryType.ONLY_RUNTIME;
     final SearchRequest searchRequest = ElasticsearchUtil
-        .createSearchRequest(flowNodeInstanceTemplate, ElasticsearchUtil.QueryType.ONLY_RUNTIME)
+        .createSearchRequest(flowNodeInstanceTemplate, queryType)
         .source(new SearchSourceBuilder()
             .query(termQuery(FlowNodeInstanceTemplate.KEY, parentFlowNodeInstanceKey))
             .fetchSource(FlowNodeInstanceTemplate.TREE_PATH, null));
