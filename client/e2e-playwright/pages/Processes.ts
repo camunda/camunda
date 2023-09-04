@@ -136,9 +136,13 @@ export class Processes {
     await this.page.getByRole('option', {name: option}).click();
   }
 
-  async navigateToProcesses(
-    searchParams?: Parameters<typeof convertToQueryString>[0],
-  ) {
+  async navigateToProcesses({
+    searchParams,
+    options,
+  }: {
+    searchParams?: Parameters<typeof convertToQueryString>[0];
+    options?: Parameters<Page['goto']>[1];
+  }) {
     if (searchParams === undefined) {
       await this.page.goto(Paths.processes());
       return;
@@ -146,6 +150,7 @@ export class Processes {
 
     await this.page.goto(
       `${Paths.processes()}?${convertToQueryString(searchParams)}`,
+      options,
     );
   }
 

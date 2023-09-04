@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {expect, Route, Request} from '@playwright/test';
+import {expect, Route} from '@playwright/test';
 import {test} from '../test-fixtures';
 import {Paths} from 'modules/Routes';
 import {DecisionInstanceDto} from 'modules/api/decisionInstances/fetchDecisionInstance';
@@ -30,8 +30,8 @@ function mockResponses({
   decisionInstanceDetail: DecisionInstanceDto;
   drdData: DrdDataDto;
   xml: string;
-}): (router: Route, request: Request) => Promise<unknown> | unknown {
-  return (route) => {
+}) {
+  return (route: Route) => {
     if (route.request().url().includes('/api/authentications/user')) {
       return route.fulfill({
         status: 200,

@@ -183,10 +183,12 @@ test.describe('Processes', () => {
 
   test('Wait for process creation', async ({processesPage, page}) => {
     await processesPage.navigateToProcesses({
-      active: 'true',
-      incidents: 'true',
-      process: 'testProcess',
-      version: '1',
+      searchParams: {
+        active: 'true',
+        incidents: 'true',
+        process: 'testProcess',
+        version: '1',
+      },
     });
 
     await expect(page.getByTestId('data-table-skeleton')).toBeVisible();
