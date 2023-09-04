@@ -69,11 +69,6 @@ const DecisionOperations: React.FC<Props> = ({
                 Deleting the only existing version of a decision definition
                 could result in process incidents.
               </ListItem>
-              <ListItem>
-                In case the DRD contains decisions which are part of multiple
-                DRDs, these decision definitions and their DRDs will not be
-                deleted.
-              </ListItem>
             </UnorderedList>
             <Link
               href="https://docs.camunda.io/docs/components/operate/operate-introduction/"
