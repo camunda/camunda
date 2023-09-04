@@ -15,18 +15,16 @@ import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.impl.stream.JobStreamClient;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.shared.MainSupport;
 import io.camunda.zeebe.shared.Profile;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.VersionUtil;
-import io.camunda.zeebe.util.error.FatalErrorHandler;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextClosedEvent;
@@ -75,17 +73,13 @@ public class StandaloneGateway
   }
 
   public static void main(final String[] args) {
-    Thread.setDefaultUncaughtExceptionHandler(
-        FatalErrorHandler.uncaughtExceptionHandler(Loggers.GATEWAY_LOGGER));
+    MainSupport.setDefaultGlobalConfiguration();
+    MainSupport.putSystemPropertyIfAbsent(
+        "spring.banner.location", "classpath:/assets/zeebe_gateway_banner.txt");
 
-    System.setProperty("spring.banner.location", "classpath:/assets/zeebe_gateway_banner.txt");
-    System.setProperty(
-        "reactor.schedulers.defaultBoundedElasticSize",
-        String.valueOf(2 * Runtime.getRuntime().availableProcessors()));
     final var application =
-        new SpringApplicationBuilder(StandaloneGateway.class)
-            .web(WebApplicationType.REACTIVE)
-            .logStartupInfo(true)
+        MainSupport.createDefaultApplicationBuilder()
+            .sources(StandaloneGateway.class)
             .profiles(Profile.GATEWAY.getId())
             .build(args);
 

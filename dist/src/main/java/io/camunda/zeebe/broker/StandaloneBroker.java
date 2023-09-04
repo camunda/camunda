@@ -13,16 +13,14 @@ import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
 import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.camunda.zeebe.shared.MainSupport;
 import io.camunda.zeebe.shared.Profile;
 import io.camunda.zeebe.util.FileUtil;
-import io.camunda.zeebe.util.error.FatalErrorHandler;
 import java.io.IOException;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextClosedEvent;
@@ -67,17 +65,13 @@ public class StandaloneBroker
   }
 
   public static void main(final String[] args) {
-    Thread.setDefaultUncaughtExceptionHandler(
-        FatalErrorHandler.uncaughtExceptionHandler(Loggers.SYSTEM_LOGGER));
+    MainSupport.setDefaultGlobalConfiguration();
+    MainSupport.putSystemPropertyIfAbsent(
+        "spring.banner.location", "classpath:/assets/zeebe_broker_banner.txt");
 
-    System.setProperty("spring.banner.location", "classpath:/assets/zeebe_broker_banner.txt");
-    System.setProperty(
-        "reactor.schedulers.defaultBoundedElasticSize",
-        String.valueOf(2 * Runtime.getRuntime().availableProcessors()));
     final var application =
-        new SpringApplicationBuilder(StandaloneBroker.class)
-            .web(WebApplicationType.REACTIVE)
-            .logStartupInfo(true)
+        MainSupport.createDefaultApplicationBuilder()
+            .sources(StandaloneBroker.class)
             .profiles(Profile.BROKER.getId())
             .build(args);
 
