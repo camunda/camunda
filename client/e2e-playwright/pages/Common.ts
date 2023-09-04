@@ -32,4 +32,13 @@ export class Common {
     await this.clickOpenSettingsButton();
     await this.clickLogoutButton();
   }
+
+  async changeTheme(theme: string): Promise<void> {
+    await this.page.addInitScript((theme) => {
+      window.localStorage.setItem(
+        'sharedState',
+        JSON.stringify({theme: theme}),
+      );
+    }, theme);
+  }
 }

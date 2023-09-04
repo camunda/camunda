@@ -39,6 +39,7 @@ const test = base.extend<
     dashboardPage: Dashboard;
     processInstancePage: ProcessInstance;
     decisionsPage: Decisions;
+    commonPage: Common;
   },
   {workerStorageState: string}
 >({
@@ -85,6 +86,9 @@ const test = base.extend<
   },
   decisionsPage: async ({page}, use) => {
     await use(new Decisions(page));
+  },
+  commonPage: async ({page}, use) => {
+    await use(new Common(page));
   },
 });
 
