@@ -36,11 +36,6 @@ interface JobStreamer extends AutoCloseable {
   @ThreadSafe
   final class NoopJobStream implements JobStreamer {
     private static final NoopJobStream INSTANCE = new NoopJobStream();
-    private static boolean isOpen = false;
-
-    public void setIsOpen(final boolean isOpen) {
-      this.isOpen = isOpen;
-    }
 
     @Override
     public void close() {}

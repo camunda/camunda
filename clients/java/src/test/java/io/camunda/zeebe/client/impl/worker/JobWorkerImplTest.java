@@ -122,9 +122,9 @@ public final class JobWorkerImplTest {
   }
 
   @Test
-  public void shouldBackoffWhenStreamEnabledAndOnPollSuccess() {
+  public void shouldBackoffWhenStreamEnabledOnPollSuccessAndResponseIsEmpty() {
     // given a gateway that responds with some jobs
-    gateway.respondWith(TestData.jobs(10));
+    gateway.respondWith(TestData.jobs(0));
 
     // and a client with stream enabled and retry delay supplier that is slowing down polling
     client
@@ -135,7 +135,7 @@ public final class JobWorkerImplTest {
         .streamEnabled(true)
         .open();
 
-    // and assuming that the gateway responded multiple times successfully with jobs
+    // and assuming that the gateway responded multiple times successfully
     gateway.startMeasuring();
     Awaitility.await()
         .pollInterval(Duration.ofMillis(10))
