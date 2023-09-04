@@ -71,9 +71,10 @@ public final class DbDecisionState implements MutableDecisionState {
 
   private final DbInt dbDecisionVersion;
   private final DbCompositeKey<DbString, DbInt> decisionIdAndVersion;
+  private final DbTenantAwareKey<DbCompositeKey<DbString, DbInt>> tenantAwareDecisionIdAndVersion;
 
-  // TODO
-  private final ColumnFamily<DbCompositeKey<DbString, DbInt>, DbForeignKey<DbLong>>
+  private final ColumnFamily<
+          DbTenantAwareKey<DbCompositeKey<DbString, DbInt>>, DbForeignKey<DbLong>>
       decisionKeyByDecisionIdAndVersion;
 
   private final ColumnFamily<DbTenantAwareKey<DbLong>, PersistedDecisionRequirements>
@@ -153,11 +154,13 @@ public final class DbDecisionState implements MutableDecisionState {
 
     dbDecisionVersion = new DbInt();
     decisionIdAndVersion = new DbCompositeKey<>(dbDecisionId, dbDecisionVersion);
+    tenantAwareDecisionIdAndVersion =
+        new DbTenantAwareKey<>(tenantIdKey, decisionIdAndVersion, PlacementType.PREFIX);
     decisionKeyByDecisionIdAndVersion =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.DMN_DECISION_KEY_BY_DECISION_ID_AND_VERSION,
             transactionContext,
-            decisionIdAndVersion,
+            tenantAwareDecisionIdAndVersion,
             fkDecision);
 
     dbDecisionRequirementsVersion = new DbInt();
@@ -285,18 +288,21 @@ public final class DbDecisionState implements MutableDecisionState {
    *
    * @param decisionId the id of the decision
    * @param currentVersion the current version
+   * @param tenantId the tenant of the decision
    * @return the decision key of the version that's previous to the given version
    */
   private Optional<Long> findPreviousVersionDecisionKey(
-      final DirectBuffer decisionId, final int currentVersion) {
+      final DirectBuffer decisionId, final int currentVersion, final String tenantId) {
     final Map<Integer, Long> decisionKeysByVersion = new HashMap<>();
 
+    tenantIdKey.wrapString(tenantId);
     dbDecisionId.wrapBuffer(decisionId);
     decisionKeyByDecisionIdAndVersion.whileEqualPrefix(
-        dbDecisionId,
+        new DbCompositeKey<>(tenantIdKey, dbDecisionId),
         ((key, decisionKey) -> {
-          if (key.second().getValue() < currentVersion) {
-            decisionKeysByVersion.put(key.second().getValue(), decisionKey.inner().getValue());
+          if (key.wrappedKey().second().getValue() < currentVersion) {
+            decisionKeysByVersion.put(
+                key.wrappedKey().second().getValue(), decisionKey.inner().getValue());
           }
         }));
 
@@ -345,7 +351,7 @@ public final class DbDecisionState implements MutableDecisionState {
 
     dbDecisionId.wrapString(record.getDecisionId());
     dbDecisionVersion.wrapInt(record.getVersion());
-    decisionKeyByDecisionIdAndVersion.upsert(decisionIdAndVersion, fkDecision);
+    decisionKeyByDecisionIdAndVersion.upsert(tenantAwareDecisionIdAndVersion, fkDecision);
 
     updateLatestDecisionVersion(record);
   }
@@ -376,7 +382,8 @@ public final class DbDecisionState implements MutableDecisionState {
             latestVersion -> {
               if (latestVersion == record.getVersion()) {
                 dbDecisionId.wrapBuffer(record.getDecisionIdBuffer());
-                findPreviousVersionDecisionKey(record.getDecisionIdBuffer(), record.getVersion())
+                findPreviousVersionDecisionKey(
+                        record.getDecisionIdBuffer(), record.getVersion(), record.getTenantId())
                     .ifPresentOrElse(
                         previousDecisionKey -> {
                           // Update the latest decision version
@@ -397,7 +404,7 @@ public final class DbDecisionState implements MutableDecisionState {
 
     decisionKeyByDecisionRequirementsKey.deleteExisting(dbDecisionRequirementsKeyAndDecisionKey);
     decisionsByKey.deleteExisting(tenantAwareDecisionKey);
-    decisionKeyByDecisionIdAndVersion.deleteExisting(decisionIdAndVersion);
+    decisionKeyByDecisionIdAndVersion.deleteExisting(tenantAwareDecisionIdAndVersion);
   }
 
   @Override
