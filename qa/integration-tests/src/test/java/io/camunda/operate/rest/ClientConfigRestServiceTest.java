@@ -73,7 +73,8 @@ public class ClientConfigRestServiceTest extends OperateIntegrationTest {
             + "\"mixpanelToken\":\"i-am-a-token\","
             + "\"isLoginDelegated\":false,"
             + "\"tasklistUrl\":\"https://tasklist.camunda.io/tl\","
-            + "\"resourcePermissionsEnabled\":false"
+            + "\"resourcePermissionsEnabled\":false,"
+            + "\"multiTenancyEnabled\":false"
             + "};");
   }
 
@@ -101,7 +102,8 @@ public class ClientConfigRestServiceTest extends OperateIntegrationTest {
             + "\"mixpanelToken\":\"i-am-a-token\","
             + "\"isLoginDelegated\":false,"
             + "\"tasklistUrl\":null,"
-            + "\"resourcePermissionsEnabled\":false"
+            + "\"resourcePermissionsEnabled\":false,"
+            + "\"multiTenancyEnabled\":false"
             + "};");
   }
 
@@ -130,7 +132,8 @@ public class ClientConfigRestServiceTest extends OperateIntegrationTest {
             + "\"mixpanelToken\":\"i-am-a-token\","
             + "\"isLoginDelegated\":false,"
             + "\"tasklistUrl\":null,"
-            + "\"resourcePermissionsEnabled\":false"
+            + "\"resourcePermissionsEnabled\":false,"
+            + "\"multiTenancyEnabled\":false"
             + "};");
   }
 

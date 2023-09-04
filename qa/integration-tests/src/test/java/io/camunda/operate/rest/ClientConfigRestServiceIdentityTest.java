@@ -60,7 +60,8 @@ public class ClientConfigRestServiceIdentityTest extends OperateIntegrationTest 
             + "\"mixpanelToken\":null,"
             + "\"isLoginDelegated\":true,"
             + "\"tasklistUrl\":null,"
-            + "\"resourcePermissionsEnabled\":false"
+            + "\"resourcePermissionsEnabled\":false,"
+            + "\"multiTenancyEnabled\":false"
             + "};");
   }
 

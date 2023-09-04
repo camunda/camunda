@@ -45,6 +45,8 @@ public class ClientConfig {
 
   public boolean resourcePermissionsEnabled;
 
+  public boolean multiTenancyEnabled;
+
   public String asJson(){
     isEnterprise = operateProperties.isEnterprise();
     clusterId = operateProperties.getCloud().getClusterId();
@@ -56,6 +58,7 @@ public class ClientConfig {
     isLoginDelegated = profileService.isLoginDelegated();
     tasklistUrl = operateProperties.getTasklistUrl();
     resourcePermissionsEnabled = operateProperties.getIdentity().isResourcePermissionsEnabled();
+    multiTenancyEnabled = operateProperties.getMultiTenancy().isEnabled();
     try {
       return String.format("window.clientConfig = %s;",
           new ObjectMapper().writeValueAsString(this));

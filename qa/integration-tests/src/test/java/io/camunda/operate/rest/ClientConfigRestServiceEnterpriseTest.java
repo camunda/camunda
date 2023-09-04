@@ -36,6 +36,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
         OperateProperties.PREFIX + ".cloud.organizationid=organizationId",
         OperateProperties.PREFIX + ".cloud.mixpanelToken=i-am-a-token",
         OperateProperties.PREFIX + ".cloud.mixpanelAPIHost=https://fake.mixpanel.com",
+        OperateProperties.PREFIX + ".multiTenancy.enabled=true",
         //CAMUNDA_OPERATE_CLOUD_CLUSTERID=clusterId  -- leave out to test for null values
     }
 )
@@ -62,7 +63,8 @@ public class ClientConfigRestServiceEnterpriseTest extends OperateIntegrationTes
             + "\"mixpanelToken\":\"i-am-a-token\","
             + "\"isLoginDelegated\":false,"
             + "\"tasklistUrl\":null,"
-            + "\"resourcePermissionsEnabled\":false"
+            + "\"resourcePermissionsEnabled\":false,"
+            + "\"multiTenancyEnabled\":true"
             + "};");
   }
 
