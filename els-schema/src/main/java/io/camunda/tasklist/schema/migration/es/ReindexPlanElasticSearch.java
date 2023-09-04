@@ -4,12 +4,13 @@
  * See the License.txt file for more information. You may not use this file
  * except in compliance with the proprietary license.
  */
-package io.camunda.tasklist.schema.migration;
+package io.camunda.tasklist.schema.migration.es;
 
 import static io.camunda.tasklist.util.CollectionUtil.map;
 
 import io.camunda.tasklist.es.RetryElasticsearchClient;
 import io.camunda.tasklist.exceptions.MigrationException;
+import io.camunda.tasklist.schema.migration.Step;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -25,9 +26,9 @@ import org.slf4j.LoggerFactory;
  * Steps that will be added are elasticsearch ingest processors.<br>
  * The steps will be applied in the order they were added.<br>
  */
-public class ReindexPlan implements Plan {
+public class ReindexPlanElasticSearch {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(ReindexPlan.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ReindexPlanElasticSearch.class);
 
   private static final String DEFAULT_SCRIPT =
       "ctx._index = params.dstIndex+'_' + (ctx._index.substring(ctx._index.indexOf('_') + 1, ctx._index.length()))";
@@ -44,7 +45,7 @@ public class ReindexPlan implements Plan {
     return script;
   }
 
-  public ReindexPlan buildScript(Script script) {
+  public ReindexPlanElasticSearch buildScript(Script script) {
     this.script = script;
     return this;
   }
@@ -53,7 +54,7 @@ public class ReindexPlan implements Plan {
     return srcIndex;
   }
 
-  public ReindexPlan setSrcIndex(String srcIndex) {
+  public ReindexPlanElasticSearch setSrcIndex(String srcIndex) {
     this.srcIndex = srcIndex;
     return this;
   }
@@ -62,27 +63,26 @@ public class ReindexPlan implements Plan {
     return dstIndex;
   }
 
-  public ReindexPlan setDstIndex(String dstIndex) {
+  public ReindexPlanElasticSearch setDstIndex(String dstIndex) {
     this.dstIndex = dstIndex;
     return this;
   }
 
-  public ReindexPlan buildScript(final String scriptContent, final Map<String, Object> params) {
+  public ReindexPlanElasticSearch buildScript(
+      final String scriptContent, final Map<String, Object> params) {
     script = new Script(ScriptType.INLINE, "painless", scriptContent, params);
     return this;
   }
 
-  @Override
   public List<Step> getSteps() {
     return steps;
   }
 
-  public ReindexPlan setSteps(List<Step> steps) {
+  public ReindexPlanElasticSearch setSteps(List<Step> steps) {
     this.steps = steps;
     return this;
   }
 
-  @Override
   public void executeOn(final RetryElasticsearchClient retryElasticsearchClient)
       throws MigrationException {
     final ReindexRequest reindexRequest =
@@ -128,7 +128,7 @@ public class ReindexPlan implements Plan {
 
   @Override
   public String toString() {
-    return "ReindexPlan [steps="
+    return "ReindexPlanElasticSearch [steps="
         + steps
         + ",  srcIndex="
         + srcIndex
@@ -137,13 +137,17 @@ public class ReindexPlan implements Plan {
         + "]";
   }
 
-  public ReindexPlan setBatchSize(int reindexBatchSize) {
+  public ReindexPlanElasticSearch setBatchSize(int reindexBatchSize) {
     this.reindexBatchSize = reindexBatchSize;
     return this;
   }
 
-  public ReindexPlan setSlices(int slices) {
+  public ReindexPlanElasticSearch setSlices(int slices) {
     this.slices = slices;
     return this;
+  }
+
+  public static ReindexPlanElasticSearch create() {
+    return new ReindexPlanElasticSearch();
   }
 }

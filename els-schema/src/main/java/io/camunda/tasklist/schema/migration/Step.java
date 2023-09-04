@@ -24,32 +24,17 @@ import java.util.Comparator;
 public interface Step {
 
   Comparator<Step> SEMANTICVERSION_COMPARATOR =
-      new Comparator<Step>() {
-        @Override
-        public int compare(Step s1, Step s2) {
-          return SemanticVersion.fromVersion(s1.getVersion())
-              .compareTo(SemanticVersion.fromVersion(s2.getVersion()));
-        }
-      };
+      Comparator.comparing(s -> SemanticVersion.fromVersion(s.getVersion()));
 
-  Comparator<Step> ORDER_COMPARATOR =
-      new Comparator<Step>() {
-        @Override
-        public int compare(Step s1, Step s2) {
-          return s1.getOrder().compareTo(s2.getOrder());
-        }
-      };
+  Comparator<Step> ORDER_COMPARATOR = Comparator.comparing(Step::getOrder);
 
   Comparator<Step> SEMANTICVERSION_ORDER_COMPARATOR =
-      new Comparator<Step>() {
-        @Override
-        public int compare(Step s1, Step s2) {
-          int result = SEMANTICVERSION_COMPARATOR.compare(s1, s2);
-          if (result == 0) {
-            result = ORDER_COMPARATOR.compare(s1, s2);
-          }
-          return result;
+      (s1, s2) -> {
+        int result = SEMANTICVERSION_COMPARATOR.compare(s1, s2);
+        if (result == 0) {
+          result = ORDER_COMPARATOR.compare(s1, s2);
         }
+        return result;
       };
 
   String INDEX_NAME = "indexName",
@@ -60,25 +45,25 @@ public interface Step {
       ORDER = "order",
       CONTENT = "content";
 
-  public OffsetDateTime getCreatedDate();
+  OffsetDateTime getCreatedDate();
 
-  public Step setCreatedDate(final OffsetDateTime date);
+  Step setCreatedDate(final OffsetDateTime date);
 
-  public OffsetDateTime getAppliedDate();
+  OffsetDateTime getAppliedDate();
 
-  public Step setAppliedDate(final OffsetDateTime date);
+  Step setAppliedDate(final OffsetDateTime date);
 
-  public String getVersion();
+  String getVersion();
 
-  public Integer getOrder();
+  Integer getOrder();
 
-  public boolean isApplied();
+  boolean isApplied();
 
-  public Step setApplied(final boolean isApplied);
+  Step setApplied(final boolean isApplied);
 
-  public String getIndexName();
+  String getIndexName();
 
-  public String getContent();
+  String getContent();
 
-  public String getDescription();
+  String getDescription();
 }

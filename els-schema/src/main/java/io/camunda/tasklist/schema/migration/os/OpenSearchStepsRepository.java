@@ -4,17 +4,19 @@
  * See the License.txt file for more information. You may not use this file
  * except in compliance with the proprietary license.
  */
-package io.camunda.tasklist.schema.migration;
+package io.camunda.tasklist.schema.migration.os;
 
-import static io.camunda.tasklist.util.ElasticsearchUtil.joinWithAnd;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+import static io.camunda.tasklist.util.OpenSearchUtil.joinWithAnd;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
-import io.camunda.tasklist.es.RetryElasticsearchClient;
+import io.camunda.tasklist.CommonUtils;
+import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.exceptions.MigrationException;
+import io.camunda.tasklist.os.RetryOpenSearchClient;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.indices.MigrationRepositoryIndex;
+import io.camunda.tasklist.schema.migration.Step;
+import io.camunda.tasklist.schema.migration.StepsRepository;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.OffsetDateTime;
@@ -22,11 +24,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.support.IndicesOptions;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.elasticsearch.search.sort.SortOrder;
+import org.opensearch.client.opensearch._types.ExpandWildcard;
+import org.opensearch.client.opensearch._types.FieldValue;
+import org.opensearch.client.opensearch._types.query_dsl.Query;
+import org.opensearch.client.opensearch._types.query_dsl.TermQuery;
+import org.opensearch.client.opensearch.core.SearchRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,21 +38,16 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.stereotype.Component;
 
-/**
- * Saves and retrieves Steps from Elasticsearch index.<br>
- * After creation it updates the repository index by looking in classpath folder for new steps.<br>
- */
 @Component
-@Conditional(ElasticSearchCondition.class)
-public class ElasticsearchStepsRepository implements StepsRepository {
-
-  private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchStepsRepository.class);
+@Conditional(OpenSearchCondition.class)
+public class OpenSearchStepsRepository implements StepsRepository {
+  private static final Logger LOGGER = LoggerFactory.getLogger(OpenSearchStepsRepository.class);
 
   private static final String STEP_FILE_EXTENSION = ".json";
 
-  private static final String DEFAULT_SCHEMA_CHANGE_FOLDER = "/schema/es/change";
+  private static final String DEFAULT_SCHEMA_CHANGE_FOLDER = "/schema/os/change";
 
-  @Autowired private RetryElasticsearchClient retryElasticsearchClient;
+  @Autowired private RetryOpenSearchClient retryOpenSearchClient;
 
   @Qualifier("tasklistObjectMapper")
   @Autowired
@@ -75,7 +72,7 @@ public class ElasticsearchStepsRepository implements StepsRepository {
         save(step);
       }
     }
-    retryElasticsearchClient.refresh(migrationRepositoryIndex.getFullQualifiedName());
+    retryOpenSearchClient.refresh(migrationRepositoryIndex.getFullQualifiedName());
   }
 
   private List<Step> readStepsFromClasspath() throws IOException {
@@ -83,7 +80,7 @@ public class ElasticsearchStepsRepository implements StepsRepository {
 
     final List<Resource> resources =
         getResourcesFor(
-            ElasticsearchStepsRepository.DEFAULT_SCHEMA_CHANGE_FOLDER + "/*" + STEP_FILE_EXTENSION);
+            OpenSearchStepsRepository.DEFAULT_SCHEMA_CHANGE_FOLDER + "/*" + STEP_FILE_EXTENSION);
     for (Resource resource : resources) {
       LOGGER.info("Read step {} ", resource.getFilename());
       steps.add(readStepFromFile(resource.getInputStream()));
@@ -114,10 +111,10 @@ public class ElasticsearchStepsRepository implements StepsRepository {
   @Override
   public void save(final Step step) throws MigrationException, IOException {
     final boolean createdOrUpdated =
-        retryElasticsearchClient.createOrUpdateDocument(
+        retryOpenSearchClient.createOrUpdateDocument(
             migrationRepositoryIndex.getFullQualifiedName(),
             idFromStep(step),
-            objectMapper.writeValueAsString(step));
+            CommonUtils.getJsonObjectFromEntity(step));
     if (createdOrUpdated) {
       LOGGER.info("Step {}  saved.", step);
     } else {
@@ -126,40 +123,53 @@ public class ElasticsearchStepsRepository implements StepsRepository {
     }
   }
 
-  protected List<Step> findBy(final Optional<QueryBuilder> query) {
-    final SearchSourceBuilder searchSpec =
-        new SearchSourceBuilder().sort(Step.VERSION + ".keyword", SortOrder.ASC);
-    query.ifPresent(searchSpec::query);
+  protected List<Step> findBy(final Optional<Query> query) {
     final SearchRequest request =
-        new SearchRequest(migrationRepositoryIndex.getFullQualifiedName())
-            .source(searchSpec)
-            .indicesOptions(IndicesOptions.lenientExpandOpen());
-    return retryElasticsearchClient.searchWithScroll(request, Step.class, objectMapper);
+        SearchRequest.of(
+            sr -> {
+              query.ifPresent(sr::query);
+              return sr.index(migrationRepositoryIndex.getFullQualifiedName())
+                  .sort(
+                      sort ->
+                          sort.field(
+                              f ->
+                                  f.field(Step.VERSION + ".keyword")
+                                      .order(
+                                          org.opensearch.client.opensearch._types.SortOrder.Asc)))
+                  .allowNoIndices(true)
+                  .ignoreUnavailable(true)
+                  .expandWildcards(ExpandWildcard.Open)
+                  .scroll(s -> s.time(RetryOpenSearchClient.SCROLL_KEEP_ALIVE_MS));
+            });
+    return retryOpenSearchClient.searchWithScroll(request, Step.class, objectMapper);
   }
 
   /** Returns all stored steps in repository index */
   @Override
   public List<Step> findAll() {
     LOGGER.debug(
-        "Find all steps from Elasticsearch at {}:{} ",
-        tasklistProperties.getElasticsearch().getHost(),
-        tasklistProperties.getElasticsearch().getPort());
+        "Find all steps from OpenSearch at {}:{} ",
+        tasklistProperties.getOpenSearch().getHost(),
+        tasklistProperties.getOpenSearch().getPort());
 
     return findBy(Optional.empty());
   }
+
   /** Returns all steps for an index that are not applied yet. */
   @Override
   public List<Step> findNotAppliedFor(final String indexName) {
     LOGGER.debug(
-        "Find 'not applied steps' for index {} from Elasticsearch at {}:{} ",
+        "Find 'not applied steps' for index {} from OpenSearch at {}:{} ",
         indexName,
-        tasklistProperties.getElasticsearch().getHost(),
-        tasklistProperties.getElasticsearch().getPort());
+        tasklistProperties.getOpenSearch().getHost(),
+        tasklistProperties.getOpenSearch().getPort());
 
     return findBy(
-        Optional.ofNullable(
+        Optional.of(
             joinWithAnd(
-                termQuery(Step.INDEX_NAME + ".keyword", indexName),
-                termQuery(Step.APPLIED, false))));
+                new TermQuery.Builder()
+                    .field(Step.INDEX_NAME + ".keyword")
+                    .value(FieldValue.of(indexName)),
+                new TermQuery.Builder().field(Step.APPLIED).value(FieldValue.of(false)))));
   }
 }

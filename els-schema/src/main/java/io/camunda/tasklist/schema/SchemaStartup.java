@@ -7,6 +7,7 @@
 package io.camunda.tasklist.schema;
 
 import io.camunda.tasklist.exceptions.MigrationException;
+import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.MigrationProperties;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.manager.SchemaManager;
@@ -41,9 +42,9 @@ public class SchemaStartup {
     schemaValidator.validate();
 
     Boolean isCreateSchema = false;
-    if (tasklistProperties.getDatabase().equals(TasklistProperties.ELASTIC_SEARCH)) {
+    if (TasklistProperties.ELASTIC_SEARCH.equalsIgnoreCase(tasklistProperties.getDatabase())) {
       isCreateSchema = tasklistProperties.getElasticsearch().isCreateSchema();
-    } else if (tasklistProperties.getDatabase().equals(TasklistProperties.OPEN_SEARCH)) {
+    } else if (TasklistProperties.OPEN_SEARCH.equalsIgnoreCase(tasklistProperties.getDatabase())) {
       isCreateSchema = tasklistProperties.getOpenSearch().isCreateSchema();
     }
 
@@ -56,8 +57,13 @@ public class SchemaStartup {
     }
     if (migrationProperties.isMigrationEnabled()) {
       LOGGER.info("SchemaStartup: migrate schema.");
-      migrator.migrate();
+      try {
+        migrator.migrate();
+      } catch (Exception e) {
+        LOGGER.error("An issue occurred during schema migration, details:", e);
+        throw new TasklistRuntimeException("An issue occurred during schema migration", e);
+      }
     }
-    LOGGER.info("SchemaStartup finished.");
+    LOGGER.info("SchemaStartup: finished.");
   }
 }

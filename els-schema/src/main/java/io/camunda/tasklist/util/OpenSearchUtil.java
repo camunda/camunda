@@ -30,7 +30,19 @@ import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.Time;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
-import org.opensearch.client.opensearch.core.*;
+import org.opensearch.client.opensearch._types.query_dsl.QueryVariant;
+import org.opensearch.client.opensearch.core.BulkRequest;
+import org.opensearch.client.opensearch.core.BulkResponse;
+import org.opensearch.client.opensearch.core.ClearScrollRequest;
+import org.opensearch.client.opensearch.core.DeleteByQueryRequest;
+import org.opensearch.client.opensearch.core.DeleteByQueryResponse;
+import org.opensearch.client.opensearch.core.ReindexRequest;
+import org.opensearch.client.opensearch.core.ReindexResponse;
+import org.opensearch.client.opensearch.core.ScrollRequest;
+import org.opensearch.client.opensearch.core.ScrollResponse;
+import org.opensearch.client.opensearch.core.SearchRequest;
+import org.opensearch.client.opensearch.core.SearchResponse;
+import org.opensearch.client.opensearch.core.UpdateRequest;
 import org.opensearch.client.opensearch.core.bulk.BulkResponseItem;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.core.search.HitsMetadata;
@@ -102,16 +114,22 @@ public abstract class OpenSearchUtil {
 
   public static Query joinWithAnd(ObjectBuilder... queries) {
     final List<ObjectBuilder> notNullQueries = throwAwayNullElements(queries);
-    switch (notNullQueries.size()) {
-      case 0:
-        return null;
-      default:
-        final BoolQuery.Builder boolQ = boolQuery();
-        for (ObjectBuilder query : notNullQueries) {
-          boolQ.must((Query) query.build());
-        }
-        return new Query.Builder().bool(boolQ.build()).build();
+    if (notNullQueries.size() == 0) {
+      return new Query.Builder().build();
     }
+    final BoolQuery.Builder boolQ = boolQuery();
+    for (ObjectBuilder queryBuilder : notNullQueries) {
+      final var query = queryBuilder.build();
+
+      if (query instanceof QueryVariant qv) {
+        boolQ.must(qv._toQuery());
+      } else if (query instanceof Query q) {
+        boolQ.must(q);
+      } else {
+        throw new TasklistRuntimeException("Queries should be of type [Query] or [QueryVariant]");
+      }
+    }
+    return new Query.Builder().bool(boolQ.build()).build();
   }
 
   public static Query.Builder joinQueryBuilderWithAnd(ObjectBuilder... queries) {

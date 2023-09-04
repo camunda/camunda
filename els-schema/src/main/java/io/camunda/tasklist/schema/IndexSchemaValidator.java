@@ -8,15 +8,13 @@ package io.camunda.tasklist.schema;
 
 import io.camunda.tasklist.schema.indices.IndexDescriptor;
 import java.util.Set;
-import org.springframework.stereotype.Component;
 
-@Component
 public interface IndexSchemaValidator {
-  public Set<String> olderVersionsForIndex(IndexDescriptor indexDescriptor);
+  Set<String> olderVersionsForIndex(IndexDescriptor indexDescriptor);
 
-  public void validate();
+  void validate();
 
-  public boolean hasAnyTasklistIndices();
+  boolean hasAnyTasklistIndices();
 
-  public boolean schemaExists();
+  boolean schemaExists();
 }

@@ -67,6 +67,7 @@ public class IndexSchemaValidatorOpenSearch implements IndexSchemaValidator {
         .collect(Collectors.toSet());
   }
 
+  @Override
   public Set<String> olderVersionsForIndex(IndexDescriptor indexDescriptor) {
     final SemanticVersion currentVersion =
         SemanticVersion.fromVersion(indexDescriptor.getVersion());
@@ -93,6 +94,7 @@ public class IndexSchemaValidatorOpenSearch implements IndexSchemaValidator {
     return Optional.empty();
   }
 
+  @Override
   public void validate() {
     if (!hasAnyTasklistIndices()) {
       return;
@@ -120,6 +122,7 @@ public class IndexSchemaValidatorOpenSearch implements IndexSchemaValidator {
     }
   }
 
+  @Override
   public boolean hasAnyTasklistIndices() {
     final Set<String> indices =
         retryOpenSearchClient.getIndexNames(
@@ -127,6 +130,7 @@ public class IndexSchemaValidatorOpenSearch implements IndexSchemaValidator {
     return !indices.isEmpty();
   }
 
+  @Override
   public boolean schemaExists() {
     try {
       final Set<String> indices =

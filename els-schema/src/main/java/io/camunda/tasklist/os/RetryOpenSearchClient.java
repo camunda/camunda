@@ -8,22 +8,27 @@ package io.camunda.tasklist.os;
 
 import static io.camunda.tasklist.util.CollectionUtil.getOrDefaultForNullValue;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
+import io.camunda.tasklist.util.CollectionUtil;
+import jakarta.json.stream.JsonParser;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import net.jodah.failsafe.Failsafe;
 import net.jodah.failsafe.RetryPolicy;
 import net.jodah.failsafe.function.CheckedSupplier;
-import org.opensearch.client.json.JsonData;
+import org.opensearch.client.json.JsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.HealthStatus;
 import org.opensearch.client.opensearch._types.OpenSearchException;
@@ -31,6 +36,7 @@ import org.opensearch.client.opensearch._types.Result;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.cluster.HealthResponse;
 import org.opensearch.client.opensearch.cluster.PutComponentTemplateRequest;
+import org.opensearch.client.opensearch.core.ClearScrollRequest;
 import org.opensearch.client.opensearch.core.DeleteByQueryRequest;
 import org.opensearch.client.opensearch.core.DeleteByQueryResponse;
 import org.opensearch.client.opensearch.core.DeleteRequest;
@@ -39,11 +45,17 @@ import org.opensearch.client.opensearch.core.GetRequest;
 import org.opensearch.client.opensearch.core.GetResponse;
 import org.opensearch.client.opensearch.core.IndexResponse;
 import org.opensearch.client.opensearch.core.ReindexRequest;
+import org.opensearch.client.opensearch.core.ReindexResponse;
+import org.opensearch.client.opensearch.core.ScrollRequest;
+import org.opensearch.client.opensearch.core.SearchRequest;
+import org.opensearch.client.opensearch.core.SearchResponse;
+import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.indices.CreateIndexRequest;
 import org.opensearch.client.opensearch.indices.GetIndexResponse;
 import org.opensearch.client.opensearch.indices.GetIndicesSettingsResponse;
 import org.opensearch.client.opensearch.indices.IndexSettings;
 import org.opensearch.client.opensearch.indices.PutIndexTemplateRequest;
+import org.opensearch.client.opensearch.ingest.Processor;
 import org.opensearch.client.opensearch.tasks.GetTasksResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,7 +71,7 @@ public class RetryOpenSearchClient {
   public static final String NO_REFRESH = "-1";
   public static final String NUMBERS_OF_REPLICA = "index.number_of_replicas";
   public static final String NO_REPLICA = "0";
-  public static final int SCROLL_KEEP_ALIVE_MS = 60_000;
+  public static final String SCROLL_KEEP_ALIVE_MS = "60000ms";
   public static final int DEFAULT_NUMBER_OF_RETRIES =
       30 * 10; // 30*10 with 2 seconds = 10 minutes retry loop
   public static final int DEFAULT_DELAY_INTERVAL_IN_SECONDS = 2;
@@ -153,17 +165,6 @@ public class RetryOpenSearchClient {
   }
 
   public boolean createOrUpdateDocument(String name, String id, Map source) {
-
-    return executeWithRetries(
-        () -> {
-          final IndexResponse response =
-              openSearchClient.index(i -> i.index(name).id(id).document(source));
-          final Result result = response.result();
-          return result.equals(Result.Created) || result.equals(Result.Updated);
-        });
-  }
-
-  public boolean createOrUpdateDocument(String name, String id, String source) {
     return executeWithRetries(
         () -> {
           final IndexResponse response =
@@ -272,13 +273,14 @@ public class RetryOpenSearchClient {
     return executeWithRetries(
         "GetIndexSettings " + indexName,
         () -> {
-          final Map<String, String> settings = new HashMap<>();
           final GetIndicesSettingsResponse response =
               openSearchClient.indices().getSettings(s -> s.index(List.of(indexName)));
-          for (String field : fields) {
-            settings.put(field, response.get(field).toString());
-          }
-          return settings;
+
+          final Set<String> fieldNames = Set.of(fields);
+          return response.result().entrySet().stream()
+              .filter(entry -> fieldNames.contains(entry.getKey()))
+              .filter(entry -> entry.getValue() != null)
+              .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().toString()));
         });
   }
 
@@ -310,15 +312,28 @@ public class RetryOpenSearchClient {
                 .acknowledged());
   }
 
-  public boolean addPipeline(String name, String definition) {
-    // final BytesReference content = new BytesArray(definition.getBytes());
+  public boolean addPipeline(String name, List<String> processorDefinitions) {
     return executeWithRetries(
         "AddPipeline " + name,
-        () ->
-            openSearchClient
-                .ingest()
-                .putPipeline(i -> i.id(name).meta(name, JsonData.of(definition)))
-                .acknowledged());
+        () -> {
+          final List<Processor> processors =
+              processorDefinitions.stream()
+                  .map(
+                      definition -> {
+                        final JsonpMapper mapper = openSearchClient._transport().jsonpMapper();
+                        final JsonParser parser =
+                            mapper
+                                .jsonProvider()
+                                .createParser(new ByteArrayInputStream(definition.getBytes()));
+                        return Processor._DESERIALIZER.deserialize(parser, mapper);
+                      })
+                  .collect(Collectors.toList());
+
+          return openSearchClient
+              .ingest()
+              .putPipeline(i -> i.id(name).processors(processors))
+              .acknowledged();
+        });
   }
 
   public boolean removePipeline(String name) {
@@ -348,7 +363,8 @@ public class RetryOpenSearchClient {
               return true;
             }
           }
-          final String task = openSearchClient.reindex(reindexRequest).task();
+          final ReindexResponse reindex = openSearchClient.reindex(reindexRequest);
+          final String task = reindex.task();
           TimeUnit.of(ChronoUnit.MILLIS).sleep(2_000);
           return waitUntilTaskIsCompleted(task, srcCount);
         },
@@ -362,16 +378,15 @@ public class RetryOpenSearchClient {
   // (created,updated and deleted documents) not equal to to total documents
   //   we need to wait and poll again the task status
   private boolean waitUntilTaskIsCompleted(String taskId, long srcCount) {
-    final String[] taskIdParts = taskId.split(":");
-    final String nodeId = taskIdParts[0];
-    final Long smallTaskId = Long.parseLong(taskIdParts[1]);
     final GetTasksResponse taskResponse =
         executeWithGivenRetries(
             Integer.MAX_VALUE,
-            "GetTaskInfo{" + nodeId + "},{" + smallTaskId + "}",
+            "GetTaskInfo{" + taskId + "}",
             () -> {
-              openSearchTask.checkForErrorsOrFailures(nodeId, smallTaskId.intValue());
-              return openSearchClient.tasks().get(t -> t.taskId(String.valueOf(smallTaskId)));
+              final GetTasksResponse tasksResponse =
+                  openSearchClient.tasks().get(t -> t.taskId(taskId));
+              openSearchTask.checkForErrorsOrFailures(tasksResponse);
+              return tasksResponse;
             },
             openSearchTask::needsToPollAgain);
     if (taskResponse != null) {
@@ -412,54 +427,42 @@ public class RetryOpenSearchClient {
         });
   }*/
 
-  /*public <T> List<T> searchWithScroll(
+  public <T> List<T> searchWithScroll(
       SearchRequest searchRequest, Class<T> resultClass, ObjectMapper objectMapper) {
     final long totalHits =
         executeWithRetries(
             "Count search results",
-            () -> esClient.search(searchRequest, requestOptions).getHits().getTotalHits().value);
+            () -> openSearchClient.search(searchRequest, resultClass).hits().total().value());
     return executeWithRetries(
         "Search with scroll",
         () -> scroll(searchRequest, resultClass, objectMapper),
         resultList -> resultList.size() != totalHits);
-  }*/
+  }
 
-  /*private <T> List<T> scroll(SearchRequest searchRequest, Class<T> clazz, ObjectMapper objectMapper)
+  private <T> List<T> scroll(SearchRequest searchRequest, Class<T> clazz, ObjectMapper objectMapper)
       throws IOException {
     final List<T> results = new ArrayList<>();
-    searchRequest.scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
-    SearchResponse response = esClient.search(searchRequest, requestOptions);
+    SearchResponse<T> response = openSearchClient.search(searchRequest, clazz);
 
     String scrollId = null;
-    while (response.getHits().getHits().length > 0) {
-      results.addAll(
-          CollectionUtil.map(
-              response.getHits().getHits(),
-              searchHit -> searchHitToObject(searchHit, clazz, objectMapper)));
+    while (response.hits().hits().size() > 0) {
+      results.addAll(CollectionUtil.map(response.hits().hits(), Hit::source));
 
-      scrollId = response.getScrollId();
-      final SearchScrollRequest scrollRequest =
-          new SearchScrollRequest(scrollId).scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
-      response = esClient.scroll(scrollRequest, requestOptions);
+      scrollId = response.scrollId();
+      final ScrollRequest scrollRequest =
+          new ScrollRequest.Builder()
+              .scrollId(scrollId)
+              .scroll(s -> s.time(SCROLL_KEEP_ALIVE_MS))
+              .build();
+      response = openSearchClient.scroll(scrollRequest, clazz);
     }
     if (scrollId != null) {
-      final ClearScrollRequest clearScrollRequest = new ClearScrollRequest();
-      clearScrollRequest.addScrollId(scrollId);
-      esClient.clearScroll(clearScrollRequest, requestOptions);
+      final ClearScrollRequest clearScrollRequest =
+          new ClearScrollRequest.Builder().scrollId(scrollId).build();
+      openSearchClient.clearScroll(clearScrollRequest);
     }
     return results;
   }
-
-  /*private <T> T searchHitToObject(SearchHit searchHit, Class<T> clazz, ObjectMapper objectMapper) {
-    try {
-      return objectMapper.readValue(searchHit.getSourceAsString(), clazz);
-    } catch (JsonProcessingException e) {
-      throw new TasklistRuntimeException(
-          String.format(
-              "Error while reading entity of type %s from Elasticsearch!", clazz.getName()),
-          e);
-    }
-  }*/
 
   // ------------------- Retry part ------------------
   private <T> T executeWithRetries(CheckedSupplier<T> supplier) {
@@ -503,7 +506,7 @@ public class RetryOpenSearchClient {
       throw new TasklistRuntimeException(
           "Couldn't execute operation "
               + operationName
-              + " on elasticsearch for "
+              + " on opensearch for "
               + numberOfRetries
               + " attempts with "
               + delayIntervalInSeconds

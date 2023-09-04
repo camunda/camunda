@@ -12,7 +12,7 @@ import static io.camunda.tasklist.es.RetryElasticsearchClient.NUMBERS_OF_REPLICA
 import static io.camunda.tasklist.es.RetryElasticsearchClient.REFRESH_INTERVAL;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.tasklist.schema.migration.Plan;
+import io.camunda.tasklist.schema.migration.es.ReindexPlanElasticSearch;
 import io.camunda.tasklist.util.TasklistIntegrationTest;
 import java.util.List;
 import java.util.Map;
@@ -57,8 +57,10 @@ public class ReindexIT extends TasklistIntegrationTest {
     createIndex(idxName("index-1.2.4_"), List.of());
 
     retryElasticsearchClient.refresh(idxName("index-*"));
-    final Plan plan =
-        Plan.forReindex().setSrcIndex(idxName("index-1.2.3")).setDstIndex(idxName("index-1.2.4"));
+    final ReindexPlanElasticSearch plan =
+        ReindexPlanElasticSearch.create()
+            .setSrcIndex(idxName("index-1.2.3"))
+            .setDstIndex(idxName("index-1.2.4"));
 
     plan.executeOn(retryElasticsearchClient);
 

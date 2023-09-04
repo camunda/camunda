@@ -15,6 +15,7 @@ import org.opensearch.client.opensearch.tasks.Status;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
 
 @Component
 @Conditional(OpenSearchCondition.class)
@@ -32,8 +33,7 @@ public class OpenSearchTask {
   public static final String DELETED = "deleted";
   @Autowired private OpenSearchClient openSearchClient;
 
-  public void checkForErrorsOrFailures(final String node, final Integer id) throws IOException {
-    final GetTasksResponse tasks = openSearchClient.tasks().get(t -> t.taskId(node + ":" + id));
+  public void checkForErrorsOrFailures(final GetTasksResponse tasks) throws IOException {
     if (tasks != null) {
       checkForErrors(tasks);
       checkForFailures(tasks);
@@ -47,25 +47,21 @@ public class OpenSearchTask {
   }
 
   private void checkForFailures(final GetTasksResponse taskResponse) {
-    if (taskResponse.response().failures() != null) {
+    if (!CollectionUtils.isEmpty(taskResponse.response().failures())) {
       throw new TasklistRuntimeException(taskResponse.response().failures().get(0));
     }
   }
 
-  // TODO check this method
   public boolean needsToPollAgain(final GetTasksResponse taskResponse) {
-    return false;
-    /*if (taskResponse == null) {
+    if (taskResponse == null) {
       return false;
     }
-    final Map<String, Object> statusMap = getTaskStatusMap(taskResponse.get());
-    final long total = taskResponse.task().
-
-            (Integer) statusMap.get(TOTAL);
-    final long created = (Integer) statusMap.get(CREATED);
-    final long updated = (Integer) statusMap.get(UPDATED);
-    final long deleted = (Integer) statusMap.get(DELETED);
-    return !taskResponse.get().completed() || (created + updated + deleted != total);*/
+    final Status taskStatus = getTaskStatus(taskResponse);
+    final long total = taskStatus.total();
+    final long created = taskStatus.created();
+    final long updated = taskStatus.updated();
+    final long deleted = taskStatus.deleted();
+    return !taskResponse.completed() || (created + updated + deleted != total);
   }
 
   private Status getTaskStatus(final GetTasksResponse taskResponse) {

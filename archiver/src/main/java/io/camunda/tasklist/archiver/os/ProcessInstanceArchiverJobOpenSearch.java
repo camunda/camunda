@@ -216,7 +216,7 @@ public class ProcessInstanceArchiverJobOpenSearch extends AbstractArchiverJobOpe
             .size(tasklistProperties.getArchiver().getRolloverBatchSize())
             .sort(s -> s.field(f -> f.field(ProcessInstanceIndex.END_DATE).order(SortOrder.Asc)))
             .requestCache(false)
-            .scroll(Time.of(t -> t.time(String.valueOf(SCROLL_KEEP_ALIVE_MS))))
+            .scroll(Time.of(t -> t.time(SCROLL_KEEP_ALIVE_MS)))
             .build();
 
     LOGGER.debug("Query finished process instances for archiving request: \n{}", q.toString());

@@ -4,7 +4,7 @@
  * See the License.txt file for more information. You may not use this file
  * except in compliance with the proprietary license.
  */
-package io.camunda.tasklist.schema.migration;
+package io.camunda.tasklist.schema.migration.es;
 
 import static io.camunda.tasklist.es.RetryElasticsearchClient.NO_REFRESH;
 import static io.camunda.tasklist.es.RetryElasticsearchClient.NO_REPLICA;
@@ -21,6 +21,9 @@ import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.IndexSchemaValidator;
 import io.camunda.tasklist.schema.SemanticVersion;
 import io.camunda.tasklist.schema.indices.IndexDescriptor;
+import io.camunda.tasklist.schema.migration.Migrator;
+import io.camunda.tasklist.schema.migration.Step;
+import io.camunda.tasklist.schema.migration.StepsRepository;
 import io.camunda.tasklist.schema.templates.TemplateDescriptor;
 import java.io.IOException;
 import java.time.OffsetDateTime;
@@ -30,7 +33,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Future;
-import java.util.stream.Collectors;
 import org.elasticsearch.common.settings.Settings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -80,7 +82,7 @@ public class ElasticSearchMigrator implements Migrator {
     }
     boolean failed = false;
     final List<Future<Boolean>> results =
-        indexDescriptors.stream().map(this::migrateIndexInThread).collect(Collectors.toList());
+        indexDescriptors.stream().map(this::migrateIndexInThread).toList();
     for (Future<Boolean> result : results) {
       try {
         if (!result.get()) {
@@ -129,7 +131,7 @@ public class ElasticSearchMigrator implements Migrator {
       final String currentVersion = indexDescriptor.getVersion();
       final List<Step> stepsForIndex =
           stepsRepository.findNotAppliedFor(indexDescriptor.getIndexName());
-      final Plan plan =
+      final ReindexPlanElasticSearch plan =
           createPlanFor(
               indexDescriptor.getIndexName(), olderVersion, currentVersion, stepsForIndex);
       migrateIndex(indexDescriptor, plan);
@@ -152,7 +154,8 @@ public class ElasticSearchMigrator implements Migrator {
     }
   }
 
-  private void migrateIndex(final IndexDescriptor indexDescriptor, final Plan plan)
+  private void migrateIndex(
+      final IndexDescriptor indexDescriptor, final ReindexPlanElasticSearch plan)
       throws IOException, MigrationException {
     final TasklistElasticsearchProperties elsConfig = tasklistProperties.getElasticsearch();
 
@@ -203,7 +206,7 @@ public class ElasticSearchMigrator implements Migrator {
     return settings;
   }
 
-  protected Plan createPlanFor(
+  protected ReindexPlanElasticSearch createPlanFor(
       final String indexName,
       final String srcVersion,
       final String dstVersion,
@@ -225,7 +228,7 @@ public class ElasticSearchMigrator implements Migrator {
     final String srcIndex = String.format("%s-%s-%s", indexPrefix, indexName, srcVersion);
     final String dstIndex = String.format("%s-%s-%s", indexPrefix, indexName, dstVersion);
 
-    return Plan.forReindex()
+    return ReindexPlanElasticSearch.create()
         .setBatchSize(migrationProperties.getReindexBatchSize())
         .setSlices(migrationProperties.getSlices())
         .setSrcIndex(srcIndex)
