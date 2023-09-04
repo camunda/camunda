@@ -990,7 +990,7 @@
         # if more timers become due than can be activated during a certain time period.
         #
         # This setting can also be set using the environment variable ZEEBE_BROKER_EXPERIMENTAL_FEATURES_ENABLEYIELDINGDUEDATECHECKER
-        # enableYieldingDueDateChecker: false
+        # enableYieldingDueDateChecker: true
 
         # Controls whether to collect metrics about actor usage such as actor job execution latencies
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_FEATURES_ENABLEACTORMETRICS
