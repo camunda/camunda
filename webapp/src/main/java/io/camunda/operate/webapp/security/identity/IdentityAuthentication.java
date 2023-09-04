@@ -17,6 +17,7 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.SpringContextHolder;
 import io.camunda.operate.webapp.security.Permission;
 import io.camunda.operate.webapp.security.tenant.OperateTenant;
+import io.camunda.operate.webapp.security.tenant.TenantAwareAuthentication;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -29,7 +30,7 @@ import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.util.StringUtils;
 
-public class IdentityAuthentication extends AbstractAuthenticationToken implements Serializable {
+public class IdentityAuthentication extends AbstractAuthenticationToken implements Serializable, TenantAwareAuthentication {
 
   private static final long serialVersionUID = 1L;
 
@@ -122,6 +123,7 @@ public class IdentityAuthentication extends AbstractAuthenticationToken implemen
     return authorizations;
   }
 
+  @Override
   public List<OperateTenant> getTenants() {
     if (tenants == null) {
       synchronized (this) {
