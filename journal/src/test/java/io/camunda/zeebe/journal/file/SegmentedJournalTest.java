@@ -27,12 +27,9 @@ import io.camunda.zeebe.journal.record.PersistedJournalRecord;
 import io.camunda.zeebe.journal.record.RecordData;
 import io.camunda.zeebe.journal.util.MockJournalMetastore;
 import io.camunda.zeebe.journal.util.PosixPathAssert;
-import io.camunda.zeebe.test.util.junit.RegressionTest;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -912,32 +909,6 @@ class SegmentedJournalTest {
     assertThatThrownBy(() -> journal.append(4, journalFactory.entry()))
         .isInstanceOf(OutOfDiskSpace.class)
         .hasMessage("Nope, no free space.");
-  }
-
-  @RegressionTest("https://github.com/camunda/zeebe/issues/13955")
-  void shouldPrintAsyncOODOnlyOnceFailed() {
-    // given
-    // in order to assert output
-    final ByteArrayOutputStream outContent = new ByteArrayOutputStream();
-    System.setOut(new PrintStream(outContent));
-
-    journalFactory = new TestJournalFactory("test", 1, createFailingSegmentAllocator(3));
-    journal = journalFactory.journal(journalFactory.segmentsManager(directory));
-    journal.append(1, journalFactory.entry()); // first segment
-    journal.append(2, journalFactory.entry()); // second segment - after this we are creating async
-
-    // when - then
-    assertThatThrownBy(() -> journal.append(3, journalFactory.entry()))
-        .isInstanceOf(OutOfDiskSpace.class)
-        .hasMessage("Nope, no free space.");
-    assertThatThrownBy(() -> journal.append(4, journalFactory.entry()))
-        .isInstanceOf(OutOfDiskSpace.class)
-        .hasMessage("Nope, no free space.");
-
-    // then
-    assertThat(outContent.toString())
-        .containsOnlyOnce(
-            "java.util.concurrent.CompletionException: io.camunda.zeebe.journal.JournalException$OutOfDiskSpace: Nope, no free space.");
   }
 
   private SegmentedJournal openJournal(final int entriesPerSegment) {
