@@ -27,6 +27,7 @@ import io.camunda.zeebe.journal.record.PersistedJournalRecord;
 import io.camunda.zeebe.journal.record.RecordData;
 import io.camunda.zeebe.journal.util.MockJournalMetastore;
 import io.camunda.zeebe.journal.util.PosixPathAssert;
+import io.camunda.zeebe.test.util.junit.RegressionTest;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
 import java.io.ByteArrayOutputStream;
@@ -913,7 +914,7 @@ class SegmentedJournalTest {
         .hasMessage("Nope, no free space.");
   }
 
-  @Test
+  @RegressionTest("https://github.com/camunda/zeebe/issues/13955")
   void shouldPrintAsyncOODOnlyOnceFailed() {
     // given
     // in order to assert output
