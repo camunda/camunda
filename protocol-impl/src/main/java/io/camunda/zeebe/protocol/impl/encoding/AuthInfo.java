@@ -7,14 +7,11 @@
  */
 package io.camunda.zeebe.protocol.impl.encoding;
 
-import com.auth0.jwt.interfaces.DecodedJWT;
 import io.camunda.zeebe.auth.impl.Authorization;
-import io.camunda.zeebe.auth.impl.JwtAuthorizationDecoder;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import java.util.List;
 import java.util.Map;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -76,15 +73,9 @@ public class AuthInfo extends UnpackedObject {
     switch (getFormat()) {
       case JWT -> {
         final String jwtToken = getAuthData();
-        final DecodedJWT decodedJWT =
-            Authorization.jwtDecoder(jwtToken)
-                .withClaim(JwtAuthorizationDecoder.AUTHORIZED_TENANTS_CLAIM)
-                .build();
-        final List<String> authorizedTenants =
-            decodedJWT
-                .getClaim(JwtAuthorizationDecoder.AUTHORIZED_TENANTS_CLAIM)
-                .asList(String.class);
-        return Map.of(JwtAuthorizationDecoder.AUTHORIZED_TENANTS_CLAIM, authorizedTenants);
+        return Authorization.jwtDecoder(jwtToken)
+            .withClaim(Authorization.AUTHORIZED_TENANTS)
+            .decode();
       }
       default -> {
         return Map.of();
