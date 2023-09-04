@@ -19,7 +19,6 @@ import com.auth0.jwt.interfaces.Claim;
 import io.camunda.zeebe.auth.api.AuthorizationEncoder;
 import io.camunda.zeebe.auth.impl.Authorization;
 import io.camunda.zeebe.auth.impl.JwtAuthorizationDecoder;
-import io.camunda.zeebe.auth.impl.JwtAuthorizationEncoder;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
 import java.util.List;
 import java.util.Map;
@@ -45,8 +44,7 @@ public class JwtAuthorizationTest {
 
     // when
     final AuthorizationEncoder encoder =
-        Authorization.jwtEncoder()
-            .withClaim(JwtAuthorizationEncoder.AUTHORIZED_TENANTS_CLAIM, authorizedTenants);
+        Authorization.jwtEncoder().withClaim(Authorization.AUTHORIZED_TENANTS, authorizedTenants);
     final String jwtToken = encoder.encode();
 
     // then
@@ -54,9 +52,9 @@ public class JwtAuthorizationTest {
     // assert default claims are also present
     assertDefaultClaims(claims);
     // and authorized tenants claim is present
-    assertThat(claims).containsKey(JwtAuthorizationEncoder.AUTHORIZED_TENANTS_CLAIM);
+    assertThat(claims).containsKey(Authorization.AUTHORIZED_TENANTS);
     final List<String> authorizedTenantClaim =
-        claims.get(JwtAuthorizationEncoder.AUTHORIZED_TENANTS_CLAIM).as(List.class);
+        claims.get(Authorization.AUTHORIZED_TENANTS).as(List.class);
     assertThat(authorizedTenantClaim).containsExactlyElementsOf(authorizedTenants);
   }
 
@@ -72,7 +70,7 @@ public class JwtAuthorizationTest {
 
     // when
     final JwtAuthorizationDecoder decoder = Authorization.jwtDecoder(jwtToken);
-    final Map<String, Claim> claims = decoder.decode();
+    final Map<String, Claim> claims = decoder.build().getClaims();
 
     // then
     assertDefaultClaims(claims);
@@ -87,19 +85,18 @@ public class JwtAuthorizationTest {
             .withIssuer(DEFAULT_ISSUER)
             .withAudience(DEFAULT_AUDIENCE)
             .withSubject(DEFAULT_SUBJECT)
-            .withClaim(JwtAuthorizationEncoder.AUTHORIZED_TENANTS_CLAIM, authorizedTenants)
+            .withClaim(Authorization.AUTHORIZED_TENANTS, authorizedTenants)
             .sign(Algorithm.none());
 
     // when
     final JwtAuthorizationDecoder decoder =
-        Authorization.jwtDecoder(jwtToken)
-            .withClaim(JwtAuthorizationEncoder.AUTHORIZED_TENANTS_CLAIM);
-    final Map<String, Claim> claims = decoder.decode();
+        Authorization.jwtDecoder(jwtToken).withClaim(Authorization.AUTHORIZED_TENANTS);
+    final Map<String, Claim> claims = decoder.build().getClaims();
 
     // then
     assertDefaultClaims(claims);
     final List<String> authorizedTenantClaim =
-        claims.get(JwtAuthorizationEncoder.AUTHORIZED_TENANTS_CLAIM).as(List.class);
+        claims.get(Authorization.AUTHORIZED_TENANTS).as(List.class);
     assertThat(authorizedTenantClaim).containsExactlyElementsOf(authorizedTenants);
   }
 
@@ -115,8 +112,7 @@ public class JwtAuthorizationTest {
 
     // when
     final JwtAuthorizationDecoder decoder =
-        Authorization.jwtDecoder(jwtToken)
-            .withClaim(JwtAuthorizationEncoder.AUTHORIZED_TENANTS_CLAIM);
+        Authorization.jwtDecoder(jwtToken).withClaim(Authorization.AUTHORIZED_TENANTS);
 
     // then
     assertThatThrownBy(() -> decoder.decode())
@@ -144,7 +140,7 @@ public class JwtAuthorizationTest {
   public void shouldFailJwtTokenDecodingWithoutJwtToken() {
     // when
     final JwtAuthorizationDecoder decoder =
-        Authorization.jwtDecoder(null).withClaim(JwtAuthorizationEncoder.AUTHORIZED_TENANTS_CLAIM);
+        Authorization.jwtDecoder(null).withClaim(Authorization.AUTHORIZED_TENANTS);
 
     // then
     assertThatThrownBy(() -> decoder.decode())

@@ -31,7 +31,7 @@ public class TenantAuthorizationCheckerImpl implements TenantAuthorizationChecke
 
   public static TenantAuthorizationChecker fromAuthorizationMap(final Map<String, Object> authMap) {
     final List<String> authorizedTenants =
-        (List) authMap.getOrDefault(JwtAuthorizationDecoder.AUTHORIZED_TENANTS_CLAIM, List.of());
+        (List) authMap.getOrDefault(Authorization.AUTHORIZED_TENANTS, List.of());
     return new TenantAuthorizationCheckerImpl(authorizedTenants);
   }
 }
