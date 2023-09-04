@@ -21,6 +21,8 @@ public class ProcessGroupDto {
 
   private String bpmnProcessId;
 
+  private String tenantId;
+
   private String name;
 
   private Set<String> permissions;
@@ -33,6 +35,15 @@ public class ProcessGroupDto {
 
   public void setBpmnProcessId(String bpmnProcessId) {
     this.bpmnProcessId = bpmnProcessId;
+  }
+
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  public ProcessGroupDto setTenantId(String tenantId) {
+    this.tenantId = tenantId;
+    return this;
   }
 
   public String getName() {
@@ -65,12 +76,14 @@ public class ProcessGroupDto {
 
   public static List<ProcessGroupDto> createFrom(Map<String, List<ProcessEntity>> processesGrouped, PermissionsService permissionsService) {
     List<ProcessGroupDto> groups = new ArrayList<>();
-    processesGrouped.entrySet().stream().forEach(groupEntry -> {
+    processesGrouped.values().stream().forEach(group -> {
         ProcessGroupDto groupDto = new ProcessGroupDto();
-        groupDto.setBpmnProcessId(groupEntry.getKey());
-        groupDto.setName(groupEntry.getValue().get(0).getName());
-        groupDto.setPermissions(permissionsService == null ? new HashSet<>() : permissionsService.getProcessDefinitionPermission(groupEntry.getKey()));
-        groupDto.setProcesses(DtoCreator.create(groupEntry.getValue(), ProcessDto.class));
+      ProcessEntity process0 = group.get(0);
+      groupDto.setBpmnProcessId(process0.getBpmnProcessId());
+        groupDto.setTenantId(process0.getTenantId());
+        groupDto.setName(process0.getName());
+        groupDto.setPermissions(permissionsService == null ? new HashSet<>() : permissionsService.getProcessDefinitionPermission(process0.getBpmnProcessId()));
+        groupDto.setProcesses(DtoCreator.create(group, ProcessDto.class));
         groups.add(groupDto);
       }
     );

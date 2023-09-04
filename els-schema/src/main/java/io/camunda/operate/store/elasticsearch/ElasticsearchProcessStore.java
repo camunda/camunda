@@ -24,10 +24,7 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.IdsQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.query.*;
 import org.elasticsearch.index.reindex.BulkByScrollResponse;
 import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 import org.elasticsearch.search.SearchHit;
@@ -166,45 +163,54 @@ public class ElasticsearchProcessStore implements ProcessStore {
   }
 
   @Override
-  public Map<String, List<ProcessEntity>> getProcessesGrouped(@Nullable Set<String> allowedBPMNProcessIds) {
+  public Map<String, List<ProcessEntity>> getProcessesGrouped(String tenantId, @Nullable Set<String> allowedBPMNProcessIds) {
+    final String tenantsGroupsAggName = "group_by_tenantId";
     final String groupsAggName = "group_by_bpmnProcessId";
     final String processesAggName = "processes";
 
     AggregationBuilder agg =
-        terms(groupsAggName)
-            .field(ProcessIndex.BPMN_PROCESS_ID)
+        terms(tenantsGroupsAggName)
+            .field(ProcessIndex.TENANT_ID)
             .size(ElasticsearchUtil.TERMS_AGG_SIZE)
             .subAggregation(
-                topHits(processesAggName)
-                    .fetchSource(new String[]{ProcessIndex.ID, ProcessIndex.NAME, ProcessIndex.VERSION, ProcessIndex.BPMN_PROCESS_ID}, null)
-                    .size(ElasticsearchUtil.TOPHITS_AGG_SIZE)
-                    .sort(ProcessIndex.VERSION, SortOrder.DESC));
+                terms(groupsAggName)
+                    .field(ProcessIndex.BPMN_PROCESS_ID)
+                    .size(ElasticsearchUtil.TERMS_AGG_SIZE)
+                    .subAggregation(
+                        topHits(processesAggName)
+                            .fetchSource(new String[]{ProcessIndex.ID, ProcessIndex.NAME, ProcessIndex.VERSION,
+                                ProcessIndex.BPMN_PROCESS_ID, ProcessIndex.TENANT_ID}, null)
+                            .size(ElasticsearchUtil.TOPHITS_AGG_SIZE)
+                            .sort(ProcessIndex.VERSION, SortOrder.DESC)));
 
     SearchSourceBuilder sourceBuilder = new SearchSourceBuilder()
         .aggregation(agg)
         .size(0);
-    if (allowedBPMNProcessIds == null) {
-      sourceBuilder.query(QueryBuilders.matchAllQuery());
-    } else {
-      sourceBuilder.query(QueryBuilders.termsQuery(ListViewTemplate.BPMN_PROCESS_ID, allowedBPMNProcessIds));
-    }
+    sourceBuilder.query(buildQuery(tenantId, allowedBPMNProcessIds));
     final SearchRequest searchRequest = new SearchRequest(processIndex.getAlias()).source(sourceBuilder);
 
     try {
       final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      final Terms groups = searchResponse.getAggregations().get(groupsAggName);
+      final Terms groups = searchResponse.getAggregations().get(tenantsGroupsAggName);
       Map<String, List<ProcessEntity>> result = new HashMap<>();
 
       groups.getBuckets().stream().forEach(b -> {
-        final String bpmnProcessId = b.getKeyAsString();
-        result.put(bpmnProcessId, new ArrayList<>());
 
-        final TopHits processes = b.getAggregations().get(processesAggName);
-        final SearchHit[] hits = processes.getHits().getHits();
-        for (SearchHit searchHit : hits) {
-          final ProcessEntity processEntity = fromSearchHit(searchHit.getSourceAsString());
-          result.get(bpmnProcessId).add(processEntity);
-        }
+        final String groupTenantId = b.getKeyAsString();
+        final Terms processGroups = b.getAggregations().get(groupsAggName);
+
+        processGroups.getBuckets().stream().forEach(tenantB -> {
+          final String bpmnProcessId = tenantB.getKeyAsString();
+          String groupKey = groupTenantId + "_" + bpmnProcessId;
+          result.put(groupKey, new ArrayList<>());
+
+          final TopHits processes = tenantB.getAggregations().get(processesAggName);
+          final SearchHit[] hits = processes.getHits().getHits();
+          for (SearchHit searchHit : hits) {
+            final ProcessEntity processEntity = fromSearchHit(searchHit.getSourceAsString());
+            result.get(groupKey).add(processEntity);
+          }
+        });
       });
 
       return result;
@@ -213,6 +219,16 @@ public class ElasticsearchProcessStore implements ProcessStore {
       logger.error(message, e);
       throw new OperateRuntimeException(message, e);
     }
+  }
+
+  private QueryBuilder buildQuery(String tenantId, Set<String> allowedBPMNProcessIds) {
+    TermsQueryBuilder bpmnProcessIdQ = allowedBPMNProcessIds != null ? termsQuery(BPMN_PROCESS_ID, allowedBPMNProcessIds) : null;
+    TermQueryBuilder tenantIdQ = tenantId != null ? termQuery(ProcessIndex.TENANT_ID, tenantId) : null;
+    QueryBuilder q = joinWithAnd(bpmnProcessIdQ, tenantIdQ);
+    if (q == null) {
+      q = matchAllQuery();
+    }
+    return q;
   }
 
   @Override

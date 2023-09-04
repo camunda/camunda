@@ -28,6 +28,7 @@ import io.camunda.operate.schema.indices.ProcessIndex;
 import io.camunda.operate.schema.templates.IncidentTemplate;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.webapp.reader.ProcessReader;
+import io.camunda.operate.webapp.rest.dto.ProcessRequestDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentByProcessStatisticsDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentsByErrorMsgStatisticsDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentsByProcessGroupStatisticsDto;
@@ -104,7 +105,7 @@ public class IncidentStatisticsReader extends AbstractReader implements io.camun
       for (Bucket bucket : buckets) {
         Long processDefinitionKey = (Long) bucket.getKey();
         long incidents = bucket.getDocCount();
-        results.put(processDefinitionKey, new IncidentByProcessStatisticsDto(processDefinitionKey.toString(),incidents, 0));
+        results.put(processDefinitionKey, new IncidentByProcessStatisticsDto(processDefinitionKey.toString(), incidents, 0));
       }
       return results;
     } catch (IOException e) {
@@ -152,12 +153,13 @@ public class IncidentStatisticsReader extends AbstractReader implements io.camun
 
     Set<IncidentsByProcessGroupStatisticsDto> result = new TreeSet<>(IncidentsByProcessGroupStatisticsDto.COMPARATOR);
 
-    final Map<String, List<ProcessEntity>> processGroups = processReader.getProcessesGrouped();
+    //TODO check user tenants
+    final Map<String, List<ProcessEntity>> processGroups = processReader.getProcessesGrouped(new ProcessRequestDto());
 
     //iterate over process groups (bpmnProcessId)
-    for (Map.Entry<String, List<ProcessEntity>> entry: processGroups.entrySet()) {
+    for (List<ProcessEntity> processes: processGroups.values()) {
       IncidentsByProcessGroupStatisticsDto stat = new IncidentsByProcessGroupStatisticsDto();
-      stat.setBpmnProcessId(entry.getKey());
+      stat.setBpmnProcessId(processes.get(0).getBpmnProcessId());
 
       //accumulate stat for process group
       long activeInstancesCount = 0;
@@ -167,7 +169,7 @@ public class IncidentStatisticsReader extends AbstractReader implements io.camun
       long maxVersion = 0;
 
       //iterate over process versions
-      for (ProcessEntity processEntity: entry.getValue()) {
+      for (ProcessEntity processEntity: processes) {
         IncidentByProcessStatisticsDto statForProcess = incidentsByProcessMap.get(processEntity.getKey());
         if (statForProcess != null) {
           activeInstancesCount += statForProcess.getActiveInstancesCount();

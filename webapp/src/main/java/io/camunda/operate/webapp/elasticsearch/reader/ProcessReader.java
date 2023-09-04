@@ -8,6 +8,7 @@ package io.camunda.operate.webapp.elasticsearch.reader;
 
 import io.camunda.operate.store.ProcessStore;
 import io.camunda.operate.entities.ProcessEntity;
+import io.camunda.operate.webapp.rest.dto.ProcessRequestDto;
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.identity.PermissionsService;
 import org.slf4j.Logger;
@@ -57,8 +58,8 @@ public class ProcessReader implements io.camunda.operate.webapp.reader.ProcessRe
    * @return
    */
   @Override
-  public Map<String, List<ProcessEntity>> getProcessesGrouped() {
-    return processStore.getProcessesGrouped(getAllowedProcessIdsOrNullForAll());
+  public Map<String, List<ProcessEntity>> getProcessesGrouped(ProcessRequestDto request) {
+    return processStore.getProcessesGrouped(request.getTenantId(), getAllowedProcessIdsOrNullForAll());
   }
 
   /**

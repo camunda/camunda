@@ -70,7 +70,7 @@ public class OpenSearchProcessStore implements ProcessStore {
   }
 
   @Override
-  public Map<String, List<ProcessEntity>> getProcessesGrouped(Set<String> allowedBPMNprocessIds) {
+  public Map<String, List<ProcessEntity>> getProcessesGrouped(String tenantId, Set<String> allowedBPMNprocessIds) {
     throw new UnsupportedOperationException();
   }
 

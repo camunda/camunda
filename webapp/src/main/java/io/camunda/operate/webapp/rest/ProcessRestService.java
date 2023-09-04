@@ -13,6 +13,7 @@ import io.camunda.operate.util.rest.ValidLongId;
 import io.camunda.operate.webapp.InternalAPIErrorController;
 import io.camunda.operate.webapp.reader.ProcessReader;
 import io.camunda.operate.webapp.rest.dto.DtoCreator;
+import io.camunda.operate.webapp.rest.dto.ProcessRequestDto;
 import io.camunda.operate.webapp.rest.exception.NotAuthorizedException;
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.identity.PermissionsService;
@@ -28,11 +29,7 @@ import io.camunda.operate.webapp.rest.dto.ProcessDto;
 import io.camunda.operate.webapp.rest.dto.ProcessGroupDto;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "Processes")
 @RestController
@@ -72,8 +69,16 @@ public class ProcessRestService extends InternalAPIErrorController {
 
   @Operation(summary = "List processes grouped by bpmnProcessId")
   @GetMapping(path = "/grouped")
+  @Deprecated
   public List<ProcessGroupDto> getProcessesGrouped() {
-    final Map<String, List<ProcessEntity>> processesGrouped = processReader.getProcessesGrouped();
+    final Map<String, List<ProcessEntity>> processesGrouped = processReader.getProcessesGrouped(new ProcessRequestDto());
+    return ProcessGroupDto.createFrom(processesGrouped, permissionsService);
+  }
+
+  @Operation(summary = "List processes grouped by bpmnProcessId")
+  @PostMapping(path = "/grouped")
+  public List<ProcessGroupDto> getProcessesGrouped(@RequestBody ProcessRequestDto request) {
+    final Map<String, List<ProcessEntity>> processesGrouped = processReader.getProcessesGrouped(request);
     return ProcessGroupDto.createFrom(processesGrouped, permissionsService);
   }
 

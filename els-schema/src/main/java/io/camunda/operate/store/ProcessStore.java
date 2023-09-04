@@ -27,7 +27,7 @@ public interface ProcessStore {
 
   String getDiagramByKey(final Long processDefinitionKey);
 
-  Map<String, List<ProcessEntity>> getProcessesGrouped(@Nullable Set<String> allowedBPMNprocessIds);
+  Map<String, List<ProcessEntity>> getProcessesGrouped(String tenantId, @Nullable Set<String> allowedBPMNprocessIds);
 
   Map<Long, ProcessEntity> getProcessIdsToProcesses();
 
