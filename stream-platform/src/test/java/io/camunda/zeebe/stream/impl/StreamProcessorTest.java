@@ -490,15 +490,18 @@ public final class StreamProcessorTest {
     final var defaultRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
     streamPlatform.startStreamProcessor();
 
-    // when
-    assertThat(asyncServiceLatch.await(10, TimeUnit.SECONDS)).isTrue();
-    streamPlatform.writeBatch(
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)));
+    try {
+      // when
+      assertThat(asyncServiceLatch.await(10, TimeUnit.SECONDS)).isTrue();
+      streamPlatform.writeBatch(
+          RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)));
 
-    // then
-    verify(defaultRecordProcessor, timeout(500).times(0)).process(any(), any());
-    // free processor
-    countDownLatch.countDown();
+      // then
+      verify(defaultRecordProcessor, timeout(500).times(0)).process(any(), any());
+    } finally {
+      // free processor
+      countDownLatch.countDown();
+    }
   }
 
   @Test
@@ -533,15 +536,19 @@ public final class StreamProcessorTest {
     final var defaultRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
     streamPlatform.startStreamProcessor();
 
-    // when
-    assertThat(asyncServiceLatch.await(10, TimeUnit.SECONDS)).isTrue();
-    streamPlatform.writeBatch(
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)));
+    try {
+      // when
+      assertThat(asyncServiceLatch.await(10, TimeUnit.SECONDS)).isTrue();
+      streamPlatform.writeBatch(
+          RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)));
 
-    // then
-    verify(defaultRecordProcessor, TIMEOUT.times(1)).process(any(), any());
-    // free schedule service
-    countDownLatch.countDown();
+      // then
+      verify(defaultRecordProcessor, TIMEOUT.times(1)).process(any(), any());
+
+    } finally {
+      // free schedule service
+      countDownLatch.countDown();
+    }
   }
 
   @Disabled("Should be enabled when https://github.com/camunda/zeebe/issues/11849 is fixed")
