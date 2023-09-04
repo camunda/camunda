@@ -43,7 +43,7 @@ jobs:
     # Setup: checkout code. This is required because we are using
     # composite actions and deployment manifests.
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac # v4
     #########################################################################
     # Determine the argocd arguments that need to be passed to the create app command
     - name: Determine Argocd Arguments
