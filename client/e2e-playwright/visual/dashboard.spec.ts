@@ -22,9 +22,9 @@ function mockResponses({
   incidentsByError,
   incidentsByProcess,
 }: {
-  statistics: CoreStatisticsDto;
-  incidentsByError: IncidentByErrorDto[];
-  incidentsByProcess: ProcessInstanceByNameDto[];
+  statistics?: CoreStatisticsDto;
+  incidentsByError?: IncidentByErrorDto[];
+  incidentsByProcess?: ProcessInstanceByNameDto[];
 }) {
   return (route: Route) => {
     if (route.request().url().includes('/api/authentications/user')) {
@@ -50,7 +50,7 @@ function mockResponses({
       route.request().url().includes('/api/process-instances/core-statistics')
     ) {
       return route.fulfill({
-        status: 200,
+        status: statistics === undefined ? 400 : 200,
         body: JSON.stringify(statistics),
         headers: {
           'content-type': 'application/json',
@@ -60,7 +60,7 @@ function mockResponses({
 
     if (route.request().url().includes('/api/incidents/byError')) {
       return route.fulfill({
-        status: 200,
+        status: incidentsByError === undefined ? 400 : 200,
         body: JSON.stringify(incidentsByError),
         headers: {
           'content-type': 'application/json',
@@ -70,7 +70,7 @@ function mockResponses({
 
     if (route.request().url().includes('/api/incidents/byProcess')) {
       return route.fulfill({
-        status: 200,
+        status: incidentsByProcess === undefined ? 400 : 200,
         body: JSON.stringify(incidentsByProcess),
         headers: {
           'content-type': 'application/json',
@@ -110,63 +110,7 @@ test.describe('dashboard page', () => {
     test(`error page - ${theme}`, async ({page, commonPage}) => {
       await commonPage.changeTheme(theme);
 
-      await page.route(/^.*\/api.*$/i, (route) => {
-        if (route.request().url().includes('/api/authentications/user')) {
-          return route.fulfill({
-            status: 200,
-            body: JSON.stringify({
-              userId: 'demo',
-              displayName: 'demo',
-              canLogout: true,
-              permissions: ['read', 'write'],
-              roles: null,
-              salesPlanType: null,
-              c8Links: {},
-              username: 'demo',
-            }),
-            headers: {
-              'content-type': 'application/json',
-            },
-          });
-        }
-
-        if (
-          route
-            .request()
-            .url()
-            .includes('/api/process-instances/core-statistics')
-        ) {
-          return route.fulfill({
-            status: 500,
-            body: '',
-            headers: {
-              'content-type': 'application/json',
-            },
-          });
-        }
-
-        if (route.request().url().includes('/api/incidents/byError')) {
-          return route.fulfill({
-            status: 500,
-            body: '',
-            headers: {
-              'content-type': 'application/json',
-            },
-          });
-        }
-
-        if (route.request().url().includes('/api/incidents/byProcess')) {
-          return route.fulfill({
-            status: 500,
-            body: '',
-            headers: {
-              'content-type': 'application/json',
-            },
-          });
-        }
-
-        return route.continue();
-      });
+      await page.route(/^.*\/api.*$/i, mockResponses({}));
 
       await page.goto(Paths.dashboard(), {
         waitUntil: 'networkidle',

@@ -75,8 +75,14 @@ export class ProcessInstance {
       .click();
   }
 
-  async navigateToProcessInstance(id: string) {
-    await this.page.goto(Paths.processInstance(id));
+  async navigateToProcessInstance({
+    id,
+    options,
+  }: {
+    id: string;
+    options?: Parameters<Page['goto']>[1];
+  }) {
+    await this.page.goto(Paths.processInstance(id), options);
   }
 
   async selectFlowNode(flowNodeName: string) {

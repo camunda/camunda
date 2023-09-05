@@ -27,9 +27,9 @@ function mockResponses({
   drdData,
   xml,
 }: {
-  decisionInstanceDetail: DecisionInstanceDto;
-  drdData: DrdDataDto;
-  xml: string;
+  decisionInstanceDetail?: DecisionInstanceDto;
+  drdData?: DrdDataDto;
+  xml?: string;
 }) {
   return (route: Route) => {
     if (route.request().url().includes('/api/authentications/user')) {
@@ -53,7 +53,7 @@ function mockResponses({
 
     if (route.request().url().includes('drd-data')) {
       return route.fulfill({
-        status: 200,
+        status: drdData === undefined ? 400 : 200,
         body: JSON.stringify(drdData),
         headers: {
           'content-type': 'application/json',
@@ -63,7 +63,7 @@ function mockResponses({
 
     if (route.request().url().includes('/api/decision-instances/')) {
       return route.fulfill({
-        status: 200,
+        status: decisionInstanceDetail === undefined ? 400 : 200,
         body: JSON.stringify(decisionInstanceDetail),
         headers: {
           'content-type': 'application/json',
@@ -73,7 +73,7 @@ function mockResponses({
 
     if (route.request().url().includes('xml')) {
       return route.fulfill({
-        status: 200,
+        status: xml === undefined ? 400 : 200,
         body: JSON.stringify(xml),
         headers: {
           'content-type': 'application/json',
@@ -91,58 +91,7 @@ test.describe('decision instance page', () => {
     test.skip(`error page - ${theme}`, async ({page, commonPage}) => {
       await commonPage.changeTheme(theme);
 
-      await page.route(/^.*\/api.*$/i, (route) => {
-        if (route.request().url().includes('/api/authentications/user')) {
-          return route.fulfill({
-            status: 200,
-            body: JSON.stringify({
-              userId: 'demo',
-              displayName: 'demo',
-              canLogout: true,
-              permissions: ['read', 'write'],
-              roles: null,
-              salesPlanType: null,
-              c8Links: {},
-              username: 'demo',
-            }),
-            headers: {
-              'content-type': 'application/json',
-            },
-          });
-        }
-
-        if (route.request().url().includes('/api/decision-instances/')) {
-          return route.fulfill({
-            status: 500,
-            body: '',
-            headers: {
-              'content-type': 'application/json',
-            },
-          });
-        }
-
-        if (route.request().url().includes('drd-data')) {
-          return route.fulfill({
-            status: 500,
-            body: '',
-            headers: {
-              'content-type': 'application/json',
-            },
-          });
-        }
-
-        if (route.request().url().includes('xml')) {
-          return route.fulfill({
-            status: 500,
-            body: '',
-            headers: {
-              'content-type': 'application/json',
-            },
-          });
-        }
-
-        return route.continue();
-      });
+      await page.route(/^.*\/api.*$/i, mockResponses({}));
 
       await page.goto(Paths.decisionInstance('1'), {
         waitUntil: 'networkidle',

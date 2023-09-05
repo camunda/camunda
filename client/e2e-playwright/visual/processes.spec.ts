@@ -25,11 +25,11 @@ function mockResponses({
   processInstances,
   processXml,
 }: {
-  batchOperations: OperationEntity[];
-  groupedProcesses: ProcessDto[];
-  statistics: ProcessInstancesStatisticsDto[];
-  processInstances: ProcessInstancesDto;
-  processXml: string;
+  batchOperations?: OperationEntity[];
+  groupedProcesses?: ProcessDto[];
+  statistics?: ProcessInstancesStatisticsDto[];
+  processInstances?: ProcessInstancesDto;
+  processXml?: string;
 }) {
   return (route: Route) => {
     if (route.request().url().includes('/api/authentications/user')) {
@@ -53,7 +53,7 @@ function mockResponses({
 
     if (route.request().url().includes('/api/batch-operations')) {
       return route.fulfill({
-        status: 200,
+        status: batchOperations === undefined ? 400 : 200,
         body: JSON.stringify(batchOperations),
         headers: {
           'content-type': 'application/json',
@@ -63,7 +63,7 @@ function mockResponses({
 
     if (route.request().url().includes('/api/processes/grouped')) {
       return route.fulfill({
-        status: 200,
+        status: groupedProcesses === undefined ? 400 : 200,
         body: JSON.stringify(groupedProcesses),
         headers: {
           'content-type': 'application/json',
@@ -73,7 +73,7 @@ function mockResponses({
 
     if (route.request().url().includes('/api/process-instances/statistics')) {
       return route.fulfill({
-        status: 200,
+        status: statistics === undefined ? 400 : 200,
         body: JSON.stringify(statistics),
         headers: {
           'content-type': 'application/json',
@@ -83,7 +83,7 @@ function mockResponses({
 
     if (route.request().url().includes('/api/process-instances')) {
       return route.fulfill({
-        status: 200,
+        status: processInstances === undefined ? 400 : 200,
         body: JSON.stringify(processInstances),
         headers: {
           'content-type': 'application/json',
@@ -93,7 +93,7 @@ function mockResponses({
 
     if (route.request().url().includes('xml')) {
       return route.fulfill({
-        status: 200,
+        status: processXml === undefined ? 400 : 200,
         body: JSON.stringify(processXml),
         headers: {
           'content-type': 'application/json',
@@ -159,80 +159,12 @@ test.describe('processes page', () => {
         );
       }, theme);
 
-      await page.route(/^.*\/api.*$/i, (route) => {
-        if (route.request().url().includes('/api/authentications/user')) {
-          return route.fulfill({
-            status: 200,
-            body: JSON.stringify({
-              userId: 'demo',
-              displayName: 'demo',
-              canLogout: true,
-              permissions: ['read', 'write'],
-              roles: null,
-              salesPlanType: null,
-              c8Links: {},
-              username: 'demo',
-            }),
-            headers: {
-              'content-type': 'application/json',
-            },
-          });
-        }
-
-        if (route.request().url().includes('/api/processes/grouped')) {
-          return route.fulfill({
-            status: 200,
-            body: JSON.stringify(mockGroupedProcesses),
-            headers: {
-              'content-type': 'application/json',
-            },
-          });
-        }
-
-        if (route.request().url().includes('/api/batch-operations')) {
-          return route.fulfill({
-            status: 500,
-            body: '',
-            headers: {
-              'content-type': 'application/json',
-            },
-          });
-        }
-
-        if (route.request().url().includes('xml')) {
-          return route.fulfill({
-            status: 500,
-            body: '',
-            headers: {
-              'content-type': 'application/json',
-            },
-          });
-        }
-
-        if (
-          route.request().url().includes('/api/process-instances/statistics')
-        ) {
-          return route.fulfill({
-            status: 500,
-            body: '',
-            headers: {
-              'content-type': 'application/json',
-            },
-          });
-        }
-
-        if (route.request().url().includes('/api/process-instances')) {
-          return route.fulfill({
-            status: 500,
-            body: '',
-            headers: {
-              'content-type': 'application/json',
-            },
-          });
-        }
-
-        return route.continue();
-      });
+      await page.route(
+        /^.*\/api.*$/i,
+        mockResponses({
+          groupedProcesses: mockGroupedProcesses,
+        }),
+      );
 
       await processesPage.navigateToProcesses({
         searchParams: {

@@ -22,10 +22,10 @@ function mockResponses({
   decisionInstances,
   decisionXml,
 }: {
-  batchOperations: OperationEntity[];
-  groupedDecisions: DecisionDto[];
-  decisionInstances: DecisionInstancesDto;
-  decisionXml: string;
+  batchOperations?: OperationEntity[];
+  groupedDecisions?: DecisionDto[];
+  decisionInstances?: DecisionInstancesDto;
+  decisionXml?: string;
 }) {
   return (route: Route) => {
     if (route.request().url().includes('/api/authentications/user')) {
@@ -49,7 +49,7 @@ function mockResponses({
 
     if (route.request().url().includes('/api/batch-operations')) {
       return route.fulfill({
-        status: 200,
+        status: batchOperations === undefined ? 400 : 200,
         body: JSON.stringify(batchOperations),
         headers: {
           'content-type': 'application/json',
@@ -59,7 +59,7 @@ function mockResponses({
 
     if (route.request().url().includes('/api/decisions/grouped')) {
       return route.fulfill({
-        status: 200,
+        status: groupedDecisions === undefined ? 400 : 200,
         body: JSON.stringify(groupedDecisions),
         headers: {
           'content-type': 'application/json',
@@ -69,7 +69,7 @@ function mockResponses({
 
     if (route.request().url().includes('/api/decision-instances')) {
       return route.fulfill({
-        status: 200,
+        status: decisionInstances === undefined ? 400 : 200,
         body: JSON.stringify(decisionInstances),
         headers: {
           'content-type': 'application/json',
@@ -79,7 +79,7 @@ function mockResponses({
 
     if (route.request().url().includes('xml')) {
       return route.fulfill({
-        status: 200,
+        status: decisionXml === undefined ? 400 : 200,
         body: JSON.stringify(decisionXml),
         headers: {
           'content-type': 'application/json',
@@ -144,68 +144,12 @@ test.describe('decisions page', () => {
         );
       }, theme);
 
-      await page.route(/^.*\/api.*$/i, (route) => {
-        if (route.request().url().includes('/api/authentications/user')) {
-          return route.fulfill({
-            status: 200,
-            body: JSON.stringify({
-              userId: 'demo',
-              displayName: 'demo',
-              canLogout: true,
-              permissions: ['read', 'write'],
-              roles: null,
-              salesPlanType: null,
-              c8Links: {},
-              username: 'demo',
-            }),
-            headers: {
-              'content-type': 'application/json',
-            },
-          });
-        }
-
-        if (route.request().url().includes('/api/decisions/grouped')) {
-          return route.fulfill({
-            status: 200,
-            body: JSON.stringify(mockGroupedDecisions),
-            headers: {
-              'content-type': 'application/json',
-            },
-          });
-        }
-
-        if (route.request().url().includes('/api/batch-operations')) {
-          return route.fulfill({
-            status: 500,
-            body: '',
-            headers: {
-              'content-type': 'application/json',
-            },
-          });
-        }
-
-        if (route.request().url().includes('xml')) {
-          return route.fulfill({
-            status: 500,
-            body: '',
-            headers: {
-              'content-type': 'application/json',
-            },
-          });
-        }
-
-        if (route.request().url().includes('/api/decision-instances')) {
-          return route.fulfill({
-            status: 500,
-            body: '',
-            headers: {
-              'content-type': 'application/json',
-            },
-          });
-        }
-
-        return route.continue();
-      });
+      await page.route(
+        /^.*\/api.*$/i,
+        mockResponses({
+          groupedDecisions: mockGroupedDecisions,
+        }),
+      );
 
       await decisionsPage.navigateToDecisions({
         searchParams: {

@@ -82,9 +82,9 @@ test.describe('Process Instance', () => {
   test('Resolve an incident', async ({page, processInstancePage}) => {
     test.setTimeout(DEFAULT_TEST_TIMEOUT + 3 * 15000); // 15 seconds for each applied operation in this test
 
-    await processInstancePage.navigateToProcessInstance(
-      initialData.instanceWithIncidentToResolve.processInstanceKey,
-    );
+    await processInstancePage.navigateToProcessInstance({
+      id: initialData.instanceWithIncidentToResolve.processInstanceKey,
+    });
 
     // click and expand incident bar
     await expect(
@@ -192,9 +192,9 @@ test.describe('Process Instance', () => {
     const instanceId =
       initialData.instanceWithIncidentToCancel.processInstanceKey;
 
-    await processInstancePage.navigateToProcessInstance(
-      initialData.instanceWithIncidentToCancel.processInstanceKey,
-    );
+    await processInstancePage.navigateToProcessInstance({
+      id: initialData.instanceWithIncidentToCancel.processInstanceKey,
+    });
 
     await expect(
       page.getByRole('button', {

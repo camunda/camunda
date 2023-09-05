@@ -50,7 +50,7 @@ test.describe('Process Instance Variables', () => {
     test.setTimeout(DEFAULT_TEST_TIMEOUT + 1 * 15000); // 15 seconds for each applied operation in this test
 
     const processInstanceKey = initialData.instance.processInstanceKey;
-    processInstancePage.navigateToProcessInstance(processInstanceKey);
+    processInstancePage.navigateToProcessInstance({id: processInstanceKey});
 
     expect(processInstancePage.addVariableButton).toBeEnabled();
 
@@ -84,7 +84,7 @@ test.describe('Process Instance Variables', () => {
     test.setTimeout(DEFAULT_TEST_TIMEOUT + 1 * 15000); // 15 seconds for each applied operation in this test
 
     const processInstanceKey = initialData.instance.processInstanceKey;
-    processInstancePage.navigateToProcessInstance(processInstanceKey);
+    processInstancePage.navigateToProcessInstance({id: processInstanceKey});
 
     expect(processInstancePage.addVariableButton).toBeEnabled();
 
@@ -131,7 +131,7 @@ test.describe('Process Instance Variables', () => {
     const processInstanceKey =
       initialData.instanceWithManyVariables.processInstanceKey;
 
-    processInstancePage.navigateToProcessInstance(processInstanceKey);
+    processInstancePage.navigateToProcessInstance({id: processInstanceKey});
 
     await expect(processInstancePage.variablesList).toBeVisible();
 

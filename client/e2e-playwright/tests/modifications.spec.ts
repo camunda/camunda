@@ -39,9 +39,9 @@ test.beforeEach(async ({page, processInstancePage}) => {
     );
   });
 
-  await processInstancePage.navigateToProcessInstance(
-    initialData.instanceWithoutAnIncident.processInstanceKey,
-  );
+  await processInstancePage.navigateToProcessInstance({
+    id: initialData.instanceWithoutAnIncident.processInstanceKey,
+  });
 });
 
 test.describe('Modifications', () => {
