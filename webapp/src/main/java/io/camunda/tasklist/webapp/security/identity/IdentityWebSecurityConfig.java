@@ -24,6 +24,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.stereotype.Component;
+import org.springframework.web.servlet.handler.HandlerMappingIntrospector;
 
 @Profile(IDENTITY_AUTH_PROFILE)
 @EnableWebSecurity
@@ -40,19 +41,20 @@ public class IdentityWebSecurityConfig extends BaseWebConfigurer {
   }
 
   @Override
-  protected void applySecurityFilterSettings(HttpSecurity http) throws Exception {
+  protected void applySecurityFilterSettings(
+      HttpSecurity http, HandlerMappingIntrospector introspector) throws Exception {
     http.csrf((csrf) -> csrf.disable())
         .authorizeRequests(
             (authorize) -> {
               authorize
-                  .requestMatchers(AUTH_WHITELIST)
+                  .requestMatchers(getAuthWhitelist(introspector))
                   .permitAll()
                   .requestMatchers(
                       AntPathRequestMatcher.antMatcher(GRAPHQL_URL),
                       AntPathRequestMatcher.antMatcher(ALL_REST_V1_API),
                       AntPathRequestMatcher.antMatcher(ERROR_URL))
                   .authenticated()
-                  .requestMatchers(ROOT_URL)
+                  .requestMatchers(AntPathRequestMatcher.antMatcher(ROOT_URL))
                   .authenticated();
             })
         .exceptionHandling(

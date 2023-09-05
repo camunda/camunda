@@ -27,6 +27,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.web.servlet.handler.HandlerMappingIntrospector;
 
 public abstract class BaseWebConfigurer {
 
@@ -39,12 +40,13 @@ public abstract class BaseWebConfigurer {
   @Autowired private TasklistProfileService profileService;
 
   @Bean
-  public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+  public SecurityFilterChain filterChain(HttpSecurity http, HandlerMappingIntrospector introspector)
+      throws Exception {
     final var authenticationManagerBuilder =
         http.getSharedObject(AuthenticationManagerBuilder.class);
 
     applySecurityHeadersSettings(http);
-    applySecurityFilterSettings(http);
+    applySecurityFilterSettings(http, introspector);
     applyAuthenticationSettings(authenticationManagerBuilder);
     applyOAuth2Settings(http);
 
@@ -59,21 +61,25 @@ public abstract class BaseWebConfigurer {
             tasklistProperties.getSecurityProperties().getContentSecurityPolicy());
   }
 
-  protected void applySecurityFilterSettings(HttpSecurity http) throws Exception {
-    defaultFilterSettings(http);
+  protected void applySecurityFilterSettings(
+      HttpSecurity http, HandlerMappingIntrospector introspector) throws Exception {
+    defaultFilterSettings(http, introspector);
   }
 
-  private void defaultFilterSettings(final HttpSecurity http) throws Exception {
+  private void defaultFilterSettings(
+      final HttpSecurity http, HandlerMappingIntrospector introspector) throws Exception {
     http.csrf((csrf) -> csrf.disable())
         .authorizeRequests(
             (authorize) -> {
               authorize
-                  .requestMatchers(AUTH_WHITELIST)
+                  .requestMatchers(TasklistURIs.getAuthWhitelist(introspector))
                   .permitAll()
                   .requestMatchers(
                       AntPathRequestMatcher.antMatcher(GRAPHQL_URL),
                       AntPathRequestMatcher.antMatcher(ALL_REST_V1_API),
                       AntPathRequestMatcher.antMatcher(ERROR_URL))
+                  .authenticated()
+                  .requestMatchers(AntPathRequestMatcher.antMatcher("/login"))
                   .authenticated();
             })
         .formLogin(

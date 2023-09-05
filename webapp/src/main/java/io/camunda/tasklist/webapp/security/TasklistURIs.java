@@ -8,6 +8,11 @@ package io.camunda.tasklist.webapp.security;
 
 import static io.camunda.tasklist.webapp.rest.ClientConfigRestService.CLIENT_CONFIG_RESOURCE;
 
+import org.springframework.security.web.servlet.util.matcher.MvcRequestMatcher;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.security.web.util.matcher.RequestMatcher;
+import org.springframework.web.servlet.handler.HandlerMappingIntrospector;
+
 public final class TasklistURIs {
 
   public static final String ROOT_URL = "/";
@@ -36,17 +41,22 @@ public final class TasklistURIs {
   public static final String START_PUBLIC_PROCESS = "/new/";
   public static final String RESPONSE_CHARACTER_ENCODING = "UTF-8";
 
-  public static final String[] AUTH_WHITELIST = {
-    "/webjars/**",
-    CLIENT_CONFIG_RESOURCE,
-    ERROR_URL,
-    NO_PERMISSION,
-    LOGIN_RESOURCE,
-    LOGOUT_RESOURCE,
-    REST_V1_EXTERNAL_API,
-    NEW_FORM
-  };
+  private TasklistURIs() {}
+
+  public static final RequestMatcher[] getAuthWhitelist(HandlerMappingIntrospector introspector) {
+    final RequestMatcher[] requestMatchers = {
+      AntPathRequestMatcher.antMatcher("/webjars/**"),
+      AntPathRequestMatcher.antMatcher(CLIENT_CONFIG_RESOURCE),
+      new MvcRequestMatcher(introspector, ERROR_URL),
+      AntPathRequestMatcher.antMatcher(NO_PERMISSION),
+      AntPathRequestMatcher.antMatcher(LOGIN_RESOURCE),
+      AntPathRequestMatcher.antMatcher(LOGOUT_RESOURCE),
+      AntPathRequestMatcher.antMatcher(REST_V1_EXTERNAL_API),
+      new MvcRequestMatcher(introspector, NEW_FORM)
+    };
+    return requestMatchers;
+  }
 
   // Used as constants class
-  private TasklistURIs() {}
+
 }
