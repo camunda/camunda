@@ -30,7 +30,7 @@ jobs:
       previous-latest-version: ${{ env.PREVIOUS_LATEST_VERSION }}
       previous-previous-latest-version: ${{ env.PREVIOUS_PREVIOUS_LATEST_VERSION }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - run: git fetch --tags
       - run: |
           latest=$(git tag | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sed -E -e 's/\.[0-9]+$//' | sort -Vr | head -n1)
