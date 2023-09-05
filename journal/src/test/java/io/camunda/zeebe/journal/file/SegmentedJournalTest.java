@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import io.camunda.zeebe.journal.JournalException.InvalidAsqn;
+import io.camunda.zeebe.journal.JournalException.OutOfDiskSpace;
 import io.camunda.zeebe.journal.JournalReader;
 import io.camunda.zeebe.journal.JournalRecord;
 import io.camunda.zeebe.journal.record.PersistedJournalRecord;
@@ -37,6 +38,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Phaser;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.assertj.core.api.Assertions;
@@ -892,6 +894,23 @@ class SegmentedJournalTest {
     assertThat(journalFactory.metaStore().loadLastFlushedIndex()).isEqualTo(lastWrittenIndex);
   }
 
+  @Test
+  void shouldFailWithOODForAsyncSegmentCreation() {
+    // given
+    journalFactory = new TestJournalFactory("test", 1, createFailingSegmentAllocator(3));
+    journal = journalFactory.journal(journalFactory.segmentsManager(directory));
+    journal.append(1, journalFactory.entry()); // first segment
+    journal.append(2, journalFactory.entry()); // second segment - after this we are creating async
+
+    // when - then
+    assertThatThrownBy(() -> journal.append(3, journalFactory.entry()))
+        .isInstanceOf(OutOfDiskSpace.class)
+        .hasMessage("Nope, no free space.");
+    assertThatThrownBy(() -> journal.append(4, journalFactory.entry()))
+        .isInstanceOf(OutOfDiskSpace.class)
+        .hasMessage("Nope, no free space.");
+  }
+
   private SegmentedJournal openJournal(final int entriesPerSegment) {
     return openJournal("test", entriesPerSegment);
   }
@@ -899,5 +918,23 @@ class SegmentedJournalTest {
   private SegmentedJournal openJournal(final String data, final int entriesPerSegment) {
     journalFactory = new TestJournalFactory(data, entriesPerSegment);
     return journalFactory.journal(journalFactory.segmentsManager(directory));
+  }
+
+  /**
+   * Creates a segment allocator, which should fail after the given segments count has been reached.
+   * Failing will be done via throwing an OutOfDiskException.
+   *
+   * @param failAtSegmentCount the count which should be reached, until a OOD exception is thrown.
+   * @return the failing segment allocator
+   */
+  private SegmentAllocator createFailingSegmentAllocator(final int failAtSegmentCount) {
+    final AtomicInteger segmentCount = new AtomicInteger(0);
+    return (channel, segmentSize) -> {
+      if (segmentCount.incrementAndGet() >= failAtSegmentCount) {
+        throw new OutOfDiskSpace("Nope, no free space.");
+      } else {
+        SegmentAllocator.fill().allocate(channel, segmentSize);
+      }
+    };
   }
 }
