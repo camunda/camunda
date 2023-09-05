@@ -485,7 +485,7 @@ public final class FileBasedSnapshotStore extends Actor
 
   // TODO(npepinpe): using Either here would allow easy rollback regardless of when or where an
   // exception is thrown, without having to catch and rollback for every possible case
-  FileBasedSnapshot newSnapshot(
+  FileBasedSnapshot persistNewSnapshot(
       final FileBasedSnapshotId snapshotId,
       final Path directory,
       final long expectedChecksum,
