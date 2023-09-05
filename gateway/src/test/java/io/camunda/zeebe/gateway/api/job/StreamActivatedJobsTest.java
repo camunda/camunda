@@ -181,10 +181,6 @@ public class StreamActivatedJobsTest extends GatewayTest {
             "INVALID_ARGUMENT: Expected to stream activated jobs with timeout to be greater than zero, but it was 0");
   }
 
-  // TODO add test for onClose
-  // How to test onClose? it seems the graceful way to close a stream from the client side is
-  // simply to cancel it, as per the gRPC docs. So is onClose only for when we close it server side?
-
   private TestStreamObserver getStreamActivatedJobsRequestUnblocking(
       final String jobType,
       final String worker,
