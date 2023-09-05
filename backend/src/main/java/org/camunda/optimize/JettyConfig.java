@@ -108,20 +108,16 @@ public class JettyConfig {
     HttpConfiguration https = new HttpConfiguration();
     https.setSendServerVersion(false);
     final SecureRequestCustomizer customizer = new SecureRequestCustomizer(
-      true,
+      // We disable SNI checks for integration tests
+      !Boolean.parseBoolean(environment.getProperty(INTEGRATION_TESTS)),
       configurationService.getSecurityConfiguration().getResponseHeaders().getHttpStrictTransportSecurityMaxAge(),
       getResponseHeadersConfiguration(configurationService).getHttpStrictTransportSecurityIncludeSubdomains()
     );
 
-    // This is necessary otherwise the integration tests SecurityResponseHeadersIT and SecurityCookiesInResponseIT
-    // will fail
-    if (Boolean.parseBoolean(environment.getProperty(INTEGRATION_TESTS))) {
-      customizer.setSniHostCheck(false);
-    }
-
     https.addCustomizer(customizer);
     https.setSecureScheme("https");
     https.setRequestHeaderSize(configurationService.getMaxRequestHeaderSizeInBytes());
+    https.setResponseHeaderSize(configurationService.getMaxResponseHeaderSizeInBytes());
     SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
     sslContextFactory.setKeyStorePath(configurationService.getContainerKeystoreLocation());
     sslContextFactory.setKeyStorePassword(configurationService.getContainerKeystorePassword());

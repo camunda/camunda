@@ -170,6 +170,7 @@ public class ConfigurationService {
   @SuppressWarnings(OPTIONAL_FIELD_OR_PARAM)
   private Optional<String> containerAccessUrl;
   private Integer maxRequestHeaderSizeInBytes;
+  private Integer maxResponseHeaderSizeInBytes;
 
   // We use optional field here in order to allow restoring defaults with BeanUtils.copyProperties
   // if only the getter is of type Optional the value won't get reset properly.
@@ -779,6 +780,14 @@ public class ConfigurationService {
         configJsonContext.read(ConfigurationServiceConstants.CONTAINER_MAX_REQUEST_HEADER_IN_BYTES, Integer.class);
     }
     return maxRequestHeaderSizeInBytes;
+  }
+
+  public Integer getMaxResponseHeaderSizeInBytes() {
+    if (maxResponseHeaderSizeInBytes == null) {
+      maxResponseHeaderSizeInBytes =
+        configJsonContext.read(ConfigurationServiceConstants.CONTAINER_MAX_RESPONSE_HEADER_IN_BYTES, Integer.class);
+    }
+    return maxResponseHeaderSizeInBytes;
   }
 
   public List<String> getDecisionInputImportPluginBasePackages() {

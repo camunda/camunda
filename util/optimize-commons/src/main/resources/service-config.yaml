@@ -127,6 +127,8 @@ container:
   accessUrl: ${CONTAINER_ACCESS_URL:null}
   # Maximum size of a single request header. Note that higher values consume more memory
   maxRequestHeaderSizeInBytes: ${CAMUNDA_OPTIMIZE_CONTAINER_MAX_REQUEST_HEADER_SIZE_BYTES:8192}
+  # Maximum size of a single response header. Note that higher values consume more memory
+  maxResponseHeaderSizeInBytes: ${CAMUNDA_OPTIMIZE_CONTAINER_MAX_RESPONSE_HEADER_SIZE_BYTES:8192}
 
 # Configuration for fetching user data
 users:

@@ -105,6 +105,7 @@ public class ConfigurationServiceConstants {
 
   public static final String CONTAINER_ACCESS_URL = "$.container.accessUrl";
   public static final String CONTAINER_MAX_REQUEST_HEADER_IN_BYTES = "$.container.maxRequestHeaderSizeInBytes";
+  public static final String CONTAINER_MAX_RESPONSE_HEADER_IN_BYTES = "$.container.maxResponseHeaderSizeInBytes";
 
   public static final String ENTITY_CONFIGURATION = "$.entity";
 
