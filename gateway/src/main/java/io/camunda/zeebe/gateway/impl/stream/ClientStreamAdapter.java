@@ -103,7 +103,7 @@ public class ClientStreamAdapter {
         responseObserver.onNext(activatedJob);
       } catch (final Exception e) {
         responseObserver.onError(e);
-        CompletableFuture.failedFuture(e);
+        throw e;
       }
     }
   }
