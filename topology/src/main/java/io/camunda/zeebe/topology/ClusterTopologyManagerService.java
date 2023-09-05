@@ -8,6 +8,7 @@
 package io.camunda.zeebe.topology;
 
 import io.atomix.cluster.ClusterMembershipService;
+import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
@@ -49,10 +50,12 @@ public final class ClusterTopologyManagerService extends Actor {
       throw new UncheckedIOException("Failed to create data directory", e);
     }
 
-    final var topologyFile = dataRootDirectory.resolve(TOPOLOGY_FILE_NAME);
+    final MemberId localMemberId = memberShipService.getLocalMember().id();
+    topologyFile = dataRootDirectory.resolve(TOPOLOGY_FILE_NAME);
     persistedClusterTopology = new PersistedClusterTopology(topologyFile, new ProtoBufSerializer());
-    this.topologyFile = topologyFile;
-    clusterTopologyManager = new ClusterTopologyManager(this, persistedClusterTopology);
+    clusterTopologyManager =
+        new ClusterTopologyManager(
+            this, localMemberId, persistedClusterTopology, new NoopTopologyChangeApplier());
     clusterTopologyGossiper =
         new ClusterTopologyGossiper(
             this,
@@ -63,7 +66,7 @@ public final class ClusterTopologyManagerService extends Actor {
             clusterTopologyManager::onGossipReceived);
     clusterTopologyManager.setTopologyGossiper(clusterTopologyGossiper::updateClusterTopology);
 
-    isCoordinator = memberShipService.getLocalMember().id().id().equals(COORDINATOR_ID);
+    isCoordinator = localMemberId.id().equals(COORDINATOR_ID);
   }
 
   private TopologyInitializer getNonCoordinatorInitializer() {

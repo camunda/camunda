@@ -30,14 +30,19 @@ final class ClusterTopologyManager {
   private Consumer<ClusterTopology> topologyGossiper;
   private final ActorFuture<Void> startFuture;
 
-  private TopologyChangeAppliers operationsApplier;
-  private MemberId localMemberId;
+  private final TopologyChangeAppliers operationsAppliers;
+  private final MemberId localMemberId;
 
   ClusterTopologyManager(
-      final ConcurrencyControl executor, final PersistedClusterTopology persistedClusterTopology) {
+      final ConcurrencyControl executor,
+      final MemberId localMemberId,
+      final PersistedClusterTopology persistedClusterTopology,
+      final TopologyChangeAppliers operationsAppliers) {
     this.executor = executor;
     this.persistedClusterTopology = persistedClusterTopology;
     startFuture = executor.createFuture();
+    this.operationsAppliers = operationsAppliers;
+    this.localMemberId = localMemberId;
   }
 
   ActorFuture<ClusterTopology> getClusterTopology() {
@@ -120,9 +125,9 @@ final class ClusterTopologyManager {
   private void applyTopologyChangeOperation(final ClusterTopology mergedTopology)
       throws IOException {
     final var operation = mergedTopology.pendingChangerFor(localMemberId);
-    final var applier = operationsApplier.getApplier(operation);
+    final var operationApplier = operationsAppliers.getApplier(operation);
     final var initialized =
-        applier
+        operationApplier
             .init()
             .map(
                 transformer ->
@@ -136,7 +141,7 @@ final class ClusterTopologyManager {
       return;
     }
 
-    applier
+    operationApplier
         .apply()
         .onComplete((transformer, error) -> onOperationApplied(operation, transformer, error));
   }

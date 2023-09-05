@@ -70,7 +70,11 @@ final class ClusterTopologyManagerTest {
 
   private ClusterTopologyManager createTopologyManager() {
     final ClusterTopologyManager clusterTopologyManager =
-        new ClusterTopologyManager(new TestConcurrencyControl(), persistedClusterTopology);
+        new ClusterTopologyManager(
+            new TestConcurrencyControl(),
+            MemberId.from("1"),
+            persistedClusterTopology,
+            new NoopTopologyChangeApplier());
     clusterTopologyManager.setTopologyGossiper(gossipHandler);
     return clusterTopologyManager;
   }
