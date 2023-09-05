@@ -28,7 +28,7 @@ class ClusterTopologyTest {
                 withActivePartition(0, 2),
                 member(3),
                 withActivePartition(0, 3)),
-            new ClusterChangePlan());
+            ClusterChangePlan.empty());
     // when
     final var topology =
         ClusterTopology.init()
@@ -50,7 +50,7 @@ class ClusterTopologyTest {
         new ClusterTopology(
             0,
             Map.of(member(1), withActivePartition(1, 1), member(2), withActivePartition(1, 2)),
-            new ClusterChangePlan());
+            ClusterChangePlan.empty());
     final var topology =
         ClusterTopology.init()
             .addMember(
@@ -87,7 +87,7 @@ class ClusterTopologyTest {
                 withActivePartition(0, 2),
                 member(3),
                 new MemberState(1, State.JOINING, Map.of())),
-            new ClusterChangePlan());
+            ClusterChangePlan.empty());
 
     final var initialTopology =
         ClusterTopology.init()
