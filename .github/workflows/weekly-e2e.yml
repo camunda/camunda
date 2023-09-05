@@ -29,7 +29,7 @@ jobs:
       previous-previous-latest-major-minor-version: ${{ env.PREVIOUS_PREVIOUS_LATEST_MINOR_VERSION }}
       previous-previous-latest-major-minor-patch-version: ${{ env.PREVIOUS_PREVIOUS_LATEST_MINOR_PATCH_VERSION }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - run: git fetch --tags
       - run: |
           latest_major_minor_patch=$(git tag | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -Vr | head -n1)

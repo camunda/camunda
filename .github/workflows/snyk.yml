@@ -89,7 +89,7 @@ jobs:
     steps:
       - name: Install Snyk CLI
         uses: snyk/actions/setup@master
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.ref }}
       - name: Setup Zeebe

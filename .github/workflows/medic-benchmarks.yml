@@ -37,7 +37,7 @@ jobs:
       full-ref: ${{ steps.data.outputs.full-ref }}
       benchmark: ${{ steps.data.outputs.benchmark }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Collect benchmark data
         id: data
         run: |

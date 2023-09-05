@@ -63,7 +63,7 @@ jobs:
         ports:
           - 5000:5000
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-zeebe
         with:
           maven-cache-key-modifier: it-${{ matrix.group }}
@@ -117,7 +117,7 @@ jobs:
     runs-on: [ self-hosted, linux, amd64, "16" ]
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-zeebe
         with:
           go: false
@@ -171,7 +171,7 @@ jobs:
             runner: "aws-arm-core-4-default"
             arch: arm64
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-zeebe
         with:
           go: false
@@ -213,7 +213,7 @@ jobs:
     runs-on: [ self-hosted, linux, amd64, "16" ]
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-zeebe
         with:
           go: false
@@ -248,7 +248,7 @@ jobs:
     runs-on: [ self-hosted, linux, amd64, "16" ]
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-zeebe
         with:
           go: false
@@ -284,7 +284,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-zeebe
         with:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
@@ -308,7 +308,7 @@ jobs:
       security-events: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - uses: ./.github/actions/setup-zeebe
         with:
           go: false
@@ -345,7 +345,7 @@ jobs:
     name: Go linting
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-zeebe
         with:
           java: false
@@ -369,7 +369,7 @@ jobs:
       # so we use this fixed value as a workaround
       GO_CLIENT_BASE_REF: stable/8.2
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-zeebe
         with:
           java: false
@@ -387,7 +387,7 @@ jobs:
     name: Java checks
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-zeebe
         with:
           go: false
@@ -408,7 +408,7 @@ jobs:
     env:
       LOCAL_DOCKER_IMAGE: localhost:5000/camunda/zeebe
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: hadolint/hadolint-action@v3.1.0
         with:
           config: ./.hadolint.yaml
@@ -496,7 +496,7 @@ jobs:
       group: deploy-maven-snapshot
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Import Secrets
         id: secrets
         uses: hashicorp/vault-action@v2.7.3
@@ -540,7 +540,7 @@ jobs:
       group: deploy-docker-snapshot
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Import Secrets
         id: secrets
         uses: hashicorp/vault-action@v2.7.3
@@ -584,7 +584,7 @@ jobs:
       contents: 'read'
       id-token: 'write'
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: google-github-actions/auth@v1
         id: auth
         with:
@@ -679,7 +679,7 @@ jobs:
       checks: read
       pull-requests: write
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - id: metadata
         name: Fetch dependency metadata
         if: github.actor == 'dependabot[bot]'
