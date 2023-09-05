@@ -71,19 +71,19 @@ public class DecisionReader extends AbstractReader implements io.camunda.operate
 
   /**
    * Gets the DMN diagram XML as a string.
-   * @param decisionDefinitionId
+   * @param decisionDefinitionKey
    * @return
    */
   @Override
-  public String getDiagram(String decisionDefinitionId) {
+  public String getDiagram(Long decisionDefinitionKey) {
     //get decisionRequirementsId
     SearchRequest searchRequest = new SearchRequest(decisionIndex.getAlias())
-        .source(new SearchSourceBuilder().query(idsQuery().addIds(decisionDefinitionId)));
+        .source(new SearchSourceBuilder().query(idsQuery().addIds(decisionDefinitionKey.toString())));
     try {
       SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
       if (response.getHits().getTotalHits().value == 0) {
         throw new NotFoundException(
-            "No decision definition found for id " + decisionDefinitionId);
+            "No decision definition found for id " + decisionDefinitionKey);
       }
       final Object key = response.getHits().getHits()[0].getSourceAsMap()
           .get(DECISION_REQUIREMENTS_KEY);

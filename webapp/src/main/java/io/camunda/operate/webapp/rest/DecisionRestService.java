@@ -43,9 +43,10 @@ public class DecisionRestService extends InternalAPIErrorController {
 
   @Operation(summary = "Get decision DMN XML")
   @GetMapping(path = "/{id}/xml")
-  public String getDecisionDiagram(@PathVariable("id") String decisionDefinitionId) {
-    checkIdentityReadPermission(decisionDefinitionId);
-    return decisionReader.getDiagram(decisionDefinitionId);
+  public String getDecisionDiagram(@ValidLongId @PathVariable("id") String decisionDefinitionId) {
+    final Long decisionDefinitionKey = Long.valueOf(decisionDefinitionId);
+    checkIdentityReadPermission(decisionDefinitionKey);
+    return decisionReader.getDiagram(decisionDefinitionKey);
   }
 
   @Operation(summary = "List decisions grouped by decisionId")
@@ -73,9 +74,9 @@ public class DecisionRestService extends InternalAPIErrorController {
     return batchOperationWriter.scheduleDeleteDecisionDefinition(decisionDefinitionEntity);
   }
 
-  private void checkIdentityReadPermission(String decisionDefinitionId) {
+  private void checkIdentityReadPermission(Long decisionDefinitionKey) {
     if (permissionsService != null) {
-      String decisionId = decisionReader.getDecision(Long.valueOf(decisionDefinitionId)).getDecisionId();
+      String decisionId = decisionReader.getDecision(decisionDefinitionKey).getDecisionId();
       if (!permissionsService.hasPermissionForDecision(decisionId, IdentityPermission.READ)) {
         throw new NotAuthorizedException(String.format("No read permission for decision %s", decisionId));
       }

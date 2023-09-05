@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.Map;
 
 public interface DecisionReader {
-    String getDiagram(String decisionDefinitionId);
+    String getDiagram(Long decisionDefinitionKey);
 
     DecisionDefinitionEntity getDecision(Long decisionDefinitionKey);
 
