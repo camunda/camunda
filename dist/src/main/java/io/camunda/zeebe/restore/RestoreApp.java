@@ -9,6 +9,7 @@ package io.camunda.zeebe.restore;
 
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.shared.MainSupport;
 import io.camunda.zeebe.shared.Profile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,7 +19,6 @@ import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 
 @SpringBootApplication(
@@ -41,10 +41,12 @@ public class RestoreApp implements ApplicationRunner {
   }
 
   public static void main(final String[] args) {
+    MainSupport.setDefaultGlobalConfiguration();
+
     final var application =
-        new SpringApplicationBuilder(RestoreApp.class)
+        MainSupport.createDefaultApplicationBuilder()
             .web(WebApplicationType.NONE)
-            .logStartupInfo(true)
+            .sources(RestoreApp.class)
             .profiles(Profile.RESTORE.getId())
             .build();
 
