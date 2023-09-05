@@ -50,10 +50,6 @@ public class ProcessDefinitionReader {
     return definitionReader.getDefinitions(DefinitionType.PROCESS, false, false, true);
   }
 
-  public List<ProcessDefinitionOptimizeDto> getProcessDefinitions(final Set<String> definitionKeys) {
-    return definitionReader.getDefinitions(DefinitionType.PROCESS, definitionKeys, false, false, true);
-  }
-
   public Optional<ProcessDefinitionOptimizeDto> getProcessDefinition(final String definitionId) {
     final BoolQueryBuilder query = boolQuery().must(matchAllQuery());
     query.must(termsQuery(PROCESS_DEFINITION_ID, definitionId));

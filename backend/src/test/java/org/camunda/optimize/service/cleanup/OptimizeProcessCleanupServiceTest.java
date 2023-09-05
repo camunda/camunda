@@ -39,7 +39,6 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -372,13 +371,11 @@ public class OptimizeProcessCleanupServiceTest {
     return filteredProcessInstancesWithDateFilter;
   }
 
-  private List<String> mockProcessDefinitions(final List<String> processDefinitionIds) {
+  private void mockProcessDefinitions(final List<String> processDefinitionIds) {
     final List<ProcessDefinitionOptimizeDto> processDefinitionOptimizeDtos = processDefinitionIds.stream()
       .map(this::createProcessDefinitionDto)
       .collect(Collectors.toList());
-    when(processDefinitionReader.getProcessDefinitions(any()))
-      .thenReturn(processDefinitionOptimizeDtos);
-    return processDefinitionIds;
+    when(processDefinitionReader.getAllProcessDefinitions()).thenReturn(processDefinitionOptimizeDtos);
   }
 
   private List<String> generateRandomDefinitionsKeys(final Integer amount) {
