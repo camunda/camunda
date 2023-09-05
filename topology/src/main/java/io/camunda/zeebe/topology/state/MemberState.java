@@ -30,7 +30,7 @@ public record MemberState(long version, State state, Map<Integer, PartitionState
     return update(State.JOINING, partitions);
   }
 
-  MemberState toActive() {
+  public MemberState toActive() {
     if (state == State.LEFT || state == State.LEAVING) {
       throw new IllegalStateException(
           String.format("Cannot transition to ACTIVE when current state is %s", state));

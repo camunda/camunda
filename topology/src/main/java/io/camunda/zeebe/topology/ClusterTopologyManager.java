@@ -122,8 +122,7 @@ final class ClusterTopologyManager {
     return result;
   }
 
-  private void applyTopologyChangeOperation(final ClusterTopology mergedTopology)
-      throws IOException {
+  private void applyTopologyChangeOperation(final ClusterTopology mergedTopology) {
     final var operation = mergedTopology.pendingChangerFor(localMemberId);
     final var operationApplier = operationsAppliers.getApplier(operation);
     final var initialized =
