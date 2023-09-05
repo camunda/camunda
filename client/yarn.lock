@@ -2352,18 +2352,18 @@
     "@types/node" "*"
     "@types/responselike" "^1.0.0"
 
-"@types/carbon-components-react@7.55.2":
-  version "7.55.2"
-  resolved "https://registry.yarnpkg.com/@types/carbon-components-react/-/carbon-components-react-7.55.2.tgz#d5cab229cee78a25c58c3d0ab2e34e64b69116b0"
-  integrity sha512-4ikLLTykxeGYlvTRjnSbLNTLhlVaRyPhTnBlHFeRKMFHuGQB4N9qdG8xWMqaC+d+3ewSjQnOwYzzwJaLTLCfug==
+"@types/carbon-components-react@7.55.3":
+  version "7.55.3"
+  resolved "https://registry.yarnpkg.com/@types/carbon-components-react/-/carbon-components-react-7.55.3.tgz#bc0dd6fe01c86e9c274ee76b1892d01ee4c926d5"
+  integrity sha512-CZjYyPkEPjKNyR1WRfGW4xwG30CQ3gvc71Ljw7IyFw0686mAu5q3UdwIiRh8qsb5SsU7eU+8ll+rP+NI0+UqZQ==
   dependencies:
     "@types/react" "*"
     flatpickr "4.6.9"
 
-"@types/carbon__elements@11.10.0":
-  version "11.10.0"
-  resolved "https://registry.yarnpkg.com/@types/carbon__elements/-/carbon__elements-11.10.0.tgz#393d9e4273208f0ecb72d300ca94760f93990956"
-  integrity sha512-wFK8jsF8rY+yuS6Yk2xy9JemA9NTl6erUGCBvmZg5gtkoMMCRo+h+5J3S19MHLsV6vU0F0szaNVjXOPuq1IGmA==
+"@types/carbon__elements@11.10.1":
+  version "11.10.1"
+  resolved "https://registry.yarnpkg.com/@types/carbon__elements/-/carbon__elements-11.10.1.tgz#efdd169c4716c3a91fe24ef00070a6cab1256cb8"
+  integrity sha512-Eha6aCTNe5yTp2np9YZYfeA8DBFMh/97Bq2mP/8Nig/eEr3SigPhvEtt76IMEpJJNBxbIEOltueuVRN3mFsL/w==
 
 "@types/connect-history-api-fallback@^1.3.5":
   version "1.3.5"
