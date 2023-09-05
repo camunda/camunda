@@ -485,7 +485,7 @@ public final class FileBasedSnapshotStore extends Actor
 
   // TODO(npepinpe): using Either here would allow easy rollback regardless of when or where an
   // exception is thrown, without having to catch and rollback for every possible case
-  FileBasedSnapshot newSnapshot(
+  FileBasedSnapshot persistNewSnapshot(
       final FileBasedSnapshotId snapshotId,
       final Path directory,
       final long expectedChecksum,
@@ -504,65 +504,70 @@ public final class FileBasedSnapshotStore extends Actor
       return currentPersistedSnapshot;
     }
 
-    // it's important to persist the checksum file only after the move is finished, since we use it
-    // as a marker file to guarantee the move was complete and not partial
-    final var destination = buildSnapshotDirectory(snapshotId);
-    moveToSnapshotDirectory(directory, destination);
+    try (final var ignored = snapshotMetrics.startPersistTimer()) {
+      // it's important to persist the checksum file only after the move is finished, since we use
+      // it
+      // as a marker file to guarantee the move was complete and not partial
+      final var destination = buildSnapshotDirectory(snapshotId);
+      moveToSnapshotDirectory(directory, destination);
 
-    final var checksumPath = buildSnapshotsChecksumPath(snapshotId);
-    final SfvChecksum actualChecksum;
-    try {
-      // computing the checksum on the final destination also lets us detect any failures during the
-      // copy/move that could occur
-      actualChecksum = SnapshotChecksum.calculate(destination);
-      if (actualChecksum.getCombinedValue() != expectedChecksum) {
+      final var checksumPath = buildSnapshotsChecksumPath(snapshotId);
+      final SfvChecksum actualChecksum;
+      try {
+        // computing the checksum on the final destination also lets us detect any failures during
+        // the
+        // copy/move that could occur
+        actualChecksum = SnapshotChecksum.calculate(destination);
+        if (actualChecksum.getCombinedValue() != expectedChecksum) {
+          rollbackPartialSnapshot(destination);
+          throw new InvalidSnapshotChecksum(
+              directory, expectedChecksum, actualChecksum.getCombinedValue());
+        }
+
+        SnapshotChecksum.persist(checksumPath, actualChecksum);
+      } catch (final IOException e) {
         rollbackPartialSnapshot(destination);
-        throw new InvalidSnapshotChecksum(
-            directory, expectedChecksum, actualChecksum.getCombinedValue());
+        throw new UncheckedIOException(e);
       }
 
-      SnapshotChecksum.persist(checksumPath, actualChecksum);
-    } catch (final IOException e) {
-      rollbackPartialSnapshot(destination);
-      throw new UncheckedIOException(e);
+      final var newPersistedSnapshot =
+          new FileBasedSnapshot(
+              destination,
+              checksumPath,
+              actualChecksum.getCombinedValue(),
+              snapshotId,
+              metadata,
+              this::onSnapshotDeleted,
+              actor);
+      final var failed =
+          !currentPersistedSnapshotRef.compareAndSet(
+              currentPersistedSnapshot, newPersistedSnapshot);
+      if (failed) {
+        // we moved already the snapshot but we expected that this will be cleaned up by the next
+        // successful snapshot
+        final var errorMessage =
+            "Expected that last snapshot is '%s', which should be replace with '%s', but last snapshot was '%s'.";
+        throw new ConcurrentModificationException(
+            String.format(
+                errorMessage,
+                currentPersistedSnapshot,
+                newPersistedSnapshot.getSnapshotId(),
+                currentPersistedSnapshotRef.get()));
+      }
+
+      availableSnapshots.add(newPersistedSnapshot);
+
+      LOGGER.info("Committed new snapshot {}", newPersistedSnapshot.getId());
+
+      snapshotMetrics.incrementSnapshotCount();
+      observeSnapshotSize(newPersistedSnapshot);
+
+      deleteOlderSnapshots(newPersistedSnapshot);
+
+      listeners.forEach(listener -> listener.onNewSnapshot(newPersistedSnapshot));
+
+      return newPersistedSnapshot;
     }
-
-    final var newPersistedSnapshot =
-        new FileBasedSnapshot(
-            destination,
-            checksumPath,
-            actualChecksum.getCombinedValue(),
-            snapshotId,
-            metadata,
-            this::onSnapshotDeleted,
-            actor);
-    final var failed =
-        !currentPersistedSnapshotRef.compareAndSet(currentPersistedSnapshot, newPersistedSnapshot);
-    if (failed) {
-      // we moved already the snapshot but we expected that this will be cleaned up by the next
-      // successful snapshot
-      final var errorMessage =
-          "Expected that last snapshot is '%s', which should be replace with '%s', but last snapshot was '%s'.";
-      throw new ConcurrentModificationException(
-          String.format(
-              errorMessage,
-              currentPersistedSnapshot,
-              newPersistedSnapshot.getSnapshotId(),
-              currentPersistedSnapshotRef.get()));
-    }
-
-    availableSnapshots.add(newPersistedSnapshot);
-
-    LOGGER.info("Committed new snapshot {}", newPersistedSnapshot.getId());
-
-    snapshotMetrics.incrementSnapshotCount();
-    observeSnapshotSize(newPersistedSnapshot);
-
-    deleteOlderSnapshots(newPersistedSnapshot);
-
-    listeners.forEach(listener -> listener.onNewSnapshot(newPersistedSnapshot));
-
-    return newPersistedSnapshot;
   }
 
   private void deleteOlderSnapshots(final FileBasedSnapshot newPersistedSnapshot) {

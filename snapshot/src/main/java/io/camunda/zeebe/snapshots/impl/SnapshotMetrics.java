@@ -8,6 +8,7 @@
 package io.camunda.zeebe.snapshots.impl;
 
 import io.prometheus.client.Counter;
+import io.prometheus.client.Counter.Child;
 import io.prometheus.client.Gauge;
 import io.prometheus.client.Histogram;
 import io.prometheus.client.Histogram.Timer;
@@ -44,6 +45,14 @@ public final class SnapshotMetrics {
           .name("snapshot_duration")
           .help("Approximate duration of snapshot operation")
           .register();
+
+  private static final Histogram SNAPSHOT_PERSIST_DURATION =
+      Histogram.build()
+          .namespace(NAMESPACE)
+          .labelNames(PARTITION_LABEL_NAME)
+          .name("snapshot_persist_duration")
+          .help("Approximate duration of snapshot persist operation")
+          .register();
   private static final Histogram SNAPSHOT_FILE_SIZE =
       Histogram.build()
           .namespace(NAMESPACE)
@@ -53,29 +62,43 @@ public final class SnapshotMetrics {
           .buckets(.01, .1, .5, 1, 5, 10, 25, 50, 100, 250, 500)
           .register();
 
-  private final String partitionId;
+  private final Histogram.Child snapshotPersistDuration;
+  private final Histogram.Child snapshotFileSize;
+  private final Histogram.Child snapshotDuration;
+  private final Gauge.Child snapshotChunkCount;
+  private final Gauge.Child snapshotSize;
+  private final Child snapshotCount;
 
-  public SnapshotMetrics(final String partitionName) {
-    partitionId = partitionName;
+  public SnapshotMetrics(final String partitionId) {
+    snapshotDuration = SNAPSHOT_DURATION.labels(partitionId);
+    snapshotPersistDuration = SNAPSHOT_PERSIST_DURATION.labels(partitionId);
+    snapshotFileSize = SNAPSHOT_FILE_SIZE.labels(partitionId);
+    snapshotChunkCount = SNAPSHOT_CHUNK_COUNT.labels(partitionId);
+    snapshotSize = SNAPSHOT_SIZE.labels(partitionId);
+    snapshotCount = SNAPSHOT_COUNT.labels(partitionId);
   }
 
   void incrementSnapshotCount() {
-    SNAPSHOT_COUNT.labels(partitionId).inc();
+    snapshotCount.inc();
   }
 
   void observeSnapshotSize(final long sizeInBytes) {
-    SNAPSHOT_SIZE.labels(partitionId).set(sizeInBytes);
+    snapshotSize.set(sizeInBytes);
   }
 
   void observeSnapshotChunkCount(final long count) {
-    SNAPSHOT_CHUNK_COUNT.labels(partitionId).set(count);
+    snapshotChunkCount.set(count);
   }
 
   void observeSnapshotFileSize(final long sizeInBytes) {
-    SNAPSHOT_FILE_SIZE.labels(partitionId).observe(sizeInBytes / 1_000_000f);
+    snapshotFileSize.observe(sizeInBytes / 1_000_000f);
   }
 
   Timer startTimer() {
-    return SNAPSHOT_DURATION.labels(partitionId).startTimer();
+    return snapshotDuration.startTimer();
+  }
+
+  Timer startPersistTimer() {
+    return snapshotPersistDuration.startTimer();
   }
 }

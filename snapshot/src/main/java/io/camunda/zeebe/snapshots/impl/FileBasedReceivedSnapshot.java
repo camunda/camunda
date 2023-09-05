@@ -280,7 +280,8 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
                 Long.MAX_VALUE);
       }
       final PersistedSnapshot value =
-          snapshotStore.newSnapshot(snapshotId, directory, expectedSnapshotChecksum, metadata);
+          snapshotStore.persistNewSnapshot(
+              snapshotId, directory, expectedSnapshotChecksum, metadata);
       future.complete(value);
     } catch (final Exception e) {
       future.completeExceptionally(e);
