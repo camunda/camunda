@@ -107,6 +107,10 @@ final class ClusterTopologyManager {
               final var mergedTopology =
                   persistedClusterTopology.getTopology().merge(receivedTopology);
               if (!mergedTopology.equals(persistedClusterTopology.getTopology())) {
+                LOG.debug(
+                    "Received new topology {}. Updating local topology to {}",
+                    receivedTopology,
+                    mergedTopology);
                 persistedClusterTopology.update(mergedTopology);
                 if (mergedTopology.hasPendingChangesFor(localMemberId)) {
                   applyTopologyChangeOperation(mergedTopology);
@@ -124,6 +128,7 @@ final class ClusterTopologyManager {
 
   private void applyTopologyChangeOperation(final ClusterTopology mergedTopology) {
     final var operation = mergedTopology.pendingChangerFor(localMemberId);
+    LOG.info("Applying topology change operation {}", operation);
     final var operationApplier = operationsAppliers.getApplier(operation);
     final var initialized =
         operationApplier
@@ -152,6 +157,10 @@ final class ClusterTopologyManager {
     if (error == null) {
       updateLocalTopology(
           persistedClusterTopology.getTopology().advanceTopologyChange(localMemberId, transformer));
+      LOG.info(
+          "Operation {} applied. Updated local topology to {}",
+          operation,
+          persistedClusterTopology.getTopology());
     } else {
       // TODO: Retry after a fixed delay. The failure is most likely due to timeouts such
       // as when joining a raft partition.
