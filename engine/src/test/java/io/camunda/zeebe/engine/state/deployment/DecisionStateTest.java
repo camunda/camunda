@@ -409,10 +409,8 @@ public final class DecisionStateTest {
     decisionState.deleteDecision(decisionRecord);
 
     // then
-    assertThat(
-        decisionState
-            .findDecisionByTenantAndKey(TENANT_ID, decisionRecord.getDecisionKey()))
-            .isEmpty();
+    assertThat(decisionState.findDecisionByTenantAndKey(TENANT_ID, decisionRecord.getDecisionKey()))
+        .isEmpty();
     assertThat(
             decisionState.findLatestDecisionByIdAndTenant(
                 decisionRecord.getDecisionIdBuffer(), TENANT_ID))
@@ -447,9 +445,8 @@ public final class DecisionStateTest {
 
     // then
     assertThat(
-        decisionState
-            .findDecisionByTenantAndKey(TENANT_ID, decisionRecord1.getDecisionKey()))
-            .isEmpty();
+            decisionState.findDecisionByTenantAndKey(TENANT_ID, decisionRecord1.getDecisionKey()))
+        .isEmpty();
     final var latestDecisionById =
         decisionState.findLatestDecisionByIdAndTenant(
             decisionRecord1.getDecisionIdBuffer(), TENANT_ID);
@@ -483,9 +480,8 @@ public final class DecisionStateTest {
 
     // then
     assertThat(
-        decisionState
-            .findDecisionByTenantAndKey(TENANT_ID, decisionRecord2.getDecisionKey()))
-            .isEmpty();
+            decisionState.findDecisionByTenantAndKey(TENANT_ID, decisionRecord2.getDecisionKey()))
+        .isEmpty();
     final var latestDecisionById =
         decisionState.findLatestDecisionByIdAndTenant(
             decisionRecord2.getDecisionIdBuffer(), TENANT_ID);
@@ -521,9 +517,8 @@ public final class DecisionStateTest {
 
     // then
     assertThat(
-        decisionState
-            .findDecisionByTenantAndKey(TENANT_ID, decisionRecord3.getDecisionKey()))
-            .isEmpty();
+            decisionState.findDecisionByTenantAndKey(TENANT_ID, decisionRecord3.getDecisionKey()))
+        .isEmpty();
     final var latestDecisionById =
         decisionState.findLatestDecisionByIdAndTenant(
             decisionRecord3.getDecisionIdBuffer(), TENANT_ID);
@@ -545,9 +540,9 @@ public final class DecisionStateTest {
 
     // then
     assertThat(
-        decisionState
-            .findDecisionRequirementsByTenantAndKey(TENANT_ID, drg.getDecisionRequirementsKey()))
-            .isEmpty();
+            decisionState.findDecisionRequirementsByTenantAndKey(
+                TENANT_ID, drg.getDecisionRequirementsKey()))
+        .isEmpty();
     assertThat(
             decisionState.findLatestDecisionByIdAndTenant(
                 drg.getDecisionRequirementsIdBuffer(), TENANT_ID))
@@ -574,10 +569,9 @@ public final class DecisionStateTest {
 
     // then
     assertThat(
-        decisionState
-            .findDecisionsByTenantAndDecisionRequirementsKey(
+            decisionState.findDecisionsByTenantAndDecisionRequirementsKey(
                 TENANT_ID, drg1.getDecisionRequirementsKey()))
-            .isEmpty();
+        .isEmpty();
     final var latestDrg =
         decisionState.findLatestDecisionRequirementsByTenantAndId(
             TENANT_ID, drg1.getDecisionRequirementsIdBuffer());
@@ -608,9 +602,8 @@ public final class DecisionStateTest {
 
     // then
     assertThat(
-        decisionState
-            .findDecisionByTenantAndKey(TENANT_ID, drg2.getDecisionRequirementsKey()))
-            .isEmpty();
+            decisionState.findDecisionByTenantAndKey(TENANT_ID, drg2.getDecisionRequirementsKey()))
+        .isEmpty();
     final var latestDrg =
         decisionState.findLatestDecisionRequirementsByTenantAndId(
             TENANT_ID, drg2.getDecisionRequirementsIdBuffer());
@@ -641,9 +634,8 @@ public final class DecisionStateTest {
 
     // then
     assertThat(
-        decisionState
-            .findDecisionByTenantAndKey(TENANT_ID, drg3.getDecisionRequirementsKey()))
-            .isEmpty();
+            decisionState.findDecisionByTenantAndKey(TENANT_ID, drg3.getDecisionRequirementsKey()))
+        .isEmpty();
     final var latestDrg =
         decisionState.findLatestDecisionRequirementsByTenantAndId(
             TENANT_ID, drg3.getDecisionRequirementsIdBuffer());
