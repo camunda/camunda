@@ -44,6 +44,14 @@ public final class SnapshotMetrics {
           .name("snapshot_duration")
           .help("Approximate duration of snapshot operation")
           .register();
+
+  private static final Histogram SNAPSHOT_PERSIST_DURATION =
+      Histogram.build()
+          .namespace(NAMESPACE)
+          .labelNames(PARTITION_LABEL_NAME)
+          .name("snapshot_persist_duration")
+          .help("Approximate duration of snapshot persist operation")
+          .register();
   private static final Histogram SNAPSHOT_FILE_SIZE =
       Histogram.build()
           .namespace(NAMESPACE)
@@ -77,5 +85,9 @@ public final class SnapshotMetrics {
 
   Timer startTimer() {
     return SNAPSHOT_DURATION.labels(partitionId).startTimer();
+  }
+
+  Timer startPersistTimer() {
+    return SNAPSHOT_PERSIST_DURATION.labels(partitionId).startTimer();
   }
 }
