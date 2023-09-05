@@ -60,7 +60,8 @@ public final class ClusterTopologyAssert
     return this;
   }
 
-  public void hasPendingOperationsWithSize(final int expectedSize) {
+  public ClusterTopologyAssert hasPendingOperationsWithSize(final int expectedSize) {
     assertThat(actual.changes().pendingOperations()).hasSize(expectedSize);
+    return this;
   }
 }

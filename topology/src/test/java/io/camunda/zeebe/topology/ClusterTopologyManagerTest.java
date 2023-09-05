@@ -19,12 +19,17 @@ import io.camunda.zeebe.topology.serializer.ClusterTopologySerializer;
 import io.camunda.zeebe.topology.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.MemberState;
+import io.camunda.zeebe.topology.state.TopologyChangeOperation;
+import io.camunda.zeebe.util.Either;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.function.UnaryOperator;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -39,9 +44,11 @@ final class ClusterTopologyManagerTest {
   private final ClusterTopology initialTopology =
       ClusterTopology.init()
           .addMember(MemberId.from("1"), MemberState.initializeAsActive(Map.of()));
-  private PersistedClusterTopology persistedClusterTopology;
   private final TopologyInitializer successInitializer =
       () -> CompletableActorFuture.completed(initialTopology);
+  private final MemberId localMemberId = MemberId.from("1");
+
+  private PersistedClusterTopology persistedClusterTopology;
 
   @BeforeEach
   void init() {
@@ -51,7 +58,13 @@ final class ClusterTopologyManagerTest {
 
   private ActorFuture<ClusterTopologyManager> startTopologyManager(
       final TopologyInitializer topologyInitializer) {
-    final var clusterTopologyManager = createTopologyManager();
+    return startTopologyManager(topologyInitializer, new NoopTopologyChangeApplier());
+  }
+
+  private ActorFuture<ClusterTopologyManager> startTopologyManager(
+      final TopologyInitializer topologyInitializer,
+      final TopologyChangeAppliers operationsAppliers) {
+    final var clusterTopologyManager = createTopologyManager(operationsAppliers);
 
     final ActorFuture<ClusterTopologyManager> startFuture = new TestActorFuture<>();
 
@@ -68,13 +81,15 @@ final class ClusterTopologyManagerTest {
     return startFuture;
   }
 
-  private ClusterTopologyManager createTopologyManager() {
+  private ClusterTopologyManager createTopologyManager(
+      final TopologyChangeAppliers operationsAppliers) {
+
     final ClusterTopologyManager clusterTopologyManager =
         new ClusterTopologyManager(
             new TestConcurrencyControl(),
-            MemberId.from("1"),
+            localMemberId,
             persistedClusterTopology,
-            new NoopTopologyChangeApplier());
+            operationsAppliers);
     clusterTopologyManager.setTopologyGossiper(gossipHandler);
     return clusterTopologyManager;
   }
@@ -145,5 +160,48 @@ final class ClusterTopologyManagerTest {
     assertThat(persistedClusterTopology.getTopology())
         .describedAs("Updated topology is persisted")
         .isEqualTo(clusterTopology);
+  }
+
+  @Test
+  void shouldInitiateClusterTopologyChangeOnGossip() {
+    // given
+    final ClusterTopologyManager clusterTopologyManager =
+        startTopologyManager(successInitializer, new TestMemberLeaver()).join();
+
+    // when
+    final ClusterTopology topologyFromOtherMember =
+        initialTopology.startTopologyChange(List.of(() -> localMemberId));
+    clusterTopologyManager.onGossipReceived(topologyFromOtherMember).join();
+
+    // then
+    Awaitility.await("ClusterTopology is updated after applying topology change operation.")
+        .untilAsserted(
+            () ->
+                ClusterTopologyAssert.assertThatClusterTopology(
+                        clusterTopologyManager.getClusterTopology().join())
+                    .hasPendingOperationsWithSize(0)
+                    .hasMemberWithState(1, MemberState.State.LEFT));
+    assertThat(gossipState.get())
+        .describedAs("Updated topology is gossiped")
+        .isEqualTo(clusterTopologyManager.getClusterTopology().join());
+  }
+
+  private static class TestMemberLeaver implements TopologyChangeAppliers {
+
+    @Override
+    public OperationApplier getApplier(final TopologyChangeOperation operation) {
+      // ignore type of operation and always apply member leave operation
+      return new OperationApplier() {
+        @Override
+        public Either<Exception, UnaryOperator<MemberState>> init() {
+          return Either.right(MemberState::toLeaving);
+        }
+
+        @Override
+        public ActorFuture<UnaryOperator<MemberState>> apply() {
+          return CompletableActorFuture.completed(MemberState::toLeft);
+        }
+      };
+    }
   }
 }
