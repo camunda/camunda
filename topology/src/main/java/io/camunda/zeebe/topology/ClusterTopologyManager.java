@@ -7,11 +7,16 @@
  */
 package io.camunda.zeebe.topology;
 
+import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.topology.state.ClusterTopology;
+import io.camunda.zeebe.topology.state.MemberState;
+import io.camunda.zeebe.topology.state.TopologyChangeOperation;
+import io.camunda.zeebe.util.Either;
 import java.io.IOException;
 import java.util.function.Consumer;
+import java.util.function.UnaryOperator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,6 +29,9 @@ final class ClusterTopologyManager {
 
   private Consumer<ClusterTopology> topologyGossiper;
   private final ActorFuture<Void> startFuture;
+
+  private TopologyChangeAppliers operationsApplier;
+  private MemberId localMemberId;
 
   ClusterTopologyManager(
       final ConcurrencyControl executor, final PersistedClusterTopology persistedClusterTopology) {
@@ -46,25 +54,6 @@ final class ClusterTopologyManager {
         });
 
     return startFuture;
-  }
-
-  ActorFuture<ClusterTopology> onGossipReceived(final ClusterTopology receivedTopology) {
-    final ActorFuture<ClusterTopology> result = executor.createFuture();
-    executor.run(
-        () -> {
-          try {
-            if (receivedTopology != null) {
-              final var mergedTopology =
-                  persistedClusterTopology.getTopology().merge(receivedTopology);
-              updateLocalTopology(mergedTopology);
-            }
-            result.complete(persistedClusterTopology.getTopology());
-          } catch (final IOException error) {
-            result.completeExceptionally(error);
-          }
-        });
-
-    return result;
   }
 
   public void setTopologyGossiper(final Consumer<ClusterTopology> topologyGossiper) {
@@ -104,7 +93,78 @@ final class ClusterTopologyManager {
     }
   }
 
-  private void updateLocalTopology(final ClusterTopology topology) throws IOException {
-    persistedClusterTopology.update(topology);
+  ActorFuture<ClusterTopology> onGossipReceived(final ClusterTopology receivedTopology) {
+    final ActorFuture<ClusterTopology> result = executor.createFuture();
+    executor.run(
+        () -> {
+          try {
+            if (receivedTopology != null) {
+              final var mergedTopology =
+                  persistedClusterTopology.getTopology().merge(receivedTopology);
+              if (!mergedTopology.equals(persistedClusterTopology.getTopology())) {
+                persistedClusterTopology.update(mergedTopology);
+                if (mergedTopology.hasPendingChangesFor(localMemberId)) {
+                  applyTopologyChangeOperation(mergedTopology);
+                }
+              }
+            }
+            result.complete(persistedClusterTopology.getTopology());
+          } catch (final IOException error) {
+            result.completeExceptionally(error);
+          }
+        });
+
+    return result;
+  }
+
+  private void applyTopologyChangeOperation(final ClusterTopology mergedTopology)
+      throws IOException {
+    final var operation = mergedTopology.pendingChangerFor(localMemberId);
+    final var applier = operationsApplier.getApplier(operation);
+    final var initialized =
+        applier
+            .init()
+            .map(
+                transformer ->
+                    persistedClusterTopology.getTopology().updateMember(localMemberId, transformer))
+            .map(this::updateLocalTopology);
+
+    if (initialized.isLeft()) {
+      // TODO: What should we do here? Retry?
+      LOG.error(
+          "Failed to initialize topology change operation {}", operation, initialized.getLeft());
+      return;
+    }
+
+    applier
+        .apply()
+        .onComplete((transformer, error) -> onOperationApplied(operation, transformer, error));
+  }
+
+  private void onOperationApplied(
+      final TopologyChangeOperation operation,
+      final UnaryOperator<MemberState> transformer,
+      final Throwable error) {
+    if (error == null) {
+      updateLocalTopology(
+          persistedClusterTopology.getTopology().advanceTopologyChange(localMemberId, transformer));
+    } else {
+      // TODO: Retry after a fixed delay. The failure is most likely due to timeouts such
+      // as when joining a raft partition.
+      LOG.error("Failed to apply topology change operation {}", operation, error);
+    }
+  }
+
+  private Either<Exception, ClusterTopology> updateLocalTopology(final ClusterTopology topology) {
+    if (topology.equals(persistedClusterTopology.getTopology())) {
+      return Either.right(topology);
+    }
+    try {
+      persistedClusterTopology.update(topology);
+      topologyGossiper.accept(topology);
+      return Either.right(topology);
+    } catch (final Exception e) {
+      return Either.left(e);
+    }
   }
 }
