@@ -28,7 +28,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,10 +43,17 @@ class ClusterTopologyManagementIntegrationTest {
   private final List<Node> clusterNodes =
       List.of(createNode("0"), createNode("1"), createNode("2"));
   private final Map<Integer, TestNode> nodes = new HashMap<>();
+  private Set<MemberId> clusterMemberIds;
 
   @BeforeEach
   void setup() {
     actorScheduler.start();
+
+    clusterMemberIds =
+        clusterNodes.stream()
+            .map(Node::id)
+            .map(id -> MemberId.from(id.id()))
+            .collect(Collectors.toSet());
 
     // start 3 clusterNodes
     createClusterNodes();
@@ -100,9 +107,7 @@ class ClusterTopologyManagementIntegrationTest {
 
     final var restartFutures =
         nodes.values().stream()
-            .map(
-                node ->
-                    node.start(actorScheduler, List.of(), this::getIncorrectPartitionDistribution))
+            .map(node -> node.start(actorScheduler, Set.of(), getIncorrectPartitionDistribution()))
             .toList();
     restartFutures.forEach(ActorFuture::join);
 
@@ -136,10 +141,7 @@ class ClusterTopologyManagementIntegrationTest {
     nodes.put(0, restartedNode0);
 
     restartedNode0
-        .start(
-            actorScheduler,
-            List.of(MemberId.from("1"), MemberId.from("2")),
-            this::getIncorrectPartitionDistribution)
+        .start(actorScheduler, clusterMemberIds, getIncorrectPartitionDistribution())
         .join();
 
     // then - all nodes should have the correct topology generated before restart of node 0
@@ -181,12 +183,9 @@ class ClusterTopologyManagementIntegrationTest {
 
   private ActorFuture<Void> startNode(final TestNode node) {
     if (node.cluster.getMembershipService().getLocalMember().id().id().equals("0")) {
-      return node.start(
-          actorScheduler,
-          List.of(MemberId.from("1"), MemberId.from("2")),
-          this::getExpectedPartitionDistribution);
+      return node.start(actorScheduler, clusterMemberIds, getExpectedPartitionDistribution());
     } else {
-      return node.start(actorScheduler, List.of(), this::getIncorrectPartitionDistribution);
+      return node.start(actorScheduler, clusterMemberIds, getIncorrectPartitionDistribution());
     }
   }
 
@@ -214,10 +213,17 @@ class ClusterTopologyManagementIntegrationTest {
 
     ActorFuture<Void> start(
         final ActorSchedulingService actorScheduler,
-        final List<MemberId> knownMembers,
-        final Supplier<Set<PartitionMetadata>> partitionSupplier) {
+        final Set<MemberId> clusterMembers,
+        final Set<PartitionMetadata> partitions) {
       cluster.start().join();
-      return service.start(actorScheduler, knownMembers, partitionSupplier);
+      return service.start(
+          actorScheduler,
+          new StaticConfiguration(
+              new ControllablePartitionDistributor().withPartitions(partitions),
+              clusterMembers,
+              cluster.getMembershipService().getLocalMember().id(),
+              List.of(),
+              3));
     }
 
     void close() {

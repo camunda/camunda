@@ -12,15 +12,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import io.atomix.cluster.MemberId;
-import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
-import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
 import io.camunda.zeebe.broker.system.configuration.PartitioningCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
-import io.camunda.zeebe.topology.state.ClusterTopology;
-import io.camunda.zeebe.topology.state.MemberState;
-import io.camunda.zeebe.topology.state.PartitionState;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
@@ -55,10 +50,10 @@ class StaticPartitionDistributionResolverTest {
     clusterCfg.setReplicationFactor(3);
 
     // when
-    final var topology =
-        new PartitionDistributionResolver()
-            .resolvePartitionDistribution(partitioningCfg, clusterCfg);
-    final Set<PartitionMetadata> partitionDistribution = topology.partitions();
+    final var partitionDistribution =
+        PartitionDistributionResolver.getStaticConfiguration(
+                clusterCfg, partitioningCfg, MemberId.from("1"))
+            .generatePartitionDistribution();
 
     // then
     // RoundRobinPartitionDistributorTest verifies more cases.
@@ -119,99 +114,15 @@ fixed:
     clusterCfg.setReplicationFactor(3);
 
     // when
-    final var topology =
-        new PartitionDistributionResolver()
-            .resolvePartitionDistribution(partitioningCfg, clusterCfg);
-    final Set<PartitionMetadata> partitionDistribution = topology.partitions();
+    final var partitionDistribution =
+        PartitionDistributionResolver.getStaticConfiguration(
+                clusterCfg, partitioningCfg, MemberId.from("1"))
+            .generatePartitionDistribution();
 
     // then
     // FixedPartitionDistributorTest verifies more cases.
     final var actualDistribution = getDistribution(partitionDistribution);
     assertThat(actualDistribution).containsExactlyInAnyOrderEntriesOf(expectedDistribution);
-  }
-
-  @Test
-  void shouldGeneratePartitionDistributionFromTopology() {
-    // given
-    final PartitionMetadata partitionOne =
-        new PartitionMetadata(
-            PartitionId.from(PartitionManagerImpl.GROUP_NAME, 1),
-            Set.of(member(1), member(2), member(0)),
-            Map.of(member(0), 1, member(1), 2, member(2), 3),
-            3,
-            member(2));
-    final PartitionMetadata partitionTwo =
-        new PartitionMetadata(
-            PartitionId.from(PartitionManagerImpl.GROUP_NAME, 2),
-            Set.of(member(1), member(2), member(0)),
-            Map.of(member(2), 1, member(1), 2, member(0), 3),
-            3,
-            member(0));
-
-    final var expected = Set.of(partitionTwo, partitionOne);
-
-    final ClusterTopology topology =
-        ClusterTopology.init()
-            .addMember(
-                member(0),
-                MemberState.initializeAsActive(
-                    Map.of(1, PartitionState.active(1), 2, PartitionState.active(3))))
-            .addMember(
-                member(1),
-                MemberState.initializeAsActive(
-                    Map.of(1, PartitionState.active(2), 2, PartitionState.active(2))))
-            .addMember(
-                member(2),
-                MemberState.initializeAsActive(
-                    Map.of(1, PartitionState.active(3), 2, PartitionState.active(1))));
-
-    // when
-    final var partitionDistribution =
-        new PartitionDistributionResolver().resolvePartitionDistribution(topology);
-
-    // then
-    assertThat(partitionDistribution.partitions()).containsExactlyInAnyOrderElementsOf(expected);
-  }
-
-  @Test
-  void shouldGeneratePartitionDistributionFromTopologyWithMemberWithNoPartitions() {
-    // given
-    final PartitionMetadata partitionOne =
-        new PartitionMetadata(
-            PartitionId.from(PartitionManagerImpl.GROUP_NAME, 1),
-            Set.of(member(1), member(0)),
-            Map.of(member(0), 1, member(1), 2),
-            2,
-            member(1));
-
-    final PartitionMetadata partitionTwo =
-        new PartitionMetadata(
-            PartitionId.from(PartitionManagerImpl.GROUP_NAME, 2),
-            Set.of(member(1), member(0)),
-            Map.of(member(1), 2, member(0), 3),
-            3,
-            member(0));
-
-    final var expected = Set.of(partitionTwo, partitionOne);
-
-    final ClusterTopology topology =
-        ClusterTopology.init()
-            .addMember(
-                member(0),
-                MemberState.initializeAsActive(
-                    Map.of(1, PartitionState.active(1), 2, PartitionState.active(3))))
-            .addMember(
-                member(1),
-                MemberState.initializeAsActive(
-                    Map.of(1, PartitionState.active(2), 2, PartitionState.active(2))))
-            .addMember(member(2), MemberState.initializeAsActive(Map.of()).toLeaving());
-
-    // when
-    final var partitionDistribution =
-        new PartitionDistributionResolver().resolvePartitionDistribution(topology);
-
-    // then
-    assertThat(partitionDistribution.partitions()).containsExactlyInAnyOrderElementsOf(expected);
   }
 
   private static MemberId member(final int id) {

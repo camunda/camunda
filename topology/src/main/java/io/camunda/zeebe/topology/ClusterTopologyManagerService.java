@@ -8,9 +8,7 @@
 package io.camunda.zeebe.topology;
 
 import io.atomix.cluster.ClusterMembershipService;
-import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
-import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -27,9 +25,6 @@ import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
-import java.util.List;
-import java.util.Set;
-import java.util.function.Supplier;
 
 public final class ClusterTopologyManagerService extends Actor {
   // Use a node 0 as always the coordinator. Later we can make it configurable or allow changing it
@@ -82,8 +77,11 @@ public final class ClusterTopologyManagerService extends Actor {
   }
 
   private TopologyInitializer getCoordinatorInitializer(
-      final Supplier<Set<PartitionMetadata>> staticPartitionResolver,
-      final List<MemberId> knownMembers) {
+      final StaticConfiguration staticConfiguration) {
+    final var knownMembers =
+        staticConfiguration.clusterMembers().stream()
+            .filter(m -> !m.equals(staticConfiguration.localMemberId()))
+            .toList();
     return new FileInitializer(topologyFile, new ProtoBufSerializer())
         .orThen(
             new SyncInitializer(
@@ -91,24 +89,20 @@ public final class ClusterTopologyManagerService extends Actor {
                 knownMembers,
                 this,
                 clusterTopologyGossiper::queryClusterTopology))
-        .orThen(new StaticInitializer(staticPartitionResolver));
+        .orThen(new StaticInitializer(staticConfiguration));
   }
 
   /** Starts ClusterTopologyManager which initializes ClusterTopology */
   public ActorFuture<Void> start(
       final ActorSchedulingService actorSchedulingService,
-      final List<MemberId> clusterMembers,
-      final Supplier<Set<PartitionMetadata>> partitionDistributionResolver) {
+      final StaticConfiguration staticConfiguration) {
     final var startFuture = new CompletableActorFuture<Void>();
     actorSchedulingService
         .submitActor(this)
         .onComplete(
             (ignore, error) -> {
               if (error == null) {
-                actor.run(
-                    () ->
-                        startClusterTopologyServices(
-                            partitionDistributionResolver, clusterMembers, startFuture));
+                actor.run(() -> startClusterTopologyServices(staticConfiguration, startFuture));
               } else {
                 startFuture.completeExceptionally(error);
               }
@@ -118,12 +112,11 @@ public final class ClusterTopologyManagerService extends Actor {
   }
 
   private void startClusterTopologyServices(
-      final Supplier<Set<PartitionMetadata>> partitionDistributionResolver,
-      final List<MemberId> knownMembers,
+      final StaticConfiguration staticConfiguration,
       final CompletableActorFuture<Void> startFuture) {
     final TopologyInitializer topologyInitializer =
         isCoordinator
-            ? getCoordinatorInitializer(partitionDistributionResolver, knownMembers)
+            ? getCoordinatorInitializer(staticConfiguration)
             : getNonCoordinatorInitializer();
     // Start gossiper first so that when ClusterTopologyManager initializes the topology, it can
     // immediately gossip it.

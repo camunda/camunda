@@ -12,6 +12,7 @@ import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.backup.api.BackupDescriptor;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.broker.partitioning.RaftPartitionFactory;
+import io.camunda.zeebe.broker.partitioning.topology.PartitionDistribution;
 import io.camunda.zeebe.broker.partitioning.topology.PartitionDistributionResolver;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.util.FileUtil;
@@ -98,16 +99,18 @@ public class RestoreManager {
   }
 
   private Set<RaftPartition> collectPartitions() {
-
+    final var localBrokerId = configuration.getCluster().getNodeId();
+    final var localMember = MemberId.from(String.valueOf(localBrokerId));
     final var clusterTopology =
-        new PartitionDistributionResolver()
-            .resolvePartitionDistribution(
-                configuration.getExperimental().getPartitioning(), configuration.getCluster());
+        new PartitionDistribution(
+            PartitionDistributionResolver.getStaticConfiguration(
+                    configuration.getCluster(),
+                    configuration.getExperimental().getPartitioning(),
+                    localMember)
+                .generatePartitionDistribution());
     // snapshot store factory can be null because we are not going start the partitions.
     final var raftPartitionFactory = new RaftPartitionFactory(configuration, null);
 
-    final var localBrokerId = configuration.getCluster().getNodeId();
-    final var localMember = MemberId.from(String.valueOf(localBrokerId));
     return clusterTopology.partitions().stream()
         .filter(partitionMetadata -> partitionMetadata.members().contains(localMember))
         .map(raftPartitionFactory::createRaftPartition)

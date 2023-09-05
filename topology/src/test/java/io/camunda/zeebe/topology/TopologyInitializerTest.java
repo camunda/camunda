@@ -178,11 +178,18 @@ final class TopologyInitializerTest {
 
   private TopologyInitializer getStaticInitializer() {
     final MemberId member = MemberId.from("10");
+    final var partitionId = PartitionId.from("test", 1);
     final Set<PartitionMetadata> partitions =
         Set.of(
             new PartitionMetadata(
                 PartitionId.from("test", 1), Set.of(member), Map.of(member, 1), 1, member));
-    return new StaticInitializer(() -> partitions);
+    return new StaticInitializer(
+        new StaticConfiguration(
+            new ControllablePartitionDistributor().withPartitions(partitions),
+            Set.of(member),
+            member,
+            List.of(partitionId),
+            1));
   }
 
   private static class TestTopologyNotifier implements TopologyUpdateNotifier {
