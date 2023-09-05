@@ -21,6 +21,7 @@ import io.camunda.zeebe.test.util.asserts.TopologyAssert;
 import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.http.ContentType;
 import io.restassured.specification.RequestSpecification;
+import java.time.Duration;
 import java.util.Objects;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -49,7 +50,9 @@ final class StandaloneBrokerIT {
 
   @BeforeEach
   void beforeEach() {
-    await("until broker is ready").untilAsserted(this::assertBrokerIsReady);
+    await("until broker is ready")
+        .timeout(Duration.ofSeconds(60)) // A slow ci infrastructure can result in slow startup
+        .untilAsserted(this::assertBrokerIsReady);
   }
 
   /** A simple smoke test to ensure the broker starts and can perform basic functionality. */
