@@ -62,7 +62,6 @@ public final class SnapshotMetrics {
           .buckets(.01, .1, .5, 1, 5, 10, 25, 50, 100, 250, 500)
           .register();
 
-  private final String partitionId;
   private final Histogram.Child snapshotPersistDuration;
   private final Histogram.Child snapshotFileSize;
   private final Histogram.Child snapshotDuration;
@@ -70,9 +69,7 @@ public final class SnapshotMetrics {
   private final Gauge.Child snapshotSize;
   private final Child snapshotCount;
 
-  public SnapshotMetrics(final String partitionName) {
-
-    partitionId = partitionName;
+  public SnapshotMetrics(final String partitionId) {
     snapshotDuration = SNAPSHOT_DURATION.labels(partitionId);
     snapshotPersistDuration = SNAPSHOT_PERSIST_DURATION.labels(partitionId);
     snapshotFileSize = SNAPSHOT_FILE_SIZE.labels(partitionId);
