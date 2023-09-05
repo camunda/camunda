@@ -28,6 +28,7 @@ public class ZeebeFormDefinitionImpl extends BpmnModelElementInstanceImpl
     implements ZeebeFormDefinition {
 
   protected static Attribute<String> formKeyAttribute;
+  protected static Attribute<String> formIdAttribute;
 
   public ZeebeFormDefinitionImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
@@ -43,6 +44,16 @@ public class ZeebeFormDefinitionImpl extends BpmnModelElementInstanceImpl
     formKeyAttribute.setValue(this, formKey);
   }
 
+  @Override
+  public String getFormId() {
+    return formIdAttribute.getValue(this);
+  }
+
+  @Override
+  public void setFormId(final String formId) {
+    formIdAttribute.setValue(this, formId);
+  }
+
   public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -54,7 +65,12 @@ public class ZeebeFormDefinitionImpl extends BpmnModelElementInstanceImpl
         typeBuilder
             .stringAttribute(ZeebeConstants.ATTRIBUTE_FORM_KEY)
             .namespace(BpmnModelConstants.ZEEBE_NS)
-            .required()
+            .build();
+
+    formIdAttribute =
+        typeBuilder
+            .stringAttribute(ZeebeConstants.ATTRIBUTE_FORM_ID)
+            .namespace(BpmnModelConstants.ZEEBE_NS)
             .build();
 
     typeBuilder.build();
