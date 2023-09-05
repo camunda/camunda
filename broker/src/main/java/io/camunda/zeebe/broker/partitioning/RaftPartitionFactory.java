@@ -58,7 +58,6 @@ public final class RaftPartitionFactory {
       throw new UncheckedIOException("Failed to create Raft data directory", e);
     }
 
-    storageConfig.setDirectory(dataDirectory.toString());
     storageConfig.setPersistedSnapshotStoreFactory(snapshotStoreFactory);
     storageConfig.setFlusherFactory(
         createFlusherFactory(
