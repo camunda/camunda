@@ -201,8 +201,8 @@ test('add, edit and delete sources', async (t) => {
   // add source by tenant
   await t.click(e.addButton);
   const tenantName = 'engineering';
-  await t.typeText(e.typeaheadInput, tenantName, {replace: true});
-  await t.click(Common.typeaheadOption(tenantName));
+  await t.typeText(Common.comboBox, tenantName, {replace: true});
+  await t.click(Common.carbonOption(tenantName));
   await t.click(e.itemCheckbox(3));
   await t.click(e.itemCheckbox(4));
   await t.takeElementScreenshot(Common.modalContainer, 'img/sourceByTenant.png');

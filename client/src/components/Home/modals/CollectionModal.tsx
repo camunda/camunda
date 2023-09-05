@@ -5,33 +5,43 @@
  * except in compliance with the proprietary license.
  */
 
-import {useState} from 'react';
+import {ReactNode, useState} from 'react';
 import {Redirect} from 'react-router-dom';
-import {Button} from '@carbon/react';
+import {Button, Form, TextInput} from '@carbon/react';
 
-import {LabeledInput, Modal, Form} from 'components';
+import {Modal} from 'components';
 import {t} from 'translation';
-import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
 import {addSources} from 'services';
+import {useErrorHandling} from 'hooks';
+import {Source} from 'types';
 
 import SourcesModal from './SourcesModal';
 
 import './CollectionModal.scss';
+
+interface CollectionModalProps {
+  onClose: () => void;
+  title?: ReactNode;
+  confirmText: string;
+  initialName?: string;
+  onConfirm: (name?: string) => Promise<void>;
+  showSourcesModal?: boolean;
+}
 
 export function CollectionModal({
   onClose,
   title,
   confirmText,
   initialName,
-  mightFail,
   onConfirm,
   showSourcesModal,
-}) {
+}: CollectionModalProps) {
   const [name, setName] = useState(initialName);
   const [loading, setLoading] = useState(false);
   const [redirect, setRedirect] = useState(null);
   const [displaySourcesModal, setDisplaySourcesModal] = useState(false);
+  const {mightFail} = useErrorHandling();
 
   const confirm = () => {
     if (!name || loading) {
@@ -45,7 +55,7 @@ export function CollectionModal({
     }
   };
 
-  const performRequest = (sources) => {
+  const performRequest = (sources?: Source[]) => {
     mightFail(
       onConfirm(name),
       (id) => {
@@ -78,18 +88,15 @@ export function CollectionModal({
         <Modal.Content>
           <Form>
             {showSourcesModal && <div className="info">{t('common.collection.modal.info')}</div>}
-            <Form.Group>
-              <LabeledInput
-                type="text"
-                label={t('common.collection.modal.inputLabel')}
-                style={{width: '100%'}}
-                value={name}
-                onChange={({target: {value}}) => setName(value)}
-                disabled={loading}
-                autoComplete="off"
-                data-modal-primary-focus
-              />
-            </Form.Group>
+            <TextInput
+              id="collectionName"
+              labelText={t('common.collection.modal.inputLabel')}
+              value={name}
+              onChange={({target: {value}}) => setName(value)}
+              disabled={loading}
+              autoComplete="off"
+              data-modal-primary-focus
+            />
           </Form>
         </Modal.Content>
         <Modal.Footer>
@@ -113,4 +120,4 @@ export function CollectionModal({
   );
 }
 
-export default withErrorHandling(CollectionModal);
+export default CollectionModal;

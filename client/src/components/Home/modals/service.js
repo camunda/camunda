@@ -16,18 +16,6 @@ export async function getDefinitionTenants(defintionKey, defintionType) {
   return await response.json();
 }
 
-export async function getDefinitionsWithTenants() {
-  const response = await get('api/definition');
-
-  return await response.json();
-}
-
-export async function getTenantsWithDefinitions() {
-  const response = await get('api/definition/_groupByTenant');
-
-  return await response.json();
-}
-
 export function formatTenants(tenants, selectedTenants) {
   return tenants.map(({id, name}, index) => {
     if (id === '__unauthorizedTenantId__') {
@@ -60,3 +48,5 @@ export function formatDefintionName({key, name, type}) {
 
   return (name || key) + ' (' + typeLabel + ')';
 }
+
+export {getDefinitionsWithTenants, getTenantsWithDefinitions} from './service.ts';

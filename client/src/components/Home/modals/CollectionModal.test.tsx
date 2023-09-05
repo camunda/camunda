@@ -5,24 +5,29 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import {shallow} from 'enzyme';
-
-import {LabeledInput} from 'components';
 
 import {CollectionModal} from './CollectionModal';
 import SourcesModal from './SourcesModal';
 
+jest.mock('hooks', () => ({
+  ...jest.requireActual('hooks'),
+  useErrorHandling: () => ({
+    mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
+  }),
+}));
+
 const props = {
   initialName: 'aCollectionName',
   onClose: jest.fn(),
-  mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
+  confirmText: 'confirm',
+  onConfirm: jest.fn(),
 };
 
 it('should provide name edit input', async () => {
   const node = await shallow(<CollectionModal {...props} />);
 
-  expect(node.find(LabeledInput).prop('value')).toBe(props.initialName);
+  expect(node.find('TextInput').prop('value')).toBe(props.initialName);
 });
 
 it('have a cancel and save collection button', async () => {
@@ -44,7 +49,7 @@ it('should invoke onConfirm on save button click', async () => {
 it('should disable save button if report name is empty', async () => {
   const node = await shallow(<CollectionModal {...props} />);
 
-  node.find(LabeledInput).simulate('change', {target: {value: ''}});
+  node.find('TextInput').simulate('change', {target: {value: ''}});
 
   expect(node.find('.confirm')).toBeDisabled();
 });

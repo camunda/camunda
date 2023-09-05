@@ -5,10 +5,11 @@
  * except in compliance with the proprietary license.
  */
 
-import {useState, useEffect} from 'react';
+import {useState, useEffect, ChangeEvent} from 'react';
 import classnames from 'classnames';
 import {
   Button,
+  ComboBox,
   TableSelectAll,
   TableSelectRow,
   TableToolbar,
@@ -16,26 +17,40 @@ import {
   TableToolbarSearch,
 } from '@carbon/react';
 
-import {Modal, Table, TenantPopover, Typeahead} from 'components';
+import {Modal, Table, TenantPopover} from 'components';
 import {formatters} from 'services';
 import {t} from 'translation';
-import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
 import {areTenantsAvailable, getOptimizeProfile} from 'config';
+import {useErrorHandling} from 'hooks';
+import {Source} from 'types';
 
-import {getDefinitionsWithTenants, getTenantsWithDefinitions} from './service';
+import {
+  DefinitionWithTenants,
+  TenantWithDefinitions,
+  getDefinitionsWithTenants,
+  getTenantsWithDefinitions,
+} from './service';
 
 import './SourcesModal.scss';
 
 const {formatTenantName} = formatters;
 
-export function SourcesModal({onClose, onConfirm, mightFail, confirmText, preSelectAll}) {
-  const [definitions, setDefinitions] = useState();
-  const [tenants, setTenants] = useState([]);
-  const [selected, setSelected] = useState([]);
-  const [selectedTenant, setSelectedTenant] = useState();
+interface SourcesModalProps {
+  onClose: () => void;
+  onConfirm: (definitions?: Source[]) => void;
+  confirmText: string;
+  preSelectAll?: boolean;
+}
+
+export function SourcesModal({onClose, onConfirm, confirmText, preSelectAll}: SourcesModalProps) {
+  const [definitions, setDefinitions] = useState<DefinitionWithTenants[]>();
+  const [tenants, setTenants] = useState<TenantWithDefinitions[]>([]);
+  const [selected, setSelected] = useState<Source[]>([]);
+  const [selectedTenant, setSelectedTenant] = useState('');
   const [query, setQuery] = useState('');
-  const [optimizeProfile, setOptimizeProfile] = useState();
+  const [optimizeProfile, setOptimizeProfile] = useState('');
+  const {mightFail} = useErrorHandling();
 
   useEffect(() => {
     mightFail(
@@ -60,7 +75,7 @@ export function SourcesModal({onClose, onConfirm, mightFail, confirmText, preSel
     })();
   }, [mightFail]);
 
-  const removeExtraTenants = (def) => {
+  const removeExtraTenants = (def: Source): Source => {
     if (typeof selectedTenant === 'undefined') {
       return def;
     }
@@ -98,7 +113,8 @@ export function SourcesModal({onClose, onConfirm, mightFail, confirmText, preSel
     );
   }
 
-  const isInSelected = ({key}) => selected.some(({definitionKey}) => key === definitionKey);
+  const isInSelected = ({key}: {key?: string}) =>
+    selected.some(({definitionKey}) => key === definitionKey);
   const allChecked = filteredDefinitions.every(isInSelected);
   const allIndeterminate = !allChecked && filteredDefinitions.some(isInSelected);
 
@@ -113,7 +129,10 @@ export function SourcesModal({onClose, onConfirm, mightFail, confirmText, preSel
           className={classnames({hidden: !filteredDefinitions.length})}
           indeterminate={allIndeterminate}
           checked={allChecked}
-          onSelect={({target: {checked}}) => (checked ? deselectAll() : selectAll())}
+          onSelect={({target}) => {
+            const {checked} = target as HTMLInputElement;
+            checked ? deselectAll() : selectAll();
+          }}
         />
       ),
       id: 'checked',
@@ -133,6 +152,14 @@ export function SourcesModal({onClose, onConfirm, mightFail, confirmText, preSel
     });
   }
 
+  const tenantsSelectorItems = [
+    {value: undefined, label: t('common.collection.modal.allTenants')},
+    ...tenants.map((tenant) => ({
+      value: tenant.id,
+      label: formatTenantName(tenant),
+    })),
+  ];
+
   return (
     <Modal open onClose={onClose} size="lg" className="SourcesModal">
       <Modal.Header>{t('home.sources.add')}</Modal.Header>
@@ -142,30 +169,25 @@ export function SourcesModal({onClose, onConfirm, mightFail, confirmText, preSel
             <TableToolbar>
               <TableToolbarContent>
                 {tenants.length !== 0 && (
-                  <Typeahead
+                  <ComboBox
+                    id="tenantsSelector"
                     className="tenantsSelector"
-                    placeholder={t('common.select')}
-                    onChange={(tenant) => {
+                    placeholder={t('common.select').toString()}
+                    items={tenantsSelectorItems}
+                    itemToString={(tenant) =>
+                      (tenant as (typeof tenantsSelectorItems)[number])?.label.toString()
+                    }
+                    initialSelectedItem={tenantsSelectorItems[0]}
+                    onChange={({selectedItem}) => {
                       setSelected([]);
-                      setSelectedTenant(tenant);
+                      setSelectedTenant(selectedItem?.value || '');
                     }}
-                    noValuesMessage={t('common.notFound')}
-                  >
-                    <Typeahead.Option value={undefined}>
-                      {t('common.collection.modal.allTenants')}
-                    </Typeahead.Option>
-                    {tenants.map((tenant) => (
-                      <Typeahead.Option key={tenant.id} value={tenant.id}>
-                        {formatTenantName(tenant)}
-                      </Typeahead.Option>
-                    ))}
-                  </Typeahead>
+                  />
                 )}
                 <TableToolbarSearch
-                  value={query}
-                  placeholder={t('home.search.name')}
+                  placeholder={t('home.search.name').toString()}
                   onChange={(evt) => {
-                    setQuery(evt.target.value);
+                    setQuery((evt as ChangeEvent<HTMLInputElement>).target.value);
                   }}
                   onClear={() => {
                     setQuery('');
@@ -189,21 +211,23 @@ export function SourcesModal({onClose, onConfirm, mightFail, confirmText, preSel
                 id={key}
                 name={key}
                 ariaLabel={key}
-                onSelect={({target: {checked}}) =>
+                onSelect={({target}) => {
+                  const {checked} = target as HTMLInputElement;
                   checked
                     ? setSelected([...selected, removeExtraTenants(format(def))])
                     : setSelected((selected) =>
                         selected.filter(({definitionKey}) => def.key !== definitionKey)
-                      )
-                }
+                      );
+                }}
               />,
               key,
-              def.type,
+              def.type || '',
             ];
 
             if (tenants.length !== 0) {
               if (optimizeProfile === 'ccsm' && tenants.length === 1) {
-                body.push(formatTenantName(def.tenants[0]));
+                const {id, name} = def?.tenants?.[0] || {};
+                body.push(<>{formatTenantName({id, name})}</>);
               } else {
                 body.push(
                   // clicking inside the popover
@@ -217,7 +241,8 @@ export function SourcesModal({onClose, onConfirm, mightFail, confirmText, preSel
                           if (def.key === selectedDefinition.definitionKey) {
                             return {
                               ...selectedDefinition,
-                              tenants: newTenants.length === 0 ? [def.tenants[0].id] : newTenants,
+                              tenants:
+                                newTenants.length === 0 ? [def.tenants[0]?.id || null] : newTenants,
                             };
                           }
                           return selectedDefinition;
@@ -250,9 +275,9 @@ export function SourcesModal({onClose, onConfirm, mightFail, confirmText, preSel
   );
 }
 
-export default withErrorHandling(SourcesModal);
+export default SourcesModal;
 
-function format({key, type, tenants}) {
+function format({key, type, tenants}: DefinitionWithTenants): Source {
   return {
     definitionKey: key,
     definitionType: type,
@@ -260,7 +285,7 @@ function format({key, type, tenants}) {
   };
 }
 
-function definitionHasSelectedTenant(def, selectedTenant) {
+function definitionHasSelectedTenant(def: DefinitionWithTenants, selectedTenant?: string) {
   return def.tenants.some(({id}) =>
     typeof selectedTenant !== 'undefined' ? selectedTenant === id : true
   );

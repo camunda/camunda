@@ -375,7 +375,16 @@ export interface Definition {
   tenantIds?: (string | null)[];
   versions?: string[];
   flowNodeIds?: string[];
+  type?: string;
 }
+
+export type Tenant = {id: string | null; name?: string};
+
+export type Source = {
+  definitionKey: string;
+  definitionType?: string;
+  tenants: (string | null)[];
+};
 
 export type Variable = {id?: string; name: string; type: string; label?: string | null};
 

@@ -5,6 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
+import {Tenant} from 'types';
 import {get, post} from 'request';
 
 export type Definition = {
@@ -16,8 +17,6 @@ export type Version = {
   version: string;
   versionTag: string | null;
 };
-
-export type Tenant = {id: string | null; name?: string};
 
 type DefintionWithTenants = {
   key: string;

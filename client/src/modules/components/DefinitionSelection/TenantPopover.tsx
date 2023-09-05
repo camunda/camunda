@@ -10,8 +10,7 @@ import {ComponentProps} from 'react';
 import {t} from 'translation';
 import {formatters} from 'services';
 import {Popover, ButtonGroup, Button, Switch, Form, LoadingIndicator} from 'components';
-
-import {Tenant} from './service';
+import {Tenant} from 'types';
 
 import './TenantPopover.scss';
 
