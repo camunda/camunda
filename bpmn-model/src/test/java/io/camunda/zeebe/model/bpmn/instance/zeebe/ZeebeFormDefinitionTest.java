@@ -17,6 +17,7 @@ package io.camunda.zeebe.model.bpmn.instance.zeebe;
 
 import io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants;
 import io.camunda.zeebe.model.bpmn.instance.BpmnModelElementInstanceTest;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 
@@ -34,7 +35,8 @@ public class ZeebeFormDefinitionTest extends BpmnModelElementInstanceTest {
 
   @Override
   public Collection<AttributeAssumption> getAttributesAssumptions() {
-    return Collections.singletonList(
-        new AttributeAssumption(BpmnModelConstants.ZEEBE_NS, "formKey", false, true));
+    return Arrays.asList(
+        new AttributeAssumption(BpmnModelConstants.ZEEBE_NS, "formKey", false, false),
+        new AttributeAssumption(BpmnModelConstants.ZEEBE_NS, "formId", false, false));
   }
 }
