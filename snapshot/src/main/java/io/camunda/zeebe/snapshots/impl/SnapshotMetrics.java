@@ -8,6 +8,7 @@
 package io.camunda.zeebe.snapshots.impl;
 
 import io.prometheus.client.Counter;
+import io.prometheus.client.Counter.Child;
 import io.prometheus.client.Gauge;
 import io.prometheus.client.Histogram;
 import io.prometheus.client.Histogram.Timer;
@@ -62,32 +63,45 @@ public final class SnapshotMetrics {
           .register();
 
   private final String partitionId;
+  private final Histogram.Child snapshotPersistDuration;
+  private final Histogram.Child snapshotFileSize;
+  private final Histogram.Child snapshotDuration;
+  private final Gauge.Child snapshotChunkCount;
+  private final Gauge.Child snapshotSize;
+  private final Child snapshotCount;
 
   public SnapshotMetrics(final String partitionName) {
+
     partitionId = partitionName;
+    snapshotDuration = SNAPSHOT_DURATION.labels(partitionId);
+    snapshotPersistDuration = SNAPSHOT_PERSIST_DURATION.labels(partitionId);
+    snapshotFileSize = SNAPSHOT_FILE_SIZE.labels(partitionId);
+    snapshotChunkCount = SNAPSHOT_CHUNK_COUNT.labels(partitionId);
+    snapshotSize = SNAPSHOT_SIZE.labels(partitionId);
+    snapshotCount = SNAPSHOT_COUNT.labels(partitionId);
   }
 
   void incrementSnapshotCount() {
-    SNAPSHOT_COUNT.labels(partitionId).inc();
+    snapshotCount.inc();
   }
 
   void observeSnapshotSize(final long sizeInBytes) {
-    SNAPSHOT_SIZE.labels(partitionId).set(sizeInBytes);
+    snapshotSize.set(sizeInBytes);
   }
 
   void observeSnapshotChunkCount(final long count) {
-    SNAPSHOT_CHUNK_COUNT.labels(partitionId).set(count);
+    snapshotChunkCount.set(count);
   }
 
   void observeSnapshotFileSize(final long sizeInBytes) {
-    SNAPSHOT_FILE_SIZE.labels(partitionId).observe(sizeInBytes / 1_000_000f);
+    snapshotFileSize.observe(sizeInBytes / 1_000_000f);
   }
 
   Timer startTimer() {
-    return SNAPSHOT_DURATION.labels(partitionId).startTimer();
+    return snapshotDuration.startTimer();
   }
 
   Timer startPersistTimer() {
-    return SNAPSHOT_PERSIST_DURATION.labels(partitionId).startTimer();
+    return snapshotPersistDuration.startTimer();
   }
 }
