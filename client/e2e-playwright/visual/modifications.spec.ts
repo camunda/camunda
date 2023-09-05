@@ -8,99 +8,14 @@
 import {expect} from '@playwright/test';
 import {test} from '../test-fixtures';
 import {
-  completedInstance,
   instanceWithIncident,
   mockResponses,
   runningInstance,
 } from './processInstance.mocks';
 
-test.describe('process instance page', () => {
+test.describe('modifications', () => {
   for (const theme of ['light', 'dark']) {
-    test(`error page - ${theme}`, async ({
-      page,
-      commonPage,
-      processInstancePage,
-    }) => {
-      await commonPage.changeTheme(theme);
-
-      await page.route(
-        /^.*\/api.*$/i,
-        mockResponses({
-          processInstanceDetail: runningInstance.detail,
-          xml: runningInstance.xml,
-        }),
-      );
-
-      await processInstancePage.navigateToProcessInstance({
-        id: '1',
-        options: {
-          waitUntil: 'networkidle',
-        },
-      });
-
-      await expect(page).toHaveScreenshot();
-    });
-
-    test(`running instance - ${theme}`, async ({
-      page,
-      commonPage,
-      processInstancePage,
-    }) => {
-      await commonPage.changeTheme(theme);
-
-      await page.route(
-        /^.*\/api.*$/i,
-        mockResponses({
-          processInstanceDetail: runningInstance.detail,
-          flowNodeInstances: runningInstance.flowNodeInstances,
-          statistics: runningInstance.statistics,
-          sequenceFlows: runningInstance.sequenceFlows,
-          variables: runningInstance.variables,
-          xml: runningInstance.xml,
-        }),
-      );
-
-      await processInstancePage.navigateToProcessInstance({
-        id: '1',
-        options: {
-          waitUntil: 'networkidle',
-        },
-      });
-
-      await expect(page).toHaveScreenshot();
-    });
-
-    test(`add variable state - ${theme}`, async ({
-      page,
-      commonPage,
-      processInstancePage,
-    }) => {
-      await commonPage.changeTheme(theme);
-
-      await page.route(
-        /^.*\/api.*$/i,
-        mockResponses({
-          processInstanceDetail: runningInstance.detail,
-          flowNodeInstances: runningInstance.flowNodeInstances,
-          statistics: runningInstance.statistics,
-          sequenceFlows: runningInstance.sequenceFlows,
-          variables: runningInstance.variables,
-          xml: runningInstance.xml,
-        }),
-      );
-
-      await processInstancePage.navigateToProcessInstance({
-        id: '1',
-        options: {
-          waitUntil: 'networkidle',
-        },
-      });
-
-      await processInstancePage.addVariableButton.click();
-      await expect(page).toHaveScreenshot();
-    });
-
-    test(`edit variable state - ${theme}`, async ({
+    test(`with helper modal - ${theme}`, async ({
       page,
       commonPage,
       processInstancePage,
@@ -128,14 +43,57 @@ test.describe('process instance page', () => {
 
       await page
         .getByRole('button', {
-          name: /edit variable/i,
+          name: /modify instance/i,
         })
         .click();
 
       await expect(page).toHaveScreenshot();
     });
 
-    test(`instance with incident - ${theme}`, async ({
+    test(`with add variable state - ${theme}`, async ({
+      page,
+      commonPage,
+      processInstancePage,
+    }) => {
+      await commonPage.changeTheme(theme);
+
+      await page.route(
+        /^.*\/api.*$/i,
+        mockResponses({
+          processInstanceDetail: runningInstance.detail,
+          flowNodeInstances: runningInstance.flowNodeInstances,
+          statistics: runningInstance.statistics,
+          sequenceFlows: runningInstance.sequenceFlows,
+          variables: runningInstance.variables,
+          xml: runningInstance.xml,
+        }),
+      );
+
+      await processInstancePage.navigateToProcessInstance({
+        id: '1',
+        options: {
+          waitUntil: 'networkidle',
+        },
+      });
+
+      await page
+        .getByRole('button', {
+          name: /modify instance/i,
+        })
+        .click();
+
+      await page
+        .getByRole('button', {
+          name: /continue/i,
+        })
+        .click();
+
+      await processInstancePage.addVariableButton.click();
+
+      await expect(page).toHaveScreenshot();
+    });
+
+    test(`diagram badges and flow node instance history panel - ${theme}`, async ({
       page,
       commonPage,
       processInstancePage,
@@ -152,6 +110,7 @@ test.describe('process instance page', () => {
           variables: instanceWithIncident.variables,
           xml: instanceWithIncident.xml,
           incidents: instanceWithIncident.incidents,
+          metaData: instanceWithIncident.metaData,
         }),
       );
 
@@ -164,14 +123,44 @@ test.describe('process instance page', () => {
 
       await page
         .getByRole('button', {
-          name: /view 1 incident in instance/i,
+          name: /modify instance/i,
+        })
+        .click();
+
+      await page
+        .getByRole('button', {
+          name: /continue/i,
+        })
+        .click();
+
+      await page
+        .getByRole('button', {
+          name: /reset diagram zoom/i,
+        })
+        .click();
+
+      await processInstancePage.diagram.getByText(/check payment/i).click();
+
+      await expect(page.getByTestId('dropdown-spinner')).not.toBeVisible();
+
+      await page
+        .getByTitle(
+          /move selected instance in this flow node to another target/i,
+        )
+        .click();
+
+      await processInstancePage.diagram.getByText(/check order items/i).click();
+      await processInstancePage.diagram.getByText(/check payment/i).click();
+      await page
+        .getByRole('button', {
+          name: /add single flow node instance/i,
         })
         .click();
 
       await expect(page).toHaveScreenshot();
     });
 
-    test(`completed instance - ${theme}`, async ({
+    test(`apply modifications summary modal - ${theme}`, async ({
       page,
       commonPage,
       processInstancePage,
@@ -181,12 +170,14 @@ test.describe('process instance page', () => {
       await page.route(
         /^.*\/api.*$/i,
         mockResponses({
-          processInstanceDetail: completedInstance.detail,
-          flowNodeInstances: completedInstance.flowNodeInstances,
-          statistics: completedInstance.statistics,
-          sequenceFlows: completedInstance.sequenceFlows,
-          variables: completedInstance.variables,
-          xml: completedInstance.xml,
+          processInstanceDetail: instanceWithIncident.detail,
+          flowNodeInstances: instanceWithIncident.flowNodeInstances,
+          statistics: instanceWithIncident.statistics,
+          sequenceFlows: instanceWithIncident.sequenceFlows,
+          variables: instanceWithIncident.variables,
+          xml: instanceWithIncident.xml,
+          incidents: instanceWithIncident.incidents,
+          metaData: instanceWithIncident.metaData,
         }),
       );
 
@@ -197,7 +188,61 @@ test.describe('process instance page', () => {
         },
       });
 
-      await page.getByText(/show end date/i).click();
+      await page
+        .getByRole('button', {
+          name: /modify instance/i,
+        })
+        .click();
+
+      await page
+        .getByRole('button', {
+          name: /continue/i,
+        })
+        .click();
+
+      await processInstancePage.diagram.getByText(/check payment/i).click();
+
+      await expect(page.getByTestId('dropdown-spinner')).not.toBeVisible();
+
+      await page
+        .getByTitle(
+          /move selected instance in this flow node to another target/i,
+        )
+        .click();
+
+      await processInstancePage.diagram.getByText(/check order items/i).click();
+
+      const firstVariableValueInput = page
+        .getByRole('textbox', {
+          name: /value/i,
+        })
+        .nth(0);
+
+      await firstVariableValueInput.clear();
+      await firstVariableValueInput.fill('"test"');
+      await page.keyboard.press('Tab');
+
+      await page
+        .getByRole('button', {
+          name: /apply modifications/i,
+        })
+        .click();
+
+      await expect(
+        page.getByText(/planned modifications for process instance/i),
+      ).toBeVisible();
+
+      await expect(
+        page.getByRole('button', {
+          name: /delete flow node modification/i,
+        }),
+      ).toBeVisible();
+
+      await expect(
+        page.getByRole('button', {
+          name: /delete variable modification/i,
+        }),
+      ).toBeVisible();
 
       await expect(page).toHaveScreenshot();
     });

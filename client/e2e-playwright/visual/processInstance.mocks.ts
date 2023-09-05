@@ -5,6 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
+import {Route} from '@playwright/test';
 import {
   FlowNodeInstanceDto,
   FlowNodeInstancesDto,
@@ -696,4 +697,132 @@ const completedInstance: InstanceMock = {
   variables: [],
 };
 
-export {runningInstance, instanceWithIncident, completedInstance};
+function mockResponses({
+  processInstanceDetail,
+  flowNodeInstances,
+  statistics,
+  sequenceFlows,
+  variables,
+  xml,
+  incidents,
+  metaData,
+}: {
+  processInstanceDetail?: ProcessInstanceEntity;
+  flowNodeInstances?: FlowNodeInstancesDto<FlowNodeInstanceDto>;
+  statistics?: ProcessInstanceDetailStatisticsDto[];
+  sequenceFlows?: SequenceFlowsDto;
+  variables?: VariableEntity[];
+  xml?: string;
+  incidents?: ProcessInstanceIncidentsDto;
+  metaData?: MetaDataDto;
+}) {
+  return (route: Route) => {
+    if (route.request().url().includes('/api/authentications/user')) {
+      return route.fulfill({
+        status: 200,
+        body: JSON.stringify({
+          userId: 'demo',
+          displayName: 'demo',
+          canLogout: true,
+          permissions: ['read', 'write'],
+          roles: null,
+          salesPlanType: null,
+          c8Links: {},
+          username: 'demo',
+        }),
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
+    }
+
+    if (route.request().url().includes('/api/flow-node-instances')) {
+      return route.fulfill({
+        status: flowNodeInstances === undefined ? 400 : 200,
+        body: JSON.stringify(flowNodeInstances),
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
+    }
+
+    if (route.request().url().includes('statistics')) {
+      return route.fulfill({
+        status: statistics === undefined ? 400 : 200,
+        body: JSON.stringify(statistics),
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
+    }
+
+    if (route.request().url().includes('sequence-flows')) {
+      return route.fulfill({
+        status: sequenceFlows === undefined ? 400 : 200,
+        body: JSON.stringify(sequenceFlows),
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
+    }
+
+    if (route.request().url().includes('variables')) {
+      return route.fulfill({
+        status: variables === undefined ? 400 : 200,
+        body: JSON.stringify(variables),
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
+    }
+
+    if (route.request().url().includes('xml')) {
+      return route.fulfill({
+        status: xml === undefined ? 400 : 200,
+        body: JSON.stringify(xml),
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
+    }
+
+    if (route.request().url().includes('incidents')) {
+      return route.fulfill({
+        status: incidents === undefined ? 400 : 200,
+        body: JSON.stringify(incidents),
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
+    }
+
+    if (route.request().url().includes('flow-node-metadata')) {
+      return route.fulfill({
+        status: metaData === undefined ? 400 : 200,
+        body: JSON.stringify(metaData),
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
+    }
+
+    if (route.request().url().includes('/api/process-instances/')) {
+      return route.fulfill({
+        status: processInstanceDetail === undefined ? 400 : 200,
+        body: JSON.stringify(processInstanceDetail),
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
+    }
+
+    route.continue();
+  };
+}
+
+export {
+  runningInstance,
+  instanceWithIncident,
+  completedInstance,
+  mockResponses,
+};

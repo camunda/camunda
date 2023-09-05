@@ -31,6 +31,7 @@ const DiagramControls: React.FC<Props> = ({
         kind="tertiary"
         align="left"
         label="Reset diagram zoom"
+        aria-label="Reset diagram zoom"
         onClick={handleZoomReset}
       >
         <CenterCircle />
@@ -40,6 +41,7 @@ const DiagramControls: React.FC<Props> = ({
         kind="tertiary"
         align="left"
         label="Zoom in diagram"
+        aria-label="Zoom in diagram"
         onClick={handleZoomIn}
       >
         <Add />
@@ -49,6 +51,7 @@ const DiagramControls: React.FC<Props> = ({
         kind="tertiary"
         align="left"
         label="Zoom out diagram"
+        aria-label="Zoom out diagram"
         onClick={handleZoomOut}
       >
         <Subtract />
