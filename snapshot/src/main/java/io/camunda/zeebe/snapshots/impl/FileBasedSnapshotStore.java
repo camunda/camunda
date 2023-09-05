@@ -512,19 +512,8 @@ public final class FileBasedSnapshotStore extends Actor
       moveToSnapshotDirectory(directory, destination);
 
       final var checksumPath = buildSnapshotsChecksumPath(snapshotId);
-      final SfvChecksum actualChecksum;
       try {
-        // computing the checksum on the final destination also lets us detect any failures during
-        // the
-        // copy/move that could occur
-        actualChecksum = SnapshotChecksum.calculate(destination);
-        if (actualChecksum.getCombinedValue() != expectedChecksum) {
-          rollbackPartialSnapshot(destination);
-          throw new InvalidSnapshotChecksum(
-              directory, expectedChecksum, actualChecksum.getCombinedValue());
-        }
-
-        SnapshotChecksum.persist(checksumPath, actualChecksum);
+        SnapshotChecksum.persist(checksumPath, new SfvChecksum(expectedChecksum));
       } catch (final IOException e) {
         rollbackPartialSnapshot(destination);
         throw new UncheckedIOException(e);
@@ -534,7 +523,7 @@ public final class FileBasedSnapshotStore extends Actor
           new FileBasedSnapshot(
               destination,
               checksumPath,
-              actualChecksum.getCombinedValue(),
+              expectedChecksum,
               snapshotId,
               metadata,
               this::onSnapshotDeleted,
