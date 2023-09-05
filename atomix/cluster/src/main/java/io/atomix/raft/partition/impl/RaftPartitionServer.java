@@ -30,7 +30,7 @@ import io.atomix.raft.SnapshotReplicationListener;
 import io.atomix.raft.metrics.RaftStartupMetrics;
 import io.atomix.raft.partition.RaftElectionConfig;
 import io.atomix.raft.partition.RaftPartition;
-import io.atomix.raft.partition.RaftPartitionGroupConfig;
+import io.atomix.raft.partition.RaftPartitionConfig;
 import io.atomix.raft.partition.RaftStorageConfig;
 import io.atomix.raft.roles.RaftRole;
 import io.atomix.raft.storage.RaftStorage;
@@ -61,7 +61,7 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer>, Health
 
   private final MemberId localMemberId;
   private final RaftPartition partition;
-  private final RaftPartitionGroupConfig config;
+  private final RaftPartitionConfig config;
   private final ClusterMembershipService membershipService;
   private final ClusterCommunicationService clusterCommunicator;
   private final Set<RaftRoleChangeListener> deferredRoleChangeListeners =
@@ -75,7 +75,7 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer>, Health
 
   public RaftPartitionServer(
       final RaftPartition partition,
-      final RaftPartitionGroupConfig config,
+      final RaftPartitionConfig config,
       final MemberId localMemberId,
       final ClusterMembershipService membershipService,
       final ClusterCommunicationService clusterCommunicator,
@@ -90,8 +90,8 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer>, Health
             getClass(),
             LoggerContext.builder(RaftPartitionServer.class).addValue(partition.name()).build());
     this.partitionMetadata = partitionMetadata;
-    requestTimeout = config.getPartitionConfig().getRequestTimeout();
-    snapshotRequestTimeout = config.getPartitionConfig().getSnapshotRequestTimeout();
+    requestTimeout = config.getRequestTimeout();
+    snapshotRequestTimeout = config.getSnapshotRequestTimeout();
   }
 
   @Override
@@ -165,10 +165,8 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer>, Health
             .getPersistedSnapshotStoreFactory()
             .createReceivableSnapshotStore(partition.dataDirectory().toPath(), partitionId);
 
-    final var partitionConfig = config.getPartitionConfig();
-
     final var electionConfig =
-        partitionConfig.isPriorityElectionEnabled()
+        config.isPriorityElectionEnabled()
             ? RaftElectionConfig.ofPriorityElection(
                 partitionMetadata.getTargetPriority(), partitionMetadata.getPriority(localMemberId))
             : RaftElectionConfig.ofDefaultElection();
@@ -178,7 +176,7 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer>, Health
         .withPartitionId(partitionId)
         .withMembershipService(membershipService)
         .withProtocol(createServerProtocol())
-        .withPartitionConfig(partitionConfig)
+        .withPartitionConfig(config)
         .withStorage(createRaftStorage())
         .withEntryValidator(config.getEntryValidator())
         .withElectionConfig(electionConfig)

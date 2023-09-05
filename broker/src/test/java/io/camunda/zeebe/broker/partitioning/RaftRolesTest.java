@@ -19,7 +19,8 @@ import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.impl.DefaultPartitionManagementService;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
-import io.atomix.raft.partition.RaftPartitionGroup;
+import io.atomix.raft.partition.RaftPartitionConfig;
+import io.atomix.raft.partition.RaftStorageConfig;
 import io.atomix.raft.partition.RoundRobinPartitionDistributor;
 import java.io.File;
 import java.util.ArrayList;
@@ -148,14 +149,23 @@ public final class RaftRolesTest {
         new RoundRobinPartitionDistributor()
             .distributePartitions(memberIds, partitionIds, memberIds.size());
 
-    final RaftPartitionGroup partitionGroup =
-        RaftPartitionGroup.builder("normal")
-            .withPartitionDistribution(partitionDistribution)
-            .withPriorityElection(false)
-            .withDataDirectory(
-                new File(new File(atomixClusterRule.getDataDir(), "log"), "" + nodeId))
-            .withSnapshotStoreFactory(new NoopSnapshotStoreFactory())
-            .build();
+    final var partitions =
+        partitionDistribution.stream()
+            .map(
+                metadata -> {
+                  final var raftStorageConfig = new RaftStorageConfig();
+                  raftStorageConfig.setPersistedSnapshotStoreFactory(
+                      new NoopSnapshotStoreFactory());
+                  final var raftPartitionConfig = new RaftPartitionConfig();
+                  raftPartitionConfig.setStorageConfig(raftStorageConfig);
+                  raftPartitionConfig.setPriorityElectionEnabled(false);
+
+                  return new RaftPartition(
+                      metadata,
+                      raftPartitionConfig,
+                      new File(new File(atomixClusterRule.getDataDir(), "log"), "" + nodeId));
+                })
+            .toList();
 
     final var atomixFuture =
         atomixClusterRule.startAtomix(nodeId, nodeIds, AtomixClusterBuilder::build);
@@ -163,14 +173,14 @@ public final class RaftRolesTest {
     final AtomixCluster atomix;
     try {
       atomix = atomixFuture.get();
+      final var managementService =
+          new DefaultPartitionManagementService(
+              atomix.getMembershipService(), atomix.getCommunicationService());
 
-      partitionGroup.getPartitions().forEach(partitionConsumer);
+      partitions.forEach(partitionConsumer);
       return CompletableFuture.allOf(
-          partitionGroup
-              .join(
-                  new DefaultPartitionManagementService(
-                      atomix.getMembershipService(), atomix.getCommunicationService()))
-              .values()
+          partitions.stream()
+              .map(partition -> partition.open(managementService))
               .toArray(CompletableFuture[]::new));
     } catch (final InterruptedException | ExecutionException e) {
       LangUtil.rethrowUnchecked(e);

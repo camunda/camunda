@@ -26,7 +26,6 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
       final ActorFuture<BrokerStartupContext> startupFuture) {
     final var partitionManager =
         new PartitionManagerImpl(
-            concurrencyControl,
             brokerStartupContext.getActorSchedulingService(),
             brokerStartupContext.getBrokerConfiguration(),
             brokerStartupContext.getBrokerInfo(),
@@ -60,7 +59,7 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
                                     adminService.injectAdminAccess(
                                         partitionManager.createAdminAccess(adminService));
                                     adminService.injectPartitionInfoSource(
-                                        partitionManager.getPartitions());
+                                        partitionManager.getZeebePartitions());
 
                                     brokerStartupContext.setPartitionManager(partitionManager);
 

@@ -18,7 +18,6 @@ import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.partition.RaftPartitionConfig;
-import io.atomix.raft.partition.RaftPartitionGroupConfig;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -28,8 +27,6 @@ import org.junit.jupiter.api.Test;
 public class RaftPartitionServerTest {
 
   private final RaftPartition raftPartition = mock(RaftPartition.class);
-  private final RaftPartitionGroupConfig partitionGroupConfig =
-      mock(RaftPartitionGroupConfig.class);
 
   @Test
   public void testInitServerRuntimeExceptionReturnsExceptionalFuture() {
@@ -38,13 +35,12 @@ public class RaftPartitionServerTest {
     when(raftPartition.members()).thenReturn(List.of(localMemberId));
     when(raftPartition.id())
         .thenReturn(PartitionId.from("group", Integer.parseInt(localMemberId.id())));
-
-    when(partitionGroupConfig.getPartitionConfig()).thenReturn(new RaftPartitionConfig());
+    final var raftPartitionConfig = mock(RaftPartitionConfig.class);
 
     final RaftPartitionServer raftPartitionServer =
         new RaftPartitionServer(
             raftPartition,
-            partitionGroupConfig,
+            new RaftPartitionConfig(),
             localMemberId,
             mock(ClusterMembershipService.class),
             mock(ClusterCommunicationService.class),
@@ -52,7 +48,7 @@ public class RaftPartitionServerTest {
 
     // this is called internally by #initServer which we need to ensure does not prevent
     // a completableFuture to be returned on failure
-    when(partitionGroupConfig.getStorageConfig()).thenThrow(RuntimeException.class);
+    when(raftPartitionConfig.getStorageConfig()).thenThrow(RuntimeException.class);
 
     // when
     final CompletableFuture<RaftPartitionServer> raftServerStartFuture =

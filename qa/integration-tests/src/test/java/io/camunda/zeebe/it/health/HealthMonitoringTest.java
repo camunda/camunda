@@ -11,10 +11,7 @@ import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static org.awaitility.Awaitility.await;
 import static org.awaitility.Awaitility.waitAtMost;
 
-import io.atomix.primitive.partition.PartitionId;
-import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.broker.Broker;
-import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import java.time.Duration;
 import org.junit.Rule;
@@ -45,15 +42,12 @@ public class HealthMonitoringTest {
             });
 
     // when
-    final var raftPartition =
-        (RaftPartition)
-            leader
-                .getBrokerContext()
-                .getPartitionManager()
-                .getPartitionGroup()
-                .getPartition(
-                    PartitionId.from(PartitionManagerImpl.GROUP_NAME, START_PARTITION_ID));
-    raftPartition.getServer().stop();
+    leader
+        .getBrokerContext()
+        .getPartitionManager()
+        .getRaftPartition(START_PARTITION_ID)
+        .getServer()
+        .stop();
 
     // then
     /* timeouts are selected generously as at the time of this implementation there is a

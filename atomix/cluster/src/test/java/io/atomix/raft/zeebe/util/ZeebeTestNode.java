@@ -21,14 +21,16 @@ import io.atomix.cluster.MemberId;
 import io.atomix.cluster.Node;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.cluster.discovery.NodeDiscoveryProvider;
-import io.atomix.primitive.partition.ManagedPartitionGroup;
 import io.atomix.primitive.partition.PartitionId;
+import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.primitive.partition.impl.DefaultPartitionManagementService;
 import io.atomix.raft.partition.RaftPartition;
-import io.atomix.raft.partition.RaftPartitionGroup;
+import io.atomix.raft.partition.RaftPartitionConfig;
+import io.atomix.raft.partition.RaftStorageConfig;
 import io.atomix.raft.partition.RoundRobinPartitionDistributor;
 import io.atomix.raft.partition.impl.RaftPartitionServer;
 import io.atomix.raft.snapshot.TestSnapshotStore;
+import io.atomix.raft.zeebe.EntryValidator.NoopEntryValidator;
 import java.io.File;
 import java.util.Collection;
 import java.util.List;
@@ -40,15 +42,13 @@ import java.util.stream.Collectors;
 public class ZeebeTestNode {
 
   public static final String CLUSTER_ID = "zeebe";
-  private static final String DATA_PARTITION_GROUP_NAME = "data";
   private static final String HOST = "localhost";
   private static final int BASE_PORT = 10_000;
   private final Member member;
   private final Node node;
   private final File directory;
-
-  private RaftPartitionGroup dataPartitionGroup;
   private AtomixCluster cluster;
+  private List<RaftPartition> partitions;
 
   public ZeebeTestNode(final int id, final File directory) {
     final String textualId = String.valueOf(id);
@@ -63,30 +63,51 @@ public class ZeebeTestNode {
   }
 
   RaftPartition getPartition(final int id) {
-    return (RaftPartition) getDataPartitionGroup().getPartition(String.valueOf(id));
-  }
-
-  private ManagedPartitionGroup getDataPartitionGroup() {
-    return dataPartitionGroup;
+    return partitions.stream().filter(p -> p.id().id() == id).findFirst().orElse(null);
   }
 
   public CompletableFuture<Void> start(final Collection<ZeebeTestNode> nodes) {
     cluster = buildCluster(nodes);
-    dataPartitionGroup =
-        buildPartitionGroup(RaftPartitionGroup.builder(DATA_PARTITION_GROUP_NAME), nodes).build();
+    final Set<MemberId> members =
+        nodes.stream().map(ZeebeTestNode::getMember).map(Member::id).collect(Collectors.toSet());
+    members.add(member.id());
 
+    final var partitionDistribution =
+        new RoundRobinPartitionDistributor()
+            .distributePartitions(members, List.of(PartitionId.from("test", 1)), members.size());
+
+    partitions = buildPartitions(partitionDistribution);
+    final var managementService =
+        new DefaultPartitionManagementService(
+            cluster.getMembershipService(), cluster.getCommunicationService());
     return cluster
         .start()
         .thenCompose(
             ignored ->
                 CompletableFuture.allOf(
-                    dataPartitionGroup
-                        .join(
-                            new DefaultPartitionManagementService(
-                                cluster.getMembershipService(), cluster.getCommunicationService()))
-                        .values()
-                        .toArray(CompletableFuture[]::new)))
-        .thenApply(v -> null);
+                    partitions.stream()
+                        .map(partition -> partition.open(managementService))
+                        .toArray(CompletableFuture[]::new)));
+  }
+
+  private List<RaftPartition> buildPartitions(final Set<PartitionMetadata> partitionDistribution) {
+    return partitionDistribution.stream()
+        .map(
+            partitionMetadata -> {
+              final var raftStorageConfig = new RaftStorageConfig();
+              raftStorageConfig.setPersistedSnapshotStoreFactory(
+                  (path, partition) -> new TestSnapshotStore(new AtomicReference<>()));
+              raftStorageConfig.setSegmentSize(1024);
+              final var raftPartitionConfig = new RaftPartitionConfig();
+              raftPartitionConfig.setStorageConfig(raftStorageConfig);
+              raftPartitionConfig.setPriorityElectionEnabled(false);
+              raftPartitionConfig.setEntryValidator(new NoopEntryValidator());
+              return new RaftPartition(
+                  partitionMetadata,
+                  raftPartitionConfig,
+                  new File(new File(directory, "log"), "" + member.id()));
+            })
+        .toList();
   }
 
   private AtomixCluster buildCluster(final Collection<ZeebeTestNode> nodes) {
@@ -96,10 +117,6 @@ public class ZeebeTestNode {
         .withMembershipProvider(buildDiscoveryProvider(nodes))
         .withMemberId(getMemberId())
         .build();
-  }
-
-  public RaftPartitionGroup getPartitionGroup() {
-    return dataPartitionGroup;
   }
 
   public MemberId getMemberId() {
@@ -116,29 +133,14 @@ public class ZeebeTestNode {
     return node;
   }
 
-  private RaftPartitionGroup.Builder buildPartitionGroup(
-      final RaftPartitionGroup.Builder builder, final Collection<ZeebeTestNode> nodes) {
-    final Set<MemberId> members =
-        nodes.stream().map(ZeebeTestNode::getMember).map(Member::id).collect(Collectors.toSet());
-    members.add(member.id());
-
-    final var partitionDistribution =
-        new RoundRobinPartitionDistributor()
-            .distributePartitions(members, List.of(PartitionId.from("test", 1)), members.size());
-    return builder
-        .withPartitionDistribution(partitionDistribution)
-        .withDataDirectory(directory)
-        .withSegmentSize(1024L)
-        .withSnapshotStoreFactory(
-            (path, partition) -> new TestSnapshotStore(new AtomicReference<>()));
-  }
-
   public Member getMember() {
     return member;
   }
 
   public CompletableFuture<Void> stop() {
-    return dataPartitionGroup.close().thenCompose(ignored -> cluster.stop());
+    return CompletableFuture.allOf(
+            partitions.stream().map(RaftPartition::close).toArray(CompletableFuture[]::new))
+        .thenCompose(ignored -> cluster.stop());
   }
 
   public AtomixCluster getCluster() {

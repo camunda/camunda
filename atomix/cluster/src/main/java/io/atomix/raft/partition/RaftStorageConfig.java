@@ -25,7 +25,6 @@ import io.camunda.zeebe.snapshots.ReceivableSnapshotStoreFactory;
 /** Raft storage configuration. */
 public class RaftStorageConfig {
 
-  private static final String DATA_PREFIX = ".data";
   private static final int DEFAULT_MAX_SEGMENT_SIZE = 1024 * 1024 * 32;
   private static final RaftLogFlusher.Factory DEFAULT_FLUSHER_FACTORY =
       RaftLogFlusher.Factory::direct;
@@ -34,7 +33,6 @@ public class RaftStorageConfig {
 
   private static final boolean DEFAULT_PREALLOCATE_SEGMENT_FILES = true;
 
-  private String directory;
   private long segmentSize = DEFAULT_MAX_SEGMENT_SIZE;
   private RaftLogFlusher.Factory flusherFactory = DEFAULT_FLUSHER_FACTORY;
   private long freeDiskSpace = DEFAULT_FREE_DISK_SPACE;
@@ -43,18 +41,6 @@ public class RaftStorageConfig {
 
   @Optional("SnapshotStoreFactory")
   private ReceivableSnapshotStoreFactory persistedSnapshotStoreFactory;
-
-  /**
-   * Returns the partition data directory.
-   *
-   * @param groupName the partition group name
-   * @return the partition data directory
-   */
-  public String getDirectory(final String groupName) {
-    return directory != null
-        ? directory
-        : System.getProperty("atomix.data", DATA_PREFIX) + "/" + groupName;
-  }
 
   /**
    * Returns the Raft log segment size.
@@ -95,17 +81,6 @@ public class RaftStorageConfig {
    */
   public RaftStorageConfig setFlusherFactory(final RaftLogFlusher.Factory flusherFactory) {
     this.flusherFactory = flusherFactory;
-    return this;
-  }
-
-  /**
-   * Sets the partition data directory.
-   *
-   * @param directory the partition data directory
-   * @return the Raft partition group configuration
-   */
-  public RaftStorageConfig setDirectory(final String directory) {
-    this.directory = directory;
     return this;
   }
 
@@ -179,10 +154,7 @@ public class RaftStorageConfig {
   @Override
   public String toString() {
     return "RaftStorageConfig{"
-        + "directory='"
-        + directory
-        + '\''
-        + ", segmentSize="
+        + "segmentSize="
         + segmentSize
         + ", flushExplicitly="
         + flusherFactory

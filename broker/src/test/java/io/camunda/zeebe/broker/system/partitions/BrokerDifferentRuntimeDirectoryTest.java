@@ -39,12 +39,7 @@ public class BrokerDifferentRuntimeDirectoryTest {
           .isNotEmptyDirectory();
       final var partition =
           (RaftPartition)
-              brokerRule
-                  .getBroker()
-                  .getBrokerContext()
-                  .getPartitionManager()
-                  .getPartitionGroup()
-                  .getPartition(i);
+              brokerRule.getBroker().getBrokerContext().getPartitionManager().getRaftPartition(i);
       assertThat(partition.dataDirectory().toPath().resolve("runtime"))
           .describedAs("No runtime directory is created in the data directory")
           .doesNotExist();

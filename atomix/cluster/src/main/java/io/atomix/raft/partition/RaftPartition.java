@@ -44,18 +44,19 @@ public final class RaftPartition implements Partition, HealthMonitorable {
   private static final Logger LOG = LoggerFactory.getLogger(RaftPartition.class);
   private static final String PARTITION_NAME_FORMAT = "%s-partition-%d";
   private final PartitionId partitionId;
-  private final RaftPartitionGroupConfig config;
+  private final RaftPartitionConfig config;
   private final File dataDirectory;
   private final Set<RaftRoleChangeListener> deferredRoleChangeListeners =
       new CopyOnWriteArraySet<>();
-  private PartitionMetadata partitionMetadata;
+  private final PartitionMetadata partitionMetadata;
   private RaftPartitionServer server;
 
   public RaftPartition(
-      final PartitionId partitionId,
-      final RaftPartitionGroupConfig config,
+      final PartitionMetadata partitionMetadata,
+      final RaftPartitionConfig config,
       final File dataDirectory) {
-    this.partitionId = partitionId;
+    partitionId = partitionMetadata.id();
+    this.partitionMetadata = partitionMetadata;
     this.config = config;
     this.dataDirectory = dataDirectory;
   }
@@ -83,7 +84,7 @@ public final class RaftPartition implements Partition, HealthMonitorable {
   }
 
   /** Opens the partition. */
-  CompletableFuture<RaftPartition> open(final PartitionManagementService managementService) {
+  public CompletableFuture<RaftPartition> open(final PartitionManagementService managementService) {
     if (partitionMetadata
         .members()
         .contains(managementService.getMembershipService().getLocalMember().id())) {
@@ -143,7 +144,7 @@ public final class RaftPartition implements Partition, HealthMonitorable {
   }
 
   /** Closes the partition. */
-  CompletableFuture<Void> close() {
+  public CompletableFuture<Void> close() {
     return closeServer()
         .exceptionally(
             error -> {
@@ -233,9 +234,8 @@ public final class RaftPartition implements Partition, HealthMonitorable {
   @VisibleForTesting
   public boolean shouldStepDown() {
     final var primary = partitionMetadata.getPrimary();
-    final var partitionConfig = config.getPartitionConfig();
     return server != null
-        && partitionConfig.isPriorityElectionEnabled()
+        && config.isPriorityElectionEnabled()
         && primary.isPresent()
         && !primary.get().equals(server.getMemberId());
   }
@@ -244,11 +244,7 @@ public final class RaftPartition implements Partition, HealthMonitorable {
     return server.stop();
   }
 
-  public PartitionMetadata getMetadata() {
-    return partitionMetadata;
-  }
-
-  public void setMetadata(final PartitionMetadata partitionMetadata) {
-    this.partitionMetadata = partitionMetadata;
+  public RaftPartitionConfig getPartitionConfig() {
+    return config;
   }
 }
