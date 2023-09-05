@@ -55,6 +55,9 @@ public interface MutableProcessingState extends ProcessingState {
   MutableDecisionState getDecisionState();
 
   @Override
+  MutableFormState getFormState();
+
+  @Override
   MutableSignalSubscriptionState getSignalSubscriptionState();
 
   @Override

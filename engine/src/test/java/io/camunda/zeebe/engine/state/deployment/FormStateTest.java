@@ -1,0 +1,110 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
+ */
+package io.camunda.zeebe.engine.state.deployment;
+
+import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsArray;
+import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
+import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import io.camunda.zeebe.engine.state.mutable.MutableFormState;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.util.ProcessingStateExtension;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.FormRecord;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+
+@ExtendWith(ProcessingStateExtension.class)
+public class FormStateTest {
+
+  private MutableProcessingState processingState;
+  private MutableFormState formState;
+
+  @BeforeEach
+  public void setup() {
+    formState = processingState.getFormState();
+  }
+
+  @Test
+  void shouldStoreForm() {
+    // given
+    final var formRecord = sampleFormRecord();
+    formState.storeFormRecord(formRecord);
+
+    // when
+    final var maybePersistedForm = formState.findFormByKey(formRecord.getFormKey());
+
+    // then
+    assertThat(maybePersistedForm).isNotEmpty();
+    final var persistedForm = maybePersistedForm.get();
+    assertThat(bufferAsString(persistedForm.getFormId())).isEqualTo(formRecord.getFormId());
+    assertThat(persistedForm.getVersion()).isEqualTo(formRecord.getVersion());
+    assertThat(persistedForm.getFormKey()).isEqualTo(formRecord.getFormKey());
+    assertThat(bufferAsString(persistedForm.getResourceName()))
+        .isEqualTo(formRecord.getResourceName());
+    assertThat(bufferAsArray(persistedForm.getChecksum())).isEqualTo(formRecord.getChecksum());
+    assertThat(bufferAsArray(persistedForm.getResource())).isEqualTo(formRecord.getResource());
+  }
+
+  @Test
+  void shouldFindLatestByFormId() {
+    // given
+    final var formRecord1 = sampleFormRecord();
+    formState.storeFormRecord(formRecord1);
+
+    final var formRecord2 = sampleFormRecord(2, 2L);
+    formState.storeFormRecord(formRecord2);
+
+    // when
+    final var maybePersistedForm = formState.findLatestFormById(formRecord1.getFormIdBuffer());
+
+    // then
+    assertThat(maybePersistedForm).isNotEmpty();
+    final var persistedForm = maybePersistedForm.get();
+    assertThat(bufferAsString(persistedForm.getFormId())).isEqualTo(formRecord2.getFormId());
+    assertThat(persistedForm.getVersion()).isEqualTo(2);
+    assertThat(persistedForm.getFormKey()).isEqualTo(formRecord2.getFormKey());
+    assertThat(bufferAsString(persistedForm.getResourceName()))
+        .isEqualTo(formRecord2.getResourceName());
+    assertThat(bufferAsArray(persistedForm.getChecksum())).isEqualTo(formRecord2.getChecksum());
+    assertThat(bufferAsArray(persistedForm.getResource())).isEqualTo(formRecord2.getResource());
+  }
+
+  @Test
+  void shouldReturnEmptyIfNoFormIsDeployedForFormId() {
+    // when
+    final var persistedForm = formState.findLatestFormById(wrapString("form-1"));
+
+    // then
+    assertThat(persistedForm).isEmpty();
+  }
+
+  @Test
+  void shouldReturnEmptyIfNoFormIsDeployedForFormKey() {
+    // when
+    final var persistedForm = formState.findFormByKey(1L);
+
+    // then
+    assertThat(persistedForm).isEmpty();
+  }
+
+  private FormRecord sampleFormRecord(final int version, final long key) {
+    return new FormRecord()
+        .setFormId("form-id")
+        .setVersion(version)
+        .setFormKey(key)
+        .setResourceName("form-1.form")
+        .setChecksum(wrapString("checksum"))
+        .setResource(wrapString("form-resource"));
+  }
+
+  private FormRecord sampleFormRecord() {
+    return sampleFormRecord(1, 1L);
+  }
+}
