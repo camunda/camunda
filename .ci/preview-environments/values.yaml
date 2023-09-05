@@ -71,10 +71,6 @@ camunda-platform:
     podSecurityContext:
       fsGroup: 1000
     partitionCount: 1
-    # Enable the creation of persistent volumes.
-    persistenceType: disk
-    # Defines a reasonable default for the `zeebe` StatefulSet, for when persistence is enabled.
-    pvcSize: 1Gi
     replicationFactor: 1
     nodeSelector:
       cloud.google.com/gke-nodepool: previews
@@ -120,8 +116,6 @@ camunda-platform:
         value: "1"
     clusterHealthCheckParams: wait_for_status=yellow&timeout=1s
     esJavaOpts: "-Xms512m -Xmx512m"
-    persistence:
-      enabled: true
     securityContext:
       capabilities:
         add:
@@ -146,10 +140,6 @@ camunda-platform:
       - key: "previews"
         operator: "Exists"
         effect: "NoSchedule"
-    volumeClaimTemplate:
-      resources:
-        requests:
-          storage: 1Gi
 
 # Configuration of global values as required by the camunda-platform chart and to comply
 # with Infra best practices.
