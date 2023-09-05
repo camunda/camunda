@@ -14,6 +14,7 @@ import io.camunda.zeebe.topology.state.ClusterChangePlan;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.MemberState;
 import io.camunda.zeebe.topology.state.PartitionState;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -25,26 +26,23 @@ public final class TopologyUtil {
 
   public static ClusterTopology getClusterTopologyFrom(
       final Set<PartitionMetadata> partitionDistribution) {
-    final var partitionsOwnedByMembers =
-        partitionDistribution.stream()
-            .flatMap(
-                p ->
-                    p.members().stream()
-                        .map(m -> Map.entry(m, Map.entry(p.id().id(), p.getPriority(m)))))
-            .collect(
-                Collectors.groupingBy(
-                    Entry::getKey,
-                    Collectors.toMap(
-                        e -> e.getValue().getKey(),
-                        e -> PartitionState.active(e.getValue().getValue()))));
-
-    final var memberStates =
-        partitionsOwnedByMembers.entrySet().stream()
-            .collect(
-                Collectors.toMap(Entry::getKey, e -> MemberState.initializeAsActive(e.getValue())));
+    final var partitionStatesByMember = new HashMap<MemberId, Map<Integer, PartitionState>>();
+    for (final var partitionMetadata : partitionDistribution) {
+      final var partitionId = partitionMetadata.id().id();
+      for (final var member : partitionMetadata.members()) {
+        final var memberPriority = partitionMetadata.getPriority(member);
+        partitionStatesByMember
+            .computeIfAbsent(member, k -> new HashMap<>())
+            .put(partitionId, PartitionState.active(memberPriority));
+      }
+    }
+    final var memberStates = new HashMap<MemberId, MemberState>();
+    for (final var e : partitionStatesByMember.entrySet()) {
+      memberStates.put(e.getKey(), MemberState.initializeAsActive(e.getValue()));
+    }
 
     return new io.camunda.zeebe.topology.state.ClusterTopology(
-        0, memberStates, ClusterChangePlan.empty());
+        0, Map.copyOf(memberStates), ClusterChangePlan.empty());
   }
 
   public static Set<PartitionMetadata> getPartitionDistributionFrom(
@@ -53,22 +51,22 @@ public final class TopologyUtil {
       throw new IllegalStateException(
           "Cannot generated partition distribution from uninitialized topology");
     }
-    final var partitionsToMembersMap =
-        clusterTopology.members().entrySet().stream()
-            .flatMap(
-                memberEntry ->
-                    memberEntry.getValue().partitions().entrySet().stream()
-                        .map(
-                            p ->
-                                Map.entry(
-                                    p.getKey(),
-                                    Map.entry(memberEntry.getKey(), p.getValue().priority()))))
-            .collect(
-                Collectors.groupingBy(
-                    Entry::getKey,
-                    Collectors.toMap(e -> e.getValue().getKey(), e -> e.getValue().getValue())));
 
-    return partitionsToMembersMap.entrySet().stream()
+    final var memberPriorityByPartition = new HashMap<Integer, Map<MemberId, Integer>>();
+    clusterTopology
+        .members()
+        .forEach(
+            (memberId, member) -> {
+              for (final Entry<Integer, PartitionState> entry : member.partitions().entrySet()) {
+                final Integer partitionId = entry.getKey();
+                final PartitionState partitionState = entry.getValue();
+                memberPriorityByPartition
+                    .computeIfAbsent(partitionId, k -> new HashMap<>())
+                    .put(memberId, partitionState.priority());
+              }
+            });
+
+    return memberPriorityByPartition.entrySet().stream()
         .map(e -> getPartitionMetadata(e, groupName))
         .collect(Collectors.toSet());
   }
