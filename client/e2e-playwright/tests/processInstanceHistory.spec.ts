@@ -180,13 +180,28 @@ test.describe('Process Instance History', () => {
      * Scrolling down
      */
     await firstSubtree.getByRole('treeitem').nth(49).scrollIntoViewIfNeeded();
+    await expect(firstSubtree.getByRole('treeitem').nth(47)).toBeInViewport();
+    await expect(firstSubtree.getByRole('treeitem').nth(48)).toBeInViewport();
+    await expect(firstSubtree.getByRole('treeitem').nth(49)).toBeInViewport();
+    await expect(firstSubtree.getByRole('treeitem').nth(50)).toBeInViewport();
+    await expect(firstSubtree.getByRole('treeitem').nth(51)).toBeInViewport();
+
     await expect(firstSubtree.getByRole('treeitem')).toHaveCount(100);
 
     await firstSubtree.getByRole('treeitem').nth(99).scrollIntoViewIfNeeded();
     await expect(firstSubtree.getByRole('treeitem')).toHaveCount(150);
+    await expect(firstSubtree.getByRole('treeitem').nth(97)).toBeInViewport();
+    await expect(firstSubtree.getByRole('treeitem').nth(98)).toBeInViewport();
+    await expect(firstSubtree.getByRole('treeitem').nth(99)).toBeInViewport();
+    await expect(firstSubtree.getByRole('treeitem').nth(100)).toBeInViewport();
+    await expect(firstSubtree.getByRole('treeitem').nth(101)).toBeInViewport();
 
     await firstSubtree.getByRole('treeitem').nth(149).scrollIntoViewIfNeeded();
     await expect(firstSubtree.getByRole('treeitem')).toHaveCount(200);
+    await expect(firstSubtree.getByRole('treeitem').nth(120)).toBeInViewport();
+    await expect(firstSubtree.getByRole('treeitem').nth(121)).toBeInViewport();
+    await expect(firstSubtree.getByRole('treeitem').nth(122)).toBeInViewport();
+    await expect(firstSubtree.getByRole('treeitem').nth(123)).toBeInViewport();
 
     let firstItemId = await firstSubtree
       .getByRole('treeitem')
@@ -215,6 +230,10 @@ test.describe('Process Instance History', () => {
     ).toBe(lastItemId);
 
     await expect(firstSubtree.getByRole('treeitem')).toHaveCount(200);
+    await expect(firstSubtree.getByRole('treeitem').nth(120)).toBeInViewport();
+    await expect(firstSubtree.getByRole('treeitem').nth(121)).toBeInViewport();
+    await expect(firstSubtree.getByRole('treeitem').nth(122)).toBeInViewport();
+    await expect(firstSubtree.getByRole('treeitem').nth(123)).toBeInViewport();
 
     firstItemId = await firstSubtree
       .getByRole('treeitem')
@@ -244,5 +263,9 @@ test.describe('Process Instance History', () => {
     ).toBe(firstItemId);
 
     await expect(firstSubtree.getByRole('treeitem')).toHaveCount(200);
+    await expect(firstSubtree.getByRole('treeitem').nth(49)).toBeInViewport();
+    await expect(firstSubtree.getByRole('treeitem').nth(50)).toBeInViewport();
+    await expect(firstSubtree.getByRole('treeitem').nth(51)).toBeInViewport();
+    await expect(firstSubtree.getByRole('treeitem').nth(52)).toBeInViewport();
   });
 });
