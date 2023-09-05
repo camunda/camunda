@@ -11,18 +11,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.topology.state.ClusterTopology;
+import io.camunda.zeebe.topology.state.MemberState;
 import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.assertj.core.api.AbstractAssert;
 
-final class ClusterTopologyAssert extends AbstractAssert<ClusterTopologyAssert, ClusterTopology> {
+public final class ClusterTopologyAssert
+    extends AbstractAssert<ClusterTopologyAssert, ClusterTopology> {
 
   private ClusterTopologyAssert(final ClusterTopology clusterTopology, final Class<?> selfType) {
     super(clusterTopology, selfType);
   }
 
-  static ClusterTopologyAssert assertThatClusterTopology(final ClusterTopology actual) {
+  public static ClusterTopologyAssert assertThatClusterTopology(final ClusterTopology actual) {
     return new ClusterTopologyAssert(actual, ClusterTopologyAssert.class);
   }
 
@@ -44,10 +46,21 @@ final class ClusterTopologyAssert extends AbstractAssert<ClusterTopologyAssert, 
     return this;
   }
 
+  public ClusterTopologyAssert hasMemberWithState(final int member, final MemberState.State state) {
+    final var memberId = MemberId.from(Integer.toString(member));
+    assertThat(actual.members()).containsKey(memberId);
+    assertThat(actual.members().get(memberId).state()).isEqualTo(state);
+    return this;
+  }
+
   ClusterTopologyAssert hasOnlyMembers(final Set<Integer> members) {
     final var memberIds =
         members.stream().map(id -> MemberId.from(String.valueOf(id))).collect(Collectors.toSet());
     assertThat(actual.members()).containsOnlyKeys(memberIds);
     return this;
+  }
+
+  public void hasPendingOperationsWithSize(final int expectedSize) {
+    assertThat(actual.changes().pendingOperations()).hasSize(expectedSize);
   }
 }

@@ -8,9 +8,12 @@
 package io.camunda.zeebe.topology.state;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.topology.ClusterTopologyAssert;
 import io.camunda.zeebe.topology.state.MemberState.State;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
@@ -110,6 +113,43 @@ class ClusterTopologyTest {
 
     // then
     assertThat(topologyOnAnotherMember).isEqualTo(expectedTopology);
+  }
+
+  @Test
+  void shouldAdvanceClusterTopologyChanges() {
+    // given
+    final var initialTopology =
+        ClusterTopology.init()
+            .addMember(member(1), MemberState.uninitialized())
+            .startTopologyChange(
+                List.of(mock(TopologyChangeOperation.class), mock(TopologyChangeOperation.class)));
+
+    // when
+    final var updatedTopology =
+        initialTopology.advanceTopologyChange(member(1), MemberState::toActive);
+
+    // then
+    ClusterTopologyAssert.assertThatClusterTopology(updatedTopology)
+        .hasMemberWithState(1, State.ACTIVE)
+        .hasPendingOperationsWithSize(1);
+  }
+
+  @Test
+  void shouldMergeClusterTopologyChanges() {
+    final var initialTopology =
+        ClusterTopology.init()
+            .addMember(member(1), MemberState.uninitialized())
+            .startTopologyChange(
+                List.of(mock(TopologyChangeOperation.class), mock(TopologyChangeOperation.class)));
+
+    // when
+    final var updatedTopology =
+        initialTopology.advanceTopologyChange(member(1), MemberState::toActive);
+
+    final var mergedTopology = initialTopology.merge(updatedTopology);
+
+    // then
+    assertThat(mergedTopology).isEqualTo(updatedTopology);
   }
 
   private MemberId member(final int id) {
