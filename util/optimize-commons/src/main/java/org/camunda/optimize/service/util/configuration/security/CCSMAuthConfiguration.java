@@ -21,4 +21,5 @@ public class CCSMAuthConfiguration {
   private String clientSecret;
   // Identity audience
   private String audience;
+  private String baseUrl;
 }

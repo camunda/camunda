@@ -21,6 +21,7 @@ security:
       clientId: ${CAMUNDA_OPTIMIZE_IDENTITY_CLIENTID:}
       clientSecret: ${CAMUNDA_OPTIMIZE_IDENTITY_CLIENTSECRET:}
       audience: ${CAMUNDA_OPTIMIZE_IDENTITY_AUDIENCE:}
+      baseUrl: ${CAMUNDA_OPTIMIZE_IDENTITY_BASE_URL:}
     cookie:
       same-site:
         # decides if the Optimize auth cookie has the same site cookie flag set
