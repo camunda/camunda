@@ -8,16 +8,7 @@
 import {del, get, post, put} from 'request';
 import {track} from 'tracking';
 
-export async function loadEntities(sortBy, sortOrder) {
-  const params = {};
-  if (sortBy && sortOrder) {
-    params.sortBy = sortBy;
-    params.sortOrder = sortOrder;
-  }
-
-  const response = await get('api/entities', params);
-  return await response.json();
-}
+import {createEventName} from './entityService.ts';
 
 export async function loadEntity(type, id, query) {
   const response = await get(`api/${type}/` + id, query);
@@ -61,13 +52,4 @@ export async function loadReports(collection) {
   }
   const response = await get(url);
   return await response.json();
-}
-
-function createEventName(action, entityType) {
-  const type = getEntityType(entityType);
-  return action + type.charAt(0).toUpperCase() + type.slice(1);
-}
-
-function getEntityType(entityType) {
-  return entityType === 'dashboard/instant' ? 'instantPreviewDashboard' : entityType;
 }

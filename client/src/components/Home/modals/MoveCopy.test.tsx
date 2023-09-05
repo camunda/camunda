@@ -5,16 +5,12 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import {shallow} from 'enzyme';
-
-import {Switch} from 'components';
-
-import MoveCopyWithErrorHandling from './MoveCopy';
+import {runLastEffect} from '__mocks__/react';
 
 import {loadEntities} from 'services';
 
-const MoveCopy = MoveCopyWithErrorHandling.WrappedComponent;
+import MoveCopy from './MoveCopy';
 
 jest.mock('services', () => ({
   ...jest.requireActual('services'),
@@ -76,8 +72,15 @@ jest.mock('services', () => ({
   ]),
 }));
 
+jest.mock('hooks', () => ({
+  useErrorHandling: jest.fn(() => ({
+    mightFail: jest.fn((data, cb) => cb(data)),
+    error: false,
+    resetError: jest.fn(),
+  })),
+}));
+
 const props = {
-  mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
   entity: {name: 'Test Dashboard', entityType: 'dashboard', data: {subEntityCounts: {report: 2}}},
   collection: null,
   moving: true,
@@ -86,30 +89,43 @@ const props = {
   parentCollection: 'aCollectionId',
 };
 
-it('should match snapshot', () => {
+it('should render properly', () => {
   const node = shallow(<MoveCopy {...props} />);
+  runLastEffect();
 
-  expect(node).toMatchSnapshot();
+  expect(node.find('Toggle').prop('labelA')).toBe('Move copy to …');
+  expect(node.find('ComboBox').prop('items')).toEqual([
+    {id: null, name: 'Collections', entityType: 'collection'},
+    {
+      id: 'anotherCollection',
+      name: 'Another Collection',
+      entityType: 'collection',
+    },
+  ]);
 });
 
 it('should load available collections', () => {
   shallow(<MoveCopy {...props} />);
+  runLastEffect();
 
   expect(loadEntities).toHaveBeenCalled();
 });
 
-it('should invoke setCopy on copy switch change', async () => {
+it('should invoke setCopy on copy switch change', () => {
   const node = shallow(<MoveCopy {...props} />);
 
-  node.find(Switch).simulate('change', {target: {checked: false}});
+  node.find('Toggle').prop<(checked: boolean) => void>('onToggle')?.(false);
 
   expect(props.setMoving).toHaveBeenCalledWith(false);
 });
 
 it('should invoke setCollection on collection selection', () => {
   const node = shallow(<MoveCopy {...props} />);
+  runLastEffect();
 
-  node.find('Typeahead').props().onChange('anotherCollection');
+  node.find('ComboBox').prop<(args: {selectedItem: {id: string}}) => void>('onChange')?.({
+    selectedItem: {id: 'anotherCollection'},
+  });
 
   expect(props.setCollection).toHaveBeenCalledWith({
     id: 'anotherCollection',

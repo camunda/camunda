@@ -9,7 +9,7 @@ export function getRandomId() {
   return Math.random().toString(36).slice(2);
 }
 
-export {loadReports} from './entityService';
+export {loadReports, loadEntities} from './entityService';
 
 export * as formatters from './formatters';
 export {loadProcessDefinitionXml, loadDecisionDefinitionXml} from './dataLoaders';

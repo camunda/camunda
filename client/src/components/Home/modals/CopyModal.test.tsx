@@ -5,7 +5,6 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import {shallow} from 'enzyme';
 import CopyModal from './CopyModal';
 
@@ -16,10 +15,11 @@ const props = {
   onClose: jest.fn(),
 };
 
-it('should match snapshot', () => {
+it('should render properly', () => {
   const node = shallow(<CopyModal {...props} />);
 
-  expect(node).toMatchSnapshot();
+  expect(node.find('TextInput').prop('labelText')).toBe('Name of Copy');
+  expect(node.find('MoveCopy')).toExist();
 });
 
 it('should hide option to move the copy for collection entities', () => {
@@ -27,7 +27,7 @@ it('should hide option to move the copy for collection entities', () => {
     <CopyModal {...props} entity={{name: 'collection', entityType: 'collection'}} />
   );
 
-  expect(node).toMatchSnapshot();
+  expect(node.find('MoveCopy')).not.toExist();
 });
 
 it('should call the onConfirm action', () => {
@@ -37,13 +37,14 @@ it('should call the onConfirm action', () => {
 
   node.find('.confirm').simulate('click');
 
+  expect(node.find('Checkbox')).toExist();
   expect(props.onConfirm).toHaveBeenCalledWith('collection (copy)', true);
 });
 
 it('should hide the jump checkbox if jumpToEntity property is not added', () => {
   const node = shallow(<CopyModal {...props} />);
 
-  expect(node.find('LabeledInput[type="checkbox"]')).not.toExist();
+  expect(node.find('Checkbox')).not.toExist();
 
   node.find('.confirm').simulate('click');
 

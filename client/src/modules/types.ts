@@ -7,6 +7,18 @@
 
 import {SerializedEditorState} from 'lexical';
 
+export type GenericEntity<D extends Record<string, unknown> = Record<string, unknown>> = {
+  id: string | null;
+  name: string;
+  lastModified: string;
+  created: string;
+  owner: string;
+  entityType: string;
+  lastModifier: string;
+  currentUserRole: string;
+  data: D;
+};
+
 type ReportType = 'process' | 'decision';
 
 interface Report<Data> {
