@@ -22,6 +22,7 @@ public class TaskQuery {
   private String processDefinitionId;
   private String processInstanceId;
   private int pageSize;
+  private TaskByVariables[] taskVariables;
   private String[] searchAfter;
   private String[] searchAfterOrEqual;
   private String[] searchBefore;
@@ -99,6 +100,15 @@ public class TaskQuery {
 
   public TaskQuery setProcessInstanceId(String processInstanceId) {
     this.processInstanceId = processInstanceId;
+    return this;
+  }
+
+  public TaskByVariables[] getTaskVariables() {
+    return taskVariables;
+  }
+
+  public TaskQuery setTaskVariables(TaskByVariables[] taskVariables) {
+    this.taskVariables = taskVariables;
     return this;
   }
 
@@ -185,6 +195,7 @@ public class TaskQuery {
         .setSearchBefore(this.searchBefore)
         .setSearchBeforeOrEqual(this.searchBeforeOrEqual)
         .setState(this.state)
+        .setTaskVariables(this.taskVariables)
         .setCandidateGroup(this.candidateGroup);
   }
 
@@ -206,6 +217,7 @@ public class TaskQuery {
         && Objects.equals(candidateUser, taskQuery.candidateUser)
         && Objects.equals(processDefinitionId, taskQuery.processDefinitionId)
         && Objects.equals(processInstanceId, taskQuery.processInstanceId)
+        && Arrays.equals(taskVariables, taskQuery.taskVariables)
         && Arrays.equals(searchAfter, taskQuery.searchAfter)
         && Arrays.equals(searchAfterOrEqual, taskQuery.searchAfterOrEqual)
         && Arrays.equals(searchBefore, taskQuery.searchBefore)
@@ -250,6 +262,7 @@ public class TaskQuery {
         .add("processDefinitionId='" + processDefinitionId + "'")
         .add("processInstanceId='" + processInstanceId + "'")
         .add("pageSize=" + pageSize)
+        .add("taskVariables=" + Arrays.toString(taskVariables))
         .add("searchAfter=" + Arrays.toString(searchAfter))
         .add("searchAfterOrEqual=" + Arrays.toString(searchAfterOrEqual))
         .add("searchBefore=" + Arrays.toString(searchBefore))

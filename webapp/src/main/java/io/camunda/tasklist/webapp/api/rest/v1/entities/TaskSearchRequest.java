@@ -10,6 +10,7 @@ import static io.camunda.tasklist.webapp.graphql.entity.TaskQueryDTO.DEFAULT_PAG
 
 import io.camunda.tasklist.entities.TaskState;
 import io.camunda.tasklist.queries.DateFilter;
+import io.camunda.tasklist.queries.TaskByVariables;
 import io.camunda.tasklist.queries.TaskOrderBy;
 import java.util.Arrays;
 import java.util.Objects;
@@ -27,6 +28,7 @@ public class TaskSearchRequest {
   private int pageSize = DEFAULT_PAGE_SIZE;
   private DateFilter followUpDate;
   private DateFilter dueDate;
+  private TaskByVariables[] taskVariables;
   private TaskOrderBy[] sort;
   private String[] searchAfter;
   private String[] searchAfterOrEqual;
@@ -141,6 +143,15 @@ public class TaskSearchRequest {
     return this;
   }
 
+  public TaskByVariables[] getTaskVariables() {
+    return taskVariables;
+  }
+
+  public TaskSearchRequest setTaskVariables(TaskByVariables[] taskVariables) {
+    this.taskVariables = taskVariables;
+    return this;
+  }
+
   public String[] getSearchAfter() {
     return searchAfter;
   }
@@ -197,6 +208,7 @@ public class TaskSearchRequest {
         && Objects.equals(processInstanceKey, that.processInstanceKey)
         && Objects.equals(followUpDate, that.followUpDate)
         && Objects.equals(dueDate, that.dueDate)
+        && Arrays.equals(taskVariables, that.taskVariables)
         && Arrays.equals(sort, that.sort)
         && Arrays.equals(searchAfter, that.searchAfter)
         && Arrays.equals(searchAfterOrEqual, that.searchAfterOrEqual)
@@ -241,6 +253,7 @@ public class TaskSearchRequest {
         .add("pageSize=" + pageSize)
         .add("followUpDate=" + followUpDate)
         .add("dueDate=" + dueDate)
+        .add("taskVariables=" + Arrays.toString(taskVariables))
         .add("sort=" + Arrays.toString(sort))
         .add("searchAfter=" + Arrays.toString(searchAfter))
         .add("searchAfterOrEqual=" + Arrays.toString(searchAfterOrEqual))

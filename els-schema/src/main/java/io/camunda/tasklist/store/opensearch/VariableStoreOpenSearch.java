@@ -10,6 +10,7 @@ import static io.camunda.tasklist.schema.indices.VariableIndex.ID;
 import static io.camunda.tasklist.schema.indices.VariableIndex.NAME;
 import static io.camunda.tasklist.schema.indices.VariableIndex.SCOPE_FLOW_NODE_ID;
 import static io.camunda.tasklist.util.CollectionUtil.isNotEmpty;
+import static io.camunda.tasklist.util.OpenSearchUtil.SCROLL_KEEP_ALIVE_MS;
 import static io.camunda.tasklist.util.OpenSearchUtil.createSearchRequest;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.mapping;
@@ -34,18 +35,24 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.SortOrder;
+import org.opensearch.client.opensearch._types.Time;
 import org.opensearch.client.opensearch._types.query_dsl.ConstantScoreQuery;
 import org.opensearch.client.opensearch._types.query_dsl.FieldAndFormat;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.BulkRequest;
+import org.opensearch.client.opensearch.core.ClearScrollRequest;
+import org.opensearch.client.opensearch.core.ScrollRequest;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.bulk.BulkOperation;
@@ -60,7 +67,6 @@ import org.springframework.stereotype.Component;
 @Component
 @Conditional(OpenSearchCondition.class)
 public class VariableStoreOpenSearch implements VariableStore {
-
   private static final Logger LOGGER = LoggerFactory.getLogger(VariableStoreOpenSearch.class);
 
   @Autowired
@@ -281,6 +287,94 @@ public class VariableStoreOpenSearch implements VariableStore {
           String.format("Exception occurred, while obtaining task variable: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
     }
+  }
+
+  @Override
+  public List<String> getProcessInstanceIdsWithMatchingVars(
+      List<String> varNames, List<String> varValues) {
+    final List<Set<String>> listProcessIdsMatchingVars = new ArrayList<>();
+
+    for (int i = 0; i < varNames.size(); i++) {
+      final Query.Builder nameQ = new Query.Builder();
+      final int finalI = i;
+      nameQ.terms(
+          terms ->
+              terms
+                  .field(VariableIndex.NAME)
+                  .terms(
+                      t ->
+                          t.value(Collections.singletonList(FieldValue.of(varNames.get(finalI))))));
+
+      final Query.Builder valueQ = new Query.Builder();
+      valueQ.terms(
+          terms ->
+              terms
+                  .field(VariableIndex.VALUE)
+                  .terms(
+                      t ->
+                          t.value(
+                              Collections.singletonList(FieldValue.of(varValues.get(finalI))))));
+      final Query boolQuery = OpenSearchUtil.joinWithAnd(nameQ, valueQ);
+      final SearchRequest.Builder searchRequestBuilder = new SearchRequest.Builder();
+      searchRequestBuilder
+          .index(variableIndex.getAlias())
+          .query(q -> q.constantScore(cs -> cs.filter(boolQuery)))
+          .scroll(timeBuilder -> timeBuilder.time(SCROLL_KEEP_ALIVE_MS));
+
+      final Set<String> processInstanceIds = new HashSet<>();
+
+      try {
+        SearchResponse<VariableEntity> response =
+            osClient.search(searchRequestBuilder.build(), VariableEntity.class);
+
+        List<String> scrollProcessIds =
+            response.hits().hits().stream()
+                .map(hit -> hit.source().getProcessInstanceId())
+                .collect(Collectors.toList());
+
+        processInstanceIds.addAll(scrollProcessIds);
+
+        final String scrollId = response.scrollId();
+
+        while (!scrollProcessIds.isEmpty()) {
+          final ScrollRequest scrollRequest =
+              ScrollRequest.of(
+                  builder ->
+                      builder
+                          .scrollId(scrollId)
+                          .scroll(new Time.Builder().time(SCROLL_KEEP_ALIVE_MS).build()));
+
+          response = osClient.scroll(scrollRequest, VariableEntity.class);
+          scrollProcessIds =
+              response.hits().hits().stream()
+                  .map(hit -> hit.source().getProcessInstanceId())
+                  .collect(Collectors.toList());
+
+          processInstanceIds.addAll(scrollProcessIds);
+        }
+
+        final ClearScrollRequest clearScrollRequest =
+            new ClearScrollRequest.Builder().scrollId(scrollId).build();
+        osClient.clearScroll(clearScrollRequest);
+
+        listProcessIdsMatchingVars.add(processInstanceIds);
+
+      } catch (IOException e) {
+        final String message =
+            String.format("Exception occurred while obtaining flowInstanceIds: %s", e.getMessage());
+        throw new TasklistRuntimeException(message, e);
+      }
+    }
+
+    // now find the intersection of all sets
+    return new ArrayList<>(
+        listProcessIdsMatchingVars.stream()
+            .reduce(
+                (set1, set2) -> {
+                  set1.retainAll(set2);
+                  return set1;
+                })
+            .orElse(Collections.emptySet()));
   }
 
   private void applyFetchSourceForVariableIndex(

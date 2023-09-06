@@ -29,13 +29,19 @@ import io.camunda.tasklist.util.ElasticsearchUtil;
 import java.io.IOException;
 import java.util.*;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.elasticsearch.action.bulk.BulkRequest;
+import org.elasticsearch.action.search.ClearScrollRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.search.SearchScrollRequest;
 import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.core.TimeValue;
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.TermsQueryBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
@@ -49,7 +55,6 @@ import org.springframework.stereotype.Component;
 @Component
 @Conditional(ElasticSearchCondition.class)
 public class VariableStoreElasticSearch implements VariableStore {
-
   private static final Logger LOGGER = LoggerFactory.getLogger(VariableStoreElasticSearch.class);
 
   @Autowired private RestHighLevelClient esClient;
@@ -89,6 +94,7 @@ public class VariableStoreElasticSearch implements VariableStore {
     if (requests == null || requests.size() == 0) {
       return new HashMap<>();
     }
+
     final TermsQueryBuilder taskIdsQ =
         termsQuery(
             TaskVariableTemplate.TASK_ID,
@@ -263,5 +269,74 @@ public class VariableStoreElasticSearch implements VariableStore {
       includesFields = elsFieldNames.toArray(new String[elsFieldNames.size()]);
       searchSourceBuilder.fetchSource(includesFields, null);
     }
+  }
+
+  public List<String> getProcessInstanceIdsWithMatchingVars(
+      List<String> varNames, List<String> varValues) {
+
+    final List<Set<String>> listProcessIdsMatchingVars = new ArrayList<>();
+
+    for (int i = 0; i < varNames.size(); i++) {
+      final BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
+      boolQuery.must(QueryBuilders.termQuery(NAME, varNames.get(i)));
+      boolQuery.must(QueryBuilders.termQuery(VALUE, varValues.get(i)));
+
+      final SearchSourceBuilder searchSourceBuilder =
+          new SearchSourceBuilder().query(boolQuery).fetchSource(PROCESS_INSTANCE_ID, null);
+
+      final SearchRequest searchRequest =
+          new SearchRequest(variableIndex.getAlias()).source(searchSourceBuilder);
+      searchRequest.scroll(new TimeValue(SCROLL_KEEP_ALIVE_MS));
+
+      final Set<String> processInstanceIds = new HashSet<>();
+
+      try {
+        SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+        String scrollId = searchResponse.getScrollId();
+
+        List<String> scrollProcessIds =
+            Arrays.stream(searchResponse.getHits().getHits())
+                .map(hit -> (String) hit.getSourceAsMap().get(PROCESS_INSTANCE_ID))
+                .collect(Collectors.toList());
+
+        processInstanceIds.addAll(scrollProcessIds);
+
+        while (scrollProcessIds.size() > 0) {
+          final SearchScrollRequest scrollRequest =
+              new SearchScrollRequest(scrollId).scroll(new TimeValue(SCROLL_KEEP_ALIVE_MS));
+
+          searchResponse = esClient.scroll(scrollRequest, RequestOptions.DEFAULT);
+          scrollId = searchResponse.getScrollId();
+          scrollProcessIds =
+              Arrays.stream(searchResponse.getHits().getHits())
+                  .map(hit -> (String) hit.getSourceAsMap().get(PROCESS_INSTANCE_ID))
+                  .toList();
+          processInstanceIds.addAll(scrollProcessIds);
+        }
+
+        final ClearScrollRequest clearScrollRequest = new ClearScrollRequest();
+        clearScrollRequest.addScrollId(scrollId);
+        esClient.clearScroll(clearScrollRequest, RequestOptions.DEFAULT);
+
+        listProcessIdsMatchingVars.add(processInstanceIds);
+
+      } catch (IOException e) {
+        final String message =
+            String.format(
+                "Exception occurred while obtaining flowNodeInstanceIds for variable %s: %s",
+                varNames.get(i), e.getMessage());
+        throw new TasklistRuntimeException(message, e);
+      }
+    }
+
+    // Find intersection of all sets
+    return new ArrayList<>(
+        listProcessIdsMatchingVars.stream()
+            .reduce(
+                (set1, set2) -> {
+                  set1.retainAll(set2);
+                  return set1;
+                })
+            .orElse(Collections.emptySet()));
   }
 }

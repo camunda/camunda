@@ -75,6 +75,7 @@ public class TaskMapper {
         .setPageSize(searchRequest.getPageSize())
         .setDueDate(searchRequest.getDueDate())
         .setFollowUpDate(searchRequest.getFollowUpDate())
+        .setTaskVariables(searchRequest.getTaskVariables())
         .setSort(searchRequest.getSort())
         .setSearchAfter(searchRequest.getSearchAfter())
         .setSearchAfterOrEqual(searchRequest.getSearchAfterOrEqual())

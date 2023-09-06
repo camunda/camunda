@@ -8,6 +8,7 @@ package io.camunda.tasklist.webapp.graphql.entity;
 
 import io.camunda.tasklist.entities.TaskState;
 import io.camunda.tasklist.queries.DateFilter;
+import io.camunda.tasklist.queries.TaskByVariables;
 import io.camunda.tasklist.queries.TaskOrderBy;
 import io.camunda.tasklist.queries.TaskQuery;
 import java.util.Arrays;
@@ -25,6 +26,7 @@ public class TaskQueryDTO {
   private String candidateUser;
   private String processDefinitionId;
   private String processInstanceId;
+  private TaskByVariables[] taskVariables;
   private int pageSize = DEFAULT_PAGE_SIZE;
   private String[] searchAfter;
   private String[] searchAfterOrEqual;
@@ -58,6 +60,15 @@ public class TaskQueryDTO {
 
   public TaskQueryDTO setAssignee(String assignee) {
     this.assignee = assignee;
+    return this;
+  }
+
+  public TaskByVariables[] getTaskVariables() {
+    return taskVariables;
+  }
+
+  public TaskQueryDTO setTaskVariables(TaskByVariables[] taskVariables) {
+    this.taskVariables = taskVariables;
     return this;
   }
 
@@ -197,6 +208,7 @@ public class TaskQueryDTO {
         && Objects.equals(processInstanceId, that.processInstanceId)
         && Objects.equals(followUpDate, that.followUpDate)
         && Objects.equals(dueDate, that.dueDate)
+        && Arrays.equals(taskVariables, that.taskVariables)
         && Arrays.equals(sort, that.sort)
         && Arrays.equals(searchAfter, that.searchAfter)
         && Arrays.equals(searchAfterOrEqual, that.searchAfterOrEqual)
@@ -237,6 +249,7 @@ public class TaskQueryDTO {
         .setProcessDefinitionId(this.processDefinitionId)
         .setProcessInstanceId(this.processInstanceId)
         .setPageSize(this.pageSize)
+        .setTaskVariables(this.taskVariables)
         .setSearchAfter(this.searchAfter)
         .setSearchAfterOrEqual(this.searchAfterOrEqual)
         .setSearchBefore(this.searchBefore)

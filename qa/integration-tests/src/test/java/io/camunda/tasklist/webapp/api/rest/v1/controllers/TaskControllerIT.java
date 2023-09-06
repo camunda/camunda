@@ -16,6 +16,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.entities.TaskState;
+import io.camunda.tasklist.queries.TaskByVariables;
 import io.camunda.tasklist.util.MockMvcHelper;
 import io.camunda.tasklist.util.TasklistTester;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
@@ -129,6 +130,45 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
         .hasStatus(HttpStatus.BAD_REQUEST)
         .hasMessage(
             "Only one of [searchAfter, searchAfterOrEqual, searchBefore, searchBeforeOrEqual] must be present in request.");
+  }
+
+  @Test
+  public void searchTasksByVariable() {
+    // given
+    final String bpmnProcessId = "simpleTestProcess";
+    final String flowNodeBpmnId = "taskB_".concat(UUID.randomUUID().toString());
+
+    final var taskId =
+        createTask(bpmnProcessId, flowNodeBpmnId, "{\"var_0\": 0, \"var_1\": 1, \"var_2\": 2}")
+            .claimHumanTask(flowNodeBpmnId)
+            .getTaskId();
+
+    final var taskIdExcluded =
+        createTask(bpmnProcessId, flowNodeBpmnId, "{\"var_0\": 2, \"var_1\": 1, \"var_2\": 2}")
+            .claimHumanTask(flowNodeBpmnId)
+            .getTaskId();
+
+    // when
+    final var searchQuery =
+        new TaskQueryDTO()
+            .setTaskVariables(
+                new TaskByVariables[] {
+                  new TaskByVariables().setName("var_0").setValue("0").setOperator("eq")
+                });
+
+    final var result =
+        mockMvcHelper.doRequest(post(TasklistURIs.TASKS_URL_V1.concat("/search")), searchQuery);
+
+    // then
+    assertThat(result)
+        .hasOkHttpStatus()
+        .hasApplicationJsonContentType()
+        .extractingListContent(objectMapper, TaskSearchResponse.class)
+        .hasSize(1)
+        .allSatisfy(
+            task -> {
+              assertThat(task.getId()).isEqualTo(taskId);
+            });
   }
 
   @Test

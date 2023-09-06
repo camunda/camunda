@@ -10,6 +10,7 @@ import static io.camunda.tasklist.schema.indices.ProcessInstanceDependant.PROCES
 import static io.camunda.tasklist.util.CollectionUtil.asMap;
 import static io.camunda.tasklist.util.CollectionUtil.getOrDefaultFromMap;
 import static io.camunda.tasklist.util.ElasticsearchUtil.*;
+import static java.util.stream.Collectors.toList;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.WAIT_UNTIL;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
@@ -26,22 +27,35 @@ import io.camunda.tasklist.entities.TaskState;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.queries.Sort;
+import io.camunda.tasklist.queries.TaskByVariables;
 import io.camunda.tasklist.queries.TaskOrderBy;
 import io.camunda.tasklist.queries.TaskQuery;
+import io.camunda.tasklist.schema.indices.VariableIndex;
 import io.camunda.tasklist.schema.templates.TaskTemplate;
+import io.camunda.tasklist.schema.templates.TaskVariableTemplate;
 import io.camunda.tasklist.store.TaskStore;
+import io.camunda.tasklist.store.VariableStore;
+import io.camunda.tasklist.store.util.TaskVariableSearchUtil;
 import io.camunda.tasklist.util.ElasticsearchUtil;
 import io.camunda.tasklist.views.TaskSearchView;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+import org.elasticsearch.action.search.ClearScrollRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.search.SearchScrollRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.core.TimeValue;
+import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.IdsQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -58,9 +72,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Conditional(ElasticSearchCondition.class)
 public class TaskStoreElasticSearch implements TaskStore {
-
   private static final Logger LOGGER = LoggerFactory.getLogger(TaskStoreElasticSearch.class);
-
   private static final Map<TaskState, String> SORT_FIELD_PER_STATE =
       Map.of(
           TaskState.CREATED, TaskTemplate.CREATION_TIME,
@@ -69,7 +81,13 @@ public class TaskStoreElasticSearch implements TaskStore {
 
   @Autowired private RestHighLevelClient esClient;
 
+  @Autowired private TaskVariableSearchUtil taskVariableSearchUtil;
+
   @Autowired private TaskTemplate taskTemplate;
+
+  @Autowired private VariableStore variableStoreElasticSearch;
+
+  @Autowired private TaskVariableTemplate taskVariableTemplate;
 
   @Autowired private ObjectMapper objectMapper;
 
@@ -221,7 +239,27 @@ public class TaskStoreElasticSearch implements TaskStore {
   }
 
   private List<TaskSearchView> queryTasks(final TaskQuery query, String taskId) {
-    final QueryBuilder esQuery = buildQuery(query, taskId);
+    List<String> tasksIds = null;
+    if (query.getTaskVariables() != null && query.getTaskVariables().length > 0) {
+      tasksIds = getTasksContainsVarNameAndValue(query.getTaskVariables());
+      if (tasksIds.isEmpty()) {
+        return new ArrayList<>();
+      }
+    }
+
+    if (taskId != null && !taskId.isEmpty()) {
+      if (query.getTaskVariables() != null && query.getTaskVariables().length > 0) {
+        tasksIds = tasksIds.stream().filter(id -> !id.equals(taskId)).collect(toList());
+        if (tasksIds.isEmpty()) {
+          return new ArrayList<>();
+        }
+      } else {
+        tasksIds = new ArrayList<>();
+        tasksIds.add(taskId);
+      }
+    }
+
+    final QueryBuilder esQuery = buildQuery(query, tasksIds);
     // TODO #104 define list of fields
 
     // TODO we can play around with query type here (2nd parameter), e.g. when we select for only
@@ -282,7 +320,7 @@ public class TaskStoreElasticSearch implements TaskStore {
     }
   }
 
-  private QueryBuilder buildQuery(TaskQuery query, String taskId) {
+  private QueryBuilder buildQuery(TaskQuery query, List<String> taskIds) {
     QueryBuilder stateQ = boolQuery().mustNot(termQuery(TaskTemplate.STATE, TaskState.CANCELED));
     if (query.getState() != null) {
       stateQ = termQuery(TaskTemplate.STATE, query.getState());
@@ -300,8 +338,8 @@ public class TaskStoreElasticSearch implements TaskStore {
       assigneeQ = termQuery(TaskTemplate.ASSIGNEE, query.getAssignee());
     }
     IdsQueryBuilder idsQuery = null;
-    if (taskId != null) {
-      idsQuery = idsQuery().addIds(taskId);
+    if (taskIds != null) {
+      idsQuery = idsQuery().addIds(taskIds.toArray(new String[0]));
     }
 
     QueryBuilder taskDefinitionQ = null;
@@ -540,5 +578,124 @@ public class TaskStoreElasticSearch implements TaskStore {
     } catch (Exception e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
     }
+  }
+
+  private List<String> getTasksContainsVarNameAndValue(TaskByVariables[] taskVariablesFilter) {
+    final List<String> varNames =
+        Arrays.stream(taskVariablesFilter).map(TaskByVariables::getName).collect(toList());
+    final List<String> varValues =
+        Arrays.stream(taskVariablesFilter).map(TaskByVariables::getValue).collect(toList());
+
+    final List<String> processIdsCreatedFiltered =
+        variableStoreElasticSearch.getProcessInstanceIdsWithMatchingVars(varNames, varValues);
+
+    final List<String> tasksIdsCreatedFiltered =
+        retrieveTaskIdByProcessInstanceId(processIdsCreatedFiltered, taskVariablesFilter);
+
+    final List<String> taskIdsCompletedFiltered =
+        getTasksIdsCompletedWithMatchingVars(varNames, varValues);
+
+    return Stream.concat(tasksIdsCreatedFiltered.stream(), taskIdsCompletedFiltered.stream())
+        .distinct()
+        .collect(Collectors.toList());
+  }
+
+  private List<String> getTasksIdsCompletedWithMatchingVars(
+      List<String> varNames, List<String> varValues) {
+    final List<Set<String>> tasksIdsMatchingAllVars = new ArrayList<>();
+
+    for (int i = 0; i < varNames.size(); i++) {
+      final BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
+      boolQuery.must(QueryBuilders.termQuery(VariableIndex.NAME, varNames.get(i)));
+      boolQuery.must(QueryBuilders.termQuery(VariableIndex.VALUE, varValues.get(i)));
+
+      final SearchSourceBuilder searchSourceBuilder =
+          new SearchSourceBuilder()
+              .query(boolQuery)
+              .fetchSource(TaskVariableTemplate.TASK_ID, null);
+
+      final SearchRequest searchRequest =
+          new SearchRequest(taskVariableTemplate.getAlias()).source(searchSourceBuilder);
+      searchRequest.scroll(new TimeValue(SCROLL_KEEP_ALIVE_MS));
+
+      final Set<String> taskIds = new HashSet<>();
+
+      try {
+        SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+        String scrollId = searchResponse.getScrollId();
+
+        List<String> scrollTaskIds =
+            Arrays.stream(searchResponse.getHits().getHits())
+                .map(hit -> (String) hit.getSourceAsMap().get(TaskVariableTemplate.TASK_ID))
+                .collect(Collectors.toList());
+
+        taskIds.addAll(scrollTaskIds);
+
+        while (scrollTaskIds.size() > 0) {
+          final SearchScrollRequest scrollRequest =
+              new SearchScrollRequest(scrollId).scroll(new TimeValue(SCROLL_KEEP_ALIVE_MS));
+
+          searchResponse = esClient.scroll(scrollRequest, RequestOptions.DEFAULT);
+          scrollId = searchResponse.getScrollId();
+          scrollTaskIds =
+              Arrays.stream(searchResponse.getHits().getHits())
+                  .map(hit -> (String) hit.getSourceAsMap().get(TaskVariableTemplate.TASK_ID))
+                  .toList();
+          taskIds.addAll(scrollTaskIds);
+        }
+
+        // Finalize the scroll to free the resources
+        final ClearScrollRequest clearScrollRequest = new ClearScrollRequest();
+        clearScrollRequest.addScrollId(scrollId);
+        esClient.clearScroll(clearScrollRequest, RequestOptions.DEFAULT);
+
+        tasksIdsMatchingAllVars.add(taskIds);
+
+      } catch (IOException e) {
+        final String message =
+            String.format(
+                "Exception occurred while obtaining taskIds for variable %s: %s",
+                varNames.get(i), e.getMessage());
+        throw new TasklistRuntimeException(message, e);
+      }
+    }
+
+    // Find intersection of all sets
+    return new ArrayList<>(
+        tasksIdsMatchingAllVars.stream()
+            .reduce(
+                (set1, set2) -> {
+                  set1.retainAll(set2);
+                  return set1;
+                })
+            .orElse(Collections.emptySet()));
+  }
+
+  private List<String> retrieveTaskIdByProcessInstanceId(
+      List<String> processIds, TaskByVariables[] taskVariablesFilter) {
+    final List<String> taskIdsCreated = new ArrayList<>();
+    final Map<String, String> variablesMap =
+        IntStream.range(0, taskVariablesFilter.length)
+            .boxed()
+            .collect(
+                Collectors.toMap(
+                    i -> taskVariablesFilter[i].getName(), i -> taskVariablesFilter[i].getValue()));
+
+    for (String processId : processIds) {
+      final List<String> taskIds = getTaskIdsByProcessInstanceId(processId);
+      for (String taskId : taskIds) {
+        final TaskEntity taskEntity = getTask(taskId);
+        if (taskEntity.getState() == TaskState.CREATED) {
+          final List<VariableStore.GetVariablesRequest> request =
+              Collections.singletonList(
+                  VariableStore.GetVariablesRequest.createFrom(taskEntity)
+                      .setVarNames(variablesMap.keySet().stream().toList()));
+          if (taskVariableSearchUtil.checkIfVariablesExistInTask(request, variablesMap)) {
+            taskIdsCreated.add(taskId);
+          }
+        }
+      }
+    }
+    return taskIdsCreated;
   }
 }

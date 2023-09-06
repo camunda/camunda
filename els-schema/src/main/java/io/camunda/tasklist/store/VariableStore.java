@@ -25,6 +25,9 @@ public interface VariableStore {
 
   public TaskVariableEntity getTaskVariable(final String variableId, Set<String> fieldNames);
 
+  public List<String> getProcessInstanceIdsWithMatchingVars(
+      List<String> varNames, List<String> varValues);
+
   static class FlowNodeTree extends HashMap<String, String> {
 
     public String getParent(String currentFlowNodeInstanceId) {
