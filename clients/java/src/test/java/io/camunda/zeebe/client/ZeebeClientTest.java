@@ -20,6 +20,7 @@ import static io.camunda.zeebe.client.ClientProperties.DEFAULT_TENANT_ID;
 import static io.camunda.zeebe.client.ClientProperties.MAX_MESSAGE_SIZE;
 import static io.camunda.zeebe.client.ClientProperties.USE_PLAINTEXT_CONNECTION;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.CA_CERTIFICATE_VAR;
+import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.DEFAULT_TENANT_ID_VAR;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.KEEP_ALIVE_VAR;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.OVERRIDE_AUTHORITY_VAR;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.PLAINTEXT_CONNECTION_VAR;
@@ -31,6 +32,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
+import io.camunda.zeebe.client.api.command.CommandWithTenantStep;
 import io.camunda.zeebe.client.api.worker.JobWorker;
 import io.camunda.zeebe.client.impl.NoopCredentialsProvider;
 import io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl;
@@ -78,7 +80,8 @@ public final class ZeebeClientTest extends ClientTest {
       assertThat(configuration.getDefaultRequestTimeout()).isEqualTo(Duration.ofSeconds(10));
       assertThat(configuration.getMaxMessageSize()).isEqualTo(4 * 1024 * 1024);
       assertThat(configuration.getOverrideAuthority()).isNull();
-      assertThat(configuration.getDefaultTenantId()).isEmpty();
+      assertThat(configuration.getDefaultTenantId())
+          .isEqualTo(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
     }
   }
 
@@ -436,12 +439,39 @@ public final class ZeebeClientTest extends ClientTest {
   }
 
   @Test
+  public void shouldUseDefaultTenantId() {
+    // given
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getDefaultTenantId())
+        .isEqualTo(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
+  }
+
+  @Test
+  public void shouldSetDefaultTenantIdFromSetterWithClientBuilder() {
+    // given
+    final String overrideTenant = "override-tenant";
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+    builder.defaultTenantId(overrideTenant);
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getDefaultTenantId()).isEqualTo(overrideTenant);
+  }
+
+  @Test
   public void shouldSetDefaultTenantIdFromPropertyWithClientBuilder() {
     // given
     final String tenantId = "test-tenant";
-    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
     final Properties properties = new Properties();
     properties.setProperty(DEFAULT_TENANT_ID, tenantId);
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
     builder.withProperties(properties);
 
     // when
@@ -449,6 +479,39 @@ public final class ZeebeClientTest extends ClientTest {
 
     // then
     assertThat(builder.getDefaultTenantId()).isEqualTo(tenantId);
+  }
+
+  @Test
+  public void shouldSetDefaultTenantIdFromEnvVarWithClientBuilder() {
+    // given
+    final String overrideTenant = "override-tenant";
+    Environment.system().put(DEFAULT_TENANT_ID_VAR, overrideTenant);
+
+    // when
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+    builder.build();
+
+    // then
+    assertThat(builder.getDefaultTenantId()).isEqualTo(overrideTenant);
+  }
+
+  @Test
+  public void shouldSetFinalDefaultTenantIdFromEnvVarWithClientBuilder() {
+    // given
+    final String propertyTenantId = "test-tenant";
+    final Properties properties = new Properties();
+    properties.setProperty(DEFAULT_TENANT_ID, propertyTenantId);
+    final String envVarTenantId = "override-tenant";
+    Environment.system().put(DEFAULT_TENANT_ID_VAR, envVarTenantId);
+    final String setterTenantId = "setter-tenant";
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+    builder.defaultTenantId(setterTenantId);
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getDefaultTenantId()).isEqualTo(envVarTenantId);
   }
 
   @Test
@@ -469,7 +532,7 @@ public final class ZeebeClientTest extends ClientTest {
             .build();
 
     // then
-    // todo(#13321): verify that tenant id is set in the request
+    // todo(#14106): verify that tenant id is set in the request
     assertThat(client.getConfiguration().getDefaultTenantId()).isEqualTo("");
   }
 

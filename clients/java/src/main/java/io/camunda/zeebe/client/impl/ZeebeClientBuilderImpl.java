@@ -49,6 +49,7 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   public static final String KEEP_ALIVE_VAR = "ZEEBE_KEEP_ALIVE";
   public static final String OVERRIDE_AUTHORITY_VAR = "ZEEBE_OVERRIDE_AUTHORITY";
   public static final String DEFAULT_GATEWAY_ADDRESS = "0.0.0.0:26500";
+  public static final String DEFAULT_TENANT_ID_VAR = "ZEEBE_DEFAULT_TENANT_ID";
 
   private boolean applyEnvironmentVariableOverrides = true;
 
@@ -396,6 +397,10 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
 
     if (Environment.system().isDefined(MAX_MESSAGE_SIZE)) {
       maxMessageSize(DataSizeUtil.parse(Environment.system().get(MAX_MESSAGE_SIZE)));
+    }
+
+    if (Environment.system().isDefined(DEFAULT_TENANT_ID_VAR)) {
+      defaultTenantId(Environment.system().get(DEFAULT_TENANT_ID_VAR));
     }
   }
 
