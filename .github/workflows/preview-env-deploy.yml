@@ -72,7 +72,7 @@ jobs:
         app_url: https://${{ steps.sanitize.outputs.branch_name == 'master' && 'stage' || steps.sanitize.outputs.branch_name }}.operate.camunda.cloud
         argocd_arguments: ${{ env.argocd_arguments }}
   clean:
-    if: always() && needs.deploy-preview.result != 'skipped'
+    if: always() && github.event_name == 'pull_request' && needs.deploy-preview.result != 'skipped'
     uses: camunda/operate/.github/workflows/preview-env-clean.yml@master
     needs:
     - deploy-preview
