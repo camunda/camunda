@@ -17,24 +17,12 @@
       "matchManagers": [
         "dockerfile"
       ],
-      "excludePackageNames": [
-        "ubuntu"
-      ],
       "matchUpdateTypes": [
         "major",
         "minor",
         "patch"
       ],
       "enabled": false
-    },
-    {
-      "matchManagers": [
-        "dockerfile"
-      ],
-      "packageNames": [
-        "ubuntu"
-      ],
-      "versioning": "regex:^(?<compatibility>[a-z]+)-(?<patch>\\d+)$"
     }
   ],
   "dockerfile": {
