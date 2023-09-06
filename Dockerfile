@@ -5,33 +5,17 @@
 # We use the ubuntu release name only as otherwise renovate fails to update the tag & both digests
 # see https://github.com/camunda/zeebe/pull/14071#discussion_r1311176361
 ARG BASE_IMAGE="ubuntu:jammy"
-ARG BASE_DIGEST_AMD64="sha256:aabed3296a3d45cede1dc866a24476c4d7e093aa806263c27ddaadbdce3c1054"
-ARG BASE_DIGEST_ARM64="sha256:aabed3296a3d45cede1dc866a24476c4d7e093aa806263c27ddaadbdce3c1054"
+ARG BASE_DIGEST="sha256:aabed3296a3d45cede1dc866a24476c4d7e093aa806263c27ddaadbdce3c1054"
 ARG JDK_IMAGE="eclipse-temurin:17-jdk-jammy"
-ARG JDK_DIGEST_AMD64="sha256:cf2e1d79e3d430b5277a1ff04cedb521706a053a2adc17b384e9a9bb4b1e79ee"
-ARG JDK_DIGEST_ARM64="sha256:cf2e1d79e3d430b5277a1ff04cedb521706a053a2adc17b384e9a9bb4b1e79ee"
+ARG JDK_DIGEST="sha256:cf2e1d79e3d430b5277a1ff04cedb521706a053a2adc17b384e9a9bb4b1e79ee"
 
 # set to "build" to build zeebe from scratch instead of using a distball
 ARG DIST="distball"
 
-### AMD64 base image ###
-# BASE_DIGEST_AMD64 is defined at the top of the Dockerfile
-# hadolint ignore=DL3006
-FROM ${BASE_IMAGE}@${BASE_DIGEST_AMD64} as base-amd64
-ARG BASE_DIGEST_AMD64
-ARG BASE_DIGEST="${BASE_DIGEST_AMD64}"
-
-### ARM64 base image ##
-# BASE_DIGEST_ARM64 is defined at the top of the Dockerfile
-# hadolint ignore=DL3006
-FROM ${BASE_IMAGE}@${BASE_DIGEST_ARM64} as base-arm64
-ARG BASE_DIGEST_ARM64
-ARG BASE_DIGEST="${BASE_DIGEST_ARM64}"
-
-### Base image ##
+### Base image ###
 # All package installation, updates, etc., anything with APT should be done here in a single step
 # hadolint ignore=DL3006
-FROM base-${TARGETARCH} as base
+FROM ${BASE_IMAGE}@${BASE_DIGEST} as base
 WORKDIR /
 
 # Upgrade all outdated packages and install missing ones (e.g. locales, tini)
@@ -47,20 +31,9 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     apt-get install -yqq --no-install-recommends tini ca-certificates && \
     apt-get upgrade -yqq --no-install-recommends
 
-
-### AMD64 JDK image ###
-# JDK_DIGEST_AMD64 is defined at the top of the Dockerfile
-# hadolint ignore=DL3006
-FROM ${JDK_IMAGE}@${JDK_DIGEST_AMD64} as jdk-amd64
-
-### ARM64 JDK image ##
-# JDK_DIGEST_ARM64 is defined at the top of the Dockerfile
-# hadolint ignore=DL3006
-FROM ${JDK_IMAGE}@${JDK_DIGEST_ARM64} as jdk-arm64
-
 ### Build custom JRE using the base JDK image
 # hadolint ignore=DL3006
-FROM jdk-${TARGETARCH} as jre-build
+FROM ${JDK_IMAGE}@${JDK_DIGEST} as jre-build
 
 # Build a custom JRE which will strip down and compress modules to end up with a smaller Java \
 # distribution than the official JRE. This will also include useful debugging tools like
@@ -68,6 +41,9 @@ FROM jdk-${TARGETARCH} as jre-build
 # 10ms to the start up time, which is negligible considering our application takes ~10s to start up.
 # See https://adoptium.net/blog/2021/10/jlink-to-produce-own-runtime/
 # hadolint ignore=DL3018
+# required to compile a JRE on ARM64
+# see https://github.com/openzipkin/docker-java/issues/34
+ENV JAVA_TOOL_OPTIONS "-Djdk.lang.Process.launchMechanism=vfork"
 RUN jlink \
      --add-modules ALL-MODULE-PATH \
      --strip-debug \
@@ -125,7 +101,6 @@ RUN mkdir camunda-zeebe && \
 FROM ${DIST} as dist
 
 ### Application Image ###
-# TARGETARCH is provided by buildkit
 # https://docs.docker.com/engine/reference/builder/#automatic-platform-args-in-the-global-scope
 # hadolint ignore=DL3006
 FROM java as app
