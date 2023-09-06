@@ -9,6 +9,7 @@ package io.camunda.zeebe.snapshots.impl;
 
 import io.camunda.zeebe.snapshots.ImmutableChecksumsSFV;
 import io.camunda.zeebe.snapshots.MutableChecksumsSFV;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.io.UncheckedIOException;
@@ -61,11 +62,8 @@ final class SnapshotChecksum {
 
   public static void persist(final Path checksumPath, final ImmutableChecksumsSFV checksum)
       throws IOException {
-    try (final RandomAccessFile checksumFile = new RandomAccessFile(checksumPath.toFile(), "rwd")) {
-      final byte[] data = checksum.serializeSfvFileData();
-      checksumFile.write(data);
-      checksumFile.setLength(data.length);
-    }
+    final FileOutputStream fileOutputStream = new FileOutputStream(checksumPath.toFile());
+    checksum.write(fileOutputStream);
   }
 
   /**

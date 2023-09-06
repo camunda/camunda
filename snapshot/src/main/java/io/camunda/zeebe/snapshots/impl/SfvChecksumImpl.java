@@ -10,10 +10,9 @@ package io.camunda.zeebe.snapshots.impl;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import io.camunda.zeebe.snapshots.MutableChecksumsSFV;
-import java.io.BufferedWriter;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
+import java.io.OutputStream;
+import java.io.PrintWriter;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Path;
@@ -34,15 +33,22 @@ import org.agrona.IoUtil;
  */
 final class SfvChecksumImpl implements MutableChecksumsSFV {
 
-  private static final String FILE_CRC_SEPARATOR = "   ";
+  public static final String FORMAT_NUMBER_OF_FILES_LINE =
+      "; number of files used for combined value = %d\n";
+  private static final String SFV_HEADER =
+      """
+; This is an SFC checksum file for all files in the given directory.
+; You might use cksfv or another tool to validate these files manually.
+; This is an automatically created file - please do NOT modify.
+""";
+  private static final String FORMAT_SNAPSHOT_DIRECTORY_LINE = "; snapshot directory = %s\n";
+  private static final String FORMAT_FILE_CRC_LINE = "%s   %s\n";
+  private static final String FORMAT_COMBINED_VALUE_LINE = "; combinedValue = %s\n";
   private static final String FILE_CRC_SEPARATOR_REGEX = " {3}";
   private static final Pattern FILE_CRC_PATTERN =
       Pattern.compile("(.*)" + FILE_CRC_SEPARATOR_REGEX + "([0-9a-fA-F]{1,16})");
-  private static final String COMBINED_VALUE_PREFIX = "; combinedValue = ";
   private static final Pattern COMBINED_VALUE_PATTERN =
       Pattern.compile(".*combinedValue\\s+=\\s+([0-9a-fA-F]{1,16})");
-  private static final String SNAPSHOT_DIRECTORY_PREFIX = "; snapshot directory = ";
-
   private Checksum combinedChecksum;
   private final SortedMap<String, Long> checksums = new TreeMap<>();
   private String snapshotDirectoryComment;
@@ -66,33 +72,19 @@ final class SfvChecksumImpl implements MutableChecksumsSFV {
   }
 
   @Override
-  public byte[] serializeSfvFileData() throws IOException {
-    final ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    final BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(baos, UTF_8));
-    writer.write("; This is an SFC checksum file for all files in the given directory.");
-    writer.newLine();
-    writer.write("; You might use cksfv or another tool to validate these files manually.");
-    writer.newLine();
-    writer.write("; This is an automatically created file - please do NOT modify.");
-    writer.newLine();
+  public void write(final OutputStream stream) throws IOException {
+    final var writer = new PrintWriter(stream);
+    writer.print(SFV_HEADER);
     if (snapshotDirectoryComment != null) {
-      writer.write(SNAPSHOT_DIRECTORY_PREFIX);
-      writer.write(snapshotDirectoryComment);
-      writer.newLine();
+      writer.printf(FORMAT_SNAPSHOT_DIRECTORY_LINE, snapshotDirectoryComment);
     }
-    writer.write(COMBINED_VALUE_PREFIX);
-    writer.write(Long.toHexString(combinedChecksum.getValue()));
-    writer.newLine();
-    writer.write("; number of files used for combined value = " + checksums.size());
-    writer.newLine();
+    writer.printf(FORMAT_COMBINED_VALUE_LINE, Long.toHexString(combinedChecksum.getValue()));
+    writer.printf(FORMAT_NUMBER_OF_FILES_LINE, checksums.size());
+
     for (final Entry<String, Long> entry : checksums.entrySet()) {
-      writer.write(entry.getKey());
-      writer.write(FILE_CRC_SEPARATOR);
-      writer.write(Long.toHexString(entry.getValue()));
-      writer.newLine();
+      writer.printf(FORMAT_FILE_CRC_LINE, entry.getKey(), Long.toHexString(entry.getValue()));
     }
     writer.flush();
-    return baos.toByteArray();
   }
 
   public void setSnapshotDirectoryComment(final String headerComment) {
