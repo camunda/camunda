@@ -71,6 +71,7 @@ camunda-platform:
     podSecurityContext:
       fsGroup: 1000
     partitionCount: 1
+    persistenceType: local
     replicationFactor: 1
     nodeSelector:
       cloud.google.com/gke-nodepool: previews
@@ -116,6 +117,8 @@ camunda-platform:
         value: "1"
     clusterHealthCheckParams: wait_for_status=yellow&timeout=1s
     esJavaOpts: "-Xms512m -Xmx512m"
+    persistence:
+      enabled: false
     securityContext:
       capabilities:
         add:
