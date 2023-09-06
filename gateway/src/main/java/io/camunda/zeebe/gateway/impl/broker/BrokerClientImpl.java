@@ -44,6 +44,7 @@ public final class BrokerClientImpl implements BrokerClient {
   private boolean isClosed;
   private Subscription jobAvailableSubscription;
   private final ClusterEventService eventService;
+  private final AtomixClientTransportAdapter atomixTransportAdapter;
 
   public BrokerClientImpl(
       final GatewayCfg configuration,
@@ -97,7 +98,7 @@ public final class BrokerClientImpl implements BrokerClient {
         .forEach(
             member -> topologyManager.event(new ClusterMembershipEvent(Type.MEMBER_ADDED, member)));
 
-    final var atomixTransportAdapter = new AtomixClientTransportAdapter(messagingService);
+    atomixTransportAdapter = new AtomixClientTransportAdapter(messagingService);
     actorScheduler.submitActor(atomixTransportAdapter);
     requestManager =
         new BrokerRequestManager(
@@ -115,8 +116,15 @@ public final class BrokerClientImpl implements BrokerClient {
     }
 
     isClosed = true;
-
     LOG.debug("Closing gateway broker client ...");
+
+    doAndLogException(requestManager::close);
+    LOG.debug("request manager closed");
+
+    if (atomixTransportAdapter != null) {
+      doAndLogException(atomixTransportAdapter::close);
+      LOG.debug("transport client closed");
+    }
 
     doAndLogException(topologyManager::close);
     LOG.debug("topology manager closed");
