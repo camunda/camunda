@@ -36,6 +36,7 @@ public final class DeployResourceTest extends GatewayTest {
     final var builder = DeployResourceRequest.newBuilder();
     builder.addResourcesBuilder().setName(bpmnName).setContent(ByteString.copyFromUtf8("<xml/>"));
     builder.addResourcesBuilder().setName(dmnName).setContent(ByteString.copyFromUtf8("test"));
+    // TODO: test explicit passing of tenantId with #14041
 
     final var request = builder.build();
 

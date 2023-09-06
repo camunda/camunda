@@ -79,7 +79,7 @@ public final class GrpcErrorMapper {
       logger.debug("Expected to handle gRPC request, but JSON property was invalid", rootError);
     } else if (error instanceof InvalidTenantRequestException) {
       builder.setCode(Code.INVALID_ARGUMENT_VALUE).setMessage(error.getMessage());
-      logger.debug("Expected to handle gRPC request, but tenantId property was invalid", rootError);
+      logger.debug(error.getMessage(), rootError);
     } else if (error instanceof IllegalArgumentException) {
       builder.setCode(Code.INVALID_ARGUMENT_VALUE).setMessage(error.getMessage());
       logger.debug("Expected to handle gRPC request, but JSON property was invalid 123", rootError);

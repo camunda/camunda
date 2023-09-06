@@ -53,15 +53,14 @@ import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationPropertiesImpl;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.regex.Pattern;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.springframework.util.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 public final class RequestMapper {
 
-  // TODO: replace with TenantOwned.DEFAULT_TENANT constant after #13989
-  private static final String DEFAULT_TENANT = "<default>";
   private static final Pattern TENANT_ID_MASK = Pattern.compile("^[\\w\\.-]{1,31}$");
 
   public static BrokerDeployResourceRequest toDeployProcessRequest(
@@ -71,7 +70,7 @@ public final class RequestMapper {
     for (final ProcessRequestObject process : grpcRequest.getProcessesList()) {
       brokerRequest.addResource(process.getDefinition().toByteArray(), process.getName());
     }
-    brokerRequest.setTenantId(DEFAULT_TENANT);
+    brokerRequest.setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
     return brokerRequest;
   }
@@ -82,7 +81,7 @@ public final class RequestMapper {
 
     // TODO: pass multi-tenancy config property (#14041)
     final String tenantId = grpcRequest.getTenantId();
-    brokerRequest.setTenantId(ensureTenantIdSet("deployment", tenantId, false));
+    brokerRequest.setTenantId(ensureTenantIdSet("DeployResource", tenantId, false));
 
     for (final Resource resource : grpcRequest.getResourcesList()) {
       brokerRequest.addResource(resource.getContent().toByteArray(), resource.getName());
@@ -269,28 +268,33 @@ public final class RequestMapper {
   }
 
   public static String ensureTenantIdSet(
-      final String requestName, final String tenantId, final boolean isMultiTenancyEnabled) {
+      final String commandName, final String tenantId, final boolean isMultiTenancyEnabled) {
 
-    final boolean hasTenantId = StringUtils.hasText(tenantId);
+    final boolean hasTenantId = !StringUtils.isBlank(tenantId);
     if (isMultiTenancyEnabled) {
 
       if (!hasTenantId) {
-        throw new InvalidTenantRequestException(requestName, "Client didn't provide a tenant ID.");
+        throw new InvalidTenantRequestException(
+            commandName, tenantId, "no tenant identifier was provided.");
+      }
+
+      if (tenantId.length() > 31) {
+        throw new InvalidTenantRequestException(
+            commandName, tenantId, "tenant identifier is longer than 31 characters");
       }
 
       if (!TENANT_ID_MASK.matcher(tenantId).matches()) {
         throw new InvalidTenantRequestException(
-            requestName, "Client sent a tenant ID which includes invalid characters.");
+            commandName, tenantId, "tenant identifier contains illegal characters");
       }
 
       return tenantId;
     } else {
       if (hasTenantId) {
-        throw new InvalidTenantRequestException(
-            requestName, "Client sent a tenant ID while multi-tenancy is disabled.");
+        throw new InvalidTenantRequestException(commandName, tenantId, "multi-tenancy is disabled");
       }
 
-      return DEFAULT_TENANT;
+      return TenantOwned.DEFAULT_TENANT_IDENTIFIER;
     }
   }
 }

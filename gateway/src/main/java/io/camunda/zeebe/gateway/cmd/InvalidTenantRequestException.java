@@ -9,23 +9,31 @@ package io.camunda.zeebe.gateway.cmd;
 
 public class InvalidTenantRequestException extends ClientException {
 
-  private static final String MESSAGE_FORMAT = "Invalid tenant-aware %s request: %s";
+  private static final String MESSAGE_FORMAT =
+      "Expected to handle gRPC request %s with tenant identifier `%s`, but %s";
 
-  private final String requestName;
+  private final String commandName;
+  private final String tenantId;
   private final String reason;
 
-  public InvalidTenantRequestException(final String requestName, final String reason) {
-    super(String.format(MESSAGE_FORMAT, requestName, reason));
+  public InvalidTenantRequestException(
+      final String commandName, final String tenantId, final String reason) {
+    super(String.format(MESSAGE_FORMAT, commandName, tenantId, reason));
 
-    this.requestName = requestName;
+    this.commandName = commandName;
+    this.tenantId = tenantId;
     this.reason = reason;
   }
 
-  public String getRequestName() {
-    return requestName;
+  public String getCommandName() {
+    return commandName;
   }
 
   public String getReason() {
     return reason;
+  }
+
+  public String getTenantId() {
+    return tenantId;
   }
 }
