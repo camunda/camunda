@@ -8,6 +8,7 @@
 package io.camunda.zeebe.snapshots;
 
 import java.io.IOException;
+import java.io.OutputStream;
 
 /**
  * Immutable checksum collection in simple file verification (SFV) file format, which only allows to
@@ -21,7 +22,9 @@ public interface ImmutableChecksumsSFV {
   long getCombinedValue();
 
   /**
-   * @return the serialized SFV file data
+   * Write the checksum collection in SFV format to the given output stream.
+   *
+   * @param stream in which the data will be written to
    */
-  byte[] serializeSfvFileData() throws IOException;
+  void write(OutputStream stream) throws IOException;
 }

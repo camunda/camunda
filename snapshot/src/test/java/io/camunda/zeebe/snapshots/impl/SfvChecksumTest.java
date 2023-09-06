@@ -11,6 +11,7 @@ import static io.camunda.zeebe.snapshots.impl.SnapshotChecksumTest.createChunk;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import org.junit.Before;
@@ -54,8 +55,10 @@ public class SfvChecksumTest {
     // given
     final String[] givenSfvLines = {"; combinedValue = 12345678", "file1   aabbccdd"};
     sfvChecksum.updateFromSfvFile(givenSfvLines);
-    final String serialized =
-        new String(sfvChecksum.serializeSfvFileData(), StandardCharsets.UTF_8);
+
+    final var arrayOutputStream = new ByteArrayOutputStream();
+    sfvChecksum.write(arrayOutputStream);
+    final String serialized = arrayOutputStream.toString(StandardCharsets.UTF_8);
 
     // when
     final String[] actualSfVlines = serialized.split(System.lineSeparator());
@@ -69,10 +72,11 @@ public class SfvChecksumTest {
   public void shouldWriteSnapshotDirectoryCommentIfPresent() throws IOException {
     // given
     sfvChecksum.setSnapshotDirectoryComment("/foo/bar");
+    final var arrayOutputStream = new ByteArrayOutputStream();
+    sfvChecksum.write(arrayOutputStream);
 
     // when
-    final String serialized =
-        new String(sfvChecksum.serializeSfvFileData(), StandardCharsets.UTF_8);
+    final String serialized = arrayOutputStream.toString(StandardCharsets.UTF_8);
 
     // then
     assertThat(serialized).contains("; snapshot directory = /foo/bar");
@@ -81,10 +85,11 @@ public class SfvChecksumTest {
   @Test
   public void shouldContainHumanReadableInstructions() throws IOException {
     // given
+    final var arrayOutputStream = new ByteArrayOutputStream();
+    sfvChecksum.write(arrayOutputStream);
 
     // when
-    final String serialized =
-        new String(sfvChecksum.serializeSfvFileData(), StandardCharsets.UTF_8);
+    final String serialized = arrayOutputStream.toString(StandardCharsets.UTF_8);
 
     // then
     assertThat(serialized)
