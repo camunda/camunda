@@ -14,7 +14,7 @@ import io.camunda.zeebe.scheduler.ActorThread;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
-import io.camunda.zeebe.snapshots.MutableChecksumsSFV;
+import io.camunda.zeebe.snapshots.ImmutableChecksumsSFV;
 import io.camunda.zeebe.snapshots.PersistableSnapshot;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.PersistedSnapshotListener;
@@ -484,12 +484,10 @@ public final class FileBasedSnapshotStore extends Actor
         && persistedSnapshot.getSnapshotId().compareTo(snapshotId) >= 0);
   }
 
-  // TODO(npepinpe): using Either here would allow easy rollback regardless of when or where an
-  // exception is thrown, without having to catch and rollback for every possible case
   FileBasedSnapshot persistNewSnapshot(
       final FileBasedSnapshotId snapshotId,
       final Path directory,
-      final long expectedChecksum,
+      final ImmutableChecksumsSFV immutableChecksumsSFV,
       final FileBasedSnapshotMetadata metadata) {
     final var currentPersistedSnapshot = currentPersistedSnapshotRef.get();
 
@@ -513,19 +511,8 @@ public final class FileBasedSnapshotStore extends Actor
       moveToSnapshotDirectory(directory, destination);
 
       final var checksumPath = buildSnapshotsChecksumPath(snapshotId);
-      final MutableChecksumsSFV actualChecksum;
       try {
-        // computing the checksum on the final destination also lets us detect any failures during
-        // the
-        // copy/move that could occur
-        actualChecksum = SnapshotChecksum.calculate(destination);
-        if (actualChecksum.getCombinedValue() != expectedChecksum) {
-          rollbackPartialSnapshot(destination);
-          throw new InvalidSnapshotChecksum(
-              directory, expectedChecksum, actualChecksum.getCombinedValue());
-        }
-
-        SnapshotChecksum.persist(checksumPath, actualChecksum);
+        SnapshotChecksum.persist(checksumPath, immutableChecksumsSFV);
       } catch (final IOException e) {
         rollbackPartialSnapshot(destination);
         throw new UncheckedIOException(e);
@@ -535,7 +522,7 @@ public final class FileBasedSnapshotStore extends Actor
           new FileBasedSnapshot(
               destination,
               checksumPath,
-              actualChecksum.getCombinedValue(),
+              immutableChecksumsSFV.getCombinedValue(),
               snapshotId,
               metadata,
               this::onSnapshotDeleted,

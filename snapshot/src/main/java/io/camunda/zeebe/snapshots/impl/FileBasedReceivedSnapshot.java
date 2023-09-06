@@ -39,6 +39,7 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
   private long expectedSnapshotChecksum;
   private int expectedTotalCount;
   private FileBasedSnapshotMetadata metadata;
+  private SfvChecksumImpl checksumCollection;
 
   FileBasedReceivedSnapshot(
       final FileBasedSnapshotId snapshotId,
@@ -114,6 +115,12 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
 
     LOGGER.trace("Consume snapshot snapshotChunk {} of snapshot {}", chunkName, snapshotId);
     writeReceivedSnapshotChunk(snapshotChunk, snapshotFile);
+
+    if (checksumCollection == null) {
+      checksumCollection = new SfvChecksumImpl();
+    }
+    checksumCollection.updateFromBytes(
+        snapshotFile.getFileName().toString(), snapshotChunk.getContent());
 
     if (snapshotChunk.getChunkName().equals(FileBasedSnapshotStore.METADATA_FILE_NAME)) {
       try {
@@ -269,6 +276,13 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
       return;
     }
 
+    if (expectedSnapshotChecksum != checksumCollection.getCombinedValue()) {
+      future.completeExceptionally(
+          new InvalidSnapshotChecksum(
+              directory, expectedSnapshotChecksum, checksumCollection.getCombinedValue()));
+      return;
+    }
+
     try {
       if (metadata == null) {
         // backward compatibility
@@ -280,8 +294,7 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
                 Long.MAX_VALUE);
       }
       final PersistedSnapshot value =
-          snapshotStore.persistNewSnapshot(
-              snapshotId, directory, expectedSnapshotChecksum, metadata);
+          snapshotStore.persistNewSnapshot(snapshotId, directory, checksumCollection, metadata);
       future.complete(value);
     } catch (final Exception e) {
       future.completeExceptionally(e);

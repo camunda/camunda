@@ -62,7 +62,7 @@ final class SnapshotChecksum {
 
   public static void persist(final Path checksumPath, final ImmutableChecksumsSFV checksum)
       throws IOException {
-    try(final var stream = new FileOutputStream(checksumPath.toFile())) {
+    try (final var stream = new FileOutputStream(checksumPath.toFile())) {
       checksum.write(stream);
     }
   }
