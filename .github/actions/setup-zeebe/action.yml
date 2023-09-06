@@ -31,6 +31,10 @@ inputs:
   secret_vault_secretId:
     description: 'secret valut secret id'
     required: false
+  docker:
+    description: If true, logs into Docker Hub using our CI account; helpful to prevent rate limiting
+    required: false
+    default: "true"
 
 outputs: {}
 
@@ -63,11 +67,24 @@ runs:
         secrets: |
           secret/data/products/zeebe/ci/zeebe ARTIFACTS_USR;
           secret/data/products/zeebe/ci/zeebe ARTIFACTS_PSW;
+          secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_USR;
+          secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_PSW;
     - uses: actions/setup-java@v3
       if: inputs.java == 'true'
       with:
         distribution: 'temurin'
         java-version: ${{ inputs.java-version }}
+    # Logging into Docker Hub will help prevent us being rate limited when using an anonymous account
+    - name: Login to Docker Hub
+      uses: docker/login-action@v2
+      if: |
+        inputs.docker == 'true'
+        && inputs.secret_vault_address != ''
+        && inputs.secret_vault_roleId != ''
+        && inputs.secret_vault_secretId != ''
+      with:
+        username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
+        password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
     # Use CI Nexus as co-located pull-through cache for Maven artifacts via ~/.m2/settings.xml
     - name: 'Create settings.xml'
       uses: s4u/maven-settings-action@v2.8.0
