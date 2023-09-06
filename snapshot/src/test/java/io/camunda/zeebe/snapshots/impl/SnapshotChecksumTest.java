@@ -9,6 +9,7 @@ package io.camunda.zeebe.snapshots.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.snapshots.ImmutableChecksumsSFV;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -167,7 +168,7 @@ public class SnapshotChecksumTest {
     }
 
     // when
-    final SfvChecksum sfvChecksum = SnapshotChecksum.read(tempFile.toPath());
+    final ImmutableChecksumsSFV sfvChecksum = SnapshotChecksum.read(tempFile.toPath());
     final long combinedValue = sfvChecksum.getCombinedValue();
 
     // then
@@ -181,7 +182,7 @@ public class SnapshotChecksumTest {
     createChunk(folder, "file1.txt");
     createChunk(folder, "file2.txt");
     createChunk(folder, "file3.txt");
-    final SfvChecksum sfvChecksum = SnapshotChecksum.calculate(folder);
+    final ImmutableChecksumsSFV sfvChecksum = SnapshotChecksum.calculate(folder);
 
     // when
     final String serialized =
@@ -191,13 +192,14 @@ public class SnapshotChecksumTest {
     assertThat(serialized).contains("; number of files used for combined value = 3");
   }
 
+  @Test
   public void shouldAddChecksumOfMetadataAtTheEnd() throws IOException {
     // given
     final var folder = temporaryFolder.newFolder().toPath();
     createChunk(folder, "file1.txt");
     createChunk(folder, "file2.txt");
     createChunk(folder, "file3.txt");
-    final SfvChecksum checksumCalculatedInSteps = SnapshotChecksum.calculate(folder);
+    final var checksumCalculatedInSteps = SnapshotChecksum.calculate(folder);
 
     // when
     createChunk(folder, FileBasedSnapshotStore.METADATA_FILE_NAME);
@@ -206,7 +208,7 @@ public class SnapshotChecksumTest {
         folder.resolve(FileBasedSnapshotStore.METADATA_FILE_NAME));
 
     // This is how checksum is calculated when verifying
-    final SfvChecksum checksumCalculatedAtOnce = SnapshotChecksum.calculate(folder);
+    final ImmutableChecksumsSFV checksumCalculatedAtOnce = SnapshotChecksum.calculate(folder);
 
     // then
     assertThat(checksumCalculatedInSteps.getCombinedValue())

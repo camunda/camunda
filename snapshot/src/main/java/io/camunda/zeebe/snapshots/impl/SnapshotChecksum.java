@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.snapshots.impl;
 
+import io.camunda.zeebe.snapshots.ImmutableChecksumsSFV;
+import io.camunda.zeebe.snapshots.MutableChecksumsSFV;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.io.UncheckedIOException;
@@ -20,14 +22,14 @@ final class SnapshotChecksum {
     throw new IllegalStateException("Utility class");
   }
 
-  public static SfvChecksum read(final Path checksumPath) throws IOException {
+  public static ImmutableChecksumsSFV read(final Path checksumPath) throws IOException {
     try (final RandomAccessFile checksumFile = new RandomAccessFile(checksumPath.toFile(), "r")) {
       if (checksumFile.length() == 8) {
         // compatibility mode
         final long combinedChecksum = checksumFile.readLong();
-        return new SfvChecksum(combinedChecksum);
+        return new SfvChecksumImpl(combinedChecksum);
       }
-      final SfvChecksum sfvChecksum = new SfvChecksum();
+      final SfvChecksumImpl sfvChecksum = new SfvChecksumImpl();
       String line;
       while ((line = checksumFile.readLine()) != null) {
         sfvChecksum.updateFromSfvFile(line);
@@ -36,10 +38,10 @@ final class SnapshotChecksum {
     }
   }
 
-  public static SfvChecksum calculate(final Path snapshotDirectory) throws IOException {
+  public static MutableChecksumsSFV calculate(final Path snapshotDirectory) throws IOException {
     try (final var fileStream =
         Files.list(snapshotDirectory).filter(SnapshotChecksum::isNotMetadataFile).sorted()) {
-      final SfvChecksum sfvChecksum = createCombinedChecksum(fileStream);
+      final var sfvChecksum = createCombinedChecksum(fileStream);
 
       // While persisting transient snapshot, the checksum of metadata file is added at the end.
       // Hence when we recalculate the checksum, we must follow the same order. Otherwise base on
@@ -57,7 +59,7 @@ final class SnapshotChecksum {
     return !file.getFileName().toString().equals(FileBasedSnapshotStore.METADATA_FILE_NAME);
   }
 
-  public static void persist(final Path checksumPath, final SfvChecksum checksum)
+  public static void persist(final Path checksumPath, final ImmutableChecksumsSFV checksum)
       throws IOException {
     try (final RandomAccessFile checksumFile = new RandomAccessFile(checksumPath.toFile(), "rwd")) {
       final byte[] data = checksum.serializeSfvFileData();
@@ -71,13 +73,13 @@ final class SnapshotChecksum {
    *
    * @return the SfvChecksum object
    */
-  private static SfvChecksum createCombinedChecksum(final Stream<Path> files) {
-    final SfvChecksum checksum = new SfvChecksum();
+  private static SfvChecksumImpl createCombinedChecksum(final Stream<Path> files) {
+    final SfvChecksumImpl checksum = new SfvChecksumImpl();
     files.forEachOrdered(
         path -> {
           try {
             checksum.updateFromFile(path);
-          } catch (IOException e) {
+          } catch (final IOException e) {
             throw new UncheckedIOException(e);
           }
         });

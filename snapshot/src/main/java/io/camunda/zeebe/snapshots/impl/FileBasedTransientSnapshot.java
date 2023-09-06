@@ -10,6 +10,7 @@ package io.camunda.zeebe.snapshots.impl;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.snapshots.MutableChecksumsSFV;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotNotFoundException;
 import io.camunda.zeebe.snapshots.SnapshotId;
@@ -38,7 +39,7 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
   private final ActorFuture<Void> takenFuture = new CompletableActorFuture<>();
   private boolean isValid = false;
   private PersistedSnapshot snapshot;
-  private SfvChecksum checksum;
+  private MutableChecksumsSFV checksum;
   private long lastFollowupEventPosition = Long.MAX_VALUE;
 
   FileBasedTransientSnapshot(

@@ -22,11 +22,11 @@ public class SfvChecksumTest {
 
   @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
-  private SfvChecksum sfvChecksum;
+  private SfvChecksumImpl sfvChecksum;
 
   @Before
   public void setUp() throws Exception {
-    sfvChecksum = new SfvChecksum();
+    sfvChecksum = new SfvChecksumImpl();
   }
 
   @Test
