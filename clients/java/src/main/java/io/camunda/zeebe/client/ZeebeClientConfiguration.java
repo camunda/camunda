@@ -113,4 +113,9 @@ public interface ZeebeClientConfiguration {
    * @see ZeebeClientBuilder#jobWorkerExecutor(ScheduledExecutorService, boolean)
    */
   boolean ownsJobWorkerExecutor();
+
+  /**
+   * @see ZeebeClientBuilder#streamEnabled(boolean)
+   */
+  boolean getStreamEnabled();
 }

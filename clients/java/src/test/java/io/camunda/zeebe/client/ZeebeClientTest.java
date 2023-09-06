@@ -16,6 +16,7 @@
 package io.camunda.zeebe.client;
 
 import static io.camunda.zeebe.client.ClientProperties.CLOUD_REGION;
+import static io.camunda.zeebe.client.ClientProperties.ENABLE_STREAMING;
 import static io.camunda.zeebe.client.ClientProperties.DEFAULT_TENANT_ID;
 import static io.camunda.zeebe.client.ClientProperties.MAX_MESSAGE_SIZE;
 import static io.camunda.zeebe.client.ClientProperties.USE_PLAINTEXT_CONNECTION;
@@ -24,6 +25,7 @@ import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.DEFAULT_TENANT
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.KEEP_ALIVE_VAR;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.OVERRIDE_AUTHORITY_VAR;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.PLAINTEXT_CONNECTION_VAR;
+import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.ZEEBE_CLIENT_WORKER_STREAM_ENABLE;
 import static io.camunda.zeebe.client.impl.util.DataSizeUtil.ONE_MB;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -82,6 +84,7 @@ public final class ZeebeClientTest extends ClientTest {
       assertThat(configuration.getOverrideAuthority()).isNull();
       assertThat(configuration.getDefaultTenantId())
           .isEqualTo(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
+      assertThat(configuration.getStreamEnabled()).isFalse();
     }
   }
 
@@ -147,6 +150,40 @@ public final class ZeebeClientTest extends ClientTest {
 
     // then
     assertThat(builder.isPlaintextConnectionEnabled()).isTrue();
+  }
+
+  @Test
+  public void shouldDisableStreamingWithProperty() {
+    // given
+    final Properties properties = new Properties();
+    properties.putIfAbsent(ENABLE_STREAMING, "false");
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+    builder.applyEnvironmentVariableOverrides(false);
+    builder.withProperties(properties);
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getStreamEnabled()).isFalse();
+  }
+
+  @Test
+  public void shouldDisableStreamingWithEnvVar() {
+    // given
+    Environment.system().put(ZEEBE_CLIENT_WORKER_STREAM_ENABLE, "false");
+    final Properties properties = new Properties();
+    properties.putIfAbsent(ENABLE_STREAMING, "true");
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+    // Env var should override client property
+    builder.applyEnvironmentVariableOverrides(true);
+    builder.withProperties(properties);
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getStreamEnabled()).isFalse();
   }
 
   @Test

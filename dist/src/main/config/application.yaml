@@ -50,7 +50,7 @@ zeebe:
 
     network:
       # Controls the default host the broker should bind to. Can be overwritten on a
-      # per binding basis for client, management and replication
+      # per-binding basis for client, management and replication
       # This setting can also be overridden using the environment variable ZEEBE_BROKER_NETWORK_HOST.
       host: 0.0.0.0
 
