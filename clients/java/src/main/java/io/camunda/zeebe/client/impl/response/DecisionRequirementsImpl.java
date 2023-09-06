@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.client.impl.response;
 
+import io.camunda.zeebe.client.api.command.CommandWithTenantStep;
 import io.camunda.zeebe.client.api.response.DecisionRequirements;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DecisionRequirementsMetadata;
 import java.util.Objects;
@@ -49,6 +50,7 @@ public final class DecisionRequirementsImpl implements DecisionRequirements {
    *     dmnDecisionRequirementsId, String dmnDecisionRequirementsName, int version, long
    *     decisionRequirementsKey, String resourceName, String tenantId)}
    */
+  @Deprecated
   public DecisionRequirementsImpl(
       final String dmnDecisionRequirementsId,
       final String dmnDecisionRequirementsName,
@@ -61,7 +63,7 @@ public final class DecisionRequirementsImpl implements DecisionRequirements {
         version,
         decisionRequirementsKey,
         resourceName,
-        "");
+        CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
   }
 
   public DecisionRequirementsImpl(

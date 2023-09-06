@@ -31,6 +31,7 @@ import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
+import io.camunda.zeebe.client.api.command.CommandWithTenantStep;
 import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder;
 import io.camunda.zeebe.client.impl.util.DataSizeUtil;
 import io.camunda.zeebe.client.impl.util.Environment;
@@ -53,7 +54,7 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
 
   private final List<ClientInterceptor> interceptors = new ArrayList<>();
   private String gatewayAddress = DEFAULT_GATEWAY_ADDRESS;
-  private String defaultTenantId = "";
+  private String defaultTenantId = CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER;
   private int jobWorkerMaxJobsActive = 32;
   private int numJobWorkerExecutionThreads = 1;
   private String defaultJobWorkerName = "default";

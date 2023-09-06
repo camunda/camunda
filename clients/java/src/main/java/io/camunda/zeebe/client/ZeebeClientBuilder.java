@@ -50,9 +50,9 @@ public interface ZeebeClientBuilder {
   ZeebeClientBuilder gatewayAddress(String gatewayAddress);
 
   /**
-   * @param tenantId the tenant identifier which is used for tenant-aware deployments when no tenant
-   *     identifier is set for a command. Default value is an empty String since the property isn't
-   *     allowed when multi-tenancy is disabled in the Zeebe gateway.
+   * @param tenantId the tenant identifier which is used for tenant-aware commands when no tenant
+   *     identifier is set. The default value is {@link
+   *     io.camunda.zeebe.client.api.command.CommandWithTenantStep#DEFAULT_TENANT_IDENTIFIER}.
    */
   ZeebeClientBuilder defaultTenantId(String tenantId);
 

@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.client.impl.response;
 
+import io.camunda.zeebe.client.api.command.CommandWithTenantStep;
 import io.camunda.zeebe.client.api.response.Process;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ProcessMetadata;
 import java.util.Objects;
@@ -52,7 +53,12 @@ public final class ProcessImpl implements Process {
       final String bpmnProcessId,
       final int version,
       final String resourceName) {
-    this(processDefinitionKey, bpmnProcessId, version, resourceName, "");
+    this(
+        processDefinitionKey,
+        bpmnProcessId,
+        version,
+        resourceName,
+        CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
   }
 
   public ProcessImpl(

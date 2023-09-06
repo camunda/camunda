@@ -16,6 +16,7 @@
 package io.camunda.zeebe.client.util;
 
 import com.google.protobuf.GeneratedMessageV3;
+import io.camunda.zeebe.client.api.command.CommandWithTenantStep;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayImplBase;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
@@ -164,7 +165,12 @@ public final class RecordingGatewayService extends GatewayImplBase {
       final int version,
       final long processDefinitionKey,
       final String resourceName) {
-    return deployedProcess(bpmnProcessId, version, processDefinitionKey, resourceName, "");
+    return deployedProcess(
+        bpmnProcessId,
+        version,
+        processDefinitionKey,
+        resourceName,
+        CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
   }
 
   public static ProcessMetadata deployedProcess(
@@ -196,7 +202,7 @@ public final class RecordingGatewayService extends GatewayImplBase {
         decisionKey,
         dmnDecisionRequirementsId,
         decisionRequirementsKey,
-        "");
+        CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
   }
 
   public static DecisionMetadata deployedDecision(
@@ -230,7 +236,7 @@ public final class RecordingGatewayService extends GatewayImplBase {
         version,
         decisionRequirementsKey,
         resourceName,
-        "");
+        CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
   }
 
   public static DecisionRequirementsMetadata deployedDecisionRequirements(

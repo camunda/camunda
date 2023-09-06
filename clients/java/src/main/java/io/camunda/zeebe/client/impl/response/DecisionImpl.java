@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.client.impl.response;
 
+import io.camunda.zeebe.client.api.command.CommandWithTenantStep;
 import io.camunda.zeebe.client.api.response.Decision;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DecisionMetadata;
 import java.util.Objects;
@@ -51,6 +52,7 @@ public final class DecisionImpl implements Decision {
    *     dmnDecisionName, int version, long decisionKey, String dmnDecisionRequirementsId, long
    *     decisionRequirementsKey, String tenantId)}
    */
+  @Deprecated
   public DecisionImpl(
       final String dmnDecisionId,
       final String dmnDecisionName,
@@ -65,7 +67,7 @@ public final class DecisionImpl implements Decision {
         decisionKey,
         dmnDecisionRequirementsId,
         decisionRequirementsKey,
-        "");
+        CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
   }
 
   public DecisionImpl(
