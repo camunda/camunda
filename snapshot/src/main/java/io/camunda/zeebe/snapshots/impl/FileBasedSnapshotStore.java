@@ -14,6 +14,7 @@ import io.camunda.zeebe.scheduler.ActorThread;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
+import io.camunda.zeebe.snapshots.MutableChecksumsSFV;
 import io.camunda.zeebe.snapshots.PersistableSnapshot;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.PersistedSnapshotListener;
@@ -512,7 +513,7 @@ public final class FileBasedSnapshotStore extends Actor
       moveToSnapshotDirectory(directory, destination);
 
       final var checksumPath = buildSnapshotsChecksumPath(snapshotId);
-      final SfvChecksum actualChecksum;
+      final MutableChecksumsSFV actualChecksum;
       try {
         // computing the checksum on the final destination also lets us detect any failures during
         // the

@@ -9,6 +9,7 @@ package io.camunda.zeebe.snapshots.impl;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+import io.camunda.zeebe.snapshots.MutableChecksumsSFV;
 import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -31,7 +32,7 @@ import org.agrona.IoUtil;
  * compatibility with 'combinedChecksum' field.
  * https://en.wikipedia.org/wiki/Simple_file_verification
  */
-final class SfvChecksum {
+final class SfvChecksumImpl implements MutableChecksumsSFV {
 
   private static final String FILE_CRC_SEPARATOR = "   ";
   private static final String FILE_CRC_SEPARATOR_REGEX = " {3}";
@@ -51,74 +52,21 @@ final class SfvChecksum {
    *
    * @param combinedChecksum pre-defined checksum
    */
-  public SfvChecksum(final long combinedChecksum) {
+  public SfvChecksumImpl(final long combinedChecksum) {
     this.combinedChecksum = new PreDefinedImmutableChecksum(combinedChecksum);
   }
 
-  public SfvChecksum() {
+  public SfvChecksumImpl() {
     combinedChecksum = new CRC32C();
   }
 
+  @Override
   public long getCombinedValue() {
     return combinedChecksum.getValue();
   }
 
-  public void setSnapshotDirectoryComment(final String headerComment) {
-    snapshotDirectoryComment = headerComment;
-  }
-
   @Override
-  public String toString() {
-    return "SfvChecksum{"
-        + "combinedChecksum="
-        + combinedChecksum.getValue()
-        + ", checksums="
-        + checksums
-        + '}';
-  }
-
-  public void updateFromFile(final Path filePath) throws IOException {
-    final String fileName = filePath.getFileName().toString();
-    final byte[] chunkId = fileName.getBytes(UTF_8);
-    combinedChecksum.update(chunkId);
-
-    final Checksum checksum = new CRC32C();
-    final ByteBuffer readBuffer = ByteBuffer.allocate(IoUtil.BLOCK_SIZE);
-    try (final FileChannel channel = FileChannel.open(filePath, StandardOpenOption.READ)) {
-      readBuffer.clear();
-      while (channel.read(readBuffer) > 0) {
-        readBuffer.flip();
-        combinedChecksum.update(readBuffer);
-        readBuffer.flip();
-        checksum.update(readBuffer);
-        readBuffer.clear();
-      }
-    }
-    checksums.put(fileName, checksum.getValue());
-  }
-
-  public void updateFromSfvFile(final String... lines) {
-    for (String line : lines) {
-      line = line.trim();
-      if (line.startsWith(";")) {
-        final Matcher matcher = COMBINED_VALUE_PATTERN.matcher(line);
-        if (matcher.find()) {
-          final String hexString = matcher.group(1);
-          final long crc = Long.parseLong(hexString, 16);
-          combinedChecksum = new PreDefinedImmutableChecksum(crc);
-        }
-      } else {
-        final Matcher matcher = FILE_CRC_PATTERN.matcher(line);
-        if (matcher.find()) {
-          final Long crc = Long.parseLong(matcher.group(2), 16);
-          final String fileName = matcher.group(1).trim();
-          checksums.put(fileName, crc);
-        }
-      }
-    }
-  }
-
-  byte[] serializeSfvFileData() throws IOException {
+  public byte[] serializeSfvFileData() throws IOException {
     final ByteArrayOutputStream baos = new ByteArrayOutputStream();
     final BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(baos, UTF_8));
     writer.write("; This is an SFC checksum file for all files in the given directory.");
@@ -145,6 +93,63 @@ final class SfvChecksum {
     }
     writer.flush();
     return baos.toByteArray();
+  }
+
+  public void setSnapshotDirectoryComment(final String headerComment) {
+    snapshotDirectoryComment = headerComment;
+  }
+
+  @Override
+  public String toString() {
+    return "SfvChecksum{"
+        + "combinedChecksum="
+        + combinedChecksum.getValue()
+        + ", checksums="
+        + checksums
+        + '}';
+  }
+
+  @Override
+  public void updateFromFile(final Path filePath) throws IOException {
+    final String fileName = filePath.getFileName().toString();
+    final byte[] chunkId = fileName.getBytes(UTF_8);
+    combinedChecksum.update(chunkId);
+
+    final Checksum checksum = new CRC32C();
+    final ByteBuffer readBuffer = ByteBuffer.allocate(IoUtil.BLOCK_SIZE);
+    try (final FileChannel channel = FileChannel.open(filePath, StandardOpenOption.READ)) {
+      readBuffer.clear();
+      while (channel.read(readBuffer) > 0) {
+        readBuffer.flip();
+        combinedChecksum.update(readBuffer);
+        readBuffer.flip();
+        checksum.update(readBuffer);
+        readBuffer.clear();
+      }
+    }
+    checksums.put(fileName, checksum.getValue());
+  }
+
+  @Override
+  public void updateFromSfvFile(final String... lines) {
+    for (String line : lines) {
+      line = line.trim();
+      if (line.startsWith(";")) {
+        final Matcher matcher = COMBINED_VALUE_PATTERN.matcher(line);
+        if (matcher.find()) {
+          final String hexString = matcher.group(1);
+          final long crc = Long.parseLong(hexString, 16);
+          combinedChecksum = new PreDefinedImmutableChecksum(crc);
+        }
+      } else {
+        final Matcher matcher = FILE_CRC_PATTERN.matcher(line);
+        if (matcher.find()) {
+          final Long crc = Long.parseLong(matcher.group(2), 16);
+          final String fileName = matcher.group(1).trim();
+          checksums.put(fileName, crc);
+        }
+      }
+    }
   }
 
   private static class PreDefinedImmutableChecksum implements Checksum {
