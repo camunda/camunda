@@ -99,7 +99,8 @@ public class GrpcErrorMapperTenantTest {
         Arguments.of("", true, "no tenant identifier was provided"),
         Arguments.of("     ", true, "no tenant identifier was provided"),
         Arguments.of("a".repeat(35), true, "tenant identifier is longer than 31 characters"),
-        Arguments.of("abcde.-  ", true, "tenant identifier contains illegal characters"));
+        Arguments.of("abcde.-  ", true, "tenant identifier contains illegal characters"),
+        Arguments.of("tenant-1", false, "multi-tenancy is disabled"));
   }
 
   public static Stream<Arguments> validTenantIds() {
@@ -108,6 +109,7 @@ public class GrpcErrorMapperTenantTest {
         Arguments.of("tenant-2", true),
         Arguments.of("tenant.3", true),
         Arguments.of("tenant.test-5", true),
+        Arguments.of("<default>", true),
         Arguments.of("<default>", false),
         Arguments.of("", false));
   }

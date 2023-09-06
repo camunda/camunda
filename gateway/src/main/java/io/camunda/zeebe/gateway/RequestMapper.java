@@ -283,7 +283,8 @@ public final class RequestMapper {
             commandName, tenantId, "tenant identifier is longer than 31 characters");
       }
 
-      if (!TENANT_ID_MASK.matcher(tenantId).matches()) {
+      if (!TenantOwned.DEFAULT_TENANT_IDENTIFIER.equals(tenantId)
+          && !TENANT_ID_MASK.matcher(tenantId).matches()) {
         throw new InvalidTenantRequestException(
             commandName, tenantId, "tenant identifier contains illegal characters");
       }
