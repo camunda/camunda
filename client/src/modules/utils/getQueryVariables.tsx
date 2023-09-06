@@ -35,7 +35,7 @@ const getQueryVariables = (
     | 'searchAfterOrEqual'
   >,
 ): TasksSearchBody => {
-  const {filter, sortBy, sortOrder} = filters;
+  const {filter, sortBy, sortOrder, ...remainingFilters} = filters;
   const BASE_QUERY_VARIABLES: TasksSearchBody = {
     sort: [
       {
@@ -56,6 +56,7 @@ const getQueryVariables = (
         assigned: true,
         assignee: assignee!,
         state: 'CREATED',
+        ...remainingFilters,
       };
     }
     case 'unassigned': {
@@ -63,12 +64,14 @@ const getQueryVariables = (
         ...BASE_QUERY_VARIABLES,
         assigned: false,
         state: 'CREATED',
+        ...remainingFilters,
       };
     }
     case 'completed': {
       return {
         ...BASE_QUERY_VARIABLES,
         state: 'COMPLETED',
+        ...remainingFilters,
       };
     }
     case 'all-open':
@@ -76,6 +79,7 @@ const getQueryVariables = (
       return {
         ...BASE_QUERY_VARIABLES,
         state: 'CREATED',
+        ...remainingFilters,
       };
     }
   }

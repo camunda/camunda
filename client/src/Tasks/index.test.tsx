@@ -22,21 +22,29 @@ const SECOND_PAGE = Array.from({length: 50}).map((_, index) =>
   generateTask(`${index + 50}`),
 );
 
-type Props = {
-  children?: React.ReactNode;
-};
+function getWrapper(
+  initialEntries: React.ComponentProps<
+    typeof MemoryRouter
+  >['initialEntries'] = ['/'],
+) {
+  type Props = {
+    children?: React.ReactNode;
+  };
 
-const Wrapper: React.FC<Props> = ({children}) => {
-  return (
-    <ReactQueryProvider>
-      <MemoryRouter initialEntries={['/']}>
-        <MockThemeProvider>{children}</MockThemeProvider>
-      </MemoryRouter>
-    </ReactQueryProvider>
-  );
-};
+  const Wrapper: React.FC<Props> = ({children}) => {
+    return (
+      <ReactQueryProvider>
+        <MemoryRouter initialEntries={initialEntries}>
+          <MockThemeProvider>{children}</MockThemeProvider>
+        </MemoryRouter>
+      </ReactQueryProvider>
+    );
+  };
 
-describe('<Layout />', () => {
+  return Wrapper;
+}
+
+describe('<Tasks />', () => {
   it('should load more tasks', async () => {
     nodeMockServer.use(
       rest.get('/v1/internal/users/current', (_, res, ctx) => {
@@ -53,7 +61,7 @@ describe('<Layout />', () => {
     );
 
     render(<Tasks />, {
-      wrapper: Wrapper,
+      wrapper: getWrapper(),
     });
 
     await waitFor(() => expect(screen.getByTitle('All open')).toBeDisabled());
@@ -71,5 +79,29 @@ describe('<Layout />', () => {
     expect(await screen.findByText('TASK 50')).toBeInTheDocument();
     expect(screen.getByText('TASK 99')).toBeInTheDocument();
     expect(screen.getAllByRole('article')).toHaveLength(100);
+  });
+
+  it('should use tasklist api raw filters', async () => {
+    nodeMockServer.use(
+      rest.get('/v1/internal/users/current', (_, res, ctx) => {
+        return res.once(ctx.json(userMocks.currentUser));
+      }),
+      rest.post('/v1/tasks/search', async (req, res, ctx) => {
+        const {candidateUser, foo} = await req.json();
+
+        if (candidateUser === 'demo' && foo === undefined) {
+          return res(ctx.json(FIRST_PAGE));
+        }
+
+        return res.networkError('Wrong params');
+      }),
+    );
+
+    render(<Tasks />, {
+      wrapper: getWrapper(['/?candidateUser=demo&foo=bar']),
+    });
+
+    expect(await screen.findByText('TASK 0')).toBeInTheDocument();
+    expect(screen.queryByText('No tasks found')).not.toBeInTheDocument();
   });
 });
