@@ -29,7 +29,6 @@ public interface ZeebeClientConfiguration {
 
   /**
    * @see ZeebeClientBuilder#defaultTenantId(String)
-   * @return
    */
   String getDefaultTenantId();
 

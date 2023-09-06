@@ -107,6 +107,9 @@ public final class DeploymentEventImpl implements DeploymentEvent {
         + decisions
         + ", decisionRequirements="
         + decisionRequirements
+        + ", tenantId='"
+        + tenantId
+        + '\''
         + '}';
   }
 }

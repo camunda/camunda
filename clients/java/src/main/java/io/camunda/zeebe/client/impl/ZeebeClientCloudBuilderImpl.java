@@ -93,7 +93,7 @@ public class ZeebeClientCloudBuilderImpl
     }
     innerBuilder.withProperties(properties);
 
-    // todo(#13321): allow default tenant id setting for cloud client
+    // todo(#14106): allow default tenant id setting for cloud client
     innerBuilder.defaultTenantId("");
 
     return this;
@@ -115,7 +115,8 @@ public class ZeebeClientCloudBuilderImpl
   @Override
   @ExperimentalApi("https://github.com/camunda/zeebe/issues/14106")
   public ZeebeClientCloudBuilderStep4 defaultTenantId(final String tenantId) {
-    Loggers.LOGGER.debug("Multi-tenancy is currently not supported in Camunda Cloud.");
+    Loggers.LOGGER.debug(
+        "Multi-tenancy in Camunda 8 SaaS will be supported with https://github.com/camunda/zeebe/issues/14106.");
     return this;
   }
 
