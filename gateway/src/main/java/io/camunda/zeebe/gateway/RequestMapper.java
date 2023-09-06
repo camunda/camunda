@@ -290,7 +290,7 @@ public final class RequestMapper {
 
       return tenantId;
     } else {
-      if (hasTenantId) {
+      if (hasTenantId && !TenantOwned.DEFAULT_TENANT_IDENTIFIER.equals(tenantId)) {
         throw new InvalidTenantRequestException(commandName, tenantId, "multi-tenancy is disabled");
       }
 

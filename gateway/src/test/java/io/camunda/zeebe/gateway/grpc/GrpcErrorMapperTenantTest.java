@@ -15,7 +15,6 @@ import io.camunda.zeebe.gateway.cmd.InvalidTenantRequestException;
 import io.camunda.zeebe.util.logging.RecordingAppender;
 import io.grpc.Status.Code;
 import io.grpc.StatusRuntimeException;
-import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.Level;
@@ -56,10 +55,9 @@ public class GrpcErrorMapperTenantTest {
   @ParameterizedTest
   @MethodSource("invalidTenantIds")
   void shouldLogInvalidTenantRequestException(
-      final String invalidTenantId, final String logMessage) {
+      final String invalidTenantId, final boolean multiTenancyEnabled, final String logMessage) {
     // given
     final String requestName = "DeployResource";
-    final boolean multiTenancyEnabled = true;
     try {
       RequestMapper.ensureTenantIdSet(requestName, invalidTenantId, multiTenancyEnabled);
       fail("Expected to throw exception");
@@ -83,10 +81,10 @@ public class GrpcErrorMapperTenantTest {
 
   @ParameterizedTest
   @MethodSource("validTenantIds")
-  void shouldNotLogInvalidTenantRequestException(final String invalidTenantId) {
+  void shouldNotLogInvalidTenantRequestException(
+      final String invalidTenantId, final boolean multiTenancyEnabled) {
     // given
     final String requestName = "DeployResource";
-    final boolean multiTenancyEnabled = true;
 
     // when
     RequestMapper.ensureTenantIdSet(requestName, invalidTenantId, multiTenancyEnabled);
@@ -97,14 +95,20 @@ public class GrpcErrorMapperTenantTest {
 
   public static Stream<Arguments> invalidTenantIds() {
     return Stream.of(
-        Arguments.of("tenant!@#", "tenant identifier contains illegal characters"),
-        Arguments.of("", "no tenant identifier was provided"),
-        Arguments.of("     ", "no tenant identifier was provided"),
-        Arguments.of("a".repeat(35), "tenant identifier is longer than 31 characters"),
-        Arguments.of("abcde.-  ", "tenant identifier contains illegal characters"));
+        Arguments.of("tenant!@#", true, "tenant identifier contains illegal characters"),
+        Arguments.of("", true, "no tenant identifier was provided"),
+        Arguments.of("     ", true, "no tenant identifier was provided"),
+        Arguments.of("a".repeat(35), true, "tenant identifier is longer than 31 characters"),
+        Arguments.of("abcde.-  ", true, "tenant identifier contains illegal characters"));
   }
 
-  public static List<String> validTenantIds() {
-    return List.of("tenant1", "tenant-2", "tenant.3", "tenant.test-5");
+  public static Stream<Arguments> validTenantIds() {
+    return Stream.of(
+        Arguments.of("tenant1", true),
+        Arguments.of("tenant-2", true),
+        Arguments.of("tenant.3", true),
+        Arguments.of("tenant.test-5", true),
+        Arguments.of("<default>", false),
+        Arguments.of("", false));
   }
 }
