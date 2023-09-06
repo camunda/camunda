@@ -8,7 +8,6 @@
 import {observer} from 'mobx-react';
 import {Restricted} from 'modules/components/Restricted';
 import {COLLAPSABLE_PANEL_MIN_WIDTH} from 'modules/constants';
-import {IS_DECISION_DEFINITION_DELETION_ENABLED} from 'modules/feature-flags';
 import {useOperationsPanelResize} from 'modules/hooks/useOperationsPanelResize';
 import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
 import {useEffect, useRef, useState} from 'react';
@@ -126,25 +125,23 @@ const Decision: React.FC = observer(() => {
   return (
     <Section>
       <PanelHeader title={decisionName} ref={panelHeaderRef}>
-        {IS_DECISION_DEFINITION_DELETION_ENABLED &&
-          isVersionSelected &&
-          decisionDefinitionId !== null && (
-            <Restricted
-              scopes={['write']}
-              resourceBasedRestrictions={{
-                scopes: ['DELETE'],
-                permissions: groupedDecisionsStore.getPermissions(
-                  decisionId ?? undefined,
-                ),
-              }}
-            >
-              <DecisionOperations
-                decisionDefinitionId={decisionDefinitionId}
-                decisionName={decisionName}
-                decisionVersion={version}
-              />
-            </Restricted>
-          )}
+        {isVersionSelected && decisionDefinitionId !== null && (
+          <Restricted
+            scopes={['write']}
+            resourceBasedRestrictions={{
+              scopes: ['DELETE'],
+              permissions: groupedDecisionsStore.getPermissions(
+                decisionId ?? undefined,
+              ),
+            }}
+          >
+            <DecisionOperations
+              decisionDefinitionId={decisionDefinitionId}
+              decisionName={decisionName}
+              decisionVersion={version}
+            />
+          </Restricted>
+        )}
       </PanelHeader>
       <DiagramShell
         status={getStatus()}
