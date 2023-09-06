@@ -19,9 +19,11 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.transport.stream.api.ClientStreamConsumer;
 import io.camunda.zeebe.transport.stream.api.ClientStreamId;
 import io.camunda.zeebe.transport.stream.api.ClientStreamer;
+import io.camunda.zeebe.util.VisibleForTesting;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.ServerCallStreamObserver;
+import io.grpc.stub.StreamObserver;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import org.agrona.DirectBuffer;
@@ -78,13 +80,13 @@ public class ClientStreamAdapter {
         new StatusRuntimeException(Status.INVALID_ARGUMENT.withDescription(errorMessage)));
   }
 
-  @SuppressWarnings("ClassCanBeRecord")
-  private static final class ClientStreamConsumerImpl implements ClientStreamConsumer {
-    private final ServerCallStreamObserver<ActivatedJob> responseObserver;
+  @VisibleForTesting("Allow unit testing behavior job handling behavior")
+  static final class ClientStreamConsumerImpl implements ClientStreamConsumer {
+    private final StreamObserver<ActivatedJob> responseObserver;
     private final Executor executor;
 
     public ClientStreamConsumerImpl(
-        final ServerCallStreamObserver<ActivatedJob> responseObserver, final Executor executor) {
+        final StreamObserver<ActivatedJob> responseObserver, final Executor executor) {
       this.responseObserver = responseObserver;
       this.executor = executor;
     }
@@ -103,7 +105,7 @@ public class ClientStreamAdapter {
         responseObserver.onNext(activatedJob);
       } catch (final Exception e) {
         responseObserver.onError(e);
-        CompletableFuture.failedFuture(e);
+        throw e;
       }
     }
   }
