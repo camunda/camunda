@@ -160,14 +160,11 @@ jobs:
       matrix:
         os: [ macos, windows, linux ]
         arch: [ amd64 ]
-        docker-login: [ true ]
         include:
           - os: macos
             runner: macos-latest
-            docker-login: false
           - os: windows
             runner: windows-latest
-            docker-login: false
           - os: linux
             runner: [ self-hosted, linux, amd64 ]
           - os: linux
@@ -181,7 +178,7 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          docker: ${{ matrix.docker-login }}
+          docker: ${{ matrix.os != 'macos' && matrix.os != 'windows' }}
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
         with:
