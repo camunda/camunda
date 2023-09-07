@@ -1,3 +1,102 @@
+# v8.3.0-alpha5
+## 🚀 New Features
+* ES/OS - filter task by variables ([#3371](https://github.com/camunda/tasklist/issues/3371))
+* Add raw filters from Tasklist API ([#3382](https://github.com/camunda/tasklist/issues/3382))
+* implement schema migration for `OpenSearch` ([#3347](https://github.com/camunda/tasklist/issues/3347))
+* Always enable processes tab ([#3366](https://github.com/camunda/tasklist/issues/3366))
+* convert Integer backupIds to Long ([#3328](https://github.com/camunda/tasklist/issues/3328))
+* implement health check for `OpenSearch` ([#3326](https://github.com/camunda/tasklist/issues/3326))
+* implement backups for OpenSearch ([#3305](https://github.com/camunda/tasklist/issues/3305))
+* OpenSearch Implementation ([#3319](https://github.com/camunda/tasklist/issues/3319))
+* making docker image rootless ([#3286](https://github.com/camunda/tasklist/issues/3286))
+
+## 💊 Bugfixes
+* remove not used code  ([#3420](https://github.com/camunda/tasklist/issues/3420))
+* **preview-env**: Run the cleanup job only on 'pull_request' events ([#3411](https://github.com/camunda/tasklist/issues/3411))
+* **deps**: update dependency @carbon/elements to v11.29.0 ([#3394](https://github.com/camunda/tasklist/issues/3394))
+* **deps**: update dependency @carbon/react to v1.37.0 ([#3395](https://github.com/camunda/tasklist/issues/3395))
+* update security police - remove unsafe line ([#3380](https://github.com/camunda/tasklist/issues/3380))
+* **deps**: update dependency @camunda/camunda-composite-components to v0.1.4 ([#3389](https://github.com/camunda/tasklist/issues/3389))
+* **deps**: update dependency mobx to v6.10.2 ([#3386](https://github.com/camunda/tasklist/issues/3386))
+* **deps**: update all non-major dependencies ([#3374](https://github.com/camunda/tasklist/issues/3374))
+* When zeebe connection is not done tasklist is shutdown ([#3383](https://github.com/camunda/tasklist/issues/3383))
+* Show form validation instead of redirecting ([#3358](https://github.com/camunda/tasklist/issues/3358))
+* **deps**: update dependency @monaco-editor/react to v4.5.2 ([#3364](https://github.com/camunda/tasklist/issues/3364))
+* **deps**: update dependency @camunda/camunda-composite-components to v0.1.3 ([#3360](https://github.com/camunda/tasklist/issues/3360))
+* **deps**: update tanstack-query monorepo to v4.33.0 ([#3354](https://github.com/camunda/tasklist/issues/3354))
+* **deps**: update dependency zod to v3.22.2 ([#3353](https://github.com/camunda/tasklist/issues/3353))
+* **deps**: update dependency @carbon/elements to v11.28.0 ([#3351](https://github.com/camunda/tasklist/issues/3351))
+* **deps**: update all non-major dependencies ([#3310](https://github.com/camunda/tasklist/issues/3310))
+* **deps**: update dependency react-router-dom to v6.15.0 ([#3315](https://github.com/camunda/tasklist/issues/3315))
+* **deps**: update dependency @carbon/react to v1.36.0 ([#3352](https://github.com/camunda/tasklist/issues/3352))
+* **deps**: update dependency sass to v1.66.1 ([#3311](https://github.com/camunda/tasklist/issues/3311))
+* Fix release action ([#3333](https://github.com/camunda/tasklist/issues/3333))
+* Fix variables form layer ([#3301](https://github.com/camunda/tasklist/issues/3301))
+* **deps**: update dependency @camunda/camunda-composite-components to v0.1.1 ([#3295](https://github.com/camunda/tasklist/issues/3295))
+* **deps**: update dependency @carbon/react to v1.35.0 ([#3296](https://github.com/camunda/tasklist/issues/3296))
+* **deps**: update tanstack-query monorepo to v4.32.6 ([#3248](https://github.com/camunda/tasklist/issues/3248))
+* **deps**: update dependency @carbon/elements to v11.27.0 ([#3249](https://github.com/camunda/tasklist/issues/3249))
+* **deps**: update dependency sass to v1.64.2 ([#3241](https://github.com/camunda/tasklist/issues/3241))
+* **deps**: update dependency mobx to v6.10.0 ([#3236](https://github.com/camunda/tasklist/issues/3236))
+
+## 🧹 Chore
+* Bump Identity and Zeebe to 8.3.0-alpha5 ([#3422](https://github.com/camunda/tasklist/issues/3422))
+* Update Renovate config to always use chore prefix ([#3417](https://github.com/camunda/tasklist/issues/3417))
+* **deps**: update dependency @types/lodash to v4.14.198 ([#3406](https://github.com/camunda/tasklist/issues/3406))
+* updating spring version ([#3385](https://github.com/camunda/tasklist/issues/3385))
+* **deps**: update all non-major dependencies ([#3402](https://github.com/camunda/tasklist/issues/3402))
+* **deps**: update actions/checkout action to v4 ([#3401](https://github.com/camunda/tasklist/issues/3401))
+* **deps**: update dependency msw to v1.3.0 ([#3398](https://github.com/camunda/tasklist/issues/3398))
+* **deps**: update dependency @types/node to v18.17.14 ([#3397](https://github.com/camunda/tasklist/issues/3397))
+* **deps**: update actions/add-to-project digest to 4f0b69f ([#3396](https://github.com/camunda/tasklist/issues/3396))
+* Update Browserlist DB
+* **deps**: update tibdex/github-app-token action to v1.8.2 ([#3390](https://github.com/camunda/tasklist/issues/3390))
+* Add test.slow to e2e tests
+* bump maven plugin version 3.11.0 ([#3388](https://github.com/camunda/tasklist/issues/3388))
+* **deps**: update actions/add-to-project digest to b2735aa ([#3375](https://github.com/camunda/tasklist/issues/3375))
+* **preview-env**: Add a new workflow to clean up preview environments ([#3341](https://github.com/camunda/tasklist/issues/3341))
+* Update msw service worker
+* **deps**: update all non-major dependencies ([#3369](https://github.com/camunda/tasklist/issues/3369))
+* Update Browserlist DB
+* **deps**: update dependency @types/node to v18.17.9 ([#3365](https://github.com/camunda/tasklist/issues/3365))
+* **gha**: dont trigger deploy-preview on closed PRs ([#3361](https://github.com/camunda/tasklist/issues/3361))
+* **deps**: update all non-major dependencies ([#3363](https://github.com/camunda/tasklist/issues/3363))
+* **deps**: update dependency lint-staged to v14 ([#3357](https://github.com/camunda/tasklist/issues/3357))
+* **deps**: update dependency @types/node to v18.17.7 ([#3355](https://github.com/camunda/tasklist/issues/3355))
+* **deps**: update dependency @playwright/test to v1.37.1 ([#3226](https://github.com/camunda/tasklist/issues/3226))
+* **deps**: update dependency monaco-editor to v0.41.0 ([#3292](https://github.com/camunda/tasklist/issues/3292))
+* **deps**: update actions/setup-python action to v4 ([#3238](https://github.com/camunda/tasklist/issues/3238))
+* **deps**: update dependency eslint-config-prettier to v9 ([#3297](https://github.com/camunda/tasklist/issues/3297))
+* **deps**: update dependency ubuntu to v22 ([#3308](https://github.com/camunda/tasklist/issues/3308))
+* **deps**: update dependency lint-staged to v13.3.0 ([#3337](https://github.com/camunda/tasklist/issues/3337))
+* Update Browserlist DB
+* **gha**: migrate n1-standard-quick to equivalent ([#3336](https://github.com/camunda/tasklist/issues/3336))
+* **deps**: update stefanzweifel/git-auto-commit-action digest to 47a8ad5 ([#3332](https://github.com/camunda/tasklist/issues/3332))
+* **deps**: update actions/add-to-project digest to 35f3b36 ([#3317](https://github.com/camunda/tasklist/issues/3317))
+* Update Browserlist db
+* Fix browserlist update action
+* Update Carbonisation screenshot baseline
+* Increase E2E timeout
+* Use HTML reporter on CI
+* Fix E2E test instructions
+* add reviewers to renovate.json ([#3325](https://github.com/camunda/tasklist/issues/3325))
+* spring version
+* Remove reference to Testcafe
+* cleanup Jenkins jobs [master] ([#3280](https://github.com/camunda/tasklist/issues/3280))
+* adding empty file to create folder
+* adding configuration to /home/tasklist ([#3309](https://github.com/camunda/tasklist/issues/3309))
+* **deps**: bump version.micrometer from 1.10.3 to 1.10.5 ([#2735](https://github.com/camunda/tasklist/issues/2735))
+* **deps**: update all non-major dependencies ([#3304](https://github.com/camunda/tasklist/issues/3304))
+* **deps**: update dependency @testing-library/jest-dom to v5.17.0 ([#3234](https://github.com/camunda/tasklist/issues/3234))
+* **deps**: update dependency @types/react to v18.2.19 ([#3298](https://github.com/camunda/tasklist/issues/3298))
+* **deps**: update actions/add-to-project digest to 2b9d214 ([#3294](https://github.com/camunda/tasklist/issues/3294))
+* **deps**: update enricomi/publish-unit-test-result-action action to v2.9.0 ([#3293](https://github.com/camunda/tasklist/issues/3293))
+* **deps**: update dependency eslint-config-prettier to v8.10.0 ([#3290](https://github.com/camunda/tasklist/issues/3290))
+* **deps**: update dependency @types/node to v18.17.3 ([#3289](https://github.com/camunda/tasklist/issues/3289))
+* **deps**: update all non-major dependencies ([#3224](https://github.com/camunda/tasklist/issues/3224))
+* **deps**: update actions/add-to-project digest to 99cf218 ([#3225](https://github.com/camunda/tasklist/issues/3225))
+* Fix e2e tests ([#3288](https://github.com/camunda/tasklist/issues/3288))
+* update CHANGELOG.md
 # v8.3.0-alpha4
 ## 🚀 New Features
 * be-302-identity ([#3266](https://github.com/camunda/tasklist/issues/3266))
