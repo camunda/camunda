@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.broker.system.partitions.impl;
 
+import static java.util.Objects.requireNonNull;
+
 import io.camunda.zeebe.broker.system.partitions.AtomixRecordEntrySupplier;
 import io.camunda.zeebe.broker.system.partitions.NoEntryAtSnapshotPosition;
 import io.camunda.zeebe.broker.system.partitions.StateController;
@@ -52,12 +54,12 @@ public class StateControllerImpl implements StateController {
       final AtomixRecordEntrySupplier entrySupplier,
       final ToLongFunction<ZeebeDb> exporterPositionSupplier,
       final ConcurrencyControl concurrencyControl) {
-    this.constructableSnapshotStore = constructableSnapshotStore;
-    this.runtimeDirectory = runtimeDirectory;
-    this.zeebeDbFactory = zeebeDbFactory;
-    this.exporterPositionSupplier = exporterPositionSupplier;
-    this.entrySupplier = entrySupplier;
-    this.concurrencyControl = concurrencyControl;
+    this.constructableSnapshotStore = requireNonNull(constructableSnapshotStore);
+    this.runtimeDirectory = requireNonNull(runtimeDirectory);
+    this.zeebeDbFactory = requireNonNull(zeebeDbFactory);
+    this.exporterPositionSupplier = requireNonNull(exporterPositionSupplier);
+    this.entrySupplier = requireNonNull(entrySupplier);
+    this.concurrencyControl = requireNonNull(concurrencyControl);
   }
 
   @Override
