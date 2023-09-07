@@ -8,8 +8,8 @@ name: Daily tests
 on:
   workflow_dispatch: { }
   schedule:
-    # Runs at 01:00 every day; see this link for more: https://crontab.guru/#0_1_*_*_*
-    - cron: '0 1 * * *'
+    # Runs at 01:00 every week day; see this link for more: https://crontab.guru/#0_1_*_*_1-5
+    - cron: '0 1 * * 1-5'
 
 env:
   # This URL is used as the business key for the various QA workflows
