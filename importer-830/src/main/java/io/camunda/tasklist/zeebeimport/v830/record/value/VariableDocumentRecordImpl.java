@@ -10,6 +10,7 @@ import io.camunda.tasklist.zeebeimport.v830.record.RecordValueImpl;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
 import java.util.Map;
+import java.util.Objects;
 
 public class VariableDocumentRecordImpl extends RecordValueImpl
     implements VariableDocumentRecordValue {
@@ -17,6 +18,8 @@ public class VariableDocumentRecordImpl extends RecordValueImpl
   private VariableDocumentUpdateSemantic updateSemantics;
   private long scopeKey;
   private Map<String, Object> variables;
+
+  private String tenantId;
 
   @Override
   public long getScopeKey() {
@@ -46,10 +49,20 @@ public class VariableDocumentRecordImpl extends RecordValueImpl
   }
 
   @Override
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  public void setTenantId(String tenantId) {
+    this.tenantId = tenantId;
+  }
+
+  @Override
   public int hashCode() {
     int result = updateSemantics != null ? updateSemantics.hashCode() : 0;
     result = 31 * result + (int) (scopeKey ^ (scopeKey >>> 32));
     result = 31 * result + (variables != null ? variables.hashCode() : 0);
+    result = 31 * result + (tenantId != null ? tenantId.hashCode() : 0);
     return result;
   }
 
@@ -61,15 +74,10 @@ public class VariableDocumentRecordImpl extends RecordValueImpl
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-
     final VariableDocumentRecordImpl that = (VariableDocumentRecordImpl) o;
-
-    if (scopeKey != that.scopeKey) {
-      return false;
-    }
-    if (updateSemantics != that.updateSemantics) {
-      return false;
-    }
-    return variables != null ? variables.equals(that.variables) : that.variables == null;
+    return scopeKey == that.scopeKey
+        && updateSemantics == that.updateSemantics
+        && Objects.equals(variables, that.variables)
+        && Objects.equals(tenantId, that.tenantId);
   }
 }

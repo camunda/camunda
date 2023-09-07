@@ -19,6 +19,7 @@ public class DeployedProcessImpl implements Process {
   private byte[] checksum;
   private byte[] resource;
   private boolean isDuplicate;
+  private String tenantId;
 
   public DeployedProcessImpl() {}
 
@@ -57,6 +58,11 @@ public class DeployedProcessImpl implements Process {
     return isDuplicate;
   }
 
+  @Override
+  public String getTenantId() {
+    return tenantId;
+  }
+
   public void setResourceName(String resourceName) {
     this.resourceName = resourceName;
   }
@@ -87,6 +93,10 @@ public class DeployedProcessImpl implements Process {
     isDuplicate = duplicate;
   }
 
+  public void setTenantId(String tenantId) {
+    this.tenantId = tenantId;
+  }
+
   @Override
   public String toJson() {
     throw new UnsupportedOperationException("toJson operation is not supported");
@@ -106,6 +116,7 @@ public class DeployedProcessImpl implements Process {
         && isDuplicate == that.isDuplicate
         && Objects.equals(bpmnProcessId, that.bpmnProcessId)
         && Objects.equals(resourceName, that.resourceName)
+        && Objects.equals(tenantId, that.tenantId)
         && Arrays.equals(checksum, that.checksum)
         && Arrays.equals(resource, that.resource);
   }
@@ -113,7 +124,8 @@ public class DeployedProcessImpl implements Process {
   @Override
   public int hashCode() {
     int result =
-        Objects.hash(bpmnProcessId, resourceName, processDefinitionKey, version, isDuplicate);
+        Objects.hash(
+            bpmnProcessId, resourceName, processDefinitionKey, version, isDuplicate, tenantId);
     result = 31 * result + Arrays.hashCode(checksum);
     result = 31 * result + Arrays.hashCode(resource);
     return result;
@@ -138,6 +150,8 @@ public class DeployedProcessImpl implements Process {
         + Arrays.toString(resource)
         + ", isDuplicate="
         + isDuplicate
+        + ", tenantId="
+        + tenantId
         + '}';
   }
 }

@@ -25,6 +25,7 @@ public class ProcessInstanceRecordValueImpl extends RecordValueWithPayloadImpl
   private BpmnEventType bpmnEventType;
   private long parentProcessInstanceKey;
   private long parentElementInstanceKey;
+  private String tenantId;
 
   public ProcessInstanceRecordValueImpl() {}
 
@@ -79,6 +80,11 @@ public class ProcessInstanceRecordValueImpl extends RecordValueWithPayloadImpl
   }
 
   @Override
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o) {
       return true;
@@ -98,6 +104,7 @@ public class ProcessInstanceRecordValueImpl extends RecordValueWithPayloadImpl
         && parentElementInstanceKey == that.parentElementInstanceKey
         && Objects.equals(bpmnProcessId, that.bpmnProcessId)
         && Objects.equals(elementId, that.elementId)
+        && Objects.equals(tenantId, that.tenantId)
         && bpmnElementType == that.bpmnElementType
         && bpmnEventType == that.bpmnEventType;
   }
@@ -115,7 +122,8 @@ public class ProcessInstanceRecordValueImpl extends RecordValueWithPayloadImpl
         bpmnElementType,
         bpmnEventType,
         parentProcessInstanceKey,
-        parentElementInstanceKey);
+        parentElementInstanceKey,
+        tenantId);
   }
 
   @Override
@@ -143,6 +151,8 @@ public class ProcessInstanceRecordValueImpl extends RecordValueWithPayloadImpl
         + parentProcessInstanceKey
         + ", parentElementInstanceKey="
         + parentElementInstanceKey
+        + ", tenantId="
+        + tenantId
         + '}';
   }
 }

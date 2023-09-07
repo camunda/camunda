@@ -8,6 +8,7 @@ package io.camunda.tasklist.zeebeimport.v820.record.value;
 
 import io.camunda.tasklist.zeebeimport.v820.record.RecordValueImpl;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
+import java.util.Objects;
 
 public class VariableRecordValueImpl extends RecordValueImpl implements VariableRecordValue {
 
@@ -17,6 +18,7 @@ public class VariableRecordValueImpl extends RecordValueImpl implements Variable
   private long processInstanceKey;
   private long processDefinitionKey;
   private String bpmnProcessId;
+  private String tenantId;
 
   @Override
   public String getName() {
@@ -48,6 +50,11 @@ public class VariableRecordValueImpl extends RecordValueImpl implements Variable
     return bpmnProcessId;
   }
 
+  @Override
+  public String getTenantId() {
+    return tenantId;
+  }
+
   public void setProcessDefinitionKey(long processDefinitionKey) {
     this.processDefinitionKey = processDefinitionKey;
   }
@@ -68,6 +75,10 @@ public class VariableRecordValueImpl extends RecordValueImpl implements Variable
     this.name = name;
   }
 
+  public void setTenantId(String tenantId) {
+    this.tenantId = tenantId;
+  }
+
   public VariableRecordValueImpl setBpmnProcessId(final String bpmnProcessId) {
     this.bpmnProcessId = bpmnProcessId;
     return this;
@@ -80,6 +91,7 @@ public class VariableRecordValueImpl extends RecordValueImpl implements Variable
     result = 31 * result + (int) (scopeKey ^ (scopeKey >>> 32));
     result = 31 * result + (int) (processInstanceKey ^ (processInstanceKey >>> 32));
     result = 31 * result + (int) (processDefinitionKey ^ (processDefinitionKey >>> 32));
+    result = 31 * result + (tenantId != null ? tenantId.hashCode() : 0);
     return result;
   }
 
@@ -91,22 +103,14 @@ public class VariableRecordValueImpl extends RecordValueImpl implements Variable
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-
     final VariableRecordValueImpl that = (VariableRecordValueImpl) o;
-
-    if (scopeKey != that.scopeKey) {
-      return false;
-    }
-    if (processInstanceKey != that.processInstanceKey) {
-      return false;
-    }
-    if (processDefinitionKey != that.processDefinitionKey) {
-      return false;
-    }
-    if (name != null ? !name.equals(that.name) : that.name != null) {
-      return false;
-    }
-    return value != null ? value.equals(that.value) : that.value == null;
+    return scopeKey == that.scopeKey
+        && processInstanceKey == that.processInstanceKey
+        && processDefinitionKey == that.processDefinitionKey
+        && Objects.equals(name, that.name)
+        && Objects.equals(value, that.value)
+        && Objects.equals(bpmnProcessId, that.bpmnProcessId)
+        && Objects.equals(tenantId, that.tenantId);
   }
 
   @Override
@@ -124,6 +128,8 @@ public class VariableRecordValueImpl extends RecordValueImpl implements Variable
         + processInstanceKey
         + ", processDefinitionKey="
         + processDefinitionKey
+        + ", tenantId="
+        + tenantId
         + "} "
         + super.toString();
   }

@@ -19,7 +19,6 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
   private long processInstanceKey;
   private long processDefinitionKey;
   private int processDefinitionVersion;
-
   private String type;
   private String worker;
   private long deadline;
@@ -27,6 +26,7 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
   private int retries;
   private String errorMessage;
   private String errorCode;
+  private String tenantId;
 
   public JobRecordValueImpl() {}
 
@@ -109,6 +109,11 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
     return processDefinitionKey;
   }
 
+  @Override
+  public String getTenantId() {
+    return tenantId;
+  }
+
   public void setProcessDefinitionKey(long processDefinitionKey) {
     this.processDefinitionKey = processDefinitionKey;
   }
@@ -157,6 +162,10 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
     this.type = type;
   }
 
+  public void setTenantId(String tenantId) {
+    this.tenantId = tenantId;
+  }
+
   @Override
   public int hashCode() {
     return Objects.hash(
@@ -171,7 +180,8 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
         worker,
         deadline,
         customHeaders,
-        retries);
+        retries,
+        tenantId);
   }
 
   @Override
@@ -196,7 +206,8 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
         && Objects.equals(type, that.type)
         && Objects.equals(worker, that.worker)
         && Objects.equals(deadline, that.deadline)
-        && Objects.equals(customHeaders, that.customHeaders);
+        && Objects.equals(customHeaders, that.customHeaders)
+        && Objects.equals(tenantId, that.tenantId);
   }
 
   @Override
@@ -228,6 +239,8 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
         + customHeaders
         + ", retries="
         + retries
+        + ", tenantId="
+        + tenantId
         + ", variables='"
         + getVariables()
         + '\''
