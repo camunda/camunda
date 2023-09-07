@@ -5,7 +5,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>tasklist-parent</artifactId>
-    <version>8.3.0-alpha5</version>
+    <version>SNAPSHOT</version>
   </parent>
 
   <name>Tasklist Webjar</name>
