@@ -65,7 +65,12 @@ public record ClusterTopology(
       throw new IllegalStateException(
           String.format("Expected to update member %s, but member does not exist", memberId.id()));
     }
-    final var updateMemberState = memberStateUpdater.apply(members.get(memberId));
+    final MemberState currentState = members.get(memberId);
+    final var updateMemberState = memberStateUpdater.apply(currentState);
+    if (currentState.equals(updateMemberState)) {
+      return this;
+    }
+
     final var newMembers =
         ImmutableMap.<MemberId, MemberState>builder()
             .putAll(members)

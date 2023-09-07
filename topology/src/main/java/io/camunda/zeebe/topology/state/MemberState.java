@@ -61,7 +61,7 @@ public record MemberState(long version, State state, Map<Integer, PartitionState
     return update(State.LEFT, partitions);
   }
 
-  MemberState addPartition(final int partitionId, final PartitionState partitionState) {
+  public MemberState addPartition(final int partitionId, final PartitionState partitionState) {
     if (partitions.containsKey(partitionId)) {
       throw new IllegalStateException(
           String.format(
@@ -72,7 +72,7 @@ public record MemberState(long version, State state, Map<Integer, PartitionState
     return internalUpdatePartition(partitionId, partitionState);
   }
 
-  MemberState updatePartition(
+  public MemberState updatePartition(
       final int partitionId, final UnaryOperator<PartitionState> partitionStateUpdater) {
     if (!partitions.containsKey(partitionId)) {
       throw new IllegalStateException(
@@ -84,7 +84,7 @@ public record MemberState(long version, State state, Map<Integer, PartitionState
     return internalUpdatePartition(partitionId, updatedPartitionState);
   }
 
-  MemberState removePartition(final int partitionId) {
+  public MemberState removePartition(final int partitionId) {
     final var mutableMap = new HashMap<>(partitions);
     mutableMap.remove(partitionId);
 
