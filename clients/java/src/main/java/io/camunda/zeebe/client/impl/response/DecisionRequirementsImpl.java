@@ -40,7 +40,7 @@ public final class DecisionRequirementsImpl implements DecisionRequirements {
   }
 
   /**
-   * A constructor that provides an instance with an empty String for a tenantId.
+   * A constructor that provides an instance with the <code><default></code> tenantId set.
    *
    * <p>From version 8.3.0, the java client supports multi-tenancy for this command, which requires
    * the <code>tenantId</code> property to be defined. This constructor is only intended for
