@@ -22,6 +22,7 @@ import com.google.protobuf.ByteString;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.ClientException;
+import io.camunda.zeebe.client.api.command.CommandWithTenantStep;
 import io.camunda.zeebe.client.api.command.DeployResourceCommandStep1;
 import io.camunda.zeebe.client.api.command.DeployResourceCommandStep1.DeployResourceCommandStep2;
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
@@ -62,6 +63,28 @@ public final class DeployResourceCommandImpl
     requestTimeout = config.getDefaultRequestTimeout();
     this.retryPredicate = retryPredicate;
     tenantId(config.getDefaultTenantId());
+  }
+
+  /**
+   * A constructor that provides an instance with the <code><default></code> tenantId set.
+   *
+   * <p>From version 8.3.0, the java client supports multi-tenancy for this command, which requires
+   * the <code>tenantId</code> property to be defined. This constructor is only intended for
+   * backwards compatibility in tests.
+   *
+   * @deprecated since 8.3.0, use {@link
+   *     DeployResourceCommandImpl#DeployResourceCommandImpl(GatewayStub asyncStub,
+   *     ZeebeClientConfiguration config, Predicate retryPredicate)}
+   */
+  @Deprecated
+  public DeployResourceCommandImpl(
+      final GatewayStub asyncStub,
+      final Duration requestTimeout,
+      final Predicate<Throwable> retryPredicate) {
+    this.asyncStub = asyncStub;
+    this.requestTimeout = requestTimeout;
+    this.retryPredicate = retryPredicate;
+    tenantId(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
   }
 
   @Override
