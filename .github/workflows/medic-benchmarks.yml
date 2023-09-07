@@ -36,6 +36,7 @@ jobs:
     outputs:
       full-ref: ${{ steps.data.outputs.full-ref }}
       benchmark: ${{ steps.data.outputs.benchmark }}
+      operate: ${{ steps.data.outputs.operate }}
     steps:
       - uses: actions/checkout@v4
       - name: Collect benchmark data
@@ -43,6 +44,8 @@ jobs:
         run: |
           echo "full-ref"=$(git rev-parse HEAD) >> $GITHUB_OUTPUT
           echo "benchmark=medic-y-$(date +%Y)-cw-$(date +%V)-$(git rev-parse --short HEAD)-benchmark" >> $GITHUB_OUTPUT
+          echo "operate=operate-y-$(date +%Y)-cw-$(date +%V)" >> $GITHUB_OUTPUT
+          
 
   setup-normal-benchmark:
     name: Normal Benchmark
@@ -71,11 +74,18 @@ jobs:
       ref: ${{ needs.benchmark-data.outputs.full-ref }}
       measure: false
       benchmark-load: >
-        --set starter.rate=25
+        --set starter.rate=5
+        --set worker.replicas=1
         --set timer.replicas=1
-        --set timer.rate=25
+        --set timer.rate=5
         --set publisher.replicas=1
-        --set publisher.rate=25
+        --set publisher.rate=5
+        --set camunda-platform.operate.enabled=true
+        --set camunda-platform.operate.image.repository=gcr.io/zeebe-io/operate
+        --set camunda-platform.operate.image.tag=${{ needs.benchmark-data.outputs.operate }}    
+        --set camunda-platform.elasticsearch.volumeClaimTemplate.resources.requests.storage=128Gi
+        --set camunda-platform.retentionPolicy.zeebeIndexMaxSize=30
+        --set camunda-platform.retentionPolicy.schedule="0 * * * *"
   setup-latency-benchmark:
     name: Latency Benchmark
     uses: ./.github/workflows/benchmark.yml
