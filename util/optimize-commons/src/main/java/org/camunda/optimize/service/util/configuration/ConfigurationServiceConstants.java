@@ -147,5 +147,5 @@ public class ConfigurationServiceConstants {
   public static final String CCSM_PROFILE = "ccsm";
   public static final String PLATFORM_PROFILE = "platform";
   //@formatter:on
-
+  public static final String CAMUNDA_OPTIMIZE_DATABASE_TYPE = "$.database.type";
 }
