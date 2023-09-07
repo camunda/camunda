@@ -21,6 +21,7 @@ import io.camunda.zeebe.model.bpmn.instance.CompensateEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.ErrorEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.EscalationEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.StartEvent;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeFormDefinition;
 
 /**
  * @author Sebastian Menski
@@ -132,6 +133,20 @@ public abstract class AbstractStartEventBuilder<B extends AbstractStartEventBuil
   public B interrupting(final boolean interrupting) {
     element.setInterrupting(interrupting);
 
+    return myself;
+  }
+
+  public B zeebeFormKey(final String formKey) {
+    final ZeebeFormDefinition formDefinition =
+        getCreateSingleExtensionElement(ZeebeFormDefinition.class);
+    formDefinition.setFormKey(formKey);
+    return myself;
+  }
+
+  public B zeebeFormId(final String formId) {
+    final ZeebeFormDefinition formDefinition =
+        getCreateSingleExtensionElement(ZeebeFormDefinition.class);
+    formDefinition.setFormId(formId);
     return myself;
   }
 }

@@ -16,6 +16,7 @@
 package io.camunda.zeebe.model.bpmn.validation;
 
 import static io.camunda.zeebe.model.bpmn.validation.ExpectedValidationResult.expect;
+import static java.util.Collections.EMPTY_LIST;
 import static java.util.Collections.singletonList;
 
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -24,6 +25,7 @@ import io.camunda.zeebe.model.bpmn.builder.ProcessBuilder;
 import io.camunda.zeebe.model.bpmn.instance.Process;
 import io.camunda.zeebe.model.bpmn.instance.StartEvent;
 import io.camunda.zeebe.model.bpmn.instance.SubProcess;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeFormDefinition;
 import java.util.Arrays;
 import java.util.Collections;
 import org.junit.runners.Parameterized.Parameters;
@@ -68,6 +70,53 @@ public class ZeebeStartEventValidationTest extends AbstractZeebeValidationTest {
             expect(SubProcess.class, "Interrupting timer event with time cycle is not allowed.")),
       },
       {processWithNoneStartEventAndMultipleOtherStartEvents(), valid()},
+      // Form Deployment validation
+      {
+        Bpmn.createExecutableProcess().startEvent().zeebeFormKey("").endEvent().done(),
+        singletonList(
+            expect(
+                ZeebeFormDefinition.class,
+                "Exactly one of the attributes 'formId, formKey' must be present and not empty"))
+      },
+      {
+        Bpmn.createExecutableProcess().startEvent().zeebeFormId("").endEvent().done(),
+        singletonList(
+            expect(
+                ZeebeFormDefinition.class,
+                "Exactly one of the attributes 'formId, formKey' must be present and not empty"))
+      },
+      {
+        Bpmn.createExecutableProcess()
+            .startEvent()
+            .zeebeFormKey("")
+            .zeebeFormId("")
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                ZeebeFormDefinition.class,
+                "Exactly one of the attributes 'formId, formKey' must be present and not empty"))
+      },
+      {
+        Bpmn.createExecutableProcess()
+            .startEvent()
+            .zeebeFormKey("form-key")
+            .zeebeFormId("form-id")
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                ZeebeFormDefinition.class,
+                "Exactly one of the attributes 'formId, formKey' must be present and not empty"))
+      },
+      {
+        Bpmn.createExecutableProcess().startEvent().zeebeFormId("form-id").endEvent().done(),
+        EMPTY_LIST
+      },
+      {
+        Bpmn.createExecutableProcess().startEvent().zeebeFormKey("form-key").endEvent().done(),
+        EMPTY_LIST
+      },
     };
   }
 
