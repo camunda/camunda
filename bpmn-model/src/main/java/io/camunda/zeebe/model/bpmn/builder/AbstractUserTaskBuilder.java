@@ -64,6 +64,14 @@ public abstract class AbstractUserTaskBuilder<B extends AbstractUserTaskBuilder<
   }
 
   @Override
+  public B zeebeFormId(final String formId) {
+    final ZeebeFormDefinition formDefinition =
+        getCreateSingleExtensionElement(ZeebeFormDefinition.class);
+    formDefinition.setFormId(formId);
+    return myself;
+  }
+
+  @Override
   public B zeebeUserTaskForm(final String userTaskForm) {
     final ZeebeUserTaskForm zeebeUserTaskForm = createZeebeUserTaskForm();
     zeebeUserTaskForm.setTextContent(userTaskForm);

@@ -16,6 +16,7 @@
 package io.camunda.zeebe.model.bpmn.validation;
 
 import static io.camunda.zeebe.model.bpmn.validation.ExpectedValidationResult.expect;
+import static java.util.Collections.EMPTY_LIST;
 import static java.util.Collections.singletonList;
 
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -36,7 +37,47 @@ public class ZeebeUserTaskValidationTest extends AbstractZeebeValidationTest {
             .endEvent()
             .done(),
         singletonList(
-            expect(ZeebeFormDefinition.class, "Attribute 'formKey' must be present and not empty"))
+            expect(
+                ZeebeFormDefinition.class,
+                "Exactly one of the attributes 'formId, formKey' must be present and not empty"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task")
+            .zeebeFormId("")
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                ZeebeFormDefinition.class,
+                "Exactly one of the attributes 'formId, formKey' must be present and not empty"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task")
+            .zeebeFormId("")
+            .zeebeFormKey("")
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                ZeebeFormDefinition.class,
+                "Exactly one of the attributes 'formId, formKey' must be present and not empty"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task")
+            .zeebeFormId("form-id")
+            .zeebeFormKey("form-key")
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                ZeebeFormDefinition.class,
+                "Exactly one of the attributes 'formId, formKey' must be present and not empty"))
       },
       {
         Bpmn.createExecutableProcess("process")
@@ -49,6 +90,24 @@ public class ZeebeUserTaskValidationTest extends AbstractZeebeValidationTest {
             expect(
                 ZeebeUserTaskForm.class,
                 "User task form text content has to be present and not empty"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task")
+            .zeebeFormId("form-id")
+            .endEvent()
+            .done(),
+        EMPTY_LIST
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task")
+            .zeebeFormKey("form-key")
+            .endEvent()
+            .done(),
+        EMPTY_LIST
       }
     };
   }

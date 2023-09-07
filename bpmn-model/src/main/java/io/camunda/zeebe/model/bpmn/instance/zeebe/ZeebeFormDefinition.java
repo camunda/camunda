@@ -22,4 +22,8 @@ public interface ZeebeFormDefinition extends BpmnModelElementInstance {
   String getFormKey();
 
   void setFormKey(String formKey);
+
+  String getFormId();
+
+  void setFormId(String formId);
 }

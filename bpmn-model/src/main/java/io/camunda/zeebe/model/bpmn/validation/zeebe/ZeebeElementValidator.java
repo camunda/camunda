@@ -17,7 +17,9 @@ package io.camunda.zeebe.model.bpmn.validation.zeebe;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
@@ -26,7 +28,8 @@ public final class ZeebeElementValidator<T extends ModelElementInstance>
     implements ModelElementValidator<T> {
 
   private final Class<T> elementType;
-  private final List<AttributeAssertion<T>> attributeAssertions = new ArrayList<>();
+  private final List<AttributeAssertion<T>> singleAttributeAssertions = new ArrayList<>();
+  private final List<AttributeAssertion<T>> groupAttributesAssertions = new ArrayList<>();
 
   private ZeebeElementValidator(final Class<T> elementType) {
     this.elementType = elementType;
@@ -40,7 +43,7 @@ public final class ZeebeElementValidator<T extends ModelElementInstance>
   @Override
   public void validate(final T element, final ValidationResultCollector validationResultCollector) {
 
-    attributeAssertions.forEach(
+    singleAttributeAssertions.forEach(
         assertions -> {
           final String attributeValue = assertions.attributeSupplier.apply(element);
           if (attributeValue == null || attributeValue.isEmpty()) {
@@ -50,17 +53,54 @@ public final class ZeebeElementValidator<T extends ModelElementInstance>
                     "Attribute '%s' must be present and not empty", assertions.attributeName));
           }
         });
+
+    if (!groupAttributesAssertions.isEmpty()) {
+      final long matchCount = countMatchingGroupAttributesAssertions(element);
+
+      if (matchCount != 1) {
+        final String attributes = getAttributeNames();
+        final String errorMessage =
+            String.format(
+                "Exactly one of the attributes '%s' must be present and not empty", attributes);
+        validationResultCollector.addError(0, errorMessage);
+      }
+    }
   }
 
   public ZeebeElementValidator<T> hasNonEmptyAttribute(
       final Function<T, String> attributeSupplier, final String attributeName) {
-    attributeAssertions.add(new AttributeAssertion<>(attributeSupplier, attributeName));
+    singleAttributeAssertions.add(new AttributeAssertion<>(attributeSupplier, attributeName));
+    return this;
+  }
+
+  public ZeebeElementValidator<T> hasOnlyOneAttributeInGroup(
+      final Map<String, Function<T, String>> nameToAttributeSupplier) {
+    nameToAttributeSupplier.forEach(
+        (attributeName, attributeSupplier) ->
+            groupAttributesAssertions.add(
+                new AttributeAssertion<>(attributeSupplier, attributeName)));
     return this;
   }
 
   public static <T extends ModelElementInstance> ZeebeElementValidator<T> verifyThat(
       final Class<T> elementType) {
     return new ZeebeElementValidator<>(elementType);
+  }
+
+  private long countMatchingGroupAttributesAssertions(final T element) {
+    return groupAttributesAssertions.stream()
+        .filter(
+            assertion -> {
+              final String attributeValue = assertion.attributeSupplier.apply(element);
+              return attributeValue != null && !attributeValue.isEmpty();
+            })
+        .count();
+  }
+
+  private String getAttributeNames() {
+    return groupAttributesAssertions.stream()
+        .map(assertion -> assertion.attributeName)
+        .collect(Collectors.joining(", "));
   }
 
   private static final class AttributeAssertion<T extends ModelElementInstance> {

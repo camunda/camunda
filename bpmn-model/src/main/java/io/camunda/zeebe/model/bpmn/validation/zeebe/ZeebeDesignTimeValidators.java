@@ -30,7 +30,9 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.function.Function;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 
 public final class ZeebeDesignTimeValidators {
@@ -90,8 +92,13 @@ public final class ZeebeDesignTimeValidators {
                 ZeebeSubscription::getCorrelationKey, ZeebeConstants.ATTRIBUTE_CORRELATION_KEY));
     validators.add(
         ZeebeElementValidator.verifyThat(ZeebeFormDefinition.class)
-            .hasNonEmptyAttribute(
-                ZeebeFormDefinition::getFormKey, ZeebeConstants.ATTRIBUTE_FORM_KEY));
+            .hasOnlyOneAttributeInGroup(
+                new HashMap<String, Function<ZeebeFormDefinition, String>>() {
+                  {
+                    put(ZeebeConstants.ATTRIBUTE_FORM_KEY, ZeebeFormDefinition::getFormKey);
+                    put(ZeebeConstants.ATTRIBUTE_FORM_ID, ZeebeFormDefinition::getFormId);
+                  }
+                }));
     validators.add(new ZeebeUserTaskFormValidator());
     validators.add(
         ZeebeElementValidator.verifyThat(ZeebeCalledDecision.class)

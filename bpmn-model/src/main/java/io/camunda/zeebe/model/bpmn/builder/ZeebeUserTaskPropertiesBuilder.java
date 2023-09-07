@@ -134,4 +134,12 @@ public interface ZeebeUserTaskPropertiesBuilder<B extends ZeebeUserTaskPropertie
    * @return the builder object
    */
   B zeebeFollowUpDateExpression(String expression);
+
+  /**
+   * Sets the form id of the build user task.
+   *
+   * @param formId the form id to set
+   * @return the builder object
+   */
+  B zeebeFormId(String formId);
 }
