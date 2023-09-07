@@ -9,6 +9,7 @@ package io.camunda.zeebe.auth.impl;
 
 import io.camunda.zeebe.auth.api.TenantAuthorizationChecker;
 import java.util.List;
+import java.util.Map;
 
 public class TenantAuthorizationCheckerImpl implements TenantAuthorizationChecker {
 
@@ -28,9 +29,9 @@ public class TenantAuthorizationCheckerImpl implements TenantAuthorizationChecke
     return authorizedTenants.containsAll(tenantIds);
   }
 
-  public static TenantAuthorizationChecker fromJwtDecoder(final JwtAuthorizationDecoder decoder) {
+  public static TenantAuthorizationChecker fromAuthorizationMap(final Map<String, Object> authMap) {
     final List<String> authorizedTenants =
-        decoder.decode().get(JwtAuthorizationDecoder.AUTHORIZED_TENANTS_CLAIM).asList(String.class);
+        (List) authMap.getOrDefault(Authorization.AUTHORIZED_TENANTS, List.of());
     return new TenantAuthorizationCheckerImpl(authorizedTenants);
   }
 }

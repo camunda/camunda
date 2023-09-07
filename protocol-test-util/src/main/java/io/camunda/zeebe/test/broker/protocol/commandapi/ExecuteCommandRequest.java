@@ -10,6 +10,7 @@ package io.camunda.zeebe.test.broker.protocol.commandapi;
 import static io.camunda.zeebe.protocol.record.ExecuteCommandRequestEncoder.keyNullValue;
 import static io.camunda.zeebe.protocol.record.ExecuteCommandRequestEncoder.partitionIdNullValue;
 
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.record.ExecuteCommandRequestEncoder;
 import io.camunda.zeebe.protocol.record.MessageHeaderEncoder;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -40,6 +41,7 @@ public final class ExecuteCommandRequest implements ClientRequest {
   private byte[] encodedCmd;
   private ActorFuture<DirectBuffer> responseFuture;
   private Intent intent = null;
+  private final AuthInfo authorization = new AuthInfo();
 
   public ExecuteCommandRequest(
       final ClientTransport output, final String targetAddress, final MsgPackHelper msgPackHelper) {
@@ -65,6 +67,15 @@ public final class ExecuteCommandRequest implements ClientRequest {
 
   public ExecuteCommandRequest intent(final Intent intent) {
     this.intent = intent;
+    return this;
+  }
+
+  public AuthInfo getAuthorization() {
+    return authorization;
+  }
+
+  public ExecuteCommandRequest setAuthorization(final AuthInfo authorization) {
+    this.authorization.wrap(authorization);
     return this;
   }
 

@@ -11,7 +11,6 @@ import com.auth0.jwt.JWT;
 import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTVerificationException;
-import com.auth0.jwt.interfaces.Claim;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.auth0.jwt.interfaces.Verification;
 import io.camunda.zeebe.auth.api.AuthorizationDecoder;
@@ -25,13 +24,13 @@ import org.slf4j.LoggerFactory;
 
 public class JwtAuthorizationDecoder
     implements JwtAuthorizationBuilder<JwtAuthorizationDecoder, Algorithm, DecodedJWT>,
-        AuthorizationDecoder<Map<String, Claim>> {
+        AuthorizationDecoder<Map<String, Object>> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(JwtAuthorizationDecoder.class);
 
-  private String issuer = "zeebe-gateway";
-  private String audience = "zeebe-broker";
-  private String subject = "Authorization";
+  private String issuer = DEFAULT_ISSUER;
+  private String audience = DEFAULT_AUDIENCE;
+  private String subject = DEFAULT_SUBJECT;
   private Algorithm signingAlgorithm = Algorithm.none();
   private final Set<String> claims = new HashSet<>();
   private String jwtToken;
@@ -94,8 +93,11 @@ public class JwtAuthorizationDecoder
   }
 
   @Override
-  public Map<String, Claim> decode() {
-    return build().getClaims();
+  public Map<String, Object> decode() {
+    final DecodedJWT decodedJWT = withClaim(Authorization.AUTHORIZED_TENANTS).build();
+    return Map.of(
+        Authorization.AUTHORIZED_TENANTS,
+        decodedJWT.getClaim(Authorization.AUTHORIZED_TENANTS).asList(String.class));
   }
 
   /**

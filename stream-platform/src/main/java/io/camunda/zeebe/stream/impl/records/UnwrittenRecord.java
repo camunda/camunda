@@ -14,6 +14,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import java.util.Map;
 
 public class UnwrittenRecord implements TypedRecord {
   private final long key;
@@ -23,7 +24,7 @@ public class UnwrittenRecord implements TypedRecord {
 
   public UnwrittenRecord(
       final long key,
-      int partitionId,
+      final int partitionId,
       final UnifiedRecordValue value,
       final RecordMetadata metadata) {
     this.key = key;
@@ -75,6 +76,11 @@ public class UnwrittenRecord implements TypedRecord {
   @Override
   public String getBrokerVersion() {
     return metadata.getBrokerVersion().toString();
+  }
+
+  @Override
+  public Map<String, Object> getAuthorizations() {
+    return metadata.getAuthorization().toDecodedMap();
   }
 
   @Override

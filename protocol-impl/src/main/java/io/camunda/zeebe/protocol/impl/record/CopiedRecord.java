@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.protocol.impl.record;
 
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -14,6 +15,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.util.StringUtil;
+import java.util.Map;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public final class CopiedRecord<T extends UnifiedRecordValue> implements Record<T> {
@@ -30,6 +32,7 @@ public final class CopiedRecord<T extends UnifiedRecordValue> implements Record<
   private final RejectionType rejectionType;
   private final String rejectionReason;
   private final String brokerVersion;
+  private final AuthInfo authorization;
   private final int recordVersion;
 
   public CopiedRecord(
@@ -53,6 +56,7 @@ public final class CopiedRecord<T extends UnifiedRecordValue> implements Record<
     rejectionReason = metadata.getRejectionReason();
     valueType = metadata.getValueType();
     brokerVersion = metadata.getBrokerVersion().toString();
+    authorization = metadata.getAuthorization();
     recordVersion = metadata.getRecordVersion();
   }
 
@@ -86,6 +90,7 @@ public final class CopiedRecord<T extends UnifiedRecordValue> implements Record<
     rejectionReason = copiedRecord.rejectionReason;
     valueType = copiedRecord.valueType;
     brokerVersion = copiedRecord.brokerVersion;
+    authorization = copiedRecord.authorization;
     recordVersion = copiedRecord.recordVersion;
   }
 
@@ -137,6 +142,11 @@ public final class CopiedRecord<T extends UnifiedRecordValue> implements Record<
   @Override
   public String getBrokerVersion() {
     return brokerVersion;
+  }
+
+  @Override
+  public Map<String, Object> getAuthorizations() {
+    return authorization.toDecodedMap();
   }
 
   @Override

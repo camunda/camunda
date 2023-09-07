@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.StringUtil;
+import java.util.Map;
 
 public final class TypedRecordImpl implements TypedRecord {
   private final int partitionId;
@@ -80,6 +81,11 @@ public final class TypedRecordImpl implements TypedRecord {
   @Override
   public String getBrokerVersion() {
     return metadata.getBrokerVersion().toString();
+  }
+
+  @Override
+  public Map<String, Object> getAuthorizations() {
+    return metadata.getAuthorization().toDecodedMap();
   }
 
   @Override

@@ -17,6 +17,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import org.junit.Before;
 import org.junit.Test;
@@ -102,6 +103,11 @@ public final class RecordingExporterTest {
     @Override
     public String getBrokerVersion() {
       return null;
+    }
+
+    @Override
+    public Map<String, Object> getAuthorizations() {
+      return Map.of();
     }
 
     @Override

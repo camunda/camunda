@@ -13,6 +13,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import java.util.Map;
 
 record MockTypedCheckpointRecord(
     long position,
@@ -65,6 +66,11 @@ record MockTypedCheckpointRecord(
   @Override
   public String getBrokerVersion() {
     return null;
+  }
+
+  @Override
+  public Map<String, Object> getAuthorizations() {
+    return Map.of();
   }
 
   @Override

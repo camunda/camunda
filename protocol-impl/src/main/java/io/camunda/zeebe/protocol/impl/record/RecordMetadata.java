@@ -8,6 +8,7 @@
 package io.camunda.zeebe.protocol.impl.record;
 
 import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
 import io.camunda.zeebe.protocol.record.MessageHeaderEncoder;
 import io.camunda.zeebe.protocol.record.RecordMetadataDecoder;
@@ -32,7 +33,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
       MessageHeaderEncoder.ENCODED_LENGTH + RecordMetadataEncoder.BLOCK_LENGTH;
   public static final int DEFAULT_RECORD_VERSION = 1;
 
-  private static final VersionInfo CURRENT_BROKER_VERSION =
+  public static final VersionInfo CURRENT_BROKER_VERSION =
       VersionInfo.parse(VersionUtil.getVersion());
 
   private final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
@@ -46,6 +47,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
   private long requestId;
   private short intentValue = Intent.NULL_VAL;
   private int requestStreamId;
+  private final AuthInfo authorization = new AuthInfo();
   private RejectionType rejectionType;
   private final UnsafeBuffer rejectionReason = new UnsafeBuffer(0, 0);
 
@@ -68,6 +70,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
 
     decoder.wrap(buffer, offset, headerDecoder.blockLength(), headerDecoder.version());
 
+    // working with fixed-length fields
     recordType = decoder.recordType();
     requestStreamId = decoder.requestStreamId();
     requestId = decoder.requestId();
@@ -94,13 +97,21 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
       recordVersion = decodedRecordVersion;
     }
 
+    // working with variable-length fields
     final int rejectionReasonLength = decoder.rejectionReasonLength();
-
     if (rejectionReasonLength > 0) {
-      offset += headerDecoder.blockLength();
-      offset += RecordMetadataDecoder.rejectionReasonHeaderLength();
+      decoder.wrapRejectionReason(rejectionReason);
+    } else {
+      decoder.skipRejectionReason();
+    }
 
-      rejectionReason.wrap(buffer, offset, rejectionReasonLength);
+    final int authorizationLength = decoder.authorizationLength();
+    if (authorizationLength > 0) {
+      final DirectBuffer authBuffer = new UnsafeBuffer();
+      decoder.wrapAuthorization(authBuffer);
+      authorization.wrap(authBuffer);
+    } else {
+      decoder.skipAuthorization();
     }
   }
 
@@ -108,7 +119,9 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
   public int getLength() {
     return BLOCK_LENGTH
         + RecordMetadataEncoder.rejectionReasonHeaderLength()
-        + rejectionReason.capacity();
+        + rejectionReason.capacity()
+        + RecordMetadataEncoder.authorizationHeaderLength()
+        + authorization.getLength();
   }
 
   @Override
@@ -122,9 +135,9 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
         .version(encoder.sbeSchemaVersion());
 
     offset += headerEncoder.encodedLength();
-
     encoder.wrap(buffer, offset);
 
+    // working with fixed-length fields
     encoder
         .recordType(recordType)
         .requestStreamId(requestStreamId)
@@ -141,13 +154,9 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
         .minorVersion(brokerVersion.getMinorVersion())
         .patchVersion(brokerVersion.getPatchVersion());
 
-    offset += RecordMetadataEncoder.BLOCK_LENGTH;
-
-    if (rejectionReason.capacity() > 0) {
-      encoder.putRejectionReason(rejectionReason, 0, rejectionReason.capacity());
-    } else {
-      buffer.putInt(offset, 0);
-    }
+    // working with variable-length fields
+    encoder.putRejectionReason(rejectionReason, 0, rejectionReason.capacity());
+    encoder.putAuthorization(authorization.toDirectBuffer(), 0, authorization.getLength());
   }
 
   public long getRequestId() {
@@ -229,6 +238,20 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     return BufferUtil.bufferAsString(rejectionReason);
   }
 
+  public RecordMetadata authorization(final AuthInfo authorization) {
+    this.authorization.wrap(authorization);
+    return this;
+  }
+
+  public RecordMetadata authorization(final DirectBuffer buffer) {
+    authorization.wrap(buffer);
+    return this;
+  }
+
+  public AuthInfo getAuthorization() {
+    return authorization;
+  }
+
   public RecordMetadata brokerVersion(final VersionInfo brokerVersion) {
     this.brokerVersion = brokerVersion;
     return this;
@@ -257,6 +280,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     intent = null;
     rejectionType = RejectionType.NULL_VAL;
     rejectionReason.wrap(0, 0);
+    authorization.reset();
     brokerVersion = CURRENT_BROKER_VERSION;
     recordVersion = DEFAULT_RECORD_VERSION;
     return this;
@@ -272,6 +296,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
         requestStreamId,
         rejectionType,
         rejectionReason,
+        authorization,
         protocolVersion,
         brokerVersion,
         recordVersion);
@@ -294,6 +319,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
         && recordType == that.recordType
         && rejectionType == that.rejectionType
         && rejectionReason.equals(that.rejectionReason)
+        && authorization.equals(that.authorization)
         && brokerVersion.equals(that.brokerVersion)
         && recordVersion == that.recordVersion;
   }
@@ -318,6 +344,10 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     }
     if (rejectionReason.capacity() > 0) {
       builder.append(", rejectionReason=").append(BufferUtil.bufferAsString(rejectionReason));
+    }
+
+    if (!authorization.isEmpty()) {
+      builder.append(", authorization=").append(authorization);
     }
 
     builder.append('}');

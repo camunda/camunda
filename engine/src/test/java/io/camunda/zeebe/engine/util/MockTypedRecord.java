@@ -16,6 +16,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import java.util.Map;
 
 public final class MockTypedRecord<T extends UnifiedRecordValue> implements TypedRecord<T> {
 
@@ -111,6 +112,11 @@ public final class MockTypedRecord<T extends UnifiedRecordValue> implements Type
   @Override
   public String getBrokerVersion() {
     return metadata.getBrokerVersion().toString();
+  }
+
+  @Override
+  public Map<String, Object> getAuthorizations() {
+    return metadata.getAuthorization().toDecodedMap();
   }
 
   @Override
