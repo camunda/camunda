@@ -44,7 +44,7 @@ public final class ProcessVersionManager {
         new DbTenantAwareKey<>(tenantIdKey, processIdKey, PlacementType.PREFIX);
     processVersionInfoColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.DEPRECATED_PROCESS_VERSION,
+            ZbColumnFamilies.PROCESS_VERSION,
             transactionContext,
             tenantAwareProcessIdKey,
             nextVersion);
