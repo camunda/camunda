@@ -88,7 +88,7 @@ public final class DbProcessState implements MutableProcessState {
         new DbTenantAwareKey<>(tenantIdKey, processDefinitionKey, PlacementType.PREFIX);
     processColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.DEPRECATED_PROCESS_CACHE,
+            ZbColumnFamilies.PROCESS_CACHE,
             transactionContext,
             tenantAwareProcessDefinitionKey,
             persistedProcess);
@@ -100,7 +100,7 @@ public final class DbProcessState implements MutableProcessState {
         new DbTenantAwareKey<>(tenantIdKey, idAndVersionKey, PlacementType.PREFIX);
     processByIdAndVersionColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.DEPRECATED_PROCESS_CACHE_BY_ID_AND_VERSION,
+            ZbColumnFamilies.PROCESS_CACHE_BY_ID_AND_VERSION,
             transactionContext,
             tenantAwareProcessIdAndVersionKey,
             persistedProcess);
@@ -109,11 +109,11 @@ public final class DbProcessState implements MutableProcessState {
     fkTenantAwareProcessId =
         new DbForeignKey<>(
             tenantAwareProcessId,
-            ZbColumnFamilies.DEPRECATED_PROCESS_CACHE_BY_ID_AND_VERSION,
+            ZbColumnFamilies.PROCESS_CACHE_BY_ID_AND_VERSION,
             MatchType.Prefix);
     digestByIdColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.DEPRECATED_PROCESS_CACHE_DIGEST_BY_ID,
+            ZbColumnFamilies.PROCESS_CACHE_DIGEST_BY_ID,
             transactionContext,
             fkTenantAwareProcessId,
             digest);
