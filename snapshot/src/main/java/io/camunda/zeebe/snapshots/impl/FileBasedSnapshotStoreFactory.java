@@ -19,6 +19,7 @@ import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
+import java.util.NoSuchElementException;
 import org.agrona.collections.Int2ObjectHashMap;
 
 /**
@@ -34,7 +35,6 @@ import org.agrona.collections.Int2ObjectHashMap;
 public final class FileBasedSnapshotStoreFactory implements ReceivableSnapshotStoreFactory {
   public static final String SNAPSHOTS_DIRECTORY = "snapshots";
   public static final String PENDING_DIRECTORY = "pending";
-
   private final Int2ObjectHashMap<FileBasedSnapshotStore> partitionSnapshotStores =
       new Int2ObjectHashMap<>();
   private final ActorSchedulingService actorScheduler;
@@ -105,6 +105,11 @@ public final class FileBasedSnapshotStoreFactory implements ReceivableSnapshotSt
   @Deprecated // This is an intermediate solution to run StateController and SnapshotStore on same
   // actor.
   public ConcurrencyControl getSnapshotStoreConcurrencyControl(final int partitionId) {
-    return partitionSnapshotStores.get(partitionId);
+
+    final var snapshotStore = partitionSnapshotStores.get(partitionId);
+    if (snapshotStore == null) {
+      throw new NoSuchElementException("No snapshot store found for partition " + partitionId);
+    }
+    return snapshotStore;
   }
 }
