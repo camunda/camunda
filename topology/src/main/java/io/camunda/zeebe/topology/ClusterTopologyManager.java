@@ -20,7 +20,27 @@ import java.util.function.UnaryOperator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Responsible for initializing ClusterTopology and managing ClusterTopology changes. */
+/**
+ * ClusterTopologyManager is responsible for initializing ClusterTopology and managing
+ * ClusterTopology changes.
+ *
+ * <p>On startup, ClusterTopologyManager initializes the topology using {@link
+ * TopologyInitializer}s. The initialized topology is gossiped to other members.
+ *
+ * <p>When a topology is received via gossip, it is merged with the local topology. The merge
+ * operation ensures that any concurrent update to the topology is not lost.
+ *
+ * <h4>Making configuration changes</h4>
+ *
+ * <p>Only a coordinator can start a topology change. The steps to make a configuration change are
+ * added to the {@link ClusterTopology}. To make a topology change, the coordinator update the
+ * topology with a list of operations that needs to be executed to achieve the target topology and
+ * gossip the updated topology. These operations are expected to be executed in the order given.
+ *
+ * <p>When a member receives a topology with pending changes, it applies the change if it is
+ * applicable to the member. Only a member can make changes to its own state in the topology. See
+ * {@link TopologyChangeAppliers} to see how a change is applied locally.
+ */
 final class ClusterTopologyManager {
   private static final Logger LOG = LoggerFactory.getLogger(ClusterTopologyManager.class);
 

@@ -23,7 +23,25 @@ import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Initialized topology * */
+/**
+ * Initializes topology using different strategies.
+ *
+ * <h4>Initialization Process</h4>
+ *
+ * Each member is configured with a static configuration with initial set of cluster members and
+ * partition distribution.
+ *
+ * <p>Both coordinator and other members first check the local persisted configuration to determine
+ * the topology. If one exists, that is used to initialize the topology. See {@link
+ * FileInitializer}. On bootstrap of the cluster, the local persisted topology is empty.
+ * <li>When the local topology is empty, the coordinator queries cluster members in the static
+ *     configuration for the current topology. See {@link SyncInitializer}. If any member replies
+ *     with a valid topology, coordinator uses that one. If any member replies with an uninitialized
+ *     topology, coordinator generates a new topology from the provided static configuration. See
+ *     {@link StaticInitializer}.
+ * <li>When the local topology is empty, a non-coordinating member waits until it receives a valid
+ *     topology from the coordinator via gossip. See {@link GossipInitializer}.
+ */
 public interface TopologyInitializer {
 
   /**

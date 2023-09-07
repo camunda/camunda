@@ -12,6 +12,17 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.UnaryOperator;
 
+/**
+ * Represents the state of a member in the cluster.
+ *
+ * <p>Version is incremented every time the state is updated. This is used to resolve conflicts when
+ * the members receive gossip updates out of order. Only a member can update its own state. This
+ * prevents any conflicting concurrent updates.
+ *
+ * @param version version of the state.
+ * @param state current state of the member
+ * @param partitions state of all partitions that the member is replicating
+ */
 public record MemberState(long version, State state, Map<Integer, PartitionState> partitions) {
   public static MemberState initializeAsActive(
       final Map<Integer, PartitionState> initialPartitions) {
