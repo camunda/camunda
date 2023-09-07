@@ -33,6 +33,9 @@ final class ClusterTopologyManager {
   private final TopologyChangeAppliers operationsAppliers;
   private final MemberId localMemberId;
 
+  // Indicates whether there is a topology change operation in progress on this member.
+  private boolean onGoingTopologyChangeOperation = false;
+
   ClusterTopologyManager(
       final ConcurrencyControl executor,
       final MemberId localMemberId,
@@ -106,13 +109,15 @@ final class ClusterTopologyManager {
             if (receivedTopology != null) {
               final var mergedTopology =
                   persistedClusterTopology.getTopology().merge(receivedTopology);
+              // If receivedTopology is an older version, the merged topology will be same as the
+              // local one. In that case, we can skip the next steps.
               if (!mergedTopology.equals(persistedClusterTopology.getTopology())) {
                 LOG.debug(
                     "Received new topology {}. Updating local topology to {}",
                     receivedTopology,
                     mergedTopology);
                 persistedClusterTopology.update(mergedTopology);
-                if (mergedTopology.hasPendingChangesFor(localMemberId)) {
+                if (shouldApplyTopologyChangeOperation(mergedTopology)) {
                   applyTopologyChangeOperation(mergedTopology);
                 }
               }
@@ -126,7 +131,20 @@ final class ClusterTopologyManager {
     return result;
   }
 
+  private boolean shouldApplyTopologyChangeOperation(final ClusterTopology mergedTopology) {
+    // Topology change operation should be applied only once. The operation is removed
+    // from the pending list only after the operation is completed. We should take care
+    // not to repeatedly trigger the same operation while it is in progress. This
+    // usually would not happen, because no other member will update the topology while
+    // the current one is in progress. So the local topology is not changed. The topology change
+    // operation is triggered locally only when the local topology is changes. However, as
+    // an extra precaution we check if there is an ongoing operation before applying
+    // one.
+    return !onGoingTopologyChangeOperation && mergedTopology.hasPendingChangesFor(localMemberId);
+  }
+
   private void applyTopologyChangeOperation(final ClusterTopology mergedTopology) {
+    onGoingTopologyChangeOperation = true;
     final var operation = mergedTopology.pendingChangerFor(localMemberId);
     LOG.info("Applying topology change operation {}", operation);
     final var operationApplier = operationsAppliers.getApplier(operation);
@@ -154,6 +172,7 @@ final class ClusterTopologyManager {
       final TopologyChangeOperation operation,
       final UnaryOperator<MemberState> transformer,
       final Throwable error) {
+    onGoingTopologyChangeOperation = false;
     if (error == null) {
       updateLocalTopology(
           persistedClusterTopology.getTopology().advanceTopologyChange(localMemberId, transformer));
