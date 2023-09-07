@@ -195,7 +195,8 @@ final class ClusterTopologyManagerTest {
       // ignore type of operation and always apply member leave operation
       return new OperationApplier() {
         @Override
-        public Either<Exception, UnaryOperator<MemberState>> init() {
+        public Either<Exception, UnaryOperator<MemberState>> init(
+            final ClusterTopology currentClusterTopology) {
           return Either.right(MemberState::toLeaving);
         }
 

@@ -32,7 +32,8 @@ public interface TopologyChangeAppliers {
      * @return an either which contains an exception if the operation is not valid, or a function to
      *     update the cluster topology
      */
-    Either<Exception, UnaryOperator<MemberState>> init();
+    Either<Exception, UnaryOperator<MemberState>> init(
+        final ClusterTopology currentClusterTopology);
 
     /**
      * Applies the operation. This can be run asynchronously and should complete the future when the
