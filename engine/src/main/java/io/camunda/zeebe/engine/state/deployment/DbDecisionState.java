@@ -103,12 +103,13 @@ public final class DbDecisionState implements MutableDecisionState {
     dbDecisionKey = new DbLong();
     tenantAwareDecisionKey =
         new DbTenantAwareKey<>(tenantIdKey, dbDecisionKey, PlacementType.PREFIX);
-    fkDecision = new DbForeignKey<>(tenantAwareDecisionKey, ZbColumnFamilies.DMN_DECISIONS);
+    fkDecision =
+        new DbForeignKey<>(tenantAwareDecisionKey, ZbColumnFamilies.DEPRECATED_DMN_DECISIONS);
 
     dbPersistedDecision = new PersistedDecision();
     decisionsByKey =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.DMN_DECISIONS,
+            ZbColumnFamilies.DEPRECATED_DMN_DECISIONS,
             transactionContext,
             tenantAwareDecisionKey,
             dbPersistedDecision);
@@ -117,7 +118,7 @@ public final class DbDecisionState implements MutableDecisionState {
     tenantAwareDecisionId = new DbTenantAwareKey<>(tenantIdKey, dbDecisionId, PlacementType.PREFIX);
     latestDecisionKeysByDecisionId =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.DMN_LATEST_DECISION_BY_ID,
+            ZbColumnFamilies.DEPRECATED_DMN_LATEST_DECISION_BY_ID,
             transactionContext,
             tenantAwareDecisionId,
             fkDecision);
@@ -127,11 +128,12 @@ public final class DbDecisionState implements MutableDecisionState {
         new DbTenantAwareKey<>(tenantIdKey, dbDecisionRequirementsKey, PlacementType.PREFIX);
     fkDecisionRequirements =
         new DbForeignKey<>(
-            tenantAwareDecisionRequirementsKey, ZbColumnFamilies.DMN_DECISION_REQUIREMENTS);
+            tenantAwareDecisionRequirementsKey,
+            ZbColumnFamilies.DEPRECATED_DMN_DECISION_REQUIREMENTS);
     dbPersistedDecisionRequirements = new PersistedDecisionRequirements();
     decisionRequirementsByKey =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.DMN_DECISION_REQUIREMENTS,
+            ZbColumnFamilies.DEPRECATED_DMN_DECISION_REQUIREMENTS,
             transactionContext,
             tenantAwareDecisionRequirementsKey,
             dbPersistedDecisionRequirements);
@@ -141,7 +143,7 @@ public final class DbDecisionState implements MutableDecisionState {
         new DbTenantAwareKey<>(tenantIdKey, dbDecisionRequirementsId, PlacementType.PREFIX);
     latestDecisionRequirementsKeysById =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.DMN_LATEST_DECISION_REQUIREMENTS_BY_ID,
+            ZbColumnFamilies.DEPRECATED_DMN_LATEST_DECISION_REQUIREMENTS_BY_ID,
             transactionContext,
             tenantAwareDecisionRequirementsId,
             fkDecisionRequirements);
@@ -150,7 +152,7 @@ public final class DbDecisionState implements MutableDecisionState {
         new DbCompositeKey<>(fkDecisionRequirements, fkDecision);
     decisionKeyByDecisionRequirementsKey =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.DMN_DECISION_KEY_BY_DECISION_REQUIREMENTS_KEY,
+            ZbColumnFamilies.DEPRECATED_DMN_DECISION_KEY_BY_DECISION_REQUIREMENTS_KEY,
             transactionContext,
             dbDecisionRequirementsKeyAndDecisionKey,
             DbNil.INSTANCE);
@@ -161,7 +163,7 @@ public final class DbDecisionState implements MutableDecisionState {
         new DbTenantAwareKey<>(tenantIdKey, decisionIdAndVersion, PlacementType.PREFIX);
     decisionKeyByDecisionIdAndVersion =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.DMN_DECISION_KEY_BY_DECISION_ID_AND_VERSION,
+            ZbColumnFamilies.DEPRECATED_DMN_DECISION_KEY_BY_DECISION_ID_AND_VERSION,
             transactionContext,
             tenantAwareDecisionIdAndVersion,
             fkDecision);
@@ -173,7 +175,8 @@ public final class DbDecisionState implements MutableDecisionState {
         new DbTenantAwareKey<>(tenantIdKey, decisionRequirementsIdAndVersion, PlacementType.PREFIX);
     decisionRequirementsKeyByIdAndVersion =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.DMN_DECISION_REQUIREMENTS_KEY_BY_DECISION_REQUIREMENT_ID_AND_VERSION,
+            ZbColumnFamilies
+                .DEPRECATED_DMN_DECISION_REQUIREMENTS_KEY_BY_DECISION_REQUIREMENT_ID_AND_VERSION,
             transactionContext,
             tenantAwareDecisionRequirementsIdAndVersion,
             fkDecisionRequirements);
