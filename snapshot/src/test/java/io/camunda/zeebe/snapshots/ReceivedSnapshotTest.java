@@ -12,8 +12,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
-import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreFactory;
+import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.snapshots.impl.InvalidSnapshotChecksum;
 import io.camunda.zeebe.snapshots.impl.SnapshotWriteException;
 import io.camunda.zeebe.util.FileUtil;
@@ -45,15 +46,15 @@ public class ReceivedSnapshotTest {
   @Before
   public void beforeEach() throws Exception {
     final int partitionId = 1;
+    final var senderDirectory = temporaryFolder.newFolder("sender").toPath();
+    final var receiverDirectory = temporaryFolder.newFolder("receiver").toPath();
 
-    final var senderFactory = new FileBasedSnapshotStoreFactory(scheduler.get(), 1);
-    senderFactory.createReceivableSnapshotStore(
-        temporaryFolder.newFolder("sender").toPath(), partitionId);
-    senderSnapshotStore = senderFactory.getConstructableSnapshotStore(partitionId);
-    receiverSnapshotStore =
-        new FileBasedSnapshotStoreFactory(scheduler.get(), 2)
-            .createReceivableSnapshotStore(
-                temporaryFolder.newFolder("received").toPath(), partitionId);
+    senderSnapshotStore = new FileBasedSnapshotStore(partitionId, senderDirectory);
+    scheduler.get().submitActor((Actor) senderSnapshotStore).join();
+
+    receiverSnapshotStore = new FileBasedSnapshotStore(partitionId, receiverDirectory);
+
+    scheduler.get().submitActor((Actor) receiverSnapshotStore).join();
   }
 
   @Test

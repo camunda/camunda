@@ -13,7 +13,6 @@ import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
-import io.camunda.zeebe.snapshots.ReceivableSnapshotStoreFactory;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.util.Map;
@@ -25,19 +24,16 @@ import org.slf4j.LoggerFactory;
 final class PartitionStartup {
 
   private final ActorSchedulingService schedulingService;
-  private final ReceivableSnapshotStoreFactory snapshotStoreFactory;
   private final PartitionManagementService partitionManagementService;
   private final RaftPartitionFactory raftPartitionFactory;
   private final ZeebePartitionFactory zeebePartitionFactory;
 
   PartitionStartup(
       final ActorSchedulingService schedulingService,
-      final ReceivableSnapshotStoreFactory snapshotStoreFactory,
       final PartitionManagementService partitionManagementService,
       final RaftPartitionFactory raftPartitionFactory,
       final ZeebePartitionFactory zeebePartitionFactory) {
     this.schedulingService = schedulingService;
-    this.snapshotStoreFactory = snapshotStoreFactory;
     this.partitionManagementService = partitionManagementService;
     this.raftPartitionFactory = raftPartitionFactory;
     this.zeebePartitionFactory = zeebePartitionFactory;
@@ -96,9 +92,12 @@ final class PartitionStartup {
       // needs to wait for the snapshot store actor to be started. Synchronously waiting is not
       // allowed from an actor, so delegate to another thread.
       CompletableFuture.supplyAsync(
-              () ->
-                  snapshotStoreFactory.createReceivableSnapshotStore(
-                      raftPartition.dataDirectory().toPath(), partitionId))
+              () -> {
+                final var snapshotStore =
+                    new FileBasedSnapshotStore(partitionId, raftPartition.dataDirectory().toPath());
+                schedulingService.submitActor(snapshotStore).join();
+                return snapshotStore;
+              })
           .exceptionallyCompose(
               failure -> {
                 LOG.error("Failed to create snapshot store for partition {}", partitionId, failure);
@@ -121,10 +120,7 @@ final class PartitionStartup {
               })
           .thenAcceptAsync(
               started ->
-                  actor.call(
-                      () ->
-                          startZeebePartition(
-                              started.getLeft(), (FileBasedSnapshotStore) started.getRight())))
+                  actor.call(() -> startZeebePartition(started.getLeft(), started.getRight())))
           .exceptionally(
               t -> {
                 LOG.error("Failed to start zeebe partition {}", partitionId, t);

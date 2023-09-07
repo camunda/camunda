@@ -21,7 +21,6 @@ import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotException.StateClosedException;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
-import io.camunda.zeebe.snapshots.impl.SnapshotMetrics;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
 import java.io.File;
 import java.io.IOException;
@@ -61,12 +60,7 @@ public final class StateControllerImplTest {
   @Before
   public void setup() throws IOException {
 
-    store =
-        new FileBasedSnapshotStore(
-            1,
-            new SnapshotMetrics("partition-1"),
-            tempFolderRule.newFolder("snapshots").toPath(),
-            tempFolderRule.newFolder("pending").toPath());
+    store = new FileBasedSnapshotStore(1, tempFolderRule.newFolder("data").toPath());
     actorSchedulerRule.submitActor(store).join();
 
     runtimeDirectory = tempFolderRule.getRoot().toPath().resolve("runtime");

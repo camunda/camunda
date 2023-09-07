@@ -16,7 +16,7 @@ import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
-import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreFactory;
+import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -42,12 +42,12 @@ final class TestState {
             .build();
     actorScheduler.start();
 
-    final var storeFactory = new FileBasedSnapshotStoreFactory(actorScheduler, 1);
-    final var snapshotStore = createSnapshotStore(storeFactory, tempDirectory);
+    final var snapshotStore = new FileBasedSnapshotStore(1, tempDirectory);
+    actorScheduler.submitActor(snapshotStore).join();
+
     generateSnapshot(snapshotStore, sizeInBytes);
 
-    return new TestContext(
-        actorScheduler, tempDirectory, snapshotStore, createDbFactory(), storeFactory);
+    return new TestContext(actorScheduler, tempDirectory, snapshotStore, createDbFactory());
   }
 
   private void generateSnapshot(
@@ -55,13 +55,6 @@ final class TestState {
     final var snapshot = snapshotStore.newTransientSnapshot(1, 1, 1, 1).get();
     snapshot.take(path -> generateSnapshot(path, sizeInBytes)).join();
     snapshot.persist().join();
-  }
-
-  @SuppressWarnings("resource")
-  private ConstructableSnapshotStore createSnapshotStore(
-      final FileBasedSnapshotStoreFactory storeFactory, final Path tempDirectory) {
-    storeFactory.createReceivableSnapshotStore(tempDirectory, 1);
-    return storeFactory.getConstructableSnapshotStore(1);
   }
 
   private void generateSnapshot(final Path path, final long sizeInBytes) {
@@ -124,9 +117,8 @@ final class TestState {
   public record TestContext(
       ActorScheduler actorScheduler,
       Path temporaryFolder,
-      ConstructableSnapshotStore snapshotStore,
-      ZeebeDbFactory<ZbColumnFamilies> dbFactory,
-      FileBasedSnapshotStoreFactory snapshotStoreFactory)
+      FileBasedSnapshotStore snapshotStore,
+      ZeebeDbFactory<ZbColumnFamilies> dbFactory)
       implements AutoCloseable {
 
     @Override

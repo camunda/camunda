@@ -21,10 +21,10 @@ import io.camunda.zeebe.backup.management.BackupService;
 import io.camunda.zeebe.journal.JournalMetaStore;
 import io.camunda.zeebe.journal.file.SegmentedJournal;
 import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.camunda.zeebe.scheduler.SchedulingHints;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotException.CorruptedSnapshotException;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
-import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreFactory;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
 import java.io.IOException;
@@ -77,10 +77,8 @@ class PartitionRestoreServiceTest {
   void setUp() {
     backupStore = new TestRestorableBackupStore();
 
-    snapshotStore =
-        (FileBasedSnapshotStore)
-            new FileBasedSnapshotStoreFactory(actorScheduler, nodeId)
-                .createReceivableSnapshotStore(dataDirectory, partitionId);
+    snapshotStore = new FileBasedSnapshotStore(partitionId, dataDirectory);
+    actorScheduler.submitActor(snapshotStore, SchedulingHints.IO_BOUND);
 
     backupService =
         new BackupService(
@@ -98,7 +96,7 @@ class PartitionRestoreServiceTest {
             PartitionId.from("raft", partitionId), Set.of(), Map.of(), 1, new MemberId("1"));
     final var raftPartition =
         new RaftPartition(partitionMetadata, null, dataDirectoryToRestore.toFile());
-    restoreService = new PartitionRestoreService(backupStore, raftPartition, Set.of(1, 2), nodeId);
+    restoreService = new PartitionRestoreService(backupStore, raftPartition, Set.of(1, 2));
 
     journal =
         SegmentedJournal.builder()

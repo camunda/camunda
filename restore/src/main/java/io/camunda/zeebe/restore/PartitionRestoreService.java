@@ -18,7 +18,8 @@ import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.journal.JournalMetaStore.InMemory;
 import io.camunda.zeebe.journal.JournalReader;
 import io.camunda.zeebe.journal.file.SegmentedJournal;
-import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreFactory;
+import io.camunda.zeebe.snapshots.RestorableSnapshotStore;
+import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -44,19 +45,14 @@ public class PartitionRestoreService {
   final Set<Integer> brokerIds;
   final Path rootDirectory;
   private final RaftPartition partition;
-  private final int localBrokerId;
 
   public PartitionRestoreService(
-      final BackupStore backupStore,
-      final RaftPartition partition,
-      final Set<Integer> brokerIds,
-      final int localNodeId) {
+      final BackupStore backupStore, final RaftPartition partition, final Set<Integer> brokerIds) {
     this.backupStore = backupStore;
     partitionId = partition.id().id();
     rootDirectory = partition.dataDirectory().toPath();
     this.partition = partition;
     this.brokerIds = brokerIds;
-    localBrokerId = localNodeId;
   }
 
   /**
@@ -184,9 +180,9 @@ public class PartitionRestoreService {
       return;
     }
 
-    final var snapshotStore =
-        FileBasedSnapshotStoreFactory.createRestorableSnapshotStore(
-            partition.dataDirectory().toPath(), partition.id().id(), localBrokerId);
+    @SuppressWarnings("resource")
+    final RestorableSnapshotStore snapshotStore =
+        new FileBasedSnapshotStore(partition.id().id(), partition.dataDirectory().toPath());
 
     try {
       snapshotStore.restore(

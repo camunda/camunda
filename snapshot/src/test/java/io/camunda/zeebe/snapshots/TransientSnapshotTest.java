@@ -16,7 +16,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotAlreadyExistsException;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotNotFoundException;
-import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreFactory;
+import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.File;
 import java.io.IOException;
@@ -41,17 +41,15 @@ public class TransientSnapshotTest {
   @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
   @Rule public ActorSchedulerRule scheduler = new ActorSchedulerRule();
 
-  private ConstructableSnapshotStore snapshotStore;
+  private FileBasedSnapshotStore snapshotStore;
 
   @Before
   public void beforeEach() {
     final int partitionId = 1;
     final File root = temporaryFolder.getRoot();
-    final FileBasedSnapshotStoreFactory factory =
-        new FileBasedSnapshotStoreFactory(scheduler.get(), 1);
 
-    factory.createReceivableSnapshotStore(root.toPath(), partitionId);
-    snapshotStore = factory.getConstructableSnapshotStore(partitionId);
+    snapshotStore = new FileBasedSnapshotStore(partitionId, root.toPath());
+    scheduler.submitActor(snapshotStore).join();
   }
 
   @Test

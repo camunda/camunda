@@ -47,7 +47,7 @@ public class FileBasedTransientSnapshotTest {
     final var root = temporaryFolder.getRoot().toPath();
     pendingDir = root.resolve(PENDING_DIRECTORY);
     snapshotsDir = root.resolve(SNAPSHOT_DIRECTORY);
-    snapshotStore = createStore(snapshotsDir, pendingDir);
+    snapshotStore = createStore(root);
   }
 
   @Test
@@ -372,15 +372,9 @@ public class FileBasedTransientSnapshotTest {
     return true;
   }
 
-  private FileBasedSnapshotStore createStore(final Path snapshotDir, final Path pendingDir)
-      throws IOException {
-    final var store =
-        new FileBasedSnapshotStore(1, new SnapshotMetrics("1-1"), snapshotDir, pendingDir);
-
-    FileUtil.ensureDirectoryExists(snapshotDir);
-    FileUtil.ensureDirectoryExists(pendingDir);
+  private FileBasedSnapshotStore createStore(final Path root) throws IOException {
+    final var store = new FileBasedSnapshotStore(1, root);
     scheduler.submitActor(store);
-
     return store;
   }
 }

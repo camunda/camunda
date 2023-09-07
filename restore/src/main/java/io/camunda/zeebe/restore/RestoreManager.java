@@ -55,14 +55,13 @@ public class RestoreManager {
             .boxed()
             .collect(Collectors.toSet());
     final var partitionToRestore = collectPartitions();
-    final var localBrokerId = configuration.getCluster().getNodeId();
 
     final var partitionIds = partitionToRestore.stream().map(p -> p.id().id()).toList();
     LOG.info("Restoring partitions {}", partitionIds);
 
     return CompletableFuture.allOf(
             partitionToRestore.stream()
-                .map(partition -> restorePartition(partition, backupId, brokerIds, localBrokerId))
+                .map(partition -> restorePartition(partition, backupId, brokerIds))
                 .toArray(CompletableFuture[]::new))
         .exceptionallyComposeAsync(error -> logFailureAndDeleteDataDirectory(dataDirectory, error));
   }
@@ -89,11 +88,8 @@ public class RestoreManager {
   }
 
   private CompletableFuture<Void> restorePartition(
-      final RaftPartition partition,
-      final long backupId,
-      final Set<Integer> brokerIds,
-      final int localBrokerId) {
-    return new PartitionRestoreService(backupStore, partition, brokerIds, localBrokerId)
+      final RaftPartition partition, final long backupId, final Set<Integer> brokerIds) {
+    return new PartitionRestoreService(backupStore, partition, brokerIds)
         .restore(backupId)
         .thenAccept(backup -> logSuccessfulRestore(backup, partition.id().id(), backupId));
   }

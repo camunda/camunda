@@ -57,12 +57,10 @@ public class FileBasedReceivedSnapshotTest {
     final var receiverRoot = temporaryFolder.newFolder("receiver").toPath();
     receiverPendingDir = receiverRoot.resolve(PENDING_DIRECTORY);
     receiverSnapshotsDir = receiverRoot.resolve(SNAPSHOT_DIRECTORY);
-    receiverSnapshotStore = createStore(2, receiverSnapshotsDir, receiverPendingDir);
+    receiverSnapshotStore = createStore(receiverRoot);
 
     final var senderRoot = temporaryFolder.newFolder("sender").toPath();
-    senderSnapshotStore =
-        createStore(
-            1, senderRoot.resolve(SNAPSHOT_DIRECTORY), senderRoot.resolve(PENDING_DIRECTORY));
+    senderSnapshotStore = createStore(senderRoot);
   }
 
   @Test
@@ -377,17 +375,8 @@ public class FileBasedReceivedSnapshotTest {
     return true;
   }
 
-  private FileBasedSnapshotStore createStore(
-      final int nodeId, final Path snapshotDir, final Path pendingDir) throws IOException {
-    final var store =
-        new FileBasedSnapshotStore(
-            PARTITION_ID,
-            new SnapshotMetrics(nodeId + "-" + PARTITION_ID),
-            snapshotDir,
-            pendingDir);
-
-    FileUtil.ensureDirectoryExists(snapshotDir);
-    FileUtil.ensureDirectoryExists(pendingDir);
+  private FileBasedSnapshotStore createStore(final Path root) {
+    final var store = new FileBasedSnapshotStore(PARTITION_ID, root);
     scheduler.submitActor(store);
 
     return store;

@@ -10,7 +10,7 @@ package io.camunda.zeebe.snapshots;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
-import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreFactory;
+import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -25,13 +25,10 @@ public class PersistedSnapshotStoreTest {
 
   @Before
   public void before() {
-    final FileBasedSnapshotStoreFactory factory =
-        new FileBasedSnapshotStoreFactory(scheduler.get(), 1);
-
     final var partitionId = 1;
     final var root = temporaryFolder.getRoot();
 
-    persistedSnapshotStore = factory.createReceivableSnapshotStore(root.toPath(), partitionId);
+    persistedSnapshotStore = new FileBasedSnapshotStore(partitionId, root.toPath());
   }
 
   @Test

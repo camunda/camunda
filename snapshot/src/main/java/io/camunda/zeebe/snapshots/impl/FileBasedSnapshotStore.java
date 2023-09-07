@@ -49,6 +49,8 @@ import org.slf4j.LoggerFactory;
 
 public final class FileBasedSnapshotStore extends Actor
     implements ConstructableSnapshotStore, ReceivableSnapshotStore, RestorableSnapshotStore {
+  public static final String SNAPSHOTS_DIRECTORY = "snapshots";
+  public static final String PENDING_DIRECTORY = "pending";
 
   static final int VERSION = 1;
 
@@ -81,14 +83,18 @@ public final class FileBasedSnapshotStore extends Actor
   private final String actorName;
   private final int partitionId;
 
-  public FileBasedSnapshotStore(
-      final int partitionId,
-      final SnapshotMetrics snapshotMetrics,
-      final Path snapshotsDirectory,
-      final Path pendingDirectory) {
-    this.snapshotsDirectory = snapshotsDirectory;
-    this.pendingDirectory = pendingDirectory;
-    this.snapshotMetrics = snapshotMetrics;
+  public FileBasedSnapshotStore(final int partitionId, final Path root) {
+    snapshotsDirectory = root.resolve(SNAPSHOTS_DIRECTORY);
+    pendingDirectory = root.resolve(PENDING_DIRECTORY);
+
+    try {
+      FileUtil.ensureDirectoryExists(snapshotsDirectory);
+      FileUtil.ensureDirectoryExists(pendingDirectory);
+    } catch (final IOException e) {
+      throw new UncheckedIOException("Failed to create snapshot directories", e);
+    }
+
+    snapshotMetrics = new SnapshotMetrics(String.valueOf(partitionId));
     receivingSnapshotStartCount = new AtomicLong();
 
     listeners = new CopyOnWriteArraySet<>();
