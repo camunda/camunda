@@ -1,5 +1,10 @@
 {
-  "extends": ["config:base", ":rebaseStalePrs"],
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:base",
+    ":rebaseStalePrs",
+    ":semanticCommitTypeAll(chore)"
+  ],
   "includePaths": ["client/**", ".github/**", ".ci/**"],
   "ignorePaths": ["client/pom.xml"],
   "helmv3": {
@@ -7,9 +12,7 @@
       "helm-camunda-io": "https://helm.camunda.io"
     }
   },
-  "reviewers": [
-    "team:hto-frontend"
-  ],
+  "reviewers": ["team:hto-frontend"],
   "packageRules": [
     {
       "groupName": "definitelyTyped",
