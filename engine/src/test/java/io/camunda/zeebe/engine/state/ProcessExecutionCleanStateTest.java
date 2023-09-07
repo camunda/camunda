@@ -40,10 +40,10 @@ public final class ProcessExecutionCleanStateTest {
       List.of(
           ZbColumnFamilies.DEFAULT,
           ZbColumnFamilies.KEY,
-          ZbColumnFamilies.PROCESS_VERSION,
-          ZbColumnFamilies.PROCESS_CACHE,
-          ZbColumnFamilies.PROCESS_CACHE_BY_ID_AND_VERSION,
-          ZbColumnFamilies.PROCESS_CACHE_DIGEST_BY_ID,
+          ZbColumnFamilies.DEPRECATED_PROCESS_VERSION,
+          ZbColumnFamilies.DEPRECATED_PROCESS_CACHE,
+          ZbColumnFamilies.DEPRECATED_PROCESS_CACHE_BY_ID_AND_VERSION,
+          ZbColumnFamilies.DEPRECATED_PROCESS_CACHE_DIGEST_BY_ID,
           ZbColumnFamilies.MESSAGE_STATS,
           ZbColumnFamilies.MIGRATIONS_STATE);
 
