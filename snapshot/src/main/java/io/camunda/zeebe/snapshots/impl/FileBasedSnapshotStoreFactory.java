@@ -20,7 +20,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.NoSuchElementException;
-import org.agrona.collections.Int2ObjectHashMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Loads existing snapshots in memory, cleaning out old and/or invalid snapshots if present.
@@ -35,8 +35,8 @@ import org.agrona.collections.Int2ObjectHashMap;
 public final class FileBasedSnapshotStoreFactory implements ReceivableSnapshotStoreFactory {
   public static final String SNAPSHOTS_DIRECTORY = "snapshots";
   public static final String PENDING_DIRECTORY = "pending";
-  private final Int2ObjectHashMap<FileBasedSnapshotStore> partitionSnapshotStores =
-      new Int2ObjectHashMap<>();
+  private final ConcurrentHashMap<Integer, FileBasedSnapshotStore> partitionSnapshotStores =
+      new ConcurrentHashMap<>();
   private final ActorSchedulingService actorScheduler;
   private final int nodeId;
 
