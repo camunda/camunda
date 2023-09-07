@@ -14,15 +14,9 @@ import java.util.Optional;
  * An operation that changes the topology. The operation could be a member join or leave a cluster,
  * or a member join or leave partition.
  */
-public interface TopologyChangeOperation {
+public record TopologyChangeOperation(MemberId memberId, Operation operation) {
 
-  MemberId memberId();
-
-  default Operation getOperation() {
-    return Operation.NONE;
-  }
-
-  record PartitionOperation(
+  public record PartitionOperation(
       int partitionId, PartitionOperationType operationType, Optional<Integer> priority)
       implements Operation {
     @Override
@@ -31,7 +25,7 @@ public interface TopologyChangeOperation {
     }
   }
 
-  interface Operation {
+  public interface Operation {
     Operation NONE = new Operation() {};
 
     default boolean isPartitionOperation() {
@@ -39,7 +33,7 @@ public interface TopologyChangeOperation {
     }
   }
 
-  enum PartitionOperationType {
+  public enum PartitionOperationType {
     UNKNOWN,
     JOIN,
     LEAVE
