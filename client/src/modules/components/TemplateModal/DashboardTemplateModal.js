@@ -45,6 +45,7 @@ export default function DashboardTemplateModal({
       templates: [
         {
           name: 'instantPreviewDashboard',
+          disabled: (definitions) => definitions.length > 1,
           disableDescription: true,
           img: instantPreviewDashboard,
           config: [
