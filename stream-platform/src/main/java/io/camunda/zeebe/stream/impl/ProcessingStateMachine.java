@@ -113,8 +113,7 @@ public final class ProcessingStateMachine {
   private static final Duration PROCESSING_RETRY_DELAY = Duration.ofMillis(250);
   private static final MetadataFilter PROCESSING_FILTER =
       recordMetadata -> recordMetadata.getRecordType() == RecordType.COMMAND;
-  private final EventFilter eventFilter =
-      new MetadataEventFilter(new RecordProtocolVersionFilter().and(PROCESSING_FILTER));
+  private final EventFilter eventFilter = new MetadataEventFilter(PROCESSING_FILTER);
 
   private final EventFilter commandFilter =
       new MetadataEventFilter(
