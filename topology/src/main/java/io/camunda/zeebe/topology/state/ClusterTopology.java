@@ -11,7 +11,7 @@ import com.google.common.collect.ImmutableMap;
 import io.atomix.cluster.MemberId;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -112,29 +112,27 @@ public record ClusterTopology(
    * @return true if the next operation in pending changes is applicable for the given memberId,
    *     otherwise returns false.
    */
-  public boolean hasPendingChangesFor(final MemberId memberId) {
+  private boolean hasPendingChangesFor(final MemberId memberId) {
     return !changes.pendingOperations().isEmpty()
         && changes.pendingOperations().get(0).memberId().equals(memberId);
   }
 
   /**
    * Returns the next pending operation for the given memberId. If there is no pending operation for
-   * the members, throws NoSuchElementException. It is recommended to call {@link
-   * #hasPendingChangesFor(MemberId)} before calling this method.
+   * this member, then returns an empty optional.
    *
    * @param memberId id of the member
    * @return the next pending operation for the given memberId.
-   * @throws NoSuchElementException if there is no pending operation for the given memberId.
    */
-  public TopologyChangeOperation pendingChangerFor(final MemberId memberId) {
+  public Optional<TopologyChangeOperation> pendingChangesFor(final MemberId memberId) {
     if (!hasPendingChangesFor(memberId)) {
-      throw new NoSuchElementException();
+      return Optional.empty();
     }
-    return changes.pendingOperations().get(0);
+    return Optional.of(changes.pendingOperations().get(0));
   }
 
   /**
-   * When the operation returned by {@link #pendingChangerFor(MemberId)} is completed, the changes
+   * When the operation returned by {@link #pendingChangesFor(MemberId)} is completed, the changes
    * should be reflected in ClusterTopology by invoking this method. This removes the completed
    * operation from the pending changes and update the member state using the given updater.
    *

@@ -140,12 +140,13 @@ final class ClusterTopologyManager {
     // operation is triggered locally only when the local topology is changes. However, as
     // an extra precaution we check if there is an ongoing operation before applying
     // one.
-    return !onGoingTopologyChangeOperation && mergedTopology.hasPendingChangesFor(localMemberId);
+    return !onGoingTopologyChangeOperation
+        && mergedTopology.pendingChangesFor(localMemberId).isPresent();
   }
 
   private void applyTopologyChangeOperation(final ClusterTopology mergedTopology) {
     onGoingTopologyChangeOperation = true;
-    final var operation = mergedTopology.pendingChangerFor(localMemberId);
+    final var operation = mergedTopology.pendingChangesFor(localMemberId).orElseThrow();
     LOG.info("Applying topology change operation {}", operation);
     final var operationApplier = changeAppliers.getApplier(operation);
     final var initialized =
