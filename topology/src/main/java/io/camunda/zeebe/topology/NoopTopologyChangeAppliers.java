@@ -18,7 +18,7 @@ import java.util.function.UnaryOperator;
  * This is temporary implementation for TopologyChangeAppliers. This will be eventually removed or
  * moved to tests, once concrete implementation for each TopologyChangeOperation is available.
  */
-public class NoopTopologyChangeApplier implements TopologyChangeAppliers {
+public class NoopTopologyChangeAppliers implements TopologyChangeAppliers {
 
   @Override
   public OperationApplier getApplier(final TopologyChangeOperation operation) {

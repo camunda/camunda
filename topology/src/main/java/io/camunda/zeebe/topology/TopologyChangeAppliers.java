@@ -24,18 +24,26 @@ public interface TopologyChangeAppliers {
   interface OperationApplier {
 
     /**
-     * Validate and initialize the operation. Returns an Either with an exception if the operation
-     * is not valid, or a function that updates the state of the member in the cluster topology
+     * This method will be called before invoking {@link OperationApplier#apply()}. This method can
+     * be used to validate the operation and to update the ClusterTopology to mark the start of the
+     * operation. For example, an operation for joining a partition can mark the state as JOINING.
      *
-     * @return an either
+     * @return an either which contains an exception if the operation is not valid, or a function to
+     *     update the cluster toplogy
      */
     Either<Exception, UnaryOperator<MemberState>> init();
 
     /**
      * Applies the operation. This can be run asynchronously and should complete the future when the
-     * operation is completed.
+     * operation is completed. The future should be completed with a function that can update the
+     * ClusterTopology to mark the operation as completed. For example, an operation for joining a
+     * partition should mark the state of the partition as ACTIVE.
      *
-     * @return the future when the operation is completed.
+     * <p>It is expected that no other operation is applied until this operation is completed. It is
+     * guaranteed that the MemberState updated by {@link OperationApplier#init()} remains the same
+     * until this operation is completed.
+     *
+     * @return the future which is completed when the operation is completed successfully or failed.
      */
     ActorFuture<UnaryOperator<MemberState>> apply();
   }

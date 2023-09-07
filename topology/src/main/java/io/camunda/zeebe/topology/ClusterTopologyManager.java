@@ -30,7 +30,7 @@ final class ClusterTopologyManager {
   private Consumer<ClusterTopology> topologyGossiper;
   private final ActorFuture<Void> startFuture;
 
-  private final TopologyChangeAppliers operationsAppliers;
+  private final TopologyChangeAppliers changeAppliers;
   private final MemberId localMemberId;
 
   // Indicates whether there is a topology change operation in progress on this member.
@@ -40,11 +40,11 @@ final class ClusterTopologyManager {
       final ConcurrencyControl executor,
       final MemberId localMemberId,
       final PersistedClusterTopology persistedClusterTopology,
-      final TopologyChangeAppliers operationsAppliers) {
+      final TopologyChangeAppliers changeAppliers) {
     this.executor = executor;
     this.persistedClusterTopology = persistedClusterTopology;
     startFuture = executor.createFuture();
-    this.operationsAppliers = operationsAppliers;
+    this.changeAppliers = changeAppliers;
     this.localMemberId = localMemberId;
   }
 
@@ -147,13 +147,11 @@ final class ClusterTopologyManager {
     onGoingTopologyChangeOperation = true;
     final var operation = mergedTopology.pendingChangerFor(localMemberId);
     LOG.info("Applying topology change operation {}", operation);
-    final var operationApplier = operationsAppliers.getApplier(operation);
+    final var operationApplier = changeAppliers.getApplier(operation);
     final var initialized =
         operationApplier
             .init()
-            .map(
-                transformer ->
-                    persistedClusterTopology.getTopology().updateMember(localMemberId, transformer))
+            .map(transformer -> mergedTopology.updateMember(localMemberId, transformer))
             .map(this::updateLocalTopology);
 
     if (initialized.isLeft()) {

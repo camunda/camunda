@@ -55,7 +55,7 @@ public final class ClusterTopologyManagerService extends Actor {
     persistedClusterTopology = new PersistedClusterTopology(topologyFile, new ProtoBufSerializer());
     clusterTopologyManager =
         new ClusterTopologyManager(
-            this, localMemberId, persistedClusterTopology, new NoopTopologyChangeApplier());
+            this, localMemberId, persistedClusterTopology, new NoopTopologyChangeAppliers());
     clusterTopologyGossiper =
         new ClusterTopologyGossiper(
             this,

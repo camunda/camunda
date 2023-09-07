@@ -58,7 +58,7 @@ final class ClusterTopologyManagerTest {
 
   private ActorFuture<ClusterTopologyManager> startTopologyManager(
       final TopologyInitializer topologyInitializer) {
-    return startTopologyManager(topologyInitializer, new NoopTopologyChangeApplier());
+    return startTopologyManager(topologyInitializer, new NoopTopologyChangeAppliers());
   }
 
   private ActorFuture<ClusterTopologyManager> startTopologyManager(
