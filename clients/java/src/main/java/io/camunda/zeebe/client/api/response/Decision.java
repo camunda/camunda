@@ -48,4 +48,9 @@ public interface Decision {
    * @return the assigned key of the decision requirements graph that this decision is part of
    */
   long getDecisionRequirementsKey();
+
+  /**
+   * @return the tenant identifier that owns this decision
+   */
+  String getTenantId();
 }

@@ -16,6 +16,7 @@
 package io.camunda.zeebe.client.util;
 
 import com.google.protobuf.GeneratedMessageV3;
+import io.camunda.zeebe.client.api.command.CommandWithTenantStep;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayImplBase;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
@@ -164,11 +165,26 @@ public final class RecordingGatewayService extends GatewayImplBase {
       final int version,
       final long processDefinitionKey,
       final String resourceName) {
+    return deployedProcess(
+        bpmnProcessId,
+        version,
+        processDefinitionKey,
+        resourceName,
+        CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
+  }
+
+  public static ProcessMetadata deployedProcess(
+      final String bpmnProcessId,
+      final int version,
+      final long processDefinitionKey,
+      final String resourceName,
+      final String tenantId) {
     return ProcessMetadata.newBuilder()
         .setBpmnProcessId(bpmnProcessId)
         .setVersion(version)
         .setProcessDefinitionKey(processDefinitionKey)
         .setResourceName(resourceName)
+        .setTenantId(tenantId)
         .build();
   }
 
@@ -179,6 +195,24 @@ public final class RecordingGatewayService extends GatewayImplBase {
       final long decisionKey,
       final String dmnDecisionRequirementsId,
       final long decisionRequirementsKey) {
+    return deployedDecision(
+        dmnDecisionId,
+        dmnDecisionName,
+        version,
+        decisionKey,
+        dmnDecisionRequirementsId,
+        decisionRequirementsKey,
+        CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
+  }
+
+  public static DecisionMetadata deployedDecision(
+      final String dmnDecisionId,
+      final String dmnDecisionName,
+      final int version,
+      final long decisionKey,
+      final String dmnDecisionRequirementsId,
+      final long decisionRequirementsKey,
+      final String tenantId) {
     return DecisionMetadata.newBuilder()
         .setDmnDecisionId(dmnDecisionId)
         .setDmnDecisionName(dmnDecisionName)
@@ -186,6 +220,7 @@ public final class RecordingGatewayService extends GatewayImplBase {
         .setDecisionKey(decisionKey)
         .setDmnDecisionRequirementsId(dmnDecisionRequirementsId)
         .setDecisionRequirementsKey(decisionRequirementsKey)
+        .setTenantId(tenantId)
         .build();
   }
 
@@ -195,12 +230,29 @@ public final class RecordingGatewayService extends GatewayImplBase {
       final int version,
       final long decisionRequirementsKey,
       final String resourceName) {
+    return deployedDecisionRequirements(
+        dmnDecisionRequirementsId,
+        dmnDecisionRequirementsName,
+        version,
+        decisionRequirementsKey,
+        resourceName,
+        CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
+  }
+
+  public static DecisionRequirementsMetadata deployedDecisionRequirements(
+      final String dmnDecisionRequirementsId,
+      final String dmnDecisionRequirementsName,
+      final int version,
+      final long decisionRequirementsKey,
+      final String resourceName,
+      final String tenantId) {
     return DecisionRequirementsMetadata.newBuilder()
         .setDmnDecisionRequirementsId(dmnDecisionRequirementsId)
         .setDmnDecisionRequirementsName(dmnDecisionRequirementsName)
         .setVersion(version)
         .setDecisionRequirementsKey(decisionRequirementsKey)
         .setResourceName(resourceName)
+        .setTenantId(tenantId)
         .build();
   }
 
@@ -374,12 +426,14 @@ public final class RecordingGatewayService extends GatewayImplBase {
                 .build());
   }
 
-  public void onDeployResourceRequest(final long key, final Deployment... deployments) {
+  public void onDeployResourceRequest(
+      final long key, final String tenantId, final Deployment... deployments) {
     addRequestHandler(
         DeployResourceRequest.class,
         request ->
             DeployResourceResponse.newBuilder()
                 .setKey(key)
+                .setTenantId(tenantId)
                 .addAllDeployments(Arrays.asList(deployments))
                 .build());
   }

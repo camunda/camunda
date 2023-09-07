@@ -50,6 +50,13 @@ public interface ZeebeClientBuilder {
   ZeebeClientBuilder gatewayAddress(String gatewayAddress);
 
   /**
+   * @param tenantId the tenant identifier which is used for tenant-aware commands when no tenant
+   *     identifier is set. The default value is {@link
+   *     io.camunda.zeebe.client.api.command.CommandWithTenantStep#DEFAULT_TENANT_IDENTIFIER}.
+   */
+  ZeebeClientBuilder defaultTenantId(String tenantId);
+
+  /**
    * @param maxJobsActive Default value for {@link JobWorkerBuilderStep3#maxJobsActive(int)}.
    *     Default value is 32.
    */

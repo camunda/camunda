@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.client.impl.response;
 
+import io.camunda.zeebe.client.api.command.CommandWithTenantStep;
 import io.camunda.zeebe.client.api.response.Process;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ProcessMetadata;
 import java.util.Objects;
@@ -25,24 +26,52 @@ public final class ProcessImpl implements Process {
   private final String bpmnProcessId;
   private final int version;
   private final String resourceName;
+  private final String tenantId;
 
   public ProcessImpl(final ProcessMetadata process) {
     this(
         process.getProcessDefinitionKey(),
         process.getBpmnProcessId(),
         process.getVersion(),
-        process.getResourceName());
+        process.getResourceName(),
+        process.getTenantId());
+  }
+
+  /**
+   * A constructor that provides an instance with the <code><default></code> tenantId set.
+   *
+   * <p>From version 8.3.0, the java client supports multi-tenancy for this command, which requires
+   * the <code>tenantId</code> property to be defined. This constructor is only intended for
+   * backwards compatibility in tests.
+   *
+   * @deprecated since 8.3.0, use {@link ProcessImpl#ProcessImpl(long processDefinitionKey, String
+   *     bpmnProcessId, int version, String resourceName, String tenantId)}
+   */
+  @Deprecated
+  public ProcessImpl(
+      final long processDefinitionKey,
+      final String bpmnProcessId,
+      final int version,
+      final String resourceName) {
+    this(
+        processDefinitionKey,
+        bpmnProcessId,
+        version,
+        resourceName,
+        CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
   }
 
   public ProcessImpl(
       final long processDefinitionKey,
       final String bpmnProcessId,
       final int version,
-      final String resourceName) {
+      final String resourceName,
+      final String tenantId) {
     this.processDefinitionKey = processDefinitionKey;
     this.bpmnProcessId = bpmnProcessId;
     this.version = version;
     this.resourceName = resourceName;
+    this.tenantId = tenantId;
   }
 
   @Override
@@ -66,8 +95,13 @@ public final class ProcessImpl implements Process {
   }
 
   @Override
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  @Override
   public int hashCode() {
-    return Objects.hash(processDefinitionKey, bpmnProcessId, version, resourceName);
+    return Objects.hash(processDefinitionKey, bpmnProcessId, version, resourceName, tenantId);
   }
 
   @Override
@@ -82,7 +116,8 @@ public final class ProcessImpl implements Process {
     return processDefinitionKey == process.processDefinitionKey
         && version == process.version
         && Objects.equals(bpmnProcessId, process.bpmnProcessId)
-        && Objects.equals(resourceName, process.resourceName);
+        && Objects.equals(resourceName, process.resourceName)
+        && Objects.equals(tenantId, process.tenantId);
   }
 
   @Override
@@ -97,6 +132,9 @@ public final class ProcessImpl implements Process {
         + version
         + ", resourceName='"
         + resourceName
+        + '\''
+        + ", tenantId='"
+        + tenantId
         + '\''
         + '}';
   }

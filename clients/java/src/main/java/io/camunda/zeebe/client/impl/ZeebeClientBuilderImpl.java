@@ -31,6 +31,7 @@ import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
+import io.camunda.zeebe.client.api.command.CommandWithTenantStep;
 import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder;
 import io.camunda.zeebe.client.impl.util.DataSizeUtil;
 import io.camunda.zeebe.client.impl.util.Environment;
@@ -48,11 +49,13 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   public static final String KEEP_ALIVE_VAR = "ZEEBE_KEEP_ALIVE";
   public static final String OVERRIDE_AUTHORITY_VAR = "ZEEBE_OVERRIDE_AUTHORITY";
   public static final String DEFAULT_GATEWAY_ADDRESS = "0.0.0.0:26500";
+  public static final String DEFAULT_TENANT_ID_VAR = "ZEEBE_DEFAULT_TENANT_ID";
 
   private boolean applyEnvironmentVariableOverrides = true;
 
   private final List<ClientInterceptor> interceptors = new ArrayList<>();
   private String gatewayAddress = DEFAULT_GATEWAY_ADDRESS;
+  private String defaultTenantId = CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER;
   private int jobWorkerMaxJobsActive = 32;
   private int numJobWorkerExecutionThreads = 1;
   private String defaultJobWorkerName = "default";
@@ -73,6 +76,11 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   @Override
   public String getGatewayAddress() {
     return gatewayAddress;
+  }
+
+  @Override
+  public String getDefaultTenantId() {
+    return defaultTenantId;
   }
 
   @Override
@@ -170,6 +178,9 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
     if (properties.containsKey(ClientProperties.GATEWAY_ADDRESS)) {
       gatewayAddress(properties.getProperty(ClientProperties.GATEWAY_ADDRESS));
     }
+    if (properties.containsKey(ClientProperties.DEFAULT_TENANT_ID)) {
+      defaultTenantId(properties.getProperty(ClientProperties.DEFAULT_TENANT_ID));
+    }
 
     if (properties.containsKey(ClientProperties.JOB_WORKER_EXECUTION_THREADS)) {
       numJobWorkerExecutionThreads(
@@ -239,6 +250,12 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   @Override
   public ZeebeClientBuilder gatewayAddress(final String gatewayAddress) {
     this.gatewayAddress = gatewayAddress;
+    return this;
+  }
+
+  @Override
+  public ZeebeClientBuilder defaultTenantId(final String tenantId) {
+    defaultTenantId = tenantId;
     return this;
   }
 
@@ -381,6 +398,10 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
     if (Environment.system().isDefined(MAX_MESSAGE_SIZE)) {
       maxMessageSize(DataSizeUtil.parse(Environment.system().get(MAX_MESSAGE_SIZE)));
     }
+
+    if (Environment.system().isDefined(DEFAULT_TENANT_ID_VAR)) {
+      defaultTenantId(Environment.system().get(DEFAULT_TENANT_ID_VAR));
+    }
   }
 
   @Override
@@ -388,6 +409,7 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
     final StringBuilder sb = new StringBuilder();
 
     appendProperty(sb, "gatewayAddress", gatewayAddress);
+    appendProperty(sb, "defaultTenantId", defaultTenantId);
     appendProperty(sb, "jobWorkerMaxJobsActive", jobWorkerMaxJobsActive);
     appendProperty(sb, "numJobWorkerExecutionThreads", numJobWorkerExecutionThreads);
     appendProperty(sb, "defaultJobWorkerName", defaultJobWorkerName);

@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.client.impl.response;
 
+import io.camunda.zeebe.client.api.command.CommandWithTenantStep;
 import io.camunda.zeebe.client.api.response.Decision;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DecisionMetadata;
 import java.util.Objects;
@@ -27,6 +28,7 @@ public final class DecisionImpl implements Decision {
   private final long decisionKey;
   private final String dmnDecisionRequirementsId;
   private final long decisionRequirementsKey;
+  private final String tenantId;
 
   public DecisionImpl(final DecisionMetadata metadata) {
     this(
@@ -35,7 +37,37 @@ public final class DecisionImpl implements Decision {
         metadata.getVersion(),
         metadata.getDecisionKey(),
         metadata.getDmnDecisionRequirementsId(),
-        metadata.getDecisionRequirementsKey());
+        metadata.getDecisionRequirementsKey(),
+        metadata.getTenantId());
+  }
+
+  /**
+   * A constructor that provides an instance with the <code><default></code> tenantId set.
+   *
+   * <p>From version 8.3.0, the java client supports multi-tenancy for this command, which requires
+   * the <code>tenantId</code> property to be defined. This constructor is only intended for
+   * backwards compatibility in tests.
+   *
+   * @deprecated since 8.3.0, use {@link DecisionImpl#DecisionImpl(String dmnDecisionId, String
+   *     dmnDecisionName, int version, long decisionKey, String dmnDecisionRequirementsId, long
+   *     decisionRequirementsKey, String tenantId)}
+   */
+  @Deprecated
+  public DecisionImpl(
+      final String dmnDecisionId,
+      final String dmnDecisionName,
+      final int version,
+      final long decisionKey,
+      final String dmnDecisionRequirementsId,
+      final long decisionRequirementsKey) {
+    this(
+        dmnDecisionId,
+        dmnDecisionName,
+        version,
+        decisionKey,
+        dmnDecisionRequirementsId,
+        decisionRequirementsKey,
+        CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
   }
 
   public DecisionImpl(
@@ -44,13 +76,15 @@ public final class DecisionImpl implements Decision {
       final int version,
       final long decisionKey,
       final String dmnDecisionRequirementsId,
-      final long decisionRequirementsKey) {
+      final long decisionRequirementsKey,
+      final String tenantId) {
     this.dmnDecisionId = dmnDecisionId;
     this.dmnDecisionName = dmnDecisionName;
     this.version = version;
     this.decisionKey = decisionKey;
     this.dmnDecisionRequirementsId = dmnDecisionRequirementsId;
     this.decisionRequirementsKey = decisionRequirementsKey;
+    this.tenantId = tenantId;
   }
 
   @Override
@@ -84,6 +118,11 @@ public final class DecisionImpl implements Decision {
   }
 
   @Override
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  @Override
   public int hashCode() {
     return Objects.hash(
         dmnDecisionId,
@@ -91,7 +130,8 @@ public final class DecisionImpl implements Decision {
         version,
         decisionKey,
         dmnDecisionRequirementsId,
-        decisionRequirementsKey);
+        decisionRequirementsKey,
+        tenantId);
   }
 
   @Override
@@ -108,7 +148,8 @@ public final class DecisionImpl implements Decision {
         && decisionRequirementsKey == decision.decisionRequirementsKey
         && Objects.equals(dmnDecisionId, decision.dmnDecisionId)
         && Objects.equals(dmnDecisionName, decision.dmnDecisionName)
-        && Objects.equals(dmnDecisionRequirementsId, decision.dmnDecisionRequirementsId);
+        && Objects.equals(dmnDecisionRequirementsId, decision.dmnDecisionRequirementsId)
+        && Objects.equals(tenantId, decision.tenantId);
   }
 
   @Override
@@ -129,6 +170,9 @@ public final class DecisionImpl implements Decision {
         + '\''
         + ", decisionRequirementsKey="
         + decisionRequirementsKey
+        + ", tenantId='"
+        + tenantId
+        + '\''
         + '}';
   }
 }

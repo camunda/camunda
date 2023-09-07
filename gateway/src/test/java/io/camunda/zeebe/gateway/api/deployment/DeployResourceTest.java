@@ -19,12 +19,13 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Deployment;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ProcessMetadata;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public final class DeployResourceTest extends GatewayTest {
 
   @Test
-  public void shouldMapRequestAndResponse() {
+  public void shouldMapRequestAndResponseWithDefaultTenantId() {
     // given
     final var stub = new DeployResourceStub();
     stub.registerWith(brokerClient);
@@ -87,5 +88,40 @@ public final class DeployResourceTest extends GatewayTest {
     final BrokerDeployResourceRequest brokerRequest = brokerClient.getSingleBrokerRequest();
     assertThat(brokerRequest.getIntent()).isEqualTo(DeploymentIntent.CREATE);
     assertThat(brokerRequest.getValueType()).isEqualTo(ValueType.DEPLOYMENT);
+  }
+
+  @Test
+  @Ignore("https://github.com/camunda/zeebe/issues/14041")
+  public void shouldMapRequestAndResponseWithCustomTenantId() {
+    // given
+    final var stub = new DeployResourceStub();
+    stub.registerWith(brokerClient);
+
+    final String bpmnName = "testProcess.bpmn";
+    final String dmnName = "testDecision.dmn";
+    final String tenantId = "test-tenant";
+
+    final var builder = DeployResourceRequest.newBuilder();
+    builder.addResourcesBuilder().setName(bpmnName).setContent(ByteString.copyFromUtf8("<xml/>"));
+    builder.addResourcesBuilder().setName(dmnName).setContent(ByteString.copyFromUtf8("test"));
+    builder.setTenantId(tenantId);
+
+    final var request = builder.build();
+
+    // when
+    final var response = client.deployResource(request);
+
+    // then
+    assertThat(response.getTenantId()).isEqualTo(tenantId);
+
+    assertThat(response.getDeploymentsCount()).isEqualTo(3);
+    final ProcessMetadata process = response.getDeployments(0).getProcess();
+    assertThat(process.getTenantId()).isEqualTo(tenantId);
+
+    final DecisionMetadata decision = response.getDeployments(1).getDecision();
+    assertThat(decision.getTenantId()).isEqualTo(tenantId);
+
+    final DecisionRequirementsMetadata drg = response.getDeployments(2).getDecisionRequirements();
+    assertThat(drg.getTenantId()).isEqualTo(tenantId);
   }
 }

@@ -23,7 +23,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.client.api.command.ClientException;
-import io.camunda.zeebe.client.api.command.DeployResourceCommandStep1.DeployResourceCommandStep2;
 import io.camunda.zeebe.client.api.response.DeploymentEvent;
 import io.camunda.zeebe.client.impl.command.StreamUtil;
 import io.camunda.zeebe.client.impl.response.DecisionImpl;
@@ -179,10 +178,12 @@ public final class DeployResourceTest extends ClientTest {
   public void shouldDeployMultipleResources() {
     // given
     final long key = 345L;
+    final String tenantId = "test-tenant";
     final String filename1 = BPMN_1_FILENAME.substring(1);
     final String filename2 = BPMN_2_FILENAME.substring(1);
     gatewayService.onDeployResourceRequest(
         key,
+        tenantId,
         deployment(deployedProcess(BPMN_1_PROCESS_ID, 1, 1, filename1)),
         deployment(deployedProcess(BPMN_2_PROCESS_ID, 1, 2, filename2)));
 
@@ -191,12 +192,14 @@ public final class DeployResourceTest extends ClientTest {
         .newDeployResourceCommand()
         .addResourceFromClasspath(filename1)
         .addResourceFromClasspath(filename2)
+        .tenantId(tenantId)
         .send()
         .join();
 
     // then
     final DeployResourceRequest request = gatewayService.getLastRequest();
     assertThat(request.getResourcesList()).hasSize(2);
+    assertThat(request.getTenantId()).isEqualTo(tenantId);
 
     final Resource resource1 = request.getResources(0);
     assertThat(resource1.getName()).isEqualTo(filename1);
@@ -211,31 +214,39 @@ public final class DeployResourceTest extends ClientTest {
   public void shouldDeployProcessAsResource() {
     // given
     final long key = 123L;
+    final String tenantId = "test-tenant";
     final String filename = DeployResourceTest.class.getResource(BPMN_1_FILENAME).getPath();
     gatewayService.onDeployResourceRequest(
-        key, deployment(deployedProcess(BPMN_1_PROCESS_ID, 12, 423, filename)));
+        key, tenantId, deployment(deployedProcess(BPMN_1_PROCESS_ID, 12, 423, filename, tenantId)));
 
     // when
     final DeploymentEvent response =
-        client.newDeployResourceCommand().addResourceFile(filename).send().join();
+        client
+            .newDeployResourceCommand()
+            .addResourceFile(filename)
+            .tenantId(tenantId)
+            .send()
+            .join();
 
     // then
     assertThat(response.getKey()).isEqualTo(key);
+    assertThat(response.getTenantId()).isEqualTo(tenantId);
     assertThat(response.getProcesses())
-        .containsExactly(new ProcessImpl(423, BPMN_1_PROCESS_ID, 12, filename));
-    assertThat(response.getTenantId()).isEqualTo("");
+        .containsExactly(new ProcessImpl(423, BPMN_1_PROCESS_ID, 12, filename, tenantId));
   }
 
   @Test
   public void shouldDeployMultipleProcessesAsResources() {
     // given
     final long key = 345L;
+    final String tenantId = "test-tenant";
     final String filename1 = BPMN_1_FILENAME.substring(1);
     final String filename2 = BPMN_2_FILENAME.substring(1);
     gatewayService.onDeployResourceRequest(
         key,
-        deployment(deployedProcess(BPMN_1_PROCESS_ID, 1, 1, filename1)),
-        deployment(deployedProcess(BPMN_2_PROCESS_ID, 1, 2, filename2)));
+        tenantId,
+        deployment(deployedProcess(BPMN_1_PROCESS_ID, 1, 1, filename1, tenantId)),
+        deployment(deployedProcess(BPMN_2_PROCESS_ID, 1, 2, filename2, tenantId)));
 
     // when
     final DeploymentEvent response =
@@ -243,6 +254,7 @@ public final class DeployResourceTest extends ClientTest {
             .newDeployResourceCommand()
             .addResourceFromClasspath(filename1)
             .addResourceFromClasspath(filename2)
+            .tenantId(tenantId)
             .send()
             .join();
 
@@ -250,8 +262,8 @@ public final class DeployResourceTest extends ClientTest {
     assertThat(response.getKey()).isEqualTo(key);
     assertThat(response.getProcesses())
         .containsExactly(
-            new ProcessImpl(1, BPMN_1_PROCESS_ID, 1, filename1),
-            new ProcessImpl(2, BPMN_2_PROCESS_ID, 1, filename2));
+            new ProcessImpl(1, BPMN_1_PROCESS_ID, 1, filename1, tenantId),
+            new ProcessImpl(2, BPMN_2_PROCESS_ID, 1, filename2, tenantId));
   }
 
   @Test
@@ -260,18 +272,21 @@ public final class DeployResourceTest extends ClientTest {
     final String filename = DeployResourceTest.class.getResource(DMN_FILENAME).getPath();
     final long deploymentKey = 123L;
     final int version = 1;
+    final String tenantId = "test-tenant";
     final long decisionRequirementsKey = 234L;
     final long decisionKey1 = 345L;
     final long decisionKey2 = 456L;
     gatewayService.onDeployResourceRequest(
         deploymentKey,
+        tenantId,
         deployment(
             deployedDecisionRequirements(
                 DMN_DECISION_REQUIREMENTS_ID,
                 DMN_DECISION_REQUIREMENTS_NAME,
                 version,
                 decisionRequirementsKey,
-                filename)),
+                filename,
+                tenantId)),
         deployment(
             deployedDecision(
                 DMN_DECISION_ID_1,
@@ -279,7 +294,8 @@ public final class DeployResourceTest extends ClientTest {
                 version,
                 decisionKey1,
                 DMN_DECISION_REQUIREMENTS_ID,
-                decisionRequirementsKey)),
+                decisionRequirementsKey,
+                tenantId)),
         deployment(
             deployedDecision(
                 DMN_DECISION_ID_2,
@@ -287,7 +303,8 @@ public final class DeployResourceTest extends ClientTest {
                 version,
                 decisionKey2,
                 DMN_DECISION_REQUIREMENTS_ID,
-                decisionRequirementsKey)));
+                decisionRequirementsKey,
+                tenantId)));
 
     // when
     final DeploymentEvent response =
@@ -302,7 +319,8 @@ public final class DeployResourceTest extends ClientTest {
                 DMN_DECISION_REQUIREMENTS_NAME,
                 version,
                 decisionRequirementsKey,
-                filename));
+                filename,
+                tenantId));
     assertThat(response.getDecisions())
         .containsExactly(
             new DecisionImpl(
@@ -311,14 +329,16 @@ public final class DeployResourceTest extends ClientTest {
                 version,
                 decisionKey1,
                 DMN_DECISION_REQUIREMENTS_ID,
-                decisionRequirementsKey),
+                decisionRequirementsKey,
+                tenantId),
             new DecisionImpl(
                 DMN_DECISION_ID_2,
                 DMN_DECISION_NAME_2,
                 version,
                 decisionKey2,
                 DMN_DECISION_REQUIREMENTS_ID,
-                decisionRequirementsKey));
+                decisionRequirementsKey,
+                tenantId));
   }
 
   @Test
@@ -363,22 +383,6 @@ public final class DeployResourceTest extends ClientTest {
 
     // then
     rule.verifyRequestTimeout(requestTimeout);
-  }
-
-  @Test
-  public void shouldAllowSpecifyingTenantId() {
-    // given
-    final DeployResourceCommandStep2 builder =
-        client.newDeployResourceCommand().addResourceStringUtf8("", "test.bpmn");
-
-    // when
-    final DeployResourceCommandStep2 builderWithTenantId = builder.tenantId("custom tenant");
-
-    // then
-    // todo(#13321): verify that tenant id is set in the request
-    assertThat(builderWithTenantId)
-        .describedAs("This method has no effect on the command builder while under development")
-        .isEqualTo(builder);
   }
 
   private byte[] getBytes(final String filename) {

@@ -31,6 +31,11 @@ public final class ClientProperties {
   public static final String GATEWAY_ADDRESS = "zeebe.client.gateway.address";
 
   /**
+   * @see ZeebeClientBuilder#defaultTenantId(String)
+   */
+  public static final String DEFAULT_TENANT_ID = "zeebe.client.tenantId";
+
+  /**
    * @see ZeebeClientBuilder#numJobWorkerExecutionThreads(int)
    */
   public static final String JOB_WORKER_EXECUTION_THREADS = "zeebe.client.worker.threads";
