@@ -18,6 +18,7 @@ import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.partition.RaftPartitionConfig;
+import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -44,6 +45,7 @@ public class RaftPartitionServerTest {
             localMemberId,
             mock(ClusterMembershipService.class),
             mock(ClusterCommunicationService.class),
+            mock(ReceivableSnapshotStore.class),
             mock(PartitionMetadata.class));
 
     // this is called internally by #initServer which we need to ensure does not prevent

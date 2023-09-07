@@ -26,6 +26,7 @@ import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.raft.RaftRoleChangeListener;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.impl.RaftPartitionServer;
+import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
@@ -84,18 +85,22 @@ public final class RaftPartition implements Partition, HealthMonitorable {
   }
 
   /** Opens the partition. */
-  public CompletableFuture<RaftPartition> open(final PartitionManagementService managementService) {
+  public CompletableFuture<RaftPartition> open(
+      final PartitionManagementService managementService,
+      final ReceivableSnapshotStore snapshotStore) {
     if (partitionMetadata
         .members()
         .contains(managementService.getMembershipService().getLocalMember().id())) {
-      initServer(managementService);
+      initServer(managementService, snapshotStore);
       return server.start().thenApply(v -> this);
     }
     return CompletableFuture.completedFuture(this);
   }
 
-  private void initServer(final PartitionManagementService managementService) {
-    server = createServer(managementService);
+  private void initServer(
+      final PartitionManagementService managementService,
+      final ReceivableSnapshotStore snapshotStore) {
+    server = createServer(managementService, snapshotStore);
 
     if (!deferredRoleChangeListeners.isEmpty()) {
       deferredRoleChangeListeners.forEach(server::addRoleChangeListener);
@@ -104,13 +109,16 @@ public final class RaftPartition implements Partition, HealthMonitorable {
   }
 
   /** Creates a Raft server. */
-  protected RaftPartitionServer createServer(final PartitionManagementService managementService) {
+  private RaftPartitionServer createServer(
+      final PartitionManagementService managementService,
+      final ReceivableSnapshotStore snapshotStore) {
     return new RaftPartitionServer(
         this,
         config,
         managementService.getMembershipService().getLocalMember().id(),
         managementService.getMembershipService(),
         managementService.getMessagingService(),
+        snapshotStore,
         partitionMetadata);
   }
 

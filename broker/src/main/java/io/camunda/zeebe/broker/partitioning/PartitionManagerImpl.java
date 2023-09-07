@@ -89,7 +89,6 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
             brokerCfg,
             localBroker,
             commandApiService,
-            snapshotStoreFactory,
             clusterServices,
             exporterRepository,
             healthCheckService,
@@ -102,10 +101,14 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
     managementService =
         new DefaultPartitionManagementService(
             clusterServices.getMembershipService(), clusterServices.getCommunicationService());
-    final var raftPartitionFactory = new RaftPartitionFactory(brokerCfg, snapshotStoreFactory);
+    final var raftPartitionFactory = new RaftPartitionFactory(brokerCfg);
     partitionStartup =
         new PartitionStartup(
-            actorSchedulingService, managementService, raftPartitionFactory, zeebePartitionFactory);
+            actorSchedulingService,
+            snapshotStoreFactory,
+            managementService,
+            raftPartitionFactory,
+            zeebePartitionFactory);
   }
 
   public PartitionAdminAccess createAdminAccess(final ConcurrencyControl concurrencyControl) {

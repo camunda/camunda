@@ -108,8 +108,7 @@ public class RestoreManager {
                     configuration.getExperimental().getPartitioning(),
                     localMember)
                 .generatePartitionDistribution());
-    // snapshot store factory can be null because we are not going start the partitions.
-    final var raftPartitionFactory = new RaftPartitionFactory(configuration, null);
+    final var raftPartitionFactory = new RaftPartitionFactory(configuration);
 
     return clusterTopology.partitions().stream()
         .filter(partitionMetadata -> partitionMetadata.members().contains(localMember))

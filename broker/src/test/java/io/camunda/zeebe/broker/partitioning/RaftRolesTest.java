@@ -13,7 +13,7 @@ import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.AtomixClusterBuilder;
 import io.atomix.cluster.AtomixClusterRule;
 import io.atomix.cluster.MemberId;
-import io.atomix.cluster.NoopSnapshotStoreFactory;
+import io.atomix.cluster.NoopSnapshotStore;
 import io.atomix.primitive.partition.Partition;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.impl.DefaultPartitionManagementService;
@@ -154,8 +154,6 @@ public final class RaftRolesTest {
             .map(
                 metadata -> {
                   final var raftStorageConfig = new RaftStorageConfig();
-                  raftStorageConfig.setPersistedSnapshotStoreFactory(
-                      new NoopSnapshotStoreFactory());
                   final var raftPartitionConfig = new RaftPartitionConfig();
                   raftPartitionConfig.setStorageConfig(raftStorageConfig);
                   raftPartitionConfig.setPriorityElectionEnabled(false);
@@ -180,7 +178,7 @@ public final class RaftRolesTest {
       partitions.forEach(partitionConsumer);
       return CompletableFuture.allOf(
           partitions.stream()
-              .map(partition -> partition.open(managementService))
+              .map(partition -> partition.open(managementService, new NoopSnapshotStore()))
               .toArray(CompletableFuture[]::new));
     } catch (final InterruptedException | ExecutionException e) {
       LangUtil.rethrowUnchecked(e);

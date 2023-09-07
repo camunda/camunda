@@ -19,6 +19,7 @@ import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.Member;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.Node;
+import io.atomix.cluster.NoopSnapshotStore;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.cluster.discovery.NodeDiscoveryProvider;
 import io.atomix.primitive.partition.PartitionId;
@@ -28,7 +29,6 @@ import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.partition.RaftPartitionConfig;
 import io.atomix.raft.partition.RaftStorageConfig;
 import io.atomix.raft.partition.impl.RaftPartitionServer;
-import io.atomix.raft.snapshot.TestSnapshotStore;
 import io.atomix.raft.zeebe.EntryValidator.NoopEntryValidator;
 import java.io.File;
 import java.util.Collection;
@@ -36,7 +36,6 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 public class ZeebeTestNode {
@@ -93,7 +92,8 @@ public class ZeebeTestNode {
             ignored ->
                 CompletableFuture.allOf(
                     partitions.stream()
-                        .map(partition -> partition.open(managementService))
+                        .map(
+                            partition -> partition.open(managementService, new NoopSnapshotStore()))
                         .toArray(CompletableFuture[]::new)));
   }
 
@@ -102,8 +102,6 @@ public class ZeebeTestNode {
         .map(
             partitionMetadata -> {
               final var raftStorageConfig = new RaftStorageConfig();
-              raftStorageConfig.setPersistedSnapshotStoreFactory(
-                  (path, partition) -> new TestSnapshotStore(new AtomicReference<>()));
               raftStorageConfig.setSegmentSize(1024);
               final var raftPartitionConfig = new RaftPartitionConfig();
               raftPartitionConfig.setStorageConfig(raftStorageConfig);
