@@ -28,35 +28,6 @@ public class TaskVariableSearchUtil {
 
   @Autowired private VariableStore variableStore;
 
-  public Map<String, List<VariableEntity>> getRuntimeVariablesPerTaskId(
-      List<VariableStore.GetVariablesRequest> requests) {
-
-    if (requests == null || requests.size() == 0) {
-      return new HashMap<>();
-    }
-
-    // build flow node trees (for each process instance)
-    final Map<String, VariableStore.FlowNodeTree> flowNodeTrees = buildFlowNodeTrees(requests);
-
-    // build local variable map  (for each flow node instance)
-    final List<String> flowNodeInstanceIds =
-        flowNodeTrees.values().stream()
-            .flatMap(f -> f.getFlowNodeInstanceIds().stream())
-            .collect(Collectors.toList());
-    final Map<String, VariableStore.VariableMap> variableMaps =
-        buildVariableMaps(
-            flowNodeInstanceIds,
-            requests.stream()
-                .map(VariableStore.GetVariablesRequest::getVarNames)
-                .flatMap(x -> x == null ? null : x.stream())
-                .collect(toList()),
-            requests
-                .get(0)
-                .getFieldNames()); // we assume here that all requests has the same list of  fields
-
-    return buildResponse(flowNodeTrees, variableMaps, requests);
-  }
-
   public Boolean checkIfVariablesExistInTask(
       List<VariableStore.GetVariablesRequest> requests, Map<String, String> variableNameAndVar) {
 
