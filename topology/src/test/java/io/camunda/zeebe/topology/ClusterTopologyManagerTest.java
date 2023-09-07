@@ -9,6 +9,7 @@ package io.camunda.zeebe.topology;
 
 import static io.camunda.zeebe.topology.ClusterTopologyAssert.*;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -22,6 +23,7 @@ import io.camunda.zeebe.topology.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.MemberState;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation;
+import io.camunda.zeebe.topology.state.TopologyChangeOperation.Operation;
 import io.camunda.zeebe.util.Either;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -172,7 +174,8 @@ final class ClusterTopologyManagerTest {
 
     // when
     final ClusterTopology topologyFromOtherMember =
-        initialTopology.startTopologyChange(List.of(() -> localMemberId));
+        initialTopology.startTopologyChange(
+            List.of(new TopologyChangeOperation(localMemberId, mock(Operation.class))));
     clusterTopologyManager.onGossipReceived(topologyFromOtherMember).join();
 
     // then
