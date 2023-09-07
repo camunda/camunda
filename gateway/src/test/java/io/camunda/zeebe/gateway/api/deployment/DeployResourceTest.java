@@ -31,10 +31,12 @@ public final class DeployResourceTest extends GatewayTest {
 
     final String bpmnName = "testProcess.bpmn";
     final String dmnName = "testDecision.dmn";
+    final String defaultTenantId = "<default>";
 
     final var builder = DeployResourceRequest.newBuilder();
     builder.addResourcesBuilder().setName(bpmnName).setContent(ByteString.copyFromUtf8("<xml/>"));
     builder.addResourcesBuilder().setName(dmnName).setContent(ByteString.copyFromUtf8("test"));
+    // TODO: test explicit passing of tenantId with #14041
 
     final var request = builder.build();
 
@@ -44,6 +46,7 @@ public final class DeployResourceTest extends GatewayTest {
     // then
     assertThat(response.getKey()).isEqualTo(stub.getKey());
     assertThat(response.getDeploymentsCount()).isEqualTo(3);
+    assertThat(response.getTenantId()).isEqualTo(defaultTenantId);
 
     final Deployment firstDeployment = response.getDeployments(0);
     assertThat(firstDeployment.hasProcess()).isTrue();
@@ -54,6 +57,7 @@ public final class DeployResourceTest extends GatewayTest {
     assertThat(process.getResourceName()).isEqualTo(bpmnName);
     assertThat(process.getProcessDefinitionKey()).isEqualTo(stub.getProcessDefinitionKey());
     assertThat(process.getVersion()).isEqualTo(stub.getProcessVersion());
+    assertThat(process.getTenantId()).isEqualTo(defaultTenantId);
 
     final Deployment secondDeployment = response.getDeployments(1);
     assertThat(secondDeployment.hasProcess()).isFalse();
@@ -66,6 +70,7 @@ public final class DeployResourceTest extends GatewayTest {
     assertThat(decision.getDecisionKey()).isEqualTo(567);
     assertThat(decision.getDmnDecisionRequirementsId()).isEqualTo(dmnName);
     assertThat(decision.getDecisionRequirementsKey()).isEqualTo(678);
+    assertThat(decision.getTenantId()).isEqualTo(defaultTenantId);
 
     final Deployment thirdDeployment = response.getDeployments(2);
     assertThat(thirdDeployment.hasProcess()).isFalse();
@@ -77,6 +82,7 @@ public final class DeployResourceTest extends GatewayTest {
     assertThat(drg.getVersion()).isEqualTo(456);
     assertThat(drg.getDecisionRequirementsKey()).isEqualTo(678);
     assertThat(drg.getResourceName()).isEqualTo(dmnName);
+    assertThat(drg.getTenantId()).isEqualTo(defaultTenantId);
 
     final BrokerDeployResourceRequest brokerRequest = brokerClient.getSingleBrokerRequest();
     assertThat(brokerRequest.getIntent()).isEqualTo(DeploymentIntent.CREATE);

@@ -30,6 +30,7 @@ public final class DeployProcessTest extends GatewayTest {
 
     final String bpmnName = "testProcess.bpmn";
     final String otherName = "testProcess.txt";
+    final String defaultTenantId = "<default>";
 
     final Builder builder = DeployProcessRequest.newBuilder();
     builder
@@ -58,6 +59,7 @@ public final class DeployProcessTest extends GatewayTest {
     assertThat(process.getResourceName()).isEqualTo(otherName);
     assertThat(process.getProcessDefinitionKey()).isEqualTo(stub.getProcessDefinitionKey());
     assertThat(process.getVersion()).isEqualTo(stub.getProcessVersion());
+    assertThat(process.getTenantId()).isEqualTo(defaultTenantId);
 
     final BrokerDeployResourceRequest brokerRequest = brokerClient.getSingleBrokerRequest();
     assertThat(brokerRequest.getIntent()).isEqualTo(DeploymentIntent.CREATE);

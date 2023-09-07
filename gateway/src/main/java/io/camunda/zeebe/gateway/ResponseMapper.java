@@ -69,6 +69,7 @@ public final class ResponseMapper {
                     .setBpmnProcessId(bufferAsString(process.getBpmnProcessIdBuffer()))
                     .setVersion(process.getVersion())
                     .setProcessDefinitionKey(process.getKey())
+                    .setTenantId(process.getTenantId())
                     .setResourceName(bufferAsString(process.getResourceNameBuffer())));
 
     return responseBuilder.build();
@@ -76,7 +77,8 @@ public final class ResponseMapper {
 
   public static DeployResourceResponse toDeployResourceResponse(
       final long key, final DeploymentRecord brokerResponse) {
-    final var responseBuilder = DeployResourceResponse.newBuilder().setKey(key);
+    final var responseBuilder =
+        DeployResourceResponse.newBuilder().setKey(key).setTenantId(brokerResponse.getTenantId());
 
     brokerResponse.processesMetadata().stream()
         .map(
@@ -86,6 +88,7 @@ public final class ResponseMapper {
                     .setVersion(process.getVersion())
                     .setProcessDefinitionKey(process.getKey())
                     .setResourceName(process.getResourceName())
+                    .setTenantId(process.getTenantId())
                     .build())
         .forEach(process -> responseBuilder.addDeploymentsBuilder().setProcess(process));
 
@@ -99,6 +102,7 @@ public final class ResponseMapper {
                     .setDecisionKey(decision.getDecisionKey())
                     .setDmnDecisionRequirementsId(decision.getDecisionRequirementsId())
                     .setDecisionRequirementsKey(decision.getDecisionRequirementsKey())
+                    .setTenantId(decision.getTenantId())
                     .build())
         .forEach(decision -> responseBuilder.addDeploymentsBuilder().setDecision(decision));
 
@@ -111,6 +115,7 @@ public final class ResponseMapper {
                     .setVersion(drg.getDecisionRequirementsVersion())
                     .setDecisionRequirementsKey(drg.getDecisionRequirementsKey())
                     .setResourceName(drg.getResourceName())
+                    .setTenantId(drg.getTenantId())
                     .build())
         .forEach(drg -> responseBuilder.addDeploymentsBuilder().setDecisionRequirements(drg));
 

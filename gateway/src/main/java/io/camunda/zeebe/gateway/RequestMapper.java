@@ -11,6 +11,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.agrona.LangUtil.rethrowUnchecked;
 
 import com.fasterxml.jackson.core.JsonParseException;
+import io.camunda.zeebe.gateway.cmd.InvalidTenantRequestException;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerBroadcastSignalRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCancelProcessInstanceRequest;
@@ -52,10 +53,15 @@ import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationPropertiesImpl;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import java.util.regex.Pattern;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.apache.commons.lang3.StringUtils;
 
 public final class RequestMapper {
+
+  private static final Pattern TENANT_ID_MASK = Pattern.compile("^[\\w\\.-]{1,31}$");
 
   public static BrokerDeployResourceRequest toDeployProcessRequest(
       final DeployProcessRequest grpcRequest) {
@@ -64,6 +70,7 @@ public final class RequestMapper {
     for (final ProcessRequestObject process : grpcRequest.getProcessesList()) {
       brokerRequest.addResource(process.getDefinition().toByteArray(), process.getName());
     }
+    brokerRequest.setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
     return brokerRequest;
   }
@@ -71,6 +78,10 @@ public final class RequestMapper {
   public static BrokerDeployResourceRequest toDeployResourceRequest(
       final DeployResourceRequest grpcRequest) {
     final BrokerDeployResourceRequest brokerRequest = new BrokerDeployResourceRequest();
+
+    // TODO: pass multi-tenancy config property (#14041)
+    final String tenantId = grpcRequest.getTenantId();
+    brokerRequest.setTenantId(ensureTenantIdSet("DeployResource", tenantId, false));
 
     for (final Resource resource : grpcRequest.getResourcesList()) {
       brokerRequest.addResource(resource.getContent().toByteArray(), resource.getName());
@@ -253,6 +264,38 @@ public final class RequestMapper {
           throw e;
         }
       }
+    }
+  }
+
+  public static String ensureTenantIdSet(
+      final String commandName, final String tenantId, final boolean isMultiTenancyEnabled) {
+
+    final boolean hasTenantId = !StringUtils.isBlank(tenantId);
+    if (isMultiTenancyEnabled) {
+
+      if (!hasTenantId) {
+        throw new InvalidTenantRequestException(
+            commandName, tenantId, "no tenant identifier was provided.");
+      }
+
+      if (tenantId.length() > 31) {
+        throw new InvalidTenantRequestException(
+            commandName, tenantId, "tenant identifier is longer than 31 characters");
+      }
+
+      if (!TenantOwned.DEFAULT_TENANT_IDENTIFIER.equals(tenantId)
+          && !TENANT_ID_MASK.matcher(tenantId).matches()) {
+        throw new InvalidTenantRequestException(
+            commandName, tenantId, "tenant identifier contains illegal characters");
+      }
+
+      return tenantId;
+    } else {
+      if (hasTenantId && !TenantOwned.DEFAULT_TENANT_IDENTIFIER.equals(tenantId)) {
+        throw new InvalidTenantRequestException(commandName, tenantId, "multi-tenancy is disabled");
+      }
+
+      return TenantOwned.DEFAULT_TENANT_IDENTIFIER;
     }
   }
 }

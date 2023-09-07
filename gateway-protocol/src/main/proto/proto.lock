@@ -581,6 +581,11 @@
                 "name": "resources",
                 "type": "Resource",
                 "is_repeated": true
+              },
+              {
+                "id": 2,
+                "name": "tenantId",
+                "type": "string"
               }
             ]
           },
@@ -612,6 +617,11 @@
                 "name": "deployments",
                 "type": "Deployment",
                 "is_repeated": true
+              },
+              {
+                "id": 3,
+                "name": "tenantId",
+                "type": "string"
               }
             ]
           },
@@ -657,6 +667,11 @@
                 "id": 4,
                 "name": "resourceName",
                 "type": "string"
+              },
+              {
+                "id": 5,
+                "name": "tenantId",
+                "type": "string"
               }
             ]
           },
@@ -692,6 +707,11 @@
                 "id": 6,
                 "name": "decisionRequirementsKey",
                 "type": "int64"
+              },
+              {
+                "id": 7,
+                "name": "tenantId",
+                "type": "string"
               }
             ]
           },
@@ -721,6 +741,11 @@
               {
                 "id": 5,
                 "name": "resourceName",
+                "type": "string"
+              },
+              {
+                "id": 6,
+                "name": "tenantId",
                 "type": "string"
               }
             ]
