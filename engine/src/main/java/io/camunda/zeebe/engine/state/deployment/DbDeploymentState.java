@@ -18,6 +18,7 @@ import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.state.mutable.MutableDeploymentState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.MutableBoolean;
@@ -26,7 +27,6 @@ import org.agrona.collections.MutableReference;
 import org.slf4j.Logger;
 
 public final class DbDeploymentState implements MutableDeploymentState {
-
   private static final Logger LOG = Loggers.STREAM_PROCESSING;
 
   private final DbLong deploymentKey;
@@ -140,6 +140,10 @@ public final class DbDeploymentState implements MutableDeploymentState {
               // we ignore this currently
               return;
             }
+            // Any deployments in this state are old as deployment distributions are done using
+            // generalized distribution now. It is safe to assume that they belong to the default
+            // tenant. We do have to set this on the record before distributing it.
+            deploymentRaw.getDeploymentRecord().setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
             lastDeployment.set(BufferUtil.createCopy(deploymentRaw.getDeploymentRecord()));
             lastDeploymentKey.set(deploymentKey);
           }
