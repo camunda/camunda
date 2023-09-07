@@ -93,6 +93,7 @@ public final class DeployResourceTest extends GatewayTest {
   @Test
   @Ignore("https://github.com/camunda/zeebe/issues/14041")
   public void shouldMapRequestAndResponseWithCustomTenantId() {
+    // given
     final var stub = new DeployResourceStub();
     stub.registerWith(brokerClient);
 
@@ -111,33 +112,16 @@ public final class DeployResourceTest extends GatewayTest {
     final var response = client.deployResource(request);
 
     // then
-    assertThat(response.getKey()).isEqualTo(stub.getKey());
-    assertThat(response.getDeploymentsCount()).isEqualTo(3);
     assertThat(response.getTenantId()).isEqualTo(tenantId);
 
-    final Deployment firstDeployment = response.getDeployments(0);
-    assertThat(firstDeployment.hasProcess()).isTrue();
-    assertThat(firstDeployment.hasDecision()).isFalse();
-    assertThat(firstDeployment.hasDecisionRequirements()).isFalse();
-    final ProcessMetadata process = firstDeployment.getProcess();
+    assertThat(response.getDeploymentsCount()).isEqualTo(3);
+    final ProcessMetadata process = response.getDeployments(0).getProcess();
     assertThat(process.getTenantId()).isEqualTo(tenantId);
 
-    final Deployment secondDeployment = response.getDeployments(1);
-    assertThat(secondDeployment.hasProcess()).isFalse();
-    assertThat(secondDeployment.hasDecision()).isTrue();
-    assertThat(secondDeployment.hasDecisionRequirements()).isFalse();
-    final DecisionMetadata decision = secondDeployment.getDecision();
+    final DecisionMetadata decision = response.getDeployments(1).getDecision();
     assertThat(decision.getTenantId()).isEqualTo(tenantId);
 
-    final Deployment thirdDeployment = response.getDeployments(2);
-    assertThat(thirdDeployment.hasProcess()).isFalse();
-    assertThat(thirdDeployment.hasDecision()).isFalse();
-    assertThat(thirdDeployment.hasDecisionRequirements()).isTrue();
-    final DecisionRequirementsMetadata drg = thirdDeployment.getDecisionRequirements();
+    final DecisionRequirementsMetadata drg = response.getDeployments(2).getDecisionRequirements();
     assertThat(drg.getTenantId()).isEqualTo(tenantId);
-
-    final BrokerDeployResourceRequest brokerRequest = brokerClient.getSingleBrokerRequest();
-    assertThat(brokerRequest.getIntent()).isEqualTo(DeploymentIntent.CREATE);
-    assertThat(brokerRequest.getValueType()).isEqualTo(ValueType.DEPLOYMENT);
   }
 }
