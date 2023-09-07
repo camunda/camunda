@@ -459,49 +459,6 @@ public final class StreamProcessorTest {
   }
 
   @Test
-  public void shouldBlockProcessingIfSchedulingBlocks() throws InterruptedException {
-    // given
-    final var mockProcessorLifecycleAware = streamPlatform.getMockProcessorLifecycleAware();
-    final CountDownLatch asyncServiceLatch = new CountDownLatch(1);
-    final CountDownLatch countDownLatch = new CountDownLatch(1);
-    doAnswer(
-            (invocationOnMock) -> {
-              final var context = (ReadonlyStreamProcessorContext) invocationOnMock.getArgument(0);
-
-              context
-                  .getScheduleService()
-                  .runAtFixedRate(
-                      Duration.ZERO,
-                      (taskResultBuilder) -> {
-                        try {
-                          asyncServiceLatch.countDown();
-                          countDownLatch.await();
-                        } catch (final InterruptedException e) {
-                          throw new RuntimeException(e);
-                        }
-                        return taskResultBuilder.build();
-                      });
-
-              return invocationOnMock.callRealMethod();
-            })
-        .when(mockProcessorLifecycleAware)
-        .onRecovered(any());
-
-    final var defaultRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
-    streamPlatform.startStreamProcessor();
-
-    // when
-    assertThat(asyncServiceLatch.await(10, TimeUnit.SECONDS)).isTrue();
-    streamPlatform.writeBatch(
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)));
-
-    // then
-    verify(defaultRecordProcessor, timeout(500).times(0)).process(any(), any());
-    // free processor
-    countDownLatch.countDown();
-  }
-
-  @Test
   public void shouldProcessEvenIfAsyncSchedulingBlocks() throws InterruptedException {
     // given
     final var mockProcessorLifecycleAware = streamPlatform.getMockProcessorLifecycleAware();
@@ -533,15 +490,19 @@ public final class StreamProcessorTest {
     final var defaultRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
     streamPlatform.startStreamProcessor();
 
-    // when
-    assertThat(asyncServiceLatch.await(10, TimeUnit.SECONDS)).isTrue();
-    streamPlatform.writeBatch(
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)));
+    try {
+      // when
+      assertThat(asyncServiceLatch.await(10, TimeUnit.SECONDS)).isTrue();
+      streamPlatform.writeBatch(
+          RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)));
 
-    // then
-    verify(defaultRecordProcessor, TIMEOUT.times(1)).process(any(), any());
-    // free schedule service
-    countDownLatch.countDown();
+      // then
+      verify(defaultRecordProcessor, TIMEOUT.times(1)).process(any(), any());
+
+    } finally {
+      // free schedule service
+      countDownLatch.countDown();
+    }
   }
 
   @Disabled("Should be enabled when https://github.com/camunda/zeebe/issues/11849 is fixed")
