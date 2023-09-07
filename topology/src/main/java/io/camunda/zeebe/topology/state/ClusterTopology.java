@@ -9,7 +9,9 @@ package io.camunda.zeebe.topology.state;
 
 import com.google.common.collect.ImmutableMap;
 import io.atomix.cluster.MemberId;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -21,9 +23,11 @@ import java.util.stream.Stream;
  * <p>version - represents the current version of the topology. It is incremented when new
  * configuration change is triggered.
  *
- * <p>members - represents the state of each members
+ * <p>members - represents the state of each member
  *
  * <p>changes - keeps track of the ongoing configuration changes
+ *
+ * <p>This class is immutable. Each mutable methods returns a new instance with the updated state.
  */
 public record ClusterTopology(
     long version, Map<MemberId, MemberState> members, ClusterChangePlan changes) {
@@ -55,7 +59,7 @@ public record ClusterTopology(
     return new ClusterTopology(version, newMembers, changes);
   }
 
-  ClusterTopology updateMember(
+  public ClusterTopology updateMember(
       final MemberId memberId, final UnaryOperator<MemberState> memberStateUpdater) {
     if (!members.containsKey(memberId)) {
       throw new IllegalStateException(
@@ -70,10 +74,20 @@ public record ClusterTopology(
     return new ClusterTopology(version, newMembers, changes);
   }
 
+  public ClusterTopology startTopologyChange(final List<TopologyChangeOperation> operations) {
+    if (changes.pendingOperations().isEmpty()) {
+      return new ClusterTopology(version + 1, members, ClusterChangePlan.init(operations));
+    } else {
+      throw new IllegalArgumentException(
+          "Expected to start new topology change, but there is a topology change in progress "
+              + changes);
+    }
+  }
+
   /**
    * Returns a new ClusterTopology after merging this and other. This doesn't overwrite this or
    * other. If this.version == other.version then the new ClusterTopology contains merged members
-   * and changes. Otherwise, it returns the one with highest version.
+   * and changes. Otherwise, it returns the one with the highest version.
    *
    * @param other ClusterTopology to merge
    * @return merged ClusterTopology
@@ -89,9 +103,49 @@ public record ClusterTopology(
               .collect(
                   Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, MemberState::merge));
 
-      // TODO: changes also have to be merged. We will do it when we add support for configuration
-      // changes.
-      return new ClusterTopology(version, ImmutableMap.copyOf(mergedMembers), changes);
+      final var mergedChanges = changes.merge(other.changes);
+      return new ClusterTopology(version, ImmutableMap.copyOf(mergedMembers), mergedChanges);
     }
+  }
+
+  /**
+   * @return true if the next operation in pending changes is applicable for the given memberId,
+   *     otherwise returns false.
+   */
+  private boolean hasPendingChangesFor(final MemberId memberId) {
+    return !changes.pendingOperations().isEmpty()
+        && changes.pendingOperations().get(0).memberId().equals(memberId);
+  }
+
+  /**
+   * Returns the next pending operation for the given memberId. If there is no pending operation for
+   * this member, then returns an empty optional.
+   *
+   * @param memberId id of the member
+   * @return the next pending operation for the given memberId.
+   */
+  public Optional<TopologyChangeOperation> pendingChangesFor(final MemberId memberId) {
+    if (!hasPendingChangesFor(memberId)) {
+      return Optional.empty();
+    }
+    return Optional.of(changes.pendingOperations().get(0));
+  }
+
+  /**
+   * When the operation returned by {@link #pendingChangesFor(MemberId)} is completed, the changes
+   * should be reflected in ClusterTopology by invoking this method. This removes the completed
+   * operation from the pending changes and update the member state using the given updater.
+   *
+   * @param memberId id of the member which completed the operation
+   * @param memberStateUpdater the method to update the member state
+   * @return the updated ClusterTopology
+   */
+  public ClusterTopology advanceTopologyChange(
+      final MemberId memberId, final UnaryOperator<MemberState> memberStateUpdater) {
+    return updateMember(memberId, memberStateUpdater).advance();
+  }
+
+  private ClusterTopology advance() {
+    return new ClusterTopology(version, members, changes.advance());
   }
 }
