@@ -14,10 +14,10 @@ import io.camunda.zeebe.engine.state.mutable.MutableDeploymentState;
 import io.camunda.zeebe.engine.util.ProcessingStateRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 import org.apache.commons.lang3.tuple.Triple;
 import org.junit.Before;
@@ -194,7 +194,8 @@ public class DeploymentStateTest {
     assertThat(pendings).extracting(Triple::getMiddle).containsExactly(2, 3);
     assertThat(pendings)
         .extracting(Triple::getRight)
-        .containsOnly(BufferUtil.createCopy(deployment));
+        .containsOnly(
+            BufferUtil.createCopy(deployment.setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)));
   }
 
   @Test
@@ -224,8 +225,9 @@ public class DeploymentStateTest {
         .extracting(Triple::getRight)
         .containsOnly(
             deployments.stream()
+                .map(record -> record.setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER))
                 .map(BufferUtil::createCopy)
-                .collect(Collectors.toList())
+                .toList()
                 .toArray(new DirectBuffer[deployments.size()]));
   }
 
