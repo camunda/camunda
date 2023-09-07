@@ -16,11 +16,13 @@ package commands
 
 import (
 	"context"
-	"github.com/camunda/zeebe/clients/go/v8/pkg/entities"
-	"github.com/camunda/zeebe/clients/go/v8/pkg/pb"
+	"errors"
 	"io"
 	"log"
 	"time"
+
+	"github.com/camunda/zeebe/clients/go/v8/pkg/entities"
+	"github.com/camunda/zeebe/clients/go/v8/pkg/pb"
 )
 
 const (
@@ -96,7 +98,7 @@ func (cmd *ActivateJobsCommand) Send(ctx context.Context) ([]entities.Job, error
 	var activatedJobs []entities.Job
 	for {
 		response, err := stream.Recv()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break
 		}
 		if cmd.shouldRetry(ctx, err) {

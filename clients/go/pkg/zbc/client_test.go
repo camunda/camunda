@@ -18,13 +18,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/camunda/zeebe/clients/go/v8/internal/utils"
-	"google.golang.org/grpc/metadata"
 	"net"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/camunda/zeebe/clients/go/v8/internal/utils"
+	"google.golang.org/grpc/metadata"
 
 	"github.com/stretchr/testify/suite"
 	"google.golang.org/grpc"
@@ -542,6 +543,60 @@ func (s *clientTestSuite) TestOverrideHostAndPortEnvVar() {
 	// then
 	s.NoError(err)
 	s.EqualValues(fmt.Sprintf("%s:%s", address, port), config.GatewayAddress)
+}
+
+func (s *clientTestSuite) TestRetryPredicatewithStopOnPermanentError() {
+	var alwaysRetryfunc = func(_ context.Context, _ error) bool {
+		return true
+	}
+
+	for _, tc := range []struct {
+		err   error
+		retry bool
+	}{
+		{
+			err:   nil,
+			retry: true,
+		},
+		{
+			err:   Error("random error"),
+			retry: true,
+		},
+		{
+			err:   context.Canceled,
+			retry: false,
+		},
+		{
+			err:   context.DeadlineExceeded,
+			retry: false,
+		},
+		{
+			err:   status.Error(codes.InvalidArgument, "invalid arguments"),
+			retry: false,
+		},
+		{
+			err:   status.Error(codes.Unimplemented, "uninplemented"),
+			retry: false,
+		},
+		{
+			err:   status.Error(codes.Canceled, "canceled"),
+			retry: false,
+		},
+		{
+			err:   status.Error(codes.NotFound, "not found"),
+			retry: true,
+		},
+	} {
+		name := fmt.Sprintf("%s", tc.err)
+		inputErr := tc.err
+		expectRetry := tc.retry
+		s.Run(name, func() {
+			shouldRetryRequest := withStopOnPermanentError(alwaysRetryfunc)
+
+			s.Equal(expectRetry, shouldRetryRequest(context.Background(), inputErr))
+		})
+	}
+
 }
 
 func createSecureServer(withSan bool) (net.Listener, *grpc.Server) {
