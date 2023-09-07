@@ -39,6 +39,8 @@ public class TopologyChangeAppliersImpl implements TopologyChangeAppliers {
           operation.priority().orElse(-1),
           localMemberId,
           partitionTopologyChangeExecutor);
+      case LEAVE -> new PartitionLeaveApplier(
+          operation.partitionId(), localMemberId, partitionTopologyChangeExecutor);
       default -> new NoopApplier();
     };
   }
