@@ -215,7 +215,7 @@ public class DbMigrationState implements MutableMigrationState {
     processIdKey = new DbString();
     processVersionInfoColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.PROCESS_VERSION,
+            ZbColumnFamilies.DEPRECATED_PROCESS_VERSION,
             transactionContext,
             processIdKey,
             new ProcessVersionInfo());

@@ -24,12 +24,16 @@ public enum ZbColumnFamilies {
   KEY,
 
   // process
-  PROCESS_VERSION,
+  @Deprecated
+  DEPRECATED_PROCESS_VERSION,
 
   // process cache
-  PROCESS_CACHE,
-  PROCESS_CACHE_BY_ID_AND_VERSION,
-  PROCESS_CACHE_DIGEST_BY_ID,
+  @Deprecated
+  DEPRECATED_PROCESS_CACHE,
+  @Deprecated
+  DEPRECATED_PROCESS_CACHE_BY_ID_AND_VERSION,
+  @Deprecated
+  DEPRECATED_PROCESS_CACHE_DIGEST_BY_ID,
 
   // element instance
   ELEMENT_INSTANCE_PARENT_CHILD,
