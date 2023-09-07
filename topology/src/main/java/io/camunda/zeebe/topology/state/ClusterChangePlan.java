@@ -25,8 +25,10 @@ public record ClusterChangePlan(int version, List<TopologyChangeOperation> pendi
 
   /** To be called when the first operation is completed. */
   ClusterChangePlan advance() {
-    return new ClusterChangePlan(
-        version + 1, pendingOperations.subList(1, pendingOperations.size()));
+    // List#subList hold on to the original list. Make a copy to prevent a potential memory leak.
+    final var nextPendingOperations =
+        List.copyOf(pendingOperations.subList(1, pendingOperations.size()));
+    return new ClusterChangePlan(version + 1, nextPendingOperations);
   }
 
   public ClusterChangePlan merge(final ClusterChangePlan other) {
