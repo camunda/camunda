@@ -34,4 +34,21 @@ final class TopologyChangeAppliersImplTest {
     // then
     assertThat(applier).isInstanceOf(PartitionJoinApplier.class);
   }
+
+  @Test
+  void shouldReturnPartitionLeaveApplier() {
+    // given
+    final var topologyChangeAppliers = new TopologyChangeAppliersImpl(null, localMemberId);
+    final var partitionOperation =
+        new TopologyChangeOperation.PartitionOperation(
+            1, TopologyChangeOperation.PartitionOperationType.LEAVE, Optional.of(1));
+
+    // when
+    final var applier =
+        topologyChangeAppliers.getApplier(
+            new TopologyChangeOperation(localMemberId, partitionOperation));
+
+    // then
+    assertThat(applier).isInstanceOf(PartitionLeaveApplier.class);
+  }
 }

@@ -29,4 +29,10 @@ public final class MemberStateAssert extends AbstractAssert<MemberStateAssert, M
     Assertions.assertThat(partitions).containsEntry(partitionId, state);
     return this;
   }
+
+  public MemberStateAssert doesNotContainPartition(final int partitionId) {
+    final Map<Integer, PartitionState> partitions = actual.partitions();
+    Assertions.assertThat(partitions).doesNotContainKey(partitionId);
+    return this;
+  }
 }
