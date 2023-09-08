@@ -25,7 +25,7 @@ import java.nio.file.Path;
 import java.util.Optional;
 import java.util.Set;
 
-class NoopSnapshotStore implements ReceivableSnapshotStore {
+public class NoopSnapshotStore implements ReceivableSnapshotStore {
 
   @Override
   public boolean hasSnapshotId(final String id) {

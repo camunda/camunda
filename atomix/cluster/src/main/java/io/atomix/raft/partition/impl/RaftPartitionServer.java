@@ -70,8 +70,9 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer>, Health
   private final PartitionMetadata partitionMetadata;
   private final Duration requestTimeout;
   private final Duration snapshotRequestTimeout;
+  private final ReceivableSnapshotStore persistedSnapshotStore;
+
   private RaftServer server;
-  private ReceivableSnapshotStore persistedSnapshotStore;
 
   public RaftPartitionServer(
       final RaftPartition partition,
@@ -79,6 +80,7 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer>, Health
       final MemberId localMemberId,
       final ClusterMembershipService membershipService,
       final ClusterCommunicationService clusterCommunicator,
+      final ReceivableSnapshotStore persistedSnapshotStore,
       final PartitionMetadata partitionMetadata) {
     this.partition = partition;
     this.config = config;
@@ -89,6 +91,7 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer>, Health
         ContextualLoggerFactory.getLogger(
             getClass(),
             LoggerContext.builder(RaftPartitionServer.class).addValue(partition.name()).build());
+    this.persistedSnapshotStore = persistedSnapshotStore;
     this.partitionMetadata = partitionMetadata;
     requestTimeout = config.getRequestTimeout();
     snapshotRequestTimeout = config.getSnapshotRequestTimeout();
@@ -159,12 +162,6 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer>, Health
 
   private RaftServer buildServer() {
     final var partitionId = partition.id().id();
-    persistedSnapshotStore =
-        config
-            .getStorageConfig()
-            .getPersistedSnapshotStoreFactory()
-            .createReceivableSnapshotStore(partition.dataDirectory().toPath(), partitionId);
-
     final var electionConfig =
         config.isPriorityElectionEnabled()
             ? RaftElectionConfig.ofPriorityElection(

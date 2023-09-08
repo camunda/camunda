@@ -13,6 +13,8 @@ import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
+import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
+import io.camunda.zeebe.util.collection.Tuple;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
@@ -20,6 +22,7 @@ import org.slf4j.LoggerFactory;
 
 /** Bootstraps a raft partition and the corresponding Zeebe partition. */
 final class PartitionStartup {
+
   private final ActorSchedulingService schedulingService;
   private final PartitionManagementService partitionManagementService;
   private final RaftPartitionFactory raftPartitionFactory;
@@ -90,19 +93,34 @@ final class PartitionStartup {
       // allowed from an actor, so delegate to another thread.
       CompletableFuture.supplyAsync(
               () -> {
-                LOG.debug("Starting raft partition {}", partitionId);
-                return raftPartition.open(partitionManagementService).join();
+                final var snapshotStore =
+                    new FileBasedSnapshotStore(partitionId, raftPartition.dataDirectory().toPath());
+                schedulingService.submitActor(snapshotStore).join();
+                return snapshotStore;
               })
-          .exceptionally(
-              t -> {
-                LOG.error("Failed to start raft partition {}", raftPartition.id(), t);
+          .exceptionallyCompose(
+              failure -> {
+                LOG.error("Failed to create snapshot store for partition {}", partitionId, failure);
+                result.completeExceptionally(failure);
+                return CompletableFuture.failedStage(failure);
+              })
+          .thenApplyAsync(
+              snapshotStore -> {
+                LOG.debug("Starting raft partition {}", partitionId);
+                raftPartition.open(partitionManagementService, snapshotStore).join();
+                return Tuple.of(raftPartition, snapshotStore);
+              })
+          .exceptionallyCompose(
+              failure -> {
+                LOG.error("Failed to start raft partition {}", raftPartition.id(), failure);
                 // close the raft partition in case it was partially started
                 raftPartition.close();
-                result.completeExceptionally(t);
-                return null;
+                result.completeExceptionally(failure);
+                return CompletableFuture.failedStage(failure);
               })
-          .thenAccept(
-              startedRaftPartition -> actor.call(() -> startZeebePartition(startedRaftPartition)))
+          .thenAcceptAsync(
+              started ->
+                  actor.call(() -> startZeebePartition(started.getLeft(), started.getRight())))
           .exceptionally(
               t -> {
                 LOG.error("Failed to start zeebe partition {}", partitionId, t);
@@ -118,8 +136,10 @@ final class PartitionStartup {
       closeAsync();
     }
 
-    private void startZeebePartition(final RaftPartition startedRaftPartition) {
-      final var zeebePartition = zeebePartitionFactory.constructPartition(startedRaftPartition);
+    private void startZeebePartition(
+        final RaftPartition startedRaftPartition, final FileBasedSnapshotStore snapshotStore) {
+      final var zeebePartition =
+          zeebePartitionFactory.constructPartition(startedRaftPartition, snapshotStore);
       runOnCompletion(
           schedulingService.submitActor(zeebePartition),
           (v, t) -> {

@@ -23,9 +23,8 @@ import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
-import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
-import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreFactory;
+import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
 import java.io.IOException;
@@ -55,15 +54,14 @@ public final class AsyncSnapshottingTest {
   private StateControllerImpl snapshotController;
   private AsyncSnapshotDirector asyncSnapshotDirector;
   private StreamProcessor mockStreamProcessor;
-  private ConstructableSnapshotStore persistedSnapshotStore;
+  private FileBasedSnapshotStore persistedSnapshotStore;
 
   @Before
   public void setup() throws IOException {
     final var rootDirectory = tempFolderRule.getRoot().toPath();
-    final var factory = new FileBasedSnapshotStoreFactory(actorSchedulerRule.get(), 1);
     final int partitionId = 1;
-    factory.createReceivableSnapshotStore(rootDirectory, partitionId);
-    persistedSnapshotStore = factory.getConstructableSnapshotStore(partitionId);
+    persistedSnapshotStore = new FileBasedSnapshotStore(partitionId, rootDirectory);
+    actorSchedulerRule.submitActor(persistedSnapshotStore).join();
 
     snapshotController =
         new StateControllerImpl(

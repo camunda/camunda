@@ -8,15 +8,12 @@
 package io.camunda.zeebe.broker.partitioning;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
-import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
-import io.camunda.zeebe.snapshots.ReceivableSnapshotStoreFactory;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Set;
@@ -26,8 +23,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.util.unit.DataSize;
 
 public final class RaftPartitionFactoryTest {
-  private static final ReceivableSnapshotStoreFactory SNAPSHOT_STORE_FACTORY =
-      (directory, partitionId) -> mock(ReceivableSnapshotStore.class);
 
   @Test
   void shouldSetElectionTimeout() {
@@ -198,7 +193,7 @@ public final class RaftPartitionFactoryTest {
   }
 
   private RaftPartition buildRaftPartition(final BrokerCfg brokerCfg) {
-    return new RaftPartitionFactory(brokerCfg, SNAPSHOT_STORE_FACTORY)
+    return new RaftPartitionFactory(brokerCfg)
         .createRaftPartition(
             new PartitionMetadata(
                 PartitionId.from("test", 1),

@@ -81,7 +81,6 @@ public class LargeStateControllerPerformanceTest {
   @Benchmark
   public Optional<String> measureStateRecovery() throws Exception {
     // given
-    //noinspection deprecation
     final var controller =
         new StateControllerImpl(
             context.dbFactory(),
@@ -89,7 +88,7 @@ public class LargeStateControllerPerformanceTest {
             context.temporaryFolder().resolve("runtime"),
             ignored -> Optional.empty(),
             ignored -> 0L,
-            context.snapshotStoreFactory().getSnapshotStoreConcurrencyControl(1));
+            context.snapshotStore());
 
     // when
     try (final var db = controller.recover().join()) {

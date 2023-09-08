@@ -16,11 +16,9 @@
  */
 package io.atomix.raft.partition;
 
-import com.esotericsoftware.kryo.serializers.FieldSerializer.Optional;
 import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.storage.log.RaftLogFlusher;
 import io.atomix.utils.concurrent.ThreadContext;
-import io.camunda.zeebe.snapshots.ReceivableSnapshotStoreFactory;
 
 /** Raft storage configuration. */
 public class RaftStorageConfig {
@@ -38,9 +36,6 @@ public class RaftStorageConfig {
   private long freeDiskSpace = DEFAULT_FREE_DISK_SPACE;
   private int journalIndexDensity = DEFAULT_JOURNAL_INDEX_DENSITY;
   private boolean preallocateSegmentFiles = DEFAULT_PREALLOCATE_SEGMENT_FILES;
-
-  @Optional("SnapshotStoreFactory")
-  private ReceivableSnapshotStoreFactory persistedSnapshotStoreFactory;
 
   /**
    * Returns the Raft log segment size.
@@ -81,27 +76,6 @@ public class RaftStorageConfig {
    */
   public RaftStorageConfig setFlusherFactory(final RaftLogFlusher.Factory flusherFactory) {
     this.flusherFactory = flusherFactory;
-    return this;
-  }
-
-  /**
-   * Returns the current snapshot store factory.
-   *
-   * @return the snapshot store factory
-   */
-  public ReceivableSnapshotStoreFactory getPersistedSnapshotStoreFactory() {
-    return persistedSnapshotStoreFactory;
-  }
-
-  /**
-   * Sets the snapshot store factory.
-   *
-   * @param persistedSnapshotStoreFactory the new snapshot store factory
-   * @return the Raft storage configuration
-   */
-  public RaftStorageConfig setPersistedSnapshotStoreFactory(
-      final ReceivableSnapshotStoreFactory persistedSnapshotStoreFactory) {
-    this.persistedSnapshotStoreFactory = persistedSnapshotStoreFactory;
     return this;
   }
 
@@ -164,8 +138,6 @@ public class RaftStorageConfig {
         + journalIndexDensity
         + ", preallocateSegmentFiles="
         + preallocateSegmentFiles
-        + ", persistedSnapshotStoreFactory="
-        + persistedSnapshotStoreFactory
         + '}';
   }
 }

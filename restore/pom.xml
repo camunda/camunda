@@ -54,6 +54,16 @@
     </dependency>
 
     <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-scheduler</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-broker</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
     </dependency>
@@ -75,21 +85,26 @@
       <artifactId>mockito-core</artifactId>
       <scope>test</scope>
     </dependency>
+
     <dependency>
       <groupId>org.agrona</groupId>
       <artifactId>agrona</artifactId>
       <scope>test</scope>
     </dependency>
 
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-scheduler</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-broker</artifactId>
-    </dependency>
-
   </dependencies>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <configuration>
+          <ignoredNonTestScopedDependencies>
+            <!-- javac and maven-dependency-plugin disagree whether this is needed or not. -->
+            <ignoredNonTestScopedDependency>io.camunda:zeebe-scheduler</ignoredNonTestScopedDependency>
+          </ignoredNonTestScopedDependencies>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 </project>

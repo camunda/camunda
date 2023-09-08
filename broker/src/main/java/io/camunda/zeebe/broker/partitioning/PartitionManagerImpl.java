@@ -26,7 +26,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
-import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreFactory;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.health.HealthStatus;
 import java.util.ArrayList;
@@ -74,8 +73,6 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
     this.actorSchedulingService = actorSchedulingService;
     this.healthCheckService = healthCheckService;
     this.diskSpaceUsageMonitor = diskSpaceUsageMonitor;
-    final var snapshotStoreFactory =
-        new FileBasedSnapshotStoreFactory(actorSchedulingService, localBroker.getNodeId());
     final var featureFlags = brokerCfg.getExperimental().getFeatures().toFeatureFlags();
     this.partitionDistribution = partitionDistribution;
     topologyManager = new TopologyManagerImpl(clusterServices.getMembershipService(), localBroker);
@@ -89,7 +86,6 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
             brokerCfg,
             localBroker,
             commandApiService,
-            snapshotStoreFactory,
             clusterServices,
             exporterRepository,
             healthCheckService,
@@ -102,7 +98,7 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
     managementService =
         new DefaultPartitionManagementService(
             clusterServices.getMembershipService(), clusterServices.getCommunicationService());
-    final var raftPartitionFactory = new RaftPartitionFactory(brokerCfg, snapshotStoreFactory);
+    final var raftPartitionFactory = new RaftPartitionFactory(brokerCfg);
     partitionStartup =
         new PartitionStartup(
             actorSchedulingService, managementService, raftPartitionFactory, zeebePartitionFactory);

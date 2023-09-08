@@ -18,7 +18,6 @@ import io.camunda.zeebe.broker.raft.ZeebeEntryValidator;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ExperimentalCfg;
 import io.camunda.zeebe.broker.system.configuration.RaftCfg.FlushConfig;
-import io.camunda.zeebe.snapshots.ReceivableSnapshotStoreFactory;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -29,12 +28,9 @@ public final class RaftPartitionFactory {
   public static final String GROUP_NAME = "raft-partition";
 
   private final BrokerCfg brokerCfg;
-  private final ReceivableSnapshotStoreFactory snapshotStoreFactory;
 
-  public RaftPartitionFactory(
-      final BrokerCfg brokerCfg, final ReceivableSnapshotStoreFactory snapshotStoreFactory) {
+  public RaftPartitionFactory(final BrokerCfg brokerCfg) {
     this.brokerCfg = brokerCfg;
-    this.snapshotStoreFactory = snapshotStoreFactory;
   }
 
   public RaftPartition createRaftPartition(final PartitionMetadata partitionMetadata) {
@@ -58,7 +54,6 @@ public final class RaftPartitionFactory {
       throw new UncheckedIOException("Failed to create Raft data directory", e);
     }
 
-    storageConfig.setPersistedSnapshotStoreFactory(snapshotStoreFactory);
     storageConfig.setFlusherFactory(
         createFlusherFactory(
             brokerCfg.getCluster().getRaft().getFlush(), brokerCfg.getExperimental()));

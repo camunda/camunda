@@ -51,7 +51,7 @@ import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.startup.StartupStep;
 import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
-import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreFactory;
+import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.FeatureFlags;
@@ -86,7 +86,6 @@ final class ZeebePartitionFactory {
   private final BrokerCfg brokerCfg;
   private final BrokerInfo localBroker;
   private final CommandApiService commandApiService;
-  private final FileBasedSnapshotStoreFactory snapshotStoreFactory;
   private final ClusterServices clusterServices;
   private final ExporterRepository exporterRepository;
   private final BrokerHealthCheckService healthCheckService;
@@ -102,7 +101,6 @@ final class ZeebePartitionFactory {
       final BrokerCfg brokerCfg,
       final BrokerInfo localBroker,
       final CommandApiService commandApiService,
-      final FileBasedSnapshotStoreFactory snapshotStoreFactory,
       final ClusterServices clusterServices,
       final ExporterRepository exporterRepository,
       final BrokerHealthCheckService healthCheckService,
@@ -116,7 +114,6 @@ final class ZeebePartitionFactory {
     this.brokerCfg = brokerCfg;
     this.localBroker = localBroker;
     this.commandApiService = commandApiService;
-    this.snapshotStoreFactory = snapshotStoreFactory;
     this.clusterServices = clusterServices;
     this.exporterRepository = exporterRepository;
     this.healthCheckService = healthCheckService;
@@ -128,21 +125,16 @@ final class ZeebePartitionFactory {
     this.featureFlags = featureFlags;
   }
 
-  ZeebePartition constructPartition(final RaftPartition raftPartition) {
+  ZeebePartition constructPartition(
+      final RaftPartition raftPartition, final FileBasedSnapshotStore snapshotStore) {
     final var communicationService = clusterServices.getCommunicationService();
     final var membershipService = clusterServices.getMembershipService();
     final var typedRecordProcessorsFactory = createFactory(localBroker, featureFlags);
 
     final var partitionId = raftPartition.id().id();
 
-    final ConstructableSnapshotStore constructableSnapshotStore =
-        snapshotStoreFactory.getConstructableSnapshotStore(partitionId);
-
     final StateController stateController =
-        createStateController(
-            raftPartition,
-            constructableSnapshotStore,
-            snapshotStoreFactory.getSnapshotStoreConcurrencyControl(partitionId));
+        createStateController(raftPartition, snapshotStore, snapshotStore);
 
     final var context =
         new PartitionStartupAndTransitionContextImpl(
@@ -156,7 +148,7 @@ final class ZeebePartitionFactory {
             brokerCfg,
             commandApiService::newCommandResponseWriter,
             () -> commandApiService.getOnProcessedListener(partitionId),
-            constructableSnapshotStore,
+            snapshotStore,
             stateController,
             typedRecordProcessorsFactory,
             exporterRepository,
