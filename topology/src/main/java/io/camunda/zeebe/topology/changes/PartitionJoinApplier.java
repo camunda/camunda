@@ -66,10 +66,6 @@ final class PartitionJoinApplier implements OperationApplier {
                   + localMemberState.partitions().get(partitionId).state()));
     }
 
-    if (priority < 0) {
-      return Either.left(new IllegalArgumentException("Priority is required for partition join"));
-    }
-
     // Collect the priority of each member, including the local member. This is needed to generate
     // PartitionMetadata when joining the partition.
     partitionMembersWithPriority = collectPriorityByMembers(currentClusterTopology);
