@@ -14,6 +14,7 @@ import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.msgpack.value.ObjectValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -148,6 +149,6 @@ public final class ProcessInstanceModificationRecord extends UnifiedRecordValue
   @Override
   public String getTenantId() {
     // todo(#13288): replace dummy implementation
-    return "";
+    return TenantOwned.DEFAULT_TENANT_IDENTIFIER;
   }
 }

@@ -21,6 +21,7 @@ import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.Map;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -352,6 +353,6 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   @Override
   public String getTenantId() {
     // todo(#13345): replace dummy implementation
-    return "";
+    return TenantOwned.DEFAULT_TENANT_IDENTIFIER;
   }
 }

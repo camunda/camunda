@@ -22,6 +22,7 @@ import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.EvaluatedDecisionValue;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
 import java.util.List;
@@ -321,6 +322,6 @@ public final class DecisionEvaluationRecord extends UnifiedRecordValue
   @Override
   public String getTenantId() {
     // todo(#13777): replace dummy implementation
-    return "";
+    return TenantOwned.DEFAULT_TENANT_IDENTIFIER;
   }
 }

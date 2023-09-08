@@ -16,6 +16,7 @@ import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageStartEventSubscriptionRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.Map;
 import org.agrona.DirectBuffer;
 
@@ -159,6 +160,6 @@ public final class MessageStartEventSubscriptionRecord extends UnifiedRecordValu
   @Override
   public String getTenantId() {
     // todo(#13289): replace dummy implementation
-    return "";
+    return TenantOwned.DEFAULT_TENANT_IDENTIFIER;
   }
 }

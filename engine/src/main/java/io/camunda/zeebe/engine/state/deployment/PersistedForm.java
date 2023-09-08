@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.state.deployment;
 
+import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
+
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.BinaryProperty;
@@ -14,6 +16,7 @@ import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.FormRecord;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -25,6 +28,8 @@ public final class PersistedForm extends UnpackedObject implements DbValue {
   private final StringProperty resourceNameProp = new StringProperty("resourceName");
   private final BinaryProperty resourceProp = new BinaryProperty("resource", new UnsafeBuffer());
   private final BinaryProperty checksumProp = new BinaryProperty("checksum", new UnsafeBuffer());
+  private final StringProperty tenantIdProp =
+      new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
   public PersistedForm() {
     declareProperty(formIdProp)
@@ -32,7 +37,8 @@ public final class PersistedForm extends UnpackedObject implements DbValue {
         .declareProperty(formKeyProp)
         .declareProperty(resourceNameProp)
         .declareProperty(resourceProp)
-        .declareProperty(checksumProp);
+        .declareProperty(checksumProp)
+        .declareProperty(tenantIdProp);
   }
 
   public PersistedForm copy() {
@@ -43,6 +49,7 @@ public final class PersistedForm extends UnpackedObject implements DbValue {
     copy.resourceNameProp.setValue(getResourceName());
     copy.resourceProp.setValue(getResource());
     copy.checksumProp.setValue(getChecksum());
+    copy.tenantIdProp.setValue(getTenantId());
     return copy;
   }
 
@@ -70,6 +77,10 @@ public final class PersistedForm extends UnpackedObject implements DbValue {
     return checksumProp.getValue();
   }
 
+  public String getTenantId() {
+    return bufferAsString(tenantIdProp.getValue());
+  }
+
   public void wrap(final FormRecord record) {
     formIdProp.setValue(record.getFormId());
     versionProp.setValue(record.getVersion());
@@ -77,5 +88,6 @@ public final class PersistedForm extends UnpackedObject implements DbValue {
     resourceNameProp.setValue(record.getResourceNameBuffer());
     resourceProp.setValue(BufferUtil.wrapArray(record.getResource()));
     checksumProp.setValue(record.getChecksumBuffer());
+    tenantIdProp.setValue(record.getTenantId());
   }
 }

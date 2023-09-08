@@ -14,6 +14,7 @@ import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalSubscriptionRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import org.agrona.DirectBuffer;
 
 public final class SignalSubscriptionRecord extends UnifiedRecordValue
@@ -117,6 +118,6 @@ public final class SignalSubscriptionRecord extends UnifiedRecordValue
   @Override
   public String getTenantId() {
     // todo(#13336): replace dummy implementation
-    return "";
+    return TenantOwned.DEFAULT_TENANT_IDENTIFIER;
   }
 }

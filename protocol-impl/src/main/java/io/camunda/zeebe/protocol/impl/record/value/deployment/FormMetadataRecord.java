@@ -17,6 +17,7 @@ import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.deployment.FormMetadataValue;
 import org.agrona.DirectBuffer;
 
@@ -28,6 +29,8 @@ public class FormMetadataRecord extends UnifiedRecordValue implements FormMetada
   private final StringProperty resourceNameProp = new StringProperty("resourceName");
   private final BinaryProperty checksumProp = new BinaryProperty("checksum");
   private final BooleanProperty isDuplicateProp = new BooleanProperty("isDuplicate", false);
+  private final StringProperty tenantIdProp =
+      new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
   public FormMetadataRecord() {
     declareProperty(formIdProp)
@@ -35,7 +38,8 @@ public class FormMetadataRecord extends UnifiedRecordValue implements FormMetada
         .declareProperty(formKeyProp)
         .declareProperty(resourceNameProp)
         .declareProperty(checksumProp)
-        .declareProperty(isDuplicateProp);
+        .declareProperty(isDuplicateProp)
+        .declareProperty(tenantIdProp);
   }
 
   @Override
@@ -115,7 +119,11 @@ public class FormMetadataRecord extends UnifiedRecordValue implements FormMetada
 
   @Override
   public String getTenantId() {
-    // todo(#13320): replace dummy implementation
-    return "";
+    return bufferAsString(tenantIdProp.getValue());
+  }
+
+  public FormMetadataRecord setTenantId(final String tenantId) {
+    tenantIdProp.setValue(tenantId);
+    return this;
   }
 }

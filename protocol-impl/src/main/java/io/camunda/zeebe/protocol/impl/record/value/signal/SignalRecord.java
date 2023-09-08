@@ -13,6 +13,7 @@ import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Map;
 import org.agrona.DirectBuffer;
@@ -70,6 +71,6 @@ public final class SignalRecord extends UnifiedRecordValue implements SignalReco
   @Override
   public String getTenantId() {
     // todo(#13336): replace dummy implementation
-    return "";
+    return TenantOwned.DEFAULT_TENANT_IDENTIFIER;
   }
 }

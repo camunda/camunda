@@ -7,12 +7,15 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.deployment;
 
+import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.BinaryProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.deployment.Form;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
@@ -25,6 +28,8 @@ public final class FormRecord extends UnifiedRecordValue implements Form {
   private final StringProperty resourceNameProp = new StringProperty("resourceName");
   private final BinaryProperty checksumProp = new BinaryProperty("checksum", new UnsafeBuffer());
   private final BinaryProperty resourceProp = new BinaryProperty("resource", new UnsafeBuffer());
+  private final StringProperty tenantIdProp =
+      new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
   public FormRecord() {
     declareProperty(formIdProp)
@@ -32,7 +37,8 @@ public final class FormRecord extends UnifiedRecordValue implements Form {
         .declareProperty(formKeyProp)
         .declareProperty(resourceNameProp)
         .declareProperty(checksumProp)
-        .declareProperty(resourceProp);
+        .declareProperty(resourceProp)
+        .declareProperty(tenantIdProp);
   }
 
   public FormRecord wrap(final FormMetadataRecord metadata, final byte[] resource) {
@@ -42,6 +48,7 @@ public final class FormRecord extends UnifiedRecordValue implements Form {
     formKeyProp.setValue(metadata.getFormKey());
     resourceNameProp.setValue(metadata.getResourceNameBuffer());
     resourceProp.setValue(BufferUtil.wrapArray(resource));
+    tenantIdProp.setValue(metadata.getTenantId());
     return this;
   }
 
@@ -163,7 +170,6 @@ public final class FormRecord extends UnifiedRecordValue implements Form {
 
   @Override
   public String getTenantId() {
-    // todo(#13320): replace dummy implementation
-    return "";
+    return bufferAsString(tenantIdProp.getValue());
   }
 }
