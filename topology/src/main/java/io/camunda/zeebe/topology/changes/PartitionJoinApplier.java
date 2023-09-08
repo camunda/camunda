@@ -47,19 +47,18 @@ final class PartitionJoinApplier implements OperationApplier {
       final ClusterTopology currentClusterTopology) {
 
     final boolean localMemberIsActive =
-        currentClusterTopology.members().containsKey(localMemberId)
-            && currentClusterTopology.members().get(localMemberId).state() == State.ACTIVE;
+        currentClusterTopology.hasMember(localMemberId)
+            && currentClusterTopology.getMember(localMemberId).state() == State.ACTIVE;
     if (!localMemberIsActive) {
       return Either.left(
           new IllegalStateException(
               "Expected to join partition, but the local member is not active"));
     }
 
-    final MemberState localMemberState = currentClusterTopology.members().get(localMemberId);
-    final boolean partitionExistsInLocalMember =
-        localMemberState.partitions().containsKey(partitionId);
+    final MemberState localMemberState = currentClusterTopology.getMember(localMemberId);
+    final boolean partitionExistsInLocalMember = localMemberState.hasPartition(partitionId);
     if (partitionExistsInLocalMember
-        && localMemberState.partitions().get(partitionId).state() != PartitionState.State.JOINING) {
+        && localMemberState.getPartition(partitionId).state() != PartitionState.State.JOINING) {
       return Either.left(
           new IllegalStateException(
               "Expected to join partition, but the local member already has the partition at state "
@@ -70,7 +69,8 @@ final class PartitionJoinApplier implements OperationApplier {
     // PartitionMetadata when joining the partition.
     partitionMembersWithPriority = collectPriorityByMembers(currentClusterTopology);
 
-    if (partitionExistsInLocalMember) {
+    if (partitionExistsInLocalMember
+        && localMemberState.getPartition(partitionId).state() == PartitionState.State.JOINING) {
       // The state is already JOINING, so we don't need to change it. This can happen when the node
       // was restarted while applying the join operation. To ensure that the topology change can
       // make progress, we do not treat this as an error.

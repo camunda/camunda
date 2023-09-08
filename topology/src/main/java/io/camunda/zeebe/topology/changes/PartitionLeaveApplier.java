@@ -15,7 +15,6 @@ import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.MemberState;
 import io.camunda.zeebe.topology.state.PartitionState;
 import io.camunda.zeebe.util.Either;
-import java.util.Map;
 import java.util.function.UnaryOperator;
 
 /**
@@ -30,9 +29,14 @@ record PartitionLeaveApplier(
   public Either<Exception, UnaryOperator<MemberState>> init(
       final ClusterTopology currentClusterTopology) {
 
-    final Map<Integer, PartitionState> localPartitions =
-        currentClusterTopology.members().get(localMemberId).partitions();
-    final boolean partitionExistsInLocalMember = localPartitions.containsKey(partitionId);
+    if (!currentClusterTopology.hasMember(localMemberId)) {
+      return Either.left(
+          new IllegalStateException(
+              "Expected to leave partition, but the local member does not exist in the topology"));
+    }
+
+    final boolean partitionExistsInLocalMember =
+        currentClusterTopology.getMember(localMemberId).hasPartition(partitionId);
 
     if (!partitionExistsInLocalMember) {
       return Either.left(
@@ -41,7 +45,8 @@ record PartitionLeaveApplier(
     }
 
     final boolean partitionIsLeaving =
-        localPartitions.get(partitionId).state() == PartitionState.State.LEAVING;
+        currentClusterTopology.getMember(localMemberId).getPartition(partitionId).state()
+            == PartitionState.State.LEAVING;
     if (partitionIsLeaving) {
       // If partition state is already set to leaving, then we don't need to set it again. This can
       // happen if the node was restarted while applying the leave operation. To ensure that the

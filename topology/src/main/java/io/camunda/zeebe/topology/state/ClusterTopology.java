@@ -153,4 +153,12 @@ public record ClusterTopology(
   private ClusterTopology advance() {
     return new ClusterTopology(version, members, changes.advance());
   }
+
+  public boolean hasMember(final MemberId memberId) {
+    return members().containsKey(memberId);
+  }
+
+  public MemberState getMember(final MemberId memberId) {
+    return members().get(memberId);
+  }
 }

@@ -133,6 +133,14 @@ public record MemberState(long version, State state, Map<Integer, PartitionState
     return new MemberState(version + 1, state, partitions);
   }
 
+  public boolean hasPartition(final int partitionId) {
+    return partitions().containsKey(partitionId);
+  }
+
+  public PartitionState getPartition(final int partitionId) {
+    return partitions.get(partitionId);
+  }
+
   public enum State {
     UNINITIALIZED,
     JOINING,
