@@ -10,6 +10,7 @@ message GossipState {
 message ClusterTopology {
   int64 version = 1;
   map<string, MemberState> members = 2;
+  ClusterChangePlan changes = 3;
 }
 
 message MemberState {
@@ -23,10 +24,29 @@ message PartitionState {
   int32 priority = 2;
 }
 
+message ClusterChangePlan {
+  int32 version = 1;
+  repeated TopologyChangeOperation operation = 2;
+}
+
+message TopologyChangeOperation {
+  string memberId = 1;
+  OperationType type = 2;
+  optional int32 partitionId = 3;
+  optional int32 priority = 4;
+}
 enum State {
   UNKNOWN = 0;
   JOINING = 1;
   ACTIVE = 2;
   LEAVING = 3;
   LEFT = 4;
+}
+
+enum OperationType{
+  UNKNOWN_OPERATION = 0;
+  MEMBER_JOIN = 1;
+  MEMBER_LEAVE = 2;
+  PARTITION_JOIN_= 3;
+  PARTITION_LEAVE = 4;
 }

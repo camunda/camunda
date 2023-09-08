@@ -15,6 +15,10 @@ import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.MemberState;
 import io.camunda.zeebe.topology.state.MemberState.State;
 import io.camunda.zeebe.topology.state.PartitionState;
+import io.camunda.zeebe.topology.state.TopologyChangeOperation;
+import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
+import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
@@ -66,7 +70,8 @@ final class ProtoBufSerializerTest {
         topologyWithOneMemberOneLeavingPartition(),
         topologyWithOneMemberOneJoiningPartition(),
         topologyWithOneMemberTwoPartitions(),
-        topologyWithTwoMembers());
+        topologyWithTwoMembers(),
+        topologyWithClusterChangePlan());
   }
 
   private static ClusterTopology topologyWithOneMemberNoPartitions() {
@@ -125,5 +130,15 @@ final class ProtoBufSerializerTest {
             MemberState.initializeAsActive(
                 Map.of(1, PartitionState.joining(1), 2, PartitionState.active(2))))
         .addMember(MemberId.from("1"), MemberState.initializeAsActive(Map.of()).toLeaving());
+  }
+
+  private static ClusterTopology topologyWithClusterChangePlan() {
+    final List<TopologyChangeOperation> changes =
+        List.of(
+            new PartitionLeaveOperation(MemberId.from("1"), 1),
+            new PartitionJoinOperation(MemberId.from("2"), 2, 5));
+    return ClusterTopology.init()
+        .addMember(MemberId.from("1"), MemberState.initializeAsActive(Map.of()))
+        .startTopologyChange(changes);
   }
 }
