@@ -384,7 +384,7 @@
               },
               {
                 "color": "green",
-                "value": 145
+                "value": 30
               }
             ]
           },
@@ -468,7 +468,7 @@
               },
               {
                 "color": "green",
-                "value": 49
+                "value": 10
               }
             ]
           },
@@ -549,6 +549,10 @@
               {
                 "color": "red",
                 "value": null
+              },
+              {
+                "color": "dark-green",
+                "value": 5
               }
             ]
           },
@@ -1670,8 +1674,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               }
             ]
           }
@@ -1724,8 +1727,7 @@
                   "mode": "absolute",
                   "steps": [
                     {
-                      "color": "green",
-                      "value": null
+                      "color": "green"
                     },
                     {
                       "color": "red",
@@ -1785,8 +1787,7 @@
                   "mode": "absolute",
                   "steps": [
                     {
-                      "color": "green",
-                      "value": null
+                      "color": "green"
                     },
                     {
                       "color": "semi-dark-orange",
@@ -1961,8 +1962,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -2347,6 +2347,6 @@
   "timezone": "",
   "title": "Zeebe Medic Benchmarks",
   "uid": "zeebe-medic-benchmark",
-  "version": 2,
+  "version": 3,
   "weekStart": ""
 }
