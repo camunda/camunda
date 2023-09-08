@@ -1,3 +1,6 @@
+## Vereinfachte Navigation zu den Rohdaten.
+Das Navigieren von einem Dashboard, zu den Details in den aggergierten Berichten, zu den Rohdaten hilft gefundene Erkenntnisse umfangreich zu analysieren. Diese Navigation ist heute schon möglich, jedoch schwer zu finden. Mit diesem Release wirde die Navigation verbessert. Reports die Teil eines Dashboards sind, können nun an beliebiger Stelle geklickt werden, um direkt vom Dashboard zum Report zu navigieren. Der Report zeigt nun zusätzlich zur aggergierten Datenvisualisierung auch die Rohdaten an.
+
 ## Aktualisierung der Report Vorlagen
 Report Vorlagen helfen dem Nutzer Prozessausführungsdaten schnell in einem Report zu visualisieren. Die neuen Report Vorlagen bieten eine Übersicht der in Optimize verfügbaren Visualisierungsmöglichkeiten, um abhängig von der Problemstellung Daten möglichst aussagekräftig zu darzustellen.
 
