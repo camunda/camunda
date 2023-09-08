@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.broker.partitioning;
+package io.camunda.zeebe.broker.partitioning.startup;
 
 import io.atomix.primitive.partition.PartitionManagementService;
 import io.atomix.primitive.partition.PartitionMetadata;
@@ -21,14 +21,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Bootstraps a raft partition and the corresponding Zeebe partition. */
-final class PartitionStartup {
+public final class PartitionStartup {
 
   private final ActorSchedulingService schedulingService;
   private final PartitionManagementService partitionManagementService;
   private final RaftPartitionFactory raftPartitionFactory;
   private final ZeebePartitionFactory zeebePartitionFactory;
 
-  PartitionStartup(
+  public PartitionStartup(
       final ActorSchedulingService schedulingService,
       final PartitionManagementService partitionManagementService,
       final RaftPartitionFactory raftPartitionFactory,
@@ -47,13 +47,13 @@ final class PartitionStartup {
    * @return future that completes successfully with the started partition when it is ready to use
    *     or exceptionally if the partition fails to start.
    */
-  CompletableFuture<StartedPartition> bootstrap(final PartitionMetadata partitionMetadata) {
+  public CompletableFuture<StartedPartition> bootstrap(final PartitionMetadata partitionMetadata) {
     final var bootstrap = new BootstrapActor(partitionMetadata);
     schedulingService.submitActor(bootstrap);
     return bootstrap.result();
   }
 
-  record StartedPartition(RaftPartition raftPartition, ZeebePartition zeebePartition) {}
+  public record StartedPartition(RaftPartition raftPartition, ZeebePartition zeebePartition) {}
 
   /**
    * Orchestrates the bootstrap of a partition. This is a short-lived actor that starts the
