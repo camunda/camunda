@@ -12,6 +12,7 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import java.util.Map;
 
 public class RecordImpl<T extends RecordValue> implements Record<T> {
 
@@ -34,6 +35,8 @@ public class RecordImpl<T extends RecordValue> implements Record<T> {
   private int recordVersion;
 
   private T value;
+
+  private Map<String, Object> authorizations;
 
   public RecordImpl() {}
 
@@ -92,8 +95,9 @@ public class RecordImpl<T extends RecordValue> implements Record<T> {
     return valueType;
   }
 
-  public void setValueType(ValueType valueType) {
-    this.valueType = valueType;
+  @Override
+  public Map<String, Object> getAuthorizations() {
+    return authorizations;
   }
 
   @Override
@@ -145,6 +149,14 @@ public class RecordImpl<T extends RecordValue> implements Record<T> {
     this.position = position;
   }
 
+  public void setValueType(ValueType valueType) {
+    this.valueType = valueType;
+  }
+
+  public void setAuthorizations(Map<String, Object> authorizations) {
+    this.authorizations = authorizations;
+  }
+
   @Override
   public Record<T> clone() {
     throw new UnsupportedOperationException("Clone not implemented");
@@ -186,6 +198,8 @@ public class RecordImpl<T extends RecordValue> implements Record<T> {
         + timestamp
         + ", sourceRecordPosition="
         + sourceRecordPosition
+        + ", authorizations="
+        + (authorizations == null ? "null" : String.format("[size='%d']", authorizations.size()))
         + ", value="
         + value
         + '}';
