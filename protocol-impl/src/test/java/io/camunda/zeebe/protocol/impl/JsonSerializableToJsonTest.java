@@ -209,7 +209,7 @@ final class JsonSerializableToJsonTest {
                 "checksum": "Y2hlY2tzdW0=",
                 "processDefinitionKey": 123,
                 "duplicate": false,
-                "tenantId": ""
+                "tenantId": "<default>"
               }
             ],
             "resources": [
@@ -220,7 +220,7 @@ final class JsonSerializableToJsonTest {
             ],
             "decisionsMetadata": [],
             "decisionRequirementsMetadata": [],
-            "tenantId": ""
+            "tenantId": "<default>"
           }
         }
         """
@@ -262,7 +262,7 @@ final class JsonSerializableToJsonTest {
               "decisionRequirementsMetadata": [],
               "processesMetadata": [],
               "decisionsMetadata": [],
-              "tenantId": ""
+              "tenantId": "<default>"
           }
         }
         """
@@ -334,7 +334,7 @@ final class JsonSerializableToJsonTest {
               "processDefinitionKey": 123,
               "resourceName": "resource",
               "duplicate": true,
-              "tenantId": ""
+              "tenantId": "<default>"
             }
           ],
           "decisionsMetadata": [
@@ -346,7 +346,7 @@ final class JsonSerializableToJsonTest {
               "decisionName": "decision-name",
               "decisionKey": 2,
               "duplicate": true,
-              "tenantId": ""
+              "tenantId": "<default>"
             }
           ],
           "decisionRequirementsMetadata": [
@@ -359,10 +359,10 @@ final class JsonSerializableToJsonTest {
               "resourceName": "resource-name",
               "checksum": "Y2hlY2tzdW0=",
               "duplicate": true,
-              "tenantId": ""
+              "tenantId": "<default>"
             }
           ],
-          "tenantId": ""
+          "tenantId": "<default>"
         }
         """
       },
@@ -395,7 +395,7 @@ final class JsonSerializableToJsonTest {
           "processesMetadata": [],
           "decisionsMetadata": [],
           "decisionRequirementsMetadata": [],
-          "tenantId": ""
+          "tenantId": "<default>"
         }
         """
       },
@@ -436,7 +436,7 @@ final class JsonSerializableToJsonTest {
           "processDefinitionKey": 123,
           "resourceName": "resource",
           "duplicate": false,
-          "tenantId": ""
+          "tenantId": "<default>"
         }
         """
       },
@@ -505,7 +505,7 @@ final class JsonSerializableToJsonTest {
           "elementInstanceKey": 34,
           "jobKey": 123,
           "variableScopeKey": 34,
-          "tenantId": ""
+          "tenantId": "<default>"
         }
         """
       },
@@ -526,7 +526,7 @@ final class JsonSerializableToJsonTest {
           "elementInstanceKey": -1,
           "jobKey": -1,
           "variableScopeKey": -1,
-          "tenantId": ""
+          "tenantId": "<default>"
         }
         """
       },
@@ -609,7 +609,7 @@ final class JsonSerializableToJsonTest {
               "errorCode": "error",
               "customHeaders": {},
               "deadline": 1000,
-              "tenantId": ""
+              "tenantId": "<default>"
             }
           ],
           "timeout": 2,
@@ -705,7 +705,7 @@ final class JsonSerializableToJsonTest {
             "workerVersion": "42"
           },
           "deadline": 13,
-          "tenantId": ""
+          "tenantId": "<default>"
         }
         """
       },
@@ -734,7 +734,7 @@ final class JsonSerializableToJsonTest {
           "errorCode": "",
           "customHeaders": {},
           "deadline": -1,
-          "tenantId": ""
+          "tenantId": "<default>"
         }
         """
       },
@@ -768,7 +768,7 @@ final class JsonSerializableToJsonTest {
           "errorCode": "",
           "processDefinitionVersion": -1,
           "customHeaders": {},
-          "tenantId": ""
+          "tenantId": "<default>"
         }
         """
       },
@@ -802,7 +802,7 @@ final class JsonSerializableToJsonTest {
           "messageId": "test-id",
           "name": "test-message",
           "deadline": 22,
-          "tenantId": ""
+          "tenantId": "<default>"
         }
         """
       },
@@ -830,7 +830,7 @@ final class JsonSerializableToJsonTest {
           "messageId": "",
           "name": "test-message",
           "deadline": -1,
-          "tenantId": ""
+          "tenantId": "<default>"
         }
         """
       },
@@ -908,7 +908,7 @@ final class JsonSerializableToJsonTest {
           "variables": {
             "foo": "bar"
           },
-          "tenantId": ""
+          "tenantId": "<default>"
         }
         """
       },
@@ -935,7 +935,7 @@ final class JsonSerializableToJsonTest {
           "messageKey": -1,
           "correlationKey": "",
           "variables": {},
-          "tenantId": ""
+          "tenantId": "<default>"
         }
         """
       },
@@ -975,7 +975,7 @@ final class JsonSerializableToJsonTest {
             "foo": "bar"
           },
           "interrupting": true,
-          "tenantId": ""
+          "tenantId": "<default>"
         }
         """
       },
@@ -1004,7 +1004,7 @@ final class JsonSerializableToJsonTest {
           "messageKey": -1,
           "variables": {},
           "interrupting": true,
-          "tenantId": ""
+          "tenantId": "<default>"
         }
         """
       },
@@ -1048,7 +1048,7 @@ final class JsonSerializableToJsonTest {
           "correlationKey": "key",
           "elementId": "A",
           "interrupting": true,
-          "tenantId": ""
+          "tenantId": "<default>"
         }
         """
       },
@@ -1078,7 +1078,7 @@ final class JsonSerializableToJsonTest {
           "correlationKey": "",
           "elementId": "",
           "interrupting": true,
-          "tenantId": ""
+          "tenantId": "<default>"
         }
         """
       },
@@ -1113,7 +1113,7 @@ final class JsonSerializableToJsonTest {
           "targetElementId": "node1",
           "repetitions": 3,
           "processDefinitionKey": 13,
-          "tenantId": ""
+          "tenantId": "<default>"
         }
         """
       },
@@ -1148,7 +1148,7 @@ final class JsonSerializableToJsonTest {
           "bpmnProcessId": "process",
           "name": "x",
           "value": "1",
-          "tenantId": ""
+          "tenantId": "<default>"
         }
         """
       },
@@ -1175,7 +1175,7 @@ final class JsonSerializableToJsonTest {
             "foo": 1
           },
           "scopeKey": 3,
-          "tenantId": ""
+          "tenantId": "<default>"
         }
         """
       },
@@ -1196,7 +1196,7 @@ final class JsonSerializableToJsonTest {
           "updateSemantics": "PROPAGATE",
           "variables": {},
           "scopeKey": 3,
-          "tenantId": ""
+          "tenantId": "<default>"
         }
         """
       },
@@ -1239,7 +1239,7 @@ final class JsonSerializableToJsonTest {
               "elementId": "element"
             }
           ],
-          "tenantId": ""
+          "tenantId": "<default>"
         }
         """
       },
@@ -1258,7 +1258,7 @@ final class JsonSerializableToJsonTest {
           "version": -1,
           "processInstanceKey": -1,
           "startInstructions": [],
-          "tenantId": ""
+          "tenantId": "<default>"
         }
         """
       },
@@ -1309,7 +1309,7 @@ final class JsonSerializableToJsonTest {
             "ancestorScopeKeys": [1,3]
           }],
           "ancestorScopeKeys": [1,3],
-          "tenantId": ""
+          "tenantId": "<default>"
         }
         """
       },
@@ -1327,7 +1327,7 @@ final class JsonSerializableToJsonTest {
           "terminateInstructions": [],
           "activateInstructions": [],
           "ancestorScopeKeys": [],
-          "tenantId": ""
+          "tenantId": "<default>"
         }
         """
       },
@@ -1371,7 +1371,7 @@ final class JsonSerializableToJsonTest {
           "parentProcessInstanceKey": 11,
           "parentElementInstanceKey": 22,
           "bpmnEventType": "UNSPECIFIED",
-          "tenantId": ""
+          "tenantId": "<default>"
         }
         """
       },
@@ -1394,7 +1394,7 @@ final class JsonSerializableToJsonTest {
           "parentProcessInstanceKey": -1,
           "parentElementInstanceKey": -1,
           "bpmnEventType": "UNSPECIFIED",
-          "tenantId": ""
+          "tenantId": "<default>"
         }
         """
       },
@@ -1422,7 +1422,7 @@ final class JsonSerializableToJsonTest {
           "decisionRequirementsKey": 3,
           "decisionRequirementsId": "decision-requirements-id",
           "duplicate": false,
-          "tenantId": ""
+          "tenantId": "<default>"
         }
         """
       },
@@ -1454,7 +1454,7 @@ final class JsonSerializableToJsonTest {
           "resource": "cmVzb3VyY2U=",
           "checksum": "Y2hlY2tzdW0=",
           "duplicate": false,
-          "tenantId": ""
+          "tenantId": "<default>"
         }
         """
       },
@@ -1562,7 +1562,7 @@ final class JsonSerializableToJsonTest {
           ],
           "evaluationFailureMessage":"evaluation-failure-message",
           "failedDecisionId":"failed-decision-id",
-          "tenantId": ""
+          "tenantId": "<default>"
         }
         """
       },
@@ -1591,7 +1591,7 @@ final class JsonSerializableToJsonTest {
           "evaluatedDecisions":[],
           "evaluationFailureMessage":"",
           "failedDecisionId":"",
-          "tenantId": ""
+          "tenantId": "<default>"
         }
         """
       },
@@ -1627,7 +1627,7 @@ final class JsonSerializableToJsonTest {
           "escalationCode": "escalation",
           "throwElementId": "throw",
           "catchElementId": "catch",
-          "tenantId": ""
+          "tenantId": "<default>"
         }
         """
       },
@@ -1644,7 +1644,7 @@ final class JsonSerializableToJsonTest {
           "escalationCode": "",
           "throwElementId": "",
           "catchElementId": "",
-          "tenantId": ""
+          "tenantId": "<default>"
         }
         """
       },
@@ -1668,7 +1668,7 @@ final class JsonSerializableToJsonTest {
           "variables": {
             "foo": "bar"
           },
-          "tenantId": ""
+          "tenantId": "<default>"
         }
         """
       },
@@ -1688,7 +1688,7 @@ final class JsonSerializableToJsonTest {
         {
           "signalName":"test-signal",
           "variables": {},
-          "tenantId": ""
+          "tenantId": "<default>"
         }
         """
       },
@@ -1719,7 +1719,7 @@ final class JsonSerializableToJsonTest {
           "catchEventId": "startEvent",
           "bpmnProcessId": "process",
           "catchEventInstanceKey":3,
-          "tenantId": ""
+          "tenantId": "<default>"
         }
         """
       },
@@ -1742,7 +1742,7 @@ final class JsonSerializableToJsonTest {
           "catchEventId":"",
           "bpmnProcessId":"",
           "catchEventInstanceKey":-1,
-          "tenantId": ""
+          "tenantId": "<default>"
         }
         """
       },
@@ -1760,7 +1760,7 @@ final class JsonSerializableToJsonTest {
         """
         {
           "resourceKey":1,
-          "tenantId": ""
+          "tenantId": "<default>"
         }
         """
       },
@@ -1810,11 +1810,11 @@ final class JsonSerializableToJsonTest {
               "resourceName": "my_first_bpmn.bpmn",
               "checksum": "c2hhMQ==",
               "duplicate": false,
-              "tenantId": ""
+              "tenantId": "<default>"
             }],
             "decisionsMetadata": [],
             "decisionRequirementsMetadata": [],
-            "tenantId": ""
+            "tenantId": "<default>"
           }
         }
         """
@@ -1852,7 +1852,7 @@ final class JsonSerializableToJsonTest {
           "processInstanceKey": 123,
           "batchElementInstanceKey": 456,
           "index": 10,
-          "tenantId": ""
+          "tenantId": "<default>"
         }
         """
       },
@@ -1872,7 +1872,7 @@ final class JsonSerializableToJsonTest {
           "processInstanceKey": 123,
           "batchElementInstanceKey": 456,
           "index": -1,
-          "tenantId": ""
+          "tenantId": "<default>"
         }
         """
       },
