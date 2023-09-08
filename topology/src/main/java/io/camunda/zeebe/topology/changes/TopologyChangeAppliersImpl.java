@@ -8,9 +8,15 @@
 package io.camunda.zeebe.topology.changes;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.zeebe.topology.changes.NoopTopologyChangeAppliers.NoopApplier;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.topology.state.ClusterTopology;
+import io.camunda.zeebe.topology.state.MemberState;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation;
-import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionOperation;
+import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
+import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
+import io.camunda.zeebe.util.Either;
+import java.util.function.UnaryOperator;
 
 public class TopologyChangeAppliersImpl implements TopologyChangeAppliers {
 
@@ -26,22 +32,43 @@ public class TopologyChangeAppliersImpl implements TopologyChangeAppliers {
 
   @Override
   public OperationApplier getApplier(final TopologyChangeOperation operation) {
-    if (operation.operation().isPartitionOperation()) {
-      return getPartitionApplier((PartitionOperation) operation.operation());
-    }
-    return new NoopApplier();
-  }
-
-  private OperationApplier getPartitionApplier(final PartitionOperation operation) {
-    return switch (operation.operationType()) {
-      case JOIN -> new PartitionJoinApplier(
-          operation.partitionId(),
-          operation.priority().orElse(-1),
+    if (operation instanceof final PartitionJoinOperation joinOperation) {
+      return new PartitionJoinApplier(
+          joinOperation.partitionId(),
+          joinOperation.priority(),
           localMemberId,
           partitionTopologyChangeExecutor);
-      case LEAVE -> new PartitionLeaveApplier(
-          operation.partitionId(), localMemberId, partitionTopologyChangeExecutor);
-      default -> new NoopApplier();
-    };
+    } else if (operation instanceof final PartitionLeaveOperation leaveOperation) {
+      return new PartitionLeaveApplier(
+          leaveOperation.partitionId(), localMemberId, partitionTopologyChangeExecutor);
+    } else return new FailingApplier(operation);
+  }
+
+  static class FailingApplier implements OperationApplier {
+
+    private final TopologyChangeOperation operation;
+
+    public FailingApplier(final TopologyChangeOperation operation) {
+      this.operation = operation;
+    }
+
+    @Override
+    public Either<Exception, UnaryOperator<MemberState>> init(
+        final ClusterTopology currentClusterTopology) {
+      return Either.left(new UnknownOperationException(operation));
+    }
+
+    @Override
+    public ActorFuture<UnaryOperator<MemberState>> apply() {
+      return CompletableActorFuture.completedExceptionally(
+          new UnknownOperationException(operation));
+    }
+
+    private static class UnknownOperationException extends RuntimeException {
+
+      public UnknownOperationException(final TopologyChangeOperation operation) {
+        super("Unknown topology change operation " + operation);
+      }
+    }
   }
 }

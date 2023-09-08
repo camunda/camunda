@@ -8,35 +8,22 @@
 package io.camunda.zeebe.topology.state;
 
 import io.atomix.cluster.MemberId;
-import java.util.Optional;
 
 /**
  * An operation that changes the topology. The operation could be a member join or leave a cluster,
  * or a member join or leave partition.
  */
-public record TopologyChangeOperation(MemberId memberId, Operation operation) {
+public sealed interface TopologyChangeOperation {
 
-  public record PartitionOperation(
-      int partitionId, PartitionOperationType operationType, Optional<Integer> priority)
-      implements Operation {
-    @Override
-    public boolean isPartitionOperation() {
-      return true;
-    }
-  }
+  MemberId memberId();
 
-  public interface Operation {
-    Operation NONE = new Operation() {};
+  sealed interface PartitionChangeOperation extends TopologyChangeOperation {
+    int partitionId();
 
-    default boolean isPartitionOperation() {
-      return false;
-    }
-  }
+    record PartitionJoinOperation(MemberId memberId, int partitionId, int priority)
+        implements PartitionChangeOperation {}
 
-  public enum PartitionOperationType {
-    UNKNOWN,
-    JOIN,
-    LEAVE
-    // Add PROMOTE and DEMOTE when we want to support them
+    record PartitionLeaveOperation(MemberId memberId, int partitionId)
+        implements PartitionChangeOperation {}
   }
 }
