@@ -27,6 +27,8 @@ public final class ProcessInstanceResultRecord extends UnifiedRecordValue
   private final LongProperty processDefinitionKeyProperty =
       new LongProperty("processDefinitionKey", -1);
   private final IntegerProperty versionProperty = new IntegerProperty("version", -1);
+  private final StringProperty tenantIdProperty =
+      new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   private final DocumentProperty variablesProperty = new DocumentProperty("variables");
   private final LongProperty processInstanceKeyProperty =
       new LongProperty("processInstanceKey", -1);
@@ -36,6 +38,7 @@ public final class ProcessInstanceResultRecord extends UnifiedRecordValue
         .declareProperty(processDefinitionKeyProperty)
         .declareProperty(processInstanceKeyProperty)
         .declareProperty(versionProperty)
+        .declareProperty(tenantIdProperty)
         .declareProperty(variablesProperty);
   }
 
@@ -106,7 +109,11 @@ public final class ProcessInstanceResultRecord extends UnifiedRecordValue
 
   @Override
   public String getTenantId() {
-    // todo(#13774): replace dummy implementation
-    return TenantOwned.DEFAULT_TENANT_IDENTIFIER;
+    return BufferUtil.bufferAsString(tenantIdProperty.getValue());
+  }
+
+  public ProcessInstanceResultRecord setTenantId(final String tenantId) {
+    tenantIdProperty.setValue(tenantId);
+    return this;
   }
 }

@@ -1217,6 +1217,7 @@ final class JsonSerializableToJsonTest {
                   .setBpmnProcessId(processId)
                   .setProcessDefinitionKey(key)
                   .setVersion(version)
+                  .setTenantId("test-tenant")
                   .setVariables(
                       new UnsafeBuffer(
                           MsgPackConverter.convertToMsgPack("{'foo':'bar','baz':'boz'}")))
@@ -1239,7 +1240,7 @@ final class JsonSerializableToJsonTest {
               "elementId": "element"
             }
           ],
-          "tenantId": "<default>"
+          "tenantId": "test-tenant"
         }
         """
       },
