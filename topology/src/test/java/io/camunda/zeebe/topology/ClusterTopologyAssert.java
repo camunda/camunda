@@ -38,12 +38,17 @@ public final class ClusterTopologyAssert
     return this;
   }
 
-  ClusterTopologyAssert hasMemberWithPartitions(
+  public ClusterTopologyAssert hasMemberWithPartitions(
       final int member, final Collection<Integer> partitionIds) {
     final var memberId = MemberId.from(Integer.toString(member));
     assertThat(actual.members()).containsKey(memberId);
     assertThat(actual.members().get(memberId).partitions()).containsOnlyKeys(partitionIds);
     return this;
+  }
+
+  public MemberStateAssert member(final MemberId memberId) {
+    assertThat(actual.members()).containsKey(memberId);
+    return MemberStateAssert.assertThat(actual.members().get(memberId));
   }
 
   public ClusterTopologyAssert hasMemberWithState(final int member, final MemberState.State state) {

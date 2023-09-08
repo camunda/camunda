@@ -8,11 +8,11 @@
 package io.camunda.zeebe.topology.state;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.topology.ClusterTopologyAssert;
 import io.camunda.zeebe.topology.state.MemberState.State;
+import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -122,7 +122,9 @@ class ClusterTopologyTest {
         ClusterTopology.init()
             .addMember(member(1), MemberState.uninitialized())
             .startTopologyChange(
-                List.of(mock(TopologyChangeOperation.class), mock(TopologyChangeOperation.class)));
+                List.of(
+                    new PartitionLeaveOperation(member(1), 1),
+                    new PartitionLeaveOperation(member(2), 2)));
 
     // when
     final var updatedTopology =
@@ -140,7 +142,9 @@ class ClusterTopologyTest {
         ClusterTopology.init()
             .addMember(member(1), MemberState.uninitialized())
             .startTopologyChange(
-                List.of(mock(TopologyChangeOperation.class), mock(TopologyChangeOperation.class)));
+                List.of(
+                    new PartitionLeaveOperation(member(1), 1),
+                    new PartitionLeaveOperation(member(2), 2)));
 
     // when
     final var updatedTopology =

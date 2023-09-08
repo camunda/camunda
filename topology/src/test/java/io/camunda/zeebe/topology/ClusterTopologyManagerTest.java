@@ -15,11 +15,14 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
+import io.camunda.zeebe.topology.changes.NoopTopologyChangeAppliers;
+import io.camunda.zeebe.topology.changes.TopologyChangeAppliers;
 import io.camunda.zeebe.topology.serializer.ClusterTopologySerializer;
 import io.camunda.zeebe.topology.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.MemberState;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation;
+import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.util.Either;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -170,7 +173,7 @@ final class ClusterTopologyManagerTest {
 
     // when
     final ClusterTopology topologyFromOtherMember =
-        initialTopology.startTopologyChange(List.of(() -> localMemberId));
+        initialTopology.startTopologyChange(List.of(new PartitionLeaveOperation(localMemberId, 1)));
     clusterTopologyManager.onGossipReceived(topologyFromOtherMember).join();
 
     // then
@@ -193,7 +196,8 @@ final class ClusterTopologyManagerTest {
       // ignore type of operation and always apply member leave operation
       return new OperationApplier() {
         @Override
-        public Either<Exception, UnaryOperator<MemberState>> init() {
+        public Either<Exception, UnaryOperator<MemberState>> init(
+            final ClusterTopology currentClusterTopology) {
           return Either.right(MemberState::toLeaving);
         }
 

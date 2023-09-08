@@ -13,7 +13,17 @@ import io.atomix.cluster.MemberId;
  * An operation that changes the topology. The operation could be a member join or leave a cluster,
  * or a member join or leave partition.
  */
-public interface TopologyChangeOperation {
+public sealed interface TopologyChangeOperation {
 
   MemberId memberId();
+
+  sealed interface PartitionChangeOperation extends TopologyChangeOperation {
+    int partitionId();
+
+    record PartitionJoinOperation(MemberId memberId, int partitionId, int priority)
+        implements PartitionChangeOperation {}
+
+    record PartitionLeaveOperation(MemberId memberId, int partitionId)
+        implements PartitionChangeOperation {}
+  }
 }

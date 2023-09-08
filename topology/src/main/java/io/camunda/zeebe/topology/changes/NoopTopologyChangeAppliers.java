@@ -5,10 +5,11 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.topology;
+package io.camunda.zeebe.topology.changes;
 
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.MemberState;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation;
 import io.camunda.zeebe.util.Either;
@@ -25,10 +26,11 @@ public class NoopTopologyChangeAppliers implements TopologyChangeAppliers {
     return new NoopApplier();
   }
 
-  private static class NoopApplier implements OperationApplier {
+  public static class NoopApplier implements OperationApplier {
 
     @Override
-    public Either<Exception, UnaryOperator<MemberState>> init() {
+    public Either<Exception, UnaryOperator<MemberState>> init(
+        final ClusterTopology currentClusterTopology) {
       return Either.right(memberState -> memberState);
     }
 

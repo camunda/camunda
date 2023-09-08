@@ -10,6 +10,7 @@ package io.camunda.zeebe.topology;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.topology.changes.TopologyChangeAppliers;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.MemberState;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation;
@@ -171,7 +172,7 @@ final class ClusterTopologyManager {
     final var operationApplier = changeAppliers.getApplier(operation);
     final var initialized =
         operationApplier
-            .init()
+            .init(mergedTopology)
             .map(transformer -> mergedTopology.updateMember(localMemberId, transformer))
             .map(this::updateLocalTopology);
 
