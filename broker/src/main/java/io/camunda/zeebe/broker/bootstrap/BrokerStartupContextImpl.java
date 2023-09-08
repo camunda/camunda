@@ -77,6 +77,11 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   }
 
   @Override
+  public String toString() {
+    return "BrokerStartupContextImpl{" + "broker=" + brokerInfo.getNodeId() + '}';
+  }
+
+  @Override
   public BrokerInfo getBrokerInfo() {
     return brokerInfo;
   }
