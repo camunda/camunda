@@ -1,3 +1,7 @@
+# v8.3.0-alpha6
+## 🧹 Chore
+* update Zeebe and Identity to 8.3.0-alpha6 ([#5312](https://github.com/camunda/operate/issues/5312))
+* update CHANGELOG.md
 # v8.3.0-alpha5
 ## 🚀 New Features
 * enable decision definition deletion in UI ([#5229](https://github.com/camunda/operate/issues/5229))
