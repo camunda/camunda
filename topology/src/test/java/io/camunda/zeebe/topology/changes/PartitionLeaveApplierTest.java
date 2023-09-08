@@ -8,6 +8,7 @@
 package io.camunda.zeebe.topology.changes;
 
 import static io.camunda.zeebe.test.util.asserts.EitherAssert.assertThat;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -20,7 +21,9 @@ import io.camunda.zeebe.topology.state.MemberState;
 import io.camunda.zeebe.topology.state.PartitionState;
 import io.camunda.zeebe.topology.state.PartitionState.State;
 import io.camunda.zeebe.util.Either;
+import java.time.Duration;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import java.util.function.UnaryOperator;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -89,5 +92,23 @@ final class PartitionLeaveApplierTest {
     ClusterTopologyAssert.assertThatClusterTopology(resultingTopology)
         .member(localMemberId)
         .doesNotContainPartition(1);
+  }
+
+  @Test
+  void shouldReturnExceptionWhenLeaveFailed() {
+    // given
+    when(partitionChangeExecutor.leave(anyInt()))
+        .thenReturn(
+            CompletableActorFuture.completedExceptionally(new RuntimeException("Expected")));
+
+    // when
+    final var joinFuture = partitionLeaveApplier.apply();
+
+    // then
+    Assertions.assertThat(joinFuture)
+        .failsWithin(Duration.ofMillis(100))
+        .withThrowableOfType(ExecutionException.class)
+        .withCauseInstanceOf(RuntimeException.class)
+        .withMessageContaining("Expected");
   }
 }

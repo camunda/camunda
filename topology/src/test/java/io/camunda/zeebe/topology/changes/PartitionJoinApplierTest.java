@@ -23,8 +23,10 @@ import io.camunda.zeebe.topology.state.MemberState;
 import io.camunda.zeebe.topology.state.PartitionState;
 import io.camunda.zeebe.topology.state.PartitionState.State;
 import io.camunda.zeebe.util.Either;
+import java.time.Duration;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 import java.util.function.UnaryOperator;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -93,6 +95,22 @@ final class PartitionJoinApplierTest {
   }
 
   @Test
+  void shouldRejectJoinIfMemberDoesNotExists() {
+    // given
+    final ClusterTopology topologyWithoutMember = ClusterTopology.init();
+    // when
+    final Either<Exception, UnaryOperator<MemberState>> result =
+        partitionJoinApplier.init(topologyWithoutMember);
+
+    // then
+    assertThat(result).isLeft();
+
+    Assertions.assertThat(result.getLeft())
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("the local member is not active");
+  }
+
+  @Test
   void shouldInitializeStateToJoining() {
     // when
     final var updater = partitionJoinApplier.init(initialClusterTopology).get();
@@ -124,5 +142,23 @@ final class PartitionJoinApplierTest {
         .hasMemberWithPartitions(1, Set.of(1))
         .member(localMemberId)
         .hasPartitionWithState(1, new PartitionState(State.ACTIVE, 1));
+  }
+
+  @Test
+  void shouldReturnExceptionWhenJoinFailed() {
+    // given
+    when(partitionChangeExecutor.join(anyInt(), any()))
+        .thenReturn(
+            CompletableActorFuture.completedExceptionally(new RuntimeException("Expected")));
+
+    // when
+    final var joinFuture = partitionJoinApplier.apply();
+
+    // then
+    Assertions.assertThat(joinFuture)
+        .failsWithin(Duration.ofMillis(100))
+        .withThrowableOfType(ExecutionException.class)
+        .withCauseInstanceOf(RuntimeException.class)
+        .withMessageContaining("Expected");
   }
 }
