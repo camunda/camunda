@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.snapshots.impl;
 
+import static io.camunda.zeebe.util.FileUtil.deleteFolder;
 import static io.camunda.zeebe.util.FileUtil.ensureDirectoryExists;
 
 import io.camunda.zeebe.scheduler.Actor;
@@ -362,14 +363,28 @@ public final class FileBasedSnapshotStore extends Actor
                         + snapshotId
                         + "'."));
 
-    // to make the pending dir unique
-    final var nextStartCount = receivingSnapshotStartCount.incrementAndGet();
-    final var pendingDirectoryName =
-        String.format(
-            RECEIVING_DIR_FORMAT, parsedSnapshotId.getSnapshotIdAsString(), nextStartCount);
-    final var pendingSnapshotDir = pendingDirectory.resolve(pendingDirectoryName);
+    final var directory = buildSnapshotDirectory(parsedSnapshotId);
+    if (directory.toFile().exists()) {
+      if (!buildSnapshotsChecksumPath(parsedSnapshotId).toFile().exists()) {
+        try {
+          // old pending/incomplete received snapshots which we can delete
+          deleteFolder(directory);
+        } catch (final IOException e) {
+          throw new IllegalStateException(
+              "Expected to delete pending received snapshot, but failed.", e);
+        }
+      } else {
+        // this should not happen
+        // this means we persisted a snapshot - marked as valid
+        // and now received the same snapshot via replication
+        throw new IllegalStateException(
+            String.format(
+                "Expected to receive snapshot with id %s, but was already persisted. This shouldn't happen.",
+                snapshotId));
+      }
+    }
     final var newPendingSnapshot =
-        new FileBasedReceivedSnapshot(parsedSnapshotId, pendingSnapshotDir, this, actor);
+        new FileBasedReceivedSnapshot(parsedSnapshotId, directory, this, actor);
     addPendingSnapshot(newPendingSnapshot);
     return newPendingSnapshot;
   }
@@ -391,8 +406,9 @@ public final class FileBasedSnapshotStore extends Actor
               processedPosition, exportedPosition);
       return Either.left(new SnapshotAlreadyExistsException(error));
     }
-    final var directory = buildPendingSnapshotDirectory(newSnapshotId);
-
+    // transient snapshots are directly written to our snapshot dir
+    // with the sfv checksum file they are marked as valid
+    final var directory = buildSnapshotDirectory(newSnapshotId);
     final var newPendingSnapshot =
         new FileBasedTransientSnapshot(newSnapshotId, directory, this, actor);
     addPendingSnapshot(newPendingSnapshot);
@@ -492,7 +508,6 @@ public final class FileBasedSnapshotStore extends Actor
 
   FileBasedSnapshot persistNewSnapshot(
       final FileBasedSnapshotId snapshotId,
-      final Path directory,
       final ImmutableChecksumsSFV immutableChecksumsSFV,
       final FileBasedSnapshotMetadata metadata) {
     final var currentPersistedSnapshot = currentPersistedSnapshotRef.get();
@@ -514,8 +529,6 @@ public final class FileBasedSnapshotStore extends Actor
       // it
       // as a marker file to guarantee the move was complete and not partial
       final var destination = buildSnapshotDirectory(snapshotId);
-      moveToSnapshotDirectory(directory, destination);
-
       final var checksumPath = buildSnapshotsChecksumPath(snapshotId);
       try {
         SnapshotChecksum.persist(checksumPath, immutableChecksumsSFV);
