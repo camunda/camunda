@@ -78,7 +78,7 @@ public class FileBasedReceivedSnapshotTest {
   }
 
   @Test
-  public void shouldStoreReceivedSnapshotInPendingDirectory() {
+  public void shouldStoreReceivedSnapshotInSnapshotDirectory() {
     // given
     final var persistedSnapshot = takePersistedSnapshot(1L);
 
@@ -87,12 +87,9 @@ public class FileBasedReceivedSnapshotTest {
 
     // then
     assertThat(receivedSnapshot.getPath())
-        .as("there exists a pending snapshot in the pending directory")
-        .hasParent(receiverPendingDir)
+        .as("there exists a snapshot in the directory")
+        .hasParent(receiverSnapshotsDir)
         .isDirectory();
-    assertThat(receiverSnapshotsDir)
-        .as("the pending snapshot was not committed")
-        .isEmptyDirectory();
   }
 
   @Test
@@ -151,15 +148,15 @@ public class FileBasedReceivedSnapshotTest {
     olderReceivedSnapshot.persist().join();
 
     // then
-    assertThat(receiverPendingDir)
+    assertThat(receiverSnapshotsDir)
         .asInstanceOf(DirectoryAssert.factory())
         .as(
             "the latest pending snapshot should not be deleted because it is newer than the persisted one")
-        .isDirectoryContainingExactly(receivedSnapshot.getPath());
+        .isDirectoryContainingAllOf(olderReceivedSnapshot.getPath(), receivedSnapshot.getPath());
   }
 
   @Test
-  public void shouldDeletePartialSnapshotOnInvalidChecksumPersist() {
+  public void shouldNotPersistOnPartialSnapshotOnInvalidChecksumPersist() {
     // given
     final var persistedSnapshot = (FileBasedSnapshot) takePersistedSnapshot(1L);
     final var corruptedSnapshot =
@@ -180,7 +177,9 @@ public class FileBasedReceivedSnapshotTest {
     assertThat(didPersist)
         .as("the snapshot was not persisted as it has a checksum mismatch")
         .failsWithin(Duration.ofSeconds(5));
-    assertThat(receiverSnapshotsDir).as("the partial snapshot was rolled back").isEmptyDirectory();
+    assertThat(receiverSnapshotsDir)
+        .as("the partial snapshot was rolled back")
+        .isDirectoryNotContaining(name -> name.getFileName().toString().equals("1-0-1-0.checksum"));
   }
 
   @Test

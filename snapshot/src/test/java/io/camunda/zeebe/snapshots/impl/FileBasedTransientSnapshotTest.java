@@ -85,8 +85,8 @@ public class FileBasedTransientSnapshotTest {
 
     // then
     assertThat(snapshotsDir)
-        .as("the committed snapshots directory should be empty")
-        .isEmptyDirectory();
+        .isDirectoryNotContaining(
+            p -> p.getFileName().toFile().getName().equals("1-2-3-4.checksum"));
   }
 
   @Test
@@ -100,7 +100,7 @@ public class FileBasedTransientSnapshotTest {
     // then
     assertThat(transientSnapshot.getPath())
         .as("the transient snapshot directory was written in the pending directory")
-        .hasParent(pendingDir)
+        .hasParent(snapshotsDir)
         .isNotEmptyDirectory();
   }
 
@@ -138,21 +138,6 @@ public class FileBasedTransientSnapshotTest {
     assertThat(snapshotStore.getLatestSnapshot())
         .as("the latest snapshot was not changed after purge")
         .hasValue(persistedSnapshot);
-  }
-
-  @Test
-  public void shouldDeleteOlderTransientDirectoryOnPersist() {
-    // given
-    final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 0L, 1L, 0L).get();
-    transientSnapshot.take(this::writeSnapshot).join();
-
-    // when
-    transientSnapshot.persist().join();
-
-    // then
-    assertThat(transientSnapshot.getPath())
-        .as("the transient directory is removed after persist")
-        .doesNotExist();
   }
 
   @Test
@@ -249,7 +234,7 @@ public class FileBasedTransientSnapshotTest {
     assertThat(newerTransientSnapshot.getPath())
         .as("the newer transient snapshot still exists since it has a greater ID")
         .isNotEmptyDirectory()
-        .hasParent(pendingDir);
+        .hasParent(snapshotsDir);
   }
 
   @Test

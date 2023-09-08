@@ -216,21 +216,6 @@ public class TransientSnapshotTest {
   }
 
   @Test
-  public void shouldRemoveTransientSnapshotOnPersist() {
-    // given
-    final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 0L, 1L, 0L).get();
-    transientSnapshot.take(this::writeSnapshot);
-
-    // when
-    final var newSnapshot = snapshotStore.newTransientSnapshot(2L, 0L, 1L, 0L).get();
-    newSnapshot.take(this::writeSnapshot);
-    newSnapshot.persist().join();
-
-    // then
-    assertThat(newSnapshot.getPath()).as("the transient snapshot was removed").doesNotExist();
-  }
-
-  @Test
   public void shouldNotRemoveTransientSnapshotWithGreaterIdOnPersist() {
     final var newerTransientSnapshot = snapshotStore.newTransientSnapshot(2L, 0L, 1L, 0L).get();
     newerTransientSnapshot.take(this::writeSnapshot);
