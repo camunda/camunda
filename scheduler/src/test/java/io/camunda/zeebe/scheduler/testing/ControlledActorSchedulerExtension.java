@@ -21,6 +21,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.function.Consumer;
+import org.agrona.concurrent.IdleStrategy;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -92,9 +93,11 @@ public class ControlledActorSchedulerExtension implements BeforeEachCallback, Af
         final TaskScheduler taskScheduler,
         final ActorClock clock,
         final ActorTimerQueue timerQueue,
-        final boolean metricsEnabled) {
+        final boolean metricsEnabled,
+        final IdleStrategy idleStrategy) {
       controlledThread =
-          new ControlledActorThread(name, id, threadGroup, taskScheduler, clock, timerQueue);
+          new ControlledActorThread(
+              name, id, threadGroup, taskScheduler, clock, timerQueue, idleStrategy);
       return controlledThread;
     }
   }

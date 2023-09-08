@@ -20,11 +20,13 @@ public final class EnsureUtil {
     Objects.requireNonNull(o, property);
   }
 
-  public static void ensureGreaterThan(
+  public static long ensureGreaterThan(
       final String property, final long testValue, final long comparisonValue) {
     if (testValue <= comparisonValue) {
       throw new IllegalArgumentException(property + " must be greater than " + comparisonValue);
     }
+
+    return testValue;
   }
 
   public static void ensureGreaterThanOrEqual(

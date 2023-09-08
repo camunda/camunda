@@ -11,6 +11,7 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ThreadsCfg;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.shared.ActorClockConfiguration;
+import io.camunda.zeebe.shared.IdleStrategyConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -19,21 +20,25 @@ import org.springframework.context.annotation.Configuration;
 public final class ActorSchedulerConfiguration {
   private final BrokerCfg brokerCfg;
   private final ActorClockConfiguration actorClockConfiguration;
+  private final IdleStrategyConfig idleStrategyConfig;
 
   @Autowired
   public ActorSchedulerConfiguration(
-      final BrokerCfg brokerCfg, final ActorClockConfiguration actorClockConfiguration) {
+      final BrokerCfg brokerCfg,
+      final ActorClockConfiguration actorClockConfiguration,
+      final IdleStrategyConfig idleStrategyConfig) {
     this.brokerCfg = brokerCfg;
     this.actorClockConfiguration = actorClockConfiguration;
+    this.idleStrategyConfig = idleStrategyConfig;
   }
 
   @Bean(destroyMethod = "close")
   public ActorScheduler scheduler() {
     final ThreadsCfg cfg = brokerCfg.getThreads();
 
-    final int cpuThreads = cfg.getCpuThreadCount();
-    final int ioThreads = cfg.getIoThreadCount();
-    final boolean metricsEnabled = brokerCfg.getExperimental().getFeatures().isEnableActorMetrics();
+    final var cpuThreads = cfg.getCpuThreadCount();
+    final var ioThreads = cfg.getIoThreadCount();
+    final var metricsEnabled = brokerCfg.getExperimental().getFeatures().isEnableActorMetrics();
 
     return ActorScheduler.newActorScheduler()
         .setActorClock(actorClockConfiguration.getClock().orElse(null))
@@ -41,6 +46,7 @@ public final class ActorSchedulerConfiguration {
         .setIoBoundActorThreadCount(ioThreads)
         .setMetricsEnabled(metricsEnabled)
         .setSchedulerName(String.format("Broker-%d", brokerCfg.getCluster().getNodeId()))
+        .setIdleStrategySupplier(idleStrategyConfig.toSupplier())
         .build();
   }
 }

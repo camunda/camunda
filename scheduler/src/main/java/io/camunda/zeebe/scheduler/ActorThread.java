@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.scheduler;
 
+import io.camunda.zeebe.scheduler.ActorScheduler.ActorSchedulerBuilder;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.scheduler.clock.DefaultActorClock;
 import io.camunda.zeebe.util.Loggers;
@@ -14,10 +15,9 @@ import io.camunda.zeebe.util.error.FatalErrorHandler;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.Consumer;
-import org.agrona.concurrent.BackoffIdleStrategy;
+import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.ManyToManyConcurrentArrayQueue;
 import org.slf4j.Logger;
 import org.slf4j.MDC;
@@ -39,7 +39,7 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
   public final ManyToManyConcurrentArrayQueue<Runnable> submittedCallbacks =
       new ManyToManyConcurrentArrayQueue<>(1024 * 24);
   protected final ActorTimerQueue timerJobQueue;
-  protected ActorTaskRunnerIdleStrategy idleStrategy = new ActorTaskRunnerIdleStrategy();
+  protected ActorTaskRunnerIdleStrategy idleStrategy;
   ActorTask currentTask;
   private final ActorMetrics actorMetrics;
   private final CompletableFuture<Void> terminationFuture = new CompletableFuture<>();
@@ -58,6 +58,26 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
       final ActorClock clock,
       final ActorTimerQueue timerQueue,
       final boolean metricsEnabled) {
+    this(
+        name,
+        id,
+        threadGroup,
+        taskScheduler,
+        clock,
+        timerQueue,
+        metricsEnabled,
+        ActorSchedulerBuilder.defaultIdleStrategySupplier());
+  }
+
+  public ActorThread(
+      final String name,
+      final int id,
+      final ActorThreadGroup threadGroup,
+      final TaskScheduler taskScheduler,
+      final ActorClock clock,
+      final ActorTimerQueue timerQueue,
+      final boolean metricsEnabled,
+      final IdleStrategy idleStrategy) {
     setName(name);
     state = ActorThreadState.NEW;
     threadId = id;
@@ -66,6 +86,7 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
     actorThreadGroup = threadGroup;
     this.taskScheduler = taskScheduler;
     actorMetrics = new ActorMetrics(metricsEnabled);
+    this.idleStrategy = new ActorTaskRunnerIdleStrategy(idleStrategy);
   }
 
   ActorMetrics getActorMetrics() {
@@ -255,16 +276,15 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
   }
 
   protected class ActorTaskRunnerIdleStrategy {
-    final BackoffIdleStrategy backoff =
-        new BackoffIdleStrategy(100, 100, 1, TimeUnit.MILLISECONDS.toNanos(1));
-    boolean isIdle;
+    private final IdleStrategy idleStrategy;
+    private boolean isIdle;
 
-    long idleTimeStart;
-    long busyTimeStart;
+    protected ActorTaskRunnerIdleStrategy(final IdleStrategy idleStrategy) {
+      this.idleStrategy = idleStrategy;
+    }
 
     void init() {
       isIdle = true;
-      idleTimeStart = System.nanoTime();
     }
 
     public void hintWorkAvailable() {
@@ -274,20 +294,15 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
     protected void onIdle() {
       if (!isIdle) {
         clock.update();
-        idleTimeStart = clock.getNanoTime();
         isIdle = true;
       }
 
-      backoff.idle();
+      idleStrategy.idle();
     }
 
     protected void onTaskExecuted() {
-      backoff.reset();
-
-      if (isIdle) {
-        busyTimeStart = clock.getNanoTime();
-        isIdle = false;
-      }
+      idleStrategy.reset();
+      isIdle = false;
     }
   }
 }

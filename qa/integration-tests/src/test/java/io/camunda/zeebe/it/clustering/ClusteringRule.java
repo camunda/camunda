@@ -22,7 +22,6 @@ import io.atomix.cluster.Member;
 import io.atomix.cluster.messaging.impl.NettyMessagingService;
 import io.atomix.cluster.messaging.impl.NettyUnicastService;
 import io.atomix.utils.Version;
-import io.camunda.zeebe.broker.ActorSchedulerConfiguration;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.BrokerClusterConfiguration;
 import io.camunda.zeebe.broker.PartitionListener;
@@ -42,7 +41,7 @@ import io.camunda.zeebe.client.api.response.BrokerInfo;
 import io.camunda.zeebe.client.api.response.PartitionInfo;
 import io.camunda.zeebe.client.api.response.Topology;
 import io.camunda.zeebe.engine.state.QueryService;
-import io.camunda.zeebe.gateway.ActorSchedulerComponent;
+import io.camunda.zeebe.gateway.ActorSchedulerConfiguration;
 import io.camunda.zeebe.gateway.BrokerClientComponent;
 import io.camunda.zeebe.gateway.Gateway;
 import io.camunda.zeebe.gateway.GatewayClusterConfiguration;
@@ -58,6 +57,7 @@ import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.shared.ActorClockConfiguration;
+import io.camunda.zeebe.shared.IdleStrategyConfig;
 import io.camunda.zeebe.shared.management.ActorClockService.MutableClock;
 import io.camunda.zeebe.snapshots.SnapshotId;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId;
@@ -348,7 +348,9 @@ public class ClusteringRule extends ExternalResource {
             new BrokerClusterConfiguration().clusterConfig(brokerCfg),
             Version.from(VersionUtil.getVersion()));
     final var scheduler =
-        new ActorSchedulerConfiguration(brokerCfg, actorClockConfiguration).scheduler();
+        new io.camunda.zeebe.broker.ActorSchedulerConfiguration(
+                brokerCfg, actorClockConfiguration, new IdleStrategyConfig())
+            .scheduler();
     final var systemContext = new SystemContext(brokerCfg, scheduler, atomixCluster);
     systemContexts.put(nodeId, systemContext);
 
@@ -457,7 +459,9 @@ public class ClusteringRule extends ExternalResource {
     atomixCluster.start().join();
 
     final ActorScheduler actorScheduler =
-        new ActorSchedulerComponent(gatewayCfg, actorClockConfiguration).actorScheduler();
+        new ActorSchedulerConfiguration(
+                gatewayCfg, actorClockConfiguration, new IdleStrategyConfig())
+            .actorScheduler();
     actorScheduler.start();
 
     final var brokerClient =
