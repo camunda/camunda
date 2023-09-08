@@ -103,7 +103,7 @@ public class ListLogStorage implements LogStorage {
 
   private record Entry(ByteBuffer data) {}
 
-  private class ListLogStorageReader implements LogStorageReader {
+  private final class ListLogStorageReader implements LogStorageReader {
     volatile int currentIndex;
 
     @Override

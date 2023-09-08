@@ -109,7 +109,7 @@ public class IntermediateThrowEventProcessor
         final ExecutableIntermediateThrowEvent element, final BpmnElementContext terminating) {}
   }
 
-  private class NoneIntermediateThrowEventBehavior implements IntermediateThrowEventBehavior {
+  private final class NoneIntermediateThrowEventBehavior implements IntermediateThrowEventBehavior {
 
     @Override
     public boolean isSuitableForEvent(final ExecutableIntermediateThrowEvent element) {
@@ -135,7 +135,8 @@ public class IntermediateThrowEventProcessor
     }
   }
 
-  private class MessageIntermediateThrowEventBehavior implements IntermediateThrowEventBehavior {
+  private final class MessageIntermediateThrowEventBehavior
+      implements IntermediateThrowEventBehavior {
 
     @Override
     public boolean isSuitableForEvent(final ExecutableIntermediateThrowEvent element) {
@@ -175,7 +176,7 @@ public class IntermediateThrowEventProcessor
     }
   }
 
-  private class LinkIntermediateThrowEventBehavior implements IntermediateThrowEventBehavior {
+  private final class LinkIntermediateThrowEventBehavior implements IntermediateThrowEventBehavior {
     @Override
     public boolean isSuitableForEvent(final ExecutableIntermediateThrowEvent element) {
       return element.isLinkThrowEvent();
@@ -203,7 +204,8 @@ public class IntermediateThrowEventProcessor
     }
   }
 
-  private class EscalationIntermediateThrowEventBehavior implements IntermediateThrowEventBehavior {
+  private final class EscalationIntermediateThrowEventBehavior
+      implements IntermediateThrowEventBehavior {
     @Override
     public boolean isSuitableForEvent(final ExecutableIntermediateThrowEvent element) {
       return element.isEscalationThrowEvent();
@@ -252,7 +254,8 @@ public class IntermediateThrowEventProcessor
     }
   }
 
-  private class SignalIntermediateThrowEventBehavior implements IntermediateThrowEventBehavior {
+  private final class SignalIntermediateThrowEventBehavior
+      implements IntermediateThrowEventBehavior {
     @Override
     public boolean isSuitableForEvent(final ExecutableIntermediateThrowEvent element) {
       return element.isSignalThrowEvent();

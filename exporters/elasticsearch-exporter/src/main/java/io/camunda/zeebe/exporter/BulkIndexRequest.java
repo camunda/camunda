@@ -132,5 +132,5 @@ final class BulkIndexRequest implements ContentProducer {
   record BulkOperation(BulkIndexAction metadata, byte[] source) {}
 
   @JsonAppend(attrs = {@JsonAppend.Attr(value = RECORD_SEQUENCE_PROPERTY)})
-  private static class RecordSequenceMixin {}
+  private static final class RecordSequenceMixin {}
 }

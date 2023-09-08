@@ -138,7 +138,7 @@ public final class DiscoveryMembershipProtocol
     }
   }
 
-  private static class Type implements GroupMembershipProtocol.Type<Config> {
+  private static final class Type implements GroupMembershipProtocol.Type<Config> {
     @Override
     public String name() {
       return "memory";

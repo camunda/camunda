@@ -124,7 +124,7 @@ public class IdentityInterceptorTest {
     };
   }
 
-  private static class CloseStatusCapturingServerCall extends NoopServerCall<Object, Object> {
+  private static final class CloseStatusCapturingServerCall extends NoopServerCall<Object, Object> {
     private final AtomicReference<Status> closeStatus = new AtomicReference<>();
 
     @Override

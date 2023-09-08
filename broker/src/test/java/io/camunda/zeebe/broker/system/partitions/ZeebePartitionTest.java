@@ -548,7 +548,7 @@ public class ZeebePartitionTest {
     assertThat(healthReport.getIssue()).isNull();
   }
 
-  private static class NoopStartupStep implements PartitionStartupStep {
+  private static final class NoopStartupStep implements PartitionStartupStep {
 
     @Override
     public String getName() {
@@ -568,7 +568,7 @@ public class ZeebePartitionTest {
     }
   }
 
-  private static class NoopTransitionStep implements PartitionTransitionStep {
+  private static final class NoopTransitionStep implements PartitionTransitionStep {
 
     @Override
     public ActorFuture<Void> prepareTransition(
@@ -588,7 +588,7 @@ public class ZeebePartitionTest {
     }
   }
 
-  private static class BlockingTransitionStep implements PartitionTransitionStep {
+  private static final class BlockingTransitionStep implements PartitionTransitionStep {
 
     @Override
     public ActorFuture<Void> prepareTransition(

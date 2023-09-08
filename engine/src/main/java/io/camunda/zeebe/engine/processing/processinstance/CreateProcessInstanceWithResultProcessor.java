@@ -58,7 +58,7 @@ public final class CreateProcessInstanceWithResultProcessor
     createProcessor.afterAccept(commandWriter, stateWriter, key, intent, value);
   }
 
-  private class CommandControlWithAwaitResult
+  private final class CommandControlWithAwaitResult
       implements CommandControl<ProcessInstanceCreationRecord> {
 
     TypedRecord<ProcessInstanceCreationRecord> command;

@@ -135,7 +135,7 @@ public final class LogStoragePartitionTransitionStep implements PartitionTransit
     }
   }
 
-  private static class LogAppenderForReadOnlyStorage implements ZeebeLogAppender {
+  private static final class LogAppenderForReadOnlyStorage implements ZeebeLogAppender {
 
     @Override
     public void appendEntry(final ApplicationEntry entry, final AppendListener appendListener) {

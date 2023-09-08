@@ -246,7 +246,7 @@ public class GatewayAuthenticationIdentityIT {
     return System.getProperty("identity.docker.image.version", SNAPSHOT_TAG);
   }
 
-  private static class InvalidAuthTokenProvider implements CredentialsProvider {
+  private static final class InvalidAuthTokenProvider implements CredentialsProvider {
 
     @Override
     public void applyCredentials(final Metadata headers) {

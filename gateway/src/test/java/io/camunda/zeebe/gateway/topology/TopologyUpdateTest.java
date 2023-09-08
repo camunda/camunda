@@ -426,7 +426,7 @@ final class TopologyUpdateTest {
     actorSchedulerRule.workUntilDone();
   }
 
-  private static class RecordingTopologyListener implements BrokerTopologyListener {
+  private static final class RecordingTopologyListener implements BrokerTopologyListener {
 
     private final Set<Integer> brokers = new CopyOnWriteArraySet<>();
 

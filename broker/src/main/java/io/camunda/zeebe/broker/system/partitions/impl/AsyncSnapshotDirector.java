@@ -445,7 +445,7 @@ public final class AsyncSnapshotDirector extends Actor
     };
   }
 
-  private static class InProgressSnapshot {
+  private static final class InProgressSnapshot {
     private long lastWrittenPosition;
     private TransientSnapshot pendingSnapshot;
     private long lowerBoundSnapshotPosition;

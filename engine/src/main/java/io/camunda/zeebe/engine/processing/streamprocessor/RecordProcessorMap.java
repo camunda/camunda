@@ -82,7 +82,7 @@ public final class RecordProcessorMap {
     return valueIt;
   }
 
-  private class ValueIterator implements Iterator<TypedRecordProcessor> {
+  private final class ValueIterator implements Iterator<TypedRecordProcessor> {
     private int next;
 
     private void scanToNext() {

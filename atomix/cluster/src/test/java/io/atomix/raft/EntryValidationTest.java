@@ -63,7 +63,7 @@ public final class EntryValidationTest {
     assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
   }
 
-  private static class TestEntryValidator implements EntryValidator {
+  private static final class TestEntryValidator implements EntryValidator {
     BiFunction<ApplicationEntry, ApplicationEntry, ValidationResult> validation;
 
     @Override

@@ -106,7 +106,7 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
         final ExecutableEndEvent element, final BpmnElementContext terminating) {}
   }
 
-  private class NoneEndEventBehavior implements EndEventBehavior {
+  private final class NoneEndEventBehavior implements EndEventBehavior {
 
     @Override
     public boolean isSuitableForEvent(final ExecutableEndEvent element) {
@@ -131,7 +131,7 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
     }
   }
 
-  private class ErrorEndEventBehavior implements EndEventBehavior {
+  private final class ErrorEndEventBehavior implements EndEventBehavior {
 
     @Override
     public boolean isSuitableForEvent(final ExecutableEndEvent element) {
@@ -169,7 +169,7 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
     }
   }
 
-  private class MessageEndEventBehavior implements EndEventBehavior {
+  private final class MessageEndEventBehavior implements EndEventBehavior {
 
     @Override
     public boolean isSuitableForEvent(final ExecutableEndEvent element) {
@@ -204,7 +204,7 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
     }
   }
 
-  private class TerminateEndEventBehavior implements EndEventBehavior {
+  private final class TerminateEndEventBehavior implements EndEventBehavior {
 
     @Override
     public boolean isSuitableForEvent(final ExecutableEndEvent element) {
@@ -227,7 +227,7 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
     }
   }
 
-  private class EscalationEndEventBehavior implements EndEventBehavior {
+  private final class EscalationEndEventBehavior implements EndEventBehavior {
     @Override
     public boolean isSuitableForEvent(final ExecutableEndEvent element) {
       return element.isEscalationEndEvent();
@@ -274,7 +274,7 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
     }
   }
 
-  private class SignalEndEventBehavior implements EndEventBehavior {
+  private final class SignalEndEventBehavior implements EndEventBehavior {
     @Override
     public boolean isSuitableForEvent(final ExecutableEndEvent element) {
       return element.isSignalEndEvent();

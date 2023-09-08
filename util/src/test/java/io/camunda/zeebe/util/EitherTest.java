@@ -195,7 +195,7 @@ class EitherTest {
   }
 
   /** Simple Consumer that always fails a test when executed. */
-  private static class FailConsumer implements Consumer<Object> {
+  private static final class FailConsumer implements Consumer<Object> {
     @Override
     public void accept(final Object o) {
       Assertions.fail("Expected NOT to perform this action!");

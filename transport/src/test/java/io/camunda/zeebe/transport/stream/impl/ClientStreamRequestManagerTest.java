@@ -322,7 +322,7 @@ final class ClientStreamRequestManagerTest {
         .unicast(eq(StreamTopics.REMOVE_ALL.topic()), any(), any(), eq(server2), anyBoolean());
   }
 
-  private static class TestMetadata implements BufferWriter {
+  private static final class TestMetadata implements BufferWriter {
     @Override
     public int getLength() {
       return Integer.BYTES;

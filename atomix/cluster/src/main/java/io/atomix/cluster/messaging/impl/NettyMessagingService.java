@@ -873,7 +873,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
   }
 
   /** Channel initializer for basic connections. */
-  private class BasicServerChannelInitializer extends ChannelInitializer<SocketChannel> {
+  private final class BasicServerChannelInitializer extends ChannelInitializer<SocketChannel> {
 
     @Override
     protected void initChannel(final SocketChannel channel) {
@@ -1018,7 +1018,8 @@ public final class NettyMessagingService implements ManagedMessagingService {
   }
 
   /** Server handshake handler. */
-  private class ServerHandshakeHandlerAdapter extends HandshakeHandlerAdapter<ProtocolRequest> {
+  private final class ServerHandshakeHandlerAdapter
+      extends HandshakeHandlerAdapter<ProtocolRequest> {
 
     @Override
     public void channelRead(final ChannelHandlerContext context, final Object message)

@@ -187,7 +187,7 @@ public final class CreateProcessInstanceWithResultTest extends ClientTest {
         .isEqualTo(builder);
   }
 
-  private static class VariablesPojo {
+  private static final class VariablesPojo {
     String key;
 
     public String getKey() {
