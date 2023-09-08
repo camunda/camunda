@@ -1,5 +1,5 @@
 ## Ease full raw data drill down
-The drill down from the high-level overview to the details of a report to the raw data aggregated helps to investigate and analyze findings. This navigation is already possible today but difficult to follow. This release now streamlines the navigation. Each report on a dashboard can be clicked anywhere on the report tile to drill down to the report, which now contains the report plus the raw data side by side. 
+The drill down from the high-level overview dashboard to the details of a report to the raw data aggregated helps to investigate and analyze findings. This navigation is already possible today but difficult to follow. This release now streamlines the navigation. Each report on a dashboard can be clicked anywhere on the report tile to drill down to the report, which now contains the report plus the raw data side by side. 
 
 ## Send Optimize notifications to the notification tracker
 Optimize is now sending important notifications to the Camunda 8 notifications tracker. This allows us to support users utilizing Camunda 8 for process orchestration with hints about the benefits of using Optimize.
