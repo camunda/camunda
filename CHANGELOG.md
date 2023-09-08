@@ -1,3 +1,6 @@
+# v8.3.0-alpha6
+## 💊 Bugfixes
+* Update IdentityAuthorizationService.java ([#3438](https://github.com/camunda/tasklist/issues/3438))
 # v8.3.0-alpha5
 ## 🚀 New Features
 * ES/OS - filter task by variables ([#3371](https://github.com/camunda/tasklist/issues/3371))
