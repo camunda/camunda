@@ -18,6 +18,10 @@ import io.camunda.zeebe.util.Either;
 import java.util.Map;
 import java.util.function.UnaryOperator;
 
+/**
+ * A partition leave operation is executed when a member wants to stop replicating a partition. This
+ * is allowed only when the member is already replicating the partition.
+ */
 record PartitionLeaveApplier(
     int partitionId,
     MemberId localMemberId,
@@ -41,7 +45,9 @@ record PartitionLeaveApplier(
     final boolean partitionIsLeaving =
         localPartitions.get(partitionId).state() == PartitionState.State.LEAVING;
     if (partitionIsLeaving) {
-      // If partition state is already set to leaving, then we don't need to set it again
+      // If partition state is already set to leaving, then we don't need to set it again. This can
+      // happen if the node was restarted while applying the leave operation. To ensure that the
+      // topology change can make progress, we do not treat this as an error.
       return Either.right(m -> m);
     } else {
       return Either.right(

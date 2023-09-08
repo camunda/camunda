@@ -20,6 +20,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.UnaryOperator;
 
+/**
+ * A Partition Join operation is executed when a member wants to start replicating a partition. This
+ * is allowed only when the member is active, and the partition is not already active.
+ */
 final class PartitionJoinApplier implements OperationApplier {
   private final int partitionId;
   private final int priority;
@@ -71,7 +75,9 @@ final class PartitionJoinApplier implements OperationApplier {
     partitionMembersWithPriority = collectPriorityByMembers(currentClusterTopology);
 
     if (partitionExistsInLocalMember) {
-      // The state is already JOINING, so we don't need to do anything
+      // The state is already JOINING, so we don't need to change it. This can happen when the node
+      // was restarted while applying the join operation. To ensure that the topology change can
+      // make progress, we do not treat this as an error.
       return Either.right(memberState -> memberState);
     } else {
       return Either.right(

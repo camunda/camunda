@@ -18,9 +18,26 @@ import java.util.Map;
  */
 public interface PartitionTopologyChangeExecutor {
 
-  // The implementation should be able to build new PartitionMetadata from the given partitionId and
-  // priorities.
+  /**
+   * The implementation of this method must start the partition on this member. The partition must
+   * join the replication group formed by the members given in the {@code membersWithPriority}. The
+   * implementation must be idempotent. If the node restarts after this method was called, but
+   * before marking the operation as completed, it will be retried after the restart.
+   *
+   * @param partitionId id of the partition
+   * @param membersWithPriority priority of each replicas used of leader election
+   * @return a future that completes when the partition is started and joined the replication group
+   */
   ActorFuture<Void> join(int partitionId, Map<MemberId, Integer> membersWithPriority);
 
+  /**
+   * The implementation of this method must remove the member from the replication group of the
+   * given partition and stops the partition on this member. The implementation must be idempotent.
+   * If the node restarts after this method was called, but before marking the operation as
+   * completed, it will be retried after the restart.
+   *
+   * @param partitionId id of the partition
+   * @return a future that completes when the partition is stopped and removed from the replication.
+   */
   ActorFuture<Void> leave(int partitionId);
 }
