@@ -25,6 +25,8 @@ interface JobStreamer extends AutoCloseable {
   @Override
   void close();
 
+  boolean isOpen();
+
   void openStreamer(final Consumer<ActivatedJob> jobConsumer);
 
   static JobStreamer noop() {
@@ -37,6 +39,11 @@ interface JobStreamer extends AutoCloseable {
 
     @Override
     public void close() {}
+
+    @Override
+    public boolean isOpen() {
+      return false;
+    }
 
     @Override
     public void openStreamer(final Consumer<ActivatedJob> jobConsumer) {}

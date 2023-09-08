@@ -136,6 +136,11 @@ final class JobWorkerMetricsTest {
     }
 
     @Override
+    public boolean isOpen() {
+      return true;
+    }
+
+    @Override
     public void openStreamer(final Consumer<ActivatedJob> jobConsumer) {
       consumerRef.set(jobConsumer);
     }

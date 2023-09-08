@@ -122,6 +122,34 @@ public final class JobWorkerImplTest {
   }
 
   @Test
+  public void shouldBackoffWhenStreamEnabledOnPollSuccessAndResponseIsEmpty() {
+    // given a gateway that responds with some jobs
+    gateway.respondWith(TestData.jobs(0));
+
+    // and a client with stream enabled and retry delay supplier that is slowing down polling
+    client
+        .newWorker()
+        .jobType("test")
+        .handler(NOOP_JOB_HANDLER)
+        .backoffSupplier(prev -> SLOW_POLL_DELAY_IN_MS)
+        .streamEnabled(true)
+        .open();
+
+    // and assuming that the gateway responded multiple times successfully
+    gateway.startMeasuring();
+    Awaitility.await()
+        .pollInterval(Duration.ofMillis(10))
+        .atMost(Duration.ofSeconds(5))
+        .until(() -> gateway.getCountedPolls() > 3);
+    gateway.stopMeasuring();
+
+    // since stream is enabled then we expect the poll to backoff
+    assertThat(gateway.getTimeBetweenLatestPolls()).isGreaterThan(SLOW_POLL_THRESHOLD);
+
+    client.close();
+  }
+
+  @Test
   public void shouldOpenStreamIfOptedIn() {
     // given
     final JobWorkerBuilderStep3 builder =

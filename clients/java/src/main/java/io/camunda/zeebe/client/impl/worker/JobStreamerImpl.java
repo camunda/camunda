@@ -100,6 +100,11 @@ final class JobStreamerImpl implements JobStreamer {
   }
 
   @Override
+  public boolean isOpen() {
+    return !isClosed;
+  }
+
+  @Override
   public void openStreamer(final Consumer<ActivatedJob> jobConsumer) {
     final FinalCommandStep<StreamJobsResponse> command = buildCommand(jobConsumer);
     open(command);
