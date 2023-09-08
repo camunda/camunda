@@ -9,6 +9,7 @@ package io.camunda.tasklist.webapp.security.identity;
 import io.camunda.identity.sdk.Identity;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.SpringContextHolder;
+import io.camunda.tasklist.webapp.security.sso.TokenAuthentication;
 import java.util.ArrayList;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,6 +39,15 @@ public class IdentityAuthorizationService {
                 identity
                     .authorizations()
                     .forToken(jwtAuthenticationToken.getToken().getTokenValue()))
+            .getProcessesAllowedToStart();
+      } else if (authentication instanceof TokenAuthentication) {
+        final Identity identity = SpringContextHolder.getBean(Identity.class);
+        return new IdentityAuthorization(
+                identity
+                    .authorizations()
+                    .forToken(
+                        ((TokenAuthentication) authentication).getAccessToken(),
+                        ((TokenAuthentication) authentication).getOrganization()))
             .getProcessesAllowedToStart();
       }
     }
