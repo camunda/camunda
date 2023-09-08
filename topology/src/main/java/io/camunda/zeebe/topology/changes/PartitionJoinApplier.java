@@ -27,7 +27,7 @@ import java.util.function.UnaryOperator;
 final class PartitionJoinApplier implements OperationApplier {
   private final int partitionId;
   private final int priority;
-  private final PartitionTopologyChangeExecutor partitionTopologyChangeExecutor;
+  private final PartitionChangeExecutor partitionChangeExecutor;
   private final MemberId localMemberId;
   private Map<MemberId, Integer> partitionMembersWithPriority;
 
@@ -35,11 +35,11 @@ final class PartitionJoinApplier implements OperationApplier {
       final int partitionId,
       final int priority,
       final MemberId localMemberId,
-      final PartitionTopologyChangeExecutor partitionTopologyChangeExecutor) {
+      final PartitionChangeExecutor partitionChangeExecutor) {
     this.partitionId = partitionId;
     this.priority = priority;
     this.localMemberId = localMemberId;
-    this.partitionTopologyChangeExecutor = partitionTopologyChangeExecutor;
+    this.partitionChangeExecutor = partitionChangeExecutor;
   }
 
   @Override
@@ -90,7 +90,7 @@ final class PartitionJoinApplier implements OperationApplier {
     final CompletableActorFuture<UnaryOperator<MemberState>> result =
         new CompletableActorFuture<>();
 
-    partitionTopologyChangeExecutor
+    partitionChangeExecutor
         .join(partitionId, partitionMembersWithPriority)
         .onComplete(
             (ignore, error) -> {

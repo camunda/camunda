@@ -20,13 +20,12 @@ import java.util.function.UnaryOperator;
 
 public class TopologyChangeAppliersImpl implements TopologyChangeAppliers {
 
-  private final PartitionTopologyChangeExecutor partitionTopologyChangeExecutor;
+  private final PartitionChangeExecutor partitionChangeExecutor;
   private final MemberId localMemberId;
 
   public TopologyChangeAppliersImpl(
-      final PartitionTopologyChangeExecutor partitionTopologyChangeExecutor,
-      final MemberId localMemberId) {
-    this.partitionTopologyChangeExecutor = partitionTopologyChangeExecutor;
+      final PartitionChangeExecutor partitionChangeExecutor, final MemberId localMemberId) {
+    this.partitionChangeExecutor = partitionChangeExecutor;
     this.localMemberId = localMemberId;
   }
 
@@ -37,10 +36,10 @@ public class TopologyChangeAppliersImpl implements TopologyChangeAppliers {
           joinOperation.partitionId(),
           joinOperation.priority(),
           localMemberId,
-          partitionTopologyChangeExecutor);
+          partitionChangeExecutor);
     } else if (operation instanceof final PartitionLeaveOperation leaveOperation) {
       return new PartitionLeaveApplier(
-          leaveOperation.partitionId(), localMemberId, partitionTopologyChangeExecutor);
+          leaveOperation.partitionId(), localMemberId, partitionChangeExecutor);
     } else return new FailingApplier(operation);
   }
 

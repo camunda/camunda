@@ -24,14 +24,14 @@ import org.junit.jupiter.api.Test;
 
 final class PartitionLeaveApplierTest {
 
-  private final PartitionTopologyChangeExecutor partitionTopologyChangeExecutor =
-      mock(PartitionTopologyChangeExecutor.class);
+  private final PartitionChangeExecutor partitionChangeExecutor =
+      mock(PartitionChangeExecutor.class);
   private final MemberId localMemberId = MemberId.from("1");
   final ClusterTopology initialClusterTopology =
       ClusterTopology.init().addMember(localMemberId, MemberState.initializeAsActive(Map.of()));
 
   final PartitionLeaveApplier partitionLeaveApplier =
-      new PartitionLeaveApplier(1, localMemberId, partitionTopologyChangeExecutor);
+      new PartitionLeaveApplier(1, localMemberId, partitionChangeExecutor);
 
   @Test
   void shouldRejectLeaveWhenPartitionDoesNotExist() {
@@ -70,15 +70,14 @@ final class PartitionLeaveApplierTest {
         topologyWithPartition.updateMember(
             localMemberId, partitionLeaveApplier.init(topologyWithPartition).get());
 
-    when(partitionTopologyChangeExecutor.leave(1))
-        .thenReturn(CompletableActorFuture.completed(null));
+    when(partitionChangeExecutor.leave(1)).thenReturn(CompletableActorFuture.completed(null));
 
     // when
     final var stateUpdater = partitionLeaveApplier.apply().join();
     final var resultingTopology = topologyAfterInit.updateMember(localMemberId, stateUpdater);
 
     // then
-    verify(partitionTopologyChangeExecutor).leave(1);
+    verify(partitionChangeExecutor).leave(1);
     ClusterTopologyAssert.assertThatClusterTopology(resultingTopology)
         .member(localMemberId)
         .doesNotContainPartition(1);

@@ -16,7 +16,7 @@ import java.util.Map;
  * implementation of this interface is expected to be a call back to the system component that can
  * start or stop partition. This is typically the PartitionManager in the Broker.
  */
-public interface PartitionTopologyChangeExecutor {
+public interface PartitionChangeExecutor {
 
   /**
    * The implementation of this method must start the partition on this member. The partition must

@@ -23,9 +23,7 @@ import java.util.function.UnaryOperator;
  * is allowed only when the member is already replicating the partition.
  */
 record PartitionLeaveApplier(
-    int partitionId,
-    MemberId localMemberId,
-    PartitionTopologyChangeExecutor partitionTopologyChangeExecutor)
+    int partitionId, MemberId localMemberId, PartitionChangeExecutor partitionChangeExecutor)
     implements OperationApplier {
 
   @Override
@@ -60,7 +58,7 @@ record PartitionLeaveApplier(
     final CompletableActorFuture<UnaryOperator<MemberState>> result =
         new CompletableActorFuture<>();
 
-    partitionTopologyChangeExecutor
+    partitionChangeExecutor
         .leave(partitionId)
         .onComplete(
             (ignore, error) -> {

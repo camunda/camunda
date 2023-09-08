@@ -27,13 +27,13 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 final class PartitionJoinApplierTest {
-  private final PartitionTopologyChangeExecutor partitionTopologyChangeExecutor =
-      mock(PartitionTopologyChangeExecutor.class);
+  private final PartitionChangeExecutor partitionChangeExecutor =
+      mock(PartitionChangeExecutor.class);
   private final MemberId localMemberId = MemberId.from("1");
   final ClusterTopology initialClusterTopology =
       ClusterTopology.init().addMember(localMemberId, MemberState.initializeAsActive(Map.of()));
   final PartitionJoinApplier partitionJoinApplier =
-      new PartitionJoinApplier(1, 1, localMemberId, partitionTopologyChangeExecutor);
+      new PartitionJoinApplier(1, 1, localMemberId, partitionChangeExecutor);
 
   @Test
   void shouldRejectJoinIfPartitionIsAlreadyJoined() {
@@ -86,7 +86,7 @@ final class PartitionJoinApplierTest {
   void shouldRejectJoinIfPriorityIsNoSet() {
     // given
     final PartitionJoinApplier partitionJoinApplier =
-        new PartitionJoinApplier(1, -1, localMemberId, partitionTopologyChangeExecutor);
+        new PartitionJoinApplier(1, -1, localMemberId, partitionChangeExecutor);
 
     // when - then
     assertThat(partitionJoinApplier.init(initialClusterTopology))
@@ -114,7 +114,7 @@ final class PartitionJoinApplierTest {
     final var updatedTopology =
         initialClusterTopology.updateMember(
             localMemberId, partitionJoinApplier.init(initialClusterTopology).get());
-    when(partitionTopologyChangeExecutor.join(anyInt(), any()))
+    when(partitionChangeExecutor.join(anyInt(), any()))
         .thenReturn(CompletableActorFuture.completed(null));
 
     // when
@@ -122,7 +122,7 @@ final class PartitionJoinApplierTest {
     final var resultingTopology = updatedTopology.updateMember(localMemberId, updater);
 
     // then
-    verify(partitionTopologyChangeExecutor, times(1)).join(anyInt(), any());
+    verify(partitionChangeExecutor, times(1)).join(anyInt(), any());
     ClusterTopologyAssert.assertThatClusterTopology(resultingTopology)
         .hasMemberWithPartitions(1, Set.of(1))
         .member(localMemberId)
