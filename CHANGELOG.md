@@ -1,3 +1,8 @@
+# v8.3.0-alpha6
+## 🧹 Chore
+* Bump Identity and Zeebe to 8.3.0-alpha6 ([#3432](https://github.com/camunda/tasklist/issues/3432))
+* Fix dev version
+* update CHANGELOG.md
 # v8.3.0-alpha5
 ## 🚀 New Features
 * ES/OS - filter task by variables ([#3371](https://github.com/camunda/tasklist/issues/3371))
