@@ -7,19 +7,22 @@
  */
 package io.camunda.zeebe.topology.changes;
 
+import static io.camunda.zeebe.test.util.asserts.EitherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
-import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import io.camunda.zeebe.topology.ClusterTopologyAssert;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.MemberState;
 import io.camunda.zeebe.topology.state.PartitionState;
 import io.camunda.zeebe.topology.state.PartitionState.State;
+import io.camunda.zeebe.util.Either;
 import java.util.Map;
+import java.util.function.UnaryOperator;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 final class PartitionLeaveApplierTest {
@@ -35,11 +38,16 @@ final class PartitionLeaveApplierTest {
 
   @Test
   void shouldRejectLeaveWhenPartitionDoesNotExist() {
-    // when - then
-    EitherAssert.assertThat(partitionLeaveApplier.init(initialClusterTopology))
-        .isLeft()
-        .left()
-        .isInstanceOf(IllegalStateException.class);
+    // when
+    final Either<Exception, UnaryOperator<MemberState>> result =
+        partitionLeaveApplier.init(initialClusterTopology);
+
+    // then
+    assertThat(result).isLeft();
+
+    Assertions.assertThat(result.getLeft())
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("does not have the partition");
   }
 
   @Test

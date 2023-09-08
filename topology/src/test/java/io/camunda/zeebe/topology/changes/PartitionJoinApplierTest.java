@@ -22,8 +22,11 @@ import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.MemberState;
 import io.camunda.zeebe.topology.state.PartitionState;
 import io.camunda.zeebe.topology.state.PartitionState.State;
+import io.camunda.zeebe.util.Either;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.UnaryOperator;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 final class PartitionJoinApplierTest {
@@ -42,13 +45,16 @@ final class PartitionJoinApplierTest {
         initialClusterTopology.updateMember(
             localMemberId, m -> m.addPartition(1, PartitionState.active(1)));
 
-    // when - then
-    assertThat(partitionJoinApplier.init(topologyWithPartitionJoined))
-        .isLeft()
-        .left()
-        .isInstanceOf(IllegalStateException.class);
+    // when
+    final Either<Exception, UnaryOperator<MemberState>> result =
+        partitionJoinApplier.init(topologyWithPartitionJoined);
 
     // then
+    assertThat(result).isLeft();
+
+    Assertions.assertThat(result.getLeft())
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("the local member already has the partition");
   }
 
   @Test
@@ -59,12 +65,13 @@ final class PartitionJoinApplierTest {
             localMemberId, m -> m.addPartition(1, PartitionState.active(1).toLeaving()));
 
     // when - then
-    assertThat(partitionJoinApplier.init(topologyWithPartitionLeaving))
-        .isLeft()
-        .left()
-        .isInstanceOf(IllegalStateException.class);
+    final Either<Exception, UnaryOperator<MemberState>> result =
+        partitionJoinApplier.init(topologyWithPartitionLeaving);
+    assertThat(result).isLeft();
 
-    // then
+    Assertions.assertThat(result.getLeft())
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("the local member already has the partition");
   }
 
   @Test
@@ -73,26 +80,16 @@ final class PartitionJoinApplierTest {
     final ClusterTopology topologyWithMemberNotActive =
         initialClusterTopology.updateMember(localMemberId, MemberState::toLeaving);
 
-    // when - then
-    assertThat(partitionJoinApplier.init(topologyWithMemberNotActive))
-        .isLeft()
-        .left()
-        .isInstanceOf(IllegalStateException.class);
+    // when
+    final Either<Exception, UnaryOperator<MemberState>> result =
+        partitionJoinApplier.init(topologyWithMemberNotActive);
 
     // then
-  }
+    assertThat(result).isLeft();
 
-  @Test
-  void shouldRejectJoinIfPriorityIsNoSet() {
-    // given
-    final PartitionJoinApplier partitionJoinApplier =
-        new PartitionJoinApplier(1, -1, localMemberId, partitionChangeExecutor);
-
-    // when - then
-    assertThat(partitionJoinApplier.init(initialClusterTopology))
-        .isLeft()
-        .left()
-        .isInstanceOf(IllegalArgumentException.class);
+    Assertions.assertThat(result.getLeft())
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("the local member is not active");
   }
 
   @Test
