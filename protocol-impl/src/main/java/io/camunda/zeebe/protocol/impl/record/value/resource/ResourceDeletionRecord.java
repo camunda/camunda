@@ -10,6 +10,7 @@ package io.camunda.zeebe.protocol.impl.record.value.resource;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.ResourceDeletionRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 
 public class ResourceDeletionRecord extends UnifiedRecordValue
     implements ResourceDeletionRecordValue {
@@ -37,6 +38,6 @@ public class ResourceDeletionRecord extends UnifiedRecordValue
   @Override
   public String getTenantId() {
     // todo(#13238): replace dummy implementation
-    return "";
+    return TenantOwned.DEFAULT_TENANT_IDENTIFIER;
   }
 }

@@ -10,6 +10,7 @@ package io.camunda.zeebe.protocol.impl.record.value.processinstance;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceBatchRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 
 public final class ProcessInstanceBatchRecord extends UnifiedRecordValue
     implements ProcessInstanceBatchRecordValue {
@@ -72,6 +73,6 @@ public final class ProcessInstanceBatchRecord extends UnifiedRecordValue
   @Override
   public String getTenantId() {
     // todo(#13774): replace dummy implementation
-    return "";
+    return TenantOwned.DEFAULT_TENANT_IDENTIFIER;
   }
 }
