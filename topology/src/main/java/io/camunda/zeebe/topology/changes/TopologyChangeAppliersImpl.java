@@ -40,7 +40,9 @@ public class TopologyChangeAppliersImpl implements TopologyChangeAppliers {
     } else if (operation instanceof final PartitionLeaveOperation leaveOperation) {
       return new PartitionLeaveApplier(
           leaveOperation.partitionId(), localMemberId, partitionChangeExecutor);
-    } else return new FailingApplier(operation);
+    } else {
+      return new FailingApplier(operation);
+    }
   }
 
   static class FailingApplier implements OperationApplier {
