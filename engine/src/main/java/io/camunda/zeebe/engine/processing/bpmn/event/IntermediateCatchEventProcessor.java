@@ -92,7 +92,8 @@ public class IntermediateCatchEventProcessor
     void onActivate(final ExecutableCatchEventElement element, final BpmnElementContext activating);
   }
 
-  private class DefaultIntermediateCatchEventBehavior implements IntermediateCatchEventBehavior {
+  private final class DefaultIntermediateCatchEventBehavior
+      implements IntermediateCatchEventBehavior {
 
     @Override
     public boolean isSuitableForEvent(final ExecutableCatchEventElement element) {
@@ -111,7 +112,7 @@ public class IntermediateCatchEventProcessor
     }
   }
 
-  private class LinkIntermediateCatchEventBehavior implements IntermediateCatchEventBehavior {
+  private final class LinkIntermediateCatchEventBehavior implements IntermediateCatchEventBehavior {
 
     @Override
     public boolean isSuitableForEvent(final ExecutableCatchEventElement element) {

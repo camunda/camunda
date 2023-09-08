@@ -95,7 +95,7 @@ public final class ReusableObjectList<T extends Reusable> implements Iterable<T>
     return iterator;
   }
 
-  private class ObjectIterator implements Iterator<T> {
+  private final class ObjectIterator implements Iterator<T> {
     private ReusableElement current = null;
 
     private int index = 0;

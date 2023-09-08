@@ -260,7 +260,7 @@ public class DefaultClusterEventService
   }
 
   /** Internal subscriber. */
-  private static class InternalSubscriber
+  private static final class InternalSubscriber
       implements BiFunction<Address, byte[], CompletableFuture<byte[]>> {
     private final List<InternalSubscription> subscriptions = new CopyOnWriteArrayList<>();
 

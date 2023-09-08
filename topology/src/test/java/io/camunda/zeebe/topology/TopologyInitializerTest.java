@@ -192,7 +192,7 @@ final class TopologyInitializerTest {
             1));
   }
 
-  private static class TestTopologyNotifier implements TopologyUpdateNotifier {
+  private static final class TestTopologyNotifier implements TopologyUpdateNotifier {
 
     private TopologyUpdateListener listener;
 

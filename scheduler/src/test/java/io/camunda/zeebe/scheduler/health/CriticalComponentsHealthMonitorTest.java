@@ -185,7 +185,7 @@ public class CriticalComponentsHealthMonitorTest {
     actorControl.call(() -> null).join();
   }
 
-  private static class ControllableComponent implements HealthMonitorable {
+  private static final class ControllableComponent implements HealthMonitorable {
     private final Set<FailureListener> failureListeners = new HashSet<>();
     private volatile HealthReport healthReport = HealthReport.healthy(this);
 

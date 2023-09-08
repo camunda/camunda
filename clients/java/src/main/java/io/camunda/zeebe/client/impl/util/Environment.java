@@ -66,7 +66,7 @@ public final class Environment {
   }
 
   // Returns an environment created from the system's environment variables using System#getenv()
-  private static class EnvironmentSingleton {
+  private static final class EnvironmentSingleton {
     private static final Environment SYSTEM = new Environment(System.getenv());
   }
 }

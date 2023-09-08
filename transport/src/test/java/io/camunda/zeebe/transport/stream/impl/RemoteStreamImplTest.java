@@ -97,7 +97,7 @@ class RemoteStreamImplTest {
     assertThat(transport.attemptedStreams).isEmpty();
   }
 
-  private static class FailingTransport implements Transport {
+  private static final class FailingTransport implements Transport {
 
     private final List<UUID> attemptedStreams = new ArrayList<>();
 

@@ -68,7 +68,7 @@ public class SingleRaftEntryValidationTest {
             .count();
   }
 
-  private static class TestEntryValidator implements EntryValidator {
+  private static final class TestEntryValidator implements EntryValidator {
     BiFunction<ApplicationEntry, ApplicationEntry, ValidationResult> validation;
 
     @Override

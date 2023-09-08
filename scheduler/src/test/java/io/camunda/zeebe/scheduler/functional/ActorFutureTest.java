@@ -712,7 +712,54 @@ public final class ActorFutureTest {
     assertThat(executorCount).hasValue(1);
   }
 
-  private static class ActorA extends Actor {
+  private static final class BlockedCallActor extends Actor {
+    public void waitOnFuture() {
+      actor.call(
+          () -> {
+            actor.runOnCompletionBlockingCurrentPhase(
+                new CompletableActorFuture<>(),
+                (r, t) -> {
+                  // never called since future is never completed
+                });
+          });
+    }
+
+    public ActorFuture<Integer> call(final int returnValue) {
+      return actor.call(() -> returnValue);
+    }
+  }
+
+  private static final class BlockedCallActorWithRunOnCompletion extends Actor {
+    public void waitOnFuture() {
+      actor.call(
+          () -> {
+            actor.runOnCompletion(
+                new CompletableActorFuture<>(),
+                (r, t) -> {
+                  // never called since future is never completed
+                });
+          });
+    }
+
+    public ActorFuture<Integer> call(final int returnValue) {
+      return actor.call(() -> returnValue);
+    }
+  }
+
+  private static final class TestActor extends Actor {
+
+    public <T> void awaitFuture(
+        final ActorFuture<T> f, final BiConsumer<T, Throwable> onCompletion) {
+      actor.call(() -> actor.runOnCompletionBlockingCurrentPhase(f, onCompletion));
+    }
+
+    @Override
+    public void close() {
+      actor.close();
+    }
+  }
+
+  private static final class ActorA extends Actor {
 
     private final ActorB actorB;
 
@@ -742,56 +789,9 @@ public final class ActorFutureTest {
     }
   }
 
-  private static class ActorB extends Actor {
+  private static final class ActorB extends Actor {
     public ActorFuture<Integer> getValue() {
       return actor.call(() -> 0xCAFE);
-    }
-  }
-
-  class BlockedCallActor extends Actor {
-    public void waitOnFuture() {
-      actor.call(
-          () -> {
-            actor.runOnCompletionBlockingCurrentPhase(
-                new CompletableActorFuture<>(),
-                (r, t) -> {
-                  // never called since future is never completed
-                });
-          });
-    }
-
-    public ActorFuture<Integer> call(final int returnValue) {
-      return actor.call(() -> returnValue);
-    }
-  }
-
-  class BlockedCallActorWithRunOnCompletion extends Actor {
-    public void waitOnFuture() {
-      actor.call(
-          () -> {
-            actor.runOnCompletion(
-                new CompletableActorFuture<>(),
-                (r, t) -> {
-                  // never called since future is never completed
-                });
-          });
-    }
-
-    public ActorFuture<Integer> call(final int returnValue) {
-      return actor.call(() -> returnValue);
-    }
-  }
-
-  class TestActor extends Actor {
-
-    public <T> void awaitFuture(
-        final ActorFuture<T> f, final BiConsumer<T, Throwable> onCompletion) {
-      actor.call(() -> actor.runOnCompletionBlockingCurrentPhase(f, onCompletion));
-    }
-
-    @Override
-    public void close() {
-      actor.close();
     }
   }
 }

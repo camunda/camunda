@@ -189,7 +189,7 @@ final class ClusterTopologyManagerTest {
         .isEqualTo(clusterTopologyManager.getClusterTopology().join());
   }
 
-  private static class TestMemberLeaver implements TopologyChangeAppliers {
+  private static final class TestMemberLeaver implements TopologyChangeAppliers {
 
     @Override
     public OperationApplier getApplier(final TopologyChangeOperation operation) {

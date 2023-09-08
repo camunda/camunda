@@ -128,7 +128,7 @@ public final class BpmnBufferedMessageStartEventBehavior {
     }
   }
 
-  private static class Correlation {
+  private static final class Correlation {
     private long messageKey = Long.MAX_VALUE;
     private long subscriptionKey = -1L;
     private final MessageStartEventSubscriptionRecord subscriptionRecord =

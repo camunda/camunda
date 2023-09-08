@@ -427,7 +427,7 @@ public class RandomizedPartitionTransitionTest {
     }
   }
 
-  private static class TestActor extends Actor {
+  private static final class TestActor extends Actor {
 
     @Override
     public String getName() {

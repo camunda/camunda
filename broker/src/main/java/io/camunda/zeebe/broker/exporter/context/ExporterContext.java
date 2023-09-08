@@ -48,7 +48,7 @@ public final class ExporterContext implements Context {
     this.filter = filter;
   }
 
-  private static class AcceptAllRecordsFilter implements RecordFilter {
+  private static final class AcceptAllRecordsFilter implements RecordFilter {
 
     @Override
     public boolean acceptType(final RecordType recordType) {

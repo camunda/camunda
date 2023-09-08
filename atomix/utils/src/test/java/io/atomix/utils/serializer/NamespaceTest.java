@@ -56,7 +56,7 @@ public class NamespaceTest {
     assertEquals(expectedInteger, gotInteger);
   }
 
-  private static class NumberSerializer extends Serializer<Number> {
+  private static final class NumberSerializer extends Serializer<Number> {
 
     @Override
     public void write(final Kryo kryo, final Output output, final Number object) {

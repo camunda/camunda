@@ -449,7 +449,7 @@ public class SwimProtocolTest extends ConcurrentTestCase {
     return listener != null ? listener.nextEvent() : null;
   }
 
-  private class TestGroupMembershipEventListener implements GroupMembershipEventListener {
+  private final class TestGroupMembershipEventListener implements GroupMembershipEventListener {
 
     private final BlockingDeque<GroupMembershipEvent> queue = new LinkedBlockingDeque<>(100);
 

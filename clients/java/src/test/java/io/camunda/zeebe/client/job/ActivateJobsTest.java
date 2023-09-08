@@ -365,7 +365,7 @@ public final class ActivateJobsTest extends ClientTest {
     assertThat(job1.getVariable("key")).isNull();
   }
 
-  static class VariablesPojo {
+  private static final class VariablesPojo {
 
     int a;
 
