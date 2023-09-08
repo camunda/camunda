@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
 
@@ -41,8 +42,10 @@ public final class StateQueryService implements QueryService {
   public Optional<DirectBuffer> getBpmnProcessIdForProcess(final long key) {
     ensureServiceIsOpened();
 
-    // TODO tenant always should be default
-    return Optional.ofNullable(state.getProcessState().getProcessByKeyAndTenant(key, ""))
+    return Optional.ofNullable(
+            state
+                .getProcessState()
+                .getProcessByKeyAndTenant(key, TenantOwned.DEFAULT_TENANT_IDENTIFIER))
         .map(DeployedProcess::getBpmnProcessId);
   }
 
