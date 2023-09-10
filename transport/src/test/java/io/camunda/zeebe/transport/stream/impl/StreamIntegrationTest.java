@@ -20,6 +20,7 @@ import io.atomix.cluster.messaging.MessagingException.RemoteHandlerFailure;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.transport.TransportFactory;
 import io.camunda.zeebe.transport.stream.api.ClientStream;
@@ -40,7 +41,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -108,7 +108,7 @@ final class StreamIntegrationTest {
                   payload.wrap(p, 0, p.capacity());
                   payloads.get().add(payload.data());
                   latch.countDown();
-                  return CompletableFuture.completedFuture(null);
+                  return CompletableActorFuture.completed(null);
                 })
             .join();
     awaitStreamAdded(streamType, streamId, server1, server2);
@@ -131,7 +131,7 @@ final class StreamIntegrationTest {
     final var streamType = BufferUtil.wrapString("foo");
     final var clientStreamId =
         clientStreamer
-            .add(streamType, metadata, p -> CompletableFuture.completedFuture(null))
+            .add(streamType, metadata, p -> CompletableActorFuture.completed(null))
             .join();
     awaitStreamAdded(streamType, clientStreamId, server1, server2);
     final var serverStream = server1.streamer.streamFor(streamType).orElseThrow();
@@ -210,7 +210,7 @@ final class StreamIntegrationTest {
     final var properties = new TestSerializableData();
     final var streamId =
         clientStreamer
-            .add(streamType, properties, p -> CompletableFuture.completedFuture(null))
+            .add(streamType, properties, p -> CompletableActorFuture.completed(null))
             .join();
     awaitStreamAdded(streamType, streamId, server1, server2);
 
@@ -238,7 +238,7 @@ final class StreamIntegrationTest {
       // when
       final var streamId =
           clientStreamer
-              .add(streamType, properties, p -> CompletableFuture.completedFuture(null))
+              .add(streamType, properties, p -> CompletableActorFuture.completed(null))
               .join();
 
       // then
@@ -252,7 +252,7 @@ final class StreamIntegrationTest {
       final var properties = new TestSerializableData();
       final var streamId =
           clientStreamer
-              .add(streamType, properties, p -> CompletableFuture.completedFuture(null))
+              .add(streamType, properties, p -> CompletableActorFuture.completed(null))
               .join();
 
       // must wait until the stream is connected everywhere before removal, as otherwise there is a
@@ -276,7 +276,7 @@ final class StreamIntegrationTest {
       final var properties = new TestSerializableData();
       final var streamId =
           clientStreamer
-              .add(streamType, properties, p -> CompletableFuture.completedFuture(null))
+              .add(streamType, properties, p -> CompletableActorFuture.completed(null))
               .join();
       awaitStreamAdded(streamType, streamId, server1, server2);
 
@@ -300,7 +300,7 @@ final class StreamIntegrationTest {
       client.streamService.onServerRemoved(server1.memberId());
       final var streamId =
           clientStreamer
-              .add(streamType, properties, p -> CompletableFuture.completedFuture(null))
+              .add(streamType, properties, p -> CompletableActorFuture.completed(null))
               .join();
       awaitStreamOnServer(streamType, server2, stream -> assertThat(stream).isPresent());
       awaitStreamOnClient(
@@ -327,7 +327,7 @@ final class StreamIntegrationTest {
               BufferUtil.wrapString("bar"),
               BufferUtil.wrapString("buz"));
       final var properties = new TestSerializableData();
-      final ClientStreamConsumer consumer = p -> CompletableFuture.completedFuture(null);
+      final ClientStreamConsumer consumer = p -> CompletableActorFuture.completed(null);
       streamTypes.forEach(
           streamType -> {
             final var id = clientStreamer.add(streamType, properties, consumer).join();
@@ -353,7 +353,7 @@ final class StreamIntegrationTest {
       final var properties = new TestSerializableData();
       final var streamId =
           clientStreamer
-              .add(streamType, properties, p -> CompletableFuture.completedFuture(null))
+              .add(streamType, properties, p -> CompletableActorFuture.completed(null))
               .join();
       awaitStreamAdded(streamType, streamId, server1, server2);
       server1.close();
