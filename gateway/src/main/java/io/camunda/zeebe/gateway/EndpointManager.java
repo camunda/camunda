@@ -19,7 +19,7 @@ import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerRequest;
 import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
-import io.camunda.zeebe.gateway.impl.stream.ClientStreamAdapter;
+import io.camunda.zeebe.gateway.impl.stream.StreamJobsHandler;
 import io.camunda.zeebe.gateway.interceptors.impl.IdentityInterceptor;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
@@ -63,9 +63,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.TopologyResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
-import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
-import io.camunda.zeebe.transport.stream.api.ClientStreamer;
 import io.camunda.zeebe.util.VersionUtil;
 import io.grpc.Context;
 import io.grpc.stub.ServerCallStreamObserver;
@@ -73,7 +71,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.Executor;
 import java.util.function.Function;
 
 public final class EndpointManager {
@@ -82,19 +79,17 @@ public final class EndpointManager {
   private final BrokerTopologyManager topologyManager;
   private final ActivateJobsHandler activateJobsHandler;
   private final RequestRetryHandler requestRetryHandler;
-  private final ClientStreamAdapter clientStreamAdapter;
+  private final StreamJobsHandler streamJobsHandler;
   private final MultiTenancyCfg multiTenancy;
 
   public EndpointManager(
       final BrokerClient brokerClient,
       final ActivateJobsHandler activateJobsHandler,
-      final ClientStreamer<JobActivationProperties> jobStreamer,
-      final Executor executor,
+      final StreamJobsHandler streamJobsHandler,
       final MultiTenancyCfg multiTenancy) {
     this.brokerClient = brokerClient;
     this.activateJobsHandler = activateJobsHandler;
-
-    clientStreamAdapter = new ClientStreamAdapter(jobStreamer, executor);
+    this.streamJobsHandler = streamJobsHandler;
     topologyManager = brokerClient.getTopologyManager();
     requestRetryHandler = new RequestRetryHandler(brokerClient, topologyManager);
     this.multiTenancy = multiTenancy;
@@ -168,7 +163,7 @@ public final class EndpointManager {
   public void streamActivatedJobs(
       final StreamActivatedJobsRequest request,
       final ServerCallStreamObserver<ActivatedJob> responseObserver) {
-    clientStreamAdapter.handle(request, responseObserver);
+    streamJobsHandler.handle(request, responseObserver);
   }
 
   public void activateJobs(

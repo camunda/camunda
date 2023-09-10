@@ -20,6 +20,7 @@ import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.RoundRobinActivateJobsHandler;
+import io.camunda.zeebe.gateway.impl.stream.StreamJobsHandler;
 import io.camunda.zeebe.gateway.interceptors.impl.IdentityInterceptor;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayBlockingStub;
@@ -48,6 +49,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -79,11 +81,12 @@ public final class StubbedGateway {
   public void start() throws IOException {
     final var activateJobsHandler = buildActivateJobsHandler(brokerClient);
     submitActorToActivateJobs(activateJobsHandler);
+    final var clientStreamAdapter = new StreamJobsHandler(jobStreamer);
+    actorScheduler.submitActor(clientStreamAdapter).join();
 
     final MultiTenancyCfg multiTenancy = config.getMultiTenancy();
     final EndpointManager endpointManager =
-        new EndpointManager(
-            brokerClient, activateJobsHandler, jobStreamer, Runnable::run, multiTenancy);
+        new EndpointManager(brokerClient, activateJobsHandler, clientStreamAdapter, multiTenancy);
     final GatewayGrpcService gatewayGrpcService = new GatewayGrpcService(endpointManager);
 
     final InProcessServerBuilder serverBuilder =
@@ -158,11 +161,18 @@ public final class StubbedGateway {
     private final ConcurrentMap<ClientStreamId, StreamTypeConsumer> streamIdToConsumer =
         new ConcurrentHashMap<>();
 
+    private final AtomicReference<Throwable> failOnAdd = new AtomicReference<>();
+
     @Override
     public ActorFuture<ClientStreamId> add(
         final DirectBuffer streamType,
         final JobActivationProperties metadata,
         final ClientStreamConsumer clientStreamConsumer) {
+      final var failure = failOnAdd.get();
+      if (failure != null) {
+        return CompletableActorFuture.completedExceptionally(failure);
+      }
+
       final StubbedClientStreamId streamId = new StubbedClientStreamId(UUID.randomUUID());
       final StreamTypeConsumer consumer =
           new StreamTypeConsumer(streamType, metadata, clientStreamConsumer);
@@ -183,7 +193,7 @@ public final class StubbedGateway {
     @Override
     public void close() {}
 
-    public CompletableFuture<Void> push(final ActivatedJobImpl activatedJob) {
+    public ActorFuture<Void> push(final ActivatedJobImpl activatedJob) {
       final StreamTypeConsumer streamTypeConsumer =
           registeredStreams.get(activatedJob.jobRecord().getTypeBuffer());
 
@@ -193,7 +203,8 @@ public final class StubbedGateway {
         return streamTypeConsumer.clientStreamConsumer.push(serializedJob);
       }
 
-      return CompletableFuture.failedFuture(new RuntimeException("No stream exists with given id"));
+      return CompletableActorFuture.completedExceptionally(
+          new RuntimeException("No stream exists with given id"));
     }
 
     public boolean containsStreamFor(final String streamType) {
@@ -205,6 +216,10 @@ public final class StubbedGateway {
       // below, we reserve some time for a client to register for a job type
       Awaitility.await("wait until stream is registered")
           .until(() -> registeredStreams.containsKey(jobType));
+    }
+
+    public void setFailOnAdd(final Throwable failure) {
+      failOnAdd.set(failure);
     }
   }
 
