@@ -14,6 +14,7 @@ import static org.mockito.Mockito.when;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.transport.stream.api.ClientStreamConsumer;
@@ -36,7 +37,7 @@ import org.junit.jupiter.api.Test;
 class ClientStreamManagerTest {
 
   private static final ClientStreamConsumer NOOP_CONSUMER =
-      p -> CompletableFuture.completedFuture(null);
+      p -> CompletableActorFuture.completed(null);
   private final DirectBuffer streamType = BufferUtil.wrapString("foo");
   private final TestMetadata metadata = new TestMetadata(1);
   private final ClientStreamRegistry<TestMetadata> registry = new ClientStreamRegistry<>();
@@ -47,7 +48,6 @@ class ClientStreamManagerTest {
           registry,
           new ClientStreamRequestManager<>(mockTransport, new TestConcurrencyControl()),
           metrics);
-  private final TestConcurrencyControl executor = new TestConcurrencyControl();
 
   @BeforeEach
   void setup() {
@@ -216,7 +216,7 @@ class ClientStreamManagerTest {
             metadata,
             directBuffer -> {
               payloadReceived.wrap(directBuffer);
-              return CompletableFuture.completedFuture(null);
+              return CompletableActorFuture.completed(null);
             });
     final var streamId = getServerStreamId(clientStreamId);
 
@@ -224,7 +224,7 @@ class ClientStreamManagerTest {
     final var payloadPushed = BufferUtil.wrapString("data");
     final var request = new PushStreamRequest().streamId(streamId).payload(payloadPushed);
     final var future = new TestActorFuture<Void>();
-    clientStreamManager.onPayloadReceived(request, future, executor);
+    clientStreamManager.onPayloadReceived(request, future);
 
     // then
     assertThat(future).succeedsWithin(Duration.ofMillis(100));
@@ -240,7 +240,7 @@ class ClientStreamManagerTest {
     final var payloadPushed = BufferUtil.wrapString("data");
     final var request = new PushStreamRequest().streamId(UUID.randomUUID()).payload(payloadPushed);
     final var future = new TestActorFuture<Void>();
-    clientStreamManager.onPayloadReceived(request, future, executor);
+    clientStreamManager.onPayloadReceived(request, future);
 
     // then
     assertThat(future)
@@ -266,7 +266,7 @@ class ClientStreamManagerTest {
     final var payloadPushed = BufferUtil.wrapString("data");
     final var request = new PushStreamRequest().streamId(streamId).payload(payloadPushed);
     final var future = new TestActorFuture<Void>();
-    clientStreamManager.onPayloadReceived(request, future, executor);
+    clientStreamManager.onPayloadReceived(request, future);
 
     // then
     assertThat(future)
