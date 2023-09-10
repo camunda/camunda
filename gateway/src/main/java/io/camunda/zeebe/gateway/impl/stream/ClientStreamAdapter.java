@@ -22,6 +22,7 @@ import io.camunda.zeebe.transport.stream.api.ClientStreamer;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
+import io.grpc.internal.SerializingExecutor;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 import java.util.concurrent.CompletableFuture;
@@ -83,12 +84,12 @@ public class ClientStreamAdapter {
   @VisibleForTesting("Allow unit testing behavior job handling behavior")
   static final class ClientStreamConsumerImpl implements ClientStreamConsumer {
     private final StreamObserver<ActivatedJob> responseObserver;
-    private final Executor executor;
+    private final SerializingExecutor executor;
 
     public ClientStreamConsumerImpl(
         final StreamObserver<ActivatedJob> responseObserver, final Executor executor) {
       this.responseObserver = responseObserver;
-      this.executor = executor;
+      this.executor = new SerializingExecutor(executor);
     }
 
     @Override
