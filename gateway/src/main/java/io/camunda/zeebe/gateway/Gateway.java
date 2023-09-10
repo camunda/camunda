@@ -130,7 +130,7 @@ public final class Gateway implements CloseableSilently {
 
     final var endpointManager =
         new EndpointManager(
-            brokerClient, activateJobsHandler, jobStreamer, grpcExecutor, multiTenancy);
+            brokerClient, activateJobsHandler, jobStreamer, actorSchedulingService, grpcExecutor, multiTenancy);
     final var gatewayGrpcService = new GatewayGrpcService(endpointManager);
     return buildServer(serverBuilder, gatewayGrpcService);
   }

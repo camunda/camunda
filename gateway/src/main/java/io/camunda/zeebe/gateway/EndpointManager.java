@@ -65,6 +65,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesReque
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.transport.stream.api.ClientStreamer;
 import io.camunda.zeebe.util.VersionUtil;
 import io.grpc.Context;
@@ -89,12 +90,13 @@ public final class EndpointManager {
       final BrokerClient brokerClient,
       final ActivateJobsHandler activateJobsHandler,
       final ClientStreamer<JobActivationProperties> jobStreamer,
+      final ActorSchedulingService scheduler,
       final Executor executor,
       final MultiTenancyCfg multiTenancy) {
     this.brokerClient = brokerClient;
     this.activateJobsHandler = activateJobsHandler;
 
-    clientStreamAdapter = new ClientStreamAdapter(jobStreamer, executor);
+    clientStreamAdapter = new ClientStreamAdapter(jobStreamer, scheduler, executor);
     topologyManager = brokerClient.getTopologyManager();
     requestRetryHandler = new RequestRetryHandler(brokerClient, topologyManager);
     this.multiTenancy = multiTenancy;

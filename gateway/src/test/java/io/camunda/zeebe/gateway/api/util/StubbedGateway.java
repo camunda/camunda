@@ -83,7 +83,7 @@ public final class StubbedGateway {
     final MultiTenancyCfg multiTenancy = config.getMultiTenancy();
     final EndpointManager endpointManager =
         new EndpointManager(
-            brokerClient, activateJobsHandler, jobStreamer, Runnable::run, multiTenancy);
+            brokerClient, activateJobsHandler, jobStreamer, actorScheduler, Runnable::run, multiTenancy);
     final GatewayGrpcService gatewayGrpcService = new GatewayGrpcService(endpointManager);
 
     final InProcessServerBuilder serverBuilder =
@@ -183,7 +183,7 @@ public final class StubbedGateway {
     @Override
     public void close() {}
 
-    public CompletableFuture<Void> push(final ActivatedJobImpl activatedJob) {
+    public ActorFuture<Void> push(final ActivatedJobImpl activatedJob) {
       final StreamTypeConsumer streamTypeConsumer =
           registeredStreams.get(activatedJob.jobRecord().getTypeBuffer());
 
@@ -193,7 +193,8 @@ public final class StubbedGateway {
         return streamTypeConsumer.clientStreamConsumer.push(serializedJob);
       }
 
-      return CompletableFuture.failedFuture(new RuntimeException("No stream exists with given id"));
+      return CompletableActorFuture.completedExceptionally(
+          new RuntimeException("No stream exists with given id"));
     }
 
     public boolean containsStreamFor(final String streamType) {
