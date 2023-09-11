@@ -97,6 +97,13 @@ public final class RaftPartition implements Partition, HealthMonitorable {
     return CompletableFuture.completedFuture(this);
   }
 
+  public CompletableFuture<RaftPartition> join(
+      final PartitionManagementService managementService,
+      final ReceivableSnapshotStore snapshotStore) {
+    initServer(managementService, snapshotStore);
+    return server.join().thenApply(v -> this);
+  }
+
   private void initServer(
       final PartitionManagementService managementService,
       final ReceivableSnapshotStore snapshotStore) {

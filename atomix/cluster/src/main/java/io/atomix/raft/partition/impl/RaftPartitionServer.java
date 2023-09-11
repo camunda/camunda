@@ -113,6 +113,28 @@ public class RaftPartitionServer implements HealthMonitorable {
         .thenApply(v -> this);
   }
 
+  public CompletableFuture<RaftPartitionServer> join() {
+    final var metrics = new RaftStartupMetrics(partition.name());
+    final long joinStartTime = System.currentTimeMillis();
+    log.info("Server joining partition {}", partition.id());
+    return server
+        .join()
+        .whenComplete(
+            (r, e) -> {
+              if (e == null) {
+                final long endTime = System.currentTimeMillis();
+                metrics.observeJoinDuration(endTime - joinStartTime);
+                log.info(
+                    "Server successfully joined partition {} in {}ms",
+                    partition.id(),
+                    endTime - joinStartTime);
+              } else {
+                log.warn("Server join failed for partition {}", partition.id(), e);
+              }
+            })
+        .thenApply(v -> this);
+  }
+
   public CompletableFuture<Void> stop() {
     return server != null ? server.shutdown() : CompletableFuture.completedFuture(null);
   }
