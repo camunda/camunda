@@ -125,7 +125,7 @@ public final class ZeebePartitionFactory {
     this.featureFlags = featureFlags;
   }
 
-  ZeebePartition constructPartition(
+  public ZeebePartition constructPartition(
       final RaftPartition raftPartition, final FileBasedSnapshotStore snapshotStore) {
     final var communicationService = clusterServices.getCommunicationService();
     final var membershipService = clusterServices.getMembershipService();

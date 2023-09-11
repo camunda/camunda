@@ -31,12 +31,11 @@ import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import java.time.Duration;
 import java.util.Collections;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -90,6 +89,7 @@ class PartitionManagerStepTest {
               mock(ExporterRepository.class),
               mock(ClusterServicesImpl.class, RETURNS_DEEP_STUBS),
               Collections.emptyList());
+      testBrokerStartupContext.setConcurrencyControl(CONCURRENCY_CONTROL);
       testBrokerStartupContext.setAdminApiService(mock(AdminApiRequestHandler.class));
       testBrokerStartupContext.setBrokerAdminService(mock(BrokerAdminServiceImpl.class));
       testBrokerStartupContext.setJobStreamService(mock(JobStreamService.class));
@@ -158,7 +158,6 @@ class PartitionManagerStepTest {
       assertThat(startupFuture)
           .failsWithin(Duration.ZERO)
           .withThrowableOfType(ExecutionException.class)
-          .withCauseInstanceOf(CompletionException.class)
           .withRootCauseInstanceOf(IllegalStateException.class);
     }
   }
@@ -173,7 +172,7 @@ class PartitionManagerStepTest {
     @BeforeEach
     void setUp() {
       mockPartitionManager = mock(PartitionManagerImpl.class);
-      when(mockPartitionManager.stop()).thenReturn(CompletableFuture.completedFuture(null));
+      when(mockPartitionManager.stop()).thenReturn(CompletableActorFuture.completed(null));
 
       testBrokerStartupContext =
           new BrokerStartupContextImpl(

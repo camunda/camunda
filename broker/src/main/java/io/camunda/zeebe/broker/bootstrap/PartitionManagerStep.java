@@ -10,8 +10,6 @@ package io.camunda.zeebe.broker.bootstrap;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
 
 final class PartitionManagerStep extends AbstractBrokerStartupStep {
   @Override
@@ -26,6 +24,7 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
       final ActorFuture<BrokerStartupContext> startupFuture) {
     final var partitionManager =
         new PartitionManagerImpl(
+            brokerStartupContext.getConcurrencyControl(),
             brokerStartupContext.getActorSchedulingService(),
             brokerStartupContext.getBrokerConfiguration(),
             brokerStartupContext.getBrokerInfo(),
@@ -38,36 +37,19 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
             brokerStartupContext.getGatewayBrokerTransport(),
             brokerStartupContext.getJobStreamService().jobStreamer(),
             brokerStartupContext.getClusterTopology().getPartitionDistribution());
-
-    CompletableFuture.supplyAsync(partitionManager::start)
-        .thenCompose(Function.identity())
-        .whenComplete(
-            (ok, error) -> {
-              if (error != null) {
-                startupFuture.completeExceptionally(error);
-                return;
-              }
-
-              forwardExceptions(
-                  () ->
-                      concurrencyControl.run(
-                          () ->
-                              forwardExceptions(
-                                  () -> {
-                                    final var adminService =
-                                        brokerStartupContext.getBrokerAdminService();
-                                    adminService.injectAdminAccess(
-                                        partitionManager.createAdminAccess(adminService));
-                                    adminService.injectPartitionInfoSource(
-                                        partitionManager.getZeebePartitions());
-
-                                    brokerStartupContext.setPartitionManager(partitionManager);
-
-                                    startupFuture.complete(brokerStartupContext);
-                                  },
-                                  startupFuture)),
-                  startupFuture);
-            });
+    concurrencyControl.run(
+        () -> {
+          try {
+            partitionManager.start();
+            final var adminService = brokerStartupContext.getBrokerAdminService();
+            adminService.injectAdminAccess(partitionManager.createAdminAccess(adminService));
+            adminService.injectPartitionInfoSource(partitionManager.getZeebePartitions());
+            brokerStartupContext.setPartitionManager(partitionManager);
+            startupFuture.complete(brokerStartupContext);
+          } catch (final Exception e) {
+            startupFuture.completeExceptionally(e);
+          }
+        });
   }
 
   @Override
@@ -81,25 +63,15 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
       return;
     }
 
-    CompletableFuture.supplyAsync(partitionManager::stop)
-        .thenCompose(Function.identity())
-        .whenComplete(
-            (ok, error) -> {
-              if (error != null) {
-                shutdownFuture.completeExceptionally(error);
-                return;
-              }
-              forwardExceptions(
-                  () ->
-                      concurrencyControl.run(
-                          () ->
-                              forwardExceptions(
-                                  () -> {
-                                    brokerShutdownContext.setPartitionManager(null);
-                                    shutdownFuture.complete(brokerShutdownContext);
-                                  },
-                                  shutdownFuture)),
-                  shutdownFuture);
-            });
+    concurrencyControl.runOnCompletion(
+        partitionManager.stop(),
+        (ok, error) -> {
+          brokerShutdownContext.setPartitionManager(null);
+          if (error != null) {
+            shutdownFuture.completeExceptionally(error);
+          } else {
+            shutdownFuture.complete(brokerShutdownContext);
+          }
+        });
   }
 }

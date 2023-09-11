@@ -140,7 +140,7 @@ public class PartitionStartupAndTransitionContextImpl
 
   @Override
   public String toString() {
-    return "PartitionContextImpl{"
+    return "PartitionStartupAndTransitionContextImpl{"
         + "partition="
         + partitionId
         + ", term="
