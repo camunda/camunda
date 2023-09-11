@@ -73,7 +73,6 @@ import java.util.stream.Collectors;
 
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.common.document.DocumentField;
 import org.elasticsearch.index.query.*;
 import org.elasticsearch.search.SearchHit;
@@ -266,15 +265,16 @@ public class FlowNodeInstanceReader extends AbstractReader implements io.camunda
   private FlowNodeInstanceResponseDto scrollAllSearchHits(final SearchRequest searchRequest, String processInstanceId)
       throws IOException {
     final Boolean[] runningParent = new Boolean[]{false};
-    final List<FlowNodeInstanceEntity> children =
-        ElasticsearchUtil
-            .scroll(searchRequest,
-                FlowNodeInstanceEntity.class,
-                objectMapper,
-                esClient,
-                getSearchHitFunction(null),
-                null,
-                getAggsProcessor(null, runningParent));
+    final List<FlowNodeInstanceEntity> children = tenantAwareClient.search(searchRequest, () -> {
+      return ElasticsearchUtil
+        .scroll(searchRequest,
+            FlowNodeInstanceEntity.class,
+            objectMapper,
+            esClient,
+            getSearchHitFunction(null),
+            null,
+            getAggsProcessor(null, runningParent));
+    });
     markHasIncident(processInstanceId, children);
     return new FlowNodeInstanceResponseDto(runningParent[0],
         FlowNodeInstanceDto.createFrom(children, objectMapper));
@@ -295,8 +295,7 @@ public class FlowNodeInstanceReader extends AbstractReader implements io.camunda
 
   private FlowNodeInstanceResponseDto getOnePage(final SearchRequest searchRequest, final String processInstanceId)
       throws IOException {
-    final SearchResponse searchResponse = esClient
-        .search(searchRequest, RequestOptions.DEFAULT);
+    final SearchResponse searchResponse = tenantAwareClient.search(searchRequest);
 
     final Boolean[] runningParent = new Boolean[1];
     processAggregation(searchResponse.getAggregations(), null, runningParent);
@@ -342,7 +341,7 @@ public class FlowNodeInstanceReader extends AbstractReader implements io.camunda
         );
     try {
       final Map<String,Long> flowNodeIdIncidents = new HashMap<>();
-      final SearchResponse response = esClient.search(request, RequestOptions.DEFAULT);
+      final SearchResponse response = tenantAwareClient.search(request);
       final Filters filterBuckets = response.getAggregations().get(NUMBER_OF_INCIDENTS_FOR_TREE_PATH);
 
       filterBuckets.getBuckets().forEach(b -> flowNodeIdIncidents.put(b.getKeyAsString(), b.getDocCount()));
@@ -464,7 +463,7 @@ public class FlowNodeInstanceReader extends AbstractReader implements io.camunda
         .createSearchRequest(incidentTemplate, QueryType.ONLY_RUNTIME)
         .source(new SearchSourceBuilder().query(query));
     try {
-      final SearchResponse response = esClient.search(request, RequestOptions.DEFAULT);
+      final SearchResponse response = tenantAwareClient.search(request);
       flowNodeMetadata.setIncidentCount(response.getHits().getTotalHits().value);
       if (response.getHits().getTotalHits().value == 1) {
         final IncidentEntity incidentEntity = fromSearchHit(
@@ -507,7 +506,7 @@ public class FlowNodeInstanceReader extends AbstractReader implements io.camunda
         .createSearchRequest(incidentTemplate, QueryType.ONLY_RUNTIME)
         .source(new SearchSourceBuilder().query(query));
     try {
-      final SearchResponse response = esClient.search(request, RequestOptions.DEFAULT);
+      final SearchResponse response = tenantAwareClient.search(request);
       flowNodeMetadata.setIncidentCount(response.getHits().getTotalHits().value);
       if (response.getHits().getTotalHits().value == 1) {
         final IncidentEntity incidentEntity = fromSearchHit(
@@ -547,7 +546,7 @@ public class FlowNodeInstanceReader extends AbstractReader implements io.camunda
             .fetchSource(new String[]{DECISION_NAME, DECISION_ID}, null)
         );
     try {
-      final SearchResponse response = esClient.search(request, RequestOptions.DEFAULT);
+      final SearchResponse response = tenantAwareClient.search(request);
       if (response.getHits().getTotalHits().value > 0) {
         final Map<String, Object> source = response.getHits().getHits()[0].getSourceAsMap();
         String decisionName = (String)source.get(DECISION_NAME);
@@ -577,7 +576,7 @@ public class FlowNodeInstanceReader extends AbstractReader implements io.camunda
             .query(constantScoreQuery(flowNodeInstanceIdQ)));
     final SearchResponse response;
     try {
-      response = esClient.search(request, RequestOptions.DEFAULT);
+      response = tenantAwareClient.search(request);
       flowNodeInstance = getFlowNodeInstance(response);
     } catch (IOException e) {
       final String message = String.format(
@@ -611,7 +610,7 @@ public class FlowNodeInstanceReader extends AbstractReader implements io.camunda
             .size(0)
             .aggregation(getLevelsAggs()));
     try {
-      final SearchResponse response = esClient.search(request, RequestOptions.DEFAULT);
+      final SearchResponse response = tenantAwareClient.search(request);
 
       final Terms levelsAgg = response.getAggregations().get(LEVELS_AGG_NAME);
       result.addAll(buildBreadcrumbForFlowNodeId(levelsAgg.getBuckets(), level));
@@ -644,7 +643,7 @@ public class FlowNodeInstanceReader extends AbstractReader implements io.camunda
         .source(sourceBuilder);
 
     try {
-      final SearchResponse response = esClient.search(request, RequestOptions.DEFAULT);
+      final SearchResponse response = tenantAwareClient.search(request);
 
       final FlowNodeMetadataDto result = new FlowNodeMetadataDto();
       final FlowNodeInstanceEntity flowNodeInstance = getFlowNodeInstance(response);
@@ -803,7 +802,7 @@ public class FlowNodeInstanceReader extends AbstractReader implements io.camunda
                 new String[]{ListViewTemplate.PROCESS_NAME, ListViewTemplate.BPMN_PROCESS_ID},
                 null));
     try {
-      final SearchResponse response = esClient.search(request, RequestOptions.DEFAULT);
+      final SearchResponse response = tenantAwareClient.search(request);
       if (response.getHits().getTotalHits().value >= 1) {
         processInstanceConsumer.accept(response.getHits().getAt(0));
       }
@@ -828,7 +827,7 @@ public class FlowNodeInstanceReader extends AbstractReader implements io.camunda
             .sort(EVALUATION_DATE, SortOrder.DESC)
             .sort(EXECUTION_INDEX, SortOrder.DESC));
     try {
-      final SearchResponse response = esClient.search(request, RequestOptions.DEFAULT);
+      final SearchResponse response = tenantAwareClient.search(request);
       if (response.getHits().getTotalHits().value >= 1) {
         decisionInstanceConsumer.accept(response.getHits().getAt(0));
       }
@@ -848,7 +847,7 @@ public class FlowNodeInstanceReader extends AbstractReader implements io.camunda
     final SearchRequest request = ElasticsearchUtil.createSearchRequest(eventTemplate)
         .source(new SearchSourceBuilder().query(query).sort(EventTemplate.ID));
     try {
-      final SearchResponse response = esClient.search(request, RequestOptions.DEFAULT);
+      final SearchResponse response = tenantAwareClient.search(request);
       if (response.getHits().getTotalHits().value >= 1) {
         //take last event
         eventEntity = fromSearchHit(response.getHits().getHits()[(int) (response.getHits().getTotalHits().value - 1)]
@@ -906,7 +905,7 @@ public class FlowNodeInstanceReader extends AbstractReader implements io.camunda
             .aggregation(finishedFlowNodesAggs)
             .size(0));
     try {
-      final SearchResponse response = esClient.search(request, RequestOptions.DEFAULT);
+      final SearchResponse response = tenantAwareClient.search(request);
 
       Set<String> incidentPaths = new HashSet<>();
       processAggregation(response.getAggregations(), incidentPaths, new Boolean[]{false});
@@ -972,7 +971,7 @@ public class FlowNodeInstanceReader extends AbstractReader implements io.camunda
                   .must(termQuery(PROCESS_INSTANCE_KEY,processInstanceId))
                   .must(termsQuery(STATE, states.stream().map(Enum::name).collect(Collectors.toList()))))
               .fetchField(ID));
-      final SearchHits searchHits = esClient.search(searchRequest, RequestOptions.DEFAULT).getHits();
+      final SearchHits searchHits = tenantAwareClient.search(searchRequest).getHits();
 
       for(SearchHit searchHit: searchHits){
         final Map<String, DocumentField> documentFields = searchHit.getDocumentFields();
@@ -1012,7 +1011,7 @@ public class FlowNodeInstanceReader extends AbstractReader implements io.camunda
                           .must(termQuery(STATE, ACTIVE))
                           .must(termQuery(INCIDENT, false)))))
               .size(0));
-      final SearchResponse response = esClient.search(request, RequestOptions.DEFAULT);
+      final SearchResponse response = tenantAwareClient.search(request);
       final Aggregations aggregations = response.getAggregations();
       final Terms flowNodeAgg = aggregations.get(FLOW_NODE_ID_AGG);
       return flowNodeAgg.getBuckets().stream().map( bucket ->

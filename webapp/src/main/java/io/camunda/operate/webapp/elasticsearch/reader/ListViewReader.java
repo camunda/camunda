@@ -11,6 +11,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+
 import io.camunda.operate.entities.FlowNodeState;
 import io.camunda.operate.entities.FlowNodeType;
 import io.camunda.operate.util.ElasticsearchUtil;
@@ -20,6 +21,7 @@ import io.camunda.operate.entities.listview.ProcessInstanceState;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.ListViewTemplate;
+import io.camunda.operate.tenant.TenantAwareElasticsearchClient;
 import io.camunda.operate.webapp.reader.OperationReader;
 import io.camunda.operate.webapp.rest.dto.listview.*;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
@@ -28,8 +30,6 @@ import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.identity.PermissionsService;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
 import org.elasticsearch.index.query.ExistsQueryBuilder;
 import org.elasticsearch.index.query.Operator;
@@ -86,7 +86,7 @@ public class ListViewReader implements io.camunda.operate.webapp.reader.ListView
   private static final Logger logger = LoggerFactory.getLogger(ListViewReader.class);
 
   @Autowired
-  private RestHighLevelClient esClient;
+  private TenantAwareElasticsearchClient searchRequestClient;
 
   @Autowired
   private ObjectMapper objectMapper;
@@ -145,7 +145,7 @@ public class ListViewReader implements io.camunda.operate.webapp.reader.ListView
     logger.debug("Search request will search in: \n{}", searchRequest.indices());
 
     try {
-      SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      SearchResponse response = searchRequestClient.search(searchRequest);
       result.setTotalCount(response.getHits().getTotalHits().value);
 
       List<ProcessInstanceForListViewEntity> processInstanceEntities = ElasticsearchUtil.mapSearchHits(response.getHits().getHits(),

@@ -7,10 +7,12 @@
 package io.camunda.operate.store.elasticsearch;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import io.camunda.operate.entities.SequenceFlowEntity;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.schema.templates.SequenceFlowTemplate;
 import io.camunda.operate.store.SequenceFlowStore;
+import io.camunda.operate.tenant.TenantAwareElasticsearchClient;
 import io.camunda.operate.util.ElasticsearchUtil;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -41,6 +43,9 @@ public class ElasticsearchSequenceFlowStore implements SequenceFlowStore {
   private RestHighLevelClient esClient;
 
   @Autowired
+  private TenantAwareElasticsearchClient tenantAwareClient;
+
+  @Autowired
   private ObjectMapper objectMapper;
 
   @Override
@@ -52,7 +57,9 @@ public class ElasticsearchSequenceFlowStore implements SequenceFlowStore {
             .query(query)
             .sort(SequenceFlowTemplate.ACTIVITY_ID, SortOrder.ASC));
     try {
-      return ElasticsearchUtil.scroll(searchRequest, SequenceFlowEntity.class, objectMapper, esClient);
+      return tenantAwareClient.search(searchRequest, () -> {
+        return ElasticsearchUtil.scroll(searchRequest, SequenceFlowEntity.class, objectMapper, esClient);
+      });
     } catch (IOException e) {
       final String message = String.format("Exception occurred, while obtaining sequence flows: %s for processInstanceKey %s", e.getMessage(),processInstanceKey);
       logger.error(message, e);

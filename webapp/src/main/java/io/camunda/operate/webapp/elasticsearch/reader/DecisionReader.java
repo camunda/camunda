@@ -31,7 +31,6 @@ import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.identity.PermissionsService;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
@@ -80,7 +79,7 @@ public class DecisionReader extends AbstractReader implements io.camunda.operate
     SearchRequest searchRequest = new SearchRequest(decisionIndex.getAlias())
         .source(new SearchSourceBuilder().query(idsQuery().addIds(decisionDefinitionKey.toString())));
     try {
-      SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      SearchResponse response = tenantAwareClient.search(searchRequest);
       if (response.getHits().getTotalHits().value == 0) {
         throw new NotFoundException(
             "No decision definition found for id " + decisionDefinitionKey);
@@ -96,7 +95,7 @@ public class DecisionReader extends AbstractReader implements io.camunda.operate
               .query(idsQuery().addIds(String.valueOf(decisionRequirementsId)))
               .fetchSource(XML, null));
 
-      response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      response = tenantAwareClient.search(searchRequest);
 
       if (response.getHits().getTotalHits().value == 1) {
         Map<String, Object> result = response.getHits().getHits()[0].getSourceAsMap();
@@ -127,7 +126,7 @@ public class DecisionReader extends AbstractReader implements io.camunda.operate
         .source(new SearchSourceBuilder()
             .query(termQuery(DecisionIndex.KEY, decisionDefinitionKey)));
     try {
-      final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      final SearchResponse response = tenantAwareClient.search(searchRequest);
       if (response.getHits().getTotalHits().value == 1) {
         return fromSearchHit(response.getHits().getHits()[0].getSourceAsString());
       } else if (response.getHits().getTotalHits().value > 1) {
@@ -176,7 +175,7 @@ public class DecisionReader extends AbstractReader implements io.camunda.operate
     final SearchRequest searchRequest = new SearchRequest(decisionIndex.getAlias()).source(sourceBuilder);
 
     try {
-      final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      final SearchResponse searchResponse = tenantAwareClient.search(searchRequest);
       final Terms groups = searchResponse.getAggregations().get(tenantsGroupsAggName);
       Map<String, List<DecisionDefinitionEntity>> result = new HashMap<>();
 

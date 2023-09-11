@@ -9,6 +9,8 @@ package io.camunda.operate.store.elasticsearch;
 import io.camunda.operate.schema.indices.DecisionIndex;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.store.DecisionStore;
+import io.camunda.operate.tenant.TenantAwareElasticsearchClient;
+
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -47,6 +49,9 @@ public class ElasticsearchDecisionStore implements DecisionStore {
   @Autowired
   private RestHighLevelClient esClient;
 
+  @Autowired
+  private TenantAwareElasticsearchClient tenantAwareClient;
+
   @Override
   public Optional<Long> getDistinctCountFor(String fieldName) {
     final String indexAlias = decisionIndex.getAlias();
@@ -59,7 +64,7 @@ public class ElasticsearchDecisionStore implements DecisionStore {
                     .precisionThreshold(1_000)
                     .field(fieldName)));
     try {
-      final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      final SearchResponse searchResponse = tenantAwareClient.search(searchRequest);
       final Cardinality distinctFieldCounts = searchResponse.getAggregations().get(DISTINCT_FIELD_COUNTS);
       return Optional.of(distinctFieldCounts.getValue());
     } catch (Exception e) {

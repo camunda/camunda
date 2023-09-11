@@ -59,7 +59,6 @@ import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.identity.PermissionsService;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.RangeQueryBuilder;
@@ -83,9 +82,6 @@ public class DecisionInstanceReader extends AbstractReader implements io.camunda
   private DecisionInstanceTemplate decisionInstanceTemplate;
 
   @Autowired
-  private DecisionIndex decisionIndex;
-
-  @Autowired
   private DateTimeFormatter dateTimeFormatter;
 
   @Autowired
@@ -106,7 +102,7 @@ public class DecisionInstanceReader extends AbstractReader implements io.camunda
       .query(constantScoreQuery(query)));
 
     try {
-      final SearchResponse response = esClient.search(request, RequestOptions.DEFAULT);
+      final SearchResponse response = tenantAwareClient.search(request);
       if (response.getHits().getTotalHits().value == 1) {
         final DecisionInstanceEntity decisionInstance = ElasticsearchUtil
             .fromSearchHit(response.getHits().getHits()[0].getSourceAsString(), objectMapper,
@@ -153,7 +149,7 @@ public class DecisionInstanceReader extends AbstractReader implements io.camunda
     logger.debug("Search request will search in: \n{}", searchRequest.indices());
 
     try {
-      SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      SearchResponse response = tenantAwareClient.search(searchRequest);
       result.setTotalCount(response.getHits().getTotalHits().value);
 
       List<DecisionInstanceEntity> decisionInstanceEntities = ElasticsearchUtil.mapSearchHits(response.getHits().getHits(),
@@ -330,13 +326,15 @@ public class DecisionInstanceReader extends AbstractReader implements io.camunda
             .sort(EVALUATION_DATE, SortOrder.ASC)
         );
     try {
-      final List<DRDDataEntryDto> entries = ElasticsearchUtil
+      final List<DRDDataEntryDto> entries = tenantAwareClient.search(request, () -> {
+        return ElasticsearchUtil
           .scroll(request, DRDDataEntryDto.class, objectMapper, esClient,
               sh -> {
                 final Map<String, Object> map = sh.getSourceAsMap();
                 return new DRDDataEntryDto(sh.getId(), (String) map.get(DECISION_ID),
                     DecisionInstanceState.valueOf((String) map.get(STATE)));
               }, null, null);
+      });
       return entries.stream().collect(groupingBy(DRDDataEntryDto::getDecisionId));
     } catch (IOException e) {
       throw new OperateRuntimeException(

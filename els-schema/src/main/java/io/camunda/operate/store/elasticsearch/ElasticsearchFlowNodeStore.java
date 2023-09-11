@@ -11,11 +11,11 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.store.FlowNodeStore;
+import io.camunda.operate.tenant.TenantAwareElasticsearchClient;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.util.ThreadUtil;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.SearchHits;
@@ -52,6 +52,9 @@ public class ElasticsearchFlowNodeStore implements FlowNodeStore {
   private RestHighLevelClient esClient;
 
   @Autowired
+  private TenantAwareElasticsearchClient tenantAwareClient;
+
+  @Autowired
   private OperateProperties operateProperties;
 
   @Override
@@ -66,7 +69,7 @@ public class ElasticsearchFlowNodeStore implements FlowNodeStore {
             .query(query).fetchSource(ACTIVITY_ID, null));
     final SearchResponse response;
     try {
-      response = esClient.search(request, RequestOptions.DEFAULT);
+      response = tenantAwareClient.search(request);
       if (response.getHits().getTotalHits().value != 1) {
         throw new OperateRuntimeException("Flow node instance is not found: " + flowNodeInstanceId);
       } else {
@@ -89,10 +92,13 @@ public class ElasticsearchFlowNodeStore implements FlowNodeStore {
                 new String[]{FlowNodeInstanceTemplate.ID, FlowNodeInstanceTemplate.FLOW_NODE_ID},
                 null));
     try {
-      scrollWith(request, esClient, searchHits -> {
-        Arrays.stream(searchHits.getHits()).forEach(h -> flowNodeIdsMap.put(h.getId(),
-            (String) h.getSourceAsMap().get(FlowNodeInstanceTemplate.FLOW_NODE_ID)));
-      }, null, null);
+      tenantAwareClient.search(request, () -> {
+        scrollWith(request, esClient, searchHits -> {
+          Arrays.stream(searchHits.getHits()).forEach(h -> flowNodeIdsMap.put(h.getId(),
+              (String) h.getSourceAsMap().get(FlowNodeInstanceTemplate.FLOW_NODE_ID)));
+        }, null, null);
+        return null;
+      });
     } catch (IOException e) {
       throw new OperateRuntimeException(
           "Exception occurred when searching for flow node ids: " + e.getMessage(), e);
@@ -115,7 +121,7 @@ public class ElasticsearchFlowNodeStore implements FlowNodeStore {
             .query(termQuery(FlowNodeInstanceTemplate.KEY, parentFlowNodeInstanceKey))
             .fetchSource(FlowNodeInstanceTemplate.TREE_PATH, null));
     try {
-      final SearchHits hits = esClient.search(searchRequest, RequestOptions.DEFAULT).getHits();
+      final SearchHits hits = tenantAwareClient.search(searchRequest).getHits();
       if (hits.getTotalHits().value > 0) {
         return (String)hits.getHits()[0].getSourceAsMap().get(FlowNodeInstanceTemplate.TREE_PATH);
       } else if (attemptCount < 1){

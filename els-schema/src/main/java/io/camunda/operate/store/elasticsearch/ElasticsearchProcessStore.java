@@ -7,6 +7,7 @@
 package io.camunda.operate.store.elasticsearch;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import io.camunda.operate.entities.ProcessEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceState;
@@ -16,6 +17,7 @@ import io.camunda.operate.schema.indices.ProcessIndex;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.store.NotFoundException;
 import io.camunda.operate.store.ProcessStore;
+import io.camunda.operate.tenant.TenantAwareElasticsearchClient;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.util.TreePath;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -90,6 +92,9 @@ public class ElasticsearchProcessStore implements ProcessStore {
   private RestHighLevelClient esClient;
 
   @Autowired
+  private TenantAwareElasticsearchClient tenantAwareClient;
+
+  @Autowired
   private OperateProperties operateProperties;
 
   @Override
@@ -104,7 +109,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
                     .precisionThreshold(1_000)
                     .field(fieldName)));
     try {
-      final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      final SearchResponse searchResponse = tenantAwareClient.search(searchRequest);
       final Cardinality distinctFieldCounts = searchResponse.getAggregations().get(DISTINCT_FIELD_COUNTS);
       return Optional.of(distinctFieldCounts.getValue());
     } catch (Exception e) {
@@ -120,7 +125,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
             .query(QueryBuilders.termQuery(ProcessIndex.KEY, processDefinitionKey)));
 
     try {
-      final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      final SearchResponse response = tenantAwareClient.search(searchRequest);
       if (response.getHits().getTotalHits().value == 1) {
         return fromSearchHit(response.getHits().getHits()[0].getSourceAsString());
       } else if (response.getHits().getTotalHits().value > 1) {
@@ -145,7 +150,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
             .fetchSource(BPMN_XML, null));
 
     try {
-      final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      final SearchResponse response = tenantAwareClient.search(searchRequest);
 
       if (response.getHits().getTotalHits().value == 1) {
         Map<String, Object> result = response.getHits().getHits()[0].getSourceAsMap();
@@ -190,7 +195,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
     final SearchRequest searchRequest = new SearchRequest(processIndex.getAlias()).source(sourceBuilder);
 
     try {
-      final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      final SearchResponse searchResponse = tenantAwareClient.search(searchRequest);
       final Terms groups = searchResponse.getAggregations().get(tenantsGroupsAggName);
       Map<String, List<ProcessEntity>> result = new HashMap<>();
 
@@ -266,7 +271,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
     final SearchRequest searchRequest = new SearchRequest(processIndex.getAlias()).source(sourceBuilder);
 
     try {
-      final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      final SearchResponse response = tenantAwareClient.search(searchRequest);
       response.getHits().forEach(hit -> {
         final ProcessEntity entity = fromSearchHit(hit.getSourceAsString());
         map.put(entity.getKey(), entity);
@@ -289,7 +294,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
 
       final SearchResponse response;
 
-      response = esClient.search(request, RequestOptions.DEFAULT);
+      response = tenantAwareClient.search(request);
       final SearchHits searchHits = response.getHits();
       if (searchHits.getTotalHits().value == 1 && searchHits.getHits().length == 1) {
         return ElasticsearchUtil.fromSearchHit(searchHits.getAt(0).getSourceAsString(), objectMapper,
@@ -319,7 +324,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
     final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(listViewTemplate, ONLY_RUNTIME).source(sourceBuilder);
 
     try {
-      final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      final SearchResponse response = tenantAwareClient.search(searchRequest);
       Aggregations aggregations = response.getAggregations();
       long runningCount = ((SingleBucketAggregation) aggregations.get("running")).getDocCount();
       long incidentCount = ((SingleBucketAggregation) aggregations.get("incidents")).getDocCount();
@@ -341,7 +346,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
         .source(new SearchSourceBuilder().query(query)
             .fetchSource(TREE_PATH, null));
     try {
-      final SearchResponse response = esClient.search(request, RequestOptions.DEFAULT);
+      final SearchResponse response = tenantAwareClient.search(request);
       if (response.getHits().getTotalHits().value > 0) {
         return (String) response.getHits().getAt(0).getSourceAsMap()
             .get(TREE_PATH);
@@ -371,16 +376,19 @@ public class ElasticsearchProcessStore implements ProcessStore {
         .source(new SearchSourceBuilder().query(query)
             .fetchSource(new String[]{ID, PROCESS_KEY, PROCESS_NAME, BPMN_PROCESS_ID}, null));
     try {
-      scrollWith(request, esClient, searchHits -> {
-        Arrays.stream(searchHits.getHits())
-            .forEach(sh -> {
-              final Map<String, Object> source = sh.getSourceAsMap();
-              callHierarchy.add(Map.of(
-                  "instanceId", String.valueOf(source.get(ID)),
-                  "processDefinitionId", String.valueOf(source.get(PROCESS_KEY)),
-                  "processDefinitionName", String.valueOf(source.getOrDefault(PROCESS_NAME, source.get(BPMN_PROCESS_ID))))
-              );
-            });
+      tenantAwareClient.search(request, () -> {
+        scrollWith(request, esClient, searchHits -> {
+          Arrays.stream(searchHits.getHits())
+          .forEach(sh -> {
+            final Map<String, Object> source = sh.getSourceAsMap();
+            callHierarchy.add(Map.of(
+                "instanceId", String.valueOf(source.get(ID)),
+                "processDefinitionId", String.valueOf(source.get(PROCESS_KEY)),
+                "processDefinitionName", String.valueOf(source.getOrDefault(PROCESS_NAME, source.get(BPMN_PROCESS_ID))))
+                );
+          });
+        });
+        return null;
       });
     } catch (IOException e) {
       final String message = String.format("Exception occurred, while obtaining process instance call hierarchy: %s", e.getMessage());
@@ -419,18 +427,21 @@ public class ElasticsearchProcessStore implements ProcessStore {
         .source(new SearchSourceBuilder().query(query)
             .fetchSource(TREE_PATH, null));
     try {
-      ElasticsearchUtil.scroll(request, hits -> {
-        Arrays.stream(hits.getHits()).forEach(sh -> {
-          UpdateRequest updateRequest = new UpdateRequest();
-          Map<String, Object> updateFields = new HashMap<>();
-          String newTreePath = new TreePath((String) sh.getSourceAsMap().get(TREE_PATH)).removeProcessInstance(processInstanceKey).toString();
-          updateFields.put(TREE_PATH, newTreePath);
-          updateRequest.index(listViewTemplate.getFullQualifiedName()).id(sh.getId())
-              .doc(updateFields)
-              .retryOnConflict(UPDATE_RETRY_COUNT);
-          bulkRequest.add(updateRequest);
-        });
-      }, esClient);
+      tenantAwareClient.search(request, () -> {
+        ElasticsearchUtil.scroll(request, hits -> {
+          Arrays.stream(hits.getHits()).forEach(sh -> {
+            UpdateRequest updateRequest = new UpdateRequest();
+            Map<String, Object> updateFields = new HashMap<>();
+            String newTreePath = new TreePath((String) sh.getSourceAsMap().get(TREE_PATH)).removeProcessInstance(processInstanceKey).toString();
+            updateFields.put(TREE_PATH, newTreePath);
+            updateRequest.index(listViewTemplate.getFullQualifiedName()).id(sh.getId())
+            .doc(updateFields)
+            .retryOnConflict(UPDATE_RETRY_COUNT);
+            bulkRequest.add(updateRequest);
+          });
+        }, esClient);
+        return null;
+      });
       ElasticsearchUtil.processBulkRequest(esClient, bulkRequest, operateProperties.getElasticsearch().getBulkRequestMaxSizeInBytes());
     } catch (Exception e) {
       throw new OperateRuntimeException(
@@ -445,6 +456,8 @@ public class ElasticsearchProcessStore implements ProcessStore {
   }
 
   private List<ProcessEntity> scroll(SearchRequest searchRequest) throws IOException {
-    return ElasticsearchUtil.scroll(searchRequest, ProcessEntity.class, objectMapper, esClient);
+    return tenantAwareClient.search(searchRequest, () -> {
+      return ElasticsearchUtil.scroll(searchRequest, ProcessEntity.class, objectMapper, esClient);
+    });
   }
 }

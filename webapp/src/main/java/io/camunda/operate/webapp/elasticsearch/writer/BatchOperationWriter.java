@@ -31,6 +31,7 @@ import io.camunda.operate.schema.templates.OperationTemplate;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.store.ListViewStore;
 import io.camunda.operate.store.OperationStore;
+import io.camunda.operate.tenant.TenantAwareElasticsearchClient;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.util.ElasticsearchUtil.QueryType;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
@@ -90,6 +91,9 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
 
   @Autowired
   private RestHighLevelClient esClient;
+
+  @Autowired
+  private TenantAwareElasticsearchClient tenantAwareClient;
 
   @Autowired
   private ObjectMapper objectMapper;
@@ -210,23 +214,26 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
           .source(new SearchSourceBuilder().query(query).size(batchSize).fetchSource(includeFields, null));
 
     AtomicInteger operationsCount = new AtomicInteger();
-    ElasticsearchUtil.scrollWith(searchRequest, esClient,
-        searchHits -> {
-          try {
-            final List<ProcessInstanceSource> processInstanceSources = new ArrayList<>();
-            for(SearchHit hit : searchHits.getHits()) {
-              processInstanceSources.add(ProcessInstanceSource.fromSourceMap(hit.getSourceAsMap()));
+    tenantAwareClient.search(searchRequest, () -> {
+      ElasticsearchUtil.scrollWith(searchRequest, esClient,
+          searchHits -> {
+            try {
+              final List<ProcessInstanceSource> processInstanceSources = new ArrayList<>();
+              for(SearchHit hit : searchHits.getHits()) {
+                processInstanceSources.add(ProcessInstanceSource.fromSourceMap(hit.getSourceAsMap()));
+              }
+              operationsCount.addAndGet(persistOperations(processInstanceSources, batchOperation.getId(), batchOperationRequest.getOperationType(), null));
+            } catch (PersistenceException e) {
+              throw new RuntimeException(e);
             }
-            operationsCount.addAndGet(persistOperations(processInstanceSources, batchOperation.getId(), batchOperationRequest.getOperationType(), null));
-          } catch (PersistenceException e) {
-            throw new RuntimeException(e);
-          }
-        },
-        null,
-        searchHits -> {
-          validateTotalHits(searchHits);
-          batchOperation.setInstancesCount((int)searchHits.getTotalHits().value);
-        });
+          },
+          null,
+          searchHits -> {
+            validateTotalHits(searchHits);
+            batchOperation.setInstancesCount((int)searchHits.getTotalHits().value);
+          });
+      return null;
+    });
     return operationsCount.get();
   }
 

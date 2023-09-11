@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+
 import io.camunda.operate.entities.FlowNodeState;
 import io.camunda.operate.entities.FlowNodeType;
 import io.camunda.operate.util.ElasticsearchUtil;
@@ -18,12 +19,11 @@ import io.camunda.operate.webapp.reader.FlowNodeStatisticsReader;
 import io.camunda.operate.webapp.reader.ListViewReader;
 import io.camunda.operate.webapp.rest.dto.FlowNodeStatisticsDto;
 import io.camunda.operate.schema.templates.ListViewTemplate;
+import io.camunda.operate.tenant.TenantAwareElasticsearchClient;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.join.aggregations.Children;
 import org.elasticsearch.join.aggregations.ChildrenAggregationBuilder;
@@ -53,14 +53,15 @@ import static org.elasticsearch.join.aggregations.JoinAggregationBuilders.childr
 import static org.elasticsearch.join.aggregations.JoinAggregationBuilders.parent;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
+
 @Profile("!opensearch")
 @Component
 public class ElasticsearchFlowNodeStatisticsReader implements FlowNodeStatisticsReader {
 
   private static final Logger logger = LoggerFactory.getLogger(ElasticsearchFlowNodeStatisticsReader.class);
 
-    @Autowired
-  private RestHighLevelClient esClient;
+  @Autowired
+  private TenantAwareElasticsearchClient tenantAwareClient;
 
   @Autowired
   private ListViewReader listViewReader;
@@ -90,7 +91,7 @@ public class ElasticsearchFlowNodeStatisticsReader implements FlowNodeStatistics
   public Map<String, FlowNodeStatisticsDto> runQueryAndCollectStats(SearchRequest searchRequest) {
     try {
       Map<String, FlowNodeStatisticsDto> statisticsMap = new HashMap<>();
-      final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      final SearchResponse searchResponse = tenantAwareClient.search(searchRequest);
 
       if (searchResponse.getAggregations() != null) {
         Children activities = searchResponse.getAggregations().get(AGG_ACTIVITIES);

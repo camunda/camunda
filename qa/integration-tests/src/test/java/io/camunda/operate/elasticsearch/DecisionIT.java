@@ -17,6 +17,9 @@ import io.camunda.operate.webapp.rest.dto.DecisionRequestDto;
 import io.camunda.operate.webapp.rest.dto.dmn.DecisionGroupDto;
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.identity.PermissionsService;
+import io.camunda.operate.webapp.security.tenant.TenantService;
+import io.camunda.operate.webapp.security.tenant.TenantService.AuthenticatedTenants;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -28,6 +31,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 
 /**
@@ -49,6 +53,9 @@ public class DecisionIT extends OperateIntegrationTest {
   @Rule
   public ElasticsearchTestRule elasticsearchTestRule = new ElasticsearchTestRule();
 
+  @MockBean
+  private TenantService tenantService;
+
   @Test
   public void testDecisionsGroupedWithPermisssionWhenNotAllowed() throws Exception {
     // given
@@ -63,6 +70,8 @@ public class DecisionIT extends OperateIntegrationTest {
     final DecisionDefinitionEntity decision2 = new DecisionDefinitionEntity().setId(id2).setDecisionId(decisionId2);
     final DecisionDefinitionEntity decision3 = new DecisionDefinitionEntity().setId(id3).setDecisionId(decisionId3);
     elasticsearchTestRule.persistNew(decision1, decision2, decision3);
+
+    doReturn(AuthenticatedTenants.allTenants()).when(tenantService).getAuthenticatedTenants();
 
     // when
     when(permissionsService.getDecisionsWithPermission(IdentityPermission.READ)).thenReturn(
@@ -90,6 +99,8 @@ public class DecisionIT extends OperateIntegrationTest {
     final DecisionDefinitionEntity decision2 = new DecisionDefinitionEntity().setId(id2).setDecisionId(decisionId2);
     final DecisionDefinitionEntity decision3 = new DecisionDefinitionEntity().setId(id3).setDecisionId(decisionId3);
     elasticsearchTestRule.persistNew(decision1, decision2, decision3);
+
+    doReturn(AuthenticatedTenants.allTenants()).when(tenantService).getAuthenticatedTenants();
 
     // when
     when(permissionsService.getDecisionsWithPermission(IdentityPermission.READ)).thenReturn(
@@ -119,6 +130,8 @@ public class DecisionIT extends OperateIntegrationTest {
     final DecisionDefinitionEntity decision2 = new DecisionDefinitionEntity().setId(id2).setDecisionId(decisionId2);
     final DecisionDefinitionEntity decision3 = new DecisionDefinitionEntity().setId(id3).setDecisionId(decisionId3);
     elasticsearchTestRule.persistNew(decision1, decision2, decision3);
+
+    doReturn(AuthenticatedTenants.allTenants()).when(tenantService).getAuthenticatedTenants();
 
     // when
     when(permissionsService.getDecisionsWithPermission(IdentityPermission.READ)).thenReturn(
@@ -159,6 +172,8 @@ public class DecisionIT extends OperateIntegrationTest {
 
     when(permissionsService.getDecisionsWithPermission(IdentityPermission.READ)).thenReturn(
         PermissionsService.ResourcesAllowed.all());
+
+    doReturn(AuthenticatedTenants.allTenants()).when(tenantService).getAuthenticatedTenants();
 
     // when
     MvcResult mvcResult = postRequest(QUERY_DECISION_GROUPED_URL, new DecisionRequestDto().setTenantId(tenantId1));

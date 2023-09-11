@@ -11,9 +11,9 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.store.ListViewStore;
 import io.camunda.operate.store.NotFoundException;
+import io.camunda.operate.tenant.TenantAwareElasticsearchClient;
 import io.camunda.operate.util.ElasticsearchUtil;
 import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -46,6 +46,9 @@ public class ElasticsearchListViewStore implements ListViewStore {
   private RestHighLevelClient esClient;
 
   @Autowired
+  private TenantAwareElasticsearchClient tenantAwareClient;
+
+  @Autowired
   private OperateProperties operateProperties;
 
   @Override
@@ -56,12 +59,15 @@ public class ElasticsearchListViewStore implements ListViewStore {
     searchRequest.source().query(QueryBuilders.idsQuery().addIds(toSafeArrayOfStrings(processInstanceIdsAsStrings)));
 
     final Map<Long,String> processInstanceId2IndexName = new HashMap<>();
-    ElasticsearchUtil.scrollWith(searchRequest, esClient, searchHits -> {
-      for(SearchHit searchHit: searchHits.getHits()){
-        final String indexName = searchHit.getIndex();
-        final Long id = Long.valueOf(searchHit.getId());
-        processInstanceId2IndexName.put(id, indexName);
-      }
+    tenantAwareClient.search(searchRequest, () -> {
+      ElasticsearchUtil.scrollWith(searchRequest, esClient, searchHits -> {
+        for(SearchHit searchHit: searchHits.getHits()){
+          final String indexName = searchHit.getIndex();
+          final Long id = Long.valueOf(searchHit.getId());
+          processInstanceId2IndexName.put(id, indexName);
+        }
+      });
+      return null;
     });
 
     if(processInstanceId2IndexName.isEmpty()){
@@ -81,7 +87,7 @@ public class ElasticsearchListViewStore implements ListViewStore {
             .query(termQuery(ListViewTemplate.KEY, processInstanceKey))
             .fetchSource(ListViewTemplate.TREE_PATH, null));
     try {
-      final SearchHits hits = esClient.search(searchRequest, RequestOptions.DEFAULT).getHits();
+      final SearchHits hits = tenantAwareClient.search(searchRequest).getHits();
       if (hits.getTotalHits().value > 0) {
         return (String) hits.getHits()[0].getSourceAsMap().get(ListViewTemplate.TREE_PATH);
       }
@@ -107,7 +113,9 @@ public class ElasticsearchListViewStore implements ListViewStore {
             .query(queryBuilder)
             .fetchSource(false));
     try {
-      return ElasticsearchUtil.scrollKeysToList(searchRequest, esClient);
+      return tenantAwareClient.search(searchRequest, () -> {
+        return ElasticsearchUtil.scrollKeysToList(searchRequest, esClient);
+      });
     } catch (IOException e) {
       final String message = String.format("Exception occurred, while obtaining process instance that has empty versions: %s", e.getMessage());
       throw new OperateRuntimeException(message, e);

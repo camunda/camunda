@@ -33,7 +33,6 @@ import java.util.List;
 import java.util.Map;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
 import org.elasticsearch.index.query.IdsQueryBuilder;
 import org.elasticsearch.index.query.TermQueryBuilder;
@@ -172,7 +171,7 @@ public class VariableReader extends AbstractReader implements io.camunda.operate
         ElasticsearchUtil.createSearchRequest(variableTemplate, ALL)
             .source(searchSourceBuilder);
     try {
-      SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      SearchResponse response = tenantAwareClient.search(searchRequest);
 
       List<VariableEntity> variableEntities = ElasticsearchUtil.mapSearchHits(response.getHits().getHits(),
           (sh) -> {
@@ -247,7 +246,7 @@ public class VariableReader extends AbstractReader implements io.camunda.operate
         .source(new SearchSourceBuilder()
             .query(idsQ));
     try {
-      final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      final SearchResponse response = tenantAwareClient.search(searchRequest);;
       if (response.getHits().getTotalHits().value != 1) {
         throw new NotFoundException(String.format("Variable with id %s not found.", id));
       }
@@ -278,7 +277,7 @@ public class VariableReader extends AbstractReader implements io.camunda.operate
                         constantScoreQuery(joinWithAnd(processInstanceIdQ, scopeIdQ, varNameQ))));
 
     try {
-      final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      final SearchResponse response = tenantAwareClient.search(searchRequest);;
       if (response.getHits().getTotalHits().value > 0) {
         final VariableEntity variableEntity = ElasticsearchUtil
             .fromSearchHit(response.getHits().getHits()[0].getSourceAsString(),

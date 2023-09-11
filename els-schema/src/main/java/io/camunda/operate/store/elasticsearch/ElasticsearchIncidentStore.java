@@ -7,6 +7,7 @@
 package io.camunda.operate.store.elasticsearch;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import io.camunda.operate.entities.ErrorType;
 import io.camunda.operate.entities.IncidentEntity;
 import io.camunda.operate.entities.IncidentState;
@@ -15,11 +16,11 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.IncidentTemplate;
 import io.camunda.operate.store.IncidentStore;
 import io.camunda.operate.store.NotFoundException;
+import io.camunda.operate.tenant.TenantAwareElasticsearchClient;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.ElasticsearchUtil;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
 import org.elasticsearch.index.query.IdsQueryBuilder;
@@ -55,8 +56,12 @@ public class ElasticsearchIncidentStore implements IncidentStore {
 
   private static final Logger logger = LoggerFactory.getLogger(ElasticsearchIncidentStore.class);
   public static QueryBuilder ACTIVE_INCIDENT_QUERY = termQuery(IncidentTemplate.STATE, IncidentState.ACTIVE);
+
   @Autowired
   private RestHighLevelClient esClient;
+
+  @Autowired
+  private TenantAwareElasticsearchClient tenantAwareClient;
 
   @Autowired
   private ObjectMapper objectMapper;
@@ -75,7 +80,7 @@ public class ElasticsearchIncidentStore implements IncidentStore {
     final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(incidentTemplate, ONLY_RUNTIME)
         .source(new SearchSourceBuilder().query(query));
     try {
-      final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      final SearchResponse response = tenantAwareClient.search(searchRequest);
       if (response.getHits().getTotalHits().value == 1) {
         return ElasticsearchUtil.fromSearchHit(response.getHits().getHits()[0].getSourceAsString(), objectMapper, IncidentEntity.class);
       } else if (response.getHits().getTotalHits().value > 1) {
@@ -100,7 +105,9 @@ public class ElasticsearchIncidentStore implements IncidentStore {
         .source(new SearchSourceBuilder().query(query).sort(IncidentTemplate.CREATION_TIME, SortOrder.ASC));
 
     try {
-      return ElasticsearchUtil.scroll(searchRequest, IncidentEntity.class, objectMapper, esClient);
+      return tenantAwareClient.search(searchRequest, () -> {
+        return ElasticsearchUtil.scroll(searchRequest, IncidentEntity.class, objectMapper, esClient);
+      });
     } catch (IOException e) {
       final String message = String.format("Exception occurred, while obtaining all incidents: %s", e.getMessage());
       logger.error(message, e);
@@ -123,11 +130,14 @@ public class ElasticsearchIncidentStore implements IncidentStore {
 
     Map<Long, List<Long>> result = new HashMap<>();
     try {
-      scrollWith(searchRequest, esClient, searchHits -> {
-        for (SearchHit hit : searchHits.getHits()) {
-          CollectionUtil.addToMap(result, Long.valueOf(hit.getSourceAsMap().get(IncidentTemplate.PROCESS_INSTANCE_KEY).toString()), Long.valueOf(hit.getId()));
-        }
-      }, null, null);
+      tenantAwareClient.search(searchRequest, () -> {
+        scrollWith(searchRequest, esClient, searchHits -> {
+          for (SearchHit hit : searchHits.getHits()) {
+            CollectionUtil.addToMap(result, Long.valueOf(hit.getSourceAsMap().get(IncidentTemplate.PROCESS_INSTANCE_KEY).toString()), Long.valueOf(hit.getId()));
+          }
+        }, null, null);
+        return null;
+      });
       return result;
     } catch (IOException e) {
       final String message = String.format("Exception occurred, while obtaining all incidents: %s", e.getMessage());
@@ -149,11 +159,13 @@ public class ElasticsearchIncidentStore implements IncidentStore {
             .aggregation(errorTypesAgg));
 
     try {
-      return ElasticsearchUtil.scroll(searchRequest, IncidentEntity.class, objectMapper, esClient, null,
-          aggs -> ((Terms) aggs.get(errorTypesAggName)).getBuckets().forEach(b -> {
-            ErrorType errorType = ErrorType.valueOf(b.getKeyAsString());
-            errorTypes.add(Map.of(errorType, b.getDocCount()));
-          }));
+      return tenantAwareClient.search(searchRequest, () -> {
+        return ElasticsearchUtil.scroll(searchRequest, IncidentEntity.class, objectMapper, esClient, null,
+            aggs -> ((Terms) aggs.get(errorTypesAggName)).getBuckets().forEach(b -> {
+              ErrorType errorType = ErrorType.valueOf(b.getKeyAsString());
+              errorTypes.add(Map.of(errorType, b.getDocCount()));
+            }));
+      });
     } catch (IOException e) {
       final String message = String.format("Exception occurred, while obtaining incidents: %s", e.getMessage());
       logger.error(message, e);

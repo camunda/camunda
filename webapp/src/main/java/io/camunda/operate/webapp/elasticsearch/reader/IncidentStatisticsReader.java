@@ -37,7 +37,6 @@ import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.identity.PermissionsService;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
@@ -99,7 +98,7 @@ public class IncidentStatisticsReader extends AbstractReader implements io.camun
             .aggregation(COUNT_PROCESS_KEYS).size(0));
 
     try {
-      SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      SearchResponse searchResponse = tenantAwareClient.search(searchRequest);
 
       List<? extends Bucket> buckets = ((Terms) searchResponse.getAggregations().get(PROCESS_KEYS)).getBuckets();
       for (Bucket bucket : buckets) {
@@ -127,7 +126,7 @@ public class IncidentStatisticsReader extends AbstractReader implements io.camun
               .aggregation(COUNT_PROCESS_KEYS)
               .size(0));
 
-      SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      SearchResponse searchResponse = tenantAwareClient.search(searchRequest);
 
       List<? extends Bucket> buckets = ((Terms) searchResponse.getAggregations().get(PROCESS_KEYS)).getBuckets();
       for (Bucket bucket : buckets) {
@@ -225,7 +224,7 @@ public class IncidentStatisticsReader extends AbstractReader implements io.camun
             .size(0));
 
     try {
-      final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      final SearchResponse searchResponse = tenantAwareClient.search(searchRequest);
 
       Terms errorMessageAggregation = searchResponse.getAggregations().get(GROUP_BY_ERROR_MESSAGE_HASH);
       for (Bucket bucket : errorMessageAggregation.getBuckets()) {
