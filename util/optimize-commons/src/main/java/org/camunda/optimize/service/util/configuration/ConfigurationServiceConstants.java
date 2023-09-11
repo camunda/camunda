@@ -8,6 +8,8 @@ package org.camunda.optimize.service.util.configuration;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ConfigurationServiceConstants {
   public static final String SECURITY = "$.security";
@@ -146,6 +148,11 @@ public class ConfigurationServiceConstants {
   public static final String CLOUD_PROFILE = "cloud";
   public static final String CCSM_PROFILE = "ccsm";
   public static final String PLATFORM_PROFILE = "platform";
+  public static final List<String> optimizeModeProfiles = List.of(CLOUD_PROFILE, CCSM_PROFILE, PLATFORM_PROFILE);
+
+  public static final String ELASTICSEARCH_PROFILE = "elasticsearch";
+  public static final String OPENSEARCH_PROFILE = "opensearch";
+  public static final List<String> optimizeDatabaseProfiles = List.of(ELASTICSEARCH_PROFILE, OPENSEARCH_PROFILE);
   //@formatter:on
-  public static final String CAMUNDA_OPTIMIZE_DATABASE_TYPE = "$.database.type";
+
 }

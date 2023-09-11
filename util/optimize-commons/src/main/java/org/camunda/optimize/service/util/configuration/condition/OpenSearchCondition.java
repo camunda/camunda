@@ -14,14 +14,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CCSM_PROFILE;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.OPENSEARCH_PROFILE;
 
-public class CCSMCondition implements Condition {
+public class OpenSearchCondition implements Condition {
   @Override
   public boolean matches(final ConditionContext context, final AnnotatedTypeMetadata metadata) {
     // Necessary because Arrays.asList(...) returns an immutable list
     final List<String> activeProfiles = new ArrayList<>(Arrays.asList(context.getEnvironment().getActiveProfiles()));
-    activeProfiles.removeAll(ConfigurationServiceConstants.optimizeDatabaseProfiles);
-    return activeProfiles.size() == 1 && activeProfiles.contains(CCSM_PROFILE);
+    activeProfiles.removeAll(ConfigurationServiceConstants.optimizeModeProfiles);
+    return activeProfiles.size() == 1 && activeProfiles.contains(OPENSEARCH_PROFILE);
   }
 }

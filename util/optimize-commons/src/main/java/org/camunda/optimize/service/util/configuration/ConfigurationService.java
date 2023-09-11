@@ -88,9 +88,6 @@ public class ConfigurationService {
   private Long initialBackoff;
   private Long maximumBackoff;
 
-  // camunda optimize database type
-  private String databaseType;
-
   // elasticsearch connection
   private List<ElasticsearchConnectionNodeConfiguration> elasticsearchConnectionNodes;
   private Integer esScrollTimeoutInSeconds;
@@ -1286,13 +1283,6 @@ public class ConfigurationService {
       m2mAuth0ClientConfiguration = configJsonContext.read(M2M_CLIENT_CONFIGURATION, M2mAuth0ClientConfiguration.class);
     }
     return m2mAuth0ClientConfiguration;
-  }
-
-  public String getDatabaseType() {
-    if (databaseType == null) {
-      databaseType = configJsonContext.read(ConfigurationServiceConstants.CAMUNDA_OPTIMIZE_DATABASE_TYPE, String.class);
-    }
-    return databaseType;
   }
 
 }
