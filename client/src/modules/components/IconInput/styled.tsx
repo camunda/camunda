@@ -8,6 +8,7 @@
 import styled, {css} from 'styled-components';
 import {
   TextInput as BaseTextInput,
+  TextArea as BaseTextArea,
   IconButton as BaseIconButton,
 } from '@carbon/react';
 
@@ -16,21 +17,39 @@ const IconButton = styled(BaseIconButton)`
   margin: 2px 0;
 `;
 
-const IconContainer = styled.div`
+const IconContainer = styled.div<{$isTextArea?: boolean}>`
   position: absolute;
-  bottom: 0;
+
+  ${({$isTextArea}) =>
+    $isTextArea
+      ? css`
+          top: 26px;
+        `
+      : css`
+          bottom: 0;
+        `}
+
   right: 0;
 `;
 
+const getInputStyles = (invalid?: boolean) => {
+  return invalid
+    ? css`
+        padding-right: var(--cds-spacing-11);
+      `
+    : css`
+        padding-right: var(--cds-spacing-07);
+      `;
+};
+
 const TextInput = styled(BaseTextInput)`
   input {
-    padding-right: var(--cds-spacing-07);
-
-    ${({invalid}) =>
-      invalid &&
-      css`
-        padding-right: var(--cds-spacing-11);
-      `}
+    ${({invalid}) => getInputStyles(invalid)}
+  }
+`;
+const TextArea = styled(BaseTextArea)`
+  textarea {
+    ${({invalid}) => getInputStyles(invalid)}
   }
 `;
 
@@ -47,4 +66,4 @@ const Container = styled.div<{$isInvalid?: boolean}>`
   }
 `;
 
-export {Container, TextInput, IconContainer, IconButton};
+export {Container, TextInput, TextArea, IconContainer, IconButton};

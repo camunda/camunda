@@ -7,21 +7,21 @@
 
 import React from 'react';
 import {useFieldError} from 'modules/hooks/useFieldError';
-import {IconTextInput} from '../IconInput';
+import {IconTextArea} from '../IconInput';
 
-type Props = React.ComponentProps<typeof IconTextInput> & {
+type Props = React.ComponentProps<typeof IconTextArea> & {
   name: string;
 };
 
-const IconTextInputField: React.FC<Props> = ({name, ...props}) => {
+const IconTextAreaField: React.FC<Props> = ({name, ...props}) => {
   const error = useFieldError(name);
 
   return (
-    <IconTextInput
+    <IconTextArea
       {...props}
       invalid={error !== undefined}
       invalidText={error}
     />
   );
 };
-export {IconTextInputField};
+export {IconTextAreaField};

@@ -12,7 +12,7 @@ import {tracking} from 'modules/tracking';
 import {formatDate, formatISODate, formatTime} from './formatDate';
 import {Calendar} from '@carbon/react/icons';
 import {DateRangeModal} from './DateRangeModal';
-import {IconTextInput} from '../IconTextInput';
+import {IconTextInput} from '../IconInput';
 
 type Props = {
   filterName: string;

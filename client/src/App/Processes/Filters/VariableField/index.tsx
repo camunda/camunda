@@ -20,9 +20,11 @@ import {tracking} from 'modules/tracking';
 import {Title} from 'modules/components/FiltersPanel/styled';
 import {Popup} from '@carbon/react/icons';
 import {TextInputField} from 'modules/components/TextInputField';
-import {IconTextInputField} from 'modules/components/IconTextInputField';
 import {createPortal} from 'react-dom';
 import {Stack} from '@carbon/react';
+import {IconTextAreaField} from 'modules/components/IconTextAreaField';
+import {IS_VARIABLE_VALUE_IN_FILTER_ENABLED} from 'modules/feature-flags';
+import {IconTextInputField} from 'modules/components/IconTextInputField';
 
 const Variable: React.FC = observer(() => {
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -40,7 +42,7 @@ const Variable: React.FC = observer(() => {
             validateVariableNameComplete,
           )}
         >
-          {({input, meta}) => (
+          {({input}) => (
             <TextInputField
               {...input}
               id="variableName"
@@ -58,25 +60,31 @@ const Variable: React.FC = observer(() => {
             validateVariableValueValid,
           )}
         >
-          {({input, meta}) => (
-            <IconTextInputField
-              {...input}
-              id="variableValue"
-              size="sm"
-              placeholder="in JSON format"
-              data-testid="optional-filter-variable-value"
-              labelText="Value"
-              buttonLabel="Open JSON editor modal"
-              onIconClick={() => {
-                setIsModalVisible(true);
-                tracking.track({
-                  eventName: 'json-editor-opened',
-                  variant: 'search-variable',
-                });
-              }}
-              Icon={Popup}
-            />
-          )}
+          {({input}) => {
+            const InputComponent = IS_VARIABLE_VALUE_IN_FILTER_ENABLED
+              ? IconTextAreaField
+              : IconTextInputField;
+
+            return (
+              <InputComponent
+                {...input}
+                id="variableValue"
+                size="sm"
+                placeholder="in JSON format"
+                data-testid="optional-filter-variable-value"
+                labelText="Value"
+                buttonLabel="Open JSON editor modal"
+                onIconClick={() => {
+                  setIsModalVisible(true);
+                  tracking.track({
+                    eventName: 'json-editor-opened',
+                    variant: 'search-variable',
+                  });
+                }}
+                Icon={Popup}
+              />
+            );
+          }}
         </Field>
       </Stack>
       {createPortal(
