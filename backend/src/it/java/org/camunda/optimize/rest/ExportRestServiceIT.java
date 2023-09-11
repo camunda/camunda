@@ -7,7 +7,7 @@ package org.camunda.optimize.rest;
 
 import lombok.SneakyThrows;
 import org.apache.commons.io.IOUtils;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
@@ -31,7 +31,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -45,7 +45,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.rest.RestTestUtil.getResponseContentAsString;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
-public class ExportRestServiceIT extends AbstractIT {
+public class ExportRestServiceIT extends AbstractPlatformIT {
 
   private static final String COLUMN_PROCESS_INSTANCE_ID = ProcessInstanceDto.Fields.processInstanceId;
   private static final String SAMPLE_PROCESS_DEFINITION_KEY = "some";

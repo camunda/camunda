@@ -32,14 +32,6 @@ jobs:
         uses: ./.github/actions/login-registry
         with:
           secrets: ${{ toJSON(secrets) }}
-      - name: Start Cambpm
-        uses: ./.github/actions/compose
-        with:
-          compose_file: ${{ github.workspace }}/.github/actions/compose/docker-compose.cambpm.yml
-          project_name: cambpm
-        env:
-          CAMBPM_VERSION: ${{ steps.pom-info.outputs.x_camunda_engine_version }}
-          CAMBPM_JVM_MEMORY: 1
       - name: Start Elastic
         uses: ./.github/actions/compose
         with:
@@ -61,7 +53,7 @@ jobs:
       - name: Run Zeebe IT
         uses: ./.github/actions/run-maven
         with:
-          parameters: verify -Dzeebe.docker.version=${{ env.zeebe-version-to-use }} -Dit.test.includedGroups=Zeebe-test -Dskip.docker -Pit,engine-latest -pl backend -am
+          parameters: verify -Dzeebe.docker.version=${{ env.zeebe-version-to-use }} -Dit.test.includedGroups=ccsm-test -Pccsm-it -pl backend -am
       - name: Docker log dump
         uses: ./.github/actions/docker-logs
         if: always() # always dump the docker logs in case of success and failure

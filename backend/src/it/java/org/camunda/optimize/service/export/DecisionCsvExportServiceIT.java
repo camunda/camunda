@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.service.export;
 
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
@@ -20,7 +20,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.stream.Stream;
@@ -29,7 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 import static org.camunda.optimize.rest.RestTestUtil.getResponseContentAsString;
 
-public class DecisionCsvExportServiceIT extends AbstractIT {
+public class DecisionCsvExportServiceIT extends AbstractPlatformIT {
 
   private static final String FAKE = "FAKE";
 

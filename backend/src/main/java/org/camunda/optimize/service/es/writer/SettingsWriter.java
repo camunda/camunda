@@ -7,6 +7,7 @@ package org.camunda.optimize.service.es.writer;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.ws.rs.BadRequestException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.SettingsResponseDto;
@@ -18,7 +19,6 @@ import org.elasticsearch.script.Script;
 import org.elasticsearch.xcontent.XContentType;
 import org.springframework.stereotype.Component;
 
-import javax.ws.rs.BadRequestException;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
@@ -56,10 +56,10 @@ public class SettingsWriter {
     throws JsonProcessingException {
     Set<String> fieldsToUpdate = new HashSet<>();
 
-    if(settingsDto.getMetadataTelemetryEnabled().isPresent()) {
+    if (settingsDto.getMetadataTelemetryEnabled().isPresent()) {
       fieldsToUpdate.addAll(Set.of(LAST_MODIFIER, METADATA_TELEMETRY_ENABLED));
     }
-    if(settingsDto.getSharingEnabled().isPresent()) {
+    if (settingsDto.getSharingEnabled().isPresent()) {
       fieldsToUpdate.add(SHARING_ENABLED);
     }
     if (!fieldsToUpdate.isEmpty()) {

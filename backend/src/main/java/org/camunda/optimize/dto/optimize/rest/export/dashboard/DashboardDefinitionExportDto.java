@@ -18,7 +18,7 @@ import org.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
 import org.camunda.optimize.service.es.schema.index.DashboardIndex;
 import org.camunda.optimize.service.util.IdGenerator;
 
-import javax.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;

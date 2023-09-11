@@ -10,7 +10,7 @@ import org.apache.commons.lang3.RandomUtils;
 import org.assertj.core.groups.Tuple;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
@@ -22,7 +22,7 @@ import org.camunda.optimize.service.util.importing.EngineConstants;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MediaType;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
@@ -32,7 +32,7 @@ import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class VariableImportAdapterPluginIT extends AbstractIT {
+public class VariableImportAdapterPluginIT extends AbstractPlatformIT {
 
   private ConfigurationService configurationService;
 

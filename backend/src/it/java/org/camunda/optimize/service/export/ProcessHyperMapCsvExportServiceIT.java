@@ -7,7 +7,7 @@ package org.camunda.optimize.service.export;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -19,7 +19,7 @@ import org.camunda.optimize.util.FileReaderUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import java.sql.SQLException;
 import java.time.temporal.ChronoUnit;
 
@@ -29,7 +29,7 @@ import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 import static org.camunda.optimize.rest.RestTestUtil.getResponseContentAsString;
 import static org.camunda.optimize.util.SuppressionConstants.SAME_PARAM_VALUE;
 
-public class ProcessHyperMapCsvExportServiceIT extends AbstractIT {
+public class ProcessHyperMapCsvExportServiceIT extends AbstractPlatformIT {
 
   private static final String USER_TASK_1 = "userTask1";
   private static final String USER_TASK_2 = "userTask2";

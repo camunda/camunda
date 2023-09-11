@@ -65,7 +65,7 @@ public class ExternalVariableDataImportIT extends AbstractIngestedDataImportIT {
     // given
     final List<ExternalProcessVariableRequestDto> variables = IntStream.range(0, 10)
       .mapToObj(i -> ingestionClient.createPrimitiveExternalVariable().setId("id" + i))
-      .collect(toList());
+      .toList();
 
     ingestionClient.ingestVariables(variables);
 
@@ -93,7 +93,7 @@ public class ExternalVariableDataImportIT extends AbstractIngestedDataImportIT {
         .setProcessDefinitionKey("key" + i)
         .setProcessInstanceId(String.valueOf(i))
       )
-      .collect(toList());
+      .toList();
     ingestionClient.ingestVariables(variables);
 
     // when

@@ -5,6 +5,10 @@
  */
 package org.camunda.optimize.service.alert;
 
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
+import jakarta.ws.rs.BadRequestException;
+import jakarta.ws.rs.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -46,10 +50,6 @@ import org.springframework.scheduling.quartz.SchedulerFactoryBean;
 import org.springframework.scheduling.quartz.SpringBeanJobFactory;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-import javax.ws.rs.BadRequestException;
-import javax.ws.rs.NotFoundException;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -159,7 +159,7 @@ public class AlertService implements ReportReferencingService {
       .findAndFilterReports(userId, collectionId)
       .stream()
       .map(authorizedReportDefinitionDto -> authorizedReportDefinitionDto.getDefinitionDto().getId())
-      .collect(toList());
+      .toList();
 
     return alertReader.getAlertsForReports(authorizedReportIds);
   }

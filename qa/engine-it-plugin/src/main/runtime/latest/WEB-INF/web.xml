@@ -49,6 +49,7 @@
       org.jboss.resteasy.plugins.server.servlet.FilterDispatcher
     </filter-class>
     <init-param>
+      <!-- Change this to Jakarta once the Engine-IT plugin is updated to 7.20 ticket OPT-7144 -->
       <param-name>javax.ws.rs.Application</param-name>
       <param-value>org.camunda.bpm.engine.rest.impl.application.DefaultApplication</param-value>
     </init-param>
@@ -64,6 +65,7 @@
       org.jboss.resteasy.plugins.server.servlet.FilterDispatcher
     </filter-class>
     <init-param>
+      <!-- Change this to Jakarta once the Engine-IT plugin is updated to 7.20 ticket OPT-7144 -->
       <param-name>javax.ws.rs.Application</param-name>
       <param-value>org.camunda.bpm.engine.rest.impl.application.DefaultApplication</param-value>
     </init-param>

@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 
 @Builder
 @Data

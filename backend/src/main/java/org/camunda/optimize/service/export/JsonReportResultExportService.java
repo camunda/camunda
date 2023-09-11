@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.export;
 
+import jakarta.ws.rs.BadRequestException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.report.AuthorizedReportEvaluationResult;
@@ -19,7 +20,6 @@ import org.camunda.optimize.service.es.report.ReportEvaluationInfo;
 import org.camunda.optimize.service.report.ReportService;
 import org.springframework.stereotype.Component;
 
-import javax.ws.rs.BadRequestException;
 import java.time.ZoneId;
 
 @AllArgsConstructor

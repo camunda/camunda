@@ -11,6 +11,7 @@ services:
       - SPRING_PROFILES_ACTIVE=ccsm
       - CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL=http://localhost:18080/auth/realms/camunda-platform
       - CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_BACKEND_URL=http://keycloak:8080/auth/realms/camunda-platform
+      - CAMUNDA_OPTIMIZE_IDENTITY_BASE_URL=http://localhost:8081/
       - CAMUNDA_OPTIMIZE_IDENTITY_CLIENTID=optimize
       - CAMUNDA_OPTIMIZE_IDENTITY_CLIENTSECRET=XALaRPl5qwTEItdwCMiPS62nVpKs7dL7
       - CAMUNDA_OPTIMIZE_IDENTITY_AUDIENCE=optimize-api
@@ -22,6 +23,9 @@ services:
       - CAMUNDA_OPTIMIZE_ZEEBE_NAME=zeebe-record
       - CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT=2
       - CAMUNDA_OPTIMIZE_IMPORT_DATA_SKIP_DATA_AFTER_NESTED_DOC_LIMIT_REACHED=true
+      # This should only be set if you plan to use JWTs for the public API rather than a statically configured token
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:8080/auth/realms/camunda-platform/protocol/openid-connect/certs
+      - OPTIMIZE_LOG_LEVEL=DEBUG
     networks:
       - optimize
       - identity-network
@@ -113,22 +117,22 @@ services:
     networks:
       - optimize
     restart: always
-# We include Operate here to use its data generator, via the SPRING_PROFILES_ACTIVE property
+  # We include Operate here to use its data generator, via the SPRING_PROFILES_ACTIVE property
   operate:
     image: camunda/operate:latest
     container_name: operate
     environment:
-        - CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS=zeebe:26500
-        - CAMUNDA_OPERATE_ELASTICSEARCH_URL=http://elasticsearch:9200
-        - CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL=http://elasticsearch:9200
-        - CAMUNDA_OPERATE_ARCHIVER_WAITPERIODBEFOREARCHIVING=1m
-        - SPRING_PROFILES_ACTIVE=dev-data
-        - CAMUNDA_OPERATE_IDENTITY_ISSUER_URL=http://localhost:18080/auth/realms/camunda-platform
-        - CAMUNDA_OPERATE_IDENTITY_ISSUER_BACKEND_URL=http://localhost:18080/auth/realms/camunda-platform
-        - CAMUNDA_OPERATE_IDENTITY_CLIENT_ID=operate
-        - CAMUNDA_OPERATE_IDENTITY_CLIENT_SECRET=the-cake-is-alive
-        - CAMUNDA_OPERATE_IDENTITY_AUDIENCE=operate-api
-        - management.endpoint.health.group.liveness.include=elsIndicesCheck
+      - CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS=zeebe:26500
+      - CAMUNDA_OPERATE_ELASTICSEARCH_URL=http://elasticsearch:9200
+      - CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL=http://elasticsearch:9200
+      - CAMUNDA_OPERATE_ARCHIVER_WAITPERIODBEFOREARCHIVING=1m
+      - SPRING_PROFILES_ACTIVE=dev-data
+      - CAMUNDA_OPERATE_IDENTITY_ISSUER_URL=http://localhost:18080/auth/realms/camunda-platform
+      - CAMUNDA_OPERATE_IDENTITY_ISSUER_BACKEND_URL=http://localhost:18080/auth/realms/camunda-platform
+      - CAMUNDA_OPERATE_IDENTITY_CLIENT_ID=operate
+      - CAMUNDA_OPERATE_IDENTITY_CLIENT_SECRET=the-cake-is-alive
+      - CAMUNDA_OPERATE_IDENTITY_AUDIENCE=operate-api
+      - management.endpoint.health.group.liveness.include=elsIndicesCheck
     ports:
       - "8080:8080"
     depends_on:

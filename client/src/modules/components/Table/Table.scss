@@ -126,7 +126,7 @@
     overflow-y: auto;
     min-width: max-content;
     overflow-x: hidden;
-    flex-grow: 1;
+    flex: auto;
 
     tr {
       td {

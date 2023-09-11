@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.rest;
 
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
@@ -15,7 +15,7 @@ import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.junit.jupiter.api.Test;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -30,7 +30,7 @@ import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInst
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
 
-public class AnalysisRestServiceIT extends AbstractIT {
+public class AnalysisRestServiceIT extends AbstractPlatformIT {
 
   private static final String DIAGRAM = "org/camunda/optimize/service/es/reader/gateway_process.bpmn";
   private static final String PROCESS_DEFINITION_ID_2 = "procDef2";

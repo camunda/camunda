@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.service.es.report.process.single.processinstance.frequency.groupby.none.distributedby;
 
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
@@ -32,7 +32,7 @@ import static org.camunda.optimize.service.util.ProcessReportDataType.PROC_INST_
 import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
 import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 
-public class ProcessInstanceFrequencyByNoneByProcessReportEvaluationIT extends AbstractIT {
+public class ProcessInstanceFrequencyByNoneByProcessReportEvaluationIT extends AbstractPlatformIT {
 
   @Test
   public void reportEvaluationWithSingleProcessDefinitionSource() {

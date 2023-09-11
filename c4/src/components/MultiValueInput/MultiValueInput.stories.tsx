@@ -22,6 +22,7 @@ export const mainStory: Story = {
 		],
 		tagButtonTitle: "testButton",
 		titleText: "Multi value input title",
+		helperText:"Some additional helper text"
 	},
 	play: async ({ args, canvasElement }) => {
 		const canvas = within(canvasElement)

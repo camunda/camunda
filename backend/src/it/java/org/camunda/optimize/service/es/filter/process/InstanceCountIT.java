@@ -31,7 +31,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 
-import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ProcessInstanceConstants.SUSPENDED_STATE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
@@ -144,7 +143,7 @@ public class InstanceCountIT extends AbstractProcessDefinitionIT {
     // when
     final List<String> reportIds = Stream.of(singleReport1, singleReport2)
       .map(reportClient::createSingleProcessReport)
-      .collect(toList());
+      .toList();
     final CombinedProcessReportResultDataDto<?> combinedResult =
       reportClient.saveAndEvaluateCombinedReport(reportIds);
 

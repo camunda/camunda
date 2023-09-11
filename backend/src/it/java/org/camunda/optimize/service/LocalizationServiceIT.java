@@ -5,13 +5,13 @@
  */
 package org.camunda.optimize.service;
 
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class LocalizationServiceIT extends AbstractIT {
+public class LocalizationServiceIT extends AbstractPlatformIT {
 
   @Test
   public void failOnMissingFileForAvailableLocales() {

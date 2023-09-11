@@ -182,7 +182,7 @@ export class ReportEdit extends React.Component {
     }
 
     if (needsReevaluation && this.state.shouldAutoReloadPreview) {
-      this.reEvaluateReport(newReport);
+      await this.reEvaluateReport(newReport);
     }
   };
 
@@ -191,7 +191,6 @@ export class ReportEdit extends React.Component {
       ...this.state.report,
       data: newReport,
     };
-    delete query.result;
     await this.loadUpdatedReport(query);
   };
 

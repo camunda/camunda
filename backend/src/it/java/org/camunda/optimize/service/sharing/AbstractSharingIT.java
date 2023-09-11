@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.sharing;
 
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardTileType;
@@ -24,7 +24,7 @@ import org.camunda.optimize.service.exceptions.evaluation.ReportEvaluationExcept
 import org.camunda.optimize.service.util.ProcessReportDataType;
 import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -35,7 +35,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
-public abstract class AbstractSharingIT extends AbstractIT {
+public abstract class AbstractSharingIT extends AbstractPlatformIT {
 
   protected static final String FAKE_REPORT_ID = "fake";
 

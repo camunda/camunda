@@ -6,33 +6,31 @@
  */
 
 import update from 'immutability-helper';
-
-import {withErrorHandling, WithErrorHandlingProps} from 'HOC';
-import {t} from 'translation';
-import {showError} from 'notifications';
-
-import MultiUserInput, {MultiUserInputProps} from './MultiUserInput';
-import {getUser, User} from './service';
 import {DropdownSkeleton} from '@carbon/react';
 
+import {t} from 'translation';
+import {showError} from 'notifications';
+import {useErrorHandling} from 'hooks';
+
+import MultiUserInput, {MultiUserInputProps} from './MultiUserInput';
+import {getUser, User, getUserId} from './service';
+
 interface UserTypeaheadProps
-  extends WithErrorHandlingProps,
-    Partial<Omit<MultiUserInputProps, 'users' | 'collectionUsers' | 'onChange'>> {
+  extends Partial<Omit<MultiUserInputProps, 'users' | 'collectionUsers' | 'onChange'>> {
   collectionUsers?: User[] | null;
   users: User[] | null;
   onChange: (users: User[]) => void;
-  loading?: boolean;
 }
 
-export function UserTypeahead({
+export default function UserTypeahead({
   users = [],
   collectionUsers = [],
   onChange,
-  mightFail,
-  loading,
   ...props
 }: UserTypeaheadProps) {
-  if (!users || !collectionUsers || loading) {
+  const {mightFail} = useErrorHandling();
+
+  if (!users || !collectionUsers) {
     return <DropdownSkeleton />;
   }
 
@@ -45,8 +43,7 @@ export function UserTypeahead({
         getUser(user.id),
         (user) => {
           const {type, id} = user;
-          const exists = (users: User[]) =>
-            users.some((user) => user.id === `${type.toUpperCase()}:${id}`);
+          const exists = (users: User[]) => users.some((user) => user.id === getUserId(id, type));
 
           if (exists(users)) {
             return showError(t('home.roles.existing-identity'));
@@ -69,7 +66,7 @@ export function UserTypeahead({
 
   const addUser = (user: {id: string} | User['identity']) => {
     getSelectedUser(user, ({id, type, name, memberCount, email}) => {
-      const newId = `${type.toUpperCase()}:${id}`;
+      const newId = getUserId(id, type);
       const newIdentity: User = {id: newId, identity: {id, name, type, memberCount, email}};
       onChange(update(users, {$push: [newIdentity]}));
     });
@@ -88,5 +85,3 @@ export function UserTypeahead({
     />
   );
 }
-
-export default withErrorHandling(UserTypeahead);

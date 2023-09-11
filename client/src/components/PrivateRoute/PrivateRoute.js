@@ -13,14 +13,14 @@ import {nowPristine} from 'saveGuard';
 import {withUser} from 'HOC';
 import {showError} from 'notifications';
 import {t} from 'translation';
-
-import {Header, Footer} from '..';
-
 import {
   createOutstandingRequestPromise,
   redoOutstandingRequests,
   resetOutstandingRequests,
-} from './outstandingRequestsService';
+} from 'services';
+
+import {Header, Footer} from '..';
+
 import {Login} from './Login';
 
 import './PrivateRoute.scss';

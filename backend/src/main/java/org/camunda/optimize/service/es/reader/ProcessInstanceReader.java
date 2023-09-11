@@ -104,9 +104,9 @@ public class ProcessInstanceReader {
       .findFirst();
   }
 
-  public boolean processDefinitionHasCompletedInstances(final String processDefinitionKey) {
+  public boolean processDefinitionHasStartedInstances(final String processDefinitionKey) {
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(boolQuery().filter(existsQuery(ProcessInstanceIndex.END_DATE)))
+      .query(boolQuery().filter(existsQuery(ProcessInstanceIndex.START_DATE)))
       .size(1)
       .fetchSource(PROCESS_INSTANCE_ID, null);
 
@@ -121,12 +121,11 @@ public class ProcessInstanceReader {
       return false;
     } catch (IOException e2) {
       // If this exception is thrown, sth went wrong with ElasticSearch, so returning false and logging it
-      log.warn("Error with ElasticSearch thrown while querying for ready process instances, returning false! The " +
+      log.warn("Error with ElasticSearch thrown while querying for started process instances, returning false! The " +
                  "error was: " + e2.getMessage());
       return false;
     }
   }
-
 
   private PageResultDto<String> getNextPageOfProcessInstanceIds(final PageResultDto<String> previousPage,
                                                                 final Supplier<PageResultDto<String>> firstPageFetchFunction) {

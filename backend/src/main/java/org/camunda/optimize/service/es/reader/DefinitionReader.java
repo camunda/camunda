@@ -55,7 +55,7 @@ import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
 import org.springframework.stereotype.Component;
 
-import javax.ws.rs.NotFoundException;
+import jakarta.ws.rs.NotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -153,7 +153,7 @@ public class DefinitionReader {
     filterQuery.filter(
       boolQuery().minimumShouldMatch(1)
         .must(termQuery(DEFINITION_DELETED, false))
-        // use separate should queries as definition type may be null (returning both process and decision)
+        // use separate 'should' queries as definition type may be null (returning both process and decision)
         .should(existsQuery(PROCESS_DEFINITION_XML))
         .should(existsQuery(DECISION_DEFINITION_XML))
     );
@@ -319,7 +319,7 @@ public class DefinitionReader {
             enginesResult.getBuckets().stream().map(Terms.Bucket::getKeyAsString).collect(Collectors.toSet())
           );
         })
-        .collect(toList());
+        .toList();
       resultMap.put(tenantId, new TenantIdWithDefinitionsDto(tenantId, simpleDefinitionDtos));
     });
 
@@ -681,7 +681,7 @@ public class DefinitionReader {
           enginesResult.getBuckets().stream().map(Terms.Bucket::getKeyAsString).collect(Collectors.toSet())
         );
       })
-      .collect(toList());
+      .toList();
   }
 
   private void addTenantIdFilter(final Set<String> tenantIds, final BoolQueryBuilder query) {

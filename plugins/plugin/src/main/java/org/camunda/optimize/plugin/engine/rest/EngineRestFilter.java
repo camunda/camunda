@@ -5,15 +5,15 @@
  */
 package org.camunda.optimize.plugin.engine.rest;
 
-import javax.ws.rs.client.ClientRequestContext;
+import jakarta.ws.rs.client.ClientRequestContext;
+
 import java.io.IOException;
 
 public interface EngineRestFilter {
-
   /**
    * Filter method called before a request has been dispatched to the REST-API of a process engine.
    * <p>
-   * For details see javax.ws.rs.client.ClientRequestFilter.filter(ClientRequestContext).
+   * For details see jakarta.ws.rs.client.ClientRequestFilter.filter(ClientRequestContext).
    *
    * @param requestContext request context.
    * @param engineAlias    alias (key in configuration) of the engine the request refers to.

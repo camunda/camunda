@@ -1,6 +1,6 @@
-ARG BASE_IMAGE_NAME="alpine:3"
-ARG BASE_IMAGE_SHA_AMD64="sha256:25fad2a32ad1f6f510e528448ae1ec69a28ef81916a004d3629874104f8a7f70"
-ARG BASE_IMAGE_SHA_ARM64="sha256:e3bd82196e98898cae9fe7fbfd6e2436530485974dc4fb3b7ddb69134eda2407"
+ARG BASE_IMAGE_NAME="alpine:3.18.3"
+ARG BASE_IMAGE_SHA_AMD64="sha256:c5c5fda71656f28e49ac9c5416b3643eaa6a108a8093151d6d1afc9463be8e33"
+ARG BASE_IMAGE_SHA_ARM64="sha256:b312e4b0e2c665d634602411fcb7c2699ba748c36f59324457bc17de485f36f6"
 
 # Building prod image amd64
 FROM ${BASE_IMAGE_NAME}@${BASE_IMAGE_SHA_AMD64} as prod-amd64
@@ -17,6 +17,7 @@ ARG BASE_IMAGE_SHA_ARM64
 ARG BASE_SHA="${BASE_IMAGE_SHA_ARM64}"
 
 # Building builder image
+# hadolint ignore=DL3006
 FROM ${BASE_IMAGE_NAME} as builder
 
 ARG VERSION=2.0.0
@@ -29,8 +30,10 @@ ENV TMP_DIR=/tmp/optimize \
 RUN mkdir -p ${TMP_DIR} && \
     mkdir -p ${BUILD_DIR}
 
-ADD ${ARTIFACT_PATH}/camunda-optimize-${VERSION}-${DISTRO}.tar.gz ${BUILD_DIR}
-ADD docker/bin/optimize.sh ${BUILD_DIR}/optimize.sh
+COPY ${ARTIFACT_PATH}/camunda-optimize-${VERSION}-${DISTRO}.tar.gz ${BUILD_DIR}
+RUN tar -xzf ${BUILD_DIR}/camunda-optimize-${VERSION}-${DISTRO}.tar.gz -C ${BUILD_DIR} && \
+    rm ${BUILD_DIR}/camunda-optimize-${VERSION}-${DISTRO}.tar.gz
+COPY docker/bin/optimize.sh ${BUILD_DIR}/optimize.sh
 # Prevent environment-config.yaml from overriding service-config.yaml since the
 # service-config.yaml allows usage of OPTIMIZE_ environment variables
 RUN rm ${BUILD_DIR}/config/environment-config.yaml
@@ -38,6 +41,7 @@ RUN rm ${BUILD_DIR}/config/environment-config.yaml
 ##### FINAL IMAGE #####
 # The value of TARGETARCH is provided by the build command from docker and based on that value, prod-amd64 or
 # prod-arm64 will be built as defined above
+# hadolint ignore=DL3006
 FROM prod-${TARGETARCH}
 
 ARG VERSION=""
@@ -78,7 +82,7 @@ ENV CONTAINER_HOST=0.0.0.0
 
 EXPOSE 8090 8091
 
-RUN apk add --no-cache bash curl tini openjdk11-jre tzdata && \
+RUN apk add --no-cache bash curl tini openjdk17-jre tzdata && \
     curl "https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh" --output /usr/local/bin/wait-for-it.sh && \
     chmod +x /usr/local/bin/wait-for-it.sh && \
     addgroup -S optimize && \

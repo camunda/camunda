@@ -5,6 +5,20 @@
  */
 package org.camunda.optimize.rest;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.PUT;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.MediaType;
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.IdentityDto;
@@ -35,24 +49,8 @@ import org.camunda.optimize.service.security.SessionService;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.RequestBody;
 
-import javax.validation.Valid;
-import javax.validation.constraints.NotNull;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.GET;
-import javax.ws.rs.NotFoundException;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
 import java.util.List;
 import java.util.Map;
-
-import static java.util.stream.Collectors.toList;
 
 @AllArgsConstructor
 @Path("/eventBasedProcess")
@@ -97,7 +95,7 @@ public class EventBasedProcessRestService {
     return eventProcessService.getAllEventProcessMappingsOmitXml(userId)
       .stream()
       .map(mappingRestDto -> mapMappingDtoToRestDto(userId, mappingRestDto))
-      .collect(toList());
+      .toList();
   }
 
   @POST
@@ -185,7 +183,7 @@ public class EventBasedProcessRestService {
       .stream()
       .filter(eventRole -> identityService.isUserAuthorizedToAccessIdentity(userId, eventRole.getIdentity()))
       .map(this::mapToEventProcessRoleRestDto)
-      .collect(toList());
+      .toList();
   }
 
   @PUT
@@ -200,7 +198,7 @@ public class EventBasedProcessRestService {
     final List<EventProcessRoleRequestDto<IdentityDto>> eventRoleDtos = rolesDtoRequest.stream()
       .map(roleDto -> resolveToEventProcessRoleDto(userId, roleDto))
       .peek(roleDto -> identityService.validateUserAuthorizedToAccessRoleOrFail(userId, roleDto.getIdentity()))
-      .collect(toList());
+      .toList();
     eventProcessRoleService.updateRoles(eventProcessId, eventRoleDtos, userId);
   }
 
@@ -287,7 +285,7 @@ public class EventBasedProcessRestService {
           sourceConfig.setProcessDefinitionName(getDefinitionName(userId, sourceConfig.getProcessDefinitionKey()));
         }
       })
-      .collect(toList());
+      .toList();
   }
 
   private String getDefinitionName(final String userId, final String eventSource) {

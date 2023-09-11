@@ -6,6 +6,9 @@
 package org.camunda.optimize.dto.optimize.rest;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
@@ -16,9 +19,6 @@ import lombok.ToString;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.service.util.mapper.CustomCloudEventTimeDeserializer;
 
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Pattern;
 import java.time.Instant;
 import java.util.Optional;
 

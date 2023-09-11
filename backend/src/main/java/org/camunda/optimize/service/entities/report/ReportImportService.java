@@ -81,10 +81,10 @@ public class ReportImportService {
     final List<ReportDefinitionExportDto> singleReportsToImport = reportsToImport.stream()
       .filter(entity -> SINGLE_PROCESS_REPORT.equals(entity.getExportEntityType())
         || SINGLE_DECISION_REPORT.equals(entity.getExportEntityType()))
-      .collect(toList());
+      .toList();
     final List<ReportDefinitionExportDto> combinedReportsToImport = reportsToImport.stream()
       .filter(entity -> COMBINED_REPORT.equals(entity.getExportEntityType()))
-      .collect(toList());
+      .toList();
 
     singleReportsToImport.forEach(
       reportToImport -> importReportIntoCollection(userId, collectionId, reportToImport, originalIdToNewIdMap)
@@ -282,7 +282,7 @@ public class ReportImportService {
         originalIdToNewIdMap.get(reportItem.getId()).getId(),
         reportItem.getColor()
       ))
-      .collect(toList());
+      .toList();
     reportToImport.getData().setReports(newSingleReportItems);
   }
 
@@ -343,7 +343,7 @@ public class ReportImportService {
         tenantIds
       ).stream()
       .map(DefinitionVersionResponseDto::getVersion)
-      .collect(toList());
+      .toList();
   }
 
   private void populateDefinitionXml(final SingleProcessReportDefinitionExportDto exportDto) {

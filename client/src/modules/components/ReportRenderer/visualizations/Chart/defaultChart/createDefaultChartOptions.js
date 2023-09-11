@@ -233,6 +233,9 @@ export function createBarOptions({
       ...(groupedByDurationMaxValue
         ? createDurationFormattingOptions(false, groupedByDurationMaxValue)
         : {}),
+      font: ({chart}) => ({
+        size: Math.min(12, Math.round(chart.height / 32)),
+      }),
     },
     stacked: stacked || isCombinedNumber,
     ...groupBy,

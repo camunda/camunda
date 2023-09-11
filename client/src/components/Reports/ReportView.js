@@ -5,11 +5,14 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
-import {Link, Redirect} from 'react-router-dom';
+import React, {useEffect, useState} from 'react';
+import {Link, Redirect, useLocation} from 'react-router-dom';
+import {Button} from '@carbon/react';
+import {RowCollapse, RowExpand} from '@carbon/icons-react';
+import classnames from 'classnames';
 
 import {
-  Button,
+  Button as LegacyButton,
   ShareEntity,
   ReportRenderer,
   Popover,
@@ -21,6 +24,7 @@ import {
   DownloadButton,
   AlertsDropdown,
   EntityDescription,
+  InstanceViewTable,
 } from 'components';
 import {isSharingEnabled, getOptimizeProfile} from 'config';
 import {formatters, checkDeleteConflict} from 'services';
@@ -31,125 +35,164 @@ import {shareReport, revokeReportSharing, getSharedReport} from './service';
 
 import './ReportView.scss';
 
-export class ReportView extends React.Component {
-  state = {
-    deleting: null,
-    sharingEnabled: false,
-    optimizeProfile: null,
-  };
+export function ReportView({report, error, user, loadReport}) {
+  const [deleting, setDeletting] = useState(null);
+  const [sharingEnabled, setSharingEnabled] = useState(false);
+  const [optimizeProfile, setOptimizeProfile] = useState(null);
+  const [redirect, setRedirect] = useState(false);
+  const [bottomPanelState, setBottomPanelState] = useState('neutral');
+  const location = useLocation();
+  const isProcessReport = location.pathname.includes('processes/report');
 
-  async componentDidMount() {
-    this.setState({
-      optimizeProfile: await getOptimizeProfile(),
-      sharingEnabled: await isSharingEnabled(),
-    });
-  }
+  useEffect(() => {
+    (async () => {
+      setOptimizeProfile(await getOptimizeProfile());
+      setSharingEnabled(await isSharingEnabled());
+    })();
+  }, []);
 
-  shouldShowCSVDownload = () => {
-    const {report} = this.props;
-
+  const shouldShowCSVDownload = () => {
     if (report.combined && typeof report.result !== 'undefined') {
       return true;
     }
 
-    return this.props.report.result?.measures.length === 1;
+    return report?.data?.visualization !== 'number' && report.result?.measures.length === 1;
   };
 
-  constructCSVDownloadLink = () => {
-    return `api/export/csv/${this.props.report.id}/${encodeURIComponent(
-      formatters.formatFileName(this.props.report.name)
+  const constructCSVDownloadLink = () => {
+    return `api/export/csv/${report.id}/${encodeURIComponent(
+      formatters.formatFileName(report.name)
     )}.csv`;
   };
 
-  render() {
-    const {report, error, user, loadReport} = this.props;
-    const {redirect, sharingEnabled, optimizeProfile, deleting} = this.state;
+  const {id, name, combined, description, currentUserRole, data} = report;
+  const isInstantPreviewReport = data?.instantPreviewReport;
 
-    const {id, name, description, currentUserRole, data} = report;
-    const isInstantPreviewReport = data?.instantPreviewReport;
+  if (redirect) {
+    return <Redirect to={redirect} />;
+  }
 
-    if (redirect) {
-      return <Redirect to={redirect} />;
-    }
-
-    return (
-      <div className="ReportView Report">
-        <div className="reportHeader">
-          <div className="head">
-            <div className="info">
-              <EntityName details={<ReportDetails report={report} />}>{name}</EntityName>
-              {description && <EntityDescription description={description} />}
-            </div>
-            <div className="tools">
-              {!isInstantPreviewReport && currentUserRole === 'editor' && (
-                <>
-                  <Link className="tool-button edit-button" to="edit">
-                    <Button main tabIndex="-1">
-                      <Icon type="edit" />
-                      {t('common.edit')}
-                    </Button>
-                  </Link>
-                  <Button
-                    main
-                    className="tool-button delete-button"
-                    onClick={() => this.setState({deleting: {...report, entityType: 'report'}})}
-                  >
-                    <Icon type="delete" />
-                    {t('common.delete')}
-                  </Button>
-                </>
-              )}
-              {!isInstantPreviewReport && (
-                <Popover
-                  main
-                  className="tool-button share-button"
-                  icon="share"
-                  title={t('common.sharing.buttonTitle')}
-                  tooltip={!sharingEnabled ? t('common.sharing.disabled') : ''}
-                  disabled={!sharingEnabled}
-                  align="bottom-right"
-                >
-                  <ShareEntity
-                    type="report"
-                    resourceId={id}
-                    shareEntity={shareReport}
-                    revokeEntitySharing={revokeReportSharing}
-                    getSharedEntity={getSharedReport}
-                  />
-                </Popover>
-              )}
-              {(optimizeProfile === 'cloud' || optimizeProfile === 'platform') &&
-                data?.visualization === 'number' && <AlertsDropdown numberReport={report} />}
-              {this.shouldShowCSVDownload() && (
-                <DownloadButton
-                  main
-                  href={this.constructCSVDownloadLink()}
-                  totalCount={calculateTotalEntries(report)}
-                  user={user}
-                >
-                  <Icon type="save" />
-                  {t('report.downloadCSV')}
-                </DownloadButton>
-              )}
-            </div>
+  return (
+    <div className="ReportView Report">
+      <div className="reportHeader">
+        <div className="head">
+          <div className="info">
+            <EntityName details={<ReportDetails report={report} />}>{name}</EntityName>
+            {description && <EntityDescription description={description} />}
           </div>
-          <InstanceCount report={report} />
+          <div className="tools">
+            {!isInstantPreviewReport && currentUserRole === 'editor' && (
+              <>
+                <Link className="tool-button edit-button" to="edit">
+                  <LegacyButton main tabIndex="-1">
+                    <Icon type="edit" />
+                    {t('common.edit')}
+                  </LegacyButton>
+                </Link>
+                <LegacyButton
+                  main
+                  className="tool-button delete-button"
+                  onClick={() => setDeletting({...report, entityType: 'report'})}
+                >
+                  <Icon type="delete" />
+                  {t('common.delete')}
+                </LegacyButton>
+              </>
+            )}
+            {!isInstantPreviewReport && (
+              <Popover
+                main
+                className="tool-button share-button"
+                icon="share"
+                title={t('common.sharing.buttonTitle')}
+                tooltip={!sharingEnabled ? t('common.sharing.disabled') : ''}
+                disabled={!sharingEnabled}
+                align="bottom-right"
+              >
+                <ShareEntity
+                  type="report"
+                  resourceId={id}
+                  shareEntity={shareReport}
+                  revokeEntitySharing={revokeReportSharing}
+                  getSharedEntity={getSharedReport}
+                />
+              </Popover>
+            )}
+            {(optimizeProfile === 'cloud' || optimizeProfile === 'platform') &&
+              data?.visualization === 'number' && <AlertsDropdown numberReport={report} />}
+            {shouldShowCSVDownload() && (
+              <DownloadButton
+                main
+                href={constructCSVDownloadLink()}
+                totalCount={calculateTotalEntries(report)}
+                user={user}
+              >
+                <Icon type="save" />
+                {t('report.downloadCSV')}
+              </DownloadButton>
+            )}
+          </div>
         </div>
+        <InstanceCount report={report} />
+      </div>
+      {bottomPanelState !== 'expanded' && (
         <div className="Report__view">
           <div className="Report__content">
             <ReportRenderer error={error} report={report} loadReport={loadReport} />
           </div>
         </div>
-        <Deleter
-          type="report"
-          entity={deleting}
-          checkConflicts={({id}) => checkDeleteConflict(id, 'report')}
-          onClose={() => this.setState({deleting: null})}
-          onDelete={() => this.setState({redirect: '../../'})}
-        />
-      </div>
-    );
-  }
+      )}
+      {!isProcessReport && !combined && report.data?.visualization !== 'table' && (
+        <div className={classnames('bottomPanel', bottomPanelState)}>
+          <div className="toolbar">
+            <b>{t('report.view.rawData')}</b>
+            <div>
+              {bottomPanelState !== 'expanded' && (
+                <Button
+                  hasIconOnly
+                  label={t('common.expand')}
+                  kind="ghost"
+                  onClick={() =>
+                    setBottomPanelState((prevState) =>
+                      prevState === 'collapsed' ? 'neutral' : 'expanded'
+                    )
+                  }
+                  className="expandButton"
+                  tooltipPosition="left"
+                >
+                  <RowCollapse />
+                </Button>
+              )}
+              {bottomPanelState !== 'collapsed' && (
+                <Button
+                  hasIconOnly
+                  label={t('common.collapse')}
+                  kind="ghost"
+                  onClick={() =>
+                    setBottomPanelState((prevState) =>
+                      prevState === 'expanded' ? 'neutral' : 'collapsed'
+                    )
+                  }
+                  className="collapseButton"
+                  tooltipPosition="left"
+                >
+                  <RowExpand />
+                </Button>
+              )}
+            </div>
+          </div>
+          <InstanceViewTable className="bottomPanelTable" report={report} />
+        </div>
+      )}
+      <Deleter
+        type="report"
+        entity={deleting}
+        checkConflicts={({id}) => checkDeleteConflict(id, 'report')}
+        onClose={() => setDeletting(null)}
+        onDelete={() => setRedirect('../../')}
+      />
+    </div>
+  );
 }
 
 export default withUser(ReportView);

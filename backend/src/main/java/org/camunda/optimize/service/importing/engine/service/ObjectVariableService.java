@@ -28,8 +28,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
+import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static java.util.stream.Collectors.toList;
-import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.camunda.optimize.dto.optimize.query.variable.VariableType.BOOLEAN;
 import static org.camunda.optimize.dto.optimize.query.variable.VariableType.DOUBLE;
 import static org.camunda.optimize.dto.optimize.query.variable.VariableType.OBJECT;
@@ -85,7 +85,7 @@ public class ObjectVariableService {
         .setName(variable.getName())
         .setType(variable.getType())
         .setValue(Collections.singletonList(variable.getValue())))
-      .collect(toList());
+      .toList();
   }
 
   private void formatJsonObjectVariableAndAddToResult(final ProcessVariableUpdateDto variableUpdate,

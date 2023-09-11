@@ -42,6 +42,9 @@ export const reportItem = listItem.filter(
 export const collectionItem = listItem.filter(
   (node) => node.querySelector('.name .type').textContent.indexOf('Collection') !== -1
 );
+export const processItem = listItem.filter(
+  (node) => node.querySelector('.name .type').textContent.indexOf('Process') !== -1
+);
 export const reportLabel = reportItem.find('.name .type');
 export const listItemCheckbox = (item) => item.find('input[type="checkbox"]');
 export const newReportOption = createNewMenu.find('.Submenu');

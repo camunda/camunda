@@ -8,7 +8,7 @@ package org.camunda.optimize.rest;
 import com.google.common.collect.Lists;
 import org.assertj.core.groups.Tuple;
 import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
@@ -32,7 +32,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -52,7 +52,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DE
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_INDEX_NAME;
 
-public class DefinitionRestServiceIT extends AbstractIT {
+public class DefinitionRestServiceIT extends AbstractPlatformIT {
   private static final TenantDto SIMPLE_TENANT_NOT_DEFINED_DTO = TenantDto.builder()
     .id(TENANT_NOT_DEFINED.getId())
     .name(TENANT_NOT_DEFINED.getName())

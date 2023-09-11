@@ -5,21 +5,21 @@
  */
 package org.camunda.optimize.rest;
 
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.rest.BackupRequestDto;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.util.SuppressionConstants.UNUSED;
 
-public class BackupRestServiceIT extends AbstractIT {
-  private final static Integer VALID_BACKUP_ID = 123;
+public class BackupRestServiceIT extends AbstractPlatformIT {
+  private final static Long VALID_BACKUP_ID = 123L;
 
   @ParameterizedTest
   @MethodSource("backupApiRequestExecutorSuppliers")

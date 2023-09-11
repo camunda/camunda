@@ -25,9 +25,9 @@ jest.mock('config', () => ({
   getOptimizeProfile: jest.fn().mockReturnValue('platform'),
   isEnterpriseMode: jest.fn().mockReturnValue(true),
   getWebappLinks: jest.fn().mockReturnValue({
-    zeebe: 'http://zeebe.com',
-    operate: 'http://operate.com',
     optimize: 'http://optimize.com',
+    console: 'http://console.com',
+    operate: 'http://operate.com',
   }),
   getOnboardingConfig: jest.fn().mockReturnValue({orgId: 'orgId'}),
   getNotificationsUrl: jest.fn().mockReturnValue('notificationsUrl'),
@@ -135,10 +135,10 @@ it('should render sidebar links', async () => {
   expect(node.find(C3Navigation).prop('appBar').elements).toEqual([
     {
       active: false,
-      href: 'http://zeebe.com',
-      key: 'zeebe',
-      label: 'Zeebe',
-      ariaLabel: 'Zeebe',
+      href: 'http://console.com',
+      key: 'console',
+      label: 'Console',
+      ariaLabel: 'Console',
       routeProps: undefined,
     },
     {

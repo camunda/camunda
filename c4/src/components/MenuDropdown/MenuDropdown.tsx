@@ -13,7 +13,7 @@ import {
 	ForwardedRef,
 	useEffect,
 	useCallback,
-	useId,
+	ComponentPropsWithoutRef,
 } from "react"
 import classnames from "classnames"
 import { Menu, usePrefix } from "@carbon/react"
@@ -22,17 +22,31 @@ import { useMergedRefs } from "@carbon/react/lib/internal/useMergedRefs"
 
 import useAttachedMenu from "./useAttachedMenu"
 
+import { useId } from "../../hooks"
+
 import "./MenuDropdown.scss"
 
-export interface MenuDropdownProps {
+export interface MenuDropdownProps extends ComponentPropsWithoutRef<"div"> {
+	size?: "sm" | "md" | "lg"
 	children: ReactNode
 	className?: string
 	disabled?: boolean
 	label: ReactNode
+	invalid?: boolean
+	invalidText?: string
 }
 
 export default forwardRef(function MenuDropdown(
-	{ children, className, disabled, label, ...rest }: MenuDropdownProps,
+	{
+		children,
+		className,
+		disabled,
+		label,
+		size = "sm",
+		invalid,
+		invalidText,
+		...rest
+	}: MenuDropdownProps,
 	forwardRef: ForwardedRef<HTMLDivElement>,
 ) {
 	const prefix = usePrefix()
@@ -95,7 +109,13 @@ export default forwardRef(function MenuDropdown(
 			aria-owns={open ? id : undefined}
 			className={classnames(className, "MenuDropdown")}
 		>
-			<ListBox isOpen={open}>
+			<ListBox
+				isOpen={open}
+				size={size}
+				disabled={disabled}
+				invalid={invalid}
+				invalidText={invalidText}
+			>
 				<button
 					type="button"
 					ref={buttonRef}
@@ -116,7 +136,7 @@ export default forwardRef(function MenuDropdown(
 				className="MenuDropdownMenu"
 				ref={menuRef}
 				label={label}
-				size="md"
+				size={size}
 				open={open}
 				onClose={handleClose}
 				onOpen={handleOpen}

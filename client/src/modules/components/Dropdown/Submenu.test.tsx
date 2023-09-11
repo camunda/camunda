@@ -123,7 +123,7 @@ it('should shift the submenu up when there is no space available', () => {
         clientHeight: 60,
       }),
       //parentMenu.top
-      getBoundingClientRect: () => ({top: 50} as DOMRect),
+      getBoundingClientRect: () => ({top: 50}) as DOMRect,
     } as unknown as HTMLDivElement,
   };
 

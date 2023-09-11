@@ -7,7 +7,7 @@ package org.camunda.optimize.rest;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
@@ -48,7 +48,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.List;
@@ -68,7 +68,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_I
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
 import static org.camunda.optimize.util.SuppressionConstants.UNUSED;
 
-public class ManagementDashboardIT extends AbstractIT {
+public class ManagementDashboardIT extends AbstractPlatformIT {
 
   private static final Map<String, ExpectedReportConfigurationAndLocation> expectedReportsAndLocationsByName =
     createExpectedReportsAndLocationsByName();

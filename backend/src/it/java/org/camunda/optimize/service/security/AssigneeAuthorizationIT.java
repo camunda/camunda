@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.security;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
@@ -23,7 +23,7 @@ import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_EMAIL_DOMAIN;
 import static org.camunda.optimize.util.BpmnModels.getUserTaskDiagramWithAssignee;
 
-public class AssigneeAuthorizationIT extends AbstractIT {
+public class AssigneeAuthorizationIT extends AbstractPlatformIT {
 
   @Test
   public void searchForAssignees_forReports_missingCollectionAuth() {

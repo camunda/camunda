@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.es.report.decision;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,7 +31,7 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.util.DmnModels.createDefaultDmnModel;
 
-public class SingleDecisionReportHandlingIT extends AbstractIT {
+public class SingleDecisionReportHandlingIT extends AbstractPlatformIT {
 
   @Test
   public void updateDecisionReportWithGroupByInputVariableName() {

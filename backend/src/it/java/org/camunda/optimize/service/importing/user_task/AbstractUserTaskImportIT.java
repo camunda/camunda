@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.importing.user_task;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
@@ -22,7 +22,7 @@ import java.time.temporal.ChronoUnit;
 import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagram;
 import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 
-public abstract class AbstractUserTaskImportIT extends AbstractIT {
+public abstract class AbstractUserTaskImportIT extends AbstractPlatformIT {
 
   protected ObjectMapper objectMapper;
 

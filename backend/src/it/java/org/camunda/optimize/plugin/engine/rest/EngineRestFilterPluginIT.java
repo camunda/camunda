@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.plugin.engine.rest;
 
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
 import org.elasticsearch.action.search.SearchResponse;
@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
 
-public class EngineRestFilterPluginIT extends AbstractIT {
+public class EngineRestFilterPluginIT extends AbstractPlatformIT {
 
   private ConfigurationService configurationService;
 

@@ -35,8 +35,8 @@ import org.camunda.optimize.service.report.ReportService;
 import org.camunda.optimize.service.util.ValidationHelper;
 import org.springframework.stereotype.Component;
 
-import javax.ws.rs.ForbiddenException;
-import javax.ws.rs.NotFoundException;
+import jakarta.ws.rs.ForbiddenException;
+import jakarta.ws.rs.NotFoundException;
 import java.time.ZoneId;
 import java.util.Collections;
 import java.util.HashSet;

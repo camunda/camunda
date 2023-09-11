@@ -51,4 +51,5 @@ public class AccountsUserAccessTokenProvider {
     }
     return accessToken;
   }
+
 }

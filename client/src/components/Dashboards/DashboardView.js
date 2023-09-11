@@ -8,7 +8,7 @@
 import React, {useState, useEffect, useRef} from 'react';
 import classnames from 'classnames';
 import {FullScreen, useFullScreenHandle} from 'react-full-screen';
-import {Link} from 'react-router-dom';
+import {Link, useHistory} from 'react-router-dom';
 
 import {
   Button,
@@ -24,10 +24,12 @@ import {
   EntityDescription,
   DashboardTemplateModal,
 } from 'components';
-import {evaluateReport} from 'services';
+import {evaluateReport, createEntity, deleteEntity, addSources, loadEntities} from 'services';
 import {themed} from 'theme';
 import {t} from 'translation';
 import {getOptimizeProfile} from 'config';
+import {showError} from 'notifications';
+import {useErrorHandling, useUser} from 'hooks';
 
 import {
   getSharedDashboard,
@@ -36,7 +38,6 @@ import {
   getDefaultFilter,
 } from './service';
 import {FiltersView} from './filters';
-
 import {AutoRefreshBehavior, AutoRefreshSelect} from './AutoRefresh';
 import useReportDefinitions from './useReportDefinitions';
 
@@ -75,6 +76,9 @@ export function DashboardView(props) {
 
   const optimizeReports = tiles?.filter(({id, report}) => !!id || !!report);
   const {definitions} = useReportDefinitions(optimizeReports?.[0]);
+  const {mightFail} = useErrorHandling();
+  const history = useHistory();
+  const {user} = useUser();
 
   const themeRef = useRef(theme);
 
@@ -113,6 +117,45 @@ export function DashboardView(props) {
       return t('dashboard.cannotShare');
     }
     return '';
+  }
+
+  async function handleInstantPreviewDashboardCopying(dashboardState) {
+    const {definitions} = dashboardState;
+    const [definition] = definitions || [];
+    const {key: definitionKey, tenantIds: tenants} = definition || {};
+    let collectionId, existingCollection;
+
+    mightFail(
+      (async () => {
+        const entities = await loadEntities();
+        existingCollection = entities.find((entity) => entity.name === definitionKey);
+
+        if (existingCollection && existingCollection?.owner === user?.name) {
+          collectionId = existingCollection.id;
+        } else {
+          collectionId = await createEntity('collection', {name: definitionKey});
+        }
+
+        await addSources(collectionId, [
+          {
+            definitionKey,
+            definitionType: 'process',
+            tenants,
+          },
+        ]);
+      })(),
+      () =>
+        history.push({
+          pathname: '/collection/' + collectionId + '/dashboard/new/edit',
+          state: dashboardState,
+        }),
+      (error) => {
+        if (collectionId && !existingCollection) {
+          deleteEntity('collection', collectionId);
+        }
+        showError(error);
+      }
+    );
   }
 
   return (
@@ -263,9 +306,10 @@ export function DashboardView(props) {
       </div>
       {isInstantDashboard && isTemplateModalOpen && (
         <DashboardTemplateModal
+          trackingEventName="useInstantPreviewDashboardTemplate"
           initialDefinitions={definitions}
           onClose={() => setIsTemplateModalOpen(false)}
-          useAbsolutePath
+          onConfirm={handleInstantPreviewDashboardCopying}
         />
       )}
     </FullScreen>

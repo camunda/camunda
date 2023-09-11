@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.es.report.process.single.usertask.duration.groupby.usertask.distributedby.process;
 
 import org.assertj.core.groups.Tuple;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
@@ -40,7 +40,7 @@ import static org.camunda.optimize.util.BpmnModels.USER_TASK_2;
 import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagram;
 import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 
-public class UserTaskDurationByUserTaskByProcessReportEvaluationIT extends AbstractIT {
+public class UserTaskDurationByUserTaskByProcessReportEvaluationIT extends AbstractPlatformIT {
 
   private static final String V_1_IDENTIFIER = "v1Identifier";
   private static final String ALL_IDENTIFIER = "allIdentifier";

@@ -20,8 +20,10 @@ import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.support.PeriodicTrigger;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
+
+import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -118,7 +120,7 @@ public class EventBasedProcessesInstanceImportScheduler extends AbstractSchedule
 
   @Override
   protected Trigger createScheduleTrigger() {
-    return new PeriodicTrigger(0);
+    return new PeriodicTrigger(Duration.ZERO);
   }
 
   private void doBackoff(final Collection<? extends ImportMediator> mediators) {

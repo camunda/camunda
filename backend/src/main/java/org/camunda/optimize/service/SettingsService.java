@@ -15,7 +15,7 @@ import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.stereotype.Component;
 
-import javax.ws.rs.ForbiddenException;
+import jakarta.ws.rs.ForbiddenException;
 
 @AllArgsConstructor
 @Component

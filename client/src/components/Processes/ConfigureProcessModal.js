@@ -25,7 +25,7 @@ export function ConfigureProcessModal({
   docsLink,
 }) {
   const [selectedUser, setSelectedUser] = useState(
-    owner?.id ? {id: 'USER:' + owner.id, identity: owner} : null
+    owner?.id ? {id: 'USER:' + owner.id, identity: {...owner, type: 'user'}} : null
   );
   const [digestEnabled, setDigestEnabled] = useState(enabled);
   const [optimizeProfile, setOptimizeProfile] = useState();
@@ -66,6 +66,7 @@ export function ConfigureProcessModal({
           }
         >
           <UserTypeahead
+            key={selectedUser?.id}
             users={selectedUser ? [selectedUser] : []}
             onChange={(users) => {
               const newSelection = users[users.length - 1];
@@ -76,7 +77,6 @@ export function ConfigureProcessModal({
             }}
             excludeGroups
             optionsOnly={optimizeProfile === 'cloud'}
-            persistMenu={false}
           />
         </Labeled>
         <Switch

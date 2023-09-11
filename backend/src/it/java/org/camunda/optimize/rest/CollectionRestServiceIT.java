@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.rest;
 
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDataDto;
@@ -14,7 +14,7 @@ import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
 import org.camunda.optimize.service.es.writer.CollectionWriter;
 import org.junit.jupiter.api.Test;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.List;
@@ -26,7 +26,7 @@ import static org.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIEN
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
 import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 
-public class CollectionRestServiceIT extends AbstractIT {
+public class CollectionRestServiceIT extends AbstractPlatformIT {
 
   @Test
   public void createNewCollectionWithoutAuthentication() {

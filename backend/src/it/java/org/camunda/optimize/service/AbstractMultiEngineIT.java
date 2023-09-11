@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.service;
 
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -13,7 +13,6 @@ import org.camunda.optimize.service.util.configuration.engine.DefaultTenant;
 import org.camunda.optimize.service.util.configuration.engine.EngineAuthenticationConfiguration;
 import org.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
 import org.camunda.optimize.test.engine.AuthorizationClient;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
 import org.camunda.optimize.test.it.extension.EngineIntegrationExtension;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Order;
@@ -34,7 +33,7 @@ import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 import static org.camunda.optimize.util.SuppressionConstants.UNUSED;
 
-public class AbstractMultiEngineIT extends AbstractIT {
+public class AbstractMultiEngineIT extends AbstractPlatformIT {
   private static final String REST_ENDPOINT = "http://localhost:8080/engine-rest";
   private static final String SECURE_REST_ENDPOINT = "http://localhost:8080/engine-it-plugin/basic-auth";
   protected static final String PROCESS_KEY_1 = "TestProcess1";
@@ -61,11 +60,6 @@ public class AbstractMultiEngineIT extends AbstractIT {
   @BeforeEach
   public void init() {
     configurationService = embeddedOptimizeExtension.getConfigurationService();
-  }
-
-  @Override
-  public EmbeddedOptimizeExtension getEmbeddedOptimizeExtension() {
-    return embeddedOptimizeExtension;
   }
 
   protected ClientAndServer useAndGetSecondaryEngineMockServer() {

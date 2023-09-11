@@ -5,13 +5,12 @@
  */
 package org.camunda.optimize.dto.optimize.rest;
 
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotNull;
 
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -19,5 +18,5 @@ import javax.validation.constraints.NotNull;
 public class BackupRequestDto {
   @NotNull
   @Min(0)
-  private Integer backupId;
+  private Long backupId;
 }

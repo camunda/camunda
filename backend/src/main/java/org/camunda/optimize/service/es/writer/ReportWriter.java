@@ -41,7 +41,7 @@ import org.elasticsearch.script.ScriptType;
 import org.elasticsearch.xcontent.XContentType;
 import org.springframework.stereotype.Component;
 
-import javax.ws.rs.NotFoundException;
+import jakarta.ws.rs.NotFoundException;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.Collections;

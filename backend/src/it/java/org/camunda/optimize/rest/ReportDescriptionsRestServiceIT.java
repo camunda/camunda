@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.rest;
 
+import jakarta.ws.rs.core.Response;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
@@ -20,7 +21,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import javax.ws.rs.core.Response;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Stream;

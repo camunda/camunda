@@ -51,6 +51,7 @@ export default function InstanceStateFilter({filter = [], setFilter, children}) 
         {children}
       </div>
       <Popover
+        isTabTip
         title={
           <>
             <span className={classnames('indicator', {active})} />

@@ -14,9 +14,11 @@ import org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.importing.page.PositionBasedImportPage;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.ZeebeImportConfiguration;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.client.core.CountRequest;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
@@ -37,8 +39,6 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 @Data
 public abstract class AbstractZeebeRecordFetcher<T extends ZeebeRecordDto> {
 
-  public static final int MAX_SUCCESSFUL_FETCHES_TRACKED = 10;
-
   protected final int partitionId;
 
   private final OptimizeElasticsearchClient esClient;
@@ -47,6 +47,7 @@ public abstract class AbstractZeebeRecordFetcher<T extends ZeebeRecordDto> {
 
   private int dynamicBatchSize;
   private int consecutiveSuccessfulFetches;
+  private int consecutiveEmptyPages;
   private Deque<Integer> batchSizeDeque;
 
   protected AbstractZeebeRecordFetcher(final int partitionId,
@@ -58,6 +59,7 @@ public abstract class AbstractZeebeRecordFetcher<T extends ZeebeRecordDto> {
     this.objectMapper = objectMapper;
     this.configurationService = configurationService;
     initializeDynamicBatchSizing(configurationService);
+    initializeDynamicFetching();
   }
 
   protected abstract String getBaseIndexName();
@@ -84,7 +86,7 @@ public abstract class AbstractZeebeRecordFetcher<T extends ZeebeRecordDto> {
       }
     } catch (IOException | ElasticsearchStatusException e) {
       final String errorMessage =
-        String.format("Was not able to retrieve zeebe records of type: %s", getBaseIndexName());
+        String.format("Was not able to retrieve zeebe records of type %s from partition %s", getBaseIndexName(), partitionId);
       if (isZeebeInstanceIndexNotFoundException(e)) {
         log.warn("No Zeebe index of type {} found to read records from!", getIndexAlias());
         return Collections.emptyList();
@@ -97,7 +99,8 @@ public abstract class AbstractZeebeRecordFetcher<T extends ZeebeRecordDto> {
       }
     }
     final List<T> results = ElasticsearchReaderUtil.mapHits(searchResponse.getHits(), getRecordDtoClass(), objectMapper);
-    markFetchAsSuccessful();
+    markFetchAsSuccessfulAndAdjustBatchSize();
+    trackConsecutiveEmptyPages(results);
     return results;
   }
 
@@ -118,14 +121,15 @@ public abstract class AbstractZeebeRecordFetcher<T extends ZeebeRecordDto> {
     }
   }
 
-  private void markFetchAsSuccessful() {
+  private void markFetchAsSuccessfulAndAdjustBatchSize() {
     final int configuredDefaultBatchSize = configurationService.getConfiguredZeebe().getMaxImportPageSize();
     // When the batch size has been reduced, we keep track of successful fetches up to a maximum number of times
-    if (dynamicBatchSize != configuredDefaultBatchSize && consecutiveSuccessfulFetches < MAX_SUCCESSFUL_FETCHES_TRACKED) {
+    if (dynamicBatchSize != configuredDefaultBatchSize
+      && consecutiveSuccessfulFetches < getZeebeImportConfig().getDynamicBatchSuccessAttempts()) {
       consecutiveSuccessfulFetches++;
       // When we have reached the max number of consecutive successful fetches, we assume it is safe to start increasing the
       // batch size again
-      if (consecutiveSuccessfulFetches >= MAX_SUCCESSFUL_FETCHES_TRACKED) {
+      if (consecutiveSuccessfulFetches >= getZeebeImportConfig().getDynamicBatchSuccessAttempts()) {
         if (!batchSizeDeque.isEmpty()) {
           dynamicBatchSize = batchSizeDeque.pop();
         } else {
@@ -143,15 +147,64 @@ public abstract class AbstractZeebeRecordFetcher<T extends ZeebeRecordDto> {
     }
   }
 
+  private void trackConsecutiveEmptyPages(final List<T> results) {
+    if (results.isEmpty()) {
+      if (consecutiveEmptyPages < getZeebeImportConfig().getMaxEmptyPagesToImport()) {
+        consecutiveEmptyPages++;
+      } else {
+        // If the max number of empty pages to track has been reached, it gets reset as the dynamic querying would have taken
+        // place
+        consecutiveEmptyPages = 0;
+      }
+    } else {
+      consecutiveEmptyPages = 0;
+    }
+  }
+
   private BoolQueryBuilder getRecordQuery(final PositionBasedImportPage positionBasedImportPage) {
-    return positionBasedImportPage.isHasSeenSequenceField()
-      ? boolQuery()
-      .must(rangeQuery(ZeebeRecordDto.Fields.sequence)
-              .gt(positionBasedImportPage.getSequence())
-              .lte(positionBasedImportPage.getSequence() + dynamicBatchSize))
-      : boolQuery()
-      .must(termQuery(ZeebeRecordDto.Fields.partitionId, partitionId))
-      .must(rangeQuery(ZeebeRecordDto.Fields.position).gt(positionBasedImportPage.getPosition()));
+    // We use the position query if no record with sequences have been imported yet, or if we know that there is data to be
+    // imported that Optimize is not catching in its sequence query. This can happen in the event that the next page of
+    // records no longer exist and the next record to import will have a sequence greater than the max range of the sequence query
+    if (!positionBasedImportPage.isHasSeenSequenceField() || nextSequenceRecordIsBeyondSequenceQuery(positionBasedImportPage)) {
+      return buildPositionQuery(positionBasedImportPage);
+    } else {
+      return buildSequenceQuery(positionBasedImportPage);
+    }
+  }
+
+  private boolean nextSequenceRecordIsBeyondSequenceQuery(final PositionBasedImportPage positionBasedImportPage) {
+    // We only check for new data beyond the upper sequence range if the max configured number of empty pages has been reached
+    if (consecutiveEmptyPages < getZeebeImportConfig().getMaxEmptyPagesToImport()) {
+      return false;
+    }
+    final CountRequest countRequest = new CountRequest(getIndexAlias())
+      .query(buildPositionQuery(positionBasedImportPage))
+      .routing(String.valueOf(partitionId));
+    try {
+      log.info("Using the position query to see if there are new records in the {} index on partition {}",
+               getBaseIndexName(), partitionId
+      );
+      final long numberOfRecordsFound = esClient.countWithoutPrefix(countRequest);
+      if (numberOfRecordsFound > 0) {
+        log.info(
+          "Found {} records in index {} on partition {} that can't be imported by the current sequence query. Will revert to " +
+            "position query for the next fetch attempt",
+          numberOfRecordsFound,
+          getBaseIndexName(),
+          partitionId
+        );
+        return true;
+      } else {
+        log.info("There are no newer records to process, so empty pages of records are currently expected");
+      }
+    } catch (Exception e) {
+      if (isZeebeInstanceIndexNotFoundException(e)) {
+        log.warn("No Zeebe index of type {} found to count records from!", getIndexAlias());
+      } else {
+        log.warn("There was an error when looking for records to import beyond the boundaries of the sequence request" + e);
+      }
+    }
+    return false;
   }
 
   private String getSortField(final PositionBasedImportPage positionBasedImportPage) {
@@ -171,7 +224,37 @@ public abstract class AbstractZeebeRecordFetcher<T extends ZeebeRecordDto> {
     return false;
   }
 
+  private BoolQueryBuilder buildPositionQuery(final PositionBasedImportPage positionBasedImportPage) {
+    log.trace("using position query for records of {} on partition {}", getBaseIndexName(), getPartitionId());
+    return boolQuery()
+      .must(termQuery(ZeebeRecordDto.Fields.partitionId, partitionId))
+      .must(rangeQuery(ZeebeRecordDto.Fields.position).gt(positionBasedImportPage.getPosition()));
+  }
+
+  private BoolQueryBuilder buildSequenceQuery(final PositionBasedImportPage positionBasedImportPage) {
+    log.trace("using sequence query for records of {} on partition {}", getBaseIndexName(), getPartitionId());
+    return boolQuery()
+      .must(rangeQuery(ZeebeRecordDto.Fields.sequence)
+              .gt(positionBasedImportPage.getSequence())
+              .lte(positionBasedImportPage.getSequence() + dynamicBatchSize));
+  }
+
+  private ZeebeImportConfiguration getZeebeImportConfig() {
+    return configurationService.getConfiguredZeebe().getImportConfig();
+  }
+
+  private void initializeDynamicFetching() {
+    // Dynamic fetching describes the mechanism where Optimize will dynamically choose to fetch data based on the sequence or
+    // the position of the records. By default, Optimize will use the sequence field when it knows that this field exists on the
+    // records. In some cases, the sequence query could not find the next page. In this scenario, Optimize will use the position
+    // query to get the next page
+    this.consecutiveEmptyPages = 0;
+  }
+
   private void initializeDynamicBatchSizing(final ConfigurationService configurationService) {
+    // Dynamic batch sizing describes the mechanism where Optimize will reduce its batch size in order to accommodate situations
+    // where larger batches aren't possible. This could be when the payload is too large, for example. Based on configured values,
+    // Optimize will always aim to get back to the max configured batch size
     this.dynamicBatchSize = configurationService.getConfiguredZeebe().getMaxImportPageSize();
     this.consecutiveSuccessfulFetches = 0;
     this.batchSizeDeque = new ArrayDeque<>();

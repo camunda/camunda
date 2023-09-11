@@ -52,6 +52,6 @@ public class ExternalProcessVariableDto implements OptimizeDto {
           .setProcessInstanceId(varDto.getProcessInstanceId())
           .setProcessDefinitionKey(varDto.getProcessDefinitionKey());
       })
-      .collect(toList());
+      .toList();
   }
 }

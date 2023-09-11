@@ -5,20 +5,20 @@
  */
 package org.camunda.optimize.rest;
 
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableValueRequestDto;
 import org.junit.jupiter.api.Test;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import java.util.Collections;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.query.variable.VariableType.BOOLEAN;
 
-public class ProcessVariableRestServiceIT extends AbstractIT {
+public class ProcessVariableRestServiceIT extends AbstractPlatformIT {
 
   @Test
   public void getVariableNamesWithoutAuthentication() {

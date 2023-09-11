@@ -5,21 +5,21 @@
  */
 package org.camunda.optimize.service.security.authorization;
 
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.SettingsResponseDto;
 import org.camunda.optimize.util.SuperUserType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.engine.AuthorizationClient.GROUP_ID;
 
-public class SettingsAuthorizationIT extends AbstractIT {
+public class SettingsAuthorizationIT extends AbstractPlatformIT {
   @ParameterizedTest
   @EnumSource(SuperUserType.class)
   public void testSetSettings_asSuperUser(SuperUserType superUserType) {

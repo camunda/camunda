@@ -15,7 +15,7 @@ import org.mockserver.integration.ClientAndServer;
 import org.mockserver.model.HttpError;
 import org.mockserver.model.HttpRequest;
 
-import static javax.ws.rs.HttpMethod.GET;
+import static jakarta.ws.rs.HttpMethod.GET;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockserver.model.HttpRequest.request;
 

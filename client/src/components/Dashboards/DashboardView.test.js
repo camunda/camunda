@@ -11,12 +11,38 @@ import {useFullScreenHandle} from 'react-full-screen';
 
 import {AlertsDropdown} from 'components';
 import {getOptimizeProfile} from 'config';
+import {createEntity, deleteEntity, addSources} from 'services';
 
 import {AutoRefreshSelect} from './AutoRefresh';
 import {DashboardView} from './DashboardView';
+import {loadEntities} from 'services';
 
 jest.mock('config', () => ({
   getOptimizeProfile: jest.fn().mockReturnValue('platform'),
+}));
+
+jest.mock('services', () => ({
+  ...jest.requireActual('services'),
+  createEntity: jest.fn().mockReturnValue('collectionId'),
+  deleteEntity: jest.fn(),
+  addSources: jest.fn(),
+  loadEntities: jest.fn().mockReturnValue([]),
+}));
+
+jest.mock('hooks', () => ({
+  useErrorHandling: jest.fn().mockImplementation(() => ({
+    mightFail: jest.fn().mockImplementation(async (data, cb, err) => {
+      try {
+        const awaitedData = await data;
+        return cb(awaitedData);
+      } catch (e) {
+        err?.(e);
+      }
+    }),
+  })),
+  useUser: jest.fn().mockImplementation(() => ({
+    user: {name: 'User'},
+  })),
 }));
 
 jest.mock('react-full-screen', () => {
@@ -239,4 +265,99 @@ it('should render the create copy button and modal for instant preview dashboard
   createCopyButton.simulate('click');
 
   expect(node.find('DashboardTemplateModal')).toExist();
+  expect(node.find('DashboardTemplateModal').prop('trackingEventName')).toBe(
+    'useInstantPreviewDashboardTemplate'
+  );
+});
+
+it('should create a collection with the current data source when copying instant dashboard if one fot this user doesnt exist', async () => {
+  loadEntities.mockReturnValueOnce([
+    {
+      name: 'someKey',
+      id: 'someId',
+      owner: 'OtherUser',
+    },
+  ]);
+  const node = shallow(<DashboardView isInstantDashboard />);
+
+  const createCopyButton = node.find('.create-copy');
+
+  createCopyButton.simulate('click');
+
+  node.find('DashboardTemplateModal').prop('onConfirm')({
+    definitions: [{key: 'someKey', tenantIds: []}],
+  });
+
+  await flushPromises();
+
+  expect(createEntity).toHaveBeenCalledWith('collection', {name: 'someKey'});
+  expect(addSources).toHaveBeenCalledWith('collectionId', [
+    {definitionKey: 'someKey', definitionType: 'process', tenants: []},
+  ]);
+});
+
+it('should delete collection in case of error during collection creation', async () => {
+  addSources.mockRejectedValue(new Error());
+  const node = shallow(<DashboardView isInstantDashboard />);
+
+  const createCopyButton = node.find('.create-copy');
+
+  createCopyButton.simulate('click');
+
+  node.find('DashboardTemplateModal').prop('onConfirm')({
+    definitions: [{key: 'someKey', tenantIds: []}],
+  });
+
+  await flushPromises();
+
+  expect(deleteEntity).toHaveBeenCalledWith('collection', 'collectionId');
+});
+
+it('should use existing collection with the same name if there is one for the current user', async () => {
+  loadEntities.mockReturnValueOnce([
+    {
+      name: 'someKey',
+      id: 'someId',
+      owner: 'User',
+    },
+  ]);
+  const node = shallow(<DashboardView isInstantDashboard />);
+
+  const createCopyButton = node.find('.create-copy');
+
+  createCopyButton.simulate('click');
+
+  node.find('DashboardTemplateModal').prop('onConfirm')({
+    definitions: [{key: 'someKey', tenantIds: []}],
+  });
+
+  await flushPromises();
+
+  expect(loadEntities).toHaveBeenCalled();
+  expect(addSources).toHaveBeenCalledWith('someId', [
+    {definitionKey: 'someKey', definitionType: 'process', tenants: []},
+  ]);
+});
+
+it('should not delete collection in case of error if collection existed', async () => {
+  loadEntities.mockReturnValueOnce([
+    {
+      name: 'someKey',
+      id: 'someId',
+    },
+  ]);
+  addSources.mockRejectedValue(new Error());
+  const node = shallow(<DashboardView isInstantDashboard />);
+
+  const createCopyButton = node.find('.create-copy');
+
+  createCopyButton.simulate('click');
+
+  node.find('DashboardTemplateModal').prop('onConfirm')({
+    definitions: [{key: 'someKey', tenantIds: []}],
+  });
+
+  await flushPromises();
+
+  expect(deleteEntity).not.toHaveBeenCalled();
 });

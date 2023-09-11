@@ -10,7 +10,7 @@ import lombok.SneakyThrows;
 import org.apache.commons.text.RandomStringGenerator;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.persistence.BusinessKeyDto;
 import org.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEventDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
@@ -45,7 +45,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.CAMUNDA_ACT
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
-public abstract class AbstractCleanupIT extends AbstractIT {
+public abstract class AbstractCleanupIT extends AbstractPlatformIT {
   private static final RandomStringGenerator KEY_GENERATOR = new RandomStringGenerator.Builder()
     .withinRange('a', 'z').build();
 

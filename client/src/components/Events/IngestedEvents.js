@@ -124,6 +124,7 @@ export function IngestedEvents({mightFail}) {
       <PageTitle pageName={t('events.ingested.label')} />
       <h1 className="title">{t('events.ingested.eventSources')}</h1>
       <Table
+        size="md"
         title={t('events.ingested.label')}
         toolbar={
           <TableToolbar>

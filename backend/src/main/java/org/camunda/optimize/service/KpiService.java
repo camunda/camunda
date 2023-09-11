@@ -70,7 +70,7 @@ public class KpiService {
       .map(SingleProcessReportDefinitionRequestDto.class::cast)
       .filter(processReport -> processReport.getData().getConfiguration().getTargetValue().getIsKpi().equals(true))
       .map(ReportDefinitionDto::getId)
-      .collect(toList());
+      .toList();
   }
 
   public List<KpiResultDto> evaluateKpiReports(final String processDefinitionKey) {
@@ -213,7 +213,7 @@ public class KpiService {
         && processReport.getData().getConfiguration().getTargetValue().getIsKpi() == Boolean.TRUE)
       // KPI reports should only have a single data source
       .filter(processReport -> processReport.getData().getDefinitions().size() == 1)
-      .collect(toList());
+      .toList();
   }
 
   @Data

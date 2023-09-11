@@ -5,12 +5,12 @@
  */
 package org.camunda.optimize.service.identity;
 
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class UserTaskIdentityCacheServiceSchedulerIT extends AbstractIT {
+public class UserTaskIdentityCacheServiceSchedulerIT extends AbstractPlatformIT {
 
   @Test
   public void verifySyncEnabledByDefault() {

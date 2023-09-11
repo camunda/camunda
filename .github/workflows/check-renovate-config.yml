@@ -1,0 +1,26 @@
+name: Check renovate configuration
+
+on:
+  pull_request: 
+    paths:
+      - ".github/renovate.json5"
+
+jobs:
+  check-renovate-config:
+    name: Configuration check
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup npm
+        uses: actions/setup-node@v3
+        with:
+          node-version: "16"
+
+      - name: Validate config file
+        run: |
+          npm i -g renovate
+          renovate-config-validator ${{ github.workspace }}/.github/renovate.json5

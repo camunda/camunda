@@ -6,13 +6,13 @@
 package org.camunda.optimize.service.util;
 
 import io.github.netmikey.logunit.api.LogCapturer;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.slf4j.event.Level;
 
-public class EngineVersionCheckerIT extends AbstractIT {
+public class EngineVersionCheckerIT extends AbstractPlatformIT {
 
   @RegisterExtension
   protected final LogCapturer engineContextLogCapturer = LogCapturer.create()

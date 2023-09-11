@@ -5,7 +5,10 @@
  */
 package org.camunda.optimize.service.report;
 
-import com.google.common.collect.ImmutableSet;
+
+import jakarta.ws.rs.BadRequestException;
+import jakarta.ws.rs.ForbiddenException;
+import jakarta.ws.rs.NotFoundException;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -53,9 +56,6 @@ import org.camunda.optimize.service.util.ValidationHelper;
 import org.camunda.optimize.util.SuppressionConstants;
 import org.springframework.stereotype.Component;
 
-import javax.ws.rs.BadRequestException;
-import javax.ws.rs.ForbiddenException;
-import javax.ws.rs.NotFoundException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -684,14 +684,14 @@ public class ReportService implements CollectionReferencingService {
         ConflictedItemType.COLLECTION,
         collection.getName()
       );
-      throw new OptimizeNonTenantScopeCompliantException(ImmutableSet.of(conflictedItemDto));
+      throw new OptimizeNonTenantScopeCompliantException(Set.of(conflictedItemDto));
     } else if (NON_DEFINITION_COMPLIANT.equals(complianceLevel)) {
       final ConflictedItemDto conflictedItemDto = new ConflictedItemDto(
         collection.getId(),
         ConflictedItemType.COLLECTION,
         collection.getName()
       );
-      throw new OptimizeNonDefinitionScopeCompliantException(ImmutableSet.of(conflictedItemDto));
+      throw new OptimizeNonDefinitionScopeCompliantException(Set.of(conflictedItemDto));
     }
   }
 

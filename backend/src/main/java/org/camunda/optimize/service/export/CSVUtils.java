@@ -16,7 +16,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.Table
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.InputVariableEntry;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.OutputVariableEntry;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionInstanceDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataCountDtoDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataCountDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 
@@ -41,7 +41,6 @@ import static org.camunda.optimize.dto.optimize.query.report.single.configuratio
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto.OUTPUT_PREFIX;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto.VARIABLE_PREFIX;
 import static org.camunda.optimize.service.es.report.command.process.mapping.RawProcessDataResultDtoMapper.OBJECT_VARIABLE_VALUE_PLACEHOLDER;
-import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 
 @Slf4j
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
@@ -216,7 +215,6 @@ public class CSVUtils {
     return currentKey.replace(prefix, "");
   }
 
-  @SuppressWarnings(UNCHECKED_CAST)
   private static List<String> extractAllPrefixedVariableKeys(List<RawDataProcessInstanceDto> rawData) {
     Set<String> variableKeys = new HashSet<>();
     for (RawDataProcessInstanceDto pi : rawData) {
@@ -247,9 +245,9 @@ public class CSVUtils {
 
   public static List<String> extractAllPrefixedCountKeys() {
     return List.of(
-      addCountPrefix(RawDataCountDtoDto.Fields.incidents),
-      addCountPrefix(RawDataCountDtoDto.Fields.openIncidents),
-      addCountPrefix(RawDataCountDtoDto.Fields.userTasks)
+      addCountPrefix(RawDataCountDto.Fields.incidents),
+      addCountPrefix(RawDataCountDto.Fields.openIncidents),
+      addCountPrefix(RawDataCountDto.Fields.userTasks)
     );
   }
 
@@ -316,18 +314,18 @@ public class CSVUtils {
   }
 
   private static Optional<String> getCountValue(final RawDataProcessInstanceDto instanceDto, String flowNodeKey) {
-    if (flowNodeKey.equals(addCountPrefix(RawDataCountDtoDto.Fields.userTasks))) {
+    if (flowNodeKey.equals(addCountPrefix(RawDataCountDto.Fields.userTasks))) {
       return Optional.of(Long.toString(instanceDto.getCounts().getUserTasks()));
-    } else if (flowNodeKey.equals(addCountPrefix(RawDataCountDtoDto.Fields.incidents))) {
+    } else if (flowNodeKey.equals(addCountPrefix(RawDataCountDto.Fields.incidents))) {
       return Optional.of(Long.toString(instanceDto.getCounts().getIncidents()));
-    } else if (flowNodeKey.equals(addCountPrefix(RawDataCountDtoDto.Fields.openIncidents))) {
+    } else if (flowNodeKey.equals(addCountPrefix(RawDataCountDto.Fields.openIncidents))) {
       return Optional.of(Long.toString(instanceDto.getCounts().getOpenIncidents()));
     } else {
       return Optional.empty();
     }
   }
 
-  private static String addCountPrefix(final RawDataCountDtoDto.Fields openIncidents) {
+  private static String addCountPrefix(final RawDataCountDto.Fields openIncidents) {
     return COUNT_PREFIX + openIncidents;
   }
 

@@ -27,7 +27,7 @@ import org.mockserver.junit.jupiter.MockServerSettings;
 import org.mockserver.matchers.MatchType;
 import org.mockserver.verify.VerificationTimes;
 
-import javax.ws.rs.HttpMethod;
+import jakarta.ws.rs.HttpMethod;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -154,7 +154,7 @@ public class AlertWebhookIT extends AbstractAlertIT {
 
     // then
     client.verifyZeroInteractions();
-    alertJobLogs.assertContains("Exception thrown while trying to send notification");
+    alertJobLogs.assertContains("Exception thrown while trying to send notification: webhook notification");
   }
 
   @Test
@@ -179,7 +179,7 @@ public class AlertWebhookIT extends AbstractAlertIT {
 
     // then
     client.verifyZeroInteractions();
-    alertJobLogs.assertContains("Exception thrown while trying to send notification");
+    alertJobLogs.assertContains("Exception thrown while trying to send notification: webhook notification");
   }
 
   @Test

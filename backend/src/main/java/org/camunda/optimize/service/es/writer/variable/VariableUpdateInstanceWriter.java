@@ -42,7 +42,7 @@ public class VariableUpdateInstanceWriter {
   public List<ImportRequestDto> generateVariableUpdateImports(final List<ProcessVariableDto> variableUpdates) {
     final List<VariableUpdateInstanceDto> variableUpdateInstances = variableUpdates.stream()
       .map(this::mapToVariableUpdateInstance)
-      .collect(toList());
+      .toList();
 
     String importItemName = "variable instances";
     log.debug("Creating imports for {} [{}].", variableUpdates.size(), importItemName);
@@ -55,7 +55,7 @@ public class VariableUpdateInstanceWriter {
         .esClient(esClient)
         .request(request.get())
         .build())
-      .collect(toList());
+      .toList();
   }
 
   public void deleteByProcessInstanceIds(final List<String> processInstanceIds) {

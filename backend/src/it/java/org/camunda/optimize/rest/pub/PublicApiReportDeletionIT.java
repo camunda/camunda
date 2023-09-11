@@ -5,14 +5,14 @@
  */
 package org.camunda.optimize.rest.pub;
 
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.junit.jupiter.api.Test;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 
 import java.util.Optional;
 
@@ -21,7 +21,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_DECI
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
-public class PublicApiReportDeletionIT extends AbstractIT {
+public class PublicApiReportDeletionIT extends AbstractPlatformIT {
   private static final String ACCESS_TOKEN = "secret_export_token";
 
   @Test

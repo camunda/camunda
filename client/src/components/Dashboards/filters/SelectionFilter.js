@@ -109,6 +109,7 @@ export default function SelectionFilter({filter, type, config, setFilter, report
   return (
     <div className="SelectionFilter">
       <Popover
+        isTabTip
         title={
           <>
             <Icon type="filter" className={classnames('indicator', {active: filter})} />{' '}

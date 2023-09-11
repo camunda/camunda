@@ -12,10 +12,11 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import lombok.SneakyThrows;
 import org.assertj.core.groups.Tuple;
-import org.camunda.optimize.AbstractZeebeIT;
+import org.camunda.optimize.AbstractCCSMIT;
 import org.camunda.optimize.dto.optimize.ProcessInstanceConstants;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
+import org.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceDataDto;
 import org.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceRecordDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
@@ -52,8 +53,10 @@ import static org.camunda.optimize.util.ZeebeBpmnModels.createSimpleUserTaskProc
 import static org.camunda.optimize.util.ZeebeBpmnModels.createSingleStartDoubleEndEventProcess;
 import static org.camunda.optimize.util.ZeebeBpmnModels.createStartEndProcess;
 import static org.camunda.optimize.util.ZeebeBpmnModels.createTerminateEndEventProcess;
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
-public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
+public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
 
   private final Supplier<OptimizeIntegrationTestException> eventNotFoundExceptionSupplier =
     () -> new OptimizeIntegrationTestException("Cannot find exported event");
@@ -513,7 +516,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
     );
 
     // when
-    waitUntilInstanceRecordWithIdExported("milkAdventureEndEventId", 10);
+    waitUntilInstanceRecordWithElementIdExported("milkAdventureEndEventId");
     importAllZeebeEntitiesFromScratch();
 
     // then all new events were imported
@@ -606,6 +609,18 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
   private String getBpmnElementTypeNameForType(final BpmnElementType type) {
     return type.getElementTypeName()
       .orElseThrow(() -> new OptimizeRuntimeException("Cannot find name for type: " + type));
+  }
+
+  private void waitUntilInstanceRecordWithElementIdExported(final String instanceElementId) {
+    waitUntilMinimumDataExportedCount(
+      1,
+      ElasticsearchConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME,
+      boolQuery().must(termQuery(
+        ZeebeProcessInstanceRecordDto.Fields.value + "." + ZeebeProcessInstanceDataDto.Fields.elementId,
+        instanceElementId
+      )),
+      10
+    );
   }
 
 }

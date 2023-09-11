@@ -8,6 +8,17 @@
 import {del, get, post, put} from 'request';
 import {track} from 'tracking';
 
+export async function loadEntities(sortBy, sortOrder) {
+  const params = {};
+  if (sortBy && sortOrder) {
+    params.sortBy = sortBy;
+    params.sortOrder = sortOrder;
+  }
+
+  const response = await get('api/entities', params);
+  return await response.json();
+}
+
 export async function loadEntity(type, id, query) {
   const response = await get(`api/${type}/` + id, query);
   const json = await response.json();

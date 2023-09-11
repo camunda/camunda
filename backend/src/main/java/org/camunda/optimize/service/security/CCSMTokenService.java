@@ -23,9 +23,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import javax.servlet.http.Cookie;
-import javax.ws.rs.NotAuthorizedException;
-import javax.ws.rs.core.NewCookie;
+import jakarta.servlet.http.Cookie;
+import jakarta.ws.rs.NotAuthorizedException;
+import jakarta.ws.rs.core.NewCookie;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
@@ -155,10 +155,14 @@ public class CCSMTokenService {
 
   private IdentityConfiguration identityConfiguration() {
     final CCSMAuthConfiguration ccsmAuthConfig = configurationService.getAuthConfiguration().getCcsmAuthConfiguration();
-    return new IdentityConfiguration(
-      ccsmAuthConfig.getIssuerUrl(), ccsmAuthConfig.getIssuerBackendUrl(),
-      ccsmAuthConfig.getClientId(), ccsmAuthConfig.getClientSecret(), ccsmAuthConfig.getAudience()
-    );
+    return new IdentityConfiguration.Builder()
+      .withBaseUrl(ccsmAuthConfig.getBaseUrl())
+      .withIssuer(ccsmAuthConfig.getIssuerUrl())
+      .withIssuerBackendUrl(ccsmAuthConfig.getIssuerBackendUrl())
+      .withClientId(ccsmAuthConfig.getClientId())
+      .withClientSecret(ccsmAuthConfig.getClientSecret())
+      .withAudience(ccsmAuthConfig.getAudience())
+      .build();
   }
 
   private static boolean userHasOptimizeAuthorization(final AccessToken accessToken) {

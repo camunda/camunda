@@ -8,7 +8,7 @@ package org.camunda.optimize.service.security.authorization;
 import com.google.common.collect.ImmutableList;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
@@ -29,7 +29,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
@@ -46,7 +46,7 @@ import static org.camunda.optimize.test.util.decision.DmnHelper.createSimpleDmnM
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 import static org.camunda.optimize.util.DefinitionResourceTypeUtil.getResourceTypeByDefinitionType;
 
-public class EngineDefinitionAuthorizationIT extends AbstractIT {
+public class EngineDefinitionAuthorizationIT extends AbstractPlatformIT {
   public static final String PROCESS_KEY = "aProcess";
   public static final String DECISION_KEY = "aDecision";
   private static final String TENANT_ID_1 = "tenant1";

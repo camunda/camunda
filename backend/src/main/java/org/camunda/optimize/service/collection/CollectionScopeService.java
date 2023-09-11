@@ -36,8 +36,8 @@ import org.camunda.optimize.service.security.AuthorizedCollectionService;
 import org.camunda.optimize.service.security.util.definition.DataSourceDefinitionAuthorizationService;
 import org.springframework.stereotype.Component;
 
-import javax.ws.rs.ForbiddenException;
-import javax.ws.rs.NotFoundException;
+import jakarta.ws.rs.ForbiddenException;
+import jakarta.ws.rs.NotFoundException;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collections;

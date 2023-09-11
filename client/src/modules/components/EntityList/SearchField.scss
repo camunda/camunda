@@ -36,7 +36,9 @@
 
     font-size: 14px;
     color: var(--grey-base-40);
-    transition: width 0.3s, background-color 0.3s;
+    transition:
+      width 0.3s,
+      background-color 0.3s;
 
     &.open {
       width: 180px;

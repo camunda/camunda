@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.service;
 
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.service.util.ProcessReportDataType;
@@ -16,7 +16,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class KpiServiceIT extends AbstractIT {
+public class KpiServiceIT extends AbstractPlatformIT {
 
   private final String PROCESS_DEFINITION_KEY = "procDef";
 

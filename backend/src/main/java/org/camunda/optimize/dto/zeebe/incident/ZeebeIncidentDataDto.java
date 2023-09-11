@@ -23,6 +23,7 @@ public class ZeebeIncidentDataDto implements IncidentRecordValue {
   private long jobKey;
   private ErrorType errorType;
   private long variableScopeKey;
+  private String tenantId;
 
   @Override
   public String toJson() {

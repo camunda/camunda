@@ -8,7 +8,7 @@ package org.camunda.optimize.service.es.retrieval;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.instance.StartEvent;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.rest.FlowNodeIdsToNamesRequestDto;
 import org.camunda.optimize.dto.optimize.rest.FlowNodeNamesResponseDto;
@@ -19,7 +19,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class FlowNodeMappingIT extends AbstractIT {
+public class FlowNodeMappingIT extends AbstractPlatformIT {
 
   private static final String A_START = "aStart";
   private static final String A_TASK = "aTask";

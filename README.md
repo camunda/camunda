@@ -27,7 +27,7 @@ business processes.
 
 [![Optimize Cluster Test](https://github.com/camunda/camunda-optimize/actions/workflows/cluster-test.yml/badge.svg)](https://github.com/camunda/camunda-optimize/actions/workflows/cluster-test.yml)
 
-[![Java Compatibility Job](https://github.com/camunda/camunda-optimize/actions/workflows/java-compatibility-mode.yml/badge.svg)](https://github.com/camunda/camunda-optimize/actions/workflows/java-compatibility-mode.yml)
+[![Java Compatibility](https://github.com/camunda/camunda-optimize/actions/workflows/java-compatibility.yml/badge.svg)](https://github.com/camunda/camunda-optimize/actions/workflows/java-compatibility-mode.yml)
 
 [![Import Static Dataset Performance Test](https://github.com/camunda/camunda-optimize/actions/workflows/import-static-data-performance.yml/badge.svg)](https://github.com/camunda/camunda-optimize/actions/workflows/import-static-data-performance.yml)
 
@@ -36,6 +36,8 @@ business processes.
 [![Trivy check docker image](https://github.com/camunda/camunda-optimize/actions/workflows/trivy-check.yml/badge.svg)](https://github.com/camunda/camunda-optimize/actions/workflows/trivy-check.yml)
 
 [![e2e tests](https://github.com/camunda/camunda-optimize/actions/workflows/e2e-tests.yml/badge.svg)](https://github.com/camunda/camunda-optimize/actions/workflows/e2e-tests.yml)
+
+[![import dynamic dataset performance](https://github.com/camunda/camunda-optimize/actions/workflows/import-dynamic-data-performance.yml/badge.svg)](https://github.com/camunda/camunda-optimize/actions/workflows/import-dynamic-data-performance.yml)
 
 ## Building Optimize
 

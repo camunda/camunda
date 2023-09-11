@@ -37,7 +37,7 @@ spec:
           pathType: ImplementationSpecific
           backend:
             service:
-              name: keycloak
+              name: c8-optimize-stage-keycloak
               port:
                 number: 80
 ---

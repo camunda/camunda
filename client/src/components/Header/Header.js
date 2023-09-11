@@ -29,6 +29,8 @@ import useUserMenu from './useUserMenu';
 
 import './Header.scss';
 
+const orderedApps = ['console', 'modeler', 'tasklist', 'operate', 'optimize'];
+
 export function Header({user, mightFail, docsLink, noActions}) {
   const [showEventBased, setShowEventBased] = useState(false);
   const [enterpriseMode, setEnterpiseMode] = useState(true);
@@ -116,12 +118,11 @@ export function Header({user, mightFail, docsLink, noActions}) {
 
 function createAppProps(location) {
   return {
-    prefix: t('companyName'),
     name: t('appName'),
     ariaLabel: t('appFullName'),
     routeProps: {
       as: Link,
-      className: 'cds--header__name appLink',
+      className: 'cds--header__name',
       to: '/',
       replace: location.pathname === '/',
     },
@@ -145,14 +146,16 @@ function createWebappLinks(webappLinks) {
     return [];
   }
 
-  return Object.entries(webappLinks).map(([key, href]) => ({
-    key,
-    label: t(`navigation.apps.${key}`),
-    ariaLabel: t(`navigation.apps.${key}`),
-    href,
-    active: key === 'optimize',
-    routeProps: key === 'optimize' ? {to: '/'} : undefined,
-  }));
+  return orderedApps
+    .filter((key) => webappLinks[key])
+    .map((key) => ({
+      key,
+      label: t(`navigation.apps.${key}`),
+      ariaLabel: t(`navigation.apps.${key}`),
+      href: webappLinks[key],
+      active: key === 'optimize',
+      routeProps: key === 'optimize' ? {to: '/'} : undefined,
+    }));
 }
 
 function createNavBarProps(showEventBased, enterpriseMode) {

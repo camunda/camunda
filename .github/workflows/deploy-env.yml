@@ -28,7 +28,7 @@ jobs:
     timeout-minutes: 10
     concurrency: deploy-${{ inputs.chart_ref }}-${{ matrix.env }}
     name: Deploy ${{ matrix.env }} Optimize Stage Environment
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
         env: [c7, c8]

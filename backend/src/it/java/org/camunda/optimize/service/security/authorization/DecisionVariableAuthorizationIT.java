@@ -7,7 +7,7 @@ package org.camunda.optimize.service.security.authorization;
 
 import com.google.common.collect.Lists;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableValueRequestDto;
@@ -17,7 +17,7 @@ import org.camunda.optimize.test.util.decision.DecisionTypeRef;
 import org.camunda.optimize.test.util.decision.DmnModelGenerator;
 import org.junit.jupiter.api.Test;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -31,7 +31,7 @@ import static org.camunda.optimize.service.util.importing.EngineConstants.RESOUR
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_TENANT;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 
-public class DecisionVariableAuthorizationIT extends AbstractIT {
+public class DecisionVariableAuthorizationIT extends AbstractPlatformIT {
 
   private static final String VARIABLE_NAME = "input";
   private static final String VARIABLE_VALUE = "input";

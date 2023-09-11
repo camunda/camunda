@@ -94,7 +94,6 @@ function MultiDefinitionSelection({
         items={allItems}
         onChange={({selectedItems}) => handleSelectionChange(selectedItems)}
         placeholder={t('common.select')}
-        aria-label={t('common.definitionSelection.select.multiProcess')}
         titleText={t('common.definitionSelection.select.multiProcess')}
         size="sm"
       />

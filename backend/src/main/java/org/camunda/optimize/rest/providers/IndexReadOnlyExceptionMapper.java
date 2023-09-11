@@ -5,20 +5,19 @@
  */
 package org.camunda.optimize.rest.providers;
 
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.ext.ExceptionMapper;
+import jakarta.ws.rs.ext.Provider;
 import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import org.elasticsearch.cluster.block.ClusterBlockException;
 
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.ext.ExceptionMapper;
-import javax.ws.rs.ext.Provider;
-
 @Provider
 public class IndexReadOnlyExceptionMapper implements ExceptionMapper<ClusterBlockException> {
-  private static String ES_READ_ONLY_ERROR = "index read-only";
+  private static final String ES_READ_ONLY_ERROR = "index read-only";
 
   @Override
-  public javax.ws.rs.core.Response toResponse(ClusterBlockException e) {
+  public Response toResponse(ClusterBlockException e) {
     return Response
       .status(Response.Status.INTERNAL_SERVER_ERROR)
       .type(MediaType.APPLICATION_JSON_TYPE)

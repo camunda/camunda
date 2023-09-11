@@ -12,7 +12,7 @@ import {t} from 'translation';
 import debouncePromise from 'debouncePromise';
 import {formatters, getRandomId} from 'services';
 
-import {searchIdentities, User} from './service';
+import {searchIdentities, User, getUserId} from './service';
 
 import './MultiUserInput.scss';
 
@@ -31,7 +31,6 @@ export interface MultiUserInputProps {
   onRemove: (id: string) => void;
   onClear: () => void;
   excludeGroups?: boolean;
-  persistMenu?: boolean;
 }
 
 type Item = {
@@ -51,7 +50,6 @@ export default function MultiUserInput({
   onRemove,
   onClear,
   excludeGroups = false,
-  persistMenu,
   titleText,
 }: MultiUserInputProps): JSX.Element {
   const [loading, setLoading] = useState(true);
@@ -90,6 +88,7 @@ export default function MultiUserInput({
     function handleBlur() {
       setTextValue('');
       loadNewValues('');
+      setLoading(false);
     }
 
     const input = multiSelectRef.current?.querySelector('input');
@@ -107,22 +106,21 @@ export default function MultiUserInput({
     };
   }, [loadNewValues]);
 
-  function addIdentity(id: string) {
+  function addIdentity(id: string | null) {
     if (id || id === null) {
       const selectedIdentity = identities
         .filter(filterSelected)
-        .find((identity) => getUserId(identity) === id);
+        .find((identity) => getUserId(identity.id, identity.type) === id);
       if (selectedIdentity) {
         onAdd(selectedIdentity);
-      } else {
+      } else if (id) {
         onAdd({id});
       }
     }
   }
 
   const filterSelected = ({id, type}: User['identity']) => {
-    const exists = (users: User[]) =>
-      users.some((user) => user.id === `${type.toUpperCase()}:${id}`);
+    const exists = (users: User[]) => users.some((user) => user.id === getUserId(id, type));
 
     return !exists(users) && !exists(collectionUsers);
   };
@@ -164,9 +162,6 @@ export default function MultiUserInput({
             onRemove(userToRemove.id);
           } else {
             addIdentity(item.id);
-            if (persistMenu === false) {
-              multiSelectRef.current?.querySelector<HTMLElement>('[data-toggle="true"]')?.click();
-            }
           }
         },
       }}
@@ -233,13 +228,9 @@ function formatIdentity(identity: User['identity']): Item {
   const {label, tag, subTexts} = formatTypeaheadOption(identity);
 
   return {
-    id: getUserId(identity),
+    id: getUserId(identity.id, identity.type),
     label,
     tag,
     subTexts,
   };
-}
-
-function getUserId(identity: User['identity']) {
-  return `${identity.type.toUpperCase()}:${identity.id}`;
 }

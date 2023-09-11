@@ -5,22 +5,22 @@
  */
 package org.camunda.optimize.jetty;
 
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.rest.UIConfigurationRestService;
 import org.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.client.WebTarget;
+import jakarta.ws.rs.core.Response;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.OptimizeJettyServerCustomizer.EXTERNAL_SUB_PATH;
 import static org.camunda.optimize.jetty.OptimizeResourceConstants.REST_API_PATH;
 
-public class ContextPathIT extends AbstractIT {
+public class ContextPathIT extends AbstractPlatformIT {
 
   @AfterAll
   public static void afterAll() {

@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.events;
 
+import jakarta.ws.rs.BadRequestException;
 import lombok.AllArgsConstructor;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.xml.ModelParseException;
@@ -17,7 +18,6 @@ import org.camunda.optimize.service.util.BpmnModelUtil;
 import org.camunda.optimize.service.util.EventDtoBuilderUtil;
 import org.springframework.stereotype.Component;
 
-import javax.ws.rs.BadRequestException;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;

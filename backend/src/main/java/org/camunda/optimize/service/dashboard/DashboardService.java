@@ -5,6 +5,9 @@
  */
 package org.camunda.optimize.service.dashboard;
 
+import jakarta.ws.rs.BadRequestException;
+import jakarta.ws.rs.ForbiddenException;
+import jakarta.ws.rs.NotFoundException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -50,9 +53,6 @@ import org.camunda.optimize.service.util.IdGenerator;
 import org.camunda.optimize.service.variable.ProcessVariableService;
 import org.springframework.stereotype.Component;
 
-import javax.ws.rs.BadRequestException;
-import javax.ws.rs.ForbiddenException;
-import javax.ws.rs.NotFoundException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -92,11 +92,11 @@ public class DashboardService implements ReportReferencingService, CollectionRef
 
   @Override
   public void handleReportDeleted(final ReportDefinitionDto reportDefinition) {
-    if (reportDefinition instanceof SingleProcessReportDefinitionRequestDto) {
+    if (reportDefinition instanceof SingleProcessReportDefinitionRequestDto typeCheckedReportDefinition) {
       final List<ProcessVariableNameResponseDto> varNamesForReportToRemove =
         processVariableService.getVariableNamesForReportDefinitions(
-          Collections.singletonList((SingleProcessReportDefinitionRequestDto) reportDefinition));
-      removeVariableFiltersFromDashboardsIfUnavailable(varNamesForReportToRemove, reportDefinition.getId());
+          Collections.singletonList(typeCheckedReportDefinition));
+      removeVariableFiltersFromDashboardsIfUnavailable(varNamesForReportToRemove, typeCheckedReportDefinition.getId());
     }
     removeReportFromDashboards(reportDefinition.getId());
   }
@@ -112,9 +112,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
   public void handleReportUpdated(final String reportId, final ReportDefinitionDto updateDefinition) {
     final ReportDefinitionDto existingReport = reportReader.getReport(reportId)
       .orElseThrow(() -> new NotFoundException("Report with id [" + reportId + "] does not exist"));
-    if (existingReport instanceof SingleProcessReportDefinitionRequestDto) {
-      final SingleProcessReportDefinitionRequestDto existingReportDefinition =
-        (SingleProcessReportDefinitionRequestDto) existingReport;
+    if (existingReport instanceof SingleProcessReportDefinitionRequestDto existingReportDefinition) {
       final SingleProcessReportDefinitionRequestDto updateReportDefinition =
         (SingleProcessReportDefinitionRequestDto) updateDefinition;
       final List<ProcessVariableNameResponseDto> availableVariableNamesForExistingReport =
@@ -237,13 +235,13 @@ public class DashboardService implements ReportReferencingService, CollectionRef
           .filter(tile -> tile.getType() == DashboardTileType.OPTIMIZE_REPORT)
           .map(DashboardReportTileDto::getId)
           .filter(reportInDashboardId -> !reportId.equals(reportInDashboardId))
-          .collect(toList());
+          .toList();
         final List<SingleProcessReportDefinitionRequestDto> allReportsForIdsOmitXml =
           reportReader.getAllReportsForIdsOmitXml(otherReportIdsInDashboard)
             .stream()
             .filter(SingleProcessReportDefinitionRequestDto.class::isInstance)
             .map(SingleProcessReportDefinitionRequestDto.class::cast)
-            .collect(toList());
+            .toList();
         final List<ProcessVariableNameResponseDto> varNamesForReportsToRemain =
           processVariableService.getVariableNamesForReportDefinitions(allReportsForIdsOmitXml)
             .stream()
@@ -319,7 +317,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
   public List<IdResponseDto> getAllDashboardIdsInCollection(final String collectionId) {
     return getDashboardDefinitionsInCollectionAsService(collectionId).stream()
       .map(dashboard -> new IdResponseDto(dashboard.getId()))
-      .collect(toList());
+      .toList();
   }
 
   public DashboardDefinitionRestDto getDashboardDefinitionAsService(final String dashboardId) {
@@ -446,7 +444,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
       final List<String> reportIdsInDashboard = reportsInDashboard.stream()
         .map(DashboardReportTileDto::getId)
         .filter(IdGenerator::isValidId)
-        .collect(toList());
+        .toList();
       final Map<String, List<VariableType>> possibleVarTypesByName =
         processVariableService.getVariableNamesForAuthorizedReports(userId, reportIdsInDashboard)
           .stream().collect(
@@ -457,7 +455,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
           );
       final List<DashboardFilterDto<?>> invalidFilters = variableFilters.stream()
         .filter(isInvalidVariableFilter(possibleVarTypesByName))
-        .collect(toList());
+        .toList();
       if (!invalidFilters.isEmpty()) {
         throw new InvalidDashboardVariableFilterException(String.format(
           "The following variable filter names/types do not exist in any report in dashboard: [%s]",
@@ -597,7 +595,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
       .stream()
       .filter(DashboardVariableFilterDto.class::isInstance)
       .map(DashboardVariableFilterDto.class::cast)
-      .collect(toList());
+      .toList();
   }
 
 }

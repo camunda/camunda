@@ -5,10 +5,9 @@
  */
 package org.camunda.optimize.plugin.security.authentication;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 public interface AuthenticationExtractor {
-
   /**
    * Checks the request for authentication. May not return null, but always
    * an AuthenticationResult that indicates, whether

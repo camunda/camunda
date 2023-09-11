@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.importing.processdefinition;
 
+import jakarta.ws.rs.core.Response;
 import org.assertj.core.groups.Tuple;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
@@ -18,7 +19,6 @@ import org.mockserver.matchers.Times;
 import org.mockserver.model.HttpResponse;
 import org.mockserver.model.MediaType;
 
-import javax.ws.rs.core.Response;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;

@@ -8,7 +8,7 @@ package org.camunda.optimize.service.es.retrieval.variable;
 import com.google.common.collect.ImmutableMap;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
@@ -22,7 +22,7 @@ import java.util.Objects;
 
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
-public abstract class AbstractVariableIT extends AbstractIT {
+public abstract class AbstractVariableIT extends AbstractPlatformIT {
 
   protected static final String PROCESS_DEFINITION_KEY = "aProcessDefinitionKey";
 

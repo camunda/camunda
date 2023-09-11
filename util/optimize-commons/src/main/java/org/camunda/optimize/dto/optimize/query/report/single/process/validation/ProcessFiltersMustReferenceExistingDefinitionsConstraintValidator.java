@@ -9,8 +9,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitio
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 
-import javax.validation.ConstraintValidator;
-import javax.validation.ConstraintValidatorContext;
+import jakarta.validation.ConstraintValidator;
+import jakarta.validation.ConstraintValidatorContext;
 import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Collectors;

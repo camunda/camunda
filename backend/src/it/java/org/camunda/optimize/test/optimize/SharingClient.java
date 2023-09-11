@@ -13,7 +13,7 @@ import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareRestDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareRestDto;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import java.util.function.Supplier;
 
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;

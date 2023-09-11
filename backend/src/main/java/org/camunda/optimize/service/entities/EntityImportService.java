@@ -8,6 +8,9 @@ package org.camunda.optimize.service.entities;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -29,9 +32,6 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.mapper.ObjectMapperFactory;
 import org.springframework.stereotype.Component;
 
-import javax.validation.ConstraintViolation;
-import javax.validation.Validation;
-import javax.validation.Validator;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -168,14 +168,14 @@ public class EntityImportService {
         }
         return (ReportDefinitionExportDto) reportToImport;
       })
-      .collect(toList());
+      .toList();
   }
 
   private List<DashboardDefinitionExportDto> retrieveAllDashboardsToImport(final Set<OptimizeEntityExportDto> entitiesToImport) {
     return entitiesToImport.stream()
       .filter(exportDto -> DASHBOARD.equals(exportDto.getExportEntityType()))
       .map(DashboardDefinitionExportDto.class::cast)
-      .collect(toList());
+      .toList();
   }
 
   private CollectionDefinitionDto getAndValidateCollectionExistsAndIsAccessibleOrFail(final String userId,

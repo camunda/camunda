@@ -9,7 +9,6 @@ import React, {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
 
 import {loadVariables} from 'services';
-import {LoadingIndicator} from 'components';
 
 import WrappedTable from './Table';
 import RawDataTable from './RawDataTable';
@@ -67,10 +66,14 @@ const props = {
   report,
 };
 
+beforeEach(() => {
+  jest.clearAllMocks();
+});
+
 it('should show default report', () => {
   const node = shallow(<Table {...props} />);
 
-  expect(node.find(DefaultTable)).toBeDefined();
+  expect(node.find(DefaultTable)).toExist();
 });
 
 it('should show raw data report', () => {
@@ -85,11 +88,10 @@ it('should show raw data report', () => {
     />
   );
 
-  expect(node.find(RawDataTable)).toBeDefined();
+  expect(node.find(RawDataTable)).toExist();
 });
 
-it('should show loading indicator when loading process variables', () => {
-  loadVariables.mockReturnValueOnce([]);
+it('should enable table loading when loading process variables', () => {
   const node = shallow(
     <Table
       {...props}
@@ -100,9 +102,9 @@ it('should show loading indicator when loading process variables', () => {
       }}
     />
   );
-  runAllEffects();
 
-  expect(node.find(LoadingIndicator)).toBeDefined();
+  expect(node.find(RawDataTable).prop('processVariables')).toBe(undefined);
+  expect(node.find(RawDataTable).prop('loading')).toBe(true);
 });
 
 it('should load report when updating sorting', () => {

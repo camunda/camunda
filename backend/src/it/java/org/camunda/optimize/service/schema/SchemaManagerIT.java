@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.schema;
 
 import org.apache.http.client.methods.HttpGet;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
@@ -44,7 +44,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static javax.ws.rs.HttpMethod.HEAD;
+import static jakarta.ws.rs.HttpMethod.HEAD;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -58,7 +58,7 @@ import static org.elasticsearch.xcontent.XContentFactory.jsonBuilder;
 import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.verify.VerificationTimes.exactly;
 
-public class SchemaManagerIT extends AbstractIT {
+public class SchemaManagerIT extends AbstractPlatformIT {
 
   private OptimizeElasticsearchClient prefixAwareRestHighLevelClient;
   private OptimizeIndexNameService indexNameService;

@@ -13,21 +13,23 @@ import org.springframework.security.oauth2.jwt.Jwt;
 
 @AllArgsConstructor
 public class AudienceValidator implements OAuth2TokenValidator<Jwt> {
-    private final String audience;
+  private final String expectedAudience;
 
-    public OAuth2TokenValidatorResult validate(Jwt jwt) {
-      if (audienceIsValid()) {
-        if (jwt.getAudience().contains(audience)) {
-          return OAuth2TokenValidatorResult.success();
-        }
-        return OAuth2TokenValidatorResult.failure(
-          new OAuth2Error("invalid_token", "The required audience is missing", null));
-      } else {
-        return OAuth2TokenValidatorResult.failure(
-          new OAuth2Error("bad_configuration", "The configured audience is invalid", null));
+  public OAuth2TokenValidatorResult validate(Jwt jwt) {
+    if (audienceIsValid()) {
+      if (jwt.getAudience().contains(expectedAudience)) {
+        return OAuth2TokenValidatorResult.success();
       }
+      return OAuth2TokenValidatorResult.failure(
+        new OAuth2Error("invalid_token", "The required audience is missing", null));
+    } else {
+      return OAuth2TokenValidatorResult.failure(
+        new OAuth2Error("bad_configuration", "The configured audience is invalid", null));
     }
-    private boolean audienceIsValid() {
-        return !(audience == null || audience.isEmpty());
-    }
+  }
+
+  private boolean audienceIsValid() {
+    return !(expectedAudience == null || expectedAudience.isEmpty());
+  }
+
 }

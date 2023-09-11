@@ -36,7 +36,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static java.util.stream.Collectors.toMap;
-import static javax.ws.rs.HttpMethod.GET;
+import static jakarta.ws.rs.HttpMethod.GET;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.bpm.licensecheck.LicenseType.OPTIMIZE;
 import static org.camunda.bpm.licensecheck.LicenseType.UNIFIED;

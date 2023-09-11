@@ -1,8 +1,17 @@
 .OptimizeReportTile {
-  padding: 10px;
+  &[role='link']:hover:not(.canOnlyClickTitle),
+  &.canOnlyClickTitle .titleBar:hover {
+    cursor: pointer;
+  }
+
+  &[role='link']:hover .EntityName a {
+    text-decoration: underline;
+  }
 
   .titleBar {
     display: flex;
+    padding: 10px 10px 0px 10px;
+    min-height: 45px;
 
     .Popover .buttonWrapper .Button {
       opacity: 0;
@@ -55,7 +64,7 @@
 
   .visualization {
     position: absolute;
-    top: 33px;
+    top: 45px;
     bottom: 0;
     left: 0;
     right: 0;
@@ -63,6 +72,7 @@
     display: flex;
     flex-direction: column;
     flex-grow: 1;
+    padding: 0 10px;
 
     .Table {
       table-layout: fixed;

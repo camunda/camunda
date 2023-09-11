@@ -224,12 +224,24 @@ it('should invoke the onConfirm when when clicking the create button', async () 
   expect(node.find('.confirm')).not.toBeDisabled();
 });
 
-it('should add / atthe beginning of the link pathname when useAbsolutePath is specified', () => {
-  const node = shallow(<TemplateModal {...props} />);
+it('should override the track event name if trackingEventName is passed', async () => {
+  const testDef = {key: 'def', versions: ['1'], tenantIds: [null]};
+  const node = shallow(
+    <TemplateModal
+      {...props}
+      initialDefinitions={[testDef]}
+      trackingEventName={'useInstantPreviewDashboardTemplate'}
+    />
+  );
 
-  expect(node.find('.confirm').prop('to').pathname).toBe('report/new/edit');
+  expect(node.find('.confirm')).toBeDisabled();
 
-  node.setProps({useAbsolutePath: true});
+  runAllEffects();
+  await flushPromises();
 
-  expect(node.find('.confirm').prop('to').pathname).toBe('/report/new/edit');
+  node.find('.confirm').simulate('click');
+
+  expect(track).toHaveBeenCalledWith('useInstantPreviewDashboardTemplate', {
+    templateName: 'Locate bottlenecks on a Heatmap',
+  });
 });

@@ -7,7 +7,7 @@ package org.camunda.optimize.service.identity;
 
 import com.google.common.collect.ImmutableList;
 import io.github.netmikey.logunit.api.LogCapturer;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
@@ -32,13 +32,13 @@ import org.mockserver.verify.VerificationTimes;
 
 import java.util.List;
 
-import static javax.ws.rs.HttpMethod.GET;
+import static jakarta.ws.rs.HttpMethod.GET;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_EMAIL_DOMAIN;
 import static org.mockserver.model.HttpRequest.request;
 
-public class UserTaskIdentityCacheServiceIT extends AbstractIT {
+public class UserTaskIdentityCacheServiceIT extends AbstractPlatformIT {
   private static final String ASSIGNEE_ID_JOHN = "john";
   private static final String JOHN_FIRST_NAME = "The";
   private static final String JOHN_LAST_NAME = "Imposter";

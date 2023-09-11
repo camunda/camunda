@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.rest;
 
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.query.variable.DefinitionVariableLabelsDto;
 import org.camunda.optimize.dto.optimize.query.variable.LabelDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
@@ -22,7 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.VARIABLE_LABEL_INDEX_NAME;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
-public abstract class AbstractVariableLabelIT extends AbstractIT {
+public abstract class AbstractVariableLabelIT extends AbstractPlatformIT {
 
   private final LabelDto FIRST_LABEL = new LabelDto("a label 1", "a name", VariableType.STRING);
   private final LabelDto SECOND_LABEL = new LabelDto("a label 2", "an other name", VariableType.STRING);

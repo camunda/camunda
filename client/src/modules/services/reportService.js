@@ -22,7 +22,9 @@ export async function evaluateReport(payload, filter = [], query = {}) {
     response = await post(`api/report/${payload}/evaluate`, {filter}, {query});
   } else {
     // evaluate unsaved report
-    response = await post(`api/report/evaluate/`, payload, {query});
+    // we dont want to send report result in payload to prevent exceedeing request size limit
+    const {result, ...evaluationPayload} = payload;
+    response = await post(`api/report/evaluate/`, evaluationPayload, {query});
   }
 
   return await response.json();

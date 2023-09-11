@@ -45,7 +45,7 @@ public class PersistEventIndexHandlerStateMediator
         .map(EngineImportIndexHandler::getIndexStateDto)
         .filter(EngineImportIndexDto.class::isInstance)
         .map(EngineImportIndexDto.class::cast)
-        .collect(toList());
+        .toList();
       importService.executeImport(importIndices, () -> importCompleted.complete(null));
     } catch (Exception e) {
       log.error("Could not execute import for storing event processing index handlers!", e);

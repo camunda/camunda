@@ -8,12 +8,19 @@ package org.camunda.optimize.service.email;
 
 import freemarker.template.Template;
 import freemarker.template.TemplateException;
+import jakarta.mail.Authenticator;
+import jakarta.mail.Message;
+import jakarta.mail.MessagingException;
+import jakarta.mail.PasswordAuthentication;
+import jakarta.mail.Session;
+import jakarta.mail.Transport;
+import jakarta.mail.internet.AddressException;
+import jakarta.mail.internet.InternetAddress;
+import jakarta.mail.internet.MimeMessage;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.mail.Email;
-import org.apache.commons.mail.EmailException;
-import org.apache.commons.mail.SimpleEmail;
+
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.EmailAuthenticationConfiguration;
@@ -24,12 +31,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.ui.freemarker.FreeMarkerTemplateUtils;
 import org.springframework.web.servlet.view.freemarker.FreeMarkerConfigurer;
 
-import javax.mail.Authenticator;
-import javax.mail.MessagingException;
-import javax.mail.PasswordAuthentication;
-import javax.mail.Session;
-import javax.mail.Transport;
-import javax.mail.internet.MimeMessage;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Properties;
@@ -63,7 +64,7 @@ public class EmailService {
           } else {
             sendEmail(recipient, subject, body);
           }
-        } catch (MessagingException | EmailException e) {
+        } catch (MessagingException e) {
           log.error(
             "Was not able to send email from [{}] to [{}]!",
             configurationService.getNotificationEmailAddress(),
@@ -77,37 +78,25 @@ public class EmailService {
       }
     } else if (StringUtils.isNotEmpty(recipient)) {
       log.warn(
-        "The email service is not enabled, so no email will be sent. Please check the Optimize documentation on how to enable" +
+        "The email service is not enabled, so no email will be sent. Please check the Optimize documentation on how to enable " +
           "email notifications!");
     }
   }
 
   // TODO To be removed with OPT-6381
-  private void sendEmail(final String recipient, final String subject, final String body) throws EmailException {
-    Email email = new SimpleEmail();
-    email.setHostName(configurationService.getNotificationEmailHostname());
-    email.setSmtpPort(configurationService.getNotificationEmailPort());
-    final EmailAuthenticationConfiguration emailAuthenticationConfiguration =
-      configurationService.getEmailAuthenticationConfiguration();
-    if (Boolean.TRUE.equals(emailAuthenticationConfiguration.getEnabled())) {
-      email.setAuthentication(
-        emailAuthenticationConfiguration.getUsername(),
-        emailAuthenticationConfiguration.getPassword()
-      );
-      EmailSecurityProtocol securityProtocol = emailAuthenticationConfiguration.getSecurityProtocol();
-      if (securityProtocol.equals(EmailSecurityProtocol.STARTTLS)) {
-        email.setStartTLSEnabled(true);
-      } else if (securityProtocol.equals(EmailSecurityProtocol.SSL_TLS)) {
-        email.setSSLOnConnect(true);
-        email.setSslSmtpPort(configurationService.getNotificationEmailPort().toString());
-      }
-    }
-    email.setFrom(configurationService.getNotificationEmailAddress());
-    email.setCharset("utf-8");
-    email.setSubject(subject);
-    email.setMsg(body);
-    email.addTo(recipient);
-    email.send();
+  private void sendEmail(final String recipient, final String subject, final String body) throws MessagingException {
+    MimeMessage message = createMimeMessage();
+    message.setFrom(new InternetAddress(configurationService.getNotificationEmailAddress()));
+    validateAddress(recipient);
+    message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(recipient));
+    message.setSubject(subject);
+    message.setText(body, "utf-8");
+
+    Transport.send(message);
+  }
+
+  private static void validateAddress(final String recipient) throws AddressException {
+    InternetAddress.parse(recipient)[0].validate();
   }
 
   private void sendHtmlMessage(final String recipient, final String subject, final String htmlBody) throws MessagingException {

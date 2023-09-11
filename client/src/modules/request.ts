@@ -108,8 +108,7 @@ export async function request(payload: RequestPayload): Promise<Response> {
     credentials: 'same-origin',
   });
 
-  for (let i = 0; i < handlers.length; i++) {
-    const handlerToCall = handlers[i];
+  for (const handlerToCall of handlers) {
     if (handlerToCall) {
       response = await handlerToCall.fct(response, payload);
     }

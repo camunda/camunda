@@ -6,6 +6,7 @@
 package org.camunda.optimize.rest.eventprocess;
 
 import com.google.common.collect.ImmutableMap;
+import jakarta.ws.rs.core.Response;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import org.assertj.core.groups.Tuple;
@@ -44,7 +45,6 @@ import org.mockserver.model.HttpError;
 import org.mockserver.model.HttpRequest;
 import org.mockserver.verify.VerificationTimes;
 
-import javax.ws.rs.core.Response;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -58,10 +58,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import static javax.ws.rs.HttpMethod.DELETE;
-import static javax.ws.rs.HttpMethod.GET;
-import static javax.ws.rs.HttpMethod.POST;
-import static javax.ws.rs.HttpMethod.PUT;
+import static jakarta.ws.rs.HttpMethod.DELETE;
+import static jakarta.ws.rs.HttpMethod.GET;
+import static jakarta.ws.rs.HttpMethod.POST;
+import static jakarta.ws.rs.HttpMethod.PUT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.groups.Tuple.tuple;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;

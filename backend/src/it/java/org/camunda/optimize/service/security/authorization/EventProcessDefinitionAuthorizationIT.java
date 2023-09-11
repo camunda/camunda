@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.service.security.authorization;
 
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
@@ -19,7 +19,7 @@ import org.camunda.optimize.dto.optimize.rest.DefinitionVersionResponseDto;
 import org.camunda.optimize.test.engine.AuthorizationClient;
 import org.junit.jupiter.api.Test;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -28,7 +28,7 @@ import static org.camunda.optimize.service.util.importing.EngineConstants.RESOUR
 import static org.camunda.optimize.test.engine.AuthorizationClient.GROUP_ID;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 
-public class EventProcessDefinitionAuthorizationIT extends AbstractIT {
+public class EventProcessDefinitionAuthorizationIT extends AbstractPlatformIT {
 
   private static final String EVENT_PROCESS_DEFINITION_VERSION = "1";
 

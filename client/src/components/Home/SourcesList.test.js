@@ -9,8 +9,9 @@ import React from 'react';
 import {shallow} from 'enzyme';
 
 import {EntityList, Deleter, Modal} from 'components';
+import {addSources} from 'services';
 
-import {getSources, removeSource, editSource, addSources} from './service';
+import {getSources, removeSource, editSource} from './service';
 
 import SourcesListWithErrorHandling from './SourcesList';
 import EditSourceModal from './modals/EditSourceModal';
@@ -19,6 +20,10 @@ import {areTenantsAvailable} from 'config';
 
 jest.mock('notifications', () => ({addNotification: jest.fn()}));
 jest.mock('config', () => ({areTenantsAvailable: jest.fn().mockReturnValue(true)}));
+jest.mock('services', () => ({
+  ...jest.requireActual('services'),
+  addSources: jest.fn(),
+}));
 
 jest.mock('./service', () => ({
   getSources: jest.fn().mockReturnValue([
@@ -46,7 +51,6 @@ jest.mock('./service', () => ({
   ]),
   removeSource: jest.fn(),
   editSource: jest.fn(),
-  addSources: jest.fn(),
 }));
 
 const SourcesList = SourcesListWithErrorHandling.WrappedComponent;

@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.importing;
 
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.test.it.extension.ErrorResponseMock;
@@ -17,7 +17,7 @@ import org.elasticsearch.search.SearchHit;
 import org.junit.jupiter.api.Tag;
 import org.mockserver.model.HttpResponse;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -30,7 +30,7 @@ import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
 import static org.camunda.optimize.util.SuppressionConstants.UNUSED;
 
 @Tag("import")
-public abstract class AbstractImportIT extends AbstractIT {
+public abstract class AbstractImportIT extends AbstractPlatformIT {
 
   protected void assertAllEntriesInElasticsearchHaveAllData(String elasticsearchIndex,
                                                             final Set<String> excludedFields) {

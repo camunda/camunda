@@ -6,6 +6,7 @@
 package org.camunda.optimize.dto.optimize.query.report;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.experimental.FieldNameConstants;
@@ -17,7 +18,6 @@ import org.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
 import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityType;
 
-import javax.validation.Valid;
 import java.time.OffsetDateTime;
 
 @Data

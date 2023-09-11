@@ -5,6 +5,9 @@
  */
 package org.camunda.optimize.service.importing.engine.fetcher.instance;
 
+import jakarta.ws.rs.ForbiddenException;
+import jakarta.ws.rs.NotAuthorizedException;
+import jakarta.ws.rs.NotFoundException;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.importing.engine.fetcher.EngineEntityFetcher;
@@ -13,9 +16,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 
-import javax.ws.rs.ForbiddenException;
-import javax.ws.rs.NotAuthorizedException;
-import javax.ws.rs.NotFoundException;
 import java.util.function.Supplier;
 
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)

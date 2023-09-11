@@ -9,7 +9,6 @@ import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 
-import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -30,28 +29,28 @@ public class SnapshotUtil {
   private static final String ID_PLACEHOLDER = "{backupId}";
   private static final String VERSION_PLACEHOLDER = "{version}";
 
-  public static String getSnapshotNameForImportIndices(final Integer backupId) {
+  public static String getSnapshotNameForImportIndices(final Long backupId) {
     return getSnapshotName(SNAPSHOT_1_NAME_TEMPLATE, backupId);
   }
 
-  public static String getSnapshotNameForNonImportIndices(final Integer backupId) {
+  public static String getSnapshotNameForNonImportIndices(final Long backupId) {
     return getSnapshotName(SNAPSHOT_2_NAME_TEMPLATE, backupId);
   }
 
-  public static String getSnapshotPrefixWithBackupId(final Integer backupId) {
+  public static String getSnapshotPrefixWithBackupId(final Long backupId) {
     return SNAPSHOT_PREFIX
       .replace(COMPONENT_PREFIX_PLACEHOLDER, COMPONENT_PREFIX)
       .replace(ID_PLACEHOLDER, String.valueOf(backupId));
   }
 
-  public static Integer getBackupIdFromSnapshotName(final String snapshotName) {
+  public static Long getBackupIdFromSnapshotName(final String snapshotName) {
     Pattern pattern = Pattern.compile("^" + COMPONENT_PREFIX + "(\\d+)_.*$");
     Matcher matcher = pattern.matcher(snapshotName);
 
     if (matcher.find()) {
       String numberStr = matcher.group(1);
       try {
-        return Integer.parseInt(numberStr);
+        return Long.parseLong(numberStr);
       } catch (NumberFormatException e) {
         final String msg = String.format(
           "Cannot retrieve backupID from snapshot [%s] because the found backupID is not a valid integer.",
@@ -67,7 +66,7 @@ public class SnapshotUtil {
     }
   }
 
-  public static String[] getAllWildcardedSnapshotNamesForBackupId(final Integer backupId) {
+  public static String[] getAllWildcardedSnapshotNamesForBackupId(final Long backupId) {
     return new String[]{getSnapshotNameWithVersionWildcard(SNAPSHOT_1_NAME_TEMPLATE, backupId),
       getSnapshotNameWithVersionWildcard(SNAPSHOT_2_NAME_TEMPLATE, backupId)};
   }
@@ -86,13 +85,13 @@ public class SnapshotUtil {
         .replace(VERSION_PLACEHOLDER, "*")};
   }
 
-  private static String getSnapshotNameWithVersionWildcard(final String snapshotNameTemplate, final Integer backupId) {
+  private static String getSnapshotNameWithVersionWildcard(final String snapshotNameTemplate, final Long backupId) {
     return snapshotNameTemplate
       .replace(PREFIX_PLACEHOLDER, getSnapshotPrefixWithBackupId(backupId))
       .replace(VERSION_PLACEHOLDER, "*");
   }
 
-  private static String getSnapshotName(final String snapshotNameTemplate, final Integer backupId) {
+  private static String getSnapshotName(final String snapshotNameTemplate, final Long backupId) {
     return snapshotNameTemplate
       .replace(PREFIX_PLACEHOLDER, getSnapshotPrefixWithBackupId(backupId))
       .replace(VERSION_PLACEHOLDER, VERSION);

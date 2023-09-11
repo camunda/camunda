@@ -8,7 +8,7 @@
 import React from 'react';
 import {showError} from 'notifications';
 
-import {loadEntities} from '../service';
+import {loadEntities} from 'services';
 import {Form, Switch, Typeahead} from 'components';
 import {withErrorHandling} from 'HOC';
 import {t} from 'translation';

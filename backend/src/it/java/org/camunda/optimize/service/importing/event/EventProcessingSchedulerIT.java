@@ -5,12 +5,12 @@
  */
 package org.camunda.optimize.service.importing.event;
 
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class EventProcessingSchedulerIT extends AbstractIT {
+public class EventProcessingSchedulerIT extends AbstractPlatformIT {
 
   @Test
   public void verifyEventProcessingSchedulerIsDisabledByDefault() {

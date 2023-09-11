@@ -10,18 +10,21 @@ import {DropdownSkeleton} from '@carbon/react';
 
 import {showError} from 'notifications';
 
-import {UserTypeahead} from './UserTypeahead';
+import UserTypeahead from './UserTypeahead';
 import {getUser} from './service';
 
 jest.mock('notifications', () => ({showError: jest.fn()}));
 
 jest.mock('./service', () => ({
+  ...jest.requireActual('./service'),
   getUser: jest.fn().mockReturnValue({id: 'kermit', type: 'user', name: 'Kermit'}),
 }));
 
-const props = {
-  mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
-};
+jest.mock('hooks', () => ({
+  useErrorHandling: jest.fn(() => ({
+    mightFail: jest.fn((data, cb) => cb(data)),
+  })),
+}));
 
 const testUser = {
   id: 'USER:kermit',
@@ -36,7 +39,7 @@ const testUser = {
 
 it('should invoke onChange when adding a user', () => {
   const spy = jest.fn();
-  const node = shallow(<UserTypeahead {...props} users={[testUser]} onChange={spy} />);
+  const node = shallow(<UserTypeahead users={[testUser]} onChange={spy} />);
 
   node.find('MultiUserInput').simulate('add', {
     id: 'sales',
@@ -55,14 +58,7 @@ it('should invoke onChange when adding a user', () => {
 });
 
 it('should show an error when adding already existing user/group', () => {
-  const node = shallow(
-    <UserTypeahead
-      {...props}
-      users={[testUser]}
-      mightFail={jest.fn().mockImplementation((data, cb) => cb(data))}
-      onChange={jest.fn()}
-    />
-  );
+  const node = shallow(<UserTypeahead users={[testUser]} onChange={jest.fn()} />);
 
   node.find('MultiUserInput').simulate('add', {id: 'kermit'});
 
@@ -71,14 +67,7 @@ it('should show an error when adding already existing user/group', () => {
 
 it('should load non imported user before adding it to the list', () => {
   const spy = jest.fn();
-  const node = shallow(
-    <UserTypeahead
-      {...props}
-      users={[]}
-      mightFail={jest.fn().mockImplementation((data, cb) => cb(data))}
-      onChange={spy}
-    />
-  );
+  const node = shallow(<UserTypeahead users={[]} onChange={spy} />);
   node.find('MultiUserInput').simulate('add', {
     id: 'kermit',
   });
@@ -93,15 +82,7 @@ it('should load non imported user before adding it to the list', () => {
 });
 
 it('should handle users and collectionUsers null values', () => {
-  const node = shallow(
-    <UserTypeahead
-      {...props}
-      users={null}
-      collectionUsers={[]}
-      mightFail={jest.fn().mockImplementation((data, cb) => cb(data))}
-      onChange={jest.fn()}
-    />
-  );
+  const node = shallow(<UserTypeahead users={null} collectionUsers={[]} onChange={jest.fn()} />);
   expect(node.find(DropdownSkeleton)).toExist();
 
   node.setProps({users: [], collectionUsers: null});
@@ -109,18 +90,4 @@ it('should handle users and collectionUsers null values', () => {
 
   node.setProps({users: [], collectionUsers: []});
   expect(node.find(DropdownSkeleton)).not.toExist();
-});
-
-it('should display dropdown skeleton if loading prop is true', () => {
-  const node = shallow(
-    <UserTypeahead
-      {...props}
-      users={[]}
-      mightFail={jest.fn().mockImplementation((data, cb) => cb(data))}
-      onChange={jest.fn()}
-      loading
-    />
-  );
-
-  expect(node.find(DropdownSkeleton)).toExist();
 });

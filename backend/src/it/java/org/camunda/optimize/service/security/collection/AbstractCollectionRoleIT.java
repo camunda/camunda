@@ -7,7 +7,7 @@ package org.camunda.optimize.service.security.collection;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
@@ -20,7 +20,7 @@ import java.util.Arrays;
 import static org.camunda.optimize.test.engine.AuthorizationClient.GROUP_ID;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 
-public abstract class AbstractCollectionRoleIT extends AbstractIT {
+public abstract class AbstractCollectionRoleIT extends AbstractPlatformIT {
 
   protected AuthorizationClient authorizationClient = new AuthorizationClient(engineIntegrationExtension);
 

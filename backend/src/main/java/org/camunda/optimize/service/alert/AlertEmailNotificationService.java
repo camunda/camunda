@@ -25,21 +25,30 @@ public class AlertEmailNotificationService implements AlertNotificationService {
 
   @Override
   public void notify(@NonNull final AlertNotificationDto notification) {
-    notify(notification.getAlertMessage(), notification.getAlert().getEmails());
+    final List<String> recipients = notification.getAlert().getEmails();
+    log.info(
+      "Sending email of type {} to {} recipients for alert with ID {}",
+      notification.getType(),
+      recipients.size(),
+      notification.getAlert().getId()
+    );
+    notify(notification.getAlertMessage(), recipients);
   }
 
-  public void notify(String text, final List<String> recipients) {
+  @Override
+  public String getNotificationDescription() {
+    return "alert email";
+  }
+
+  private void notify(String text, final List<String> recipients) {
     // This only works as the link is at the end of the composed text. We would need to refactor this if the email
     // structure of alerts changes in future
     String textWithTracking = text + "&utm_medium=email";
-    recipients.forEach(recipient -> sendEmail(recipient, textWithTracking));
+    recipients.forEach(recipient -> emailService.sendEmailWithErrorHandling(
+      recipient,
+      textWithTracking,
+      "[" + configurationService.getNotificationEmailCompanyBranding() + "-Optimize] - Report status"
+    ));
   }
 
-  private void sendEmail(String to, String body) {
-    emailService.sendEmailWithErrorHandling(
-      to,
-      body,
-      "[" + configurationService.getNotificationEmailCompanyBranding() + "-Optimize] - Report status"
-    );
-  }
 }

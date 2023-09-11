@@ -5,9 +5,9 @@
  */
 package org.camunda.optimize.testplugin.engine.rest;
 
+import jakarta.ws.rs.client.ClientRequestContext;
 import org.camunda.optimize.plugin.engine.rest.EngineRestFilter;
 
-import javax.ws.rs.client.ClientRequestContext;
 import java.io.IOException;
 
 public class AddCustomTokenFilter implements EngineRestFilter {

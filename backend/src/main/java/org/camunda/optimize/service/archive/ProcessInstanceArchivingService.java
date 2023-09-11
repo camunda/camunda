@@ -17,8 +17,10 @@ import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.support.PeriodicTrigger;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
+
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 @RequiredArgsConstructor
@@ -60,8 +62,7 @@ public class ProcessInstanceArchivingService extends AbstractScheduledService im
   @Override
   protected Trigger createScheduleTrigger() {
     return new PeriodicTrigger(
-      configurationService.getDataArchiveConfiguration().getArchiveIntervalInMins(),
-      TimeUnit.MINUTES
+      Duration.ofMinutes(configurationService.getDataArchiveConfiguration().getArchiveIntervalInMins())
     );
   }
 

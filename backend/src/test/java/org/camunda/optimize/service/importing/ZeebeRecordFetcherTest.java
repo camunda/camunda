@@ -7,6 +7,7 @@ package org.camunda.optimize.service.importing;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.SneakyThrows;
+import org.camunda.optimize.dto.zeebe.variable.ZeebeVariableRecordDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -14,7 +15,6 @@ import org.camunda.optimize.service.importing.page.PositionBasedImportPage;
 import org.camunda.optimize.service.importing.zeebe.fetcher.ZeebeProcessInstanceFetcher;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.search.SearchResponse;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
@@ -48,21 +48,14 @@ public class ZeebeRecordFetcherTest {
   @Mock
   SearchResponse searchResponse;
 
-  @BeforeEach
-  public void init() {
-    when(configurationService.getConfiguredZeebe().getMaxImportPageSize()).thenReturn(TEST_CONFIGURED_BATCH_SIZE);
-    this.underTest = new ZeebeProcessInstanceFetcher(
-      1,
-      optimizeElasticsearchClient,
-      objectMapper,
-      configurationService
-    );
-  }
-
   @Test
   @SneakyThrows
   public void testFetchFailsTriggersDynamicBatchResizing() {
-    // given the class is initialized with the default batch size and number of successful requests
+    // given
+    when(configurationService.getConfiguredZeebe().getMaxImportPageSize()).thenReturn(TEST_CONFIGURED_BATCH_SIZE);
+    when(configurationService.getConfiguredZeebe().getImportConfig().getDynamicBatchSuccessAttempts()).thenReturn(10);
+    initalizeClassUnderTest();
+    // the class is initialized with the default batch size and number of successful requests
     assertThat(underTest.getDynamicBatchSize()).isEqualTo(TEST_CONFIGURED_BATCH_SIZE);
     assertThat(underTest.getConsecutiveSuccessfulFetches()).isZero();
     // and search requests fail with an IOException
@@ -171,10 +164,86 @@ public class ZeebeRecordFetcherTest {
     }
   }
 
+  @Test
+  @SneakyThrows
+  public void testThatEmptyPageFetchesAreTrackedCorrectly() {
+    // given
+    when(configurationService.getConfiguredZeebe().getImportConfig().getMaxEmptyPagesToImport()).thenReturn(3);
+    initalizeClassUnderTest();
+    // the class is initialized with the number of empty pages set to zero
+    assertThat(underTest.getConsecutiveEmptyPages()).isZero();
+
+    // given that search is successfully executed but returning empty pages
+    try (MockedStatic<ElasticsearchReaderUtil> mockEsReaderUtil = Mockito.mockStatic(ElasticsearchReaderUtil.class)) {
+      mockEsReaderUtil.when(() -> ElasticsearchReaderUtil.mapHits(any(), any(), any())).thenReturn(List.of());
+      Mockito.reset(optimizeElasticsearchClient);
+      when(optimizeElasticsearchClient.searchWithoutPrefixing(any())).thenReturn(searchResponse);
+
+      // when the next import is attempted
+      triggerFetchAttemptForEmptyPage();
+
+      // then the number of empty pages has been incremented
+      assertThat(underTest.getConsecutiveEmptyPages()).isEqualTo(1);
+
+      // when the next import is attempted
+      triggerFetchAttemptForEmptyPage();
+
+      // then the number of empty pages has been incremented
+      assertThat(underTest.getConsecutiveEmptyPages()).isEqualTo(2);
+
+      // when the next import is attempted
+      triggerFetchAttemptForEmptyPage();
+
+      // then the number of empty pages has been incremented
+      assertThat(underTest.getConsecutiveEmptyPages()).isEqualTo(3);
+
+      // when the next import is attempted
+      triggerFetchAttemptForEmptyPage();
+
+      // then the number of empty pages has been reset to zero
+      assertThat(underTest.getConsecutiveEmptyPages()).isZero();
+
+      // when the next import is attempted
+      triggerFetchAttemptForEmptyPage();
+
+      // then the number of empty pages has been incremented
+      assertThat(underTest.getConsecutiveEmptyPages()).isEqualTo(1);
+
+      // when a non-empty page of results is imported
+      mockEsReaderUtil.when(() -> ElasticsearchReaderUtil.mapHits(any(), any(), any()))
+        .thenReturn(List.of(new ZeebeVariableRecordDto()));
+      triggerFetchAttempt();
+
+      // then the number of empty pages has been reset to zero
+      assertThat(underTest.getConsecutiveEmptyPages()).isZero();
+    }
+  }
+
+  private void initalizeClassUnderTest() {
+    this.underTest = new ZeebeProcessInstanceFetcher(
+      1,
+      optimizeElasticsearchClient,
+      objectMapper,
+      configurationService
+    );
+  }
+
   private void triggerFailedFetchAttempt() {
     final PositionBasedImportPage positionBasedImportPage = new PositionBasedImportPage();
     assertThrows(
       OptimizeRuntimeException.class, () -> underTest.getZeebeRecordsForPrefixAndPartitionFrom(positionBasedImportPage));
+  }
+
+  private void triggerFetchAttemptForEmptyPage() {
+    final PositionBasedImportPage positionBasedImportPage = new PositionBasedImportPage();
+    positionBasedImportPage.setHasSeenSequenceField(true);
+    assertThat(underTest.getZeebeRecordsForPrefixAndPartitionFrom(positionBasedImportPage)).isEmpty();
+  }
+
+  private void triggerFetchAttempt() {
+    final PositionBasedImportPage positionBasedImportPage = new PositionBasedImportPage();
+    positionBasedImportPage.setHasSeenSequenceField(true);
+    underTest.getZeebeRecordsForPrefixAndPartitionFrom(positionBasedImportPage);
   }
 
 }

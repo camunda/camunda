@@ -1,16 +1,21 @@
 .DurationHeatmapModal {
+  .cds--modal-container {
+    height: 100%;
+  }
+
   .content-container {
     display: flex;
     flex-direction: column;
   }
 
   .diagram-container {
-    height: 70%;
+    flex-grow: 1;
     display: flex;
   }
 
   .Table {
     max-height: 30%;
+    height: auto;
 
     table {
       height: 100%;

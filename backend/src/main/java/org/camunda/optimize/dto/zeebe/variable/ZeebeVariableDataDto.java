@@ -19,9 +19,11 @@ public class ZeebeVariableDataDto implements VariableRecordValue {
   private long processInstanceKey;
   private long processDefinitionKey;
   private String bpmnProcessId;
+  private String tenantId;
 
   @Override
   public String toJson() {
     throw new UnsupportedOperationException("Operation not supported");
   }
+
 }

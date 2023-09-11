@@ -14,8 +14,8 @@ import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto;
 import org.camunda.optimize.service.util.IdGenerator;
 
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import java.time.Instant;
 import java.util.List;
 import java.util.Random;
@@ -56,7 +56,7 @@ public class IngestionClient {
   public List<CloudEventRequestDto> ingestEventBatchWithTimestamp(final Instant timestamp, final int eventCount) {
     final List<CloudEventRequestDto> ingestedEvents = IntStream.range(0, eventCount)
       .mapToObj(operand -> createCloudEventDto().toBuilder().time(timestamp).build())
-      .collect(toList());
+      .toList();
     ingestEventBatch(ingestedEvents);
     return ingestedEvents;
   }

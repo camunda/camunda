@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.service.identity;
 
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.UserDto;
 import org.junit.jupiter.api.BeforeEach;
@@ -15,7 +15,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class PlatformIdentityServiceIT extends AbstractIT {
+public class PlatformIdentityServiceIT extends AbstractPlatformIT {
 
   private PlatformIdentityService identityService;
 

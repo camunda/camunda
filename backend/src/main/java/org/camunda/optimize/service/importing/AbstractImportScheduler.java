@@ -13,6 +13,7 @@ import org.camunda.optimize.service.AbstractScheduledService;
 import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.support.PeriodicTrigger;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
@@ -41,7 +42,7 @@ public abstract class AbstractImportScheduler<T extends SchedulerConfig> extends
 
   @Override
   protected Trigger createScheduleTrigger() {
-    return new PeriodicTrigger(0L);
+    return new PeriodicTrigger(Duration.ZERO);
   }
 
   public synchronized void startImportScheduling() {

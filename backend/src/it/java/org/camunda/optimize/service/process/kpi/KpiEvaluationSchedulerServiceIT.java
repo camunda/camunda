@@ -10,7 +10,7 @@ import lombok.SneakyThrows;
 import org.assertj.core.groups.Tuple;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventMappingDto;
@@ -45,7 +45,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_OVE
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 
-public class KpiEvaluationSchedulerServiceIT extends AbstractIT {
+public class KpiEvaluationSchedulerServiceIT extends AbstractPlatformIT {
 
   private static final String EXTERNAL_EVENT_GROUP = "testGroup";
   private static final String EXTERNAL_EVENT_SOURCE = "integrationTestSource";

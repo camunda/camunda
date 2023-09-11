@@ -5,12 +5,12 @@
  */
 package org.camunda.optimize.service.telemetry;
 
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class TelemetrySchedulerIT extends AbstractIT {
+public class TelemetrySchedulerIT extends AbstractPlatformIT {
 
   @Test
   public void telemetrySchedulerIsStartedByDefault() {

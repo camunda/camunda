@@ -108,6 +108,7 @@ exports[`should match snapshot 1`] = `
         </Unknown>
       </NoDataNotice>
     }
+    size="md"
     sorting={
       Object {
         "by": "timestamp",

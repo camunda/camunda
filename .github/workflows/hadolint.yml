@@ -1,0 +1,19 @@
+name: Test dockerfiles with Hadolint
+on: [pull_request]
+jobs:
+  hadolint:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        dockerfile:
+          [
+            "Dockerfile",
+            "qa/clustering-tests/src/main/docker/optimize/Dockerfile",
+          ]
+    steps:
+      - uses: actions/checkout@v3
+      - uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: ${{ matrix.dockerfile }}
+          ignore: DL3018,DL3008

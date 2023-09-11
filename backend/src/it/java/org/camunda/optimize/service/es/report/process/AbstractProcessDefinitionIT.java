@@ -8,7 +8,7 @@ package org.camunda.optimize.service.es.report.process;
 import com.google.common.collect.ImmutableMap;
 import org.apache.commons.lang3.tuple.Triple;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.engine.HistoricUserTaskInstanceDto;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
@@ -35,7 +35,7 @@ import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.util.BpmnModels;
 import org.junit.jupiter.api.Tag;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import java.sql.SQLException;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
@@ -64,7 +64,7 @@ import static org.camunda.optimize.util.BpmnModels.getTripleUserTaskDiagram;
 import static org.camunda.optimize.util.SuppressionConstants.UNUSED;
 
 @Tag("reportEvaluation")
-public class AbstractProcessDefinitionIT extends AbstractIT {
+public class AbstractProcessDefinitionIT extends AbstractPlatformIT {
 
   protected static final String TEST_ACTIVITY = "testActivity";
   protected static final String BUSINESS_KEY = "aBusinessKey";

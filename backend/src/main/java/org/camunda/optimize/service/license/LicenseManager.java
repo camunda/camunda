@@ -25,7 +25,7 @@ import org.elasticsearch.action.support.replication.ReplicationResponse;
 import org.elasticsearch.xcontent.XContentBuilder;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;

@@ -31,6 +31,8 @@ public class CloudAuthConfiguration {
   private String audience;
   // the audience requested for a users service access token
   private String userAccessTokenAudience;
+  // URL to request access tokens
+  private String tokenUrl;
 
   public Optional<String> getUserAccessTokenAudience() {
     return Optional.ofNullable(userAccessTokenAudience);

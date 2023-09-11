@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.security.authorization;
 
 import com.google.common.collect.Lists;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import java.util.Collections;
 import java.util.stream.Stream;
 
@@ -25,7 +25,7 @@ import static org.camunda.optimize.service.util.importing.EngineConstants.RESOUR
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_USER;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 
-public class IdentityAuthorizationIT extends AbstractIT {
+public class IdentityAuthorizationIT extends AbstractPlatformIT {
 
   private static Stream<String> relevantPermissions() {
     return Stream.of(ALL_PERMISSION, READ_PERMISSION);

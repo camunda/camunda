@@ -9,7 +9,8 @@
 
       &.focus-visible,
       &:focus {
-        box-shadow: inset 0px 0px 0px 2px var(--red-darken-38),
+        box-shadow:
+          inset 0px 0px 0px 2px var(--red-darken-38),
           var(--red-lighten-85) 0px 0px 0px 4px;
       }
     }

@@ -13,6 +13,7 @@ import org.camunda.optimize.dto.optimize.FlowNodeTotalDurationDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.RawDataInstanceDto;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Map;
 
 @AllArgsConstructor
@@ -24,7 +25,7 @@ public class RawDataProcessInstanceDto implements RawDataInstanceDto {
   protected String processDefinitionId;
   protected String processInstanceId;
   @FieldNameConstants.Exclude
-  protected RawDataCountDtoDto counts;
+  protected RawDataCountDto counts;
   @FieldNameConstants.Exclude
   protected Map<String, FlowNodeTotalDurationDataDto> flowNodeDurations;
   protected String businessKey;
@@ -37,4 +38,7 @@ public class RawDataProcessInstanceDto implements RawDataInstanceDto {
   // Note that for more convenient display in raw data reports, each list of variable values is joined to form one
   // comma separated string
   protected Map<String, Object> variables;
+  // Note that the flow node data field can only be included on the Json export response
+  @FieldNameConstants.Exclude
+  protected List<RawDataFlowNodeDataDto> flowNodeInstances;
 }

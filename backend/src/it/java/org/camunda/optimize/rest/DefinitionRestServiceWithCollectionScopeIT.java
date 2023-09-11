@@ -6,7 +6,7 @@
 package org.camunda.optimize.rest;
 
 import com.google.common.collect.Lists;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
@@ -26,7 +26,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -41,7 +41,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DE
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_INDEX_NAME;
 
-public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
+public class DefinitionRestServiceWithCollectionScopeIT extends AbstractPlatformIT {
 
   private static final String TENANT_NOT_DEFINED_ID = TenantService.TENANT_NOT_DEFINED.getId();
   private static final String TENANT_ID_1 = "tenant1";

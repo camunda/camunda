@@ -11,9 +11,9 @@ import org.camunda.optimize.dto.optimize.query.security.CredentialsRequestDto;
 import org.camunda.optimize.service.security.AuthCookieService;
 import org.camunda.optimize.service.security.SessionService;
 
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.Response;
 
 @RequiredArgsConstructor
 public abstract class AbstractAuthenticationService {

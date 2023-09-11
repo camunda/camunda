@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.es.retrieval;
 
 import com.google.common.collect.Lists;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
@@ -56,7 +56,7 @@ import org.mockserver.matchers.Times;
 import org.mockserver.model.HttpRequest;
 import org.mockserver.verify.VerificationTimes;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -69,8 +69,8 @@ import java.util.stream.Stream;
 
 import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toSet;
-import static javax.ws.rs.HttpMethod.POST;
-import static javax.ws.rs.HttpMethod.PUT;
+import static jakarta.ws.rs.HttpMethod.POST;
+import static jakarta.ws.rs.HttpMethod.PUT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
@@ -87,7 +87,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_INDE
 import static org.mockserver.model.HttpError.error;
 import static org.mockserver.model.HttpRequest.request;
 
-public class CollectionHandlingIT extends AbstractIT {
+public class CollectionHandlingIT extends AbstractPlatformIT {
 
   private static Stream<DefinitionType> definitionTypes() {
     return Stream.of(PROCESS, DECISION);

@@ -18,8 +18,8 @@ import org.camunda.optimize.service.security.AuthorizedCollectionService;
 import org.camunda.optimize.service.security.ReportAuthorizationService;
 import org.springframework.stereotype.Component;
 
-import javax.ws.rs.ForbiddenException;
-import javax.ws.rs.NotFoundException;
+import jakarta.ws.rs.ForbiddenException;
+import jakarta.ws.rs.NotFoundException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -39,7 +39,7 @@ public class ReportExportService {
   public List<ReportDefinitionExportDto> getReportExportDtos(final Set<String> reportIds) {
     log.debug("Exporting all reports with IDs {} for export via API.", reportIds);
     final List<ReportDefinitionDto<?>> reportDefinitions = retrieveReportDefinitionsOrFailIfMissing(reportIds);
-    return reportDefinitions.stream().map(ReportDefinitionExportDto::mapReportDefinitionToExportDto).collect(toList());
+    return reportDefinitions.stream().map(ReportDefinitionExportDto::mapReportDefinitionToExportDto).toList();
   }
 
   public List<ReportDefinitionExportDto> getReportExportDtosAsUser(final String userId,
@@ -47,7 +47,7 @@ public class ReportExportService {
     log.debug("Exporting all reports with IDs {} as user {}.", reportIds, userId);
     final List<ReportDefinitionDto<?>> reportDefinitions = retrieveReportDefinitionsOrFailIfMissing(reportIds);
     validateReportAuthorizationsOrFail(userId, reportDefinitions);
-    return reportDefinitions.stream().map(ReportDefinitionExportDto::mapReportDefinitionToExportDto).collect(toList());
+    return reportDefinitions.stream().map(ReportDefinitionExportDto::mapReportDefinitionToExportDto).toList();
   }
 
   public List<ReportDefinitionDto<?>> retrieveReportDefinitionsOrFailIfMissing(final Set<String> reportIds) {

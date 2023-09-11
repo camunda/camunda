@@ -45,7 +45,9 @@
     background-color: var(--white);
     box-shadow: none;
     border-bottom: 1px solid transparent;
-    transition: box-shadow 0.2s, border 0.2s;
+    transition:
+      box-shadow 0.2s,
+      border 0.2s;
     z-index: var(--z-above);
 
     .titleBar {

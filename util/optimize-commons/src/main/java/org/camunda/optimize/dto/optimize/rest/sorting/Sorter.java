@@ -5,12 +5,12 @@
  */
 package org.camunda.optimize.dto.optimize.rest.sorting;
 
+import jakarta.ws.rs.BeanParam;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 
-import javax.ws.rs.BeanParam;
 import java.util.List;
 import java.util.Optional;
 

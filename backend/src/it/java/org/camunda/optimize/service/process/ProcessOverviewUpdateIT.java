@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.service.process;
 
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestRequestDto;
@@ -18,7 +18,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -31,7 +31,7 @@ import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_LASTNAME;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
-public class ProcessOverviewUpdateIT extends AbstractIT {
+public class ProcessOverviewUpdateIT extends AbstractPlatformIT {
 
   private static final String DEF_KEY = "def_key";
 

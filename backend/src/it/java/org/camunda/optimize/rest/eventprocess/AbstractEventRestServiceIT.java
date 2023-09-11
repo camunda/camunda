@@ -83,7 +83,7 @@ public abstract class AbstractEventRestServiceIT extends AbstractEventProcessIT 
   protected final List<CloudEventRequestDto> allEventDtos =
     Stream.of(eventTraceOne, eventTraceTwo, eventTraceThree, eventTraceFour)
       .flatMap(Collection::stream)
-      .collect(toList());
+      .toList();
 
   protected static String simpleDiagramXml;
 
@@ -108,7 +108,7 @@ public abstract class AbstractEventRestServiceIT extends AbstractEventProcessIT 
       ).toBuilder().id(event.getId() + traceId).build())
       .peek(eventDto -> eventDto.setTraceid(traceId))
       .peek(eventDto -> eventDto.setTime(currentTimestamp.plusSeconds(incrementCounter.getAndIncrement())))
-      .collect(toList());
+      .toList();
   }
 
   private CloudEventRequestDto createEventDtoWithProperties(final String group, final String source,

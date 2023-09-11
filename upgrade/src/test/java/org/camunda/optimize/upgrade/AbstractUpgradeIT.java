@@ -70,8 +70,8 @@ import java.util.List;
 import java.util.Optional;
 
 import static java.util.stream.Collectors.toList;
-import static javax.ws.rs.HttpMethod.DELETE;
-import static javax.ws.rs.HttpMethod.POST;
+import static jakarta.ws.rs.HttpMethod.DELETE;
+import static jakarta.ws.rs.HttpMethod.POST;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder.createDefaultConfiguration;
 import static org.camunda.optimize.upgrade.EnvironmentConfigUtil.createEmptyEnvConfig;
 import static org.camunda.optimize.upgrade.EnvironmentConfigUtil.deleteEnvConfig;
@@ -233,7 +233,7 @@ public abstract class AbstractUpgradeIT {
           throw new RuntimeException(e);
         }
       })
-      .collect(toList());
+      .toList();
   }
 
   @SneakyThrows

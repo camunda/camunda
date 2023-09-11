@@ -10,7 +10,7 @@ import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import lombok.SneakyThrows;
 import org.assertj.core.groups.Tuple;
-import org.camunda.optimize.AbstractZeebeIT;
+import org.camunda.optimize.AbstractCCSMIT;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
 import org.camunda.optimize.dto.zeebe.variable.ZeebeVariableRecordDto;
@@ -38,7 +38,7 @@ import static org.camunda.optimize.util.ZeebeBpmnModels.createSimpleServiceTaskP
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
-public class ZeebeVariableUpdateImportIT extends AbstractZeebeIT {
+public class ZeebeVariableUpdateImportIT extends AbstractCCSMIT {
 
   private final String PROCESS_ID = "demoProcess";
   private final Map<String, Object> VARIABLES = generateVariables();

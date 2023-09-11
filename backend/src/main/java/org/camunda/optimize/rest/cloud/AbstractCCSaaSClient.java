@@ -18,8 +18,8 @@ import org.camunda.optimize.service.util.configuration.users.CloudUsersConfigura
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PreDestroy;
-import javax.ws.rs.core.HttpHeaders;
+import jakarta.annotation.PreDestroy;
+import jakarta.ws.rs.core.HttpHeaders;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
@@ -36,7 +36,7 @@ public abstract class AbstractCCSaaSClient {
   // E.g.https://modeler.cloud.dev.ultrawombat.com/org/<ORG_ID>
   protected static final String MODELER_URL_TEMPLATE = "https://" + MODELER + ".cloud%s/org/%s";
   // E.g. https://console.cloud.dev.ultrawombat.com
-  protected static final String CONSOLE_ROOTURL_TEMPLATE = "https://" + CONSOLE +".cloud%s";
+  protected static final String CONSOLE_ROOTURL_TEMPLATE = "https://" + CONSOLE + ".cloud%s";
   // E.g. https://console.cloud.dev.ultrawombat.com/org/<ORG_ID>/cluster/<CLUSTER_ID>
   protected static final String CONSOLE_URL_TEMPLATE = CONSOLE_ROOTURL_TEMPLATE + "/org/%s/cluster/%s";
   // Prod domain as fall back
@@ -68,8 +68,12 @@ public abstract class AbstractCCSaaSClient {
 
   // In case the connection times out, the execution will throw a SocketTimeoutException or a
   // ConnectionTimeoutException (depending on the reason), which are both also IOExceptions
-  protected CloseableHttpResponse performRequest(final HttpRequestBase request, final String accessToken) throws IOException {
+  public CloseableHttpResponse performRequest(final HttpRequestBase request, final String accessToken) throws IOException {
     request.setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
+    return httpClient.execute(request);
+  }
+
+  protected CloseableHttpResponse performRequest(final HttpRequestBase request) throws IOException {
     return httpClient.execute(request);
   }
 

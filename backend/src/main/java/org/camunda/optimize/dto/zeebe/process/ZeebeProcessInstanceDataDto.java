@@ -26,6 +26,7 @@ public class ZeebeProcessInstanceDataDto implements ProcessInstanceRecordValue {
   private long parentElementInstanceKey;
   private String elementId;
   private long processInstanceKey;
+  private String tenantId;
 
   @Override
   public String toJson() {

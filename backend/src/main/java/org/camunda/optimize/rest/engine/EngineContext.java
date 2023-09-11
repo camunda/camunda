@@ -5,7 +5,10 @@
  */
 package org.camunda.optimize.rest.engine;
 
-import com.google.common.collect.ImmutableSet;
+import jakarta.ws.rs.client.Client;
+import jakarta.ws.rs.core.GenericType;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
@@ -29,10 +32,6 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.EngineVersionChecker;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
-import javax.ws.rs.client.Client;
-import javax.ws.rs.core.GenericType;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -45,7 +44,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static java.util.stream.Collectors.toList;
 import static org.camunda.optimize.dto.optimize.IdentityType.GROUP;
 import static org.camunda.optimize.dto.optimize.IdentityType.USER;
 import static org.camunda.optimize.service.importing.engine.fetcher.EngineEntityFetcher.UTF8;
@@ -82,7 +80,7 @@ import static org.camunda.optimize.service.util.importing.EngineConstants.USER_I
 
 @Slf4j
 public class EngineContext {
-  private static final Set<String> OPTIMIZE_APPLICATION_AUTH_RESOURCE_IDS = ImmutableSet.of(
+  private static final Set<String> OPTIMIZE_APPLICATION_AUTH_RESOURCE_IDS = Set.of(
     ALL_RESOURCES_RESOURCE_ID, OPTIMIZE_APPLICATION_RESOURCE_ID
   );
   private final String engineAlias;
@@ -137,7 +135,7 @@ public class EngineContext {
           }
         })
         .filter(authorizationDto -> AUTHORIZATION_TYPE_GLOBAL != authorizationDto.getType())
-        .collect(toList());
+        .toList();
 
     optimizeGrantAndRevokeAuthorizations.stream()
       .sorted(
@@ -346,7 +344,7 @@ public class EngineContext {
       // @formatter:on
         .stream()
         .map(this::mapEngineUser)
-        .collect(toList());
+        .toList();
 
     } else {
       final String message = String.format(
@@ -425,24 +423,7 @@ public class EngineContext {
   }
 
   public Optional<String> getInstallationId() {
-//    try {
-//      Response response = getEngineClient()
-//        .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
-//        .path("/installationId") // TODO: adjust the path once CAM-12294 is implemented
-//        .request(MediaType.APPLICATION_JSON)
-//        .get();
-//      if (response.getStatus() == Response.Status.OK.getStatusCode()) {
-//        return Optional.of(response.readEntity(String.class));
-//      }
-//      response.close();
-//    } catch (Exception e) {
-//      String message = String.format(
-//        "Could not get installation id from engine with alias [%s]",
-//        engineAlias
-//      );
-//      log.warn(message, e);
-//      return Optional.empty();
-//    }
+    // CAM-12294 will not be implemented, so returning empty
     return Optional.empty();
   }
 
@@ -462,7 +443,7 @@ public class EngineContext {
         .map(engineGroupDto -> new GroupDto(engineGroupDto.getId(),
                                             engineGroupDto.getName(),
                                             getUserCountForUserGroup(engineGroupDto.getId()).orElse(null)))
-        .collect(toList());
+        .toList();
       // @formatter:on
     } else {
       final String message = String.format(
@@ -488,7 +469,7 @@ public class EngineContext {
         return response.readEntity(new GenericType<List<EngineGroupDto>>() {})
           .stream()
           .map(engineGroupDto -> new GroupDto(engineGroupDto.getId(), engineGroupDto.getName()))
-          .collect(toList());
+          .toList();
         // @formatter:on
       }
     } catch (Exception e) {
@@ -668,7 +649,7 @@ public class EngineContext {
                                                                  final String userId) {
     final List<AuthorizationDto> allAuthorizations =
       getAuthorizationsForTypeForIdentity(resourceType, USER, Arrays.asList(userId, "*"));
-    final List<String> groupIdsForUser = getAllGroupsOfUser(userId).stream().map(GroupDto::getId).collect(toList());
+    final List<String> groupIdsForUser = getAllGroupsOfUser(userId).stream().map(GroupDto::getId).toList();
     if (!groupIdsForUser.isEmpty()) {
       allAuthorizations.addAll(getAuthorizationsForTypeForIdentity(
         resourceType,

@@ -105,6 +105,7 @@ public class ConfigurationServiceConstants {
 
   public static final String CONTAINER_ACCESS_URL = "$.container.accessUrl";
   public static final String CONTAINER_MAX_REQUEST_HEADER_IN_BYTES = "$.container.maxRequestHeaderSizeInBytes";
+  public static final String CONTAINER_MAX_RESPONSE_HEADER_IN_BYTES = "$.container.maxResponseHeaderSizeInBytes";
 
   public static final String ENTITY_CONFIGURATION = "$.entity";
 
@@ -137,7 +138,8 @@ public class ConfigurationServiceConstants {
   public static final String ANALYTICS_CONFIGURATION = "$.analytics";
 
   public static final String ONBOARDING_CONFIGURATION = "$.onboarding";
-
+  public static final String PANEL_NOTIFICATION_CONFIGURATION = "$.panelNotification";
+  public static final String M2M_CLIENT_CONFIGURATION = "$.m2mClient";
   public static final String CREATE_MANAGEMENT_ENTITIES_ON_STARTUP = "$.managementEntities.createOnStartup";
 
   //  This isn't strictly part of the configuration service, but is part of how Optimize is configured

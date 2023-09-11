@@ -29,11 +29,11 @@ import org.camunda.optimize.service.util.configuration.WebhookConfiguration;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PreDestroy;
-import javax.ws.rs.HttpMethod;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+import jakarta.annotation.PreDestroy;
+import jakarta.ws.rs.HttpMethod;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -89,11 +89,16 @@ public class WebhookNotificationService implements AlertNotificationService, Con
     }
 
     final WebhookConfiguration webhookConfiguration = webhookConfigurationMap.get(destination);
-    log.debug(
+    log.info(
       "Sending webhook notification for alert [id: {}, name: {}] to webhook: '{}'.",
       alert.getId(), alert.getName(), destination
     );
     sendWebhookRequest(notification, webhookConfiguration, destination);
+  }
+
+  @Override
+  public String getNotificationDescription() {
+    return "webhook notification";
   }
 
   private void sendWebhookRequest(final AlertNotificationDto notification, final WebhookConfiguration webhook,

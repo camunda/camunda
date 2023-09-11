@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.service.es.report.process.single.usertask.frequency.groupby.duration.distributedby.process;
 
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
@@ -34,7 +34,7 @@ import static org.camunda.optimize.util.BpmnModels.USER_TASK_2;
 import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagram;
 import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 
-public class UserTaskFrequencyByUserTaskDurationByProcessIT extends AbstractIT {
+public class UserTaskFrequencyByUserTaskDurationByProcessIT extends AbstractPlatformIT {
 
   @Test
   public void reportEvaluationWithSingleProcessDefinitionSource() {

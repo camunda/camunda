@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.events;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.ws.rs.BadRequestException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
@@ -30,7 +31,6 @@ import org.camunda.optimize.service.util.EventDtoBuilderUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.stereotype.Component;
 
-import javax.ws.rs.BadRequestException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;

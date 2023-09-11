@@ -13,7 +13,7 @@ import {formatLabelsForTableBody, sortColumns} from './service';
 
 const {formatReportResult, getRelativeValue, frequency, duration} = formatters;
 
-export default function processDefaultData({report}, processVariables) {
+export default function processDefaultData({report}, processVariables = []) {
   const {data, result, reportType} = report;
   const {configuration, view, groupBy} = data;
   const {

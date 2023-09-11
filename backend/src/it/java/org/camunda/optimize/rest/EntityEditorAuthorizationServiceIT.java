@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.rest;
 
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
@@ -15,13 +15,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import java.util.Collections;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 
-public class EntityEditorAuthorizationServiceIT extends AbstractIT {
+public class EntityEditorAuthorizationServiceIT extends AbstractPlatformIT {
 
   @Test
   public void createNewEntitiesAsNonSuperUserWithEntityEditorAuthorization() {

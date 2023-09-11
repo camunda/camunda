@@ -6,7 +6,7 @@
 package org.camunda.optimize.rest;
 
 import lombok.SneakyThrows;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.OnboardingStateDto;
 import org.camunda.optimize.dto.optimize.rest.OnboardingStateRestDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
@@ -14,7 +14,7 @@ import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.junit.jupiter.api.Test;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 import java.util.Optional;
 
@@ -22,7 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ONBOARDING_INDEX_NAME;
 
-public class OnboardingRestIT extends AbstractIT {
+public class OnboardingRestIT extends AbstractPlatformIT {
 
   private static final String KEY_WHATSNEW = "whatsnew";
 

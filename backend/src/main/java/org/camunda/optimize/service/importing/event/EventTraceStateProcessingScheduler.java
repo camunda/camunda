@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.importing.event;
 
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -17,8 +19,7 @@ import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.support.PeriodicTrigger;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
+import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
@@ -90,7 +91,7 @@ public class EventTraceStateProcessingScheduler extends AbstractScheduledService
 
   @Override
   protected Trigger createScheduleTrigger() {
-    return new PeriodicTrigger(0);
+    return new PeriodicTrigger(Duration.ZERO);
   }
 
   @Override

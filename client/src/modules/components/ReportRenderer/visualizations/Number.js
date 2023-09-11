@@ -14,10 +14,11 @@ import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
 
+import {formatValue} from '../service';
+
 import ProgressBar from './ProgressBar';
 
 import './Number.scss';
-import {formatValue} from '../service';
 
 export function Number({report, formatter, mightFail}) {
   const {data, result, reportType} = report;

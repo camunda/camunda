@@ -5,13 +5,13 @@
  */
 package org.camunda.optimize.service.importing.engine.fetcher.instance;
 
+import jakarta.ws.rs.ClientErrorException;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.importing.page.IdSetBasedImportPage;
 
-import javax.ws.rs.ClientErrorException;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;

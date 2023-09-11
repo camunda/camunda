@@ -11,7 +11,7 @@ import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.assertj.core.groups.Tuple;
-import org.camunda.optimize.AbstractZeebeIT;
+import org.camunda.optimize.AbstractCCSMIT;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
 import org.camunda.optimize.dto.zeebe.variable.ZeebeVariableRecordDto;
@@ -45,7 +45,7 @@ import static org.camunda.optimize.util.ZeebeBpmnModels.createStartEndProcess;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
-public class ZeebeVariableCreationImportIT extends AbstractZeebeIT {
+public class ZeebeVariableCreationImportIT extends AbstractCCSMIT {
 
   private static final String PROCESS_ID = "demoProcess";
   private static final Map<String, Object> BASIC_VARIABLES =

@@ -8,6 +8,9 @@ package org.camunda.optimize.test.it.extension;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import jakarta.ws.rs.client.Entity;
+import jakarta.ws.rs.client.WebTarget;
+import jakarta.ws.rs.core.Response;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
@@ -83,14 +86,12 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
@@ -103,6 +104,7 @@ import java.util.stream.Collectors;
 
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.PLATFORM_PROFILE;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 
 @Slf4j
@@ -393,7 +395,7 @@ public class EmbeddedOptimizeExtension
             mediator.resetBackoff();
             return mediator.runImport();
           })
-          .collect(Collectors.toList())
+          .toList()
       );
     }
     CompletableFuture.allOf(synchronizationCompletables.toArray(new CompletableFuture[0])).join();
@@ -473,12 +475,13 @@ public class EmbeddedOptimizeExtension
   }
 
   public void reloadConfiguration() {
-    // reset engine context factory first to ensure we have new clients before reinitializing any other object
-    // as they might make use of the engine client
-    final EngineContextFactory engineContextFactory =
-      getBean(PlatformEngineContextFactory.class);
-    engineContextFactory.close();
-    engineContextFactory.init();
+    if (Arrays.asList(applicationContext.getEnvironment().getActiveProfiles()).contains(PLATFORM_PROFILE)) {
+      // reset engine context factory first to ensure we have new clients before reinitializing any other object
+      // as they might make use of the engine client
+      final EngineContextFactory engineContextFactory = getBean(PlatformEngineContextFactory.class);
+      engineContextFactory.close();
+      engineContextFactory.init();
+    }
 
     final Map<String, ?> refreshableServices = getApplicationContext().getBeansOfType(ConfigurationReloadable.class);
     for (Map.Entry<String, ?> entry : refreshableServices.entrySet()) {

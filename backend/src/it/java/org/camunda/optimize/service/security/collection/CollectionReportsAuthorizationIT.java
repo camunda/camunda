@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.service.security.collection;
 
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.RoleType;
@@ -18,7 +18,7 @@ import org.camunda.optimize.test.engine.AuthorizationClient;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -31,7 +31,7 @@ import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINITION_KEY;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANTS;
 
-public class CollectionReportsAuthorizationIT extends AbstractIT {
+public class CollectionReportsAuthorizationIT extends AbstractPlatformIT {
 
   protected AuthorizationClient authorizationClient = new AuthorizationClient(engineIntegrationExtension);
 

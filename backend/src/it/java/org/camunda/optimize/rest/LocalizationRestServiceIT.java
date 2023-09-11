@@ -8,18 +8,18 @@ package org.camunda.optimize.rest;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.SneakyThrows;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.service.LocalizationService;
 import org.camunda.optimize.util.FileReaderUtil;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class LocalizationRestServiceIT extends AbstractIT {
+public class LocalizationRestServiceIT extends AbstractPlatformIT {
 
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 

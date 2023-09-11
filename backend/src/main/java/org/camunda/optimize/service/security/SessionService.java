@@ -21,9 +21,9 @@ import org.camunda.optimize.service.util.configuration.security.AuthConfiguratio
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.NotAuthorizedException;
-import javax.ws.rs.container.ContainerRequestContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.ws.rs.NotAuthorizedException;
+import jakarta.ws.rs.container.ContainerRequestContext;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.time.Instant;

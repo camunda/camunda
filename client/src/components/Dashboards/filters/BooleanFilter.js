@@ -23,6 +23,7 @@ export default function BooleanFilter({filter, setFilter}) {
 
   return (
     <Popover
+      isTabTip
       className="BooleanFilter"
       title={
         <>

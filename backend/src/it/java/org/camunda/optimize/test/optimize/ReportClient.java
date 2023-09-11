@@ -40,7 +40,7 @@ import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.List;
@@ -774,7 +774,7 @@ public class ReportClient {
     final List<String> reportIds) {
     final List<CombinedReportItemDto> reportItems = reportIds.stream()
       .map(CombinedReportItemDto::new)
-      .collect(toList());
+      .toList();
 
     final CombinedReportDataDto combinedReportData = new CombinedReportDataDto();
     combinedReportData.setReports(reportItems);

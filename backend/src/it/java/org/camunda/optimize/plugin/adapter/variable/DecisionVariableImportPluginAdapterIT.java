@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.plugin.adapter.variable;
 
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.InputInstanceDto;
@@ -24,7 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.util.InstanceIndexUtil.getDecisionInstanceIndexAliasName;
 import static org.camunda.optimize.util.DmnModels.createDefaultDmnModel;
 
-public class DecisionVariableImportPluginAdapterIT extends AbstractIT {
+public class DecisionVariableImportPluginAdapterIT extends AbstractPlatformIT {
 
   private ConfigurationService configurationService;
 

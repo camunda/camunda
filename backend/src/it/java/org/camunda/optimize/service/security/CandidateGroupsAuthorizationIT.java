@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.security;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
@@ -22,7 +22,7 @@ import static org.camunda.optimize.service.util.importing.EngineConstants.RESOUR
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.util.BpmnModels.getUserTaskDiagramWithCandidateGroup;
 
-public class CandidateGroupsAuthorizationIT extends AbstractIT {
+public class CandidateGroupsAuthorizationIT extends AbstractPlatformIT {
 
   @Test
   public void searchForCandidateGroups_forReports_missingCollectionAuth() {

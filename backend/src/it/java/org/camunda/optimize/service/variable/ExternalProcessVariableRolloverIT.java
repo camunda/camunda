@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.variable;
 
 import lombok.SneakyThrows;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableDto;
 import org.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableRequestDto;
 import org.camunda.optimize.service.es.schema.index.ExternalProcessVariableIndex;
@@ -27,7 +27,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_PROCESS_VARIABLE_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.INDEX_SUFFIX_PRE_ROLLOVER;
 
-public class ExternalProcessVariableRolloverIT extends AbstractIT {
+public class ExternalProcessVariableRolloverIT extends AbstractPlatformIT {
   private static final int NUMBER_OF_VARIABLES_IN_BATCH = 10;
   private static final String EXPECTED_SUFFIX_AFTER_FIRST_ROLLOVER = "-000002";
   private static final String EXPECTED_SUFFIX_AFTER_SECOND_ROLLOVER = "-000003";
@@ -132,7 +132,7 @@ public class ExternalProcessVariableRolloverIT extends AbstractIT {
   private void ingestExternalVariables() {
     final List<ExternalProcessVariableRequestDto> variables = IntStream.range(0, NUMBER_OF_VARIABLES_IN_BATCH)
       .mapToObj(i -> ingestionClient.createPrimitiveExternalVariable().setId("id" + i))
-      .collect(toList());
+      .toList();
     ingestionClient.ingestVariables(variables);
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
   }
@@ -166,14 +166,14 @@ public class ExternalProcessVariableRolloverIT extends AbstractIT {
     return indexNameToAliasMap.keySet()
       .stream()
       .filter(index -> indexNameToAliasMap.get(index).stream().anyMatch(AliasMetadata::writeIndex))
-      .collect(toList());
+      .toList();
   }
 
   private List<String> extractIndicesWithReadOnlyAlias(final Map<String, Set<AliasMetadata>> indexNameToAliasMap) {
     return indexNameToAliasMap.keySet()
       .stream()
       .filter(index -> indexNameToAliasMap.get(index).stream().anyMatch(alias -> !alias.writeIndex()))
-      .collect(toList());
+      .toList();
   }
 
   private String getExpectedIndexNameBeforeRollover() {

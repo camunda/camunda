@@ -6,7 +6,7 @@
 package org.camunda.optimize.websocket;
 
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.JettyConfig;
 import org.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants;
 import org.junit.jupiter.api.Test;
@@ -14,10 +14,10 @@ import org.mockserver.integration.ClientAndServer;
 import org.mockserver.model.HttpRequest;
 import org.mockserver.verify.VerificationTimes;
 
-import javax.websocket.ContainerProvider;
-import javax.websocket.DeploymentException;
-import javax.websocket.Session;
-import javax.websocket.WebSocketContainer;
+import jakarta.websocket.ContainerProvider;
+import jakarta.websocket.DeploymentException;
+import jakarta.websocket.Session;
+import jakarta.websocket.WebSocketContainer;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -27,7 +27,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 import static org.mockserver.model.HttpRequest.request;
 
-public class StatusWebSocketIT extends AbstractIT {
+public class StatusWebSocketIT extends AbstractPlatformIT {
   // use single web socket container instance, as every get call is by default creating new instances otherwise
   private static final WebSocketContainer WEB_SOCKET_CONTAINER = ContainerProvider.getWebSocketContainer();
 

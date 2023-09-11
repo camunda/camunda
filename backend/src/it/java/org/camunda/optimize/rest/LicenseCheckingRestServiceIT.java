@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.rest;
 
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.query.LicenseInformationResponseDto;
 import org.camunda.optimize.service.license.LicenseManager;
@@ -16,8 +16,8 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import javax.ws.rs.core.GenericType;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.GenericType;
+import jakarta.ws.rs.core.Response;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.function.Function;
@@ -28,7 +28,7 @@ import static org.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_AUTHORI
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class LicenseCheckingRestServiceIT extends AbstractIT {
+public class LicenseCheckingRestServiceIT extends AbstractPlatformIT {
 
   private static final String CUSTOMER_ID = "schrottis inn";
   private static OffsetDateTime VALID_UNTIL;

@@ -15,21 +15,21 @@ public class SnapshotUtilTest {
   @Test
   public void getSnapshotNameForImportIndices() {
     // when/then
-    assertThat(SnapshotUtil.getSnapshotNameForImportIndices(123))
+    assertThat(SnapshotUtil.getSnapshotNameForImportIndices(123L))
       .isEqualTo(String.format("camunda_optimize_123_%s_part_1_of_2", VERSION));
   }
 
   @Test
   public void getSnapshotNameForNonImportIndices() {
     // when/then
-    assertThat(SnapshotUtil.getSnapshotNameForNonImportIndices(123))
+    assertThat(SnapshotUtil.getSnapshotNameForNonImportIndices(123L))
       .isEqualTo(String.format("camunda_optimize_123_%s_part_2_of_2", VERSION));
   }
 
   @Test
   public void getSnapshotPrefixWithBackupId() {
     // when/then
-    assertThat(SnapshotUtil.getSnapshotPrefixWithBackupId(123))
+    assertThat(SnapshotUtil.getSnapshotPrefixWithBackupId(123L))
       .isEqualTo("camunda_optimize_123_");
   }
 
@@ -38,6 +38,6 @@ public class SnapshotUtilTest {
     // when/then
     assertThat(SnapshotUtil.getBackupIdFromSnapshotName("camunda_optimize_123_3.9.0_part_1_of_2"))
       .isEqualTo(SnapshotUtil.getBackupIdFromSnapshotName("camunda_optimize_123_3.9.0_part_2_of_2"))
-      .isEqualTo(123);
+      .isEqualTo(123L);
   }
 }

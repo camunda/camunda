@@ -18,8 +18,8 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.security.AuthorizedCollectionService;
 import org.springframework.stereotype.Component;
 
-import javax.ws.rs.ForbiddenException;
-import javax.ws.rs.NotFoundException;
+import jakarta.ws.rs.ForbiddenException;
+import jakarta.ws.rs.NotFoundException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -73,7 +73,7 @@ public class DashboardExportService {
     if (dashboardDefinitions.size() != dashboardIds.size()) {
       final List<String> foundIds = dashboardDefinitions.stream()
         .map(DashboardDefinitionRestDto::getId)
-        .collect(toList());
+        .toList();
       final Set<String> missingDashboardIds = new HashSet<>(dashboardIds);
       foundIds.forEach(missingDashboardIds::remove);
       throw new NotFoundException("Could not find dashboards with IDs " + missingDashboardIds);

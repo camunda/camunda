@@ -6,6 +6,8 @@
   align-items: center;
   margin-right: 0;
   border-right: 1px solid var(--silver-darken-87);
+  font-weight: 400;
+  font-size: 0.875rem;
 
   &.active {
     min-width: 0;

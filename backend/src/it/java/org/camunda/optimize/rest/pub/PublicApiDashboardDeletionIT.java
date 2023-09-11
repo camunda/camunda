@@ -5,15 +5,15 @@
  */
 package org.camunda.optimize.rest.pub;
 
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.junit.jupiter.api.Test;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_INDEX_NAME;
 
-public class PublicApiDashboardDeletionIT extends AbstractIT {
+public class PublicApiDashboardDeletionIT extends AbstractPlatformIT {
   private static final String ACCESS_TOKEN = "secret_export_token";
 
   @Test

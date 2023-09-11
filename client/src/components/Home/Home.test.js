@@ -11,10 +11,11 @@ import {shallow} from 'enzyme';
 import {ReportTemplateModal} from 'components';
 
 import {Home} from './Home';
-import {loadEntities} from './service';
+import {loadEntities} from 'services';
 import CreateNewButton from './CreateNewButton';
 
-jest.mock('./service', () => ({
+jest.mock('services', () => ({
+  ...jest.requireActual('services'),
   loadEntities: jest.fn().mockReturnValue([
     {
       id: '1',

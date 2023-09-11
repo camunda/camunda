@@ -21,6 +21,7 @@ export {getDiagramElementsBetween} from './diagramServices';
 export {default as getTooltipText} from './getTooltipText';
 export {default as getScreenBounds} from './getScreenBounds';
 export {
+  loadEntities,
   loadEntity,
   loadReports,
   createEntity,
@@ -43,6 +44,8 @@ export {
   isTextTileValid,
 } from './reportService';
 
+export {addSources, getCollection} from './collectionService';
+
 export * as formatters from './formatters';
 
 export function getRandomId() {
@@ -53,11 +56,12 @@ export function capitalize(string) {
   return string.charAt(0).toUpperCase() + string.slice(1);
 }
 
-export function getCollection(path) {
-  const collectionMatch = /\/collection\/([^/]+)/g.exec(path);
-  return collectionMatch && collectionMatch[1];
-}
-
 export {loadAlerts, addAlert, removeAlert, editAlert} from './alertService';
 export {default as ignoreFragments} from './ignoreFragments';
 export {default as isReactElement} from './isReactElement';
+
+export {
+  createOutstandingRequestPromise,
+  redoOutstandingRequests,
+  resetOutstandingRequests,
+} from './outstandingRequestsService';

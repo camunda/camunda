@@ -5,11 +5,11 @@
  */
 package org.camunda.optimize.service.security.authorization;
 
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
 import org.junit.jupiter.api.Test;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import java.util.Collections;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -21,7 +21,7 @@ import static org.camunda.optimize.service.util.importing.EngineConstants.AUTHOR
 import static org.camunda.optimize.service.util.importing.EngineConstants.OPTIMIZE_APPLICATION_RESOURCE_ID;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_APPLICATION;
 
-public class ApplicationAuthorizationServiceIT extends AbstractIT {
+public class ApplicationAuthorizationServiceIT extends AbstractPlatformIT {
 
   @Test
   public void grantAccessOnGlobally() {

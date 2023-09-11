@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.variable;
 
+import jakarta.ws.rs.BadRequestException;
+import jakarta.ws.rs.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.DefinitionType;
@@ -13,8 +15,6 @@ import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.es.writer.VariableLabelWriter;
 import org.springframework.stereotype.Component;
 
-import javax.ws.rs.BadRequestException;
-import javax.ws.rs.NotFoundException;
 import java.util.stream.Collectors;
 
 @RequiredArgsConstructor

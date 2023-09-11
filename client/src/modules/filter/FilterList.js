@@ -104,16 +104,17 @@ export default class FilterList extends React.Component {
                     }}
                   >
                     <DateFilterPreview filterType={filter.type} filter={filter.data} />
-                    <br />
                     {filter.data.flowNodeIds?.length > 0 && (
                       <>
-                        <span>{t('common.for')} </span>
-                        {filter.data.flowNodeIds.map((id) => (
-                          <b key={id}>
-                            {flowNodeNames?.[id] || id}
-                            <br />
-                          </b>
-                        ))}
+                        <span className="flowNodes">
+                          {t('common.for')}
+                          {filter.data.flowNodeIds.map((id) => (
+                            <b key={id}>
+                              {flowNodeNames?.[id] || id}
+                              <br />
+                            </b>
+                          ))}
+                        </span>
                       </>
                     )}
                     <AppliedToInfo filter={filter} definitions={definitions} />

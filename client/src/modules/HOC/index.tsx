@@ -7,7 +7,7 @@
 
 export {default as withErrorHandling} from './withErrorHandling';
 export {DocsProvider, default as withDocs} from './withDocs';
-export {UserProvider, default as withUser} from './withUser';
+export {UserProvider, default as withUser, UserContext} from './withUser';
 
 export type {WithErrorHandlingProps} from './withErrorHandling';
 export type {WithDocsProps} from './withDocs';

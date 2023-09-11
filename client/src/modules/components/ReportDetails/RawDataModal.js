@@ -5,43 +5,19 @@
  * except in compliance with the proprietary license.
  */
 
-import {useState, useCallback, useEffect} from 'react';
 import {Button} from '@carbon/react';
 
-import {Modal, ReportRenderer, LoadingIndicator} from 'components';
-import {withErrorHandling} from 'HOC';
-import {evaluateReport} from 'services';
+import {Modal, InstanceViewTable} from 'components';
 import {t} from 'translation';
-import {newReport} from 'config';
 
 import './RawDataModal.scss';
 
-export function RawDataModal({name, report, open, onClose, mightFail}) {
-  const [rawDataReport, setRawDataReport] = useState();
-  const [error, setError] = useState();
-  const [reportPayload, setReportPayload] = useState(convertToRawData(report));
-  const [params, setParams] = useState();
-
-  useEffect(() => {
-    mightFail(evaluateReport(reportPayload, [], params), setRawDataReport, setError);
-  }, [mightFail, params, reportPayload]);
-
-  const loadReport = useCallback((params, reportWithUpdatedSorting) => {
-    setParams(params);
-    if (reportWithUpdatedSorting) {
-      setReportPayload(reportWithUpdatedSorting);
-    }
-  }, []);
-
+export default function RawDataModal({name, report, open, onClose}) {
   return (
     <Modal className="RawDataModal" open={open} size="lg" onClose={onClose}>
       <Modal.Header>{name}</Modal.Header>
       <Modal.Content>
-        {!rawDataReport && !error ? (
-          <LoadingIndicator />
-        ) : (
-          <ReportRenderer error={error} report={rawDataReport} loadReport={loadReport} />
-        )}
+        <InstanceViewTable report={report} className="RawDataTable" />
       </Modal.Content>
       <Modal.Footer>
         <Button kind="secondary" className="close" onClick={onClose}>
@@ -50,32 +26,4 @@ export function RawDataModal({name, report, open, onClose, mightFail}) {
       </Modal.Footer>
     </Modal>
   );
-}
-
-export default withErrorHandling(RawDataModal);
-
-function convertToRawData(report) {
-  const newType = report.type === 'decision' ? 'new-decision' : 'new';
-  const defaultReport = newReport[newType];
-
-  return {
-    ...report,
-    data: {
-      ...report.data,
-      configuration: {
-        ...defaultReport.data.configuration,
-        xml: report.data.configuration.xml,
-        sorting: {by: 'startDate', order: 'desc'},
-      },
-      view: {
-        entity: null,
-        properties: ['rawData'],
-      },
-      groupBy: {
-        type: 'none',
-        value: null,
-      },
-      visualization: 'table',
-    },
-  };
 }

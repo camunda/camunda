@@ -76,10 +76,12 @@ function createSingleTargetLineDataset({targetValue, data, color, reportName, is
 
   const datasets = [
     {
+      yAxisID: 'axis-0',
       data: allValues,
       ...targetOptions,
     },
     {
+      yAxisID: 'axis-0',
       label: reportName,
       data: allValues,
       ...normalLineOptions,

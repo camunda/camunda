@@ -282,7 +282,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
       .stream()
       .filter(e -> e.getValue().removeIf(AliasMetadata::writeIndex))
       .map(Map.Entry::getKey)
-      .collect(toList());
+      .toList();
     final Map<String, Object> mappingFields = getMappingFields();
     assertThat(mappingFields).containsKey("email");
     assertThat(aliasMap.keySet()).hasSize(2);

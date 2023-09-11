@@ -115,7 +115,8 @@ input[type='radio'] {
       box-shadow: inset 0px 0px 0px 4px var(--blue-darken-55);
 
       &.focus-visible {
-        box-shadow: inset 0px 0px 0px 4px var(--blue-darken-55),
+        box-shadow:
+          inset 0px 0px 0px 4px var(--blue-darken-55),
           var(--blue-lighten-75) 0px 0px 0px 2px;
       }
     }

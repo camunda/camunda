@@ -7,17 +7,6 @@
 
 import {get, post, put, del} from 'request';
 
-export async function loadEntities(sortBy, sortOrder) {
-  const params = {};
-  if (sortBy && sortOrder) {
-    params.sortBy = sortBy;
-    params.sortOrder = sortOrder;
-  }
-
-  const response = await get('api/entities', params);
-  return await response.json();
-}
-
 export async function loadCollectionEntities(id, sortBy, sortOrder) {
   const params = {};
   if (sortBy && sortOrder) {
@@ -49,10 +38,6 @@ export async function removeUser(collection, id) {
 export async function getSources(collection) {
   const response = await get(`api/collection/${collection}/scope`);
   return await response.json();
-}
-
-export async function addSources(collection, sources) {
-  return await put(`api/collection/${collection}/scope`, sources);
 }
 
 export async function editSource(collection, scopeId, tenants, force = false) {

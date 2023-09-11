@@ -5,9 +5,9 @@
  */
 package org.camunda.optimize.service.es.reader;
 
-import io.micrometer.core.instrument.util.StringUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.exceptions.OptimizeElasticsearchConnectionException;
@@ -82,7 +82,7 @@ public class BackupReader {
     }
   }
 
-  public void validateNoDuplicateBackupId(final Integer backupId) {
+  public void validateNoDuplicateBackupId(final Long backupId) {
     final List<SnapshotInfo> existingSnapshots = getOptimizeSnapshotsForBackupId(backupId);
     if (!existingSnapshots.isEmpty()) {
       final String reason = String.format(
@@ -95,7 +95,7 @@ public class BackupReader {
     }
   }
 
-  public Map<Integer, List<SnapshotInfo>> getAllOptimizeSnapshotsByBackupId() {
+  public Map<Long, List<SnapshotInfo>> getAllOptimizeSnapshotsByBackupId() {
     return getAllOptimizeSnapshots().stream()
       .collect(
         groupingBy(snapshotInfo -> SnapshotUtil.getBackupIdFromSnapshotName(snapshotInfo.snapshot().getSnapshotId().getName()))
@@ -106,7 +106,7 @@ public class BackupReader {
     return getOptimizeSnapshots(getAllWildcardedSnapshotNamesForWildcardedBackupId());
   }
 
-  public List<SnapshotInfo> getOptimizeSnapshotsForBackupId(final Integer backupId) {
+  public List<SnapshotInfo> getOptimizeSnapshotsForBackupId(final Long backupId) {
     return getOptimizeSnapshots(getAllWildcardedSnapshotNamesForBackupId(backupId));
   }
 

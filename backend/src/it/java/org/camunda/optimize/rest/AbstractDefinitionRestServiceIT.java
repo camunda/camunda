@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.rest;
 
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
 import org.camunda.optimize.dto.optimize.TenantDto;
 
@@ -15,7 +15,7 @@ import static org.camunda.optimize.service.util.importing.EngineConstants.ALL_PE
 import static org.camunda.optimize.service.util.importing.EngineConstants.AUTHORIZATION_TYPE_GRANT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_INDEX_NAME;
 
-public abstract class AbstractDefinitionRestServiceIT extends AbstractIT {
+public abstract class AbstractDefinitionRestServiceIT extends AbstractPlatformIT {
 
   protected static final String VERSION_TAG = "aVersionTag";
   protected static final String EXPECTED_DEFINITION_NOT_FOUND_MESSAGE = "Could not find xml for";

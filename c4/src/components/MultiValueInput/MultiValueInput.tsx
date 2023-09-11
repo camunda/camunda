@@ -18,6 +18,7 @@ interface MultiValueInputProps extends ComponentPropsWithoutRef<"input"> {
 	invalid?: boolean
 	titleText?: string
 	invalidText?: string
+	helperText?: string
 }
 
 export default function MultiValueInput({
@@ -27,6 +28,7 @@ export default function MultiValueInput({
 	invalid,
 	titleText,
 	invalidText,
+	helperText,
 	...props
 }: MultiValueInputProps) {
 	const prefix = usePrefix()
@@ -58,6 +60,7 @@ export default function MultiValueInput({
 				})}
 				<input {...props} className="textInput" />
 			</div>
+			{helperText && !invalid  && <div className={`${prefix}--form__helper-text`}>{helperText}</div>}
 			{invalid && invalidText && (
 				<div className={`${prefix}--form-requirement`}>{invalidText}</div>
 			)}

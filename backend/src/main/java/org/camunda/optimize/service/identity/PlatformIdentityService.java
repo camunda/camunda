@@ -7,6 +7,7 @@ package org.camunda.optimize.service.identity;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
+import jakarta.ws.rs.container.ContainerRequestContext;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.IdentityDto;
@@ -24,7 +25,6 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import javax.ws.rs.container.ContainerRequestContext;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;

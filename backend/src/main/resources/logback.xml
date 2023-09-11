@@ -1,26 +1,26 @@
 <configuration>
-
-  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-    <if condition='property("JSON_LOGGING").contains("true")'>
-      <then>
-         <encoder class="net.logstash.logback.encoder.LogstashEncoder">
-          </encoder>
-      </then>
-      <!-- encoders are assigned the type ch.qos.logback.classic.encoder.PatternLayoutEncoder
-       in case JSON_LOGGING != true-->
-      <else>
+  <if condition='property("JSON_LOGGING").equals("true")'>
+    <then>
+      <appender name="STDOUT_JSON" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder" />
+      </appender>
+      <logger name="org.camunda.optimize" level="debug" />
+      <logger name="org.elasticsearch" level="warn" />
+      <root level="info">
+        <appender-ref ref="STDOUT_JSON"/>
+      </root>
+    </then>
+    <else>
+      <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
           <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
-      </else>
-     </if>
-  </appender>
-
-
-<logger name="org.camunda.optimize" level="debug" />
-<logger name="org.elasticsearch" level="warn" />
-
-<root level="info">
- <appender-ref ref="STDOUT" />
-</root>
+      </appender>
+      <logger name="org.camunda.optimize" level="debug" />
+      <logger name="org.elasticsearch" level="warn" />
+      <root level="info">
+        <appender-ref ref="STDOUT"/>
+      </root>
+    </else>
+  </if>
 </configuration>

@@ -10,6 +10,7 @@ import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ClassGraphException;
 import io.github.classgraph.ClassInfoList;
 import io.github.classgraph.ScanResult;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -19,7 +20,6 @@ import org.camunda.optimize.util.SuppressionConstants;
 import org.springframework.context.ApplicationContext;
 import org.springframework.util.ClassUtils;
 
-import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Path;

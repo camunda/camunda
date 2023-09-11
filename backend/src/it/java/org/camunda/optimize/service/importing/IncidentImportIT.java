@@ -32,7 +32,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static java.util.stream.Collectors.toList;
-import static javax.ws.rs.HttpMethod.POST;
+import static jakarta.ws.rs.HttpMethod.POST;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.es.report.process.single.incident.duration.IncidentDataDeployer.IncidentProcessType.ONE_TASK;
 import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
@@ -438,7 +438,7 @@ public class IncidentImportIT extends AbstractImportIT {
     final List<IncidentDto> incidents = elasticSearchIntegrationTestExtension.getAllProcessInstances()
       .stream()
       .flatMap(inst -> inst.getIncidents().stream())
-      .collect(toList());
+      .toList();
     assertThat(incidents).hasSize(1);
   }
 

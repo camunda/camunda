@@ -141,6 +141,7 @@ export function AssigneeFilter({
         {children}
       </div>
       <Popover
+        isTabTip
         title={
           <>
             <Icon type="filter" className={classnames('indicator', {active: filter})} />{' '}

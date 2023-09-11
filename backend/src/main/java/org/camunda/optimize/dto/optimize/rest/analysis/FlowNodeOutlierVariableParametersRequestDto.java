@@ -8,7 +8,7 @@ package org.camunda.optimize.dto.optimize.rest.analysis;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.analysis.FlowNodeOutlierVariableParametersDto;
 
-import javax.ws.rs.QueryParam;
+import jakarta.ws.rs.QueryParam;
 import java.util.List;
 
 @NoArgsConstructor

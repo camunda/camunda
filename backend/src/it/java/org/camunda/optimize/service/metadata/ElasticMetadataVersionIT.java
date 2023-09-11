@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.service.metadata;
 
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.Main;
 import org.camunda.optimize.dto.optimize.query.MetadataDto;
 import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
@@ -24,7 +24,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.METADATA_INDEX_NAME;
 import static org.mockserver.model.HttpRequest.request;
 
-public class ElasticMetadataVersionIT extends AbstractIT {
+public class ElasticMetadataVersionIT extends AbstractPlatformIT {
 
   private static final String SCHEMA_VERSION = "testVersion";
   private static final String INSTALLATION_ID = "testId";

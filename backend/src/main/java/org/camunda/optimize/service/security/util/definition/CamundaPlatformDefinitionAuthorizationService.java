@@ -75,7 +75,7 @@ public class CamundaPlatformDefinitionAuthorizationService implements DataSource
         .map(allAuthorizedTenants::get)
         .filter(Objects::nonNull)
         .sorted(Comparator.comparing(TenantDto::getId, Comparator.nullsFirst(naturalOrder())))
-        .collect(toList());
+        .toList();
     }
   }
 
@@ -165,7 +165,7 @@ public class CamundaPlatformDefinitionAuthorizationService implements DataSource
                                                                    final Collection<T> secondCollection) {
     return Stream.concat(secondCollection.stream(), firstCollection.stream())
       .distinct()
-      .collect(toList());
+      .toList();
   }
 
   private Map<String, TenantDto> getAuthorizedTenantDtosForUser(final String userId) {

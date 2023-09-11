@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.es.report.command.modules.view.process.variable;
 
+import jakarta.ws.rs.BadRequestException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
@@ -28,7 +29,6 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import javax.ws.rs.BadRequestException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;

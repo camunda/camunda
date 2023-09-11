@@ -84,7 +84,7 @@ public class ExternalVariableUpdateImportService implements ImportService<Extern
       resolveDuplicateVariableUpdatesPerProcessInstance(externalEntities);
     List<ProcessVariableUpdateDto> processVariables = deduplicatedVariables.stream()
       .map(this::convertExternalToProcessVariableDto)
-      .collect(toList());
+      .toList();
     return objectVariableService.convertToProcessVariableDtos(processVariables);
   }
 

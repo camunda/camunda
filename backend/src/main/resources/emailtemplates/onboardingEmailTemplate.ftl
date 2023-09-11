@@ -373,7 +373,7 @@
                                                                     </p>
                                                                 <p
                                                                     style="mso-line-height-rule:exactly; line-height:175%">
-                                                                    You have completed your first process instance for
+                                                                    You have started your first process instance for
                                                                     the ${processName} process!</p>
 
                                                                 <p

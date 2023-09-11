@@ -23,7 +23,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.view.Decis
 import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.NoneDistributedByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.ProcessReportDistributedByDto;
 
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;

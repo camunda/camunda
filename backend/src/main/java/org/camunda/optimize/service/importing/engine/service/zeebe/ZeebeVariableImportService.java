@@ -25,7 +25,7 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.importing.engine.service.ObjectVariableService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MediaType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -75,7 +75,7 @@ public class ZeebeVariableImportService extends ZeebeProcessInstanceSubEntityImp
       .collect(Collectors.groupingBy(zeebeRecord -> zeebeRecord.getValue().getProcessInstanceKey()))
       .values().stream()
       .map(this::createProcessInstanceForData)
-      .collect(toList());
+      .toList();
     log.debug(
       "Processing {} fetched zeebe variable records, of which {} are relevant to Optimize and will be imported.",
       zeebeRecords.size(),
@@ -116,7 +116,7 @@ public class ZeebeVariableImportService extends ZeebeProcessInstanceSubEntityImp
       .map(this::convertToProcessVariableDto)
       .filter(Optional::isPresent)
       .map(Optional::get)
-      .collect(toList());
+      .toList();
     final List<ProcessVariableDto> processVariablesToImport;
     if (configurationService.getConfiguredZeebe().isIncludeObjectVariableValue()) {
       processVariablesToImport = objectVariableService.convertToProcessVariableDtos(variables);

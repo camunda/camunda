@@ -5,14 +5,14 @@
  */
 package org.camunda.optimize.rest.engine;
 
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
 import org.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import java.util.Collections;
 import java.util.List;
 
@@ -33,7 +33,7 @@ import static org.camunda.optimize.service.util.importing.EngineConstants.RESOUR
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
 
-public class BasicAuthenticationEnabledIT extends AbstractIT {
+public class BasicAuthenticationEnabledIT extends AbstractPlatformIT {
 
   private static final String HTTP_LOCALHOST = "http://localhost:8080";
   private static final String TEST_USERNAME = "genzo";

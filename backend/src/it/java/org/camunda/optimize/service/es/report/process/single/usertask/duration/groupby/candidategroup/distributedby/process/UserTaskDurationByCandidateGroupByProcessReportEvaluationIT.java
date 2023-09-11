@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.es.report.process.single.usertask.duration.groupby.candidategroup.distributedby.process;
 
 import org.assertj.core.groups.Tuple;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
@@ -39,7 +39,7 @@ import static org.camunda.optimize.service.util.ProcessReportDataType.USER_TASK_
 import static org.camunda.optimize.util.BpmnModels.getFourUserTaskDiagram;
 import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 
-public class UserTaskDurationByCandidateGroupByProcessReportEvaluationIT extends AbstractIT {
+public class UserTaskDurationByCandidateGroupByProcessReportEvaluationIT extends AbstractPlatformIT {
 
   private static final String FIRST_CANDIDATE_GROUP_ID = "firstGroup";
   private static final String FIRST_CANDIDATE_GROUP_NAME = "first";

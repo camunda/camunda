@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.importing;
 
+import jakarta.ws.rs.core.Response;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.junit.jupiter.api.Test;
 import org.mockserver.integration.ClientAndServer;
@@ -12,7 +13,6 @@ import org.mockserver.matchers.Times;
 import org.mockserver.model.HttpResponse;
 import org.mockserver.model.MediaType;
 
-import javax.ws.rs.core.Response;
 import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;

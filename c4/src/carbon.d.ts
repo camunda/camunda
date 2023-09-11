@@ -23,7 +23,7 @@ declare module "@carbon/react" {
 		id: string
 		className: string
 		label: ReactNode
-		size: string
+		size: "xs" | "sm" | "md" | "lg"
 		open: boolean
 		onClose: () => void
 		onOpen: () => void

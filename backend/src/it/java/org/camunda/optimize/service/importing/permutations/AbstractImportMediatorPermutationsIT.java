@@ -17,9 +17,11 @@ import org.camunda.optimize.test.it.extension.EngineIntegrationExtension;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.util.Comparator;
 import java.util.List;
@@ -27,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.PLATFORM_PROFILE;
 import static org.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants.INTEGRATION_TESTS;
 import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 
@@ -35,6 +38,8 @@ import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
   properties = { INTEGRATION_TESTS + "=true" }
 )
 @Configuration
+@Tag("import")
+@ActiveProfiles(PLATFORM_PROFILE)
 public abstract class AbstractImportMediatorPermutationsIT {
   protected static final String TEST_PROCESS = "process";
   protected static final String CANDIDATE_GROUP = "candidateGroup";
@@ -76,7 +81,7 @@ public abstract class AbstractImportMediatorPermutationsIT {
         .stream()
         .filter(engineImportMediator -> mediatorOrder.contains(engineImportMediator.getClass()))
         .sorted(Comparator.comparingInt(o -> mediatorOrder.indexOf(o.getClass())))
-        .collect(toList());
+        .toList();
 
       for (ImportMediator sortedMediator : sortedMediators) {
         // run and wait for each mediator to finish the import run to force a certain execution order

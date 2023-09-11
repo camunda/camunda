@@ -5,7 +5,15 @@
  */
 package org.camunda.optimize.upgrade.plan.factories;
 
+import com.google.common.collect.ImmutableMap;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.text.StringSubstitutor;
+import org.camunda.optimize.dto.optimize.datasource.DataSourceDto;
+import org.camunda.optimize.service.es.schema.MappingMetadataUtil;
+import org.camunda.optimize.service.es.schema.index.AbstractDefinitionIndex;
 import org.camunda.optimize.service.es.schema.index.DashboardIndex;
+import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex;
+import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.es.schema.index.report.CombinedReportIndex;
 import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportIndex;
 import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
@@ -13,10 +21,20 @@ import org.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
 import org.camunda.optimize.upgrade.steps.UpgradeStep;
+import org.camunda.optimize.upgrade.steps.document.UpdateDataStep;
 import org.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
+import org.elasticsearch.index.query.BoolQueryBuilder;
 
+import java.util.ArrayList;
 import java.util.List;
 
+import static org.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ZEEBE_DATA_SOURCE;
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+
+@Slf4j
 public class Upgrade310To311PlanFactory implements UpgradePlanFactory {
   @Override
   public UpgradePlan createUpgradePlan(final UpgradeExecutionDependencies upgradeExecutionDependencies) {
@@ -25,6 +43,8 @@ public class Upgrade310To311PlanFactory implements UpgradePlanFactory {
       .toVersion("3.11.0")
       .addUpgradeSteps(addDescriptionFieldToReportIndices())
       .addUpgradeStep(addDescriptionFieldToDashboardIndex())
+      .addUpgradeStep(updateTenantIdInProcessDefinitionDocumentC8())
+      .addUpgradeSteps(updateTenantIdInProcessInstanceDocumentC8(upgradeExecutionDependencies))
       .build();
   }
 
@@ -38,6 +58,45 @@ public class Upgrade310To311PlanFactory implements UpgradePlanFactory {
       new UpdateIndexStep(new SingleDecisionReportIndex(), addDescriptionScript()),
       new UpdateIndexStep(new CombinedReportIndex(), addDescriptionScript())
     );
+  }
+
+  private UpgradeStep updateTenantIdInProcessDefinitionDocumentC8() {
+    final BoolQueryBuilder query = boolQuery()
+      .must(termQuery(AbstractDefinitionIndex.DATA_SOURCE + "." + DataSourceDto.Fields.type, ZEEBE_DATA_SOURCE))
+      .mustNot(existsQuery(ProcessDefinitionIndex.TENANT_ID));
+    return new UpdateDataStep(
+      new ProcessDefinitionIndex(),
+      query,
+      String.format("ctx._source.tenantId = '%s';", ZEEBE_DEFAULT_TENANT)
+    );
+  }
+
+  private List<UpgradeStep> updateTenantIdInProcessInstanceDocumentC8(final UpgradeExecutionDependencies upgradeExecutionDependencies) {
+    final BoolQueryBuilder query = boolQuery()
+      .must(termQuery(ProcessInstanceIndex.DATA_SOURCE + "." + DataSourceDto.Fields.type, ZEEBE_DATA_SOURCE))
+      .mustNot(existsQuery(ProcessInstanceIndex.TENANT_ID));
+    final StringSubstitutor substitutor = new StringSubstitutor(
+      ImmutableMap.<String, String>builder()
+        .put("defaultTenantId", ZEEBE_DEFAULT_TENANT)
+        .build()
+    );
+    final String script = substitutor.replace(
+      "  ctx._source.tenantId = '${defaultTenantId}';\n" +
+        "  for (incident in ctx._source.incidents) {\n" +
+        "      incident.tenantId = '${defaultTenantId}';\n" +
+        "  }\n" +
+        "  for (flowNode in ctx._source.flowNodeInstances) {\n" +
+        "      flowNode.tenantId = '${defaultTenantId}';\n" +
+        "  }\n");
+    final List<String> processDefinitionKeys = MappingMetadataUtil.retrieveProcessInstanceIndexIdentifiers(
+      upgradeExecutionDependencies.getEsClient(),
+      false
+    );
+    List<UpgradeStep> updateDataSteps = new ArrayList<>();
+    for (String processDefinitionKey : processDefinitionKeys) {
+      updateDataSteps.add(new UpdateDataStep(new ProcessInstanceIndex(processDefinitionKey), query, script));
+    }
+    return updateDataSteps;
   }
 
   private static String addDescriptionScript() {

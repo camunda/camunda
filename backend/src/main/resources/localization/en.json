@@ -821,7 +821,7 @@
         }
       }
     },
-    "copyInstantDashboard": "Create copy"
+    "copyInstantDashboard": "Create editable copy"
   },
   "alert": {
     "label": "Alert",

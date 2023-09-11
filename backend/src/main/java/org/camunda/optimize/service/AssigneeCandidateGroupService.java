@@ -7,6 +7,7 @@ package org.camunda.optimize.service;
 
 
 import com.google.common.collect.Sets;
+import jakarta.ws.rs.ForbiddenException;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,7 +31,6 @@ import org.camunda.optimize.service.report.ReportService;
 import org.camunda.optimize.service.security.util.definition.DataSourceDefinitionAuthorizationService;
 import org.springframework.stereotype.Component;
 
-import javax.ws.rs.ForbiddenException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -41,7 +41,6 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
 
@@ -71,7 +70,7 @@ public class AssigneeCandidateGroupService {
     return assigneeIds
       .stream()
       .map(id -> assigneesById.getOrDefault(id, new UserDto(id)))
-      .collect(toList());
+      .toList();
   }
 
   public IdentitySearchResultResponseDto searchForAssigneesAsUser(
@@ -106,7 +105,7 @@ public class AssigneeCandidateGroupService {
     return assigneeIds
       .stream()
       .map(id -> candidateGroupsById.getOrDefault(id, new GroupDto(id)))
-      .collect(toList());
+      .toList();
   }
 
   public IdentitySearchResultResponseDto searchForCandidateGroupsAsUser(

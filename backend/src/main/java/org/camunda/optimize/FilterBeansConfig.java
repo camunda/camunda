@@ -25,7 +25,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
 
-import javax.servlet.DispatcherType;
+import jakarta.servlet.DispatcherType;
 import java.util.concurrent.Callable;
 
 import static org.camunda.optimize.jetty.OptimizeResourceConstants.REST_API_PATH;

@@ -258,7 +258,7 @@ declare module '@carbon/react' {
 
   export interface DataTableCustomRenderProps<
     R extends DataTableRow = DataTableRow,
-    H extends DataTableHeader = DataTableHeader
+    H extends DataTableHeader = DataTableHeader,
   > {
     expandAll(): void;
     expandRow(rowId: R['id']): void;
@@ -292,7 +292,7 @@ declare module '@carbon/react' {
 
   export interface DataTableProps<
     R extends DataTableRow = DataTableRow,
-    H extends DataTableHeader = DataTableHeader
+    H extends DataTableHeader = DataTableHeader,
   > extends TableCarbonProps {
     filterRows?(data: FilterRowsData<R, H>): Array<R['id']>;
     headers: H[];
@@ -306,7 +306,7 @@ declare module '@carbon/react' {
 
   declare class DataTable<
     R extends DataTableRow = DataTableRow,
-    H extends DataTableHeader = DataTableHeader
+    H extends DataTableHeader = DataTableHeader,
   > extends Component<DataTableProps<R, H>> {}
 
   interface InheritedProps extends TableHTMLAttributes<HTMLTableElement> {}

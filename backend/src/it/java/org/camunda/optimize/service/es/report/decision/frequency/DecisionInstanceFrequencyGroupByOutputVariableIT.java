@@ -31,7 +31,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
@@ -623,7 +623,7 @@ public class DecisionInstanceFrequencyGroupByOutputVariableIT extends AbstractDe
     // then
     final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).hasSize(3);
-    final List<String> resultKeys = resultData.stream().map(MapResultEntryDto::getKey).collect(toList());
+    final List<String> resultKeys = resultData.stream().map(MapResultEntryDto::getKey).toList();
     assertThat(resultKeys).isSortedAccordingTo(Comparator.reverseOrder());
   }
 
@@ -670,7 +670,7 @@ public class DecisionInstanceFrequencyGroupByOutputVariableIT extends AbstractDe
     // then
     final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).hasSize(3);
-    final List<Double> bucketValues = resultData.stream().map(MapResultEntryDto::getValue).collect(toList());
+    final List<Double> bucketValues = resultData.stream().map(MapResultEntryDto::getValue).toList();
     assertThat(bucketValues).isSortedAccordingTo(Comparator.naturalOrder());
   }
 
@@ -797,7 +797,7 @@ public class DecisionInstanceFrequencyGroupByOutputVariableIT extends AbstractDe
 
     // then
     final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
-    final List<String> resultKeys = resultData.stream().map(MapResultEntryDto::getKey).collect(toList());
+    final List<String> resultKeys = resultData.stream().map(MapResultEntryDto::getKey).toList();
     assertThat(resultKeys).isSortedAccordingTo(Comparator.naturalOrder());
   }
 

@@ -14,7 +14,7 @@ import org.camunda.optimize.service.security.util.definition.DataSourceDefinitio
 import org.camunda.optimize.service.util.ValidationHelper;
 import org.springframework.stereotype.Component;
 
-import javax.ws.rs.ForbiddenException;
+import jakarta.ws.rs.ForbiddenException;
 import java.time.ZoneId;
 
 @RequiredArgsConstructor

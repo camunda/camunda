@@ -10,6 +10,8 @@ import React, {useState, useEffect} from 'react';
 import {Form, Labeled, Button, MessageBox, PageTitle} from 'components';
 import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
+import {addHandler, removeHandler} from 'request';
+import {resetOutstandingRequests, createOutstandingRequestPromise} from 'services';
 
 import {Header, Footer} from '..';
 import {validateLicense, storeLicense} from './service';
@@ -24,6 +26,30 @@ export function License({mightFail, error, resetError}) {
   useEffect(() => {
     mightFail(validateLicense(), setLicenseInfo);
   }, [mightFail]);
+
+  useEffect(() => {
+    const handleResponse = async (response, payload) => {
+      const {status} = response;
+      if (status >= 400) {
+        const {url} = payload;
+        const {errorCode} = await response.clone().json();
+
+        // all the other requests are returning this errorCode so we just mute them out
+        if (errorCode === 'noLicenseStoredError' && url !== 'api/license/validate') {
+          return createOutstandingRequestPromise(payload);
+        }
+      }
+
+      // we allow the errors from api/license/validate to pass to display error message
+      return response;
+    };
+    addHandler(handleResponse);
+
+    return () => {
+      removeHandler(handleResponse);
+      resetOutstandingRequests();
+    };
+  }, []);
 
   return (
     <>

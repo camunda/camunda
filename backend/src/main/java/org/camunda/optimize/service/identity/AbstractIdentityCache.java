@@ -26,8 +26,8 @@ import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.support.CronExpression;
 import org.springframework.scheduling.support.CronTrigger;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import java.time.OffsetDateTime;
 import java.util.Collection;
 import java.util.List;
@@ -187,7 +187,7 @@ public abstract class AbstractIdentityCache extends AbstractScheduledService imp
       .stream()
       .filter(UserDto.class::isInstance)
       .map(UserDto.class::cast)
-      .collect(toList());
+      .toList();
   }
 
   public Optional<GroupDto> getGroupIdentityById(final String id) {
@@ -200,7 +200,7 @@ public abstract class AbstractIdentityCache extends AbstractScheduledService imp
       .stream()
       .filter(GroupDto.class::isInstance)
       .map(GroupDto.class::cast)
-      .collect(toList());
+      .toList();
   }
 
   public List<IdentityWithMetadataResponseDto> getIdentities(final Collection<IdentityDto> identities) {

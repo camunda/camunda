@@ -37,7 +37,7 @@ it('should load the initial user into the user dropdown', () => {
   );
 
   expect(node.find(UserTypeahead).prop('users')).toEqual([
-    {id: 'USER:test', identity: {id: 'test', name: 'testName'}},
+    {id: 'USER:test', identity: {id: 'test', name: 'testName', type: 'user'}},
   ]);
 });
 

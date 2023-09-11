@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.service.exceptions;
 
-import javax.ws.rs.ForbiddenException;
+import jakarta.ws.rs.ForbiddenException;
 
 // For some reason, this suppression does not work if saved in the suppression constants file
 @SuppressWarnings("squid:MaximumInheritanceDepth")

@@ -5,8 +5,9 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import React, {runLastEffect} from 'react';
 import {shallow} from 'enzyme';
+import {useLocation} from 'react-router';
 
 import {Deleter, ReportRenderer, InstanceCount, DownloadButton, AlertsDropdown} from 'components';
 import {checkDeleteConflict} from 'services';
@@ -37,6 +38,13 @@ jest.mock('dates', () => ({
   format: () => 'some date',
 }));
 
+jest.mock('react-router', () => ({
+  ...jest.requireActual('react-router'),
+  useLocation: jest.fn().mockImplementation(() => {
+    return {pathname: '/report'};
+  }),
+}));
+
 const report = {
   id: '1',
   name: 'name',
@@ -56,10 +64,7 @@ const report = {
 it('should display the key properties of a report', () => {
   const node = shallow(<ReportView report={report} />);
 
-  node.setState({
-    loaded: true,
-    report,
-  });
+  runLastEffect();
 
   expect(node.find('EntityName').prop('children')).toBe(report.name);
   expect(node.find(InstanceCount)).toExist();
@@ -120,6 +125,7 @@ it('should show alert dropdown for number reports', async () => {
     <ReportView report={{...report, data: {...report.data, visualization: 'number'}}} />
   );
 
+  runLastEffect();
   await node.update();
 
   expect(node.find(AlertsDropdown)).toExist();
@@ -163,6 +169,14 @@ describe('Download CSV', () => {
     expect(node.find(DownloadButton)).not.toExist();
   });
 
+  it('should not show a download csv button if the visualization is number', () => {
+    const node = shallow(
+      <ReportView report={{...report, data: {...report.data, visualization: 'number'}}} />
+    );
+
+    expect(node.find(DownloadButton)).not.toExist();
+  });
+
   it('should calculate total entries correctly for different report types', () => {
     const node = shallow(
       <ReportView report={{...report, result: {type: 'number', measures: [{data: 12}]}}} />
@@ -196,4 +210,36 @@ it('should hide share, edit and delete buttons for instant preview report', () =
   expect(node.find('ShareEntity')).not.toExist();
   expect(node.find('.tool-button.edit-button')).not.toExist();
   expect(node.find('.tool-button.delete-button')).not.toExist();
+});
+
+it('should hide bottom raw data panel for table reports', async () => {
+  const node = await shallow(<ReportView report={report} />);
+
+  await node.update();
+
+  expect(node.find('.bottomPanel')).not.toExist();
+});
+
+it('should hide bottom raw data panel for processes page reports', async () => {
+  useLocation.mockReturnValueOnce({pathname: '/processes/report'});
+
+  const node = await shallow(
+    <ReportView report={{...report, data: {...report.data, visualization: 'number'}}} />
+  );
+
+  await node.update();
+
+  expect(node.find('.bottomPanel')).not.toExist();
+});
+
+it('should hide expandButton & report renderer when expanding bottom panel', async () => {
+  const node = await shallow(
+    <ReportView report={{...report, data: {...report.data, visualization: 'number'}}} />
+  );
+
+  await node.update();
+
+  node.find('.expandButton').simulate('click');
+  expect(node.find('.expandButton')).not.toExist();
+  expect(node.find(ReportRenderer)).not.toExist();
 });

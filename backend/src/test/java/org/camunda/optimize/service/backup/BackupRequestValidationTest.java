@@ -5,16 +5,15 @@
  */
 package org.camunda.optimize.service.backup;
 
-import org.apache.commons.lang3.StringUtils;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
+import jakarta.validation.ValidatorFactory;
 import org.camunda.optimize.dto.optimize.rest.BackupRequestDto;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import javax.validation.ConstraintViolation;
-import javax.validation.Validation;
-import javax.validation.Validator;
-import javax.validation.ValidatorFactory;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -25,7 +24,7 @@ public class BackupRequestValidationTest {
 
   @ParameterizedTest
   @MethodSource("invalidBackupIds")
-  public void triggerBackupWithInvalidBackupId(final Integer invalidBackupId, final String expectedErrorMsg) {
+  public void triggerBackupWithInvalidBackupId(final Long invalidBackupId, final String expectedErrorMsg) {
     // when
     ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
     Validator validator = factory.getValidator();
@@ -40,7 +39,7 @@ public class BackupRequestValidationTest {
   private static Stream<Arguments> invalidBackupIds() {
     return Stream.of(
       Arguments.of(null, "must not be null"),
-      Arguments.of(-1, "must be greater than or equal to 0")
+      Arguments.of(-1L, "must be greater than or equal to 0")
     );
   }
 }

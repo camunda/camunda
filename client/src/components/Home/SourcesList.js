@@ -12,12 +12,11 @@ import {t} from 'translation';
 import {EntityList, Deleter, BulkDeleter, Modal, Button as LegacyButton} from 'components';
 import {showError} from 'notifications';
 import {withErrorHandling} from 'HOC';
-import {formatters} from 'services';
+import {formatters, addSources} from 'services';
 import {areTenantsAvailable} from 'config';
 
 import {
   getSources,
-  addSources,
   editSource,
   removeSource,
   checkDeleteSourceConflicts,

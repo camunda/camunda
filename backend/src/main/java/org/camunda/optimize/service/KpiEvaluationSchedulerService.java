@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service;
 
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.SimpleDefinitionDto;
@@ -16,12 +18,10 @@ import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.support.PeriodicTrigger;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
@@ -81,7 +81,7 @@ public class KpiEvaluationSchedulerService extends AbstractScheduledService {
 
   @Override
   protected Trigger createScheduleTrigger() {
-    return new PeriodicTrigger(configurationService.getEntityConfiguration().getKpiRefreshInterval(), TimeUnit.SECONDS);
+    return new PeriodicTrigger(Duration.ofSeconds(configurationService.getEntityConfiguration().getKpiRefreshInterval()));
   }
 
 }

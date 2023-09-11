@@ -23,6 +23,7 @@ import org.camunda.optimize.test.it.extension.MockServerUtil;
 import org.camunda.optimize.test.util.VariableTestUtil;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -33,15 +34,17 @@ import org.mockserver.matchers.Times;
 import org.mockserver.model.HttpRequest;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
-import static javax.ws.rs.HttpMethod.GET;
+import static jakarta.ws.rs.HttpMethod.GET;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ProcessInstanceConstants.SUSPENDED_STATE;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.PLATFORM_PROFILE;
 import static org.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants.INTEGRATION_TESTS;
 import static org.camunda.optimize.test.it.extension.MockServerUtil.MOCKSERVER_HOST;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
@@ -57,6 +60,8 @@ import static org.mockserver.model.HttpRequest.request;
   properties = {INTEGRATION_TESTS + "=true"}
 )
 @Configuration
+@Tag("import")
+@ActiveProfiles(PLATFORM_PROFILE)
 public abstract class AbstractImportEndpointFailureIT {
 
   protected static final String START_EVENT = "startEvent";

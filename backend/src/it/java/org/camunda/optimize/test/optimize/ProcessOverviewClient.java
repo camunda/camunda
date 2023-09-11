@@ -13,7 +13,7 @@ import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewRe
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessUpdateDto;
 import org.camunda.optimize.dto.optimize.rest.sorting.ProcessOverviewSorter;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import java.util.List;
 import java.util.function.Supplier;
 

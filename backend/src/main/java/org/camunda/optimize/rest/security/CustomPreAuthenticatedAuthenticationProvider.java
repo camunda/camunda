@@ -18,12 +18,9 @@ public class CustomPreAuthenticatedAuthenticationProvider implements Authenticat
 
   @Override
   public Authentication authenticate(final Authentication authentication) throws AuthenticationException {
-    if (authentication instanceof PreAuthenticatedAuthenticationToken) {
-      PreAuthenticatedAuthenticationToken token = (PreAuthenticatedAuthenticationToken) authentication;
-      if (authentication.getPrincipal() != null) {
-        token.setAuthenticated(true);
-        return token;
-      }
+    if (authentication instanceof PreAuthenticatedAuthenticationToken token && authentication.getPrincipal() != null) {
+      token.setAuthenticated(true);
+      return token;
     }
     return null;
   }

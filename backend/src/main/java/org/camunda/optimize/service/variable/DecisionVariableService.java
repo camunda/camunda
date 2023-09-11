@@ -15,7 +15,7 @@ import org.camunda.optimize.service.es.reader.DecisionVariableReader;
 import org.camunda.optimize.service.security.util.tenant.DataSourceTenantAuthorizationService;
 import org.springframework.stereotype.Component;
 
-import javax.ws.rs.ForbiddenException;
+import jakarta.ws.rs.ForbiddenException;
 import java.util.List;
 import java.util.stream.Collectors;
 

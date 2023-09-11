@@ -5,6 +5,9 @@
  */
 package org.camunda.optimize.upgrade.migrate310to311;
 
+import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex;
+import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
+import org.camunda.optimize.service.es.schema.index.events.EventProcessDefinitionIndex;
 import org.camunda.optimize.upgrade.AbstractUpgradeIT;
 import org.camunda.optimize.upgrade.migrate310to311.indices.CombinedDecisionReportIndexV4;
 import org.camunda.optimize.upgrade.migrate310to311.indices.DashboardIndexV7;
@@ -24,11 +27,26 @@ public abstract class AbstractUpgrade311IT extends AbstractUpgradeIT {
   protected final SingleDecisionReportIndexV9 SINGLE_DECISION_REPORT_INDEX = new SingleDecisionReportIndexV9();
   protected final CombinedDecisionReportIndexV4 COMBINED_REPORT_INDEX = new CombinedDecisionReportIndexV4();
   protected final DashboardIndexV7 DASHBOARD_INDEX = new DashboardIndexV7();
+  protected final ProcessDefinitionIndex PROCESS_DEFINITION_INDEX = new ProcessDefinitionIndex();
+  protected final EventProcessDefinitionIndex EVENT_PROCESS_DEFINITION_INDEX = new EventProcessDefinitionIndex();
+  protected final ProcessInstanceIndex PROCESS_INSTANCE_INDEX_REVIEW_INVOICE = new ProcessInstanceIndex("reviewinvoice");
+  protected final ProcessInstanceIndex PROCESS_INSTANCE_INDEX_ONLY_INCIDENTS_PROCESS = new ProcessInstanceIndex("onlyincidentsprocess");
+  protected final ProcessInstanceIndex PROCESS_INSTANCE_INDEX_ALWAYS_COMPLETING_PROCESS = new ProcessInstanceIndex(  "always-completing-process");
 
   @BeforeEach
   protected void setUp() throws Exception {
     super.setUp();
-    initSchema(List.of(SINGLE_PROCESS_REPORT_INDEX, SINGLE_DECISION_REPORT_INDEX, COMBINED_REPORT_INDEX, DASHBOARD_INDEX));
+    initSchema(List.of(
+      SINGLE_PROCESS_REPORT_INDEX,
+      SINGLE_DECISION_REPORT_INDEX,
+      COMBINED_REPORT_INDEX,
+      DASHBOARD_INDEX,
+      PROCESS_DEFINITION_INDEX,
+      EVENT_PROCESS_DEFINITION_INDEX,
+      PROCESS_INSTANCE_INDEX_REVIEW_INVOICE,
+      PROCESS_INSTANCE_INDEX_ONLY_INCIDENTS_PROCESS,
+      PROCESS_INSTANCE_INDEX_ALWAYS_COMPLETING_PROCESS
+    ));
     setMetadataVersion(FROM_VERSION);
   }
 

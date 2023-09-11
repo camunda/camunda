@@ -16,9 +16,22 @@
         font-size: 10px;
       }
 
-      .content > span.note {
-        display: block;
-        margin-top: 5px;
+      .content {
+        & > .note {
+          display: block;
+          margin-top: 5px;
+        }
+
+        .DateFilterPreview + * {
+          display: block;
+          margin-top: 13px;
+        }
+
+        .flowNodes {
+          b:first-of-type {
+            margin-left: 3px;
+          }
+        }
       }
     }
 

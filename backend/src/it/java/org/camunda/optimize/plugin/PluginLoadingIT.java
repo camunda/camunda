@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.plugin;
 
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.plugin.importing.variable.PluginVariableDto;
 import org.camunda.optimize.plugin.importing.variable.VariableImportAdapter;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -25,7 +25,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.camunda.optimize.plugin.PluginVersionChecker.buildMissingPluginVersionMessage;
 import static org.camunda.optimize.plugin.PluginVersionChecker.buildUnsupportedPluginVersionMessage;
 
-public class PluginLoadingIT extends AbstractIT {
+public class PluginLoadingIT extends AbstractPlatformIT {
 
   private ConfigurationService configurationService;
   private VariableImportAdapterProvider pluginProvider;

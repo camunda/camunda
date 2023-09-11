@@ -6,7 +6,7 @@
 package org.camunda.optimize.rest;
 
 import com.google.common.collect.Lists;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
 import org.camunda.optimize.dto.optimize.UserDto;
@@ -29,7 +29,7 @@ import org.mockserver.integration.ClientAndServer;
 import org.mockserver.matchers.Times;
 import org.mockserver.model.HttpRequest;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
@@ -46,7 +46,7 @@ import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.KERMIT_GROUP_NAME;
 import static org.mockserver.model.HttpRequest.request;
 
-public class IdentityRestServiceIT extends AbstractIT {
+public class IdentityRestServiceIT extends AbstractPlatformIT {
 
   @Test
   public void searchForUser_unauthorized() {

@@ -5,6 +5,9 @@
  */
 package org.camunda.optimize.service;
 
+import jakarta.ws.rs.BadRequestException;
+import jakarta.ws.rs.ForbiddenException;
+import jakarta.ws.rs.NotFoundException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.IdentityDto;
@@ -15,7 +18,6 @@ import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewDt
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewResponseDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOwnerResponseDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessUpdateDto;
-import org.camunda.optimize.service.collection.CollectionService;
 import org.camunda.optimize.service.digest.DigestService;
 import org.camunda.optimize.service.es.reader.ProcessOverviewReader;
 import org.camunda.optimize.service.es.writer.ProcessOverviewWriter;
@@ -23,9 +25,6 @@ import org.camunda.optimize.service.identity.AbstractIdentityService;
 import org.camunda.optimize.service.security.util.definition.DataSourceDefinitionAuthorizationService;
 import org.springframework.stereotype.Component;
 
-import javax.ws.rs.BadRequestException;
-import javax.ws.rs.ForbiddenException;
-import javax.ws.rs.NotFoundException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -51,7 +50,6 @@ public class ProcessOverviewService {
   private final ProcessOverviewReader processOverviewReader;
   private final AbstractIdentityService identityService;
   private final KpiService kpiService;
-  private final CollectionService collectionService;
   private final DigestService digestService;
 
   public List<ProcessOverviewResponseDto> getAllProcessOverviews(final String userId, final String locale) {
@@ -90,7 +88,7 @@ public class ProcessOverviewService {
             .orElse(new ProcessDigestDto(false, new HashMap<>())),
           overviewForKey.map(processOverviewDto ->
                                kpiService.extractMostRecentKpiResultsForCurrentKpiReportsForProcess(processOverviewDto, locale))
-                            .orElse(Collections.emptyList())
+            .orElse(Collections.emptyList())
         );
       }).collect(Collectors.toList());
   }

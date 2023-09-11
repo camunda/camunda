@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.es.report.decision;
 
 import org.camunda.bpm.model.dmn.DmnModelInstance;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.InputVariableEntry;
@@ -49,7 +49,7 @@ import static org.camunda.optimize.util.DmnModels.STRING_OUTPUT_ID;
 import static org.camunda.optimize.util.DmnModels.createDefaultDmnModel;
 import static org.camunda.optimize.util.SuppressionConstants.UNUSED;
 
-public abstract class AbstractDecisionDefinitionIT extends AbstractIT {
+public abstract class AbstractDecisionDefinitionIT extends AbstractPlatformIT {
 
   private static String getInputVariableNameForId(String inputId) {
     switch (inputId) {

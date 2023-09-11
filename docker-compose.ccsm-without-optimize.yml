@@ -7,6 +7,7 @@ version: "3.6"
 #CAMUNDA_OPTIMIZE_IDENTITY_CLIENTSECRET=XALaRPl5qwTEItdwCMiPS62nVpKs7dL7
 #CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_BACKEND_URL=http://localhost:18080/auth/realms/camunda-platform
 #CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL=http://localhost:18080/auth/realms/camunda-platform
+#CAMUNDA_OPTIMIZE_IDENTITY_BASE_URL=http://localhost:8081/
 #CAMUNDA_OPTIMIZE_IMPORT_DATA_SKIP_DATA_AFTER_NESTED_DOC_LIMIT_REACHED=true
 #CAMUNDA_OPTIMIZE_SECURITY_AUTH_COOKIE_SAME_SITE_ENABLED=false
 #CAMUNDA_OPTIMIZE_ZEEBE_ENABLED=true
@@ -14,6 +15,9 @@ version: "3.6"
 #CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT=2
 #OPTIMIZE_ELASTICSEARCH_HTTP_PORT=9200
 #SPRING_PROFILES_ACTIVE=ccsm
+# This should only be set if you plan to use JWTs for the public API rather than a statically configured token
+#SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://localhost:18080/auth/realms/camunda-platform/protocol/openid-connect/certs
+#OPTIMIZE_LOG_LEVEL=DEBUG
 
 services:
   keycloak:

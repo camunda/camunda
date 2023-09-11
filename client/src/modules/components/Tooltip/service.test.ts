@@ -13,7 +13,7 @@ it('should return new alignment and position if no space at the edges of the scr
   jest
     .spyOn(window, 'getComputedStyle')
     .mockImplementationOnce(
-      () => ({getPropertyValue: () => '7px'} as unknown as CSSStyleDeclaration)
+      () => ({getPropertyValue: () => '7px'}) as unknown as CSSStyleDeclaration
     );
 
   const tooltip = {
@@ -38,7 +38,7 @@ it('should keep alignment and position if there is a space for the tooltip at th
   jest
     .spyOn(window, 'getComputedStyle')
     .mockImplementationOnce(
-      () => ({getPropertyValue: () => '5px'} as unknown as CSSStyleDeclaration)
+      () => ({getPropertyValue: () => '5px'}) as unknown as CSSStyleDeclaration
     );
 
   const tooltip = {

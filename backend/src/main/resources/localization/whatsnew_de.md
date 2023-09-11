@@ -1,3 +1,12 @@
+## Vereinfachte Navigation zu den Rohdaten.
+Das Navigieren von einem Dashboard, zu den Details in den aggregierten Berichten, zu den Rohdaten hilft gefundene Erkenntnisse umfangreich zu analysieren. Diese Navigation ist heute schon möglich, jedoch schwer zu finden. Mit diesem Release wird die Navigation verbessert. Reports die Teil eines Dashboards sind, können nun an beliebiger Stelle geklickt werden, um direkt vom Dashboard zum Report zu navigieren. Der Report zeigt nun zusätzlich zur aggregierten Datenvisualisierung auch die Rohdaten an.
+
+## Zeige Optimize Benachrichtigungen im Nachrichtentracker
+Optimize schickt wichtige Benachrichtigungen an den zentralen Camunda 8 Nachrichtentracker. So können Camunda 8 Nutzer bei der Prozessautomatisierung mit Hinweisen zur Nutzung von Optimize unterstützt werden.
+
+## Kopierfunktion für das Instant Preview Dashboard
+Beim Anzeigen eines Instant Preview-Dashboards können Sie jetzt direkt eine Kopie erstellen, die dann wie jedes andere Dashboard bearbeitet und geteilt werden kann. Dieses Dashboard steht nun auch als auswählbare Vorlage bei der Dashboard-Erstellung zur Verfügung.
+
 ## Aktualisierung der Report Vorlagen
 Report Vorlagen helfen dem Nutzer Prozessausführungsdaten schnell in einem Report zu visualisieren. Die neuen Report Vorlagen bieten eine Übersicht der in Optimize verfügbaren Visualisierungsmöglichkeiten, um abhängig von der Problemstellung Daten möglichst aussagekräftig zu darzustellen.
 
@@ -9,5 +18,3 @@ Aktuell befinden wir uns in einer Migration der aktuellen Optimize Oberflächen 
 
 Die Migration erfolgt schrittweise mit kommenden Releases von Optimize. Aktuell wurden Modal-Dialoge, Tabellen und Pop-Overs erfolgreich migriert. Die bekannten Funktionen sind weiter in gewohnter Weise verfügbar, ab sofort jedoch im frischen Carbon Design.
 
-## Aktualisierte Berichtsvorlagen
-Beim Anzeigen eines Instant Preview-Dashboards können Sie jetzt direkt eine Kopie erstellen, die dann wie jedes andere Dashboard bearbeitet und geteilt werden kann. Dieses Dashboard steht nun auch als auswählbare Vorlage bei der Dashboard-Erstellung zur Verfügung.

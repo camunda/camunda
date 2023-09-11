@@ -821,7 +821,7 @@
         }
       }
     },
-    "copyInstantDashboard": "Kopie erstellen"
+    "copyInstantDashboard": "Bearbeitbare Kopie erstellen"
   },
   "alert": {
     "label": "Alarm",

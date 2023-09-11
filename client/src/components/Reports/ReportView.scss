@@ -27,4 +27,33 @@
       top: 25%;
     }
   }
+
+  .bottomPanel {
+    height: 348px;
+    transition: height 0.25s;
+
+    &.collapsed {
+      height: 48px;
+      overflow: hidden;
+    }
+
+    &.expanded {
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .toolbar {
+      background-color: var(--cds-layer);
+      display: flex;
+      justify-content: space-between;
+      height: 48px;
+      align-items: center;
+      padding-left: 16px;
+      font-size: 14px;
+    }
+
+    .bottomPanelTable {
+      height: calc(100% - 48px);
+    }
+  }
 }

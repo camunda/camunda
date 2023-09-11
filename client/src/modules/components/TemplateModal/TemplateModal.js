@@ -37,7 +37,7 @@ export function TemplateModal({
   templateToState = (data) => data,
   onConfirm,
   initialDefinitions = [],
-  useAbsolutePath,
+  trackingEventName,
 }) {
   const firstTemplate = templateGroups[1].templates[0];
   const [name, setName] = useState(t(entity + '.templates.' + firstTemplate.name));
@@ -244,31 +244,25 @@ export function TemplateModal({
         <Button kind="secondary" onClick={onClose}>
           {t('common.cancel')}
         </Button>
-        {onConfirm ? (
-          <Button
-            disabled={!validSelection}
-            className="confirm"
-            onClick={() => {
-              onConfirm(newEntityState);
-              track(createEventName(entity), {templateName: name});
-            }}
-          >
-            {t(entity + '.create')}
-          </Button>
-        ) : (
-          <Button
-            as={Link}
-            className="confirm"
-            disabled={!validSelection}
-            to={{
-              pathname: (useAbsolutePath ? '/' : '') + entity + '/new/edit',
-              state: newEntityState,
-            }}
-            onClick={() => track(createEventName(entity), {templateName: name})}
-          >
-            {t(entity + '.create')}
-          </Button>
-        )}
+        <Button
+          disabled={!validSelection}
+          className="confirm"
+          onClick={() => {
+            onConfirm?.(newEntityState);
+            track(trackingEventName || createEventName(entity), {templateName: name});
+          }}
+          as={!onConfirm ? Link : undefined}
+          to={
+            !onConfirm
+              ? {
+                  pathname: entity + '/new/edit',
+                  state: newEntityState,
+                }
+              : undefined
+          }
+        >
+          {t(entity + '.create')}
+        </Button>
       </Modal.Footer>
     </Modal>
   );

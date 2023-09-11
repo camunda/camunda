@@ -7,7 +7,7 @@ package org.camunda.optimize.rest;
 
 import com.google.common.collect.ImmutableList;
 import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
 import org.camunda.optimize.dto.optimize.query.definition.AssigneeCandidateGroupDefinitionSearchRequestDto;
@@ -20,14 +20,14 @@ import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.util.BpmnModels;
 import org.junit.jupiter.api.Test;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class CandidateGroupsRestServiceIT extends AbstractIT {
+public class CandidateGroupsRestServiceIT extends AbstractPlatformIT {
 
   private static final String CANDIDATE_GROUP_ID_IMPOSTERS = "imposters";
   private static final String CANDIDATE_GROUP_NAME_IMPOSTERS = "The Evil Imposters";

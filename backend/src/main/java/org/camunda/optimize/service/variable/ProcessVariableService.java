@@ -23,7 +23,7 @@ import org.camunda.optimize.service.report.ReportService;
 import org.camunda.optimize.service.security.util.tenant.DataSourceTenantAuthorizationService;
 import org.springframework.stereotype.Component;
 
-import javax.ws.rs.ForbiddenException;
+import jakarta.ws.rs.ForbiddenException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
