@@ -145,27 +145,25 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
     final var partition = Partition.bootstrapping(context);
     partitions.put(id, partition);
 
-    concurrencyControl.run(
-        () ->
-            concurrencyControl.runOnCompletion(
-                partition.start(),
-                (startedPartition, throwable) -> {
-                  if (throwable != null) {
-                    LOGGER.error("Failed to start partition {}", id, throwable);
-                    onHealthChanged(id, HealthStatus.DEAD);
-                  } else {
-                    LOGGER.info("Started partition {}", id);
-                    final var zeebePartition = startedPartition.zeebePartition();
-                    final var raftPartition = startedPartition.raftPartition();
+    concurrencyControl.runOnCompletion(
+        partition.start(),
+        (startedPartition, throwable) -> {
+          if (throwable != null) {
+            LOGGER.error("Failed to start partition {}", id, throwable);
+            onHealthChanged(id, HealthStatus.DEAD);
+          } else {
+            LOGGER.info("Started partition {}", id);
+            final var zeebePartition = startedPartition.zeebePartition();
+            final var raftPartition = startedPartition.raftPartition();
 
-                    zeebePartition.addFailureListener(
-                        new PartitionHealthBroadcaster(id, this::onHealthChanged));
-                    diskSpaceUsageMonitor.addDiskUsageListener(zeebePartition);
-                    adminAccess.put(id, zeebePartition.getAdminAccess());
-                    zeebePartitions.add(zeebePartition);
-                    raftPartitions.add(raftPartition);
-                  }
-                }));
+            zeebePartition.addFailureListener(
+                new PartitionHealthBroadcaster(id, this::onHealthChanged));
+            diskSpaceUsageMonitor.addDiskUsageListener(zeebePartition);
+            adminAccess.put(id, zeebePartition.getAdminAccess());
+            zeebePartitions.add(zeebePartition);
+            raftPartitions.add(raftPartition);
+          }
+        });
   }
 
   public ActorFuture<Void> stop() {
