@@ -48,9 +48,7 @@ import io.camunda.zeebe.util.health.HealthReport;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CopyOnWriteArraySet;
 import org.slf4j.Logger;
 
 /** {@link Partition} server. */
@@ -63,15 +61,11 @@ public class RaftPartitionServer implements HealthMonitorable {
   private final RaftPartitionConfig config;
   private final ClusterMembershipService membershipService;
   private final ClusterCommunicationService clusterCommunicator;
-  private final Set<RaftRoleChangeListener> deferredRoleChangeListeners =
-      new CopyOnWriteArraySet<>();
-  private final Set<FailureListener> deferredFailureListeners = new CopyOnWriteArraySet<>();
   private final PartitionMetadata partitionMetadata;
   private final Duration requestTimeout;
   private final Duration snapshotRequestTimeout;
   private final ReceivableSnapshotStore persistedSnapshotStore;
-
-  private RaftServer server;
+  private final RaftServer server;
 
   public RaftPartitionServer(
       final RaftPartition partition,
@@ -94,43 +88,24 @@ public class RaftPartitionServer implements HealthMonitorable {
     this.partitionMetadata = partitionMetadata;
     requestTimeout = config.getRequestTimeout();
     snapshotRequestTimeout = config.getSnapshotRequestTimeout();
+    server = buildServer();
   }
 
   public CompletableFuture<RaftPartitionServer> bootstrap() {
     final RaftStartupMetrics raftStartupMetrics = new RaftStartupMetrics(partition.name());
-    final long bootstrapStartTime;
     log.info("Server bootstrapping partition {}", partition.id());
-    final long startTime = System.currentTimeMillis();
-    final CompletableFuture<RaftServer> serverOpenFuture;
-    if (partition.members().contains(localMemberId)) {
-      if (server != null && server.isRunning()) {
-        return CompletableFuture.completedFuture(null);
-      }
-      synchronized (this) {
-        try {
-          initServer();
-        } catch (final RuntimeException e) {
-          return CompletableFuture.failedFuture(e);
-        }
-      }
-      bootstrapStartTime = System.currentTimeMillis();
-      serverOpenFuture = server.bootstrap(partition.members());
-    } else {
-      bootstrapStartTime = System.currentTimeMillis();
-      serverOpenFuture = CompletableFuture.completedFuture(null);
-    }
-    return serverOpenFuture
+    final long bootstrapStartTime = System.currentTimeMillis();
+    return server
+        .bootstrap(partition.members())
         .whenComplete(
             (r, e) -> {
               if (e == null) {
                 final long endTime = System.currentTimeMillis();
-                final long startDuration = endTime - startTime;
                 raftStartupMetrics.observeBootstrapDuration(endTime - bootstrapStartTime);
-                raftStartupMetrics.observeStartupDuration(startDuration);
                 log.info(
                     "Server successfully bootstrapped partition {} in {}ms",
                     partition.id(),
-                    startDuration);
+                    endTime - bootstrapStartTime);
               } else {
                 log.warn("Server bootstrap failed for partition {}", partition.id(), e);
               }
@@ -140,16 +115,6 @@ public class RaftPartitionServer implements HealthMonitorable {
 
   public CompletableFuture<Void> stop() {
     return server != null ? server.shutdown() : CompletableFuture.completedFuture(null);
-  }
-
-  private void initServer() {
-    server = buildServer();
-
-    deferredRoleChangeListeners.forEach(server::addRoleChangeListener);
-    deferredRoleChangeListeners.clear();
-
-    deferredFailureListeners.forEach(server::addFailureListener);
-    deferredFailureListeners.clear();
   }
 
   private RaftServer buildServer() {
@@ -181,11 +146,7 @@ public class RaftPartitionServer implements HealthMonitorable {
   }
 
   public void addRoleChangeListener(final RaftRoleChangeListener listener) {
-    if (server == null) {
-      deferredRoleChangeListeners.add(listener);
-    } else {
-      server.addRoleChangeListener(listener);
-    }
+    server.addRoleChangeListener(listener);
   }
 
   @Override
@@ -195,21 +156,15 @@ public class RaftPartitionServer implements HealthMonitorable {
 
   @Override
   public void addFailureListener(final FailureListener listener) {
-    if (server == null) {
-      deferredFailureListeners.add(listener);
-    } else {
-      server.addFailureListener(listener);
-    }
+    server.addFailureListener(listener);
   }
 
   @Override
   public void removeFailureListener(final FailureListener listener) {
-    deferredFailureListeners.remove(listener);
     server.removeFailureListener(listener);
   }
 
   public void removeRoleChangeListener(final RaftRoleChangeListener listener) {
-    deferredRoleChangeListeners.remove(listener);
     server.removeRoleChangeListener(listener);
   }
 
