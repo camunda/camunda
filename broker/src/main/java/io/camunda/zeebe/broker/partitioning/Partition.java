@@ -46,7 +46,10 @@ public final class Partition {
   }
 
   /**
-   * Creates a partition that uses the bootstrapping process when started.
+   * Creates a partition that uses the bootstrapping process when started. Bootstrapping assumes
+   * that this broker is already part of the replication group for this partition. If the broker
+   * does not have the partition configuration stored locally, the initial configuration is derived
+   * from the static broker configuration.
    *
    * @param context a populated context that the partition can use.
    * @return a partition that can be started.
