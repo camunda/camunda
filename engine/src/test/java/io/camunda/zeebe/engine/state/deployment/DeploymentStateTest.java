@@ -227,8 +227,7 @@ public class DeploymentStateTest {
             deployments.stream()
                 .map(record -> record.setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER))
                 .map(BufferUtil::createCopy)
-                .toList()
-                .toArray(new DirectBuffer[deployments.size()]));
+                .toArray(DirectBuffer[]::new));
   }
 
   @Test
