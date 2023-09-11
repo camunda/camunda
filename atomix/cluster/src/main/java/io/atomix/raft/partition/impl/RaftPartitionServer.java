@@ -36,7 +36,6 @@ import io.atomix.raft.roles.RaftRole;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
-import io.atomix.utils.Managed;
 import io.atomix.utils.logging.ContextualLoggerFactory;
 import io.atomix.utils.logging.LoggerContext;
 import io.atomix.utils.serializer.Serializer;
@@ -55,7 +54,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import org.slf4j.Logger;
 
 /** {@link Partition} server. */
-public class RaftPartitionServer implements Managed<RaftPartitionServer>, HealthMonitorable {
+public class RaftPartitionServer implements HealthMonitorable {
 
   private final Logger log;
 
@@ -97,11 +96,10 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer>, Health
     snapshotRequestTimeout = config.getSnapshotRequestTimeout();
   }
 
-  @Override
-  public CompletableFuture<RaftPartitionServer> start() {
+  public CompletableFuture<RaftPartitionServer> bootstrap() {
     final RaftStartupMetrics raftStartupMetrics = new RaftStartupMetrics(partition.name());
     final long bootstrapStartTime;
-    log.info("Starting server for partition {}", partition.id());
+    log.info("Server bootstrapping partition {}", partition.id());
     final long startTime = System.currentTimeMillis();
     final CompletableFuture<RaftServer> serverOpenFuture;
     if (partition.members().contains(localMemberId)) {
@@ -130,22 +128,16 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer>, Health
                 raftStartupMetrics.observeBootstrapDuration(endTime - bootstrapStartTime);
                 raftStartupMetrics.observeStartupDuration(startDuration);
                 log.info(
-                    "Successfully started server for partition {} in {}ms",
+                    "Server successfully bootstrapped partition {} in {}ms",
                     partition.id(),
                     startDuration);
               } else {
-                log.warn("Failed to start server for partition {}", partition.id(), e);
+                log.warn("Server bootstrap failed for partition {}", partition.id(), e);
               }
             })
         .thenApply(v -> this);
   }
 
-  @Override
-  public boolean isRunning() {
-    return server.isRunning();
-  }
-
-  @Override
   public CompletableFuture<Void> stop() {
     return server != null ? server.shutdown() : CompletableFuture.completedFuture(null);
   }

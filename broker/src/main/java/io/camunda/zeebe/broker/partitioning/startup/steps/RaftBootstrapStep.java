@@ -27,16 +27,17 @@ public final class RaftBootstrapStep implements StartupStep<PartitionStartupCont
             .raftPartitionFactory()
             .createRaftPartition(context.partitionMetadata(), context.partitionDirectory());
 
-    final var open = partition.open(context.partitionManagementService(), context.snapshotStore());
-    open.whenComplete(
-        (raftPartition, throwable) -> {
-          if (throwable == null) {
-            context.raftPartition(raftPartition);
-            result.complete(context);
-          } else {
-            result.completeExceptionally(throwable);
-          }
-        });
+    partition
+        .bootstrap(context.partitionManagementService(), context.snapshotStore())
+        .whenComplete(
+            (raftPartition, throwable) -> {
+              if (throwable == null) {
+                context.raftPartition(raftPartition);
+                result.complete(context);
+              } else {
+                result.completeExceptionally(throwable);
+              }
+            });
 
     return result;
   }

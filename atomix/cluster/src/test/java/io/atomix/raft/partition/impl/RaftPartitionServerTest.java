@@ -54,7 +54,7 @@ public class RaftPartitionServerTest {
 
     // when
     final CompletableFuture<RaftPartitionServer> raftServerStartFuture =
-        raftPartitionServer.start();
+        raftPartitionServer.bootstrap();
 
     // then
     assertThat(raftServerStartFuture)
