@@ -26,14 +26,28 @@ public class RaftStartupMetrics extends RaftMetrics {
           .name("partition_server_bootstrap_time")
           .register();
 
+  private static final Gauge JOIN_DURATION =
+      Gauge.build()
+          .namespace(NAMESPACE)
+          .labelNames(PARTITION_GROUP_NAME_LABEL, PARTITION_LABEL)
+          .help("Time taken for the partition server to join (in ms)")
+          .name("partition_server_join_time")
+          .register();
+
   private final Gauge.Child bootstrapDuration;
+  private final Gauge.Child joinDuration;
 
   public RaftStartupMetrics(final String partitionName) {
     super(partitionName);
     bootstrapDuration = BOOTSTRAP_DURATION.labels(partitionGroupName, partition);
+    joinDuration = JOIN_DURATION.labels(partitionGroupName, partition);
   }
 
   public void observeBootstrapDuration(final long durationMillis) {
     bootstrapDuration.set(durationMillis);
+  }
+
+  public void observeJoinDuration(final long durationMillis) {
+    joinDuration.set(durationMillis);
   }
 }
