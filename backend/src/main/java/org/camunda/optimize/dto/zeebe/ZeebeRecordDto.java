@@ -18,6 +18,8 @@ import lombok.Setter;
 import lombok.ToString;
 import lombok.experimental.FieldNameConstants;
 
+import java.util.Map;
+
 @EqualsAndHashCode
 @Getter
 @Setter
@@ -39,9 +41,10 @@ public abstract class ZeebeRecordDto<VALUE extends RecordValue, INTENT extends I
   private ValueType valueType;
   private VALUE value;
   private INTENT intent;
+  private Map<String, Object> authorizations;
 
   @Override
-  public Record<VALUE> clone() {
+  public Record<VALUE> copyOf() {
     throw new UnsupportedOperationException("Operation not supported");
   }
 
