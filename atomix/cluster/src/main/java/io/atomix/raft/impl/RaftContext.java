@@ -623,10 +623,14 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
               membershipService.getMembers().stream()
                   .filter(member -> !member.id().equals(joining.memberId()))
                   .findAny()
-                  .orElseThrow()
-                  .id();
+                  .orElse(null);
+          if (receiver == null) {
+            future.completeExceptionally(
+                new IllegalStateException("Failed to join cluster; no known members found"));
+            return;
+          }
           protocol
-              .join(receiver, JoinRequest.builder().withJoiningMember(joining).build())
+              .join(receiver.id(), JoinRequest.builder().withJoiningMember(joining).build())
               .whenCompleteAsync(
                   (response, error) -> {
                     if (error != null) {
