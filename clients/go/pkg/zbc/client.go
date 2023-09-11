@@ -105,52 +105,56 @@ func withStopOnPermanentError(shouldRetryRequest func(ctx context.Context, err e
 	}
 }
 
+func (c *ClientImpl) shouldRetryRequest(ctx context.Context, err error) bool {
+	return withStopOnPermanentError(c.credentialsProvider.ShouldRetryRequest)(ctx, err)
+}
+
 func (c *ClientImpl) NewTopologyCommand() *commands.TopologyCommand {
-	return commands.NewTopologyCommand(c.gateway, withStopOnPermanentError(c.credentialsProvider.ShouldRetryRequest))
+	return commands.NewTopologyCommand(c.gateway, c.shouldRetryRequest)
 }
 
 func (c *ClientImpl) NewDeployProcessCommand() *commands.DeployCommand {
-	return commands.NewDeployCommand(c.gateway, withStopOnPermanentError(c.credentialsProvider.ShouldRetryRequest)) // nolint
+	return commands.NewDeployCommand(c.gateway, c.shouldRetryRequest) // nolint
 }
 
 func (c *ClientImpl) NewDeployResourceCommand() *commands.DeployResourceCommand {
-	return commands.NewDeployResourceCommand(c.gateway, withStopOnPermanentError(c.credentialsProvider.ShouldRetryRequest))
+	return commands.NewDeployResourceCommand(c.gateway, c.shouldRetryRequest)
 }
 
 func (c *ClientImpl) NewEvaluateDecisionCommand() commands.EvaluateDecisionCommandStep1 {
-	return commands.NewEvaluateDecisionCommand(c.gateway, withStopOnPermanentError(c.credentialsProvider.ShouldRetryRequest))
+	return commands.NewEvaluateDecisionCommand(c.gateway, c.shouldRetryRequest)
 }
 
 func (c *ClientImpl) NewPublishMessageCommand() commands.PublishMessageCommandStep1 {
-	return commands.NewPublishMessageCommand(c.gateway, withStopOnPermanentError(c.credentialsProvider.ShouldRetryRequest))
+	return commands.NewPublishMessageCommand(c.gateway, c.shouldRetryRequest)
 }
 
 func (c *ClientImpl) NewBroadcastSignalCommand() commands.BroadcastSignalCommandStep1 {
-	return commands.NewBroadcastSignalCommand(c.gateway, withStopOnPermanentError(c.credentialsProvider.ShouldRetryRequest))
+	return commands.NewBroadcastSignalCommand(c.gateway, c.shouldRetryRequest)
 }
 
 func (c *ClientImpl) NewResolveIncidentCommand() commands.ResolveIncidentCommandStep1 {
-	return commands.NewResolveIncidentCommand(c.gateway, withStopOnPermanentError(c.credentialsProvider.ShouldRetryRequest))
+	return commands.NewResolveIncidentCommand(c.gateway, c.shouldRetryRequest)
 }
 
 func (c *ClientImpl) NewCreateInstanceCommand() commands.CreateInstanceCommandStep1 {
-	return commands.NewCreateInstanceCommand(c.gateway, withStopOnPermanentError(c.credentialsProvider.ShouldRetryRequest))
+	return commands.NewCreateInstanceCommand(c.gateway, c.shouldRetryRequest)
 }
 
 func (c *ClientImpl) NewCancelInstanceCommand() commands.CancelInstanceStep1 {
-	return commands.NewCancelInstanceCommand(c.gateway, withStopOnPermanentError(c.credentialsProvider.ShouldRetryRequest))
+	return commands.NewCancelInstanceCommand(c.gateway, c.shouldRetryRequest)
 }
 
 func (c *ClientImpl) NewCompleteJobCommand() commands.CompleteJobCommandStep1 {
-	return commands.NewCompleteJobCommand(c.gateway, withStopOnPermanentError(c.credentialsProvider.ShouldRetryRequest))
+	return commands.NewCompleteJobCommand(c.gateway, c.shouldRetryRequest)
 }
 
 func (c *ClientImpl) NewFailJobCommand() commands.FailJobCommandStep1 {
-	return commands.NewFailJobCommand(c.gateway, withStopOnPermanentError(c.credentialsProvider.ShouldRetryRequest))
+	return commands.NewFailJobCommand(c.gateway, c.shouldRetryRequest)
 }
 
 func (c *ClientImpl) NewUpdateJobRetriesCommand() commands.UpdateJobRetriesCommandStep1 {
-	return commands.NewUpdateJobRetriesCommand(c.gateway, withStopOnPermanentError(c.credentialsProvider.ShouldRetryRequest))
+	return commands.NewUpdateJobRetriesCommand(c.gateway, c.shouldRetryRequest)
 }
 
 func (c *ClientImpl) NewUpdateJobTimeoutCommand() commands.UpdateJobTimeoutCommandStep1 {
@@ -158,19 +162,19 @@ func (c *ClientImpl) NewUpdateJobTimeoutCommand() commands.UpdateJobTimeoutComma
 }
 
 func (c *ClientImpl) NewSetVariablesCommand() commands.SetVariablesCommandStep1 {
-	return commands.NewSetVariablesCommand(c.gateway, withStopOnPermanentError(c.credentialsProvider.ShouldRetryRequest))
+	return commands.NewSetVariablesCommand(c.gateway, c.shouldRetryRequest)
 }
 
 func (c *ClientImpl) NewActivateJobsCommand() commands.ActivateJobsCommandStep1 {
-	return commands.NewActivateJobsCommand(c.gateway, withStopOnPermanentError(c.credentialsProvider.ShouldRetryRequest))
+	return commands.NewActivateJobsCommand(c.gateway, c.shouldRetryRequest)
 }
 
 func (c *ClientImpl) NewThrowErrorCommand() commands.ThrowErrorCommandStep1 {
-	return commands.NewThrowErrorCommand(c.gateway, withStopOnPermanentError(c.credentialsProvider.ShouldRetryRequest))
+	return commands.NewThrowErrorCommand(c.gateway, c.shouldRetryRequest)
 }
 
 func (c *ClientImpl) NewDeleteResourceCommand() commands.DeleteResourceCommandStep1 {
-	return commands.NewDeleteResourceCommand(c.gateway, withStopOnPermanentError(c.credentialsProvider.ShouldRetryRequest))
+	return commands.NewDeleteResourceCommand(c.gateway, c.shouldRetryRequest)
 }
 
 func (c *ClientImpl) NewStreamJobsCommand() commands.StreamJobsCommandStep1 {
@@ -178,7 +182,7 @@ func (c *ClientImpl) NewStreamJobsCommand() commands.StreamJobsCommandStep1 {
 }
 
 func (c *ClientImpl) NewJobWorker() worker.JobWorkerBuilderStep1 {
-	return worker.NewJobWorkerBuilder(c.gateway, c, withStopOnPermanentError(c.credentialsProvider.ShouldRetryRequest))
+	return worker.NewJobWorkerBuilder(c.gateway, c, c.shouldRetryRequest)
 }
 
 func (c *ClientImpl) Close() error {
