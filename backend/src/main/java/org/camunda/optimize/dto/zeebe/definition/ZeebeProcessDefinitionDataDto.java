@@ -19,6 +19,7 @@ public class ZeebeProcessDefinitionDataDto implements ProcessMetadataValue {
   private byte[] checksum;
   private String resourceName;
   private String bpmnProcessId;
+  private String tenantId;
 
   @Override
   public String toJson() {
