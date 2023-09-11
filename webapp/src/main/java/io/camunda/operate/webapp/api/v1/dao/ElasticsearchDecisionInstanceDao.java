@@ -16,7 +16,6 @@ import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
@@ -66,7 +65,7 @@ public class ElasticsearchDecisionInstanceDao extends ElasticsearchDao<DecisionI
 
     try {
       final SearchRequest searchRequest = new SearchRequest().indices(decisionInstanceTemplate.getAlias()).source(searchSourceBuilder);
-      final SearchResponse searchResponse = elasticsearch.search(searchRequest, RequestOptions.DEFAULT);
+      final SearchResponse searchResponse = tenantAwareClient.search(searchRequest);
       final SearchHits searchHits = searchResponse.getHits();
       final SearchHit[] searchHitArray = searchHits.getHits();
       if (searchHitArray != null && searchHitArray.length > 0) {
@@ -105,6 +104,8 @@ public class ElasticsearchDecisionInstanceDao extends ElasticsearchDao<DecisionI
 
   protected List<DecisionInstance> searchFor(final SearchSourceBuilder searchSource) throws IOException {
     final SearchRequest searchRequest = new SearchRequest(decisionInstanceTemplate.getAlias()).source(searchSource);
-    return ElasticsearchUtil.scroll(searchRequest, DecisionInstance.class, objectMapper, elasticsearch);
+    return tenantAwareClient.search(searchRequest, () -> {
+      return ElasticsearchUtil.scroll(searchRequest, DecisionInstance.class, objectMapper, elasticsearch);
+    });
   }
 }

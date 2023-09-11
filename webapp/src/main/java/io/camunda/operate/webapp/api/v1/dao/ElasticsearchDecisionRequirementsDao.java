@@ -16,7 +16,6 @@ import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
@@ -73,7 +72,7 @@ public class ElasticsearchDecisionRequirementsDao extends ElasticsearchDao<Decis
       final SearchRequest searchRequest = new SearchRequest(decisionRequirementsIndex.getAlias())
           .source(new SearchSourceBuilder()
               .query(termQuery(DecisionRequirementsIndex.KEY, key)).fetchSource(DecisionRequirementsIndex.XML, null));
-      final SearchResponse response = elasticsearch.search(searchRequest, RequestOptions.DEFAULT);
+      final SearchResponse response = tenantAwareClient.search(searchRequest);
       if (response.getHits().getTotalHits().value == 1) {
         Map<String, Object> result = response.getHits().getHits()[0].getSourceAsMap();
         return (String) result.get(DecisionRequirementsIndex.XML);
@@ -90,7 +89,7 @@ public class ElasticsearchDecisionRequirementsDao extends ElasticsearchDao<Decis
     final SearchSourceBuilder searchSourceBuilder = buildQueryOn(query, DecisionRequirements.KEY, new SearchSourceBuilder());
     try {
       final SearchRequest searchRequest = new SearchRequest().indices(decisionRequirementsIndex.getAlias()).source(searchSourceBuilder);
-      final SearchResponse searchResponse = elasticsearch.search(searchRequest, RequestOptions.DEFAULT);
+      final SearchResponse searchResponse = tenantAwareClient.search(searchRequest);
       final SearchHits searchHits = searchResponse.getHits();
       final SearchHit[] searchHitArray = searchHits.getHits();
       if (searchHitArray != null && searchHitArray.length > 0) {
@@ -107,7 +106,9 @@ public class ElasticsearchDecisionRequirementsDao extends ElasticsearchDao<Decis
 
   protected List<DecisionRequirements> searchFor(final SearchSourceBuilder searchSource) throws IOException {
     final SearchRequest searchRequest = new SearchRequest(decisionRequirementsIndex.getAlias()).source(searchSource);
-    return ElasticsearchUtil.scroll(searchRequest, DecisionRequirements.class, objectMapper, elasticsearch);
+    return tenantAwareClient.search(searchRequest, () -> {
+      return ElasticsearchUtil.scroll(searchRequest, DecisionRequirements.class, objectMapper, elasticsearch);
+    });
   }
 
   @Override

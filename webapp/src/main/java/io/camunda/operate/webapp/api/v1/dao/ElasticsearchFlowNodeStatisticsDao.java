@@ -35,7 +35,6 @@ import java.util.stream.Collectors;
 
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.filter.Filter;
@@ -85,7 +84,7 @@ public class ElasticsearchFlowNodeStatisticsDao extends ElasticsearchDao<FlowNod
                   .subAggregation(filter(COUNT_ACTIVE,
                       boolQuery().mustNot(termQuery(TYPE, FlowNodeType.MULTI_INSTANCE_BODY)).must(termQuery(STATE, ACTIVE)).must(termQuery(INCIDENT, false)))))
               .size(0));
-      final SearchResponse response = elasticsearch.search(request, RequestOptions.DEFAULT);
+      final SearchResponse response = tenantAwareClient.search(request);
       final Aggregations aggregations = response.getAggregations();
       final Terms flowNodeAgg = aggregations.get(FLOW_NODE_ID_AGG);
       return flowNodeAgg.getBuckets().stream().map(bucket -> new FlowNodeStatistics().setActivityId(bucket.getKeyAsString())

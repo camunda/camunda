@@ -28,7 +28,6 @@ import java.util.ArrayList;
 import java.util.List;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
@@ -40,6 +39,7 @@ import org.springframework.stereotype.Component;
 @Component("ElasticsearchProcessInstanceDaoV1")
 public class ElasticsearchProcessInstanceDao extends ElasticsearchDao<ProcessInstance>
     implements ProcessInstanceDao {
+
   @Autowired
   private ListViewTemplate processInstanceIndex;
 
@@ -58,8 +58,7 @@ public class ElasticsearchProcessInstanceDao extends ElasticsearchDao<ProcessIns
       final SearchRequest searchRequest = new SearchRequest().indices(
               processInstanceIndex.getAlias())
           .source(searchSourceBuilder);
-      final SearchResponse searchResponse = elasticsearch.search(searchRequest,
-          RequestOptions.DEFAULT);
+      final SearchResponse searchResponse = tenantAwareClient.search(searchRequest);
       final SearchHits searchHits = searchResponse.getHits();
       final SearchHit[] searchHitArray = searchHits.getHits();
       if (searchHitArray != null && searchHitArray.length > 0) {
@@ -143,7 +142,10 @@ public class ElasticsearchProcessInstanceDao extends ElasticsearchDao<ProcessIns
     final SearchRequest searchRequest =
         new SearchRequest(processInstanceIndex.getAlias())
             .source(searchSource);
-    return ElasticsearchUtil.scroll(searchRequest, ProcessInstance.class, objectMapper, elasticsearch);
+    return tenantAwareClient.search(searchRequest, () -> {
+      return ElasticsearchUtil.scroll(searchRequest, ProcessInstance.class, objectMapper, elasticsearch);
+    });
+
   }
 
 }

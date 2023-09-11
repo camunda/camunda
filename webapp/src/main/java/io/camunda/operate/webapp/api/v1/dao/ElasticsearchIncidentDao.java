@@ -11,7 +11,6 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import io.camunda.operate.schema.templates.IncidentTemplate;
 import io.camunda.operate.util.ElasticsearchUtil;
-import io.camunda.operate.webapp.api.v1.entities.FlowNodeInstance;
 import io.camunda.operate.webapp.api.v1.entities.Incident;
 import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.Results;
@@ -24,7 +23,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
@@ -85,8 +83,7 @@ public class ElasticsearchIncidentDao extends ElasticsearchDao<Incident> impleme
       final SearchRequest searchRequest = new SearchRequest().indices(
               incidentIndex.getAlias())
           .source(searchSourceBuilder);
-      final SearchResponse searchResponse = elasticsearch.search(searchRequest,
-          RequestOptions.DEFAULT);
+      final SearchResponse searchResponse = tenantAwareClient.search(searchRequest);
       final SearchHits searchHits = searchResponse.getHits();
       final SearchHit[] searchHitArray = searchHits.getHits();
       if (searchHitArray != null && searchHitArray.length > 0) {
@@ -131,7 +128,7 @@ public class ElasticsearchIncidentDao extends ElasticsearchDao<Incident> impleme
     try {
       final SearchRequest searchRequest = new SearchRequest(incidentIndex.getAlias())
           .source(searchSourceBuilder);
-      final SearchResponse searchResponse = elasticsearch.search(searchRequest, RequestOptions.DEFAULT);
+      final SearchResponse searchResponse = tenantAwareClient.search(searchRequest);
       final SearchHits searchHits = searchResponse.getHits();
       final SearchHit[] searchHitArray = searchHits.getHits();
       if (searchHitArray != null && searchHitArray.length > 0) {

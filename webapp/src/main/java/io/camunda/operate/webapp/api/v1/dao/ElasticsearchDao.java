@@ -13,7 +13,9 @@ import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.tenant.TenantAwareElasticsearchClient;
 import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.Query.Sort;
 import io.camunda.operate.webapp.api.v1.entities.Query.Sort.Order;
@@ -38,6 +40,9 @@ public abstract class ElasticsearchDao<T> implements SortableDao<T>, PageableDao
   @Autowired
   @Qualifier("esClient")
   protected RestHighLevelClient elasticsearch;
+
+  @Autowired
+  protected TenantAwareElasticsearchClient tenantAwareClient;
 
   @Autowired
   protected ObjectMapper objectMapper;

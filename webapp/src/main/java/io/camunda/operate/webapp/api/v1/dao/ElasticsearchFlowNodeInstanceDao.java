@@ -10,8 +10,6 @@ import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import io.camunda.operate.cache.ProcessCache;
-import io.camunda.operate.entities.ProcessEntity;
-import io.camunda.operate.entities.ProcessFlowNodeEntity;
 import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.webapp.api.v1.entities.FlowNodeInstance;
@@ -23,11 +21,9 @@ import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
@@ -94,8 +90,7 @@ public class ElasticsearchFlowNodeInstanceDao extends ElasticsearchDao<FlowNodeI
       final SearchRequest searchRequest = new SearchRequest().indices(
               flowNodeInstanceIndex.getAlias())
           .source(searchSourceBuilder);
-      final SearchResponse searchResponse = elasticsearch.search(searchRequest,
-          RequestOptions.DEFAULT);
+      final SearchResponse searchResponse = tenantAwareClient.search(searchRequest);
       final SearchHits searchHits = searchResponse.getHits();
       final SearchHit[] searchHitArray = searchHits.getHits();
       if (searchHitArray != null && searchHitArray.length > 0) {
@@ -142,7 +137,7 @@ public class ElasticsearchFlowNodeInstanceDao extends ElasticsearchDao<FlowNodeI
     try {
       final SearchRequest searchRequest = new SearchRequest(flowNodeInstanceIndex.getAlias())
           .source(searchSourceBuilder);
-      final SearchResponse searchResponse = elasticsearch.search(searchRequest, RequestOptions.DEFAULT);
+      final SearchResponse searchResponse = tenantAwareClient.search(searchRequest);
       final SearchHits searchHits = searchResponse.getHits();
       final SearchHit[] searchHitArray = searchHits.getHits();
       if (searchHitArray != null && searchHitArray.length > 0) {

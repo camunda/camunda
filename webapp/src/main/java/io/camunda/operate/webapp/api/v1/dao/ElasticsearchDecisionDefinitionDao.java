@@ -18,7 +18,6 @@ import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
@@ -75,7 +74,7 @@ public class ElasticsearchDecisionDefinitionDao extends ElasticsearchDao<Decisio
     final SearchSourceBuilder searchSourceBuilder = buildQueryOn(query, DecisionDefinition.KEY, new SearchSourceBuilder());
     try {
       final SearchRequest searchRequest = new SearchRequest().indices(decisionIndex.getAlias()).source(searchSourceBuilder);
-      final SearchResponse searchResponse = elasticsearch.search(searchRequest, RequestOptions.DEFAULT);
+      final SearchResponse searchResponse = tenantAwareClient.search(searchRequest);
       final SearchHits searchHits = searchResponse.getHits();
       final SearchHit[] searchHitArray = searchHits.getHits();
       if (searchHitArray != null && searchHitArray.length > 0) {
@@ -93,7 +92,9 @@ public class ElasticsearchDecisionDefinitionDao extends ElasticsearchDao<Decisio
 
   protected List<DecisionDefinition> searchFor(final SearchSourceBuilder searchSource) throws IOException {
     final SearchRequest searchRequest = new SearchRequest(decisionIndex.getAlias()).source(searchSource);
-    return ElasticsearchUtil.scroll(searchRequest, DecisionDefinition.class, objectMapper, elasticsearch);
+    return tenantAwareClient.search(searchRequest, () -> {
+      return ElasticsearchUtil.scroll(searchRequest, DecisionDefinition.class, objectMapper, elasticsearch);
+    });
   }
 
   protected void buildFiltering(final Query<DecisionDefinition> query, final SearchSourceBuilder searchSourceBuilder) {
@@ -132,7 +133,9 @@ public class ElasticsearchDecisionDefinitionDao extends ElasticsearchDao<Decisio
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(query).fetchSource(DecisionRequirementsIndex.KEY, null);
     SearchRequest searchRequest = new SearchRequest(decisionRequirementsIndex.getAlias()).source(searchSourceBuilder);
     try {
-      List<DecisionRequirements> decisionRequirements = ElasticsearchUtil.scroll(searchRequest, DecisionRequirements.class, objectMapper, elasticsearch);
+      List<DecisionRequirements> decisionRequirements = tenantAwareClient.search(searchRequest, () -> {
+        return ElasticsearchUtil.scroll(searchRequest, DecisionRequirements.class, objectMapper, elasticsearch);
+      });
       final List<Long> nonNullKeys = decisionRequirements.stream().map(DecisionRequirements::getKey).filter(Objects::nonNull).toList();
       if (nonNullKeys.isEmpty()) {
         return ElasticsearchUtil.createMatchNoneQuery();
