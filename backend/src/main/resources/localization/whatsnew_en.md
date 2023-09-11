@@ -5,7 +5,7 @@ The drill down from the high-level overview dashboard to the details of a report
 Optimize is now sending important notifications to the Camunda 8 notifications tracker. This allows us to support users utilizing Camunda 8 for process orchestration with hints about the benefits of using Optimize.
 
 ## Copy Instant Preview Dashboard
-When viewing an Instant Preview Dashboard, you can now directly create a copy that can then be edited and shared like any other Dashboard. This Dashboard is now also available as a selectable template during Dashboard creation.
+When viewing an Instant Preview Dashboard, you can now directly create a copy that can then be edited and shared like any other dashboard. This dashboard is now also available as a selectable template during dashboard creation.
 
 ## Updated Report Templates
 Report Templates help the user to visualize process execution data in a shareable report quickly. The new Report Templates provide an overview of the different report visualizations in Optimize.
