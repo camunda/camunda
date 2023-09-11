@@ -32,7 +32,7 @@
     <version.zeebe>8.3.0-alpha6</version.zeebe>
     <version.identity>8.3.0-alpha6</version.identity>
     <version.log4j>2.17.2</version.log4j>
-    <version.elasticsearch>7.17.12</version.elasticsearch>
+    <version.elasticsearch>7.17.13</version.elasticsearch>
     <version.elasticsearch-client>8.7.1</version.elasticsearch-client>
     <version.opensearch>2.4.0</version.opensearch>
     <version.spring.boot>3.1.3</version.spring.boot>
