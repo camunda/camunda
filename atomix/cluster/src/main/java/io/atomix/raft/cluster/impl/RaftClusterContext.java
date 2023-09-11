@@ -96,8 +96,7 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
 
   @Override
   public CompletableFuture<Void> join() {
-    return raft.join()
-        .thenRunAsync(() -> raft.transition(localMember.getType()), raft.getThreadContext());
+    return raft.join();
   }
 
   @Override
@@ -355,7 +354,7 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
       final Configuration updatedConfig,
       final RaftMember member) {
     if (previousConfig == null) {
-      return false;
+      return true;
     }
 
     final var previousMembers = previousConfig.newMembers();
