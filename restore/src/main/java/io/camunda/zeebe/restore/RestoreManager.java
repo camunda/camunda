@@ -11,7 +11,7 @@ import io.atomix.cluster.MemberId;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.backup.api.BackupDescriptor;
 import io.camunda.zeebe.backup.api.BackupStore;
-import io.camunda.zeebe.broker.partitioning.RaftPartitionFactory;
+import io.camunda.zeebe.broker.partitioning.startup.RaftPartitionFactory;
 import io.camunda.zeebe.broker.partitioning.topology.PartitionDistribution;
 import io.camunda.zeebe.broker.partitioning.topology.PartitionDistributionResolver;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;

@@ -14,7 +14,7 @@ class ClusterServicesStep extends AbstractBrokerStartupStep {
 
   @Override
   public String getName() {
-    return "Cluster Services (Start)";
+    return "Cluster Services";
   }
 
   @Override

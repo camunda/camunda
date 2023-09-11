@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.broker.partitioning;
+package io.camunda.zeebe.broker.partitioning.startup;
 
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.broker.PartitionListener;
@@ -62,7 +62,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 
-final class ZeebePartitionFactory {
+public final class ZeebePartitionFactory {
 
   private static final List<StartupStep<PartitionStartupContext>> STARTUP_STEPS =
       List.of(new RockDbMetricExporterPartitionStartupStep());
@@ -96,7 +96,7 @@ final class ZeebePartitionFactory {
   private final TopologyManagerImpl topologyManager;
   private final FeatureFlags featureFlags;
 
-  ZeebePartitionFactory(
+  public ZeebePartitionFactory(
       final ActorSchedulingService actorSchedulingService,
       final BrokerCfg brokerCfg,
       final BrokerInfo localBroker,
@@ -125,7 +125,7 @@ final class ZeebePartitionFactory {
     this.featureFlags = featureFlags;
   }
 
-  ZeebePartition constructPartition(
+  public ZeebePartition constructPartition(
       final RaftPartition raftPartition, final FileBasedSnapshotStore snapshotStore) {
     final var communicationService = clusterServices.getCommunicationService();
     final var membershipService = clusterServices.getMembershipService();

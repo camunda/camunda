@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.broker.partitioning;
+package io.camunda.zeebe.broker.partitioning.startup;
 
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.raft.partition.RaftPartition;
@@ -21,6 +21,7 @@ import io.camunda.zeebe.broker.system.configuration.RaftCfg.FlushConfig;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 
@@ -34,6 +35,21 @@ public final class RaftPartitionFactory {
   }
 
   public RaftPartition createRaftPartition(final PartitionMetadata partitionMetadata) {
+    final var partitionDirectory =
+        Paths.get(brokerCfg.getData().getDirectory())
+            .resolve(GROUP_NAME)
+            .resolve("partitions")
+            .resolve(partitionMetadata.id().id().toString());
+    try {
+      FileUtil.ensureDirectoryExists(partitionDirectory);
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
+    }
+    return createRaftPartition(partitionMetadata, partitionDirectory);
+  }
+
+  public RaftPartition createRaftPartition(
+      final PartitionMetadata partitionMetadata, final Path partitionDirectory) {
     final var storageConfig = new RaftStorageConfig();
     final var partitionConfig = new RaftPartitionConfig();
 
@@ -46,13 +62,6 @@ public final class RaftPartitionFactory {
               maxMessageSize, segmentSize));
     }
     storageConfig.setSegmentSize(segmentSize);
-    final var dataDirectory = Paths.get(brokerCfg.getData().getDirectory()).resolve(GROUP_NAME);
-
-    try {
-      FileUtil.ensureDirectoryExists(dataDirectory);
-    } catch (final IOException e) {
-      throw new UncheckedIOException("Failed to create Raft data directory", e);
-    }
 
     storageConfig.setFlusherFactory(
         createFlusherFactory(
@@ -83,13 +92,7 @@ public final class RaftPartitionFactory {
     partitionConfig.setPreferSnapshotReplicationThreshold(
         brokerCfg.getExperimental().getRaft().getPreferSnapshotReplicationThreshold());
 
-    return new RaftPartition(
-        partitionMetadata,
-        partitionConfig,
-        dataDirectory
-            .resolve("partitions")
-            .resolve(String.valueOf(partitionMetadata.id().id()))
-            .toFile());
+    return new RaftPartition(partitionMetadata, partitionConfig, partitionDirectory.toFile());
   }
 
   private RaftLogFlusher.Factory createFlusherFactory(

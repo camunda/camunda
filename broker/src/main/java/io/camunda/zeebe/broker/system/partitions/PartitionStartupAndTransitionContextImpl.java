@@ -138,6 +138,18 @@ public class PartitionStartupAndTransitionContextImpl
     this.topologyManager = topologyManager;
   }
 
+  @Override
+  public String toString() {
+    return "PartitionStartupAndTransitionContextImpl{"
+        + "partition="
+        + partitionId
+        + ", term="
+        + currentTerm
+        + ", role="
+        + currentRole
+        + '}';
+  }
+
   public PartitionAdminControl getPartitionAdminControl() {
     return new PartitionAdminControlImpl(
         () -> getPartitionContext().getStreamProcessor(),
