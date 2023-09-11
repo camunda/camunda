@@ -8,16 +8,22 @@
 package io.camunda.zeebe.it.backup;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 
 import com.google.cloud.storage.BucketInfo;
 import io.camunda.zeebe.backup.gcs.GcsBackupConfig;
 import io.camunda.zeebe.backup.gcs.GcsBackupStore;
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.BackupStoreType;
+import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig;
+import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig.GcsBackupStoreAuth;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
+import io.camunda.zeebe.qa.util.cluster.TestRestoreApp;
 import io.camunda.zeebe.qa.util.testcontainers.GcsContainer;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
+import io.camunda.zeebe.restore.BackupNotFoundException;
 import io.camunda.zeebe.shared.management.openapi.models.BackupInfo;
 import io.camunda.zeebe.shared.management.openapi.models.StateCode;
 import io.camunda.zeebe.shared.management.openapi.models.TakeBackupResponse;
@@ -29,11 +35,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testcontainers.containers.ContainerLaunchException;
-import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
-import org.testcontainers.containers.startupcheck.OneShotStartupCheckStrategy;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -73,10 +76,10 @@ final class GcsRestoreAcceptanceIT {
 
   @Test
   void shouldFailForNonExistingBackup() {
-    // then -- restore container exits with an error code
-    // we can't check the exit code directly, but we can observe that testcontainers was unable
-    // to start the container.
-    assertThatExceptionOfType(ContainerLaunchException.class).isThrownBy(() -> restoreBackup(1234));
+    // then -- restore application exits with an error code
+    assertThatCode(() -> restoreBackup(1234))
+        .isInstanceOf(IllegalStateException.class)
+        .hasRootCauseExactlyInstanceOf(BackupNotFoundException.class);
   }
 
   private void takeBackup(final long backupId) {
@@ -117,21 +120,22 @@ final class GcsRestoreAcceptanceIT {
   }
 
   private void restoreBackup(final long backupId) {
-    try (final var restore =
-        new GenericContainer<>(ZeebeTestContainerDefaults.defaultTestImage())
-            .withLogConsumer(new Slf4jLogConsumer(LOG))
-            .withNetwork(NETWORK)
-            .dependsOn(GCS)
-            .withStartupAttempts(1)
-            .withStartupCheckStrategy(
-                new OneShotStartupCheckStrategy().withTimeout(Duration.ofMinutes(1)))
-            .withEnv("ZEEBE_RESTORE", "true")
-            .withEnv("ZEEBE_BROKER_DATA_BACKUP_STORE", "GCS")
-            .withEnv("ZEEBE_BROKER_DATA_BACKUP_GCS_BUCKETNAME", BUCKET_NAME)
-            .withEnv("ZEEBE_BROKER_DATA_BACKUP_GCS_AUTH", "none")
-            .withEnv("ZEEBE_BROKER_DATA_BACKUP_GCS_HOST", GCS.internalEndpoint())
-            .withEnv("ZEEBE_RESTORE_FROM_BACKUP_ID", String.valueOf(backupId))) {
-      restore.start();
-    }
+    final var restore =
+        new TestRestoreApp()
+            .withBrokerConfig(this::configureBackupStore)
+            .withBackupId(backupId)
+            .start();
+    restore.close();
+  }
+
+  private void configureBackupStore(final BrokerCfg cfg) {
+    final var backup = cfg.getData().getBackup();
+    backup.setStore(BackupStoreType.GCS);
+
+    final var config = new GcsBackupStoreConfig();
+    config.setAuth(GcsBackupStoreAuth.NONE);
+    config.setBucketName(BUCKET_NAME);
+    config.setHost(GCS.externalEndpoint());
+    backup.setGcs(config);
   }
 }
