@@ -185,6 +185,29 @@ final class MemberJoinTest {
     assertThat(appendEntry(leader).commit()).succeedsWithin(Duration.ofSeconds(1));
   }
 
+  @Test
+  void shouldJoinSingleMemberCluster(@TempDir final Path tmp) {
+    // given - a cluster with just one member
+    final var id1 = MemberId.from("1");
+    final var m1 = createServer(tmp, createMembershipService(id1));
+
+    CompletableFuture.allOf(m1.bootstrap(id1)).join();
+
+    // when - a new member joins
+    final var id2 = MemberId.from("2");
+    final var m2 = createServer(tmp, createMembershipService(id2, id1, id2));
+    m2.join().join();
+
+    // then - all members show a configuration with two active members
+    final var expected =
+        List.of(
+            new DefaultRaftMember(id1, Type.ACTIVE, Instant.now()),
+            new DefaultRaftMember(id2, Type.ACTIVE, Instant.now()));
+
+    assertThat(m1.cluster().getMembers()).containsExactlyInAnyOrderElementsOf(expected);
+    assertThat(m2.cluster().getMembers()).containsExactlyInAnyOrderElementsOf(expected);
+  }
+
   private static LeaderRole awaitLeader(final RaftServer... servers) {
     //noinspection OptionalGetWithoutIsPresent
     return Awaitility.await("Leader is known")

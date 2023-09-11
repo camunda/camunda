@@ -96,8 +96,7 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
 
   @Override
   public CompletableFuture<Void> join() {
-    return raft.join()
-        .thenRunAsync(() -> raft.transition(localMember.getType()), raft.getThreadContext());
+    return raft.join();
   }
 
   @Override
@@ -355,7 +354,14 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
       final Configuration updatedConfig,
       final RaftMember member) {
     if (previousConfig == null) {
-      return false;
+      // When a member receives its first configuration, i.e. when it's joining an existing
+      // partition, the member should immediately transition to the newly configured role.
+      // Without this, joining will fail when the newly joining member is required for quorum. The
+      // most simple case is starting with a single member cluster and adding one new member. The
+      // join request completes only when both old and new members have committed the configuration
+      // change. That means the new member must transition to follower before the join request
+      // completes, when it receives the first configure request from the current leader.
+      return true;
     }
 
     final var previousMembers = previousConfig.newMembers();
