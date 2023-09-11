@@ -153,8 +153,7 @@ public final class PartitionManagerImpl
     partitions.put(id, partition);
 
     concurrencyControl.runOnCompletion(
-        partition.start(),
-        (started, error) -> completePartitionStart(started, error, result));
+        partition.start(), (started, error) -> completePartitionStart(id, started, error, result));
     return result;
   }
 
@@ -176,28 +175,31 @@ public final class PartitionManagerImpl
         () ->
             concurrencyControl.runOnCompletion(
                 partition.start(),
-                (started, error) -> completePartitionStart(started, error, result)));
+                (started, error) -> completePartitionStart(id, started, error, result)));
     return result;
   }
 
   private void completePartitionStart(
-      final Partition partition, final Throwable error, final ActorFuture<Void> future) {
-    final var id = partition.id();
+      final int partitionId,
+      final Partition partition,
+      final Throwable error,
+      final ActorFuture<Void> future) {
 
     if (error != null) {
-      LOGGER.error("Failed to start partition {}", id, error);
-      onHealthChanged(id, HealthStatus.DEAD);
+      LOGGER.error("Failed to start partition {}", partitionId, error);
+      onHealthChanged(partitionId, HealthStatus.DEAD);
       future.completeExceptionally(error);
       return;
     }
 
-    LOGGER.info("Started partition {}", id);
+    LOGGER.info("Started partition {}", partitionId);
     final var zeebePartition = partition.zeebePartition();
     final var raftPartition = partition.raftPartition();
 
-    zeebePartition.addFailureListener(new PartitionHealthBroadcaster(id, this::onHealthChanged));
+    zeebePartition.addFailureListener(
+        new PartitionHealthBroadcaster(partitionId, this::onHealthChanged));
     diskSpaceUsageMonitor.addDiskUsageListener(zeebePartition);
-    adminAccess.put(id, zeebePartition.getAdminAccess());
+    adminAccess.put(partitionId, zeebePartition.getAdminAccess());
     zeebePartitions.add(zeebePartition);
     raftPartitions.add(raftPartition);
     future.complete(null);
