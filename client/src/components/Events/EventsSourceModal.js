@@ -110,7 +110,8 @@ export default withErrorHandling(
 
     alreadyExists = () =>
       this.props.existingSources.some(
-        (source) => source.processDefinitionKey === this.state.source.processDefinitionKey
+        (source) =>
+          source.configuration.processDefinitionKey === this.state.source.processDefinitionKey
       );
 
     isValid = () => {
