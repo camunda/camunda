@@ -24,6 +24,7 @@ public final class CreateProcessInstanceResponseImpl implements ProcessInstanceE
   private final String bpmnProcessId;
   private final int version;
   private final long processInstanceKey;
+  private final String tenantId;
 
   public CreateProcessInstanceResponseImpl(
       final GatewayOuterClass.CreateProcessInstanceResponse response) {
@@ -31,6 +32,7 @@ public final class CreateProcessInstanceResponseImpl implements ProcessInstanceE
     bpmnProcessId = response.getBpmnProcessId();
     version = response.getVersion();
     processInstanceKey = response.getProcessInstanceKey();
+    tenantId = response.getTenantId();
   }
 
   @Override
@@ -55,8 +57,7 @@ public final class CreateProcessInstanceResponseImpl implements ProcessInstanceE
 
   @Override
   public String getTenantId() {
-    // todo(#13536): replace dummy implementation
-    return "";
+    return tenantId;
   }
 
   @Override
@@ -72,7 +73,7 @@ public final class CreateProcessInstanceResponseImpl implements ProcessInstanceE
         + ", processInstanceKey="
         + processInstanceKey
         + ", tenantId='"
-        + getTenantId()
+        + tenantId
         + '\''
         + '}';
   }
