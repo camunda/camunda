@@ -20,6 +20,7 @@ import {reaction} from 'mobx';
 import {deleteSearchParams} from 'modules/utils/filter';
 import {DecisionViewer} from 'modules/components/DecisionViewer';
 import {notificationsStore} from 'modules/stores/notifications';
+import {CopiableContent} from 'modules/components/PanelHeader/CopiableContent';
 
 const Decision: React.FC = observer(() => {
   const location = useLocation();
@@ -125,23 +126,31 @@ const Decision: React.FC = observer(() => {
   return (
     <Section>
       <PanelHeader title={decisionName} ref={panelHeaderRef}>
-        {isVersionSelected && decisionDefinitionId !== null && (
-          <Restricted
-            scopes={['write']}
-            resourceBasedRestrictions={{
-              scopes: ['DELETE'],
-              permissions: groupedDecisionsStore.getPermissions(
-                decisionId ?? undefined,
-              ),
-            }}
-          >
-            <DecisionOperations
-              decisionDefinitionId={decisionDefinitionId}
-              decisionName={decisionName}
-              decisionVersion={version}
+        <>
+          {decisionId !== null && (
+            <CopiableContent
+              copyButtonDescription="Decision ID / Click to copy"
+              content={decisionId}
             />
-          </Restricted>
-        )}
+          )}
+          {isVersionSelected && decisionDefinitionId !== null && (
+            <Restricted
+              scopes={['write']}
+              resourceBasedRestrictions={{
+                scopes: ['DELETE'],
+                permissions: groupedDecisionsStore.getPermissions(
+                  decisionId ?? undefined,
+                ),
+              }}
+            >
+              <DecisionOperations
+                decisionDefinitionId={decisionDefinitionId}
+                decisionName={decisionName}
+                decisionVersion={version}
+              />
+            </Restricted>
+          )}
+        </>
       </PanelHeader>
       <DiagramShell
         status={getStatus()}

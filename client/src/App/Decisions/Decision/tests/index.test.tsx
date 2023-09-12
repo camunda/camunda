@@ -20,9 +20,12 @@ describe('<Decision />', () => {
   });
 
   it('should render decision table and panel header', async () => {
+    const originalWindowPrompt = window.prompt;
+    window.prompt = jest.fn();
+
     mockFetchDecisionXML().withSuccess(mockDmnXml);
 
-    render(<Decision />, {
+    const {user} = render(<Decision />, {
       wrapper: createWrapper('/decisions?name=invoiceClassification&version=1'),
     });
 
@@ -30,6 +33,17 @@ describe('<Decision />', () => {
       await screen.findByText('DecisionTable view mock'),
     ).toBeInTheDocument();
     expect(screen.getByRole('heading', {name: 'invoiceClassification'}));
+    expect(screen.getAllByText('invoiceClassification')).toHaveLength(2);
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Decision ID / Click to copy',
+      }),
+    );
+
+    expect(await screen.findByText('Copied to clipboard')).toBeInTheDocument();
+
+    window.prompt = originalWindowPrompt;
   });
 
   it('should render text when no decision is selected', async () => {
