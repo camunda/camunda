@@ -15,6 +15,7 @@ import {useLocation, useNavigate, Location} from 'react-router-dom';
 import {
   Container,
   Form as StyledForm,
+  Title,
 } from 'modules/components/FiltersPanel/styled';
 import {observer} from 'mobx-react';
 import {AutoSubmit} from 'modules/components/AutoSubmit';
@@ -29,6 +30,7 @@ import {isEqual} from 'lodash';
 import {useState} from 'react';
 import {Locations} from 'modules/Routes';
 import {FiltersPanel} from 'modules/components/FiltersPanel';
+import {TenantField} from 'modules/components/TenantField';
 
 const initialValues: DecisionInstanceFilters = {
   evaluated: true,
@@ -72,6 +74,12 @@ const Filters: React.FC = observer(() => {
               />
               <Stack gap={8}>
                 <Stack gap={5}>
+                  {window.clientConfig?.multiTenancyEnabled && (
+                    <div>
+                      <Title>Tenant</Title>
+                      <TenantField />
+                    </div>
+                  )}
                   <DecisionsFormGroup />
                   <InstancesStatesFormGroup />
                 </Stack>

@@ -33,7 +33,7 @@ import {
   OptionalFilter,
   OptionalFiltersFormGroup,
 } from './OptionalFiltersFormGroup';
-import {TenantField} from './TenantField';
+import {TenantField} from 'modules/components/TenantField';
 
 const initialValues: ProcessInstanceFilters = {
   active: true,

@@ -32,6 +32,7 @@ type ProcessInstanceFilterField =
   | 'tenant';
 
 type DecisionInstanceFilterField =
+  | 'tenant'
   | 'name'
   | 'version'
   | 'evaluated'
@@ -71,6 +72,7 @@ type DecisionInstanceFilters = {
   processInstanceId?: string;
   evaluationDateBefore?: string;
   evaluationDateAfter?: string;
+  tenant?: string;
 };
 
 type RequestFilters = {
@@ -135,6 +137,7 @@ const DECISION_INSTANCE_FILTER_FIELDS: DecisionInstanceFilterField[] = [
   'processInstanceId',
   'evaluationDateAfter',
   'evaluationDateBefore',
+  'tenant',
 ];
 
 const BOOLEAN_PROCESS_INSTANCE_FILTER_FIELDS: ProcessInstanceFilterField[] = [

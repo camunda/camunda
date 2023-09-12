@@ -24,6 +24,7 @@ import {
   selectFlowNode,
   selectProcess,
   selectProcessVersion,
+  selectTenant,
 } from 'modules/testUtils/selectComboBoxOption';
 import {removeOptionalFilter} from 'modules/testUtils/removeOptionalFilter';
 import {mockGetUser} from 'modules/mocks/api/getUser';
@@ -319,8 +320,7 @@ describe('Filters', () => {
     await user.click(screen.getByRole('checkbox', {name: 'Completed'}));
     await user.click(screen.getByRole('checkbox', {name: 'Canceled'}));
 
-    await user.click(screen.getByRole('combobox', {name: 'Tenant'}));
-    await user.click(await screen.findByText('All tenants'));
+    await selectTenant({user, option: 'All tenants'});
 
     await waitFor(() =>
       expect(
