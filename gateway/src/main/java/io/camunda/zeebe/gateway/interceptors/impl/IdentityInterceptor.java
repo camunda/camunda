@@ -11,6 +11,7 @@ import io.camunda.identity.sdk.Identity;
 import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.identity.sdk.authentication.exception.TokenVerificationException;
 import io.camunda.zeebe.gateway.impl.configuration.IdentityCfg;
+import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
 import io.grpc.Metadata;
 import io.grpc.ServerCall;
 import io.grpc.ServerCallHandler;
@@ -25,13 +26,15 @@ public final class IdentityInterceptor implements ServerInterceptor {
       Metadata.Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER);
 
   private final Identity identity;
+  private final MultiTenancyCfg multiTenancy;
 
-  public IdentityInterceptor(final IdentityCfg config) {
-    this(createIdentity(config));
+  public IdentityInterceptor(final IdentityCfg config, final MultiTenancyCfg multiTenancy) {
+    this(createIdentity(config), multiTenancy);
   }
 
-  public IdentityInterceptor(final Identity identity) {
+  public IdentityInterceptor(final Identity identity, final MultiTenancyCfg multiTenancy) {
     this.identity = identity;
+    this.multiTenancy = multiTenancy;
   }
 
   private static Identity createIdentity(final IdentityCfg config) {

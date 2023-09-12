@@ -300,7 +300,9 @@ public final class Gateway implements CloseableSilently {
     interceptors.add(MONITORING_SERVER_INTERCEPTOR);
     if (AuthMode.IDENTITY == gatewayCfg.getSecurity().getAuthentication().getMode()) {
       interceptors.add(
-          new IdentityInterceptor(gatewayCfg.getSecurity().getAuthentication().getIdentity()));
+          new IdentityInterceptor(
+              gatewayCfg.getSecurity().getAuthentication().getIdentity(),
+              gatewayCfg.getMultiTenancy()));
     }
 
     return ServerInterceptors.intercept(service, interceptors);
