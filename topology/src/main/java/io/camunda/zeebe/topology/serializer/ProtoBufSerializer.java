@@ -11,7 +11,6 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.topology.gossip.ClusterTopologyGossipState;
 import io.camunda.zeebe.topology.protocol.Topology;
-import io.camunda.zeebe.topology.protocol.Topology.OperationType;
 import io.camunda.zeebe.topology.state.ClusterChangePlan;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.PartitionState;
@@ -191,12 +190,17 @@ public class ProtoBufSerializer implements ClusterTopologySerializer {
     final var builder =
         Topology.TopologyChangeOperation.newBuilder().setMemberId(operation.memberId().id());
     if (operation instanceof final PartitionJoinOperation joinOperation) {
-      builder
-          .setPartitionId(joinOperation.partitionId())
-          .setPriority(joinOperation.priority())
-          .setType(OperationType.PARTITION_JOIN_);
+      builder.setPartitionJoin(
+          Topology.PartitionJoinOperation.newBuilder()
+              .setPartitionId(joinOperation.partitionId())
+              .setPriority(joinOperation.priority()));
     } else if (operation instanceof final PartitionLeaveOperation leaveOperation) {
-      builder.setPartitionId(leaveOperation.partitionId()).setType(OperationType.PARTITION_LEAVE);
+      builder.setPartitionLeave(
+          Topology.PartitionLeaveOperation.newBuilder()
+              .setPartitionId(leaveOperation.partitionId()));
+    } else {
+      throw new IllegalArgumentException(
+          "Unknown operation type: " + operation.getClass().getSimpleName());
     }
     return builder.build();
   }
@@ -212,22 +216,22 @@ public class ProtoBufSerializer implements ClusterTopologySerializer {
 
   private TopologyChangeOperation decodeOperation(
       final Topology.TopologyChangeOperation topologyChangeOperation) {
-    return switch (topologyChangeOperation.getType()) {
-      case PARTITION_JOIN_ -> new PartitionJoinOperation(
+    if (topologyChangeOperation.hasPartitionJoin()) {
+      return new PartitionJoinOperation(
           MemberId.from(topologyChangeOperation.getMemberId()),
-          topologyChangeOperation.getPartitionId(),
-          topologyChangeOperation.getPriority());
-      case PARTITION_LEAVE -> new PartitionLeaveOperation(
+          topologyChangeOperation.getPartitionJoin().getPartitionId(),
+          topologyChangeOperation.getPartitionJoin().getPriority());
+    } else if (topologyChangeOperation.hasPartitionLeave()) {
+      return new PartitionLeaveOperation(
           MemberId.from(topologyChangeOperation.getMemberId()),
-          topologyChangeOperation.getPartitionId());
-
-        // If the node does not know of a type, the exception thrown will prevent
-        // ClusterTopologyGossiper from processing the incoming topology. This helps to prevent any
-        // incorrect or partial topology to be stored locally and later propagated to other nodes.
-        // Ideally, it is better not to any cluster topology change operations execute during a
-        // rolling update.
-      default -> throw new IllegalStateException(
-          "Unexpected value: " + topologyChangeOperation.getType());
-    };
+          topologyChangeOperation.getPartitionLeave().getPartitionId());
+    } else {
+      // If the node does not know of a type, the exception thrown will prevent
+      // ClusterTopologyGossiper from processing the incoming topology. This helps to prevent any
+      // incorrect or partial topology to be stored locally and later propagated to other nodes.
+      // Ideally, it is better not to any cluster topology change operations execute during a
+      // rolling update.
+      throw new IllegalStateException("Unknown operation: " + topologyChangeOperation);
+    }
   }
 }

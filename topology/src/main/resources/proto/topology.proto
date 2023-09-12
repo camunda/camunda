@@ -31,10 +31,21 @@ message ClusterChangePlan {
 
 message TopologyChangeOperation {
   string memberId = 1;
-  OperationType type = 2;
-  optional int32 partitionId = 3;
-  optional int32 priority = 4;
+  oneof operation {
+    PartitionJoinOperation partitionJoin = 2;
+    PartitionLeaveOperation partitionLeave = 3;
+  }
 }
+
+message PartitionJoinOperation {
+  int32 partitionId = 1;
+  int32 priority = 2;
+}
+
+message PartitionLeaveOperation {
+  int32 partitionId = 1;
+}
+
 enum State {
   UNKNOWN = 0;
   JOINING = 1;
@@ -43,10 +54,4 @@ enum State {
   LEFT = 4;
 }
 
-enum OperationType{
-  UNKNOWN_OPERATION = 0;
-  MEMBER_JOIN = 1;
-  MEMBER_LEAVE = 2;
-  PARTITION_JOIN_= 3;
-  PARTITION_LEAVE = 4;
-}
+
