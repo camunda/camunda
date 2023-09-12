@@ -208,7 +208,7 @@ jobs:
           export VERSION=$VERSION
           export DATE=$date_time_stamp
           export REVISION=$commit_hash
-          export BASE_IMAGE=eclipse-temurin:17.0.7_7-jre-focal
+          export BASE_IMAGE=eclipse-temurin:17.0.8_7-jre-focal
           sudo apt update
           sudo apt install -y jq
           sudo apt install -y bash
