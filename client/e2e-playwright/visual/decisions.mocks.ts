@@ -270,6 +270,7 @@ const mockDecisionInstances: DecisionInstancesDto = {
       evaluationDate: '2023-08-14T05:47:07.123+0000',
       processInstanceId: '2251799813830813',
       sortValues: ['', ''],
+      tenantId: '',
     },
     {
       id: '9007199254748932-1',
@@ -279,6 +280,7 @@ const mockDecisionInstances: DecisionInstancesDto = {
       evaluationDate: '2023-08-14T05:47:06.801+0000',
       processInstanceId: '9007199254748925',
       sortValues: ['', ''],
+      tenantId: '',
     },
     {
       id: '6755399441062312-1',
@@ -288,6 +290,7 @@ const mockDecisionInstances: DecisionInstancesDto = {
       evaluationDate: '2023-08-14T05:47:06.793+0000',
       processInstanceId: '6755399441062307',
       sortValues: ['', ''],
+      tenantId: '',
     },
     {
       id: '4503599627375963-1',
@@ -297,6 +300,7 @@ const mockDecisionInstances: DecisionInstancesDto = {
       evaluationDate: '2023-08-14T05:47:06.787+0000',
       processInstanceId: '4503599627375958',
       sortValues: ['', ''],
+      tenantId: '',
     },
     {
       id: '2251799813830805-1',
@@ -306,6 +310,7 @@ const mockDecisionInstances: DecisionInstancesDto = {
       evaluationDate: '2023-08-14T05:47:06.779+0000',
       processInstanceId: '2251799813830798',
       sortValues: ['', ''],
+      tenantId: '',
     },
     {
       id: '9007199254748918-1',
@@ -315,6 +320,7 @@ const mockDecisionInstances: DecisionInstancesDto = {
       evaluationDate: '2023-08-14T05:47:06.620+0000',
       processInstanceId: '9007199254748911',
       sortValues: ['', ''],
+      tenantId: '',
     },
     {
       id: '6755399441062304-1',
@@ -324,6 +330,7 @@ const mockDecisionInstances: DecisionInstancesDto = {
       evaluationDate: '2023-08-14T05:47:06.608+0000',
       processInstanceId: '6755399441062299',
       sortValues: ['', ''],
+      tenantId: '',
     },
     {
       id: '4503599627375956-1',
@@ -333,6 +340,7 @@ const mockDecisionInstances: DecisionInstancesDto = {
       evaluationDate: '2023-08-14T05:47:06.599+0000',
       processInstanceId: '4503599627375951',
       sortValues: ['', ''],
+      tenantId: '',
     },
     {
       id: '2251799813828076-1',
@@ -342,6 +350,7 @@ const mockDecisionInstances: DecisionInstancesDto = {
       evaluationDate: '2023-08-14T05:47:06.594+0000',
       processInstanceId: '2251799813828071',
       sortValues: ['', ''],
+      tenantId: '',
     },
     {
       id: '9007199254748904-1',
@@ -351,6 +360,7 @@ const mockDecisionInstances: DecisionInstancesDto = {
       evaluationDate: '2023-08-14T05:47:06.584+0000',
       processInstanceId: '9007199254748897',
       sortValues: ['', ''],
+      tenantId: '',
     },
     {
       id: '6755399441062296-1',
@@ -360,6 +370,7 @@ const mockDecisionInstances: DecisionInstancesDto = {
       evaluationDate: '2023-08-14T05:47:06.575+0000',
       processInstanceId: '6755399441062291',
       sortValues: ['', ''],
+      tenantId: '',
     },
     {
       id: '4503599627375944-1',
@@ -369,6 +380,7 @@ const mockDecisionInstances: DecisionInstancesDto = {
       evaluationDate: '2023-08-14T05:47:06.567+0000',
       processInstanceId: '4503599627375937',
       sortValues: ['', ''],
+      tenantId: '',
     },
     {
       id: '2251799813826769-1',
@@ -378,6 +390,7 @@ const mockDecisionInstances: DecisionInstancesDto = {
       evaluationDate: '2023-08-14T05:47:06.558+0000',
       processInstanceId: '2251799813826762',
       sortValues: ['', ''],
+      tenantId: '',
     },
     {
       id: '9007199254748889-1',
@@ -387,6 +400,7 @@ const mockDecisionInstances: DecisionInstancesDto = {
       evaluationDate: '2023-08-14T05:47:06.539+0000',
       processInstanceId: '9007199254748882',
       sortValues: ['', ''],
+      tenantId: '',
     },
     {
       id: '6755399441062283-1',
@@ -396,6 +410,7 @@ const mockDecisionInstances: DecisionInstancesDto = {
       evaluationDate: '2023-08-14T05:47:06.529+0000',
       processInstanceId: '6755399441062276',
       sortValues: ['', ''],
+      tenantId: '',
     },
     {
       id: '4503599627375933-1',
@@ -405,6 +420,7 @@ const mockDecisionInstances: DecisionInstancesDto = {
       evaluationDate: '2023-08-14T05:47:06.522+0000',
       processInstanceId: '4503599627375928',
       sortValues: ['', ''],
+      tenantId: '',
     },
     {
       id: '2251799813826743-1',
@@ -414,6 +430,7 @@ const mockDecisionInstances: DecisionInstancesDto = {
       evaluationDate: '2023-08-14T05:47:06.513+0000',
       processInstanceId: '2251799813826738',
       sortValues: ['', ''],
+      tenantId: '',
     },
     {
       id: '9007199254748878-1',
@@ -423,6 +440,7 @@ const mockDecisionInstances: DecisionInstancesDto = {
       evaluationDate: '2023-08-14T05:47:06.502+0000',
       processInstanceId: '9007199254748873',
       sortValues: ['', ''],
+      tenantId: '',
     },
     {
       id: '2251799813687953-1',
@@ -432,6 +450,7 @@ const mockDecisionInstances: DecisionInstancesDto = {
       evaluationDate: '2023-08-14T05:46:04.694+0000',
       processInstanceId: '2251799813687946',
       sortValues: ['', ''],
+      tenantId: '',
     },
     {
       id: '9007199254742973-1',
@@ -441,6 +460,7 @@ const mockDecisionInstances: DecisionInstancesDto = {
       evaluationDate: '2023-08-14T05:46:04.686+0000',
       processInstanceId: '9007199254742966',
       sortValues: ['', ''],
+      tenantId: '',
     },
     {
       id: '6755399441057764-1',
@@ -450,6 +470,7 @@ const mockDecisionInstances: DecisionInstancesDto = {
       evaluationDate: '2023-08-14T05:46:04.678+0000',
       processInstanceId: '6755399441057757',
       sortValues: ['', ''],
+      tenantId: '',
     },
     {
       id: '4503599627372771-1',
@@ -459,6 +480,7 @@ const mockDecisionInstances: DecisionInstancesDto = {
       evaluationDate: '2023-08-14T05:46:04.671+0000',
       processInstanceId: '4503599627372764',
       sortValues: ['', ''],
+      tenantId: '',
     },
     {
       id: '2251799813687944-1',
@@ -468,6 +490,7 @@ const mockDecisionInstances: DecisionInstancesDto = {
       evaluationDate: '2023-08-14T05:46:04.663+0000',
       processInstanceId: '2251799813687939',
       sortValues: ['', ''],
+      tenantId: '',
     },
     {
       id: '9007199254742960-1',
@@ -477,6 +500,7 @@ const mockDecisionInstances: DecisionInstancesDto = {
       evaluationDate: '2023-08-14T05:46:04.651+0000',
       processInstanceId: '9007199254742953',
       sortValues: ['', ''],
+      tenantId: '',
     },
     {
       id: '6755399441057755-1',
@@ -486,6 +510,7 @@ const mockDecisionInstances: DecisionInstancesDto = {
       evaluationDate: '2023-08-14T05:46:04.642+0000',
       processInstanceId: '6755399441057750',
       sortValues: ['', ''],
+      tenantId: '',
     },
     {
       id: '4503599627372758-1',
@@ -495,6 +520,7 @@ const mockDecisionInstances: DecisionInstancesDto = {
       evaluationDate: '2023-08-14T05:46:04.633+0000',
       processInstanceId: '4503599627372751',
       sortValues: ['', ''],
+      tenantId: '',
     },
     {
       id: '2251799813687933-1',
@@ -504,6 +530,7 @@ const mockDecisionInstances: DecisionInstancesDto = {
       evaluationDate: '2023-08-14T05:46:04.624+0000',
       processInstanceId: '2251799813687926',
       sortValues: ['', ''],
+      tenantId: '',
     },
     {
       id: '9007199254742947-1',
@@ -513,6 +540,7 @@ const mockDecisionInstances: DecisionInstancesDto = {
       evaluationDate: '2023-08-14T05:46:04.617+0000',
       processInstanceId: '9007199254742940',
       sortValues: ['', ''],
+      tenantId: '',
     },
     {
       id: '6755399441057744-1',
@@ -522,6 +550,7 @@ const mockDecisionInstances: DecisionInstancesDto = {
       evaluationDate: '2023-08-14T05:46:04.609+0000',
       processInstanceId: '6755399441057737',
       sortValues: ['', ''],
+      tenantId: '',
     },
     {
       id: '4503599627372745-1',
@@ -531,6 +560,7 @@ const mockDecisionInstances: DecisionInstancesDto = {
       evaluationDate: '2023-08-14T05:46:04.601+0000',
       processInstanceId: '4503599627372738',
       sortValues: ['', ''],
+      tenantId: '',
     },
     {
       id: '2251799813687924-1',
@@ -540,6 +570,7 @@ const mockDecisionInstances: DecisionInstancesDto = {
       evaluationDate: '2023-08-14T05:46:04.595+0000',
       processInstanceId: '2251799813687919',
       sortValues: ['', ''],
+      tenantId: '',
     },
     {
       id: '9007199254742938-1',
@@ -549,6 +580,7 @@ const mockDecisionInstances: DecisionInstancesDto = {
       evaluationDate: '2023-08-14T05:46:04.586+0000',
       processInstanceId: '9007199254742933',
       sortValues: ['', ''],
+      tenantId: '',
     },
     {
       id: '6755399441057731-1',
@@ -558,6 +590,7 @@ const mockDecisionInstances: DecisionInstancesDto = {
       evaluationDate: '2023-08-14T05:46:04.571+0000',
       processInstanceId: '6755399441057724',
       sortValues: ['', ''],
+      tenantId: '',
     },
     {
       id: '4503599627372732-1',
@@ -567,6 +600,7 @@ const mockDecisionInstances: DecisionInstancesDto = {
       evaluationDate: '2023-08-14T05:46:04.559+0000',
       processInstanceId: '4503599627372725',
       sortValues: ['', ''],
+      tenantId: '',
     },
     {
       id: '2251799813687913-1',
@@ -576,6 +610,7 @@ const mockDecisionInstances: DecisionInstancesDto = {
       evaluationDate: '2023-08-14T05:46:04.535+0000',
       processInstanceId: '2251799813687906',
       sortValues: ['', ''],
+      tenantId: '',
     },
     {
       id: '9007199254742927-1',
@@ -585,6 +620,7 @@ const mockDecisionInstances: DecisionInstancesDto = {
       evaluationDate: '2023-08-14T05:46:04.525+0000',
       processInstanceId: '9007199254742920',
       sortValues: ['', ''],
+      tenantId: '',
     },
     {
       id: '6755399441057718-1',
@@ -594,6 +630,7 @@ const mockDecisionInstances: DecisionInstancesDto = {
       evaluationDate: '2023-08-14T05:46:04.515+0000',
       processInstanceId: '6755399441057711',
       sortValues: ['', ''],
+      tenantId: '',
     },
     {
       id: '4503599627372723-1',
@@ -603,6 +640,7 @@ const mockDecisionInstances: DecisionInstancesDto = {
       evaluationDate: '2023-08-14T05:46:04.506+0000',
       processInstanceId: '4503599627372718',
       sortValues: ['', ''],
+      tenantId: '',
     },
     {
       id: '2251799813687900-1',
@@ -612,6 +650,7 @@ const mockDecisionInstances: DecisionInstancesDto = {
       evaluationDate: '2023-08-14T05:46:04.494+0000',
       processInstanceId: '2251799813687893',
       sortValues: ['', ''],
+      tenantId: '',
     },
     {
       id: '9007199254742918-1',
@@ -621,6 +660,7 @@ const mockDecisionInstances: DecisionInstancesDto = {
       evaluationDate: '2023-08-14T05:46:04.481+0000',
       processInstanceId: '9007199254742913',
       sortValues: ['', ''],
+      tenantId: '',
     },
   ],
   totalCount: 40,

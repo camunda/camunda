@@ -17,6 +17,7 @@ const mockDecisionInstances: DecisionInstancesDto = {
       processInstanceId: '2251799813689544',
       state: 'EVALUATED',
       sortValues: ['', ''],
+      tenantId: '',
     },
     {
       id: '2251799813689542',
@@ -26,6 +27,7 @@ const mockDecisionInstances: DecisionInstancesDto = {
       processInstanceId: '2251799813689544',
       state: 'FAILED',
       sortValues: ['', ''],
+      tenantId: '',
     },
     {
       id: '2251799813689543',
@@ -35,6 +37,7 @@ const mockDecisionInstances: DecisionInstancesDto = {
       processInstanceId: null,
       state: 'EVALUATED',
       sortValues: ['', ''],
+      tenantId: '',
     },
     {
       id: '2251799813689544',
@@ -44,6 +47,7 @@ const mockDecisionInstances: DecisionInstancesDto = {
       processInstanceId: '2251799813689544',
       state: 'FAILED',
       sortValues: ['', ''],
+      tenantId: '',
     },
     {
       id: '2251799813689545',
@@ -53,6 +57,7 @@ const mockDecisionInstances: DecisionInstancesDto = {
       processInstanceId: '2251799813689544',
       state: 'EVALUATED',
       sortValues: ['', ''],
+      tenantId: '',
     },
     {
       id: '2251799813689546',
@@ -62,6 +67,7 @@ const mockDecisionInstances: DecisionInstancesDto = {
       processInstanceId: '2251799813689544',
       state: 'FAILED',
       sortValues: ['', ''],
+      tenantId: '',
     },
     {
       id: '2251799813689547',
@@ -71,6 +77,7 @@ const mockDecisionInstances: DecisionInstancesDto = {
       processInstanceId: '2251799813689544',
       state: 'EVALUATED',
       sortValues: ['', ''],
+      tenantId: '',
     },
     {
       id: '2251799813689548',
@@ -80,6 +87,7 @@ const mockDecisionInstances: DecisionInstancesDto = {
       processInstanceId: '2251799813689544',
       state: 'FAILED',
       sortValues: ['', ''],
+      tenantId: '',
     },
     {
       id: '2251799813689549',
@@ -89,6 +97,7 @@ const mockDecisionInstances: DecisionInstancesDto = {
       processInstanceId: '2251799813689544',
       state: 'EVALUATED',
       sortValues: ['', ''],
+      tenantId: '',
     },
     {
       id: '2251799813689550',
@@ -98,6 +107,7 @@ const mockDecisionInstances: DecisionInstancesDto = {
       processInstanceId: '2251799813689544',
       state: 'FAILED',
       sortValues: ['', ''],
+      tenantId: '',
     },
     {
       id: '2251799813689551',
@@ -107,6 +117,7 @@ const mockDecisionInstances: DecisionInstancesDto = {
       processInstanceId: '2251799813689544',
       state: 'EVALUATED',
       sortValues: ['', ''],
+      tenantId: '',
     },
     {
       id: '2251799813689552',
@@ -116,6 +127,7 @@ const mockDecisionInstances: DecisionInstancesDto = {
       processInstanceId: '2251799813689544',
       state: 'FAILED',
       sortValues: ['', ''],
+      tenantId: '',
     },
     {
       id: '2251799813689553',
@@ -125,6 +137,7 @@ const mockDecisionInstances: DecisionInstancesDto = {
       processInstanceId: '2251799813689544',
       state: 'EVALUATED',
       sortValues: ['', ''],
+      tenantId: '',
     },
     {
       id: '2251799813689554',
@@ -134,6 +147,7 @@ const mockDecisionInstances: DecisionInstancesDto = {
       processInstanceId: '2251799813689544',
       state: 'FAILED',
       sortValues: ['', ''],
+      tenantId: '',
     },
     {
       id: '2251799813689555',
@@ -143,6 +157,7 @@ const mockDecisionInstances: DecisionInstancesDto = {
       processInstanceId: '2251799813689544',
       state: 'EVALUATED',
       sortValues: ['', ''],
+      tenantId: '',
     },
     {
       id: '2251799813689556',
@@ -152,6 +167,7 @@ const mockDecisionInstances: DecisionInstancesDto = {
       processInstanceId: '2251799813689544',
       state: 'FAILED',
       sortValues: ['', ''],
+      tenantId: '',
     },
     {
       id: '2251799813689557',
@@ -161,6 +177,7 @@ const mockDecisionInstances: DecisionInstancesDto = {
       processInstanceId: '2251799813689544',
       state: 'EVALUATED',
       sortValues: ['', ''],
+      tenantId: '',
     },
     {
       id: '2251799813689558',
@@ -170,6 +187,7 @@ const mockDecisionInstances: DecisionInstancesDto = {
       processInstanceId: '2251799813689544',
       state: 'FAILED',
       sortValues: ['', ''],
+      tenantId: '',
     },
     {
       id: '2251799813689559',
@@ -179,6 +197,7 @@ const mockDecisionInstances: DecisionInstancesDto = {
       processInstanceId: '2251799813689544',
       state: 'EVALUATED',
       sortValues: ['', ''],
+      tenantId: '',
     },
     {
       id: '2251799813689560',
@@ -188,6 +207,7 @@ const mockDecisionInstances: DecisionInstancesDto = {
       processInstanceId: '2251799813689544',
       state: 'FAILED',
       sortValues: ['', ''],
+      tenantId: '',
     },
     {
       id: '2251799813689561',
@@ -197,6 +217,7 @@ const mockDecisionInstances: DecisionInstancesDto = {
       processInstanceId: '2251799813689544',
       state: 'EVALUATED',
       sortValues: ['', ''],
+      tenantId: '',
     },
     {
       id: '2251799813689562',
@@ -206,6 +227,7 @@ const mockDecisionInstances: DecisionInstancesDto = {
       processInstanceId: '2251799813689544',
       state: 'FAILED',
       sortValues: ['', ''],
+      tenantId: '',
     },
     {
       id: '2251799813689563',
@@ -215,6 +237,7 @@ const mockDecisionInstances: DecisionInstancesDto = {
       processInstanceId: '2251799813689544',
       state: 'EVALUATED',
       sortValues: ['', ''],
+      tenantId: '',
     },
     {
       id: '2251799813689564',
@@ -224,6 +247,7 @@ const mockDecisionInstances: DecisionInstancesDto = {
       processInstanceId: '2251799813689544',
       state: 'FAILED',
       sortValues: ['', ''],
+      tenantId: '',
     },
     {
       id: '2251799813689565',
@@ -233,6 +257,7 @@ const mockDecisionInstances: DecisionInstancesDto = {
       processInstanceId: '2251799813689544',
       state: 'EVALUATED',
       sortValues: ['', ''],
+      tenantId: '',
     },
     {
       id: '2251799813689566',
@@ -242,6 +267,7 @@ const mockDecisionInstances: DecisionInstancesDto = {
       processInstanceId: '2251799813689544',
       state: 'FAILED',
       sortValues: ['', ''],
+      tenantId: '',
     },
     {
       id: '2251799813689567',
@@ -251,6 +277,7 @@ const mockDecisionInstances: DecisionInstancesDto = {
       processInstanceId: '2251799813689544',
       state: 'EVALUATED',
       sortValues: ['', ''],
+      tenantId: '',
     },
     {
       id: '2251799813689568',
@@ -260,6 +287,7 @@ const mockDecisionInstances: DecisionInstancesDto = {
       processInstanceId: '2251799813689544',
       state: 'FAILED',
       sortValues: ['', ''],
+      tenantId: '',
     },
   ],
   totalCount: 2,

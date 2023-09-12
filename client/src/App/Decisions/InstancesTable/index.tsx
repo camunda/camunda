@@ -19,6 +19,7 @@ import {Paths} from 'modules/Routes';
 import {tracking} from 'modules/tracking';
 import {Link} from 'modules/components/Link';
 import {useFilters} from 'modules/hooks/useFilters';
+import {getDecisionInstanceFilters} from 'modules/utils/filter';
 
 const ROW_HEIGHT = 34;
 
@@ -83,6 +84,12 @@ const InstancesTable: React.FC = observer(() => {
     };
   };
 
+  const {tenant} = getDecisionInstanceFilters(location.search);
+
+  const isTenantColumnVisible =
+    window.clientConfig?.multiTenancyEnabled &&
+    (tenant === undefined || tenant === 'all');
+
   return (
     <Container>
       <PanelHeader
@@ -117,6 +124,7 @@ const InstancesTable: React.FC = observer(() => {
             state,
             decisionName,
             decisionVersion,
+            tenantId,
             evaluationDate,
             processInstanceId,
           }) => {
@@ -148,6 +156,7 @@ const InstancesTable: React.FC = observer(() => {
                 </Link>
               ),
               decisionVersion,
+              tenant: isTenantColumnVisible ? tenantId : undefined,
               evaluationDate: formatDate(evaluationDate),
               processInstanceId: (
                 <>
@@ -187,6 +196,14 @@ const InstancesTable: React.FC = observer(() => {
             header: 'Version',
             key: 'decisionVersion',
           },
+          ...(isTenantColumnVisible
+            ? [
+                {
+                  header: 'Tenant',
+                  key: 'tenant',
+                },
+              ]
+            : []),
           {
             header: 'Evaluation Date',
             key: 'evaluationDate',

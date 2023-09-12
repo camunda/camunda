@@ -231,6 +231,7 @@ describe('<InstancesTable />', () => {
           processInstanceId: '2251799813689544',
           state: 'EVALUATED',
           sortValues: ['', ''],
+          tenantId: '',
         },
       ],
     });
@@ -308,5 +309,58 @@ describe('<InstancesTable />', () => {
     await waitFor(() =>
       expect(screen.queryByTestId('data-table-loader')).not.toBeInTheDocument(),
     );
+  });
+
+  it.each(['all', undefined])(
+    'should show tenant column when multi tenancy is enabled and tenant filter is %p',
+    async (tenant) => {
+      window.clientConfig = {
+        multiTenancyEnabled: true,
+      };
+
+      render(<InstancesTable />, {
+        wrapper: createWrapper(
+          `${Paths.decisions()}?${new URLSearchParams(
+            tenant === undefined ? undefined : {tenant},
+          )}`,
+        ),
+      });
+
+      expect(
+        screen.getByRole('columnheader', {name: 'Tenant'}),
+      ).toBeInTheDocument();
+
+      window.clientConfig = undefined;
+    },
+  );
+
+  it('should hide tenant column when multi tenancy is enabled and tenant filter is a specific tenant', async () => {
+    window.clientConfig = {
+      multiTenancyEnabled: true,
+    };
+
+    render(<InstancesTable />, {
+      wrapper: createWrapper(
+        `${Paths.decisions()}?${new URLSearchParams({tenant: 'tenant-a'})}`,
+      ),
+    });
+
+    expect(
+      screen.queryByRole('columnheader', {name: 'Tenant'}),
+    ).not.toBeInTheDocument();
+
+    window.clientConfig = undefined;
+  });
+
+  it('should hide tenant column when multi tenancy is disabled', async () => {
+    render(<InstancesTable />, {
+      wrapper: createWrapper(
+        `${Paths.decisions()}?${new URLSearchParams({tenant: 'all'})}`,
+      ),
+    });
+
+    expect(
+      screen.queryByRole('columnheader', {name: 'Tenant'}),
+    ).not.toBeInTheDocument();
   });
 });

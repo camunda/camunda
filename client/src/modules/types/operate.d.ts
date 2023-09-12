@@ -88,6 +88,7 @@ interface DecisionInstanceEntity {
   id: string;
   decisionName: string;
   decisionVersion: number;
+  tenantId: string;
   evaluationDate: string;
   processInstanceId: string | null;
   state: DecisionInstanceEntityState;
