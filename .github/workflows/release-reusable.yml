@@ -153,7 +153,7 @@ jobs:
       # Setup: Generate token for 'Upload to GitHub Release' step
       - name: Generate GitHub token
         id: generate_token
-        uses: tibdex/github-app-token@v1.8.2
+        uses: tibdex/github-app-token@v2.0.0
         with:
           app_id: ${{ steps.secrets.outputs.GITHUB_TASKLIST_APP_ID }}
           private_key: ${{ steps.secrets.outputs.GITHUB_TASKLIST_APP_PRIVATE_KEY }}
