@@ -16,14 +16,18 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.identity.sdk.Identity;
 import io.camunda.identity.sdk.authentication.exception.TokenVerificationException;
+import io.camunda.identity.sdk.tenants.dto.Tenant;
 import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
+import io.grpc.Context;
 import io.grpc.Metadata;
 import io.grpc.Metadata.Key;
 import io.grpc.MethodDescriptor;
 import io.grpc.ServerCallHandler;
 import io.grpc.Status;
 import io.grpc.internal.NoopServerCall;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import org.assertj.core.api.ListAssert;
 import org.junit.jupiter.api.Test;
 
 public class IdentityInterceptorTest {
@@ -111,8 +115,79 @@ public class IdentityInterceptorTest {
             });
 
     // then
-    assertThat(closeStatusCapturingServerCall.closeStatus)
-        .hasValueSatisfying(status -> assertThat(status.getCode()).isEqualTo(Status.OK.getCode()));
+    assertThat(closeStatusCapturingServerCall.closeStatus).hasValue(Status.OK);
+  }
+
+  @Test
+  public void addsAuthorizedTenantsToContext() {
+    // given
+    final Identity identity = mock(Identity.class, RETURNS_DEEP_STUBS);
+    when(identity.tenants().forToken(anyString()))
+        .thenReturn(List.of(new Tenant("tenant-a", "A"), new Tenant("tenant-b", "B")))
+        .thenReturn(List.of(new Tenant("tenant-c", "C")));
+    final var capturingServerCall = new CloseStatusCapturingServerCall();
+
+    // when
+    final var interceptor = new IdentityInterceptor(identity, multiTenancy.setEnabled(true));
+    interceptor.interceptCall(
+        capturingServerCall,
+        createAuthHeader(),
+        (call, headers) -> {
+          // then
+          assertAuthorizedTenants()
+              .describedAs("Expect that the authorized tenants is stored in the current Context")
+              .contains("tenant-a", "tenant-b");
+          call.close(Status.OK, headers);
+          return null;
+        });
+
+    // when a second call is intercepted, the authorized tenants should be updated
+    interceptor.interceptCall(
+        capturingServerCall,
+        createAuthHeader(),
+        (call, headers) -> {
+          // then
+          assertAuthorizedTenants()
+              .describedAs(
+                  "Expect that the authorized tenants is different in another request's Context")
+              .contains("tenant-c");
+          call.close(Status.OK, headers);
+          return null;
+        });
+
+    // then
+    assertThat(capturingServerCall.closeStatus).hasValue(Status.OK);
+    assertAuthorizedTenants()
+        .describedAs("Expect that the authorized tenants is not available outside of a call")
+        .isNull();
+  }
+
+  @Test
+  public void doesNotAddAuthorizedTenantsToContextWhenMultiTenancyDisabled() {
+    // given
+    final Identity identity = mock(Identity.class, RETURNS_DEEP_STUBS);
+    final var capturingServerCall = new CloseStatusCapturingServerCall();
+
+    // when
+    final var interceptor = new IdentityInterceptor(identity, multiTenancy.setEnabled(false));
+    interceptor.interceptCall(
+        capturingServerCall,
+        createAuthHeader(),
+        (call, headers) -> {
+          // then
+          assertAuthorizedTenants()
+              .describedAs(
+                  "Expect that the authorized tenants is not available in the current Context")
+              .isNull();
+          call.close(Status.OK, headers);
+          return null;
+        });
+
+    // then
+    assertThat(capturingServerCall.closeStatus).hasValue(Status.OK);
+    assertAuthorizedTenants()
+        .describedAs("Expect that the authorized tenants is not available outside of a call")
+        .isNull();
   }
 
   private Metadata createAuthHeader() {
@@ -125,6 +200,15 @@ public class IdentityInterceptorTest {
     return (call, headers) -> {
       throw new RuntimeException("Should not be invoked");
     };
+  }
+
+  private static ListAssert<String> assertAuthorizedTenants() {
+    try {
+      return assertThat(
+          Context.current().call(() -> IdentityInterceptor.AUTHORIZED_TENANTS_KEY.get()));
+    } catch (final Exception e) {
+      throw new RuntimeException("Unable to retrieve authorized tenants from context", e);
+    }
   }
 
   private static final class CloseStatusCapturingServerCall extends NoopServerCall<Object, Object> {
