@@ -181,7 +181,7 @@ public final class ClusterCfgTest {
     // when - then
     assertThatCode(() -> TestConfigReader.readConfig("default", environment))
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("Node id -1 needs to be non negative and smaller then cluster size 1.");
+        .hasMessage("Node id must be positive");
   }
 
   @Test
@@ -193,17 +193,6 @@ public final class ClusterCfgTest {
     assertThatCode(() -> TestConfigReader.readConfig("default", environment))
         .hasRootCauseInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("to int"); // spring related exception
-  }
-
-  @Test
-  void shouldThrowExceptionIfNodeIdIsLargerThenClusterSize() {
-    // given
-    final var environment = Collections.singletonMap("zeebe.broker.cluster.nodeId", "2");
-
-    // when - then
-    assertThatCode(() -> TestConfigReader.readConfig("default", environment))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("Node id 2 needs to be non negative and smaller then cluster size 1.");
   }
 
   @Test
@@ -239,7 +228,7 @@ public final class ClusterCfgTest {
     // when - then
     assertThatCode(() -> TestConfigReader.readConfig("default", environment))
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("Partition count must not be smaller then 1.");
+        .hasMessage("Partition count must not be smaller than 1.");
   }
 
   @Test
