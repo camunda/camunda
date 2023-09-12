@@ -48,7 +48,13 @@ public final class SnapshotStoreStep implements StartupStep<PartitionStartupCont
   public ActorFuture<PartitionStartupContext> shutdown(final PartitionStartupContext context) {
     final var result = context.concurrencyControl().<PartitionStartupContext>createFuture();
 
-    final var close = context.snapshotStore().closeAsync();
+    final var snapshotStore = context.snapshotStore();
+    if (snapshotStore == null) {
+      result.complete(context);
+      return result;
+    }
+
+    final var close = snapshotStore.closeAsync();
     context
         .concurrencyControl()
         .runOnCompletion(
