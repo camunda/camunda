@@ -19,6 +19,7 @@ public class DecisionDefinition {
       ID = DecisionIndex.ID,
       KEY = DecisionIndex.KEY,
       DECISION_ID = DecisionIndex.DECISION_ID,
+      TENANT_ID = DecisionIndex.TENANT_ID,
       NAME = DecisionIndex.NAME,
       VERSION = DecisionIndex.VERSION,
       DECISION_REQUIREMENTS_ID = DecisionIndex.DECISION_REQUIREMENTS_ID,

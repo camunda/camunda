@@ -115,7 +115,8 @@ public class DecisionDefinitionControllerTest {
             + "{ \"name\": \"hase\","
             + "\"version\": 5 ,"
             + "\"decisionId\": \"decisionId-23\", "
-            + "\"key\": 4217"
+            + "\"key\": 4217, "
+            + "\"tenantId\": \"tenantA\""
             + "},"
             + "\"size\": 17, "
             + "\"sort\": [{\"field\":\"version\", \"order\":\"DESC\"}]"
@@ -126,7 +127,8 @@ public class DecisionDefinitionControllerTest {
                 .setName("hase")
                 .setVersion(5)
                 .setDecisionId("decisionId-23")
-                .setKey(4217L))
+                .setKey(4217L)
+                .setTenantId("tenantA"))
         .setSort(Query.Sort.listOf(VERSION, Query.Sort.Order.DESC))
         .setSize(17));
   }

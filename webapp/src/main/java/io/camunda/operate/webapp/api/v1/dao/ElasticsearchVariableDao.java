@@ -43,6 +43,7 @@ public class ElasticsearchVariableDao extends ElasticsearchDao<Variable> impleme
     List<QueryBuilder> queryBuilders = new ArrayList<>();
     if (filter != null) {
       queryBuilders.add(buildTermQuery(Variable.KEY, filter.getKey()));
+      queryBuilders.add(buildTermQuery(Variable.TENANT_ID, filter.getTenantId()));
       queryBuilders.add(buildTermQuery(Variable.PROCESS_INSTANCE_KEY, filter.getProcessInstanceKey()));
       queryBuilders.add(buildTermQuery(Variable.SCOPE_KEY, filter.getScopeKey()));
       queryBuilders.add(buildTermQuery(Variable.NAME, filter.getName()));

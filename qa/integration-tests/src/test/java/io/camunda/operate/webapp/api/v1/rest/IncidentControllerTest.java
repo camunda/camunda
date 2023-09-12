@@ -99,7 +99,8 @@ public class IncidentControllerTest {
             + "{ "
             + "\"processInstanceKey\": 235 ,"
             + "\"type\": \"No memory left\", "
-            + "\"key\": 4217"
+            + "\"key\": 4217, "
+            + "\"tenantId\": \"tenantA\""
             + "},"
             + "\"size\": 17, "
             + "\"sort\": ["+ getSortFor(Incident.CREATION_TIME, Order.DESC)+ "]"
@@ -109,7 +110,8 @@ public class IncidentControllerTest {
             new Incident()
                 .setKey(4217L)
                 .setType("No memory left")
-                .setProcessInstanceKey(235L))
+                .setProcessInstanceKey(235L)
+                .setTenantId("tenantA"))
         .setSort(Sort.listOf(Incident.CREATION_TIME, Order.DESC))
         .setSize(17));
   }

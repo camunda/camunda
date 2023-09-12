@@ -28,7 +28,8 @@ public class ProcessInstance {
       PARENT_FLOW_NODE_INSTANCE_KEY = ListViewTemplate.PARENT_FLOW_NODE_INSTANCE_KEY,
       START_DATE = ListViewTemplate.START_DATE,
       END_DATE = ListViewTemplate.END_DATE,
-      STATE = ListViewTemplate.STATE;
+      STATE = ListViewTemplate.STATE,
+      TENANT_ID = ListViewTemplate.TENANT_ID;
 
   private Long key;
   private Integer processVersion;

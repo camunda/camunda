@@ -114,7 +114,8 @@ public class FlowNodeInstanceControllerTest {
             + "{ "
             + "\"processInstanceKey\": 235 ,"
             + "\"type\": \"START_EVENT\", "
-            + "\"key\": 4217"
+            + "\"key\": 4217, "
+            + "\"tenantId\": \"tenantA\""
             + "},"
             + "\"size\": 17, "
             + "\"sort\": ["+ getSortFor(FlowNodeInstance.START_DATE, Order.DESC)+ "]"
@@ -124,7 +125,8 @@ public class FlowNodeInstanceControllerTest {
             new FlowNodeInstance()
                 .setKey(4217L)
                 .setType("START_EVENT")
-                .setProcessInstanceKey(235L))
+                .setProcessInstanceKey(235L)
+                .setTenantId("tenantA"))
         .setSort(Sort.listOf(FlowNodeInstance.START_DATE, Order.DESC))
         .setSize(17));
   }

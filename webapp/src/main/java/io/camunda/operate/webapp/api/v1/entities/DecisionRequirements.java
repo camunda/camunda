@@ -21,7 +21,8 @@ public class DecisionRequirements {
       DECISION_REQUIREMENTS_ID = DecisionRequirementsIndex.DECISION_REQUIREMENTS_ID,
       NAME = DecisionRequirementsIndex.NAME,
       VERSION = DecisionRequirementsIndex.VERSION,
-      RESOURCE_NAME = DecisionRequirementsIndex.RESOURCE_NAME;
+      RESOURCE_NAME = DecisionRequirementsIndex.RESOURCE_NAME,
+      TENANT_ID = DecisionRequirementsIndex.TENANT_ID;
 
   private String id;
   private Long key;

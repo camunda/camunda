@@ -139,7 +139,8 @@ public class DecisionRequirementsControllerTest {
             + "{ \"name\": \"hase\","
             + "\"version\": 5 ,"
             + "\"decisionRequirementsId\": \"decisionRequirementsId-23\", "
-            + "\"key\": 4217"
+            + "\"key\": 4217, "
+            + "\"tenantId\": \"tenantA\""
             + "},"
             + "\"size\": 17, "
             + "\"sort\": [{\"field\":\"version\", \"order\":\"DESC\"}]"
@@ -150,7 +151,8 @@ public class DecisionRequirementsControllerTest {
                 .setName("hase")
                 .setVersion(5)
                 .setDecisionRequirementsId("decisionRequirementsId-23")
-                .setKey(4217L))
+                .setKey(4217L)
+                .setTenantId("tenantA"))
         .setSort(Query.Sort.listOf(VERSION, Query.Sort.Order.DESC))
         .setSize(17));
   }

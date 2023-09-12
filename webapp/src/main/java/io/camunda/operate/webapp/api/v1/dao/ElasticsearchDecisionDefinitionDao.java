@@ -104,6 +104,7 @@ public class ElasticsearchDecisionDefinitionDao extends ElasticsearchDao<Decisio
       queryBuilders.add(buildTermQuery(DecisionDefinition.ID, filter.getId()));
       queryBuilders.add(buildTermQuery(DecisionDefinition.KEY, filter.getKey()));
       queryBuilders.add(buildTermQuery(DecisionDefinition.DECISION_ID, filter.getDecisionId()));
+      queryBuilders.add(buildTermQuery(DecisionDefinition.TENANT_ID, filter.getTenantId()));
       queryBuilders.add(buildTermQuery(DecisionDefinition.NAME, filter.getName()));
       queryBuilders.add(buildTermQuery(DecisionDefinition.VERSION, filter.getVersion()));
       queryBuilders.add(buildTermQuery(DecisionDefinition.DECISION_REQUIREMENTS_ID, filter.getDecisionRequirementsId()));

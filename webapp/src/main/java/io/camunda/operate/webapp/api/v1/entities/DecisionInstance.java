@@ -26,6 +26,7 @@ public class DecisionInstance {
       PROCESS_DEFINITION_KEY = DecisionInstanceTemplate.PROCESS_DEFINITION_KEY,
       PROCESS_INSTANCE_KEY = DecisionInstanceTemplate.PROCESS_INSTANCE_KEY,
       DECISION_ID = DecisionInstanceTemplate.DECISION_ID,
+      TENANT_ID = DecisionInstanceTemplate.TENANT_ID,
       DECISION_DEFINITION_ID = DecisionInstanceTemplate.DECISION_DEFINITION_ID,
       DECISION_NAME = DecisionInstanceTemplate.DECISION_NAME,
       DECISION_VERSION = DecisionInstanceTemplate.DECISION_VERSION,

@@ -14,7 +14,10 @@ import java.util.Objects;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class SequenceFlow {
 
-  public static final String ID = SequenceFlowTemplate.ID, ACTIVITY_ID = SequenceFlowTemplate.ACTIVITY_ID, PROCESS_INSTANCE_KEY = SequenceFlowTemplate.PROCESS_INSTANCE_KEY;
+  public static final String ID = SequenceFlowTemplate.ID,
+      ACTIVITY_ID = SequenceFlowTemplate.ACTIVITY_ID,
+      PROCESS_INSTANCE_KEY = SequenceFlowTemplate.PROCESS_INSTANCE_KEY,
+      TENANT_ID = SequenceFlowTemplate.TENANT_ID;
 
   private String id;
   private String activityId;

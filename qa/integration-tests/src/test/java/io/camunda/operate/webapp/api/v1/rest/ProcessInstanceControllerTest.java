@@ -110,7 +110,8 @@ public class ProcessInstanceControllerTest {
             + "{ "
             + "\"processVersion\": 5 ,"
             + "\"bpmnProcessId\": \"bpmnProcessId-23\", "
-            + "\"key\": 4217"
+            + "\"key\": 4217, "
+            + "\"tenantId\": \"tenantA\""
             + "},"
             + "\"size\": 17, "
             + "\"sort\": ["+ getSortFor(VERSION, Order.DESC)+ "]"
@@ -120,7 +121,8 @@ public class ProcessInstanceControllerTest {
             new ProcessInstance()
                 .setBpmnProcessId("bpmnProcessId-23")
                 .setProcessVersion(5)
-                .setKey(4217L))
+                .setKey(4217L)
+                .setTenantId("tenantA"))
         .setSort(Sort.listOf(VERSION, Order.DESC))
         .setSize(17));
   }

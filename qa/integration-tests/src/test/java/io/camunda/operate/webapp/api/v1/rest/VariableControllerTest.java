@@ -100,7 +100,8 @@ public class VariableControllerTest {
             + "{ "
             + "\"processInstanceKey\": 235 ,"
             + "\"name\": \"customerId\", "
-            + "\"key\": 4217"
+            + "\"key\": 4217, "
+            + "\"tenantId\": \"tenantA\""
             + "},"
             + "\"size\": 17, "
             + "\"sort\": ["+ getSortFor(Variable.NAME, Order.DESC)+ "]"
@@ -110,7 +111,8 @@ public class VariableControllerTest {
             new Variable()
                 .setKey(4217L)
                 .setName("customerId")
-                .setProcessInstanceKey(235L))
+                .setProcessInstanceKey(235L)
+                .setTenantId("tenantA"))
         .setSort(Sort.listOf(Variable.NAME, Order.DESC))
         .setSize(17));
   }

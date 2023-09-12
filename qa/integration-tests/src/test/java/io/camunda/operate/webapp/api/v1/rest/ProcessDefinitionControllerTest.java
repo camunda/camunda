@@ -96,7 +96,8 @@ public class ProcessDefinitionControllerTest {
                 + "{ \"name\": \"hase\","
                   + "\"version\": 5 ,"
                   + "\"bpmnProcessId\": \"bpmnProcessId-23\", "
-                  + "\"key\": 4217"
+                  + "\"key\": 4217, "
+                  + "\"tenantId\": \"tenantA\""
                 + "},"
                 + "\"size\": 17, "
                 + "\"sort\": [{\"field\":\"version\", \"order\":\"DESC\"}]"
@@ -107,7 +108,8 @@ public class ProcessDefinitionControllerTest {
                 .setName("hase")
                 .setVersion(5)
                 .setBpmnProcessId("bpmnProcessId-23")
-                .setKey(4217L))
+                .setKey(4217L)
+                .setTenantId("tenantA"))
         .setSort(Sort.listOf(VERSION, Order.DESC))
         .setSize(17));
   }

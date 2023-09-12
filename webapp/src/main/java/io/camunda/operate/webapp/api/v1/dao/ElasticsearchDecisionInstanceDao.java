@@ -93,6 +93,7 @@ public class ElasticsearchDecisionInstanceDao extends ElasticsearchDao<DecisionI
       queryBuilders.add(buildTermQuery(DecisionInstance.PROCESS_DEFINITION_KEY, filter.getProcessDefinitionKey()));
       queryBuilders.add(buildTermQuery(DecisionInstance.PROCESS_INSTANCE_KEY, filter.getProcessInstanceKey()));
       queryBuilders.add(buildTermQuery(DecisionInstance.DECISION_ID, filter.getDecisionId()));
+      queryBuilders.add(buildTermQuery(DecisionInstance.TENANT_ID, filter.getTenantId()));
       queryBuilders.add(buildTermQuery(DecisionInstance.DECISION_DEFINITION_ID, filter.getDecisionDefinitionId()));
       queryBuilders.add(buildTermQuery(DecisionInstance.DECISION_NAME, filter.getDecisionName()));
       queryBuilders.add(buildTermQuery(DecisionInstance.DECISION_VERSION, filter.getDecisionVersion()));

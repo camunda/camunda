@@ -41,6 +41,7 @@ public class ElasticsearchSequenceFlowDao extends ElasticsearchDao<SequenceFlow>
     if (filter != null) {
       queryBuilders.add(buildTermQuery(SequenceFlow.ID, filter.getId()));
       queryBuilders.add(buildTermQuery(SequenceFlow.ACTIVITY_ID, filter.getActivityId()));
+      queryBuilders.add(buildTermQuery(SequenceFlow.TENANT_ID, filter.getTenantId()));
       queryBuilders.add(buildTermQuery(SequenceFlow.PROCESS_INSTANCE_KEY, filter.getProcessInstanceKey()));
     }
     searchSourceBuilder.query(

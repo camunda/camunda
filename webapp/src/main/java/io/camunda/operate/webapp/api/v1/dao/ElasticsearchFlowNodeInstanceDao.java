@@ -57,6 +57,7 @@ public class ElasticsearchFlowNodeInstanceDao extends ElasticsearchDao<FlowNodeI
       queryBuilders.add(buildTermQuery(FlowNodeInstance.FLOW_NODE_ID, filter.getFlowNodeId()));
       queryBuilders.add(buildTermQuery(FlowNodeInstance.INCIDENT, filter.getIncident()));
       queryBuilders.add(buildTermQuery(FlowNodeInstance.INCIDENT_KEY, filter.getIncidentKey()));
+      queryBuilders.add(buildTermQuery(FlowNodeInstance.TENANT_ID, filter.getTenantId()));
     }
     searchSourceBuilder.query(joinWithAnd(queryBuilders.toArray(new QueryBuilder[]{})));
   }

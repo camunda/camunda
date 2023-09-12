@@ -119,6 +119,7 @@ public class ElasticsearchDecisionRequirementsDao extends ElasticsearchDao<Decis
       queryBuilders.add(buildTermQuery(DecisionRequirements.ID, filter.getId()));
       queryBuilders.add(buildTermQuery(DecisionRequirements.KEY, filter.getKey()));
       queryBuilders.add(buildTermQuery(DecisionRequirements.DECISION_REQUIREMENTS_ID, filter.getDecisionRequirementsId()));
+      queryBuilders.add(buildTermQuery(DecisionRequirements.TENANT_ID, filter.getTenantId()));
       queryBuilders.add(buildTermQuery(DecisionRequirements.NAME, filter.getName()));
       queryBuilders.add(buildTermQuery(DecisionRequirements.VERSION, filter.getVersion()));
       queryBuilders.add(buildTermQuery(DecisionRequirements.RESOURCE_NAME, filter.getResourceName()));

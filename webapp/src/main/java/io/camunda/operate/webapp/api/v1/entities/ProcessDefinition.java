@@ -19,7 +19,8 @@ public class ProcessDefinition {
       KEY = ProcessIndex.KEY,
       NAME = ProcessIndex.NAME,
       VERSION = ProcessIndex.VERSION,
-      BPMN_PROCESS_ID = ProcessIndex.BPMN_PROCESS_ID;
+      BPMN_PROCESS_ID = ProcessIndex.BPMN_PROCESS_ID,
+      TENANT_ID = ProcessIndex.TENANT_ID;
 
   private Long key;
   private String name;

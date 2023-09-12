@@ -113,10 +113,11 @@ public class ElasticsearchProcessDefinitionDao extends ElasticsearchDao<ProcessD
     final ProcessDefinition filter = query.getFilter();
     if (filter != null) {
       List<QueryBuilder> queryBuilders = new ArrayList<>();
-      queryBuilders.add(buildTermQuery(ProcessIndex.NAME, filter.getName()));
-      queryBuilders.add(buildTermQuery(ProcessIndex.BPMN_PROCESS_ID, filter.getBpmnProcessId()));
-      queryBuilders.add(buildTermQuery(ProcessIndex.VERSION, filter.getVersion()));
-      queryBuilders.add(buildTermQuery(ProcessIndex.KEY, filter.getKey()));
+      queryBuilders.add(buildTermQuery(ProcessDefinition.NAME, filter.getName()));
+      queryBuilders.add(buildTermQuery(ProcessDefinition.BPMN_PROCESS_ID, filter.getBpmnProcessId()));
+      queryBuilders.add(buildTermQuery(ProcessDefinition.TENANT_ID, filter.getTenantId()));
+      queryBuilders.add(buildTermQuery(ProcessDefinition.VERSION, filter.getVersion()));
+      queryBuilders.add(buildTermQuery(ProcessDefinition.KEY, filter.getKey()));
       searchSourceBuilder.query(
           ElasticsearchUtil.joinWithAnd(queryBuilders.toArray(new QueryBuilder[]{})));
     }
