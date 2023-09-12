@@ -12,6 +12,7 @@ const mockGroupedProcesses = [
   {
     bpmnProcessId: 'always-completing-process',
     name: 'Always completing process',
+    tenantId: '<default>',
     permissions: [],
     processes: [
       {
@@ -25,6 +26,7 @@ const mockGroupedProcesses = [
   {
     bpmnProcessId: 'bigVarProcess',
     name: 'Big variable process',
+    tenantId: '<default>',
     permissions: [],
     processes: [
       {

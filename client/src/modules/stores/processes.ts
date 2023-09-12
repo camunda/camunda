@@ -49,9 +49,11 @@ class Processes extends NetworkReconnectionHandler {
   fetchProcesses = this.retryOnConnectionLost(async () => {
     this.startFetching();
 
-    const {process} = getProcessInstanceFilters(getSearchString());
+    const {process, tenant} = getProcessInstanceFilters(getSearchString());
 
-    const response = await fetchGroupedProcesses();
+    const response = await fetchGroupedProcesses(
+      tenant === 'all' ? undefined : tenant,
+    );
 
     if (response.isSuccess) {
       const processes = response.data;

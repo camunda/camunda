@@ -155,6 +155,7 @@ export const groupedProcessesMock: ProcessDto[] = [
   {
     bpmnProcessId: 'demoProcess',
     name: 'New demo process',
+    tenantId: '<default>',
     processes: [
       {
         id: 'demoProcess3',
@@ -180,6 +181,7 @@ export const groupedProcessesMock: ProcessDto[] = [
   {
     bpmnProcessId: 'eventBasedGatewayProcess',
     name: null,
+    tenantId: '<default>',
     processes: [
       {
         id: '2251799813696866',
@@ -199,6 +201,7 @@ export const groupedProcessesMock: ProcessDto[] = [
   {
     bpmnProcessId: 'bigVarProcess',
     name: 'Big variable process',
+    tenantId: '<default>',
     processes: [
       {
         id: '2251799813685892',
@@ -211,6 +214,7 @@ export const groupedProcessesMock: ProcessDto[] = [
   },
   {
     bpmnProcessId: 'orderProcess',
+    tenantId: '<default>',
     name: 'Order',
     processes: [],
   },

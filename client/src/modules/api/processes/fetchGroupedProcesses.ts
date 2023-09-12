@@ -19,11 +19,14 @@ type ProcessDto = {
   name: string | null;
   processes: ProcessVersionDto[];
   permissions?: ResourceBasedPermissionDto[] | null;
+  tenantId: string;
 };
 
-const fetchGroupedProcesses = async () => {
+const fetchGroupedProcesses = async (tenantId?: string) => {
   return requestAndParse<ProcessDto[]>({
     url: '/api/processes/grouped',
+    method: 'POST',
+    body: {tenantId},
   });
 };
 

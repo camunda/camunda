@@ -5,10 +5,10 @@
  * except in compliance with the proprietary license.
  */
 
-import {mockGetRequest} from '../mockRequest';
+import {mockPostRequest} from '../mockRequest';
 import {ProcessDto} from 'modules/api/processes/fetchGroupedProcesses';
 
 const mockFetchGroupedProcesses = () =>
-  mockGetRequest<ProcessDto[]>('/api/processes/grouped');
+  mockPostRequest<ProcessDto[]>('/api/processes/grouped');
 
 export {mockFetchGroupedProcesses};
