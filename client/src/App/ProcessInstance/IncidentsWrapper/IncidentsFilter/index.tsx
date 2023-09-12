@@ -5,11 +5,11 @@
  * except in compliance with the proprietary license.
  */
 
-import {Container, Stack} from './styled';
+import {Container, Stack, Layer} from './styled';
 import {incidentsStore} from 'modules/stores/incidents';
 import {observer} from 'mobx-react';
 import {tracking} from 'modules/tracking';
-import {Layer, Button, MultiSelect} from '@carbon/react';
+import {Button, MultiSelect} from '@carbon/react';
 
 const IncidentsFilter: React.FC = observer(() => {
   const {

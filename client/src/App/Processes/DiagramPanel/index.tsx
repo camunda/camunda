@@ -24,6 +24,7 @@ import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
 import {observer} from 'mobx-react';
 import {StateOverlay} from 'modules/components/StateOverlay';
 import {processDiagramStore} from 'modules/stores/processDiagram';
+import {CopiableContent} from 'modules/components/PanelHeader/CopiableContent';
 
 function setSearchParam(
   location: Location,
@@ -107,23 +108,31 @@ const DiagramPanel: React.FC = observer(() => {
   return (
     <Section>
       <PanelHeader title={processName} ref={panelHeaderRef}>
-        {IS_PROCESS_DEFINITION_DELETION_ENABLED &&
-          isVersionSelected &&
-          processId !== undefined && (
-            <Restricted
-              scopes={['write']}
-              resourceBasedRestrictions={{
-                scopes: ['DELETE'],
-                permissions: processesStore.getPermissions(bpmnProcessId),
-              }}
-            >
-              <ProcessOperations
-                processDefinitionId={processId}
-                processName={processName}
-                processVersion={version}
-              />
-            </Restricted>
+        <>
+          {bpmnProcessId !== undefined && (
+            <CopiableContent
+              copyButtonDescription="Process ID / Click to copy"
+              content={bpmnProcessId}
+            />
           )}
+          {isVersionSelected &&
+            processId !== undefined &&
+            IS_PROCESS_DEFINITION_DELETION_ENABLED && (
+              <Restricted
+                scopes={['write']}
+                resourceBasedRestrictions={{
+                  scopes: ['DELETE'],
+                  permissions: processesStore.getPermissions(bpmnProcessId),
+                }}
+              >
+                <ProcessOperations
+                  processDefinitionId={processId}
+                  processName={processName}
+                  processVersion={version}
+                />
+              </Restricted>
+            )}
+        </>
       </PanelHeader>
       <DiagramShell
         status={getStatus()}

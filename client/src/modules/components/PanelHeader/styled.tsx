@@ -20,7 +20,7 @@ const Header = styled.header<HeaderProps>`
       padding: var(--cds-spacing-04) var(--cds-spacing-05);
       display: flex;
       align-items: center;
-      justify-content: space-between;
+
       ${$size === 'md' &&
       css`
         min-height: ${COLLAPSABLE_PANEL_HEADER_HEIGHT};

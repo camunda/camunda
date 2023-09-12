@@ -14,10 +14,10 @@ import {DrdViewer} from 'modules/dmn-js/DrdViewer';
 import {decisionXmlStore} from 'modules/stores/decisionXml';
 import {drdStore} from 'modules/stores/drd';
 import {drdDataStore} from 'modules/stores/drdData';
-import {PanelHeader, Container} from './styled';
+import {PanelHeader, Container, Stack} from './styled';
 import {tracking} from 'modules/tracking';
 import {decisionDefinitionStore} from 'modules/stores/decisionDefinition';
-import {Button, Stack} from '@carbon/react';
+import {Button} from '@carbon/react';
 import {Close, Maximize, Minimize} from '@carbon/react/icons';
 import {StateOverlay} from 'modules/components/StateOverlay';
 

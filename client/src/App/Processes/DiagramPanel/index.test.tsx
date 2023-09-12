@@ -57,14 +57,26 @@ describe('DiagramPanel', () => {
   });
 
   it('should render header', async () => {
-    render(<DiagramPanel />, {
+    const originalWindowPrompt = window.prompt;
+    window.prompt = jest.fn();
+
+    const {user} = render(<DiagramPanel />, {
       wrapper: getWrapper(
         `${Paths.processes()}?process=bigVarProcess&version=1`,
       ),
     });
 
     expect(await screen.findByText('Big variable process')).toBeInTheDocument();
+    expect(screen.getByText('bigVarProcess')).toBeInTheDocument();
     expect(await screen.findByTestId('diagram')).toBeInTheDocument();
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Process ID / Click to copy',
+      }),
+    );
+    expect(await screen.findByText('Copied to clipboard')).toBeInTheDocument();
+
+    window.prompt = originalWindowPrompt;
   });
 
   it('should show the loading indicator, when diagram is loading', async () => {

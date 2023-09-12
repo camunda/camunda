@@ -11,6 +11,7 @@ import {
   COLLAPSABLE_PANEL_HEADER_HEIGHT,
 } from 'modules/constants';
 import {PanelHeader as BasePanelHeader} from 'modules/components/PanelHeader';
+import {Stack as BaseStack} from '@carbon/react';
 
 const PanelHeader = styled(BasePanelHeader)`
   padding-right: 0;
@@ -61,5 +62,8 @@ const Container = styled.div`
     }
   }
 `;
+const Stack = styled(BaseStack)`
+  margin-left: auto;
+`;
 
-export {PanelHeader, Container};
+export {PanelHeader, Container, Stack};

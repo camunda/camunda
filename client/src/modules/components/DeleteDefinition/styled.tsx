@@ -10,6 +10,7 @@ import styled from 'styled-components';
 const DeleteButtonContainer = styled.div`
   display: flex;
   align-items: center;
+  margin-left: auto;
 `;
 
 export {DeleteButtonContainer};
