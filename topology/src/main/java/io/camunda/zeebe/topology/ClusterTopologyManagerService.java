@@ -19,6 +19,8 @@ import io.camunda.zeebe.topology.TopologyInitializer.GossipInitializer;
 import io.camunda.zeebe.topology.TopologyInitializer.StaticInitializer;
 import io.camunda.zeebe.topology.TopologyInitializer.SyncInitializer;
 import io.camunda.zeebe.topology.changes.NoopTopologyChangeAppliers;
+import io.camunda.zeebe.topology.changes.TopologyChangeCoordinator;
+import io.camunda.zeebe.topology.changes.TopologyChangeCoordinatorImpl;
 import io.camunda.zeebe.topology.gossip.ClusterTopologyGossiper;
 import io.camunda.zeebe.topology.gossip.ClusterTopologyGossiperConfig;
 import io.camunda.zeebe.topology.serializer.ProtoBufSerializer;
@@ -27,6 +29,7 @@ import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
+import java.util.Optional;
 
 public final class ClusterTopologyManagerService extends Actor {
   // Use a node 0 as always the coordinator. Later we can make it configurable or allow changing it
@@ -138,5 +141,14 @@ public final class ClusterTopologyManagerService extends Actor {
 
   public ActorFuture<ClusterTopology> getClusterTopology() {
     return clusterTopologyManager.getClusterTopology();
+  }
+
+  public Optional<TopologyChangeCoordinator> getTopologyChangeCoordinator() {
+    // Only a coordinator can start topology change
+    return isCoordinator
+        // create new instance every time, as we do not expect to make topology changes very often.
+        // So there is no need to keep an instance in the field unnecessarily.
+        ? Optional.of(new TopologyChangeCoordinatorImpl(clusterTopologyManager, this))
+        : Optional.empty();
   }
 }

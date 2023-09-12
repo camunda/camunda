@@ -42,7 +42,7 @@ import org.slf4j.LoggerFactory;
  * applicable to the member. Only a member can make changes to its own state in the topology. See
  * {@link TopologyChangeAppliers} to see how a change is applied locally.
  */
-final class ClusterTopologyManager {
+public final class ClusterTopologyManager {
   private static final Logger LOG = LoggerFactory.getLogger(ClusterTopologyManager.class);
 
   private final ConcurrencyControl executor;
@@ -69,8 +69,27 @@ final class ClusterTopologyManager {
     this.localMemberId = localMemberId;
   }
 
-  ActorFuture<ClusterTopology> getClusterTopology() {
+  public ActorFuture<ClusterTopology> getClusterTopology() {
     return executor.call(persistedClusterTopology::getTopology);
+  }
+
+  public ActorFuture<ClusterTopology> updateClusterTopology(
+      final UnaryOperator<ClusterTopology> topologyUpdated) {
+    final ActorFuture<ClusterTopology> future = executor.createFuture();
+    executor.run(
+        () -> {
+          try {
+            final ClusterTopology updatedTopology =
+                topologyUpdated.apply(persistedClusterTopology.getTopology());
+            updateLocalTopology(updatedTopology)
+                .ifRightOrLeft(future::complete, future::completeExceptionally);
+          } catch (final Exception e) {
+            LOG.error("Failed to update cluster topology", e);
+            future.completeExceptionally(e);
+          }
+        });
+
+    return future;
   }
 
   ActorFuture<Void> start(final TopologyInitializer topologyInitializer) {
