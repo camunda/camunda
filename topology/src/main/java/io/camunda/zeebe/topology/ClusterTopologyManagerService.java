@@ -36,7 +36,7 @@ public final class ClusterTopologyManagerService extends Actor {
   // dynamically.
   private static final String COORDINATOR_ID = "0";
   private static final String TOPOLOGY_FILE_NAME = ".topology.meta";
-  private final ClusterTopologyManager clusterTopologyManager;
+  private final ClusterTopologyManagerImpl clusterTopologyManager;
   private final ClusterTopologyGossiper clusterTopologyGossiper;
 
   private final boolean isCoordinator;
@@ -58,7 +58,7 @@ public final class ClusterTopologyManagerService extends Actor {
     topologyFile = dataRootDirectory.resolve(TOPOLOGY_FILE_NAME);
     persistedClusterTopology = new PersistedClusterTopology(topologyFile, new ProtoBufSerializer());
     clusterTopologyManager =
-        new ClusterTopologyManager(
+        new ClusterTopologyManagerImpl(
             this, localMemberId, persistedClusterTopology, new NoopTopologyChangeAppliers());
     clusterTopologyGossiper =
         new ClusterTopologyGossiper(

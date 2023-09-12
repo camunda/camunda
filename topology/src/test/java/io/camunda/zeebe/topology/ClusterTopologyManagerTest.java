@@ -59,17 +59,17 @@ final class ClusterTopologyManagerTest {
         new PersistedClusterTopology(tempDir.resolve("topology.temp"), serializer);
   }
 
-  private ActorFuture<ClusterTopologyManager> startTopologyManager(
+  private ActorFuture<ClusterTopologyManagerImpl> startTopologyManager(
       final TopologyInitializer topologyInitializer) {
     return startTopologyManager(topologyInitializer, new NoopTopologyChangeAppliers());
   }
 
-  private ActorFuture<ClusterTopologyManager> startTopologyManager(
+  private ActorFuture<ClusterTopologyManagerImpl> startTopologyManager(
       final TopologyInitializer topologyInitializer,
       final TopologyChangeAppliers operationsAppliers) {
     final var clusterTopologyManager = createTopologyManager(operationsAppliers);
 
-    final ActorFuture<ClusterTopologyManager> startFuture = new TestActorFuture<>();
+    final ActorFuture<ClusterTopologyManagerImpl> startFuture = new TestActorFuture<>();
 
     clusterTopologyManager
         .start(topologyInitializer)
@@ -84,11 +84,11 @@ final class ClusterTopologyManagerTest {
     return startFuture;
   }
 
-  private ClusterTopologyManager createTopologyManager(
+  private ClusterTopologyManagerImpl createTopologyManager(
       final TopologyChangeAppliers operationsAppliers) {
 
-    final ClusterTopologyManager clusterTopologyManager =
-        new ClusterTopologyManager(
+    final ClusterTopologyManagerImpl clusterTopologyManager =
+        new ClusterTopologyManagerImpl(
             new TestConcurrencyControl(),
             localMemberId,
             persistedClusterTopology,
@@ -142,7 +142,7 @@ final class ClusterTopologyManagerTest {
   @Test
   void shouldUpdateLocalTopologyOnGossipEvent() {
     // given
-    final ClusterTopologyManager clusterTopologyManager =
+    final ClusterTopologyManagerImpl clusterTopologyManager =
         startTopologyManager(successInitializer).join();
 
     // when
@@ -168,7 +168,7 @@ final class ClusterTopologyManagerTest {
   @Test
   void shouldInitiateClusterTopologyChangeOnGossip() {
     // given
-    final ClusterTopologyManager clusterTopologyManager =
+    final ClusterTopologyManagerImpl clusterTopologyManager =
         startTopologyManager(successInitializer, new TestMemberLeaver()).join();
 
     // when
