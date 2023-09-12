@@ -60,8 +60,7 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
 
   private final RecordValues recordValues;
 
-  private final EventFilter eventFilter =
-      new MetadataEventFilter(new RecordProtocolVersionFilter().and(REPLAY_FILTER));
+  private final EventFilter eventFilter = new MetadataEventFilter(REPLAY_FILTER);
 
   private final LogStreamBatchReader logStreamBatchReader;
 
