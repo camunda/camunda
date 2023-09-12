@@ -70,6 +70,22 @@ public class MultiTenancyEnabledTest extends GatewayTest {
         .hasMessageContaining("but no tenant identifier was provided");
   }
 
+  @Test
+  public void deployResourceRequestRequiresValidTenantId() {
+    // given
+    when(gateway.getIdentityMock().tenants().forToken(anyString()))
+        .thenReturn(List.of(new Tenant("tenant-a", "A"), new Tenant("tenant-b", "B")));
+
+    // when/then
+    assertThatThrownBy(
+            () ->
+                client.deployResource(
+                    DeployResourceRequest.newBuilder().setTenantId("tenant-c").build()))
+        .hasMessageContaining(
+            "Expected to handle gRPC request DeployResource with tenant identifier `tenant-c`")
+        .hasMessageContaining("but tenant is not authorized to perform this request");
+  }
+
   public static final class FakeRequestStub
       implements RequestStub<BrokerDeployResourceRequest, BrokerResponse<DeploymentRecord>> {
 

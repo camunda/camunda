@@ -25,6 +25,15 @@ public class InvalidTenantRequestException extends ClientException {
     this.reason = reason;
   }
 
+  public InvalidTenantRequestException(
+      final String commandName, final String tenantId, final String reason, final Exception e) {
+    super(String.format(MESSAGE_FORMAT, commandName, tenantId, reason), e);
+
+    this.commandName = commandName;
+    this.tenantId = tenantId;
+    this.reason = reason;
+  }
+
   public String getCommandName() {
     return commandName;
   }
