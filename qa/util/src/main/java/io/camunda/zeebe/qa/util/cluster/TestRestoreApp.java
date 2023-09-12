@@ -11,12 +11,13 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.restore.RestoreApp;
 import io.camunda.zeebe.shared.Profile;
 import java.util.function.Consumer;
+import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 
 /** Represents an instance of the {@link RestoreApp} Spring application. */
 public final class TestRestoreApp extends TestSpringApplication<TestRestoreApp> {
   private final BrokerCfg config;
-  private long backupId;
+  private Long backupId;
 
   public TestRestoreApp() {
     this(new BrokerCfg());
@@ -37,12 +38,14 @@ public final class TestRestoreApp extends TestSpringApplication<TestRestoreApp> 
 
   @Override
   protected String[] commandLineArgs() {
-    return new String[] {"--backupId=" + backupId};
+    return backupId == null ? super.commandLineArgs() : new String[] {"--backupId=" + backupId};
   }
 
   @Override
   protected SpringApplicationBuilder createSpringBuilder() {
-    return super.createSpringBuilder().profiles(Profile.RESTORE.getId());
+    return super.createSpringBuilder()
+        .web(WebApplicationType.NONE)
+        .profiles(Profile.RESTORE.getId());
   }
 
   public TestRestoreApp withBrokerConfig(final Consumer<BrokerCfg> modifier) {

@@ -43,6 +43,11 @@ abstract class TestSpringApplication<T extends TestSpringApplication<T>>
     if (!propertyOverrides.containsKey("server.port")) {
       propertyOverrides.put("server.port", SocketUtil.getNextAddress().getPort());
     }
+
+    if (!beans.containsKey("collectorRegistry")) {
+      beans.put(
+          "collectorRegistry", new Bean<>(new RelaxedCollectorRegistry(), CollectorRegistry.class));
+    }
   }
 
   @Override
@@ -85,11 +90,6 @@ abstract class TestSpringApplication<T extends TestSpringApplication<T>>
    * can override this to customize the behavior of the test application.
    */
   protected SpringApplicationBuilder createSpringBuilder() {
-    if (!beans.containsKey("collectorRegistry")) {
-      beans.put(
-          "collectorRegistry", new Bean<>(new RelaxedCollectorRegistry(), CollectorRegistry.class));
-    }
-
     return MainSupport.createDefaultApplicationBuilder()
         .bannerMode(Mode.OFF)
         .lazyInitialization(true)
