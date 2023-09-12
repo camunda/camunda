@@ -73,11 +73,16 @@ public final class DeploymentTransformer {
         new DmnResourceTransformer(
             keyGenerator, stateWriter, this::getChecksum, processingState.getDecisionState());
 
+    final var formResourceTransformer =
+        new FormResourceTransformer(
+            keyGenerator, stateWriter, this::getChecksum, processingState.getFormState());
+
     resourceTransformers =
         Map.ofEntries(
             entry(".bpmn", bpmnResourceTransformer),
             entry(".xml", bpmnResourceTransformer),
-            entry(".dmn", dmnResourceTransformer));
+            entry(".dmn", dmnResourceTransformer),
+            entry(".form", formResourceTransformer));
   }
 
   private DirectBuffer getChecksum(final DeploymentResource resource) {
@@ -155,7 +160,7 @@ public final class DeploymentTransformer {
         .orElse(UNKNOWN_RESOURCE);
   }
 
-  private static final class UnknownResourceTransformer implements DeploymentResourceTransformer {
+  private static class UnknownResourceTransformer implements DeploymentResourceTransformer {
 
     @Override
     public Either<Failure, Void> transformResource(

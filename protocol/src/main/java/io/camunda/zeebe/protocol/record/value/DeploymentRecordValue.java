@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsMetadataValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource;
+import io.camunda.zeebe.protocol.record.value.deployment.FormMetadataValue;
 import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import java.util.List;
 import org.immutables.value.Value;
@@ -52,4 +53,9 @@ public interface DeploymentRecordValue extends RecordValue, TenantOwned {
    * @return the deployed decision requirements (DRGs)
    */
   List<DecisionRequirementsMetadataValue> getDecisionRequirementsMetadata();
+
+  /**
+   * @return the deployed forms
+   */
+  List<FormMetadataValue> getFormMetadata();
 }
