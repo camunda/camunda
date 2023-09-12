@@ -161,7 +161,7 @@ export function SourcesModal({onClose, onConfirm, confirmText, preSelectAll}: So
   ];
 
   return (
-    <Modal open onClose={onClose} size="lg" className="SourcesModal">
+    <Modal open onClose={onClose} size="lg" className="SourcesModal" isOverflowVisible>
       <Modal.Header>{t('home.sources.add')}</Modal.Header>
       <Modal.Content>
         <Table
@@ -232,6 +232,7 @@ export function SourcesModal({onClose, onConfirm, confirmText, preSelectAll}: So
                 body.push(
                   // clicking inside the popover
                   <TenantPopover
+                    useCarbonTrigger
                     tenants={def.tenants}
                     selected={selectedDefinition?.tenants || ['']}
                     disabled={!selectedDefinition}

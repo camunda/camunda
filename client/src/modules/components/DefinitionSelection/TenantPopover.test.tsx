@@ -6,8 +6,7 @@
  */
 
 import {shallow} from 'enzyme';
-
-import {Button} from 'components';
+import {Button} from '@carbon/react';
 
 import TenantPopover from './TenantPopover';
 
@@ -29,10 +28,7 @@ beforeEach(() => {
 it('should call the provided onChange function', () => {
   const node = shallow(<TenantPopover {...props} tenants={tenants} selected={[null]} />);
 
-  node
-    .find('Switch')
-    .first()
-    .simulate('change', {target: {checked: true}});
+  node.find('Toggle').first().simulate('toggle', true);
 
   expect(props.onChange).toHaveBeenCalledWith([null, 'a']);
 
@@ -81,6 +77,6 @@ it('should allow manual disabling', () => {
 it('should diplay a loading indicator and disable the switches while loading', () => {
   const node = shallow(<TenantPopover {...props} tenants={tenants} selected={[null]} loading />);
 
-  expect(node.find('LoadingIndicator')).toExist();
-  expect(node.find('Switch').at(0).prop('disabled')).toBe(true);
+  expect(node.find('Loading')).toExist();
+  expect(node.find('Toggle').at(0).prop('disabled')).toBe(true);
 });

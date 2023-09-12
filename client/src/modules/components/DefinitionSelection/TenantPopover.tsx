@@ -6,10 +6,11 @@
  */
 
 import {ComponentProps} from 'react';
+import {Button, ButtonSet, Form, FormGroup, Loading, Stack, Toggle} from '@carbon/react';
 
 import {t} from 'translation';
 import {formatters} from 'services';
-import {Popover, ButtonGroup, Button, Switch, Form, LoadingIndicator} from 'components';
+import {Popover} from 'components';
 import {Tenant} from 'types';
 
 import './TenantPopover.scss';
@@ -53,34 +54,47 @@ export default function TenantPopover({
       title={label || '-'}
       {...props}
     >
-      {loading && <LoadingIndicator />}
-      <Form compact>
-        <fieldset>
-          <legend>{t('common.definitionSelection.tenant.includeData')}</legend>
-          <ButtonGroup disabled={loading}>
-            <Button onClick={() => onChange(tenants.map(({id}) => id))}>
-              {t('common.enableAll')}
-            </Button>
-            <Button onClick={() => onChange([])}>{t('common.disableAll')}</Button>
-          </ButtonGroup>
-          {tenants?.map((tenant) => {
-            return (
-              <Switch
-                key={tenant.id}
-                checked={selected.includes(tenant.id)}
+      {loading && <Loading withOverlay />}
+      <Form>
+        <FormGroup legendText={t('common.definitionSelection.tenant.includeData')}>
+          <Stack gap={6}>
+            <ButtonSet aria-disabled={loading}>
+              <Button
                 disabled={loading}
-                onChange={({target}) => {
-                  if (target.checked) {
-                    onChange(selected.concat([tenant.id]));
-                  } else {
-                    onChange(selected.filter((id) => id !== tenant.id));
-                  }
-                }}
-                label={formatTenantName(tenant)}
-              />
-            );
-          })}
-        </fieldset>
+                size="sm"
+                kind="primary"
+                onClick={() => onChange(tenants.map(({id}) => id))}
+              >
+                {t('common.enableAll')}
+              </Button>
+              <Button disabled={loading} size="sm" kind="secondary" onClick={() => onChange([])}>
+                {t('common.disableAll')}
+              </Button>
+            </ButtonSet>
+            <Stack gap={3}>
+              {tenants?.map((tenant) => {
+                return (
+                  <Toggle
+                    key={tenant.id}
+                    id={`toggle-${tenant.id}`}
+                    toggled={selected.includes(tenant.id)}
+                    disabled={loading}
+                    size="sm"
+                    labelA={formatTenantName(tenant).toString()}
+                    labelB={formatTenantName(tenant).toString()}
+                    onToggle={(checked) => {
+                      if (checked) {
+                        onChange(selected.concat([tenant.id]));
+                      } else {
+                        onChange(selected.filter((id) => id !== tenant.id));
+                      }
+                    }}
+                  />
+                );
+              })}
+            </Stack>
+          </Stack>
+        </FormGroup>
       </Form>
     </Popover>
   );
