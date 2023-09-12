@@ -14,6 +14,9 @@ import io.camunda.zeebe.topology.protocol.Topology;
 import io.camunda.zeebe.topology.state.ClusterChangePlan;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.PartitionState;
+import io.camunda.zeebe.topology.state.TopologyChangeOperation;
+import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
+import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
@@ -75,8 +78,11 @@ public class ProtoBufSerializer implements ClusterTopologySerializer {
         encodedClusterTopology.getMembersMap().entrySet().stream()
             .map(e -> Map.entry(MemberId.from(e.getKey()), decodeMemberState(e.getValue())))
             .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+
+    final var changes = decodeChangePlan(encodedClusterTopology.getChanges());
+
     return new io.camunda.zeebe.topology.state.ClusterTopology(
-        encodedClusterTopology.getVersion(), members, ClusterChangePlan.empty());
+        encodedClusterTopology.getVersion(), members, changes);
   }
 
   private Topology.ClusterTopology encodeClusterTopology(
@@ -84,9 +90,12 @@ public class ProtoBufSerializer implements ClusterTopologySerializer {
     final var members =
         clusterTopology.members().entrySet().stream()
             .collect(Collectors.toMap(e -> e.getKey().id(), e -> encodeMemberState(e.getValue())));
+
+    final var encodedChangePlan = encodeChangePlan(clusterTopology.changes());
     return Topology.ClusterTopology.newBuilder()
         .setVersion(clusterTopology.version())
         .putAllMembers(members)
+        .setChanges(encodedChangePlan)
         .build();
   }
 
@@ -166,5 +175,63 @@ public class ProtoBufSerializer implements ClusterTopologySerializer {
       case JOINING -> Topology.State.JOINING;
       case LEAVING -> Topology.State.LEAVING;
     };
+  }
+
+  private Topology.ClusterChangePlan encodeChangePlan(final ClusterChangePlan changes) {
+    final var builder = Topology.ClusterChangePlan.newBuilder().setVersion(changes.version());
+    changes
+        .pendingOperations()
+        .forEach(operation -> builder.addOperation(encodeOperation(operation)));
+    return builder.build();
+  }
+
+  private Topology.TopologyChangeOperation encodeOperation(
+      final io.camunda.zeebe.topology.state.TopologyChangeOperation operation) {
+    final var builder =
+        Topology.TopologyChangeOperation.newBuilder().setMemberId(operation.memberId().id());
+    if (operation instanceof final PartitionJoinOperation joinOperation) {
+      builder.setPartitionJoin(
+          Topology.PartitionJoinOperation.newBuilder()
+              .setPartitionId(joinOperation.partitionId())
+              .setPriority(joinOperation.priority()));
+    } else if (operation instanceof final PartitionLeaveOperation leaveOperation) {
+      builder.setPartitionLeave(
+          Topology.PartitionLeaveOperation.newBuilder()
+              .setPartitionId(leaveOperation.partitionId()));
+    } else {
+      throw new IllegalArgumentException(
+          "Unknown operation type: " + operation.getClass().getSimpleName());
+    }
+    return builder.build();
+  }
+
+  private ClusterChangePlan decodeChangePlan(final Topology.ClusterChangePlan clusterChangePlan) {
+
+    final var version = clusterChangePlan.getVersion();
+    final var pendingOperations =
+        clusterChangePlan.getOperationList().stream().map(this::decodeOperation).toList();
+
+    return new ClusterChangePlan(version, pendingOperations);
+  }
+
+  private TopologyChangeOperation decodeOperation(
+      final Topology.TopologyChangeOperation topologyChangeOperation) {
+    if (topologyChangeOperation.hasPartitionJoin()) {
+      return new PartitionJoinOperation(
+          MemberId.from(topologyChangeOperation.getMemberId()),
+          topologyChangeOperation.getPartitionJoin().getPartitionId(),
+          topologyChangeOperation.getPartitionJoin().getPriority());
+    } else if (topologyChangeOperation.hasPartitionLeave()) {
+      return new PartitionLeaveOperation(
+          MemberId.from(topologyChangeOperation.getMemberId()),
+          topologyChangeOperation.getPartitionLeave().getPartitionId());
+    } else {
+      // If the node does not know of a type, the exception thrown will prevent
+      // ClusterTopologyGossiper from processing the incoming topology. This helps to prevent any
+      // incorrect or partial topology to be stored locally and later propagated to other nodes.
+      // Ideally, it is better not to any cluster topology change operations execute during a
+      // rolling update.
+      throw new IllegalStateException("Unknown operation: " + topologyChangeOperation);
+    }
   }
 }
