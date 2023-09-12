@@ -31,7 +31,6 @@ import io.atomix.raft.utils.SimpleVoteQuorum;
 import io.atomix.raft.utils.VoteQuorum;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -78,8 +77,6 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
 
   @Override
   public CompletableFuture<Void> bootstrap(final Collection<MemberId> cluster) {
-    ensureConfigurationIsConsistent(cluster);
-
     final var bootstrapFuture = new CompletableFuture<Void>();
     raft.getThreadContext()
         .execute(
@@ -116,42 +113,6 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
   @Override
   public Collection<RaftMember> getMembers() {
     return configuration.allMembers();
-  }
-
-  private void ensureConfigurationIsConsistent(final Collection<MemberId> cluster) {
-    final var hasPersistedConfiguration = configuration != null;
-    if (hasPersistedConfiguration) {
-      final var newClusterSize = cluster.size();
-      final var persistedClusterSize = configuration.newMembers().size();
-
-      if (persistedClusterSize != newClusterSize) {
-        throw new IllegalStateException(
-            String.format(
-                "Expected that persisted cluster size '%d' is equal to given one '%d', but was different. "
-                    + "Persisted configuration '%s' is different then given one, new given member id's are: '%s'. Changing the configuration is not supported. "
-                    + "Please restart with the same configuration or recreate a new cluster after deleting persisted data.",
-                persistedClusterSize,
-                newClusterSize,
-                configuration,
-                Arrays.toString(cluster.toArray())));
-      }
-
-      final var persistedMembers = configuration.newMembers();
-      for (final MemberId memberId : cluster) {
-        final var noMatch =
-            persistedMembers.stream()
-                .map(RaftMember::memberId)
-                .noneMatch(persistedMemberId -> persistedMemberId.equals(memberId));
-        if (noMatch) {
-          throw new IllegalStateException(
-              String.format(
-                  "Expected to find given node id '%s' in persisted members '%s', but was not found. "
-                      + "Persisted configuration is different then given one. Changing the configuration is not supported. "
-                      + "Please restart with the same configuration or recreate a new cluster after deleting persisted data.",
-                  memberId, Arrays.toString(persistedMembers.toArray())));
-        }
-      }
-    }
   }
 
   private void createInitialConfig(final Collection<MemberId> cluster) {
