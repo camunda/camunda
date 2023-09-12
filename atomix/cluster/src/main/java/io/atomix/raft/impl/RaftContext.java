@@ -22,7 +22,10 @@ import static com.google.common.base.Preconditions.checkState;
 import static io.atomix.utils.concurrent.Threads.namedThreads;
 
 import io.atomix.cluster.ClusterMembershipService;
+import io.atomix.cluster.Member;
 import io.atomix.cluster.MemberId;
+import io.atomix.cluster.messaging.MessagingException.NoRemoteHandler;
+import io.atomix.cluster.messaging.MessagingException.NoSuchMemberException;
 import io.atomix.raft.ElectionTimer;
 import io.atomix.raft.RaftCommitListener;
 import io.atomix.raft.RaftCommittedEntryListener;
@@ -75,13 +78,16 @@ import io.camunda.zeebe.util.logging.ThrottledLogger;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
+import java.util.Queue;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.MDC;
 
@@ -612,38 +618,66 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   }
 
   public CompletableFuture<Void> join() {
-    final CompletableFuture<Void> future = new CompletableFuture<>();
-
+    final var result = new CompletableFuture<Void>();
     threadContext.execute(
         () -> {
           final var joining =
               new DefaultRaftMember(
                   cluster.getLocalMember().memberId(), Type.ACTIVE, Instant.now());
-          final var receiver =
+          final var assistingMembers =
               membershipService.getMembers().stream()
-                  .filter(member -> !member.id().equals(joining.memberId()))
-                  .findAny()
-                  .orElse(null);
+                  .map(Member::id)
+                  .filter(id -> !id.equals(joining.memberId()))
+                  .collect(Collectors.toCollection(LinkedBlockingQueue::new));
+          joinWithRetry(joining, assistingMembers, result);
+        });
+    return result;
+  }
+
+  /**
+   * Repeatedly tries to join the cluster until it succeeds or there are no more members to try.
+   * When sending a join request to an assisting member fails because the member is currently not
+   * known, or it is known but not ready to receive join request, try again with a different
+   * assisting member.
+   *
+   * <p>Retrying helps in cases where the cluster is in flux and not all members are online and
+   * ready.
+   *
+   * @param joining the new member joining
+   * @param assistingMembers a queue of members that we will send a join request to.
+   * @param result a future to complete when joining succeeds or fails
+   */
+  private void joinWithRetry(
+      final RaftMember joining,
+      final Queue<MemberId> assistingMembers,
+      final CompletableFuture<Void> result) {
+    threadContext.execute(
+        () -> {
+          final var receiver = assistingMembers.poll();
           if (receiver == null) {
-            future.completeExceptionally(
+            result.completeExceptionally(
                 new IllegalStateException("Failed to join cluster; no known members found"));
             return;
           }
           protocol
-              .join(receiver.id(), JoinRequest.builder().withJoiningMember(joining).build())
+              .join(receiver, JoinRequest.builder().withJoiningMember(joining).build())
               .whenCompleteAsync(
                   (response, error) -> {
                     if (error != null) {
-                      future.completeExceptionally(error);
+                      if (error.getCause() instanceof NoSuchMemberException
+                          || error.getCause() instanceof NoRemoteHandler) {
+                        joinWithRetry(joining, assistingMembers, result);
+                      } else {
+                        result.completeExceptionally(error);
+                      }
                     } else if (response.status() == Status.OK) {
-                      future.complete(null);
+                      result.complete(null);
                     } else {
-                      future.completeExceptionally(response.error().createException());
+                      result.completeExceptionally(response.error().createException());
                     }
                   },
                   threadContext);
         });
-    return future;
   }
 
   /**
