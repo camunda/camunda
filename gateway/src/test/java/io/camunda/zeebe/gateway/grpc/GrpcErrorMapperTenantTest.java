@@ -59,7 +59,8 @@ public class GrpcErrorMapperTenantTest {
     // given
     final String requestName = "DeployResource";
     try {
-      RequestMapper.ensureTenantIdSet(requestName, invalidTenantId, multiTenancyEnabled);
+      RequestMapper.setMultiTenancyEnabled(multiTenancyEnabled);
+      RequestMapper.ensureTenantIdSet(requestName, invalidTenantId);
       fail("Expected to throw exception");
     } catch (final RuntimeException exception) {
       assertThat(exception).isInstanceOf(InvalidTenantRequestException.class);
@@ -82,12 +83,13 @@ public class GrpcErrorMapperTenantTest {
   @ParameterizedTest
   @MethodSource("validTenantIds")
   void shouldNotLogInvalidTenantRequestException(
-      final String invalidTenantId, final boolean multiTenancyEnabled) {
+      final String validTenantId, final boolean multiTenancyEnabled) {
     // given
     final String requestName = "DeployResource";
 
     // when
-    RequestMapper.ensureTenantIdSet(requestName, invalidTenantId, multiTenancyEnabled);
+    RequestMapper.setMultiTenancyEnabled(multiTenancyEnabled);
+    RequestMapper.ensureTenantIdSet(requestName, validTenantId);
 
     // then
     assertThat(recorder.getAppendedEvents()).hasSize(0);

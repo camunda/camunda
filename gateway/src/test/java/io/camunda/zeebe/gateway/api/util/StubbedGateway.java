@@ -11,6 +11,7 @@ import io.camunda.zeebe.gateway.EndpointManager;
 import io.camunda.zeebe.gateway.GatewayGrpcService;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
+import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.RoundRobinActivateJobsHandler;
@@ -68,7 +69,8 @@ public final class StubbedGateway {
     submitActorToActivateJobs(activateJobsHandler);
 
     final EndpointManager endpointManager =
-        new EndpointManager(brokerClient, activateJobsHandler, jobStreamer, Runnable::run);
+        new EndpointManager(
+            brokerClient, activateJobsHandler, jobStreamer, Runnable::run, new MultiTenancyCfg());
     final GatewayGrpcService gatewayGrpcService = new GatewayGrpcService(endpointManager);
 
     final InProcessServerBuilder serverBuilder =
