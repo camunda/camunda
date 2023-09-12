@@ -18,7 +18,9 @@ import io.camunda.zeebe.topology.TopologyInitializer.FileInitializer;
 import io.camunda.zeebe.topology.TopologyInitializer.GossipInitializer;
 import io.camunda.zeebe.topology.TopologyInitializer.StaticInitializer;
 import io.camunda.zeebe.topology.TopologyInitializer.SyncInitializer;
-import io.camunda.zeebe.topology.changes.NoopTopologyChangeAppliers;
+import io.camunda.zeebe.topology.changes.NoopPartitionChangeExecutor;
+import io.camunda.zeebe.topology.changes.PartitionChangeExecutor;
+import io.camunda.zeebe.topology.changes.TopologyChangeAppliersImpl;
 import io.camunda.zeebe.topology.changes.TopologyChangeCoordinator;
 import io.camunda.zeebe.topology.changes.TopologyChangeCoordinatorImpl;
 import io.camunda.zeebe.topology.gossip.ClusterTopologyGossiper;
@@ -48,6 +50,20 @@ public final class ClusterTopologyManagerService extends Actor {
       final ClusterCommunicationService communicationService,
       final ClusterMembershipService memberShipService,
       final ClusterTopologyGossiperConfig config) {
+    this(
+        dataRootDirectory,
+        communicationService,
+        memberShipService,
+        config,
+        new NoopPartitionChangeExecutor());
+  }
+
+  public ClusterTopologyManagerService(
+      final Path dataRootDirectory,
+      final ClusterCommunicationService communicationService,
+      final ClusterMembershipService memberShipService,
+      final ClusterTopologyGossiperConfig config,
+      final PartitionChangeExecutor partitionChangeExecutor) {
     try {
       FileUtil.ensureDirectoryExists(dataRootDirectory);
     } catch (final IOException e) {
@@ -59,7 +75,10 @@ public final class ClusterTopologyManagerService extends Actor {
     persistedClusterTopology = new PersistedClusterTopology(topologyFile, new ProtoBufSerializer());
     clusterTopologyManager =
         new ClusterTopologyManagerImpl(
-            this, localMemberId, persistedClusterTopology, new NoopTopologyChangeAppliers());
+            this,
+            localMemberId,
+            persistedClusterTopology,
+            new TopologyChangeAppliersImpl(partitionChangeExecutor));
     clusterTopologyGossiper =
         new ClusterTopologyGossiper(
             this,

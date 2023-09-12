@@ -7,17 +7,14 @@
  */
 package io.camunda.zeebe.topology.changes;
 
-import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.topology.ClusterTopologyManager;
 import io.camunda.zeebe.topology.changes.TopologyChangeAppliers.OperationApplier;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation;
 import java.util.ConcurrentModificationException;
 import java.util.List;
-import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -201,20 +198,6 @@ public class TopologyChangeCoordinatorImpl implements TopologyChangeCoordinator 
   static class UnknownStatus extends RuntimeException {
     public UnknownStatus(final String message) {
       super(message);
-    }
-  }
-
-  private static final class NoopPartitionChangeExecutor implements PartitionChangeExecutor {
-
-    @Override
-    public ActorFuture<Void> join(
-        final int partitionId, final Map<MemberId, Integer> membersWithPriority) {
-      return CompletableActorFuture.completed(null);
-    }
-
-    @Override
-    public ActorFuture<Void> leave(final int partitionId) {
-      return CompletableActorFuture.completed(null);
     }
   }
 }
