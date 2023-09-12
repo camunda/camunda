@@ -84,7 +84,14 @@ public final class ClusterTopologyManagerImpl implements ClusterTopologyManager 
             final ClusterTopology updatedTopology =
                 topologyUpdated.apply(persistedClusterTopology.getTopology());
             updateLocalTopology(updatedTopology)
-                .ifRightOrLeft(future::complete, future::completeExceptionally);
+                .ifRightOrLeft(
+                    updated -> {
+                      future.complete(updated);
+                      if (shouldApplyTopologyChangeOperation(updatedTopology)) {
+                        applyTopologyChangeOperation(updatedTopology);
+                      }
+                    },
+                    future::completeExceptionally);
           } catch (final Exception e) {
             LOG.error("Failed to update cluster topology", e);
             future.completeExceptionally(e);
