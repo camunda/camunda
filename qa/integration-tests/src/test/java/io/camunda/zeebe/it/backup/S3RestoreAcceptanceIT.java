@@ -13,26 +13,24 @@ import static org.assertj.core.api.Assertions.assertThatNoException;
 
 import io.camunda.zeebe.backup.s3.S3BackupConfig.Builder;
 import io.camunda.zeebe.backup.s3.S3BackupStore;
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.BackupStoreType;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
+import io.camunda.zeebe.qa.util.cluster.TestRestoreApp;
 import io.camunda.zeebe.qa.util.testcontainers.MinioContainer;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
+import io.camunda.zeebe.restore.BackupNotFoundException;
 import io.camunda.zeebe.shared.management.openapi.models.BackupInfo;
 import io.camunda.zeebe.shared.management.openapi.models.StateCode;
 import io.camunda.zeebe.shared.management.openapi.models.TakeBackupResponse;
-import io.camunda.zeebe.test.util.testcontainers.ContainerLogsDumper;
 import io.zeebe.containers.ZeebeContainer;
 import java.time.Duration;
-import java.util.Map;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
-import org.testcontainers.containers.ContainerLaunchException;
-import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
-import org.testcontainers.containers.startupcheck.OneShotStartupCheckStrategy;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -60,27 +58,6 @@ final class S3RestoreAcceptanceIT {
           .withEnv("ZEEBE_BROKER_DATA_BACKUP_S3_REGION", MINIO.region())
           .withEnv("ZEEBE_BROKER_DATA_BACKUP_S3_ACCESSKEY", MINIO.accessKey())
           .withEnv("ZEEBE_BROKER_DATA_BACKUP_S3_SECRETKEY", MINIO.secretKey());
-
-  // No `@Container` annotation because we want to start this on demand
-  @SuppressWarnings("resource")
-  private final GenericContainer<?> restore =
-      new GenericContainer<>(ZeebeTestContainerDefaults.defaultTestImage())
-          .withNetwork(NETWORK)
-          .dependsOn(MINIO)
-          .withStartupCheckStrategy(
-              new OneShotStartupCheckStrategy().withTimeout(Duration.ofMinutes(1)))
-          .withEnv("ZEEBE_RESTORE", "true")
-          .withEnv("ZEEBE_RESTORE_FROM_BACKUP_ID", Long.toString(BACKUP_ID))
-          .withEnv("ZEEBE_BROKER_DATA_BACKUP_STORE", "S3")
-          .withEnv("ZEEBE_BROKER_DATA_BACKUP_S3_BUCKETNAME", BUCKET_NAME)
-          .withEnv("ZEEBE_BROKER_DATA_BACKUP_S3_ENDPOINT", MINIO.internalEndpoint())
-          .withEnv("ZEEBE_BROKER_DATA_BACKUP_S3_REGION", MINIO.region())
-          .withEnv("ZEEBE_BROKER_DATA_BACKUP_S3_ACCESSKEY", MINIO.accessKey())
-          .withEnv("ZEEBE_BROKER_DATA_BACKUP_S3_SECRETKEY", MINIO.secretKey());
-
-  @RegisterExtension
-  @SuppressWarnings("unused")
-  final ContainerLogsDumper logsWatcher = new ContainerLogsDumper(() -> Map.of("restore", restore));
 
   @BeforeAll
   static void setupBucket() {
@@ -122,8 +99,26 @@ final class S3RestoreAcceptanceIT {
                   .containsExactly(1L, StateCode.COMPLETED);
             });
 
-    // then
-    assertThatNoException().isThrownBy(restore::start);
+    // when
+    try (final var restore = new TestRestoreApp()) {
+      restore.withBackupId(BACKUP_ID).withBrokerConfig(this::configureBackupStore);
+
+      // then
+      assertThatNoException().isThrownBy(() -> restore.start());
+    }
+  }
+
+  private void configureBackupStore(final BrokerCfg config) {
+    final var backup = config.getData().getBackup();
+    backup.setStore(BackupStoreType.S3);
+
+    final var s3 = backup.getS3();
+    s3.setRegion(MINIO.region());
+    s3.setSecretKey(MINIO.secretKey());
+    s3.setBucketName(BUCKET_NAME);
+    s3.setEndpoint(MINIO.externalEndpoint());
+    s3.setAccessKey(MINIO.accessKey());
+    s3.setForcePathStyleAccess(true);
   }
 
   @Test
@@ -150,17 +145,15 @@ final class S3RestoreAcceptanceIT {
                   .containsExactly(1L, StateCode.COMPLETED);
             });
 
-    // then -- restore container exits with an error code
-    // we can't check the exit code directly, but we can observe that testcontainers was unable
-    // to start the container.
-    assertThatExceptionOfType(ContainerLaunchException.class)
-        .isThrownBy(
-            () ->
-                restore
-                    .withStartupAttempts(1)
-                    .withEnv("ZEEBE_RESTORE_FROM_BACKUP_ID", "1234")
-                    .withStartupCheckStrategy(
-                        new OneShotStartupCheckStrategy().withTimeout(Duration.ofSeconds(10)))
-                    .start());
+    // when
+    try (final var restore = new TestRestoreApp()) {
+      restore.withBackupId(1234).withBrokerConfig(this::configureBackupStore);
+
+      // then
+      assertThatExceptionOfType(IllegalStateException.class)
+          .isThrownBy(() -> restore.start())
+          .havingRootCause()
+          .isInstanceOf(BackupNotFoundException.class);
+    }
   }
 }
