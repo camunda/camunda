@@ -46,8 +46,13 @@ public class RaftJoinStep implements StartupStep<PartitionStartupContext> {
   public ActorFuture<PartitionStartupContext> shutdown(final PartitionStartupContext context) {
     final var result = context.concurrencyControl().<PartitionStartupContext>createFuture();
 
-    context
-        .raftPartition()
+    final var raftPartition = context.raftPartition();
+    if (raftPartition == null) {
+      result.complete(context);
+      return result;
+    }
+
+    raftPartition
         .close()
         .whenComplete(
             (ignored, throwable) -> {
