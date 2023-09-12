@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.topology;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.Node;
@@ -18,7 +20,12 @@ import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
+import io.camunda.zeebe.topology.changes.NoopPartitionChangeExecutor;
+import io.camunda.zeebe.topology.changes.PartitionChangeExecutor;
+import io.camunda.zeebe.topology.changes.TopologyChangeCoordinator;
 import io.camunda.zeebe.topology.gossip.ClusterTopologyGossiperConfig;
+import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
+import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -29,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,6 +47,7 @@ class ClusterTopologyManagementIntegrationTest {
   @TempDir Path rootDir;
 
   private final ActorScheduler actorScheduler = ActorScheduler.newActorScheduler().build();
+  private final PartitionChangeExecutor partitionChangeExecutor = new NoopPartitionChangeExecutor();
 
   private final List<Node> clusterNodes =
       List.of(createNode("0"), createNode("1"), createNode("2"));
@@ -156,6 +165,36 @@ class ClusterTopologyManagementIntegrationTest {
                     .hasOnlyMembers(Set.of(0, 1, 2)));
   }
 
+  @Test
+  void shouldApplyTopologyChange() {
+    // given - all members have partition 1
+    final var startFutures = nodes.values().stream().map(this::startNode).toList();
+    startFutures.forEach(ActorFuture::join);
+
+    // when
+    final TopologyChangeCoordinator coordinator =
+        nodes.get(0).service().getTopologyChangeCoordinator().orElseThrow();
+    final var topologyChanged =
+        coordinator
+            .applyOperations(
+                List.of(
+                    new PartitionJoinOperation(MemberId.from("0"), 2, 1),
+                    new PartitionLeaveOperation(MemberId.from("1"), 1)))
+            .join();
+
+    // then
+    Awaitility.await("The topology change should complete.")
+        .untilAsserted(
+            () ->
+                assertThat(coordinator.hasCompletedChanges(topologyChanged.version()).join())
+                    .isTrue());
+    ClusterTopologyAssert.assertThatClusterTopology(
+            nodes.get(0).service().getClusterTopology().join())
+        .describedAs("The cluster must have the expected topology after change.")
+        .hasMemberWithPartitions(0, Set.of(1, 2))
+        .hasMemberWithPartitions(1, Set.of());
+  }
+
   private Node createNode(final String id) {
     return Node.builder().withId(id).withPort(SocketUtil.getNextAddress().getPort()).build();
   }
@@ -171,13 +210,13 @@ class ClusterTopologyManagementIntegrationTest {
 
   private TestNode createClusterTopologyManagerService(
       final Path tempDir, final AtomixCluster cluster) {
-
     final var service =
         new ClusterTopologyManagerService(
             tempDir.resolve(cluster.getMembershipService().getLocalMember().id().id()),
             cluster.getCommunicationService(),
             cluster.getMembershipService(),
-            new ClusterTopologyGossiperConfig(Duration.ofSeconds(1), Duration.ofMillis(100), 2));
+            new ClusterTopologyGossiperConfig(Duration.ofSeconds(1), Duration.ofMillis(100), 2),
+            partitionChangeExecutor);
     return new TestNode(cluster, service);
   }
 
