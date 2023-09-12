@@ -80,6 +80,16 @@ abstract class TestSpringApplication<T extends TestSpringApplication<T>>
     return self();
   }
 
+  @Override
+  public int mappedPort(final TestZeebePort port) {
+    if (port != TestZeebePort.MONITORING) {
+      throw new IllegalArgumentException(
+          "No known port %s; must one of MONITORING".formatted(port));
+    }
+
+    return monitoringPort();
+  }
+
   /** Returns the command line arguments that will be passed when the application is started. */
   protected String[] commandLineArgs() {
     return new String[0];
@@ -97,5 +107,25 @@ abstract class TestSpringApplication<T extends TestSpringApplication<T>>
         .initializers(new ContextOverrideInitializer(beans, propertyOverrides))
         .profiles(Profile.TEST.getId())
         .sources(springApplication);
+  }
+
+  private int monitoringPort() {
+    final Object portProperty;
+    if (springContext != null) {
+      portProperty = springContext.getEnvironment().getProperty("server.port");
+    } else {
+      portProperty = propertyOverrides.get("server.port");
+    }
+
+    if (portProperty == null) {
+      throw new IllegalStateException(
+          "No property server.port defined anywhere, cannot infer monitoring port");
+    }
+
+    if (portProperty instanceof final Integer port) {
+      return port;
+    }
+
+    return Integer.parseInt(portProperty.toString());
   }
 }
