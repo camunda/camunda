@@ -16,9 +16,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 
-import static io.camunda.operate.OperateProfileService.IDENTITY_AUTH_PROFILE;
-
-@Profile(IDENTITY_AUTH_PROFILE)
 @Configuration
 public class IdentityConfigurer {
 
