@@ -43,6 +43,10 @@ public abstract class BrokerRequest<T> implements ClientRequest {
 
   public abstract void setPartitionId(int partitionId);
 
+  public void setAuthorization(final String authorizationToken) {
+    // Unsupported by default
+  }
+
   public abstract boolean addressesSpecificPartition();
 
   public abstract boolean requiresPartitionId();
