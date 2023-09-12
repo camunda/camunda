@@ -115,6 +115,31 @@
                 }
               }
             },
+            "formMetadata": {
+              "properties": {
+                "formId": {
+                  "type": "keyword"
+                },
+                "version": {
+                  "type": "long"
+                },
+                "formKey": {
+                  "type": "long"
+                },
+                "resourceName": {
+                  "type": "text"
+                },
+                "checksum": {
+                  "enabled": false
+                },
+                "duplicate": {
+                  "type": "boolean"
+                },
+                "tenantId": {
+                  "type": "keyword"
+                }
+              }
+            },
             "tenantId": {
               "type": "keyword"
             }

@@ -160,7 +160,7 @@ public final class DeploymentTransformer {
         .orElse(UNKNOWN_RESOURCE);
   }
 
-  private static class UnknownResourceTransformer implements DeploymentResourceTransformer {
+  private static final class UnknownResourceTransformer implements DeploymentResourceTransformer {
 
     @Override
     public Either<Failure, Void> transformResource(

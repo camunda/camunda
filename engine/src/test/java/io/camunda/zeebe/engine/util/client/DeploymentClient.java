@@ -134,6 +134,27 @@ public final class DeploymentClient {
     return this;
   }
 
+  public DeploymentClient withJsonClasspathResource(final String classpathResource) {
+    try {
+      final var outputStream = new ByteArrayOutputStream();
+      final var resourceAsStream = getClass().getResourceAsStream(classpathResource);
+      resourceAsStream.transferTo(outputStream);
+
+      return withJsonResource(outputStream.toByteArray(), classpathResource);
+    } catch (final IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  public DeploymentClient withJsonResource(final byte[] resourceBytes, final String resourceName) {
+    deploymentRecord
+        .resources()
+        .add()
+        .setResourceName(wrapString(resourceName))
+        .setResource(wrapArray(resourceBytes));
+    return this;
+  }
+
   public DeploymentClient withTenantId(final String tenantId) {
     deploymentRecord.setTenantId(tenantId);
     return this;

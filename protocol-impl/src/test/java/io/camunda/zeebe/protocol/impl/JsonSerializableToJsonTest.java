@@ -191,36 +191,37 @@ final class JsonSerializableToJsonTest {
           "rejectionType": "INVALID_ARGUMENT",
           "rejectionReason": "fails",
           "brokerVersion": "1.2.3",
+          "recordVersion": 10,
+          "value": {
+            "resources": [
+              {
+                "resource": "Y29udGVudHM=",
+                "resourceName": "resource"
+              }
+            ],
+            "decisionRequirementsMetadata": [],
+            "tenantId": "<default>",
+            "processesMetadata": [
+              {
+                "version": 12,
+                "tenantId": "<default>",
+                "checksum": "Y2hlY2tzdW0=",
+                "duplicate": false,
+                "processDefinitionKey": 123,
+                "bpmnProcessId": "testProcess",
+                "resourceName": "resource"
+              }
+            ],
+            "decisionsMetadata": [],
+            "formMetadata": []
+          },
+          "sourceRecordPosition": 231,
           "authorizations": {
-            "authorized_tenants":[
+            "authorized_tenants": [
               "tenant-1",
               "tenant-2",
               "tenant-3"
             ]
-          },
-          "recordVersion": 10,
-          "sourceRecordPosition": 231,
-          "value": {
-            "processesMetadata": [
-              {
-                "version": 12,
-                "bpmnProcessId": "testProcess",
-                "resourceName": "resource",
-                "checksum": "Y2hlY2tzdW0=",
-                "processDefinitionKey": 123,
-                "duplicate": false,
-                "tenantId": "<default>"
-              }
-            ],
-            "resources": [
-              {
-                "resourceName": "resource",
-                "resource": "Y29udGVudHM="
-              }
-            ],
-            "decisionsMetadata": [],
-            "decisionRequirementsMetadata": [],
-            "tenantId": "<default>"
           }
         }
         """
@@ -244,27 +245,28 @@ final class JsonSerializableToJsonTest {
             },
         """
         {
-          "key": -1,
-          "position": -1,
-          "sourceRecordPosition": -1,
-          "partitionId": -1,
-          "timestamp": -1,
-          "recordType": "NULL_VAL",
-          "valueType": "NULL_VAL",
-          "intent": null,
-          "rejectionType": "NULL_VAL",
-          "rejectionReason": "",
-          "brokerVersion": "0.0.0",
-          "authorizations": {},
-          "recordVersion": 1,
-          "value": {
-              "resources": [],
-              "decisionRequirementsMetadata": [],
-              "processesMetadata": [],
-              "decisionsMetadata": [],
-              "tenantId": "<default>"
-          }
-        }
+           "valueType": "NULL_VAL",
+           "key": -1,
+           "position": -1,
+           "timestamp": -1,
+           "recordType": "NULL_VAL",
+           "intent": null,
+           "partitionId": -1,
+           "rejectionType": "NULL_VAL",
+           "rejectionReason": "",
+           "brokerVersion": "0.0.0",
+           "recordVersion": 1,
+           "value": {
+             "resources": [],
+             "decisionRequirementsMetadata": [],
+             "tenantId": "<default>",
+             "processesMetadata": [],
+             "decisionsMetadata": [],
+             "formMetadata": []
+           },
+           "sourceRecordPosition": -1,
+           "authorizations": {}
+         }
         """
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
@@ -320,50 +322,51 @@ final class JsonSerializableToJsonTest {
             },
         """
         {
-          "resources": [
-            {
-              "resourceName": "resource",
-              "resource": "Y29udGVudHM="
-            }
-          ],
-          "processesMetadata": [
-            {
-              "checksum": "Y2hlY2tzdW0=",
-              "bpmnProcessId": "testProcess",
-              "version": 12,
-              "processDefinitionKey": 123,
-              "resourceName": "resource",
-              "duplicate": true,
-              "tenantId": "<default>"
-            }
-          ],
-          "decisionsMetadata": [
-            {
-              "version": 1,
-              "decisionRequirementsId": "drg-id",
-              "decisionRequirementsKey": 1,
-              "decisionId": "decision-id",
-              "decisionName": "decision-name",
-              "decisionKey": 2,
-              "duplicate": true,
-              "tenantId": "<default>"
-            }
-          ],
-          "decisionRequirementsMetadata": [
-            {
-              "decisionRequirementsId": "drg-id",
-              "decisionRequirementsName": "drg-name",
-              "decisionRequirementsVersion": 1,
-              "decisionRequirementsKey": 1,
-              "namespace": "namespace",
-              "resourceName": "resource-name",
-              "checksum": "Y2hlY2tzdW0=",
-              "duplicate": true,
-              "tenantId": "<default>"
-            }
-          ],
-          "tenantId": "<default>"
-        }
+           "resources": [
+             {
+               "resource": "Y29udGVudHM=",
+               "resourceName": "resource"
+             }
+           ],
+           "decisionRequirementsMetadata": [
+             {
+               "decisionRequirementsName": "drg-name",
+               "decisionRequirementsVersion": 1,
+               "tenantId": "<default>",
+               "decisionRequirementsId": "drg-id",
+               "decisionRequirementsKey": 1,
+               "namespace": "namespace",
+               "checksum": "Y2hlY2tzdW0=",
+               "duplicate": true,
+               "resourceName": "resource-name"
+             }
+           ],
+           "tenantId": "<default>",
+           "processesMetadata": [
+             {
+               "version": 12,
+               "tenantId": "<default>",
+               "checksum": "Y2hlY2tzdW0=",
+               "duplicate": true,
+               "processDefinitionKey": 123,
+               "bpmnProcessId": "testProcess",
+               "resourceName": "resource"
+             }
+           ],
+           "decisionsMetadata": [
+             {
+               "version": 1,
+               "tenantId": "<default>",
+               "decisionKey": 2,
+               "decisionId": "decision-id",
+               "decisionName": "decision-name",
+               "decisionRequirementsId": "drg-id",
+               "decisionRequirementsKey": 1,
+               "duplicate": true
+             }
+           ],
+           "formMetadata": []
+         }
         """
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
@@ -392,10 +395,11 @@ final class JsonSerializableToJsonTest {
         """
         {
           "resources": [],
+          "decisionRequirementsMetadata": [],
+          "tenantId": "<default>",
           "processesMetadata": [],
           "decisionsMetadata": [],
-          "decisionRequirementsMetadata": [],
-          "tenantId": "<default>"
+          "formMetadata": []
         }
         """
       },
@@ -1798,25 +1802,30 @@ final class JsonSerializableToJsonTest {
         {
           "partitionId": 1,
           "valueType": "DEPLOYMENT",
-          "intent": "CREATE",
           "commandValue": {
-            "resources": [{
-              "resource": "VGhpcyBpcyB0aGUgY29udGVudHMgb2YgdGhlIEJQTU4=",
-              "resourceName": "my_first_bpmn.bpmn"
-            }],
-            "processesMetadata": [{
-              "processDefinitionKey": 123,
-              "version": 1,
-              "bpmnProcessId": "my_first_process",
-              "resourceName": "my_first_bpmn.bpmn",
-              "checksum": "c2hhMQ==",
-              "duplicate": false,
-              "tenantId": "<default>"
-            }],
-            "decisionsMetadata": [],
+            "resources": [
+              {
+                "resource": "VGhpcyBpcyB0aGUgY29udGVudHMgb2YgdGhlIEJQTU4=",
+                "resourceName": "my_first_bpmn.bpmn"
+              }
+            ],
             "decisionRequirementsMetadata": [],
-            "tenantId": "<default>"
-          }
+            "tenantId": "<default>",
+            "processesMetadata": [
+              {
+                "version": 1,
+                "tenantId": "<default>",
+                "checksum": "c2hhMQ==",
+                "duplicate": false,
+                "processDefinitionKey": 123,
+                "bpmnProcessId": "my_first_process",
+                "resourceName": "my_first_bpmn.bpmn"
+              }
+            ],
+            "decisionsMetadata": [],
+            "formMetadata": []
+          },
+          "intent": "CREATE"
         }
         """
       },

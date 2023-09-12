@@ -31,7 +31,7 @@
               "type": "long"
             },
             "resourceName": {
-              "type": "keyword"
+              "type": "text"
             },
             "resource": {
               "enabled": false
