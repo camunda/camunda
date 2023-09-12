@@ -1,9 +1,9 @@
-ARG BASE_IMAGE="eclipse-temurin:17.0.7_7-jre-focal"
+ARG BASE_IMAGE="eclipse-temurin:17.0.8_7-jre-focal"
 ARG BASE_DIGEST_AMD64="sha256:1a6c81a1b4144fe893e2452a6340d4e3a54ca53356962ed36dea290d9c43400f"
-ARG BASE_DIGEST_ARM64="sha256:78b88c13f8e2a109af3394cafd50377bf1d80ee5d18ee13c1640bf9dfcba1842"
+ARG BASE_DIGEST_ARM64="sha256:fec0b0f6cb7d2c41c0381c6828211a5adedb1ed6822d3f8209596042a9c606e7"
 
 # Prepare Operate Distribution
-FROM alpine:3.18.2 as prepare
+FROM alpine:3.18.3 as prepare
 
 WORKDIR /tmp/operate
 
