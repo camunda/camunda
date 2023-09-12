@@ -11,6 +11,7 @@ import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 
 import io.camunda.identity.sdk.Identity;
+import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProvider;
 import io.camunda.zeebe.gateway.EndpointManager;
 import io.camunda.zeebe.gateway.GatewayGrpcService;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
@@ -33,7 +34,9 @@ import io.camunda.zeebe.transport.stream.api.ClientStreamConsumer;
 import io.camunda.zeebe.transport.stream.api.ClientStreamId;
 import io.camunda.zeebe.transport.stream.api.ClientStreamer;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import io.grpc.CallCredentials;
 import io.grpc.ManagedChannel;
+import io.grpc.Metadata;
 import io.grpc.Server;
 import io.grpc.ServerInterceptors;
 import io.grpc.inprocess.InProcessChannelBuilder;
@@ -43,6 +46,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -107,13 +111,13 @@ public final class StubbedGateway {
   public GatewayBlockingStub buildClient() {
     final ManagedChannel channel =
         InProcessChannelBuilder.forName(SERVER_NAME).directExecutor().build();
-    return GatewayGrpc.newBlockingStub(channel);
+    return GatewayGrpc.newBlockingStub(channel).withCallCredentials(new FakeOAuthCallCredentials());
   }
 
   public GatewayStub buildAsyncClient() {
     final ManagedChannel channel =
         InProcessChannelBuilder.forName(SERVER_NAME).directExecutor().build();
-    return GatewayGrpc.newStub(channel);
+    return GatewayGrpc.newStub(channel).withCallCredentials(new FakeOAuthCallCredentials());
   }
 
   private void submitActorToActivateJobs(final Consumer<ActorControl> consumer) {
@@ -212,4 +216,22 @@ public final class StubbedGateway {
       ClientStreamConsumer clientStreamConsumer) {}
 
   private record StubbedClientStreamId(UUID serverStreamId) implements ClientStreamId {}
+
+  private static class FakeOAuthCallCredentials extends CallCredentials {
+
+    /** Can be adjusted to test different token values. */
+    private String token = "token";
+
+    public void setToken(final String token) {
+      this.token = token;
+    }
+
+    @Override
+    public void applyRequestMetadata(
+        final RequestInfo requestInfo, final Executor appExecutor, final MetadataApplier applier) {
+      final Metadata headers = new Metadata();
+      headers.put(OAuthCredentialsProvider.HEADER_AUTH_KEY, "Bearer " + token);
+      applier.apply(headers);
+    }
+  }
 }
