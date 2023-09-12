@@ -202,7 +202,7 @@ public class DefaultRaftServer implements RaftServer {
               if (error == null) {
                 log.debug("Server started successfully!");
               } else {
-                log.warn("Failed to start server!");
+                log.warn("Failed to start server", error);
               }
             });
   }
