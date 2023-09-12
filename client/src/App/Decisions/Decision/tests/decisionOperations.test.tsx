@@ -69,6 +69,7 @@ describe('<Decision /> - operations', () => {
       roles: null,
       salesPlanType: null,
       c8Links: {},
+      tenants: [],
     });
 
     render(<Decision />, {
@@ -95,6 +96,7 @@ describe('<Decision /> - operations', () => {
       roles: null,
       salesPlanType: null,
       c8Links: {},
+      tenants: [],
     });
 
     render(<Decision />, {

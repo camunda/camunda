@@ -79,6 +79,7 @@ describe('<Processes /> - operations', () => {
       roles: null,
       salesPlanType: null,
       c8Links: {},
+      tenants: [],
     });
 
     render(<Processes />, {
@@ -101,6 +102,7 @@ describe('<Processes /> - operations', () => {
       roles: null,
       salesPlanType: null,
       c8Links: {},
+      tenants: [],
     });
 
     const {rerender} = render(<Processes />, {

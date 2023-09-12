@@ -28,7 +28,8 @@ type ProcessInstanceFilterField =
   | 'startDateAfter'
   | 'startDateBefore'
   | 'endDateAfter'
-  | 'endDateBefore';
+  | 'endDateBefore'
+  | 'tenant';
 
 type DecisionInstanceFilterField =
   | 'name'
@@ -58,6 +59,7 @@ type ProcessInstanceFilters = {
   startDateBefore?: string;
   endDateAfter?: string;
   endDateBefore?: string;
+  tenant?: string;
 };
 
 type DecisionInstanceFilters = {
@@ -122,6 +124,7 @@ const PROCESS_INSTANCE_FILTER_FIELDS: ProcessInstanceFilterField[] = [
   'startDateBefore',
   'endDateAfter',
   'endDateBefore',
+  'tenant',
 ];
 const DECISION_INSTANCE_FILTER_FIELDS: DecisionInstanceFilterField[] = [
   'name',

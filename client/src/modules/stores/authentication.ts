@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {makeObservable, observable, action} from 'mobx';
+import {makeObservable, observable, action, computed} from 'mobx';
 import {getUser, UserDto} from 'modules/api/getUser';
 import {login, Credentials} from 'modules/api/login';
 import {logout} from 'modules/api/logout';
@@ -31,6 +31,7 @@ type State = {
   salesPlanType: UserDto['salesPlanType'];
   roles: ReadonlyArray<string> | null;
   c8Links: UserDto['c8Links'];
+  tenants: UserDto['tenants'];
 };
 
 const DEFAULT_STATE: State = {
@@ -42,6 +43,7 @@ const DEFAULT_STATE: State = {
   salesPlanType: null,
   roles: [],
   c8Links: {},
+  tenants: null,
 };
 
 class Authentication {
@@ -57,6 +59,7 @@ class Authentication {
       resetUser: action,
       setStatus: action,
       endLogin: action,
+      tenantsById: computed,
     });
   }
 
@@ -162,6 +165,7 @@ class Authentication {
     salesPlanType,
     roles,
     c8Links,
+    tenants,
   }: UserDto) => {
     storeStateLocally({
       wasReloaded: false,
@@ -174,7 +178,8 @@ class Authentication {
     this.state.salesPlanType = salesPlanType;
     this.state.roles = roles ?? [];
     this.state.permissions = permissions ?? DEFAULT_STATE.permissions;
-    this.state.c8Links = c8Links ?? {};
+    this.state.c8Links = c8Links;
+    this.state.tenants = tenants;
   };
 
   handleLogout = async () => {
@@ -203,6 +208,15 @@ class Authentication {
     this.state.status = status;
   };
 
+  get tenantsById() {
+    return this.state.tenants?.reduce<{[key: string]: string}>(
+      (tenantsById, {tenantId, name}) => ({
+        ...tenantsById,
+        [tenantId]: name,
+      }),
+      {},
+    );
+  }
   resetUser = () => {
     this.state.displayName = DEFAULT_STATE.displayName;
     this.state.canLogout = DEFAULT_STATE.canLogout;

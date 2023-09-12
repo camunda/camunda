@@ -56,6 +56,7 @@ describe('Restricted', () => {
       roles: null,
       salesPlanType: null,
       c8Links: {},
+      tenants: [],
     });
 
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
@@ -94,6 +95,7 @@ describe('Restricted', () => {
       roles: null,
       salesPlanType: null,
       c8Links: {},
+      tenants: [],
     });
 
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
@@ -128,6 +130,7 @@ describe('Restricted', () => {
       roles: null,
       salesPlanType: null,
       c8Links: {},
+      tenants: [],
     });
 
     render(
@@ -155,6 +158,7 @@ describe('Restricted', () => {
       roles: null,
       salesPlanType: null,
       c8Links: {},
+      tenants: [],
     });
 
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);

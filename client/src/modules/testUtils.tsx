@@ -143,6 +143,7 @@ const createUser = (options: Partial<UserDto> = {}): UserDto => ({
   roles: null,
   salesPlanType: null,
   c8Links: {},
+  tenants: [],
   ...options,
 });
 

@@ -32,6 +32,7 @@ export declare global {
       mixpanelAPIHost?: null | string;
       tasklistUrl?: null | string;
       resourcePermissionsEnabled?: boolean;
+      multiTenancyEnabled?: boolean;
     };
     Osano?: {
       cm?: {

@@ -34,6 +34,7 @@ type UserDto = {
       | 'operate'
       | 'optimize']?: string;
   };
+  tenants: {tenantId: string; name: string}[] | null;
 };
 
 const getUser = async (options: Parameters<typeof requestAndParse>[1]) => {

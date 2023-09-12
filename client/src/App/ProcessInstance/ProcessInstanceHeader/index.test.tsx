@@ -396,6 +396,7 @@ describe('InstanceHeader', () => {
       roles: null,
       salesPlanType: null,
       c8Links: {},
+      tenants: [],
     });
 
     render(<ProcessInstanceHeader />, {wrapper: Wrapper});
@@ -432,6 +433,7 @@ describe('InstanceHeader', () => {
       roles: null,
       salesPlanType: null,
       c8Links: {},
+      tenants: [],
     });
 
     render(<ProcessInstanceHeader />, {wrapper: Wrapper});
@@ -468,6 +470,7 @@ describe('InstanceHeader', () => {
       roles: null,
       salesPlanType: null,
       c8Links: {},
+      tenants: [],
     });
 
     render(<ProcessInstanceHeader />, {wrapper: Wrapper});
@@ -504,6 +507,7 @@ describe('InstanceHeader', () => {
       roles: null,
       salesPlanType: null,
       c8Links: {},
+      tenants: [],
     });
 
     render(<ProcessInstanceHeader />, {wrapper: Wrapper});
@@ -540,6 +544,7 @@ describe('InstanceHeader', () => {
       roles: null,
       salesPlanType: null,
       c8Links: {},
+      tenants: [],
     });
 
     render(<ProcessInstanceHeader />, {wrapper: Wrapper});

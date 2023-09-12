@@ -51,6 +51,7 @@ describe('IncidentsTable', () => {
       roles: null,
       salesPlanType: null,
       c8Links: {},
+      tenants: [],
     });
 
     render(<IncidentsTable />, {wrapper: Wrapper});
@@ -81,6 +82,7 @@ describe('IncidentsTable', () => {
       roles: null,
       salesPlanType: null,
       c8Links: {},
+      tenants: [],
     });
 
     render(<IncidentsTable />, {wrapper: Wrapper});
@@ -158,6 +160,7 @@ describe('IncidentsTable', () => {
       roles: null,
       salesPlanType: null,
       c8Links: {},
+      tenants: [],
     });
 
     render(<IncidentsTable />, {wrapper: Wrapper});
@@ -229,6 +232,7 @@ describe('IncidentsTable', () => {
       roles: null,
       salesPlanType: null,
       c8Links: {},
+      tenants: [],
     });
 
     render(<IncidentsTable />, {wrapper: Wrapper});

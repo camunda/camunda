@@ -33,6 +33,7 @@ import {
   OptionalFilter,
   OptionalFiltersFormGroup,
 } from './OptionalFiltersFormGroup';
+import {TenantField} from './TenantField';
 
 const initialValues: ProcessInstanceFilters = {
   active: true,
@@ -76,6 +77,12 @@ const Filters: React.FC = observer(() => {
                 ]}
               />
               <Stack gap={5}>
+                {window.clientConfig?.multiTenancyEnabled && (
+                  <div>
+                    <Title>Tenant</Title>
+                    <TenantField />
+                  </div>
+                )}
                 <div>
                   <Title>Process</Title>
                   <Stack gap={5}>

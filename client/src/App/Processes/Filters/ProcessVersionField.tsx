@@ -33,7 +33,9 @@ const ProcessVersionField: React.FC = observer(() => {
             }}
             disabled={versions.length === 0}
             items={items}
-            itemToString={(item) => (item === 'all' ? 'All' : item.toString())}
+            itemToString={(item) =>
+              item === 'all' ? 'All versions' : item.toString()
+            }
             selectedItem={input.value}
             size="sm"
           />

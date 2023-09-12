@@ -55,6 +55,7 @@ describe('<SessionWatcher />', () => {
         roles: null,
         salesPlanType: null,
         c8Links: {},
+        tenants: [],
       });
     });
 
@@ -79,6 +80,7 @@ describe('<SessionWatcher />', () => {
         roles: null,
         salesPlanType: null,
         c8Links: {},
+        tenants: [],
       });
     });
 
@@ -101,6 +103,7 @@ describe('<SessionWatcher />', () => {
         roles: null,
         salesPlanType: null,
         c8Links: {},
+        tenants: [],
       });
     });
 
@@ -131,6 +134,7 @@ describe('<SessionWatcher />', () => {
         roles: null,
         salesPlanType: null,
         c8Links: {},
+        tenants: [],
       });
     });
 

@@ -30,6 +30,7 @@ describe('Restricted user', () => {
       roles: null,
       salesPlanType: null,
       c8Links: {},
+      tenants: [],
     });
   });
 

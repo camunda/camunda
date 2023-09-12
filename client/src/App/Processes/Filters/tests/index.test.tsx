@@ -10,6 +10,7 @@ import {getWrapper} from './mocks';
 import {processesStore} from 'modules/stores/processes';
 import {processDiagramStore} from 'modules/stores/processDiagram';
 import {
+  createUser,
   groupedProcessesMock,
   mockProcessStatistics,
   mockProcessXML,
@@ -25,6 +26,8 @@ import {
   selectProcessVersion,
 } from 'modules/testUtils/selectComboBoxOption';
 import {removeOptionalFilter} from 'modules/testUtils/removeOptionalFilter';
+import {mockGetUser} from 'modules/mocks/api/getUser';
+import {authenticationStore} from 'modules/stores/authentication';
 
 jest.unmock('modules/utils/date/formatDate');
 
@@ -33,9 +36,17 @@ describe('Filters', () => {
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
     mockFetchProcessXML().withSuccess(mockProcessXML);
-
+    mockGetUser().withSuccess(
+      createUser({
+        tenants: [
+          {tenantId: '<default>', name: 'Default Tenant'},
+          {tenantId: 'tenant-a', name: 'Tenant A'},
+          {tenantId: 'tenant-b', name: 'Tenant B'},
+        ],
+      }),
+    );
     processesStore.fetchProcesses();
-
+    await authenticationStore.authenticate();
     await processDiagramStore.fetchProcessDiagram('bigVarProcess');
     jest.useFakeTimers();
   });
@@ -70,6 +81,10 @@ describe('Filters', () => {
   });
 
   it('should load values from the URL', async () => {
+    window.clientConfig = {
+      multiTenancyEnabled: true,
+    };
+
     const MOCK_PARAMS = {
       process: 'bigVarProcess',
       version: '1',
@@ -84,6 +99,7 @@ describe('Filters', () => {
       incidents: 'true',
       completed: 'true',
       canceled: 'true',
+      tenant: 'tenant-a',
     } as const;
 
     render(<Filters />, {
@@ -107,6 +123,10 @@ describe('Filters', () => {
     expect(
       screen.getByLabelText('Version', {selector: 'button'}),
     ).toHaveTextContent('1');
+
+    expect(screen.getByRole('combobox', {name: 'Tenant'})).toHaveTextContent(
+      /tenant a/i,
+    );
 
     expect(screen.getByLabelText('Flow Node')).toHaveValue(
       MOCK_PARAMS.flowNodeId,
@@ -135,6 +155,37 @@ describe('Filters', () => {
     expect(screen.getByRole('checkbox', {name: 'Incidents'})).toBeChecked();
     expect(screen.getByRole('checkbox', {name: 'Completed'})).toBeChecked();
     expect(screen.getByRole('checkbox', {name: 'Canceled'})).toBeChecked();
+
+    window.clientConfig = undefined;
+  });
+
+  it('should hide multi tenancy filter if its not enabled in client config', async () => {
+    const MOCK_PARAMS = {
+      process: 'bigVarProcess',
+      version: '1',
+      ids: '2251799813685467',
+      parentInstanceId: '1954699813693756',
+      errorMessage: 'a random error',
+      flowNodeId: 'ServiceTask_0kt6c5i',
+      variableName: 'foo',
+      variableValue: 'bar',
+      operationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
+      active: 'true',
+      incidents: 'true',
+      completed: 'true',
+      canceled: 'true',
+      tenant: 'tenant-a',
+    } as const;
+
+    render(<Filters />, {
+      wrapper: getWrapper(
+        `/?${new URLSearchParams(Object.entries(MOCK_PARAMS)).toString()}`,
+      ),
+    });
+
+    expect(
+      screen.queryByRole('combobox', {name: 'Tenant'}),
+    ).not.toBeInTheDocument();
   });
 
   it('should load values from the URL - date ranges', async () => {
@@ -179,6 +230,10 @@ describe('Filters', () => {
   });
 
   it('should set modified values to the URL', async () => {
+    window.clientConfig = {
+      multiTenancyEnabled: true,
+    };
+
     const MOCK_VALUES = {
       process: 'bigVarProcess',
       version: '1',
@@ -193,6 +248,7 @@ describe('Filters', () => {
       incidents: 'true',
       completed: 'true',
       canceled: 'true',
+      tenant: 'all',
     } as const;
     const {user} = render(<Filters />, {
       wrapper: getWrapper(),
@@ -263,6 +319,9 @@ describe('Filters', () => {
     await user.click(screen.getByRole('checkbox', {name: 'Completed'}));
     await user.click(screen.getByRole('checkbox', {name: 'Canceled'}));
 
+    await user.click(screen.getByRole('combobox', {name: 'Tenant'}));
+    await user.click(await screen.findByText('All tenants'));
+
     await waitFor(() =>
       expect(
         Object.fromEntries(
@@ -272,6 +331,8 @@ describe('Filters', () => {
         ),
       ).toEqual(expect.objectContaining(MOCK_VALUES)),
     );
+
+    window.clientConfig = undefined;
   });
 
   it('should set modified values to the URL - date ranges', async () => {

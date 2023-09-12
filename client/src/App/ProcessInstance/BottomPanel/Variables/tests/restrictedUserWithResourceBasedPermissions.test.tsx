@@ -40,6 +40,7 @@ describe('Restricted user with resource based permissions', () => {
       roles: null,
       salesPlanType: null,
       c8Links: {},
+      tenants: [],
     });
   });
 
