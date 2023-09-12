@@ -186,7 +186,25 @@ public class TopologyChangeCoordinatorImpl implements TopologyChangeCoordinator 
             });
   }
 
-  private static class NoopPartitionChangeExecutor implements PartitionChangeExecutor {
+  static class InvalidTopologyChangeException extends RuntimeException {
+    public InvalidTopologyChangeException(final Throwable cause) {
+      super(cause);
+    }
+  }
+
+  static class OperationNotAllowed extends RuntimeException {
+    public OperationNotAllowed(final String message) {
+      super(message);
+    }
+  }
+
+  static class UnknownStatus extends RuntimeException {
+    public UnknownStatus(final String message) {
+      super(message);
+    }
+  }
+
+  private static final class NoopPartitionChangeExecutor implements PartitionChangeExecutor {
 
     @Override
     public ActorFuture<Void> join(
@@ -197,24 +215,6 @@ public class TopologyChangeCoordinatorImpl implements TopologyChangeCoordinator 
     @Override
     public ActorFuture<Void> leave(final int partitionId) {
       return CompletableActorFuture.completed(null);
-    }
-  }
-
-  private static class InvalidTopologyChangeException extends RuntimeException {
-    public InvalidTopologyChangeException(final Throwable cause) {
-      super(cause);
-    }
-  }
-
-  private static class OperationNotAllowed extends RuntimeException {
-    public OperationNotAllowed(final String message) {
-      super(message);
-    }
-  }
-
-  private static class UnknownStatus extends RuntimeException {
-    public UnknownStatus(final String message) {
-      super(message);
     }
   }
 }
