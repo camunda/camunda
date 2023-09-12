@@ -29,6 +29,7 @@ const instance: ProcessInstanceEntity = {
   parentInstanceId: null,
   rootInstanceId: null,
   callHierarchy: [],
+  tenantId: '',
 };
 
 const instanceWithActiveOperation: ProcessInstanceEntity = {
@@ -46,6 +47,7 @@ const instanceWithActiveOperation: ProcessInstanceEntity = {
   parentInstanceId: null,
   rootInstanceId: null,
   callHierarchy: [],
+  tenantId: '',
 };
 
 const mockInstances = [instance, instanceWithActiveOperation];

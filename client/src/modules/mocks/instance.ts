@@ -20,6 +20,7 @@ const instance: ProcessInstanceEntity = {
   parentInstanceId: null,
   rootInstanceId: null,
   callHierarchy: [],
+  tenantId: '',
 };
 
 export {instance};

@@ -81,6 +81,7 @@ interface ProcessInstanceEntity {
     processDefinitionName: string;
   }>;
   permissions?: ResourceBasedPermissionDto[] | null;
+  tenantId: string;
 }
 
 interface DecisionInstanceEntity {

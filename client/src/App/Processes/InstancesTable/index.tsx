@@ -40,8 +40,14 @@ const InstancesTable: React.FC = observer(() => {
   const filters = useFilters();
   const location = useLocation();
 
-  const {canceled, completed} = getProcessInstanceFilters(location.search);
+  const {canceled, completed, tenant} = getProcessInstanceFilters(
+    location.search,
+  );
   const listHasFinishedInstances = canceled || completed;
+
+  const isTenantColumnVisible =
+    window.clientConfig?.multiTenancyEnabled &&
+    (tenant === undefined || tenant === 'all');
 
   const getTableState = () => {
     if (['initial', 'first-fetch'].includes(status)) {
@@ -162,6 +168,7 @@ const InstancesTable: React.FC = observer(() => {
               </Link>
             ),
             processVersion: instance.processVersion,
+            tenant: isTenantColumnVisible ? instance.tenantId : undefined,
             startDate: formatDate(instance.startDate),
             endDate: formatDate(instance.endDate),
             parentInstanceId: (
@@ -241,6 +248,14 @@ const InstancesTable: React.FC = observer(() => {
             header: 'Version',
             key: 'processVersion',
           },
+          ...(isTenantColumnVisible
+            ? [
+                {
+                  header: 'Tenant',
+                  key: 'tenant',
+                },
+              ]
+            : []),
           {
             header: 'Start Date',
             key: 'startDate',
