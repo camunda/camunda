@@ -195,6 +195,8 @@ declare module '@carbon/react' {
   export const usePrefix: () => string;
 
   export * from 'carbon-components-react';
+
+  export {Button} from '@carbon/react';
 }
 
 declare module '@carbon/react/icons' {

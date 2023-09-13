@@ -150,7 +150,8 @@ describe('<Task />', () => {
     expect(await screen.findByTestId('variables-table')).toBeInTheDocument();
     expect(await screen.findByText('Variables')).toBeInTheDocument();
 
-    expect(screen.queryByText('Complete Task')).not.toBeVisible();
+    // jest-dom is not parsing the visibility properly so need to check the class
+    expect(screen.queryByText(/complete task/i)).toHaveClass('hide');
   });
 
   it('should render completed task with embedded form', async () => {
@@ -175,7 +176,8 @@ describe('<Task />', () => {
 
     expect(await screen.findByTestId('details-info')).toBeInTheDocument();
     expect(await screen.findByTestId('embedded-form')).toBeInTheDocument();
-    expect(screen.queryByText('Complete Task')).not.toBeVisible();
+    // jest-dom is not parsing the visibility properly so need to check the class
+    expect(screen.queryByText(/complete task/i)).toHaveClass('hide');
   });
 
   it('should complete task without variables', async () => {

@@ -26,7 +26,7 @@
     "react-router-dom": "6.15.0",
     "react-transition-group": "4.4.5",
     "sass": "1.66.1",
-    "styled-components": "5.3.11",
+    "styled-components": "6.0.7",
     "ts-pattern": "5.0.5",
     "zod": "3.22.2"
   },
@@ -38,7 +38,7 @@
     "eject": "react-scripts eject",
     "test:e2e": "IS_E2E=true ZEEBE_GATEWAY_ADDRESS=localhost:26503 yarn playwright e2e/tests",
     "test:e2e:ci": "IS_E2E=true ZEEBE_GATEWAY_ADDRESS=localhost:26500 yarn playwright e2e/tests",
-    "ts-check": "tsc",
+    "ts-check": "tsc --noEmit",
     "eslint": "eslint .",
     "lint": "yarn ts-check && yarn eslint",
     "coverage": "yarn test --coverage --collectCoverageFrom=src/**/* --changedSince=origin/master --watchAll=false --passWithNoTests",
@@ -58,6 +58,7 @@
   ],
   "devDependencies": {
     "@axe-core/playwright": "4.7.3",
+    "@babel/plugin-proposal-private-property-in-object": "7.21.11",
     "@playwright/test": "1.37.1",
     "@tanstack/react-query-devtools": "4.35.3",
     "@testing-library/jest-dom": "6.1.3",

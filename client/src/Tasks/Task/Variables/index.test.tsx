@@ -768,7 +768,8 @@ describe('<Variables />', () => {
 
     expect(await screen.findByText('Variables')).toBeInTheDocument();
 
-    expect(screen.queryByText(/complete task/i)).not.toBeVisible();
+    // jest-dom is not parsing the visibility properly so need to check the class
+    expect(screen.queryByText(/complete task/i)).toHaveClass('hide');
   });
 
   it('should complete a task with a truncated variable', async () => {

@@ -19,7 +19,7 @@ type Props = {
     'status' | 'successDelay'
   >;
   buttonProps?: ButtonDefaultProps & ButtonKindProps;
-  children?: React.ReactNode;
+  children?: React.ComponentProps<typeof Button>['children'];
   status: React.ComponentProps<typeof OriginalInlineLoading>['status'];
   onError?: () => void;
 };
