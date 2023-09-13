@@ -30,6 +30,7 @@ import {isSharingEnabled, getOptimizeProfile} from 'config';
 import {formatters, checkDeleteConflict} from 'services';
 import {withUser} from 'HOC';
 import {t} from 'translation';
+import {track} from 'tracking';
 
 import {shareReport, revokeReportSharing, getSharedReport} from './service';
 
@@ -146,43 +147,50 @@ export function ReportView({report, error, user, loadReport}) {
         !combined &&
         typeof report.result !== 'undefined' &&
         report.data?.visualization !== 'table' && (
-          <div className={classnames('bottomPanel', bottomPanelState)}>
-            <div className="toolbar">
-              <b>{t('report.view.rawData')}</b>
-              <div>
-                {bottomPanelState !== 'expanded' && (
-                  <Button
-                    hasIconOnly
-                    label={t('common.expand')}
-                    kind="ghost"
-                    onClick={() =>
-                      setBottomPanelState((prevState) =>
-                        prevState === 'collapsed' ? 'neutral' : 'expanded'
-                      )
-                    }
-                    className="expandButton"
-                    tooltipPosition="left"
-                  >
-                    <RowCollapse />
-                  </Button>
-                )}
-                {bottomPanelState !== 'collapsed' && (
-                  <Button
-                    hasIconOnly
-                    label={t('common.collapse')}
-                    kind="ghost"
-                    onClick={() =>
-                      setBottomPanelState((prevState) =>
-                        prevState === 'expanded' ? 'neutral' : 'collapsed'
-                      )
-                    }
-                    className="collapseButton"
-                    tooltipPosition="left"
-                  >
-                    <RowExpand />
-                  </Button>
-                )}
-              </div>
+        <div className={classnames('bottomPanel', bottomPanelState)}>
+          <div className="toolbar">
+            <b>{t('report.view.rawData')}</b>
+            <div>
+              {bottomPanelState !== 'expanded' && (
+                <Button
+                  hasIconOnly
+                  label={t('common.expand')}
+                  kind="ghost"
+                  onClick={() => {
+                    track('changeRawDataView', {
+                      to: bottomPanelState === 'collapsed' ? 'half' : 'maximized',
+                      reportType: report.data?.visualization,
+                    });
+                    setBottomPanelState((prevState) =>
+                      prevState === 'collapsed' ? 'neutral' : 'expanded'
+                    );
+                  }}
+                  className="expandButton"
+                  tooltipPosition="left"
+                >
+                  <RowCollapse />
+                </Button>
+              )}
+              {bottomPanelState !== 'collapsed' && (
+                <Button
+                  hasIconOnly
+                  label={t('common.collapse')}
+                  kind="ghost"
+                  onClick={() => {
+                    track('changeRawDataView', {
+                      to: bottomPanelState === 'expanded' ? 'half' : 'minimized',
+                      reportType: report.data?.visualization,
+                    });
+                    setBottomPanelState((prevState) =>
+                      prevState === 'expanded' ? 'neutral' : 'collapsed'
+                    );
+                  }}
+                  className="collapseButton"
+                  tooltipPosition="left"
+                >
+                  <RowExpand />
+                </Button>
+              )}
             </div>
             <InstanceViewTable className="bottomPanelTable" report={report} />
           </div>

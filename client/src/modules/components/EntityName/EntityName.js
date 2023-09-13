@@ -12,13 +12,13 @@ import {Popover, Tooltip} from 'components';
 
 import './EntityName.scss';
 
-export default function EntityName({children, details, linkTo}) {
+export default function EntityName({children, details, linkTo, onClick}) {
   return (
     <div className="EntityName">
       <div className="name-container">
         <Tooltip content={children} overflowOnly position="bottom" theme="dark" delay={0}>
           {linkTo ? (
-            <Link to={linkTo} className="name">
+            <Link to={linkTo} onClick={onClick} className="name">
               {children}
             </Link>
           ) : (
