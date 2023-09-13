@@ -217,7 +217,7 @@ public final class StubbedGateway {
 
   private record StubbedClientStreamId(UUID serverStreamId) implements ClientStreamId {}
 
-  private static class FakeOAuthCallCredentials extends CallCredentials {
+  private static final class FakeOAuthCallCredentials extends CallCredentials {
 
     /** Can be adjusted to test different token values. */
     private String token = "token";
