@@ -30,7 +30,7 @@ public final class IdentityInterceptor implements ServerInterceptor {
     this(createIdentity(config));
   }
 
-  IdentityInterceptor(final Identity identity) {
+  public IdentityInterceptor(final Identity identity) {
     this.identity = identity;
   }
 

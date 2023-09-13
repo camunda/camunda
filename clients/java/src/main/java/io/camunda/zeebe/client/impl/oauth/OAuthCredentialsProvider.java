@@ -53,14 +53,14 @@ import org.slf4j.LoggerFactory;
  */
 @ThreadSafe
 public final class OAuthCredentialsProvider implements CredentialsProvider {
+  public static final Key<String> HEADER_AUTH_KEY =
+      Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER);
+
   private static final ObjectMapper JSON_MAPPER =
       new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
   private static final ObjectReader CREDENTIALS_READER =
       JSON_MAPPER.readerFor(ZeebeClientCredentials.class);
   private static final Logger LOG = LoggerFactory.getLogger(OAuthCredentialsProvider.class);
-  private static final Key<String> HEADER_AUTH_KEY =
-      Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER);
-
   private final URL authorizationServerUrl;
   private final String payload;
   private final String endpoint;
