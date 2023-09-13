@@ -83,7 +83,7 @@ export function SingleReportDetails({report, showReportName, mightFail, location
     <>
       <div className="SingleReportDetails">
         {showReportName && <h2>{reportName}</h2>}
-        {definitions.length && (
+        {definitions.length > 0 && (
           <div>
             <h3>{t('report.definition.' + type + (definitions.length > 1 ? '-plural' : ''))}</h3>
             {definitions.map((definition, idx) => {
