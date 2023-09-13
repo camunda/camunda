@@ -18,7 +18,6 @@ import io.camunda.zeebe.topology.TopologyInitializer.FileInitializer;
 import io.camunda.zeebe.topology.TopologyInitializer.GossipInitializer;
 import io.camunda.zeebe.topology.TopologyInitializer.StaticInitializer;
 import io.camunda.zeebe.topology.TopologyInitializer.SyncInitializer;
-import io.camunda.zeebe.topology.changes.NoopPartitionChangeExecutor;
 import io.camunda.zeebe.topology.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.topology.changes.TopologyChangeAppliersImpl;
 import io.camunda.zeebe.topology.changes.TopologyChangeCoordinator;
@@ -50,20 +49,6 @@ public final class ClusterTopologyManagerService extends Actor {
       final ClusterCommunicationService communicationService,
       final ClusterMembershipService memberShipService,
       final ClusterTopologyGossiperConfig config) {
-    this(
-        dataRootDirectory,
-        communicationService,
-        memberShipService,
-        config,
-        new NoopPartitionChangeExecutor());
-  }
-
-  public ClusterTopologyManagerService(
-      final Path dataRootDirectory,
-      final ClusterCommunicationService communicationService,
-      final ClusterMembershipService memberShipService,
-      final ClusterTopologyGossiperConfig config,
-      final PartitionChangeExecutor partitionChangeExecutor) {
     try {
       FileUtil.ensureDirectoryExists(dataRootDirectory);
     } catch (final IOException e) {
@@ -74,11 +59,7 @@ public final class ClusterTopologyManagerService extends Actor {
     topologyFile = dataRootDirectory.resolve(TOPOLOGY_FILE_NAME);
     persistedClusterTopology = new PersistedClusterTopology(topologyFile, new ProtoBufSerializer());
     clusterTopologyManager =
-        new ClusterTopologyManagerImpl(
-            this,
-            localMemberId,
-            persistedClusterTopology,
-            new TopologyChangeAppliersImpl(partitionChangeExecutor));
+        new ClusterTopologyManagerImpl(this, localMemberId, persistedClusterTopology);
     clusterTopologyGossiper =
         new ClusterTopologyGossiper(
             this,
@@ -169,5 +150,11 @@ public final class ClusterTopologyManagerService extends Actor {
         // So there is no need to keep an instance in the field unnecessarily.
         ? Optional.of(new TopologyChangeCoordinatorImpl(clusterTopologyManager, this))
         : Optional.empty();
+  }
+
+  public void registerPartitionChangeExecutor(
+      final PartitionChangeExecutor partitionChangeExecutor) {
+    clusterTopologyManager.registerChangeApplier(
+        new TopologyChangeAppliersImpl(partitionChangeExecutor));
   }
 }

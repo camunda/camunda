@@ -13,6 +13,7 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.topology.ClusterTopologyManagerService;
+import io.camunda.zeebe.topology.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.topology.gossip.ClusterTopologyGossiperConfig;
 import io.camunda.zeebe.topology.util.TopologyUtil;
 import java.nio.file.Path;
@@ -27,6 +28,12 @@ public class DynamicClusterTopologyService implements ClusterTopologyService {
   @Override
   public PartitionDistribution getPartitionDistribution() {
     return partitionDistribution;
+  }
+
+  @Override
+  public void registerPartitionChangeExecutor(
+      final PartitionChangeExecutor partitionChangeExecutor) {
+    clusterTopologyManagerService.registerPartitionChangeExecutor(partitionChangeExecutor);
   }
 
   @Override

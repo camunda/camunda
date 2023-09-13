@@ -21,7 +21,6 @@ import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.topology.changes.NoopPartitionChangeExecutor;
-import io.camunda.zeebe.topology.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.topology.changes.TopologyChangeCoordinator;
 import io.camunda.zeebe.topology.gossip.ClusterTopologyGossiperConfig;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
@@ -47,7 +46,6 @@ class ClusterTopologyManagementIntegrationTest {
   @TempDir Path rootDir;
 
   private final ActorScheduler actorScheduler = ActorScheduler.newActorScheduler().build();
-  private final PartitionChangeExecutor partitionChangeExecutor = new NoopPartitionChangeExecutor();
 
   private final List<Node> clusterNodes =
       List.of(createNode("0"), createNode("1"), createNode("2"));
@@ -215,8 +213,7 @@ class ClusterTopologyManagementIntegrationTest {
             tempDir.resolve(cluster.getMembershipService().getLocalMember().id().id()),
             cluster.getCommunicationService(),
             cluster.getMembershipService(),
-            new ClusterTopologyGossiperConfig(Duration.ofSeconds(1), Duration.ofMillis(100), 2),
-            partitionChangeExecutor);
+            new ClusterTopologyGossiperConfig(Duration.ofSeconds(1), Duration.ofMillis(100), 2));
     return new TestNode(cluster, service);
   }
 
@@ -255,14 +252,23 @@ class ClusterTopologyManagementIntegrationTest {
         final Set<MemberId> clusterMembers,
         final Set<PartitionMetadata> partitions) {
       cluster.start().join();
-      return service.start(
-          actorScheduler,
-          new StaticConfiguration(
-              new ControllablePartitionDistributor().withPartitions(partitions),
-              clusterMembers,
-              cluster.getMembershipService().getLocalMember().id(),
-              List.of(),
-              3));
+      final var serviceStart =
+          service.start(
+              actorScheduler,
+              new StaticConfiguration(
+                  new ControllablePartitionDistributor().withPartitions(partitions),
+                  clusterMembers,
+                  cluster.getMembershipService().getLocalMember().id(),
+                  List.of(),
+                  3));
+      serviceStart.onComplete(
+          (ignore, error) -> {
+            if (error != null) {
+              throw new RuntimeException(error);
+            }
+            service.registerPartitionChangeExecutor(new NoopPartitionChangeExecutor());
+          });
+      return serviceStart;
     }
 
     void close() {

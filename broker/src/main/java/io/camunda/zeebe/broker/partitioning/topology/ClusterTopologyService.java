@@ -10,9 +10,12 @@ package io.camunda.zeebe.broker.partitioning.topology;
 import io.camunda.zeebe.broker.bootstrap.BrokerStartupContext;
 import io.camunda.zeebe.scheduler.AsyncClosable;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.topology.changes.PartitionChangeExecutor;
 
 public interface ClusterTopologyService extends AsyncClosable {
   PartitionDistribution getPartitionDistribution();
+
+  void registerPartitionChangeExecutor(PartitionChangeExecutor partitionChangeExecutor);
 
   ActorFuture<Void> start(BrokerStartupContext brokerStartupContext);
 }
