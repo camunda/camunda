@@ -15,6 +15,7 @@ import io.camunda.zeebe.topology.state.ClusterChangePlan;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.PartitionState;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation;
+import io.camunda.zeebe.topology.state.TopologyChangeOperation.MemberJoinOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import java.util.Map;
@@ -198,6 +199,8 @@ public class ProtoBufSerializer implements ClusterTopologySerializer {
       builder.setPartitionLeave(
           Topology.PartitionLeaveOperation.newBuilder()
               .setPartitionId(leaveOperation.partitionId()));
+    } else if (operation instanceof MemberJoinOperation) {
+      builder.setMemberJoin(Topology.MemberJoinOperation.newBuilder().build());
     } else {
       throw new IllegalArgumentException(
           "Unknown operation type: " + operation.getClass().getSimpleName());
@@ -225,6 +228,8 @@ public class ProtoBufSerializer implements ClusterTopologySerializer {
       return new PartitionLeaveOperation(
           MemberId.from(topologyChangeOperation.getMemberId()),
           topologyChangeOperation.getPartitionLeave().getPartitionId());
+    } else if (topologyChangeOperation.hasMemberJoin()) {
+      return new MemberJoinOperation(MemberId.from(topologyChangeOperation.getMemberId()));
     } else {
       // If the node does not know of a type, the exception thrown will prevent
       // ClusterTopologyGossiper from processing the incoming topology. This helps to prevent any
