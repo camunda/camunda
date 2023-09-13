@@ -86,7 +86,7 @@ public class ListViewReader implements io.camunda.operate.webapp.reader.ListView
   private static final Logger logger = LoggerFactory.getLogger(ListViewReader.class);
 
   @Autowired
-  private TenantAwareElasticsearchClient searchRequestClient;
+  private TenantAwareElasticsearchClient tenantAwareClient;
 
   @Autowired
   private ObjectMapper objectMapper;
@@ -145,7 +145,7 @@ public class ListViewReader implements io.camunda.operate.webapp.reader.ListView
     logger.debug("Search request will search in: \n{}", searchRequest.indices());
 
     try {
-      SearchResponse response = searchRequestClient.search(searchRequest);
+      SearchResponse response = tenantAwareClient.search(searchRequest);
       result.setTotalCount(response.getHits().getTotalHits().value);
 
       List<ProcessInstanceForListViewEntity> processInstanceEntities = ElasticsearchUtil.mapSearchHits(response.getHits().getHits(),

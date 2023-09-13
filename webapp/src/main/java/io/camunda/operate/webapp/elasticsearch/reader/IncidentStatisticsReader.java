@@ -152,7 +152,6 @@ public class IncidentStatisticsReader extends AbstractReader implements io.camun
 
     Set<IncidentsByProcessGroupStatisticsDto> result = new TreeSet<>(IncidentsByProcessGroupStatisticsDto.COMPARATOR);
 
-    //TODO check user tenants
     final Map<String, List<ProcessEntity>> processGroups = processReader.getProcessesGrouped(new ProcessRequestDto());
 
     //iterate over process groups (bpmnProcessId)

@@ -77,7 +77,8 @@ public class TenantService {
   }
 
   private boolean isMultiTenancyEnabled() {
-    return operateProperties.getMultiTenancy().isEnabled();
+    return operateProperties.getMultiTenancy().isEnabled()
+        && SecurityContextHolder.getContext().getAuthentication()!=null;
   }
 
   public static class AuthenticatedTenants {
