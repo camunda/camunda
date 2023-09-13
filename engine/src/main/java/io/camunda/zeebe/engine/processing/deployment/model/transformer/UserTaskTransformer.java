@@ -25,7 +25,6 @@ import io.camunda.zeebe.protocol.Protocol;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import org.slf4j.Logger;
 
 public final class UserTaskTransformer implements ModelElementTransformer<UserTask> {
@@ -57,6 +56,7 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
     transformAssignmentDefinition(element, jobWorkerProperties);
     transformTaskSchedule(element, jobWorkerProperties);
     transformTaskHeaders(element, jobWorkerProperties);
+    transformTaskFormId(element, jobWorkerProperties);
   }
 
   private void transformTaskDefinition(final JobWorkerProperties jobWorkerProperties) {
@@ -139,6 +139,16 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
     }
   }
 
+  private void transformTaskFormId(
+      final UserTask element, final JobWorkerProperties jobWorkerProperties) {
+    final ZeebeFormDefinition formDefinition =
+        element.getSingleExtensionElement(ZeebeFormDefinition.class);
+
+    if (formDefinition != null && formDefinition.getFormId() != null) {
+      jobWorkerProperties.setFormId(expressionLanguage.parseExpression(formDefinition.getFormId()));
+    }
+  }
+
   private void addZeebeUserTaskFormKeyHeader(
       final UserTask element, final Map<String, String> taskHeaders) {
     final ZeebeFormDefinition formDefinition =
@@ -156,9 +166,7 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
 
     if (modelTaskHeaders != null) {
       final List<ZeebeHeader> validHeaders =
-          modelTaskHeaders.getHeaders().stream()
-              .filter(this::isValidHeader)
-              .collect(Collectors.toList());
+          modelTaskHeaders.getHeaders().stream().filter(this::isValidHeader).toList();
 
       if (validHeaders.size() < modelTaskHeaders.getHeaders().size()) {
         LOG.warn(
