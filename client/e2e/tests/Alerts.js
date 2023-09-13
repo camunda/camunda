@@ -70,9 +70,10 @@ test('create, edit, copy and remove an alert', async (t) => {
     .maximizeWindow();
 
   // EDIT
-  await t.hover(Common.listItem);
-  await t.click(Common.contextMenu(Common.listItem));
-  await t.click(Common.edit(Common.listItem));
+  const listItem = Common.listItem.filterVisible();
+  await t.hover(listItem);
+  await t.click(Common.contextMenu(listItem));
+  await t.click(Common.edit(listItem));
 
   await t.typeText(Alert.inputWithLabel('Alert Name'), 'Edited Alert', {replace: true});
 
@@ -80,9 +81,9 @@ test('create, edit, copy and remove an alert', async (t) => {
 
   await t.expect(Alert.list.textContent).notContains('Edited Alert');
 
-  await t.hover(Common.listItem);
-  await t.click(Common.contextMenu(Common.listItem));
-  await t.click(Common.edit(Common.listItem));
+  await t.hover(listItem);
+  await t.click(Common.contextMenu(listItem));
+  await t.click(Common.edit(listItem));
   await t.typeText(Alert.inputWithLabel('Alert Name'), 'Saved Alert', {replace: true});
 
   await t.click(Common.modalConfirmButton);
@@ -90,17 +91,17 @@ test('create, edit, copy and remove an alert', async (t) => {
   await t.expect(Alert.list.textContent).contains('Saved Alert');
 
   // COPY
-  await t.hover(Common.listItem);
-  await t.click(Common.contextMenu(Common.listItem));
-  await t.click(Common.copy(Common.listItem));
+  await t.hover(listItem);
+  await t.click(Common.contextMenu(listItem));
+  await t.click(Common.copy(listItem));
   await t.typeText(Alert.copyNameInput, 'Copied Alert', {replace: true});
   await t.click(Common.modalConfirmButton);
   await t.expect(Alert.list.textContent).contains('Copied Alert');
 
   // DELETE
-  await t.hover(Common.listItem);
-  await t.click(Common.contextMenu(Common.listItem));
-  await t.click(Common.del(Common.listItem));
+  await t.hover(listItem);
+  await t.click(Common.contextMenu(listItem));
+  await t.click(Common.del(listItem));
 
   await t.click(Common.modalConfirmButton);
 

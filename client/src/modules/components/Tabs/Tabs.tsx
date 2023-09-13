@@ -5,10 +5,10 @@
  * except in compliance with the proprietary license.
  */
 
-import {useState, useEffect, ComponentPropsWithoutRef, ReactNode, Children} from 'react';
+import {useState, useEffect, ComponentPropsWithoutRef, ReactNode} from 'react';
 import {Tabs as CarbonTabs, TabList, Tab, TabPanels, TabPanel} from '@carbon/react';
 
-import {isReactElement} from 'services';
+import {ignoreFragments} from 'services';
 
 import './Tabs.scss';
 
@@ -32,7 +32,7 @@ export default function Tabs<T extends string | number>({
   children,
   showButtons = true,
 }: TabsProps<T>) {
-  const tabs = Children.toArray(children).filter(isReactElement<TabProps<T>>);
+  const tabs = ignoreFragments(children);
   const values = tabs.map<T>(({props: {value}}, idx) => (value || idx) as T);
   const [selected, setSelected] = useState<T>(value);
 
@@ -51,8 +51,8 @@ export default function Tabs<T extends string | number>({
     >
       {showButtons && (
         <TabList aria-label="tabs">
-          {tabs.map(({props: {value, title, disabled}}, idx) => (
-            <Tab key={getIndex(values, value || idx)} disabled={disabled}>
+          {tabs.map(({props: {value, title, disabled, ...rest}}, idx) => (
+            <Tab {...rest} key={getIndex(values, value || idx)} disabled={disabled}>
               {title}
             </Tab>
           ))}

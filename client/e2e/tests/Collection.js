@@ -168,11 +168,11 @@ test('user permissions', async (t) => {
 
   await t.click(Common.collectionItem);
   await t.click(e.userTab);
-  await t.click(Common.selectAllCheckbox);
-  await t.click(Common.bulkMenu);
-  await t.click(e.remove(Common.bulkMenu));
+  await t.click(Common.selectAllCheckbox.filterVisible());
+  await t.click(Common.bulkMenu.filterVisible());
+  await t.click(e.remove(Common.bulkMenu.filterVisible()));
   await t.click(Common.modalConfirmButton);
-  await t.expect(Common.listItem.count).eql(1);
+  await t.expect(Common.listItem.filterVisible().count).eql(1);
 
   // delete collection
   await t.click(e.collectionContextMenu);
@@ -231,8 +231,8 @@ test('add, edit and delete sources', async (t) => {
   // bulk deleting sources
   await t.click(Common.listItemCheckbox(e.processItem.nth(0)));
   await t.click(Common.listItemCheckbox(e.processItem.nth(1)));
-  await t.click(Common.bulkMenu);
-  await t.click(e.remove(Common.bulkMenu));
+  await t.click(Common.bulkMenu.filterVisible());
+  await t.click(e.remove(Common.bulkMenu.filterVisible()));
   await t.click(Common.modalConfirmButton);
-  await t.expect(Common.listItem.exists).notOk();
+  await t.expect(Common.listItem.filterVisible().exists).notOk();
 });

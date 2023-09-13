@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import {Component} from 'react';
 import {Button} from '@carbon/react';
 
 import {t} from 'translation';
@@ -32,7 +32,7 @@ import './AlertList.scss';
 const {duration, frequency} = formatters;
 
 export default withErrorHandling(
-  class AlertList extends React.Component {
+  class AlertList extends Component {
     state = {
       deleting: null,
       editing: null,

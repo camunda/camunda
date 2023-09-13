@@ -70,3 +70,5 @@ export const addButton = Selector('.AddButton');
 export const deleteButton = Selector('.delete-button');
 export const usersTypeahead = Selector('.MultiUserInput input');
 export const comboBox = Selector('.cds--combo-box input');
+export const overflowMenuOptions = Selector('.cds--overflow-menu-options');
+export const overflowMenuOption = (text) => overflowMenuOptions.find('button').withText(text);

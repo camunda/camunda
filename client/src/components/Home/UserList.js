@@ -5,10 +5,11 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import {Component} from 'react';
+import {Button} from '@carbon/react';
 
 import {t} from 'translation';
-import {Button, EntityList, Deleter, BulkDeleter} from 'components';
+import {EntityList, Deleter, BulkDeleter} from 'components';
 import {showError} from 'notifications';
 import {withErrorHandling} from 'HOC';
 import {getOptimizeProfile} from 'config';
@@ -21,7 +22,7 @@ import {formatRole} from './formatters';
 import './UserList.scss';
 
 export default withErrorHandling(
-  class UserList extends React.Component {
+  class UserList extends Component {
     state = {
       users: null,
       deleting: null,
@@ -78,7 +79,11 @@ export default withErrorHandling(
             name={title}
             action={(bulkActive) =>
               !readOnly && (
-                <Button main primary={!bulkActive} onClick={this.openAddUserModal}>
+                <Button
+                  kind={bulkActive ? 'tertiary' : 'primary'}
+                  onClick={this.openAddUserModal}
+                  size="md"
+                >
                   {t('common.add')}
                 </Button>
               )

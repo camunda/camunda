@@ -7,28 +7,26 @@
 
 import {Selector} from 'testcafe';
 
+import {overflowMenuOption} from './Common.elements';
+
 export const navItem = Selector('.NavItem a').withText('Collections');
 export const collectionTitle = Selector('.Collection .header .text');
 export const collectionBreadcrumb = Selector('.cds--header__menu-bar .breadcrumb');
-export const collectionContextMenu = Selector('.Collection > .header .Dropdown button');
-export const editCollectionNameButton = Selector(
-  '.Collection .header .Dropdown .DropdownOption'
-).withText('Edit');
-export const copyCollectionButton = Selector(
-  '.Collection .header .Dropdown .DropdownOption'
-).withText('Copy');
-export const deleteCollectionButton = Selector(
-  '.Collection .header .Dropdown .DropdownOption'
-).withText('Delete');
-export const entityTab = Selector('.Collection .header .navigation a').withText(
-  'Dashboards & Reports'
+export const collectionContextMenu = Selector(
+  '.Collection > .header .cds--overflow-menu__wrapper button'
 );
+export const editCollectionNameButton = overflowMenuOption('Edit');
+export const copyCollectionButton = overflowMenuOption('Copy');
+export const deleteCollectionButton = overflowMenuOption('Delete');
 export const remove = (element) => element.find('.DropdownOption').withText('Remove');
-export const entitiesTab = Selector('.Collection .header .navigation a').withText('Dashboards');
-export const userTab = Selector('.Collection .header .navigation a').withText('Users');
-export const alertTab = Selector('.Collection .header .navigation a').withText('Alerts');
-export const sourcesTab = Selector('.Collection .header .navigation a').withText('Data Sources');
-export const addButton = Selector('.Collection .content .header .Button.primary');
+const tabButton = Selector('.Collection .content .cds--tabs__nav-item');
+export const entityTab = tabButton.withText('Dashboards & Reports');
+export const entitiesTab = tabButton.withText('Dashboards');
+export const userTab = tabButton.withText('Users');
+export const alertTab = tabButton.withText('Alerts');
+export const sourcesTab = tabButton.withText('Data Sources');
+export const activeTab = Selector('.Collection .content .cds--tab-content:not([hidden]');
+export const addButton = activeTab.find('.cds--btn--primary');
 export const typeaheadInput = Selector('.Typeahead input');
 export const checkbox = (text) => Selector('.Checklist tr').withText(text);
 export const managerName = Selector('.ListItem').withText('Manager').find('.name .entity');
