@@ -15,6 +15,7 @@ import io.camunda.zeebe.gateway.impl.broker.RequestRetryHandler;
 import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
 import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerRequest;
+import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.stream.ClientStreamAdapter;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
@@ -76,18 +77,22 @@ public final class EndpointManager {
   private final ActivateJobsHandler activateJobsHandler;
   private final RequestRetryHandler requestRetryHandler;
   private final ClientStreamAdapter clientStreamAdapter;
+  private final MultiTenancyCfg multiTenancy;
 
   public EndpointManager(
       final BrokerClient brokerClient,
       final ActivateJobsHandler activateJobsHandler,
       final ClientStreamer<JobActivationProperties> jobStreamer,
-      final Executor executor) {
+      final Executor executor,
+      final MultiTenancyCfg multiTenancy) {
     this.brokerClient = brokerClient;
     this.activateJobsHandler = activateJobsHandler;
 
     clientStreamAdapter = new ClientStreamAdapter(jobStreamer, executor);
     topologyManager = brokerClient.getTopologyManager();
     requestRetryHandler = new RequestRetryHandler(brokerClient, topologyManager);
+    this.multiTenancy = multiTenancy;
+    RequestMapper.setMultiTenancyEnabled(multiTenancy.isEnabled());
   }
 
   private void addBrokerInfo(

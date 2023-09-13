@@ -27,6 +27,7 @@ public class GatewayCfg {
   private SecurityCfg security = new SecurityCfg();
   private LongPollingCfg longPolling = new LongPollingCfg();
   private List<InterceptorCfg> interceptors = new ArrayList<>();
+  private MultiTenancyCfg multiTenancy = new MultiTenancyCfg();
 
   public void init() {
     init(ConfigurationDefaults.DEFAULT_HOST);
@@ -89,9 +90,18 @@ public class GatewayCfg {
     this.interceptors = interceptors;
   }
 
+  public MultiTenancyCfg getMultiTenancy() {
+    return multiTenancy;
+  }
+
+  public void setMultiTenancy(final MultiTenancyCfg multiTenancy) {
+    this.multiTenancy = multiTenancy;
+  }
+
   @Override
   public int hashCode() {
-    return Objects.hash(network, cluster, threads, security, longPolling, interceptors);
+    return Objects.hash(
+        network, cluster, threads, security, longPolling, interceptors, multiTenancy);
   }
 
   @Override
@@ -108,24 +118,27 @@ public class GatewayCfg {
         && Objects.equals(threads, that.threads)
         && Objects.equals(security, that.security)
         && Objects.equals(longPolling, that.longPolling)
-        && Objects.equals(interceptors, that.interceptors);
+        && Objects.equals(interceptors, that.interceptors)
+        && Objects.equals(multiTenancy, that.multiTenancy);
   }
 
   @Override
   public String toString() {
     return "GatewayCfg{"
-        + "networkCfg="
+        + "network="
         + network
-        + ", clusterCfg="
+        + ", cluster="
         + cluster
-        + ", threadsCfg="
+        + ", threads="
         + threads
-        + ", securityCfg="
+        + ", security="
         + security
-        + ", longPollingCfg="
+        + ", longPolling="
         + longPolling
         + ", interceptors="
         + interceptors
+        + ", multiTenancy="
+        + multiTenancy
         + '}';
   }
 

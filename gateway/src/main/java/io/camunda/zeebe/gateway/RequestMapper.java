@@ -62,6 +62,19 @@ import org.apache.commons.lang3.StringUtils;
 public final class RequestMapper {
 
   private static final Pattern TENANT_ID_MASK = Pattern.compile("^[\\w\\.-]{1,31}$");
+  private static boolean isMultiTenancyEnabled = false;
+
+  /**
+   * Sets whether multi-tenancy is enabled or not. This typically does not change at runtime. We
+   * need it during mapping, but it's hard to pass along in the mapper functions.
+   *
+   * <p>Expected to only be called by the constructor of {@link EndpointManager}, and from tests.
+   *
+   * @param isEnabled true when multi-tenancy is enabled, otherwise false
+   */
+  public static void setMultiTenancyEnabled(final boolean isEnabled) {
+    isMultiTenancyEnabled = isEnabled;
+  }
 
   public static BrokerDeployResourceRequest toDeployProcessRequest(
       final DeployProcessRequest grpcRequest) {
@@ -81,7 +94,7 @@ public final class RequestMapper {
 
     // TODO: pass multi-tenancy config property (#14041)
     final String tenantId = grpcRequest.getTenantId();
-    brokerRequest.setTenantId(ensureTenantIdSet("DeployResource", tenantId, false));
+    brokerRequest.setTenantId(ensureTenantIdSet("DeployResource", tenantId));
 
     for (final Resource resource : grpcRequest.getResourcesList()) {
       brokerRequest.addResource(resource.getContent().toByteArray(), resource.getName());
@@ -267,8 +280,7 @@ public final class RequestMapper {
     }
   }
 
-  public static String ensureTenantIdSet(
-      final String commandName, final String tenantId, final boolean isMultiTenancyEnabled) {
+  public static String ensureTenantIdSet(final String commandName, final String tenantId) {
 
     final boolean hasTenantId = !StringUtils.isBlank(tenantId);
     if (isMultiTenancyEnabled) {

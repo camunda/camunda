@@ -13,6 +13,7 @@ import io.camunda.zeebe.gateway.health.impl.GatewayHealthManagerImpl;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
 import io.camunda.zeebe.gateway.impl.configuration.AuthenticationCfg.AuthMode;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
+import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
 import io.camunda.zeebe.gateway.impl.configuration.NetworkCfg;
 import io.camunda.zeebe.gateway.impl.configuration.SecurityCfg;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
@@ -120,13 +121,16 @@ public final class Gateway implements CloseableSilently {
   }
 
   private Server createServer(final ActivateJobsHandler activateJobsHandler) {
+    final NetworkCfg network = gatewayCfg.getNetwork();
+    final MultiTenancyCfg multiTenancy = gatewayCfg.getMultiTenancy();
 
-    final var serverBuilder = applyNetworkConfig(gatewayCfg.getNetwork());
+    final var serverBuilder = applyNetworkConfig(network);
     applyExecutorConfiguration(serverBuilder);
     applySecurityConfiguration(serverBuilder);
 
     final var endpointManager =
-        new EndpointManager(brokerClient, activateJobsHandler, jobStreamer, grpcExecutor);
+        new EndpointManager(
+            brokerClient, activateJobsHandler, jobStreamer, grpcExecutor, multiTenancy);
     final var gatewayGrpcService = new GatewayGrpcService(endpointManager);
     return buildServer(serverBuilder, gatewayGrpcService);
   }
