@@ -281,7 +281,7 @@ jobs:
             secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_USR;
             secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_PSW;
       - name: Login to DockerHub
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
           password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
