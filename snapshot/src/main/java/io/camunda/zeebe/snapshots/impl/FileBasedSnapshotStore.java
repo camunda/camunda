@@ -377,7 +377,7 @@ public final class FileBasedSnapshotStore extends Actor
         // this should not happen
         // this means we persisted a snapshot - marked as valid
         // and now received the same snapshot via replication
-        throw new IllegalStateException(
+        throw new SnapshotAlreadyExistsException(
             String.format(
                 "Expected to receive snapshot with id %s, but was already persisted. This shouldn't happen.",
                 snapshotId));

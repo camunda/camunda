@@ -14,6 +14,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
+import io.camunda.zeebe.snapshots.SnapshotException.SnapshotAlreadyExistsException;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.snapshots.impl.InvalidSnapshotChecksum;
 import io.camunda.zeebe.snapshots.impl.SnapshotWriteException;
@@ -182,7 +183,7 @@ public class ReceivedSnapshotTest {
 
     // when then throw - receives same snapshot again
     assertThatThrownBy(() -> receiveSnapshot(persistedSnapshot))
-        .isInstanceOf(IllegalStateException.class)
+        .isInstanceOf(SnapshotAlreadyExistsException.class)
         .hasMessageContaining(
             "Expected to receive snapshot with id 1-0-1-0, but was already persisted");
   }
