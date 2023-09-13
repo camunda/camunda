@@ -86,29 +86,28 @@ public final class IdentityInterceptor implements ServerInterceptor {
               .withCause(e));
     }
 
-    final Context context;
     if (!multiTenancy.isEnabled()) {
-      context = Context.current();
-    } else {
-      try {
-        final List<String> authorizedTenants =
-            identity.tenants().forToken(token).stream().map(Tenant::getTenantId).toList();
-        context = Context.current().withValue(AUTHORIZED_TENANTS_KEY, authorizedTenants);
-      } catch (final RuntimeException e) {
-        LOGGER.debug(
-            "Denying call {} as the authorized tenants could not be retrieved from Identity. Error message: {}",
-            methodDescriptor.getFullMethodName(),
-            e.getMessage());
-        return deny(
-            call,
-            Status.UNAUTHENTICATED
-                .augmentDescription(
-                    "Expected Identity to provide authorized tenants, see cause for details")
-                .withCause(e));
-      }
+      return next.startCall(call, headers);
     }
 
-    return Contexts.interceptCall(context, call, headers, next);
+    try {
+      final List<String> authorizedTenants =
+          identity.tenants().forToken(token).stream().map(Tenant::getTenantId).toList();
+      final var context = Context.current().withValue(AUTHORIZED_TENANTS_KEY, authorizedTenants);
+      return Contexts.interceptCall(context, call, headers, next);
+
+    } catch (final RuntimeException e) {
+      LOGGER.debug(
+          "Denying call {} as the authorized tenants could not be retrieved from Identity. Error message: {}",
+          methodDescriptor.getFullMethodName(),
+          e.getMessage());
+      return deny(
+          call,
+          Status.UNAUTHENTICATED
+              .augmentDescription(
+                  "Expected Identity to provide authorized tenants, see cause for details")
+              .withCause(e));
+    }
   }
 
   private <ReqT> ServerCall.Listener<ReqT> deny(
