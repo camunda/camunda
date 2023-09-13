@@ -14,6 +14,7 @@ import io.camunda.zeebe.backup.api.BackupManager;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.processing.CheckpointRecordsProcessor;
 import io.camunda.zeebe.broker.PartitionListener;
+import io.camunda.zeebe.broker.PartitionRaftListener;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
@@ -60,6 +61,7 @@ public class PartitionStartupAndTransitionContextImpl
 
   private final int nodeId;
   private final List<PartitionListener> partitionListeners;
+  private final List<PartitionRaftListener> partitionRaftListeners;
   private final ClusterCommunicationService clusterCommunicationService;
   private final PartitionMessagingService messagingService;
   private final ActorSchedulingService actorSchedulingService;
@@ -104,6 +106,7 @@ public class PartitionStartupAndTransitionContextImpl
       final ClusterCommunicationService clusterCommunicationService,
       final RaftPartition raftPartition,
       final List<PartitionListener> partitionListeners,
+      final List<PartitionRaftListener> partitionRaftListeners,
       final PartitionMessagingService partitionCommunicationService,
       final ActorSchedulingService actorSchedulingService,
       final BrokerCfg brokerCfg,
@@ -128,6 +131,7 @@ public class PartitionStartupAndTransitionContextImpl
     this.commandResponseWriterSupplier = commandResponseWriterSupplier;
     this.persistedSnapshotStore = persistedSnapshotStore;
     this.partitionListeners = Collections.unmodifiableList(partitionListeners);
+    this.partitionRaftListeners = Collections.unmodifiableList(partitionRaftListeners);
     partitionId = raftPartition.id().id();
     this.actorSchedulingService = actorSchedulingService;
     maxFragmentSize = (int) brokerCfg.getNetwork().getMaxMessageSizeInBytes();
@@ -136,18 +140,6 @@ public class PartitionStartupAndTransitionContextImpl
     this.diskSpaceUsageMonitor = diskSpaceUsageMonitor;
     this.gatewayBrokerTransport = gatewayBrokerTransport;
     this.topologyManager = topologyManager;
-  }
-
-  @Override
-  public String toString() {
-    return "PartitionStartupAndTransitionContextImpl{"
-        + "partition="
-        + partitionId
-        + ", term="
-        + currentTerm
-        + ", role="
-        + currentRole
-        + '}';
   }
 
   public PartitionAdminControl getPartitionAdminControl() {
@@ -168,6 +160,16 @@ public class PartitionStartupAndTransitionContextImpl
   @Override
   public RaftPartition getRaftPartition() {
     return raftPartition;
+  }
+
+  @Override
+  public void notifyListenersOfBecameRaftLeader(final long newTerm) {
+    partitionRaftListeners.forEach(l -> l.onBecameRaftLeader(getPartitionId(), newTerm));
+  }
+
+  @Override
+  public void notifyListenersOfBecameRaftFollower(final long newTerm) {
+    partitionRaftListeners.forEach(l -> l.onBecameRaftFollower(getPartitionId(), newTerm));
   }
 
   @Override

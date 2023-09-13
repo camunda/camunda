@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.bootstrap;
 
 import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.camunda.zeebe.broker.PartitionListener;
+import io.camunda.zeebe.broker.PartitionRaftListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
@@ -51,7 +52,13 @@ public interface BrokerStartupContext {
 
   void removePartitionListener(PartitionListener partitionListener);
 
+  void addPartitionRaftListener(PartitionRaftListener partitionListener);
+
+  void removePartitionRaftListener(PartitionRaftListener partitionListener);
+
   List<PartitionListener> getPartitionListeners();
+
+  List<PartitionRaftListener> getPartitionRaftListeners();
 
   ClusterServicesImpl getClusterServices();
 

@@ -84,6 +84,12 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   }
 
   @Override
+  public void notifyListenersOfBecameRaftLeader(final long newTerm) {}
+
+  @Override
+  public void notifyListenersOfBecameRaftFollower(final long newTerm) {}
+
+  @Override
   public List<ActorFuture<Void>> notifyListenersOfBecomingLeader(final long newTerm) {
     return List.of(TestActorFuture.completedFuture(null));
   }
