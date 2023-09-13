@@ -109,7 +109,7 @@ jobs:
           registry: gcr.io
           username: oauth2accesstoken
           password: ${{ steps.auth.outputs.access_token }}
-      - uses: docker/build-push-action@v4
+      - uses: docker/build-push-action@v5
         with:
           context: .
           tags: gcr.io/zeebe-io/zeebe:${{ steps.image-tag.outputs.image-tag }}
