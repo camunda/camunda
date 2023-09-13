@@ -285,6 +285,9 @@ public class ElasticsearchExporter implements Exporter {
       if (index.commandDistribution) {
         createValueIndexTemplate(ValueType.COMMAND_DISTRIBUTION);
       }
+      if (index.form) {
+        createValueIndexTemplate(ValueType.FORM);
+      }
     }
 
     indexTemplatesCreated = true;

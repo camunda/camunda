@@ -114,6 +114,8 @@ public class OpensearchExporterConfiguration {
         return index.resourceDeletion;
       case COMMAND_DISTRIBUTION:
         return index.commandDistribution;
+      case FORM:
+        return index.form;
       default:
         return false;
     }
@@ -175,6 +177,8 @@ public class OpensearchExporterConfiguration {
     public boolean signalSubscription = true;
     public boolean resourceDeletion = true;
     public boolean commandDistribution = true;
+
+    public boolean form = true;
 
     // index settings
     private Integer numberOfShards = null;
@@ -266,6 +270,8 @@ public class OpensearchExporterConfiguration {
           + resourceDeletion
           + ", recordDistribution="
           + commandDistribution
+          + ", form="
+          + form
           + '}';
     }
   }
