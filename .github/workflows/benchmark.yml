@@ -102,7 +102,7 @@ jobs:
         run: |
           echo "image-tag=${{ inputs.name }}-$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
       - name: Setup BuildKit
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v3
       - name: Login to GCR
         uses: docker/login-action@v2
         with:
