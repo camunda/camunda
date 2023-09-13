@@ -67,19 +67,25 @@ final class PartitionJoinTest {
     // when
     try (final var existing = existingBroker.start().join();
         final var joining = joiningBroker.start().join()) {
+      Awaitility.await("Joining broker knows about existing broker")
+          .pollDelay(Duration.ofSeconds(1))
+          .pollInterval(Duration.ofMillis(500))
+          .until(
+              () ->
+                  joining
+                      .getBrokerContext()
+                      .getClusterServices()
+                      .getMembershipService()
+                      .getMembers(),
+              members -> members.size() == 2);
+
       final var partitionManager =
           (PartitionManagerImpl) joining.getBrokerContext().getPartitionManager();
 
       // then
-      Awaitility.await("Partition join completes")
-          .pollDelay(Duration.ofSeconds(1))
-          .pollInterval(Duration.ofMillis(500))
-          .untilAsserted(
-              () ->
-                  Assertions.assertThat(
-                          partitionManager.join(
-                              1, Map.of(MemberId.from("0"), 2, MemberId.from("1"), 1)))
-                      .succeedsWithin(Duration.ofSeconds(10)));
+      Assertions.assertThat(
+              partitionManager.join(1, Map.of(MemberId.from("0"), 2, MemberId.from("1"), 1)))
+          .succeedsWithin(Duration.ofSeconds(10));
     }
   }
 
