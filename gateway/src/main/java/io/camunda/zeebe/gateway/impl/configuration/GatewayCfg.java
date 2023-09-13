@@ -106,8 +106,12 @@ public class GatewayCfg {
 
   @Override
   public boolean equals(final Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
     final GatewayCfg that = (GatewayCfg) o;
     return Objects.equals(network, that.network)
         && Objects.equals(cluster, that.cluster)
