@@ -23,8 +23,8 @@ public record StaticConfiguration(
     int replicationFactor) {
 
   public ClusterTopology generateTopology() {
-    final Set<PartitionMetadata> partitionDistribution = generatePartitionDistribution();
-    return TopologyUtil.getClusterTopologyFrom(partitionDistribution);
+    final var partitionDistribution = generatePartitionDistribution();
+    return TopologyUtil.getClusterTopologyFrom(clusterMembers, partitionDistribution);
   }
 
   public Set<PartitionMetadata> generatePartitionDistribution() {

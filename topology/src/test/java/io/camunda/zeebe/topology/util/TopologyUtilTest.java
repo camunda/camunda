@@ -60,7 +60,9 @@ class TopologyUtilTest {
     final var partitionDistribution = Set.of(partitionTwo, partitionOne);
 
     // when
-    final var topology = TopologyUtil.getClusterTopologyFrom(partitionDistribution);
+    final var topology =
+        TopologyUtil.getClusterTopologyFrom(
+            Set.of(member(1), member(2), member(0)), partitionDistribution);
 
     // then
     assertThat(topology).isEqualTo(expectedTopology);

@@ -25,16 +25,17 @@ public final class TopologyUtil {
   private TopologyUtil() {}
 
   public static ClusterTopology getClusterTopologyFrom(
-      final Set<PartitionMetadata> partitionDistribution) {
+      final Set<MemberId> members, final Set<PartitionMetadata> partitionDistribution) {
     final var partitionStatesByMember = new HashMap<MemberId, Map<Integer, PartitionState>>();
-    for (final var partitionMetadata : partitionDistribution) {
-      final var partitionId = partitionMetadata.id().id();
-      for (final var member : partitionMetadata.members()) {
-        final var memberPriority = partitionMetadata.getPriority(member);
-        partitionStatesByMember
-            .computeIfAbsent(member, k -> new HashMap<>())
-            .put(partitionId, PartitionState.active(memberPriority));
-      }
+    for (final var member : members) {
+      final var partitionsStates =
+          partitionDistribution.stream()
+              .filter(p -> p.members().contains(member))
+              .collect(
+                  Collectors.toMap(
+                      p -> p.id().id(), p -> PartitionState.active(p.getPriority(member))));
+      partitionStatesByMember.put(member, partitionsStates);
+      partitionStatesByMember.computeIfAbsent(member, k -> new HashMap<>());
     }
     final var memberStates = new HashMap<MemberId, MemberState>();
     for (final var e : partitionStatesByMember.entrySet()) {
