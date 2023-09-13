@@ -61,8 +61,9 @@ final class PartitionJoinApplier implements OperationApplier {
         && localMemberState.getPartition(partitionId).state() != PartitionState.State.JOINING) {
       return Either.left(
           new IllegalStateException(
-              "Expected to join partition, but the local member already has the partition at state "
-                  + localMemberState.partitions().get(partitionId).state()));
+              String.format(
+                  "Expected to join partition %s, but the local member already has the partition at state %s",
+                  partitionId, localMemberState.partitions().get(partitionId).state())));
     }
 
     // Collect the priority of each member, including the local member. This is needed to generate

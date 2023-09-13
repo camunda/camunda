@@ -41,7 +41,9 @@ record PartitionLeaveApplier(
     if (!partitionExistsInLocalMember) {
       return Either.left(
           new IllegalStateException(
-              "Expected to leave partition, but the local member does not have the partition"));
+              String.format(
+                  "Expected to leave partition, but the local member does not have the partition %s",
+                  partitionId)));
     }
 
     final boolean partitionIsLeaving =

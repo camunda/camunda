@@ -18,7 +18,11 @@ import io.camunda.zeebe.topology.TopologyInitializer.FileInitializer;
 import io.camunda.zeebe.topology.TopologyInitializer.GossipInitializer;
 import io.camunda.zeebe.topology.TopologyInitializer.StaticInitializer;
 import io.camunda.zeebe.topology.TopologyInitializer.SyncInitializer;
-import io.camunda.zeebe.topology.changes.NoopTopologyChangeAppliers;
+import io.camunda.zeebe.topology.changes.NoopPartitionChangeExecutor;
+import io.camunda.zeebe.topology.changes.PartitionChangeExecutor;
+import io.camunda.zeebe.topology.changes.TopologyChangeAppliersImpl;
+import io.camunda.zeebe.topology.changes.TopologyChangeCoordinator;
+import io.camunda.zeebe.topology.changes.TopologyChangeCoordinatorImpl;
 import io.camunda.zeebe.topology.gossip.ClusterTopologyGossiper;
 import io.camunda.zeebe.topology.gossip.ClusterTopologyGossiperConfig;
 import io.camunda.zeebe.topology.serializer.ProtoBufSerializer;
@@ -27,13 +31,14 @@ import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
+import java.util.Optional;
 
 public final class ClusterTopologyManagerService extends Actor {
   // Use a node 0 as always the coordinator. Later we can make it configurable or allow changing it
   // dynamically.
   private static final String COORDINATOR_ID = "0";
   private static final String TOPOLOGY_FILE_NAME = ".topology.meta";
-  private final ClusterTopologyManager clusterTopologyManager;
+  private final ClusterTopologyManagerImpl clusterTopologyManager;
   private final ClusterTopologyGossiper clusterTopologyGossiper;
 
   private final boolean isCoordinator;
@@ -45,6 +50,20 @@ public final class ClusterTopologyManagerService extends Actor {
       final ClusterCommunicationService communicationService,
       final ClusterMembershipService memberShipService,
       final ClusterTopologyGossiperConfig config) {
+    this(
+        dataRootDirectory,
+        communicationService,
+        memberShipService,
+        config,
+        new NoopPartitionChangeExecutor());
+  }
+
+  public ClusterTopologyManagerService(
+      final Path dataRootDirectory,
+      final ClusterCommunicationService communicationService,
+      final ClusterMembershipService memberShipService,
+      final ClusterTopologyGossiperConfig config,
+      final PartitionChangeExecutor partitionChangeExecutor) {
     try {
       FileUtil.ensureDirectoryExists(dataRootDirectory);
     } catch (final IOException e) {
@@ -55,8 +74,11 @@ public final class ClusterTopologyManagerService extends Actor {
     topologyFile = dataRootDirectory.resolve(TOPOLOGY_FILE_NAME);
     persistedClusterTopology = new PersistedClusterTopology(topologyFile, new ProtoBufSerializer());
     clusterTopologyManager =
-        new ClusterTopologyManager(
-            this, localMemberId, persistedClusterTopology, new NoopTopologyChangeAppliers());
+        new ClusterTopologyManagerImpl(
+            this,
+            localMemberId,
+            persistedClusterTopology,
+            new TopologyChangeAppliersImpl(partitionChangeExecutor));
     clusterTopologyGossiper =
         new ClusterTopologyGossiper(
             this,
@@ -138,5 +160,14 @@ public final class ClusterTopologyManagerService extends Actor {
 
   public ActorFuture<ClusterTopology> getClusterTopology() {
     return clusterTopologyManager.getClusterTopology();
+  }
+
+  public Optional<TopologyChangeCoordinator> getTopologyChangeCoordinator() {
+    // Only a coordinator can start topology change
+    return isCoordinator
+        // create new instance every time, as we do not expect to make topology changes very often.
+        // So there is no need to keep an instance in the field unnecessarily.
+        ? Optional.of(new TopologyChangeCoordinatorImpl(clusterTopologyManager, this))
+        : Optional.empty();
   }
 }

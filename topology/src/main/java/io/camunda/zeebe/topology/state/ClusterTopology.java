@@ -161,4 +161,8 @@ public record ClusterTopology(
   public MemberState getMember(final MemberId memberId) {
     return members().get(memberId);
   }
+
+  public boolean hasPendingChanges() {
+    return !changes.pendingOperations().isEmpty();
+  }
 }
