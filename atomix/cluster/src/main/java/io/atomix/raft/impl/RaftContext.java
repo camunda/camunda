@@ -29,6 +29,7 @@ import io.atomix.cluster.messaging.MessagingException.NoSuchMemberException;
 import io.atomix.raft.ElectionTimer;
 import io.atomix.raft.RaftCommitListener;
 import io.atomix.raft.RaftCommittedEntryListener;
+import io.atomix.raft.RaftError;
 import io.atomix.raft.RaftException.ProtocolException;
 import io.atomix.raft.RaftRoleChangeListener;
 import io.atomix.raft.RaftServer;
@@ -75,6 +76,7 @@ import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
+import java.net.ConnectException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
@@ -85,6 +87,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -629,6 +632,12 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
                   .map(Member::id)
                   .filter(id -> !id.equals(joining.memberId()))
                   .collect(Collectors.toCollection(LinkedBlockingQueue::new));
+          if (assistingMembers.isEmpty()) {
+            result.completeExceptionally(
+                new IllegalStateException(
+                    "Cannot join cluster, because there are no other members in the cluster."));
+            return;
+          }
           joinWithRetry(joining, assistingMembers, result);
         });
     return result;
@@ -656,7 +665,8 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
           final var receiver = assistingMembers.poll();
           if (receiver == null) {
             result.completeExceptionally(
-                new IllegalStateException("Failed to join cluster; no known members found"));
+                new IllegalStateException(
+                    "Sent join request to all known members, but all failed. No more members left."));
             return;
           }
           protocol
@@ -664,14 +674,20 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
               .whenCompleteAsync(
                   (response, error) -> {
                     if (error != null) {
-                      if (error.getCause() instanceof NoSuchMemberException
-                          || error.getCause() instanceof NoRemoteHandler) {
+                      final var cause = error.getCause();
+                      if (cause instanceof NoSuchMemberException
+                          || cause instanceof NoRemoteHandler
+                          || cause instanceof TimeoutException
+                          || cause instanceof ConnectException) {
                         joinWithRetry(joining, assistingMembers, result);
                       } else {
                         result.completeExceptionally(error);
                       }
                     } else if (response.status() == Status.OK) {
                       result.complete(null);
+                    } else if (response.error().type() == RaftError.Type.NO_LEADER
+                        || response.error().type() == RaftError.Type.UNAVAILABLE) {
+                      joinWithRetry(joining, assistingMembers, result);
                     } else {
                       result.completeExceptionally(response.error().createException());
                     }
