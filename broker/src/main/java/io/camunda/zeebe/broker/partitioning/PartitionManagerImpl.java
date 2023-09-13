@@ -170,7 +170,12 @@ public final class PartitionManagerImpl
             zeebePartitionFactory,
             brokerCfg);
     final var partition = Partition.joining(context);
-    partitions.put(id, partition);
+    final var previousPartition = partitions.putIfAbsent(id, partition);
+    if (previousPartition != null) {
+      result.completeExceptionally(
+          new IllegalStateException(String.format("Partition %d already exists", id)));
+      return result;
+    }
     concurrencyControl.run(
         () ->
             concurrencyControl.runOnCompletion(
