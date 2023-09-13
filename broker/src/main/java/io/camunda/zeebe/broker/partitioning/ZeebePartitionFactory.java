@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.partitioning;
 
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.broker.PartitionListener;
+import io.camunda.zeebe.broker.PartitionRaftListener;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.logstreams.state.StatePositionSupplier;
@@ -97,6 +98,7 @@ final class ZeebePartitionFactory {
   private final List<PartitionListener> partitionListeners;
   private final TopologyManagerImpl topologyManager;
   private final FeatureFlags featureFlags;
+  private final List<PartitionRaftListener> partitionRaftListeners;
 
   ZeebePartitionFactory(
       final ActorSchedulingService actorSchedulingService,
@@ -110,6 +112,7 @@ final class ZeebePartitionFactory {
       final AtomixServerTransport gatewayBrokerTransport,
       final JobStreamer jobStreamer,
       final List<PartitionListener> partitionListeners,
+      final List<PartitionRaftListener> partitionRaftListeners,
       final TopologyManagerImpl topologyManager,
       final FeatureFlags featureFlags) {
     this.actorSchedulingService = actorSchedulingService;
@@ -123,6 +126,7 @@ final class ZeebePartitionFactory {
     this.gatewayBrokerTransport = gatewayBrokerTransport;
     this.jobStreamer = jobStreamer;
     this.partitionListeners = partitionListeners;
+    this.partitionRaftListeners = partitionRaftListeners;
     this.topologyManager = topologyManager;
     this.featureFlags = featureFlags;
   }
@@ -144,6 +148,7 @@ final class ZeebePartitionFactory {
             communicationService,
             raftPartition,
             partitionListeners,
+            partitionRaftListeners,
             new AtomixPartitionMessagingService(
                 communicationService, membershipService, raftPartition.members()),
             actorSchedulingService,

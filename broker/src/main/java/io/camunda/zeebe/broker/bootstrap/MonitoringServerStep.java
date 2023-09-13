@@ -42,7 +42,7 @@ final class MonitoringServerStep extends AbstractBrokerStartupStep {
 
     final var springBrokerBridge = brokerShutdownContext.getSpringBrokerBridge();
     springBrokerBridge.registerBrokerHealthCheckServiceSupplier(() -> null);
-    brokerShutdownContext.removePartitionListener(healthCheckService);
+    brokerShutdownContext.removePartitionRaftListener(healthCheckService);
     concurrencyControl.runOnCompletion(
         healthCheckService.closeAsync(),
         (ok, error) -> {
@@ -64,7 +64,7 @@ final class MonitoringServerStep extends AbstractBrokerStartupStep {
     } else {
       final var springBrokerBridge = brokerStartupContext.getSpringBrokerBridge();
       springBrokerBridge.registerBrokerHealthCheckServiceSupplier(() -> healthCheckService);
-      brokerStartupContext.addPartitionListener(healthCheckService);
+      brokerStartupContext.addPartitionRaftListener(healthCheckService);
       startupFuture.complete(brokerStartupContext);
     }
   }

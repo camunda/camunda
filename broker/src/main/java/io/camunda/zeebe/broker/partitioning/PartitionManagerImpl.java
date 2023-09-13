@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.partitioning;
 import io.atomix.primitive.partition.impl.DefaultPartitionManagementService;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.broker.PartitionListener;
+import io.camunda.zeebe.broker.PartitionRaftListener;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.partitioning.topology.PartitionDistribution;
@@ -64,6 +65,7 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
       final BrokerHealthCheckService healthCheckService,
       final DiskSpaceUsageMonitor diskSpaceUsageMonitor,
       final List<PartitionListener> partitionListeners,
+      final List<PartitionRaftListener> partitionRaftListeners,
       final CommandApiService commandApiService,
       final ExporterRepository exporterRepository,
       final AtomixServerTransport gatewayBrokerTransport,
@@ -93,6 +95,7 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
             gatewayBrokerTransport,
             jobStreamer,
             listeners,
+            partitionRaftListeners,
             topologyManager,
             featureFlags);
     managementService =

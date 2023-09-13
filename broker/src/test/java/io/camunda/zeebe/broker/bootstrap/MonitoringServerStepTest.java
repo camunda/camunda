@@ -86,7 +86,7 @@ class MonitoringServerStepTest {
     await().until(future::isDone);
 
     // then
-    verify(mockBrokerStartupContext).addPartitionListener(mockHealthCheckService);
+    verify(mockBrokerStartupContext).addPartitionRaftListener(mockHealthCheckService);
   }
 
   @Test
@@ -130,7 +130,7 @@ class MonitoringServerStepTest {
     await().until(future::isDone);
 
     // then
-    verify(mockBrokerStartupContext).removePartitionListener(mockHealthCheckService);
+    verify(mockBrokerStartupContext).removePartitionRaftListener(mockHealthCheckService);
   }
 
   @Test

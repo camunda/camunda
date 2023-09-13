@@ -10,13 +10,10 @@ package io.camunda.zeebe.broker.system.monitoring;
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.zeebe.broker.Loggers;
-import io.camunda.zeebe.broker.PartitionListener;
-import io.camunda.zeebe.engine.state.QueryService;
-import io.camunda.zeebe.logstreams.log.LogStream;
+import io.camunda.zeebe.broker.PartitionRaftListener;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.health.CriticalComponentsHealthMonitor;
 import io.camunda.zeebe.util.health.HealthMonitor;
 import io.camunda.zeebe.util.health.HealthMonitorable;
@@ -89,7 +86,7 @@ import org.slf4j.Logger;
  *
  * https://textik.com/#cb084adedb02d970
  */
-public final class BrokerHealthCheckService extends Actor implements PartitionListener {
+public final class BrokerHealthCheckService extends Actor implements PartitionRaftListener {
 
   private static final String PARTITION_COMPONENT_NAME_FORMAT = "Partition-%d";
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
@@ -120,25 +117,15 @@ public final class BrokerHealthCheckService extends Actor implements PartitionLi
   }
 
   @Override
-  public ActorFuture<Void> onBecomingFollower(final int partitionId, final long term) {
+  public ActorFuture<Void> onBecameRaftFollower(final int partitionId, final long term) {
     checkState();
     return updateBrokerReadyStatus(partitionId);
   }
 
   @Override
-  public ActorFuture<Void> onBecomingLeader(
-      final int partitionId,
-      final long term,
-      final LogStream logStream,
-      final QueryService queryService) {
+  public ActorFuture<Void> onBecameRaftLeader(final int partitionId, final long term) {
     checkState();
     return updateBrokerReadyStatus(partitionId);
-  }
-
-  @Override
-  public ActorFuture<Void> onBecomingInactive(final int partitionId, final long term) {
-    checkState();
-    return CompletableActorFuture.completed(null);
   }
 
   private void checkState() {

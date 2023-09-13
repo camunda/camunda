@@ -12,6 +12,7 @@ import static java.util.Objects.requireNonNull;
 
 import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.camunda.zeebe.broker.PartitionListener;
+import io.camunda.zeebe.broker.PartitionRaftListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
@@ -43,6 +44,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private final ExporterRepository exporterRepository;
   private final ClusterServicesImpl clusterServices;
   private final List<PartitionListener> partitionListeners = new ArrayList<>();
+  private final List<PartitionRaftListener> partitionRaftListeners = new ArrayList<>();
 
   private ConcurrencyControl concurrencyControl;
   private DiskSpaceUsageMonitor diskSpaceUsageMonitor;
@@ -121,8 +123,23 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   }
 
   @Override
+  public void addPartitionRaftListener(final PartitionRaftListener listener) {
+    partitionRaftListeners.add(requireNonNull(listener));
+  }
+
+  @Override
+  public void removePartitionRaftListener(final PartitionRaftListener listener) {
+    partitionRaftListeners.remove(requireNonNull(listener));
+  }
+
+  @Override
   public List<PartitionListener> getPartitionListeners() {
     return unmodifiableList(partitionListeners);
+  }
+
+  @Override
+  public List<PartitionRaftListener> getPartitionRaftListeners() {
+    return unmodifiableList(partitionRaftListeners);
   }
 
   @Override
