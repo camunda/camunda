@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.qa.util.cluster;
 
+import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.restore.RestoreApp;
 import io.camunda.zeebe.shared.Profile;
@@ -34,6 +35,11 @@ public final class TestRestoreApp extends TestSpringApplication<TestRestoreApp> 
   @Override
   public TestRestoreApp self() {
     return this;
+  }
+
+  @Override
+  public MemberId nodeId() {
+    return MemberId.from(String.valueOf(config.getCluster().getNodeId()));
   }
 
   @Override
