@@ -142,48 +142,51 @@ export function ReportView({report, error, user, loadReport}) {
           </div>
         </div>
       )}
-      {!isProcessReport && !combined && report.data?.visualization !== 'table' && (
-        <div className={classnames('bottomPanel', bottomPanelState)}>
-          <div className="toolbar">
-            <b>{t('report.view.rawData')}</b>
-            <div>
-              {bottomPanelState !== 'expanded' && (
-                <Button
-                  hasIconOnly
-                  label={t('common.expand')}
-                  kind="ghost"
-                  onClick={() =>
-                    setBottomPanelState((prevState) =>
-                      prevState === 'collapsed' ? 'neutral' : 'expanded'
-                    )
-                  }
-                  className="expandButton"
-                  tooltipPosition="left"
-                >
-                  <RowCollapse />
-                </Button>
-              )}
-              {bottomPanelState !== 'collapsed' && (
-                <Button
-                  hasIconOnly
-                  label={t('common.collapse')}
-                  kind="ghost"
-                  onClick={() =>
-                    setBottomPanelState((prevState) =>
-                      prevState === 'expanded' ? 'neutral' : 'collapsed'
-                    )
-                  }
-                  className="collapseButton"
-                  tooltipPosition="left"
-                >
-                  <RowExpand />
-                </Button>
-              )}
+      {!isProcessReport &&
+        !combined &&
+        typeof report.result !== 'undefined' &&
+        report.data?.visualization !== 'table' && (
+          <div className={classnames('bottomPanel', bottomPanelState)}>
+            <div className="toolbar">
+              <b>{t('report.view.rawData')}</b>
+              <div>
+                {bottomPanelState !== 'expanded' && (
+                  <Button
+                    hasIconOnly
+                    label={t('common.expand')}
+                    kind="ghost"
+                    onClick={() =>
+                      setBottomPanelState((prevState) =>
+                        prevState === 'collapsed' ? 'neutral' : 'expanded'
+                      )
+                    }
+                    className="expandButton"
+                    tooltipPosition="left"
+                  >
+                    <RowCollapse />
+                  </Button>
+                )}
+                {bottomPanelState !== 'collapsed' && (
+                  <Button
+                    hasIconOnly
+                    label={t('common.collapse')}
+                    kind="ghost"
+                    onClick={() =>
+                      setBottomPanelState((prevState) =>
+                        prevState === 'expanded' ? 'neutral' : 'collapsed'
+                      )
+                    }
+                    className="collapseButton"
+                    tooltipPosition="left"
+                  >
+                    <RowExpand />
+                  </Button>
+                )}
+              </div>
             </div>
+            <InstanceViewTable className="bottomPanelTable" report={report} />
           </div>
-          <InstanceViewTable className="bottomPanelTable" report={report} />
-        </div>
-      )}
+        )}
       <Deleter
         type="report"
         entity={deleting}
