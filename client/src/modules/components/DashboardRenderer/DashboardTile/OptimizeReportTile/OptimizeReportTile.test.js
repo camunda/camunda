@@ -157,6 +157,16 @@ it('should not navigate to the report when clicking on button element', async ()
   expect(redirectSpy).not.toHaveBeenCalledWith('report/a/');
 });
 
+it('should not navigate to the report when clicking on an href element', async () => {
+  loadTile.mockReturnValueOnce({name: 'Report Name', id: 'a', data: {visualization: 'table'}});
+  const redirectSpy = jest.fn();
+  const node = await shallow(<OptimizeReportTile {...props} history={{push: redirectSpy}} />);
+
+  node.find('.OptimizeReportTile').simulate('click', {target: document.createElement('a')});
+
+  expect(redirectSpy).not.toHaveBeenCalledWith('report/a/');
+});
+
 it('should not navigate to the report when clicking on table visualization', async () => {
   loadTile.mockReturnValueOnce({name: 'Report Name', id: 'a', data: {visualization: 'table'}});
   const redirectSpy = jest.fn();

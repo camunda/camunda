@@ -114,6 +114,7 @@ export class OptimizeReportTile extends React.Component {
         onClick: (evt) => {
           if (
             !evt.target.closest('.DropdownOption') &&
+            !evt.target.closest('a') &&
             !evt.target.closest('button') &&
             !(evt.target.closest('.visualization') && canOnlyClickTitle)
           ) {
