@@ -194,7 +194,7 @@ public final class FileBasedSnapshotStore extends Actor
               + " (e.g. crash during move), and will be deleted",
           path);
       try {
-        FileUtil.deleteFolder(path);
+        deleteFolder(path);
       } catch (final Exception e) {
         // it's fine to ignore failures to delete here, as it would constitute mostly noise
         LOGGER.debug("Failed to delete partial snapshot {}", path, e);
@@ -333,14 +333,14 @@ public final class FileBasedSnapshotStore extends Actor
 
           try {
             LOGGER.debug("DELETE FOLDER {}", snapshotsDirectory);
-            FileUtil.deleteFolder(snapshotsDirectory);
+            deleteFolder(snapshotsDirectory);
           } catch (final IOException e) {
             throw new UncheckedIOException(e);
           }
 
           try {
             LOGGER.debug("DELETE FOLDER {}", pendingDirectory);
-            FileUtil.deleteFolder(pendingDirectory);
+            deleteFolder(pendingDirectory);
           } catch (final IOException e) {
             throw new UncheckedIOException(e);
           }
@@ -489,7 +489,7 @@ public final class FileBasedSnapshotStore extends Actor
     final var optionalMetadata = FileBasedSnapshotId.ofPath(pendingSnapshot);
     if (optionalMetadata.isPresent() && optionalMetadata.get().compareTo(cutoffIndex) < 0) {
       try {
-        FileUtil.deleteFolder(pendingSnapshot);
+        deleteFolder(pendingSnapshot);
         LOGGER.debug("Deleted orphaned snapshot {}", pendingSnapshot);
       } catch (final IOException e) {
         LOGGER.warn(
@@ -623,7 +623,7 @@ public final class FileBasedSnapshotStore extends Actor
 
   private void purgePendingSnapshot(final Path pendingSnapshot) {
     try {
-      FileUtil.deleteFolder(pendingSnapshot);
+      deleteFolder(pendingSnapshot);
       LOGGER.debug("Deleted not completed (orphaned) snapshot {}", pendingSnapshot);
     } catch (final IOException e) {
       LOGGER.warn("Failed to delete not completed (orphaned) snapshot {}", pendingSnapshot, e);
