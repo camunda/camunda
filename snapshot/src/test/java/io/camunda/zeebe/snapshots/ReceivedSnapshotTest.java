@@ -14,6 +14,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
+import io.camunda.zeebe.snapshots.SnapshotException.SnapshotAlreadyExistsException;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.snapshots.impl.InvalidSnapshotChecksum;
 import io.camunda.zeebe.snapshots.impl.SnapshotWriteException;
@@ -90,24 +91,6 @@ public class ReceivedSnapshotTest {
     assertThat(receiverSnapshotStore.getLatestSnapshot())
         .as("the pending snapshot was not committed")
         .isEmpty();
-  }
-
-  @Test
-  public void shouldPurgePendingOnPersist() {
-    // given
-    final var persistedSnapshot = takePersistedSnapshot();
-
-    // when
-    final var receivedSnapshot = receiveSnapshot(persistedSnapshot);
-    final var receivedPersistedSnapshot = receivedSnapshot.persist().join();
-
-    // then
-    assertThat(receivedSnapshot.getPath())
-        .as("the pending snapshot was removed after persist")
-        .doesNotExist();
-    assertThat(receivedPersistedSnapshot.getPath())
-        .as("there exists a persisted received snapshot")
-        .exists();
   }
 
   @Test
@@ -192,20 +175,17 @@ public class ReceivedSnapshotTest {
   }
 
   @Test
-  public void shouldReturnAlreadyExistingSnapshotOnPersist() {
+  public void shouldThrowWhenAlreadyExistingSnapshotWasReceivedAgain() {
     // given
     final var persistedSnapshot = takePersistedSnapshot();
     final var firstReceivedSnapshot = receiveSnapshot(persistedSnapshot);
     final var firstPersistedSnapshot = firstReceivedSnapshot.persist().join();
 
-    // when - receives same snapshot again
-    final var secondReceivedSnapshot = receiveSnapshot(persistedSnapshot);
-    final var secondPersistedSnapshot = secondReceivedSnapshot.persist().join();
-
-    // then
-    assertThat(secondPersistedSnapshot)
-        .isEqualTo(firstPersistedSnapshot)
-        .isSameAs(firstPersistedSnapshot);
+    // when then throw - receives same snapshot again
+    assertThatThrownBy(() -> receiveSnapshot(persistedSnapshot))
+        .isInstanceOf(SnapshotAlreadyExistsException.class)
+        .hasMessageContaining(
+            "Expected to receive snapshot with id 1-0-1-0, but was already persisted");
   }
 
   @Test
@@ -254,23 +234,6 @@ public class ReceivedSnapshotTest {
   }
 
   @Test
-  public void shouldReceiveConcurrentlyWithoutOverwritingEachOther() {
-    // given
-    final var persistedSnapshot = takePersistedSnapshot();
-
-    // when
-    final ReceivedSnapshot firstReceivedSnapshot = receiveSnapshot(persistedSnapshot);
-    final ReceivedSnapshot secondReceivedSnapshot = receiveSnapshot(persistedSnapshot);
-
-    // then
-    assertThat(firstReceivedSnapshot.getPath())
-        .as("the first received snapshot is stored somewhere else than the second")
-        .exists()
-        .isNotEqualTo(secondReceivedSnapshot.getPath());
-    assertThat(secondReceivedSnapshot.getPath()).as("the second received snapshot exists").exists();
-  }
-
-  @Test
   public void shouldReceiveConcurrentlyAndPersist() {
     // given
     final var persistedSnapshot = takePersistedSnapshot();
@@ -281,9 +244,10 @@ public class ReceivedSnapshotTest {
     final PersistedSnapshot receivedPersistedSnapshot = firstReceivedSnapshot.persist().join();
 
     // then
+    // both snapshots will exist since they point to the same directory
     assertThat(firstReceivedSnapshot.getPath())
-        .as("the first received snapshot was removed on persist of concurrent receive")
-        .doesNotExist();
+        .as("the first received snapshot was removed but the new was persist on the same directory")
+        .exists();
     assertThat(secondReceivedSnapshot.getPath())
         .as("the second received snapshot was not removed as it's not considered older")
         .exists();
