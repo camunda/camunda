@@ -135,6 +135,7 @@ public final class GatewayCfgTest {
             .getResource("security/test-chain.cert.pem")
             .getPath());
     setEnv("zeebe.gateway.network.minKeepAliveInterval", Duration.ofSeconds(30).toString());
+    setEnv("zeebe.gateway.longPolling.enabled", String.valueOf(true));
     setEnv("zeebe.gateway.interceptors.0.id", "overwritten");
     setEnv("zeebe.gateway.interceptors.0.className", "Overwritten");
     setEnv("zeebe.gateway.interceptors.0.jarPath", "./overwritten.jar");
@@ -163,7 +164,7 @@ public final class GatewayCfgTest {
         .setCertificateChainPath(
             new File(
                 getClass().getClassLoader().getResource("security/test-chain.cert.pem").getPath()));
-    expected.getLongPolling().setEnabled(false);
+    expected.getLongPolling().setEnabled(true);
 
     expected.getInterceptors().add(new InterceptorCfg());
     expected.getInterceptors().get(0).setId("overwritten");
