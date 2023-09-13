@@ -19,6 +19,7 @@ import io.camunda.zeebe.topology.changes.TopologyChangeCoordinatorImpl.InvalidTo
 import io.camunda.zeebe.topology.changes.TopologyChangeCoordinatorImpl.OperationNotAllowed;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.MemberState;
+import io.camunda.zeebe.topology.state.PartitionState;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
@@ -52,6 +53,34 @@ final class TopologyChangeCoordinatorImplTest {
         .withCauseInstanceOf(InvalidTopologyChangeException.class)
         .withMessageContaining(
             "Expected to leave partition, but the local member does not exist in the topology");
+  }
+
+  @Test
+  void shouldFailOnSecondInvalidOperation() {
+    // given
+    clusterTopologyManager.setClusterTopology(
+        ClusterTopology.init()
+            .addMember(MemberId.from("1"), MemberState.initializeAsActive(Map.of()))
+            .updateMember(MemberId.from("1"), m -> m.addPartition(1, PartitionState.active(1))));
+    final var coordinator =
+        new TopologyChangeCoordinatorImpl(clusterTopologyManager, new TestConcurrencyControl());
+
+    // when
+
+    final var applyFuture =
+        coordinator.applyOperations(
+            List.of(
+                new PartitionLeaveOperation(MemberId.from("1"), 1), // Valid operation
+                new PartitionLeaveOperation(MemberId.from("1"), 1) // Duplicate leave not valid
+                ));
+
+    // then
+    assertThat(applyFuture)
+        .failsWithin(Duration.ofMillis(100))
+        .withThrowableOfType(ExecutionException.class)
+        .withCauseInstanceOf(InvalidTopologyChangeException.class)
+        .withMessageContaining(
+            "Expected to leave partition, but the local member does not have the partition 1");
   }
 
   @Test
