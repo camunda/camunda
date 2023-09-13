@@ -49,7 +49,7 @@ final class ProcessInstanceElementActivatingApplier
   public void applyState(final long elementInstanceKey, final ProcessInstanceRecord value) {
 
     createEventScope(elementInstanceKey, value);
-    final int numberOfTakenSequenceFlows = cleanupSequenceFlowsTaken(value);
+    cleanupSequenceFlowsTaken(value);
 
     final var flowScopeInstance = elementInstanceState.getInstance(value.getFlowScopeKey());
     elementInstanceState.newInstance(
@@ -63,12 +63,7 @@ final class ProcessInstanceElementActivatingApplier
     final var flowScopeElementType = flowScopeInstance.getValue().getBpmnElementType();
     final var currentElementType = value.getBpmnElementType();
 
-    decrementActiveSequenceFlow(
-        value,
-        flowScopeInstance,
-        flowScopeElementType,
-        currentElementType,
-        numberOfTakenSequenceFlows);
+    decrementActiveSequenceFlow(value, flowScopeInstance, flowScopeElementType, currentElementType);
 
     if (currentElementType == BpmnElementType.START_EVENT
         && flowScopeElementType == BpmnElementType.EVENT_SUB_PROCESS) {
@@ -81,11 +76,7 @@ final class ProcessInstanceElementActivatingApplier
     manageMultiInstance(elementInstanceKey, flowScopeInstance, flowScopeElementType);
   }
 
-  private int cleanupSequenceFlowsTaken(final ProcessInstanceRecord value) {
-    final int numberOfTakenSequenceFlows =
-        elementInstanceState.getNumberOfTakenSequenceFlows(
-            value.getFlowScopeKey(), value.getElementIdBuffer());
-
+  private void cleanupSequenceFlowsTaken(final ProcessInstanceRecord value) {
     if (value.getBpmnElementType() == BpmnElementType.PARALLEL_GATEWAY
         || value.getBpmnElementType() == BpmnElementType.INCLUSIVE_GATEWAY) {
 
@@ -94,6 +85,7 @@ final class ProcessInstanceElementActivatingApplier
               value.getProcessDefinitionKey(),
               value.getElementIdBuffer(),
               ExecutableFlowNode.class);
+
       // before a parallel or inclusive gateway is activated, all incoming sequence flows of the
       // gateway must
       // be taken at least once. decrement the number of the taken sequence flows for each incoming
@@ -102,8 +94,6 @@ final class ProcessInstanceElementActivatingApplier
       elementInstanceState.decrementNumberOfTakenSequenceFlows(
           value.getFlowScopeKey(), gateway.getId());
     }
-
-    return numberOfTakenSequenceFlows;
   }
 
   private void moveVariablesToNewEventScope(
@@ -140,8 +130,7 @@ final class ProcessInstanceElementActivatingApplier
       final ProcessInstanceRecord value,
       final ElementInstance flowScopeInstance,
       final BpmnElementType flowScopeElementType,
-      final BpmnElementType currentElementType,
-      final int numberOfTakenSequenceFlows) {
+      final BpmnElementType currentElementType) {
 
     // We don't want to decrement the active sequence flow for elements which have no incoming
     // sequence flow and for interrupting event sub processes we reset the count completely.
@@ -157,7 +146,7 @@ final class ProcessInstanceElementActivatingApplier
         decrementParallelGatewaySequenceFlow(value, flowScopeInstance);
         break;
       case INCLUSIVE_GATEWAY:
-        decrementInclusiveGatewaySequenceFlow(flowScopeInstance, numberOfTakenSequenceFlows);
+        decrementInclusiveGatewayGatewaySequenceFlow(flowScopeInstance);
         break;
       case EVENT_SUB_PROCESS:
         decrementEventSubProcessSequenceFlow(value, flowScopeInstance);
@@ -209,13 +198,11 @@ final class ProcessInstanceElementActivatingApplier
     elementInstanceState.updateInstance(flowScopeInstance);
   }
 
-  private void decrementInclusiveGatewaySequenceFlow(
-      final ElementInstance flowScopeInstance, final int numberOfTakenSequenceFlows) {
-    // Inclusive gateways can have more than one incoming sequence flow, we need to decrement the
-    // active sequence flows based on the satisfied incoming sequence flows.
+  private void decrementInclusiveGatewayGatewaySequenceFlow(
+      final ElementInstance flowScopeInstance) {
+    // Currently the inclusive gateway can only have one incoming sequence flow.
 
-    IntStream.range(0, numberOfTakenSequenceFlows)
-        .forEach(i -> flowScopeInstance.decrementActiveSequenceFlows());
+    flowScopeInstance.decrementActiveSequenceFlows();
     elementInstanceState.updateInstance(flowScopeInstance);
   }
 
