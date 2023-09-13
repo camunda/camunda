@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
@@ -54,6 +55,19 @@ public class MultiTenancyEnabledTest extends GatewayTest {
         .hasEntrySatisfying(
             Authorization.AUTHORIZED_TENANTS,
             v -> assertThat(v).asList().contains("tenant-a", "tenant-b"));
+  }
+
+  @Test
+  public void deployResourceRequestRequiresTenantId() {
+    // given
+    when(gateway.getIdentityMock().tenants().forToken(anyString()))
+        .thenReturn(List.of(new Tenant("tenant-a", "A"), new Tenant("tenant-b", "B")));
+
+    // when/then
+    assertThatThrownBy(() -> client.deployResource(DeployResourceRequest.newBuilder().build()))
+        .hasMessageContaining(
+            "Expected to handle gRPC request DeployResource with tenant identifier ``")
+        .hasMessageContaining("but no tenant identifier was provided");
   }
 
   public static final class FakeRequestStub

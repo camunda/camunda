@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.auth.impl.Authorization;
 import io.camunda.zeebe.gateway.api.util.GatewayTest;
@@ -48,6 +49,18 @@ public class MultiTenancyDisabledTest extends GatewayTest {
         .hasEntrySatisfying(
             Authorization.AUTHORIZED_TENANTS,
             v -> assertThat(v).asList().contains(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
+  }
+
+  @Test
+  public void deployResourceRequestRejectsTenantId() {
+    // given
+    final var request = DeployResourceRequest.newBuilder().setTenantId("tenant-a").build();
+
+    // when/then
+    assertThatThrownBy(() -> client.deployResource(request))
+        .hasMessageContaining(
+            "Expected to handle gRPC request DeployResource with tenant identifier")
+        .hasMessageContaining("but multi-tenancy is disabled");
   }
 
   public static final class FakeRequestStub
