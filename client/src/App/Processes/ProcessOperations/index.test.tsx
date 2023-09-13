@@ -77,11 +77,6 @@ describe('<ProcessOperations />', () => {
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        /All the deleted process definition’s running process instances will be immediately canceled and deleted./i,
-      ),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(
         /All the deleted process definition’s finished process instances will be deleted from the application./i,
       ),
     ).toBeInTheDocument();
@@ -92,7 +87,7 @@ describe('<ProcessOperations />', () => {
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        /If a process definition contains user tasks, they will be canceled and deleted from Tasklist./i,
+        /If a process definition contains user tasks, they will be deleted from Tasklist./i,
       ),
     ).toBeInTheDocument();
     expect(

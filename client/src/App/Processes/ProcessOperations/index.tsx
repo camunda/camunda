@@ -65,10 +65,6 @@ const ProcessOperations: React.FC<Props> = ({
           <Stack gap={6}>
             <UnorderedList nested>
               <ListItem>
-                All the deleted process definition’s running process instances
-                will be immediately canceled and deleted.
-              </ListItem>
-              <ListItem>
                 All the deleted process definition’s finished process instances
                 will be deleted from the application.
               </ListItem>
@@ -78,7 +74,7 @@ const ProcessOperations: React.FC<Props> = ({
               </ListItem>
               <ListItem>
                 If a process definition contains user tasks, they will be
-                canceled and deleted from Tasklist.
+                deleted from Tasklist.
               </ListItem>
             </UnorderedList>
             <Link
