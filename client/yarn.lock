@@ -2857,10 +2857,10 @@
   dependencies:
     "@types/node" "*"
 
-"@types/carbon__icons-react@^11.20.0":
-  version "11.25.0"
-  resolved "https://registry.yarnpkg.com/@types/carbon__icons-react/-/carbon__icons-react-11.25.0.tgz#18bc3970bcee4cbb05adbcbdf2f515213befdadc"
-  integrity sha512-npUQ6mhvDu911h7S+dM824tJdX5dq2ZtCaebi9dTO36hBPBs/ex4vI6Db3me88prQzQeHcdE8rdH5Vjs3H5Vmw==
+"@types/carbon__icons-react@^11.26.1":
+  version "11.26.1"
+  resolved "https://registry.yarnpkg.com/@types/carbon__icons-react/-/carbon__icons-react-11.26.1.tgz#616031ac2a05c94059c26156920f4ee814353a74"
+  integrity sha512-Y2/+Oq3knMRfIedrJ4md5/Xm2QWW3p9C5iQvQ7y8kpBggIkCouJdHvB0JkxtT6TXZCYXkWGlmgRuQQOwxAo9oQ==
 
 "@types/cheerio@*":
   version "0.22.31"
