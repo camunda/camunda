@@ -25,9 +25,9 @@ import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
 
-public class AuthorizedTenantsTest extends GatewayTest {
+public class MultiTenancyEnabledTest extends GatewayTest {
 
-  public AuthorizedTenantsTest() {
+  public MultiTenancyEnabledTest() {
     super(cfg -> cfg.getMultiTenancy().setEnabled(true));
   }
 
@@ -38,7 +38,7 @@ public class AuthorizedTenantsTest extends GatewayTest {
   }
 
   @Test
-  public void brokerRequestsShouldContainAuthorizedTenants() {
+  public void deployResourceRequestShouldContainAuthorizedTenants() {
     // given
     when(gateway.getIdentityMock().tenants().forToken(anyString()))
         .thenReturn(List.of(new Tenant("tenant-a", "A"), new Tenant("tenant-b", "B")));
