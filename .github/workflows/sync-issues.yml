@@ -41,13 +41,12 @@ jobs:
       with:
         repo_target: 'camunda/issues'
         only_sync_on_label: 'public'
-        only_sync_main_issue: 'false'
+        only_sync_main_issue: 'true'
         create_issues_on_edit: 'false'
         additional_issue_labels: 'component:operate'
         sync_repo_labels: 'false'
         use_comment_for_issue_matching: 'true'
         skip_comment_sync_keywords: '[private]'
         issue_created_comment_template: |
-          A public copy of the issue has been created: {{<link>}}
-          **Notice:** The issue comments **will be** synchronized.
-          Please don't share the sensitive information in the comments, or add `[private]` to the comments that should not be made public.
+          A public reference has been created: {{<link>}}
+          Note that comments will **not** be synchronized.
