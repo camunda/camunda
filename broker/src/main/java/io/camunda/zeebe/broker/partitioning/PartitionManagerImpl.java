@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.broker.partitioning;
 
+import io.atomix.cluster.MemberId;
+import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.primitive.partition.impl.DefaultPartitionManagementService;
 import io.atomix.raft.partition.RaftPartition;
@@ -32,18 +34,22 @@ import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.ActorFutureCollector;
+import io.camunda.zeebe.topology.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.health.HealthStatus;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class PartitionManagerImpl implements PartitionManager, TopologyManager {
+public final class PartitionManagerImpl
+    implements PartitionManager, TopologyManager, PartitionChangeExecutor {
 
   public static final String GROUP_NAME = "raft-partition";
 
@@ -131,7 +137,8 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
     }
   }
 
-  private void bootstrapPartition(final PartitionMetadata partitionMetadata) {
+  private ActorFuture<Void> bootstrapPartition(final PartitionMetadata partitionMetadata) {
+    final var result = concurrencyControl.<Void>createFuture();
     final var id = partitionMetadata.id().id();
     final var context =
         new PartitionStartupContext(
@@ -146,24 +153,61 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
     partitions.put(id, partition);
 
     concurrencyControl.runOnCompletion(
-        partition.start(),
-        (startedPartition, throwable) -> {
-          if (throwable != null) {
-            LOGGER.error("Failed to start partition {}", id, throwable);
-            onHealthChanged(id, HealthStatus.DEAD);
-          } else {
-            LOGGER.info("Started partition {}", id);
-            final var zeebePartition = startedPartition.zeebePartition();
-            final var raftPartition = startedPartition.raftPartition();
+        partition.start(), (started, error) -> completePartitionStart(id, started, error, result));
+    return result;
+  }
 
-            zeebePartition.addFailureListener(
-                new PartitionHealthBroadcaster(id, this::onHealthChanged));
-            diskSpaceUsageMonitor.addDiskUsageListener(zeebePartition);
-            adminAccess.put(id, zeebePartition.getAdminAccess());
-            zeebePartitions.add(zeebePartition);
-            raftPartitions.add(raftPartition);
-          }
-        });
+  private ActorFuture<Void> joinPartition(final PartitionMetadata partitionMetadata) {
+    final var result = concurrencyControl.<Void>createFuture();
+    final var id = partitionMetadata.id().id();
+    final var context =
+        new PartitionStartupContext(
+            actorSchedulingService,
+            concurrencyControl,
+            managementService,
+            partitionMetadata,
+            raftPartitionFactory,
+            zeebePartitionFactory,
+            brokerCfg);
+    final var partition = Partition.joining(context);
+    final var previousPartition = partitions.putIfAbsent(id, partition);
+    if (previousPartition != null) {
+      result.completeExceptionally(
+          new IllegalStateException(String.format("Partition %d already exists", id)));
+      return result;
+    }
+    concurrencyControl.run(
+        () ->
+            concurrencyControl.runOnCompletion(
+                partition.start(),
+                (started, error) -> completePartitionStart(id, started, error, result)));
+    return result;
+  }
+
+  private void completePartitionStart(
+      final int partitionId,
+      final Partition partition,
+      final Throwable error,
+      final ActorFuture<Void> future) {
+
+    if (error != null) {
+      LOGGER.error("Failed to start partition {}", partitionId, error);
+      onHealthChanged(partitionId, HealthStatus.DEAD);
+      future.completeExceptionally(error);
+      return;
+    }
+
+    LOGGER.info("Started partition {}", partitionId);
+    final var zeebePartition = partition.zeebePartition();
+    final var raftPartition = partition.raftPartition();
+
+    zeebePartition.addFailureListener(
+        new PartitionHealthBroadcaster(partitionId, this::onHealthChanged));
+    diskSpaceUsageMonitor.addDiskUsageListener(zeebePartition);
+    adminAccess.put(partitionId, zeebePartition.getAdminAccess());
+    zeebePartitions.add(zeebePartition);
+    raftPartitions.add(raftPartition);
+    future.complete(null);
   }
 
   public ActorFuture<Void> stop() {
@@ -221,5 +265,38 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
   @Override
   public Collection<ZeebePartition> getZeebePartitions() {
     return zeebePartitions;
+  }
+
+  @Override
+  public ActorFuture<Void> join(
+      final int partitionId, final Map<MemberId, Integer> membersWithPriority) {
+    final int targetPriority = Collections.max(membersWithPriority.values());
+
+    final var members = membersWithPriority.keySet();
+    final var primaries =
+        membersWithPriority.entrySet().stream()
+            .filter(entry -> entry.getValue() == targetPriority)
+            .map(Entry::getKey)
+            .toList();
+
+    MemberId primary = null;
+    if (primaries.size() == 1) {
+      primary = primaries.get(0);
+    }
+
+    final var partitionMetadata =
+        new PartitionMetadata(
+            PartitionId.from(GROUP_NAME, partitionId),
+            members,
+            membersWithPriority,
+            targetPriority,
+            primary);
+
+    return joinPartition(partitionMetadata);
+  }
+
+  @Override
+  public ActorFuture<Void> leave(final int partitionId) {
+    throw new UnsupportedOperationException("Not yet implemented");
   }
 }

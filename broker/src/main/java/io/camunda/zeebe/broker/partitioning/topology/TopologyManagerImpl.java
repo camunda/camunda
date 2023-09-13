@@ -113,7 +113,7 @@ public final class TopologyManagerImpl extends Actor
   public void event(final ClusterMembershipEvent clusterMembershipEvent) {
     final Member eventSource = clusterMembershipEvent.subject();
 
-    final BrokerInfo brokerInfo = readBrokerInfo(eventSource);
+    final BrokerInfo brokerInfo = BrokerInfo.fromProperties(eventSource.properties());
 
     if (brokerInfo != null && brokerInfo.getNodeId() != localBroker.getNodeId()) {
       actor.run(
@@ -193,40 +193,6 @@ public final class TopologyManagerImpl extends Actor
     }
     partitionLeaders.put(leaderPartitionId, brokerInfo);
     return true;
-  }
-
-  private BrokerInfo readBrokerInfo(final Member eventSource) {
-    final BrokerInfo brokerInfo = BrokerInfo.fromProperties(eventSource.properties());
-    if (brokerInfo != null && !isStaticConfigValid(brokerInfo)) {
-      LOG.error(
-          "Static configuration of node {} differs from local node {}: "
-              + "NodeId: 0 <= {} < {}, "
-              + "ClusterSize: {} == {}, "
-              + "PartitionsCount: {} == {}, "
-              + "ReplicationFactor: {} == {}.",
-          eventSource.id(),
-          membershipService.getLocalMember().id(),
-          brokerInfo.getNodeId(),
-          localBroker.getClusterSize(),
-          brokerInfo.getClusterSize(),
-          localBroker.getClusterSize(),
-          brokerInfo.getPartitionsCount(),
-          localBroker.getPartitionsCount(),
-          brokerInfo.getReplicationFactor(),
-          localBroker.getReplicationFactor());
-
-      return null;
-    }
-    return brokerInfo;
-  }
-
-  // Validate that the remote node's configuration is equal to the local node
-  private boolean isStaticConfigValid(final BrokerInfo brokerInfo) {
-    return brokerInfo.getNodeId() >= 0
-        && brokerInfo.getNodeId() < localBroker.getClusterSize()
-        && localBroker.getClusterSize() == brokerInfo.getClusterSize()
-        && localBroker.getPartitionsCount() == brokerInfo.getPartitionsCount()
-        && localBroker.getReplicationFactor() == brokerInfo.getReplicationFactor();
   }
 
   // Propagate local partition info to other nodes through Atomix member properties

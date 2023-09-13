@@ -22,10 +22,14 @@ import static com.google.common.base.Preconditions.checkState;
 import static io.atomix.utils.concurrent.Threads.namedThreads;
 
 import io.atomix.cluster.ClusterMembershipService;
+import io.atomix.cluster.Member;
 import io.atomix.cluster.MemberId;
+import io.atomix.cluster.messaging.MessagingException.NoRemoteHandler;
+import io.atomix.cluster.messaging.MessagingException.NoSuchMemberException;
 import io.atomix.raft.ElectionTimer;
 import io.atomix.raft.RaftCommitListener;
 import io.atomix.raft.RaftCommittedEntryListener;
+import io.atomix.raft.RaftError;
 import io.atomix.raft.RaftException.ProtocolException;
 import io.atomix.raft.RaftRoleChangeListener;
 import io.atomix.raft.RaftServer;
@@ -72,16 +76,21 @@ import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
+import java.net.ConnectException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
+import java.util.Queue;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.MDC;
 
@@ -612,34 +621,79 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   }
 
   public CompletableFuture<Void> join() {
-    final CompletableFuture<Void> future = new CompletableFuture<>();
-
+    final var result = new CompletableFuture<Void>();
     threadContext.execute(
         () -> {
           final var joining =
               new DefaultRaftMember(
                   cluster.getLocalMember().memberId(), Type.ACTIVE, Instant.now());
-          final var receiver =
+          final var assistingMembers =
               membershipService.getMembers().stream()
-                  .filter(member -> !member.id().equals(joining.memberId()))
-                  .findAny()
-                  .orElseThrow()
-                  .id();
+                  .map(Member::id)
+                  .filter(id -> !id.equals(joining.memberId()))
+                  .collect(Collectors.toCollection(LinkedBlockingQueue::new));
+          if (assistingMembers.isEmpty()) {
+            result.completeExceptionally(
+                new IllegalStateException(
+                    "Cannot join cluster, because there are no other members in the cluster."));
+            return;
+          }
+          joinWithRetry(joining, assistingMembers, result);
+        });
+    return result;
+  }
+
+  /**
+   * Repeatedly tries to join the cluster until it succeeds or there are no more members to try.
+   * When sending a join request to an assisting member fails because the member is currently not
+   * known, or it is known but not ready to receive join request, try again with a different
+   * assisting member.
+   *
+   * <p>Retrying helps in cases where the cluster is in flux and not all members are online and
+   * ready.
+   *
+   * @param joining the new member joining
+   * @param assistingMembers a queue of members that we will send a join request to.
+   * @param result a future to complete when joining succeeds or fails
+   */
+  private void joinWithRetry(
+      final RaftMember joining,
+      final Queue<MemberId> assistingMembers,
+      final CompletableFuture<Void> result) {
+    threadContext.execute(
+        () -> {
+          final var receiver = assistingMembers.poll();
+          if (receiver == null) {
+            result.completeExceptionally(
+                new IllegalStateException(
+                    "Sent join request to all known members, but all failed. No more members left."));
+            return;
+          }
           protocol
               .join(receiver, JoinRequest.builder().withJoiningMember(joining).build())
               .whenCompleteAsync(
                   (response, error) -> {
                     if (error != null) {
-                      future.completeExceptionally(error);
+                      final var cause = error.getCause();
+                      if (cause instanceof NoSuchMemberException
+                          || cause instanceof NoRemoteHandler
+                          || cause instanceof TimeoutException
+                          || cause instanceof ConnectException) {
+                        joinWithRetry(joining, assistingMembers, result);
+                      } else {
+                        result.completeExceptionally(error);
+                      }
                     } else if (response.status() == Status.OK) {
-                      future.complete(null);
+                      result.complete(null);
+                    } else if (response.error().type() == RaftError.Type.NO_LEADER
+                        || response.error().type() == RaftError.Type.UNAVAILABLE) {
+                      joinWithRetry(joining, assistingMembers, result);
                     } else {
-                      future.completeExceptionally(response.error().createException());
+                      result.completeExceptionally(response.error().createException());
                     }
                   },
                   threadContext);
         });
-    return future;
   }
 
   /**

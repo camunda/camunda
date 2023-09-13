@@ -11,6 +11,7 @@ import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.broker.partitioning.startup.PartitionStartupContext;
 import io.camunda.zeebe.broker.partitioning.startup.steps.PartitionDirectoryStep;
 import io.camunda.zeebe.broker.partitioning.startup.steps.RaftBootstrapStep;
+import io.camunda.zeebe.broker.partitioning.startup.steps.RaftJoinStep;
 import io.camunda.zeebe.broker.partitioning.startup.steps.SnapshotStoreStep;
 import io.camunda.zeebe.broker.partitioning.startup.steps.ZeebePartitionStep;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
@@ -66,6 +67,17 @@ public final class Partition {
                 new ZeebePartitionStep())));
   }
 
+  public static Partition joining(final PartitionStartupContext context) {
+    return new Partition(
+        context,
+        new StartupProcess<>(
+            List.of(
+                new PartitionDirectoryStep(),
+                new SnapshotStoreStep(),
+                new RaftJoinStep(),
+                new ZeebePartitionStep())));
+  }
+
   public ActorFuture<Partition> start() {
     final var concurrencyControl = context.concurrencyControl();
     final var result = concurrencyControl.<Partition>createFuture();
@@ -110,5 +122,9 @@ public final class Partition {
 
   public RaftPartition raftPartition() {
     return context.raftPartition();
+  }
+
+  public int id() {
+    return context.partitionMetadata().id().id();
   }
 }

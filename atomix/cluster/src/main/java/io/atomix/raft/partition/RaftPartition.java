@@ -84,17 +84,24 @@ public final class RaftPartition implements Partition, HealthMonitorable {
     return dataDirectory;
   }
 
-  /** Opens the partition. */
-  public CompletableFuture<RaftPartition> open(
+  /** Bootstraps a partition. */
+  public CompletableFuture<RaftPartition> bootstrap(
       final PartitionManagementService managementService,
       final ReceivableSnapshotStore snapshotStore) {
     if (partitionMetadata
         .members()
         .contains(managementService.getMembershipService().getLocalMember().id())) {
       initServer(managementService, snapshotStore);
-      return server.start().thenApply(v -> this);
+      return server.bootstrap().thenApply(v -> this);
     }
     return CompletableFuture.completedFuture(this);
+  }
+
+  public CompletableFuture<RaftPartition> join(
+      final PartitionManagementService managementService,
+      final ReceivableSnapshotStore snapshotStore) {
+    initServer(managementService, snapshotStore);
+    return server.join().thenApply(v -> this);
   }
 
   private void initServer(

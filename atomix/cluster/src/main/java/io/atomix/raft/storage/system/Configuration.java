@@ -19,6 +19,7 @@ package io.atomix.raft.storage.system;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import com.google.common.collect.ImmutableList;
 import io.atomix.raft.cluster.RaftMember;
 import java.util.Collection;
 import java.util.Collections;
@@ -44,10 +45,21 @@ public record Configuration(
     Collection<RaftMember> newMembers,
     Collection<RaftMember> oldMembers) {
 
-  public Configuration {
+  public Configuration(
+      final long index,
+      final long term,
+      final long time,
+      final Collection<RaftMember> newMembers,
+      final Collection<RaftMember> oldMembers) {
     checkArgument(time > 0, "time must be positive");
-    checkNotNull(newMembers, "members cannot be null");
+    checkNotNull(newMembers, "newMembers cannot be null");
     checkNotNull(oldMembers, "oldMembers cannot be null");
+
+    this.index = index;
+    this.term = term;
+    this.time = time;
+    this.newMembers = ImmutableList.copyOf(newMembers);
+    this.oldMembers = ImmutableList.copyOf(oldMembers);
   }
 
   public Configuration(

@@ -48,7 +48,13 @@ public final class ZeebePartitionStep implements StartupStep<PartitionStartupCon
     final var result =
         partitionStartupContext.concurrencyControl().<PartitionStartupContext>createFuture();
 
-    final var close = partitionStartupContext.zeebePartition().closeAsync();
+    final var zeebePartition = partitionStartupContext.zeebePartition();
+    if (zeebePartition == null) {
+      result.complete(partitionStartupContext);
+      return result;
+    }
+
+    final var close = zeebePartition.closeAsync();
     partitionStartupContext
         .concurrencyControl()
         .runOnCompletion(

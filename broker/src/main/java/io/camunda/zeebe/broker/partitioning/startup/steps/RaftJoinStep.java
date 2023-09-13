@@ -11,11 +11,11 @@ import io.camunda.zeebe.broker.partitioning.startup.PartitionStartupContext;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.startup.StartupStep;
 
-public final class RaftBootstrapStep implements StartupStep<PartitionStartupContext> {
+public class RaftJoinStep implements StartupStep<PartitionStartupContext> {
 
   @Override
   public String getName() {
-    return "Bootstrapped Raft Partition";
+    return "Joining Raft Partition";
   }
 
   @Override
@@ -28,7 +28,7 @@ public final class RaftBootstrapStep implements StartupStep<PartitionStartupCont
             .createRaftPartition(context.partitionMetadata(), context.partitionDirectory());
 
     partition
-        .bootstrap(context.partitionManagementService(), context.snapshotStore())
+        .join(context.partitionManagementService(), context.snapshotStore())
         .whenComplete(
             (raftPartition, throwable) -> {
               if (throwable == null) {
@@ -52,15 +52,16 @@ public final class RaftBootstrapStep implements StartupStep<PartitionStartupCont
       return result;
     }
 
-    final var close = raftPartition.close();
-    close.whenComplete(
-        (ignored, throwable) -> {
-          if (throwable == null) {
-            result.complete(context.raftPartition(null));
-          } else {
-            result.completeExceptionally(throwable);
-          }
-        });
+    raftPartition
+        .close()
+        .whenComplete(
+            (ignored, throwable) -> {
+              if (throwable == null) {
+                result.complete(context.raftPartition(null));
+              } else {
+                result.completeExceptionally(throwable);
+              }
+            });
 
     return result;
   }

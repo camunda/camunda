@@ -18,15 +18,6 @@ package io.atomix.raft.metrics;
 import io.prometheus.client.Gauge;
 
 public class RaftStartupMetrics extends RaftMetrics {
-  private static final Gauge START_DURATION =
-      Gauge.build()
-          .namespace(NAMESPACE)
-          .labelNames(PARTITION_GROUP_NAME_LABEL, PARTITION_LABEL)
-          .help(
-              "Time taken to start the partition server (in ms). This includes the bootstrap time.")
-          .name("partition_server_startup_time")
-          .register();
-
   private static final Gauge BOOTSTRAP_DURATION =
       Gauge.build()
           .namespace(NAMESPACE)
@@ -35,20 +26,28 @@ public class RaftStartupMetrics extends RaftMetrics {
           .name("partition_server_bootstrap_time")
           .register();
 
-  private final Gauge.Child startDuration;
+  private static final Gauge JOIN_DURATION =
+      Gauge.build()
+          .namespace(NAMESPACE)
+          .labelNames(PARTITION_GROUP_NAME_LABEL, PARTITION_LABEL)
+          .help("Time taken for the partition server to join (in ms)")
+          .name("partition_server_join_time")
+          .register();
+
   private final Gauge.Child bootstrapDuration;
+  private final Gauge.Child joinDuration;
 
   public RaftStartupMetrics(final String partitionName) {
     super(partitionName);
-    startDuration = START_DURATION.labels(partitionGroupName, partition);
     bootstrapDuration = BOOTSTRAP_DURATION.labels(partitionGroupName, partition);
-  }
-
-  public void observeStartupDuration(final long durationMillis) {
-    startDuration.set(durationMillis);
+    joinDuration = JOIN_DURATION.labels(partitionGroupName, partition);
   }
 
   public void observeBootstrapDuration(final long durationMillis) {
     bootstrapDuration.set(durationMillis);
+  }
+
+  public void observeJoinDuration(final long durationMillis) {
+    joinDuration.set(durationMillis);
   }
 }

@@ -60,11 +60,11 @@ public final class ClusterCfg implements ConfigurationEntry {
     initPartitionIds();
 
     if (partitionsCount < 1) {
-      throw new IllegalArgumentException("Partition count must not be smaller then 1.");
+      throw new IllegalArgumentException("Partition count must not be smaller than 1.");
     }
 
-    if (nodeId < 0 || nodeId >= clusterSize) {
-      throw new IllegalArgumentException(String.format(NODE_ID_ERROR_MSG, nodeId, clusterSize));
+    if (nodeId < 0) {
+      throw new IllegalArgumentException("Node id must be positive");
     }
 
     if (replicationFactor < 1 || replicationFactor > clusterSize) {
