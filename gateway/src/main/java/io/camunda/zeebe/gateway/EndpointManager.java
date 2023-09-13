@@ -64,6 +64,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.TopologyResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.transport.stream.api.ClientStreamer;
 import io.camunda.zeebe.util.VersionUtil;
 import io.grpc.Context;
@@ -396,25 +397,24 @@ public final class EndpointManager {
       return;
     }
 
-    if (multiTenancy.isEnabled()) {
-      // Access the "authorized tenants" value from the global key directly. This is how gRPC
-      // recommends to access data from the Context.
-      // @see IdentityInterceptorTest.addsAuthorizedTenantsToContext
-      Context.current()
-          .run(
-              () -> {
-                final List<String> authorizedTenants =
-                    IdentityInterceptor.AUTHORIZED_TENANTS_KEY.get();
-                final String authorizationToken =
-                    Authorization.jwtEncoder()
-                        .withIssuer(JwtAuthorizationBuilder.DEFAULT_ISSUER)
-                        .withAudience(JwtAuthorizationBuilder.DEFAULT_AUDIENCE)
-                        .withSubject(JwtAuthorizationBuilder.DEFAULT_SUBJECT)
-                        .withClaim(Authorization.AUTHORIZED_TENANTS, authorizedTenants)
-                        .encode();
-                brokerRequest.setAuthorization(authorizationToken);
-              });
+    final String authorizationToken;
+    try {
+      final List<String> authorizedTenants =
+          multiTenancy.isEnabled()
+              ? Context.current().call(IdentityInterceptor.AUTHORIZED_TENANTS_KEY::get)
+              : List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+      authorizationToken =
+          Authorization.jwtEncoder()
+              .withIssuer(JwtAuthorizationBuilder.DEFAULT_ISSUER)
+              .withAudience(JwtAuthorizationBuilder.DEFAULT_AUDIENCE)
+              .withSubject(JwtAuthorizationBuilder.DEFAULT_SUBJECT)
+              .withClaim(Authorization.AUTHORIZED_TENANTS, authorizedTenants)
+              .encode();
+    } catch (final Exception e) {
+      streamObserver.onError(e);
+      return;
     }
+    brokerRequest.setAuthorization(authorizationToken);
 
     brokerClient.sendRequestWithRetry(
         brokerRequest,
