@@ -104,7 +104,7 @@
         # Enables multi tenancy for the gateway.
         # When enabled, the gateway enhances requests with the authorized tenant ids of the requester.
         # It also rejects requests that specify a tenant id that the requester is not authorized to access.
-        # When disabled, the gateway enhances requests with the default tenant id.
+        # When disabled, the gateway enhances requests with the default tenant id '<default>'.
         #
         # The authorized tenants are retrieved from the configured tenant authorization provider.
         # For now, only Identity is supported as tenant authorization provider.
