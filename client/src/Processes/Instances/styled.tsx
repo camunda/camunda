@@ -5,6 +5,14 @@
  * except in compliance with the proprietary license.
  */
 
-const IS_PROCESS_INSTANCES_ENABLED = process.env.NODE_ENV === 'development';
+import styled from 'styled-components';
 
-export {IS_PROCESS_INSTANCES_ENABLED};
+const Container = styled.div`
+  position: absolute;
+  top: 3rem;
+  right: 0;
+  width: 25%;
+  height: calc(100% - 3rem);
+`;
+
+export {Container};

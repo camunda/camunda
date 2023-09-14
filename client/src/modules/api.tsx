@@ -64,6 +64,27 @@ const api = {
       },
     });
   },
+  searchProcessInstances: (payload: {
+    userId: string;
+    pageSize: number;
+    searchAfter?: [string, string];
+    searchBefore?: [string, string];
+  }) => {
+    const {userId, ...body} = payload;
+
+    return new Request(
+      mergePathname(BASENAME, `/internal/users/${userId}/process-instances`),
+      {
+        ...BASE_REQUEST_OPTIONS,
+        method: 'POST',
+        body: JSON.stringify(body),
+        headers: {
+          'Content-Type': 'application/json',
+          'x-is-polling': 'true',
+        },
+      },
+    );
+  },
   getCurrentUser: () =>
     new Request(mergePathname(BASENAME, '/v1/internal/users/current'), {
       ...BASE_REQUEST_OPTIONS,

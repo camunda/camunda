@@ -69,6 +69,11 @@ type Process = {
 
 type ProcessInstance = {
   id: string;
+  process: Process;
+  state: 'pending' | 'completed' | 'terminated' | 'failed';
+  creationDate: string;
+  sortValues: [string, string];
+  isFirst: boolean;
 };
 
 type DateSearch = {

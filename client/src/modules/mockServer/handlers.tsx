@@ -5,8 +5,16 @@
  * except in compliance with the proprietary license.
  */
 
-import {RequestHandler} from 'msw';
+import {ProcessInstance} from 'modules/types';
+import {RequestHandler, rest} from 'msw';
+import * as processInstancesMocks from 'modules/mock-schema/mocks/process-instances';
 
-const handlers: RequestHandler[] = [];
+const handlers: RequestHandler[] = [
+  rest.post('/internal/users/:userId/process-instances', (_, res, ctx) => {
+    return res(
+      ctx.json<ProcessInstance[]>(processInstancesMocks.processInstances),
+    );
+  }),
+];
 
 export {handlers};

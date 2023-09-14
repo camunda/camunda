@@ -27,6 +27,8 @@ import {NewProcessInstanceTasksPolling} from './NewProcessInstanceTasksPolling';
 import {tracking} from 'modules/tracking';
 import {useProcesses} from 'modules/queries/useProcesses';
 import {usePermissions} from 'modules/hooks/usePermissions';
+import {Instances} from './Instances';
+import {IS_PROCESS_INSTANCES_ENABLED} from 'modules/featureFlags';
 
 const Processes: React.FC = observer(() => {
   const {instance} = newProcessInstance;
@@ -142,6 +144,7 @@ const Processes: React.FC = observer(() => {
           </ProcessesContainer>
         )}
       </Stack>
+      {IS_PROCESS_INSTANCES_ENABLED ? <Instances /> : null}
       <FirstTimeModal />
     </>
   );
