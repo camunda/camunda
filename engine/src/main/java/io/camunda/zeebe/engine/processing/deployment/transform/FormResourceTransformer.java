@@ -56,14 +56,17 @@ public final class FormResourceTransformer implements DeploymentResourceTransfor
       final DeploymentResource resource, final DeploymentRecord deployment) {
 
     return parseFormId(resource)
-        .map(
-            formId -> {
-              final FormMetadataRecord formRecord = deployment.formMetadata().add();
-              appendMetadataToFormRecord(formRecord, formId, resource);
-              writeFormRecord(formRecord, resource);
+        .flatMap(
+            formId ->
+                checkForDuplicateFormId(formId, resource, deployment)
+                    .map(
+                        noDuplicates -> {
+                          final FormMetadataRecord formRecord = deployment.formMetadata().add();
+                          appendMetadataToFormRecord(formRecord, formId, resource);
+                          writeFormRecord(formRecord, resource);
 
-              return null;
-            });
+                          return null;
+                        }));
   }
 
   private Either<Failure, String> parseFormId(final DeploymentResource resource) {
@@ -82,6 +85,23 @@ public final class FormResourceTransformer implements DeploymentResourceTransfor
           String.format("'%s': %s", resource.getResourceName(), e.getCause().getMessage());
       return Either.left(new Failure(failureMessage));
     }
+  }
+
+  private Either<Failure, ?> checkForDuplicateFormId(
+      final String formId, final DeploymentResource resource, final DeploymentRecord record) {
+    return record.getFormMetadata().stream()
+        .filter(metadata -> metadata.getFormId().equals(formId))
+        .findFirst()
+        .map(
+            duplicatedForm -> {
+              final var failureMessage =
+                  String.format(
+                      "Expected the form ids to be unique within a deployment"
+                          + " but found a duplicated id '%s' in the resources '%s' and '%s'.",
+                      formId, duplicatedForm.getResourceName(), resource.getResourceName());
+              return Either.left(new Failure(failureMessage));
+            })
+        .orElse(Either.right(null));
   }
 
   private void appendMetadataToFormRecord(
