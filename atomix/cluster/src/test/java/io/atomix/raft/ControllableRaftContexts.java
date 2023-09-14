@@ -51,6 +51,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NavigableMap;
@@ -635,7 +636,7 @@ public final class ControllableRaftContexts {
     final AppendListener delegate;
 
     // Keep track of committed entries and its checksum.
-    final Map<Long, Long> indexToChecksumMap = new HashMap<>();
+    final Map<Long, List<Long>> indexToChecksumMap = new HashMap<>();
 
     private String failMessage = "";
     private boolean dataloss = false;
@@ -646,6 +647,10 @@ public final class ControllableRaftContexts {
 
     @Override
     public void onWrite(final IndexedRaftLogEntry indexed) {
+      final long index = indexed.index();
+      final var entryChecksum = indexed.getPersistedRaftRecord().checksum();
+      indexToChecksumMap.computeIfAbsent(index, (i) -> new ArrayList<>());
+      indexToChecksumMap.get(index).add(entryChecksum);
       delegate.onWrite(indexed);
     }
 
@@ -655,18 +660,16 @@ public final class ControllableRaftContexts {
     }
 
     @Override
-    public void onCommit(final IndexedRaftLogEntry indexed) {
-      final var entryChecksum = indexed.getPersistedRaftRecord().checksum();
-      final long index = indexed.index();
-      if (indexToChecksumMap.containsKey(index) && indexToChecksumMap.get(index) != entryChecksum) {
+    public void onCommit(final long index) {
+      if (indexToChecksumMap.containsKey(index) && indexToChecksumMap.get(index).size() > 1) {
+        final List<Long> checksums = indexToChecksumMap.get(index);
         failMessage =
             "Committed entry at index %d checksum %d is being overwritten by entry with checksum %d"
-                .formatted(index, indexToChecksumMap.get(index), entryChecksum);
+                .formatted(index, checksums.get(0), checksums.get(1));
         LOG.info(failMessage);
         dataloss = true;
       }
-      indexToChecksumMap.put(index, entryChecksum);
-      delegate.onCommit(indexed);
+      delegate.onCommit(index);
     }
 
     @Override
