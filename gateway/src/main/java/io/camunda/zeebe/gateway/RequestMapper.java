@@ -287,7 +287,13 @@ public final class RequestMapper {
   public static String ensureTenantIdSet(final String commandName, final String tenantId) {
 
     final boolean hasTenantId = !StringUtils.isBlank(tenantId);
-    if (isMultiTenancyEnabled) {
+    if (!isMultiTenancyEnabled) {
+      if (hasTenantId && !TenantOwned.DEFAULT_TENANT_IDENTIFIER.equals(tenantId)) {
+        throw new InvalidTenantRequestException(commandName, tenantId, "multi-tenancy is disabled");
+      }
+
+      return TenantOwned.DEFAULT_TENANT_IDENTIFIER;
+    } else {
 
       if (!hasTenantId) {
         throw new InvalidTenantRequestException(
@@ -318,12 +324,7 @@ public final class RequestMapper {
       }
 
       return tenantId;
-    } else {
-      if (hasTenantId && !TenantOwned.DEFAULT_TENANT_IDENTIFIER.equals(tenantId)) {
-        throw new InvalidTenantRequestException(commandName, tenantId, "multi-tenancy is disabled");
-      }
-
-      return TenantOwned.DEFAULT_TENANT_IDENTIFIER;
     }
+
   }
 }
