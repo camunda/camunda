@@ -8,6 +8,8 @@
 package io.camunda.zeebe.gateway;
 
 import io.atomix.utils.net.Address;
+import io.camunda.zeebe.auth.api.JwtAuthorizationBuilder;
+import io.camunda.zeebe.auth.impl.Authorization;
 import io.camunda.zeebe.gateway.ResponseMapper.BrokerResponseMapper;
 import io.camunda.zeebe.gateway.grpc.ServerStreamObserver;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
@@ -18,6 +20,7 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerRequest;
 import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.stream.ClientStreamAdapter;
+import io.camunda.zeebe.gateway.interceptors.impl.IdentityInterceptor;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
@@ -61,11 +64,14 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.TopologyResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.transport.stream.api.ClientStreamer;
 import io.camunda.zeebe.util.VersionUtil;
+import io.grpc.Context;
 import io.grpc.stub.ServerCallStreamObserver;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.function.Function;
@@ -390,6 +396,25 @@ public final class EndpointManager {
       streamObserver.onError(e);
       return;
     }
+
+    final String authorizationToken;
+    try {
+      final List<String> authorizedTenants =
+          multiTenancy.isEnabled()
+              ? Context.current().call(IdentityInterceptor.AUTHORIZED_TENANTS_KEY::get)
+              : List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+      authorizationToken =
+          Authorization.jwtEncoder()
+              .withIssuer(JwtAuthorizationBuilder.DEFAULT_ISSUER)
+              .withAudience(JwtAuthorizationBuilder.DEFAULT_AUDIENCE)
+              .withSubject(JwtAuthorizationBuilder.DEFAULT_SUBJECT)
+              .withClaim(Authorization.AUTHORIZED_TENANTS, authorizedTenants)
+              .encode();
+    } catch (final Exception e) {
+      streamObserver.onError(e);
+      return;
+    }
+    brokerRequest.setAuthorization(authorizationToken);
 
     brokerClient.sendRequestWithRetry(
         brokerRequest,

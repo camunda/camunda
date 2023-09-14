@@ -11,6 +11,8 @@ import io.camunda.zeebe.gateway.cmd.UnsupportedBrokerResponseException;
 import io.camunda.zeebe.gateway.impl.broker.response.BrokerRejection;
 import io.camunda.zeebe.gateway.impl.broker.response.BrokerRejectionResponse;
 import io.camunda.zeebe.gateway.impl.broker.response.BrokerResponse;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo.AuthDataFormat;
 import io.camunda.zeebe.protocol.impl.encoding.ExecuteCommandRequest;
 import io.camunda.zeebe.protocol.impl.encoding.ExecuteCommandResponse;
 import io.camunda.zeebe.protocol.record.ExecuteCommandRequestEncoder;
@@ -55,6 +57,12 @@ public abstract class BrokerExecuteCommand<T> extends BrokerRequest<T> {
   @Override
   public void setPartitionId(final int partitionId) {
     request.setPartitionId(partitionId);
+  }
+
+  @Override
+  public void setAuthorization(final String authorizationToken) {
+    request.setAuthorization(
+        new AuthInfo().setFormatProp(AuthDataFormat.JWT).setAuthData(authorizationToken));
   }
 
   @Override
@@ -104,6 +112,10 @@ public abstract class BrokerExecuteCommand<T> extends BrokerRequest<T> {
   @Override
   public RequestType getRequestType() {
     return RequestType.COMMAND;
+  }
+
+  public AuthInfo getAuthorization() {
+    return request.getAuthorization();
   }
 
   @Override
