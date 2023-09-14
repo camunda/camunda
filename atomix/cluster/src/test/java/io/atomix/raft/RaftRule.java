@@ -644,9 +644,12 @@ public final class RaftRule extends ExternalResource {
   }
 
   public void addCommittedEntryListener(
-      final RaftCommittedEntryListener raftCommittedEntryListener) {
+      final RaftApplicationEntryCommittedPositionListener
+          raftApplicationEntryCommittedPositionListener) {
     servers.forEach(
-        (id, raft) -> raft.getContext().addCommittedEntryListener(raftCommittedEntryListener));
+        (id, raft) ->
+            raft.getContext()
+                .addCommittedEntryListener(raftApplicationEntryCommittedPositionListener));
   }
 
   public void partition(final RaftServer follower) {

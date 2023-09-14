@@ -7,8 +7,7 @@
  */
 package io.camunda.zeebe.broker.system.partitions.impl;
 
-import io.atomix.raft.RaftCommittedEntryListener;
-import io.atomix.raft.storage.log.IndexedRaftLogEntry;
+import io.atomix.raft.RaftApplicationEntryCommittedPositionListener;
 import io.camunda.zeebe.broker.system.partitions.NoEntryAtSnapshotPosition;
 import io.camunda.zeebe.broker.system.partitions.StateController;
 import io.camunda.zeebe.logstreams.impl.Loggers;
@@ -36,7 +35,7 @@ import java.util.function.Consumer;
 import org.slf4j.Logger;
 
 public final class AsyncSnapshotDirector extends Actor
-    implements RaftCommittedEntryListener, HealthMonitorable {
+    implements RaftApplicationEntryCommittedPositionListener, HealthMonitorable {
 
   public static final Duration MINIMUM_SNAPSHOT_PERIOD = Duration.ofMinutes(1);
 
@@ -115,7 +114,7 @@ public final class AsyncSnapshotDirector extends Actor
   @Override
   protected void handleFailure(final Throwable failure) {
     LOG.error(
-        "No snapshot was taken due to failure in '{}'. Will try to take snapshot after snapshot period {}. {}",
+        "No snapshot was taken due to failure in '{}'. Will try to take snapshot after snapshot period {}.",
         actorName,
         snapshotRate,
         failure);
@@ -407,13 +406,8 @@ public final class AsyncSnapshotDirector extends Actor
   }
 
   @Override
-  public void onCommit(final IndexedRaftLogEntry indexedRaftLogEntry) {
-    // is called by the Leader Role and gives the last committed entry, where we
-    // can extract the highest position, which corresponds to the last committed position
-    if (indexedRaftLogEntry.isApplicationEntry()) {
-      final var committedPosition = indexedRaftLogEntry.getApplicationEntry().highestPosition();
-      newPositionCommitted(committedPosition);
-    }
+  public void onCommit(final long committedPosition) {
+    newPositionCommitted(committedPosition);
   }
 
   public void newPositionCommitted(final long currentCommitPosition) {
