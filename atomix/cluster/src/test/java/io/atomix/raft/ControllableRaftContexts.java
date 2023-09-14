@@ -50,7 +50,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NavigableMap;
@@ -634,7 +633,9 @@ public final class ControllableRaftContexts {
     final AppendListener delegate;
 
     // Keep track of committed entries and its checksum.
-    final Map<Long, List<Long>> indexToChecksumMap = new HashMap<>();
+    final Map<Long, Long> committedIndexToChecksumMap = new HashMap<>();
+
+    final Map<Long, Long> pendingWriteToBeCommitted = new HashMap<>();
 
     private String failMessage = "";
     private boolean dataloss = false;
@@ -647,8 +648,7 @@ public final class ControllableRaftContexts {
     public void onWrite(final IndexedRaftLogEntry indexed) {
       final long index = indexed.index();
       final var entryChecksum = indexed.getPersistedRaftRecord().checksum();
-      indexToChecksumMap.computeIfAbsent(index, (i) -> new ArrayList<>());
-      indexToChecksumMap.get(index).add(entryChecksum);
+      pendingWriteToBeCommitted.put(index, entryChecksum);
       delegate.onWrite(indexed);
     }
 
@@ -659,14 +659,19 @@ public final class ControllableRaftContexts {
 
     @Override
     public void onCommit(final long index) {
-      if (indexToChecksumMap.containsKey(index) && indexToChecksumMap.get(index).size() > 1) {
-        final List<Long> checksums = indexToChecksumMap.get(index);
+      if (committedIndexToChecksumMap.containsKey(index)
+          && pendingWriteToBeCommitted.containsKey(index)
+          && pendingWriteToBeCommitted.get(index).equals(committedIndexToChecksumMap.get(index))) {
         failMessage =
             "Committed entry at index %d checksum %d is being overwritten by entry with checksum %d"
-                .formatted(index, checksums.get(0), checksums.get(1));
+                .formatted(
+                    index,
+                    committedIndexToChecksumMap.get(index),
+                    pendingWriteToBeCommitted.get(index));
         LOG.info(failMessage);
         dataloss = true;
       }
+      committedIndexToChecksumMap.put(index, pendingWriteToBeCommitted.remove(index));
       delegate.onCommit(index);
     }
 
