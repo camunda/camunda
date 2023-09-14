@@ -83,8 +83,8 @@ public class ZeebeLogAppenderTest {
     append();
 
     // then
-    final IndexedRaftLogEntry appended = appenderListener.pollCommitted();
-    assertNotNull(appended);
+    final var committed = appenderListener.pollCommitted();
+    assertNotNull(committed);
     assertEquals(0, appenderListener.getErrors().size());
   }
 
