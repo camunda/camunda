@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.impl;
 
+import static io.camunda.zeebe.gateway.api.util.GatewayAssertions.statusRuntimeExceptionWithStatusCode;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -19,6 +20,7 @@ import io.camunda.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceRequest;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.grpc.Status;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -58,6 +60,7 @@ public class MultiTenancyDisabledTest extends GatewayTest {
 
     // when/then
     assertThatThrownBy(() -> client.deployResource(request))
+        .is(statusRuntimeExceptionWithStatusCode(Status.INVALID_ARGUMENT.getCode()))
         .hasMessageContaining(
             "Expected to handle gRPC request DeployResource with tenant identifier")
         .hasMessageContaining("but multi-tenancy is disabled");

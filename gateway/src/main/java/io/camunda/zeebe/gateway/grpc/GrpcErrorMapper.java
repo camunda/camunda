@@ -15,6 +15,7 @@ import com.google.rpc.Status.Builder;
 import io.camunda.zeebe.gateway.Loggers;
 import io.camunda.zeebe.gateway.cmd.BrokerErrorException;
 import io.camunda.zeebe.gateway.cmd.BrokerRejectionException;
+import io.camunda.zeebe.gateway.cmd.IllegalTenantRequestException;
 import io.camunda.zeebe.gateway.cmd.InvalidBrokerRequestArgumentException;
 import io.camunda.zeebe.gateway.cmd.InvalidTenantRequestException;
 import io.camunda.zeebe.gateway.cmd.NoTopologyAvailableException;
@@ -79,6 +80,9 @@ public final class GrpcErrorMapper {
       logger.debug("Expected to handle gRPC request, but JSON property was invalid", rootError);
     } else if (error instanceof InvalidTenantRequestException) {
       builder.setCode(Code.INVALID_ARGUMENT_VALUE).setMessage(error.getMessage());
+      logger.debug(error.getMessage(), rootError);
+    } else if (error instanceof IllegalTenantRequestException) {
+      builder.setCode(Code.PERMISSION_DENIED_VALUE).setMessage(error.getMessage());
       logger.debug(error.getMessage(), rootError);
     } else if (error instanceof IllegalArgumentException) {
       builder.setCode(Code.INVALID_ARGUMENT_VALUE).setMessage(error.getMessage());

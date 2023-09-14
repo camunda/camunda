@@ -11,6 +11,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.agrona.LangUtil.rethrowUnchecked;
 
 import com.fasterxml.jackson.core.JsonParseException;
+import io.camunda.zeebe.gateway.cmd.IllegalTenantRequestException;
 import io.camunda.zeebe.gateway.cmd.InvalidTenantRequestException;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerBroadcastSignalRequest;
@@ -319,7 +320,7 @@ public final class RequestMapper {
           commandName, tenantId, "tenant could not be retrieved from the request context", e);
     }
     if (!authorizedTenants.contains(tenantId)) {
-      throw new InvalidTenantRequestException(
+      throw new IllegalTenantRequestException(
           commandName, tenantId, "tenant is not authorized to perform this request");
     }
 

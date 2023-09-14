@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.impl;
 
+import static io.camunda.zeebe.gateway.api.util.GatewayAssertions.statusRuntimeExceptionWithStatusCode;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -22,6 +23,7 @@ import io.camunda.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceResponse;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.grpc.Status;
 import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
@@ -65,6 +67,7 @@ public class MultiTenancyEnabledTest extends GatewayTest {
 
     // when/then
     assertThatThrownBy(() -> client.deployResource(DeployResourceRequest.newBuilder().build()))
+        .is(statusRuntimeExceptionWithStatusCode(Status.INVALID_ARGUMENT.getCode()))
         .hasMessageContaining(
             "Expected to handle gRPC request DeployResource with tenant identifier ``")
         .hasMessageContaining("but no tenant identifier was provided");
@@ -81,6 +84,7 @@ public class MultiTenancyEnabledTest extends GatewayTest {
             () ->
                 client.deployResource(
                     DeployResourceRequest.newBuilder().setTenantId("tenant-c").build()))
+        .is(statusRuntimeExceptionWithStatusCode(Status.PERMISSION_DENIED.getCode()))
         .hasMessageContaining(
             "Expected to handle gRPC request DeployResource with tenant identifier `tenant-c`")
         .hasMessageContaining("but tenant is not authorized to perform this request");
