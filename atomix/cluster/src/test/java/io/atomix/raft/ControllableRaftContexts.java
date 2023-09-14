@@ -661,7 +661,7 @@ public final class ControllableRaftContexts {
     public void onCommit(final long index) {
       if (committedIndexToChecksumMap.containsKey(index)
           && pendingWriteToBeCommitted.containsKey(index)
-          && pendingWriteToBeCommitted.get(index).equals(committedIndexToChecksumMap.get(index))) {
+          && !pendingWriteToBeCommitted.get(index).equals(committedIndexToChecksumMap.get(index))) {
         failMessage =
             "Committed entry at index %d checksum %d is being overwritten by entry with checksum %d"
                 .formatted(
