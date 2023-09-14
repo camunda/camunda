@@ -37,7 +37,7 @@ public class MultiTenancyDisabledTest extends GatewayTest {
     new CreateProcessInstanceStub().registerWith(brokerClient);
   }
 
-  private void assertDefaultTenantIdSet() {
+  private void assertThatDefaultTenantIdSet() {
     final var brokerRequest = brokerClient.getSingleBrokerRequest();
     assertThat(((BrokerExecuteCommand<?>) brokerRequest).getAuthorization().toDecodedMap())
         .describedAs("The broker request should contain the default tenant as authorized tenant")
@@ -71,7 +71,7 @@ public class MultiTenancyDisabledTest extends GatewayTest {
     assertThat(response).isNotNull();
 
     // then
-    assertDefaultTenantIdSet();
+    assertThatDefaultTenantIdSet();
   }
 
   @Test
@@ -93,7 +93,7 @@ public class MultiTenancyDisabledTest extends GatewayTest {
     assertThat(response).isNotNull();
 
     // then
-    assertDefaultTenantIdSet();
+    assertThatDefaultTenantIdSet();
   }
 
   @Test
