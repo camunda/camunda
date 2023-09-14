@@ -55,7 +55,7 @@ public final class AtomixAppendListenerAdapter implements AppendListener {
   }
 
   @Override
-  public void onCommitError(final IndexedRaftLogEntry indexed, final Throwable error) {
-    delegate.onCommitError(indexed.index(), error);
+  public void onCommitError(final long index, final Throwable error) {
+    delegate.onCommitError(index, error);
   }
 }
