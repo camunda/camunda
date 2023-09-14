@@ -62,7 +62,7 @@ describe('request', () => {
 
   it('should handle a network errors', async () => {
     nodeMockServer.use(
-      rest.post(MOCK_URL, (_, res) => res.networkError('Failed to connect')),
+      rest.post(MOCK_URL, (_, res) => res.networkError('Failed to fetch')),
     );
 
     const response = await request(
@@ -78,7 +78,7 @@ describe('request', () => {
         variant: 'network-error',
         response: null,
         networkError: expect.objectContaining({
-          message: 'Failed to connect',
+          message: 'Failed to fetch',
         }),
       }),
     });
