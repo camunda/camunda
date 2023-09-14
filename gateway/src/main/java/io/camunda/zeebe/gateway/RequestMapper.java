@@ -293,38 +293,36 @@ public final class RequestMapper {
       }
 
       return TenantOwned.DEFAULT_TENANT_IDENTIFIER;
-    } else {
-
-      if (!hasTenantId) {
-        throw new InvalidTenantRequestException(
-            commandName, tenantId, "no tenant identifier was provided.");
-      }
-
-      if (tenantId.length() > 31) {
-        throw new InvalidTenantRequestException(
-            commandName, tenantId, "tenant identifier is longer than 31 characters");
-      }
-
-      if (!TenantOwned.DEFAULT_TENANT_IDENTIFIER.equals(tenantId)
-          && !TENANT_ID_MASK.matcher(tenantId).matches()) {
-        throw new InvalidTenantRequestException(
-            commandName, tenantId, "tenant identifier contains illegal characters");
-      }
-
-      final List<String> authorizedTenants;
-      try {
-        authorizedTenants = Context.current().call(IdentityInterceptor.AUTHORIZED_TENANTS_KEY::get);
-      } catch (final Exception e) {
-        throw new InvalidTenantRequestException(
-            commandName, tenantId, "tenant could not be retrieved from the request context", e);
-      }
-      if (!authorizedTenants.contains(tenantId)) {
-        throw new InvalidTenantRequestException(
-            commandName, tenantId, "tenant is not authorized to perform this request");
-      }
-
-      return tenantId;
     }
 
+    if (!hasTenantId) {
+      throw new InvalidTenantRequestException(
+          commandName, tenantId, "no tenant identifier was provided.");
+    }
+
+    if (tenantId.length() > 31) {
+      throw new InvalidTenantRequestException(
+          commandName, tenantId, "tenant identifier is longer than 31 characters");
+    }
+
+    if (!TenantOwned.DEFAULT_TENANT_IDENTIFIER.equals(tenantId)
+        && !TENANT_ID_MASK.matcher(tenantId).matches()) {
+      throw new InvalidTenantRequestException(
+          commandName, tenantId, "tenant identifier contains illegal characters");
+    }
+
+    final List<String> authorizedTenants;
+    try {
+      authorizedTenants = Context.current().call(IdentityInterceptor.AUTHORIZED_TENANTS_KEY::get);
+    } catch (final Exception e) {
+      throw new InvalidTenantRequestException(
+          commandName, tenantId, "tenant could not be retrieved from the request context", e);
+    }
+    if (!authorizedTenants.contains(tenantId)) {
+      throw new InvalidTenantRequestException(
+          commandName, tenantId, "tenant is not authorized to perform this request");
+    }
+
+    return tenantId;
   }
 }
