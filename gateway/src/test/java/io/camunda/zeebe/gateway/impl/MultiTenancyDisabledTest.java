@@ -91,4 +91,17 @@ public class MultiTenancyDisabledTest extends GatewayTest {
     // then
     assertDefaultTenantIdSet();
   }
+
+  @Test
+  public void createProcessInstanceRequestRejectsTenantId() {
+    // given
+    final var request = CreateProcessInstanceRequest.newBuilder().setTenantId("tenant-a").build();
+
+    // when/then
+    assertThatThrownBy(() -> client.createProcessInstance(request))
+        .is(statusRuntimeExceptionWithStatusCode(Status.INVALID_ARGUMENT.getCode()))
+        .hasMessageContaining(
+            "Expected to handle gRPC request CreateProcessInstance with tenant identifier")
+        .hasMessageContaining("but multi-tenancy is disabled");
+  }
 }
