@@ -18,13 +18,15 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstance
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.List;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public final class CreateProcessInstanceWithResultTest extends GatewayTest {
 
   @Test
-  public void shouldMapToBrokerRequest() {
+  public void shouldMapToBrokerRequestWithDefaultTenant() {
     // given
     final CreateProcessInstanceWithResultStub stub = new CreateProcessInstanceWithResultStub();
     stub.registerWith(brokerClient);
@@ -52,10 +54,11 @@ public final class CreateProcessInstanceWithResultTest extends GatewayTest {
         .isEqualTo(stub.getProcessDefinitionKey());
     assertThat(brokerRequestValue.fetchVariables().iterator().next().getValue())
         .isEqualTo(wrapString("x"));
+    assertThat(brokerRequestValue.getTenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   }
 
   @Test
-  public void shouldMapRequestAndResponse() {
+  public void shouldMapRequestAndResponseWithDefaultTenant() {
     // given
     final CreateProcessInstanceWithResultStub stub = new CreateProcessInstanceWithResultStub();
     stub.registerWith(brokerClient);
@@ -76,5 +79,34 @@ public final class CreateProcessInstanceWithResultTest extends GatewayTest {
     assertThat(response.getVersion()).isEqualTo(stub.getProcessVersion());
     assertThat(response.getProcessDefinitionKey()).isEqualTo(stub.getProcessDefinitionKey());
     assertThat(response.getProcessInstanceKey()).isEqualTo(stub.getProcessInstanceKey());
+    assertThat(response.getTenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  }
+
+  @Test
+  @Ignore("https://github.com/camunda/zeebe/issues/14041")
+  public void shouldMapRequestAndResponseWithCustomTenant() {
+    // given
+    final String tenantId = "test-tenant";
+    final CreateProcessInstanceWithResultStub stub = new CreateProcessInstanceWithResultStub();
+    stub.registerWith(brokerClient);
+
+    final CreateProcessInstanceWithResultRequest request =
+        CreateProcessInstanceWithResultRequest.newBuilder()
+            .setRequest(
+                CreateProcessInstanceRequest.newBuilder()
+                    .setProcessDefinitionKey(stub.getProcessDefinitionKey())
+                    .setTenantId(tenantId))
+            .build();
+
+    // when
+    final CreateProcessInstanceWithResultResponse response =
+        client.createProcessInstanceWithResult(request);
+
+    // then
+    assertThat(response.getTenantId()).isEqualTo(tenantId);
+
+    final ProcessInstanceCreationRecord brokerRequestValue =
+        (ProcessInstanceCreationRecord) brokerClient.getSingleBrokerRequest().getRequestWriter();
+    assertThat(brokerRequestValue.getTenantId()).isEqualTo(tenantId);
   }
 }

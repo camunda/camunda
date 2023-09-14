@@ -240,6 +240,11 @@
                 "name": "startInstructions",
                 "type": "ProcessInstanceCreationStartInstruction",
                 "is_repeated": true
+              },
+              {
+                "id": 6,
+                "name": "tenantId",
+                "type": "string"
               }
             ]
           },
@@ -275,6 +280,11 @@
                 "id": 4,
                 "name": "processInstanceKey",
                 "type": "int64"
+              },
+              {
+                "id": 5,
+                "name": "tenantId",
+                "type": "string"
               }
             ]
           },
@@ -325,6 +335,11 @@
               {
                 "id": 5,
                 "name": "variables",
+                "type": "string"
+              },
+              {
+                "id": 6,
+                "name": "tenantId",
                 "type": "string"
               }
             ]

@@ -152,6 +152,7 @@ public final class ResponseMapper {
         .setProcessDefinitionKey(brokerResponse.getProcessDefinitionKey())
         .setBpmnProcessId(bufferAsString(brokerResponse.getBpmnProcessIdBuffer()))
         .setVersion(brokerResponse.getVersion())
+        .setTenantId(brokerResponse.getTenantId())
         .setProcessInstanceKey(brokerResponse.getProcessInstanceKey())
         .build();
   }
@@ -162,6 +163,7 @@ public final class ResponseMapper {
         .setProcessDefinitionKey(brokerResponse.getProcessDefinitionKey())
         .setBpmnProcessId(bufferAsString(brokerResponse.getBpmnProcessIdBuffer()))
         .setVersion(brokerResponse.getVersion())
+        .setTenantId(brokerResponse.getTenantId())
         .setProcessInstanceKey(brokerResponse.getProcessInstanceKey())
         .setVariables(bufferAsJson(brokerResponse.getVariablesBuffer()))
         .build();

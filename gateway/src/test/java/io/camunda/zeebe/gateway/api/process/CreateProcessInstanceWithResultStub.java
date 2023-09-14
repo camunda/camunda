@@ -11,6 +11,7 @@ import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient;
 import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient.RequestStub;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceWithResultRequest;
 import io.camunda.zeebe.gateway.impl.broker.response.BrokerResponse;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
 
 public final class CreateProcessInstanceWithResultStub
@@ -46,12 +47,15 @@ public final class CreateProcessInstanceWithResultStub
   @Override
   public BrokerResponse<ProcessInstanceResultRecord> handle(
       final BrokerCreateProcessInstanceWithResultRequest request) throws Exception {
+    final ProcessInstanceCreationRecord piCreationRecord = request.getRequestWriter();
     final ProcessInstanceResultRecord response = new ProcessInstanceResultRecord();
-    response.setBpmnProcessId(PROCESS_ID);
-    response.setVariables(request.getRequestWriter().getVariablesBuffer());
-    response.setVersion(PROCESS_VERSION);
-    response.setProcessDefinitionKey(PROCESS_KEY);
-    response.setProcessInstanceKey(PROCESS_INSTANCE_KEY);
+    response
+        .setBpmnProcessId(PROCESS_ID)
+        .setVariables(piCreationRecord.getVariablesBuffer())
+        .setVersion(PROCESS_VERSION)
+        .setTenantId(piCreationRecord.getTenantId())
+        .setProcessDefinitionKey(PROCESS_KEY)
+        .setProcessInstanceKey(PROCESS_INSTANCE_KEY);
 
     return new BrokerResponse<>(response, 0, PROCESS_INSTANCE_KEY);
   }

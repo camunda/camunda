@@ -43,6 +43,11 @@ public class BrokerCreateProcessInstanceRequest
     return this;
   }
 
+  public BrokerCreateProcessInstanceRequest setTenantId(final String tenantId) {
+    requestDto.setTenantId(tenantId);
+    return this;
+  }
+
   public BrokerCreateProcessInstanceRequest setStartInstructions(
       final List<ProcessInstanceCreationStartInstruction> startInstructionsList) {
     startInstructionsList.stream()
