@@ -21,6 +21,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstance
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceRequest;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.grpc.Status;
+import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -53,6 +54,13 @@ public class MultiTenancyDisabledTest extends GatewayTest {
         .isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   }
 
+  private void assertThatRejectsRequest(final ThrowingCallable requestCallable, final String name) {
+    assertThatThrownBy(requestCallable)
+        .is(statusRuntimeExceptionWithStatusCode(Status.INVALID_ARGUMENT.getCode()))
+        .hasMessageContaining("Expected to handle gRPC request " + name + " with tenant identifier")
+        .hasMessageContaining("but multi-tenancy is disabled");
+  }
+
   @Test
   public void deployResourceRequestShouldContainDefaultTenantAsAuthorizedTenants() {
     // given
@@ -72,11 +80,7 @@ public class MultiTenancyDisabledTest extends GatewayTest {
     final var request = DeployResourceRequest.newBuilder().setTenantId("tenant-a").build();
 
     // when/then
-    assertThatThrownBy(() -> client.deployResource(request))
-        .is(statusRuntimeExceptionWithStatusCode(Status.INVALID_ARGUMENT.getCode()))
-        .hasMessageContaining(
-            "Expected to handle gRPC request DeployResource with tenant identifier")
-        .hasMessageContaining("but multi-tenancy is disabled");
+    assertThatRejectsRequest(() -> client.deployResource(request), "DeployResource");
   }
 
   @Test
@@ -98,10 +102,6 @@ public class MultiTenancyDisabledTest extends GatewayTest {
     final var request = CreateProcessInstanceRequest.newBuilder().setTenantId("tenant-a").build();
 
     // when/then
-    assertThatThrownBy(() -> client.createProcessInstance(request))
-        .is(statusRuntimeExceptionWithStatusCode(Status.INVALID_ARGUMENT.getCode()))
-        .hasMessageContaining(
-            "Expected to handle gRPC request CreateProcessInstance with tenant identifier")
-        .hasMessageContaining("but multi-tenancy is disabled");
+    assertThatRejectsRequest(() -> client.createProcessInstance(request), "CreateProcessInstance");
   }
 }
