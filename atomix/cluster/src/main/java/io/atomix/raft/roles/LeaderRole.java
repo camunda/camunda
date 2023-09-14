@@ -632,8 +632,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     raft.checkThread();
     final var appendEntriesFuture = appender.appendEntries(indexed.index());
 
-    final boolean applicationEntryWasCommitted = indexed.isApplicationEntry();
-    if (applicationEntryWasCommitted) {
+    if (indexed.isApplicationEntry()) {
       // We have some services which are waiting for the application records, especially position
       // to be committed. This is our glue code to notify them, instead of
       // passing the complete object (IndexedRaftLogEntry) threw the listeners and
@@ -663,11 +662,11 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
           // up to date with the latest entries, so it can handle configuration and initial
           // entries properly on fail over
           if (commitError == null) {
-            appendListener.onCommit(indexed.index());
+            appendListener.onCommit(commitIndex);
           } else {
-            appendListener.onCommitError(indexed.index(), commitError);
+            appendListener.onCommitError(commitIndex, commitError);
             // replicating the entry will be retried on the next append request
-            log.error("Failed to replicate entry: {}", indexed, commitError);
+            log.error("Failed to replicate entry: {}", commitIndex, commitError);
           }
         },
         raft.getThreadContext());
