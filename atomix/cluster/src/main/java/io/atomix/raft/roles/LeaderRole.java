@@ -611,7 +611,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
               // up to date with the latest entries, so it can handle configuration and initial
               // entries properly on fail over
               if (commitError == null) {
-                appendListener.onCommit(indexed);
+                appendListener.onCommit(indexed.index());
                 raft.notifyCommittedEntryListeners(indexed);
               } else {
                 appendListener.onCommitError(indexed, commitError);
