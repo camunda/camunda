@@ -32,6 +32,8 @@ import io.atomix.raft.protocol.ConfigureResponse;
 import io.atomix.raft.protocol.InternalAppendRequest;
 import io.atomix.raft.protocol.JoinRequest;
 import io.atomix.raft.protocol.JoinResponse;
+import io.atomix.raft.protocol.LeaveRequest;
+import io.atomix.raft.protocol.LeaveResponse;
 import io.atomix.raft.protocol.PollRequest;
 import io.atomix.raft.protocol.PollResponse;
 import io.atomix.raft.protocol.RaftResponse;
@@ -215,6 +217,32 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
                     .build();
               }
               return JoinResponse.builder().withStatus(Status.OK).build();
+            });
+  }
+
+  @Override
+  public CompletableFuture<LeaveResponse> onLeave(final LeaveRequest request) {
+    raft.checkThread();
+    final var currentConfiguration = raft.getCluster().getConfiguration();
+    final var updatedMembers =
+        currentConfiguration.newMembers().stream()
+            .filter(member -> !member.memberId().equals(request.leavingMember().memberId()))
+            .toList();
+    return onReconfigure(
+            ReconfigureRequest.builder()
+                .withIndex(currentConfiguration.index())
+                .withTerm(currentConfiguration.term())
+                .withMembers(updatedMembers)
+                .build())
+        .handle(
+            (reconfigureResponse, throwable) -> {
+              if (throwable != null) {
+                return LeaveResponse.builder()
+                    .withStatus(Status.ERROR)
+                    .withError(Type.PROTOCOL_ERROR, throwable.getMessage())
+                    .build();
+              }
+              return LeaveResponse.builder().withStatus(Status.OK).build();
             });
   }
 
