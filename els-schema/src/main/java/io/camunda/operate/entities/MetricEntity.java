@@ -14,6 +14,8 @@ public class MetricEntity extends OperateEntity {
   private String value;
   private OffsetDateTime eventTime;
 
+  private String tenantId;
+
   public MetricEntity() {
     super();
   }
@@ -51,25 +53,30 @@ public class MetricEntity extends OperateEntity {
     return this;
   }
 
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  public MetricEntity setTenantId(String tenantId) {
+    this.tenantId = tenantId;
+    return this;
+  }
+
   @Override
   public boolean equals(Object o) {
-    if (this == o) {
+    if (this == o)
       return true;
-    }
-    if (!(o instanceof MetricEntity)) {
+    if (o == null || getClass() != o.getClass())
       return false;
-    }
-    if (!super.equals(o)) {
+    if (!super.equals(o))
       return false;
-    }
-    final MetricEntity that = (MetricEntity) o;
-    return Objects.equals(event, that.event)
-        && Objects.equals(value, that.value)
-        && Objects.equals(eventTime, that.eventTime);
+    MetricEntity that = (MetricEntity) o;
+    return Objects.equals(event, that.event) && Objects.equals(value, that.value) && Objects.equals(eventTime,
+        that.eventTime) && Objects.equals(tenantId, that.tenantId);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), event, value, eventTime);
+    return Objects.hash(super.hashCode(), event, value, eventTime, tenantId);
   }
 }

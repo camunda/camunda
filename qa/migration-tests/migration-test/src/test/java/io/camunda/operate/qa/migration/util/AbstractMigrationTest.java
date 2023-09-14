@@ -79,6 +79,9 @@ public abstract class AbstractMigrationTest {
   protected UserIndex userIndex;
 
   @Autowired
+  protected MetricIndex metricIndex;
+
+  @Autowired
   protected RestHighLevelClient esClient;
 
   @Autowired

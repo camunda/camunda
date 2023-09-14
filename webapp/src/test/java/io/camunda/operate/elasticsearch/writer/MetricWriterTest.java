@@ -38,15 +38,17 @@ public class MetricWriterTest {
     // Given
     final String key = "processInstanceKey";
     var now = OffsetDateTime.now();
+    final String tenantId = "tenantA";
 
     // When
-    subject.registerProcessInstanceStartEvent(key, now, batchRequest);
+    subject.registerProcessInstanceStartEvent(key, tenantId, now, batchRequest);
 
     // Then
     verify(batchRequest).add(metricIndex.getFullQualifiedName(), new MetricEntity()
         .setEvent(EVENT_PROCESS_INSTANCE_STARTED)
         .setValue(key)
-        .setEventTime(now));
+        .setEventTime(now)
+        .setTenantId(tenantId));
   }
 
   @Test
@@ -54,14 +56,16 @@ public class MetricWriterTest {
     // Given
     final String key = "decisionInstanceKey";
     var now = OffsetDateTime.now();
+    final String tenantId = "tenantA";
 
     // When
-    subject.registerDecisionInstanceCompleteEvent(key, now, batchRequest);
+    subject.registerDecisionInstanceCompleteEvent(key, tenantId, now, batchRequest);
 
     // Then
     verify(batchRequest).add( metricIndex.getFullQualifiedName(), new MetricEntity()
         .setEvent(EVENT_DECISION_INSTANCE_EVALUATED)
         .setValue(key)
-        .setEventTime(now));
+        .setEventTime(now)
+        .setTenantId(tenantId));
   }
 }

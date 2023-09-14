@@ -77,30 +77,32 @@ public class ElasticsearchMetricsStore implements MetricsStore {
   }
 
   @Override
-  public void registerProcessInstanceStartEvent(String processInstanceKey, OffsetDateTime timestamp, BatchRequest batchRequest)
+  public void registerProcessInstanceStartEvent(String processInstanceKey, String tenantId, OffsetDateTime timestamp, BatchRequest batchRequest)
       throws PersistenceException {
-    final MetricEntity metric = createProcessInstanceStartedKey(processInstanceKey, timestamp);
+    final MetricEntity metric = createProcessInstanceStartedKey(processInstanceKey, tenantId, timestamp);
     batchRequest.add(metricIndex.getFullQualifiedName(), metric);
   }
 
   @Override
-  public void registerDecisionInstanceCompleteEvent(final String decisionInstanceKey,
+  public void registerDecisionInstanceCompleteEvent(final String decisionInstanceKey, String tenantId,
       final OffsetDateTime timestamp, BatchRequest batchRequest) throws PersistenceException {
-    final MetricEntity metric = createDecisionsInstanceEvaluatedKey(decisionInstanceKey, timestamp);
+    final MetricEntity metric = createDecisionsInstanceEvaluatedKey(decisionInstanceKey, tenantId, timestamp);
     batchRequest.add(metricIndex.getFullQualifiedName(), metric);
   }
 
-  private MetricEntity createProcessInstanceStartedKey(String processInstanceKey, OffsetDateTime timestamp) {
+  private MetricEntity createProcessInstanceStartedKey(String processInstanceKey, String tenantId, OffsetDateTime timestamp) {
     return new MetricEntity()
         .setEvent(EVENT_PROCESS_INSTANCE_STARTED)
         .setValue(processInstanceKey)
-        .setEventTime(timestamp);
+        .setEventTime(timestamp)
+        .setTenantId(tenantId);
   }
 
-  private MetricEntity createDecisionsInstanceEvaluatedKey(String decisionInstanceKey, OffsetDateTime timestamp) {
+  private MetricEntity createDecisionsInstanceEvaluatedKey(String decisionInstanceKey, String tenantId, OffsetDateTime timestamp) {
     return new MetricEntity()
         .setEvent(EVENT_DECISION_INSTANCE_EVALUATED)
         .setValue(decisionInstanceKey)
-        .setEventTime(timestamp);
+        .setEventTime(timestamp)
+        .setTenantId(tenantId);
   }
 }

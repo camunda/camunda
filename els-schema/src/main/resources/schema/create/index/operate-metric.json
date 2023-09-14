@@ -14,7 +14,10 @@
 			},
 			"value": {
 				"type": "keyword"
-			}
+			},
+            "tenantId": {
+              "type": "keyword"
+            }
 		}
 	}
 }

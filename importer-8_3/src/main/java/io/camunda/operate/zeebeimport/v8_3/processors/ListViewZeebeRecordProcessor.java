@@ -322,7 +322,7 @@ public class ListViewZeebeRecordProcessor {
   private void registerStartedRootProcessInstance(ProcessInstanceForListViewEntity piEntity, BatchRequest batchRequest, OffsetDateTime timestamp)
       throws PersistenceException {
     String processInstanceKey = String.valueOf(piEntity.getProcessInstanceKey());
-    metricsStore.registerProcessInstanceStartEvent(processInstanceKey, timestamp, batchRequest);
+    metricsStore.registerProcessInstanceStartEvent(processInstanceKey, piEntity.getTenantId(), timestamp, batchRequest);
   }
 
   private String getTreePathForCalledProcess(final ProcessInstanceRecordValue recordValue) {

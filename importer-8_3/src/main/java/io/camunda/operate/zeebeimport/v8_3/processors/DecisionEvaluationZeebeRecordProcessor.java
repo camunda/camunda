@@ -61,7 +61,7 @@ public class DecisionEvaluationZeebeRecordProcessor {
       OffsetDateTime timestamp = DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp()));
       for (DecisionInstanceEntity entity : decisionEntities) {
         batchRequest.add(decisionInstanceTemplate.getFullQualifiedName(), entity);
-        metricsStore.registerDecisionInstanceCompleteEvent(entity.getId(), timestamp, batchRequest);
+        metricsStore.registerDecisionInstanceCompleteEvent(entity.getId(), decisionEvaluation.getTenantId(), timestamp, batchRequest);
       }
 
   }

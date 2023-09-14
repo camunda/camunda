@@ -26,7 +26,7 @@ import org.springframework.context.annotation.Import;
 @SpringBootApplication
 @ComponentScan(basePackages = {
     "io.camunda.operate.property",
-    "io.camunda.operate.elasticsearch",
+    "io.camunda.operate.tenant",
     "io.camunda.operate.connect",
     "io.camunda.operate.store",
     "io.camunda.operate.schema",

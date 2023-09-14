@@ -71,6 +71,12 @@ public class BasicProcessTest extends AbstractMigrationTest {
   }
 
   @Test
+  public void testUsageMetrics() {
+    List<MetricEntity> metrics = entityReader.getEntitiesFor(metricIndex.getAlias(), MetricEntity.class);
+    assertThat(metrics.stream().allMatch(m -> m.getTenantId().equals(DEFAULT_TENANT_ID))).describedAs("All events have <default> tenant id").isTrue();
+  }
+
+  @Test
   public void testProcess() {
     SearchRequest searchRequest = new SearchRequest(processTemplate.getAlias());
     searchRequest.source().query(termQuery(EventTemplate.BPMN_PROCESS_ID, bpmnProcessId));

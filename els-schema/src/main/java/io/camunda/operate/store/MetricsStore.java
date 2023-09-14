@@ -18,10 +18,10 @@ public interface MetricsStore {
 
   String PROCESS_INSTANCES_AGG_NAME = "process_instances";
   String DECISION_INSTANCES_AGG_NAME = "decision_instances";
-  
+
   Long retrieveProcessInstanceCount(OffsetDateTime startTime, OffsetDateTime endTime);
   Long retrieveDecisionInstanceCount(OffsetDateTime startTime, OffsetDateTime endTime);
-  void registerProcessInstanceStartEvent(String processInstanceKey, OffsetDateTime timestamp, BatchRequest batchRequest) throws PersistenceException;
-  void registerDecisionInstanceCompleteEvent(String processInstanceKey, OffsetDateTime timestamp, BatchRequest batchRequest) throws PersistenceException;
+  void registerProcessInstanceStartEvent(String processInstanceKey, String tenantId, OffsetDateTime timestamp, BatchRequest batchRequest) throws PersistenceException;
+  void registerDecisionInstanceCompleteEvent(String processInstanceKey, String tenantId, OffsetDateTime timestamp, BatchRequest batchRequest) throws PersistenceException;
 
 }

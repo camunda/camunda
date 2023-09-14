@@ -22,4 +22,9 @@ public class MetricIndex extends AbstractIndexDescriptor implements Prio4Backup 
   public String getIndexName() {
     return INDEX_NAME;
   }
+
+  @Override
+  public String getVersion() {
+    return "8.3.0";
+  }
 }
