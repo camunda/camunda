@@ -163,9 +163,9 @@ final class RetryStrategyTest {
     test.strategy.runWithRetry(
         () -> {
           // capture the result before to ensure we're looping
-          final boolean shouldRetry = !future.isDone();
+          final boolean isDone = future.isDone();
           barrier.offer(true);
-          return shouldRetry;
+          return isDone; // false - will cause to retry; true will complete the retry strategy
         });
     // toggle the retry strategy to stop retrying, letting workUntilDone finish
     secondActor.run(
