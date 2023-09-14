@@ -54,7 +54,6 @@ public final class CreateProcessInstanceTest extends GatewayTest {
   }
 
   @Test
-  @Ignore("https://github.com/camunda/zeebe/issues/14041")
   public void shouldMapRequestAndResponseWithCustomTenantId() {
     // given
     final String tenantId = "test-tenant";
