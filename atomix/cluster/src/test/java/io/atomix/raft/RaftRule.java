@@ -693,7 +693,7 @@ public final class RaftRule extends ExternalResource {
     }
 
     @Override
-    public void onCommitError(final IndexedRaftLogEntry indexed, final Throwable error) {
+    public void onCommitError(final long index, final Throwable error) {
       commitFuture.completeExceptionally(error);
     }
 

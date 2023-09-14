@@ -676,8 +676,8 @@ public final class ControllableRaftContexts {
     }
 
     @Override
-    public void onCommitError(final IndexedRaftLogEntry indexed, final Throwable error) {
-      delegate.onCommitError(indexed, error);
+    public void onCommitError(final long index, final Throwable error) {
+      delegate.onCommitError(index, error);
     }
 
     public String getFailMessage() {
