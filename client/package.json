@@ -114,7 +114,7 @@
     "react-scripts": "5.0.1",
     "sass": "^1.66.1",
     "shelljs": "^0.8.5",
-    "styled-components": "^6.0.0",
+    "styled-components": "^6.0.8",
     "testcafe": "^3.3.0",
     "testcafe-browser-provider-browserstack": "^1.15.1",
     "tree-kill": "^1.2.2",
