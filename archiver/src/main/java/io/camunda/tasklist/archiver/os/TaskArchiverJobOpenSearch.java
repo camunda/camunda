@@ -18,7 +18,10 @@ import io.camunda.tasklist.schema.templates.TaskVariableTemplate;
 import io.camunda.tasklist.util.Either;
 import io.camunda.tasklist.util.OpenSearchUtil;
 import io.micrometer.core.instrument.Timer;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import org.opensearch.client.json.JsonData;
@@ -67,8 +70,8 @@ public class TaskArchiverJobOpenSearch extends AbstractArchiverJobOpenSearch
   }
 
   @Override
-  public CompletableFuture<Integer> archiveBatch(ArchiveBatch archiveBatch) {
-    final CompletableFuture<Integer> archiveBatchFuture;
+  public CompletableFuture<Map.Entry<String, Integer>> archiveBatch(ArchiveBatch archiveBatch) {
+    final CompletableFuture<Map.Entry<String, Integer>> archiveBatchFuture;
     if (archiveBatch != null) {
       LOGGER.debug("Following batch operations are found for archiving: {}", archiveBatch);
       archiveBatchFuture = new CompletableFuture<>();
@@ -90,7 +93,10 @@ public class TaskArchiverJobOpenSearch extends AbstractArchiverJobOpenSearch
               archiveBatch.getIds());
 
       CompletableFuture.allOf(moveVariableDocuments, moveTaskDocuments)
-          .thenAccept((v) -> archiveBatchFuture.complete(archiveBatch.getIds().size()))
+          .thenAccept(
+              (v) ->
+                  archiveBatchFuture.complete(
+                      Map.entry(archiveBatch.getFinishDate(), archiveBatch.getIds().size())))
           .exceptionally(
               (exception) -> {
                 archiveBatchFuture.completeExceptionally(exception);
@@ -99,7 +105,7 @@ public class TaskArchiverJobOpenSearch extends AbstractArchiverJobOpenSearch
 
     } else {
       LOGGER.debug("Nothing to archive");
-      archiveBatchFuture = CompletableFuture.completedFuture(0);
+      archiveBatchFuture = CompletableFuture.completedFuture(Map.entry(NOTHING_TO_ARCHIVE, 0));
     }
 
     return archiveBatchFuture;
@@ -198,7 +204,7 @@ public class TaskArchiverJobOpenSearch extends AbstractArchiverJobOpenSearch
                             bs.sort(
                                 s ->
                                     s.field(
-                                        FieldSort.of(f -> f.field("_key").order(SortOrder.Asc)))))
+                                        FieldSort.of(f -> f.field("_key").order(SortOrder.Desc)))))
                     .build())
             .aggregations(
                 instancesAggName,

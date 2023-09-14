@@ -33,10 +33,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.BeanFactory;
@@ -90,6 +87,9 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
 
   @Test
   public void testArchivingTasks() throws ArchiverException, IOException {
+    final DateTimeFormatter sdf = DateTimeFormatter.ofPattern("YYYY-MM-dd");
+    final Map<String, Integer> mapCount = new HashMap<>();
+
     final Instant currentTime = pinZeebeTime();
 
     // having
@@ -104,28 +104,35 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
     final Instant endDate1 = currentTime.minus(2, ChronoUnit.DAYS);
     final List<String> ids1 =
         startInstancesAndCompleteTasks(processId, flowNodeBpmnId, count1, endDate1);
+    mapCount.put(dateTimeFormatter.format(endDate1), count1);
 
     // start and finish instances 1 day ago
     final int count2 = random.nextInt(6) + 3;
     final Instant endDate2 = currentTime.minus(1, ChronoUnit.DAYS);
     final List<String> ids2 =
         startInstancesAndCompleteTasks(processId, flowNodeBpmnId, count2, endDate2);
+    mapCount.put(dateTimeFormatter.format(endDate2), count2);
 
     // start instances 1 day ago
     final int count3 = random.nextInt(6) + 3;
     final List<String> ids3 =
         startInstances(processId, flowNodeBpmnId, count3, currentTime.minus(1, ChronoUnit.DAYS));
-
     resetZeebeTime();
 
     // when
-    assertThat(archiverJob.archiveNextBatch().join()).isEqualTo(count1);
+    final Map.Entry<String, Integer> result1 = archiverJob.archiveNextBatch().join();
+    assertThat(mapCount.get(result1.getKey())).isEqualTo(result1.getValue());
     tasklistTestRule.refreshIndexesInElasticsearch();
-    assertThat(archiverJob.archiveNextBatch().join()).isEqualTo(count2);
+
+    final Map.Entry<String, Integer> result2 = archiverJob.archiveNextBatch().join();
+    assertThat(mapCount.get(result2.getKey())).isEqualTo(result2.getValue());
     tasklistTestRule.refreshIndexesInElasticsearch();
+
     assertThat(archiverJob.archiveNextBatch().join())
         .isEqualTo(
-            0); // 3rd run should not move anything, as the rest of the tasks are not completed
+            Map.entry(
+                "NothingToArchive",
+                0)); // 3rd run should not move anything, as the rest of the tasks are not completed
 
     tasklistTestRule.refreshIndexesInElasticsearch();
 
@@ -169,10 +176,10 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
     resetZeebeTime();
 
     // when
-    assertThat(archiverJob.archiveNextBatch().join()).isEqualTo(count1);
+    assertThat(archiverJob.archiveNextBatch().join().getValue()).isEqualTo(count1);
     tasklistTestRule.refreshIndexesInElasticsearch();
     // 2rd run should not move anything, as the rest of the tasks are completed less then 1 hour ago
-    assertThat(archiverJob.archiveNextBatch().join()).isEqualTo(0);
+    assertThat(archiverJob.archiveNextBatch().join()).isEqualTo(Map.entry("NothingToArchive", 0));
 
     tasklistTestRule.refreshIndexesInElasticsearch();
 
@@ -212,10 +219,12 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
     tasklistTestRule.refreshIndexesInElasticsearch();
 
     // when
-    assertThat(processInstanceArchiverJob.archiveNextBatch().join()).isEqualTo(count1 + count2);
+    assertThat(processInstanceArchiverJob.archiveNextBatch().join().getValue())
+        .isEqualTo(count1 + count2);
     tasklistTestRule.refreshIndexesInElasticsearch();
     // 2rd run should not move anything, as the rest of the tasks are completed less then 1 hour ago
-    assertThat(processInstanceArchiverJob.archiveNextBatch().join()).isEqualTo(0);
+    assertThat(processInstanceArchiverJob.archiveNextBatch().join())
+        .isEqualTo(Map.entry("NothingToArchive", 0));
 
     tasklistTestRule.refreshIndexesInElasticsearch();
 

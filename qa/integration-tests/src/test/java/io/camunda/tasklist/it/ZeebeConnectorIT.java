@@ -10,10 +10,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.tasklist.management.HealthCheckIT.AddManagementPropertiesInitializer;
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.util.ElasticsearchTestRule;
-import io.camunda.tasklist.util.TasklistIntegrationTest;
-import io.camunda.tasklist.util.TasklistZeebeRule;
-import io.camunda.tasklist.util.TestApplication;
+import io.camunda.tasklist.util.*;
 import io.camunda.tasklist.zeebe.PartitionHolder;
 import io.camunda.tasklist.zeebeimport.ZeebeImporter;
 import org.apache.hc.core5.http.HttpStatus;
@@ -21,8 +18,9 @@ import org.elasticsearch.client.RestHighLevelClient;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
+import org.opensearch.client.opensearch.OpenSearchClient;
+import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.HttpMethod;
@@ -41,7 +39,11 @@ import org.springframework.test.util.ReflectionTestUtils;
 @ContextConfiguration(initializers = AddManagementPropertiesInitializer.class)
 public class ZeebeConnectorIT extends TasklistIntegrationTest {
 
-  @Rule public ElasticsearchTestRule elasticsearchTestRule = new ElasticsearchTestRule();
+  @Rule
+  public TasklistTestRule elasticsearchTestRule =
+      TasklistZeebeIntegrationTest.IS_ELASTIC
+          ? new ElasticsearchTestRule()
+          : new OpenSearchTestRule();
 
   @Autowired private ZeebeImporter zeebeImporter;
 
@@ -49,9 +51,7 @@ public class ZeebeConnectorIT extends TasklistIntegrationTest {
 
   @Autowired private TasklistProperties tasklistProperties;
 
-  @Autowired
-  @Qualifier("zeebeEsClient")
-  private RestHighLevelClient zeebeEsClient;
+  @Autowired private BeanFactory beanFactory;
 
   @Autowired private TestRestTemplate testRestTemplate;
 
@@ -95,9 +95,18 @@ public class ZeebeConnectorIT extends TasklistIntegrationTest {
   }
 
   private void startZeebe() {
-    tasklistZeebeRule = new TasklistZeebeRule();
+
+    tasklistZeebeRule =
+        TasklistZeebeIntegrationTest.IS_ELASTIC
+            ? new TasklistZeebeRuleElasticSearch()
+            : new TasklistZeebeRuleOpenSearch();
     tasklistZeebeRule.setTasklistProperties(tasklistProperties);
-    tasklistZeebeRule.setZeebeEsClient(zeebeEsClient);
+    if (TasklistZeebeIntegrationTest.IS_ELASTIC) {
+      tasklistZeebeRule.setZeebeEsClient(
+          ((RestHighLevelClient) beanFactory.getBean("zeebeEsClient")));
+    } else {
+      tasklistZeebeRule.setZeebeOsClient(((OpenSearchClient) beanFactory.getBean("zeebeOsClient")));
+    }
     tasklistZeebeRule.starting(null);
     tasklistProperties.getZeebeElasticsearch().setPrefix(tasklistZeebeRule.getPrefix());
     ReflectionTestUtils.setField(partitionHolder, "zeebeClient", tasklistZeebeRule.getClient());

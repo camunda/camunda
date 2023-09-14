@@ -9,16 +9,19 @@ package io.camunda.tasklist.zeebeimport;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.TestApplication;
 import io.camunda.tasklist.util.TestCheck;
-import io.camunda.tasklist.util.apps.idempotency.ZeebeImportIdempotencyTestConfig;
+import io.camunda.tasklist.util.TestUtil;
+import io.camunda.tasklist.util.apps.idempotency.ZeebeImportIdempotencyOpenSearchTestConfig;
+import org.junit.Assume;
+import org.junit.BeforeClass;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 /**
- * Tests that even if the Zeebe data is imported twice, in Tasklist Elasticsearch is is still
+ * Tests that even if the Zeebe data is imported twice, in Tasklist OpenSearch is is still
  * consistent.
  */
 @SpringBootTest(
-    classes = {ZeebeImportIdempotencyTestConfig.class, TestApplication.class},
+    classes = {ZeebeImportIdempotencyOpenSearchTestConfig.class, TestApplication.class},
     properties = {
       TasklistProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
       TasklistProperties.PREFIX + ".archiver.rolloverEnabled = false",
@@ -27,16 +30,21 @@ import org.springframework.boot.test.context.SpringBootTest;
       "graphql.servlet.exception-handlers-enabled = true"
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-public class ZeebeImportIdempotencyIT extends ZeebeImportIT {
+public class ZeebeImportIdempotencyOpenSearchIT extends ZeebeImportIT {
 
   @Autowired
-  private ZeebeImportIdempotencyTestConfig.CustomElasticsearchBulkProcessor
-      elasticsearchBulkProcessor;
+  private ZeebeImportIdempotencyOpenSearchTestConfig.CustomOpenSearchBulkProcessor
+      customOpenSearchBulkProcessor;
+
+  @BeforeClass
+  public static void beforeClass() {
+    Assume.assumeTrue(TestUtil.isOpenSearch());
+  }
 
   @Override
   protected void processAllRecordsAndWait(TestCheck waitTill, Object... arguments) {
     tasklistTestRule.processAllRecordsAndWait(waitTill, arguments);
     tasklistTestRule.processAllRecordsAndWait(waitTill, arguments);
-    elasticsearchBulkProcessor.cancelAttempts();
+    customOpenSearchBulkProcessor.cancelAttempts();
   }
 }

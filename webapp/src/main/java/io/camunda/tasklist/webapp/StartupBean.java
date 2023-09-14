@@ -24,8 +24,6 @@ public class StartupBean {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(StartupBean.class);
 
-  // @Autowired private RestHighLevelClient zeebeEsClient;
-
   @Autowired(required = false)
   private SearchEngineUserDetailsService searchEngineUserDetailsService;
 

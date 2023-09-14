@@ -11,24 +11,34 @@ import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.response.Topology;
 import io.zeebe.containers.ZeebeContainer;
+import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
+import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.testcontainers.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
-public abstract class TasklistZeebeRule extends TestWatcher {
+public class TasklistZeebeRuleElasticSearch extends TasklistZeebeRule {
 
-  public static final String YYYY_MM_DD = "uuuu-MM-dd";
+  private static final String YYYY_MM_DD = "uuuu-MM-dd";
   private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(15);
-  private static final Logger LOGGER = LoggerFactory.getLogger(TasklistZeebeRule.class);
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(TasklistZeebeRuleElasticSearch.class);
   @Autowired public TasklistProperties tasklistProperties;
+
+  @Autowired
+  @Qualifier("zeebeEsClient")
+  protected RestHighLevelClient zeebeEsClient;
 
   protected ZeebeContainer zeebeContainer;
   private ZeebeClient client;
@@ -36,7 +46,16 @@ public abstract class TasklistZeebeRule extends TestWatcher {
   private String prefix;
   private boolean failed = false;
 
-  public abstract void refreshIndices(Instant instant);
+  public void refreshIndices(Instant instant) {
+    try {
+      final String date =
+          DateTimeFormatter.ofPattern(YYYY_MM_DD).withZone(ZoneId.systemDefault()).format(instant);
+      final RefreshRequest refreshRequest = new RefreshRequest(prefix + "*" + date);
+      zeebeEsClient.indices().refresh(refreshRequest, RequestOptions.DEFAULT);
+    } catch (IOException ex) {
+      throw new RuntimeException(ex);
+    }
+  }
 
   @Override
   protected void failed(Throwable e, Description description) {
@@ -101,7 +120,12 @@ public abstract class TasklistZeebeRule extends TestWatcher {
   }
 
   @Override
-  public abstract void finished(Description description);
+  public void finished(Description description) {
+    stop();
+    if (!failed) {
+      TestUtil.removeAllIndices(zeebeEsClient, prefix);
+    }
+  }
 
   /** Stops the broker and destroys the client. Does nothing if not started yet. */
   public void stop() {
@@ -133,7 +157,15 @@ public abstract class TasklistZeebeRule extends TestWatcher {
     this.tasklistProperties = tasklistProperties;
   }
 
-  public abstract void setZeebeOsClient(final OpenSearchClient zeebeOsClient);
+  @Override
+  public void setZeebeOsClient(OpenSearchClient zeebeOsClient) {}
 
-  public abstract void setZeebeEsClient(final RestHighLevelClient zeebeOsClient);
+  @Override
+  public void setZeebeEsClient(RestHighLevelClient zeebeOsClient) {
+    this.zeebeEsClient = zeebeOsClient;
+  }
+
+  public void setZeebeOsClient(final RestHighLevelClient zeebeOsClient) {
+    this.zeebeEsClient = zeebeOsClient;
+  }
 }

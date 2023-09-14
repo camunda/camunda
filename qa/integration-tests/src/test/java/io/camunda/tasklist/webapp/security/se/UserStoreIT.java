@@ -11,9 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.tasklist.entities.UserEntity;
 import io.camunda.tasklist.es.RetryElasticsearchClient;
 import io.camunda.tasklist.qa.util.TestElasticsearchSchemaManager;
-import io.camunda.tasklist.util.ElasticsearchTestRule;
-import io.camunda.tasklist.util.TasklistIntegrationTest;
-import io.camunda.tasklist.util.TestApplication;
+import io.camunda.tasklist.util.*;
 import io.camunda.tasklist.webapp.security.WebSecurityConfig;
 import io.camunda.tasklist.webapp.security.oauth.OAuth2WebConfigurer;
 import io.camunda.tasklist.webapp.security.se.store.UserStore;
@@ -37,7 +35,7 @@ import org.springframework.boot.test.context.SpringBootTest;
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class UserStoreIT extends TasklistIntegrationTest {
 
-  @Rule public ElasticsearchTestRule elasticsearchTestRule = new ElasticsearchTestRule();
+  @Rule public TasklistTestRule tasklistTestRule = TestUtil.getTasklistTestRule();
 
   @Autowired private SearchEngineUserDetailsService userDetailsService;
 
@@ -50,7 +48,7 @@ public class UserStoreIT extends TasklistIntegrationTest {
     userIds.forEach(
         userId ->
             userDetailsService.addUserWith(userId, userId, userId, List.of(Role.OPERATOR.name())));
-    elasticsearchTestRule.refreshIndexesInElasticsearch();
+    tasklistTestRule.refreshIndexesInElasticsearch();
     // when ( getting request of random ordered usernames )
     Collections.shuffle(userIds);
 

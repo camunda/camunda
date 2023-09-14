@@ -7,18 +7,16 @@
 package io.camunda.tasklist.it;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
-import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.archiver.ArchiverUtil;
-import io.camunda.tasklist.archiver.es.TaskArchiverJobElasticSearch;
+import io.camunda.tasklist.archiver.TaskArchiverJob;
 import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.exceptions.ArchiverException;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.templates.TaskTemplate;
 import io.camunda.tasklist.schema.templates.TaskVariableTemplate;
-import io.camunda.tasklist.util.ElasticsearchUtil;
+import io.camunda.tasklist.util.NoSqlHelper;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
 import io.camunda.tasklist.zeebe.PartitionHolder;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -33,11 +31,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.BeanFactory;
@@ -52,13 +45,14 @@ import org.springframework.test.context.TestPropertySource;
     })
 public class OneNodeArchiverIT extends TasklistZeebeIntegrationTest {
 
-  private TaskArchiverJobElasticSearch archiverJob;
+  private TaskArchiverJob archiverJob;
 
   @Autowired private BeanFactory beanFactory;
 
   @Autowired private ArchiverUtil archiverUtil;
 
-  @Autowired private RestHighLevelClient esClient;
+  @Autowired private NoSqlHelper noSqlHelper;
+  // @Autowired private RestHighLevelClient esClient;
 
   @Autowired private TaskTemplate taskTemplate;
 
@@ -78,8 +72,7 @@ public class OneNodeArchiverIT extends TasklistZeebeIntegrationTest {
     dateTimeFormatter =
         DateTimeFormatter.ofPattern(tasklistProperties.getArchiver().getRolloverDateFormat())
             .withZone(ZoneId.systemDefault());
-    archiverJob =
-        beanFactory.getBean(TaskArchiverJobElasticSearch.class, partitionHolder.getPartitionIds());
+    archiverJob = beanFactory.getBean(TaskArchiverJob.class, partitionHolder.getPartitionIds());
   }
 
   @Test
@@ -105,9 +98,11 @@ public class OneNodeArchiverIT extends TasklistZeebeIntegrationTest {
             / tasklistProperties
                 .getClusterNode()
                 .getNodeCount(); // we're archiving only part of the partitions
-    assertThat(archiverJob.archiveNextBatch().join()).isGreaterThanOrEqualTo(expectedCount);
+    assertThat(archiverJob.archiveNextBatch().join().getValue())
+        .isGreaterThanOrEqualTo(expectedCount);
     tasklistTestRule.refreshIndexesInElasticsearch();
-    assertThat(archiverJob.archiveNextBatch().join()).isLessThanOrEqualTo(expectedCount + 1);
+    assertThat(archiverJob.archiveNextBatch().join().getValue())
+        .isLessThanOrEqualTo(expectedCount + 1);
 
     tasklistTestRule.refreshIndexesInElasticsearch();
 
@@ -139,15 +134,9 @@ public class OneNodeArchiverIT extends TasklistZeebeIntegrationTest {
       destinationIndexName =
           archiverUtil.getDestinationIndexName(taskTemplate.getFullQualifiedName(), "");
     }
-    final SearchRequest searchRequest =
-        new SearchRequest(destinationIndexName)
-            .source(new SearchSourceBuilder().query(constantScoreQuery(matchAllQuery())).size(100));
 
-    final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+    final List<TaskEntity> taskEntities = noSqlHelper.getAllTasks(destinationIndexName);
 
-    final List<TaskEntity> taskEntities =
-        ElasticsearchUtil.mapSearchHits(
-            response.getHits().getHits(), objectMapper, TaskEntity.class);
     assertThat(taskEntities.size()).isGreaterThanOrEqualTo(tasksCount);
     assertThat(taskEntities.size()).isLessThanOrEqualTo(tasksCount + 1);
 

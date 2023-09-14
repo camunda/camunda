@@ -6,12 +6,14 @@
  */
 package io.camunda.tasklist.archiver;
 
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 public interface TaskArchiverJob extends Runnable {
-  public CompletableFuture<Integer> archiveBatch(AbstractArchiverJob.ArchiveBatch archiveBatch);
+  public CompletableFuture<Map.Entry<String, Integer>> archiveBatch(
+      AbstractArchiverJob.ArchiveBatch archiveBatch);
 
   public CompletableFuture<AbstractArchiverJob.ArchiveBatch> getNextBatch();
 
-  public CompletableFuture<Integer> archiveNextBatch();
+  public CompletableFuture<Map.Entry<String, Integer>> archiveNextBatch();
 }

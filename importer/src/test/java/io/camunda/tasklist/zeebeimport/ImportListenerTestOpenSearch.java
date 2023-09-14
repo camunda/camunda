@@ -6,51 +6,49 @@
  */
 package io.camunda.tasklist.zeebeimport;
 
-import static junit.framework.TestCase.assertEquals;
-import static junit.framework.TestCase.assertFalse;
-import static junit.framework.TestCase.assertTrue;
+import static junit.framework.TestCase.*;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
+import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.entities.meta.ImportPositionEntity;
 import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.NoBeansTest;
 import io.camunda.tasklist.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.tasklist.zeebe.ImportValueType;
-import io.camunda.tasklist.zeebeimport.es.ImportBatchElasticSearch;
-import io.camunda.tasklist.zeebeimport.es.ImportJobElasticSearch;
-import io.camunda.tasklist.zeebeimport.v830.processors.es.BulkProcessorElasticSearch;
+import io.camunda.tasklist.zeebeimport.os.ImportBatchOpenSearch;
+import io.camunda.tasklist.zeebeimport.os.ImportJobOpenSearch;
 import java.util.ArrayList;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.junit.Before;
 import org.junit.Test;
+import org.opensearch.client.opensearch.OpenSearchClient;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @SpringBootTest(
     classes = {
       TestApplicationWithNoBeans.class,
-      ImportJobElasticSearch.class,
-      ImportListenerTest.TestImportListener.class
+      ImportJobOpenSearch.class,
+      ImportListenerTestOpenSearch.TestImportListener.class
     })
-public class ImportListenerTest extends NoBeansTest {
+@Conditional(OpenSearchCondition.class)
+public class ImportListenerTestOpenSearch extends NoBeansTest {
 
   @MockBean private ImportBatchProcessorFactory importBatchProcessorFactory;
 
-  @MockBean private BulkProcessorElasticSearch elasticsearchBulkProcessor;
+  @MockBean private ImportBatchProcessor importBatchProcessor;
 
   @MockBean private ImportPositionHolder importPositionHolder;
 
   @MockBean
-  @Qualifier("zeebeEsClient")
-  private RestHighLevelClient zeebeEsClient;
+  @Qualifier("zeebeOsClient")
+  private OpenSearchClient zeebeOsClient;
 
   @MockBean private RecordsReaderHolder recordsReaderHolder;
 
@@ -67,20 +65,19 @@ public class ImportListenerTest extends NoBeansTest {
 
   @Test
   public void testFinished() throws Exception {
-    final ImportBatch importBatchElasticSearch =
-        new ImportBatchElasticSearch(
+    final ImportBatch importBatchOpenSearch =
+        new ImportBatchOpenSearch(
             1, ImportValueType.PROCESS_INSTANCE, new ArrayList<>(), "some_name");
     final ImportPositionEntity previousPosition =
         new ImportPositionEntity().setAliasName("alias").setPartitionId(1).setPosition(0);
     final ImportJob importJob =
-        beanFactory.getBean(
-            ImportJobElasticSearch.class, importBatchElasticSearch, previousPosition);
+        beanFactory.getBean(ImportJobOpenSearch.class, importBatchOpenSearch, previousPosition);
 
     // mock import methods
     try {
       when(importBatchProcessorFactory.getImportBatchProcessor(anyString()))
-          .thenReturn(elasticsearchBulkProcessor);
-      doNothing().when(elasticsearchBulkProcessor).performImport(importBatchElasticSearch);
+          .thenReturn(importBatchProcessor);
+      doNothing().when(importBatchProcessor).performImport(importBatchOpenSearch);
     } catch (PersistenceException e) {
       // ignore
     }
@@ -91,22 +88,21 @@ public class ImportListenerTest extends NoBeansTest {
     // then
     assertTrue(importListener.isFinishedCalled());
     assertFalse(importListener.isFailedCalled());
-    assertEquals(importListener.getImportBatch(), importBatchElasticSearch);
+    assertEquals(importListener.getImportBatch(), importBatchOpenSearch);
   }
 
   @Test
   public void testFailed() throws Exception {
-    final ImportBatchElasticSearch importBatchElasticSearch =
-        new ImportBatchElasticSearch(1, ImportValueType.PROCESS_INSTANCE, new ArrayList<>(), null);
+    final ImportBatchOpenSearch importBatchElasticSearch =
+        new ImportBatchOpenSearch(1, ImportValueType.PROCESS_INSTANCE, new ArrayList<>(), null);
     final ImportPositionEntity previousPosition =
         new ImportPositionEntity().setAliasName("alias").setPartitionId(1).setPosition(0);
     final ImportJob importJob =
-        beanFactory.getBean(
-            ImportJobElasticSearch.class, importBatchElasticSearch, previousPosition);
+        beanFactory.getBean(ImportJobOpenSearch.class, importBatchElasticSearch, previousPosition);
     // mock import methods
     try {
       doThrow(new PersistenceException())
-          .when(elasticsearchBulkProcessor)
+          .when(importBatchProcessor)
           .performImport(importBatchElasticSearch);
     } catch (PersistenceException e) {
       // ignore

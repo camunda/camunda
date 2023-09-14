@@ -14,27 +14,24 @@ import io.camunda.tasklist.schema.indices.IndexDescriptor;
 import io.camunda.tasklist.schema.indices.MigrationRepositoryIndex;
 import io.camunda.tasklist.schema.indices.TasklistWebSessionIndex;
 import io.camunda.tasklist.schema.migration.ProcessorStep;
-import io.camunda.tasklist.util.ElasticsearchTestRule;
+import io.camunda.tasklist.util.NoSqlHelper;
 import io.camunda.tasklist.util.TasklistIntegrationTest;
+import io.camunda.tasklist.util.TasklistTestRule;
+import io.camunda.tasklist.util.TestUtil;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.client.indices.GetIndexRequest;
-import org.elasticsearch.client.indices.GetIndexResponse;
-import org.elasticsearch.cluster.metadata.MappingMetadata;
 import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 public class SchemaCreationIT extends TasklistIntegrationTest {
 
-  @Rule public ElasticsearchTestRule elasticsearchTestRule = new ElasticsearchTestRule();
-  @Autowired private RestHighLevelClient esClient;
+  @Rule public TasklistTestRule elasticsearchTestRule = TestUtil.getTasklistTestRule();
   @Autowired private List<IndexDescriptor> indexDescriptors;
   @Autowired private IndexSchemaValidator indexSchemaValidator;
+  @Autowired private NoSqlHelper noSqlHelper;
 
   @Test
   public void testIndexCreation() throws IOException {
@@ -89,15 +86,7 @@ public class SchemaCreationIT extends TasklistIntegrationTest {
 
   private Map<String, Object> getFieldDescriptions(IndexDescriptor indexDescriptor)
       throws IOException {
-    final Map<String, MappingMetadata> mappings =
-        esClient
-            .indices()
-            .get(
-                new GetIndexRequest(indexDescriptor.getFullQualifiedName()), RequestOptions.DEFAULT)
-            .getMappings();
-    final Map<String, Object> source =
-        mappings.get(indexDescriptor.getFullQualifiedName()).getSourceAsMap();
-    return (Map<String, Object>) source.get("properties");
+    return noSqlHelper.getFieldDescription(indexDescriptor);
   }
 
   private IndexDescriptor getIndexDescriptorBy(String name) {
@@ -106,22 +95,11 @@ public class SchemaCreationIT extends TasklistIntegrationTest {
   }
 
   private void assertIndexAndAlias(String indexName, String aliasName) throws IOException {
-    final GetIndexResponse getIndexResponse =
-        esClient.indices().get(new GetIndexRequest(indexName), RequestOptions.DEFAULT);
-
-    assertThat(getIndexResponse.getAliases()).hasSize(1);
-    assertThat(getIndexResponse.getAliases().get(indexName).get(0).alias()).isEqualTo(aliasName);
+    assertThat(noSqlHelper.indexHasAlias(indexName, aliasName)).isTrue();
   }
 
   private void assertThatIndexHasDynamicMappingOf(
       final IndexDescriptor indexDescriptor, String dynamicMapping) throws IOException {
-    final Map<String, MappingMetadata> mappings =
-        esClient
-            .indices()
-            .get(
-                new GetIndexRequest(indexDescriptor.getFullQualifiedName()), RequestOptions.DEFAULT)
-            .getMappings();
-    final MappingMetadata mappingMetadata = mappings.get(indexDescriptor.getFullQualifiedName());
-    assertThat(mappingMetadata.getSourceAsMap()).containsEntry("dynamic", dynamicMapping);
+    assertThat(noSqlHelper.isIndexDynamicMapping(indexDescriptor, dynamicMapping)).isTrue();
   }
 }

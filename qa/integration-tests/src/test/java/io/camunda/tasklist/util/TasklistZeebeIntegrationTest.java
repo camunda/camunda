@@ -46,26 +46,17 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 @WithMockUser(DEFAULT_USER_ID)
 public abstract class TasklistZeebeIntegrationTest extends TasklistIntegrationTest {
-
   public static final String DEFAULT_USER_ID = "demo";
+  public static final Boolean IS_ELASTIC = !TasklistPropertiesUtil.isOpenSearchDatabase();
+
   public static final String DEFAULT_DISPLAY_NAME = "Demo User";
   @Autowired public BeanFactory beanFactory;
   @Rule public final TasklistZeebeRule zeebeRule;
   public ZeebeContainer zeebeContainer;
 
-  public Boolean isElasticSearch =
-      System.getenv("camunda.tasklist.database") == null
-          || System.getenv("camunda.tasklist.database").equals(TasklistProperties.ELASTIC_SEARCH);
-
   @Rule
   public TasklistTestRule tasklistTestRule =
-      isElasticSearch ? new ElasticsearchTestRule() : new OpenSearchTestRule();
-
-  // @Rule public OpenSearchTestRule openSearchTestRule = new OpenSearchTestRule();
-
-  // @Rule public OpenSearchTestRule openSearchTestRule = new OpenSearchTestRule();
-
-  // @Rule public OpenSearchTestRule openSearchTestRule = new OpenSearchTestRule();
+      IS_ELASTIC ? new ElasticsearchTestRule() : new OpenSearchTestRule();
 
   @MockBean protected ZeebeClient mockedZeebeClient;
   // we don't want to create ZeebeClient, we will rather use the one from
@@ -86,7 +77,8 @@ public abstract class TasklistZeebeIntegrationTest extends TasklistIntegrationTe
   private HttpClient httpClient = HttpClient.newHttpClient();
 
   public TasklistZeebeIntegrationTest() {
-    zeebeRule = new TasklistZeebeRule();
+    zeebeRule =
+        IS_ELASTIC ? new TasklistZeebeRuleElasticSearch() : new TasklistZeebeRuleOpenSearch();
   }
 
   @Before

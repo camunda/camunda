@@ -13,6 +13,7 @@ import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.entities.TaskVariableEntity;
 import io.camunda.tasklist.entities.VariableEntity;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
+import io.camunda.tasklist.schema.indices.IndexDescriptor;
 import io.camunda.tasklist.schema.indices.ProcessInstanceIndex;
 import io.camunda.tasklist.schema.indices.VariableIndex;
 import io.camunda.tasklist.schema.templates.TaskTemplate;
@@ -20,7 +21,9 @@ import io.camunda.tasklist.schema.templates.TaskVariableTemplate;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.FieldValue;
@@ -29,7 +32,7 @@ import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.GetResponse;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
-import org.opensearch.client.opensearch.core.search.SourceConfig;
+import org.opensearch.client.opensearch.indices.GetIndexResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -98,10 +101,8 @@ public class OpenSearchHelper implements NoSqlHelper {
       final SearchResponse<ProcessInstanceEntity> searchResponse =
           osClient.search(
               s ->
-                  s.source(
-                      new SourceConfig.Builder()
-                          .filter(filter -> filter.includes(processInstanceIds))
-                          .build()),
+                  s.index(processInstanceIndex.getAlias())
+                      .query(q -> q.ids(ids -> ids.values(processInstanceIds))),
               ProcessInstanceEntity.class);
       return searchResponse.hits().hits().stream()
           .map(m -> m.source())
@@ -125,11 +126,18 @@ public class OpenSearchHelper implements NoSqlHelper {
     flowQ.term(t -> t.field(TaskTemplate.FLOW_NODE_BPMN_ID).value(FieldValue.of(flowNodeBpmnId)));
 
     try {
+      final Query query;
+      if (processInstanceId != null) {
+        query = OpenSearchUtil.joinWithAnd(piId, flowQ);
+      } else {
+        query = flowQ.build();
+      }
+
       final SearchResponse<TaskEntity> response =
           osClient.search(
               s ->
                   s.index(List.of(taskTemplate.getAlias()))
-                      .query(OpenSearchUtil.joinWithAnd(piId, flowQ))
+                      .query(query)
                       .sort(
                           sort ->
                               sort.field(
@@ -245,5 +253,70 @@ public class OpenSearchHelper implements NoSqlHelper {
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
+  }
+
+  @Override
+  public List<TaskEntity> getAllTasks(final String index) {
+    try {
+      final SearchResponse<TaskEntity> response =
+          osClient.search(
+              s -> s.index(index).query(q -> q.matchAll(ma -> ma.queryName("getAll"))),
+              TaskEntity.class);
+      return response.hits().hits().stream().map(m -> m.source()).collect(Collectors.toList());
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  @Override
+  public Long countIndexResult(String index) {
+    try {
+      final SearchResponse<Object> result =
+          osClient.search(
+              s -> s.index(index).query(q -> q.matchAll(ma -> ma.queryName("matchall"))),
+              Object.class);
+      return result.hits().total().value();
+    } catch (IOException e) {
+      return -1L;
+    }
+  }
+
+  @Override
+  public Boolean isIndexDynamicMapping(IndexDescriptor index, final String dynamics)
+      throws IOException {
+    final GetIndexResponse response =
+        osClient.indices().get(i -> i.index(index.getFullQualifiedName()));
+    return response
+        .get(index.getFullQualifiedName())
+        .mappings()
+        .dynamic()
+        .jsonValue()
+        .equals(dynamics);
+  }
+
+  @Override
+  public Map<String, Object> getFieldDescription(IndexDescriptor indexDescriptor)
+      throws IOException {
+    final GetIndexResponse response =
+        osClient.indices().get(g -> g.index(indexDescriptor.getFullQualifiedName()));
+    return Collections.unmodifiableMap(
+        response.get(indexDescriptor.getFullQualifiedName()).mappings().properties());
+  }
+
+  @Override
+  public Boolean indexHasAlias(String index, String alias) throws IOException {
+    final GetIndexResponse response = osClient.indices().get(g -> g.index(index));
+    return response.get(index).aliases().size() == 1
+        && response.get(index).aliases().containsKey(alias);
+  }
+
+  @Override
+  public void delete(String index, String id) throws IOException {
+    osClient.delete(d -> d.index(index).id(id));
+  }
+
+  @Override
+  public void update(String index, String id, Map<String, Object> jsonMap) throws IOException {
+    osClient.update(u -> u.index(index).id(id).doc(jsonMap), Object.class);
   }
 }

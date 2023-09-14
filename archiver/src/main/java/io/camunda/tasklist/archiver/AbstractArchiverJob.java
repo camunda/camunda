@@ -12,6 +12,7 @@ import jakarta.annotation.PreDestroy;
 import java.time.Instant;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,6 +22,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 
 public abstract class AbstractArchiverJob implements Runnable {
 
+  protected static final String NOTHING_TO_ARCHIVE = "NothingToArchive";
   private static final Logger LOGGER = LoggerFactory.getLogger(AbstractArchiverJob.class);
 
   @Autowired
@@ -43,7 +45,8 @@ public abstract class AbstractArchiverJob implements Runnable {
     this.errorStrategy = new BackoffIdleStrategy(100, 1.2f, 10_000);
   }
 
-  protected abstract CompletableFuture<Integer> archiveBatch(final ArchiveBatch archiveBatch);
+  protected abstract CompletableFuture<Map.Entry<String, Integer>> archiveBatch(
+      final ArchiveBatch archiveBatch);
 
   protected abstract CompletableFuture<ArchiveBatch> getNextBatch();
 
@@ -51,9 +54,9 @@ public abstract class AbstractArchiverJob implements Runnable {
   public void run() {
     archiveNextBatch()
         .thenApply(
-            (count) -> {
+            (Map.Entry<String, Integer> map) -> {
               errorStrategy.reset();
-              if (count >= tasklistProperties.getArchiver().getRolloverBatchSize()) {
+              if (map.getValue() >= tasklistProperties.getArchiver().getRolloverBatchSize()) {
                 idleStrategy.reset();
               } else {
                 idleStrategy.idle();
@@ -80,7 +83,7 @@ public abstract class AbstractArchiverJob implements Runnable {
             });
   }
 
-  public CompletableFuture<Integer> archiveNextBatch() {
+  public CompletableFuture<Map.Entry<String, Integer>> archiveNextBatch() {
     return getNextBatch().thenCompose(this::archiveBatch);
   }
 

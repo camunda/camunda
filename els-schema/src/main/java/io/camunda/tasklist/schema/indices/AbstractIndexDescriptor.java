@@ -7,6 +7,7 @@
 package io.camunda.tasklist.schema.indices;
 
 import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.tasklist.util.TasklistPropertiesUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -18,8 +19,10 @@ public abstract class AbstractIndexDescriptor implements IndexDescriptor {
 
   @Override
   public String getFullQualifiedName() {
-    return String.format(
-        "%s-%s-%s_",
-        tasklistProperties.getElasticsearch().getIndexPrefix(), getIndexName(), getVersion());
+    final String indexPrefix =
+        TasklistPropertiesUtil.isOpenSearchDatabase()
+            ? tasklistProperties.getOpenSearch().getIndexPrefix()
+            : tasklistProperties.getElasticsearch().getIndexPrefix();
+    return String.format("%s-%s-%s_", indexPrefix, getIndexName(), getVersion());
   }
 }

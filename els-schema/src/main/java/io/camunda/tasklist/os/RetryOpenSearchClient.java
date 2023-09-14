@@ -6,8 +6,6 @@
  */
 package io.camunda.tasklist.os;
 
-import static io.camunda.tasklist.util.CollectionUtil.getOrDefaultForNullValue;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
@@ -17,12 +15,9 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import net.jodah.failsafe.Failsafe;
@@ -33,28 +28,13 @@ import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.HealthStatus;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.Result;
+import org.opensearch.client.opensearch._types.Time;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.cluster.HealthResponse;
 import org.opensearch.client.opensearch.cluster.PutComponentTemplateRequest;
-import org.opensearch.client.opensearch.core.ClearScrollRequest;
-import org.opensearch.client.opensearch.core.DeleteByQueryRequest;
-import org.opensearch.client.opensearch.core.DeleteByQueryResponse;
-import org.opensearch.client.opensearch.core.DeleteRequest;
-import org.opensearch.client.opensearch.core.DeleteResponse;
-import org.opensearch.client.opensearch.core.GetRequest;
-import org.opensearch.client.opensearch.core.GetResponse;
-import org.opensearch.client.opensearch.core.IndexResponse;
-import org.opensearch.client.opensearch.core.ReindexRequest;
-import org.opensearch.client.opensearch.core.ReindexResponse;
-import org.opensearch.client.opensearch.core.ScrollRequest;
-import org.opensearch.client.opensearch.core.SearchRequest;
-import org.opensearch.client.opensearch.core.SearchResponse;
+import org.opensearch.client.opensearch.core.*;
 import org.opensearch.client.opensearch.core.search.Hit;
-import org.opensearch.client.opensearch.indices.CreateIndexRequest;
-import org.opensearch.client.opensearch.indices.GetIndexResponse;
-import org.opensearch.client.opensearch.indices.GetIndicesSettingsResponse;
-import org.opensearch.client.opensearch.indices.IndexSettings;
-import org.opensearch.client.opensearch.indices.PutIndexTemplateRequest;
+import org.opensearch.client.opensearch.indices.*;
 import org.opensearch.client.opensearch.ingest.Processor;
 import org.opensearch.client.opensearch.tasks.GetTasksResponse;
 import org.slf4j.Logger;
@@ -183,19 +163,20 @@ public class RetryOpenSearchClient {
   }
 
   public Map<String, Object> getDocument(String name, String id) {
-    return executeWithGivenRetries(
-        10,
-        String.format("Get document from %s with id %s", name, id),
-        () -> {
-          final GetRequest request = new GetRequest.Builder().index(name).id(id).build();
-          final GetResponse response = openSearchClient.get(request, null);
-          if (response.found()) {
-            return response.fields();
-          } else {
-            return null;
-          }
-        },
-        null);
+    return (Map<String, Object>)
+        executeWithGivenRetries(
+            10,
+            String.format("Get document from %s with id %s", name, id),
+            () -> {
+              final GetRequest request = new GetRequest.Builder().index(name).id(id).build();
+              final GetResponse response2 = openSearchClient.get(request, Object.class);
+              if (response2.found()) {
+                return response2.source();
+              } else {
+                return null;
+              }
+            },
+            null);
   }
 
   public boolean deleteDocumentsByQuery(String indexName, Query query) {
@@ -269,24 +250,25 @@ public class RetryOpenSearchClient {
         });
   }
 
-  protected Map<String, String> getIndexSettingsFor(String indexName, String... fields) {
+  public IndexSettings getIndexSettingsFor(String indexName, String... fields) {
     return executeWithRetries(
         "GetIndexSettings " + indexName,
         () -> {
           final GetIndicesSettingsResponse response =
-              openSearchClient.indices().getSettings(s -> s.index(List.of(indexName)));
+              openSearchClient.indices().getSettings(s -> s.index(indexName).flatSettings(true));
 
-          final Set<String> fieldNames = Set.of(fields);
-          return response.result().entrySet().stream()
-              .filter(entry -> fieldNames.contains(entry.getKey()))
-              .filter(entry -> entry.getValue() != null)
-              .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().toString()));
+          return response.result().get(indexName).settings();
         });
   }
 
   public String getOrDefaultRefreshInterval(String indexName, String defaultValue) {
-    final Map<String, String> settings = getIndexSettingsFor(indexName, REFRESH_INTERVAL);
-    String refreshInterval = getOrDefaultForNullValue(settings, REFRESH_INTERVAL, defaultValue);
+    final IndexSettings settings = getIndexSettingsFor(indexName, REFRESH_INTERVAL);
+    String refreshInterval;
+    if (settings.refreshInterval() == null) {
+      refreshInterval = defaultValue;
+    } else {
+      refreshInterval = settings.refreshInterval().time();
+    }
     if (refreshInterval.trim().equals(NO_REFRESH)) {
       refreshInterval = defaultValue;
     }
@@ -294,8 +276,14 @@ public class RetryOpenSearchClient {
   }
 
   public String getOrDefaultNumbersOfReplica(String indexName, String defaultValue) {
-    final Map<String, String> settings = getIndexSettingsFor(indexName, NUMBERS_OF_REPLICA);
-    String numbersOfReplica = getOrDefaultForNullValue(settings, NUMBERS_OF_REPLICA, defaultValue);
+    final IndexSettings settings = getIndexSettingsFor(indexName, NUMBERS_OF_REPLICA);
+
+    String numbersOfReplica;
+    if (settings.numberOfReplicas() == null) {
+      numbersOfReplica = defaultValue;
+    } else {
+      numbersOfReplica = settings.numberOfReplicas();
+    }
     if (numbersOfReplica.trim().equals(NO_REPLICA)) {
       numbersOfReplica = defaultValue;
     }
@@ -523,6 +511,37 @@ public class RetryOpenSearchClient {
             return openSearchClient.cluster().putComponentTemplate(request).acknowledged();
           }
           return false;
+        });
+  }
+
+  public int doWithEachSearchResult(
+      SearchRequest.Builder searchRequest, Consumer<Hit> searchHitConsumer) {
+    return executeWithRetries(
+        () -> {
+          int doneOnSearchHits = 0;
+          searchRequest.scroll(Time.of(t -> t.time(SCROLL_KEEP_ALIVE_MS)));
+          SearchResponse response = openSearchClient.search(searchRequest.build(), Object.class);
+
+          String scrollId = null;
+          while (response.hits().hits().size() > 0) {
+            response.hits().hits().stream().forEach(searchHitConsumer);
+            doneOnSearchHits += response.hits().hits().size();
+
+            scrollId = response.scrollId();
+            final ScrollRequest scrollRequest =
+                new ScrollRequest.Builder()
+                    .scrollId(scrollId)
+                    .scroll(Time.of(t -> t.time(SCROLL_KEEP_ALIVE_MS)))
+                    .build();
+
+            response = openSearchClient.scroll(scrollRequest, Object.class);
+          }
+          if (scrollId != null) {
+            final ClearScrollRequest clearScrollRequest =
+                new ClearScrollRequest.Builder().scrollId(scrollId).build();
+            openSearchClient.clearScroll(clearScrollRequest);
+          }
+          return doneOnSearchHits;
         });
   }
 

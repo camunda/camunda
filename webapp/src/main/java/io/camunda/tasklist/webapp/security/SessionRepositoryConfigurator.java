@@ -18,7 +18,7 @@ import org.springframework.session.web.http.DefaultCookieSerializer;
     "${camunda.tasklist.persistent.sessions.enabled:false}"
         + " or "
         + "${camunda.tasklist.persistentSessionsEnabled:false}")
-public class ElasticsearchSessionRepositoryConfigurator {
+public class SessionRepositoryConfigurator {
 
   @Bean("sessionThreadPoolScheduler")
   public ThreadPoolTaskScheduler getTaskScheduler() {

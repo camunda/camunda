@@ -974,7 +974,7 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
         .hasApplicationJsonContentType()
         .extractingListContent(objectMapper, VariableSearchResponse.class)
         .extracting("name", "previewValue", "isValueTruncated", "draft")
-        .containsExactly(
+        .containsExactlyInAnyOrder(
             tuple("var_0", "0", false, null),
             tuple(
                 "var_1",

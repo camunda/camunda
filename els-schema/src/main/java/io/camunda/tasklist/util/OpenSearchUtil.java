@@ -212,7 +212,6 @@ public abstract class OpenSearchUtil {
         final List<BulkResponseItem> items = bulkItemResponses.items();
         for (BulkResponseItem responseItem : items) {
           if (responseItem.error() != null) {
-            // TODO check how to log the error for OpenSearch;
             LOGGER.error(
                 String.format(
                     "%s failed for type [%s] and id [%s]: %s",
@@ -276,22 +275,36 @@ public abstract class OpenSearchUtil {
     searchRequest.scroll(Time.of(t -> t.time(OpenSearchUtil.INTERNAL_SCROLL_KEEP_ALIVE_MS)));
     final SearchResponse response = osClient.search(searchRequest.build(), Object.class);
 
-    String scrollId = response.scrollId();
-    HitsMetadata hits = response.hits();
-    while (hits.hits().size() != 0) {
-      if (firstResponseConsumer != null) {
-        firstResponseConsumer.accept(response.hits());
-      }
-
-      final ScrollRequest.Builder scrollRequest = new ScrollRequest.Builder();
-      scrollRequest.scrollId(scrollId);
-      scrollRequest.scroll(Time.of(t -> t.time(SCROLL_KEEP_ALIVE_MS)));
-
-      scrollId = response.scrollId();
-      hits = response.hits();
+    if (firstResponseConsumer != null) {
+      firstResponseConsumer.accept(response.hits());
     }
 
-    clearScroll(scrollId, osClient);
+    if (aggsProcessor != null) {
+      aggsProcessor.accept(response.aggregations());
+    }
+
+    String scrollId = response.scrollId();
+    HitsMetadata hits = response.hits();
+    try {
+      while (hits.hits().size() != 0) {
+        if (searchHitsProcessor != null) {
+          searchHitsProcessor.accept(response.hits().hits());
+        }
+
+        final ScrollRequest.Builder scrollRequest = new ScrollRequest.Builder();
+        scrollRequest.scrollId(scrollId);
+        scrollRequest.scroll(Time.of(t -> t.time(SCROLL_KEEP_ALIVE_MS)));
+
+        final ScrollResponse<Object> scrollResponse =
+            osClient.scroll(scrollRequest.build(), Object.class);
+        scrollId = scrollResponse.scrollId();
+        hits = scrollResponse.hits();
+      }
+    } catch (Exception e) {
+      throw new TasklistRuntimeException(e.getMessage());
+    } finally {
+      clearScroll(scrollId, osClient);
+    }
   }
 
   public static String whereToSearch(

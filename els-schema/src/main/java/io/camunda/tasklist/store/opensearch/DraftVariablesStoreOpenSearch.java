@@ -22,6 +22,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.FieldValue;
+import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch.core.*;
 import org.opensearch.client.opensearch.core.bulk.BulkOperation;
@@ -55,6 +56,7 @@ public class DraftVariablesStoreOpenSearch implements DraftVariableStore {
       operations.add(createUpsertRequest(variableEntity));
     }
     bulkRequest.operations(operations);
+    bulkRequest.refresh(Refresh.WaitFor);
     try {
       OpenSearchUtil.processBulkRequest(osClient, bulkRequest.build());
     } catch (PersistenceException ex) {

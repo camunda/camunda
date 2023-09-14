@@ -6,8 +6,8 @@
  */
 package io.camunda.tasklist.qa.util;
 
-import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
-import io.camunda.tasklist.schema.manager.ElasticsearchSchemaManager;
+import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
+import io.camunda.tasklist.schema.manager.OpenSearchSchemaManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Conditional;
@@ -15,19 +15,18 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 @Component("schemaManager")
-@Profile({"test"})
-@Conditional(ElasticSearchCondition.class)
-public class TestElasticsearchSchemaManager extends ElasticsearchSchemaManager
+@Profile("test")
+@Conditional(OpenSearchCondition.class)
+public class TestOpenSearchSchemaManager extends OpenSearchSchemaManager
     implements TestSchemaManager {
 
-  private static final Logger LOGGER =
-      LoggerFactory.getLogger(TestElasticsearchSchemaManager.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(TestOpenSearchSchemaManager.class);
 
   public void deleteSchema() {
-    final String prefix = tasklistProperties.getElasticsearch().getIndexPrefix();
+    final String prefix = tasklistProperties.getOpenSearch().getIndexPrefix();
     LOGGER.info("Removing indices " + prefix + "*");
-    retryElasticsearchClient.deleteIndicesFor(prefix + "*");
-    retryElasticsearchClient.deleteTemplatesFor(prefix + "*");
+    retryOpenSearchClient.deleteIndicesFor(prefix + "*");
+    retryOpenSearchClient.deleteTemplatesFor(prefix + "*");
   }
 
   public void deleteSchemaQuietly() {

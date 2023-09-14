@@ -11,12 +11,25 @@ on:
   pull_request:
 
 jobs:
-  run-build:
-    name: run
+  run-build-es:
+    name: run-es
     uses: ./.github/workflows/ci-reusable.yml
     secrets: inherit
     with:
       branch: ${{ github.head_ref || github.ref_name }} # head_ref = branch name on PR, ref_name = `master` or `stable/**`
+      testProfile: docker-es
+      database: elasticsearch
     concurrency:
-      group: ci-${{ github.head_ref || github.ref_name }}
+      group: ci-es-${{ github.head_ref || github.ref_name }}
+      cancel-in-progress: true
+  run-build-os:
+    name: run-os
+    uses: ./.github/workflows/ci-reusable.yml
+    secrets: inherit
+    with:
+      branch: ${{ github.head_ref || github.ref_name }} # head_ref = branch name on PR, ref_name = `master` or `stable/**`
+      testProfile: docker-os
+      database: opensearch
+    concurrency:
+      group: ci-os-${{ github.head_ref || github.ref_name }}
       cancel-in-progress: true

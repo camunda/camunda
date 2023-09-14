@@ -19,6 +19,7 @@ import io.camunda.tasklist.zeebeimport.v830.record.value.VariableRecordValueImpl
 import io.camunda.zeebe.protocol.record.Record;
 import java.util.*;
 import org.opensearch.client.opensearch.core.bulk.BulkOperation;
+import org.opensearch.client.opensearch.core.bulk.UpdateOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -87,12 +88,13 @@ public class VariableZeebeRecordProcessorOpenSearch {
 
     return new BulkOperation.Builder()
         .update(
-            up ->
-                up.index(variableIndex.getFullQualifiedName())
-                    .id(entity.getId())
-                    .document(CommonUtils.getJsonObjectFromEntity(entity))
-                    .docAsUpsert(true)
-                    .retryOnConflict(OpenSearchUtil.UPDATE_RETRY_COUNT))
+            UpdateOperation.of(
+                up ->
+                    up.index(variableIndex.getFullQualifiedName())
+                        .id(entity.getId())
+                        .document(CommonUtils.getJsonObjectFromEntity(entity))
+                        .docAsUpsert(true)
+                        .retryOnConflict(OpenSearchUtil.UPDATE_RETRY_COUNT)))
         .build();
   }
 }

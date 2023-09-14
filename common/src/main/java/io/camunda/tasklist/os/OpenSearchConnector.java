@@ -45,10 +45,10 @@ import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.ssl.SSLContexts;
 import org.apache.http.ssl.TrustStrategy;
-import org.elasticsearch.ElasticsearchException;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch.cluster.HealthRequest;
 import org.opensearch.client.opensearch.cluster.HealthResponse;
 import org.opensearch.client.transport.OpenSearchTransport;
@@ -203,7 +203,7 @@ public class OpenSearchConnector {
     if (!checkHealth(openSearchClient)) {
       LOGGER.warn("OpenSearch cluster is not accessible");
     } else {
-      LOGGER.debug("Elasticsearch connection was successfully created.");
+      LOGGER.debug("OpenSearch connection was successfully created.");
     }
     return openSearchClient;
   }
@@ -371,7 +371,7 @@ public class OpenSearchConnector {
   private RetryPolicy<Boolean> getConnectionRetryPolicy(final OpenSearchProperties osConfig) {
     final String logMessage = String.format("connect to OpenSearch at %s", osConfig.getUrl());
     return new RetryPolicy<Boolean>()
-        .handle(IOException.class, ElasticsearchException.class)
+        .handle(IOException.class, OpenSearchException.class)
         .withDelay(Duration.ofSeconds(3))
         .withMaxAttempts(50)
         .onRetry(

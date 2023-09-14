@@ -88,7 +88,7 @@ public class RecordsReaderOpenSearch extends RecordsReaderAbstract {
       lessThanEqualsSequence = fromSequence + batchSize;
     }
 
-    final SearchRequest searchRequest =
+    final SearchRequest.Builder searchRequest =
         new SearchRequest.Builder()
             .sort(
                 s ->
@@ -106,9 +106,7 @@ public class RecordsReaderOpenSearch extends RecordsReaderAbstract {
             .size(maxNumberOfHits >= QUERY_MAX_SIZE ? QUERY_MAX_SIZE : maxNumberOfHits)
             .routing(String.valueOf(partitionId))
             .requestCache(false)
-            .scroll(Time.of(t -> t.time(SCROLL_KEEP_ALIVE_MS)))
-            .index(aliasName)
-            .build();
+            .index(aliasName);
 
     try {
       final Hit[] hits =
@@ -160,14 +158,14 @@ public class RecordsReaderOpenSearch extends RecordsReaderAbstract {
     return new ImportBatchOpenSearch(partitionId, importValueType, Arrays.asList(hits), indexName);
   }
 
-  private Hit[] read(SearchRequest searchRequest, boolean scrollNeeded) throws IOException {
+  private Hit[] read(SearchRequest.Builder searchRequest, boolean scrollNeeded) throws IOException {
     String scrollId = null;
     try {
 
       if (scrollNeeded) {
-        searchRequest.scroll();
+        searchRequest.scroll(Time.of(t -> t.time(SCROLL_KEEP_ALIVE_MS)));
       }
-      SearchResponse<Object> response = zeebeOsClient.search(searchRequest, Object.class);
+      SearchResponse<Object> response = zeebeOsClient.search(searchRequest.build(), Object.class);
 
       final List<Hit> searchHits = new ArrayList<>(response.hits().hits());
 

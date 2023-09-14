@@ -6,29 +6,21 @@
  */
 package io.camunda.tasklist.webapp.security;
 
-import static io.camunda.tasklist.schema.indices.TasklistWebSessionIndex.ATTRIBUTES;
-import static io.camunda.tasklist.schema.indices.TasklistWebSessionIndex.CREATION_TIME;
-import static io.camunda.tasklist.schema.indices.TasklistWebSessionIndex.ID;
-import static io.camunda.tasklist.schema.indices.TasklistWebSessionIndex.LAST_ACCESSED_TIME;
-import static io.camunda.tasklist.schema.indices.TasklistWebSessionIndex.MAX_INACTIVE_INTERVAL_IN_SECONDS;
+import static io.camunda.tasklist.schema.indices.TasklistWebSessionIndex.*;
 import static org.springframework.security.web.context.HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY;
 
-import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
-import io.camunda.tasklist.es.RetryElasticsearchClient;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
+import io.camunda.tasklist.os.RetryOpenSearchClient;
 import io.camunda.tasklist.schema.indices.TasklistWebSessionIndex;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Base64;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-import org.elasticsearch.action.search.SearchRequest;
+import java.util.*;
+import org.opensearch.client.opensearch.core.SearchRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,20 +46,19 @@ import org.springframework.stereotype.Component;
         + "${camunda.tasklist.persistentSessionsEnabled:false}")
 @Component
 @EnableSpringHttpSession
-@Conditional(ElasticSearchCondition.class)
-public class ElasticsearchSessionRepository
-    implements SessionRepository<ElasticsearchSessionRepository.ElasticsearchSession> {
+@Conditional(OpenSearchCondition.class)
+public class OpenSearchSessionRepository
+    implements SessionRepository<OpenSearchSessionRepository.OpenSearchSession> {
 
   public static final int DELETE_EXPIRED_SESSIONS_DELAY = 1_000 * 60 * 30; // min
   public static final String POLLING_HEADER = "x-is-polling";
-  private static final Logger LOGGER =
-      LoggerFactory.getLogger(ElasticsearchSessionRepository.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(OpenSearchSessionRepository.class);
 
   @Autowired
   @Qualifier("sessionThreadPoolScheduler")
   public ThreadPoolTaskScheduler taskScheduler;
 
-  @Autowired private RetryElasticsearchClient retryElasticsearchClient;
+  @Autowired private RetryOpenSearchClient retryOpenSearchClient;
 
   @Autowired private GenericConversionService conversionService;
 
@@ -75,16 +66,18 @@ public class ElasticsearchSessionRepository
 
   @Autowired private HttpServletRequest request;
 
+  @Autowired private ObjectMapper objectMapper;
+
   @PostConstruct
   private void setUp() {
-    LOGGER.debug("Persistent sessions in Elasticsearch enabled");
+    LOGGER.debug("Persistent sessions in OpenSearch enabled");
     setupConverter();
     startExpiredSessionCheck();
   }
 
   @PreDestroy
   private void tearDown() {
-    LOGGER.debug("Shutdown ElasticsearchSessionRepository");
+    LOGGER.debug("Shutdown OpenSearchSessionRepository");
   }
 
   private void setupConverter() {
@@ -98,13 +91,14 @@ public class ElasticsearchSessionRepository
 
   private void removedExpiredSessions() {
     LOGGER.debug("Check for expired sessions");
-    final SearchRequest searchRequest =
-        new SearchRequest(tasklistWebSessionIndex.getFullQualifiedName());
-    retryElasticsearchClient.doWithEachSearchResult(
+    final SearchRequest.Builder searchRequest = new SearchRequest.Builder();
+    searchRequest.index(tasklistWebSessionIndex.getFullQualifiedName());
+    retryOpenSearchClient.doWithEachSearchResult(
         searchRequest,
         sh -> {
-          final Map<String, Object> document = sh.getSourceAsMap();
-          final Optional<ElasticsearchSession> maybeSession = documentToSession(document);
+          final Map<String, Object> document =
+              objectMapper.convertValue(sh.source(), new TypeReference<Map<String, Object>>() {});
+          final Optional<OpenSearchSession> maybeSession = documentToSession(document);
           if (maybeSession.isPresent()) {
             final Session session = maybeSession.get();
             LOGGER.debug("Check if session {} is expired: {}", session, session.isExpired());
@@ -112,22 +106,22 @@ public class ElasticsearchSessionRepository
               deleteById(session.getId());
             }
           } else {
-            // need to delete entry in Elasticsearch in case of failing restore session
+            // need to delete entry in OpenSearch in case of failing restore session
             deleteById(getSessionIdFrom(document));
           }
         });
   }
 
-  private boolean shouldDeleteSession(final ElasticsearchSession session) {
+  private boolean shouldDeleteSession(final OpenSearchSession session) {
     return session.isExpired() || (session.containsAuthentication() && !session.isAuthenticated());
   }
 
   @Override
-  public ElasticsearchSession createSession() {
+  public OpenSearchSession createSession() {
     // Frontend e2e tests are relying on this pattern
     final String sessionId = UUID.randomUUID().toString().replace("-", "");
 
-    final ElasticsearchSession session = new ElasticsearchSession(sessionId);
+    final OpenSearchSession session = new OpenSearchSession(sessionId);
     LOGGER.debug(
         "Create session {} with maxInactiveInterval {} s",
         session,
@@ -136,15 +130,15 @@ public class ElasticsearchSessionRepository
   }
 
   @Override
-  public void save(ElasticsearchSession session) {
+  public void save(OpenSearchSession session) {
     LOGGER.debug("Save session {}", session);
     if (shouldDeleteSession(session)) {
       deleteById(session.getId());
       return;
     }
     if (session.isChanged()) {
-      LOGGER.debug("Session {} changed, save in Elasticsearch.", session);
-      retryElasticsearchClient.createOrUpdateDocument(
+      LOGGER.debug("Session {} changed, save in OpenSearch.", session);
+      retryOpenSearchClient.createOrUpdateDocument(
           tasklistWebSessionIndex.getFullQualifiedName(),
           session.getId(),
           sessionToDocument(session));
@@ -153,12 +147,12 @@ public class ElasticsearchSessionRepository
   }
 
   @Override
-  public ElasticsearchSession findById(final String id) {
-    LOGGER.debug("Retrieve session {} from Elasticsearch", id);
+  public OpenSearchSession findById(final String id) {
+    LOGGER.debug("Retrieve session {} from OpenSearch", id);
     Map<String, Object> document;
     try {
       document =
-          retryElasticsearchClient.getDocument(tasklistWebSessionIndex.getFullQualifiedName(), id);
+          retryOpenSearchClient.getDocument(tasklistWebSessionIndex.getFullQualifiedName(), id);
     } catch (Exception e) {
       document = null;
     }
@@ -166,14 +160,14 @@ public class ElasticsearchSessionRepository
       return null;
     }
 
-    final Optional<ElasticsearchSession> maybeSession = documentToSession(document);
+    final Optional<OpenSearchSession> maybeSession = documentToSession(document);
     if (maybeSession.isEmpty()) {
-      // need to delete entry in Elasticsearch in case of failing restore session
+      // need to delete entry in OpenSearch in case of failing restore session
       deleteById(getSessionIdFrom(document));
       return null;
     }
 
-    final ElasticsearchSession session = maybeSession.get();
+    final OpenSearchSession session = maybeSession.get();
     if (shouldDeleteSession(session)) {
       deleteById(session.getId());
       return null;
@@ -185,9 +179,9 @@ public class ElasticsearchSessionRepository
   @Override
   public void deleteById(String id) {
     LOGGER.debug("Delete session {}", id);
-    executeAsyncElasticsearchRequest(
+    executeAsyncOpenSearchRequest(
         () ->
-            retryElasticsearchClient.deleteDocument(
+            retryOpenSearchClient.deleteDocument(
                 tasklistWebSessionIndex.getFullQualifiedName(), id));
   }
 
@@ -202,7 +196,7 @@ public class ElasticsearchSessionRepository
         bytes, TypeDescriptor.valueOf(byte[].class), TypeDescriptor.valueOf(Object.class));
   }
 
-  private Map<String, Object> sessionToDocument(ElasticsearchSession session) {
+  private Map<String, Object> sessionToDocument(OpenSearchSession session) {
     final Map<String, byte[]> attributes = new HashMap<>();
     session
         .getAttributeNames()
@@ -244,10 +238,10 @@ public class ElasticsearchSessionRepository
     return null;
   }
 
-  private Optional<ElasticsearchSession> documentToSession(Map<String, Object> document) {
+  private Optional<OpenSearchSession> documentToSession(Map<String, Object> document) {
     try {
       final String sessionId = getSessionIdFrom(document);
-      final ElasticsearchSession session = new ElasticsearchSession(sessionId);
+      final OpenSearchSession session = new OpenSearchSession(sessionId);
       session.setLastAccessedTime(getInstantFor(document.get(LAST_ACCESSED_TIME)));
       try {
         if (request != null
@@ -265,7 +259,7 @@ public class ElasticsearchSessionRepository
 
       final Object attributesObject = document.get(ATTRIBUTES);
       if (attributesObject != null
-          && attributesObject.getClass().isInstance(new HashMap<String, String>())) {
+          && attributesObject.getClass().isInstance(new LinkedHashMap<>())) {
         final Map<String, String> attributes = (Map<String, String>) document.get(ATTRIBUTES);
         attributes
             .keySet()
@@ -281,11 +275,11 @@ public class ElasticsearchSessionRepository
     }
   }
 
-  private void executeAsyncElasticsearchRequest(Runnable requestRunnable) {
+  private void executeAsyncOpenSearchRequest(Runnable requestRunnable) {
     taskScheduler.execute(requestRunnable);
   }
 
-  static class ElasticsearchSession implements Session {
+  static class OpenSearchSession implements Session {
 
     private final MapSession delegate;
 
@@ -293,7 +287,7 @@ public class ElasticsearchSessionRepository
 
     private boolean polling;
 
-    public ElasticsearchSession(String id) {
+    public OpenSearchSession(String id) {
       delegate = new MapSession(id);
       polling = false;
     }
@@ -317,7 +311,7 @@ public class ElasticsearchSessionRepository
       return newId;
     }
 
-    public ElasticsearchSession setId(String id) {
+    public OpenSearchSession setId(String id) {
       delegate.setId(id);
       return this;
     }
@@ -372,7 +366,7 @@ public class ElasticsearchSessionRepository
       if (o == null || getClass() != o.getClass()) {
         return false;
       }
-      final ElasticsearchSession session = (ElasticsearchSession) o;
+      final OpenSearchSession session = (OpenSearchSession) o;
       return Objects.equals(getId(), session.getId());
     }
 
@@ -394,7 +388,7 @@ public class ElasticsearchSessionRepository
 
     @Override
     public String toString() {
-      return String.format("ElasticsearchSession: %s ", getId());
+      return String.format("OpenSearchSession: %s ", getId());
     }
 
     @Override
@@ -429,7 +423,7 @@ public class ElasticsearchSessionRepository
       return polling;
     }
 
-    public ElasticsearchSession setPolling(boolean polling) {
+    public OpenSearchSession setPolling(boolean polling) {
       this.polling = polling;
       return this;
     }

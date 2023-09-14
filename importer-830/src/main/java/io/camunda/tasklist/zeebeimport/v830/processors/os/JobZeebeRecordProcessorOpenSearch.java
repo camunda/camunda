@@ -166,6 +166,10 @@ public class JobZeebeRecordProcessorOpenSearch {
       jsonEntityBuilder.remove(TaskTemplate.CREATION_TIME);
     }
 
+    if (entity.getAssignee() == null) {
+      jsonEntityBuilder.remove(TaskTemplate.ASSIGNEE);
+    }
+
     return new BulkOperation.Builder()
         .update(
             UpdateOperation.of(

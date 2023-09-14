@@ -21,9 +21,9 @@ import org.springframework.context.annotation.Primary;
  * the data only with the second run.
  */
 @Configuration
-public class RetryAfterFailureTestConfig {
+public class RetryAfterFailureTestElasticSearchConfig {
 
-  @Bean("io.camunda.tasklist.zeebeimport.v830.processors.ElasticsearchBulkProcessor")
+  @Bean("io.camunda.tasklist.zeebeimport.v830.processors.es.ElasticsearchBulkProcessor")
   @Primary
   public CustomElasticsearchBulkProcessor elasticsearchBulkProcessor() {
     return new CustomElasticsearchBulkProcessor();

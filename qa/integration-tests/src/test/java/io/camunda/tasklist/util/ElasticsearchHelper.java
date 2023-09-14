@@ -14,6 +14,7 @@ import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.entities.ProcessInstanceEntity;
 import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
+import io.camunda.tasklist.schema.indices.IndexDescriptor;
 import io.camunda.tasklist.schema.indices.ProcessInstanceIndex;
 import io.camunda.tasklist.schema.indices.VariableIndex;
 import io.camunda.tasklist.schema.templates.TaskTemplate;
@@ -21,12 +22,19 @@ import io.camunda.tasklist.schema.templates.TaskVariableTemplate;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
+import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.indices.GetIndexRequest;
+import org.elasticsearch.client.indices.GetIndexResponse;
+import org.elasticsearch.cluster.metadata.MappingMetadata;
+import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.index.query.TermsQueryBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -201,5 +209,84 @@ public class ElasticsearchHelper implements NoSqlHelper {
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
+  }
+
+  @Override
+  public List<TaskEntity> getAllTasks(String index) {
+    try {
+      final SearchRequest searchRequest =
+          new SearchRequest(index)
+              .source(
+                  new SearchSourceBuilder().query(constantScoreQuery(matchAllQuery())).size(100));
+      final SearchResponse response;
+      response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      return ElasticsearchUtil.mapSearchHits(
+          response.getHits().getHits(), objectMapper, TaskEntity.class);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  @Override
+  public Long countIndexResult(final String index) {
+    try {
+      final QueryBuilder query = matchAllQuery();
+      final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+      searchSourceBuilder.query(query);
+      searchSourceBuilder.fetchSource(false);
+      final SearchResponse searchResponse =
+          esClient.search(
+              new SearchRequest(index).source(searchSourceBuilder), RequestOptions.DEFAULT);
+      return searchResponse.getHits().getTotalHits().value;
+    } catch (IOException e) {
+      return -1L;
+    }
+  }
+
+  @Override
+  public Boolean isIndexDynamicMapping(IndexDescriptor indexDescriptor, final String dynamic)
+      throws IOException {
+    final Map<String, MappingMetadata> mappings =
+        esClient
+            .indices()
+            .get(
+                new GetIndexRequest(indexDescriptor.getFullQualifiedName()), RequestOptions.DEFAULT)
+            .getMappings();
+    final MappingMetadata mappingMetadata = mappings.get(indexDescriptor.getFullQualifiedName());
+    return mappingMetadata.getSourceAsMap().get("dynamic").equals(dynamic);
+  }
+
+  @Override
+  public Map<String, Object> getFieldDescription(IndexDescriptor indexDescriptor)
+      throws IOException {
+    final Map<String, MappingMetadata> mappings =
+        esClient
+            .indices()
+            .get(
+                new GetIndexRequest(indexDescriptor.getFullQualifiedName()), RequestOptions.DEFAULT)
+            .getMappings();
+    final Map<String, Object> source =
+        mappings.get(indexDescriptor.getFullQualifiedName()).getSourceAsMap();
+    return (Map<String, Object>) source.get("properties");
+  }
+
+  @Override
+  public Boolean indexHasAlias(String index, String alias) throws IOException {
+    final GetIndexResponse getIndexResponse =
+        esClient.indices().get(new GetIndexRequest(index), RequestOptions.DEFAULT);
+    return getIndexResponse.getAliases().size() == 1
+        && getIndexResponse.getAliases().get(index).get(0).alias().equals(alias);
+  }
+
+  @Override
+  public void delete(String index, String id) throws IOException {
+    final DeleteRequest request = new DeleteRequest().index(index).id(id);
+    esClient.delete(request, RequestOptions.DEFAULT);
+  }
+
+  @Override
+  public void update(String index, String id, Map<String, Object> jsonMap) throws IOException {
+    final UpdateRequest request = new UpdateRequest().index(index).id(id).doc(jsonMap);
+    esClient.update(request, RequestOptions.DEFAULT);
   }
 }

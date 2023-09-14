@@ -8,7 +8,10 @@ package io.camunda.tasklist.util;
 
 import io.camunda.tasklist.entities.ProcessInstanceEntity;
 import io.camunda.tasklist.entities.TaskEntity;
+import io.camunda.tasklist.schema.indices.IndexDescriptor;
+import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 public interface NoSqlHelper {
   TaskEntity getTask(String taskId);
@@ -27,4 +30,20 @@ public interface NoSqlHelper {
       final String idFieldName, final String index, final List<String> ids);
 
   List<TaskEntity> getTasksFromIdAndIndex(final String index, final List<String> ids);
+
+  List<TaskEntity> getAllTasks(final String index);
+
+  Long countIndexResult(final String index);
+
+  Boolean isIndexDynamicMapping(final IndexDescriptor index, final String dynamic)
+      throws IOException;
+
+  Map<String, Object> getFieldDescription(IndexDescriptor indexDescriptor) throws IOException;
+
+  Boolean indexHasAlias(final String index, final String alias) throws IOException;
+
+  void delete(final String index, final String id) throws IOException;
+
+  void update(final String index, final String id, final Map<String, Object> jsonMap)
+      throws IOException;
 }

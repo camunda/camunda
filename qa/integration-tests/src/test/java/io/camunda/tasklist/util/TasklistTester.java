@@ -54,7 +54,7 @@ public class TasklistTester {
       "graphql/variableIT/full-variable-fragment.graphql";
 
   private ZeebeClient zeebeClient;
-  private ElasticsearchTestRule elasticsearchTestRule;
+  private TasklistTestRule tasklistTestRule;
   //
   private String processDefinitionKey;
   private String processInstanceId;
@@ -102,7 +102,7 @@ public class TasklistTester {
 
   @Autowired private TasklistProperties tasklistProperties;
 
-  @Autowired private ElasticsearchHelper elasticsearchHelper;
+  @Autowired private NoSqlHelper noSqlHelper;
 
   @Autowired private TaskMutationResolver taskMutationResolver;
 
@@ -117,9 +117,9 @@ public class TasklistTester {
   //
   //  private Long jobKey;
   //
-  public TasklistTester(ZeebeClient zeebeClient, ElasticsearchTestRule elasticsearchTestRule) {
+  public TasklistTester(ZeebeClient zeebeClient, TasklistTestRule elasticsearchTestRule) {
     this.zeebeClient = zeebeClient;
-    this.elasticsearchTestRule = elasticsearchTestRule;
+    this.tasklistTestRule = elasticsearchTestRule;
   }
 
   //
@@ -353,7 +353,7 @@ public class TasklistTester {
   }
 
   public TasklistTester processIsDeployed() {
-    elasticsearchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processDefinitionKey);
+    tasklistTestRule.processAllRecordsAndWait(processIsDeployedCheck, processDefinitionKey);
     return this;
   }
 
@@ -390,7 +390,7 @@ public class TasklistTester {
   //
 
   public TasklistTester taskIsCreated(String flowNodeBpmnId) {
-    elasticsearchTestRule.processAllRecordsAndWait(
+    tasklistTestRule.processAllRecordsAndWait(
         taskIsCreatedCheck, processInstanceId, flowNodeBpmnId);
     // update taskId
     resolveTaskId(flowNodeBpmnId, TaskState.CREATED);
@@ -398,14 +398,14 @@ public class TasklistTester {
   }
 
   public TasklistTester tasksAreCreated(String flowNodeBpmnId, int taskCount) {
-    elasticsearchTestRule.processAllRecordsAndWait(tasksAreCreatedCheck, flowNodeBpmnId, taskCount);
+    tasklistTestRule.processAllRecordsAndWait(tasksAreCreatedCheck, flowNodeBpmnId, taskCount);
     // update taskId
     resolveTaskId(flowNodeBpmnId, TaskState.CREATED);
     return this;
   }
 
   public TasklistTester taskIsCanceled(String flowNodeBpmnId) {
-    elasticsearchTestRule.processAllRecordsAndWait(
+    tasklistTestRule.processAllRecordsAndWait(
         taskIsCanceledCheck, processInstanceId, flowNodeBpmnId);
     // update taskId
     resolveTaskId(flowNodeBpmnId, TaskState.CANCELED);
@@ -413,20 +413,18 @@ public class TasklistTester {
   }
 
   public TasklistTester processInstanceIsCanceled() {
-    elasticsearchTestRule.processAllRecordsAndWait(
-        processInstanceIsCanceledCheck, processInstanceId);
+    tasklistTestRule.processAllRecordsAndWait(processInstanceIsCanceledCheck, processInstanceId);
     return this;
   }
 
   public TasklistTester processInstanceIsCompleted() {
-    elasticsearchTestRule.processAllRecordsAndWait(
-        processInstanceIsCompletedCheck, processInstanceId);
+    tasklistTestRule.processAllRecordsAndWait(processInstanceIsCompletedCheck, processInstanceId);
     return this;
   }
 
   private void resolveTaskId(final String flowNodeBpmnId, final TaskState state) {
     try {
-      final List<TaskEntity> tasks = elasticsearchHelper.getTask(processInstanceId, flowNodeBpmnId);
+      final List<TaskEntity> tasks = noSqlHelper.getTask(processInstanceId, flowNodeBpmnId);
       final Optional<TaskEntity> teOptional =
           tasks.stream().filter(te -> state.equals(te.getState())).findFirst();
       if (teOptional.isPresent()) {
@@ -440,7 +438,7 @@ public class TasklistTester {
   }
 
   public TasklistTester taskIsCompleted(String flowNodeBpmnId) {
-    elasticsearchTestRule.processAllRecordsAndWait(
+    tasklistTestRule.processAllRecordsAndWait(
         taskIsCompletedCheck, processInstanceId, flowNodeBpmnId);
     // update taskId
     resolveTaskId(flowNodeBpmnId, TaskState.COMPLETED);
@@ -448,17 +446,17 @@ public class TasklistTester {
   }
 
   public TasklistTester taskIsAssigned(String taskId) {
-    elasticsearchTestRule.processAllRecordsAndWait(taskIsAssignedCheck, taskId);
+    tasklistTestRule.processAllRecordsAndWait(taskIsAssignedCheck, taskId);
     return this;
   }
 
   public TasklistTester taskVariableExists(String varName) {
-    elasticsearchTestRule.processAllRecordsAndWait(taskVariableExists, taskId, varName);
+    tasklistTestRule.processAllRecordsAndWait(taskVariableExists, taskId, varName);
     return this;
   }
 
   public TasklistTester variablesExist(String[] varNames) {
-    elasticsearchTestRule.processAllRecordsAndWait(variablesExist, varNames);
+    tasklistTestRule.processAllRecordsAndWait(variablesExist, varNames);
     return this;
   }
 

@@ -43,9 +43,9 @@ public class OpenSearchSchemaManager implements SchemaManager {
   public static final String TASKLIST_DELETE_ARCHIVED_INDICES = "tasklist_delete_archived_indices";
   private static final Logger LOGGER = LoggerFactory.getLogger(OpenSearchSchemaManager.class);
 
-  @Autowired private TasklistProperties tasklistProperties;
+  @Autowired protected TasklistProperties tasklistProperties;
 
-  @Autowired private RetryOpenSearchClient retryOpenSearchClient;
+  @Autowired protected RetryOpenSearchClient retryOpenSearchClient;
 
   @Autowired private List<TemplateDescriptor> templateDescriptors;
 

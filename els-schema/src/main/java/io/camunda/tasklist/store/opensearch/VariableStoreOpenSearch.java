@@ -6,15 +6,11 @@
  */
 package io.camunda.tasklist.store.opensearch;
 
-import static io.camunda.tasklist.schema.indices.VariableIndex.ID;
-import static io.camunda.tasklist.schema.indices.VariableIndex.NAME;
-import static io.camunda.tasklist.schema.indices.VariableIndex.SCOPE_FLOW_NODE_ID;
+import static io.camunda.tasklist.schema.indices.VariableIndex.*;
 import static io.camunda.tasklist.util.CollectionUtil.isNotEmpty;
 import static io.camunda.tasklist.util.OpenSearchUtil.SCROLL_KEEP_ALIVE_MS;
 import static io.camunda.tasklist.util.OpenSearchUtil.createSearchRequest;
-import static java.util.stream.Collectors.groupingBy;
-import static java.util.stream.Collectors.mapping;
-import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.CommonUtils;
@@ -32,23 +28,15 @@ import io.camunda.tasklist.schema.templates.TaskVariableTemplate;
 import io.camunda.tasklist.store.VariableStore;
 import io.camunda.tasklist.util.OpenSearchUtil;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.FieldValue;
+import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.Time;
 import org.opensearch.client.opensearch._types.query_dsl.ConstantScoreQuery;
-import org.opensearch.client.opensearch._types.query_dsl.FieldAndFormat;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.ClearScrollRequest;
@@ -156,8 +144,10 @@ public class VariableStoreOpenSearch implements VariableStore {
     }
 
     final SearchRequest.Builder searchRequestBuilder = new SearchRequest.Builder();
+
     final Query joins = OpenSearchUtil.joinWithAnd(taskIdsQ, varNamesQ);
     searchRequestBuilder.query(q -> q.constantScore(cs -> cs.filter(joins)));
+    searchRequestBuilder.index(taskVariableTemplate.getAlias());
     applyFetchSourceForTaskVariableTemplate(
         searchRequestBuilder,
         requests
@@ -185,6 +175,7 @@ public class VariableStoreOpenSearch implements VariableStore {
       operations.add(createUpsertRequest(variableEntity));
     }
     bulkRequest.operations(operations);
+    bulkRequest.refresh(Refresh.WaitFor);
     try {
       OpenSearchUtil.processBulkRequest(osClient, bulkRequest.build());
     } catch (PersistenceException ex) {
@@ -227,7 +218,7 @@ public class VariableStoreOpenSearch implements VariableStore {
                                                             .map(m -> FieldValue.of(m))
                                                             .collect(toList())))))))
         .sort(sort -> sort.field(f -> f.field(FlowNodeInstanceIndex.POSITION).order(SortOrder.Asc)))
-        .size(tasklistProperties.getElasticsearch().getBatchSize());
+        .size(tasklistProperties.getOpenSearch().getBatchSize());
 
     try {
       return OpenSearchUtil.scroll(
@@ -242,9 +233,7 @@ public class VariableStoreOpenSearch implements VariableStore {
   public VariableEntity getRuntimeVariable(final String variableId, Set<String> fieldNames) {
 
     final SearchRequest.Builder request = new SearchRequest.Builder();
-    request
-        .index(variableIndex.getAlias())
-        .source(s -> s.filter(sf -> sf.includes(List.of(variableId))));
+    request.index(variableIndex.getAlias()).query(q -> q.ids(ids -> ids.values(variableId)));
     applyFetchSourceForVariableIndex(request, fieldNames);
 
     try {
@@ -268,7 +257,7 @@ public class VariableStoreOpenSearch implements VariableStore {
   public TaskVariableEntity getTaskVariable(final String variableId, Set<String> fieldNames) {
 
     final SearchRequest.Builder request = createSearchRequest(taskVariableTemplate);
-    request.source(s -> s.filter(sf -> sf.includes(List.of(variableId))));
+    request.query(q -> q.ids(ids -> ids.values(variableId)));
     applyFetchSourceForTaskVariableTemplate(request, fieldNames);
     try {
       final SearchResponse<TaskVariableEntity> response =
@@ -386,10 +375,7 @@ public class VariableStoreOpenSearch implements VariableStore {
       elsFieldNames.add(NAME);
       elsFieldNames.add(SCOPE_FLOW_NODE_ID);
       includesFields = elsFieldNames.toArray(new String[elsFieldNames.size()]);
-      searchSourceBuilder.fields(
-          Arrays.stream(includesFields)
-              .map(m -> new FieldAndFormat.Builder().field(m).build())
-              .collect(toList()));
+      searchSourceBuilder.source(s -> s.filter(f -> f.includes(Arrays.asList(includesFields))));
     }
   }
 
@@ -403,10 +389,7 @@ public class VariableStoreOpenSearch implements VariableStore {
       elsFieldNames.add(TaskVariableTemplate.NAME);
       elsFieldNames.add(TaskVariableTemplate.TASK_ID);
       includesFields = elsFieldNames.toArray(new String[elsFieldNames.size()]);
-      searchRequestBuilder.fields(
-          Arrays.stream(includesFields)
-              .map(m -> new FieldAndFormat.Builder().field(m).build())
-              .collect(toList()));
+      searchRequestBuilder.source(s -> s.filter(f -> f.includes(Arrays.asList(includesFields))));
     }
   }
 }

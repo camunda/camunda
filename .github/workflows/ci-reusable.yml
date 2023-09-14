@@ -31,6 +31,14 @@ on:
         required: false
         default: 4
         type: number
+      testProfile:
+        description: "test profile used on ES/OS test execution"
+        required: true
+        type: string
+      database:
+        description: "database used on ES/OS test execution"
+        required: true
+        type: string
 
 defaults:
   run:
@@ -49,7 +57,7 @@ env:
 jobs:
   build:
     name: "'${{ inputs.branch }}' build"
-    runs-on: ${{ (github.event_name == 'pull_request' && startsWith(inputs.branch, 'fe-')) && 'ubuntu-latest' || 'gcp-core-8-default' }}
+    runs-on: ${{ (github.event_name == 'pull_request' && startsWith(inputs.branch, 'fe-')) && 'ubuntu-latest' || 'gcp-core-16-default' }}
     timeout-minutes: 120
     steps:
       # Setup: checkout branch
@@ -126,13 +134,16 @@ jobs:
           if [ ${{ env.IS_MASTER_BRANCH }} ]; then
             mvn -B -pl webapp jib:build -Dimage=${{ env.ZEEBE_TASKLIST_DOCKER_IMAGE }}:latest -Djib.to.auth.username=${{ steps.secrets.outputs.NEXUS_USR }} -Djib.to.auth.password=${{ steps.secrets.outputs.NEXUS_PSW }}
           fi
+      
+      
+      
 
       #########################################################################
       # Tests: run tests for all Maven modules
       - name: Run Tests
         if: ${{ env.IS_FE_BRANCH == 'false' }}
         run: |
-          mvn -T4 verify -P docker,skipFrontendBuild -B --fail-at-end -Dfailsafe.rerunFailingTestsCount=2
+          mvn -T4 verify -P ${{ inputs.testProfile }},skipFrontendBuild -B --fail-at-end -Dfailsafe.rerunFailingTestsCount=2 -Dcamunda.tasklist.database=${{ inputs.database }}
 
       #########################################################################
       # Reports: publish test metrics results

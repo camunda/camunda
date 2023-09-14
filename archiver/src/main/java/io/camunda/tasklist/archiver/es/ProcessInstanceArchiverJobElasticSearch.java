@@ -25,6 +25,7 @@ import io.micrometer.core.instrument.Timer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import org.elasticsearch.action.search.SearchRequest;
@@ -75,8 +76,8 @@ public class ProcessInstanceArchiverJobElasticSearch extends AbstractArchiverJob
   }
 
   @Override
-  public CompletableFuture<Integer> archiveBatch(ArchiveBatch archiveBatch) {
-    final CompletableFuture<Integer> archiveBatchFuture;
+  public CompletableFuture<Map.Entry<String, Integer>> archiveBatch(ArchiveBatch archiveBatch) {
+    final CompletableFuture<Map.Entry<String, Integer>> archiveBatchFuture;
     if (archiveBatch != null) {
       LOGGER.debug("Following batch operations are found for archiving: {}", archiveBatch);
       archiveBatchFuture = new CompletableFuture<>();
@@ -101,7 +102,10 @@ public class ProcessInstanceArchiverJobElasticSearch extends AbstractArchiverJob
 
       CompletableFuture.allOf(
               deleteVariablesFuture, deleteFlowNodesFuture, deleteProcessInstanceFuture)
-          .thenAccept((v) -> archiveBatchFuture.complete(archiveBatch.getIds().size()))
+          .thenAccept(
+              (v) ->
+                  archiveBatchFuture.complete(
+                      Map.entry("PROCESS_INSTANCE_ARCHIVER", archiveBatch.getIds().size())))
           .exceptionally(
               (t) -> {
                 archiveBatchFuture.completeExceptionally(t);
@@ -109,7 +113,7 @@ public class ProcessInstanceArchiverJobElasticSearch extends AbstractArchiverJob
               });
     } else {
       LOGGER.debug("Nothing to archive");
-      archiveBatchFuture = CompletableFuture.completedFuture(0);
+      archiveBatchFuture = CompletableFuture.completedFuture(Map.entry(NOTHING_TO_ARCHIVE, 0));
     }
 
     return archiveBatchFuture;

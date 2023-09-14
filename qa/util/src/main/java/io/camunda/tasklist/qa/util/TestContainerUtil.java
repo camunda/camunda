@@ -7,6 +7,7 @@
 package io.camunda.tasklist.qa.util;
 
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
+import io.camunda.tasklist.util.TasklistPropertiesUtil;
 import io.zeebe.containers.ZeebeContainer;
 import io.zeebe.containers.ZeebePort;
 import jakarta.annotation.PreDestroy;

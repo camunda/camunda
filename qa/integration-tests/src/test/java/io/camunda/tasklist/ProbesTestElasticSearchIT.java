@@ -9,11 +9,11 @@ package io.camunda.tasklist;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.tasklist.es.RetryElasticsearchClient;
-import io.camunda.tasklist.management.ElasticSearchCheck;
 import io.camunda.tasklist.management.HealthCheckIT.AddManagementPropertiesInitializer;
 import io.camunda.tasklist.management.SearchEngineHealthIndicator;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.TestElasticsearchSchemaManager;
+import io.camunda.tasklist.qa.util.TestSchemaManager;
 import io.camunda.tasklist.schema.IndexSchemaValidator;
 import io.camunda.tasklist.util.TasklistIntegrationTest;
 import io.camunda.tasklist.util.TestApplication;
@@ -21,9 +21,7 @@ import io.camunda.tasklist.util.TestUtil;
 import io.camunda.tasklist.webapp.security.WebSecurityConfig;
 import io.camunda.tasklist.webapp.security.oauth.OAuth2WebConfigurer;
 import io.camunda.tasklist.zeebe.PartitionHolder;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -47,16 +45,17 @@ import org.springframework.test.context.junit4.SpringRunner;
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ContextConfiguration(initializers = AddManagementPropertiesInitializer.class)
-public class ProbesTestIT extends TasklistIntegrationTest {
+public class ProbesTestElasticSearchIT extends TasklistIntegrationTest {
 
   @Autowired private TasklistProperties tasklistProperties;
-
-  @Autowired private TestElasticsearchSchemaManager schemaManager;
-
-  @Autowired private ElasticSearchCheck probes;
+  @Autowired private TestSchemaManager schemaManager;
   @Autowired private IndexSchemaValidator indexSchemaValidator;
-
   @MockBean private PartitionHolder partitionHolder;
+
+  @BeforeClass
+  public static void beforeClass() {
+    Assume.assumeTrue(TestUtil.isElasticSearch());
+  }
 
   @Before
   public void before() {

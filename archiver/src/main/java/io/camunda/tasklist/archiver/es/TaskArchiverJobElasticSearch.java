@@ -25,6 +25,7 @@ import io.micrometer.core.instrument.Timer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -72,8 +73,8 @@ public class TaskArchiverJobElasticSearch extends AbstractArchiverJobElasticSear
   }
 
   @Override
-  public CompletableFuture<Integer> archiveBatch(ArchiveBatch archiveBatch) {
-    final CompletableFuture<Integer> archiveBatchFuture;
+  public CompletableFuture<Map.Entry<String, Integer>> archiveBatch(ArchiveBatch archiveBatch) {
+    final CompletableFuture<Map.Entry<String, Integer>> archiveBatchFuture;
     if (archiveBatch != null) {
       LOGGER.debug("Following batch operations are found for archiving: {}", archiveBatch);
       archiveBatchFuture = new CompletableFuture<>();
@@ -95,7 +96,10 @@ public class TaskArchiverJobElasticSearch extends AbstractArchiverJobElasticSear
               archiveBatch.getIds());
 
       CompletableFuture.allOf(moveVariableDocuments, moveTaskDocuments)
-          .thenAccept((v) -> archiveBatchFuture.complete(archiveBatch.getIds().size()))
+          .thenAccept(
+              (v) ->
+                  archiveBatchFuture.complete(
+                      Map.entry(archiveBatch.getFinishDate(), archiveBatch.getIds().size())))
           .exceptionally(
               (t) -> {
                 archiveBatchFuture.completeExceptionally(t);
@@ -104,7 +108,7 @@ public class TaskArchiverJobElasticSearch extends AbstractArchiverJobElasticSear
 
     } else {
       LOGGER.debug("Nothing to archive");
-      archiveBatchFuture = CompletableFuture.completedFuture(0);
+      archiveBatchFuture = CompletableFuture.completedFuture(Map.entry(NOTHING_TO_ARCHIVE, 0));
     }
 
     return archiveBatchFuture;

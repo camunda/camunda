@@ -106,7 +106,12 @@ public class TaskStoreOpenSearch implements TaskStore {
   public List<String> getTaskIdsByProcessInstanceId(String processInstanceId) {
     final SearchRequest.Builder searchRequest =
         OpenSearchUtil.createSearchRequest(taskTemplate)
-            .source(s -> s.filter(filter -> filter.includes(processInstanceId)))
+            .query(
+                q ->
+                    q.term(
+                        term ->
+                            term.field(PROCESS_INSTANCE_ID)
+                                .value(FieldValue.of(processInstanceId))))
             .fields(f -> f.field(TaskTemplate.ID));
 
     try {
@@ -217,8 +222,16 @@ public class TaskStoreOpenSearch implements TaskStore {
     try {
       final SearchResponse<TaskSearchView> response =
           osClient.search(searchRequest, TaskSearchView.class);
+
       final List<TaskSearchView> tasks =
-          response.hits().hits().stream().map(m -> m.source()).collect(Collectors.toList());
+          response.hits().hits().stream()
+              .map(
+                  m -> {
+                    m.source()
+                        .setSortValues(Arrays.asList(m.sort().toArray()).toArray(new String[0]));
+                    return m.source();
+                  })
+              .collect(Collectors.toList());
 
       if (tasks.size() > 0) {
         if (query.getSearchBefore() != null || query.getSearchBeforeOrEqual() != null) {

@@ -154,7 +154,8 @@ public class ArchiverUtilOpenSearch extends ArchiverUtilAbstract {
     final var deleteRequest = new DeleteByQueryRequest.Builder().index(index);
     return deleteRequest
         .scroll(Time.of(t -> t.time(OpenSearchUtil.INTERNAL_SCROLL_KEEP_ALIVE_MS)))
-        // TODO https://github.com/opensearch-project/opensearch-java/pull/538/files there is a
+        // TODO https://github.com/opensearch-project/opensearch-java/pull/538/files there is a bug
+        // on slices
         // unreleased fix to set slices to auto using 0l
         // slices(0l)
         .conflicts(Conflicts.Proceed);

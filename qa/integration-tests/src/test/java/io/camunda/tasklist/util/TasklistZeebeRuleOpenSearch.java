@@ -11,24 +11,31 @@ import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.response.Topology;
 import io.zeebe.containers.ZeebeContainer;
+import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.testcontainers.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
-public abstract class TasklistZeebeRule extends TestWatcher {
+public class TasklistZeebeRuleOpenSearch extends TasklistZeebeRule {
 
   public static final String YYYY_MM_DD = "uuuu-MM-dd";
   private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(15);
-  private static final Logger LOGGER = LoggerFactory.getLogger(TasklistZeebeRule.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(TasklistZeebeRuleOpenSearch.class);
   @Autowired public TasklistProperties tasklistProperties;
+
+  @Autowired
+  @Qualifier("zeebeOsClient")
+  protected OpenSearchClient zeebeOsClient;
 
   protected ZeebeContainer zeebeContainer;
   private ZeebeClient client;
@@ -36,7 +43,15 @@ public abstract class TasklistZeebeRule extends TestWatcher {
   private String prefix;
   private boolean failed = false;
 
-  public abstract void refreshIndices(Instant instant);
+  public void refreshIndices(Instant instant) {
+    try {
+      final String date =
+          DateTimeFormatter.ofPattern(YYYY_MM_DD).withZone(ZoneId.systemDefault()).format(instant);
+      zeebeOsClient.indices().refresh(r -> r.index(prefix + "*" + date));
+    } catch (IOException ex) {
+      throw new RuntimeException(ex);
+    }
+  }
 
   @Override
   protected void failed(Throwable e, Description description) {
@@ -46,7 +61,7 @@ public abstract class TasklistZeebeRule extends TestWatcher {
   @Override
   public void starting(Description description) {
     this.prefix = TestUtil.createRandomString(10);
-    tasklistProperties.getZeebeElasticsearch().setPrefix(prefix);
+    tasklistProperties.getZeebeOpenSearch().setPrefix(prefix);
 
     startZeebe();
   }
@@ -59,7 +74,7 @@ public abstract class TasklistZeebeRule extends TestWatcher {
     LOGGER.info("************ Starting Zeebe:{} ************", zeebeVersion);
     zeebeContainer =
         new ZeebeContainer(DockerImageName.parse("camunda/zeebe").withTag(zeebeVersion));
-    Testcontainers.exposeHostPorts(9200);
+    Testcontainers.exposeHostPorts(9205);
     zeebeContainer
         .withEnv("JAVA_OPTS", "-Xss256k -XX:+TieredCompilation -XX:TieredStopAtLevel=1")
         .withEnv("ZEEBE_LOG_LEVEL", "ERROR")
@@ -67,14 +82,14 @@ public abstract class TasklistZeebeRule extends TestWatcher {
         .withEnv("ZEEBE_CLOCK_CONTROLLED", "true")
         .withEnv("ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT", "2")
         .withEnv(
-            "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL",
-            "http://host.testcontainers.internal:9200")
-        .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_DELAY", "1")
-        .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_SIZE", "1")
-        .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_PREFIX", prefix)
+            "ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_URL",
+            "http://host.testcontainers.internal:9205")
+        .withEnv("ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_BULK_DELAY", "1")
+        .withEnv("ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_BULK_SIZE", "1")
+        .withEnv("ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_INDEX_PREFIX", prefix)
         .withEnv(
-            "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME",
-            "io.camunda.zeebe.exporter.ElasticsearchExporter");
+            "ZEEBE_BROKER_EXPORTERS_OPENSEARCH_CLASSNAME",
+            "io.camunda.zeebe.exporter.opensearch.OpensearchExporter");
     zeebeContainer.start();
 
     client =
@@ -101,7 +116,12 @@ public abstract class TasklistZeebeRule extends TestWatcher {
   }
 
   @Override
-  public abstract void finished(Description description);
+  public void finished(Description description) {
+    stop();
+    if (!failed) {
+      TestUtil.removeAllIndices(zeebeOsClient, prefix);
+    }
+  }
 
   /** Stops the broker and destroys the client. Does nothing if not started yet. */
   public void stop() {
@@ -133,7 +153,10 @@ public abstract class TasklistZeebeRule extends TestWatcher {
     this.tasklistProperties = tasklistProperties;
   }
 
-  public abstract void setZeebeOsClient(final OpenSearchClient zeebeOsClient);
+  @Override
+  public void setZeebeEsClient(RestHighLevelClient zeebeOsClient) {}
 
-  public abstract void setZeebeEsClient(final RestHighLevelClient zeebeOsClient);
+  public void setZeebeOsClient(final OpenSearchClient zeebeOsClient) {
+    this.zeebeOsClient = zeebeOsClient;
+  }
 }

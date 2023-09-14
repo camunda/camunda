@@ -14,21 +14,35 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.tasklist.schema.migration.es.ReindexPlanElasticSearch;
 import io.camunda.tasklist.util.TasklistIntegrationTest;
+import io.camunda.tasklist.util.TestUtil;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.common.settings.Settings;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 import org.springframework.beans.factory.annotation.Autowired;
 
-public class ReindexIT extends TasklistIntegrationTest {
+public class ReindexElasticSearchIT extends TasklistIntegrationTest {
 
+  private static final String SOURCE_INDEX_123 = "index-1.2.3";
+
+  private static final String SOURCE_INDEX_124 = "index-1.2.4";
+
+  private static final String INDEX_NAME_123 = SOURCE_INDEX_123 + "_";
+
+  private static final String INDEX_NAME_124 = SOURCE_INDEX_124 + "_";
+
+  private static final String INDEX_NAME_ARCHIVER_123 = INDEX_NAME_123 + "2021-05-23";
+  private static final String INDEX_NAME_ARCHIVER_124 = INDEX_NAME_124 + "2021-05-23";
   @Autowired private RetryElasticsearchClient retryElasticsearchClient;
 
   private String indexPrefix;
+
+  @BeforeClass
+  public static void beforeClass() {
+    Assume.assumeTrue(TestUtil.isElasticSearch());
+  }
 
   @Before
   public void setUp() {
@@ -48,19 +62,19 @@ public class ReindexIT extends TasklistIntegrationTest {
   public void reindexArchivedIndices() throws Exception {
     /// Old version -> before migration
     // create index
-    createIndex(idxName("index-1.2.3_"), List.of(Map.of("test_name", "test_value")));
+    createIndex(idxName(INDEX_NAME_123), List.of(Map.of("test_name", "test_value")));
     // Create archived index
     createIndex(
-        idxName("index-1.2.3_2021-05-23"), List.of(Map.of("test_name", "test_value_archived")));
+        idxName(INDEX_NAME_ARCHIVER_123), List.of(Map.of("test_name", "test_value_archived")));
     /// New version -> migration
     // Create new index
-    createIndex(idxName("index-1.2.4_"), List.of());
+    createIndex(idxName(INDEX_NAME_124), List.of());
 
     retryElasticsearchClient.refresh(idxName("index-*"));
     final ReindexPlanElasticSearch plan =
         ReindexPlanElasticSearch.create()
-            .setSrcIndex(idxName("index-1.2.3"))
-            .setDstIndex(idxName("index-1.2.4"));
+            .setSrcIndex(idxName(SOURCE_INDEX_123))
+            .setDstIndex(idxName(SOURCE_INDEX_124));
 
     plan.executeOn(retryElasticsearchClient);
 
@@ -68,33 +82,33 @@ public class ReindexIT extends TasklistIntegrationTest {
     assertThat(retryElasticsearchClient.getIndexNames(idxName("index-*")))
         .containsExactlyInAnyOrder(
             // reindexed indices:
-            idxName("index-1.2.4_"), idxName("index-1.2.4_2021-05-23"),
+            idxName(INDEX_NAME_124), idxName(INDEX_NAME_ARCHIVER_124),
             // old indices:
-            idxName("index-1.2.3_"), idxName("index-1.2.3_2021-05-23"));
+            idxName(INDEX_NAME_123), idxName(INDEX_NAME_ARCHIVER_123));
   }
 
   @Test // ZTL-1008
   public void resetIndexSettings() {
     /// Old version -> before migration
     // create index
-    createIndex(idxName("index-1.2.3_"), List.of(Map.of("test_name", "test_value")));
+    createIndex(idxName(INDEX_NAME_123), List.of(Map.of("test_name", "test_value")));
     // set reindex settings
     final Settings settings =
         Settings.builder()
             .put(NUMBERS_OF_REPLICA, NO_REPLICA)
             .put(REFRESH_INTERVAL, NO_REFRESH)
             .build();
-    retryElasticsearchClient.setIndexSettingsFor(settings, idxName("index-1.2.3_"));
+    retryElasticsearchClient.setIndexSettingsFor(settings, idxName(INDEX_NAME_123));
     final Map<String, String> reindexSettings =
         retryElasticsearchClient.getIndexSettingsFor(
-            idxName("index-1.2.3_"), NUMBERS_OF_REPLICA, REFRESH_INTERVAL);
+            idxName(INDEX_NAME_123), NUMBERS_OF_REPLICA, REFRESH_INTERVAL);
     assertThat(reindexSettings)
         .containsEntry(NUMBERS_OF_REPLICA, NO_REPLICA)
         .containsEntry(REFRESH_INTERVAL, NO_REFRESH);
     // Migrator uses this
-    assertThat(retryElasticsearchClient.getOrDefaultNumbersOfReplica(idxName("index-1.2.3_"), "5"))
+    assertThat(retryElasticsearchClient.getOrDefaultNumbersOfReplica(idxName(INDEX_NAME_123), "5"))
         .isEqualTo("5");
-    assertThat(retryElasticsearchClient.getOrDefaultRefreshInterval(idxName("index-1.2.3_"), "2"))
+    assertThat(retryElasticsearchClient.getOrDefaultRefreshInterval(idxName(INDEX_NAME_123), "2"))
         .isEqualTo("2");
   }
 

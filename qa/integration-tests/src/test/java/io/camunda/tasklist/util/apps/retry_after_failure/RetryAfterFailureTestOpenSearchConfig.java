@@ -4,12 +4,12 @@
  * See the License.txt file for more information. You may not use this file
  * except in compliance with the proprietary license.
  */
-package io.camunda.tasklist.util.apps.idempotency;
+package io.camunda.tasklist.util.apps.retry_after_failure;
 
 import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.zeebe.ImportValueType;
 import io.camunda.tasklist.zeebeimport.ImportBatch;
-import io.camunda.tasklist.zeebeimport.v820.processors.es.BulkProcessorElasticSearch;
+import io.camunda.tasklist.zeebeimport.v820.processors.os.OpenSearchBulkProcessor;
 import java.util.HashSet;
 import java.util.Set;
 import org.springframework.context.annotation.Bean;
@@ -17,31 +17,32 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 
 /**
- * Let's mock ElasticsearchBulkProcessor, so that it persists the data successfully, but throw an
- * exception after that. This will cause the data to be imported twice.
+ * Let's mock OpenSearchBulkProcessor, so that it throw an exception with the 2st run and persist
+ * the data only with the second run.
  */
 @Configuration
-public class ZeebeImportIdempotencyTestConfig {
+public class RetryAfterFailureTestOpenSearchConfig {
 
-  @Bean("io.camunda.tasklist.zeebeimport.v830.processors.ElasticsearchBulkProcessor")
+  @Bean("io.camunda.tasklist.zeebeimport.v830.processors.os.OpenSearchBulkProcessor")
   @Primary
-  public CustomElasticsearchBulkProcessor elasticsearchBulkProcessor() {
-    return new CustomElasticsearchBulkProcessor();
+  public CustomOpenSearchBulkProcessor openSearchBulkProcessor() {
+    return new CustomOpenSearchBulkProcessor();
   }
 
-  public static class CustomElasticsearchBulkProcessor extends BulkProcessorElasticSearch {
+  public static class CustomOpenSearchBulkProcessor extends OpenSearchBulkProcessor {
 
     private Set<ImportValueType> alreadyFailedTypes = new HashSet<>();
 
     @Override
     public void performImport(ImportBatch importBatchElasticSearch) throws PersistenceException {
-      super.performImport(importBatchElasticSearch);
       final ImportValueType importValueType = importBatchElasticSearch.getImportValueType();
       if (!alreadyFailedTypes.contains(importValueType)) {
         alreadyFailedTypes.add(importValueType);
         throw new PersistenceException(
             String.format(
-                "Fake exception when saving data of type %s to Elasticsearch", importValueType));
+                "Fake exception when saving data of type %s to OpenSearch", importValueType));
+      } else {
+        super.performImport(importBatchElasticSearch);
       }
     }
 

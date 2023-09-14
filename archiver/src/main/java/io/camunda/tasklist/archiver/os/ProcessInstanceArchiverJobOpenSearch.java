@@ -22,6 +22,7 @@ import io.camunda.tasklist.util.OpenSearchUtil;
 import io.micrometer.core.instrument.Timer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import org.opensearch.client.json.JsonData;
@@ -71,8 +72,8 @@ public class ProcessInstanceArchiverJobOpenSearch extends AbstractArchiverJobOpe
   }
 
   @Override
-  public CompletableFuture<Integer> archiveBatch(ArchiveBatch archiveBatch) {
-    final CompletableFuture<Integer> archiveBatchFuture;
+  public CompletableFuture<Map.Entry<String, Integer>> archiveBatch(ArchiveBatch archiveBatch) {
+    final CompletableFuture<Map.Entry<String, Integer>> archiveBatchFuture;
     if (archiveBatch != null) {
       LOGGER.debug("Following batch operations are found for archiving: {}", archiveBatch);
       archiveBatchFuture = new CompletableFuture<>();
@@ -97,7 +98,10 @@ public class ProcessInstanceArchiverJobOpenSearch extends AbstractArchiverJobOpe
 
       CompletableFuture.allOf(
               deleteVariablesFuture, deleteFlowNodesFuture, deleteProcessInstanceFuture)
-          .thenAccept((v) -> archiveBatchFuture.complete(archiveBatch.getIds().size()))
+          .thenAccept(
+              (v) ->
+                  archiveBatchFuture.complete(
+                      Map.entry("PROCESS_INSTANCE_ARCHIVER", archiveBatch.getIds().size())))
           .exceptionally(
               (t) -> {
                 archiveBatchFuture.completeExceptionally(t);
@@ -105,7 +109,7 @@ public class ProcessInstanceArchiverJobOpenSearch extends AbstractArchiverJobOpe
               });
     } else {
       LOGGER.debug("Nothing to archive");
-      archiveBatchFuture = CompletableFuture.completedFuture(0);
+      archiveBatchFuture = CompletableFuture.completedFuture(Map.entry(NOTHING_TO_ARCHIVE, 0));
     }
 
     return archiveBatchFuture;

@@ -33,7 +33,10 @@ public abstract class TestUtil {
     try {
       LOGGER.info("Removing indices");
       final var indexResponses = osClient.indices().get(ir -> ir.index(List.of(prefix + "*")));
-      osClient.indices().delete(d -> d.index(indexResponses.result().keySet().stream().toList()));
+      final List listIndexResponses = indexResponses.result().keySet().stream().toList();
+      if (listIndexResponses.size() > 0) {
+        osClient.indices().delete(d -> d.index(listIndexResponses));
+      }
 
       final var templateResponses =
           osClient.indices().getIndexTemplate(it -> it.name(prefix + "*"));
@@ -75,5 +78,19 @@ public abstract class TestUtil {
     } catch (ElasticsearchStatusException | IOException ex) {
       LOGGER.error(ex.getMessage(), ex);
     }
+  }
+
+  public static TasklistTestRule getTasklistTestRule() {
+    return TasklistZeebeIntegrationTest.IS_ELASTIC
+        ? new ElasticsearchTestRule()
+        : new OpenSearchTestRule();
+  }
+
+  public static boolean isElasticSearch() {
+    return !TasklistPropertiesUtil.isOpenSearchDatabase();
+  }
+
+  public static boolean isOpenSearch() {
+    return TasklistPropertiesUtil.isOpenSearchDatabase();
   }
 }

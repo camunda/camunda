@@ -68,7 +68,7 @@ public class OpenSearchBulkProcessor extends AbstractImportBatchProcessorOpenSea
 
     final ImportValueType importValueType = importBatch.getImportValueType();
 
-    LOGGER.debug("Writing [{}] Zeebe records to Elasticsearch", zeebeRecords.size());
+    LOGGER.debug("Writing [{}] Zeebe records to OpenSearch", zeebeRecords.size());
     for (Record record : zeebeRecords) {
       switch (importValueType) {
         case PROCESS_INSTANCE:

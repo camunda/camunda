@@ -88,9 +88,7 @@ public class ProcessStoreOpenSearch implements ProcessStore {
         new FieldCollapse.Builder().field(ProcessIndex.PROCESS_DEFINITION_ID).build();
     final SortOptions sortOptions =
         new SortOptions.Builder()
-            .field(
-                FieldSort.of(
-                    f -> f.field(ProcessIndex.PROCESS_DEFINITION_ID).order(SortOrder.Desc)))
+            .field(FieldSort.of(f -> f.field(ProcessIndex.VERSION).order(SortOrder.Desc)))
             .build();
 
     final SearchResponse<ProcessEntity> response;
@@ -103,7 +101,7 @@ public class ProcessStoreOpenSearch implements ProcessStore {
                           q ->
                               q.term(
                                   t ->
-                                      t.field(ProcessIndex.KEY)
+                                      t.field(ProcessIndex.PROCESS_DEFINITION_ID)
                                           .value(FieldValue.of(bpmnProcessId))))
                       .collapse(keyCollapse)
                       .sort(sortOptions)
@@ -112,10 +110,13 @@ public class ProcessStoreOpenSearch implements ProcessStore {
       if (response.hits().hits().size() > 0) {
         return response.hits().hits().get(0).source();
       } else {
-        throw new NotFoundException(String.format("Process with key %s not found", bpmnProcessId));
+        throw new NotFoundException(
+            String.format("Could not find process with id '%s'.", bpmnProcessId));
       }
     } catch (IOException e) {
-      throw new RuntimeException(e);
+      final String message =
+          String.format("Exception occurred, while obtaining the process: %s", e.getMessage());
+      throw new TasklistRuntimeException(message, e);
     }
   }
 
@@ -396,6 +397,9 @@ public class ProcessStoreOpenSearch implements ProcessStore {
       throw new RuntimeException(e);
     }
 
-    return response.hits().hits().stream().map(h -> h.source()).collect(Collectors.toList());
+    return response.hits().hits().stream()
+        .map(h -> h.source())
+        .filter(p -> p.isStartedByForm())
+        .collect(Collectors.toList());
   }
 }

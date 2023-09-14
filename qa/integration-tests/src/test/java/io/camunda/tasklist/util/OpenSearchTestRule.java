@@ -75,11 +75,11 @@ public class OpenSearchTestRule extends TestWatcher implements TasklistTestRule 
     if (indexPrefix == null) {
       indexPrefix = TestUtil.createRandomString(10) + "-tasklist";
     }
-    tasklistProperties.getElasticsearch().setIndexPrefix(indexPrefix);
-    if (tasklistProperties.getElasticsearch().isCreateSchema()) {
+    tasklistProperties.getOpenSearch().setIndexPrefix(indexPrefix);
+    if (tasklistProperties.getOpenSearch().isCreateSchema()) {
       schemaManager.createSchema();
       assertThat(areIndicesCreatedAfterChecks(indexPrefix, 4, 5 * 60 /*sec*/))
-          .describedAs("Elasticsearch %s (min %d) indices are created", indexPrefix, 5)
+          .describedAs("OpenSearch %s (min %d) indices are created", indexPrefix, 5)
           .isTrue();
     }
   }
@@ -87,7 +87,7 @@ public class OpenSearchTestRule extends TestWatcher implements TasklistTestRule 
   @Override
   protected void finished(Description description) {
     if (!failed) {
-      final String indexPrefix = tasklistProperties.getElasticsearch().getIndexPrefix();
+      final String indexPrefix = tasklistProperties.getOpenSearch().getIndexPrefix();
       TestUtil.removeAllIndices(osClient, indexPrefix);
     }
     tasklistProperties
@@ -123,8 +123,7 @@ public class OpenSearchTestRule extends TestWatcher implements TasklistTestRule 
     try {
       osClient
           .indices()
-          .refresh(
-              r -> r.index(List.of(tasklistProperties.getOpenSearch().getIndexPrefix() + "*")));
+          .refresh(r -> r.index(tasklistProperties.getOpenSearch().getIndexPrefix() + "*"));
     } catch (Exception t) {
       LOGGER.error("Could not refresh Tasklist OpenSearch indices", t);
     }
@@ -185,9 +184,7 @@ public class OpenSearchTestRule extends TestWatcher implements TasklistTestRule 
         imported = testImportListener.getImported();
         LOGGER.debug(" {} of {} records processed", imported, shouldImportCount);
       }
-
       refreshTasklistIndices();
-
       found = testCheck.test(arguments);
       if (!found) {
         sleepFor(500);
@@ -221,14 +218,14 @@ public class OpenSearchTestRule extends TestWatcher implements TasklistTestRule 
         areCreated = areIndicesAreCreated(indexPrefix, minCountOfIndices);
       } catch (Exception t) {
         LOGGER.error(
-            "Elasticsearch indices (min {}) are not created yet. Waiting {}/{}",
+            "OpenSearch indices (min {}) are not created yet. Waiting {}/{}",
             minCountOfIndices,
             checks,
             maxChecks);
         sleepFor(200);
       }
     }
-    LOGGER.debug("Elasticsearch indices are created after {} checks", checks);
+    LOGGER.debug("OpenSearch indices are created after {} checks", checks);
     return areCreated;
   }
 

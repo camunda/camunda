@@ -8,14 +8,17 @@ package io.camunda.tasklist.zeebeimport;
 
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.TestApplication;
-import io.camunda.tasklist.util.apps.retry_after_failure.RetryAfterFailureTestConfig;
+import io.camunda.tasklist.util.TestUtil;
+import io.camunda.tasklist.util.apps.retry_after_failure.RetryAfterFailureTestElasticSearchConfig;
 import org.junit.After;
+import org.junit.Assume;
+import org.junit.BeforeClass;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 /** Tests that after one failure of specific batch import, it will be successfully retried. */
 @SpringBootTest(
-    classes = {RetryAfterFailureTestConfig.class, TestApplication.class},
+    classes = {RetryAfterFailureTestElasticSearchConfig.class, TestApplication.class},
     properties = {
       TasklistProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
       TasklistProperties.PREFIX + ".archiver.rolloverEnabled = false",
@@ -24,10 +27,16 @@ import org.springframework.boot.test.context.SpringBootTest;
       "graphql.servlet.exception-handlers-enabled = true"
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-public class ZeebeImportRetryAfterFailureIT extends ZeebeImportIT {
+public class ZeebeImportRetryAfterFailureElasticSearchIT extends ZeebeImportIT {
 
   @Autowired
-  private RetryAfterFailureTestConfig.CustomElasticsearchBulkProcessor elasticsearchBulkProcessor;
+  private RetryAfterFailureTestElasticSearchConfig.CustomElasticsearchBulkProcessor
+      elasticsearchBulkProcessor;
+
+  @BeforeClass
+  public static void beforeClass() {
+    Assume.assumeTrue(TestUtil.isElasticSearch());
+  }
 
   @After
   public void after() {

@@ -101,7 +101,7 @@ public class UserStoreOpenSearch implements UserStore {
             .query(q -> q.constantScore(qs -> qs.filter(qf -> qf.ids(iq -> iq.values(userIds)))))
             .sort(s -> s.script(getScriptSort(userIds)))
             .source(s -> s.filter(sf -> sf.includes(UserIndex.USER_ID, UserIndex.DISPLAY_NAME)))
-            .scroll(Time.of(t -> t.time(SCROLL_KEEP_ALIVE_MS + "ms")))
+            .scroll(Time.of(t -> t.time(SCROLL_KEEP_ALIVE_MS)))
             .build();
 
     try {

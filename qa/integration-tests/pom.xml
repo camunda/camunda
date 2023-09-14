@@ -151,6 +151,7 @@
           <failIfNoTests>true</failIfNoTests>
           <systemPropertyVariables>
             <spring.profiles.active>test</spring.profiles.active>
+            <camunda.tasklist.database>${camunda.tasklist.database}</camunda.tasklist.database>
           </systemPropertyVariables>
         </configuration>
       </plugin>
@@ -163,6 +164,7 @@
           <failIfNoTests>true</failIfNoTests>
           <systemPropertyVariables>
             <spring.profiles.active>test</spring.profiles.active>
+            <camunda.tasklist.database>${camunda.tasklist.database}</camunda.tasklist.database>
           </systemPropertyVariables>
         </configuration>
       </plugin>
@@ -215,8 +217,12 @@
   <profiles>
 
     <profile>
-      <id>docker</id>
+      <id>docker-os</id>
       <activation>
+        <property>
+          <name>camunda.tasklist.database</name>
+          <value>opensearch</value>
+        </property>
         <activeByDefault>true</activeByDefault>
       </activation>
       <build>
@@ -226,8 +232,9 @@
             <groupId>org.codehaus.mojo</groupId>
             <artifactId>exec-maven-plugin</artifactId>
             <executions>
+
               <execution>
-                <id>docker-start</id>
+                <id>docker-start-os</id>
                 <phase>pre-integration-test</phase>
                 <goals>
                   <goal>exec</goal>
@@ -239,10 +246,11 @@
                   <arguments>
                     <argument>up</argument>
                     <argument>-d</argument>
-                    <argument>elasticsearch</argument>
+                    <argument>opensearch</argument>
                   </arguments>
                 </configuration>
               </execution>
+
 
               <execution>
                 <id>docker-stop</id>
@@ -270,6 +278,70 @@
         </plugins>
       </build>
     </profile>
+
+
+    <profile>
+      <id>docker-es</id>
+      <activation>
+        <property>
+          <name>camunda.tasklist.database</name>
+          <value>elasticsearch</value>
+        </property>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <build>
+        <plugins>
+
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>exec-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>docker-start-es</id>
+                <phase>pre-integration-test</phase>
+                <goals>
+                  <goal>exec</goal>
+                </goals>
+                <configuration>
+                  <skip>${skipTests}</skip>
+                  <executable>docker-compose</executable>
+                  <workingDirectory>..</workingDirectory>
+                  <arguments>
+                    <argument>up</argument>
+                    <argument>-d</argument>
+                    <argument>elasticsearch</argument>
+                  </arguments>
+                </configuration>
+              </execution>
+
+
+              <execution>
+                <id>docker-stop</id>
+                <phase>post-integration-test</phase>
+                <goals>
+                  <goal>exec</goal>
+                </goals>
+                <configuration>
+                  <skip>${skipTests}</skip>
+                  <executable>docker-compose</executable>
+                  <workingDirectory>..</workingDirectory>
+                  <arguments>
+                    <argument>down</argument>
+                  </arguments>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-resources-plugin</artifactId>
+          </plugin>
+
+        </plugins>
+      </build>
+    </profile>
+
 
   </profiles>
 
