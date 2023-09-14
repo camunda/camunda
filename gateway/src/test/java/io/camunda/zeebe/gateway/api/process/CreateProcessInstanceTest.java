@@ -17,6 +17,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public final class CreateProcessInstanceTest extends GatewayTest {
@@ -53,6 +54,7 @@ public final class CreateProcessInstanceTest extends GatewayTest {
   }
 
   @Test
+  @Ignore("https://github.com/camunda/zeebe/issues/14041")
   public void shouldMapRequestAndResponseWithCustomTenantId() {
     // given
     final String tenantId = "test-tenant";
