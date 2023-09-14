@@ -82,7 +82,7 @@ public class RaftAppendTest {
   @Test
   public void shouldNotifyCommittedEntryListenerOnLeaderOnly() throws Throwable {
     // given
-    final var committedEntryListener = mock(RaftCommittedEntryListener.class);
+    final var committedEntryListener = mock(RaftApplicationEntryCommittedPositionListener.class);
     raftRule.addCommittedEntryListener(committedEntryListener);
 
     // when

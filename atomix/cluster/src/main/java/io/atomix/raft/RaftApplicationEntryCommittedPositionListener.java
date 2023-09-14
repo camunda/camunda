@@ -16,17 +16,16 @@
  */
 package io.atomix.raft;
 
-import io.atomix.raft.storage.log.IndexedRaftLogEntry;
-
 /**
- * This listener will only be called by the Leader, when it commits an entry. If RAFT is currently
- * running in a follower role, it will not call this listener.
+ * This listener will only be called by the Leader, when it commits an application entry.
+ *
+ * <p>If RAFT is currently running in a follower role, it will not call this listener.
  */
 @FunctionalInterface
-public interface RaftCommittedEntryListener {
+public interface RaftApplicationEntryCommittedPositionListener {
 
   /**
-   * @param indexedRaftLogEntry the new committed entry
+   * @param committedPosition the new committed position which is related to the application entries
    */
-  void onCommit(IndexedRaftLogEntry indexedRaftLogEntry);
+  void onCommit(long committedPosition);
 }
