@@ -12,13 +12,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.auth.impl.Authorization;
+import io.camunda.zeebe.gateway.api.deployment.DeployResourceStub;
 import io.camunda.zeebe.gateway.api.util.GatewayTest;
-import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient;
-import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient.RequestStub;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerDeployResourceRequest;
-import io.camunda.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceRequest;
-import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.grpc.Status;
 import org.junit.Before;
@@ -32,8 +29,7 @@ public class MultiTenancyDisabledTest extends GatewayTest {
 
   @Before
   public void setup() {
-    final FakeRequestStub stub = new FakeRequestStub();
-    stub.registerWith(brokerClient);
+    new DeployResourceStub().registerWith(brokerClient);
   }
 
   @Test
@@ -64,21 +60,5 @@ public class MultiTenancyDisabledTest extends GatewayTest {
         .hasMessageContaining(
             "Expected to handle gRPC request DeployResource with tenant identifier")
         .hasMessageContaining("but multi-tenancy is disabled");
-  }
-
-  public static final class FakeRequestStub
-      implements RequestStub<BrokerDeployResourceRequest, BrokerResponse<DeploymentRecord>> {
-
-    @Override
-    public void registerWith(final StubbedBrokerClient gateway) {
-      gateway.registerHandler(BrokerDeployResourceRequest.class, this);
-    }
-
-    @Override
-    public BrokerResponse<DeploymentRecord> handle(final BrokerDeployResourceRequest request)
-        throws Exception {
-      final DeploymentRecord deploymentRecord = request.getRequestWriter();
-      return new BrokerResponse<>(deploymentRecord, 0, 123);
-    }
   }
 }
