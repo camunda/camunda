@@ -156,8 +156,8 @@ final class RetryStrategyTest {
     final var barrier = new LinkedTransferQueue<Boolean>();
     final var future = new CompletableFuture<Void>();
     final var secondActor = new ControllableActor();
-    schedulerRule.submitActor(test.actor);
-    schedulerRule.submitActor(secondActor);
+    schedulerRule.submitActor(test.actor).join();
+    schedulerRule.submitActor(secondActor).join();
 
     // when
     test.strategy.runWithRetry(
