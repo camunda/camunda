@@ -39,10 +39,11 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-final class MemberJoinTest {
+final class ReconfigurationTest {
   private final SingleThreadContext context = new SingleThreadContext("raft-%d");
   private final TestRaftProtocolFactory protocolFactory = new TestRaftProtocolFactory(context);
   private final List<RaftServer> servers = new LinkedList<>();
@@ -53,159 +54,6 @@ final class MemberJoinTest {
       server.shutdown().join();
     }
     context.close();
-  }
-
-  @Test
-  void shouldJoinExistingMembers(@TempDir final Path tmp) {
-    // given - a cluster with 3 members
-    final var id1 = MemberId.from("1");
-    final var id2 = MemberId.from("2");
-    final var id3 = MemberId.from("3");
-
-    final var m1 = createServer(tmp, createMembershipService(id1, id2, id3));
-    final var m2 = createServer(tmp, createMembershipService(id2, id1, id3));
-    final var m3 = createServer(tmp, createMembershipService(id3, id1, id2));
-
-    CompletableFuture.allOf(
-            m1.bootstrap(id1, id2, id3), m2.bootstrap(id1, id2, id3), m3.bootstrap(id1, id2, id3))
-        .join();
-
-    // when - a new member joins
-    final var id4 = MemberId.from("4");
-    final var m4 = createServer(tmp, createMembershipService(id4, id1, id2, id3));
-    m4.join().join();
-
-    // then - all members show a configuration with 4 active members
-    final var expected =
-        List.of(
-            new DefaultRaftMember(id1, Type.ACTIVE, Instant.now()),
-            new DefaultRaftMember(id2, Type.ACTIVE, Instant.now()),
-            new DefaultRaftMember(id3, Type.ACTIVE, Instant.now()),
-            new DefaultRaftMember(id4, Type.ACTIVE, Instant.now()));
-
-    assertThat(m1.cluster().getMembers()).containsExactlyInAnyOrderElementsOf(expected);
-    assertThat(m2.cluster().getMembers()).containsExactlyInAnyOrderElementsOf(expected);
-    assertThat(m3.cluster().getMembers()).containsExactlyInAnyOrderElementsOf(expected);
-    assertThat(m4.cluster().getMembers()).containsExactlyInAnyOrderElementsOf(expected);
-  }
-
-  @Test
-  void shouldCommitOnAllMembers(@TempDir final Path tmp) {
-    // given - a cluster with 3 members and one new member joining
-    final var id1 = MemberId.from("1");
-    final var id2 = MemberId.from("2");
-    final var id3 = MemberId.from("3");
-    final var id4 = MemberId.from("4");
-
-    final var m1 = createServer(tmp, createMembershipService(id1, id2, id3));
-    final var m2 = createServer(tmp, createMembershipService(id2, id1, id3));
-    final var m3 = createServer(tmp, createMembershipService(id3, id1, id2));
-    final var m4 = createServer(tmp, createMembershipService(id4, id1, id2, id3));
-
-    CompletableFuture.allOf(
-            m1.bootstrap(id1, id2, id3), m2.bootstrap(id1, id2, id3), m3.bootstrap(id1, id2, id3))
-        .join();
-    m4.join().join();
-
-    // when - appending a new entry
-    final var leader = awaitLeader(m1, m2, m3, m4);
-    final var index = appendEntry(leader).write().join();
-
-    // then - all members received the entry
-    Awaitility.await("All members have committed the entry")
-        .untilAsserted(
-            () ->
-                assertThat(List.of(m1, m2, m3, m4))
-                    .allSatisfy(
-                        server ->
-                            assertThat(server.getContext().getCommitIndex()).isEqualTo(index)));
-  }
-
-  @Test
-  void shouldRequireAdjustedQuorum(@TempDir final Path tmp) {
-    // given - a cluster with 3 members and two new members joining
-    final var id1 = MemberId.from("1");
-    final var id2 = MemberId.from("2");
-    final var id3 = MemberId.from("3");
-    final var id4 = MemberId.from("4");
-    final var id5 = MemberId.from("5");
-
-    final var m1 = createServer(tmp, createMembershipService(id1, id2, id3));
-    final var m2 = createServer(tmp, createMembershipService(id2, id1, id3));
-    final var m3 = createServer(tmp, createMembershipService(id3, id1, id2));
-    final var m4 = createServer(tmp, createMembershipService(id4, id1, id2, id3));
-    final var m5 = createServer(tmp, createMembershipService(id5, id1, id2, id3));
-
-    CompletableFuture.allOf(
-            m1.bootstrap(id1, id2, id3), m2.bootstrap(id1, id2, id3), m3.bootstrap(id1, id2, id3))
-        .join();
-
-    m4.join().join();
-    m5.join().join();
-
-    // when - no quorum possible because three out of five members are down
-    m1.shutdown().join();
-    m4.shutdown().join();
-    m5.shutdown().join();
-
-    // then - cluster will not find a leader because two members are not enough for a quorum
-    Awaitility.await("No leader is elected")
-        .during(Duration.ofSeconds(5))
-        .until(() -> getLeader(m1, m2, m3, m4, m5), Optional::isEmpty);
-  }
-
-  @Test
-  void shouldFormNewQuorum(@TempDir final Path tmp) {
-    // given - a cluster with 3 members and two new members joining
-    final var id1 = MemberId.from("1");
-    final var id2 = MemberId.from("2");
-    final var id3 = MemberId.from("3");
-    final var id4 = MemberId.from("4");
-    final var id5 = MemberId.from("5");
-
-    final var m1 = createServer(tmp, createMembershipService(id1, id2, id3));
-    final var m2 = createServer(tmp, createMembershipService(id2, id1, id3));
-    final var m3 = createServer(tmp, createMembershipService(id3, id1, id2));
-    final var m4 = createServer(tmp, createMembershipService(id4, id1, id2, id3));
-    final var m5 = createServer(tmp, createMembershipService(id5, id1, id2, id3));
-
-    CompletableFuture.allOf(
-            m1.bootstrap(id1, id2, id3), m2.bootstrap(id1, id2, id3), m3.bootstrap(id1, id2, id3))
-        .join();
-
-    m4.join().join();
-    m5.join().join();
-
-    // when - original members fail so that quorum depends on new members
-    m1.shutdown().join();
-    m2.shutdown().join();
-
-    // then - cluster still has a leader and can commit entries
-    final var leader = awaitLeader(m1, m2, m3, m4, m5);
-    assertThat(appendEntry(leader).commit()).succeedsWithin(Duration.ofSeconds(1));
-  }
-
-  @Test
-  void shouldJoinSingleMemberCluster(@TempDir final Path tmp) {
-    // given - a cluster with just one member
-    final var id1 = MemberId.from("1");
-    final var m1 = createServer(tmp, createMembershipService(id1));
-
-    CompletableFuture.allOf(m1.bootstrap(id1)).join();
-
-    // when - a new member joins
-    final var id2 = MemberId.from("2");
-    final var m2 = createServer(tmp, createMembershipService(id2, id1, id2));
-    m2.join().join();
-
-    // then - all members show a configuration with two active members
-    final var expected =
-        List.of(
-            new DefaultRaftMember(id1, Type.ACTIVE, Instant.now()),
-            new DefaultRaftMember(id2, Type.ACTIVE, Instant.now()));
-
-    assertThat(m1.cluster().getMembers()).containsExactlyInAnyOrderElementsOf(expected);
-    assertThat(m2.cluster().getMembers()).containsExactlyInAnyOrderElementsOf(expected);
   }
 
   private static LeaderRole awaitLeader(final RaftServer... servers) {
@@ -330,6 +178,139 @@ final class MemberJoinTest {
     @Override
     public void onCommitError(final long index, final Throwable error) {
       commit.completeExceptionally(error);
+    }
+  }
+
+  @Nested
+  final class Joining {
+    @Test
+    void shouldJoinExistingMembers(@TempDir final Path tmp) {
+      // given - a cluster with 3 members
+      final var id1 = MemberId.from("1");
+      final var id2 = MemberId.from("2");
+      final var id3 = MemberId.from("3");
+
+      final var m1 = createServer(tmp, createMembershipService(id1, id2, id3));
+      final var m2 = createServer(tmp, createMembershipService(id2, id1, id3));
+      final var m3 = createServer(tmp, createMembershipService(id3, id1, id2));
+
+      CompletableFuture.allOf(
+              m1.bootstrap(id1, id2, id3), m2.bootstrap(id1, id2, id3), m3.bootstrap(id1, id2, id3))
+          .join();
+
+      // when - a new member joins
+      final var id4 = MemberId.from("4");
+      final var m4 = createServer(tmp, createMembershipService(id4, id1, id2, id3));
+      m4.join().join();
+
+      // then - all members show a configuration with 4 active members
+      final var expected =
+          List.of(
+              new DefaultRaftMember(id1, Type.ACTIVE, Instant.now()),
+              new DefaultRaftMember(id2, Type.ACTIVE, Instant.now()),
+              new DefaultRaftMember(id3, Type.ACTIVE, Instant.now()),
+              new DefaultRaftMember(id4, Type.ACTIVE, Instant.now()));
+
+      assertThat(m1.cluster().getMembers()).containsExactlyInAnyOrderElementsOf(expected);
+      assertThat(m2.cluster().getMembers()).containsExactlyInAnyOrderElementsOf(expected);
+      assertThat(m3.cluster().getMembers()).containsExactlyInAnyOrderElementsOf(expected);
+      assertThat(m4.cluster().getMembers()).containsExactlyInAnyOrderElementsOf(expected);
+    }
+
+    @Test
+    void shouldCommitOnAllMembers(@TempDir final Path tmp) {
+      // given - a cluster with 3 members and one new member joining
+      final var id1 = MemberId.from("1");
+      final var id2 = MemberId.from("2");
+      final var id3 = MemberId.from("3");
+      final var id4 = MemberId.from("4");
+
+      final var m1 = createServer(tmp, createMembershipService(id1, id2, id3));
+      final var m2 = createServer(tmp, createMembershipService(id2, id1, id3));
+      final var m3 = createServer(tmp, createMembershipService(id3, id1, id2));
+      final var m4 = createServer(tmp, createMembershipService(id4, id1, id2, id3));
+
+      CompletableFuture.allOf(
+              m1.bootstrap(id1, id2, id3), m2.bootstrap(id1, id2, id3), m3.bootstrap(id1, id2, id3))
+          .join();
+      m4.join().join();
+
+      // when - appending a new entry
+      final var leader = awaitLeader(m1, m2, m3, m4);
+      final var index = appendEntry(leader).write().join();
+
+      // then - all members received the entry
+      Awaitility.await("All members have committed the entry")
+          .untilAsserted(
+              () ->
+                  assertThat(List.of(m1, m2, m3, m4))
+                      .allSatisfy(
+                          server ->
+                              assertThat(server.getContext().getCommitIndex()).isEqualTo(index)));
+    }
+
+    @Test
+    void shouldRequireAdjustedQuorum(@TempDir final Path tmp) {
+      // given - a cluster with 3 members and two new members joining
+      final var id1 = MemberId.from("1");
+      final var id2 = MemberId.from("2");
+      final var id3 = MemberId.from("3");
+      final var id4 = MemberId.from("4");
+      final var id5 = MemberId.from("5");
+
+      final var m1 = createServer(tmp, createMembershipService(id1, id2, id3));
+      final var m2 = createServer(tmp, createMembershipService(id2, id1, id3));
+      final var m3 = createServer(tmp, createMembershipService(id3, id1, id2));
+      final var m4 = createServer(tmp, createMembershipService(id4, id1, id2, id3));
+      final var m5 = createServer(tmp, createMembershipService(id5, id1, id2, id3));
+
+      CompletableFuture.allOf(
+              m1.bootstrap(id1, id2, id3), m2.bootstrap(id1, id2, id3), m3.bootstrap(id1, id2, id3))
+          .join();
+
+      m4.join().join();
+      m5.join().join();
+
+      // when - no quorum possible because three out of five members are down
+      m1.shutdown().join();
+      m4.shutdown().join();
+      m5.shutdown().join();
+
+      // then - cluster will not find a leader because two members are not enough for a quorum
+      Awaitility.await("No leader is elected")
+          .during(Duration.ofSeconds(5))
+          .until(() -> getLeader(m1, m2, m3, m4, m5), Optional::isEmpty);
+    }
+
+    @Test
+    void shouldFormNewQuorum(@TempDir final Path tmp) {
+      // given - a cluster with 3 members and two new members joining
+      final var id1 = MemberId.from("1");
+      final var id2 = MemberId.from("2");
+      final var id3 = MemberId.from("3");
+      final var id4 = MemberId.from("4");
+      final var id5 = MemberId.from("5");
+
+      final var m1 = createServer(tmp, createMembershipService(id1, id2, id3));
+      final var m2 = createServer(tmp, createMembershipService(id2, id1, id3));
+      final var m3 = createServer(tmp, createMembershipService(id3, id1, id2));
+      final var m4 = createServer(tmp, createMembershipService(id4, id1, id2, id3));
+      final var m5 = createServer(tmp, createMembershipService(id5, id1, id2, id3));
+
+      CompletableFuture.allOf(
+              m1.bootstrap(id1, id2, id3), m2.bootstrap(id1, id2, id3), m3.bootstrap(id1, id2, id3))
+          .join();
+
+      m4.join().join();
+      m5.join().join();
+
+      // when - original members fail so that quorum depends on new members
+      m1.shutdown().join();
+      m2.shutdown().join();
+
+      // then - cluster still has a leader and can commit entries
+      final var leader = awaitLeader(m1, m2, m3, m4, m5);
+      assertThat(appendEntry(leader).commit()).succeedsWithin(Duration.ofSeconds(1));
     }
   }
 }
