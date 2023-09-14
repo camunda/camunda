@@ -12,11 +12,9 @@ import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.value.LongValue;
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.StreamSupport;
 
-public final class ProcessVersionInfo extends UnpackedObject implements DbValue {
+public final class ProcessVersionInfo extends UnpackedObject
+    implements DbValue, VersionInfo<ProcessVersionInfo> {
   // The property key is named nextValue. This is not a great name and doesn't describe what it is.
   // However, changing this is not backwards compatible. Changing the variable name is the best we
   // can do to hide this name.
@@ -36,63 +34,18 @@ public final class ProcessVersionInfo extends UnpackedObject implements DbValue 
    *
    * @return the highest version we've ever known for this process
    */
+  @Override
   public long getHighestVersion() {
     return highestVersionProp.getValue();
   }
 
-  /**
-   * Sets the highest version of a process. This is the highest version we've ever known. If the
-   * passed version is lower than the current known highest version, nothing is changed.
-   *
-   * @param version the version of the process
-   */
-  public ProcessVersionInfo setHighestVersionIfHigher(final long version) {
-    if (version > highestVersionProp.getValue()) {
-      highestVersionProp.setValue(version);
-    }
-    return this;
+  @Override
+  public void setHighestVersion(final long version) {
+    highestVersionProp.setValue(version);
   }
 
-  public Long getLatestVersion() {
-    final List<Long> knownVersions = getKnownVersions();
-    if (knownVersions.isEmpty()) {
-      return 0L;
-    }
-    return knownVersions.get(knownVersions.size() - 1);
-  }
-
-  public List<Long> getKnownVersions() {
-    return StreamSupport.stream(knownVersions.spliterator(), false)
-        .map(LongValue::getValue)
-        .sorted()
-        .toList();
-  }
-
-  public Optional<Integer> findVersionBefore(final long version) {
-    final var knownVersions = getKnownVersions();
-    final var previousIndex = knownVersions.indexOf(version) - 1;
-
-    if (previousIndex >= knownVersions.size() || previousIndex < 0) {
-      return Optional.empty();
-    }
-
-    return Optional.of(knownVersions.get(previousIndex).intValue());
-  }
-
-  public void addKnownVersion(final long version) {
-    if (!getKnownVersions().contains(version)) {
-      knownVersions.add().setValue(version);
-      setHighestVersionIfHigher(version);
-    }
-  }
-
-  public void removeKnownVersion(final long version) {
-    final var iterator = knownVersions.iterator();
-    while (iterator.hasNext()) {
-      if (iterator.next().getValue() == version) {
-        iterator.remove();
-        break;
-      }
-    }
+  @Override
+  public ArrayProperty<LongValue> getKnownVersionsProp() {
+    return knownVersions;
   }
 }
