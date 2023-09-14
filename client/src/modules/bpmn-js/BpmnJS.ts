@@ -226,6 +226,7 @@ class BpmnJS {
     this.#navigatedViewer = new NavigatedViewer({
       container,
       bpmnRenderer: bpmnRendererColors,
+      canvas: {deferUpdate: true},
       additionalModules: [ElementTemplatesIconsRenderer, OutlineModule],
     });
   };

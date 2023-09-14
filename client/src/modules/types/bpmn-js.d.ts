@@ -115,10 +115,12 @@ declare module 'bpmn-js/lib/NavigatedViewer' {
     constructor({
       container,
       bpmnRenderer,
+      canvas,
       additionalModules,
     }: {
       container: HTMLElement;
       bpmnRenderer: {[moduleName]: unknown};
+      canvas: {deferUpdate: boolean};
       additionalModules: unknown[];
     });
 
