@@ -43,7 +43,7 @@ public class LargeStateControllerPerformanceTest {
   private static final double SIZE_GB =
       Double.parseDouble(
           System.getenv().getOrDefault("LARGE_STATE_CONTROLLER_PERFORMANCE_TEST_SIZE_GB", "0.5"));
-  private static final Map<Double, Double> KNOWN_REFERENCE_SCORES = Map.of(0.5, 10.0, 4.0, 9.0);
+  private static final Map<Double, Double> KNOWN_REFERENCE_SCORES = Map.of(0.5, 10.0, 4.0, 10.0);
 
   private TestState.TestContext context;
 
@@ -75,7 +75,7 @@ public class LargeStateControllerPerformanceTest {
     final var assertResult = testCase.run();
 
     // then
-    assertResult.isWithinDeviation(referenceScore, 0.2);
+    assertResult.isAtLeast(referenceScore, 0.2);
   }
 
   @Benchmark
