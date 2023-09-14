@@ -83,7 +83,12 @@ public final class StubbedGateway {
     final MultiTenancyCfg multiTenancy = config.getMultiTenancy();
     final EndpointManager endpointManager =
         new EndpointManager(
-            brokerClient, activateJobsHandler, jobStreamer, actorScheduler, Runnable::run, multiTenancy);
+            brokerClient,
+            activateJobsHandler,
+            jobStreamer,
+            actorScheduler,
+            Runnable::run,
+            multiTenancy);
     final GatewayGrpcService gatewayGrpcService = new GatewayGrpcService(endpointManager);
 
     final InProcessServerBuilder serverBuilder =
