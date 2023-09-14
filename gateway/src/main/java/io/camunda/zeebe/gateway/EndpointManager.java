@@ -388,33 +388,14 @@ public final class EndpointManager {
       final Function<GrpcRequestT, BrokerRequest<BrokerResponseT>> requestMapper,
       final BrokerResponseMapper<BrokerResponseT, GrpcResponseT> responseMapper,
       final ServerStreamObserver<GrpcResponseT> streamObserver) {
+
     final BrokerRequest<BrokerResponseT> brokerRequest;
-
     try {
-      brokerRequest = requestMapper.apply(grpcRequest);
+      brokerRequest = mapToBrokerRequest(grpcRequest, requestMapper);
     } catch (final Exception e) {
       streamObserver.onError(e);
       return;
     }
-
-    final String authorizationToken;
-    try {
-      final List<String> authorizedTenants =
-          multiTenancy.isEnabled()
-              ? Context.current().call(IdentityInterceptor.AUTHORIZED_TENANTS_KEY::get)
-              : List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-      authorizationToken =
-          Authorization.jwtEncoder()
-              .withIssuer(JwtAuthorizationBuilder.DEFAULT_ISSUER)
-              .withAudience(JwtAuthorizationBuilder.DEFAULT_AUDIENCE)
-              .withSubject(JwtAuthorizationBuilder.DEFAULT_SUBJECT)
-              .withClaim(Authorization.AUTHORIZED_TENANTS, authorizedTenants)
-              .encode();
-    } catch (final Exception e) {
-      streamObserver.onError(e);
-      return;
-    }
-    brokerRequest.setAuthorization(authorizationToken);
 
     brokerClient.sendRequestWithRetry(
         brokerRequest,
@@ -427,10 +408,10 @@ public final class EndpointManager {
       final Function<GrpcRequestT, BrokerRequest<BrokerResponseT>> requestMapper,
       final BrokerResponseMapper<BrokerResponseT, GrpcResponseT> responseMapper,
       final ServerStreamObserver<GrpcResponseT> streamObserver) {
-    final BrokerRequest<BrokerResponseT> brokerRequest;
 
+    final BrokerRequest<BrokerResponseT> brokerRequest;
     try {
-      brokerRequest = requestMapper.apply(grpcRequest);
+      brokerRequest = mapToBrokerRequest(grpcRequest, requestMapper);
     } catch (final Exception e) {
       streamObserver.onError(e);
       return;
@@ -448,10 +429,10 @@ public final class EndpointManager {
       final BrokerResponseMapper<BrokerResponseT, GrpcResponseT> responseMapper,
       final ServerStreamObserver<GrpcResponseT> streamObserver,
       final Duration timeout) {
-    final BrokerRequest<BrokerResponseT> brokerRequest;
 
+    final BrokerRequest<BrokerResponseT> brokerRequest;
     try {
-      brokerRequest = requestMapper.apply(grpcRequest);
+      brokerRequest = mapToBrokerRequest(grpcRequest, requestMapper);
     } catch (final Exception e) {
       streamObserver.onError(e);
       return;
@@ -462,6 +443,29 @@ public final class EndpointManager {
         (key, response) -> consumeResponse(responseMapper, streamObserver, key, response),
         streamObserver::onError,
         timeout);
+  }
+
+  private <GrpcRequestT, BrokerResponseT> BrokerRequest<BrokerResponseT> mapToBrokerRequest(
+      final GrpcRequestT grpcRequest,
+      final Function<GrpcRequestT, BrokerRequest<BrokerResponseT>> requestMapper)
+      throws Exception {
+
+    final BrokerRequest<BrokerResponseT> brokerRequest = requestMapper.apply(grpcRequest);
+
+    final List<String> authorizedTenants =
+        multiTenancy.isEnabled()
+            ? Context.current().call(IdentityInterceptor.AUTHORIZED_TENANTS_KEY::get)
+            : List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    final String authorizationToken =
+        Authorization.jwtEncoder()
+            .withIssuer(JwtAuthorizationBuilder.DEFAULT_ISSUER)
+            .withAudience(JwtAuthorizationBuilder.DEFAULT_AUDIENCE)
+            .withSubject(JwtAuthorizationBuilder.DEFAULT_SUBJECT)
+            .withClaim(Authorization.AUTHORIZED_TENANTS, authorizedTenants)
+            .encode();
+    brokerRequest.setAuthorization(authorizationToken);
+
+    return brokerRequest;
   }
 
   private <BrokerResponseT, GrpcResponseT> void consumeResponse(
