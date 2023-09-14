@@ -10,13 +10,13 @@ package io.camunda.zeebe.gateway.impl;
 import static io.camunda.zeebe.gateway.api.util.GatewayAssertions.statusRuntimeExceptionWithStatusCode;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assumptions.assumeThat;
 
 import io.camunda.zeebe.auth.impl.Authorization;
 import io.camunda.zeebe.gateway.api.deployment.DeployResourceStub;
 import io.camunda.zeebe.gateway.api.process.CreateProcessInstanceStub;
 import io.camunda.zeebe.gateway.api.util.GatewayTest;
-import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceRequest;
-import io.camunda.zeebe.gateway.impl.broker.request.BrokerDeployResourceRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerExecuteCommand;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceRequest;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -36,6 +36,23 @@ public class MultiTenancyDisabledTest extends GatewayTest {
     new CreateProcessInstanceStub().registerWith(brokerClient);
   }
 
+  private void assertDefaultTenantIdSet() {
+    final var brokerRequest = brokerClient.getSingleBrokerRequest();
+    assertThat(((BrokerExecuteCommand<?>) brokerRequest).getAuthorization().toDecodedMap())
+        .describedAs("The broker request should contain the default tenant as authorized tenant")
+        .hasEntrySatisfying(
+            Authorization.AUTHORIZED_TENANTS,
+            v -> assertThat(v).asList().contains(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
+
+    assumeThat(brokerRequest.getRequestWriter())
+        .describedAs(
+            "The rest of this assertion only makes sense when the broker request contains a record that is TenantOwned")
+        .isInstanceOf(TenantOwned.class);
+    assertThat(((TenantOwned) brokerRequest.getRequestWriter()).getTenantId())
+        .describedAs("The tenant id should be set to the default tenant")
+        .isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  }
+
   @Test
   public void deployResourceRequestShouldContainDefaultTenantAsAuthorizedTenants() {
     // given
@@ -46,13 +63,7 @@ public class MultiTenancyDisabledTest extends GatewayTest {
     assertThat(response).isNotNull();
 
     // then
-    final BrokerDeployResourceRequest brokerRequest = brokerClient.getSingleBrokerRequest();
-    assertThat(brokerRequest.getRequestWriter().getTenantId())
-        .isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-    assertThat(brokerRequest.getAuthorization().toDecodedMap())
-        .hasEntrySatisfying(
-            Authorization.AUTHORIZED_TENANTS,
-            v -> assertThat(v).asList().contains(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
+    assertDefaultTenantIdSet();
   }
 
   @Test
@@ -78,12 +89,6 @@ public class MultiTenancyDisabledTest extends GatewayTest {
     assertThat(response).isNotNull();
 
     // then
-    final BrokerCreateProcessInstanceRequest brokerRequest = brokerClient.getSingleBrokerRequest();
-    assertThat(brokerRequest.getRequestWriter().getTenantId())
-        .isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-    assertThat(brokerRequest.getAuthorization().toDecodedMap())
-        .hasEntrySatisfying(
-            Authorization.AUTHORIZED_TENANTS,
-            v -> assertThat(v).asList().contains(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
+    assertDefaultTenantIdSet();
   }
 }
