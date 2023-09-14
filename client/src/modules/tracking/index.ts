@@ -229,6 +229,16 @@ type Events =
   | {
       eventName: 'optional-filter-selected';
       filterName: string;
+    }
+  | {
+      eventName: 'definition-deletion-button';
+      resource: 'process' | 'decision';
+      version: string;
+    }
+  | {
+      eventName: 'definition-deletion-confirmation';
+      resource: 'process' | 'decision';
+      version: string;
     };
 
 const STAGE_ENV = getStage(window.location.host);

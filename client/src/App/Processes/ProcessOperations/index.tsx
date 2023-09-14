@@ -16,6 +16,7 @@ import {panelStatesStore} from 'modules/stores/panelStates';
 import {StructuredList} from 'modules/components/StructuredList';
 import {UnorderedList} from 'modules/components/DeleteDefinitionModal/Warning/styled';
 import {notificationsStore} from 'modules/stores/notifications';
+import {tracking} from 'modules/tracking';
 
 type Props = {
   processDefinitionId: string;
@@ -50,7 +51,15 @@ const ProcessOperations: React.FC<Props> = ({
             title={`Delete Process Definition "${processName} - Version ${processVersion}"`}
             type="DELETE"
             disabled={isOperationRunning}
-            onClick={() => setIsDeleteModalVisible(true)}
+            onClick={() => {
+              tracking.track({
+                eventName: 'definition-deletion-button',
+                resource: 'process',
+                version: processVersion,
+              });
+
+              setIsDeleteModalVisible(true);
+            }}
           />
         </OperationItems>
       </DeleteButtonContainer>
@@ -108,6 +117,13 @@ const ProcessOperations: React.FC<Props> = ({
         onDelete={() => {
           setIsOperationRunning(true);
           setIsDeleteModalVisible(false);
+
+          tracking.track({
+            eventName: 'definition-deletion-confirmation',
+            resource: 'process',
+            version: processVersion,
+          });
+
           operationsStore.applyDeleteProcessDefinitionOperation({
             processDefinitionId,
             onSuccess: () => {

@@ -17,6 +17,7 @@ import {StructuredList} from 'modules/components/StructuredList';
 import {UnorderedList} from 'modules/components/DeleteDefinitionModal/Warning/styled';
 import {decisionDefinitionStore} from 'modules/stores/decisionDefinition';
 import {notificationsStore} from 'modules/stores/notifications';
+import {tracking} from 'modules/tracking';
 
 type Props = {
   decisionDefinitionId: string;
@@ -45,7 +46,14 @@ const DecisionOperations: React.FC<Props> = ({
             title={`Delete Decision Definition "${decisionName} - Version ${decisionVersion}"`}
             type="DELETE"
             disabled={isOperationRunning}
-            onClick={() => setIsDeleteModalVisible(true)}
+            onClick={() => {
+              tracking.track({
+                eventName: 'definition-deletion-button',
+                resource: 'decision',
+                version: decisionVersion,
+              });
+              setIsDeleteModalVisible(true);
+            }}
           />
         </OperationItems>
       </DeleteButtonContainer>
@@ -102,6 +110,12 @@ const DecisionOperations: React.FC<Props> = ({
         onDelete={() => {
           setIsOperationRunning(true);
           setIsDeleteModalVisible(false);
+
+          tracking.track({
+            eventName: 'definition-deletion-confirmation',
+            resource: 'decision',
+            version: decisionVersion,
+          });
 
           operationsStore.applyDeleteDecisionDefinitionOperation({
             decisionDefinitionId,
