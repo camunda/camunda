@@ -148,9 +148,7 @@ public final class RequestMapper {
         .setBpmnProcessId(grpcRequest.getBpmnProcessId())
         .setKey(grpcRequest.getProcessDefinitionKey())
         .setVersion(grpcRequest.getVersion())
-        .setTenantId(
-            ensureTenantIdSet(
-                "CreateProcessInstance", grpcRequest.getTenantId()))
+        .setTenantId(ensureTenantIdSet("CreateProcessInstance", grpcRequest.getTenantId()))
         .setVariables(ensureJsonSet(grpcRequest.getVariables()))
         .setStartInstructions(grpcRequest.getStartInstructionsList());
 
@@ -168,9 +166,7 @@ public final class RequestMapper {
         .setBpmnProcessId(request.getBpmnProcessId())
         .setKey(request.getProcessDefinitionKey())
         .setVersion(request.getVersion())
-        .setTenantId(
-            ensureTenantIdSet(
-                "CreateProcessInstanceWithResult", request.getTenantId()))
+        .setTenantId(ensureTenantIdSet("CreateProcessInstanceWithResult", request.getTenantId()))
         .setVariables(ensureJsonSet(request.getVariables()))
         .setStartInstructions(request.getStartInstructionsList())
         .setFetchVariables(grpcRequest.getFetchVariablesList());

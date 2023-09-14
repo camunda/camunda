@@ -17,7 +17,6 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public final class CreateProcessInstanceTest extends GatewayTest {

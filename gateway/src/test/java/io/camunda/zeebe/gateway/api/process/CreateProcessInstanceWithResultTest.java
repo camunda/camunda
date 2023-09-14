@@ -20,7 +20,6 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.List;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public final class CreateProcessInstanceWithResultTest extends GatewayTest {
