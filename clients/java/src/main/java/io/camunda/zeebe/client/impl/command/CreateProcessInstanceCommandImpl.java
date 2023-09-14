@@ -15,8 +15,10 @@
  */
 package io.camunda.zeebe.client.impl.command;
 
+import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
+import io.camunda.zeebe.client.api.command.CommandWithTenantStep;
 import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep2;
 import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3;
@@ -49,6 +51,31 @@ public final class CreateProcessInstanceCommandImpl
   public CreateProcessInstanceCommandImpl(
       final GatewayStub asyncStub,
       final JsonMapper jsonMapper,
+      final ZeebeClientConfiguration config,
+      final Predicate<Throwable> retryPredicate) {
+    super(jsonMapper);
+    this.asyncStub = asyncStub;
+    requestTimeout = config.getDefaultRequestTimeout();
+    this.retryPredicate = retryPredicate;
+    this.jsonMapper = jsonMapper;
+    builder = CreateProcessInstanceRequest.newBuilder();
+    tenantId(config.getDefaultTenantId());
+  }
+
+  /**
+   * A constructor that provides an instance with the <code><default></code> tenantId set.
+   *
+   * <p>From version 8.3.0, the java client supports multi-tenancy for this command, which requires
+   * the <code>tenantId</code> property to be defined. This constructor is only intended for
+   * backwards compatibility in tests.
+   *
+   * @deprecated since 8.3.0, use {@link
+   *     CreateProcessInstanceCommandImpl#CreateProcessInstanceCommandImpl(GatewayStub asyncStub,
+   *     JsonMapper jsonMapper, ZeebeClientConfiguration config, Predicate retryPredicate)}
+   */
+  public CreateProcessInstanceCommandImpl(
+      final GatewayStub asyncStub,
+      final JsonMapper jsonMapper,
       final Duration requestTimeout,
       final Predicate<Throwable> retryPredicate) {
     super(jsonMapper);
@@ -57,6 +84,7 @@ public final class CreateProcessInstanceCommandImpl
     this.retryPredicate = retryPredicate;
     this.jsonMapper = jsonMapper;
     builder = CreateProcessInstanceRequest.newBuilder();
+    tenantId(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
   }
 
   @Override
@@ -126,7 +154,7 @@ public final class CreateProcessInstanceCommandImpl
 
   @Override
   public CreateProcessInstanceCommandStep3 tenantId(final String tenantId) {
-    // todo(#13536): replace dummy implementation
+    builder.setTenantId(tenantId);
     return this;
   }
 

@@ -255,10 +255,7 @@ public final class ZeebeClientImpl implements ZeebeClient {
   @Override
   public CreateProcessInstanceCommandStep1 newCreateInstanceCommand() {
     return new CreateProcessInstanceCommandImpl(
-        asyncStub,
-        jsonMapper,
-        config.getDefaultRequestTimeout(),
-        credentialsProvider::shouldRetryRequest);
+        asyncStub, jsonMapper, config, credentialsProvider::shouldRetryRequest);
   }
 
   @Override
