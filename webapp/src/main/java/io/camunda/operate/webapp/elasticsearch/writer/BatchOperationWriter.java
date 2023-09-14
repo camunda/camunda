@@ -35,10 +35,7 @@ import io.camunda.operate.tenant.TenantAwareElasticsearchClient;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.util.ElasticsearchUtil.QueryType;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
-import io.camunda.operate.webapp.reader.DecisionInstanceReader;
-import io.camunda.operate.webapp.reader.IncidentReader;
-import io.camunda.operate.webapp.reader.ListViewReader;
-import io.camunda.operate.webapp.reader.OperationReader;
+import io.camunda.operate.webapp.reader.*;
 import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
@@ -118,6 +115,12 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
 
   @Autowired
   private DecisionInstanceReader decisionInstanceReader;
+
+  @Autowired
+  private DecisionReader decisionReader;
+
+  @Autowired
+  private ProcessReader processReader;
 
   @Autowired(required = false)
   private PermissionsService permissionsService;
@@ -247,6 +250,10 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
   public BatchOperationEntity scheduleSingleOperation(long processInstanceKey, CreateOperationRequestDto operationRequest) {
     logger.debug("Creating operation: processInstanceKey [{}], operation type [{}]", processInstanceKey, operationRequest.getOperationType());
     try {
+      //check user tenants
+      //if tenant is not available for the user, getProcessInstanceByKey will throw NotFoundException
+      processInstanceReader.getProcessInstanceByKey(processInstanceKey);
+
       //add batch operation with unique id
       final BatchOperationEntity batchOperation = createBatchOperationEntity(operationRequest.getOperationType(),
           operationRequest.getName());
@@ -313,6 +320,9 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
   public BatchOperationEntity scheduleModifyProcessInstance(ModifyProcessInstanceRequestDto modifyRequest) {
     logger.debug("Creating modify process instance operation: processInstanceKey [{}]", modifyRequest.getProcessInstanceKey());
     try {
+      //check user tenants
+      //if tenant is not available for the user, getProcessInstanceByKey will throw NotFoundException
+      processInstanceReader.getProcessInstanceByKey(Long.valueOf(modifyRequest.getProcessInstanceKey()));
       final int operationsCount = modifyRequest.getModifications().size();
       final Long processInstanceKey = Long.parseLong(modifyRequest.getProcessInstanceKey());
       final BatchOperationEntity batchOperation = createBatchOperationEntity(OperationType.MODIFY_PROCESS_INSTANCE, null)
@@ -353,6 +363,10 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
     Long decisionDefinitionKey = decisionDefinitionEntity.getKey();
     OperationType operationType = OperationType.DELETE_DECISION_DEFINITION;
 
+    //check user tenants
+    //if tenant is not available for the user, getDecision will throw NotFoundException
+    decisionReader.getDecision(decisionDefinitionKey);
+
     // Create batch operation
     String batchOperationName = String.format("%s - Version %s", decisionDefinitionEntity.getName(), decisionDefinitionEntity.getVersion());
     final BatchOperationEntity batchOperation = createBatchOperationEntity(operationType, batchOperationName)
@@ -384,6 +398,10 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
 
     Long processDefinitionKey = processEntity.getKey();
     OperationType operationType = OperationType.DELETE_PROCESS_DEFINITION;
+
+    //check user tenants
+    //if tenant is not available for the user, getProcess will throw NotFoundException
+    processReader.getProcess(processDefinitionKey);
 
     // Create batch operation
     String batchOperationName = String.format("%s - Version %s", processEntity.getName(), processEntity.getVersion());

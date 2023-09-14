@@ -7,6 +7,7 @@
 package io.camunda.operate.webapp.security;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertThrows;
 import static org.mockito.Mockito.when;
 
 import io.camunda.operate.entities.BatchOperationEntity;
@@ -37,7 +38,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = { TestApplication.class },
-    properties = {"spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER" })
+    properties = {"spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER"})
 @WithMockUser(username = AuthorizationIT.USER)
 public class AuthorizationIT {
 
@@ -103,17 +104,16 @@ public class AuthorizationIT {
   public void testWritePermissionsForSingleOperation() {
     // given
     userHasPermission(Permission.WRITE);
-    // when
-    try {
-      processInstanceRestService.operation("23", new CreateOperationRequestDto().setOperationType(
-          OperationType.DELETE_PROCESS_INSTANCE
-      ));
-      // then
-    } catch(OperateRuntimeException e) {
-      Throwable cause = e.getCause();
-        assertThat(cause).isInstanceOf(NotFoundException.class);
-        assertThat(cause.getMessage()).isEqualTo("Process instances [23] doesn't exists.");
-    }
+
+    Exception e = assertThrows(OperateRuntimeException.class, () -> {
+      //when
+      processInstanceRestService.operation("23",
+          new CreateOperationRequestDto().setOperationType(OperationType.DELETE_PROCESS_INSTANCE));
+    });
+    //then
+    Throwable cause = e.getCause();
+    assertThat(cause).isInstanceOf(NotFoundException.class);
+    assertThat(cause.getMessage()).isEqualTo("Could not find process instance with id '23'.");
   }
 
   private void userHasPermission(Permission permission) {
