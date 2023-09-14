@@ -26,7 +26,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 public class TestAppender implements AppendListener {
   private final BlockingQueue<IndexedRaftLogEntry> written;
-  private final BlockingQueue<IndexedRaftLogEntry> committed;
+  private final BlockingQueue<Long> committed;
   private final BlockingQueue<Throwable> errors;
 
   public TestAppender() {
@@ -46,8 +46,8 @@ public class TestAppender implements AppendListener {
   }
 
   @Override
-  public void onCommit(final IndexedRaftLogEntry indexed) {
-    committed.offer(indexed);
+  public void onCommit(final long index) {
+    committed.offer(index);
   }
 
   @Override
@@ -68,7 +68,7 @@ public class TestAppender implements AppendListener {
     return takeUnchecked(written);
   }
 
-  public IndexedRaftLogEntry pollCommitted() {
+  public Long pollCommitted() {
     return takeUnchecked(committed);
   }
 
@@ -80,7 +80,7 @@ public class TestAppender implements AppendListener {
     return new ArrayList<>(written);
   }
 
-  public List<IndexedRaftLogEntry> getCommitted() {
+  public List<Long> getCommitted() {
     return new ArrayList<>(committed);
   }
 

@@ -689,8 +689,8 @@ public final class RaftRule extends ExternalResource {
     }
 
     @Override
-    public void onCommit(final IndexedRaftLogEntry indexed) {
-      commitFuture.complete(indexed.index());
+    public void onCommit(final long index) {
+      commitFuture.complete(index);
     }
 
     @Override
