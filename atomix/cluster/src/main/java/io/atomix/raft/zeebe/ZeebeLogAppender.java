@@ -87,7 +87,7 @@ public interface ZeebeLogAppender {
     /**
      * Called when the entry has been committed.
      *
-     * @param index the entry that was committed
+     * @param index the index of the entry that was committed
      */
     default void onCommit(final long index) {}
 
