@@ -572,7 +572,7 @@ public class RaftTest extends ConcurrentTestCase {
     }
 
     @Override
-    public void onCommitError(final IndexedRaftLogEntry indexed, final Throwable error) {
+    public void onCommitError(final long index, final Throwable error) {
       fail("Unexpected write error: " + error.getMessage());
     }
 

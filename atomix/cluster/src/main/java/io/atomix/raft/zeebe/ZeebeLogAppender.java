@@ -95,9 +95,9 @@ public interface ZeebeLogAppender {
      * Called when an error occurred while replicating or committing an entry, typically when if an
      * append operation was pending when shutting down the server or stepping down as leader.
      *
-     * @param indexed the entry that should have been committed
+     * @param index the index of the entry that should have been committed
      * @param error the error that occurred
      */
-    default void onCommitError(final IndexedRaftLogEntry indexed, final Throwable error) {}
+    default void onCommitError(final long index, final Throwable error) {}
   }
 }
