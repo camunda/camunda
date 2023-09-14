@@ -13,8 +13,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.auth.impl.Authorization;
 import io.camunda.zeebe.gateway.api.deployment.DeployResourceStub;
+import io.camunda.zeebe.gateway.api.process.CreateProcessInstanceStub;
 import io.camunda.zeebe.gateway.api.util.GatewayTest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerDeployResourceRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceRequest;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.grpc.Status;
@@ -30,6 +33,7 @@ public class MultiTenancyDisabledTest extends GatewayTest {
   @Before
   public void setup() {
     new DeployResourceStub().registerWith(brokerClient);
+    new CreateProcessInstanceStub().registerWith(brokerClient);
   }
 
   @Test
@@ -43,6 +47,8 @@ public class MultiTenancyDisabledTest extends GatewayTest {
 
     // then
     final BrokerDeployResourceRequest brokerRequest = brokerClient.getSingleBrokerRequest();
+    assertThat(brokerRequest.getRequestWriter().getTenantId())
+        .isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
     assertThat(brokerRequest.getAuthorization().toDecodedMap())
         .hasEntrySatisfying(
             Authorization.AUTHORIZED_TENANTS,
@@ -60,5 +66,24 @@ public class MultiTenancyDisabledTest extends GatewayTest {
         .hasMessageContaining(
             "Expected to handle gRPC request DeployResource with tenant identifier")
         .hasMessageContaining("but multi-tenancy is disabled");
+  }
+
+  @Test
+  public void createProcessInstanceRequestShouldContainDefaultTenantAsAuthorizedTenants() {
+    // given
+    final var request = CreateProcessInstanceRequest.newBuilder().build();
+
+    // when
+    final var response = client.createProcessInstance(request);
+    assertThat(response).isNotNull();
+
+    // then
+    final BrokerCreateProcessInstanceRequest brokerRequest = brokerClient.getSingleBrokerRequest();
+    assertThat(brokerRequest.getRequestWriter().getTenantId())
+        .isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    assertThat(brokerRequest.getAuthorization().toDecodedMap())
+        .hasEntrySatisfying(
+            Authorization.AUTHORIZED_TENANTS,
+            v -> assertThat(v).asList().contains(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
   }
 }
