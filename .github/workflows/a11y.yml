@@ -13,7 +13,7 @@ jobs:
       - name: Setup yarn cache
         uses: actions/setup-node@v3
         with:
-          node-version: "19"
+          node-version: "20"
           cache: "yarn"
           cache-dependency-path: client/yarn.lock
       - name: Install node dependencies
