@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.processinstance;
 
+import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -165,7 +166,7 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
 
   @Override
   public String getTenantId() {
-    return BufferUtil.bufferAsString(tenantIdProperty.getValue());
+    return bufferAsString(tenantIdProperty.getValue());
   }
 
   public ProcessInstanceCreationRecord setTenantId(final String tenantId) {

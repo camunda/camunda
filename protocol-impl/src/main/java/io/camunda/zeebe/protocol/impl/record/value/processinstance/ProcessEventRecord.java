@@ -30,12 +30,16 @@ public final class ProcessEventRecord extends UnifiedRecordValue
   private final LongProperty processInstanceKeyProperty =
       new LongProperty("processInstanceKey", -1);
 
+  private final StringProperty tenantIdProperty =
+      new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+
   public ProcessEventRecord() {
     declareProperty(scopeKeyProperty)
         .declareProperty(targetElementIdProperty)
         .declareProperty(variablesProperty)
         .declareProperty(processDefinitionKeyProperty)
-        .declareProperty(processInstanceKeyProperty);
+        .declareProperty(processInstanceKeyProperty)
+        .declareProperty(tenantIdProperty);
   }
 
   public ProcessEventRecord wrap(final ProcessEventRecord record) {
@@ -44,6 +48,7 @@ public final class ProcessEventRecord extends UnifiedRecordValue
     variablesProperty.setValue(record.getVariablesBuffer());
     processDefinitionKeyProperty.setValue(record.getProcessDefinitionKey());
     processInstanceKeyProperty.setValue(record.getProcessInstanceKey());
+    tenantIdProperty.setValue(record.getTenantId());
 
     return this;
   }
@@ -110,7 +115,11 @@ public final class ProcessEventRecord extends UnifiedRecordValue
 
   @Override
   public String getTenantId() {
-    // todo(#13774): replace dummy implementation
-    return TenantOwned.DEFAULT_TENANT_IDENTIFIER;
+    return BufferUtil.bufferAsString(tenantIdProperty.getValue());
+  }
+
+  public ProcessEventRecord setTenantId(final String tenantId) {
+    tenantIdProperty.setValue(tenantId);
+    return this;
   }
 }
