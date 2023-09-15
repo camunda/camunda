@@ -138,7 +138,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             stateBehavior,
             incidentBehavior,
             jobActivationBehavior,
-            jobMetrics);
+            jobMetrics,
+            processingState.getFormState());
 
     multiInstanceOutputCollectionBehavior =
         new MultiInstanceOutputCollectionBehavior(stateBehavior, expressionBehavior());

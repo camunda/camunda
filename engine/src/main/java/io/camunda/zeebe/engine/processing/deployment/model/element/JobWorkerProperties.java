@@ -24,6 +24,7 @@ public class JobWorkerProperties {
   private Expression dueDate;
   private Expression followUpDate;
   private Map<String, String> taskHeaders = Map.of();
+  private Expression formId;
 
   public Expression getType() {
     return type;
@@ -87,5 +88,13 @@ public class JobWorkerProperties {
 
   public void setTaskHeaders(final Map<String, String> taskHeaders) {
     this.taskHeaders = taskHeaders;
+  }
+
+  public Expression getFormId() {
+    return formId;
+  }
+
+  public void setFormId(final Expression formId) {
+    this.formId = formId;
   }
 }

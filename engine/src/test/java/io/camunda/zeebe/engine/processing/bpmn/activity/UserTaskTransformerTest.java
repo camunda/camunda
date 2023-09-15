@@ -205,4 +205,27 @@ class UserTaskTransformerTest {
       }
     }
   }
+
+  @Nested
+  @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+  class FormIdTests {
+
+    Stream<Arguments> formIds() {
+      return Stream.of(
+          Arguments.of(null, null), Arguments.of("", null), Arguments.of("form-id", "form-id"));
+    }
+
+    @DisplayName("Should transform user task with formId")
+    @ParameterizedTest
+    @MethodSource("formIds")
+    void shouldTransform(final String formId, final String parsedExpression) {
+      final var userTask = transformUserTask(processWithUserTask(b -> b.zeebeFormId(formId)));
+      if (parsedExpression == null) {
+        assertThat(userTask.getJobWorkerProperties().getFormId()).isNull();
+      } else {
+        assertThat(userTask.getJobWorkerProperties().getFormId().getExpression())
+            .isEqualTo(parsedExpression);
+      }
+    }
+  }
 }
