@@ -71,6 +71,15 @@ public class MultiTenancyEnabledTest extends GatewayTest {
         .hasMessageContaining("but no tenant identifier was provided");
   }
 
+  private void assertThatRejectsUnauthorizedRequest(
+      final ThrowingCallable requestCallable, final String name) {
+    assertThatThrownBy(requestCallable)
+        .is(statusRuntimeExceptionWithStatusCode(Status.PERMISSION_DENIED.getCode()))
+        .hasMessageContaining(
+            "Expected to handle gRPC request " + name + " with tenant identifier `tenant-c`")
+        .hasMessageContaining("but tenant is not authorized to perform this request");
+  }
+
   @Test
   public void deployResourceRequestShouldContainAuthorizedTenants() {
     // given
@@ -94,8 +103,7 @@ public class MultiTenancyEnabledTest extends GatewayTest {
     final var request = DeployResourceRequest.newBuilder().build();
 
     // when/then
-    assertThatRejectsRequestMissingTenantId(
-        () -> client.deployResource(request), "DeployResource");
+    assertThatRejectsRequestMissingTenantId(() -> client.deployResource(request), "DeployResource");
   }
 
   @Test
@@ -103,16 +111,10 @@ public class MultiTenancyEnabledTest extends GatewayTest {
     // given
     when(gateway.getIdentityMock().tenants().forToken(anyString()))
         .thenReturn(List.of(new Tenant("tenant-a", "A"), new Tenant("tenant-b", "B")));
+    final var request = DeployResourceRequest.newBuilder().setTenantId("tenant-c").build();
 
     // when/then
-    assertThatThrownBy(
-            () ->
-                client.deployResource(
-                    DeployResourceRequest.newBuilder().setTenantId("tenant-c").build()))
-        .is(statusRuntimeExceptionWithStatusCode(Status.PERMISSION_DENIED.getCode()))
-        .hasMessageContaining(
-            "Expected to handle gRPC request DeployResource with tenant identifier `tenant-c`")
-        .hasMessageContaining("but tenant is not authorized to perform this request");
+    assertThatRejectsUnauthorizedRequest(() -> client.deployResource(request), "DeployResource");
   }
 
   @Test
@@ -148,15 +150,10 @@ public class MultiTenancyEnabledTest extends GatewayTest {
     // given
     when(gateway.getIdentityMock().tenants().forToken(anyString()))
         .thenReturn(List.of(new Tenant("tenant-a", "A"), new Tenant("tenant-b", "B")));
+    final var request = CreateProcessInstanceRequest.newBuilder().setTenantId("tenant-c").build();
 
     // when/then
-    assertThatThrownBy(
-            () ->
-                client.createProcessInstance(
-                    CreateProcessInstanceRequest.newBuilder().setTenantId("tenant-c").build()))
-        .is(statusRuntimeExceptionWithStatusCode(Status.PERMISSION_DENIED.getCode()))
-        .hasMessageContaining(
-            "Expected to handle gRPC request CreateProcessInstance with tenant identifier `tenant-c`")
-        .hasMessageContaining("but tenant is not authorized to perform this request");
+    assertThatRejectsUnauthorizedRequest(
+        () -> client.createProcessInstance(request), "CreateProcessInstance");
   }
 }
