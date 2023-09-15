@@ -21,7 +21,7 @@ final class TopologyChangeAppliersImplTest {
   @Test
   void shouldReturnPartitionJoinApplier() {
     // given
-    final var topologyChangeAppliers = new TopologyChangeAppliersImpl(null);
+    final var topologyChangeAppliers = new TopologyChangeAppliersImpl(null, null);
     final var partitionOperation = new PartitionJoinOperation(localMemberId, 1, 1);
 
     // when
@@ -34,7 +34,7 @@ final class TopologyChangeAppliersImplTest {
   @Test
   void shouldReturnPartitionLeaveApplier() {
     // given
-    final var topologyChangeAppliers = new TopologyChangeAppliersImpl(null);
+    final var topologyChangeAppliers = new TopologyChangeAppliersImpl(null, null);
     final var partitionOperation = new PartitionLeaveOperation(localMemberId, 1);
 
     // when

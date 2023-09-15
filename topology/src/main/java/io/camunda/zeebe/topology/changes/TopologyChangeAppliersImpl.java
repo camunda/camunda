@@ -12,6 +12,7 @@ import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.MemberState;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation;
+import io.camunda.zeebe.topology.state.TopologyChangeOperation.MemberJoinOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.util.Either;
@@ -20,9 +21,13 @@ import java.util.function.UnaryOperator;
 public class TopologyChangeAppliersImpl implements TopologyChangeAppliers {
 
   private final PartitionChangeExecutor partitionChangeExecutor;
+  private final TopologyMembershipChangeExecutor topologyMembershipChangeExecutor;
 
-  public TopologyChangeAppliersImpl(final PartitionChangeExecutor partitionChangeExecutor) {
+  public TopologyChangeAppliersImpl(
+      final PartitionChangeExecutor partitionChangeExecutor,
+      final TopologyMembershipChangeExecutor topologyMembershipChangeExecutor) {
     this.partitionChangeExecutor = partitionChangeExecutor;
+    this.topologyMembershipChangeExecutor = topologyMembershipChangeExecutor;
   }
 
   @Override
@@ -36,6 +41,10 @@ public class TopologyChangeAppliersImpl implements TopologyChangeAppliers {
     } else if (operation instanceof final PartitionLeaveOperation leaveOperation) {
       return new PartitionLeaveApplier(
           leaveOperation.partitionId(), leaveOperation.memberId(), partitionChangeExecutor);
+    } else if (operation instanceof final MemberJoinOperation memberJoinOperation) {
+      return new MemberJoinApplier(
+          memberJoinOperation.memberId(), topologyMembershipChangeExecutor);
+
     } else {
       return new FailingApplier(operation);
     }

@@ -108,7 +108,8 @@ public class TopologyChangeCoordinatorImpl implements TopologyChangeCoordinator 
     } else {
       // simulate applying changes to validate the operations
       final var topologyChangeSimulator =
-          new TopologyChangeAppliersImpl(new NoopPartitionChangeExecutor());
+          new TopologyChangeAppliersImpl(
+              new NoopPartitionChangeExecutor(), new NoopTopologyMembershipChangeExecutor());
       final var topologyWithPendingOperations =
           currentClusterTopology.startTopologyChange(operations);
 

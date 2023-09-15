@@ -21,8 +21,10 @@ import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.topology.changes.NoopPartitionChangeExecutor;
+import io.camunda.zeebe.topology.changes.NoopTopologyMembershipChangeExecutor;
 import io.camunda.zeebe.topology.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.topology.changes.TopologyChangeCoordinator;
+import io.camunda.zeebe.topology.changes.TopologyMembershipChangeExecutor;
 import io.camunda.zeebe.topology.gossip.ClusterTopologyGossiperConfig;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
@@ -48,6 +50,8 @@ class ClusterTopologyManagementIntegrationTest {
 
   private final ActorScheduler actorScheduler = ActorScheduler.newActorScheduler().build();
   private final PartitionChangeExecutor partitionChangeExecutor = new NoopPartitionChangeExecutor();
+  private final TopologyMembershipChangeExecutor topologyMembershipChangeExecutor =
+      new NoopTopologyMembershipChangeExecutor();
 
   private final List<Node> clusterNodes =
       List.of(createNode("0"), createNode("1"), createNode("2"));
@@ -216,7 +220,8 @@ class ClusterTopologyManagementIntegrationTest {
             cluster.getCommunicationService(),
             cluster.getMembershipService(),
             new ClusterTopologyGossiperConfig(Duration.ofSeconds(1), Duration.ofMillis(100), 2),
-            partitionChangeExecutor);
+            partitionChangeExecutor,
+            topologyMembershipChangeExecutor);
     return new TestNode(cluster, service);
   }
 

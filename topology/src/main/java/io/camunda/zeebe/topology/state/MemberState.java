@@ -29,11 +29,11 @@ public record MemberState(long version, State state, Map<Integer, PartitionState
     return new MemberState(0, State.ACTIVE, Map.copyOf(initialPartitions));
   }
 
-  static MemberState uninitialized() {
+  public static MemberState uninitialized() {
     return new MemberState(0, State.UNINITIALIZED, Map.of());
   }
 
-  MemberState toJoining() {
+  public MemberState toJoining() {
     if (state == State.LEAVING) {
       throw new IllegalStateException(
           String.format("Cannot transition to JOINING when current state is %s", state));

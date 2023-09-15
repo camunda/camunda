@@ -11,6 +11,7 @@ import com.google.common.collect.ImmutableMap;
 import io.atomix.cluster.MemberId;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
@@ -59,23 +60,41 @@ public record ClusterTopology(
     return new ClusterTopology(version, newMembers, changes);
   }
 
+  /**
+   * Adds or updates a member in the topology.
+   *
+   * <p>memberStateUpdater is invoked with the current state of the member. If the member does not
+   * exist, and memberStateUpdater returns a non-null value, then the member is added to the
+   * topology. If the member exists, and the memberStateUpdater returns a null value, then the
+   * member is removed.
+   *
+   * @param memberId id of the member to be updated
+   * @param memberStateUpdater transforms the current state of the member to the new state
+   * @return the updated ClusterTopology
+   */
   public ClusterTopology updateMember(
       final MemberId memberId, final UnaryOperator<MemberState> memberStateUpdater) {
-    if (!members.containsKey(memberId)) {
-      throw new IllegalStateException(
-          String.format("Expected to update member %s, but member does not exist", memberId.id()));
-    }
     final MemberState currentState = members.get(memberId);
     final var updateMemberState = memberStateUpdater.apply(currentState);
-    if (currentState.equals(updateMemberState)) {
+
+    if (Objects.equals(currentState, updateMemberState)) {
       return this;
     }
 
-    final var newMembers =
-        ImmutableMap.<MemberId, MemberState>builder()
-            .putAll(members)
-            .put(memberId, updateMemberState)
-            .buildKeepingLast();
+    final var mapBuilder = ImmutableMap.<MemberId, MemberState>builder();
+
+    if (updateMemberState != null) {
+      // Add/Update the member
+      mapBuilder.putAll(members).put(memberId, updateMemberState);
+    } else {
+      // remove memberId from the map
+      mapBuilder.putAll(
+          members.entrySet().stream()
+              .filter(entry -> !entry.getKey().equals(memberId))
+              .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
+    }
+
+    final var newMembers = mapBuilder.buildKeepingLast();
     return new ClusterTopology(version, newMembers, changes);
   }
 
