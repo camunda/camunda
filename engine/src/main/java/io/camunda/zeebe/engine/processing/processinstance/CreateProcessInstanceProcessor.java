@@ -49,11 +49,11 @@ public final class CreateProcessInstanceProcessor
   private static final String ERROR_MESSAGE_NO_IDENTIFIER_SPECIFIED =
       "Expected at least a bpmnProcessId or a key greater than -1, but none given";
   private static final String ERROR_MESSAGE_NOT_FOUND_BY_PROCESS =
-      "Expected to find process definition with process ID '%s', but none found";
+      "Expected to find process definition with process ID '%s' and tenant ID '%s', but none found";
   private static final String ERROR_MESSAGE_NOT_FOUND_BY_PROCESS_AND_VERSION =
-      "Expected to find process definition with process ID '%s' and version '%d', but none found";
+      "Expected to find process definition with process ID '%s',  tenant ID '%s', and version '%d', but none found";
   private static final String ERROR_MESSAGE_NOT_FOUND_BY_KEY =
-      "Expected to find process definition with key '%d', but none found";
+      "Expected to find process definition with key '%d' and tenant ID '%s', but none found";
   private static final String ERROR_MESSAGE_NO_NONE_START_EVENT =
       "Expected to create instance of process with none start event, but there is no such event";
 
@@ -133,7 +133,11 @@ public final class CreateProcessInstanceProcessor
     final long processInstanceKey = keyGenerator.nextKey();
 
     setVariablesFromDocument(
-        record, process.getKey(), processInstanceKey, process.getBpmnProcessId());
+        record,
+        process.getKey(),
+        processInstanceKey,
+        process.getBpmnProcessId(),
+        process.getTenantId());
 
     final var processInstance = initProcessInstanceRecord(process, processInstanceKey);
     if (record.startInstructions().isEmpty()) {
@@ -300,13 +304,15 @@ public final class CreateProcessInstanceProcessor
       final ProcessInstanceCreationRecord record,
       final long processDefinitionKey,
       final long processInstanceKey,
-      final DirectBuffer bpmnProcessId) {
+      final DirectBuffer bpmnProcessId,
+      final String tenantId) {
 
     variableBehavior.mergeLocalDocument(
         processInstanceKey,
         processDefinitionKey,
         processInstanceKey,
         bpmnProcessId,
+        tenantId,
         record.getVariablesBuffer());
   }
 
@@ -320,6 +326,7 @@ public final class CreateProcessInstanceProcessor
     newProcessInstance.setBpmnElementType(BpmnElementType.PROCESS);
     newProcessInstance.setElementId(process.getProcess().getId());
     newProcessInstance.setFlowScopeKey(-1);
+    newProcessInstance.setTenantId(process.getTenantId());
     return newProcessInstance;
   }
 
@@ -351,7 +358,8 @@ public final class CreateProcessInstanceProcessor
       return Either.left(
           new Rejection(
               RejectionType.NOT_FOUND,
-              String.format(ERROR_MESSAGE_NOT_FOUND_BY_PROCESS, bufferAsString(bpmnProcessId))));
+              String.format(
+                  ERROR_MESSAGE_NOT_FOUND_BY_PROCESS, bufferAsString(bpmnProcessId), tenantId)));
     }
   }
 
@@ -368,6 +376,7 @@ public final class CreateProcessInstanceProcessor
               String.format(
                   ERROR_MESSAGE_NOT_FOUND_BY_PROCESS_AND_VERSION,
                   bufferAsString(bpmnProcessId),
+                  tenantId,
                   version)));
     }
   }
@@ -379,7 +388,8 @@ public final class CreateProcessInstanceProcessor
     } else {
       return Either.left(
           new Rejection(
-              RejectionType.NOT_FOUND, String.format(ERROR_MESSAGE_NOT_FOUND_BY_KEY, key)));
+              RejectionType.NOT_FOUND,
+              String.format(ERROR_MESSAGE_NOT_FOUND_BY_KEY, key, tenantId)));
     }
   }
 

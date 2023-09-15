@@ -130,6 +130,8 @@ public final class BpmnElementContextImpl implements BpmnElementContext {
         + getProcessVersion()
         + ", processDefinitionKey="
         + getProcessDefinitionKey()
+        + ", tenantId="
+        + getTenantId()
         + '}';
   }
 }

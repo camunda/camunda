@@ -148,6 +148,7 @@ public final class ScriptTaskProcessor implements BpmnElementProcessor<Executabl
       eventTriggerBehavior.triggeringProcessEvent(
           context.getProcessDefinitionKey(),
           context.getProcessInstanceKey(),
+          context.getTenantId(),
           context.getElementInstanceKey(),
           context.getElementId(),
           resultVariable);
