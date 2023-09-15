@@ -641,11 +641,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
       final var committedPosition = indexed.getApplicationEntry().highestPosition();
       appendEntriesFuture.whenCompleteAsync(
           (commitIndex, commitError) -> {
-            if (!isRunning()) {
-              return;
-            }
-
-            if (commitError == null) {
+            if (isRunning() && commitError == null) {
               raft.notifyApplicationEntryCommittedPositionListeners(committedPosition);
             }
           },
