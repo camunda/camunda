@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.gateway.cmd;
 
-public class InvalidTenantRequestException extends ClientException {
+public class IllegalTenantRequestException extends ClientException {
 
   private static final String MESSAGE_FORMAT =
       "Expected to handle gRPC request %s with tenant identifier `%s`, but %s";
@@ -16,7 +16,7 @@ public class InvalidTenantRequestException extends ClientException {
   private final String tenantId;
   private final String reason;
 
-  public InvalidTenantRequestException(
+  public IllegalTenantRequestException(
       final String commandName, final String tenantId, final String reason) {
     super(String.format(MESSAGE_FORMAT, commandName, tenantId, reason));
 
@@ -25,7 +25,7 @@ public class InvalidTenantRequestException extends ClientException {
     this.reason = reason;
   }
 
-  public InvalidTenantRequestException(
+  public IllegalTenantRequestException(
       final String commandName, final String tenantId, final String reason, final Exception e) {
     super(String.format(MESSAGE_FORMAT, commandName, tenantId, reason), e);
 

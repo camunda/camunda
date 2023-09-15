@@ -11,6 +11,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.agrona.LangUtil.rethrowUnchecked;
 
 import com.fasterxml.jackson.core.JsonParseException;
+import io.camunda.zeebe.gateway.cmd.IllegalTenantRequestException;
 import io.camunda.zeebe.gateway.cmd.InvalidTenantRequestException;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerBroadcastSignalRequest;
@@ -28,6 +29,7 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerResolveIncidentRequest
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerSetVariablesRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerThrowErrorRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUpdateJobRetriesRequest;
+import io.camunda.zeebe.gateway.interceptors.impl.IdentityInterceptor;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.BroadcastSignalRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CancelProcessInstanceRequest;
@@ -54,6 +56,8 @@ import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationPropertiesImpl;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.grpc.Context;
+import java.util.List;
 import java.util.regex.Pattern;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -284,31 +288,42 @@ public final class RequestMapper {
   public static String ensureTenantIdSet(final String commandName, final String tenantId) {
 
     final boolean hasTenantId = !StringUtils.isBlank(tenantId);
-    if (isMultiTenancyEnabled) {
-
-      if (!hasTenantId) {
-        throw new InvalidTenantRequestException(
-            commandName, tenantId, "no tenant identifier was provided.");
-      }
-
-      if (tenantId.length() > 31) {
-        throw new InvalidTenantRequestException(
-            commandName, tenantId, "tenant identifier is longer than 31 characters");
-      }
-
-      if (!TenantOwned.DEFAULT_TENANT_IDENTIFIER.equals(tenantId)
-          && !TENANT_ID_MASK.matcher(tenantId).matches()) {
-        throw new InvalidTenantRequestException(
-            commandName, tenantId, "tenant identifier contains illegal characters");
-      }
-
-      return tenantId;
-    } else {
+    if (!isMultiTenancyEnabled) {
       if (hasTenantId && !TenantOwned.DEFAULT_TENANT_IDENTIFIER.equals(tenantId)) {
         throw new InvalidTenantRequestException(commandName, tenantId, "multi-tenancy is disabled");
       }
 
       return TenantOwned.DEFAULT_TENANT_IDENTIFIER;
     }
+
+    if (!hasTenantId) {
+      throw new InvalidTenantRequestException(
+          commandName, tenantId, "no tenant identifier was provided.");
+    }
+
+    if (tenantId.length() > 31) {
+      throw new InvalidTenantRequestException(
+          commandName, tenantId, "tenant identifier is longer than 31 characters");
+    }
+
+    if (!TenantOwned.DEFAULT_TENANT_IDENTIFIER.equals(tenantId)
+        && !TENANT_ID_MASK.matcher(tenantId).matches()) {
+      throw new InvalidTenantRequestException(
+          commandName, tenantId, "tenant identifier contains illegal characters");
+    }
+
+    final List<String> authorizedTenants;
+    try {
+      authorizedTenants = Context.current().call(IdentityInterceptor.AUTHORIZED_TENANTS_KEY::get);
+    } catch (final Exception e) {
+      throw new InvalidTenantRequestException(
+          commandName, tenantId, "tenant could not be retrieved from the request context", e);
+    }
+    if (!authorizedTenants.contains(tenantId)) {
+      throw new IllegalTenantRequestException(
+          commandName, tenantId, "tenant is not authorized to perform this request");
+    }
+
+    return tenantId;
   }
 }

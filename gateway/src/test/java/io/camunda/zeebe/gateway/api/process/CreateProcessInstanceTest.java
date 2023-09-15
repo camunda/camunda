@@ -17,13 +17,12 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public final class CreateProcessInstanceTest extends GatewayTest {
 
   @Test
-  public void shouldMapRequestAndResponseWithDefaultTenantId() {
+  public void shouldMapRequestAndResponse() {
     // given
     final CreateProcessInstanceStub stub = new CreateProcessInstanceStub();
     stub.registerWith(brokerClient);
@@ -51,32 +50,5 @@ public final class CreateProcessInstanceTest extends GatewayTest {
     assertThat(brokerRequestValue.getProcessDefinitionKey())
         .isEqualTo(stub.getProcessDefinitionKey());
     assertThat(brokerRequestValue.getTenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-  }
-
-  @Test
-  @Ignore("https://github.com/camunda/zeebe/issues/14041")
-  public void shouldMapRequestAndResponseWithCustomTenantId() {
-    // given
-    final String tenantId = "test-tenant";
-    final CreateProcessInstanceStub stub = new CreateProcessInstanceStub();
-    stub.registerWith(brokerClient);
-
-    final CreateProcessInstanceRequest request =
-        CreateProcessInstanceRequest.newBuilder()
-            .setProcessDefinitionKey(stub.getProcessDefinitionKey())
-            .setTenantId(tenantId)
-            .build();
-
-    // when
-    final CreateProcessInstanceResponse response = client.createProcessInstance(request);
-
-    // then
-    assertThat(response.getTenantId()).isEqualTo(tenantId);
-
-    final ProcessInstanceCreationRecord brokerRequestValue =
-        (ProcessInstanceCreationRecord) brokerClient.getSingleBrokerRequest().getRequestWriter();
-    assertThat(brokerRequestValue.getProcessDefinitionKey())
-        .isEqualTo(stub.getProcessDefinitionKey());
-    assertThat(brokerRequestValue.getTenantId()).isEqualTo(tenantId);
   }
 }
