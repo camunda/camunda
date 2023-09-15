@@ -27,6 +27,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceRespons
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.grpc.Status;
 import java.util.List;
+import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -61,6 +62,15 @@ public class MultiTenancyEnabledTest extends GatewayTest {
         .isEqualTo(owningTenantId);
   }
 
+  private void assertThatRejectsRequestMissingTenantId(
+      final ThrowingCallable requestCallable, final String name) {
+    assertThatThrownBy(requestCallable)
+        .is(statusRuntimeExceptionWithStatusCode(Status.INVALID_ARGUMENT.getCode()))
+        .hasMessageContaining(
+            "Expected to handle gRPC request " + name + " with tenant identifier ``")
+        .hasMessageContaining("but no tenant identifier was provided");
+  }
+
   @Test
   public void deployResourceRequestShouldContainAuthorizedTenants() {
     // given
@@ -81,13 +91,11 @@ public class MultiTenancyEnabledTest extends GatewayTest {
     // given
     when(gateway.getIdentityMock().tenants().forToken(anyString()))
         .thenReturn(List.of(new Tenant("tenant-a", "A"), new Tenant("tenant-b", "B")));
+    final var request = DeployResourceRequest.newBuilder().build();
 
     // when/then
-    assertThatThrownBy(() -> client.deployResource(DeployResourceRequest.newBuilder().build()))
-        .is(statusRuntimeExceptionWithStatusCode(Status.INVALID_ARGUMENT.getCode()))
-        .hasMessageContaining(
-            "Expected to handle gRPC request DeployResource with tenant identifier ``")
-        .hasMessageContaining("but no tenant identifier was provided");
+    assertThatRejectsRequestMissingTenantId(
+        () -> client.deployResource(request), "DeployResource");
   }
 
   @Test
@@ -128,14 +136,11 @@ public class MultiTenancyEnabledTest extends GatewayTest {
     // given
     when(gateway.getIdentityMock().tenants().forToken(anyString()))
         .thenReturn(List.of(new Tenant("tenant-a", "A"), new Tenant("tenant-b", "B")));
+    final var request = CreateProcessInstanceRequest.newBuilder().build();
 
     // when/then
-    assertThatThrownBy(
-            () -> client.createProcessInstance(CreateProcessInstanceRequest.newBuilder().build()))
-        .is(statusRuntimeExceptionWithStatusCode(Status.INVALID_ARGUMENT.getCode()))
-        .hasMessageContaining(
-            "Expected to handle gRPC request CreateProcessInstance with tenant identifier ``")
-        .hasMessageContaining("but no tenant identifier was provided");
+    assertThatRejectsRequestMissingTenantId(
+        () -> client.createProcessInstance(request), "CreateProcessInstance");
   }
 
   @Test
