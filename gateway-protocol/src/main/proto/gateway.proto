@@ -20,6 +20,8 @@ message StreamActivatedJobsRequest {
   // a list of variables to fetch as the job variables; if empty, all visible variables at
   // the time of activation for the scope of the job will be returned
   repeated string fetchVariable = 5;
+  // a list of identifiers of tenants for which to stream jobs
+  repeated string tenantIds = 6;
 }
 
 message ActivateJobsRequest {
@@ -40,6 +42,8 @@ message ActivateJobsRequest {
   // if the requestTimeout = 0, a default timeout is used.
   // if the requestTimeout < 0, long polling is disabled and the request is completed immediately, even when no job is activated.
   int64 requestTimeout = 6;
+  // a list of IDs of tenants for which to activate jobs
+  repeated string tenantIds = 7;
 }
 
 message ActivateJobsResponse {
@@ -77,6 +81,8 @@ message ActivatedJob {
   // JSON document, computed at activation time, consisting of all visible variables to
   // the task scope
   string variables = 13;
+  // // the id of the tenant that owns the job
+  string tenantId = 14;
 }
 
 message CancelProcessInstanceRequest {
