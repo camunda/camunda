@@ -491,7 +491,7 @@ test('add, edit and remove dashboards description', async (t) => {
 
   // Add description
   await t.expect(Common.descriptionParagraph.exists).notOk();
-  await t.expect(Common.addDescriptionButton.textContent).contains('Add Description');
+  await t.expect(Common.addDescriptionButton.textContent).contains('Add description');
   const description = 'This is a description of the dashboard.';
   await u.addEditEntityDescription(t, description, 'img/dashboad-descriptionModal.png');
 
@@ -506,8 +506,6 @@ test('add, edit and remove dashboards description', async (t) => {
 
   // Edit description
   await t.click(Common.editButton);
-
-  await t.expect(Common.addDescriptionButton.textContent).contains('Edit');
 
   const newDescription =
     'This is a new description of the dashboard. This time the description is very long and will not fit in one line. It will display ellipsis and More button.';
@@ -538,7 +536,7 @@ test('add, edit and remove dashboards description', async (t) => {
   await t.click(Common.editButton);
   await u.addEditEntityDescription(t);
   await t.expect(Common.descriptionParagraph.exists).notOk();
-  await t.expect(Common.addDescriptionButton.textContent).contains('Add Description');
+  await t.expect(Common.addDescriptionButton.textContent).contains('Add description');
 
   await u.save(t);
 

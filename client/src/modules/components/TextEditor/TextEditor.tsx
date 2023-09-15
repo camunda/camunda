@@ -92,6 +92,7 @@ export default function TextEditor({onChange, simpleEditor, initialValue, limit}
             error: isTextTileTooLong(initialValue?.length || 0, limit),
           })}
           onChange={(evt) => onChange(evt.target.value)}
+          data-modal-primary-focus
         />
       ) : (
         <LexicalComposer initialConfig={initialConfig}>

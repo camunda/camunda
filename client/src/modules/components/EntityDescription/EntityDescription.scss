@@ -3,6 +3,7 @@
   padding-right: 48px;
   margin-top: 1rem;
   font-size: 14px;
+  align-items: center;
 
   .description {
     margin: 0;
@@ -19,28 +20,13 @@
     align-self: flex-end;
   }
 
-  .edit,
-  .add {
-    .Icon {
-      margin-right: 0;
-    }
-  }
-
-  .description,
-  .toggle,
-  .edit,
-  .add {
+  .description {
     font-size: inherit;
-  }
-
-  .description,
-  .toggle {
     line-height: 1.5;
   }
 
   .toggle,
   .edit {
-    flex-shrink: 0;
     margin-left: 1rem;
   }
 }
