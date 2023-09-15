@@ -7,15 +7,18 @@
  */
 package io.camunda.zeebe.engine.state.instance;
 
+import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
+
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public final class TimerInstance extends UnpackedObject implements DbValue {
+public final class TimerInstance extends UnpackedObject implements DbValue, TenantOwned {
 
   public static final long NO_ELEMENT_INSTANCE = -1L;
 
@@ -25,6 +28,8 @@ public final class TimerInstance extends UnpackedObject implements DbValue {
   private final LongProperty keyProp = new LongProperty("key", 0L);
   private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey", 0L);
   private final LongProperty processInstanceKeyProp = new LongProperty("processInstanceKey", 0L);
+  private final StringProperty tenantIdProp =
+      new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   private final LongProperty dueDateProp = new LongProperty("dueDate", 0L);
   private final IntegerProperty repetitionsProp = new IntegerProperty("repetitions", 0);
 
@@ -95,10 +100,20 @@ public final class TimerInstance extends UnpackedObject implements DbValue {
   }
 
   @Override
-  public void wrap(final DirectBuffer buffer, int offset, final int length) {
+  public void wrap(final DirectBuffer buffer, final int offset, final int length) {
     final byte[] bytes = new byte[length];
     final UnsafeBuffer mutableBuffer = new UnsafeBuffer(bytes);
     buffer.getBytes(offset, bytes, 0, length);
     super.wrap(mutableBuffer, 0, length);
+  }
+
+  @Override
+  public String getTenantId() {
+    return bufferAsString(tenantIdProp.getValue());
+  }
+
+  public TimerInstance setTenantId(final String tenantId) {
+    tenantIdProp.setValue(tenantId);
+    return this;
   }
 }

@@ -287,8 +287,7 @@ public final class DeploymentCreateProcessor
       final ProcessMetadata processMetadata, final TimerInstance timer) {
     final DirectBuffer timerBpmnId =
         processState
-            .getProcessByKeyAndTenant(
-                timer.getProcessDefinitionKey(), processMetadata.getTenantId())
+            .getProcessByKeyAndTenant(timer.getProcessDefinitionKey(), timer.getTenantId())
             .getBpmnProcessId();
 
     if (timerBpmnId.equals(processMetadata.getBpmnProcessIdBuffer())) {
