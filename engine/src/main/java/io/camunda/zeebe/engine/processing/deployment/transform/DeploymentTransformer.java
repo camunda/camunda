@@ -73,11 +73,16 @@ public final class DeploymentTransformer {
         new DmnResourceTransformer(
             keyGenerator, stateWriter, this::getChecksum, processingState.getDecisionState());
 
+    final var formResourceTransformer =
+        new FormResourceTransformer(
+            keyGenerator, stateWriter, this::getChecksum, processingState.getFormState());
+
     resourceTransformers =
         Map.ofEntries(
             entry(".bpmn", bpmnResourceTransformer),
             entry(".xml", bpmnResourceTransformer),
-            entry(".dmn", dmnResourceTransformer));
+            entry(".dmn", dmnResourceTransformer),
+            entry(".form", formResourceTransformer));
   }
 
   private DirectBuffer getChecksum(final DeploymentResource resource) {

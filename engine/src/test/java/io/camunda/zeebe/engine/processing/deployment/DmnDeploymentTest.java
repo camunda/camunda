@@ -31,7 +31,7 @@ import java.security.NoSuchAlgorithmException;
 import org.junit.Rule;
 import org.junit.Test;
 
-public final class DeploymentDmnTest {
+public final class DmnDeploymentTest {
 
   private static final String DMN_DECISION_TABLE = "/dmn/decision-table.dmn";
   private static final String DMN_DECISION_TABLE_V2 = "/dmn/decision-table_v2.dmn";

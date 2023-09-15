@@ -13,6 +13,7 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentDistributionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.FormRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
@@ -84,6 +85,7 @@ public final class TypedEventRegistry {
     registry.put(ValueType.SIGNAL_SUBSCRIPTION, SignalSubscriptionRecord.class);
     registry.put(ValueType.SIGNAL, SignalRecord.class);
     registry.put(ValueType.PROCESS_INSTANCE_BATCH, ProcessInstanceBatchRecord.class);
+    registry.put(ValueType.FORM, FormRecord.class);
 
     EVENT_REGISTRY = Collections.unmodifiableMap(registry);
 

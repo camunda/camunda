@@ -59,6 +59,7 @@ import io.camunda.zeebe.protocol.record.value.VariableDocumentRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsRecordValue;
+import io.camunda.zeebe.protocol.record.value.deployment.Form;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import java.time.Duration;
 import java.util.Collection;
@@ -371,6 +372,10 @@ public final class RecordingExporter implements Exporter {
   public static ResourceDeletionRecordStream resourceDeletionRecords(
       final ResourceDeletionIntent intent) {
     return resourceDeletionRecords().withIntent(intent);
+  }
+
+  public static FormRecordStream formRecords() {
+    return new FormRecordStream(records(ValueType.FORM, Form.class));
   }
 
   public static ErrorRecordStream errorRecords() {

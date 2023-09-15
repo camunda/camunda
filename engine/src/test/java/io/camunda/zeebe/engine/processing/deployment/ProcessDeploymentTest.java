@@ -36,7 +36,7 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-public final class CreateDeploymentTest {
+public final class ProcessDeploymentTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
   private static final String NONE_EXECUTABLE_POOLS =

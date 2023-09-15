@@ -220,6 +220,7 @@ final class JsonSerializableToJsonTest {
             ],
             "decisionsMetadata": [],
             "decisionRequirementsMetadata": [],
+            "formMetadata": [],
             "tenantId": "<default>"
           }
         }
@@ -262,6 +263,7 @@ final class JsonSerializableToJsonTest {
               "decisionRequirementsMetadata": [],
               "processesMetadata": [],
               "decisionsMetadata": [],
+              "formMetadata": [],
               "tenantId": "<default>"
           }
         }
@@ -316,6 +318,15 @@ final class JsonSerializableToJsonTest {
                   .setDecisionRequirementsKey(1L)
                   .setDecisionRequirementsId("drg-id")
                   .markAsDuplicate();
+              record
+                  .formMetadata()
+                  .add()
+                  .setFormId("form-id")
+                  .setVersion(1)
+                  .setFormKey(1L)
+                  .setResourceName("form1.form")
+                  .setChecksum(checksum)
+                  .markAsDuplicate();
               return record;
             },
         """
@@ -362,6 +373,17 @@ final class JsonSerializableToJsonTest {
               "tenantId": "<default>"
             }
           ],
+          "formMetadata": [
+          {
+              "checksum": "Y2hlY2tzdW0=",
+              "formId": "form-id",
+              "version": 1,
+              "formKey": 1,
+              "resourceName": "form1.form",
+              "duplicate": true,
+              "tenantId": "<default>"
+            }
+          ],
           "tenantId": "<default>"
         }
         """
@@ -395,6 +417,7 @@ final class JsonSerializableToJsonTest {
           "processesMetadata": [],
           "decisionsMetadata": [],
           "decisionRequirementsMetadata": [],
+          "formMetadata": [],
           "tenantId": "<default>"
         }
         """
@@ -1815,6 +1838,7 @@ final class JsonSerializableToJsonTest {
             }],
             "decisionsMetadata": [],
             "decisionRequirementsMetadata": [],
+            "formMetadata": [],
             "tenantId": "<default>"
           }
         }

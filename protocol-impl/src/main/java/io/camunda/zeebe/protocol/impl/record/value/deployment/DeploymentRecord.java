@@ -17,6 +17,7 @@ import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsMetadataValue;
+import io.camunda.zeebe.protocol.record.value.deployment.FormMetadataValue;
 import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
@@ -39,6 +40,9 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
   private final ArrayProperty<DecisionRequirementsMetadataRecord> decisionRequirementsMetadataProp =
       new ArrayProperty<>("decisionRequirementsMetadata", new DecisionRequirementsMetadataRecord());
 
+  private final ArrayProperty<FormMetadataRecord> formMetadataProp =
+      new ArrayProperty<>("formMetadata", new FormMetadataRecord());
+
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
@@ -47,6 +51,7 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
         .declareProperty(processesMetadataProp)
         .declareProperty(decisionRequirementsMetadataProp)
         .declareProperty(decisionMetadataProp)
+        .declareProperty(formMetadataProp)
         .declareProperty(tenantIdProp);
   }
 
@@ -64,6 +69,10 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
 
   public ValueArray<DecisionRequirementsMetadataRecord> decisionRequirementsMetadata() {
     return decisionRequirementsMetadataProp;
+  }
+
+  public ValueArray<FormMetadataRecord> formMetadata() {
+    return formMetadataProp;
   }
 
   @Override
@@ -115,6 +124,20 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
 
     for (final DecisionRequirementsMetadataRecord metadata : decisionRequirementsMetadataProp) {
       final var copyRecord = new DecisionRequirementsMetadataRecord();
+      final var copyBuffer = BufferUtil.createCopy(metadata);
+      copyRecord.wrap(copyBuffer);
+      metadataList.add(copyRecord);
+    }
+
+    return metadataList;
+  }
+
+  @Override
+  public List<FormMetadataValue> getFormMetadata() {
+    final var metadataList = new ArrayList<FormMetadataValue>();
+
+    for (final FormMetadataRecord metadata : formMetadataProp) {
+      final var copyRecord = new FormMetadataRecord();
       final var copyBuffer = BufferUtil.createCopy(metadata);
       copyRecord.wrap(copyBuffer);
       metadataList.add(copyRecord);
