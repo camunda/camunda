@@ -32,7 +32,7 @@ export const fullscreenButton = Selector('.fullscreen-button');
 export const header = Selector('.cds--header');
 export const themeButton = Selector('.theme-toggle');
 export const fullscreenContent = Selector('.fullscreen');
-export const shareFilterCheckbox = Selector('.ShareEntity .includeFilters input');
+export const shareFilterCheckbox = Selector('.ShareEntity input[type="checkbox"]');
 export const autoRefreshButton = Selector('.tools .Dropdown').withText('Auto Refresh');
 export const reportModalOptionsButton = Selector('.CreateTileModal').find('.optionsButton');
 export const reportModalDropdownOption = Selector('.CreateTileModal').find('.DropdownOption');

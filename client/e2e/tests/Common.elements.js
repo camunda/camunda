@@ -60,11 +60,11 @@ export const typeaheadOption = (text) => typeahead.find('.DropdownOption').withT
 export const notification = Selector('.Notification');
 export const notificationCloseButton = notification.find('.close');
 export const shareButton = Selector('.share-button .Button');
-export const shareSwitch = Selector('.ShareEntity .Switch');
+export const shareSwitch = Selector('.ShareEntity .cds--toggle__switch');
 export const shareHeader = Selector('.Sharing .header');
 export const shareTitle = shareHeader.find('.name-container');
 export const shareLink = shareHeader.find('.title-button');
-export const shareUrl = Selector('.ShareEntity .linkText');
+export const shareUrl = Selector('.ShareEntity input[type="text"]');
 export const shareOptimizeIcon = Selector('.Sharing.compact .iconLink');
 export const addButton = Selector('.AddButton');
 export const deleteButton = Selector('.delete-button');

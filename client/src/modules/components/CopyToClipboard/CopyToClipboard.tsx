@@ -5,22 +5,35 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
-import {Button} from 'components';
+import {ComponentProps, ReactNode} from 'react';
+import {Button} from '@carbon/react';
 
 import {t} from 'translation';
 
-export default function CopyToClipboard({children, value, disabled, onCopy}) {
+interface CopyToClipboardProps extends Pick<ComponentProps<typeof Button>, 'kind' | 'disabled'> {
+  children: ReactNode;
+  value: string;
+  onCopy: () => void;
+}
+
+export default function CopyToClipboard({
+  children,
+  value,
+  disabled,
+  onCopy,
+  kind,
+}: CopyToClipboardProps) {
   return (
     <Button
       className="CopyToClipboard"
+      size="sm"
       onClick={(evt) => {
         evt.preventDefault();
         const input = document.createElement('input');
         input.value = value;
-        input.style.opacity = 0;
+        input.style.opacity = '0';
         input.style.position = 'absolute';
-        input.style.top = 0;
+        input.style.top = '0';
 
         document.body.appendChild(input);
 
@@ -29,11 +42,10 @@ export default function CopyToClipboard({children, value, disabled, onCopy}) {
 
         document.body.removeChild(input);
 
-        if (typeof onCopy === 'function') {
-          onCopy();
-        }
+        onCopy?.();
       }}
       disabled={disabled}
+      kind={kind}
     >
       {children || t('common.copy')}
     </Button>

@@ -5,62 +5,69 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import {runLastEffect} from '__mocks__/react';
 import {shallow} from 'enzyme';
+import {Checkbox, TextInput, TextInputSkeleton, Toggle} from '@carbon/react';
 
 import ShareEntity from './ShareEntity';
 
 const props = {
   type: 'report',
+  resourceId: 'resourceId',
   shareEntity: jest.fn(),
   revokeEntitySharing: jest.fn(),
-  getSharedEntity: jest.fn(),
+  getSharedEntity: jest.fn().mockReturnValue(10),
 };
 
-beforeAll(() => {
-  const windowProps = JSON.stringify(window.location);
-  delete window.location;
+let originalWindowLocation = window.location;
 
+beforeEach(() => {
+  jest.clearAllMocks();
   Object.defineProperty(window, 'location', {
-    value: JSON.parse(windowProps),
+    configurable: true,
+    enumerable: true,
+    value: new URL(window.location.href),
   });
+
   window.location.href = 'http://example.com/#/dashboard/1';
 });
 
-it('should render without crashing', () => {
-  shallow(<ShareEntity {...props} />);
+afterEach(() => {
+  Object.defineProperty(window, 'location', {
+    configurable: true,
+    enumerable: true,
+    value: originalWindowLocation,
+  });
 });
 
-it('should initially get already shared entities', () => {
+it('should initially get already shared entities', async () => {
   shallow(<ShareEntity {...props} />);
+  await runLastEffect();
 
   expect(props.getSharedEntity).toHaveBeenCalled();
 });
 
-it('should share entity if is checked', () => {
-  props.getSharedEntity.mockReturnValue(10);
-
+it('should share entity if is checked', async () => {
   const node = shallow(<ShareEntity {...props} />);
+  await runLastEffect();
 
-  node.instance().toggleValue({target: {checked: true}});
+  node.find(Toggle).simulate('toggle', true);
 
   expect(props.shareEntity).toHaveBeenCalled();
 });
 
-it('should delete entity if sharing is revoked', () => {
-  props.getSharedEntity.mockReturnValue(10);
-
+it('should delete entity if sharing is revoked', async () => {
   const node = shallow(<ShareEntity {...props} />);
+  await runLastEffect();
 
-  node.instance().toggleValue({target: {checked: false}});
+  node.find(Toggle).simulate('toggle', false);
 
   expect(props.revokeEntitySharing).toHaveBeenCalled();
 });
 
-it('should construct special link', () => {
-  const node = shallow(<ShareEntity type="report" {...props} />);
-
-  node.setState({loaded: true, id: 10});
+it('should construct special link', async () => {
+  const node = shallow(<ShareEntity {...props} type="report" />);
+  await runLastEffect();
 
   expect(node.find('CopyToClipboard').at(0)).toHaveProp(
     'value',
@@ -68,13 +75,12 @@ it('should construct special link', () => {
   );
 });
 
-it('should construct special link for embedding', () => {
-  const node = shallow(<ShareEntity type="report" {...props} />);
+it('should construct special link for embedding', async () => {
+  const node = shallow(<ShareEntity {...props} type="report" />);
+  await runLastEffect();
   Object.defineProperty(window.location, 'origin', {
     value: 'http://example.com',
   });
-
-  node.setState({loaded: true, id: 10});
 
   const clipboardValue = node.find('CopyToClipboard').at(1).prop('value');
 
@@ -87,46 +93,45 @@ it('should include filters', async () => {
     <ShareEntity
       {...props}
       type="dashboard"
-      filter={[{data: null, type: 'runningInstancesOnly'}]}
+      filter={[{data: null, type: 'runningInstancesOnly', filterLevel: 'instance', appliedTo: []}]}
     />
   );
+  await runLastEffect();
 
-  await flushPromises();
-
-  node.find('.includeFilters [type="checkbox"]').simulate('change', {target: {checked: true}});
+  node.find(Checkbox).simulate('change', {target: {checked: true}});
 
   const link = node.find('CopyToClipboard').at(0).prop('value');
   expect(link).toContain('?filter=');
   expect(link).toContain('runningInstancesOnly');
 });
 
-it('should display a loading indicator', () => {
+it('should display a loading indicator', async () => {
   const node = shallow(<ShareEntity {...props} />);
+  runLastEffect();
 
-  expect(node.find('LoadingIndicator')).toExist();
+  expect(node.find(TextInputSkeleton)).toExist();
+  await flushPromises();
 });
 
 it('should disable all controlls when sharing is disabled', async () => {
-  props.getSharedEntity.mockReturnValue();
-  const node = shallow(<ShareEntity {...props} />);
+  props.getSharedEntity.mockReturnValue(null);
+  const node = shallow(<ShareEntity {...props} filter={[]} />);
+  await runLastEffect();
 
-  await flushPromises();
-
-  expect(node.find('.linkText').prop('disabled')).toBe(true);
-  expect(node.find('.includeFilters ForwardRef(LabeledInput)').prop('disabled')).toBe(true);
+  expect(node.find(TextInput).prop('disabled')).toBe(true);
+  expect(node.find(Checkbox).prop('disabled')).toBe(true);
   expect(node.find('CopyToClipboard').at(0).prop('disabled')).toBe(true);
   expect(node.find('CopyToClipboard').at(1).prop('disabled')).toBe(true);
 });
 
 it('should enable all controlls when sharing is enabled', async () => {
-  const node = shallow(<ShareEntity {...props} />);
+  const node = shallow(<ShareEntity {...props} filter={[]} />);
+  await runLastEffect();
 
-  await flushPromises();
+  node.find(Toggle).simulate('toggle', true);
 
-  node.find('Switch').simulate('change', {target: {checked: true}});
-
-  expect(node.find('.linkText').prop('disabled')).toBe(false);
-  expect(node.find('.includeFilters ForwardRef(LabeledInput)').prop('disabled')).toBe(false);
+  expect(node.find(TextInput).prop('disabled')).toBe(false);
+  expect(node.find(Checkbox).prop('disabled')).toBe(false);
   expect(node.find('CopyToClipboard').at(0).prop('disabled')).toBe(false);
   expect(node.find('CopyToClipboard').at(1).prop('disabled')).toBe(false);
 });

@@ -5,27 +5,32 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import {shallow} from 'enzyme';
-
-import {Button} from 'components';
+import {Button} from '@carbon/react';
 
 import CopyToClipboard from './CopyToClipboard';
 
+const props = {
+  value: 'test',
+  disabled: false,
+  onCopy: jest.fn(),
+  children: 'buttonContent',
+};
+
 it('should allow custom labels', () => {
-  const node = shallow(<CopyToClipboard>Custom Label</CopyToClipboard>);
+  const node = shallow(<CopyToClipboard {...props}>Custom Label</CopyToClipboard>);
 
   expect(node).toIncludeText('Custom Label');
 });
 
 it('should allow being disabled', () => {
-  const node = shallow(<CopyToClipboard disabled />);
+  const node = shallow(<CopyToClipboard {...props} disabled />);
 
   expect(node.find(Button)).toBeDisabled();
 });
 
 it('should copy specified value', () => {
-  const node = shallow(<CopyToClipboard />);
+  const node = shallow(<CopyToClipboard {...props} />);
 
   node.find(Button).simulate('click', {preventDefault: () => {}});
   expect(document.execCommand).toHaveBeenCalledWith('Copy');
@@ -33,7 +38,7 @@ it('should copy specified value', () => {
 
 it('should call a provided onCopy function', () => {
   const spy = jest.fn();
-  const node = shallow(<CopyToClipboard onCopy={spy} />);
+  const node = shallow(<CopyToClipboard {...props} onCopy={spy} />);
 
   node.find(Button).simulate('click', {preventDefault: () => {}});
 

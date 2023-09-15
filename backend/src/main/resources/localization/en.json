@@ -1085,6 +1085,7 @@
     "error": "Error",
     "closeError": "Close error notification",
     "units": "Units",
+    "link": "Link",
     "process": {
       "label": "Process",
       "label-plural": "Processes"

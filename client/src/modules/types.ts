@@ -36,7 +36,7 @@ interface Report<Data> {
 
 type FilterFilterApplicationLevel = 'instance' | 'view';
 
-interface ProcessFilter<DATA> {
+export interface ProcessFilter<DATA = unknown> {
   type:
     | 'assignee'
     | 'canceledFlowNodes'

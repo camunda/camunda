@@ -1,32 +1,7 @@
 .ShareEntity {
   width: calc(23rem - 60px);
 
-  .Switch {
-    margin-bottom: 25px;
-
-    .label {
-      font-size: 16px;
-      font-weight: bold;
-      margin-top: -1px;
-    }
-  }
-
-  > .linkText {
-    width: 100%;
-    margin-bottom: 10px;
-  }
-
-  .includeFilters {
-    padding-bottom: 10px;
-    font-size: 14px;
-  }
-
-  .clipboardButtons {
-    margin-top: 10px;
-    text-align: right;
-
-    .CopyToClipboard {
-      margin-left: 10px;
-    }
+  .cds--btn-set button {
+    flex: 1;
   }
 }
