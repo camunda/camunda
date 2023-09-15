@@ -115,7 +115,7 @@ public final class CreateProcessInstanceProcessor
   @Override
   public ProcessingError tryHandleError(
       final TypedRecord<ProcessInstanceCreationRecord> typedCommand, final Throwable error) {
-    if (error instanceof EventSubscriptionException exception) {
+    if (error instanceof final EventSubscriptionException exception) {
       // This exception is only thrown for ProcessInstanceCreationRecord with start instructions
       rejectionWriter.appendRejection(
           typedCommand, RejectionType.INVALID_ARGUMENT, exception.getMessage());
@@ -329,20 +329,22 @@ public final class CreateProcessInstanceProcessor
 
     if (bpmnProcessId.capacity() > 0) {
       if (record.getVersion() >= 0) {
-        return getProcess(bpmnProcessId, record.getVersion());
+        return getProcess(bpmnProcessId, record.getVersion(), record.getTenantId());
       } else {
-        return getProcess(bpmnProcessId);
+        return getProcess(bpmnProcessId, record.getTenantId());
       }
     } else if (record.getProcessDefinitionKey() >= 0) {
-      return getProcess(record.getProcessDefinitionKey());
+      return getProcess(record.getProcessDefinitionKey(), record.getTenantId());
     } else {
       return Either.left(
           new Rejection(RejectionType.INVALID_ARGUMENT, ERROR_MESSAGE_NO_IDENTIFIER_SPECIFIED));
     }
   }
 
-  private Either<Rejection, DeployedProcess> getProcess(final DirectBuffer bpmnProcessId) {
-    final DeployedProcess process = processState.getLatestProcessVersionByProcessId(bpmnProcessId);
+  private Either<Rejection, DeployedProcess> getProcess(
+      final DirectBuffer bpmnProcessId, final String tenantId) {
+    final DeployedProcess process =
+        processState.getLatestProcessVersionByProcessId(bpmnProcessId, tenantId);
     if (process != null) {
       return Either.right(process);
     } else {
@@ -354,9 +356,9 @@ public final class CreateProcessInstanceProcessor
   }
 
   private Either<Rejection, DeployedProcess> getProcess(
-      final DirectBuffer bpmnProcessId, final int version) {
+      final DirectBuffer bpmnProcessId, final int version, final String tenantId) {
     final DeployedProcess process =
-        processState.getProcessByProcessIdAndVersion(bpmnProcessId, version);
+        processState.getProcessByProcessIdAndVersion(bpmnProcessId, version, tenantId);
     if (process != null) {
       return Either.right(process);
     } else {
@@ -370,8 +372,8 @@ public final class CreateProcessInstanceProcessor
     }
   }
 
-  private Either<Rejection, DeployedProcess> getProcess(final long key) {
-    final DeployedProcess process = processState.getProcessByKey(key);
+  private Either<Rejection, DeployedProcess> getProcess(final long key, final String tenantId) {
+    final DeployedProcess process = processState.getProcessByKeyAndTenant(key, tenantId);
     if (process != null) {
       return Either.right(process);
     } else {

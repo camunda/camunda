@@ -92,6 +92,7 @@ public final class BpmnEventSubscriptionBehavior {
     final var triggeredEvent =
         processState.getFlowElement(
             context.getProcessDefinitionKey(),
+            context.getTenantId(),
             eventTrigger.getElementId(),
             ExecutableFlowElement.class);
 

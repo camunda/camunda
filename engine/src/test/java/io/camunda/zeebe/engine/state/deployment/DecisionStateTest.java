@@ -25,6 +25,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith(ProcessingStateExtension.class)
 public final class DecisionStateTest {
 
+  private static final String TENANT_ID = "tenant";
   private MutableProcessingState processingState;
   private MutableDecisionState decisionState;
 
@@ -37,7 +38,8 @@ public final class DecisionStateTest {
   @Test
   void shouldReturnEmptyIfNoDecisionIsDeployedForDeploymentId() {
     // when
-    final var persistedDecision = decisionState.findLatestDecisionById(wrapString("decision-1"));
+    final var persistedDecision =
+        decisionState.findLatestDecisionByIdAndTenant(wrapString("decision-1"), TENANT_ID);
 
     // then
     assertThat(persistedDecision).isEmpty();
@@ -47,7 +49,7 @@ public final class DecisionStateTest {
   @Test
   void shouldReturnEmptyIfNoDecisionIsDeployedForDeploymentKey() {
     // when
-    final var persistedDecision = decisionState.findDecisionByKey(1L);
+    final var persistedDecision = decisionState.findDecisionByTenantAndKey(TENANT_ID, 1L);
 
     // then
     assertThat(persistedDecision).isEmpty();
@@ -57,7 +59,8 @@ public final class DecisionStateTest {
   @Test
   void shouldReturnEmptyIfNoDrgIsDeployed() {
     // when
-    final var persistedDrg = decisionState.findLatestDecisionRequirementsById(wrapString("drg-1"));
+    final var persistedDrg =
+        decisionState.findLatestDecisionRequirementsByTenantAndId(TENANT_ID, wrapString("drg-1"));
 
     // then
     assertThat(persistedDrg).isEmpty();
@@ -67,7 +70,7 @@ public final class DecisionStateTest {
   @Test
   void shouldReturnEmptyIfNoDrgIsDeployedByKey() {
     // when
-    final var persistedDrg = decisionState.findDecisionRequirementsByKey(1L);
+    final var persistedDrg = decisionState.findDecisionRequirementsByTenantAndKey(TENANT_ID, 1L);
 
     // then
     assertThat(persistedDrg).isEmpty();
@@ -85,7 +88,8 @@ public final class DecisionStateTest {
 
     // when
     final var persistedDecision =
-        decisionState.findLatestDecisionById(decisionRecord.getDecisionIdBuffer());
+        decisionState.findLatestDecisionByIdAndTenant(
+            decisionRecord.getDecisionIdBuffer(), TENANT_ID);
 
     // then
     assertThat(persistedDecision).isNotEmpty();
@@ -117,9 +121,11 @@ public final class DecisionStateTest {
 
     // when
     final var persistedDecision1 =
-        decisionState.findLatestDecisionById(decisionRecord1.getDecisionIdBuffer());
+        decisionState.findLatestDecisionByIdAndTenant(
+            decisionRecord1.getDecisionIdBuffer(), TENANT_ID);
     final var persistedDecision2 =
-        decisionState.findLatestDecisionById(decisionRecord2.getDecisionIdBuffer());
+        decisionState.findLatestDecisionByIdAndTenant(
+            decisionRecord2.getDecisionIdBuffer(), TENANT_ID);
 
     // then
     assertThat(persistedDecision1).isNotEmpty();
@@ -147,9 +153,9 @@ public final class DecisionStateTest {
 
     // when
     final var persistedDecision1 =
-        decisionState.findDecisionByKey(decisionRecord1.getDecisionKey());
+        decisionState.findDecisionByTenantAndKey(TENANT_ID, decisionRecord1.getDecisionKey());
     final var persistedDecision2 =
-        decisionState.findDecisionByKey(decisionRecord2.getDecisionKey());
+        decisionState.findDecisionByTenantAndKey(TENANT_ID, decisionRecord2.getDecisionKey());
 
     // then
     assertThat(persistedDecision1).isNotEmpty();
@@ -193,7 +199,8 @@ public final class DecisionStateTest {
 
     // when
     final var persistedDecision =
-        decisionState.findLatestDecisionById(decisionRecordV1.getDecisionIdBuffer());
+        decisionState.findLatestDecisionByIdAndTenant(
+            decisionRecordV1.getDecisionIdBuffer(), TENANT_ID);
 
     // then
     assertThat(persistedDecision).isNotEmpty();
@@ -209,7 +216,8 @@ public final class DecisionStateTest {
 
     // when
     final var persistedDrg =
-        decisionState.findLatestDecisionRequirementsById(drg.getDecisionRequirementsIdBuffer());
+        decisionState.findLatestDecisionRequirementsByTenantAndId(
+            TENANT_ID, drg.getDecisionRequirementsIdBuffer());
 
     // then
     assertThat(persistedDrg).isNotEmpty();
@@ -249,9 +257,11 @@ public final class DecisionStateTest {
 
     // when
     final var persistedDrg1 =
-        decisionState.findLatestDecisionRequirementsById(drg1.getDecisionRequirementsIdBuffer());
+        decisionState.findLatestDecisionRequirementsByTenantAndId(
+            TENANT_ID, drg1.getDecisionRequirementsIdBuffer());
     final var persistedDrg2 =
-        decisionState.findLatestDecisionRequirementsById(drg2.getDecisionRequirementsIdBuffer());
+        decisionState.findLatestDecisionRequirementsByTenantAndId(
+            TENANT_ID, drg2.getDecisionRequirementsIdBuffer());
 
     // then
     assertThat(persistedDrg1).isNotEmpty();
@@ -286,8 +296,8 @@ public final class DecisionStateTest {
 
     // when
     final var persistedDrg =
-        decisionState.findLatestDecisionRequirementsById(
-            decisionRecordV1.getDecisionRequirementsIdBuffer());
+        decisionState.findLatestDecisionRequirementsByTenantAndId(
+            TENANT_ID, decisionRecordV1.getDecisionRequirementsIdBuffer());
 
     // then
     assertThat(persistedDrg).isNotEmpty();
@@ -307,9 +317,11 @@ public final class DecisionStateTest {
 
     // when
     final var persistedDrg1 =
-        decisionState.findDecisionRequirementsByKey(drg1.getDecisionRequirementsKey());
+        decisionState.findDecisionRequirementsByTenantAndKey(
+            TENANT_ID, drg1.getDecisionRequirementsKey());
     final var persistedDrg2 =
-        decisionState.findDecisionRequirementsByKey(drg2.getDecisionRequirementsKey());
+        decisionState.findDecisionRequirementsByTenantAndKey(
+            TENANT_ID, drg2.getDecisionRequirementsKey());
 
     // then
     assertThat(persistedDrg1).isNotEmpty();
@@ -328,7 +340,8 @@ public final class DecisionStateTest {
     final var unknownDrgKey = 1L;
 
     // when
-    final var decisions = decisionState.findDecisionsByDecisionRequirementsKey(unknownDrgKey);
+    final var decisions =
+        decisionState.findDecisionsByTenantAndDecisionRequirementsKey(TENANT_ID, unknownDrgKey);
 
     // then
     assertThat(decisions).isEmpty();
@@ -363,10 +376,12 @@ public final class DecisionStateTest {
 
     // when
     final var decisionsOfDrg1 =
-        decisionState.findDecisionsByDecisionRequirementsKey(drg1.getDecisionRequirementsKey());
+        decisionState.findDecisionsByTenantAndDecisionRequirementsKey(
+            TENANT_ID, drg1.getDecisionRequirementsKey());
 
     final var decisionsOfDrg2 =
-        decisionState.findDecisionsByDecisionRequirementsKey(drg2.getDecisionRequirementsKey());
+        decisionState.findDecisionsByTenantAndDecisionRequirementsKey(
+            TENANT_ID, drg2.getDecisionRequirementsKey());
 
     // then
     assertThat(decisionsOfDrg1)
@@ -394,12 +409,15 @@ public final class DecisionStateTest {
     decisionState.deleteDecision(decisionRecord);
 
     // then
-    assertThat(decisionState.findDecisionByKey(decisionRecord.getDecisionKey())).isEmpty();
-    assertThat(decisionState.findLatestDecisionById(decisionRecord.getDecisionIdBuffer()))
+    assertThat(decisionState.findDecisionByTenantAndKey(TENANT_ID, decisionRecord.getDecisionKey()))
         .isEmpty();
     assertThat(
-            decisionState.findDecisionsByDecisionRequirementsKey(
-                decisionRecord.getDecisionRequirementsKey()))
+            decisionState.findLatestDecisionByIdAndTenant(
+                decisionRecord.getDecisionIdBuffer(), TENANT_ID))
+        .isEmpty();
+    assertThat(
+            decisionState.findDecisionsByTenantAndDecisionRequirementsKey(
+                TENANT_ID, decisionRecord.getDecisionRequirementsKey()))
         .isEmpty();
   }
 
@@ -426,9 +444,12 @@ public final class DecisionStateTest {
     decisionState.deleteDecision(decisionRecord1);
 
     // then
-    assertThat(decisionState.findDecisionByKey(decisionRecord1.getDecisionKey())).isEmpty();
+    assertThat(
+            decisionState.findDecisionByTenantAndKey(TENANT_ID, decisionRecord1.getDecisionKey()))
+        .isEmpty();
     final var latestDecisionById =
-        decisionState.findLatestDecisionById(decisionRecord1.getDecisionIdBuffer());
+        decisionState.findLatestDecisionByIdAndTenant(
+            decisionRecord1.getDecisionIdBuffer(), TENANT_ID);
     assertThat(latestDecisionById).isNotEmpty();
     assertThat(latestDecisionById.get().getDecisionId())
         .isEqualTo(decisionRecord2.getDecisionIdBuffer());
@@ -458,9 +479,12 @@ public final class DecisionStateTest {
     decisionState.deleteDecision(decisionRecord2);
 
     // then
-    assertThat(decisionState.findDecisionByKey(decisionRecord2.getDecisionKey())).isEmpty();
+    assertThat(
+            decisionState.findDecisionByTenantAndKey(TENANT_ID, decisionRecord2.getDecisionKey()))
+        .isEmpty();
     final var latestDecisionById =
-        decisionState.findLatestDecisionById(decisionRecord2.getDecisionIdBuffer());
+        decisionState.findLatestDecisionByIdAndTenant(
+            decisionRecord2.getDecisionIdBuffer(), TENANT_ID);
     assertThat(latestDecisionById).isNotEmpty();
     assertThat(latestDecisionById.get().getDecisionId())
         .isEqualTo(decisionRecord1.getDecisionIdBuffer());
@@ -492,9 +516,12 @@ public final class DecisionStateTest {
     decisionState.deleteDecision(decisionRecord3);
 
     // then
-    assertThat(decisionState.findDecisionByKey(decisionRecord3.getDecisionKey())).isEmpty();
+    assertThat(
+            decisionState.findDecisionByTenantAndKey(TENANT_ID, decisionRecord3.getDecisionKey()))
+        .isEmpty();
     final var latestDecisionById =
-        decisionState.findLatestDecisionById(decisionRecord3.getDecisionIdBuffer());
+        decisionState.findLatestDecisionByIdAndTenant(
+            decisionRecord3.getDecisionIdBuffer(), TENANT_ID);
     assertThat(latestDecisionById).isNotEmpty();
     assertThat(latestDecisionById.get().getDecisionId())
         .isEqualTo(decisionRecord1.getDecisionIdBuffer());
@@ -512,9 +539,13 @@ public final class DecisionStateTest {
     decisionState.deleteDecisionRequirements(drg);
 
     // then
-    assertThat(decisionState.findDecisionRequirementsByKey(drg.getDecisionRequirementsKey()))
+    assertThat(
+            decisionState.findDecisionRequirementsByTenantAndKey(
+                TENANT_ID, drg.getDecisionRequirementsKey()))
         .isEmpty();
-    assertThat(decisionState.findLatestDecisionById(drg.getDecisionRequirementsIdBuffer()))
+    assertThat(
+            decisionState.findLatestDecisionByIdAndTenant(
+                drg.getDecisionRequirementsIdBuffer(), TENANT_ID))
         .isEmpty();
   }
 
@@ -538,10 +569,12 @@ public final class DecisionStateTest {
 
     // then
     assertThat(
-            decisionState.findDecisionsByDecisionRequirementsKey(drg1.getDecisionRequirementsKey()))
+            decisionState.findDecisionsByTenantAndDecisionRequirementsKey(
+                TENANT_ID, drg1.getDecisionRequirementsKey()))
         .isEmpty();
     final var latestDrg =
-        decisionState.findLatestDecisionRequirementsById(drg1.getDecisionRequirementsIdBuffer());
+        decisionState.findLatestDecisionRequirementsByTenantAndId(
+            TENANT_ID, drg1.getDecisionRequirementsIdBuffer());
     assertThat(latestDrg).isNotEmpty();
     assertThat(latestDrg.get().getDecisionRequirementsId())
         .isEqualTo(drg2.getDecisionRequirementsIdBuffer());
@@ -568,9 +601,12 @@ public final class DecisionStateTest {
     decisionState.deleteDecisionRequirements(drg2);
 
     // then
-    assertThat(decisionState.findDecisionByKey(drg2.getDecisionRequirementsKey())).isEmpty();
+    assertThat(
+            decisionState.findDecisionByTenantAndKey(TENANT_ID, drg2.getDecisionRequirementsKey()))
+        .isEmpty();
     final var latestDrg =
-        decisionState.findLatestDecisionRequirementsById(drg2.getDecisionRequirementsIdBuffer());
+        decisionState.findLatestDecisionRequirementsByTenantAndId(
+            TENANT_ID, drg2.getDecisionRequirementsIdBuffer());
     assertThat(latestDrg).isNotEmpty();
     assertThat(latestDrg.get().getDecisionRequirementsId())
         .isEqualTo(drg1.getDecisionRequirementsIdBuffer());
@@ -597,9 +633,12 @@ public final class DecisionStateTest {
     decisionState.deleteDecisionRequirements(drg3);
 
     // then
-    assertThat(decisionState.findDecisionByKey(drg3.getDecisionRequirementsKey())).isEmpty();
+    assertThat(
+            decisionState.findDecisionByTenantAndKey(TENANT_ID, drg3.getDecisionRequirementsKey()))
+        .isEmpty();
     final var latestDrg =
-        decisionState.findLatestDecisionRequirementsById(drg3.getDecisionRequirementsIdBuffer());
+        decisionState.findLatestDecisionRequirementsByTenantAndId(
+            TENANT_ID, drg3.getDecisionRequirementsIdBuffer());
     assertThat(latestDrg).isNotEmpty();
     assertThat(latestDrg.get().getDecisionRequirementsId())
         .isEqualTo(drg1.getDecisionRequirementsIdBuffer());
@@ -614,7 +653,8 @@ public final class DecisionStateTest {
         .setVersion(1)
         .setDecisionKey(1L)
         .setDecisionRequirementsId("drg-id")
-        .setDecisionRequirementsKey(1L);
+        .setDecisionRequirementsKey(1L)
+        .setTenantId(TENANT_ID);
   }
 
   private DecisionRequirementsRecord sampleDecisionRequirementsRecord() {
@@ -626,6 +666,7 @@ public final class DecisionStateTest {
         .setNamespace("namespace")
         .setResourceName("resource-name")
         .setChecksum(wrapString("checksum"))
-        .setResource(wrapString("dmn-resource"));
+        .setResource(wrapString("dmn-resource"))
+        .setTenantId(TENANT_ID);
   }
 }

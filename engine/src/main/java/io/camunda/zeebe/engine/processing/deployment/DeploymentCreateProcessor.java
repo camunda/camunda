@@ -223,7 +223,10 @@ public final class DeploymentCreateProcessor
     for (final ProcessMetadata processMetadata : record.getValue().processesMetadata()) {
       if (!processMetadata.isDuplicate()) {
         final List<ExecutableStartEvent> startEvents =
-            processState.getProcessByKey(processMetadata.getKey()).getProcess().getStartEvents();
+            processState
+                .getProcessByKeyAndTenant(processMetadata.getKey(), processMetadata.getTenantId())
+                .getProcess()
+                .getStartEvents();
 
         unsubscribeFromPreviousTimers(processMetadata);
         subscribeToTimerStartEventIfExists(processMetadata, startEvents);
@@ -263,7 +266,10 @@ public final class DeploymentCreateProcessor
   private void unsubscribeFromPreviousTimer(
       final ProcessMetadata processMetadata, final TimerInstance timer) {
     final DirectBuffer timerBpmnId =
-        processState.getProcessByKey(timer.getProcessDefinitionKey()).getBpmnProcessId();
+        processState
+            .getProcessByKeyAndTenant(
+                timer.getProcessDefinitionKey(), processMetadata.getTenantId())
+            .getBpmnProcessId();
 
     if (timerBpmnId.equals(processMetadata.getBpmnProcessIdBuffer())) {
       catchEventBehavior.unsubscribeFromTimerEvent(timer);

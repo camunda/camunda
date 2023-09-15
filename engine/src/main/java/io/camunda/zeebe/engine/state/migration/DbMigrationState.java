@@ -159,14 +159,17 @@ public class DbMigrationState implements MutableMigrationState {
     dbPersistedDecision = new PersistedDecision();
     decisionsByKeyColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.DMN_DECISIONS, transactionContext, dbDecisionKey, dbPersistedDecision);
+            ZbColumnFamilies.DEPRECATED_DMN_DECISIONS,
+            transactionContext,
+            dbDecisionKey,
+            dbPersistedDecision);
     dbDecisionId = new DbString();
-    fkDecision = new DbForeignKey<>(dbDecisionKey, ZbColumnFamilies.DMN_DECISIONS);
+    fkDecision = new DbForeignKey<>(dbDecisionKey, ZbColumnFamilies.DEPRECATED_DMN_DECISIONS);
     dbDecisionVersion = new DbInt();
     decisionKeyAndVersion = new DbCompositeKey<>(dbDecisionId, dbDecisionVersion);
     decisionKeyByDecisionIdAndVersion =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.DMN_DECISION_KEY_BY_DECISION_ID_AND_VERSION,
+            ZbColumnFamilies.DEPRECATED_DMN_DECISION_KEY_BY_DECISION_ID_AND_VERSION,
             transactionContext,
             decisionKeyAndVersion,
             fkDecision);
@@ -174,11 +177,12 @@ public class DbMigrationState implements MutableMigrationState {
     //  ColumnFamilies for decision requirements migration
     dbDecisionRequirementsKey = new DbLong();
     fkDecisionRequirements =
-        new DbForeignKey<>(dbDecisionRequirementsKey, ZbColumnFamilies.DMN_DECISION_REQUIREMENTS);
+        new DbForeignKey<>(
+            dbDecisionRequirementsKey, ZbColumnFamilies.DEPRECATED_DMN_DECISION_REQUIREMENTS);
     dbPersistedDecisionRequirements = new PersistedDecisionRequirements();
     decisionRequirementsByKeyColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.DMN_DECISION_REQUIREMENTS,
+            ZbColumnFamilies.DEPRECATED_DMN_DECISION_REQUIREMENTS,
             transactionContext,
             dbDecisionRequirementsKey,
             dbPersistedDecisionRequirements);
@@ -188,7 +192,8 @@ public class DbMigrationState implements MutableMigrationState {
         new DbCompositeKey<>(dbDecisionRequirementsId, dbDecisionRequirementsVersion);
     decisionRequirementsKeyByIdAndVersionColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.DMN_DECISION_REQUIREMENTS_KEY_BY_DECISION_REQUIREMENT_ID_AND_VERSION,
+            ZbColumnFamilies
+                .DEPRECATED_DMN_DECISION_REQUIREMENTS_KEY_BY_DECISION_REQUIREMENT_ID_AND_VERSION,
             transactionContext,
             decisionRequirementsIdAndVersion,
             fkDecisionRequirements);
@@ -215,7 +220,7 @@ public class DbMigrationState implements MutableMigrationState {
     processIdKey = new DbString();
     processVersionInfoColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.PROCESS_VERSION,
+            ZbColumnFamilies.DEPRECATED_PROCESS_VERSION,
             transactionContext,
             processIdKey,
             new ProcessVersionInfo());

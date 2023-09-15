@@ -11,13 +11,12 @@ import io.camunda.zeebe.engine.state.deployment.PersistedProcess.PersistedProces
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
-import org.agrona.DirectBuffer;
 
 public interface MutableProcessState extends ProcessState {
 
   void putDeployment(DeploymentRecord deploymentRecord);
 
-  void putLatestVersionDigest(DirectBuffer processId, DirectBuffer digest);
+  void putLatestVersionDigest(final ProcessRecord processRecord);
 
   void putProcess(long key, ProcessRecord value);
 
@@ -25,10 +24,10 @@ public interface MutableProcessState extends ProcessState {
    * Updates the state of a process. This method updates both the ColumnFamily and the in memory
    * cache.
    *
-   * @param processDefinitionKey the key of the process definition
+   * @param processRecord the record of the process that is updated
    * @param state the new state
    */
-  void updateProcessState(final long processDefinitionKey, final PersistedProcessState state);
+  void updateProcessState(final ProcessRecord processRecord, final PersistedProcessState state);
 
   /**
    * Deletes a process fromm the state and cache

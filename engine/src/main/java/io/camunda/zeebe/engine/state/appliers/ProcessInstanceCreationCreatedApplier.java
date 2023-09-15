@@ -36,7 +36,9 @@ final class ProcessInstanceCreationCreatedApplier
   public void applyState(final long key, final ProcessInstanceCreationRecord value) {
     if (value.hasStartInstructions()) {
       final var process =
-          processState.getProcessByKey(value.getProcessDefinitionKey()).getProcess();
+          processState
+              .getProcessByKeyAndTenant(value.getProcessDefinitionKey(), value.getTenantId())
+              .getProcess();
       final ElementInstance processInstance =
           elementInstanceState.getInstance(value.getProcessInstanceKey());
 

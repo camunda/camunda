@@ -85,6 +85,7 @@ final class ProcessInstanceElementCompletedApplier
     final var callActivity =
         processState.getFlowElement(
             parentElementInstance.getValue().getProcessDefinitionKey(),
+            parentElementInstance.getValue().getTenantId(),
             elementId,
             ExecutableCallActivity.class);
 
@@ -114,6 +115,7 @@ final class ProcessInstanceElementCompletedApplier
       final var element =
           processState.getFlowElement(
               value.getProcessDefinitionKey(),
+              value.getTenantId(),
               value.getElementIdBuffer(),
               ExecutableEndEvent.class);
       return element.isTerminateEndEvent();

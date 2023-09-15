@@ -62,7 +62,8 @@ public final class CatchEventAnalyzer {
     final ArrayList<DirectBuffer> availableCatchEvents = new ArrayList<>();
     while (instance != null && instance.isActive()) {
       final var instanceRecord = instance.getValue();
-      final var process = getProcess(instanceRecord.getProcessDefinitionKey());
+      final var process =
+          getProcess(instanceRecord.getProcessDefinitionKey(), instanceRecord.getTenantId());
 
       final var found = findErrorCatchEventInProcess(errorCode, process, instance);
       if (found.isRight()) {
@@ -162,7 +163,8 @@ public final class CatchEventAnalyzer {
       final DirectBuffer escalationCode, final ElementInstance instance) {
     // walk through the scope hierarchy and look for a matching catch event
     final var instanceRecord = instance.getValue();
-    final var process = getProcess(instanceRecord.getProcessDefinitionKey());
+    final var process =
+        getProcess(instanceRecord.getProcessDefinitionKey(), instanceRecord.getTenantId());
 
     return findEscalationCatchEventInProcess(escalationCode, process, instance)
         .or(
@@ -235,9 +237,10 @@ public final class CatchEventAnalyzer {
     return eventEscalationCode.capacity() == 0 || eventEscalationCode.equals(escalationCode);
   }
 
-  private ExecutableProcess getProcess(final long processDefinitionKey) {
+  private ExecutableProcess getProcess(final long processDefinitionKey, final String tenantId) {
 
-    final var deployedProcess = processState.getProcessByKey(processDefinitionKey);
+    final var deployedProcess =
+        processState.getProcessByKeyAndTenant(processDefinitionKey, tenantId);
     if (deployedProcess == null) {
       throw new IllegalStateException(
           String.format(

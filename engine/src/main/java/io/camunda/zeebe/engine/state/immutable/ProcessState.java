@@ -9,23 +9,19 @@ package io.camunda.zeebe.engine.state.immutable;
 
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
-import java.util.Collection;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
 
 public interface ProcessState {
 
-  DeployedProcess getLatestProcessVersionByProcessId(DirectBuffer processId);
+  DeployedProcess getLatestProcessVersionByProcessId(DirectBuffer processId, final String tenantId);
 
-  DeployedProcess getProcessByProcessIdAndVersion(DirectBuffer processId, int version);
+  DeployedProcess getProcessByProcessIdAndVersion(
+      DirectBuffer processId, int version, final String tenantId);
 
-  DeployedProcess getProcessByKey(long key);
+  DeployedProcess getProcessByKeyAndTenant(long key, String tenantId);
 
-  Collection<DeployedProcess> getProcesses();
-
-  Collection<DeployedProcess> getProcessesByBpmnProcessId(DirectBuffer bpmnProcessId);
-
-  DirectBuffer getLatestVersionDigest(DirectBuffer processId);
+  DirectBuffer getLatestVersionDigest(DirectBuffer processId, final String tenantId);
 
   /**
    * Gets the latest process version. This is the latest version for which we have a process in the
@@ -34,7 +30,7 @@ public interface ProcessState {
    *
    * @param bpmnProcessId the id of the process
    */
-  int getLatestProcessVersion(String bpmnProcessId);
+  int getLatestProcessVersion(String bpmnProcessId, final String tenantId);
 
   /**
    * Gets the next version a process of a given id will receive. This is used, for example, when a
@@ -43,7 +39,7 @@ public interface ProcessState {
    *
    * @param bpmnProcessId the id of the process
    */
-  int getNextProcessVersion(String bpmnProcessId);
+  int getNextProcessVersion(String bpmnProcessId, final String tenantId);
 
   /**
    * Finds the previous known version a process. This is used, for example, when a process is
@@ -54,10 +50,11 @@ public interface ProcessState {
    * @param bpmnProcessId the id of the process
    * @param version the version for which we want to find the previous version
    */
-  Optional<Integer> findProcessVersionBefore(String bpmnProcessId, long version);
+  Optional<Integer> findProcessVersionBefore(
+      String bpmnProcessId, long version, final String tenantId);
 
   <T extends ExecutableFlowElement> T getFlowElement(
-      long processDefinitionKey, DirectBuffer elementId, Class<T> elementType);
+      long processDefinitionKey, String tenantId, DirectBuffer elementId, Class<T> elementType);
 
   /** TODO: Remove the cache entirely from the immutable state */
   void clearCache();

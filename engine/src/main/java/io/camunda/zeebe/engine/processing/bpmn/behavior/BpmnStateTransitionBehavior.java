@@ -480,7 +480,7 @@ public final class BpmnStateTransitionBehavior {
     final var elementId = callActivityContext.getElementId();
 
     return stateBehavior
-        .getProcess(processDefinitionKey)
+        .getProcess(processDefinitionKey, callActivityContext.getTenantId())
         .map(DeployedProcess::getProcess)
         .map(
             process ->

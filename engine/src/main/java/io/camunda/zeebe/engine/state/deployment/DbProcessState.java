@@ -17,6 +17,8 @@ import io.camunda.zeebe.db.impl.DbForeignKey;
 import io.camunda.zeebe.db.impl.DbForeignKey.MatchType;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbString;
+import io.camunda.zeebe.db.impl.DbTenantAwareKey;
+import io.camunda.zeebe.db.impl.DbTenantAwareKey.PlacementType;
 import io.camunda.zeebe.engine.processing.deployment.model.BpmnFactory;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
@@ -31,8 +33,6 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -51,24 +51,30 @@ public final class DbProcessState implements MutableProcessState {
   private final BpmnTransformer transformer = BpmnFactory.createTransformer();
   private final ProcessRecord processRecordForDeployments = new ProcessRecord();
 
-  private final Map<DirectBuffer, Long2ObjectHashMap<DeployedProcess>>
-      processesByProcessIdAndVersion = new HashMap<>();
-  private final Long2ObjectHashMap<DeployedProcess> processesByKey;
+  private final Map<String, Map<DirectBuffer, Long2ObjectHashMap<DeployedProcess>>>
+      processesByTenantAndProcessIdAndVersionCache = new HashMap<>();
+  private final Map<String, Long2ObjectHashMap<DeployedProcess>> processByTenantAndKeyCache;
 
   // process
-  private final ColumnFamily<DbLong, PersistedProcess> processColumnFamily;
+  private final ColumnFamily<DbTenantAwareKey<DbLong>, PersistedProcess> processColumnFamily;
   private final DbLong processDefinitionKey;
   private final PersistedProcess persistedProcess;
+  private final DbString tenantIdKey;
+  private final DbTenantAwareKey<DbLong> tenantAwareProcessDefinitionKey;
 
-  private final ColumnFamily<DbCompositeKey<DbString, DbLong>, PersistedProcess>
+  private final ColumnFamily<DbTenantAwareKey<DbCompositeKey<DbString, DbLong>>, PersistedProcess>
       processByIdAndVersionColumnFamily;
   private final DbLong processVersion;
   private final DbCompositeKey<DbString, DbLong> idAndVersionKey;
+  private final DbTenantAwareKey<DbCompositeKey<DbString, DbLong>>
+      tenantAwareProcessIdAndVersionKey;
 
   private final DbString processId;
-  private final DbForeignKey<DbString> fkProcessId;
+  private final DbTenantAwareKey<DbString> tenantAwareProcessId;
+  private final DbForeignKey<DbTenantAwareKey<DbString>> fkTenantAwareProcessId;
 
-  private final ColumnFamily<DbForeignKey<DbString>, Digest> digestByIdColumnFamily;
+  private final ColumnFamily<DbForeignKey<DbTenantAwareKey<DbString>>, Digest>
+      digestByIdColumnFamily;
   private final Digest digest = new Digest();
 
   private final ProcessVersionManager versionManager;
@@ -77,31 +83,42 @@ public final class DbProcessState implements MutableProcessState {
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     processDefinitionKey = new DbLong();
     persistedProcess = new PersistedProcess();
+    tenantIdKey = new DbString();
+    tenantAwareProcessDefinitionKey =
+        new DbTenantAwareKey<>(tenantIdKey, processDefinitionKey, PlacementType.PREFIX);
     processColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.PROCESS_CACHE,
             transactionContext,
-            processDefinitionKey,
+            tenantAwareProcessDefinitionKey,
             persistedProcess);
 
     processId = new DbString();
     processVersion = new DbLong();
     idAndVersionKey = new DbCompositeKey<>(processId, processVersion);
+    tenantAwareProcessIdAndVersionKey =
+        new DbTenantAwareKey<>(tenantIdKey, idAndVersionKey, PlacementType.PREFIX);
     processByIdAndVersionColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.PROCESS_CACHE_BY_ID_AND_VERSION,
             transactionContext,
-            idAndVersionKey,
+            tenantAwareProcessIdAndVersionKey,
             persistedProcess);
 
-    fkProcessId =
+    tenantAwareProcessId = new DbTenantAwareKey<>(tenantIdKey, processId, PlacementType.PREFIX);
+    fkTenantAwareProcessId =
         new DbForeignKey<>(
-            processId, ZbColumnFamilies.PROCESS_CACHE_BY_ID_AND_VERSION, MatchType.Prefix);
+            tenantAwareProcessId,
+            ZbColumnFamilies.PROCESS_CACHE_BY_ID_AND_VERSION,
+            MatchType.Prefix);
     digestByIdColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.PROCESS_CACHE_DIGEST_BY_ID, transactionContext, fkProcessId, digest);
+            ZbColumnFamilies.PROCESS_CACHE_DIGEST_BY_ID,
+            transactionContext,
+            fkTenantAwareProcessId,
+            digest);
 
-    processesByKey = new Long2ObjectHashMap<>();
+    processByTenantAndKeyCache = new HashMap<>();
 
     versionManager = new ProcessVersionManager(DEFAULT_VERSION_VALUE, zeebeDb, transactionContext);
   }
@@ -120,73 +137,82 @@ public final class DbProcessState implements MutableProcessState {
   }
 
   @Override
-  public void putLatestVersionDigest(
-      final DirectBuffer processIdBuffer, final DirectBuffer digest) {
-    processId.wrapBuffer(processIdBuffer);
-    this.digest.set(digest);
+  public void putLatestVersionDigest(final ProcessRecord processRecord) {
+    tenantIdKey.wrapString(processRecord.getTenantId());
+    processId.wrapBuffer(processRecord.getBpmnProcessIdBuffer());
+    digest.set(processRecord.getChecksumBuffer());
 
-    digestByIdColumnFamily.upsert(fkProcessId, this.digest);
+    digestByIdColumnFamily.upsert(fkTenantAwareProcessId, digest);
   }
 
   @Override
   public void putProcess(final long key, final ProcessRecord processRecord) {
     persistProcess(key, processRecord);
     updateLatestVersion(processRecord);
-    putLatestVersionDigest(
-        processRecord.getBpmnProcessIdBuffer(), processRecord.getChecksumBuffer());
+    putLatestVersionDigest(processRecord);
   }
 
   @Override
   public void updateProcessState(
-      final long processDefinitionKey, final PersistedProcessState state) {
-    this.processDefinitionKey.wrapLong(processDefinitionKey);
-    final var process = processColumnFamily.get(this.processDefinitionKey);
+      final ProcessRecord processRecord, final PersistedProcessState state) {
+    tenantIdKey.wrapString(processRecord.getTenantId());
+    processDefinitionKey.wrapLong(processRecord.getProcessDefinitionKey());
+
+    final var process = processColumnFamily.get(tenantAwareProcessDefinitionKey);
     process.setState(state);
-    processColumnFamily.update(this.processDefinitionKey, process);
+    processColumnFamily.update(tenantAwareProcessDefinitionKey, process);
     updateInMemoryState(process);
   }
 
   @Override
   public void deleteProcess(final ProcessRecord processRecord) {
+    tenantIdKey.wrapString(processRecord.getTenantId());
     processDefinitionKey.wrapLong(processRecord.getProcessDefinitionKey());
     processId.wrapString(processRecord.getBpmnProcessId());
     processVersion.wrapLong(processRecord.getVersion());
 
-    processColumnFamily.deleteExisting(processDefinitionKey);
-    processByIdAndVersionColumnFamily.deleteExisting(idAndVersionKey);
+    processColumnFamily.deleteExisting(tenantAwareProcessDefinitionKey);
+    processByIdAndVersionColumnFamily.deleteExisting(tenantAwareProcessIdAndVersionKey);
 
-    processesByProcessIdAndVersion.remove(processRecord.getBpmnProcessIdBuffer());
-    processesByKey.remove(processRecord.getProcessDefinitionKey());
+    processesByTenantAndProcessIdAndVersionCache
+        .getOrDefault(processRecord.getTenantId(), new HashMap<>())
+        .remove(processRecord.getBpmnProcessIdBuffer());
+    processByTenantAndKeyCache
+        .getOrDefault(processRecord.getTenantId(), new Long2ObjectHashMap<>())
+        .remove(processRecord.getProcessDefinitionKey());
 
     final long latestVersion =
-        versionManager.getLatestProcessVersion(processRecord.getBpmnProcessId());
+        versionManager.getLatestProcessVersion(
+            processRecord.getBpmnProcessId(), processRecord.getTenantId());
     if (latestVersion == processRecord.getVersion()) {
       // As we don't set the digest to the digest of the previous there is a chance it does not
       // exist. This happens when deleting the latest version two times in a row. To be safe we must
       // use deleteIfExists.
-      digestByIdColumnFamily.deleteIfExists(fkProcessId);
+      digestByIdColumnFamily.deleteIfExists(fkTenantAwareProcessId);
     }
 
     versionManager.deleteProcessVersion(
-        processRecord.getBpmnProcessId(), processRecord.getVersion());
+        processRecord.getBpmnProcessId(), processRecord.getVersion(), processRecord.getTenantId());
   }
 
   private void persistProcess(final long processDefinitionKey, final ProcessRecord processRecord) {
+    tenantIdKey.wrapString(processRecord.getTenantId());
     persistedProcess.wrap(processRecord, processDefinitionKey);
     this.processDefinitionKey.wrapLong(processDefinitionKey);
-    processColumnFamily.upsert(this.processDefinitionKey, persistedProcess);
+
+    processColumnFamily.upsert(tenantAwareProcessDefinitionKey, persistedProcess);
 
     processId.wrapBuffer(processRecord.getBpmnProcessIdBuffer());
     processVersion.wrapLong(processRecord.getVersion());
 
-    processByIdAndVersionColumnFamily.upsert(idAndVersionKey, persistedProcess);
+    processByIdAndVersionColumnFamily.upsert(tenantAwareProcessIdAndVersionKey, persistedProcess);
   }
 
   private void updateLatestVersion(final ProcessRecord processRecord) {
     processId.wrapBuffer(processRecord.getBpmnProcessIdBuffer());
     final var bpmnProcessId = processRecord.getBpmnProcessId();
     final var version = processRecord.getVersion();
-    versionManager.addProcessVersion(bpmnProcessId, version);
+    versionManager.addProcessVersion(bpmnProcessId, version, processRecord.getTenantId());
   }
 
   // is called on getters, if process is not in memory
@@ -232,31 +258,39 @@ public final class DbProcessState implements MutableProcessState {
 
   private void addProcessToInMemoryState(final DeployedProcess deployedProcess) {
     final DirectBuffer bpmnProcessId = deployedProcess.getBpmnProcessId();
-    processesByKey.put(deployedProcess.getKey(), deployedProcess);
+
+    final Long2ObjectHashMap<DeployedProcess> keyMap =
+        processByTenantAndKeyCache.computeIfAbsent(
+            deployedProcess.getTenantId(), key -> new Long2ObjectHashMap<>());
+    keyMap.put(deployedProcess.getKey(), deployedProcess);
 
     final Long2ObjectHashMap<DeployedProcess> versionMap =
-        processesByProcessIdAndVersion.computeIfAbsent(
-            bpmnProcessId, id -> new Long2ObjectHashMap<>());
+        processesByTenantAndProcessIdAndVersionCache
+            .computeIfAbsent(deployedProcess.getTenantId(), key -> new HashMap<>())
+            .computeIfAbsent(bpmnProcessId, key -> new Long2ObjectHashMap<>());
 
     final int version = deployedProcess.getVersion();
     versionMap.put(version, deployedProcess);
   }
 
   @Override
-  public DeployedProcess getLatestProcessVersionByProcessId(final DirectBuffer processIdBuffer) {
+  public DeployedProcess getLatestProcessVersionByProcessId(
+      final DirectBuffer processIdBuffer, final String tenantId) {
     final Long2ObjectHashMap<DeployedProcess> versionMap =
-        processesByProcessIdAndVersion.get(processIdBuffer);
+        processesByTenantAndProcessIdAndVersionCache
+            .getOrDefault(tenantId, new HashMap<>())
+            .get(processIdBuffer);
 
     processId.wrapBuffer(processIdBuffer);
-    final long latestVersion = versionManager.getLatestProcessVersion(processIdBuffer);
+    final long latestVersion = versionManager.getLatestProcessVersion(processIdBuffer, tenantId);
 
     DeployedProcess deployedProcess;
     if (versionMap == null) {
-      deployedProcess = lookupProcessByIdAndPersistedVersion(latestVersion);
+      deployedProcess = lookupProcessByIdAndPersistedVersion(latestVersion, tenantId);
     } else {
       deployedProcess = versionMap.get(latestVersion);
       if (deployedProcess == null) {
-        deployedProcess = lookupProcessByIdAndPersistedVersion(latestVersion);
+        deployedProcess = lookupProcessByIdAndPersistedVersion(latestVersion, tenantId);
       }
     }
     return deployedProcess;
@@ -264,76 +298,67 @@ public final class DbProcessState implements MutableProcessState {
 
   @Override
   public DeployedProcess getProcessByProcessIdAndVersion(
-      final DirectBuffer processId, final int version) {
+      final DirectBuffer processId, final int version, final String tenantId) {
     final Long2ObjectHashMap<DeployedProcess> versionMap =
-        processesByProcessIdAndVersion.get(processId);
+        processesByTenantAndProcessIdAndVersionCache
+            .getOrDefault(tenantId, new HashMap<>())
+            .get(processId);
 
     if (versionMap != null) {
       final DeployedProcess deployedProcess = versionMap.get(version);
-      return deployedProcess != null ? deployedProcess : lookupPersistenceState(processId, version);
+      return deployedProcess != null
+          ? deployedProcess
+          : lookupPersistenceState(processId, version, tenantId);
     } else {
-      return lookupPersistenceState(processId, version);
+      return lookupPersistenceState(processId, version, tenantId);
     }
   }
 
   @Override
-  public DeployedProcess getProcessByKey(final long key) {
-    final DeployedProcess deployedProcess = processesByKey.get(key);
+  public DeployedProcess getProcessByKeyAndTenant(final long key, final String tenantId) {
+    final DeployedProcess deployedProcess =
+        processByTenantAndKeyCache.getOrDefault(tenantId, new Long2ObjectHashMap<>()).get(key);
 
     if (deployedProcess != null) {
       return deployedProcess;
     } else {
-      return lookupPersistenceStateForProcessByKey(key);
+      return lookupPersistenceStateForProcessByKey(key, tenantId);
     }
   }
 
   @Override
-  public Collection<DeployedProcess> getProcesses() {
-    updateCompleteInMemoryState();
-    return processesByKey.values();
-  }
-
-  @Override
-  public Collection<DeployedProcess> getProcessesByBpmnProcessId(final DirectBuffer bpmnProcessId) {
-    updateCompleteInMemoryState();
-
-    final Long2ObjectHashMap<DeployedProcess> processesByVersions =
-        processesByProcessIdAndVersion.get(bpmnProcessId);
-
-    if (processesByVersions != null) {
-      return processesByVersions.values();
-    }
-    return Collections.emptyList();
-  }
-
-  @Override
-  public DirectBuffer getLatestVersionDigest(final DirectBuffer processIdBuffer) {
+  public DirectBuffer getLatestVersionDigest(
+      final DirectBuffer processIdBuffer, final String tenantId) {
+    tenantIdKey.wrapString(tenantId);
     processId.wrapBuffer(processIdBuffer);
-    final Digest latestDigest = digestByIdColumnFamily.get(fkProcessId);
+    final Digest latestDigest = digestByIdColumnFamily.get(fkTenantAwareProcessId);
     return latestDigest == null || digest.get().byteArray() == null ? null : latestDigest.get();
   }
 
   @Override
-  public int getLatestProcessVersion(final String bpmnProcessId) {
-    return (int) versionManager.getLatestProcessVersion(bpmnProcessId);
+  public int getLatestProcessVersion(final String bpmnProcessId, final String tenantId) {
+    return (int) versionManager.getLatestProcessVersion(bpmnProcessId, tenantId);
   }
 
   @Override
-  public int getNextProcessVersion(final String bpmnProcessId) {
-    return (int) versionManager.getHighestProcessVersion(bpmnProcessId) + 1;
+  public int getNextProcessVersion(final String bpmnProcessId, final String tenantId) {
+    return (int) versionManager.getHighestProcessVersion(bpmnProcessId, tenantId) + 1;
   }
 
   @Override
   public Optional<Integer> findProcessVersionBefore(
-      final String bpmnProcessId, final long version) {
-    return versionManager.findProcessVersionBefore(bpmnProcessId, version);
+      final String bpmnProcessId, final long version, final String tenantId) {
+    return versionManager.findProcessVersionBefore(bpmnProcessId, version, tenantId);
   }
 
   @Override
   public <T extends ExecutableFlowElement> T getFlowElement(
-      final long processDefinitionKey, final DirectBuffer elementId, final Class<T> elementType) {
+      final long processDefinitionKey,
+      final String tenantId,
+      final DirectBuffer elementId,
+      final Class<T> elementType) {
 
-    final var deployedProcess = getProcessByKey(processDefinitionKey);
+    final var deployedProcess = getProcessByKeyAndTenant(processDefinitionKey, tenantId);
     if (deployedProcess == null) {
       throw new IllegalStateException(
           String.format(
@@ -355,16 +380,18 @@ public final class DbProcessState implements MutableProcessState {
 
   @Override
   public void clearCache() {
-    processesByKey.clear();
-    processesByProcessIdAndVersion.clear();
+    processByTenantAndKeyCache.clear();
+    processesByTenantAndProcessIdAndVersionCache.clear();
     versionManager.clear();
   }
 
-  private DeployedProcess lookupProcessByIdAndPersistedVersion(final long latestVersion) {
+  private DeployedProcess lookupProcessByIdAndPersistedVersion(
+      final long latestVersion, final String tenantId) {
+    tenantIdKey.wrapString(tenantId);
     processVersion.wrapLong(latestVersion);
 
     final PersistedProcess processWithVersionAndId =
-        processByIdAndVersionColumnFamily.get(idAndVersionKey);
+        processByIdAndVersionColumnFamily.get(tenantAwareProcessIdAndVersionKey);
 
     if (processWithVersionAndId != null) {
       return updateInMemoryState(processWithVersionAndId);
@@ -373,18 +400,21 @@ public final class DbProcessState implements MutableProcessState {
   }
 
   private DeployedProcess lookupPersistenceState(
-      final DirectBuffer processIdBuffer, final int version) {
+      final DirectBuffer processIdBuffer, final int version, final String tenantId) {
+    tenantIdKey.wrapString(tenantId);
     processId.wrapBuffer(processIdBuffer);
     processVersion.wrapLong(version);
 
     final PersistedProcess processWithVersionAndId =
-        processByIdAndVersionColumnFamily.get(idAndVersionKey);
+        processByIdAndVersionColumnFamily.get(tenantAwareProcessIdAndVersionKey);
 
     if (processWithVersionAndId != null) {
       updateInMemoryState(processWithVersionAndId);
 
       final Long2ObjectHashMap<DeployedProcess> newVersionMap =
-          processesByProcessIdAndVersion.get(processIdBuffer);
+          processesByTenantAndProcessIdAndVersionCache
+              .getOrDefault(tenantId, new HashMap<>())
+              .get(processIdBuffer);
 
       if (newVersionMap != null) {
         return newVersionMap.get(version);
@@ -394,20 +424,21 @@ public final class DbProcessState implements MutableProcessState {
     return null;
   }
 
-  private DeployedProcess lookupPersistenceStateForProcessByKey(final long processDefinitionKey) {
+  private DeployedProcess lookupPersistenceStateForProcessByKey(
+      final long processDefinitionKey, final String tenantId) {
+    tenantIdKey.wrapString(tenantId);
     this.processDefinitionKey.wrapLong(processDefinitionKey);
 
-    final PersistedProcess processWithKey = processColumnFamily.get(this.processDefinitionKey);
+    final PersistedProcess processWithKey =
+        processColumnFamily.get(tenantAwareProcessDefinitionKey);
     if (processWithKey != null) {
       updateInMemoryState(processWithKey);
 
-      return processesByKey.get(processDefinitionKey);
+      return processByTenantAndKeyCache
+          .getOrDefault(tenantId, new Long2ObjectHashMap<>())
+          .get(processDefinitionKey);
     }
     // does not exist in persistence and in memory state
     return null;
-  }
-
-  private void updateCompleteInMemoryState() {
-    processColumnFamily.forEach(this::updateInMemoryState);
   }
 }

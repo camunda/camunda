@@ -40,7 +40,7 @@ public class ProcessDefinitionVersionMigrationTest {
       processIdKey = new DbString();
       processVersionInfoColumnFamily =
           zeebeDb.createColumnFamily(
-              ZbColumnFamilies.PROCESS_VERSION,
+              ZbColumnFamilies.DEPRECATED_PROCESS_VERSION,
               transactionContext,
               processIdKey,
               new ProcessVersionInfo());
@@ -89,7 +89,7 @@ public class ProcessDefinitionVersionMigrationTest {
       processIdKey = new DbString();
       nextValueColumnFamily =
           zeebeDb.createColumnFamily(
-              ZbColumnFamilies.PROCESS_VERSION,
+              ZbColumnFamilies.DEPRECATED_PROCESS_VERSION,
               transactionContext,
               processIdKey,
               new ProcessVersionInfo());

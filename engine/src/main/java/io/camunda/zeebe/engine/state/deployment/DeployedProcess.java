@@ -48,6 +48,10 @@ public final class DeployedProcess {
     return persistedProcess.getState();
   }
 
+  public String getTenantId() {
+    return persistedProcess.getTenantId();
+  }
+
   @Override
   public String toString() {
     return "DeployedProcess{"

@@ -33,7 +33,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.junit.Before;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -607,8 +606,6 @@ public final class CreateDeploymentTest {
   }
 
   @Test
-  @Ignore(
-      "Unignore in 13320 part 2. Currently 2nd deployment is marked as duplicate as the state is not supporting tenants yet.")
   public void shouldCreateProcessesForTenants() {
     // given
     final String tenant = "tenant";

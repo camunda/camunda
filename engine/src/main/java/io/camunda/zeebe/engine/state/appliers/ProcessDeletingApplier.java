@@ -24,7 +24,6 @@ public class ProcessDeletingApplier implements TypedEventApplier<ProcessIntent, 
 
   @Override
   public void applyState(final long key, final ProcessRecord value) {
-    processState.updateProcessState(
-        value.getProcessDefinitionKey(), PersistedProcessState.PENDING_DELETION);
+    processState.updateProcessState(value, PersistedProcessState.PENDING_DELETION);
   }
 }

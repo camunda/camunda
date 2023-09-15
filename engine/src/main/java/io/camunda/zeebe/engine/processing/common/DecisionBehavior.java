@@ -50,15 +50,18 @@ public class DecisionBehavior {
     this.metrics = metrics;
   }
 
-  public Either<Failure, PersistedDecision> findDecisionById(final String decisionId) {
+  public Either<Failure, PersistedDecision> findDecisionByIdAndTenant(
+      final String decisionId, final String tenantId) {
     return Either.ofOptional(
-            decisionState.findLatestDecisionById(BufferUtil.wrapString(decisionId)))
+            decisionState.findLatestDecisionByIdAndTenant(
+                BufferUtil.wrapString(decisionId), tenantId))
         .orElse(new Failure("no decision found for id '%s'".formatted(decisionId)))
         .mapLeft(failure -> formatDecisionLookupFailure(failure, decisionId));
   }
 
-  public Either<Failure, PersistedDecision> findDecisionByKey(final long decisionKey) {
-    return Either.ofOptional(decisionState.findDecisionByKey(decisionKey))
+  public Either<Failure, PersistedDecision> findDecisionByKeyAndTenant(
+      final long decisionKey, final String tenantId) {
+    return Either.ofOptional(decisionState.findDecisionByTenantAndKey(tenantId, decisionKey))
         .orElse(new Failure("no decision found for key '%s'".formatted(decisionKey)))
         .mapLeft(failure -> formatDecisionLookupFailure(failure, decisionKey));
   }
@@ -109,7 +112,8 @@ public class DecisionBehavior {
 
     final var decisionKeysByDecisionId =
         decisionState
-            .findDecisionsByDecisionRequirementsKey(decision.getDecisionRequirementsKey())
+            .findDecisionsByTenantAndDecisionRequirementsKey(
+                decision.getTenantId(), decision.getDecisionRequirementsKey())
             .stream()
             .collect(
                 Collectors.toMap(
@@ -154,7 +158,8 @@ public class DecisionBehavior {
   private Either<Failure, DeployedDrg> findDrgByDecision(final PersistedDecision decision) {
     final var key = decision.getDecisionRequirementsKey();
     final var id = decision.getDecisionRequirementsId();
-    return Either.ofOptional(decisionState.findDecisionRequirementsByKey(key))
+    return Either.ofOptional(
+            decisionState.findDecisionRequirementsByTenantAndKey(decision.getTenantId(), key))
         .orElse(new Failure("no drg found for id '%s'".formatted(bufferAsString(id))));
   }
 

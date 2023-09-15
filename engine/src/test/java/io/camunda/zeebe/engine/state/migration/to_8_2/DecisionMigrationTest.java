@@ -44,9 +44,9 @@ public class DecisionMigrationTest {
       final var mockProcessingState = mock(ProcessingState.class);
 
       // when
-      when(mockProcessingState.isEmpty(ZbColumnFamilies.DMN_DECISIONS)).thenReturn(true);
+      when(mockProcessingState.isEmpty(ZbColumnFamilies.DEPRECATED_DMN_DECISIONS)).thenReturn(true);
       when(mockProcessingState.isEmpty(
-              ZbColumnFamilies.DMN_DECISION_KEY_BY_DECISION_ID_AND_VERSION))
+              ZbColumnFamilies.DEPRECATED_DMN_DECISION_KEY_BY_DECISION_ID_AND_VERSION))
           .thenReturn(true);
       final var actual = sutMigration.needsToRun(mockProcessingState);
 
@@ -60,9 +60,10 @@ public class DecisionMigrationTest {
       final var mockProcessingState = mock(ProcessingState.class);
 
       // when
-      when(mockProcessingState.isEmpty(ZbColumnFamilies.DMN_DECISIONS)).thenReturn(false);
+      when(mockProcessingState.isEmpty(ZbColumnFamilies.DEPRECATED_DMN_DECISIONS))
+          .thenReturn(false);
       when(mockProcessingState.isEmpty(
-              ZbColumnFamilies.DMN_DECISION_KEY_BY_DECISION_ID_AND_VERSION))
+              ZbColumnFamilies.DEPRECATED_DMN_DECISION_KEY_BY_DECISION_ID_AND_VERSION))
           .thenReturn(false);
       final var actual = sutMigration.needsToRun(mockProcessingState);
 
@@ -76,9 +77,10 @@ public class DecisionMigrationTest {
       final var mockProcessingState = mock(ProcessingState.class);
 
       // when
-      when(mockProcessingState.isEmpty(ZbColumnFamilies.DMN_DECISIONS)).thenReturn(false);
+      when(mockProcessingState.isEmpty(ZbColumnFamilies.DEPRECATED_DMN_DECISIONS))
+          .thenReturn(false);
       when(mockProcessingState.isEmpty(
-              ZbColumnFamilies.DMN_DECISION_KEY_BY_DECISION_ID_AND_VERSION))
+              ZbColumnFamilies.DEPRECATED_DMN_DECISION_KEY_BY_DECISION_ID_AND_VERSION))
           .thenReturn(true);
       final var actual = sutMigration.needsToRun(mockProcessingState);
 
@@ -122,13 +124,13 @@ public class DecisionMigrationTest {
     public void setup() {
       legacyDecisionState = new LegacyDecisionState(zeebeDb, transactionContext);
       dbDecisionKey = new DbLong();
-      fkDecision = new DbForeignKey<>(dbDecisionKey, ZbColumnFamilies.DMN_DECISIONS);
+      fkDecision = new DbForeignKey<>(dbDecisionKey, ZbColumnFamilies.DEPRECATED_DMN_DECISIONS);
       dbDecisionId = new DbString();
       dbDecisionVersion = new DbInt();
       decisionIdAndVersion = new DbCompositeKey<>(dbDecisionId, dbDecisionVersion);
       decisionKeyByDecisionIdAndVersion =
           zeebeDb.createColumnFamily(
-              ZbColumnFamilies.DMN_DECISION_KEY_BY_DECISION_ID_AND_VERSION,
+              ZbColumnFamilies.DEPRECATED_DMN_DECISION_KEY_BY_DECISION_ID_AND_VERSION,
               transactionContext,
               decisionIdAndVersion,
               fkDecision);

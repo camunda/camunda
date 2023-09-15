@@ -129,13 +129,16 @@ public class ResourceDeletionProcessor
     final var value = command.getValue();
 
     final var processOptional =
-        Optional.ofNullable(processState.getProcessByKey(value.getResourceKey()));
+        Optional.ofNullable(
+            processState.getProcessByKeyAndTenant(value.getResourceKey(), value.getTenantId()));
     if (processOptional.isPresent()) {
       deleteProcess(processOptional.get());
       return;
     }
 
-    final var drgOptional = decisionState.findDecisionRequirementsByKey(value.getResourceKey());
+    final var drgOptional =
+        decisionState.findDecisionRequirementsByTenantAndKey(
+            value.getTenantId(), value.getResourceKey());
     if (drgOptional.isPresent()) {
       deleteDecisionRequirements(drgOptional.get());
       return;
@@ -146,7 +149,8 @@ public class ResourceDeletionProcessor
 
   private void deleteDecisionRequirements(final DeployedDrg drg) {
     decisionState
-        .findDecisionsByDecisionRequirementsKey(drg.getDecisionRequirementsKey())
+        .findDecisionsByTenantAndDecisionRequirementsKey(
+            drg.getTenantId(), drg.getDecisionRequirementsKey())
         .forEach(this::deleteDecision);
 
     final var drgRecord =
@@ -186,21 +190,26 @@ public class ResourceDeletionProcessor
             .setBpmnProcessId(processIdBuffer)
             .setVersion(process.getVersion())
             .setKey(process.getKey())
-            .setResourceName(process.getResourceName());
+            .setResourceName(process.getResourceName())
+            .setTenantId(process.getTenantId());
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), ProcessIntent.DELETING, processRecord);
 
     final String processId = processRecord.getBpmnProcessId();
-    final var latestVersion = processState.getLatestProcessVersion(processId);
+    final var latestVersion =
+        processState.getLatestProcessVersion(processId, processRecord.getTenantId());
 
     // If we are deleting the latest version we must unsubscribe the start events
     if (latestVersion == process.getVersion()) {
       unsubscribeStartEvents(process);
 
-      final var previousVersion = processState.findProcessVersionBefore(processId, latestVersion);
+      final var previousVersion =
+          processState.findProcessVersionBefore(
+              processId, latestVersion, processRecord.getTenantId());
       // If there is a previous version we must resubscribe to the previous version's start events.
       if (previousVersion.isPresent()) {
         final var previousProcess =
-            processState.getProcessByProcessIdAndVersion(processIdBuffer, previousVersion.get());
+            processState.getProcessByProcessIdAndVersion(
+                processIdBuffer, previousVersion.get(), process.getTenantId());
         resubscribeStartEvents(previousProcess);
       }
     }

@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.state.deployment;
 
+import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
+
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.BinaryProperty;
@@ -15,6 +17,7 @@ import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import org.agrona.DirectBuffer;
 
 public final class PersistedProcess extends UnpackedObject implements DbValue {
@@ -25,6 +28,8 @@ public final class PersistedProcess extends UnpackedObject implements DbValue {
   private final BinaryProperty resourceProp = new BinaryProperty("resource");
   private final EnumProperty<PersistedProcessState> stateProp =
       new EnumProperty<>("state", PersistedProcessState.class, PersistedProcessState.ACTIVE);
+  private final StringProperty tenantIdProp =
+      new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
   public PersistedProcess() {
     declareProperty(versionProp)
@@ -32,7 +37,8 @@ public final class PersistedProcess extends UnpackedObject implements DbValue {
         .declareProperty(bpmnProcessIdProp)
         .declareProperty(resourceNameProp)
         .declareProperty(resourceProp)
-        .declareProperty(stateProp);
+        .declareProperty(stateProp)
+        .declareProperty(tenantIdProp);
   }
 
   public void wrap(final ProcessRecord processRecord, final long processDefinitionKey) {
@@ -42,6 +48,7 @@ public final class PersistedProcess extends UnpackedObject implements DbValue {
 
     versionProp.setValue(processRecord.getVersion());
     keyProp.setValue(processDefinitionKey);
+    tenantIdProp.setValue(processRecord.getTenantId());
   }
 
   public int getVersion() {
@@ -71,6 +78,10 @@ public final class PersistedProcess extends UnpackedObject implements DbValue {
   public PersistedProcess setState(final PersistedProcessState state) {
     stateProp.setValue(state);
     return this;
+  }
+
+  public String getTenantId() {
+    return bufferAsString(tenantIdProp.getValue());
   }
 
   public enum PersistedProcessState {

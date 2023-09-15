@@ -81,6 +81,11 @@ public final class BpmnElementContextImpl implements BpmnElementContext {
   }
 
   @Override
+  public String getTenantId() {
+    return recordValue.getTenantId();
+  }
+
+  @Override
   public BpmnElementContext copy(
       final long elementInstanceKey,
       final ProcessInstanceRecord recordValue,
