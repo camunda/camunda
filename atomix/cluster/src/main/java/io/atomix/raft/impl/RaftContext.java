@@ -27,8 +27,8 @@ import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.MessagingException.NoRemoteHandler;
 import io.atomix.cluster.messaging.MessagingException.NoSuchMemberException;
 import io.atomix.raft.ElectionTimer;
+import io.atomix.raft.RaftApplicationEntryCommittedPositionListener;
 import io.atomix.raft.RaftCommitListener;
-import io.atomix.raft.RaftCommittedEntryListener;
 import io.atomix.raft.RaftError;
 import io.atomix.raft.RaftException.ProtocolException;
 import io.atomix.raft.RaftRoleChangeListener;
@@ -61,7 +61,6 @@ import io.atomix.raft.roles.PromotableRole;
 import io.atomix.raft.roles.RaftRole;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.StorageException;
-import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.storage.system.MetaStore;
 import io.atomix.raft.utils.StateUtil;
@@ -115,7 +114,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   private final Set<Consumer<State>> stateChangeListeners = new CopyOnWriteArraySet<>();
   private final Set<Consumer<RaftMember>> electionListeners = new CopyOnWriteArraySet<>();
   private final Set<RaftCommitListener> commitListeners = new CopyOnWriteArraySet<>();
-  private final Set<RaftCommittedEntryListener> committedEntryListeners =
+  private final Set<RaftApplicationEntryCommittedPositionListener> committedEntryListeners =
       new CopyOnWriteArraySet<>();
   private final Set<SnapshotReplicationListener> snapshotReplicationListeners =
       new CopyOnWriteArraySet<>();
@@ -433,21 +432,23 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
    * <p>Note that it will be called on the Raft thread, and as such should not perform any heavy
    * computation.
    *
-   * @param raftCommittedEntryListener the listener to add
+   * @param raftApplicationEntryCommittedPositionListener the listener to add
    */
   public void addCommittedEntryListener(
-      final RaftCommittedEntryListener raftCommittedEntryListener) {
-    committedEntryListeners.add(raftCommittedEntryListener);
+      final RaftApplicationEntryCommittedPositionListener
+          raftApplicationEntryCommittedPositionListener) {
+    committedEntryListeners.add(raftApplicationEntryCommittedPositionListener);
   }
 
   /**
    * Removes registered committedEntryListener
    *
-   * @param raftCommittedEntryListener the listener to remove
+   * @param raftApplicationEntryCommittedPositionListener the listener to remove
    */
   public void removeCommittedEntryListener(
-      final RaftCommittedEntryListener raftCommittedEntryListener) {
-    committedEntryListeners.remove(raftCommittedEntryListener);
+      final RaftApplicationEntryCommittedPositionListener
+          raftApplicationEntryCommittedPositionListener) {
+    committedEntryListeners.remove(raftApplicationEntryCommittedPositionListener);
   }
 
   /**
@@ -464,7 +465,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
    *
    * @param committedEntry the most recently committed entry
    */
-  public void notifyCommittedEntryListeners(final IndexedRaftLogEntry committedEntry) {
+  public void notifyApplicationEntryCommittedPositionListeners(final long committedEntry) {
     committedEntryListeners.forEach(listener -> listener.onCommit(committedEntry));
   }
 
