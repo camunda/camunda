@@ -296,6 +296,15 @@ public interface RaftServer {
   CompletableFuture<RaftServer> join();
 
   /**
+   * Requests to leave the replication group by sending a {@link
+   * io.atomix.raft.protocol.LeaveRequest} to an arbitrary member of the cluster, as provided by the
+   * {@link ClusterMembershipService}.
+   *
+   * @return A future to be completed successfully once the server has left the cluster.
+   */
+  CompletableFuture<RaftServer> leave();
+
+  /**
    * Promotes the server to leader if possible.
    *
    * @return a future to be completed once the server has been promoted

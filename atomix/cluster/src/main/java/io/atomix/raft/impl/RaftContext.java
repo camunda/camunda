@@ -46,6 +46,7 @@ import io.atomix.raft.metrics.RaftServiceMetrics;
 import io.atomix.raft.partition.RaftElectionConfig;
 import io.atomix.raft.partition.RaftPartitionConfig;
 import io.atomix.raft.protocol.JoinRequest;
+import io.atomix.raft.protocol.LeaveRequest;
 import io.atomix.raft.protocol.ProtocolVersionHandler;
 import io.atomix.raft.protocol.RaftResponse;
 import io.atomix.raft.protocol.RaftResponse.Status;
@@ -696,6 +697,35 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
                   },
                   threadContext);
         });
+  }
+
+  public CompletableFuture<Void> leave() {
+    final CompletableFuture<Void> future = new CompletableFuture<>();
+
+    threadContext.execute(
+        () -> {
+          final var leaving = cluster.getLocalMember();
+          final var receiver =
+              membershipService.getMembers().stream()
+                  .filter(member -> !member.id().equals(leaving.memberId()))
+                  .findAny()
+                  .orElseThrow()
+                  .id();
+          protocol
+              .leave(receiver, LeaveRequest.builder().withLeavingMember(leaving).build())
+              .whenCompleteAsync(
+                  (response, error) -> {
+                    if (error != null) {
+                      future.completeExceptionally(error);
+                    } else if (response.status() == Status.OK) {
+                      future.complete(null);
+                    } else {
+                      future.completeExceptionally(response.error().createException());
+                    }
+                  },
+                  threadContext);
+        });
+    return future;
   }
 
   /**
