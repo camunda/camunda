@@ -218,7 +218,8 @@ public final class RequestMapper {
         .setTimeout(grpcRequest.getTimeout())
         .setWorker(grpcRequest.getWorker())
         .setMaxJobsToActivate(grpcRequest.getMaxJobsToActivate())
-        .setVariables(grpcRequest.getFetchVariableList());
+        .setVariables(grpcRequest.getFetchVariableList())
+        .setTenantIds(grpcRequest.getTenantIdsList());
   }
 
   public static BrokerResolveIncidentRequest toResolveIncidentRequest(
@@ -249,10 +250,11 @@ public final class RequestMapper {
       final StreamActivatedJobsRequest request) {
     final JobActivationPropertiesImpl jobActivationProperties = new JobActivationPropertiesImpl();
     final DirectBuffer worker = wrapString(request.getWorker());
-    jobActivationProperties.setWorker(worker, 0, worker.capacity());
-    jobActivationProperties.setTimeout(request.getTimeout());
-    jobActivationProperties.setFetchVariables(
-        request.getFetchVariableList().stream().map(StringValue::new).toList());
+    jobActivationProperties
+        .setWorker(worker, 0, worker.capacity())
+        .setTimeout(request.getTimeout())
+        .setFetchVariables(request.getFetchVariableList().stream().map(StringValue::new).toList())
+        .setTenantIds(request.getTenantIdsList().stream().map(StringValue::new).toList());
 
     return jobActivationProperties;
   }
