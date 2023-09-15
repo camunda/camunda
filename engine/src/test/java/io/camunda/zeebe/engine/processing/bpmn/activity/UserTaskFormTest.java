@@ -57,7 +57,7 @@ public class UserTaskFormTest {
         .isEqualTo(
             tuple(
                 ErrorType.FORM_NOT_FOUND,
-                "Expected to find a form with id 'form-id', but no form with this id it is found, at least a form with this id should be available"));
+                "Expected to find a form with id 'form-id', but no form with this id is found, at least a form with this id should be available. To resolve the Incident please deploy a form with the same id"));
   }
 
   private FormRecord sampleFormRecord() {

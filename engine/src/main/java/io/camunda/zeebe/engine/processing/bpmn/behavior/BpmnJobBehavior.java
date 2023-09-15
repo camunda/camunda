@@ -117,7 +117,7 @@ public final class BpmnJobBehavior {
                     .map(p::candidateUsers))
         .flatMap(p -> evalDateExp(jobWorkerProps.getDueDate(), scopeKey).map(p::dueDate))
         .flatMap(p -> evalDateExp(jobWorkerProps.getFollowUpDate(), scopeKey).map(p::followUpDate))
-        .flatMap(p -> evalFormId(jobWorkerProps.getFormId(), scopeKey).map(p::formKey));
+        .flatMap(p -> evalFormIdExp(jobWorkerProps.getFormId(), scopeKey).map(p::formKey));
   }
 
   private Either<Failure, String> evalTypeExp(final Expression type, final long scopeKey) {
@@ -164,27 +164,32 @@ public final class BpmnJobBehavior {
         .map(optionalDate -> optionalDate.map(ZonedDateTime::toString).orElse(null));
   }
 
-  private Either<Failure, String> evalFormId(final Expression formIdExp, final long scopeKey) {
+  private Either<Failure, String> evalFormIdExp(final Expression formIdExp, final long scopeKey) {
     if (formIdExp == null) {
       return Either.right(null);
     }
-    final String formId =
-        expressionBehavior.evaluateStringExpression(formIdExp, scopeKey).getOrElse("");
-    final Optional<PersistedForm> latestFormById = formState.findLatestFormById(wrapString(formId));
-    return latestFormById
-        .<Either<Failure, String>>map(
-            persistedForm -> Either.right(String.valueOf(persistedForm.getFormKey())))
-        .orElseGet(
-            () ->
-                Either.left(
-                    new Failure(
-                        String.format(
-                            "Expected to find a form with id '%s',"
-                                + " but no form with this id it is found,"
-                                + " at least a form with this id should be available",
-                            formId),
-                        ErrorType.FORM_NOT_FOUND,
-                        scopeKey)));
+    return expressionBehavior
+        .evaluateStringExpression(formIdExp, scopeKey)
+        .flatMap(
+            formId -> {
+              final Optional<PersistedForm> latestFormById =
+                  formState.findLatestFormById(wrapString(formId));
+              return latestFormById
+                  .<Either<Failure, String>>map(
+                      persistedForm -> Either.right(String.valueOf(persistedForm.getFormKey())))
+                  .orElseGet(
+                      () ->
+                          Either.left(
+                              new Failure(
+                                  String.format(
+                                      "Expected to find a form with id '%s',"
+                                          + " but no form with this id is found,"
+                                          + " at least a form with this id should be available."
+                                          + " To resolve the Incident please deploy a form with the same id",
+                                      formId),
+                                  ErrorType.FORM_NOT_FOUND,
+                                  scopeKey)));
+            });
   }
 
   private void writeJobCreatedEvent(

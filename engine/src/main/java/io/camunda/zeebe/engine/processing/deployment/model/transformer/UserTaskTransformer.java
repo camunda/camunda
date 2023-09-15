@@ -154,7 +154,7 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
     final ZeebeFormDefinition formDefinition =
         element.getSingleExtensionElement(ZeebeFormDefinition.class);
 
-    if (formDefinition != null) {
+    if (formDefinition != null && formDefinition.getFormKey() != null) {
       taskHeaders.put(Protocol.USER_TASK_FORM_KEY_HEADER_NAME, formDefinition.getFormKey());
     }
   }
