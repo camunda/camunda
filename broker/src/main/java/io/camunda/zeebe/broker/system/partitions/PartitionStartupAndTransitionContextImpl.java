@@ -508,4 +508,16 @@ public class PartitionStartupAndTransitionContextImpl
   public ExporterRepository getExporterRepository() {
     return exporterRepository;
   }
+
+  @Override
+  public String toString() {
+    return "PartitionStartupAndTransitionContextImpl{"
+        + "partitionId="
+        + partitionId
+        + ", currentTerm="
+        + currentTerm
+        + ", currentRole="
+        + currentRole
+        + '}';
+  }
 }
