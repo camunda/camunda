@@ -17,6 +17,7 @@ import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedTransferQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
@@ -162,21 +163,28 @@ final class RetryStrategyTest {
     test.strategy.runWithRetry(
         () -> {
           // capture the result before to ensure we're looping
-          final boolean shouldRetry = !future.isDone();
+          final boolean isDone = future.isDone();
           barrier.offer(true);
-          return shouldRetry;
+          return isDone; // false - will cause to retry; true will complete the retry strategy
         });
     // toggle the retry strategy to stop retrying, letting workUntilDone finish
     secondActor.run(
         () -> {
           // wait until the test actor ran at least once, guaranteeing it's currently looping
           // and retrying
-          barrier.poll();
+          try {
+            // always set a timeout - if this hits we know the other job wasn't execute before.
+            barrier.poll(1, TimeUnit.SECONDS);
+          } catch (final InterruptedException e) {
+            throw new RuntimeException(e);
+          }
           future.complete(null);
         });
     // wrap workUntilDone in a timeout condition, as otherwise the test hangs forever there if the
     // actors are not yielding
-    Awaitility.await("workUntilDone should be finite if each actor yields the thread")
+    Awaitility.await(
+            "workUntilDone should be finite if each actor yields the thread, used retry strategy "
+                + test.strategy.getClass().getName())
         .atMost(Duration.ofSeconds(30))
         .untilAsserted(schedulerRule::workUntilDone);
 
