@@ -635,7 +635,9 @@ public final class ControllableRaftContexts {
     final AppendListener delegate;
 
     // Keep track of committed entries and its checksum.
-    final Map<Long, Long> indexToChecksumMap = new HashMap<>();
+    final Map<Long, Long> committedIndexToChecksumMap = new HashMap<>();
+
+    final Map<Long, Long> pendingWriteToBeCommitted = new HashMap<>();
 
     private String failMessage = "";
     private boolean dataloss = false;
@@ -646,6 +648,9 @@ public final class ControllableRaftContexts {
 
     @Override
     public void onWrite(final IndexedRaftLogEntry indexed) {
+      final long index = indexed.index();
+      final var entryChecksum = indexed.getPersistedRaftRecord().checksum();
+      pendingWriteToBeCommitted.put(index, entryChecksum);
       delegate.onWrite(indexed);
     }
 
@@ -655,23 +660,26 @@ public final class ControllableRaftContexts {
     }
 
     @Override
-    public void onCommit(final IndexedRaftLogEntry indexed) {
-      final var entryChecksum = indexed.getPersistedRaftRecord().checksum();
-      final long index = indexed.index();
-      if (indexToChecksumMap.containsKey(index) && indexToChecksumMap.get(index) != entryChecksum) {
+    public void onCommit(final long index) {
+      if (committedIndexToChecksumMap.containsKey(index)
+          && pendingWriteToBeCommitted.containsKey(index)
+          && !pendingWriteToBeCommitted.get(index).equals(committedIndexToChecksumMap.get(index))) {
         failMessage =
             "Committed entry at index %d checksum %d is being overwritten by entry with checksum %d"
-                .formatted(index, indexToChecksumMap.get(index), entryChecksum);
+                .formatted(
+                    index,
+                    committedIndexToChecksumMap.get(index),
+                    pendingWriteToBeCommitted.get(index));
         LOG.info(failMessage);
         dataloss = true;
       }
-      indexToChecksumMap.put(index, entryChecksum);
-      delegate.onCommit(indexed);
+      committedIndexToChecksumMap.put(index, pendingWriteToBeCommitted.remove(index));
+      delegate.onCommit(index);
     }
 
     @Override
-    public void onCommitError(final IndexedRaftLogEntry indexed, final Throwable error) {
-      delegate.onCommitError(indexed, error);
+    public void onCommitError(final long index, final Throwable error) {
+      delegate.onCommitError(index, error);
     }
 
     public String getFailMessage() {

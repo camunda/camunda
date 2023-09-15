@@ -78,7 +78,7 @@
     <version.protobuf>3.24.3</version.protobuf>
     <version.protobuf-common>2.24.0</version.protobuf-common>
     <version.micrometer>1.11.4</version.micrometer>
-    <version.rocksdbjni>8.3.2</version.rocksdbjni>
+    <version.rocksdbjni>8.5.3</version.rocksdbjni>
     <version.sbe>1.29.0</version.sbe>
     <version.scala>2.13.12</version.scala>
     <version.slf4j>2.0.9</version.slf4j>
@@ -103,7 +103,7 @@
     <version.jmock>2.12.0</version.jmock>
     <version.jmh>1.37</version.jmh>
     <version.json-smart>2.4.8</version.json-smart>
-    <version.byte-buddy>1.14.7</version.byte-buddy>
+    <version.byte-buddy>1.14.8</version.byte-buddy>
     <version.revapi>0.28.1</version.revapi>
     <version.commons-io>2.11.0</version.commons-io>
     <version.immutables>2.9.3</version.immutables>
@@ -119,8 +119,8 @@
     <version.jnr-posix>3.1.18</version.jnr-posix>
     <version.zpt>8.2.13</version.zpt>
     <version.feign>12.5</version.feign>
-    <version.google-sdk>26.22.0</version.google-sdk>
-    <version.awssdk>2.20.147</version.awssdk>
+    <version.google-sdk>26.23.0</version.google-sdk>
+    <version.awssdk>2.20.148</version.awssdk>
     <version.toxiproxy>2.1.7</version.toxiproxy>
     <version.validation-api>3.0.2</version.validation-api>
     <version.jackson-databind-nullable>0.2.6</version.jackson-databind-nullable>

@@ -323,12 +323,12 @@ final class MemberJoinTest {
     }
 
     @Override
-    public void onCommit(final IndexedRaftLogEntry indexed) {
-      commit.complete(indexed.index());
+    public void onCommit(final long index) {
+      commit.complete(index);
     }
 
     @Override
-    public void onCommitError(final IndexedRaftLogEntry indexed, final Throwable error) {
+    public void onCommitError(final long index, final Throwable error) {
       commit.completeExceptionally(error);
     }
   }

@@ -58,4 +58,29 @@ public final class JMHAssert extends AbstractAssert<JMHAssert, RunResult> {
 
     return myself;
   }
+
+  /**
+   * Asserts that the result of this benchmark is at least the expected reference score.
+   *
+   * @param referenceScore the expected reference score
+   * @param maxDeviation the maximum allowed deviation used to compute a real minimum score
+   * @return itself for chaining
+   */
+  @SuppressWarnings("UnusedReturnValue")
+  public JMHAssert isAtLeast(final double referenceScore, final double maxDeviation) {
+    final double score = actual.getPrimaryResult().getScore();
+    final double minimumScore = referenceScore - referenceScore * maxDeviation;
+
+    if (score < minimumScore) {
+      throwAssertionError(
+          new BasicErrorMessageFactory(
+              "Expected reference score to be at least %s (with %s max deviation, i.e. %s), but got %s",
+              DECIMAL_FORMAT.format(referenceScore),
+              DECIMAL_FORMAT.format(maxDeviation * 100) + "%",
+              DECIMAL_FORMAT.format(minimumScore),
+              DECIMAL_FORMAT.format(score)));
+    }
+
+    return myself;
+  }
 }
