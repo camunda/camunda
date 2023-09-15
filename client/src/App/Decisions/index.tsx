@@ -20,18 +20,16 @@ type LocationType = Omit<Location, 'state'> & {
 };
 
 const Decisions: React.FC = () => {
-  useEffect(() => {
-    document.title = PAGE_TITLE.DECISION_INSTANCES;
-    groupedDecisionsStore.fetchDecisions();
-
-    return groupedDecisionsStore.reset;
-  }, []);
-
   const location = useLocation() as LocationType;
 
   useEffect(() => {
+    document.title = PAGE_TITLE.DECISION_INSTANCES;
+    return groupedDecisionsStore.reset;
+  }, []);
+
+  useEffect(() => {
     if (
-      groupedDecisionsStore.state.status !== 'initial' &&
+      groupedDecisionsStore.state.status === 'initial' ||
       location.state?.refreshContent
     ) {
       groupedDecisionsStore.fetchDecisions();
