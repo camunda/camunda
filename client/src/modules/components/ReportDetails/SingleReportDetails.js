@@ -9,8 +9,8 @@ import React, {useState, useEffect} from 'react';
 import classnames from 'classnames';
 import {withRouter} from 'react-router-dom';
 import deepEqual from 'fast-deep-equal';
+import {Button} from '@carbon/react';
 
-import {Button} from 'components';
 import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
 import {formatters, reportConfig} from 'services';
@@ -112,7 +112,12 @@ export function SingleReportDetails({report, showReportName, mightFail, location
                     </div>
                   )}
                   {!isShared && (
-                    <Button link className="modalButton" onClick={() => setShowDiagram(definition)}>
+                    <Button
+                      size="sm"
+                      kind="tertiary"
+                      className="modalButton"
+                      onClick={() => setShowDiagram(definition)}
+                    >
                       {t('common.entity.viewModel.' + report.reportType)}
                     </Button>
                   )}
@@ -134,8 +139,9 @@ export function SingleReportDetails({report, showReportName, mightFail, location
             </h4>
             {!isShared && (
               <Button
+                size="sm"
+                kind="tertiary"
                 className="rawDataButton modalButton"
-                link
                 onClick={() => setShowRawData(true)}
               >
                 {t('common.entity.viewRawData')}

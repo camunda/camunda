@@ -6,10 +6,10 @@
  */
 
 import React, {runAllEffects} from 'react';
+import {Button} from '@carbon/react';
 import {shallow} from 'enzyme';
 import update from 'immutability-helper';
 
-import {Button} from 'components';
 import {getOptimizeProfile} from 'config';
 
 import RawDataModal from './RawDataModal';
