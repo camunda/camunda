@@ -197,4 +197,20 @@ public class MultiTenancyEnabledTest extends GatewayTest {
     assertThatRejectsUnauthorizedRequest(
         () -> client.createProcessInstance(request), "CreateProcessInstance");
   }
+
+  @Test
+  public void createProcessInstanceResponseHasTenantId() {
+    // given
+    when(gateway.getIdentityMock().tenants().forToken(anyString()))
+        .thenReturn(List.of(new Tenant("tenant-a", "A"), new Tenant("tenant-b", "B")));
+
+    // when
+    final CreateProcessInstanceResponse response =
+        client.createProcessInstance(
+            CreateProcessInstanceRequest.newBuilder().setTenantId("tenant-b").build());
+    assertThat(response).isNotNull();
+
+    // then
+    assertThat(response.getTenantId()).isEqualTo("tenant-b");
+  }
 }
