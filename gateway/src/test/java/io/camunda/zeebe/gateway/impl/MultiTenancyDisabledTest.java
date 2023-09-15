@@ -11,16 +11,26 @@ import static io.camunda.zeebe.gateway.api.util.GatewayAssertions.statusRuntimeE
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assumptions.assumeThat;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.when;
 
+import com.google.protobuf.ByteString;
+import io.camunda.identity.sdk.tenants.dto.Tenant;
 import io.camunda.zeebe.auth.impl.Authorization;
 import io.camunda.zeebe.gateway.api.deployment.DeployResourceStub;
 import io.camunda.zeebe.gateway.api.process.CreateProcessInstanceStub;
 import io.camunda.zeebe.gateway.api.util.GatewayTest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerExecuteCommand;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DecisionMetadata;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DecisionRequirementsMetadata;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceRequest.Builder;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ProcessMetadata;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.grpc.Status;
+import java.util.List;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.Before;
 import org.junit.Test;
@@ -81,6 +91,41 @@ public class MultiTenancyDisabledTest extends GatewayTest {
 
     // when/then
     assertThatRejectsRequest(() -> client.deployResource(request), "DeployResource");
+  }
+
+  @Test
+  public void deployResourceResponseHasTenantId() {
+    // given
+    when(gateway.getIdentityMock().tenants().forToken(anyString()))
+        .thenReturn(List.of(new Tenant("tenant-a", "A"), new Tenant("tenant-b", "B")));
+
+    // when
+    final Builder requestBuilder = DeployResourceRequest.newBuilder();
+    requestBuilder
+        .addResourcesBuilder()
+        .setName("testProcess.bpmn")
+        .setContent(ByteString.copyFromUtf8("<xml/>"));
+    requestBuilder
+        .addResourcesBuilder()
+        .setName("testDecision.dmn")
+        .setContent(ByteString.copyFromUtf8("test"));
+    final DeployResourceResponse response = client.deployResource(requestBuilder.build());
+    assertThat(response).isNotNull();
+
+    // then
+    assertThat(response.getTenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+
+    assumeThat(response.getDeploymentsCount())
+        .describedAs("Any metadata of the deployed resources should also contain the tenant id")
+        .isEqualTo(3);
+    final ProcessMetadata process = response.getDeployments(0).getProcess();
+    assertThat(process.getTenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+
+    final DecisionMetadata decision = response.getDeployments(1).getDecision();
+    assertThat(decision.getTenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+
+    final DecisionRequirementsMetadata drg = response.getDeployments(2).getDecisionRequirements();
+    assertThat(drg.getTenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   }
 
   @Test
