@@ -28,6 +28,10 @@ public interface PartitionContext {
 
   RaftPartition getRaftPartition();
 
+  void notifyListenersOfBecameRaftLeader(final long newTerm);
+
+  void notifyListenersOfBecameRaftFollower(final long newTerm);
+
   @Deprecated // will be moved to transition logic and happen automatically
   List<ActorFuture<Void>> notifyListenersOfBecomingLeader(final long newTerm);
 

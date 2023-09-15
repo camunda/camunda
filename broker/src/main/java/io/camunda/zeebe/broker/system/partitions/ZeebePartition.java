@@ -235,6 +235,7 @@ public final class ZeebePartition extends Actor
 
   private ActorFuture<Void> leaderTransition(final long newTerm) {
     final var latencyTimer = roleMetrics.startLeaderTransitionLatencyTimer();
+    context.notifyListenersOfBecameRaftLeader(newTerm);
     final var leaderTransitionFuture = transition.toLeader(newTerm);
     leaderTransitionFuture.onComplete(
         (success, error) -> {
@@ -259,6 +260,7 @@ public final class ZeebePartition extends Actor
   }
 
   private ActorFuture<Void> followerTransition(final long newTerm) {
+    context.notifyListenersOfBecameRaftFollower(newTerm);
     final var followerTransitionFuture = transition.toFollower(newTerm);
     followerTransitionFuture.onComplete(
         (success, error) -> {
