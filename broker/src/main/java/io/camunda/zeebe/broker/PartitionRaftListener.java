@@ -9,9 +9,7 @@ package io.camunda.zeebe.broker;
 
 /**
  * Can be implemented and used to react on partition role changes, like on Leader on Actor should be
- * started and on Follower one should be removed. If this listener performs actions that are
- * critical to the progress of a partition, it is expected to complete the future exceptionally on a
- * failure. Otherwise the future should complete normally.
+ * started and on Follower one should be removed.
  */
 public interface PartitionRaftListener {
   /**
