@@ -18,8 +18,7 @@ import io.camunda.zeebe.auth.impl.Authorization;
 import io.camunda.zeebe.gateway.api.deployment.DeployResourceStub;
 import io.camunda.zeebe.gateway.api.process.CreateProcessInstanceStub;
 import io.camunda.zeebe.gateway.api.util.GatewayTest;
-import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceRequest;
-import io.camunda.zeebe.gateway.impl.broker.request.BrokerDeployResourceRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerExecuteCommand;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceRequest;
@@ -41,6 +40,14 @@ public class MultiTenancyEnabledTest extends GatewayTest {
     new CreateProcessInstanceStub().registerWith(brokerClient);
   }
 
+  private void assertThatTenantIdsSet(final String... authorizedTenants) {
+    final var brokerRequest = brokerClient.getSingleBrokerRequest();
+    assertThat(((BrokerExecuteCommand<?>) brokerRequest).getAuthorization().toDecodedMap())
+        .hasEntrySatisfying(
+            Authorization.AUTHORIZED_TENANTS,
+            v -> assertThat(v).asList().contains(authorizedTenants));
+  }
+
   @Test
   public void deployResourceRequestShouldContainAuthorizedTenants() {
     // given
@@ -53,11 +60,7 @@ public class MultiTenancyEnabledTest extends GatewayTest {
     assertThat(response).isNotNull();
 
     // then
-    final BrokerDeployResourceRequest brokerRequest = brokerClient.getSingleBrokerRequest();
-    assertThat(brokerRequest.getAuthorization().toDecodedMap())
-        .hasEntrySatisfying(
-            Authorization.AUTHORIZED_TENANTS,
-            v -> assertThat(v).asList().contains("tenant-a", "tenant-b"));
+    assertThatTenantIdsSet("tenant-a", "tenant-b");
   }
 
   @Test
@@ -104,11 +107,7 @@ public class MultiTenancyEnabledTest extends GatewayTest {
     assertThat(response).isNotNull();
 
     // then
-    final BrokerCreateProcessInstanceRequest brokerRequest = brokerClient.getSingleBrokerRequest();
-    assertThat(brokerRequest.getAuthorization().toDecodedMap())
-        .hasEntrySatisfying(
-            Authorization.AUTHORIZED_TENANTS,
-            v -> assertThat(v).asList().contains("tenant-a", "tenant-b"));
+    assertThatTenantIdsSet("tenant-a", "tenant-b");
   }
 
   @Test
