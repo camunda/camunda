@@ -7,16 +7,13 @@
 
 import React, {useEffect, useState} from 'react';
 import {Link, Redirect, useLocation} from 'react-router-dom';
-import {Button} from '@carbon/react';
-import {RowCollapse, RowExpand} from '@carbon/icons-react';
 import classnames from 'classnames';
+import {Button, Tooltip} from '@carbon/react';
+import {Download, Edit, RowCollapse, RowExpand, Share, TrashCan} from '@carbon/icons-react';
 
 import {
-  Button as LegacyButton,
   ShareEntity,
   ReportRenderer,
-  Popover,
-  Icon,
   Deleter,
   EntityName,
   InstanceCount,
@@ -25,6 +22,7 @@ import {
   AlertsDropdown,
   EntityDescription,
   InstanceViewTable,
+  Popover,
 } from 'components';
 import {isSharingEnabled, getOptimizeProfile} from 'config';
 import {formatters, checkDeleteConflict} from 'services';
@@ -67,11 +65,12 @@ export function ReportView({report, error, user, loadReport}) {
   };
 
   const {id, name, combined, description, currentUserRole, data} = report;
-  const isInstantPreviewReport = data?.instantPreviewReport;
 
   if (redirect) {
     return <Redirect to={redirect} />;
   }
+
+  const isInstantPreview = data?.instantPreviewReport;
 
   return (
     <div className="ReportView Report">
@@ -82,55 +81,66 @@ export function ReportView({report, error, user, loadReport}) {
             {description && <EntityDescription description={description} />}
           </div>
           <div className="tools">
-            {!isInstantPreviewReport && currentUserRole === 'editor' && (
+            {!isInstantPreview && (
               <>
-                <Link className="tool-button edit-button" to="edit">
-                  <LegacyButton main tabIndex="-1">
-                    <Icon type="edit" />
-                    {t('common.edit')}
-                  </LegacyButton>
-                </Link>
-                <LegacyButton
-                  main
-                  className="tool-button delete-button"
-                  onClick={() => setDeletting({...report, entityType: 'report'})}
+                {currentUserRole === 'editor' && (
+                  <Tooltip label={t('common.edit')} className="cds--icon-tooltip">
+                    <Link
+                      className="edit-button cds--btn cds--btn--icon-only cds--btn--primary"
+                      to="edit"
+                    >
+                      <Edit />
+                    </Link>
+                  </Tooltip>
+                )}
+                <Popover
+                  className="share-button"
+                  align="bottom-right"
+                  trigger={
+                    <Popover.Button
+                      iconDescription={t('common.sharing.buttonTitle')}
+                      hasIconOnly
+                      renderIcon={Share}
+                    />
+                  }
+                  isTabTip
                 >
-                  <Icon type="delete" />
-                  {t('common.delete')}
-                </LegacyButton>
+                  {sharingEnabled ? (
+                    <ShareEntity
+                      type="report"
+                      resourceId={id}
+                      shareEntity={shareReport}
+                      revokeEntitySharing={revokeReportSharing}
+                      getSharedEntity={getSharedReport}
+                    />
+                  ) : (
+                    t('common.sharing.disabled')
+                  )}
+                </Popover>
+                {(optimizeProfile === 'cloud' || optimizeProfile === 'platform') &&
+                  data?.visualization === 'number' && <AlertsDropdown numberReport={report} />}
               </>
             )}
-            {!isInstantPreviewReport && (
-              <Popover
-                main
-                className="tool-button share-button"
-                icon="share"
-                title={t('common.sharing.buttonTitle')}
-                tooltip={!sharingEnabled ? t('common.sharing.disabled') : ''}
-                disabled={!sharingEnabled}
-                align="bottom-right"
-              >
-                <ShareEntity
-                  type="report"
-                  resourceId={id}
-                  shareEntity={shareReport}
-                  revokeEntitySharing={revokeReportSharing}
-                  getSharedEntity={getSharedReport}
-                />
-              </Popover>
-            )}
-            {(optimizeProfile === 'cloud' || optimizeProfile === 'platform') &&
-              data?.visualization === 'number' && <AlertsDropdown numberReport={report} />}
             {shouldShowCSVDownload() && (
               <DownloadButton
-                main
                 href={constructCSVDownloadLink()}
                 totalCount={calculateTotalEntries(report)}
                 user={user}
-              >
-                <Icon type="save" />
-                {t('report.downloadCSV')}
-              </DownloadButton>
+                kind="ghost"
+                iconDescription={t('report.downloadCSV')}
+                hasIconOnly
+                renderIcon={Download}
+              />
+            )}
+            {!isInstantPreview && currentUserRole === 'editor' && (
+              <Button
+                iconDescription={t('common.delete')}
+                kind="ghost"
+                onClick={() => setDeletting({...report, entityType: 'report'})}
+                className="delete-button"
+                renderIcon={TrashCan}
+                hasIconOnly
+              />
             )}
           </div>
         </div>

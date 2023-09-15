@@ -27,7 +27,7 @@ exports[`should render a table with correct data 1`] = `
             50
              
             instances
-            <ComponentErrorHandler
+            <Unknown
               fileName="department_Outliers.csv"
               totalCount={0}
             >
@@ -35,7 +35,7 @@ exports[`should render a table with correct data 1`] = `
                 type="save"
               />
               Instance IDs
-            </ComponentErrorHandler>
+            </Unknown>
           </div>,
           "1",
           "10",

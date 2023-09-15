@@ -950,7 +950,6 @@
     "contactManager": "Bitte wenden Sie sich an den Sammelmanager, um neue Alarme zu erstellen",
     "inactiveStatus": "Alarm inaktiv",
     "activateInfo": "Zum Aktivieren fügen Sie eine E-Mail oder ein Zielsystem hinzu",
-    "existingAlerts": "Vorhandene Alarme",
     "updated": "\"{name}\" aktualisiert.",
     "removed": "\"{name}\" entfernt."
   },
@@ -1086,6 +1085,7 @@
     "closeError": "Fehlerbenachrichtigung schließen",
     "units": "Einheiten",
     "link": "Link",
+    "details": "Details",
     "process": {
       "label": "Prozess",
       "label-plural": "Prozesse"

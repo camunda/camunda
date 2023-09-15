@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {shallow} from 'enzyme';
+import {mount, shallow} from 'enzyme';
 
 import {Button, Labeled, Tooltip} from 'components';
 
@@ -86,16 +86,30 @@ it('should display a label if specified', () => {
   expect(node.find(Labeled).prop('label')).toBe('testLabel');
 });
 
-it('should use the carbon based trigger if specified', () => {
-  const node = shallow(
-    <Popover title="a" useCarbonTrigger>
+it('should use the carbon listbox trigger if specified', () => {
+  const node = mount(
+    <Popover title="a" trigger={<Popover.ListBox label="test">test</Popover.ListBox>}>
       Child content
     </Popover>
   );
 
   expect(node.find('.popoverContent').exists()).toBe(false);
 
-  node.find('ListBox button').simulate('click');
+  node.find(Popover.ListBox).find('button').simulate('click');
+
+  expect(node.find('.popoverContent').exists()).toBe(true);
+});
+
+it('should use the carbon button trigger if specified', () => {
+  const node = mount(
+    <Popover title="a" trigger={<Popover.Button>test</Popover.Button>}>
+      Child content
+    </Popover>
+  );
+
+  expect(node.find('.popoverContent').exists()).toBe(false);
+
+  node.find(Popover.Button).simulate('click');
 
   expect(node.find('.popoverContent').exists()).toBe(true);
 });

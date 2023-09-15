@@ -423,7 +423,7 @@ test('version selection', async (t) => {
 
   // Creating
   await t.click(e.alertsDropdown);
-  await t.click(Common.option('New Alert'));
+  await t.click(Common.overflowMenuOption('Create New Alert'));
   await t.typeText(Alert.inputWithLabel('Alert Name'), 'Test alert', {replace: true});
   await t.click(Common.comboBox);
   await t.click(Common.carbonOption('Number Report'));
@@ -433,14 +433,14 @@ test('version selection', async (t) => {
 
   // editing
   await t.click(e.alertsDropdown);
-  await t.click(Common.option('Test alert'));
+  await t.click(Common.overflowMenuOption('Test alert'));
   await t.typeText(Alert.inputWithLabel('Alert Name'), 'another alert name', {replace: true});
   await t.click(Common.modalConfirmButton);
   await t.click(Common.notificationCloseButton);
 
   // deleting
   await t.click(e.alertsDropdown);
-  await t.click(Common.option('another alert name'));
+  await t.click(Common.overflowMenuOption('another alert name'));
   await t.click(e.alertDeleteButton);
   await t.click(Common.modalConfirmButton);
   await t.click(Common.notificationCloseButton);

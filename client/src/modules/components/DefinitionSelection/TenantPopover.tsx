@@ -23,6 +23,7 @@ interface TenantPopoverProps extends Omit<ComponentProps<typeof Popover>, 'onCha
   selected: Tenant['id'][];
   disabled?: boolean;
   onChange: (tenants: Tenant['id'][]) => void;
+  useCarbonTrigger?: boolean;
 }
 
 export default function TenantPopover({
@@ -31,6 +32,7 @@ export default function TenantPopover({
   selected,
   disabled,
   onChange,
+  useCarbonTrigger,
   ...props
 }: TenantPopoverProps) {
   const allSelected = tenants && tenants.length === selected.length;
@@ -52,6 +54,13 @@ export default function TenantPopover({
       className="TenantPopover"
       disabled={disabled || tenants?.length < 2 || !tenants}
       title={label || '-'}
+      trigger={
+        useCarbonTrigger ? (
+          <Popover.ListBox label={label} disabled={disabled || tenants?.length < 2 || !tenants}>
+            {label || '-'}
+          </Popover.ListBox>
+        ) : undefined
+      }
       {...props}
     >
       {loading && <Loading withOverlay />}

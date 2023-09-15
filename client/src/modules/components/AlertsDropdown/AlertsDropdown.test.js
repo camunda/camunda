@@ -7,6 +7,7 @@
 
 import React, {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
+import {OverflowMenuItem} from '@carbon/react';
 
 import {AlertModal, Dropdown, Deleter} from 'components';
 import {loadReports, loadAlerts, editAlert, addAlert, removeAlert, getCollection} from 'services';
@@ -72,24 +73,28 @@ jest.mock('services', () => {
     editAlert: jest.fn(),
     removeAlert: jest.fn(),
     getCollection: jest.fn().mockReturnValue('collectionId'),
+    isAlertCompatibleReport: jest.fn().mockReturnValue(true),
   };
 });
 
 jest.mock('config', () => ({getWebhooks: jest.fn().mockReturnValue(['webhook1', 'webhook2'])}));
 jest.mock('notifications', () => ({addNotification: jest.fn()}));
+jest.mock('hooks', () => ({
+  useErrorHandling: jest.fn(() => ({
+    mightFail: jest.fn((data, cb) => cb(data)),
+  })),
+}));
 
 beforeEach(() => {
   jest.clearAllMocks();
 });
 
 const props = {
-  mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
   location: {},
-  dashboardTiles: [],
 };
 
 it('should load existing alerts, reports and webhooks', () => {
-  shallow(<AlertsDropdown {...props} />);
+  shallow(<AlertsDropdown {...props} dashboardTiles={[]} />);
 
   runAllEffects();
 
@@ -110,11 +115,11 @@ it('should only show the dropdown inside a collection', () => {
 
 it('should create new alert', async () => {
   const testAlert = {id: 'alertID', name: 'newName'};
-  const node = shallow(<AlertsDropdown {...props} />);
+  const node = shallow(<AlertsDropdown {...props} numberReport={{id: '2'}} />);
 
   runAllEffects();
 
-  node.find(Dropdown.Option).at(0).simulate('click');
+  node.find(OverflowMenuItem).at(1).simulate('click');
 
   node.find(AlertModal).prop('onConfirm')(testAlert);
 
@@ -127,7 +132,7 @@ it('should edit an alert', async () => {
 
   runAllEffects();
 
-  node.find(Dropdown.Option).at(1).simulate('click');
+  node.find(OverflowMenuItem).at(0).simulate('click');
 
   const updatedAlert = {id: 'alert1', name: 'newName'};
   node.find(AlertModal).prop('onConfirm')(updatedAlert);
@@ -141,7 +146,7 @@ it('should pass only reports in scope', async () => {
 
   runAllEffects();
 
-  node.find(Dropdown.Option).at(1).simulate('click');
+  node.find(OverflowMenuItem).at(0).simulate('click');
 
   expect(node.find(AlertModal).prop('reports').length).toBe(1);
   expect(node.find(AlertModal).prop('reports')[0].id).toBe('2');
@@ -152,8 +157,8 @@ it('should show only alerts in scope', async () => {
 
   runAllEffects();
 
-  expect(node.find(Dropdown.Option).length).toBe(2);
-  expect(node.find(Dropdown.Option).at(1)).toIncludeText('second Alert');
+  expect(node.find(OverflowMenuItem).length).toBe(2);
+  expect(node.find(OverflowMenuItem).at(0).prop('itemText')).toBe('second Alert');
 });
 
 it('should pass number report id to alert modal', async () => {
@@ -163,7 +168,7 @@ it('should pass number report id to alert modal', async () => {
 
   runAllEffects();
 
-  node.find(Dropdown.Option).at(1).simulate('click');
+  node.find(OverflowMenuItem).at(0).simulate('click');
 
   expect(node.find(AlertModal).prop('initialReport')).toBe('2');
 });
@@ -173,7 +178,7 @@ it('should delete an alert', async () => {
 
   runAllEffects();
 
-  node.find(Dropdown.Option).at(1).simulate('click');
+  node.find(OverflowMenuItem).at(0).simulate('click');
   node.find(AlertModal).prop('onRemove')();
 
   expect(node.find(Deleter).prop('entity').id).toBe('alert1');

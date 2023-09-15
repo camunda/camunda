@@ -8,18 +8,12 @@
 import {useState, useEffect, ComponentPropsWithoutRef} from 'react';
 import {Button} from '@carbon/react';
 
-import {Button as LegacyButton, Modal} from 'components';
-import {
-  withErrorHandling,
-  withDocs,
-  withUser,
-  WithUserProps,
-  WithErrorHandlingProps,
-  WithDocsProps,
-} from 'HOC';
+import {Modal, Button as LegacyButton} from 'components';
+import {withDocs, WithDocsProps} from 'HOC';
 import {get} from 'request';
 import {showError} from 'notifications';
 import {getExportCsvLimit} from 'config';
+import {useErrorHandling, useUser} from 'hooks';
 
 import {t} from 'translation';
 
@@ -30,11 +24,7 @@ type RetrieverProps = {
   href?: never;
 };
 
-interface CommonProps
-  extends WithUserProps,
-    WithErrorHandlingProps,
-    WithDocsProps,
-    ComponentPropsWithoutRef<'button'> {
+interface CommonProps extends WithDocsProps, ComponentPropsWithoutRef<typeof Button> {
   totalCount: number;
 }
 
@@ -43,19 +33,15 @@ export type DownloadButtonProps = CommonProps & (LinkProps | RetrieverProps);
 export function DownloadButton({
   href,
   fileName,
-  mightFail,
-  error,
-  resetError,
   retriever,
   totalCount,
   docsLink,
-  user,
-  getUser,
-  refreshUser,
   ...props
 }: DownloadButtonProps) {
   const [exportLimit, setExportLimit] = useState(1000);
   const [modalOpen, setModalOpen] = useState(false);
+  const {user} = useUser();
+  const {mightFail} = useErrorHandling();
 
   useEffect(() => {
     (async () => {
@@ -96,9 +82,11 @@ export function DownloadButton({
     return null;
   }
 
+  const Trigger = 'kind' in props ? Button : LegacyButton;
+
   return (
     <>
-      <LegacyButton
+      <Trigger
         {...props}
         onClick={() => (totalCount > exportLimit ? setModalOpen(true) : triggerDownload())}
       />
@@ -131,4 +119,4 @@ async function getData(url: string) {
   return await response.blob();
 }
 
-export default withErrorHandling(withDocs(withUser(DownloadButton)));
+export default withDocs(DownloadButton);

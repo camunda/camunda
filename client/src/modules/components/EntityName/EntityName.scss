@@ -33,28 +33,18 @@
   .Popover {
     display: inline-block;
     vertical-align: top;
-    margin-top: 7px;
+    margin-top: 9px;
 
-    .buttonWrapper .Button {
+    .DetailsPopoverButton {
+      padding: 0;
+      border-radius: 50%;
       width: 20px;
       height: 20px;
+      min-height: 20px;
       margin-left: 3px;
 
-      &:hover {
-        background-color: var(--silver-darken-94);
-      }
-
-      &:active,
-      &.active {
-        background-color: var(--silver-darken-80);
-      }
-
-      .Icon {
-        margin: 2px;
-      }
-
-      .downIcon {
-        display: none;
+      svg {
+        margin: auto;
       }
     }
 

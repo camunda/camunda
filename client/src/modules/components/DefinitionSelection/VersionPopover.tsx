@@ -58,8 +58,14 @@ export default function VersionPopover({
       title={title}
       disabled={disabled || !versions}
       align="bottom-right"
-      useCarbonTrigger={useCarbonTrigger}
       label={label}
+      trigger={
+        useCarbonTrigger ? (
+          <Popover.ListBox label={label} disabled={disabled || !versions}>
+            {title}
+          </Popover.ListBox>
+        ) : undefined
+      }
     >
       {loading && <LoadingIndicator />}
       <Form compact>

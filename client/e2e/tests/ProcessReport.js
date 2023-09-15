@@ -1297,7 +1297,9 @@ test('add, edit and remove reports description', async (t) => {
   await t.expect(Common.addDescriptionButton.textContent).contains('Edit');
 
   const newDescription =
-    'This is a new description of the report. This time the description is very long and it will not fit in one line. It will display ellipsis and More button.';
+    'This is a new description of the report. This time the description is very long and it will not fit in one line. It will display ellipsis and More button.'.repeat(
+      2
+    );
   await u.addEditEntityDescription(t, newDescription);
 
   await t.expect(Common.descriptionField.textContent).contains(newDescription);

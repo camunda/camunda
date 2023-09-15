@@ -5,12 +5,23 @@
  * except in compliance with the proprietary license.
  */
 
-import {ReactNode, useCallback, useEffect, useLayoutEffect, useRef, useState} from 'react';
+import {
+  ComponentProps,
+  ReactNode,
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
 import {
   Popover as CarbonPopover,
   PopoverAlignment,
   PopoverContent,
   PopoverProps as CarbonPopoverProps,
+  Button,
 } from '@carbon/react';
 import ListBox from '@carbon/react/lib/components/ListBox';
 
@@ -36,14 +47,7 @@ const possibleAlignments: PopoverAlignment[] = [
   'right-top',
 ];
 
-interface PopoverProps extends Omit<CarbonPopoverProps<'div'>, 'title' | 'open' | 'align'> {
-  className?: string;
-  children: ReactNode;
-  floating?: boolean;
-  onOpen?: () => void;
-  onClose?: () => void;
-  autoOpen?: boolean;
-  align?: PopoverAlignment;
+interface LegacyTriggerProps {
   main?: boolean;
   icon?: string;
   title?: ReactNode;
@@ -51,8 +55,29 @@ interface PopoverProps extends Omit<CarbonPopoverProps<'div'>, 'title' | 'open' 
   disabled?: boolean;
   tooltip?: TooltipProps['content'];
   tooltipPosition?: TooltipProps['position'];
-  useCarbonTrigger?: boolean;
 }
+
+interface PopoverProps
+  extends Omit<CarbonPopoverProps<'div'>, 'title' | 'open' | 'align'>,
+    LegacyTriggerProps {
+  className?: string;
+  children: ReactNode;
+  floating?: boolean;
+  onOpen?: () => void;
+  onClose?: () => void;
+  autoOpen?: boolean;
+  align?: PopoverAlignment;
+  trigger?: ReactNode;
+}
+
+interface TriggerContextProps {
+  open: boolean;
+  setOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  buttonRef?: React.MutableRefObject<HTMLButtonElement | null>;
+  popoverId?: string;
+}
+
+const TriggerContext = createContext<TriggerContextProps>({open: false, setOpen: () => {}});
 
 export default function Popover({
   className,
@@ -68,7 +93,7 @@ export default function Popover({
   autoOpen = false,
   align,
   tooltipPosition,
-  useCarbonTrigger,
+  trigger,
   label,
   ...props
 }: PopoverProps): JSX.Element {
@@ -230,74 +255,121 @@ export default function Popover({
   const buttonId = getRandomId();
 
   return (
-    <CarbonPopover
-      className={classNames(className, 'Popover')}
-      {...props}
-      open={open}
-      ref={popoverRef}
-    >
-      <Tooltip content={tooltip} position={tooltipPosition}>
-        <div className="buttonWrapper">
-          {useCarbonTrigger ? (
-            <>
-              {label && (
-                <label htmlFor={buttonId} className="cds--label">
-                  {label}
-                </label>
-              )}
-              <ListBox isOpen={open} size="sm" disabled={disabled}>
-                <button
+    <TriggerContext.Provider value={{open, setOpen, buttonRef, popoverId}}>
+      <CarbonPopover
+        className={classNames(className, 'Popover')}
+        {...props}
+        open={open}
+        ref={popoverRef}
+      >
+        <Tooltip content={tooltip} position={tooltipPosition}>
+          <div className="buttonWrapper">
+            {trigger || (
+              <>
+                {label && <Labeled label={label} htmlFor={buttonId} />}
+                <LegacyButton
                   id={buttonId}
-                  type="button"
-                  ref={buttonRef}
-                  className="cds--list-box__field"
-                  disabled={disabled}
                   onClick={() => setOpen(!open)}
-                  aria-haspopup
-                  aria-expanded={open}
-                  aria-controls={open ? popoverId : undefined}
+                  active={!disabled && open}
+                  main={main}
+                  disabled={disabled}
+                  icon={!!icon && !title}
+                  ref={buttonRef}
                 >
-                  <span className="cds--list-box__label"> {title}</span>
-                  <ListBox.MenuIcon isOpen={open} />
-                </button>
-              </ListBox>
-            </>
-          ) : (
-            <>
-              {label && <Labeled label={label} htmlFor={buttonId} />}
-              <LegacyButton
-                id={buttonId}
-                onClick={() => setOpen(!open)}
-                active={!disabled && open}
-                main={main}
-                disabled={disabled}
-                icon={!!icon && !title}
-                ref={buttonRef}
-              >
-                {icon ? <Icon type={icon} /> : ''}
-                {title}
-                <Icon type="down" className="downIcon" />
-              </LegacyButton>
-            </>
-          )}
-        </div>
-      </Tooltip>
-      {open && (
-        <PopoverContent
-          id={popoverId}
-          className={classNames('popoverContent', {scrollable})}
-          ref={dialogRef}
-          style={popoverStyles}
-          onMouseDownCapture={() => {
-            isInsideClick.current = true;
-          }}
-        >
-          <div ref={contentRef}>{children}</div>
-        </PopoverContent>
-      )}
-    </CarbonPopover>
+                  {icon ? <Icon type={icon} /> : ''}
+                  {title}
+                  <Icon type="down" className="downIcon" />
+                </LegacyButton>
+              </>
+            )}
+          </div>
+        </Tooltip>
+        {open && (
+          <PopoverContent
+            id={popoverId}
+            className={classNames('popoverContent', {scrollable})}
+            ref={dialogRef}
+            style={popoverStyles}
+            onMouseDownCapture={() => {
+              isInsideClick.current = true;
+            }}
+          >
+            <div ref={contentRef}>{children}</div>
+          </PopoverContent>
+        )}
+      </CarbonPopover>
+    </TriggerContext.Provider>
   );
 }
+
+interface ListBoxTriggerProps {
+  label: ReactNode;
+  children: ReactNode;
+  disabled?: boolean;
+}
+
+Popover.ListBox = function ListBoxTrigger({label, children, disabled}: ListBoxTriggerProps) {
+  const {open, setOpen, buttonRef, popoverId} = useContext(TriggerContext);
+
+  const buttonId = getRandomId();
+
+  return (
+    <>
+      {label && (
+        <label htmlFor={buttonId} className="cds--label">
+          {label}
+        </label>
+      )}
+      <ListBox isOpen={open} size="sm" disabled={disabled}>
+        <button
+          id={buttonId}
+          type="button"
+          ref={buttonRef}
+          className="cds--list-box__field"
+          disabled={disabled}
+          onClick={() => setOpen(!open)}
+          aria-haspopup
+          aria-expanded={open}
+          aria-controls={open ? popoverId : undefined}
+        >
+          <span className="cds--list-box__label"> {children}</span>
+          <ListBox.MenuIcon isOpen={open} />
+        </button>
+      </ListBox>
+    </>
+  );
+};
+
+type PopoverButtonFixedProps =
+  | 'id'
+  | 'ref'
+  | 'onClick'
+  | 'aria-haspopup'
+  | 'aria-expanded'
+  | 'aria-controls';
+
+Popover.Button = function ButtonTrigger(
+  props: Omit<ComponentProps<typeof Button>, PopoverButtonFixedProps>
+) {
+  const {open, setOpen, buttonRef, popoverId} = useContext(TriggerContext);
+  const buttonId = getRandomId();
+
+  return (
+    <Button
+      kind="ghost"
+      {...props}
+      id={buttonId}
+      ref={buttonRef}
+      onClick={() => setOpen(!open)}
+      aria-haspopup
+      aria-expanded={open}
+      aria-controls={open ? popoverId : undefined}
+      className={classNames('ButtonTrigger', props.className, {
+        active: open,
+      })}
+    />
+  );
+};
 
 function getClassName(alignment: PopoverAlignment) {
   return 'cds--popover--' + alignment;

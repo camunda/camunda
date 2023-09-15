@@ -950,7 +950,6 @@
     "contactManager": "Please contact the collection manager to create new Alerts",
     "inactiveStatus": "Alert inactive",
     "activateInfo": "To active add email or target system",
-    "existingAlerts": "Existing alerts",
     "updated": "\"{name}\" updated.",
     "removed": "\"{name}\" removed."
   },
@@ -1086,6 +1085,7 @@
     "closeError": "Close error notification",
     "units": "Units",
     "link": "Link",
+    "details": "Details",
     "process": {
       "label": "Process",
       "label-plural": "Processes"

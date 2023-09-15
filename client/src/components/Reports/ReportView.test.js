@@ -11,7 +11,7 @@ import {useLocation} from 'react-router';
 
 import {Deleter, ReportRenderer, InstanceCount, DownloadButton, AlertsDropdown} from 'components';
 import {checkDeleteConflict} from 'services';
-import {getOptimizeProfile} from 'config';
+import {getOptimizeProfile, isSharingEnabled} from 'config';
 
 import {ReportView} from './ReportView';
 
@@ -73,13 +73,13 @@ it('should display the key properties of a report', () => {
 it('should provide a link to edit mode in view mode', () => {
   const node = shallow(<ReportView report={report} />);
 
-  expect(node.find('.edit-button')).toExist();
+  expect(node.find({to: 'edit'})).toExist();
 });
 
 it('should open a deletion modal on delete button click', async () => {
   const node = shallow(<ReportView report={report} />);
 
-  await node.find('.delete-button').prop('onClick')();
+  await node.find({iconDescription: 'Delete'}).prop('onClick')();
 
   expect(node.find(Deleter).prop('entity')).toBeTruthy();
 });
@@ -99,11 +99,23 @@ it('should contain a ReportRenderer with the report evaluation result', () => {
   expect(node.find(ReportRenderer)).toExist();
 });
 
-it('should render a sharing popover', async () => {
-  const node = await shallow(<ReportView report={report} />);
+it('should render sharing options', async () => {
+  const node = shallow(<ReportView report={report} />);
+
+  await runLastEffect();
   await node.update();
 
-  expect(node.find('.share-button')).toExist();
+  expect(node.find('ShareEntity')).toExist();
+});
+
+it('should hide Sharing options if sharing is disabled', async () => {
+  isSharingEnabled.mockReturnValueOnce(false);
+  const node = shallow(<ReportView report={report} />);
+
+  await runLastEffect();
+  await node.update();
+
+  expect(node.find('ShareEntity')).not.toExist();
 });
 
 it('should provide conflict check method to Deleter', () => {

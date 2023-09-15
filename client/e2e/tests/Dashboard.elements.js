@@ -47,7 +47,7 @@ export const templateOption = (text) =>
 export const reportTile = Selector('.OptimizeReportTile');
 export const customValueAddButton = Selector('.customValueAddButton');
 export const typeaheadInput = Selector('.Typeahead .Input');
-export const alertsDropdown = Selector('.AlertsDropdown .Button');
+export const alertsDropdown = Selector('.AlertsDropdown button');
 export const alertDeleteButton = Selector('.AlertModal .deleteButton');
 export const collectionLink = Selector('.NavItem a').withText('New Collection');
 export const dashboardsLink = Selector('.NavItem a').withText('Dashboards');

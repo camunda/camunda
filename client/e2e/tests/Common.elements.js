@@ -59,7 +59,7 @@ export const typeahead = Selector('.Typeahead');
 export const typeaheadOption = (text) => typeahead.find('.DropdownOption').withText(text);
 export const notification = Selector('.Notification');
 export const notificationCloseButton = notification.find('.close');
-export const shareButton = Selector('.share-button .Button');
+export const shareButton = Selector('.share-button .buttonWrapper button');
 export const shareSwitch = Selector('.ShareEntity .cds--toggle__switch');
 export const shareHeader = Selector('.Sharing .header');
 export const shareTitle = shareHeader.find('.name-container');
