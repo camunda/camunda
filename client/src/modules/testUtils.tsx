@@ -115,7 +115,7 @@ export const createInstance = (
     parentInstanceId: null,
     rootInstanceId: null,
     callHierarchy: [],
-    tenantId: '',
+    tenantId: '<default>',
     ...options,
   };
 };

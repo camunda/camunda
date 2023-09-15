@@ -21,40 +21,54 @@ import {tracking} from 'modules/tracking';
 import {InstanceHeader} from 'modules/components/InstanceHeader';
 import {Skeleton} from 'modules/components/InstanceHeader/Skeleton';
 import {notificationsStore} from 'modules/stores/notifications';
+import {authenticationStore} from 'modules/stores/authentication';
 
-const headerColumns = [
-  {
-    name: 'Process Name',
-    skeletonWidth: '94px',
-  },
-  {
-    name: 'Process Instance Key',
-    skeletonWidth: '136px',
-  },
-  {
-    name: 'Version',
-    skeletonWidth: '34px',
-  },
-  {
-    name: 'Start Date',
-    skeletonWidth: '142px',
-  },
-  {
-    name: 'End Date',
-    skeletonWidth: '142px',
-  },
-  {
-    name: 'Parent Process Instance Key',
-    skeletonWidth: '142px',
-  },
-  {
-    name: 'Called Process Instances',
-    skeletonWidth: '142px',
-  },
-];
+const getHeaderColumns = (isMultiTenancyEnabled: boolean = false) => {
+  return [
+    {
+      name: 'Process Name',
+      skeletonWidth: '94px',
+    },
+    {
+      name: 'Process Instance Key',
+      skeletonWidth: '136px',
+    },
+    {
+      name: 'Version',
+      skeletonWidth: '34px',
+    },
+    ...(isMultiTenancyEnabled
+      ? [
+          {
+            name: 'Tenant',
+            skeletonWidth: '34px',
+          },
+        ]
+      : []),
+
+    {
+      name: 'Start Date',
+      skeletonWidth: '142px',
+    },
+    {
+      name: 'End Date',
+      skeletonWidth: '142px',
+    },
+    {
+      name: 'Parent Process Instance Key',
+      skeletonWidth: '142px',
+    },
+    {
+      name: 'Called Process Instances',
+      skeletonWidth: '142px',
+    },
+  ];
+};
 
 const ProcessInstanceHeader: React.FC = observer(() => {
   const {processInstance} = processInstanceDetailsStore.state;
+  const isMultiTenancyEnabled = window.clientConfig?.multiTenancyEnabled;
+  const headerColumns = getHeaderColumns(isMultiTenancyEnabled);
 
   if (
     processInstance === null ||
@@ -66,12 +80,20 @@ const ProcessInstanceHeader: React.FC = observer(() => {
   const {
     id,
     processVersion,
+    tenantId,
     startDate,
     endDate,
     parentInstanceId,
     state,
     bpmnProcessId,
   } = processInstance;
+
+  const tenantName = authenticationStore.tenantsById?.[tenantId] ?? tenantId;
+  const versionColumnTitle = `View process "${getProcessName(
+    processInstance,
+  )} version ${processVersion}" instances${
+    isMultiTenancyEnabled ? ` - ${tenantName}` : ''
+  }`;
 
   return (
     <InstanceHeader
@@ -92,10 +114,14 @@ const ProcessInstanceHeader: React.FC = observer(() => {
                 process: bpmnProcessId,
                 active: true,
                 incidents: true,
+                ...(isMultiTenancyEnabled
+                  ? {
+                      tenant: tenantId,
+                    }
+                  : {}),
               })}
-              title={`View process ${getProcessName(
-                processInstance,
-              )} version ${processVersion} instances`}
+              title={versionColumnTitle}
+              aria-label={versionColumnTitle}
               onClick={() => {
                 tracking.track({
                   eventName: 'navigation',
@@ -107,6 +133,14 @@ const ProcessInstanceHeader: React.FC = observer(() => {
             </Link>
           ),
         },
+        ...(isMultiTenancyEnabled
+          ? [
+              {
+                title: tenantName,
+                content: tenantName,
+              },
+            ]
+          : []),
         {
           title: formatDate(startDate) ?? '--',
           content: formatDate(startDate),

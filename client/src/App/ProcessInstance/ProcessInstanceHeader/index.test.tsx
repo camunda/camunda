@@ -122,9 +122,11 @@ describe('InstanceHeader', () => {
     ).toBeInTheDocument();
     expect(
       screen.getByRole('link', {
-        description: `View process ${getProcessName(
+        description: `View process "${getProcessName(
           mockInstanceWithActiveOperation,
-        )} version ${mockInstanceWithActiveOperation.processVersion} instances`,
+        )} version ${
+          mockInstanceWithActiveOperation.processVersion
+        }" instances`,
       }),
     ).toHaveTextContent(
       mockInstanceWithActiveOperation.processVersion.toString(),

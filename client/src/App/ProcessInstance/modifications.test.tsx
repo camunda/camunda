@@ -420,7 +420,7 @@ describe('ProcessInstance - modification mode', () => {
 
     await user.click(
       screen.getByRole('link', {
-        description: /View process someProcessName version 1 instances/,
+        description: /View process "someProcessName version 1" instances/,
       }),
     );
 
@@ -439,7 +439,7 @@ describe('ProcessInstance - modification mode', () => {
 
     await user.click(
       screen.getByRole('link', {
-        description: /View process someProcessName version 1 instances/,
+        description: /View process "someProcessName version 1" instances/,
       }),
     );
 
@@ -484,7 +484,7 @@ describe('ProcessInstance - modification mode', () => {
 
     await user.click(
       screen.getByRole('link', {
-        description: /View process someProcessName version 1 instances/,
+        description: /View process "someProcessName version 1" instances/,
       }),
     );
 
@@ -503,7 +503,7 @@ describe('ProcessInstance - modification mode', () => {
 
     await user.click(
       screen.getByRole('link', {
-        description: /View process someProcessName version 1 instances/,
+        description: /View process "someProcessName version 1" instances/,
       }),
     );
 
