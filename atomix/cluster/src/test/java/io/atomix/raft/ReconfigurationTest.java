@@ -127,8 +127,8 @@ final class ReconfigurationTest {
             .withStorage(storage)
             .withPartitionConfig(
                 new RaftPartitionConfig()
-                    .setElectionTimeout(Duration.ofMillis(1000))
-                    .setHeartbeatInterval(Duration.ofMillis(500)))
+                    .setElectionTimeout(Duration.ofMillis(500))
+                    .setHeartbeatInterval(Duration.ofMillis(100)))
             .build();
     servers.add(server);
     return server;
@@ -310,6 +310,93 @@ final class ReconfigurationTest {
 
       // then - cluster still has a leader and can commit entries
       final var leader = awaitLeader(m1, m2, m3, m4, m5);
+      assertThat(appendEntry(leader).commit()).succeedsWithin(Duration.ofSeconds(1));
+    }
+  }
+
+  @Nested
+  final class Leaving {
+    @Test
+    void shouldLeaveCluster(@TempDir final Path tmp) {
+      // given - a cluster with 3 members
+      final var id1 = MemberId.from("1");
+      final var id2 = MemberId.from("2");
+      final var id3 = MemberId.from("3");
+
+      final var m1 = createServer(tmp, createMembershipService(id1, id2, id3));
+      final var m2 = createServer(tmp, createMembershipService(id2, id1, id3));
+      final var m3 = createServer(tmp, createMembershipService(id3, id1, id2));
+
+      CompletableFuture.allOf(
+              m1.bootstrap(id1, id2, id3), m2.bootstrap(id1, id2, id3), m3.bootstrap(id1, id2, id3))
+          .join();
+
+      // when - existing member leaves
+      m3.leave().join();
+
+      // then - all members show a configuration with 2 active members
+      final var expected =
+          List.of(
+              new DefaultRaftMember(id1, Type.ACTIVE, Instant.now()),
+              new DefaultRaftMember(id2, Type.ACTIVE, Instant.now()));
+
+      assertThat(m1.cluster().getMembers()).containsExactlyInAnyOrderElementsOf(expected);
+      assertThat(m2.cluster().getMembers()).containsExactlyInAnyOrderElementsOf(expected);
+    }
+
+    @Test
+    void shouldLeave2MemberCluster(@TempDir final Path tmp) {
+      // given - a cluster with 2 members
+      final var id1 = MemberId.from("1");
+      final var id2 = MemberId.from("2");
+
+      final var m1 = createServer(tmp, createMembershipService(id1, id2));
+      final var m2 = createServer(tmp, createMembershipService(id2, id1));
+
+      CompletableFuture.allOf(m1.bootstrap(id1, id2), m2.bootstrap(id1, id2)).join();
+
+      // when - existing member leaves
+      m2.leave().join();
+
+      // then - all members show a configuration with 1 active member
+      final var expected = List.of(new DefaultRaftMember(id1, Type.ACTIVE, Instant.now()));
+
+      assertThat(m1.cluster().getMembers()).containsExactlyInAnyOrderElementsOf(expected);
+    }
+
+    @Test
+    void shouldReduceQuorumSize(@TempDir final Path tmp) {
+      // given - a cluster with 5 members
+      final var id1 = MemberId.from("1");
+      final var id2 = MemberId.from("2");
+      final var id3 = MemberId.from("3");
+      final var id4 = MemberId.from("4");
+      final var id5 = MemberId.from("5");
+
+      final var m1 = createServer(tmp, createMembershipService(id1, id2, id3));
+      final var m2 = createServer(tmp, createMembershipService(id2, id1, id3));
+      final var m3 = createServer(tmp, createMembershipService(id3, id1, id2));
+      final var m4 = createServer(tmp, createMembershipService(id4, id1, id2, id3));
+      final var m5 = createServer(tmp, createMembershipService(id5, id1, id2, id3));
+
+      CompletableFuture.allOf(
+              m1.bootstrap(id1, id2, id3, id4, id5),
+              m2.bootstrap(id1, id2, id3, id4, id5),
+              m3.bootstrap(id1, id2, id3, id4, id5),
+              m4.bootstrap(id1, id2, id3, id4, id5),
+              m5.bootstrap(id1, id2, id3, id4, id5))
+          .join();
+
+      // when -- two members leave
+      awaitLeader(m1, m2, m3, m4, m5); // await leader so that join doesn't fail with NO_LEADER
+      m4.leave().join();
+      awaitLeader(m1, m2, m3, m5); // await leader so that join doesn't fail with NO_LEADER
+      m5.leave().join();
+      m4.shutdown().join();
+      m5.shutdown().join();
+
+      // then -- remaining three can elect a leader and commit entries
+      final var leader = awaitLeader(m1, m2, m3);
       assertThat(appendEntry(leader).commit()).succeedsWithin(Duration.ofSeconds(1));
     }
   }
