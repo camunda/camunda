@@ -17,6 +17,7 @@ import {
 import {useEffect} from 'react';
 import {ProcessOperations} from '.';
 import {notificationsStore} from 'modules/stores/notifications';
+import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
 
 jest.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -48,6 +49,11 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
 
 describe('<ProcessOperations />', () => {
   it('should open modal and show content', async () => {
+    mockFetchProcessInstances().withSuccess({
+      processInstances: [],
+      totalCount: 0,
+    });
+
     const {user} = render(
       <ProcessOperations
         processDefinitionId="2251799813687094"
@@ -58,7 +64,7 @@ describe('<ProcessOperations />', () => {
     );
 
     await user.click(
-      screen.getByRole('button', {
+      await screen.findByRole('button', {
         name: /^delete process definition "myProcess - version 2"$/i,
       }),
     );
@@ -105,6 +111,10 @@ describe('<ProcessOperations />', () => {
 
   it('should apply delete definition operation', async () => {
     mockApplyProcessDefinitionOperation().withSuccess(mockOperation);
+    mockFetchProcessInstances().withSuccess({
+      processInstances: [],
+      totalCount: 0,
+    });
 
     const {user} = render(
       <ProcessOperations
@@ -116,7 +126,7 @@ describe('<ProcessOperations />', () => {
     );
 
     await user.click(
-      screen.getByRole('button', {
+      await screen.findByRole('button', {
         name: /^delete process definition "myProcess - version 2"$/i,
       }),
     );
@@ -139,6 +149,10 @@ describe('<ProcessOperations />', () => {
 
   it('should show notification on operation error', async () => {
     mockApplyProcessDefinitionOperation().withServerError(500);
+    mockFetchProcessInstances().withSuccess({
+      processInstances: [],
+      totalCount: 0,
+    });
 
     const {user} = render(
       <ProcessOperations
@@ -150,7 +164,7 @@ describe('<ProcessOperations />', () => {
     );
 
     await user.click(
-      screen.getByRole('button', {
+      await screen.findByRole('button', {
         name: /^delete process definition "myProcess - version 2"$/i,
       }),
     );
@@ -177,6 +191,10 @@ describe('<ProcessOperations />', () => {
 
   it('should show notification on operation auth error', async () => {
     mockApplyProcessDefinitionOperation().withServerError(403);
+    mockFetchProcessInstances().withSuccess({
+      processInstances: [],
+      totalCount: 0,
+    });
 
     const {user} = render(
       <ProcessOperations
@@ -188,7 +206,7 @@ describe('<ProcessOperations />', () => {
     );
 
     await user.click(
-      screen.getByRole('button', {
+      await screen.findByRole('button', {
         name: /^delete process definition "myProcess - version 2"$/i,
       }),
     );
@@ -216,6 +234,10 @@ describe('<ProcessOperations />', () => {
 
   it('should disable button and show spinner when delete operation is triggered', async () => {
     mockApplyProcessDefinitionOperation().withSuccess(mockOperation);
+    mockFetchProcessInstances().withSuccess({
+      processInstances: [],
+      totalCount: 0,
+    });
 
     const {user} = render(
       <ProcessOperations
@@ -227,7 +249,7 @@ describe('<ProcessOperations />', () => {
     );
 
     await user.click(
-      screen.getByRole('button', {
+      await screen.findByRole('button', {
         name: /^delete process definition "myProcess - version 2"$/i,
       }),
     );
@@ -251,6 +273,10 @@ describe('<ProcessOperations />', () => {
 
   it('should enable button and remove spinner when delete operation failed', async () => {
     mockApplyProcessDefinitionOperation().withNetworkError();
+    mockFetchProcessInstances().withSuccess({
+      processInstances: [],
+      totalCount: 0,
+    });
 
     const {user} = render(
       <ProcessOperations
@@ -262,7 +288,7 @@ describe('<ProcessOperations />', () => {
     );
 
     await user.click(
-      screen.getByRole('button', {
+      await screen.findByRole('button', {
         name: /^delete process definition "myProcess - version 2"$/i,
       }),
     );
@@ -296,6 +322,10 @@ describe('<ProcessOperations />', () => {
 
   it('should show warning when clicking apply without confirmation', async () => {
     mockApplyProcessDefinitionOperation().withSuccess(mockOperation);
+    mockFetchProcessInstances().withSuccess({
+      processInstances: [],
+      totalCount: 0,
+    });
 
     const {user} = render(
       <ProcessOperations
@@ -307,7 +337,7 @@ describe('<ProcessOperations />', () => {
     );
 
     await user.click(
-      screen.getByRole('button', {
+      await screen.findByRole('button', {
         name: /^delete process definition "myProcess - version 2"$/i,
       }),
     );
@@ -331,5 +361,81 @@ describe('<ProcessOperations />', () => {
     expect(
       screen.queryByText('Please tick this box if you want to proceed.'),
     ).not.toBeInTheDocument();
+  });
+
+  it('should initially disable the delete button', async () => {
+    mockApplyProcessDefinitionOperation().withSuccess(mockOperation);
+    mockFetchProcessInstances().withSuccess({
+      processInstances: [],
+      totalCount: 0,
+    });
+
+    render(
+      <ProcessOperations
+        processDefinitionId="2251799813687094"
+        processName="myProcess"
+        processVersion="2"
+      />,
+      {wrapper: Wrapper},
+    );
+
+    expect(
+      screen.getByRole('button', {
+        name: /^delete process definition "myProcess - version 2"$/i,
+      }),
+    ).toBeDisabled();
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', {
+          name: /^delete process definition "myProcess - version 2"$/i,
+        }),
+      ).toBeEnabled(),
+    );
+  });
+
+  it('should disable delete button when there are running instances', async () => {
+    mockApplyProcessDefinitionOperation().withSuccess(mockOperation);
+    mockFetchProcessInstances().withSuccess({
+      processInstances: [],
+      totalCount: 1,
+    });
+
+    render(
+      <ProcessOperations
+        processDefinitionId="2251799813687094"
+        processName="myProcess"
+        processVersion="2"
+      />,
+      {wrapper: Wrapper},
+    );
+
+    expect(
+      await screen.findByRole('button', {
+        name: 'Only process definitions without running instances can be deleted.',
+      }),
+    ).toBeDisabled();
+  });
+
+  it('should enable delete button when process instances could not be fetched', async () => {
+    mockApplyProcessDefinitionOperation().withSuccess(mockOperation);
+    mockFetchProcessInstances().withServerError();
+
+    render(
+      <ProcessOperations
+        processDefinitionId="2251799813687094"
+        processName="myProcess"
+        processVersion="2"
+      />,
+      {wrapper: Wrapper},
+    );
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', {
+          name: /^delete process definition "myProcess - version 2"$/i,
+        }),
+      ).toBeEnabled(),
+    );
   });
 });

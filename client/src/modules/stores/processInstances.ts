@@ -268,6 +268,23 @@ class ProcessInstances extends NetworkReconnectionHandler {
     }
   };
 
+  fetchRunningInstancesCount = async () => {
+    const {processIds} = getProcessInstancesRequestFilters();
+
+    const response = await fetchProcessInstances({
+      payload: {
+        query: {active: true, running: true, incidents: true, processIds},
+        pageSize: 0,
+      },
+    });
+
+    if (response.isSuccess) {
+      return response.data.totalCount;
+    }
+
+    return 0;
+  };
+
   refreshAllInstances = async () => {
     const response = await fetchProcessInstances({
       payload: {
