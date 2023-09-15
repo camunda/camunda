@@ -8,7 +8,7 @@
 import React, {useEffect, useState} from 'react';
 import {Link, Redirect, useLocation} from 'react-router-dom';
 import classnames from 'classnames';
-import {Button, Tooltip} from '@carbon/react';
+import {Button} from '@carbon/react';
 import {Download, Edit, RowCollapse, RowExpand, Share, TrashCan} from '@carbon/icons-react';
 
 import {
@@ -84,14 +84,14 @@ export function ReportView({report, error, user, loadReport}) {
             {!isInstantPreview && (
               <>
                 {currentUserRole === 'editor' && (
-                  <Tooltip label={t('common.edit')} className="cds--icon-tooltip">
-                    <Link
-                      className="edit-button cds--btn cds--btn--icon-only cds--btn--primary"
-                      to="edit"
-                    >
-                      <Edit />
-                    </Link>
-                  </Tooltip>
+                  <Button
+                    as={Link}
+                    to="edit"
+                    hasIconOnly
+                    iconDescription={t('common.edit')}
+                    renderIcon={Edit}
+                    className="edit-button"
+                  />
                 )}
                 <Popover
                   className="share-button"
