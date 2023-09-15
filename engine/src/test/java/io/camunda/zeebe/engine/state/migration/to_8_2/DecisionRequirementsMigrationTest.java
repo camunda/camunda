@@ -45,11 +45,11 @@ public class DecisionRequirementsMigrationTest {
       final var mockProcessingState = mock(ProcessingState.class);
 
       // when
-      when(mockProcessingState.isEmpty(ZbColumnFamilies.DMN_DECISION_REQUIREMENTS))
+      when(mockProcessingState.isEmpty(ZbColumnFamilies.DEPRECATED_DMN_DECISION_REQUIREMENTS))
           .thenReturn(true);
       when(mockProcessingState.isEmpty(
               ZbColumnFamilies
-                  .DMN_DECISION_REQUIREMENTS_KEY_BY_DECISION_REQUIREMENT_ID_AND_VERSION))
+                  .DEPRECATED_DMN_DECISION_REQUIREMENTS_KEY_BY_DECISION_REQUIREMENT_ID_AND_VERSION))
           .thenReturn(true);
       final var actual = sutMigration.needsToRun(mockProcessingState);
 
@@ -63,11 +63,11 @@ public class DecisionRequirementsMigrationTest {
       final var mockProcessingState = mock(ProcessingState.class);
 
       // when
-      when(mockProcessingState.isEmpty(ZbColumnFamilies.DMN_DECISION_REQUIREMENTS))
+      when(mockProcessingState.isEmpty(ZbColumnFamilies.DEPRECATED_DMN_DECISION_REQUIREMENTS))
           .thenReturn(false);
       when(mockProcessingState.isEmpty(
               ZbColumnFamilies
-                  .DMN_DECISION_REQUIREMENTS_KEY_BY_DECISION_REQUIREMENT_ID_AND_VERSION))
+                  .DEPRECATED_DMN_DECISION_REQUIREMENTS_KEY_BY_DECISION_REQUIREMENT_ID_AND_VERSION))
           .thenReturn(false);
       final var actual = sutMigration.needsToRun(mockProcessingState);
 
@@ -81,11 +81,11 @@ public class DecisionRequirementsMigrationTest {
       final var mockProcessingState = mock(ProcessingState.class);
 
       // when
-      when(mockProcessingState.isEmpty(ZbColumnFamilies.DMN_DECISION_REQUIREMENTS))
+      when(mockProcessingState.isEmpty(ZbColumnFamilies.DEPRECATED_DMN_DECISION_REQUIREMENTS))
           .thenReturn(false);
       when(mockProcessingState.isEmpty(
               ZbColumnFamilies
-                  .DMN_DECISION_REQUIREMENTS_KEY_BY_DECISION_REQUIREMENT_ID_AND_VERSION))
+                  .DEPRECATED_DMN_DECISION_REQUIREMENTS_KEY_BY_DECISION_REQUIREMENT_ID_AND_VERSION))
           .thenReturn(true);
       final var actual = sutMigration.needsToRun(mockProcessingState);
 
@@ -129,14 +129,16 @@ public class DecisionRequirementsMigrationTest {
       legacyDecisionState = new LegacyDecisionState(zeebeDb, transactionContext);
       dbDecisionRequirementsKey = new DbLong();
       fkDecisionRequirements =
-          new DbForeignKey<>(dbDecisionRequirementsKey, ZbColumnFamilies.DMN_DECISION_REQUIREMENTS);
+          new DbForeignKey<>(
+              dbDecisionRequirementsKey, ZbColumnFamilies.DEPRECATED_DMN_DECISION_REQUIREMENTS);
       dbDecisionRequirementsId = new DbString();
       dbDecisionRequirementsVersion = new DbInt();
       decisionRequirementsIdAndVersion =
           new DbCompositeKey<>(dbDecisionRequirementsId, dbDecisionRequirementsVersion);
       decisionRequirementsKeyByIdAndVersion =
           zeebeDb.createColumnFamily(
-              ZbColumnFamilies.DMN_DECISION_REQUIREMENTS_KEY_BY_DECISION_REQUIREMENT_ID_AND_VERSION,
+              ZbColumnFamilies
+                  .DEPRECATED_DMN_DECISION_REQUIREMENTS_KEY_BY_DECISION_REQUIREMENT_ID_AND_VERSION,
               transactionContext,
               decisionRequirementsIdAndVersion,
               fkDecisionRequirements);

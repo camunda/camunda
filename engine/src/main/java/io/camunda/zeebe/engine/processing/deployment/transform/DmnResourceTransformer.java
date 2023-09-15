@@ -172,7 +172,8 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
         .setTenantId(deploymentEvent.getTenantId());
 
     decisionState
-        .findLatestDecisionRequirementsById(wrapString(parsedDrg.getId()))
+        .findLatestDecisionRequirementsByTenantAndId(
+            deploymentEvent.getTenantId(), wrapString(parsedDrg.getId()))
         .ifPresentOrElse(
             latestDrg -> {
               final int latestVersion = latestDrg.getDecisionRequirementsVersion();
@@ -212,7 +213,8 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
                   .setTenantId(drgRecord.getTenantId());
 
               decisionState
-                  .findLatestDecisionById(wrapString(decision.getId()))
+                  .findLatestDecisionByIdAndTenant(
+                      wrapString(decision.getId()), drgRecord.getTenantId())
                   .ifPresentOrElse(
                       latestDecision -> {
                         final var latestVersion = latestDecision.getVersion();
@@ -255,7 +257,7 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
         .map(
             decisionId ->
                 decisionState
-                    .findLatestDecisionById(decisionId)
+                    .findLatestDecisionByIdAndTenant(decisionId, drg.getTenantId())
                     .map(PersistedDecision::getDecisionRequirementsKey)
                     .orElse(UNKNOWN_DECISION_REQUIREMENTS_KEY))
         .allMatch(drgKey -> drgKey == drg.getDecisionRequirementsKey());

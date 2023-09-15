@@ -57,4 +57,8 @@ public final class DeployedDrg {
   public DirectBuffer getResource() {
     return persistedDecisionRequirements.getResource();
   }
+
+  public String getTenantId() {
+    return persistedDecisionRequirements.getTenantId();
+  }
 }

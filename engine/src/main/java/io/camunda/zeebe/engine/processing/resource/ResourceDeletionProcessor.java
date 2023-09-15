@@ -136,7 +136,9 @@ public class ResourceDeletionProcessor
       return;
     }
 
-    final var drgOptional = decisionState.findDecisionRequirementsByKey(value.getResourceKey());
+    final var drgOptional =
+        decisionState.findDecisionRequirementsByTenantAndKey(
+            value.getTenantId(), value.getResourceKey());
     if (drgOptional.isPresent()) {
       deleteDecisionRequirements(drgOptional.get());
       return;
@@ -147,7 +149,8 @@ public class ResourceDeletionProcessor
 
   private void deleteDecisionRequirements(final DeployedDrg drg) {
     decisionState
-        .findDecisionsByDecisionRequirementsKey(drg.getDecisionRequirementsKey())
+        .findDecisionsByTenantAndDecisionRequirementsKey(
+            drg.getTenantId(), drg.getDecisionRequirementsKey())
         .forEach(this::deleteDecision);
 
     final var drgRecord =

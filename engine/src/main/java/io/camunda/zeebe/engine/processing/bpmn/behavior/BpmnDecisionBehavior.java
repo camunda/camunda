@@ -72,7 +72,8 @@ public final class BpmnDecisionBehavior {
     }
 
     final var decisionId = decisionIdOrFailure.get();
-    final var decisionOrFailure = decisionBehavior.findDecisionById(decisionId);
+    final var decisionOrFailure =
+        decisionBehavior.findDecisionByIdAndTenant(decisionId, context.getTenantId());
     final Either<Failure, ParsedDecisionRequirementsGraph> drgOrFailure =
         decisionOrFailure
             .flatMap(decision -> decisionBehavior.findParsedDrgByDecision(decision))
