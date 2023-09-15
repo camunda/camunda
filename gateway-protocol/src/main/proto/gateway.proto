@@ -116,6 +116,8 @@ message CreateProcessInstanceRequest {
   // will start at the start event. If non-empty the process instance will apply start
   // instructions after it has been created
   repeated ProcessInstanceCreationStartInstruction startInstructions = 5;
+  // the tenant id of the process definition
+  string tenantId = 6;
 }
 
 message ProcessInstanceCreationStartInstruction {
@@ -142,6 +144,8 @@ message CreateProcessInstanceResponse {
   // the unique identifier of the created process instance; to be used wherever a request
   // needs a process instance key (e.g. CancelProcessInstanceRequest)
   int64 processInstanceKey = 4;
+  // the tenant identifier of the created process instance
+  string tenantId = 5;
 }
 
 message CreateProcessInstanceWithResultRequest {
@@ -169,6 +173,8 @@ message CreateProcessInstanceWithResultResponse {
   // JSON document
   // consists of visible variables in the root scope
   string variables = 5;
+  // the tenant identifier of the process definition
+  string tenantId = 6;
 }
 
 message EvaluateDecisionRequest {

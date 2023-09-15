@@ -28,6 +28,7 @@ public final class CreateProcessInstanceWithResultResponseImpl implements Proces
   private final String bpmnProcessId;
   private final int version;
   private final long processInstanceKey;
+  private final String tenantId;
   private final String variables;
 
   private Map<String, Object> variablesAsMap;
@@ -40,6 +41,7 @@ public final class CreateProcessInstanceWithResultResponseImpl implements Proces
     version = response.getVersion();
     processInstanceKey = response.getProcessInstanceKey();
     variables = response.getVariables();
+    tenantId = response.getTenantId();
   }
 
   @Override
@@ -91,8 +93,7 @@ public final class CreateProcessInstanceWithResultResponseImpl implements Proces
 
   @Override
   public String getTenantId() {
-    // todo(#13536): replace dummy implementation
-    return "";
+    return tenantId;
   }
 
   @Override
@@ -111,7 +112,7 @@ public final class CreateProcessInstanceWithResultResponseImpl implements Proces
         + variables
         + '\''
         + ", tenantId='"
-        + getTenantId()
+        + tenantId
         + '\''
         + '}';
   }

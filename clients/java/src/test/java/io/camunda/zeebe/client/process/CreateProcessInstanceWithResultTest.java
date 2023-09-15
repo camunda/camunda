@@ -19,9 +19,10 @@ import static io.camunda.zeebe.client.util.JsonUtil.fromJsonAsMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
-import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1.CreateProcessInstanceWithResultCommandStep1;
+import io.camunda.zeebe.client.api.command.CommandWithTenantStep;
 import io.camunda.zeebe.client.api.response.ProcessInstanceResult;
 import io.camunda.zeebe.client.util.ClientTest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultRequest;
 import java.time.Duration;
 import org.junit.Test;
@@ -137,54 +138,86 @@ public final class CreateProcessInstanceWithResultTest extends ClientTest {
   }
 
   @Test
-  public void shouldAllowSpecifyingTenantIdByLatestVersionOfProcessId() {
-    // given
-    final CreateProcessInstanceWithResultCommandStep1 builder =
-        client.newCreateInstanceCommand().bpmnProcessId("").latestVersion().withResult();
-
+  public void shouldUseDefaultTenantId() {
     // when
-    final CreateProcessInstanceWithResultCommandStep1 builderWithTenantId =
-        builder.tenantId("custom tenant");
+    client
+        .newCreateInstanceCommand()
+        .bpmnProcessId("test")
+        .latestVersion()
+        .withResult()
+        .send()
+        .join();
 
     // then
-    // todo(#13536): verify that tenant id is set in the request
-    assertThat(builderWithTenantId)
-        .describedAs("This method has no effect on the command builder while under development")
-        .isEqualTo(builder);
+    final CreateProcessInstanceWithResultRequest request = gatewayService.getLastRequest();
+    final CreateProcessInstanceRequest piRequest = request.getRequest();
+    assertThat(piRequest.getTenantId()).isEqualTo(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
+  }
+
+  @Test
+  public void shouldAllowSpecifyingTenantIdByLatestVersionOfProcessId() {
+    // given
+    final String bpmnProcessId = "testProcess";
+    final String tenantId = "test-tenant";
+
+    // when
+    client
+        .newCreateInstanceCommand()
+        .bpmnProcessId(bpmnProcessId)
+        .latestVersion()
+        .tenantId(tenantId)
+        .withResult()
+        .send()
+        .join();
+
+    // then
+    final CreateProcessInstanceWithResultRequest request = gatewayService.getLastRequest();
+    final CreateProcessInstanceRequest piRequest = request.getRequest();
+    assertThat(piRequest.getTenantId()).isEqualTo(tenantId);
   }
 
   @Test
   public void shouldAllowSpecifyingTenantIdByProcessIdAndVersion() {
     // given
-    final CreateProcessInstanceWithResultCommandStep1 builder =
-        client.newCreateInstanceCommand().bpmnProcessId("").version(3).withResult();
+    final String bpmnProcessId = "testProcess";
+    final int version = 3;
+    final String tenantId = "test-tenant";
 
     // when
-    final CreateProcessInstanceWithResultCommandStep1 builderWithTenantId =
-        builder.tenantId("custom tenant");
+    client
+        .newCreateInstanceCommand()
+        .bpmnProcessId(bpmnProcessId)
+        .version(version)
+        .tenantId(tenantId)
+        .withResult()
+        .send()
+        .join();
 
     // then
-    // todo(#13536): verify that tenant id is set in the request
-    assertThat(builderWithTenantId)
-        .describedAs("This method has no effect on the command builder while under development")
-        .isEqualTo(builder);
+    final CreateProcessInstanceWithResultRequest request = gatewayService.getLastRequest();
+    final CreateProcessInstanceRequest piRequest = request.getRequest();
+    assertThat(piRequest.getTenantId()).isEqualTo(tenantId);
   }
 
   @Test
   public void shouldAllowSpecifyingTenantIdByProcessDefinitionKey() {
     // given
-    final CreateProcessInstanceWithResultCommandStep1 builder =
-        client.newCreateInstanceCommand().processDefinitionKey(1L).withResult();
+    final Long processDefinitionKey = 1L;
+    final String tenantId = "test-tenant";
 
     // when
-    final CreateProcessInstanceWithResultCommandStep1 builderWithTenantId =
-        builder.tenantId("custom tenant");
+    client
+        .newCreateInstanceCommand()
+        .processDefinitionKey(processDefinitionKey)
+        .tenantId(tenantId)
+        .withResult()
+        .send()
+        .join();
 
     // then
-    // todo(#13536): verify that tenant id is set in the request
-    assertThat(builderWithTenantId)
-        .describedAs("This method has no effect on the command builder while under development")
-        .isEqualTo(builder);
+    final CreateProcessInstanceWithResultRequest request = gatewayService.getLastRequest();
+    final CreateProcessInstanceRequest piRequest = request.getRequest();
+    assertThat(piRequest.getTenantId()).isEqualTo(tenantId);
   }
 
   private static final class VariablesPojo {

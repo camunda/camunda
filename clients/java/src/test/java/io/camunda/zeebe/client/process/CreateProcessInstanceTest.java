@@ -22,7 +22,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;
 
 import io.camunda.zeebe.client.api.command.ClientException;
-import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3;
+import io.camunda.zeebe.client.api.command.CommandWithTenantStep;
 import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.client.util.ClientTest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest;
@@ -237,51 +237,74 @@ public final class CreateProcessInstanceTest extends ClientTest {
   }
 
   @Test
-  public void shouldAllowSpecifyingTenantIdByLatestVersionOfProcessId() {
-    // given
-    final CreateProcessInstanceCommandStep3 builder =
-        client.newCreateInstanceCommand().bpmnProcessId("").latestVersion();
-
+  public void shouldUseDefaultTenantId() {
     // when
-    final CreateProcessInstanceCommandStep3 builderWithTenantId = builder.tenantId("custom tenant");
+    client.newCreateInstanceCommand().bpmnProcessId("test").latestVersion().send().join();
 
     // then
-    // todo(#13536): verify that tenant id is set in the request
-    assertThat(builderWithTenantId)
-        .describedAs("This method has no effect on the command builder while under development")
-        .isEqualTo(builder);
+    final CreateProcessInstanceRequest request = gatewayService.getLastRequest();
+    assertThat(request.getTenantId()).isEqualTo(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
+  }
+
+  @Test
+  public void shouldAllowSpecifyingTenantIdByLatestVersionOfProcessId() {
+    // given
+    final String bpmnProcessId = "testProcess";
+    final String tenantId = "test-tenant";
+
+    // when
+    client
+        .newCreateInstanceCommand()
+        .bpmnProcessId(bpmnProcessId)
+        .latestVersion()
+        .tenantId(tenantId)
+        .send()
+        .join();
+
+    // then
+    final CreateProcessInstanceRequest request = gatewayService.getLastRequest();
+    assertThat(request.getTenantId()).isEqualTo(tenantId);
   }
 
   @Test
   public void shouldAllowSpecifyingTenantIdByProcessIdAndVersion() {
     // given
-    final CreateProcessInstanceCommandStep3 builder =
-        client.newCreateInstanceCommand().bpmnProcessId("").version(3);
+    final String bpmnProcessId = "testProcess";
+    final int version = 3;
+    final String tenantId = "test-tenant";
 
     // when
-    final CreateProcessInstanceCommandStep3 builderWithTenantId = builder.tenantId("custom tenant");
+    client
+        .newCreateInstanceCommand()
+        .bpmnProcessId(bpmnProcessId)
+        .version(version)
+        .tenantId(tenantId)
+        .send()
+        .join();
 
     // then
-    // todo(#13536): verify that tenant id is set in the request
-    assertThat(builderWithTenantId)
-        .describedAs("This method has no effect on the command builder while under development")
-        .isEqualTo(builder);
+    final CreateProcessInstanceRequest request = gatewayService.getLastRequest();
+    assertThat(request.getTenantId()).isEqualTo(tenantId);
   }
 
   @Test
   public void shouldAllowSpecifyingTenantIdByProcessDefinitionKey() {
     // given
-    final CreateProcessInstanceCommandStep3 builder =
-        client.newCreateInstanceCommand().processDefinitionKey(1L);
+    final String customTenantId = "test-tenant";
+    final Long processDefinitionKey = 1L;
 
     // when
-    final CreateProcessInstanceCommandStep3 builderWithTenantId = builder.tenantId("custom tenant");
+    client
+        .newCreateInstanceCommand()
+        .processDefinitionKey(processDefinitionKey)
+        .tenantId(customTenantId)
+        .send()
+        .join();
 
     // then
-    // todo(#13536): verify that tenant id is set in the request
-    assertThat(builderWithTenantId)
-        .describedAs("This method has no effect on the command builder while under development")
-        .isEqualTo(builder);
+    final CreateProcessInstanceRequest request = gatewayService.getLastRequest();
+    assertThat(request.getTenantId()).isEqualTo(customTenantId);
+    assertThat(request.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
   }
 
   public static class VariableDocument {

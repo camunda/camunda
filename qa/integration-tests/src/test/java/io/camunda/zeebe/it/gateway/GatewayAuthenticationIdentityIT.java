@@ -58,14 +58,14 @@ public class GatewayAuthenticationIdentityIT {
 
   @Container
   private static final GenericContainer<?> KEYCLOAK =
-      new GenericContainer<>("quay.io/keycloak/keycloak:19.0.3")
+      new GenericContainer<>("bitnami/keycloak:22.0.1")
           .withEnv("KC_HEALTH_ENABLED", "true")
-          .withEnv("KEYCLOAK_ADMIN", KEYCLOAK_USER)
+          .withEnv("KEYCLOAK_ADMIN_USER", KEYCLOAK_USER)
           .withEnv("KEYCLOAK_ADMIN_PASSWORD", KEYCLOAK_PASSWORD)
+          .withEnv("KEYCLOAK_DATABASE_VENDOR", "dev-mem")
           .withNetwork(NETWORK)
           .withNetworkAliases("keycloak")
           .withExposedPorts(8080)
-          .withCommand("start-dev")
           .waitingFor(
               new HttpWaitStrategy()
                   .forPort(8080)

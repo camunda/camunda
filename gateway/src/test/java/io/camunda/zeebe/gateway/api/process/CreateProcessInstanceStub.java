@@ -63,12 +63,16 @@ public final class CreateProcessInstanceStub
 
   private BrokerResponse<ProcessInstanceCreationRecord> getDefaultResponse(
       final BrokerCreateProcessInstanceRequest request) {
+    final var piCreationRecord = request.getRequestWriter();
     final var record = new ProcessInstanceCreationRecord();
-    record.setBpmnProcessId(PROCESS_ID);
-    record.setVariables(request.getRequestWriter().getVariablesBuffer());
-    record.setVersion(PROCESS_VERSION);
-    record.setProcessDefinitionKey(PROCESS_KEY);
-    record.setProcessInstanceKey(PROCESS_INSTANCE_KEY);
+    record
+        .setBpmnProcessId(PROCESS_ID)
+        .setVariables(piCreationRecord.getVariablesBuffer())
+        .setVersion(PROCESS_VERSION)
+        .setTenantId(piCreationRecord.getTenantId())
+        .setProcessDefinitionKey(PROCESS_KEY)
+        .setProcessInstanceKey(PROCESS_INSTANCE_KEY);
+
     return new BrokerResponse<>(record, 0, PROCESS_INSTANCE_KEY);
   }
 }
