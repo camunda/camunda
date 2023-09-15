@@ -76,6 +76,12 @@ public class JobActivationPropertiesImpl extends UnpackedObject implements JobAc
         .collect(Collectors.toList());
   }
 
+  public JobActivationPropertiesImpl setTenantIds(final List<StringValue> tenantIds) {
+    tenantIdsProp.reset();
+    tenantIds.forEach(tenantId -> tenantIdsProp.add().wrap(tenantId));
+    return this;
+  }
+
   public ValueArray<StringValue> tenantIds() {
     return tenantIdsProp;
   }
