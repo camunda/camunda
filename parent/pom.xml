@@ -93,7 +93,7 @@
     <version.feel-scala>1.16.1</version.feel-scala>
     <version.dmn-scala>1.8.1</version.dmn-scala>
     <version.rest-assured>5.3.2</version.rest-assured>
-    <version.spring>6.0.11</version.spring>
+    <version.spring>6.0.12</version.spring>
     <version.spring-boot>3.1.3</version.spring-boot>
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.kryo>5.5.0</version.kryo>
