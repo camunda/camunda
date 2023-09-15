@@ -24,6 +24,7 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -96,7 +97,47 @@ public final class ScriptTaskExpressionTest {
         .hasBpmnElementType(BpmnElementType.SCRIPT_TASK)
         .hasFlowScopeKey(processInstanceKey)
         .hasBpmnProcessId(PROCESS_ID)
-        .hasProcessInstanceKey(processInstanceKey);
+        .hasProcessInstanceKey(processInstanceKey)
+        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  }
+
+  @Test
+  public void shouldActivateTaskWithCustomTenant() {
+    // given
+    final String tenantId = "foo";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            processWithScriptTask(
+                t -> t.zeebeExpression("substring(x, 4)").zeebeResultVariable(RESULT_VARIABLE)))
+        .withTenantId(tenantId)
+        .deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable("x", A_STRING)
+            .withTenantId(tenantId)
+            .create();
+
+    // then
+    final Record<ProcessInstanceRecordValue> taskActivating =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withElementType(BpmnElementType.SCRIPT_TASK)
+            .withTenantId(tenantId)
+            .getFirst();
+
+    Assertions.assertThat(taskActivating.getValue())
+        .hasElementId(TASK_ID)
+        .hasBpmnElementType(BpmnElementType.SCRIPT_TASK)
+        .hasFlowScopeKey(processInstanceKey)
+        .hasBpmnProcessId(PROCESS_ID)
+        .hasProcessInstanceKey(processInstanceKey)
+        .hasTenantId(tenantId);
   }
 
   @Test
@@ -117,6 +158,40 @@ public final class ScriptTaskExpressionTest {
     assertThat(
             RecordingExporter.processInstanceRecords()
                 .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
+        .containsSubsequence(
+            tuple(BpmnElementType.SCRIPT_TASK, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(BpmnElementType.SCRIPT_TASK, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
+  public void shouldCompleteTaskWithCustomTenant() {
+    // given
+    final String tenantId = "foo";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            processWithScriptTask(
+                t -> t.zeebeExpression("substring(x, 4)").zeebeResultVariable(RESULT_VARIABLE)))
+        .withTenantId(tenantId)
+        .deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable("x", A_STRING)
+            .withTenantId(tenantId)
+            .create();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .withTenantId(tenantId)
                 .limitToProcessInstanceCompleted())
         .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
         .containsSubsequence(

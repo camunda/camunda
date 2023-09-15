@@ -43,6 +43,10 @@ public final class ProcessInstanceRecordStream
     return valueFilter(v -> v.getProcessInstanceKey() == processInstanceKey);
   }
 
+  public ProcessInstanceRecordStream withTenantId(final String tenantId) {
+    return valueFilter(v -> tenantId.equals(v.getTenantId()));
+  }
+
   public ProcessInstanceRecordStream withProcessInstanceKeyOrParentProcessInstanceKey(
       final long processInstanceKey) {
     return valueFilter(

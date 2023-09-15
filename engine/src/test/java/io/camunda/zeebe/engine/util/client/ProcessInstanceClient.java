@@ -88,6 +88,11 @@ public final class ProcessInstanceClient {
       return this;
     }
 
+    public ProcessInstanceCreationClient withTenantId(final String tenantId) {
+      processInstanceCreationRecord.setTenantId(tenantId);
+      return this;
+    }
+
     public ProcessInstanceCreationClient withVariables(final Map<String, Object> variables) {
       processInstanceCreationRecord.setVariables(MsgPackUtil.asMsgPack(variables));
       return this;
