@@ -153,6 +153,7 @@ public final class BpmnStateBehavior {
         context.getProcessDefinitionKey(),
         context.getProcessInstanceKey(),
         context.getBpmnProcessId(),
+        context.getTenantId(),
         variableName,
         variableValue,
         valueOffset,
@@ -172,6 +173,7 @@ public final class BpmnStateBehavior {
         context.getProcessDefinitionKey(),
         context.getProcessInstanceKey(),
         context.getBpmnProcessId(),
+        context.getTenantId(),
         variablesAsDocument);
   }
 
@@ -200,6 +202,7 @@ public final class BpmnStateBehavior {
         targetProcess.getKey(),
         targetProcessInstanceKey,
         targetProcess.getBpmnProcessId(),
+        targetProcess.getTenantId(),
         variables);
   }
 
