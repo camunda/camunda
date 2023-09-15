@@ -16,8 +16,12 @@ import static org.mockito.Mockito.when;
 import io.camunda.identity.sdk.tenants.dto.Tenant;
 import io.camunda.zeebe.auth.impl.Authorization;
 import io.camunda.zeebe.gateway.api.deployment.DeployResourceStub;
+import io.camunda.zeebe.gateway.api.process.CreateProcessInstanceStub;
 import io.camunda.zeebe.gateway.api.util.GatewayTest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerDeployResourceRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceResponse;
 import io.grpc.Status;
@@ -34,6 +38,7 @@ public class MultiTenancyEnabledTest extends GatewayTest {
   @Before
   public void setup() {
     new DeployResourceStub().registerWith(brokerClient);
+    new CreateProcessInstanceStub().registerWith(brokerClient);
   }
 
   @Test
@@ -83,6 +88,58 @@ public class MultiTenancyEnabledTest extends GatewayTest {
         .is(statusRuntimeExceptionWithStatusCode(Status.PERMISSION_DENIED.getCode()))
         .hasMessageContaining(
             "Expected to handle gRPC request DeployResource with tenant identifier `tenant-c`")
+        .hasMessageContaining("but tenant is not authorized to perform this request");
+  }
+
+  @Test
+  public void createProcessInstanceRequestShouldContainAuthorizedTenants() {
+    // given
+    when(gateway.getIdentityMock().tenants().forToken(anyString()))
+        .thenReturn(List.of(new Tenant("tenant-a", "A"), new Tenant("tenant-b", "B")));
+
+    // when
+    final CreateProcessInstanceResponse response =
+        client.createProcessInstance(
+            CreateProcessInstanceRequest.newBuilder().setTenantId("tenant-b").build());
+    assertThat(response).isNotNull();
+
+    // then
+    final BrokerCreateProcessInstanceRequest brokerRequest = brokerClient.getSingleBrokerRequest();
+    assertThat(brokerRequest.getAuthorization().toDecodedMap())
+        .hasEntrySatisfying(
+            Authorization.AUTHORIZED_TENANTS,
+            v -> assertThat(v).asList().contains("tenant-a", "tenant-b"));
+  }
+
+  @Test
+  public void createProcessInstanceRequestRequiresTenantId() {
+    // given
+    when(gateway.getIdentityMock().tenants().forToken(anyString()))
+        .thenReturn(List.of(new Tenant("tenant-a", "A"), new Tenant("tenant-b", "B")));
+
+    // when/then
+    assertThatThrownBy(
+            () -> client.createProcessInstance(CreateProcessInstanceRequest.newBuilder().build()))
+        .is(statusRuntimeExceptionWithStatusCode(Status.INVALID_ARGUMENT.getCode()))
+        .hasMessageContaining(
+            "Expected to handle gRPC request CreateProcessInstance with tenant identifier ``")
+        .hasMessageContaining("but no tenant identifier was provided");
+  }
+
+  @Test
+  public void createProcessInstanceRequestRequiresValidTenantId() {
+    // given
+    when(gateway.getIdentityMock().tenants().forToken(anyString()))
+        .thenReturn(List.of(new Tenant("tenant-a", "A"), new Tenant("tenant-b", "B")));
+
+    // when/then
+    assertThatThrownBy(
+            () ->
+                client.createProcessInstance(
+                    CreateProcessInstanceRequest.newBuilder().setTenantId("tenant-c").build()))
+        .is(statusRuntimeExceptionWithStatusCode(Status.PERMISSION_DENIED.getCode()))
+        .hasMessageContaining(
+            "Expected to handle gRPC request CreateProcessInstance with tenant identifier `tenant-c`")
         .hasMessageContaining("but tenant is not authorized to perform this request");
   }
 }
