@@ -8,7 +8,7 @@
 import React, {runLastEffect} from 'react';
 import {shallow} from 'enzyme';
 
-import {Button, Modal} from 'components';
+import {Modal} from 'components';
 
 import {AddDefinition} from './AddDefinition';
 import {loadDefinitions, loadTenants} from './service';
@@ -37,7 +37,7 @@ const props = {
 it('should open a modal on button click', () => {
   const node = shallow(<AddDefinition {...props} />);
 
-  node.find(Button).simulate('click', {stopPropagation: () => {}});
+  node.find('.AddDefinition').simulate('click', {stopPropagation: () => {}});
 
   expect(node.find(Modal).prop('open')).toBe(true);
 });

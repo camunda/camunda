@@ -5,7 +5,6 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import {shallow} from 'enzyme';
 
 import {LabeledInput} from 'components';
@@ -52,23 +51,23 @@ it('should disable the specific selection when all or latest is selected', () =>
 it('should construct the label based on the selected versions', () => {
   const node = shallow(<VersionPopover {...props} versions={versions} selected={[]} />);
 
-  expect(node.find('.VersionPopover').prop('title')).toBe('None');
+  expect(node.prop('trigger').props.children).toBe('None');
 
   node.setProps({selected: ['1']});
 
-  expect(node.find('.VersionPopover').prop('title')).toBe('1');
+  expect(node.prop('trigger').props.children).toBe('1');
 
   node.setProps({selected: ['2', '1']});
 
-  expect(node.find('.VersionPopover').prop('title')).toBe('2, 1');
+  expect(node.prop('trigger').props.children).toBe('2, 1');
 
   node.setProps({selected: ['all']});
 
-  expect(node.find('.VersionPopover').prop('title')).toBe('All');
+  expect(node.prop('trigger').props.children).toBe('All');
 
   node.setProps({selected: ['latest']});
 
-  expect(node.find('.VersionPopover').prop('title')).toBe('Latest : 3');
+  expect(node.prop('trigger').props.children).toBe('Latest : 3');
 });
 
 it('should check the versions based on the selected specific versions', () => {
@@ -81,12 +80,12 @@ it('should check the versions based on the selected specific versions', () => {
     />
   );
 
-  expect(node).toMatchSnapshot();
+  expect(node.prop('trigger').props.children).toBe('Latest : 3');
 });
 
 it('should not crash, but be disabled if no versions are provided', () => {
   const node = shallow(<VersionPopover {...props} selected={[]} />);
-  expect(node.find('.VersionPopover').prop('disabled')).toBe(true);
+  expect(node.prop('trigger').props.disabled).toBe(true);
 });
 
 it('should diplay a loading indicator and disable the inputs while loading', () => {

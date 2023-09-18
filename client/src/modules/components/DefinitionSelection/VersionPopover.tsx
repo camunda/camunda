@@ -23,7 +23,6 @@ interface VersionPopoverProps {
   disabled?: boolean;
   tooltip?: ReactNode;
   loading?: boolean;
-  useCarbonTrigger?: boolean;
   label?: ReactNode;
 }
 
@@ -35,7 +34,6 @@ export default function VersionPopover({
   disabled,
   tooltip,
   loading,
-  useCarbonTrigger,
   label,
 }: VersionPopoverProps) {
   const specific = usesSpecificVersions(selected);
@@ -55,16 +53,11 @@ export default function VersionPopover({
     <Popover
       className="VersionPopover"
       tooltip={tooltip}
-      title={title}
-      disabled={disabled || !versions}
       align="bottom-right"
-      label={label}
       trigger={
-        useCarbonTrigger ? (
-          <Popover.ListBox label={label} disabled={disabled || !versions}>
-            {title}
-          </Popover.ListBox>
-        ) : undefined
+        <Popover.ListBox label={label} disabled={disabled || !versions}>
+          {title}
+        </Popover.ListBox>
       }
     >
       {loading && <LoadingIndicator />}

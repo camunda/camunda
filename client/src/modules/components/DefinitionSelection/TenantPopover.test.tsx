@@ -44,34 +44,34 @@ it('should call the provided onChange function', () => {
 it('should construct the label based on the selected tenants', () => {
   const node = shallow(<TenantPopover {...props} tenants={tenants} selected={[]} />);
 
-  expect(node.find('.TenantPopover').prop('title')).toBe('Select...');
+  expect(node.prop('trigger').props.children).toBe('Select...');
 
   node.setProps({selected: ['a']});
 
-  expect(node.find('.TenantPopover').prop('title')).toBe('Tenant A');
+  expect(node.prop('trigger').props.children).toBe('Tenant A');
 
   node.setProps({selected: ['a', 'b']});
 
-  expect(node.find('.TenantPopover').prop('title')).toBe('Multiple');
+  expect(node.prop('trigger').props.children).toBe('Multiple');
 
   node.setProps({selected: ['a', 'b', 'c', null]});
 
-  expect(node.find('.TenantPopover').prop('title')).toBe('All');
+  expect(node.prop('trigger').props.children).toBe('All');
 
   node.setProps({tenants: [{id: null, name: 'Not defined'}], selected: [null]});
 
-  expect(node.find('.TenantPopover').prop('title')).toBe('Not defined');
-  expect(node.find('.TenantPopover')).toBeDisabled();
+  expect(node.prop('trigger').props.children).toBe('Not defined');
+  expect(node.prop('trigger').props.disabled).toBe(true);
 });
 
 it('should not crash, but be disabled if no tenants are provided', () => {
   const node = shallow(<TenantPopover {...props} selected={[]} tenants={[]} />);
-  expect(node.find('.TenantPopover').prop('disabled')).toBe(true);
+  expect(node.prop('trigger').props.disabled).toBe(true);
 });
 
 it('should allow manual disabling', () => {
   const node = shallow(<TenantPopover {...props} tenants={tenants} selected={[null]} disabled />);
-  expect(node.find('.TenantPopover').prop('disabled')).toBe(true);
+  expect(node.prop('trigger').props.disabled).toBe(true);
 });
 
 it('should diplay a loading indicator and disable the switches while loading', () => {

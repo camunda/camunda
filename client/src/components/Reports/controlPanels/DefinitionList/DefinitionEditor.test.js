@@ -7,8 +7,9 @@
 
 import {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
+import {TextInput, Button} from '@carbon/react';
 
-import {Input, BPMNDiagram, Button, TenantInfo} from 'components';
+import {BPMNDiagram, TenantInfo} from 'components';
 import {loadProcessDefinitionXml} from 'services';
 import {getOptimizeProfile} from 'config';
 
@@ -85,8 +86,8 @@ it('should allow users to set a display name', () => {
   const spy = jest.fn();
   const node = shallow(<DefinitionEditor {...props} onChange={spy} />);
 
-  node.find(Input).simulate('change', {target: {value: 'new display name'}});
-  node.find(Input).simulate('blur', {relatedTarget: {}});
+  node.find(TextInput).simulate('change', {target: {value: 'new display name'}});
+  node.find(TextInput).simulate('blur', {relatedTarget: {}});
 
   expect(spy.mock.calls[0][0].displayName).toBe('new display name');
 });
@@ -127,7 +128,7 @@ it('should pass all tenants ids to the renameVariableModal', () => {
   ];
   const node = shallow(<DefinitionEditor {...props} tenantInfo={tenantInfo} />);
 
-  node.find('.actionBar').find(Button).simulate('click');
+  node.find(Button).last().simulate('click');
 
   expect(node.find(RenameVariablesModal).prop('availableTenants')).toEqual(['a', 'b']);
 });
@@ -137,8 +138,7 @@ it('should invoke onChange when confirming the renamed variable modal', () => {
   const node = shallow(<DefinitionEditor {...props} onChange={spy} />);
   runAllEffects();
 
-  node.find('.actionBar').find(Button).simulate('click');
-
+  node.find(Button).last().simulate('click');
   node.find(RenameVariablesModal).prop('onChange')();
 
   expect(spy).toHaveBeenCalled();

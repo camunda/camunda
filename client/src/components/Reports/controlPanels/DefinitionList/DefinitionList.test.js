@@ -8,7 +8,6 @@
 import React, {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
 
-import {Button} from 'components';
 import {getOptimizeProfile} from 'config';
 
 import DefinitionEditor from './DefinitionEditor';
@@ -99,7 +98,7 @@ it('should allow copying definitions', () => {
   const spy = jest.fn();
   const node = shallow(<DefinitionList {...props} onCopy={spy} />);
 
-  node.find(Button).first().simulate('click');
+  node.find('.actionBtn').first().simulate('click');
   expect(spy).toHaveBeenCalled();
 });
 
@@ -117,5 +116,5 @@ it('should not allow copy if limit of 10 definitions is reached', () => {
     />
   );
 
-  expect(node.find({type: 'copy-small'})).not.toExist();
+  expect(node.find({iconDescription: 'Copy'})).not.toExist();
 });

@@ -13,8 +13,9 @@ export const reportContainer = Selector('.Report');
 export const reportName = Selector('.ReportView .name');
 export const reportRenderer = Selector('.ReportRenderer');
 export const report = Selector('.ListItem.report');
-export const definitionCopyButton = (definition) => definition.find('.Button').nth(0);
-export const definitionEditButton = (definition) => definition.find('.Popover .Button');
+export const definitionCopyButton = (definition) => definition.find('.actionBtn').nth(0);
+export const definitionEditButton = (definition) =>
+  definition.find('.Popover .buttonWrapper button');
 export const checkbox = (name) => Selector('.label').withText(name);
 export const groupbyDropdown = checkbox('Group By').nextSibling();
 export const groupbyDropdownButton = groupbyDropdown.find('button');
@@ -85,7 +86,7 @@ export const controlPanelFilter = Selector('.ActionItem');
 export const filterRemoveButton = controlPanelFilter.find('.Button:last-child');
 export const definitionElement = (name) => Selector('.DefinitionList li').withText(name);
 export const definitionEditorPopover = Selector('.DefinitionList .Popover');
-export const definitionEditor = definitionEditorPopover.find('.Button');
+export const definitionEditor = definitionEditorPopover.find('.buttonWrapper button');
 export const definitionEditorDialog = definitionEditorPopover.find('.popoverContent');
 export const versionPopover = Selector('.VersionPopover');
 export const versionAll = Selector('input[type="radio"]').nth(0);
@@ -121,7 +122,7 @@ export const lineButton = Selector('.measureContainer .Button').withText('Line')
 export const tableScrollableContainer = reportTable.find('table');
 export const objectViewBtn = reportTable.find('.ObjectViewBtn').nth(0);
 export const objectVariableModal = Selector('.ObjectVariableModal');
-export const renameVariablesBtn = Selector('.actionBar .Button').withText('Rename Variables');
+export const renameVariablesBtn = Selector('button').withText('Rename Variables');
 export const newNameInput = (name) =>
   Selector('.RenameVariablesModal tbody tr').withText(name).find('.Input');
 export const viewSelect = Selector('.View .activateButton');

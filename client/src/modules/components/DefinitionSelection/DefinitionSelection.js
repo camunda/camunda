@@ -377,7 +377,6 @@ export class DefinitionSelection extends React.Component {
                   onChange={this.changeVersions}
                   loading={isLoadingVersions}
                   label={t('common.definitionSelection.version.label')}
-                  useCarbonTrigger
                 />
               </div>
               {this.isOnlyTenant() ? (
@@ -390,7 +389,6 @@ export class DefinitionSelection extends React.Component {
                     onChange={this.changeTenants}
                     loading={isLoadingTenants}
                     label={t('common.tenant.label')}
-                    useCarbonTrigger
                   />
                 </div>
               )}

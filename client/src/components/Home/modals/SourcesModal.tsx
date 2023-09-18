@@ -232,7 +232,6 @@ export function SourcesModal({onClose, onConfirm, confirmText, preSelectAll}: So
                 body.push(
                   // clicking inside the popover
                   <TenantPopover
-                    useCarbonTrigger
                     tenants={def.tenants}
                     selected={selectedDefinition?.tenants || ['']}
                     disabled={!selectedDefinition}

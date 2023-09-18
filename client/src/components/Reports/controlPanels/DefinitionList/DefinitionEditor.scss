@@ -1,15 +1,17 @@
+@use '@carbon/styles/scss/spacing';
+
 .DefinitionEditor {
   .diagram {
     height: 240px;
-    padding: 20px 40px;
-    border-top: 1px solid var(--silver-darken-80);
     display: flex;
     position: relative;
+    border-bottom: 1px solid var(--cds-border-strong);
+    padding: spacing.$spacing-06 0;
 
-    .Button {
+    .diagramExpandBtn {
       position: absolute;
-      top: 15px;
-      left: 40px;
+      top: 0px;
+      left: 0px;
     }
   }
 }

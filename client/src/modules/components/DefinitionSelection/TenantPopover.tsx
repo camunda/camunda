@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {ComponentProps} from 'react';
+import {ComponentProps, ReactNode} from 'react';
 import {Button, ButtonSet, Form, FormGroup, Loading, Stack, Toggle} from '@carbon/react';
 
 import {t} from 'translation';
@@ -17,13 +17,13 @@ import './TenantPopover.scss';
 
 const {formatTenantName} = formatters;
 
-interface TenantPopoverProps extends Omit<ComponentProps<typeof Popover>, 'onChange' | 'children'> {
+interface TenantPopoverProps extends Pick<ComponentProps<typeof Popover>, 'floating' | 'align'> {
   loading?: boolean;
   tenants: Tenant[];
   selected: Tenant['id'][];
   disabled?: boolean;
   onChange: (tenants: Tenant['id'][]) => void;
-  useCarbonTrigger?: boolean;
+  label?: ReactNode;
 }
 
 export default function TenantPopover({
@@ -32,36 +32,34 @@ export default function TenantPopover({
   selected,
   disabled,
   onChange,
-  useCarbonTrigger,
-  ...props
+  floating,
+  align,
+  label,
 }: TenantPopoverProps) {
   const allSelected = tenants && tenants.length === selected.length;
   const noneSelected = selected.length === 0;
 
-  let label: string | undefined = t('common.definitionSelection.multiple').toString();
+  let value: string | undefined = t('common.definitionSelection.multiple').toString();
   if (allSelected) {
-    label = t('common.all').toString();
+    value = t('common.all').toString();
   }
   if (noneSelected) {
-    label = t('common.select').toString();
+    value = t('common.select').toString();
   }
   if (selected?.length === 1 && tenants?.length !== 0) {
-    label = tenants?.find(({id}) => id === selected[0])?.name;
+    value = tenants?.find(({id}) => id === selected[0])?.name;
   }
 
   return (
     <Popover
       className="TenantPopover"
-      disabled={disabled || tenants?.length < 2 || !tenants}
-      title={label || '-'}
       trigger={
-        useCarbonTrigger ? (
-          <Popover.ListBox label={label} disabled={disabled || tenants?.length < 2 || !tenants}>
-            {label || '-'}
-          </Popover.ListBox>
-        ) : undefined
+        <Popover.ListBox label={label} disabled={disabled || tenants?.length < 2 || !tenants}>
+          {value || '-'}
+        </Popover.ListBox>
       }
-      {...props}
+      floating={floating}
+      align={align}
     >
       {loading && <Loading withOverlay />}
       <Form>

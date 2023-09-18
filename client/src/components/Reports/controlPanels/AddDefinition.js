@@ -8,8 +8,9 @@
 import {useState, useEffect} from 'react';
 import {withRouter} from 'react-router-dom';
 import {Button} from '@carbon/react';
+import {Add} from '@carbon/icons-react';
 
-import {Button as LegacyButton, Icon, Modal, MessageBox, Checklist} from 'components';
+import {Modal, MessageBox, Checklist} from 'components';
 import {withErrorHandling} from 'HOC';
 import {getCollection, getRandomId} from 'services';
 import {t} from 'translation';
@@ -53,19 +54,20 @@ export function AddDefinition({mightFail, location, definitions, type, onAdd}) {
 
   return (
     <>
-      <LegacyButton
-        small
-        className="AddDefinition"
+      <Button
+        kind="tertiary"
+        className="AddDefinition cds--layout--size-xs"
         onClick={(evt) => {
           evt.stopPropagation();
           setSelectedDefinitions([]);
           setModalOpen(true);
         }}
         disabled={definitions.length >= 10}
+        renderIcon={Add}
       >
-        <Icon type="plus" />
         {t('common.add')}
-      </LegacyButton>
+      </Button>
+
       <Modal open={modalOpen} onClose={handleModalClose} className="AddDefinitionModal">
         <Modal.Header>
           {t('report.definition.add', {type: t('report.definition.' + type)})}
