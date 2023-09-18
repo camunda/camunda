@@ -33,6 +33,8 @@ public final class MessageStartEventSubscriptionRecord extends UnifiedRecordValu
   private final LongProperty messageKeyProp = new LongProperty("messageKey", -1L);
   private final StringProperty correlationKeyProp = new StringProperty("correlationKey", "");
   private final DocumentProperty variablesProp = new DocumentProperty("variables");
+  private final StringProperty tenantIdProp =
+      new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
   public MessageStartEventSubscriptionRecord() {
     declareProperty(processDefinitionKeyProp)
@@ -42,7 +44,8 @@ public final class MessageStartEventSubscriptionRecord extends UnifiedRecordValu
         .declareProperty(processInstanceKeyProp)
         .declareProperty(messageKeyProp)
         .declareProperty(correlationKeyProp)
-        .declareProperty(variablesProp);
+        .declareProperty(variablesProp)
+        .declareProperty(tenantIdProp);
   }
 
   public void wrap(final MessageStartEventSubscriptionRecord record) {
@@ -50,6 +53,7 @@ public final class MessageStartEventSubscriptionRecord extends UnifiedRecordValu
     bpmnProcessIdProp.setValue(record.getBpmnProcessIdBuffer());
     messageNameProp.setValue(record.getMessageNameBuffer());
     startEventIdProp.setValue(record.getStartEventIdBuffer());
+    tenantIdProp.setValue(record.getTenantId());
   }
 
   @JsonIgnore
@@ -159,7 +163,11 @@ public final class MessageStartEventSubscriptionRecord extends UnifiedRecordValu
 
   @Override
   public String getTenantId() {
-    // todo(#13289): replace dummy implementation
-    return TenantOwned.DEFAULT_TENANT_IDENTIFIER;
+    return bufferAsString(tenantIdProp.getValue());
+  }
+
+  public MessageStartEventSubscriptionRecord setTenantId(final String tenantId) {
+    tenantIdProp.setValue(tenantId);
+    return this;
   }
 }
