@@ -14,6 +14,7 @@ import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.Member;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
+import io.camunda.zeebe.scheduler.AsyncClosable;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.topology.TopologyUpdateNotifier;
@@ -31,7 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public final class ClusterTopologyGossiper
-    implements TopologyUpdateNotifier, ClusterMembershipEventListener {
+    implements TopologyUpdateNotifier, ClusterMembershipEventListener, AsyncClosable {
   private static final Logger LOGGER = LoggerFactory.getLogger(ClusterTopologyGossiper.class);
   private static final String SYNC_REQUEST_TOPIC = "cluster-topology-sync";
   private static final String GOSSIP_REQUEST_TOPIC = "cluster-topology-gossip";
@@ -85,8 +86,18 @@ public final class ClusterTopologyGossiper
     registerMemberAddedListener();
   }
 
+  private void internalStop() {
+    unregisterMemberListener();
+    unregisterSyncHandler();
+    unregisterGossipHandler();
+  }
+
   private void registerMemberAddedListener() {
     membershipService.addListener(this);
+  }
+
+  private void unregisterMemberListener() {
+    membershipService.removeListener(this);
   }
 
   private void registerSyncHandler() {
@@ -98,9 +109,17 @@ public final class ClusterTopologyGossiper
         executor::run);
   }
 
+  private void unregisterSyncHandler() {
+    communicationService.unsubscribe(SYNC_REQUEST_TOPIC);
+  }
+
   private void registerGossipHandler() {
     communicationService.consume(
         GOSSIP_REQUEST_TOPIC, serializer::decode, this::handleGossip, executor::run);
+  }
+
+  private void unregisterGossipHandler() {
+    communicationService.unsubscribe(GOSSIP_REQUEST_TOPIC);
   }
 
   private void scheduleSync() {
@@ -271,5 +290,16 @@ public final class ClusterTopologyGossiper
     // When a new member is added to the cluster, immediately sync with it so that the new member
     // receives the latest topology as fast as possible.
     executor.run(() -> sync(event.subject().id()));
+  }
+
+  @Override
+  public ActorFuture<Void> closeAsync() {
+    final ActorFuture<Void> future = executor.createFuture();
+    executor.run(
+        () -> {
+          internalStop();
+          future.complete(null);
+        });
+    return future;
   }
 }
