@@ -265,9 +265,35 @@ public final class TestCluster implements CloseableSilently {
    *     complete
    */
   public TestCluster awaitCompleteTopology(final Duration timeout) {
+    return awaitCompleteTopology(brokers.size(), partitionsCount, replicationFactor, timeout);
+  }
+
+  /**
+   * Waits until every gateway in the cluster sees a complete and healthy topology, as defined by
+   * the {@link #replicationFactor}, {@link #partitionsCount}, and count of {@link #brokers} in this
+   * cluster.
+   *
+   * @param clusterSize the expected brokers count
+   * @param partitionsCount the expected partitions count
+   * @param replicationFactor the expected number of replicas per partition
+   * @param timeout maximum time to block before failing
+   * @throws org.awaitility.core.ConditionTimeoutException if timeout expires before the topology is
+   *     complete
+   */
+  public TestCluster awaitCompleteTopology(
+      final int clusterSize,
+      final int partitionsCount,
+      final int replicationFactor,
+      final Duration timeout) {
     Awaitility.await("until cluster topology is complete")
         .atMost(timeout)
-        .untilAsserted(() -> assertThat(allGateways()).allSatisfy(this::assertCompleteTopology));
+        .untilAsserted(
+            () ->
+                assertThat(allGateways())
+                    .allSatisfy(
+                        gateway ->
+                            assertCompleteTopology(
+                                gateway, clusterSize, partitionsCount, replicationFactor)));
     return this;
   }
 
@@ -318,13 +344,17 @@ public final class TestCluster implements CloseableSilently {
     return true;
   }
 
-  private void assertCompleteTopology(final TestGateway<?> node) {
+  private void assertCompleteTopology(
+      final TestGateway<?> node,
+      final int clusterSize,
+      final int partitionsCount,
+      final int replicationFactor) {
     assertThatCode(() -> node.probe(TestHealthProbe.READY))
         .as("gateway '%s' is ready", node.nodeId())
         .doesNotThrowAnyException();
     try (final var client = node.newClientBuilder().build()) {
       TopologyAssert.assertThat(client.newTopologyRequest().send().join())
-          .isComplete(brokers.size(), partitionsCount, replicationFactor);
+          .isComplete(clusterSize, partitionsCount, replicationFactor);
     }
   }
 
