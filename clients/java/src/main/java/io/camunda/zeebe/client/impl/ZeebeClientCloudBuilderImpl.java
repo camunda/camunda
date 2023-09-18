@@ -91,9 +91,9 @@ public class ZeebeClientCloudBuilderImpl
     if (properties.containsKey(ClientProperties.CLOUD_REGION)) {
       withRegion(properties.getProperty(ClientProperties.CLOUD_REGION));
     }
-    if (properties.containsKey(ClientProperties.ENABLE_STREAMING)) {
-      streamEnabled(
-          Boolean.parseBoolean(properties.getProperty(ClientProperties.ENABLE_STREAMING)));
+    if (properties.containsKey(ClientProperties.STREAM_ENABLED)) {
+      defaultJobWorkerStreamEnabled(
+          Boolean.parseBoolean(properties.getProperty(ClientProperties.STREAM_ENABLED)));
     }
     innerBuilder.withProperties(properties);
 
@@ -223,8 +223,8 @@ public class ZeebeClientCloudBuilderImpl
   }
 
   @Override
-  public ZeebeClientBuilder streamEnabled(final boolean streamEnabled) {
-    innerBuilder.streamEnabled(streamEnabled);
+  public ZeebeClientBuilder defaultJobWorkerStreamEnabled(final boolean streamEnabled) {
+    innerBuilder.defaultJobWorkerStreamEnabled(streamEnabled);
     return null;
   }
 

@@ -165,7 +165,7 @@ public interface ZeebeClientBuilder {
    * A custom streamEnabled allows the client to use job stream instead of job poll. The default
    * value is set as enabled.
    */
-  ZeebeClientBuilder streamEnabled(boolean streamEnabled);
+  ZeebeClientBuilder defaultJobWorkerStreamEnabled(boolean streamEnabled);
 
   /**
    * @return a new {@link ZeebeClient} with the provided configuration options.

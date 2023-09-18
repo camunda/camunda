@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.client.impl.worker;
 
+import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.ZEEBE_CLIENT_WORKER_STREAM_ENABLED;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.client.ZeebeClient;
@@ -23,6 +24,7 @@ import io.camunda.zeebe.client.api.worker.JobWorker;
 import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep3;
 import io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl;
 import io.camunda.zeebe.client.impl.ZeebeClientImpl;
+import io.camunda.zeebe.client.impl.util.Environment;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayImplBase;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
@@ -62,6 +64,7 @@ public final class JobWorkerImplTest {
 
   private MockedGateway gateway;
   private ZeebeClient client;
+  private ManagedChannel channel;
 
   @Before
   public void setup() throws IOException {
@@ -77,7 +80,7 @@ public final class JobWorkerImplTest {
             .addService(gateway)
             .build()
             .start());
-    final ManagedChannel channel =
+    channel =
         grpcCleanup.register(InProcessChannelBuilder.forName(serverName).directExecutor().build());
 
     client =
@@ -157,6 +160,29 @@ public final class JobWorkerImplTest {
 
     // when
     try (final JobWorker ignored = builder.open()) {
+      // then
+      Awaitility.await("until a stream is open")
+          .pollInterval(Duration.ofMillis(100))
+          .atMost(Duration.ofSeconds(5))
+          .untilAsserted(() -> assertThat(gateway.openStreams).hasSize(1));
+    }
+  }
+
+  @Test
+  public void workerBuilderShouldOverrideEnvVariables() {
+    // given
+    Environment.system().put(ZEEBE_CLIENT_WORKER_STREAM_ENABLED, "false");
+
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+    builder.applyEnvironmentVariableOverrides(true).build();
+    final ZeebeClient zeebeClient =
+        new ZeebeClientImpl(builder, channel, GatewayGrpc.newStub(channel));
+
+    final JobWorkerBuilderStep3 jobWorkerBuilderStep3 =
+        zeebeClient.newWorker().jobType("test").handler(NOOP_JOB_HANDLER).streamEnabled(true);
+
+    // when
+    try (final JobWorker ignored = jobWorkerBuilderStep3.open()) {
       // then
       Awaitility.await("until a stream is open")
           .pollInterval(Duration.ofMillis(100))

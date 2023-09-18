@@ -16,16 +16,16 @@
 package io.camunda.zeebe.client;
 
 import static io.camunda.zeebe.client.ClientProperties.CLOUD_REGION;
-import static io.camunda.zeebe.client.ClientProperties.ENABLE_STREAMING;
 import static io.camunda.zeebe.client.ClientProperties.DEFAULT_TENANT_ID;
 import static io.camunda.zeebe.client.ClientProperties.MAX_MESSAGE_SIZE;
+import static io.camunda.zeebe.client.ClientProperties.STREAM_ENABLED;
 import static io.camunda.zeebe.client.ClientProperties.USE_PLAINTEXT_CONNECTION;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.CA_CERTIFICATE_VAR;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.DEFAULT_TENANT_ID_VAR;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.KEEP_ALIVE_VAR;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.OVERRIDE_AUTHORITY_VAR;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.PLAINTEXT_CONNECTION_VAR;
-import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.ZEEBE_CLIENT_WORKER_STREAM_ENABLE;
+import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.ZEEBE_CLIENT_WORKER_STREAM_ENABLED;
 import static io.camunda.zeebe.client.impl.util.DataSizeUtil.ONE_MB;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -84,7 +84,7 @@ public final class ZeebeClientTest extends ClientTest {
       assertThat(configuration.getOverrideAuthority()).isNull();
       assertThat(configuration.getDefaultTenantId())
           .isEqualTo(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
-      assertThat(configuration.getStreamEnabled()).isFalse();
+      assertThat(configuration.getDefaultJobWorkerStreamEnabled()).isFalse();
     }
   }
 
@@ -153,37 +153,50 @@ public final class ZeebeClientTest extends ClientTest {
   }
 
   @Test
-  public void shouldDisableStreamingWithProperty() {
+  public void shouldEnableStreamingWithProperty() {
     // given
     final Properties properties = new Properties();
-    properties.putIfAbsent(ENABLE_STREAMING, "false");
+    properties.putIfAbsent(STREAM_ENABLED, "true");
     final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
-    builder.applyEnvironmentVariableOverrides(false);
     builder.withProperties(properties);
 
     // when
     builder.build();
 
     // then
-    assertThat(builder.getStreamEnabled()).isFalse();
+    assertThat(builder.getDefaultJobWorkerStreamEnabled()).isTrue();
   }
 
   @Test
-  public void shouldDisableStreamingWithEnvVar() {
+  public void shouldEnableStreamingWithEnvironmentVariableWhenApplied() {
     // given
-    Environment.system().put(ZEEBE_CLIENT_WORKER_STREAM_ENABLE, "false");
+    Environment.system().put(ZEEBE_CLIENT_WORKER_STREAM_ENABLED, "true");
+
+    final ZeebeClientBuilderImpl builder1 = new ZeebeClientBuilderImpl();
+    final ZeebeClientBuilderImpl builder2 = new ZeebeClientBuilderImpl();
+    builder1.applyEnvironmentVariableOverrides(false);
+    builder2.applyEnvironmentVariableOverrides(true);
+
+    // when
+    builder1.build();
+    builder2.build();
+    assertThat(builder1.getDefaultJobWorkerStreamEnabled()).isFalse();
+    assertThat(builder2.getDefaultJobWorkerStreamEnabled()).isTrue();
+  }
+
+  @Test
+  public void environmentVariableShouldOverrideProperty() {
+    // given
+    Environment.system().put(ZEEBE_CLIENT_WORKER_STREAM_ENABLED, "true");
     final Properties properties = new Properties();
-    properties.putIfAbsent(ENABLE_STREAMING, "true");
+    properties.putIfAbsent(STREAM_ENABLED, "false");
+
     final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
-    // Env var should override client property
-    builder.applyEnvironmentVariableOverrides(true);
-    builder.withProperties(properties);
+    builder.withProperties(properties).applyEnvironmentVariableOverrides(true);
 
     // when
     builder.build();
-
-    // then
-    assertThat(builder.getStreamEnabled()).isFalse();
+    assertThat(builder.getDefaultJobWorkerStreamEnabled()).isTrue();
   }
 
   @Test

@@ -118,9 +118,9 @@ public final class ClientProperties {
   public static final String CLOUD_REGION = "zeebe.client.cloud.region";
 
   /**
-   * @see ZeebeClientBuilder#streamEnabled(boolean)
+   * @see ZeebeClientBuilder#defaultJobWorkerStreamEnabled(boolean)
    */
-  public static final String ENABLE_STREAMING = "zeebe.client.worker.stream.enable";
+  public static final String STREAM_ENABLED = "zeebe.client.worker.stream.enabled";
 
   private ClientProperties() {}
 }
