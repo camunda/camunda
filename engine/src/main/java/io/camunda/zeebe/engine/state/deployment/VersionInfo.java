@@ -7,34 +7,47 @@
  */
 package io.camunda.zeebe.engine.state.deployment;
 
+import io.camunda.zeebe.db.DbValue;
+import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
+import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.value.LongValue;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.StreamSupport;
 
-public interface VersionInfo<T> {
+public final class VersionInfo extends UnpackedObject implements DbValue {
+  // The property key is named nextValue. This is not a great name and doesn't describe what it is.
+  // However, changing this is not backwards compatible. Changing the variable name is the best we
+  // can do to hide this name.
+  private final LongProperty highestVersionProp = new LongProperty("nextValue", -1L);
+  private final ArrayProperty<LongValue> knownVersions =
+      new ArrayProperty<>("knownVersions", new LongValue());
 
-  long getHighestVersion();
-
-  void setHighestVersion(final long version);
-
-  ArrayProperty<LongValue> getKnownVersionsProp();
-
-  /**
-   * Sets the highest version of a resource. This is the highest version we've ever known. If the
-   * passed version is lower than the current known highest version, nothing is changed.
-   *
-   * @param version the version of the resource
-   */
-  default T setHighestVersionIfHigher(final long version) {
-    if (version > getHighestVersion()) {
-      setHighestVersion(version);
-    }
-    return (T) this;
+  public VersionInfo() {
+    declareProperty(highestVersionProp).declareProperty(knownVersions);
   }
 
-  default Long getLatestVersion() {
+  /**
+   * Gets the highest version of a resource. This is the highest version we've ever known. There is
+   * no guarantee that a resource with this version still exists in the state. It could've been
+   * deleted. We need to track this version so we don't ever reuse version numbers after a resource
+   * has been deleted.
+   *
+   * @return the highest version we've ever known for this resource
+   */
+  public long getHighestVersion() {
+    return highestVersionProp.getValue();
+  }
+
+  public VersionInfo setHighestVersionIfHigher(final long version) {
+    if (version > getHighestVersion()) {
+      highestVersionProp.setValue(version);
+    }
+    return this;
+  }
+
+  public Long getLatestVersion() {
     final List<Long> knownVersions = getKnownVersions();
     if (knownVersions.isEmpty()) {
       return 0L;
@@ -42,14 +55,14 @@ public interface VersionInfo<T> {
     return knownVersions.get(knownVersions.size() - 1);
   }
 
-  default List<Long> getKnownVersions() {
-    return StreamSupport.stream(getKnownVersionsProp().spliterator(), false)
+  public List<Long> getKnownVersions() {
+    return StreamSupport.stream(knownVersions.spliterator(), false)
         .map(LongValue::getValue)
         .sorted()
         .toList();
   }
 
-  default Optional<Integer> findVersionBefore(final long version) {
+  public Optional<Integer> findVersionBefore(final long version) {
     final var knownVersions = getKnownVersions();
     final var previousIndex = knownVersions.indexOf(version) - 1;
 
@@ -60,15 +73,15 @@ public interface VersionInfo<T> {
     return Optional.of(knownVersions.get(previousIndex).intValue());
   }
 
-  default void addKnownVersion(final long version) {
+  public void addKnownVersion(final long version) {
     if (!getKnownVersions().contains(version)) {
-      getKnownVersionsProp().add().setValue(version);
+      knownVersions.add().setValue(version);
       setHighestVersionIfHigher(version);
     }
   }
 
-  default void removeKnownVersion(final long version) {
-    final var iterator = getKnownVersionsProp().iterator();
+  public void removeKnownVersion(final long version) {
+    final var iterator = knownVersions.iterator();
     while (iterator.hasNext()) {
       if (iterator.next().getValue() == version) {
         iterator.remove();

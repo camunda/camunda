@@ -18,7 +18,7 @@ import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.state.deployment.PersistedDecision;
 import io.camunda.zeebe.engine.state.deployment.PersistedDecisionRequirements;
-import io.camunda.zeebe.engine.state.deployment.ProcessVersionInfo;
+import io.camunda.zeebe.engine.state.deployment.VersionInfo;
 import io.camunda.zeebe.engine.state.immutable.PendingMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.PendingProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
@@ -100,7 +100,7 @@ public class DbMigrationState implements MutableMigrationState {
       processInstanceKeyByProcessDefinitionKeyColumnFamily;
 
   private final DbString processIdKey;
-  private final ColumnFamily<DbString, ProcessVersionInfo> processVersionInfoColumnFamily;
+  private final ColumnFamily<DbString, VersionInfo> processVersionInfoColumnFamily;
 
   public DbMigrationState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
@@ -223,7 +223,7 @@ public class DbMigrationState implements MutableMigrationState {
             ZbColumnFamilies.DEPRECATED_PROCESS_VERSION,
             transactionContext,
             processIdKey,
-            new ProcessVersionInfo());
+            new VersionInfo());
   }
 
   @Override

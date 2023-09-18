@@ -27,7 +27,7 @@ public class DbFormState implements MutableFormState {
   private final PersistedForm dbPersistedForm;
   private final ColumnFamily<DbLong, PersistedForm> formsByKey;
   private final DbString dbFormId;
-  private final FormVersionManager versionManager;
+  private final VersionManager versionManager;
   private final DbLong formVersion;
   private final DbCompositeKey<DbString, DbLong> idAndVersionKey;
   private final ColumnFamily<DbCompositeKey<DbString, DbLong>, PersistedForm>
@@ -51,7 +51,9 @@ public class DbFormState implements MutableFormState {
             idAndVersionKey,
             dbPersistedForm);
 
-    versionManager = new FormVersionManager(DEFAULT_VERSION_VALUE, zeebeDb, transactionContext);
+    versionManager =
+        new VersionManager(
+            DEFAULT_VERSION_VALUE, zeebeDb, ZbColumnFamilies.FORM_VERSION, transactionContext);
   }
 
   @Override
@@ -67,15 +69,16 @@ public class DbFormState implements MutableFormState {
   }
 
   @Override
-  public Optional<PersistedForm> findLatestFormById(final DirectBuffer formId) {
+  public Optional<PersistedForm> findLatestFormById(
+      final DirectBuffer formId, final String tenantId) {
     dbFormId.wrapBuffer(formId);
-    final long latestVersion = versionManager.getLatestFormVersion(formId);
+    final long latestVersion = versionManager.getLatestResourceVersion(formId, tenantId);
     formVersion.wrapLong(latestVersion);
     return Optional.ofNullable(formByIdAndVersionColumnFamily.get(idAndVersionKey));
   }
 
   @Override
-  public Optional<PersistedForm> findFormByKey(final long formKey) {
+  public Optional<PersistedForm> findFormByKey(final long formKey, final String tenantId) {
     dbFormKey.wrapLong(formKey);
     return Optional.ofNullable(formsByKey.get(dbFormKey)).map(PersistedForm::copy);
   }
@@ -84,6 +87,6 @@ public class DbFormState implements MutableFormState {
     final var formId = formRecord.getFormId();
     dbFormId.wrapString(formId);
     final var version = formRecord.getVersion();
-    versionManager.addFormVersion(formId, version);
+    versionManager.addResourceVersion(formId, version, formRecord.getTenantId());
   }
 }

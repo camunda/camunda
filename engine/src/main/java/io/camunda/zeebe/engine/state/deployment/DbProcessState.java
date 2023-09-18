@@ -77,7 +77,7 @@ public final class DbProcessState implements MutableProcessState {
       digestByIdColumnFamily;
   private final Digest digest = new Digest();
 
-  private final ProcessVersionManager versionManager;
+  private final VersionManager versionManager;
 
   public DbProcessState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
@@ -120,7 +120,9 @@ public final class DbProcessState implements MutableProcessState {
 
     processByTenantAndKeyCache = new HashMap<>();
 
-    versionManager = new ProcessVersionManager(DEFAULT_VERSION_VALUE, zeebeDb, transactionContext);
+    versionManager =
+        new VersionManager(
+            DEFAULT_VERSION_VALUE, zeebeDb, ZbColumnFamilies.PROCESS_VERSION, transactionContext);
   }
 
   @Override
@@ -182,7 +184,7 @@ public final class DbProcessState implements MutableProcessState {
         .remove(processRecord.getProcessDefinitionKey());
 
     final long latestVersion =
-        versionManager.getLatestProcessVersion(
+        versionManager.getLatestResourceVersion(
             processRecord.getBpmnProcessId(), processRecord.getTenantId());
     if (latestVersion == processRecord.getVersion()) {
       // As we don't set the digest to the digest of the previous there is a chance it does not
@@ -191,7 +193,7 @@ public final class DbProcessState implements MutableProcessState {
       digestByIdColumnFamily.deleteIfExists(fkTenantAwareProcessId);
     }
 
-    versionManager.deleteProcessVersion(
+    versionManager.deleteResourceVersion(
         processRecord.getBpmnProcessId(), processRecord.getVersion(), processRecord.getTenantId());
   }
 
@@ -212,7 +214,7 @@ public final class DbProcessState implements MutableProcessState {
     processId.wrapBuffer(processRecord.getBpmnProcessIdBuffer());
     final var bpmnProcessId = processRecord.getBpmnProcessId();
     final var version = processRecord.getVersion();
-    versionManager.addProcessVersion(bpmnProcessId, version, processRecord.getTenantId());
+    versionManager.addResourceVersion(bpmnProcessId, version, processRecord.getTenantId());
   }
 
   // is called on getters, if process is not in memory
@@ -282,7 +284,7 @@ public final class DbProcessState implements MutableProcessState {
             .get(processIdBuffer);
 
     processId.wrapBuffer(processIdBuffer);
-    final long latestVersion = versionManager.getLatestProcessVersion(processIdBuffer, tenantId);
+    final long latestVersion = versionManager.getLatestResourceVersion(processIdBuffer, tenantId);
 
     DeployedProcess deployedProcess;
     if (versionMap == null) {
@@ -337,18 +339,18 @@ public final class DbProcessState implements MutableProcessState {
 
   @Override
   public int getLatestProcessVersion(final String bpmnProcessId, final String tenantId) {
-    return (int) versionManager.getLatestProcessVersion(bpmnProcessId, tenantId);
+    return (int) versionManager.getLatestResourceVersion(bpmnProcessId, tenantId);
   }
 
   @Override
   public int getNextProcessVersion(final String bpmnProcessId, final String tenantId) {
-    return (int) versionManager.getHighestProcessVersion(bpmnProcessId, tenantId) + 1;
+    return (int) versionManager.getHighestResourceVersion(bpmnProcessId, tenantId) + 1;
   }
 
   @Override
   public Optional<Integer> findProcessVersionBefore(
       final String bpmnProcessId, final long version, final String tenantId) {
-    return versionManager.findProcessVersionBefore(bpmnProcessId, version, tenantId);
+    return versionManager.findResourceVersionBefore(bpmnProcessId, version, tenantId);
   }
 
   @Override
