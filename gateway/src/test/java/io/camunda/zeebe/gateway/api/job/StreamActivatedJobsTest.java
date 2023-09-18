@@ -14,6 +14,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StreamActivatedJobsRequest;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.stream.job.ActivatedJobImpl;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.MsgPackUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.grpc.Status;
@@ -64,6 +65,8 @@ public class StreamActivatedJobsTest extends GatewayTest {
     assertThat(streamedActivatedJob.getWorker()).isEqualTo(WORKER);
     assertThat(streamedActivatedJob.getDeadline()).isEqualTo(DEADLINE);
     assertThat(activatedJob.jobRecord().getVariables()).isEqualTo(fetchedVariables);
+    assertThat(activatedJob.jobRecord().getTenantId())
+        .isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   }
 
   @Test
