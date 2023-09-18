@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -43,6 +44,7 @@ public class SubscriptionCommandSenderTest {
       Protocol.encodePartitionId(SAME_PARTITION, 1);
   private static final long DEFAULT_ELEMENT_INSTANCE_KEY = 111;
   private static final DirectBuffer DEFAULT_MESSAGE_NAME = BufferUtil.wrapString("msg");
+  private static final String DEFAULT_TENANT = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
   private InterPartitionCommandSender mockInterPartitionCommandSender;
   private SubscriptionCommandSender subscriptionCommandSender;
   private ProcessingResultBuilder mockProcessingResultBuilder;
@@ -96,7 +98,8 @@ public class SubscriptionCommandSenderTest {
         DEFAULT_MESSAGE_NAME,
         DEFAULT_MESSAGE_KEY,
         DEFAULT_VARIABLES,
-        DEFAULT_CORRELATION_KEY);
+        DEFAULT_CORRELATION_KEY,
+        DEFAULT_TENANT);
 
     // then
     verify(mockProcessingResultBuilder).appendPostCommitTask(any());
@@ -115,7 +118,8 @@ public class SubscriptionCommandSenderTest {
         DEFAULT_MESSAGE_NAME,
         DEFAULT_MESSAGE_KEY,
         DEFAULT_VARIABLES,
-        DEFAULT_CORRELATION_KEY);
+        DEFAULT_CORRELATION_KEY,
+        DEFAULT_TENANT);
 
     // then
     verify(mockProcessingResultBuilder, never()).appendPostCommitTask(any());

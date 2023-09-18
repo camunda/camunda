@@ -108,7 +108,8 @@ public final class MessageSubscriptionRejectProcessor
         subscription.getMessageNameBuffer(),
         subscription.getMessageKey(),
         subscription.getVariablesBuffer(),
-        subscription.getCorrelationKeyBuffer());
+        subscription.getCorrelationKeyBuffer(),
+        subscription.getTenantId());
   }
 
   private void rejectCommand(final TypedRecord<MessageSubscriptionRecord> record) {

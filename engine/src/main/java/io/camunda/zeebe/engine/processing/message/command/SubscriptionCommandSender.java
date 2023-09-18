@@ -133,7 +133,8 @@ public class SubscriptionCommandSender {
       final DirectBuffer messageName,
       final long messageKey,
       final DirectBuffer variables,
-      final DirectBuffer correlationKey) {
+      final DirectBuffer correlationKey,
+      final String tenantId) {
     return handleFollowUpCommandBasedOnPartition(
         Protocol.decodePartitionId(processInstanceKey),
         ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
@@ -146,7 +147,8 @@ public class SubscriptionCommandSender {
             .setMessageKey(messageKey)
             .setMessageName(messageName)
             .setVariables(variables)
-            .setCorrelationKey(correlationKey));
+            .setCorrelationKey(correlationKey)
+            .setTenantId(tenantId));
   }
 
   /**
