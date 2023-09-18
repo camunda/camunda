@@ -40,6 +40,7 @@ import java.util.Comparator;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
@@ -324,6 +325,8 @@ public class DecisionListQueryIT extends OperateIntegrationTest {
   public void testVariousSorting() throws Exception {
     testSortingByDecisionNameAsc();
     testSortingByDecisionNameDesc();
+    testSortingByTenantIdAsc();
+    testSortingByTenantIdDesc();
     testSortingByDecisionVersionAsc();
     testSortingByDecisionVersionDesc();
     testSortingByEvaluationDateAsc();
@@ -374,6 +377,32 @@ public class DecisionListQueryIT extends OperateIntegrationTest {
     sorting.setSortOrder(SortingDto.SORT_ORDER_DESC_VALUE);
 
     testSorting(sorting, comparator, "id desc");
+  }
+
+  private void testSortingByTenantIdAsc() throws Exception {
+    final Comparator<DecisionInstanceForListDto> comparator =
+        Comparator.comparing((DecisionInstanceForListDto o) -> o.getTenantId().toLowerCase())
+            .thenComparingLong(o -> getId(o));
+    final SortingDto sorting = new SortingDto();
+    sorting.setSortBy(ListViewTemplate.TENANT_ID);
+    sorting.setSortOrder(SortingDto.SORT_ORDER_ASC_VALUE);
+
+    testSorting(sorting, comparator, "tenantId asc");
+  }
+
+  private void testSortingByTenantIdDesc() throws Exception {
+    final Comparator<DecisionInstanceForListDto> comparator = (o1, o2) -> {
+      int x = o2.getTenantId().toLowerCase().compareTo(o1.getTenantId().toLowerCase());
+      if (x == 0) {
+        x = getId(o1).compareTo(getId(o2));
+      }
+      return x;
+    };
+    final SortingDto sorting = new SortingDto();
+    sorting.setSortBy(ListViewTemplate.TENANT_ID);
+    sorting.setSortOrder(SortingDto.SORT_ORDER_DESC_VALUE);
+
+    testSorting(sorting, comparator, "tenantId desc");
   }
 
   private void testSortingByDecisionNameAsc() throws Exception {

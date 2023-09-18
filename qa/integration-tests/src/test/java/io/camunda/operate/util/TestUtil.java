@@ -289,7 +289,7 @@ public abstract class TestUtil {
     return incidentEntity;
   }
 
-  public static List<ProcessEntity> createProcessVersions(String bpmnProcessId, String name, int versionsCount) {
+  public static List<ProcessEntity> createProcessVersions(String bpmnProcessId, String name, int versionsCount, String tenantId) {
     List<ProcessEntity> result = new ArrayList<>();
     Random processIdGenerator =  new Random();
     for (int i = 1; i <= versionsCount; i++) {
@@ -298,6 +298,7 @@ public abstract class TestUtil {
       processEntity.setKey(processId);
       processEntity.setId(processId.toString());
       processEntity.setBpmnProcessId(bpmnProcessId);
+      processEntity.setTenantId(tenantId);
       processEntity.setName(name + i);
       processEntity.setVersion(i);
       result.add(processEntity);

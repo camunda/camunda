@@ -68,6 +68,9 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
 
   private Random random = new Random();
 
+  private String tenantId1 = "tenant1";
+  private String tenantId2 = "tenant2";
+
   @Test
   public void testAbsentProcessDoesntThrowExceptions() throws Exception {
     List<OperateEntity> entities = new ArrayList<>();
@@ -101,6 +104,7 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
     IncidentByProcessStatisticsDto next = iterator.next();
     assertThat(next.getName()).isEqualTo(DEMO_PROCESS_NAME + 1);
     assertThat(next.getBpmnProcessId()).isEqualTo(DEMO_BPMN_PROCESS_ID);
+    assertThat(next.getTenantId()).isEqualTo(tenantId1);
     assertThat(next.getInstancesWithActiveIncidentsCount()).isEqualTo(2L);
     assertThat(next.getActiveInstancesCount()).isEqualTo(0);
     assertThat(next.getVersion()).isEqualTo(1);
@@ -110,6 +114,7 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
     next = iterator.next();
     assertThat(next.getName()).isEqualTo(ORDER_PROCESS_NAME + 2);
     assertThat(next.getBpmnProcessId()).isEqualTo(ORDER_BPMN_PROCESS_ID);
+    assertThat(next.getTenantId()).isEqualTo(tenantId2);
     assertThat(next.getInstancesWithActiveIncidentsCount()).isEqualTo(1L);
     assertThat(next.getActiveInstancesCount()).isEqualTo(0);
     assertThat(next.getVersion()).isEqualTo(2);
@@ -126,6 +131,7 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
         s.getProcessId() != null &&
           s.getName().equals(DEMO_PROCESS_NAME + s.getVersion()) &&
           s.getErrorMessage().equals(ERRMSG_OTHER) &&
+          s.getTenantId().equals(tenantId1) &&
           s.getInstancesWithActiveIncidentsCount() == 1L &&
           (s.getVersion() == 1 || s.getVersion() == 2)
     );
@@ -296,11 +302,13 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
     assertThat(process.getActiveInstancesCount()).isEqualTo(0);
     assertThat(process.getInstancesWithActiveIncidentsCount()).isEqualTo(0);
     assertThat(process.getBpmnProcessId()).isEqualTo(NO_INSTANCES_PROCESS_ID);
+    assertThat(process.getTenantId()).isEqualTo(tenantId2);
     assertThat(process.getName()).isEqualTo(NO_INSTANCES_PROCESS_NAME + version);
   }
 
   private void assertLoanProcess(IncidentsByProcessGroupStatisticsDto loanProcessGroup) {
     assertThat(loanProcessGroup.getBpmnProcessId()).isEqualTo(LOAN_BPMN_PROCESS_ID);
+    assertThat(loanProcessGroup.getTenantId()).isEqualTo(tenantId1);
     assertThat(loanProcessGroup.getProcessName()).isEqualTo(LOAN_PROCESS_NAME + "1");
     assertThat(loanProcessGroup.getActiveInstancesCount()).isEqualTo(5);
     assertThat(loanProcessGroup.getInstancesWithActiveIncidentsCount()).isEqualTo(0);
@@ -311,6 +319,7 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
     IncidentByProcessStatisticsDto loanProcessProcessStatistic = loanProcessGroup.getProcesses().iterator().next();
     assertThat(loanProcessProcessStatistic.getName()).isEqualTo(LOAN_PROCESS_NAME + "1");
     assertThat(loanProcessProcessStatistic.getBpmnProcessId()).isEqualTo(LOAN_BPMN_PROCESS_ID);
+    assertThat(loanProcessProcessStatistic.getTenantId()).isEqualTo(tenantId1);
     assertThat(loanProcessProcessStatistic.getVersion()).isEqualTo(1);
     assertThat(loanProcessProcessStatistic.getActiveInstancesCount()).isEqualTo(5);
     assertThat(loanProcessProcessStatistic.getInstancesWithActiveIncidentsCount()).isEqualTo(0);
@@ -319,6 +328,7 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
   private void assertOrderProcess(IncidentsByProcessGroupStatisticsDto orderProcessGroup) {
     //assert Order process group
     assertThat(orderProcessGroup.getBpmnProcessId()).isEqualTo(ORDER_BPMN_PROCESS_ID);
+    assertThat(orderProcessGroup.getTenantId()).isEqualTo(tenantId2);
     assertThat(orderProcessGroup.getProcessName()).isEqualTo(ORDER_PROCESS_NAME + "2");
     assertThat(orderProcessGroup.getActiveInstancesCount()).isEqualTo(8);
     assertThat(orderProcessGroup.getInstancesWithActiveIncidentsCount()).isEqualTo(1);
@@ -327,6 +337,7 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
     final IncidentByProcessStatisticsDto orderProcess = orderProcessGroup.getProcesses().iterator().next();
     assertThat(orderProcess.getName()).isEqualTo(ORDER_PROCESS_NAME + "2");
     assertThat(orderProcess.getBpmnProcessId()).isEqualTo(ORDER_BPMN_PROCESS_ID);
+    assertThat(orderProcess.getTenantId()).isEqualTo(tenantId2);
     assertThat(orderProcess.getVersion()).isEqualTo(2);
     assertThat(orderProcess.getActiveInstancesCount()).isEqualTo(3);
     assertThat(orderProcess.getInstancesWithActiveIncidentsCount()).isEqualTo(1);
@@ -335,6 +346,7 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
   private void assertDemoProcess(IncidentsByProcessGroupStatisticsDto demoProcessGroup) {
     //assert Demo process group
     assertThat(demoProcessGroup.getBpmnProcessId()).isEqualTo(DEMO_BPMN_PROCESS_ID);
+    assertThat(demoProcessGroup.getTenantId()).isEqualTo(tenantId1);
     assertThat(demoProcessGroup.getProcessName()).isEqualTo(DEMO_PROCESS_NAME + "2");
     assertThat(demoProcessGroup.getActiveInstancesCount()).isEqualTo(9);
     assertThat(demoProcessGroup.getInstancesWithActiveIncidentsCount()).isEqualTo(4);
@@ -344,6 +356,7 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
     final IncidentByProcessStatisticsDto process1 = processes.next();
     assertThat(process1.getName()).isEqualTo(DEMO_PROCESS_NAME + "1");
     assertThat(process1.getBpmnProcessId()).isEqualTo(DEMO_BPMN_PROCESS_ID);
+    assertThat(process1.getTenantId()).isEqualTo(tenantId1);
     assertThat(process1.getVersion()).isEqualTo(1);
     assertThat(process1.getActiveInstancesCount()).isEqualTo(3);
     assertThat(process1.getInstancesWithActiveIncidentsCount()).isEqualTo(3);
@@ -351,13 +364,14 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
     final IncidentByProcessStatisticsDto process2 = processes.next();
     assertThat(process2.getName()).isEqualTo(DEMO_PROCESS_NAME + "2");
     assertThat(process2.getBpmnProcessId()).isEqualTo(DEMO_BPMN_PROCESS_ID);
+    assertThat(process2.getTenantId()).isEqualTo(tenantId1);
     assertThat(process2.getVersion()).isEqualTo(2);
     assertThat(process2.getActiveInstancesCount()).isEqualTo(6);
     assertThat(process2.getInstancesWithActiveIncidentsCount()).isEqualTo(1);
   }
 
   private void createDemoProcessData() {
-    List<ProcessEntity> processVersions = createProcessVersions(DEMO_BPMN_PROCESS_ID, DEMO_PROCESS_NAME, 2);
+    List<ProcessEntity> processVersions = createProcessVersions(DEMO_BPMN_PROCESS_ID, DEMO_PROCESS_NAME, 2, tenantId1);
     elasticsearchTestRule.persistNew(processVersions.toArray(new OperateEntity[processVersions.size()]));
 
     List<OperateEntity> entities = new ArrayList<>();
@@ -400,7 +414,7 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
   }
 
   private void createOrderProcessData() {
-    List<ProcessEntity> processVersions = createProcessVersions(ORDER_BPMN_PROCESS_ID, ORDER_PROCESS_NAME, 2);
+    List<ProcessEntity> processVersions = createProcessVersions(ORDER_BPMN_PROCESS_ID, ORDER_PROCESS_NAME, 2, tenantId2);
     elasticsearchTestRule.persistNew(processVersions.toArray(new OperateEntity[processVersions.size()]));
 
     List<OperateEntity> entities = new ArrayList<>();
@@ -431,7 +445,7 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
 
   private void createLoanProcessData() {
     //Loan process v1
-    List<ProcessEntity> processVersions = createProcessVersions(LOAN_BPMN_PROCESS_ID, LOAN_PROCESS_NAME, 1);
+    List<ProcessEntity> processVersions = createProcessVersions(LOAN_BPMN_PROCESS_ID, LOAN_PROCESS_NAME, 1, tenantId1);
     elasticsearchTestRule.persistNew(processVersions.get(0));
 
     List<OperateEntity> entities = new ArrayList<>();
@@ -451,7 +465,7 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
   }
 
   private void createNoInstancesProcessData(int versionCount) {
-    createProcessVersions(NO_INSTANCES_PROCESS_ID, NO_INSTANCES_PROCESS_NAME, versionCount)
+    createProcessVersions(NO_INSTANCES_PROCESS_ID, NO_INSTANCES_PROCESS_NAME, versionCount, tenantId2)
       .forEach( processVersion -> elasticsearchTestRule.persistNew(processVersion));
   }
 

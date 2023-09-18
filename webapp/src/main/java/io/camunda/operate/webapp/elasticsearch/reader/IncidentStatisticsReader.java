@@ -158,6 +158,7 @@ public class IncidentStatisticsReader extends AbstractReader implements io.camun
     for (List<ProcessEntity> processes: processGroups.values()) {
       IncidentsByProcessGroupStatisticsDto stat = new IncidentsByProcessGroupStatisticsDto();
       stat.setBpmnProcessId(processes.get(0).getBpmnProcessId());
+      stat.setTenantId(processes.get(0).getTenantId());
 
       //accumulate stat for process group
       long activeInstancesCount = 0;
@@ -177,6 +178,7 @@ public class IncidentStatisticsReader extends AbstractReader implements io.camun
         }
         statForProcess.setName(processEntity.getName());
         statForProcess.setBpmnProcessId(processEntity.getBpmnProcessId());
+        statForProcess.setTenantId(processEntity.getTenantId());
         statForProcess.setVersion(processEntity.getVersion());
         stat.getProcesses().add(statForProcess);
 
@@ -199,7 +201,7 @@ public class IncidentStatisticsReader extends AbstractReader implements io.camun
     Set<IncidentsByErrorMsgStatisticsDto> result = new TreeSet<>(IncidentsByErrorMsgStatisticsDto.COMPARATOR);
 
     Map<Long, ProcessEntity> processes = processReader.getProcessesWithFields(
-        ProcessIndex.KEY, ProcessIndex.NAME, ProcessIndex.BPMN_PROCESS_ID, ProcessIndex.VERSION);
+        ProcessIndex.KEY, ProcessIndex.NAME, ProcessIndex.BPMN_PROCESS_ID, ProcessIndex.TENANT_ID, ProcessIndex.VERSION);
 
     TermsAggregationBuilder aggregation = terms(GROUP_BY_ERROR_MESSAGE_HASH)
         .field(IncidentTemplate.ERROR_MSG_HASH)
@@ -264,6 +266,7 @@ public class IncidentStatisticsReader extends AbstractReader implements io.camun
         ProcessEntity process = processes.get(processDefinitionKey);
         statisticForProcess.setName(process.getName());
         statisticForProcess.setBpmnProcessId(process.getBpmnProcessId());
+        statisticForProcess.setTenantId(process.getTenantId());
         statisticForProcess.setVersion(process.getVersion());
         processStatistics.getProcesses().add(statisticForProcess);
       }

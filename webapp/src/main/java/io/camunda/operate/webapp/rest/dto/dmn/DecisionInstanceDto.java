@@ -32,6 +32,7 @@ public class DecisionInstanceDto implements
   private DecisionType decisionType;
   private String decisionDefinitionId;
   private String decisionId;
+  private String tenantId;
   private String decisionName;
   private int decisionVersion;
   private OffsetDateTime evaluationDate;
@@ -85,6 +86,15 @@ public class DecisionInstanceDto implements
 
   public DecisionInstanceDto setDecisionId(final String decisionId) {
     this.decisionId = decisionId;
+    return this;
+  }
+
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  public DecisionInstanceDto setTenantId(String tenantId) {
+    this.tenantId = tenantId;
     return this;
   }
 
@@ -175,6 +185,7 @@ public class DecisionInstanceDto implements
     this.setId(entity.getId())
         .setDecisionDefinitionId(entity.getDecisionDefinitionId())
         .setDecisionId(entity.getDecisionId())
+        .setTenantId(entity.getTenantId())
         .setDecisionName(entity.getDecisionName())
         .setDecisionType(entity.getDecisionType())
         .setDecisionVersion(entity.getDecisionVersion())
@@ -189,33 +200,24 @@ public class DecisionInstanceDto implements
   }
 
   @Override
-  public boolean equals(final Object o) {
-    if (this == o) {
+  public boolean equals(Object o) {
+    if (this == o)
       return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
+    if (o == null || getClass() != o.getClass())
       return false;
-    }
-    final DecisionInstanceDto that = (DecisionInstanceDto) o;
-    return decisionVersion == that.decisionVersion &&
-        processInstanceId == that.processInstanceId &&
-        Objects.equals(id, that.id) &&
-        state == that.state &&
-        decisionType == that.decisionType &&
-        Objects.equals(decisionDefinitionId, that.decisionDefinitionId) &&
-        Objects.equals(decisionId, that.decisionId) &&
-        Objects.equals(decisionName, that.decisionName) &&
-        Objects.equals(evaluationDate, that.evaluationDate) &&
-        Objects.equals(errorMessage, that.errorMessage) &&
-        Objects.equals(result, that.result) &&
-        Objects.equals(evaluatedInputs, that.evaluatedInputs) &&
-        Objects.equals(evaluatedOutputs, that.evaluatedOutputs);
+    DecisionInstanceDto that = (DecisionInstanceDto) o;
+    return decisionVersion == that.decisionVersion && Objects.equals(id,
+        that.id) && state == that.state && decisionType == that.decisionType && Objects.equals(decisionDefinitionId,
+        that.decisionDefinitionId) && Objects.equals(decisionId, that.decisionId) && Objects.equals(tenantId,
+        that.tenantId) && Objects.equals(decisionName, that.decisionName) && Objects.equals(evaluationDate,
+        that.evaluationDate) && Objects.equals(errorMessage, that.errorMessage) && Objects.equals(processInstanceId,
+        that.processInstanceId) && Objects.equals(result, that.result) && Objects.equals(evaluatedInputs,
+        that.evaluatedInputs) && Objects.equals(evaluatedOutputs, that.evaluatedOutputs);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, state, decisionType, decisionDefinitionId, decisionId, decisionName,
-        decisionVersion, evaluationDate, errorMessage, processInstanceId, result, evaluatedInputs,
-        evaluatedOutputs);
+    return Objects.hash(id, state, decisionType, decisionDefinitionId, decisionId, tenantId, decisionName,
+        decisionVersion, evaluationDate, errorMessage, processInstanceId, result, evaluatedInputs, evaluatedOutputs);
   }
 }

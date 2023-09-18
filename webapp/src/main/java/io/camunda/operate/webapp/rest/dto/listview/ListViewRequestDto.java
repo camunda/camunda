@@ -22,6 +22,7 @@ public class ListViewRequestDto extends PaginatedQuery<ListViewRequestDto> {
   public static final String SORT_BY_PROCESS_NAME = "processName";
   public static final String SORT_BY_WORFLOW_VERSION = "processVersion";
   public static final String SORT_BY_PARENT_INSTANCE_ID = "parentInstanceId";
+  public static final String SORT_BY_TENANT_ID = "tenantId";
 
   public static final Set<String> VALID_SORT_BY_VALUES;
   static {
@@ -32,6 +33,7 @@ public class ListViewRequestDto extends PaginatedQuery<ListViewRequestDto> {
     VALID_SORT_BY_VALUES.add(SORT_BY_PROCESS_NAME);
     VALID_SORT_BY_VALUES.add(SORT_BY_WORFLOW_VERSION);
     VALID_SORT_BY_VALUES.add(SORT_BY_PARENT_INSTANCE_ID);
+    VALID_SORT_BY_VALUES.add(SORT_BY_TENANT_ID);
   }
 
   private ListViewQueryDto query;

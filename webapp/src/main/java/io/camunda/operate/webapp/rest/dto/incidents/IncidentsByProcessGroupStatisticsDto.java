@@ -7,16 +7,19 @@
 package io.camunda.operate.webapp.rest.dto.incidents;
 
 import java.util.Comparator;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 public class IncidentsByProcessGroupStatisticsDto {
-  
+
   public static final Comparator<IncidentsByProcessGroupStatisticsDto> COMPARATOR = new IncidentsByProcessGroupStatisticsDtoComparator();
 
   private String bpmnProcessId;
+
+  private String tenantId;
 
   private String processName;
 
@@ -33,6 +36,15 @@ public class IncidentsByProcessGroupStatisticsDto {
 
   public void setBpmnProcessId(String bpmnProcessId) {
     this.bpmnProcessId = bpmnProcessId;
+  }
+
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  public IncidentsByProcessGroupStatisticsDto setTenantId(String tenantId) {
+    this.tenantId = tenantId;
+    return this;
   }
 
   public String getProcessName() {
@@ -73,31 +85,19 @@ public class IncidentsByProcessGroupStatisticsDto {
       return true;
     if (o == null || getClass() != o.getClass())
       return false;
-
     IncidentsByProcessGroupStatisticsDto that = (IncidentsByProcessGroupStatisticsDto) o;
-
-    if (instancesWithActiveIncidentsCount != that.instancesWithActiveIncidentsCount)
-      return false;
-    if (activeInstancesCount != that.activeInstancesCount)
-      return false;
-    if (bpmnProcessId != null ? !bpmnProcessId.equals(that.bpmnProcessId) : that.bpmnProcessId != null)
-      return false;
-    if (processName != null ? !processName.equals(that.processName) : that.processName != null)
-      return false;
-    return processes != null ? processes.equals(that.processes) : that.processes == null;
+    return instancesWithActiveIncidentsCount == that.instancesWithActiveIncidentsCount && activeInstancesCount == that.activeInstancesCount && Objects.equals(
+        bpmnProcessId, that.bpmnProcessId) && Objects.equals(tenantId, that.tenantId) && Objects.equals(processName,
+        that.processName) && Objects.equals(processes, that.processes);
   }
 
   @Override
   public int hashCode() {
-    int result = bpmnProcessId != null ? bpmnProcessId.hashCode() : 0;
-    result = 31 * result + (processName != null ? processName.hashCode() : 0);
-    result = 31 * result + (int) (instancesWithActiveIncidentsCount ^ (instancesWithActiveIncidentsCount >>> 32));
-    result = 31 * result + (int) (activeInstancesCount ^ (activeInstancesCount >>> 32));
-    result = 31 * result + (processes != null ? processes.hashCode() : 0);
-    return result;
+    return Objects.hash(bpmnProcessId, tenantId, processName, instancesWithActiveIncidentsCount, activeInstancesCount,
+        processes);
   }
-  
-  public static class IncidentsByProcessGroupStatisticsDtoComparator implements Comparator<IncidentsByProcessGroupStatisticsDto> { 
+
+  public static class IncidentsByProcessGroupStatisticsDtoComparator implements Comparator<IncidentsByProcessGroupStatisticsDto> {
     @Override
     public int compare(IncidentsByProcessGroupStatisticsDto o1, IncidentsByProcessGroupStatisticsDto o2) {
       if (o1 == null) {
@@ -118,6 +118,9 @@ public class IncidentsByProcessGroupStatisticsDto {
         result = Long.compare(o2.getActiveInstancesCount(), o1.getActiveInstancesCount());
         if (result == 0) {
           result = o1.getBpmnProcessId().compareTo(o2.getBpmnProcessId());
+          if (result == 0) {
+            result = o1.getTenantId().compareTo(o2.getTenantId());
+          }
         }
       }
       return result;

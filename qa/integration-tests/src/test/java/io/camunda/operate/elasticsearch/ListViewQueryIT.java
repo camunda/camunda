@@ -846,6 +846,8 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     testDefaultSorting();
     testSortingByIdAsc();
     testSortingByIdDesc();
+    testSortingByTenantIdAsc();
+    testSortingByTenantIdDesc();
     testSortingByProcessNameAsc();
     testSortingByProcessNameDesc();
     testSortingByProcessVersionAsc();
@@ -895,6 +897,32 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     sorting.setSortOrder(SortingDto.SORT_ORDER_DESC_VALUE);
 
     testSorting(sorting, comparator, "id desc");
+  }
+
+  private void testSortingByTenantIdAsc() throws Exception {
+    final Comparator<ListViewProcessInstanceDto> comparator =
+        Comparator.comparing((ListViewProcessInstanceDto o) -> o.getTenantId().toLowerCase())
+            .thenComparingLong(o -> Long.valueOf(o.getId()));
+    final SortingDto sorting = new SortingDto();
+    sorting.setSortBy(ListViewTemplate.TENANT_ID);
+    sorting.setSortOrder(SortingDto.SORT_ORDER_ASC_VALUE);
+
+    testSorting(sorting, comparator, "tenantId asc");
+  }
+
+  private void testSortingByTenantIdDesc() throws Exception {
+    final Comparator<ListViewProcessInstanceDto> comparator = (o1, o2) -> {
+      int x = o2.getTenantId().toLowerCase().compareTo(o1.getTenantId().toLowerCase());
+      if (x == 0) {
+        x = Long.valueOf(o1.getId()).compareTo(Long.valueOf(o2.getId()));
+      }
+      return x;
+    };
+    final SortingDto sorting = new SortingDto();
+    sorting.setSortBy(ListViewTemplate.TENANT_ID);
+    sorting.setSortOrder(SortingDto.SORT_ORDER_DESC_VALUE);
+
+    testSorting(sorting, comparator, "tenantId desc");
   }
 
   private void testSortingByProcessNameAsc() throws Exception {
