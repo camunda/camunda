@@ -58,7 +58,7 @@ public class ProcessReader implements io.camunda.operate.webapp.reader.ProcessRe
    * @return
    */
   @Override
-  public Map<String, List<ProcessEntity>> getProcessesGrouped(ProcessRequestDto request) {
+  public Map<ProcessStore.ProcessKey, List<ProcessEntity>> getProcessesGrouped(ProcessRequestDto request) {
     return processStore.getProcessesGrouped(request.getTenantId(), getAllowedProcessIdsOrNullForAll());
   }
 

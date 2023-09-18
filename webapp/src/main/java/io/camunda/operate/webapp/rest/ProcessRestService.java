@@ -71,14 +71,14 @@ public class ProcessRestService extends InternalAPIErrorController {
   @GetMapping(path = "/grouped")
   @Deprecated
   public List<ProcessGroupDto> getProcessesGrouped() {
-    final Map<String, List<ProcessEntity>> processesGrouped = processReader.getProcessesGrouped(new ProcessRequestDto());
+    final var processesGrouped = processReader.getProcessesGrouped(new ProcessRequestDto());
     return ProcessGroupDto.createFrom(processesGrouped, permissionsService);
   }
 
   @Operation(summary = "List processes grouped by bpmnProcessId")
   @PostMapping(path = "/grouped")
   public List<ProcessGroupDto> getProcessesGrouped(@RequestBody ProcessRequestDto request) {
-    final Map<String, List<ProcessEntity>> processesGrouped = processReader.getProcessesGrouped(request);
+    final var processesGrouped = processReader.getProcessesGrouped(request);
     return ProcessGroupDto.createFrom(processesGrouped, permissionsService);
   }
 

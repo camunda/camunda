@@ -6,6 +6,7 @@
  */
 package io.camunda.operate.webapp.rest.dto;
 
+import io.camunda.operate.store.ProcessStore;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -70,11 +71,11 @@ public class ProcessGroupDto {
     this.processes = processes;
   }
 
-  public static List<ProcessGroupDto> createFrom(Map<String, List<ProcessEntity>> processesGrouped) {
+  public static List<ProcessGroupDto> createFrom(Map<ProcessStore.ProcessKey, List<ProcessEntity>> processesGrouped) {
     return createFrom(processesGrouped, null);
   }
 
-  public static List<ProcessGroupDto> createFrom(Map<String, List<ProcessEntity>> processesGrouped, PermissionsService permissionsService) {
+  public static List<ProcessGroupDto> createFrom(Map<ProcessStore.ProcessKey, List<ProcessEntity>> processesGrouped, PermissionsService permissionsService) {
     List<ProcessGroupDto> groups = new ArrayList<>();
     processesGrouped.values().stream().forEach(group -> {
         ProcessGroupDto groupDto = new ProcessGroupDto();

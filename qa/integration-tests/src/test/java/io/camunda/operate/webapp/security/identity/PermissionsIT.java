@@ -22,6 +22,7 @@ import io.camunda.operate.entities.dmn.definition.DecisionDefinitionEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.property.IdentityProperties;
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.store.ProcessStore;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.rest.dto.ProcessGroupDto;
 import io.camunda.operate.webapp.rest.dto.dmn.DecisionGroupDto;
@@ -66,10 +67,10 @@ public class PermissionsIT {
     final String orderProcessId = "orderProcess";
     final String loanProcessId = "loanProcess";
 
-    final Map<String, List<ProcessEntity>> processesGrouped = new LinkedHashMap<>();
-    processesGrouped.put(demoProcessId, Collections.singletonList(new ProcessEntity().setBpmnProcessId(demoProcessId)));
-    processesGrouped.put(orderProcessId, Collections.singletonList(new ProcessEntity().setBpmnProcessId(orderProcessId)));
-    processesGrouped.put(loanProcessId, Collections.singletonList(new ProcessEntity().setBpmnProcessId(loanProcessId)));
+    final Map<ProcessStore.ProcessKey, List<ProcessEntity>> processesGrouped = new LinkedHashMap<>();
+    processesGrouped.put(new ProcessStore.ProcessKey(demoProcessId, null), Collections.singletonList(new ProcessEntity().setBpmnProcessId(demoProcessId)));
+    processesGrouped.put(new ProcessStore.ProcessKey(orderProcessId, null), Collections.singletonList(new ProcessEntity().setBpmnProcessId(orderProcessId)));
+    processesGrouped.put(new ProcessStore.ProcessKey(loanProcessId, null), Collections.singletonList(new ProcessEntity().setBpmnProcessId(loanProcessId)));
 
     // when
     registerAuthorizations(List.of(
@@ -102,10 +103,10 @@ public class PermissionsIT {
     final String orderProcessId = "orderProcess";
     final String loanProcessId = "loanProcess";
 
-    final Map<String, List<ProcessEntity>> processesGrouped = new LinkedHashMap<>();
-    processesGrouped.put(demoProcessId, List.of(new ProcessEntity().setBpmnProcessId(demoProcessId)));
-    processesGrouped.put(orderProcessId, List.of(new ProcessEntity().setBpmnProcessId(orderProcessId)));
-    processesGrouped.put(loanProcessId, List.of(new ProcessEntity().setBpmnProcessId(loanProcessId)));
+    final Map<ProcessStore.ProcessKey, List<ProcessEntity>> processesGrouped = new LinkedHashMap<>();
+    processesGrouped.put(new ProcessStore.ProcessKey(demoProcessId, null), List.of(new ProcessEntity().setBpmnProcessId(demoProcessId)));
+    processesGrouped.put(new ProcessStore.ProcessKey(orderProcessId, null), List.of(new ProcessEntity().setBpmnProcessId(orderProcessId)));
+    processesGrouped.put(new ProcessStore.ProcessKey(loanProcessId, null), List.of(new ProcessEntity().setBpmnProcessId(loanProcessId)));
 
     // when
     registerAuthorizations(List.of(

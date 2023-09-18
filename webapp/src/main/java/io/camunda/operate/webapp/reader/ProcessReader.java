@@ -7,6 +7,7 @@
 package io.camunda.operate.webapp.reader;
 
 import io.camunda.operate.entities.ProcessEntity;
+import io.camunda.operate.store.ProcessStore;
 import io.camunda.operate.webapp.rest.dto.ProcessRequestDto;
 
 import java.util.List;
@@ -17,7 +18,7 @@ public interface ProcessReader {
 
     ProcessEntity getProcess(Long processDefinitionKey);
 
-    Map<String, List<ProcessEntity>> getProcessesGrouped(ProcessRequestDto request);
+    Map<ProcessStore.ProcessKey, List<ProcessEntity>> getProcessesGrouped(ProcessRequestDto request);
 
     Map<Long, ProcessEntity> getProcesses();
 

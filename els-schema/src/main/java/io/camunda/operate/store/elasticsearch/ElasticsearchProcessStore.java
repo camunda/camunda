@@ -168,7 +168,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
   }
 
   @Override
-  public Map<String, List<ProcessEntity>> getProcessesGrouped(String tenantId, @Nullable Set<String> allowedBPMNProcessIds) {
+  public Map<ProcessKey, List<ProcessEntity>> getProcessesGrouped(String tenantId, @Nullable Set<String> allowedBPMNProcessIds) {
     final String tenantsGroupsAggName = "group_by_tenantId";
     final String groupsAggName = "group_by_bpmnProcessId";
     final String processesAggName = "processes";
@@ -197,7 +197,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
     try {
       final SearchResponse searchResponse = tenantAwareClient.search(searchRequest);
       final Terms groups = searchResponse.getAggregations().get(tenantsGroupsAggName);
-      Map<String, List<ProcessEntity>> result = new HashMap<>();
+      Map<ProcessKey, List<ProcessEntity>> result = new HashMap<>();
 
       groups.getBuckets().stream().forEach(b -> {
 
@@ -206,7 +206,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
 
         processGroups.getBuckets().stream().forEach(tenantB -> {
           final String bpmnProcessId = tenantB.getKeyAsString();
-          String groupKey = groupTenantId + "_" + bpmnProcessId;
+          ProcessKey groupKey = new ProcessKey(bpmnProcessId, groupTenantId);
           result.put(groupKey, new ArrayList<>());
 
           final TopHits processes = tenantB.getAggregations().get(processesAggName);

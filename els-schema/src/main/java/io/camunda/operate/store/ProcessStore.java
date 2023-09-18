@@ -11,10 +11,7 @@ import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import org.springframework.lang.Nullable;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 public interface ProcessStore {
 
@@ -27,7 +24,7 @@ public interface ProcessStore {
 
   String getDiagramByKey(final Long processDefinitionKey);
 
-  Map<String, List<ProcessEntity>> getProcessesGrouped(String tenantId, @Nullable Set<String> allowedBPMNprocessIds);
+  Map<ProcessKey, List<ProcessEntity>> getProcessesGrouped(String tenantId, @Nullable Set<String> allowedBPMNprocessIds);
 
   Map<Long, ProcessEntity> getProcessIdsToProcesses();
 
@@ -45,4 +42,47 @@ public interface ProcessStore {
   long deleteDocument(final String indexName, final String idField, String id) throws IOException;
 
   void deleteProcessInstanceFromTreePath(String processInstanceKey);
+
+  class ProcessKey {
+    private String bpmnProcessId;
+    private String tenantId;
+
+    public ProcessKey(String bpmnProcessId, String tenantId) {
+      this.bpmnProcessId = bpmnProcessId;
+      this.tenantId = tenantId;
+    }
+
+    public String getBpmnProcessId() {
+      return bpmnProcessId;
+    }
+
+    public ProcessKey setBpmnProcessId(String bpmnProcessId) {
+      this.bpmnProcessId = bpmnProcessId;
+      return this;
+    }
+
+    public String getTenantId() {
+      return tenantId;
+    }
+
+    public ProcessKey setTenantId(String tenantId) {
+      this.tenantId = tenantId;
+      return this;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o)
+        return true;
+      if (o == null || getClass() != o.getClass())
+        return false;
+      ProcessKey that = (ProcessKey) o;
+      return Objects.equals(bpmnProcessId, that.bpmnProcessId) && Objects.equals(tenantId, that.tenantId);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(bpmnProcessId, tenantId);
+    }
+  }
 }
