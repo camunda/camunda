@@ -41,9 +41,9 @@ import org.slf4j.LoggerFactory;
  *
  * <pre>{@code
  * final class MyClusteredTest {
- *   private SpringCluster cluster;
+ *   private TestCluster cluster;
  *
- *   &#64;BeforeEach
+ *   @BeforeEach
  *   void beforeEach() {
  *     cluster = TestCluster.builder()
  *         .withBrokersCount(3)
@@ -53,12 +53,12 @@ import org.slf4j.LoggerFactory;
  *         .build();
  *   }
  *
- *   &#64;AfterEach
+ *   @AfterEach
  *   void afterEach() {
  *     cluster.stop();
  *   }
  *
- *   &#64;Test
+ *   @Test
  *   void shouldConnectToCluster() {
  *     // given
  *     cluster.start();
