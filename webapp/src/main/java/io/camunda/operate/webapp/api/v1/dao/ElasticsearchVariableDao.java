@@ -83,8 +83,7 @@ public class ElasticsearchVariableDao extends ElasticsearchDao<Variable> impleme
       final SearchRequest searchRequest = new SearchRequest().indices(
               variableIndex.getAlias())
           .source(searchSourceBuilder);
-      final SearchResponse searchResponse = elasticsearch.search(searchRequest,
-          RequestOptions.DEFAULT);
+      final SearchResponse searchResponse = tenantAwareClient.search(searchRequest);
       final SearchHits searchHits = searchResponse.getHits();
       final SearchHit[] searchHitArray = searchHits.getHits();
       if (searchHitArray != null && searchHitArray.length > 0) {
@@ -136,7 +135,7 @@ public class ElasticsearchVariableDao extends ElasticsearchDao<Variable> impleme
     try {
       final SearchRequest searchRequest = new SearchRequest(variableIndex.getAlias())
           .source(searchSourceBuilder);
-      final SearchResponse searchResponse = elasticsearch.search(searchRequest, RequestOptions.DEFAULT);
+      final SearchResponse searchResponse = tenantAwareClient.search(searchRequest);
       final SearchHits searchHits = searchResponse.getHits();
       final SearchHit[] searchHitArray = searchHits.getHits();
       if (searchHitArray != null && searchHitArray.length > 0) {
