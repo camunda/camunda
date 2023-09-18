@@ -216,7 +216,14 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
                     .withError(Type.PROTOCOL_ERROR, throwable.getMessage())
                     .build();
               }
-              return JoinResponse.builder().withStatus(Status.OK).build();
+              if (reconfigureResponse.status() == Status.OK) {
+                return JoinResponse.builder().withStatus(Status.OK).build();
+              } else {
+                return JoinResponse.builder()
+                    .withStatus(Status.ERROR)
+                    .withError(reconfigureResponse.error())
+                    .build();
+              }
             });
   }
 
@@ -242,7 +249,14 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
                     .withError(Type.PROTOCOL_ERROR, throwable.getMessage())
                     .build();
               }
-              return LeaveResponse.builder().withStatus(Status.OK).build();
+              if (reconfigureResponse.status() == Status.OK) {
+                return LeaveResponse.builder().withStatus(Status.OK).build();
+              } else {
+                return LeaveResponse.builder()
+                    .withStatus(Status.ERROR)
+                    .withError(reconfigureResponse.error())
+                    .build();
+              }
             });
   }
 
