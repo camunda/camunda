@@ -16,9 +16,10 @@ import io.camunda.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.LongStream;
+import java.util.concurrent.atomic.LongAdder;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -106,7 +107,8 @@ public class ActivateJobsStub
         partitionId,
         requestDto.getMaxJobsToActivate(),
         requestDto.getTypeBuffer(),
-        requestDto.getWorkerBuffer());
+        requestDto.getWorkerBuffer(),
+        requestDto.getTenantIds());
 
     return new BrokerResponse<>(
         response, partitionId, Protocol.encodePartitionId(partitionId, JOB_BATCH_KEY));
@@ -121,31 +123,43 @@ public class ActivateJobsStub
       final int partitionId,
       final int amount,
       final DirectBuffer type,
-      final DirectBuffer worker) {
+      final DirectBuffer worker,
+      final List<String> tenantIds) {
 
     final int availableAmount = availableJobs.computeIfAbsent(bufferAsString(type), k -> 0);
     final int jobsToActivate = Math.min(amount, availableAmount);
     availableJobs.put(bufferAsString(type), availableAmount - jobsToActivate);
-    LongStream.range(0, jobsToActivate)
-        .forEach(
-            key -> {
-              response.jobKeys().add().setValue(Protocol.encodePartitionId(partitionId, key));
-              response
-                  .jobs()
-                  .add()
-                  .setType(type)
-                  .setWorker(worker)
-                  .setRetries(RETRIES)
-                  .setDeadline(DEADLINE)
-                  .setCustomHeaders(CUSTOM_HEADERS_MSGPACK)
-                  .setVariables(VARIABLES_MSGPACK)
-                  .setProcessInstanceKey(PROCESS_INSTANCE_KEY)
-                  .setBpmnProcessId(BPMN_PROCESS_ID)
-                  .setProcessDefinitionVersion(PROCESS_DEFINITION_VERSION)
-                  .setProcessDefinitionKey(PROCESS_KEY)
-                  .setElementId(ELEMENT_ID)
-                  .setElementInstanceKey(ELEMENT_INSTANCE_KEY);
-            });
+
+    final LongAdder key = new LongAdder();
+    while (key.longValue() < jobsToActivate) {
+      tenantIds.forEach(
+          tenantId -> {
+            if (key.longValue() >= jobsToActivate) {
+              return;
+            }
+            response
+                .jobKeys()
+                .add()
+                .setValue(Protocol.encodePartitionId(partitionId, key.longValue()));
+            response
+                .jobs()
+                .add()
+                .setType(type)
+                .setWorker(worker)
+                .setRetries(RETRIES)
+                .setDeadline(DEADLINE)
+                .setCustomHeaders(CUSTOM_HEADERS_MSGPACK)
+                .setVariables(VARIABLES_MSGPACK)
+                .setProcessInstanceKey(PROCESS_INSTANCE_KEY)
+                .setBpmnProcessId(BPMN_PROCESS_ID)
+                .setProcessDefinitionVersion(PROCESS_DEFINITION_VERSION)
+                .setProcessDefinitionKey(PROCESS_KEY)
+                .setElementId(ELEMENT_ID)
+                .setElementInstanceKey(ELEMENT_INSTANCE_KEY)
+                .setTenantId(tenantId);
+            key.increment();
+          });
+    }
   }
 
   @Override

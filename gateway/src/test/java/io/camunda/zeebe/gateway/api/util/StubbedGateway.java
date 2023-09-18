@@ -133,15 +133,20 @@ public final class StubbedGateway {
   }
 
   private ActivateJobsHandler buildActivateJobsHandler(final BrokerClient brokerClient) {
+    final boolean isMultiTenancyEnabled = config.getMultiTenancy().isEnabled();
     if (config.getLongPolling().isEnabled()) {
-      return buildLongPollingHandler(brokerClient);
+      return buildLongPollingHandler(brokerClient, isMultiTenancyEnabled);
     } else {
-      return new RoundRobinActivateJobsHandler(brokerClient);
+      return new RoundRobinActivateJobsHandler(brokerClient, isMultiTenancyEnabled);
     }
   }
 
-  private LongPollingActivateJobsHandler buildLongPollingHandler(final BrokerClient brokerClient) {
-    return LongPollingActivateJobsHandler.newBuilder().setBrokerClient(brokerClient).build();
+  private LongPollingActivateJobsHandler buildLongPollingHandler(
+      final BrokerClient brokerClient, final boolean isMultiTenancyEnabled) {
+    return LongPollingActivateJobsHandler.newBuilder()
+        .setBrokerClient(brokerClient)
+        .setMultiTenancyEnabled(isMultiTenancyEnabled)
+        .build();
   }
 
   /**

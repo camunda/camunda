@@ -26,6 +26,7 @@ import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.JsonUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.grpc.Status;
@@ -104,6 +105,7 @@ public final class ActivateJobsTest extends GatewayTest {
       assertThat(job.getProcessDefinitionVersion()).isEqualTo(stub.getProcessDefinitionVersion());
       assertThat(job.getProcessDefinitionKey()).isEqualTo(stub.getProcessDefinitionKey());
       assertThat(job.getElementId()).isEqualTo(stub.getElementId());
+      assertThat(job.getTenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
       assertThat(job.getElementInstanceKey()).isEqualTo(stub.getElementInstanceKey());
       JsonUtil.assertEquality(job.getCustomHeaders(), stub.getCustomHeaders());
       JsonUtil.assertEquality(job.getVariables(), stub.getVariables());
@@ -118,6 +120,8 @@ public final class ActivateJobsTest extends GatewayTest {
     assertThat(brokerRequestValue.variables())
         .extracting(v -> BufferUtil.bufferAsString(v.getValue()))
         .containsExactlyInAnyOrderElementsOf(fetchVariables);
+    assertThat(brokerRequestValue.getTenantIds())
+        .containsExactly(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   }
 
   @Test
