@@ -14,6 +14,7 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import org.junit.Rule;
@@ -79,8 +80,8 @@ public class ResourceDeletionRejectionTest {
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
             String.format(
-                "Expected to find process definition with process ID '%s', but none found",
-                processId));
+                "Expected to find process definition with process ID '%s' and tenant ID '%s', but none found",
+                processId, TenantOwned.DEFAULT_TENANT_IDENTIFIER));
   }
 
   @Test
@@ -103,8 +104,8 @@ public class ResourceDeletionRejectionTest {
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
             String.format(
-                "Expected to find process definition with process ID '%s' and version '%d', but none found",
-                processId, 1));
+                "Expected to find process definition with process ID '%s', tenant ID '%s', and version '%d', but none found",
+                processId, TenantOwned.DEFAULT_TENANT_IDENTIFIER, 1));
   }
 
   @Test
