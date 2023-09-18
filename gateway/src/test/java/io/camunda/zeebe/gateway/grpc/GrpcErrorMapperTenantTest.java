@@ -108,6 +108,56 @@ public class GrpcErrorMapperTenantTest {
     assertThat(recorder.getAppendedEvents()).hasSize(0);
   }
 
+  @ParameterizedTest
+  @MethodSource("invalidTenantIds")
+  void shouldLogInvalidTenantIdsRequestException(
+      final String invalidTenantId, final boolean multiTenancyEnabled, final String logMessage) {
+    // given
+    final String requestName = "ActivateJobs";
+    try {
+      RequestMapper.setMultiTenancyEnabled(multiTenancyEnabled);
+      RequestMapper.ensureTenantIdsSet(requestName, List.of(invalidTenantId));
+      fail("Expected to throw exception");
+    } catch (final RuntimeException exception) {
+      assertThat(exception)
+          .isInstanceOf(InvalidTenantRequestException.class)
+          .hasMessageContaining(logMessage);
+
+      // when
+      log.setLevel(Level.DEBUG);
+      final StatusRuntimeException statusException = errorMapper.mapError(exception, logger);
+
+      // then
+      assertThat(statusException.getStatus().getCode()).isEqualTo(Code.INVALID_ARGUMENT);
+      assertThat(recorder.getAppendedEvents()).hasSize(1);
+      final LogEvent event = recorder.getAppendedEvents().get(0);
+      assertThat(event.getLevel()).isEqualTo(Level.DEBUG);
+      assertThat(event.getMessage().getFormattedMessage())
+          .contains(invalidTenantId)
+          .contains(logMessage);
+    }
+  }
+
+  @ParameterizedTest
+  @MethodSource("validTenantIdsForJobActivation")
+  void shouldNotLogInvalidTenantRequestExceptionForMultipleIds(
+      final List<String> validTenantIds, final boolean multiTenancyEnabled) {
+    // given
+    final String requestName = "ActivateJobs";
+    final List<String> authorizedTenants =
+        multiTenancyEnabled ? validTenantIds : List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    Context.current()
+        .withValue(IdentityInterceptor.AUTHORIZED_TENANTS_KEY, authorizedTenants)
+        .attach();
+
+    // when
+    RequestMapper.setMultiTenancyEnabled(multiTenancyEnabled);
+    RequestMapper.ensureTenantIdsSet(requestName, validTenantIds);
+
+    // then
+    assertThat(recorder.getAppendedEvents()).hasSize(0);
+  }
+
   public static Stream<Arguments> invalidTenantIds() {
     return Stream.of(
         Arguments.of("tenant!@#", true, "tenant identifier contains illegal characters"),
@@ -127,5 +177,13 @@ public class GrpcErrorMapperTenantTest {
         Arguments.of("<default>", true),
         Arguments.of("<default>", false),
         Arguments.of("", false));
+  }
+
+  public static Stream<Arguments> validTenantIdsForJobActivation() {
+    return Stream.of(
+        Arguments.of(List.of("tenant1"), true),
+        Arguments.of(List.of("tenant-2", "tenant.3", "tenant.test-5", "<default>"), true),
+        Arguments.of(List.of("<default>"), false),
+        Arguments.of(List.of(""), false));
   }
 }
