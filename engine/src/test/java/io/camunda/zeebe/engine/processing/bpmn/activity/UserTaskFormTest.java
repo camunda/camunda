@@ -7,15 +7,22 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.activity;
 
-import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
-import io.camunda.zeebe.protocol.impl.record.value.deployment.FormRecord;
+import io.camunda.zeebe.protocol.record.Assertions;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
+import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import org.junit.ClassRule;
@@ -27,46 +34,117 @@ public class UserTaskFormTest {
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
   private static final String PROCESS_ID = "process";
+  private static final String TEST_FORM = "/form/test-form-1.form";
+  private static final String FORM_ID = "Form_0w7r08e";
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
 
   @Test
+  public void shouldActivateUserTaskIfFormIsAlreadyDeployed() {
+    // given
+    deployForm();
+    deployProcess(FORM_ID);
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    assertUserTaskActivation(processInstanceKey);
+  }
+
+  @Test
   public void shouldRaiseAnIncidentIfFormIsNotDeployed() {
+    // given
+    final var formId = "form-id";
+    deployProcess(formId);
+
+    // when
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    assertFormIncident(processInstanceKey, formId);
+  }
+
+  @Test
+  public void shouldResolveAnIncidentIfFormIsDeployed() {
+    // given
+    deployProcess(FORM_ID);
+
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var incidentCreated = assertFormIncident(processInstanceKey, FORM_ID);
+
+    // when
+    deployForm();
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(incidentCreated.getKey()).resolve();
+
+    // then
+    assertThat(RecordingExporter.incidentRecords().onlyEvents())
+        .extracting(Record::getKey, Record::getIntent)
+        .describedAs("form not found incident is resolved and no new incident is created")
+        .containsExactly(
+            tuple(incidentCreated.getKey(), IncidentIntent.CREATED),
+            tuple(incidentCreated.getKey(), IncidentIntent.RESOLVED));
+
+    assertUserTaskActivation(processInstanceKey);
+  }
+
+  private void deployProcess(final String formId) {
     final BpmnModelInstance processWithFormId =
         Bpmn.createExecutableProcess(PROCESS_ID)
             .startEvent()
             .userTask("task")
-            .zeebeFormId("form-id")
+            .zeebeFormId(formId)
             .endEvent()
             .done();
     // given
     ENGINE.deployment().withXmlResource(processWithFormId).deploy();
-
-    // when
-    ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
-
-    // then
-    assertIncident();
   }
 
-  private void assertIncident() {
-    assertThat(RecordingExporter.incidentRecords().getFirst().getValue())
+  private void deployForm() {
+    final var deploymentEvent = ENGINE.deployment().withJsonClasspathResource(TEST_FORM).deploy();
+
+    Assertions.assertThat(deploymentEvent)
+        .hasIntent(DeploymentIntent.CREATED)
+        .hasValueType(ValueType.DEPLOYMENT)
+        .hasRecordType(RecordType.EVENT);
+  }
+
+  private Record<IncidentRecordValue> assertFormIncident(
+      final long processInstanceKey, final String formId) {
+    final var incidentCreated =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    assertThat(incidentCreated.getValue())
         .extracting(r -> tuple(r.getErrorType(), r.getErrorMessage()))
         .isEqualTo(
             tuple(
                 ErrorType.FORM_NOT_FOUND,
-                "Expected to find a form with id 'form-id', but no form with this id is found, at least a form with this id should be available. To resolve the Incident please deploy a form with the same id"));
+                String.format(
+                    "Expected to find a form with id '%s', but no form with this id is found, at least a form with this id should be available. To resolve the Incident please deploy a form with the same id",
+                    formId)));
+
+    return incidentCreated;
   }
 
-  private FormRecord sampleFormRecord() {
-    return new FormRecord()
-        .setFormId("form-id")
-        .setVersion(1)
-        .setFormKey(1L)
-        .setResourceName("form-1.form")
-        .setChecksum(wrapString("checksum"))
-        .setResource(wrapString("form-resource"));
+  private void assertUserTaskActivation(final long processInstanceKey) {
+    assertThat(RecordingExporter.jobRecords().withProcessInstanceKey(processInstanceKey).limit(1))
+        .extracting(jobRecord -> jobRecord.getValue().getCustomHeaders())
+        .isNotNull()
+        .anyMatch(headers -> headers.containsKey("io.camunda.zeebe:formKey"));
+
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementType(BpmnElementType.USER_TASK)
+                .limit(3))
+        .extracting(Record::getRecordType, Record::getIntent)
+        .containsSequence(
+            tuple(RecordType.COMMAND, ProcessInstanceIntent.ACTIVATE_ELEMENT),
+            tuple(RecordType.EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(RecordType.EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATED));
   }
 }
