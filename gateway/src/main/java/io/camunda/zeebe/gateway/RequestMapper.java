@@ -214,12 +214,16 @@ public final class RequestMapper {
 
   public static BrokerActivateJobsRequest toActivateJobsRequest(
       final ActivateJobsRequest grpcRequest) {
+
+    List<String> tenantIds = grpcRequest.getTenantIdsList();
+    tenantIds = ensureTenantIdsSet("ActivateJobs", tenantIds);
+
     return new BrokerActivateJobsRequest(grpcRequest.getType())
         .setTimeout(grpcRequest.getTimeout())
         .setWorker(grpcRequest.getWorker())
         .setMaxJobsToActivate(grpcRequest.getMaxJobsToActivate())
         .setVariables(grpcRequest.getFetchVariableList())
-        .setTenantIds(grpcRequest.getTenantIdsList());
+        .setTenantIds(tenantIds);
   }
 
   public static BrokerResolveIncidentRequest toResolveIncidentRequest(
@@ -248,13 +252,17 @@ public final class RequestMapper {
 
   public static JobActivationProperties toJobActivationProperties(
       final StreamActivatedJobsRequest request) {
+
+    List<String> tenantIds = request.getTenantIdsList();
+    tenantIds = ensureTenantIdsSet("StreamActivatedJobs", tenantIds);
+
     final JobActivationPropertiesImpl jobActivationProperties = new JobActivationPropertiesImpl();
     final DirectBuffer worker = wrapString(request.getWorker());
     jobActivationProperties
         .setWorker(worker, 0, worker.capacity())
         .setTimeout(request.getTimeout())
         .setFetchVariables(request.getFetchVariableList().stream().map(StringValue::new).toList())
-        .setTenantIds(request.getTenantIdsList().stream().map(StringValue::new).toList());
+        .setTenantIds(tenantIds.stream().map(StringValue::new).toList());
 
     return jobActivationProperties;
   }
@@ -328,5 +336,35 @@ public final class RequestMapper {
     }
 
     return tenantId;
+  }
+
+  public static List<String> ensureTenantIdsSet(
+      final String commandName, final List<String> tenantIds) {
+
+    if (!isMultiTenancyEnabled) {
+      final int tenantIdNum = tenantIds.size();
+      if (tenantIdNum > 1
+          || (tenantIdNum == 1
+              && !tenantIds.contains(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+              && !tenantIds.contains(""))) {
+        throw new InvalidTenantRequestException(
+            commandName, tenantIds, "multi-tenancy is disabled");
+      }
+
+      return List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    }
+
+    if (tenantIds.isEmpty()) {
+      try {
+        return Context.current().call(IdentityInterceptor.AUTHORIZED_TENANTS_KEY::get);
+      } catch (final Exception e) {
+        throw new InvalidTenantRequestException(
+            commandName, tenantIds, "tenants could not be retrieved from the request context", e);
+      }
+    }
+
+    tenantIds.stream().forEach(tenantId -> ensureTenantIdSet(commandName, tenantId));
+
+    return tenantIds;
   }
 }
