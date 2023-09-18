@@ -37,6 +37,8 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
   private final BooleanProperty interruptingProp = new BooleanProperty("interrupting", true);
   private final StringProperty correlationKeyProp = new StringProperty("correlationKey", "");
   private final StringProperty elementIdProp = new StringProperty("elementId", "");
+  private final StringProperty tenantIdProp =
+      new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
   public ProcessMessageSubscriptionRecord() {
     declareProperty(subscriptionPartitionIdProp)
@@ -48,7 +50,8 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
         .declareProperty(interruptingProp)
         .declareProperty(bpmnProcessIdProp)
         .declareProperty(correlationKeyProp)
-        .declareProperty(elementIdProp);
+        .declareProperty(elementIdProp)
+        .declareProperty(tenantIdProp);
   }
 
   public void wrap(final ProcessMessageSubscriptionRecord record) {
@@ -62,6 +65,7 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
     setBpmnProcessId(record.getBpmnProcessIdBuffer());
     setCorrelationKey(record.getCorrelationKeyBuffer());
     setElementId(record.getElementIdBuffer());
+    setTenantId(record.getTenantId());
   }
 
   @JsonIgnore
@@ -191,7 +195,11 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
 
   @Override
   public String getTenantId() {
-    // todo(#13289): replace dummy implementation
-    return TenantOwned.DEFAULT_TENANT_IDENTIFIER;
+    return bufferAsString(tenantIdProp.getValue());
+  }
+
+  public ProcessMessageSubscriptionRecord setTenantId(final String tenantId) {
+    tenantIdProp.setValue(tenantId);
+    return this;
   }
 }
