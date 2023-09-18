@@ -123,7 +123,9 @@ public final class ClusterTopologyGossiper
   }
 
   private void scheduleSync() {
-    executor.schedule(config.syncDelay(), this::sync);
+    if (config.enableSync()) {
+      executor.schedule(config.syncDelay(), this::sync);
+    }
   }
 
   private void sync() {
@@ -289,7 +291,12 @@ public final class ClusterTopologyGossiper
   public void event(final ClusterMembershipEvent event) {
     // When a new member is added to the cluster, immediately sync with it so that the new member
     // receives the latest topology as fast as possible.
-    executor.run(() -> sync(event.subject().id()));
+    executor.run(
+        () -> {
+          if (config.enableSync()) {
+            sync(event.subject().id());
+          }
+        });
   }
 
   @Override

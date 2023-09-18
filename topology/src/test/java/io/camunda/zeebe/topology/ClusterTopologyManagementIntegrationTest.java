@@ -219,7 +219,8 @@ class ClusterTopologyManagementIntegrationTest {
             tempDir.resolve(cluster.getMembershipService().getLocalMember().id().id()),
             cluster.getCommunicationService(),
             cluster.getMembershipService(),
-            new ClusterTopologyGossiperConfig(Duration.ofSeconds(1), Duration.ofMillis(100), 2),
+            new ClusterTopologyGossiperConfig(
+                true, Duration.ofSeconds(1), Duration.ofMillis(100), 2),
             partitionChangeExecutor,
             topologyMembershipChangeExecutor);
     return new TestNode(cluster, service);
