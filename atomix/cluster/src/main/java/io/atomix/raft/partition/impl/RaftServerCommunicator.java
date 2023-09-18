@@ -202,7 +202,7 @@ public class RaftServerCommunicator implements RaftServerProtocol {
 
   @Override
   public void unregisterLeaveHandler() {
-    clusterCommunicator.unsubscribe(context.joinSubject);
+    clusterCommunicator.unsubscribe(context.leaveSubject);
   }
 
   @Override
