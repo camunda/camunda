@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateRule;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.MsgPackUtil;
 import java.util.ArrayList;
 import java.util.List;
@@ -25,6 +26,7 @@ import org.junit.Test;
 
 public final class PendingMessageSubscriptionStateTest {
 
+  private static final String DEFAULT_TENANT = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
   @Rule public final ProcessingStateRule stateRule = new ProcessingStateRule();
 
   private MutableMessageSubscriptionState persistentState;
@@ -171,6 +173,7 @@ public final class PendingMessageSubscriptionStateTest {
     // and
     final List<MessageSubscription> subscriptions = new ArrayList<>();
     persistentState.visitSubscriptions(
+        DEFAULT_TENANT,
         subscription.getMessageNameBuffer(),
         subscription.getCorrelationKeyBuffer(),
         subscriptions::add);
@@ -202,6 +205,7 @@ public final class PendingMessageSubscriptionStateTest {
     // then
     final List<Long> keys = new ArrayList<>();
     persistentState.visitSubscriptions(
+        DEFAULT_TENANT,
         subscription.getMessageNameBuffer(),
         subscription.getCorrelationKeyBuffer(),
         s -> keys.add(s.getRecord().getElementInstanceKey()));

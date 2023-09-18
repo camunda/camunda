@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateRule;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.Before;
@@ -22,6 +23,7 @@ import org.junit.Test;
 
 public final class MessageSubscriptionStateTest {
 
+  private static final String DEFAULT_TENANT = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
   @Rule public final ProcessingStateRule stateRule = new ProcessingStateRule();
 
   private MutableMessageSubscriptionState state;
@@ -86,7 +88,10 @@ public final class MessageSubscriptionStateTest {
     // when
     final List<MessageSubscription> subscriptions = new ArrayList<>();
     state.visitSubscriptions(
-        wrapString("messageName"), wrapString("correlationKey"), subscriptions::add);
+        DEFAULT_TENANT,
+        wrapString("messageName"),
+        wrapString("correlationKey"),
+        subscriptions::add);
 
     // then
     assertThat(subscriptions).hasSize(1);
@@ -114,6 +119,7 @@ public final class MessageSubscriptionStateTest {
     // when
     final List<Long> keys = new ArrayList<>();
     state.visitSubscriptions(
+        DEFAULT_TENANT,
         wrapString("messageName"),
         wrapString("correlationKey"),
         s -> keys.add(s.getRecord().getElementInstanceKey()));
@@ -131,6 +137,7 @@ public final class MessageSubscriptionStateTest {
     // when
     final List<Long> keys = new ArrayList<>();
     state.visitSubscriptions(
+        DEFAULT_TENANT,
         wrapString("messageName"),
         wrapString("correlationKey"),
         s -> {
@@ -169,6 +176,7 @@ public final class MessageSubscriptionStateTest {
     // then
     final List<Long> keys = new ArrayList<>();
     state.visitSubscriptions(
+        DEFAULT_TENANT,
         wrapString("messageName"),
         wrapString("correlationKey"),
         s -> keys.add(s.getRecord().getElementInstanceKey()));

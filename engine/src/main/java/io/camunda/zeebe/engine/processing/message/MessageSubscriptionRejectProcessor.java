@@ -73,6 +73,7 @@ public final class MessageSubscriptionRejectProcessor
     }
 
     subscriptionState.visitSubscriptions(
+        subscriptionRecord.getTenantId(),
         subscriptionRecord.getMessageNameBuffer(),
         subscriptionRecord.getCorrelationKeyBuffer(),
         subscription -> {

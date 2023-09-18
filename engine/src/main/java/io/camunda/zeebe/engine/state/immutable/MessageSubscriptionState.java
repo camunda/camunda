@@ -14,8 +14,14 @@ public interface MessageSubscriptionState {
 
   MessageSubscription get(long elementInstanceKey, DirectBuffer messageName);
 
+  /**
+   * Visits the message subscriptions that match a given tenant, message name, and correlation key.
+   */
   void visitSubscriptions(
-      DirectBuffer messageName, DirectBuffer correlationKey, MessageSubscriptionVisitor visitor);
+      final String tenantId,
+      DirectBuffer messageName,
+      DirectBuffer correlationKey,
+      MessageSubscriptionVisitor visitor);
 
   boolean existSubscriptionForElementInstance(long elementInstanceKey, DirectBuffer messageName);
 
