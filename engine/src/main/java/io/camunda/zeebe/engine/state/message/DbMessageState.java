@@ -347,7 +347,7 @@ public final class DbMessageState implements MutableMessageState {
 
   @Override
   public boolean existActiveProcessInstance(
-      final DirectBuffer bpmnProcessId, final DirectBuffer correlationKey) {
+      final String tenantId, final DirectBuffer bpmnProcessId, final DirectBuffer correlationKey) {
     ensureNotNullOrEmpty("BPMN process id", bpmnProcessId);
     ensureNotNullOrEmpty("correlation key", correlationKey);
 

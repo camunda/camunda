@@ -14,7 +14,8 @@ public interface MessageState {
 
   boolean existMessageCorrelation(long messageKey, DirectBuffer bpmnProcessId);
 
-  boolean existActiveProcessInstance(DirectBuffer bpmnProcessId, DirectBuffer correlationKey);
+  boolean existActiveProcessInstance(
+      final String tenantId, DirectBuffer bpmnProcessId, DirectBuffer correlationKey);
 
   DirectBuffer getProcessInstanceCorrelationKey(long processInstanceKey);
 

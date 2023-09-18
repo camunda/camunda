@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableMessageState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateRule;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.test.util.MsgPackUtil;
 import java.util.ArrayList;
@@ -26,6 +27,7 @@ import org.junit.Test;
 
 public final class MessageStateTest {
 
+  private static final String DEFAULT_TENANT = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
   @Rule public final ProcessingStateRule stateRule = new ProcessingStateRule();
 
   private MutableMessageState messageState;
@@ -497,12 +499,18 @@ public final class MessageStateTest {
     messageState.putActiveProcessInstance(wrapString("wf-1"), wrapString("key-1"));
 
     // then
-    assertThat(messageState.existActiveProcessInstance(wrapString("wf-1"), wrapString("key-1")))
+    assertThat(
+            messageState.existActiveProcessInstance(
+                DEFAULT_TENANT, wrapString("wf-1"), wrapString("key-1")))
         .isTrue();
 
-    assertThat(messageState.existActiveProcessInstance(wrapString("wf-2"), wrapString("key-1")))
+    assertThat(
+            messageState.existActiveProcessInstance(
+                DEFAULT_TENANT, wrapString("wf-2"), wrapString("key-1")))
         .isFalse();
-    assertThat(messageState.existActiveProcessInstance(wrapString("wf-1"), wrapString("key-2")))
+    assertThat(
+            messageState.existActiveProcessInstance(
+                DEFAULT_TENANT, wrapString("wf-1"), wrapString("key-2")))
         .isFalse();
   }
 
@@ -517,11 +525,17 @@ public final class MessageStateTest {
     messageState.removeActiveProcessInstance(wrapString("wf-1"), wrapString("key-1"));
 
     // then
-    assertThat(messageState.existActiveProcessInstance(wrapString("wf-1"), wrapString("key-1")))
+    assertThat(
+            messageState.existActiveProcessInstance(
+                DEFAULT_TENANT, wrapString("wf-1"), wrapString("key-1")))
         .isFalse();
-    assertThat(messageState.existActiveProcessInstance(wrapString("wf-2"), wrapString("key-1")))
+    assertThat(
+            messageState.existActiveProcessInstance(
+                DEFAULT_TENANT, wrapString("wf-2"), wrapString("key-1")))
         .isTrue();
-    assertThat(messageState.existActiveProcessInstance(wrapString("wf-1"), wrapString("key-2")))
+    assertThat(
+            messageState.existActiveProcessInstance(
+                DEFAULT_TENANT, wrapString("wf-1"), wrapString("key-2")))
         .isTrue();
   }
 

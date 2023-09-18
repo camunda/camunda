@@ -168,7 +168,7 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
           if (!correlatingSubscriptions.contains(bpmnProcessIdBuffer)
               && (correlationKeyBuffer.capacity() == 0
                   || !messageState.existActiveProcessInstance(
-                      bpmnProcessIdBuffer, correlationKeyBuffer))) {
+                      messageRecord.getTenantId(), bpmnProcessIdBuffer, correlationKeyBuffer))) {
 
             correlatingSubscriptions.add(subscriptionRecord);
 
