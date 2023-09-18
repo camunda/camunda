@@ -81,7 +81,9 @@ public class GatewayClusterTopologyService extends Actor {
     actor.run(
         () -> {
           topologyChangeListeners.add(listener);
-          listener.onClusterTopologyChanged(clusterTopology);
+          if (!clusterTopology.isUninitialized()) {
+            listener.onClusterTopologyChanged(clusterTopology);
+          }
         });
   }
 

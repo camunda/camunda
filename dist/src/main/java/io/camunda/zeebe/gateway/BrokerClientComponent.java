@@ -41,6 +41,7 @@ public final class BrokerClientComponent {
         atomixCluster.getMessagingService(),
         atomixCluster.getMembershipService(),
         atomixCluster.getEventService(),
+        atomixCluster.getCommunicationService(),
         actorScheduler);
   }
 }

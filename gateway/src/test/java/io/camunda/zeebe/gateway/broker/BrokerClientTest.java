@@ -98,6 +98,7 @@ public final class BrokerClientTest {
             atomixCluster.getMessagingService(),
             atomixCluster.getMembershipService(),
             atomixCluster.getEventService(),
+            atomixCluster.getCommunicationService(),
             actorScheduler.get());
 
     client.start().forEach(ActorFuture::join);
