@@ -52,6 +52,10 @@ import org.slf4j.LoggerFactory;
  * <p>For brokers, a temporary folder is created and managed by the extension. This allows you to
  * stop and restart the same broker with the same data without losing it.
  *
+ * <p>Additionally, after every test, will reset the recording exporter. On failure, prints out the
+ * recording exporter using a {@link RecordLogger}. If using a shared cluster, this may output
+ * records from a previous test, since the recording exporter is not isolated to your test.
+ *
  * <p>See {@link TestZeebe} for annotation parameters.
  */
 final class ZeebeIntegrationExtension
@@ -59,6 +63,12 @@ final class ZeebeIntegrationExtension
 
   private static final Logger LOG = LoggerFactory.getLogger(ZeebeIntegrationExtension.class);
 
+  /**
+   * Looks up all static {@link TestCluster} and {@link TestApplication} fields, tying their own
+   * lifecycle to the {@link org.junit.jupiter.api.TestInstance.Lifecycle#PER_CLASS} lifecycle.
+   *
+   * <p>{@inheritDoc}
+   */
   @Override
   public void beforeAll(final ExtensionContext extensionContext) {
     final var resources = lookupClusters(extensionContext, null, ModifierSupport::isStatic);
@@ -67,6 +77,12 @@ final class ZeebeIntegrationExtension
     manageApplications(extensionContext, nodes);
   }
 
+  /**
+   * Looks up all non-static {@link TestCluster} and {@link TestApplication} fields, tying their own
+   * lifecycle to the {@link org.junit.jupiter.api.TestInstance.Lifecycle#PER_METHOD} lifecycle.
+   *
+   * <p>{@inheritDoc}
+   */
   @Override
   public void beforeEach(final ExtensionContext extensionContext) {
     final var testInstance = extensionContext.getRequiredTestInstance();
