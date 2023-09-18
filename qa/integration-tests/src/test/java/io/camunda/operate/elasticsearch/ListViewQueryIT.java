@@ -85,7 +85,9 @@ public class ListViewQueryIT extends OperateIntegrationTest {
 
     testQueryAllRunning();
     testQueryByVariableValue();
+    testQueryByVariableInValues();
     testQueryByVariableValueNotExists();
+    testQueryByVariableInValuesNotExists();
     testQueryByBatchOperationId();
     testQueryByParentProcessId();
 
@@ -270,10 +272,41 @@ public class ListViewQueryIT extends OperateIntegrationTest {
 
   }
 
+  private void testQueryByVariableInValues() throws Exception {
+    //given
+    ListViewRequestDto query = createGetAllProcessInstancesRequest(
+        q -> q.setVariable(new VariablesQueryDto("var2", new String[]{"Y", "Z", "A"})));
+
+    //when
+    MvcResult mvcResult = postRequest(query(), query);
+
+    ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
+
+    //then
+    assertThat(response.getProcessInstances().size()).isEqualTo(2);
+    assertThat(response.getProcessInstances()).extracting(ListViewTemplate.ID).containsExactlyInAnyOrder(runningInstance.getId(),
+      completedInstance.getId());
+
+  }
+
   private void testQueryByVariableValueNotExists() throws Exception {
     //given
     ListViewRequestDto query = createGetAllProcessInstancesRequest(
         q -> q.setVariable(new VariablesQueryDto("var1", "A")));
+
+    //when
+    MvcResult mvcResult = postRequest(query(),query);
+
+    ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
+
+    //then
+    assertThat(response.getProcessInstances().size()).isEqualTo(0);
+  }
+
+  private void testQueryByVariableInValuesNotExists() throws Exception {
+    //given
+    ListViewRequestDto query = createGetAllProcessInstancesRequest(
+        q -> q.setVariable(new VariablesQueryDto("var1", new String[]{"A", "B"})));
 
     //when
     MvcResult mvcResult = postRequest(query(),query);

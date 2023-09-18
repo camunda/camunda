@@ -8,6 +8,7 @@ package io.camunda.operate.webapp.elasticsearch.reader;
 
 import java.io.IOException;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +29,7 @@ import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.identity.PermissionsService;
+import org.apache.commons.lang3.ArrayUtils;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
@@ -266,12 +268,12 @@ public class ListViewReader implements io.camunda.operate.webapp.reader.ListView
         createBpmnProcessIdQuery(query),
         createExcludeIdsQuery(query),
         createVariablesQuery(query),
+        createVariablesInQuery(query),
         createBatchOperatioIdQuery(query),
         createParentInstanceIdQuery(query),
         //TODO Elasticsearch changes
         createTenantIdQuery(query),
         createReadPermissionQuery()
-        //TODO filter by tenants assigned to current user #4858
     );
   }
 
@@ -324,11 +326,22 @@ public class ListViewReader implements io.camunda.operate.webapp.reader.ListView
 
   private QueryBuilder createVariablesQuery(ListViewQueryDto query) {
     VariablesQueryDto variablesQuery = query.getVariable();
-    if (variablesQuery != null && !StringUtils.isEmpty(variablesQuery.getName())) {
+    if (variablesQuery != null && StringUtils.hasLength(variablesQuery.getValue())) {
       if (variablesQuery.getName() == null) {
         throw new InvalidRequestException("Variables query must provide not-null variable name.");
       }
       return hasChildQuery(VARIABLES_JOIN_RELATION,  joinWithAnd(termQuery(VAR_NAME, variablesQuery.getName()), termQuery(VAR_VALUE, variablesQuery.getValue())), None);
+    }
+    return null;
+  }
+
+  private QueryBuilder createVariablesInQuery(ListViewQueryDto query) {
+    VariablesQueryDto variablesQuery = query.getVariable();
+    if (variablesQuery != null && !ArrayUtils.isEmpty(variablesQuery.getValues())) {
+      if (variablesQuery.getName() == null) {
+        throw new InvalidRequestException("Variables query must provide not-null variable name.");
+      }
+      return hasChildQuery(VARIABLES_JOIN_RELATION,  joinWithAnd(termQuery(VAR_NAME, variablesQuery.getName()), termsQuery(VAR_VALUE, variablesQuery.getValues())), None);
     }
     return null;
   }

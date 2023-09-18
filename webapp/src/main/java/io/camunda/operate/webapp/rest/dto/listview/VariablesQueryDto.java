@@ -6,11 +6,17 @@
  */
 package io.camunda.operate.webapp.rest.dto.listview;
 
+import java.util.Arrays;
+import java.util.Objects;
+
 public class VariablesQueryDto {
 
   private String name;
 
+  @Deprecated
   private String value;
+
+  private String[] values;
 
   public VariablesQueryDto() {
   }
@@ -18,6 +24,11 @@ public class VariablesQueryDto {
   public VariablesQueryDto(String variableName, String variableValue) {
     this.name = variableName;
     this.value = variableValue;
+  }
+
+  public VariablesQueryDto(String variableName, String[] values) {
+    this.name = variableName;
+    this.values = values;
   }
 
   public String getName() {
@@ -28,6 +39,7 @@ public class VariablesQueryDto {
     this.name = name;
   }
 
+  @Deprecated
   public String getValue() {
     return value;
   }
@@ -36,24 +48,29 @@ public class VariablesQueryDto {
     this.value = value;
   }
 
+  public String[] getValues() {
+    return values;
+  }
+
+  public VariablesQueryDto setValues(String[] values) {
+    this.values = values;
+    return this;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o)
       return true;
     if (o == null || getClass() != o.getClass())
       return false;
-
     VariablesQueryDto that = (VariablesQueryDto) o;
-
-    if (name != null ? !name.equals(that.name) : that.name != null)
-      return false;
-    return value != null ? value.equals(that.value) : that.value == null;
+    return Objects.equals(name, that.name) && Objects.equals(value, that.value) && Arrays.equals(values, that.values);
   }
 
   @Override
   public int hashCode() {
-    int result = name != null ? name.hashCode() : 0;
-    result = 31 * result + (value != null ? value.hashCode() : 0);
+    int result = Objects.hash(name, value);
+    result = 31 * result + Arrays.hashCode(values);
     return result;
   }
 }
