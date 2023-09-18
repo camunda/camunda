@@ -362,8 +362,7 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
     final var memberId = member.memberId();
     final var context = remoteMemberContexts.get(memberId);
     if (context != null) {
-      context.closeReplicationContext();
-      context.getMember().close();
+      context.close();
       remoteMemberContexts.remove(memberId);
       remoteActiveMembers.remove(context);
       replicationTargets.remove(context);
@@ -417,8 +416,7 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
 
   @Override
   public void close() {
-    remoteMemberContexts.values().forEach(context -> context.getMember().close());
-    remoteMemberContexts.values().forEach(RaftMemberContext::closeReplicationContext);
+    remoteMemberContexts.values().forEach(RaftMemberContext::close);
     localMember.close();
   }
 }

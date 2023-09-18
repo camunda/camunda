@@ -689,8 +689,15 @@ final class LeaderAppender {
    * @param member The member to which to send the append request.
    */
   private void appendEntries(final RaftMemberContext member) {
-    // Prevent recursive, asynchronous appends from being executed if the appender has been closed.
     if (!open) {
+      // Prevent recursive, asynchronous appends from being executed if the appender has been
+      // closed.
+      return;
+    }
+
+    if (!member.isOpen()) {
+      // Prevent recursive, asynchronous appends from being executed if the member is no longer
+      // open.
       return;
     }
 
@@ -735,7 +742,7 @@ final class LeaderAppender {
 
   private boolean hasMoreEntries(final RaftMemberContext member) {
     // If the member's nextIndex is an entry in the local log then more entries can be sent.
-    return !member.hasReplicationContext() || member.hasNextEntry();
+    return member.hasNextEntry();
   }
 
   private void handleAppendResponseError(
