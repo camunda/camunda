@@ -30,8 +30,12 @@ public interface ActivateJobsHandler extends Consumer<ActorControl> {
 
   public static InflightActivateJobsRequest toInflightActivateJobsRequest(
       final ActivateJobsRequest request,
-      final ServerStreamObserver<ActivateJobsResponse> responseObserver) {
+      final ServerStreamObserver<ActivateJobsResponse> responseObserver,
+      final boolean isMultiTenancyEnabled) {
     return new InflightActivateJobsRequest(
-        ACTIVATE_JOBS_REQUEST_ID_GENERATOR.getAndIncrement(), request, responseObserver);
+        ACTIVATE_JOBS_REQUEST_ID_GENERATOR.getAndIncrement(),
+        request,
+        responseObserver,
+        isMultiTenancyEnabled);
   }
 }

@@ -49,6 +49,7 @@ public final class LongPollingActivateJobsHandler implements ActivateJobsHandler
   private final Duration longPollingTimeout;
   private final long probeTimeoutMillis;
   private final int failedAttemptThreshold;
+  private final boolean isMultiTenancyEnabled;
 
   private final LongPollingMetrics metrics;
 
@@ -58,13 +59,15 @@ public final class LongPollingActivateJobsHandler implements ActivateJobsHandler
       final BrokerClient brokerClient,
       final long longPollingTimeout,
       final long probeTimeoutMillis,
-      final int failedAttemptThreshold) {
+      final int failedAttemptThreshold,
+      final boolean isMultiTenancyEnabled) {
     this.brokerClient = brokerClient;
     activateJobsHandler = new RoundRobinActivateJobsHandler(brokerClient);
     this.longPollingTimeout = Duration.ofMillis(longPollingTimeout);
     this.probeTimeoutMillis = probeTimeoutMillis;
     this.failedAttemptThreshold = failedAttemptThreshold;
     metrics = new LongPollingMetrics();
+    this.isMultiTenancyEnabled = isMultiTenancyEnabled;
   }
 
   @Override
@@ -88,7 +91,8 @@ public final class LongPollingActivateJobsHandler implements ActivateJobsHandler
       final ActivateJobsRequest request,
       final ServerStreamObserver<ActivateJobsResponse> responseObserver) {
     final var type = request.getType();
-    final var longPollingRequest = toInflightActivateJobsRequest(request, responseObserver);
+    final var longPollingRequest =
+        toInflightActivateJobsRequest(request, responseObserver, isMultiTenancyEnabled);
     activateJobs(longPollingRequest);
 
     // eagerly removing the request on cancellation may free up some resources
@@ -322,6 +326,7 @@ public final class LongPollingActivateJobsHandler implements ActivateJobsHandler
     private long longPollingTimeout = DEFAULT_LONG_POLLING_TIMEOUT;
     private long probeTimeoutMillis = DEFAULT_PROBE_TIMEOUT;
     private int minEmptyResponses = EMPTY_RESPONSE_THRESHOLD;
+    private boolean isMultiTenancyEnabled = false;
 
     public Builder setBrokerClient(final BrokerClient brokerClient) {
       this.brokerClient = brokerClient;
@@ -343,10 +348,19 @@ public final class LongPollingActivateJobsHandler implements ActivateJobsHandler
       return this;
     }
 
+    public Builder setMultiTenancyEnabled(final boolean isMultiTenancyEnabled) {
+      this.isMultiTenancyEnabled = isMultiTenancyEnabled;
+      return this;
+    }
+
     public LongPollingActivateJobsHandler build() {
       Objects.requireNonNull(brokerClient, "brokerClient");
       return new LongPollingActivateJobsHandler(
-          brokerClient, longPollingTimeout, probeTimeoutMillis, minEmptyResponses);
+          brokerClient,
+          longPollingTimeout,
+          probeTimeoutMillis,
+          minEmptyResponses,
+          isMultiTenancyEnabled);
     }
   }
 }

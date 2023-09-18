@@ -51,16 +51,23 @@ public final class RoundRobinActivateJobsHandler implements ActivateJobsHandler 
       new ConcurrentHashMap<>();
   private final BrokerClient brokerClient;
   private final BrokerTopologyManager topologyManager;
+  private final boolean isMultiTenancyEnabled;
 
   private ActorControl actor;
 
   public RoundRobinActivateJobsHandler(final BrokerClient brokerClient) {
+    this(brokerClient, false);
+  }
+
+  public RoundRobinActivateJobsHandler(
+      final BrokerClient brokerClient, final boolean isMultiTenancyEnabled) {
     this.brokerClient = brokerClient;
     topologyManager = brokerClient.getTopologyManager();
+    this.isMultiTenancyEnabled = isMultiTenancyEnabled;
   }
 
   @Override
-  public void accept(ActorControl actor) {
+  public void accept(final ActorControl actor) {
     this.actor = actor;
   }
 
@@ -70,7 +77,8 @@ public final class RoundRobinActivateJobsHandler implements ActivateJobsHandler 
       final ServerStreamObserver<ActivateJobsResponse> responseObserver) {
     final var topology = topologyManager.getTopology();
     if (topology != null) {
-      final var inflightRequest = toInflightActivateJobsRequest(request, responseObserver);
+      final var inflightRequest =
+          toInflightActivateJobsRequest(request, responseObserver, isMultiTenancyEnabled);
       activateJobs(
           topology.getPartitionsCount(),
           inflightRequest,
