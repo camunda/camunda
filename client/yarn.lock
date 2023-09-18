@@ -1678,10 +1678,13 @@
     "@codemirror/language" "^6.2.1"
     lezer-feel "^0.15.0"
 
-"@camunda/camunda-composite-components@^0.1.3":
-  version "0.1.3"
-  resolved "https://registry.yarnpkg.com/@camunda/camunda-composite-components/-/camunda-composite-components-0.1.3.tgz#4a66378d020ab7956f3dabf9d22f759dd4cf2f7a"
-  integrity sha512-7UGL6Xd6I9mUFi0MNThQG0UUKwTChyyNkZSVHruEKgVWtkaOO588O6PXCOcyb9uDJDt/9J+CgqgM8/WXshFrYQ==
+"@camunda/camunda-composite-components@^0.2.4":
+  version "0.2.4"
+  resolved "https://registry.yarnpkg.com/@camunda/camunda-composite-components/-/camunda-composite-components-0.2.4.tgz#a6365097bcd1046aab3eaa3e4da946494ebfc9f8"
+  integrity sha512-ExmTxC/44/sDQXJspcGSfZsY7uDphP1UZN0UGgcBYVHwQLkSPdWBiA825Lgld1Gueko0br0gsBT5gM8aPG8Ebw==
+  dependencies:
+    jwt-decode "3.1.2"
+    react-markdown "8.0.7"
 
 "@carbon/colors@^11.19.0":
   version "11.19.0"
@@ -10017,6 +10020,11 @@ jsx-ast-utils@^3.3.2:
     array-includes "^3.1.5"
     object.assign "^4.1.3"
 
+jwt-decode@3.1.2:
+  version "3.1.2"
+  resolved "https://registry.yarnpkg.com/jwt-decode/-/jwt-decode-3.1.2.tgz#3fb319f3675a2df0c2895c8f5e9fa4b67b04ed59"
+  integrity sha512-UfpWE/VZn0iP50d8cz9NrZLM9lSWhcJ+0Gt/nm4by88UL+J1SiKN8/5dkjMmbEzwL2CAe+67GsegCbIKtbp75A==
+
 kind-of@^3.0.2, kind-of@^3.0.3, kind-of@^3.2.0, kind-of@^4.0.0, kind-of@^5.0.0, kind-of@^6.0.0, kind-of@^6.0.2, kind-of@^6.0.3:
   version "6.0.3"
   resolved "https://registry.yarnpkg.com/kind-of/-/kind-of-6.0.3.tgz#07c05034a6c349fa06e24fa35aa76db4580ce4dd"
@@ -12979,7 +12987,7 @@ react-list@^0.8.13:
   dependencies:
     prop-types "15"
 
-react-markdown@^8.0.7:
+react-markdown@8.0.7, react-markdown@^8.0.7:
   version "8.0.7"
   resolved "https://registry.yarnpkg.com/react-markdown/-/react-markdown-8.0.7.tgz#c8dbd1b9ba5f1c5e7e5f2a44de465a3caafdf89b"
   integrity sha512-bvWbzG4MtOU62XqBx3Xx+zB2raaFFsq4mYiAzfjXJMEz2sixgeAfraA3tvzULF02ZdOMUOKTBFFaZJDDrq+BJQ==
