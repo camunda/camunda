@@ -16,7 +16,7 @@ import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbString;
-import io.camunda.zeebe.engine.state.deployment.ProcessVersionInfo;
+import io.camunda.zeebe.engine.state.deployment.VersionInfo;
 import io.camunda.zeebe.engine.state.immutable.MigrationState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
@@ -33,7 +33,7 @@ public class ProcessDefinitionVersionMigrationTest {
 
   private static final class LegacyProcessVersionState {
     private final DbString processIdKey;
-    private final ColumnFamily<DbString, ProcessVersionInfo> processVersionInfoColumnFamily;
+    private final ColumnFamily<DbString, VersionInfo> processVersionInfoColumnFamily;
 
     public LegacyProcessVersionState(
         final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
@@ -43,12 +43,12 @@ public class ProcessDefinitionVersionMigrationTest {
               ZbColumnFamilies.DEPRECATED_PROCESS_VERSION,
               transactionContext,
               processIdKey,
-              new ProcessVersionInfo());
+              new VersionInfo());
     }
 
     public void insertProcessVersion(final String processId, final int version) {
       processIdKey.wrapString(processId);
-      final var value = new ProcessVersionInfo().setHighestVersionIfHigher(version);
+      final var value = new VersionInfo().setHighestVersionIfHigher(version);
       processVersionInfoColumnFamily.insert(processIdKey, value);
     }
   }
@@ -81,7 +81,7 @@ public class ProcessDefinitionVersionMigrationTest {
     private TransactionContext transactionContext;
     private LegacyProcessVersionState legacyState;
     private DbString processIdKey;
-    private ColumnFamily<DbString, ProcessVersionInfo> nextValueColumnFamily;
+    private ColumnFamily<DbString, VersionInfo> nextValueColumnFamily;
 
     @BeforeEach
     void setup() {
@@ -92,7 +92,7 @@ public class ProcessDefinitionVersionMigrationTest {
               ZbColumnFamilies.DEPRECATED_PROCESS_VERSION,
               transactionContext,
               processIdKey,
-              new ProcessVersionInfo());
+              new VersionInfo());
     }
 
     @Test

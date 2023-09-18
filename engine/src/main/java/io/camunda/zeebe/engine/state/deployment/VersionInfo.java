@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.StreamSupport;
 
-public final class ProcessVersionInfo extends UnpackedObject implements DbValue {
+public final class VersionInfo extends UnpackedObject implements DbValue {
   // The property key is named nextValue. This is not a great name and doesn't describe what it is.
   // However, changing this is not backwards compatible. Changing the variable name is the best we
   // can do to hide this name.
@@ -24,30 +24,24 @@ public final class ProcessVersionInfo extends UnpackedObject implements DbValue 
   private final ArrayProperty<LongValue> knownVersions =
       new ArrayProperty<>("knownVersions", new LongValue());
 
-  public ProcessVersionInfo() {
+  public VersionInfo() {
     declareProperty(highestVersionProp).declareProperty(knownVersions);
   }
 
   /**
-   * Gets the highest version of a process. This is the highest version we've ever known. There is
-   * no guarantee that a process with this version still exists in the state. It could've been
-   * deleted. We need to track this version so we don't ever reuse version numbers after a process
+   * Gets the highest version of a resource. This is the highest version we've ever known. There is
+   * no guarantee that a resource with this version still exists in the state. It could've been
+   * deleted. We need to track this version so we don't ever reuse version numbers after a resource
    * has been deleted.
    *
-   * @return the highest version we've ever known for this process
+   * @return the highest version we've ever known for this resource
    */
   public long getHighestVersion() {
     return highestVersionProp.getValue();
   }
 
-  /**
-   * Sets the highest version of a process. This is the highest version we've ever known. If the
-   * passed version is lower than the current known highest version, nothing is changed.
-   *
-   * @param version the version of the process
-   */
-  public ProcessVersionInfo setHighestVersionIfHigher(final long version) {
-    if (version > highestVersionProp.getValue()) {
+  public VersionInfo setHighestVersionIfHigher(final long version) {
+    if (version > getHighestVersion()) {
       highestVersionProp.setValue(version);
     }
     return this;

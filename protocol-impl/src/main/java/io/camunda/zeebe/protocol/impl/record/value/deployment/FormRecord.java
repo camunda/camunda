@@ -172,4 +172,9 @@ public final class FormRecord extends UnifiedRecordValue implements Form {
   public String getTenantId() {
     return bufferAsString(tenantIdProp.getValue());
   }
+
+  public FormRecord setTenantId(final String tenantId) {
+    tenantIdProp.setValue(tenantId);
+    return this;
+  }
 }

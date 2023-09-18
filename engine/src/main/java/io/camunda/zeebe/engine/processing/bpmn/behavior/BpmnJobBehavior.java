@@ -92,7 +92,8 @@ public final class BpmnJobBehavior {
       final BpmnElementContext context, final ExecutableJobWorkerElement element) {
     final var jobWorkerProperties = element.getJobWorkerProperties();
     final var scopeKey = context.getElementInstanceKey();
-    return evaluateJobExpressions(jobWorkerProperties, scopeKey)
+    final var tenantId = context.getTenantId();
+    return evaluateJobExpressions(jobWorkerProperties, scopeKey, tenantId)
         .map(
             jobProperties -> {
               writeJobCreatedEvent(context, element, jobProperties);
@@ -102,7 +103,7 @@ public final class BpmnJobBehavior {
   }
 
   private Either<Failure, JobProperties> evaluateJobExpressions(
-      final JobWorkerProperties jobWorkerProps, final long scopeKey) {
+      final JobWorkerProperties jobWorkerProps, final long scopeKey, final String tenantId) {
     return Either.<Failure, JobProperties>right(new JobProperties())
         .flatMap(p -> evalTypeExp(jobWorkerProps.getType(), scopeKey).map(p::type))
         .flatMap(p -> evalRetriesExp(jobWorkerProps.getRetries(), scopeKey).map(p::retries))
@@ -117,7 +118,8 @@ public final class BpmnJobBehavior {
                     .map(p::candidateUsers))
         .flatMap(p -> evalDateExp(jobWorkerProps.getDueDate(), scopeKey).map(p::dueDate))
         .flatMap(p -> evalDateExp(jobWorkerProps.getFollowUpDate(), scopeKey).map(p::followUpDate))
-        .flatMap(p -> evalFormIdExp(jobWorkerProps.getFormId(), scopeKey).map(p::formKey));
+        .flatMap(
+            p -> evalFormIdExp(jobWorkerProps.getFormId(), scopeKey, tenantId).map(p::formKey));
   }
 
   private Either<Failure, String> evalTypeExp(final Expression type, final long scopeKey) {
@@ -164,7 +166,8 @@ public final class BpmnJobBehavior {
         .map(optionalDate -> optionalDate.map(ZonedDateTime::toString).orElse(null));
   }
 
-  private Either<Failure, String> evalFormIdExp(final Expression formIdExp, final long scopeKey) {
+  private Either<Failure, String> evalFormIdExp(
+      final Expression formIdExp, final long scopeKey, final String tenantId) {
     if (formIdExp == null) {
       return Either.right(null);
     }
@@ -173,7 +176,7 @@ public final class BpmnJobBehavior {
         .flatMap(
             formId -> {
               final Optional<PersistedForm> latestFormById =
-                  formState.findLatestFormById(wrapString(formId));
+                  formState.findLatestFormById(wrapString(formId), tenantId);
               return latestFormById
                   .<Either<Failure, String>>map(
                       persistedForm -> Either.right(String.valueOf(persistedForm.getFormKey())))

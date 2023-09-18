@@ -23,6 +23,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith(ProcessingStateExtension.class)
 public class FormStateTest {
 
+  private final String tenantId = "<default>";
   private MutableProcessingState processingState;
   private MutableFormState formState;
 
@@ -38,7 +39,7 @@ public class FormStateTest {
     formState.storeFormRecord(formRecord);
 
     // when
-    final var maybePersistedForm = formState.findFormByKey(formRecord.getFormKey());
+    final var maybePersistedForm = formState.findFormByKey(formRecord.getFormKey(), tenantId);
 
     // then
     assertThat(maybePersistedForm).isNotEmpty();
@@ -62,7 +63,8 @@ public class FormStateTest {
     formState.storeFormRecord(formRecord2);
 
     // when
-    final var maybePersistedForm = formState.findLatestFormById(formRecord1.getFormIdBuffer());
+    final var maybePersistedForm =
+        formState.findLatestFormById(formRecord1.getFormIdBuffer(), tenantId);
 
     // then
     assertThat(maybePersistedForm).isNotEmpty();
@@ -79,7 +81,7 @@ public class FormStateTest {
   @Test
   void shouldReturnEmptyIfNoFormIsDeployedForFormId() {
     // when
-    final var persistedForm = formState.findLatestFormById(wrapString("form-1"));
+    final var persistedForm = formState.findLatestFormById(wrapString("form-1"), tenantId);
 
     // then
     assertThat(persistedForm).isEmpty();
@@ -88,7 +90,7 @@ public class FormStateTest {
   @Test
   void shouldReturnEmptyIfNoFormIsDeployedForFormKey() {
     // when
-    final var persistedForm = formState.findFormByKey(1L);
+    final var persistedForm = formState.findFormByKey(1L, tenantId);
 
     // then
     assertThat(persistedForm).isEmpty();
@@ -101,7 +103,8 @@ public class FormStateTest {
         .setFormKey(key)
         .setResourceName("form-1.form")
         .setChecksum(wrapString("checksum"))
-        .setResource(wrapString("form-resource"));
+        .setResource(wrapString("form-resource"))
+        .setTenantId(tenantId);
   }
 
   private FormRecord sampleFormRecord() {

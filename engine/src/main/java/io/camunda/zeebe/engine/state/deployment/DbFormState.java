@@ -10,7 +10,7 @@ package io.camunda.zeebe.engine.state.deployment;
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.db.impl.DbForeignKey;
+import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.state.mutable.MutableFormState;
@@ -21,12 +21,17 @@ import org.agrona.DirectBuffer;
 
 public class DbFormState implements MutableFormState {
 
+  private static final int DEFAULT_VERSION_VALUE = 0;
+
   private final DbLong dbFormKey;
   private final PersistedForm dbPersistedForm;
   private final ColumnFamily<DbLong, PersistedForm> formsByKey;
   private final DbString dbFormId;
-  private final DbForeignKey<DbLong> fkForm;
-  private final ColumnFamily<DbString, DbForeignKey<DbLong>> latestFormKeysByFormId;
+  private final VersionManager versionManager;
+  private final DbLong formVersion;
+  private final DbCompositeKey<DbString, DbLong> idAndVersionKey;
+  private final ColumnFamily<DbCompositeKey<DbString, DbLong>, PersistedForm>
+      formByIdAndVersionColumnFamily;
 
   public DbFormState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
@@ -37,55 +42,51 @@ public class DbFormState implements MutableFormState {
             ZbColumnFamilies.FORMS, transactionContext, dbFormKey, dbPersistedForm);
 
     dbFormId = new DbString();
-    fkForm = new DbForeignKey<>(dbFormKey, ZbColumnFamilies.FORMS);
-    latestFormKeysByFormId =
+    formVersion = new DbLong();
+    idAndVersionKey = new DbCompositeKey<>(dbFormId, formVersion);
+    formByIdAndVersionColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.LATEST_FORM_KEY_BY_FORM_ID, transactionContext, dbFormId, fkForm);
+            ZbColumnFamilies.FORM_BY_ID_AND_VERSION,
+            transactionContext,
+            idAndVersionKey,
+            dbPersistedForm);
+
+    versionManager =
+        new VersionManager(
+            DEFAULT_VERSION_VALUE, zeebeDb, ZbColumnFamilies.FORM_VERSION, transactionContext);
   }
 
   @Override
   public void storeFormRecord(final FormRecord record) {
     dbFormKey.wrapLong(record.getFormKey());
+    dbFormId.wrapString(record.getFormId());
+    formVersion.wrapLong(record.getVersion());
     dbPersistedForm.wrap(record);
     formsByKey.upsert(dbFormKey, dbPersistedForm);
+    formByIdAndVersionColumnFamily.upsert(idAndVersionKey, dbPersistedForm);
 
-    updateLatestFormVersion(record);
+    updateLatestVersion(record);
   }
 
   @Override
-  public Optional<PersistedForm> findLatestFormById(final DirectBuffer formId) {
+  public Optional<PersistedForm> findLatestFormById(
+      final DirectBuffer formId, final String tenantId) {
     dbFormId.wrapBuffer(formId);
-
-    return Optional.ofNullable(latestFormKeysByFormId.get(dbFormId))
-        .flatMap(formKey -> findFormByKey(formKey.inner().getValue()));
+    final long latestVersion = versionManager.getLatestResourceVersion(formId, tenantId);
+    formVersion.wrapLong(latestVersion);
+    return Optional.ofNullable(formByIdAndVersionColumnFamily.get(idAndVersionKey));
   }
 
   @Override
-  public Optional<PersistedForm> findFormByKey(final long formKey) {
+  public Optional<PersistedForm> findFormByKey(final long formKey, final String tenantId) {
     dbFormKey.wrapLong(formKey);
     return Optional.ofNullable(formsByKey.get(dbFormKey)).map(PersistedForm::copy);
   }
 
-  private void updateFormAsLatestVersion(final FormRecord record) {
-    dbFormId.wrapBuffer(record.getFormIdBuffer());
-    dbFormKey.wrapLong(record.getFormKey());
-    latestFormKeysByFormId.update(dbFormId, fkForm);
-  }
-
-  private void updateLatestFormVersion(final FormRecord record) {
-    findLatestFormById(record.getFormIdBuffer())
-        .ifPresentOrElse(
-            previousVersion -> {
-              if (record.getVersion() > previousVersion.getVersion()) {
-                updateFormAsLatestVersion(record);
-              }
-            },
-            () -> insertFormAsLatestVersion(record));
-  }
-
-  private void insertFormAsLatestVersion(final FormRecord record) {
-    dbFormId.wrapBuffer(record.getFormIdBuffer());
-    dbFormKey.wrapLong(record.getFormKey());
-    latestFormKeysByFormId.upsert(dbFormId, fkForm);
+  private void updateLatestVersion(final FormRecord formRecord) {
+    final var formId = formRecord.getFormId();
+    dbFormId.wrapString(formId);
+    final var version = formRecord.getVersion();
+    versionManager.addResourceVersion(formId, version, formRecord.getTenantId());
   }
 }
