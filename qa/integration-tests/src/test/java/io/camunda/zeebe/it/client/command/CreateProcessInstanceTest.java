@@ -273,7 +273,7 @@ public final class CreateProcessInstanceTest {
     assertThatThrownBy(command::join)
         .isInstanceOf(ClientException.class)
         .hasMessageContaining(
-            "Expected to find process definition with process ID 'non-existing', but none found");
+            "Expected to find process definition with process ID 'non-existing' and tenant ID '<default>', but none found");
   }
 
   @Test
@@ -284,7 +284,8 @@ public final class CreateProcessInstanceTest {
 
     assertThatThrownBy(command::join)
         .isInstanceOf(ClientException.class)
-        .hasMessageContaining("Expected to find process definition with key '123', but none found");
+        .hasMessageContaining(
+            "Expected to find process definition with key '123' and tenant ID '<default>', but none found");
   }
 
   @Test

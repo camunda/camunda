@@ -23,6 +23,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -74,7 +75,8 @@ public final class CreateProcessInstanceTest {
         .hasBpmnElementType(BpmnElementType.PROCESS)
         .hasFlowScopeKey(-1)
         .hasBpmnProcessId("process")
-        .hasProcessInstanceKey(processInstanceKey);
+        .hasProcessInstanceKey(processInstanceKey)
+        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   }
 
   @Test
@@ -230,6 +232,66 @@ public final class CreateProcessInstanceTest {
             tuple(BpmnElementType.TASK, ProcessInstanceIntent.ELEMENT_COMPLETING),
             tuple(BpmnElementType.TASK, ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
+  public void shouldCreateProcessInstanceForDefaultTenant() {
+    // given
+    final String processId = "process";
+    final String tenantId = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
+    ENGINE
+        .deployment()
+        .withXmlResource(Bpmn.createExecutableProcess(processId).startEvent().endEvent().done())
+        .withTenantId(tenantId)
+        .deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+
+    // then
+    final Record<ProcessInstanceRecordValue> process =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withElementType(BpmnElementType.PROCESS)
+            .getFirst();
+
+    Assertions.assertThat(process.getValue()).hasBpmnProcessId(processId).hasTenantId(tenantId);
+  }
+
+  @Test
+  public void shouldCreateProcessInstanceForCustomTenant() {
+    // given
+    final String processId = helper.getBpmnProcessId();
+    final String tenantId = "foo";
+    ENGINE
+        .deployment()
+        .withXmlResource(Bpmn.createExecutableProcess(processId).startEvent().endEvent().done())
+        .withTenantId(tenantId)
+        .deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(processId).withTenantId(tenantId).create();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted()
+                .withElementType(BpmnElementType.PROCESS))
+        .extracting(Record::getIntent)
+        .containsSequence(
+            ProcessInstanceIntent.ELEMENT_ACTIVATING, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+
+    final Record<ProcessInstanceRecordValue> process =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withElementType(BpmnElementType.PROCESS)
+            .getFirst();
+
+    Assertions.assertThat(process.getValue()).hasBpmnProcessId(processId).hasTenantId(tenantId);
   }
 
   // Regression test for https://github.com/camunda/zeebe/issues/10536

@@ -27,6 +27,7 @@ import io.camunda.zeebe.protocol.record.value.EvaluatedDecisionValue;
 import io.camunda.zeebe.protocol.record.value.EvaluatedOutputValue;
 import io.camunda.zeebe.protocol.record.value.MatchedRuleValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -109,7 +110,47 @@ public final class BusinessRuleTaskTest {
         .hasBpmnElementType(BpmnElementType.BUSINESS_RULE_TASK)
         .hasFlowScopeKey(processInstanceKey)
         .hasBpmnProcessId(PROCESS_ID)
-        .hasProcessInstanceKey(processInstanceKey);
+        .hasProcessInstanceKey(processInstanceKey)
+        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  }
+
+  @Test
+  public void shouldActivateTaskWithCustomTenant() {
+    // given
+    final String tenantId = "foo";
+    ENGINE
+        .deployment()
+        .withXmlClasspathResource(DMN_RESOURCE)
+        .withXmlResource(
+            processWithBusinessRuleTask(
+                t -> t.zeebeCalledDecisionId("jedi_or_sith").zeebeResultVariable(RESULT_VARIABLE)))
+        .withTenantId(tenantId)
+        .deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable("lightsaberColor", "blue")
+            .withTenantId(tenantId)
+            .create();
+
+    // then
+    final Record<ProcessInstanceRecordValue> taskActivating =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withElementType(BpmnElementType.BUSINESS_RULE_TASK)
+            .getFirst();
+
+    assertThat(taskActivating.getValue())
+        .hasElementId(TASK_ID)
+        .hasBpmnElementType(BpmnElementType.BUSINESS_RULE_TASK)
+        .hasFlowScopeKey(processInstanceKey)
+        .hasBpmnProcessId(PROCESS_ID)
+        .hasProcessInstanceKey(processInstanceKey)
+        .hasTenantId(tenantId);
   }
 
   @Test

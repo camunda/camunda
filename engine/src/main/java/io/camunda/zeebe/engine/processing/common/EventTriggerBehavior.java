@@ -148,6 +148,7 @@ public class EventTriggerBehavior {
   public long triggeringProcessEvent(
       final long processDefinitionKey,
       final long processInstanceKey,
+      final String tenantId,
       final long eventScopeKey,
       final DirectBuffer catchEventId,
       final DirectBuffer variables) {
@@ -158,7 +159,8 @@ public class EventTriggerBehavior {
         .setTargetElementIdBuffer(catchEventId)
         .setVariablesBuffer(variables)
         .setProcessDefinitionKey(processDefinitionKey)
-        .setProcessInstanceKey(processInstanceKey);
+        .setProcessInstanceKey(processInstanceKey)
+        .setTenantId(tenantId);
     stateWriter.appendFollowUpEvent(eventKey, ProcessEventIntent.TRIGGERING, processEventRecord);
     return eventKey;
   }
@@ -176,6 +178,7 @@ public class EventTriggerBehavior {
       final long eventTriggerKey,
       final long processDefinitionKey,
       final long processInstanceKey,
+      final String tenantId,
       final long eventScopeKey,
       final DirectBuffer catchEventId) {
     processEventRecord.reset();
@@ -183,7 +186,8 @@ public class EventTriggerBehavior {
         .setScopeKey(eventScopeKey)
         .setTargetElementIdBuffer(catchEventId)
         .setProcessDefinitionKey(processDefinitionKey)
-        .setProcessInstanceKey(processInstanceKey);
+        .setProcessInstanceKey(processInstanceKey)
+        .setTenantId(tenantId);
     stateWriter.appendFollowUpEvent(
         eventTriggerKey, ProcessEventIntent.TRIGGERED, processEventRecord);
   }
@@ -220,6 +224,7 @@ public class EventTriggerBehavior {
         processEventKey,
         elementRecord.getProcessDefinitionKey(),
         elementRecord.getProcessInstanceKey(),
+        elementRecord.getTenantId(),
         eventScopeKey,
         triggeredEvent.getId());
 
@@ -243,6 +248,7 @@ public class EventTriggerBehavior {
           elementRecord.getProcessDefinitionKey(),
           elementRecord.getProcessInstanceKey(),
           elementRecord.getBpmnProcessIdBuffer(),
+          elementRecord.getTenantId(),
           variables);
     }
 

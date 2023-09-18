@@ -413,7 +413,8 @@ public final class ElementActivationBehavior {
         .setFlowScopeKey(flowScopeKey)
         .setParentProcessInstanceKey(-1L)
         .setParentElementInstanceKey(-1L)
-        .setBpmnEventType(elementToActivate.getEventType());
+        .setBpmnEventType(elementToActivate.getEventType())
+        .setTenantId(processInstanceRecord.getTenantId());
 
     return elementInstanceRecord;
   }
@@ -427,7 +428,7 @@ public final class ElementActivationBehavior {
       final ProcessInstanceRecord elementRecord,
       final long elementInstanceKey) {
 
-    if (element instanceof ExecutableCatchEventSupplier catchEventSupplier) {
+    if (element instanceof final ExecutableCatchEventSupplier catchEventSupplier) {
       final var bpmnElementContext = new BpmnElementContextImpl();
       bpmnElementContext.init(
           elementInstanceKey, elementRecord, ProcessInstanceIntent.ELEMENT_ACTIVATED);

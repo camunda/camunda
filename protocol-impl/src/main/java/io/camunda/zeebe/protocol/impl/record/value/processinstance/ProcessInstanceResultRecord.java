@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.processinstance;
 
+import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
@@ -16,7 +18,6 @@ import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceResultRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
-import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Map;
 import org.agrona.DirectBuffer;
 
@@ -44,7 +45,7 @@ public final class ProcessInstanceResultRecord extends UnifiedRecordValue
 
   @Override
   public String getBpmnProcessId() {
-    return BufferUtil.bufferAsString(bpmnProcessIdProperty.getValue());
+    return bufferAsString(bpmnProcessIdProperty.getValue());
   }
 
   public ProcessInstanceResultRecord setBpmnProcessId(final String bpmnProcessId) {
@@ -109,7 +110,7 @@ public final class ProcessInstanceResultRecord extends UnifiedRecordValue
 
   @Override
   public String getTenantId() {
-    return BufferUtil.bufferAsString(tenantIdProperty.getValue());
+    return bufferAsString(tenantIdProperty.getValue());
   }
 
   public ProcessInstanceResultRecord setTenantId(final String tenantId) {

@@ -23,6 +23,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.Map;
@@ -85,6 +86,7 @@ public final class CallActivityTest {
             RecordingExporter.processInstanceRecords()
                 .onlyEvents()
                 .withProcessInstanceKey(processInstanceKey)
+                .withTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
                 .withElementId("call")
                 .limit(2))
         .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))

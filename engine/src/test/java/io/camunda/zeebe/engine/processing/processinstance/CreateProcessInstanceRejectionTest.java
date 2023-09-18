@@ -233,4 +233,37 @@ public class CreateProcessInstanceRejectionTest {
         .hasIntent(ProcessInstanceCreationIntent.CREATE)
         .hasRejectionType(RejectionType.EXCEEDED_BATCH_RECORD_SIZE);
   }
+
+  @Test
+  public void shouldRejectCommandIfNoProcessDefinitionForTenant() {
+    // given
+    final String processId = "process";
+    final String tenantId = "foo";
+    final String fakeTenantId = "bar";
+    engine
+        .deployment()
+        .withXmlResource(Bpmn.createExecutableProcess(processId).startEvent().endEvent().done())
+        .withTenantId(tenantId)
+        .deploy();
+
+    // when
+    engine
+        .processInstance()
+        .ofBpmnProcessId(processId)
+        .withTenantId(fakeTenantId)
+        .expectRejection()
+        .create();
+
+    // then
+    final var rejectionRecord =
+        RecordingExporter.processInstanceCreationRecords().onlyCommandRejections().getFirst();
+
+    assertThat(rejectionRecord)
+        .hasIntent(ProcessInstanceCreationIntent.CREATE)
+        .hasRejectionType(RejectionType.NOT_FOUND)
+        .hasRejectionReason(
+            String.format(
+                "Expected to find process definition with process ID '%s' and tenant ID '%s', but none found",
+                processId, fakeTenantId));
+  }
 }

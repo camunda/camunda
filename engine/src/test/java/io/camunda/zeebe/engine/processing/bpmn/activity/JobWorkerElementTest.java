@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -102,6 +103,38 @@ public final class JobWorkerElementTest {
         .hasFlowScopeKey(processInstanceKey)
         .hasBpmnProcessId("process")
         .hasProcessInstanceKey(processInstanceKey);
+  }
+
+  @Test
+  public void shouldActivateTaskWithCustomTenant() {
+    // given
+    final String tenantId = "foo";
+    ENGINE
+        .deployment()
+        .withXmlResource(process(t -> t.zeebeJobType("test")))
+        .withTenantId(tenantId)
+        .deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withTenantId(tenantId).create();
+
+    // then
+    final Record<ProcessInstanceRecordValue> taskActivating =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withTenantId(tenantId)
+            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withElementType(elementBuilder.getElementType())
+            .getFirst();
+
+    Assertions.assertThat(taskActivating.getValue())
+        .hasElementId("task")
+        .hasBpmnElementType(elementBuilder.getElementType())
+        .hasFlowScopeKey(processInstanceKey)
+        .hasBpmnProcessId("process")
+        .hasProcessInstanceKey(processInstanceKey)
+        .hasTenantId(tenantId);
   }
 
   @Test
@@ -210,6 +243,36 @@ public final class JobWorkerElementTest {
     assertThat(
             RecordingExporter.processInstanceRecords()
                 .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
+        .containsSubsequence(
+            tuple(elementBuilder.getElementType(), ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(elementBuilder.getElementType(), ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
+  @Ignore("https://github.com/camunda/zeebe/issues/13287")
+  public void shouldCompleteTaskWithCustomTenant() {
+    // given
+    final String tenantId = "foo";
+    ENGINE
+        .deployment()
+        .withXmlResource(process(t -> t.zeebeJobType("test")))
+        .withTenantId(tenantId)
+        .deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withTenantId(tenantId).create();
+
+    ENGINE.job().ofInstance(processInstanceKey).withType("test").complete();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .withTenantId(tenantId)
                 .limitToProcessInstanceCompleted())
         .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
         .containsSubsequence(

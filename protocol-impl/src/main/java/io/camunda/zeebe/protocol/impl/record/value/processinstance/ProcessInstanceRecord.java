@@ -32,10 +32,13 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
   public static final String PROP_PROCESS_BPMN_TYPE = "bpmnElementType";
   public static final String PROP_PROCESS_SCOPE_KEY = "flowScopeKey";
   public static final String PROP_PROCESS_EVENT_TYPE = "bpmnEventType";
+  public static final String PROP_TENANT_ID = "tenantId";
 
   private final StringProperty bpmnProcessIdProp =
       new StringProperty(PROP_PROCESS_BPMN_PROCESS_ID, "");
   private final IntegerProperty versionProp = new IntegerProperty(PROP_PROCESS_VERSION, -1);
+  private final StringProperty tenantIdProp =
+      new StringProperty(PROP_TENANT_ID, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   private final LongProperty processDefinitionKeyProp = new LongProperty(PROP_PROCESS_KEY, -1L);
 
   private final LongProperty processInstanceKeyProp =
@@ -66,7 +69,8 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
         .declareProperty(flowScopeKeyProp)
         .declareProperty(bpmnEventTypeProp)
         .declareProperty(parentProcessInstanceKeyProp)
-        .declareProperty(parentElementInstanceKeyProp);
+        .declareProperty(parentElementInstanceKeyProp)
+        .declareProperty(tenantIdProp);
   }
 
   public void wrap(final ProcessInstanceRecord record) {
@@ -80,6 +84,7 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
     bpmnEventTypeProp.setValue(record.getBpmnEventType());
     parentProcessInstanceKeyProp.setValue(record.getParentProcessInstanceKey());
     parentElementInstanceKeyProp.setValue(record.getParentElementInstanceKey());
+    tenantIdProp.setValue(record.getTenantId());
   }
 
   @JsonIgnore
@@ -219,7 +224,11 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
 
   @Override
   public String getTenantId() {
-    // todo(#13774): replace dummy implementation
-    return TenantOwned.DEFAULT_TENANT_IDENTIFIER;
+    return bufferAsString(tenantIdProp.getValue());
+  }
+
+  public ProcessInstanceRecord setTenantId(final String tenantId) {
+    tenantIdProp.setValue(tenantId);
+    return this;
   }
 }

@@ -23,6 +23,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
@@ -90,6 +91,7 @@ public final class EmbeddedSubProcessTest {
     assertThat(
             RecordingExporter.processInstanceRecords()
                 .withProcessInstanceKey(processInstanceKey)
+                .withTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
                 .limitToProcessInstanceCompleted())
         .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
         .containsSubsequence(
@@ -110,6 +112,31 @@ public final class EmbeddedSubProcessTest {
     Assertions.assertThat(subProcessActivating.getValue())
         .hasFlowScopeKey(processInstanceKey)
         .hasElementId("sub-process");
+  }
+
+  @Test
+  public void shouldActivateSubProcessWithCustomTenant() {
+    // given
+    final String tenantId = "foo";
+    ENGINE.deployment().withXmlResource(NO_TASK_SUB_PROCESS).withTenantId(tenantId).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withTenantId(tenantId).create();
+
+    // then
+    final var subProcessActivating =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.SUB_PROCESS)
+            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withTenantId(tenantId)
+            .getFirst();
+
+    Assertions.assertThat(subProcessActivating.getValue())
+        .hasFlowScopeKey(processInstanceKey)
+        .hasElementId("sub-process")
+        .hasTenantId(tenantId);
   }
 
   @Test

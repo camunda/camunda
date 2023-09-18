@@ -26,6 +26,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -73,6 +74,7 @@ public final class UserTaskTest {
             RecordingExporter.processInstanceRecords()
                 .withProcessInstanceKey(processInstanceKey)
                 .withElementType(BpmnElementType.USER_TASK)
+                .withTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
                 .limit(3))
         .extracting(Record::getRecordType, Record::getIntent)
         .containsSequence(
@@ -83,6 +85,7 @@ public final class UserTaskTest {
     final Record<ProcessInstanceRecordValue> userTask =
         RecordingExporter.processInstanceRecords()
             .withProcessInstanceKey(processInstanceKey)
+            .withTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
             .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
             .withElementType(BpmnElementType.USER_TASK)
             .getFirst();
@@ -93,6 +96,28 @@ public final class UserTaskTest {
         .hasFlowScopeKey(processInstanceKey)
         .hasBpmnProcessId(PROCESS_ID)
         .hasProcessInstanceKey(processInstanceKey);
+  }
+
+  @Test
+  public void shouldActivateUserTaskForCustomTenant() {
+    // given
+    final String tenantId = "foo";
+    ENGINE.deployment().withXmlResource(process()).withTenantId(tenantId).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withTenantId(tenantId).create();
+
+    // then
+    final Record<ProcessInstanceRecordValue> userTask =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withElementType(BpmnElementType.USER_TASK)
+            .withTenantId(tenantId)
+            .getFirst();
+
+    Assertions.assertThat(userTask.getValue()).hasTenantId(tenantId);
   }
 
   @Test

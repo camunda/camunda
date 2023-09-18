@@ -663,6 +663,7 @@ public final class ProcessInstanceModificationProcessor
                     process.getKey(),
                     processInstance.getKey(),
                     process.getBpmnProcessId(),
+                    process.getTenantId(),
                     variableDocument));
   }
 

@@ -94,11 +94,12 @@ public final class EventHandle {
   private long triggeringProcessEvent(
       final long processDefinitionKey,
       final long processInstanceKey,
+      final String tenantId,
       final long eventScopeKey,
       final DirectBuffer catchEventId,
       final DirectBuffer variables) {
     return eventTriggerBehavior.triggeringProcessEvent(
-        processDefinitionKey, processInstanceKey, eventScopeKey, catchEventId, variables);
+        processDefinitionKey, processInstanceKey, tenantId, eventScopeKey, catchEventId, variables);
   }
 
   public void activateElement(
@@ -118,6 +119,7 @@ public final class EventHandle {
         triggeringProcessEvent(
             elementRecord.getProcessDefinitionKey(),
             elementRecord.getProcessInstanceKey(),
+            elementRecord.getTenantId(),
             eventScopeKey,
             catchEvent.getId(),
             variables);
@@ -150,6 +152,7 @@ public final class EventHandle {
     triggeringProcessEvent(
         jobRecord.getProcessDefinitionKey(),
         jobRecord.getProcessInstanceKey(),
+        jobRecord.getTenantId(),
         jobRecord.getElementInstanceKey(),
         jobRecord.getElementIdBuffer(),
         jobRecord.getVariablesBuffer());
@@ -210,6 +213,7 @@ public final class EventHandle {
     triggeringProcessEvent(
         processDefinitionKey,
         processInstanceKey,
+        tenantId,
         processDefinitionKey /* The eventScope for the start event is the process definition key */,
         targetElementId,
         variablesBuffer);
@@ -222,7 +226,8 @@ public final class EventHandle {
         .setVersion(process.getVersion())
         .setProcessInstanceKey(processInstanceKey)
         .setElementId(process.getProcess().getId())
-        .setBpmnElementType(process.getProcess().getElementType());
+        .setBpmnElementType(process.getProcess().getElementType())
+        .setTenantId(tenantId);
 
     commandWriter.appendFollowUpCommand(
         processInstanceKey, ProcessInstanceIntent.ACTIVATE_ELEMENT, recordForPICreation);

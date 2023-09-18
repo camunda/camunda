@@ -62,12 +62,14 @@ public final class VariableBehavior {
       final long processDefinitionKey,
       final long processInstanceKey,
       final DirectBuffer bpmnProcessId,
+      final String tenantId,
       final DirectBuffer document) {
     indexedDocument.index(document);
     if (indexedDocument.isEmpty()) {
       return;
     }
 
+    // TODO(#13388): pass tenant id to variable record
     variableRecord
         .setScopeKey(scopeKey)
         .setProcessDefinitionKey(processDefinitionKey)
@@ -105,6 +107,7 @@ public final class VariableBehavior {
       final long processDefinitionKey,
       final long processInstanceKey,
       final DirectBuffer bpmnProcessId,
+      final String tenantId,
       final DirectBuffer document) {
     indexedDocument.index(document);
     if (indexedDocument.isEmpty()) {
@@ -114,6 +117,7 @@ public final class VariableBehavior {
     long currentScope = scopeKey;
     long parentScope;
 
+    // TODO(#13388): pass tenant id to variable record
     variableRecord
         .setProcessDefinitionKey(processDefinitionKey)
         .setProcessInstanceKey(processInstanceKey)
@@ -166,11 +170,13 @@ public final class VariableBehavior {
       final long processDefinitionKey,
       final long processInstanceKey,
       final DirectBuffer bpmnProcessId,
+      final String tenantId,
       final DirectBuffer name,
       final DirectBuffer value,
       final int valueOffset,
       final int valueLength) {
 
+    // TODO(#13388): pass tenant id to variable record
     variableRecord
         .setScopeKey(scopeKey)
         .setProcessDefinitionKey(processDefinitionKey)
