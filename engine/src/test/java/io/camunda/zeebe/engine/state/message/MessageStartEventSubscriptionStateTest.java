@@ -15,6 +15,7 @@ import static org.assertj.core.api.Assertions.tuple;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageStartEventSubscriptionState;
 import io.camunda.zeebe.engine.util.ProcessingStateRule;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,6 +28,7 @@ import org.junit.Test;
 
 public final class MessageStartEventSubscriptionStateTest {
 
+  private static final String DEFAULT_TENANT = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
   @Rule public final ProcessingStateRule stateRule = new ProcessingStateRule();
 
   private MutableMessageStartEventSubscriptionState state;
@@ -66,7 +68,7 @@ public final class MessageStartEventSubscriptionStateTest {
     // when
     final var storedSubscription = new MutableReference<MessageStartEventSubscription>();
     state.visitSubscriptionsByMessageName(
-        subscription.getMessageNameBuffer(), storedSubscription::set);
+        DEFAULT_TENANT, subscription.getMessageNameBuffer(), storedSubscription::set);
 
     assertThat(storedSubscription).isNotNull();
     assertThat(storedSubscription.get().getKey()).isEqualTo(1L);
@@ -96,6 +98,7 @@ public final class MessageStartEventSubscriptionStateTest {
     final List<String> visitedStartEvents = new ArrayList<>();
 
     state.visitSubscriptionsByMessageName(
+        DEFAULT_TENANT,
         wrapString("message"),
         subscription -> {
           visitedStartEvents.add(bufferAsString(subscription.getRecord().getStartEventIdBuffer()));
@@ -187,6 +190,7 @@ public final class MessageStartEventSubscriptionStateTest {
 
     // then
     state.visitSubscriptionsByMessageName(
+        DEFAULT_TENANT,
         BufferUtil.wrapString("msg"),
         readRecord -> {
           assertThat(readRecord.getRecord().getMessageNameBuffer())

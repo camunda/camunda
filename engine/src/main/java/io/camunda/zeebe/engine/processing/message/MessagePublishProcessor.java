@@ -156,6 +156,7 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
   private void correlateToMessageStartEvents(final MessageRecord messageRecord) {
 
     startEventSubscriptionState.visitSubscriptionsByMessageName(
+        messageRecord.getTenantId(),
         messageRecord.getNameBuffer(),
         subscription -> {
           final var subscriptionRecord = subscription.getRecord();

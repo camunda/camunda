@@ -16,7 +16,9 @@ public interface MessageStartEventSubscriptionState {
   boolean exists(MessageStartEventSubscriptionRecord subscription);
 
   void visitSubscriptionsByMessageName(
-      DirectBuffer messageName, MessageStartEventSubscriptionVisitor visitor);
+      final String tenantId,
+      DirectBuffer messageName,
+      MessageStartEventSubscriptionVisitor visitor);
 
   /**
    * Visit all subscriptions with the given process definition key.
