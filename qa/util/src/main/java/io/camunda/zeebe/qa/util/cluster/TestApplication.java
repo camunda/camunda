@@ -7,8 +7,14 @@
  */
 package io.camunda.zeebe.qa.util.cluster;
 
-import io.atomix.cluster.MemberId;
+import static org.assertj.core.api.Assertions.assertThatCode;
 
+import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.qa.util.actuator.HealthActuator;
+import java.time.Duration;
+import org.awaitility.Awaitility;
+
+@SuppressWarnings("UnusedReturnValue")
 public interface TestApplication<T extends TestApplication<T>> extends AutoCloseable {
 
   /** Starts the node in a blocking fashion. */
@@ -90,4 +96,48 @@ public interface TestApplication<T extends TestApplication<T>> extends AutoClose
   default String monitoringAddress() {
     return address(TestZeebePort.MONITORING);
   }
+
+  /** Returns the default health actuator for this application. */
+  HealthActuator healthActuator();
+
+  /** Probes for the given health probe; throws an exception on failure. */
+  default void probe(final TestHealthProbe probe) {
+    switch (probe) {
+      case LIVE -> healthActuator().live();
+      case READY -> healthActuator().ready();
+      case STARTED -> healthActuator().startup();
+      default -> throw new IllegalStateException("Unexpected value: " + probe);
+    }
+  }
+
+  /** Returns true if this node can act as a gateway (e.g. broker with embedded gateway) */
+  boolean isGateway();
+
+  /**
+   * Blocks and waits until the given health probe succeeds, or the given timeout is reached.
+   *
+   * @param probe the type of probe to await
+   */
+  default T await(final TestHealthProbe probe, final Duration timeout) {
+    Awaitility.await("until broker '%s' is '%s'".formatted(nodeId(), probe))
+        .atMost(timeout)
+        .untilAsserted(() -> assertThatCode(() -> probe(probe)).doesNotThrowAnyException());
+
+    return self();
+  }
+
+  /** Convenience method to wait for a probe for a default timeout of 30 seconds. */
+  default T await(final TestHealthProbe probe) {
+    return await(probe, Duration.ofSeconds(30));
+  }
+
+  /**
+   * If the application is started (e.g. {@link #isStarted()}, resolves and returns (i.e.
+   * auto-wires) the first bean of the given type.
+   *
+   * @param type the expected bean type
+   * @return the bean (if any was resolved), or null
+   * @param <V> the expected bean type
+   */
+  <V> V bean(final Class<V> type);
 }

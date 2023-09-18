@@ -10,12 +10,16 @@ package io.camunda.zeebe.qa.util.cluster;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.gateway.StandaloneGateway;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
+import io.camunda.zeebe.qa.util.actuator.GatewayHealthActuator;
+import io.camunda.zeebe.qa.util.actuator.HealthActuator;
 import io.camunda.zeebe.shared.Profile;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
+import java.util.function.Consumer;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 
 /** Encapsulates an instance of the {@link StandaloneGateway} Spring application. */
-public final class TestStandaloneGateway extends TestSpringApplication<TestStandaloneGateway> {
+public final class TestStandaloneGateway extends TestSpringApplication<TestStandaloneGateway>
+    implements TestGateway<TestStandaloneGateway> {
   private final GatewayCfg config;
 
   public TestStandaloneGateway() {
@@ -46,6 +50,16 @@ public final class TestStandaloneGateway extends TestSpringApplication<TestStand
   }
 
   @Override
+  public HealthActuator healthActuator() {
+    return GatewayHealthActuator.ofAddress(monitoringAddress());
+  }
+
+  @Override
+  public boolean isGateway() {
+    return true;
+  }
+
+  @Override
   public int mappedPort(final TestZeebePort port) {
     return switch (port) {
       case GATEWAY -> config.getNetwork().getPort();
@@ -57,5 +71,16 @@ public final class TestStandaloneGateway extends TestSpringApplication<TestStand
   @Override
   protected SpringApplicationBuilder createSpringBuilder() {
     return super.createSpringBuilder().profiles(Profile.GATEWAY.getId());
+  }
+
+  @Override
+  public TestStandaloneGateway withGatewayConfig(final Consumer<GatewayCfg> modifier) {
+    modifier.accept(config);
+    return self();
+  }
+
+  @Override
+  public GatewayCfg gatewayConfig() {
+    return config;
   }
 }

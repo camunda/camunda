@@ -9,6 +9,7 @@ package io.camunda.zeebe.qa.util.cluster;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.qa.util.actuator.HealthActuator;
 import io.camunda.zeebe.restore.RestoreApp;
 import io.camunda.zeebe.shared.Profile;
 import java.util.function.Consumer;
@@ -40,6 +41,16 @@ public final class TestRestoreApp extends TestSpringApplication<TestRestoreApp> 
   @Override
   public MemberId nodeId() {
     return MemberId.from(String.valueOf(config.getCluster().getNodeId()));
+  }
+
+  @Override
+  public HealthActuator healthActuator() {
+    return new HealthActuator.NoopHealthActuator();
+  }
+
+  @Override
+  public boolean isGateway() {
+    return false;
   }
 
   @Override

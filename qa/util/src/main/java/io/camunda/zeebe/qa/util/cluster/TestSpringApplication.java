@@ -90,6 +90,11 @@ abstract class TestSpringApplication<T extends TestSpringApplication<T>>
     return monitoringPort();
   }
 
+  @Override
+  public <V> V bean(final Class<V> type) {
+    return springContext.getBean(type);
+  }
+
   /** Returns the command line arguments that will be passed when the application is started. */
   protected String[] commandLineArgs() {
     return new String[0];
