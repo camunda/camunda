@@ -51,7 +51,7 @@ public final class CreateProcessInstanceProcessor
   private static final String ERROR_MESSAGE_NOT_FOUND_BY_PROCESS =
       "Expected to find process definition with process ID '%s' and tenant ID '%s', but none found";
   private static final String ERROR_MESSAGE_NOT_FOUND_BY_PROCESS_AND_VERSION =
-      "Expected to find process definition with process ID '%s',  tenant ID '%s', and version '%d', but none found";
+      "Expected to find process definition with process ID '%s', tenant ID '%s', and version '%d', but none found";
   private static final String ERROR_MESSAGE_NOT_FOUND_BY_KEY =
       "Expected to find process definition with key '%d' and tenant ID '%s', but none found";
   private static final String ERROR_MESSAGE_NO_NONE_START_EVENT =

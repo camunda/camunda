@@ -40,7 +40,8 @@ public final class TimerInstance extends UnpackedObject implements DbValue, Tena
         .declareProperty(elementInstanceKeyProp)
         .declareProperty(processInstanceKeyProp)
         .declareProperty(dueDateProp)
-        .declareProperty(repetitionsProp);
+        .declareProperty(repetitionsProp)
+        .declareProperty(tenantIdProp);
   }
 
   public long getElementInstanceKey() {
