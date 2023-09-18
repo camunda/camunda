@@ -345,6 +345,25 @@ final class ReconfigurationTest {
     }
 
     @Test
+    void leaveIsIdempotent(@TempDir final Path tmp) {
+      // given - a cluster with 2 members
+      final var id1 = MemberId.from("1");
+      final var id2 = MemberId.from("2");
+
+      final var m1 = createServer(tmp, createMembershipService(id1, id2));
+      final var m2 = createServer(tmp, createMembershipService(id2, id1));
+
+      CompletableFuture.allOf(m1.bootstrap(id1, id2), m2.bootstrap(id1, id2)).join();
+
+      // when - m2 left
+      assertThat(m2.leave()).succeedsWithin(Duration.ofSeconds(5));
+      awaitLeader(m1);
+
+      // then - m2 can request leave again
+      assertThat(m2.leave()).succeedsWithin(Duration.ofSeconds(5));
+    }
+
+    @Test
     void shouldLeave2MemberCluster(@TempDir final Path tmp) {
       // given - a cluster with 2 members
       final var id1 = MemberId.from("1");
