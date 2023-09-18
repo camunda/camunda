@@ -102,6 +102,30 @@ services:
       - zeebe_network
     restart: always
 
+  tasklist-opensearch:
+    container_name: tasklist
+    image: camunda/tasklist:SNAPSHOT
+    ports:
+      - 8080:8080
+    environment:
+      - camunda.tasklist.opensearch.url=http://opensearch:9200
+      - camunda.tasklist.zeebeOpensearch.url=http://opensearch:9200
+      - camunda.tasklist.zeebe.gatewayAddress=zeebe:26500
+      #- server.servlet.context-path=/tasklist/
+      - spring.profiles.active=dev,dev-data,auth
+      - graphql.playground.enabled=true
+      - graphql.playground.settings.request.credentials=include
+      - camunda.tasklist.database=opensearch
+    volumes:
+      - ./distro/src/main/config/application.yml:/app/resources/application.yaml
+      - ./distro/src/main/config/log4j2.xml:/app/resources/log4j2.xml
+    depends_on:
+      - opensearch
+      - zeebe-opensearch
+    networks:
+      - zeebe_network
+    restart: always
+
   tasklist:
     container_name: tasklist
     image: camunda/tasklist:8.3.0-alpha6
