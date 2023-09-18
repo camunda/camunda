@@ -341,6 +341,11 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
 
     final var membersInNewConfiguration = configuration.allMembers();
 
+    // Update the local member's type if it has changed
+    if (!membersInNewConfiguration.contains(localMember)) {
+      localMember.update(Type.INACTIVE, time);
+    }
+
     // Close and remove contexts which are not needed anymore
     final var membersToRemove =
         remoteMemberContexts.values().stream()
