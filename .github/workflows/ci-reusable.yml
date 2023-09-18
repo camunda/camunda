@@ -80,7 +80,7 @@ jobs:
       # Setup: import secrets from vault
       - name: Import Secrets
         id: secrets # important to refer to it in later steps
-        uses: hashicorp/vault-action@cb841f2c86fb6d07cff94fda240828c1abc5ba43
+        uses: hashicorp/vault-action@a5f6c67fe15332606c72ea39aade385a3436f224
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
