@@ -43,72 +43,81 @@ public class EventEntity extends OperateZeebeEntity<EventEntity> {
     return processDefinitionKey;
   }
 
-  public void setProcessDefinitionKey(Long processDefinitionKey) {
+  public EventEntity setProcessDefinitionKey(Long processDefinitionKey) {
     this.processDefinitionKey = processDefinitionKey;
+    return this;
   }
 
   public Long getProcessInstanceKey() {
     return processInstanceKey;
   }
 
-  public void setProcessInstanceKey(Long processInstanceKey) {
+  public EventEntity setProcessInstanceKey(Long processInstanceKey) {
     this.processInstanceKey = processInstanceKey;
-  }
-
-  public String getFlowNodeId() {
-    return flowNodeId;
-  }
-
-  public void setFlowNodeId(String flowNodeId) {
-    this.flowNodeId = flowNodeId;
-  }
-
-  public Long getFlowNodeInstanceKey() {
-    return flowNodeInstanceKey;
-  }
-
-  public void setFlowNodeInstanceKey(Long flowNodeInstanceKey) {
-    this.flowNodeInstanceKey = flowNodeInstanceKey;
-  }
-
-  public EventSourceType getEventSourceType() {
-    return eventSourceType;
-  }
-
-  public void setEventSourceType(EventSourceType eventSourceType) {
-    this.eventSourceType = eventSourceType;
-  }
-
-  public EventType getEventType() {
-    return eventType;
-  }
-
-  public void setEventType(EventType eventType) {
-    this.eventType = eventType;
+    return this;
   }
 
   public String getBpmnProcessId() {
     return bpmnProcessId;
   }
 
-  public void setBpmnProcessId(String bpmnProcessId) {
+  public EventEntity setBpmnProcessId(String bpmnProcessId) {
     this.bpmnProcessId = bpmnProcessId;
+    return this;
+  }
+
+  public String getFlowNodeId() {
+    return flowNodeId;
+  }
+
+  public EventEntity setFlowNodeId(String flowNodeId) {
+    this.flowNodeId = flowNodeId;
+    return this;
+  }
+
+  public Long getFlowNodeInstanceKey() {
+    return flowNodeInstanceKey;
+  }
+
+  public EventEntity setFlowNodeInstanceKey(Long flowNodeInstanceKey) {
+    this.flowNodeInstanceKey = flowNodeInstanceKey;
+    return this;
+  }
+
+  public EventSourceType getEventSourceType() {
+    return eventSourceType;
+  }
+
+  public EventEntity setEventSourceType(EventSourceType eventSourceType) {
+    this.eventSourceType = eventSourceType;
+    return this;
+  }
+
+  public EventType getEventType() {
+    return eventType;
+  }
+
+  public EventEntity setEventType(EventType eventType) {
+    this.eventType = eventType;
+    return this;
   }
 
   public OffsetDateTime getDateTime() {
     return dateTime;
   }
 
-  public void setDateTime(OffsetDateTime dateTime) {
+  public EventEntity setDateTime(OffsetDateTime dateTime) {
     this.dateTime = dateTime;
+    return this;
   }
 
   public EventMetadataEntity getMetadata() {
     return metadata;
   }
 
-  public void setMetadata(EventMetadataEntity metadata) {
+  public EventEntity setMetadata(EventMetadataEntity metadata) {
     this.metadata = metadata;
+    return this;
   }
 
   public String getTenantId() {

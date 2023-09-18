@@ -99,7 +99,8 @@ public class DecisionEvaluationZeebeRecordProcessor {
           .setState(state)
           .setResult(decision.getDecisionOutput())
           .setEvaluatedOutputs(createEvaluationOutputs(decision.getMatchedRules()))
-          .setEvaluatedInputs(createEvaluationInputs(decision.getEvaluatedInputs()));
+          .setEvaluatedInputs(createEvaluationInputs(decision.getEvaluatedInputs()))
+          .setTenantId(decisionEvaluation.getTenantId());
       if (state.equals(DecisionInstanceState.FAILED)) {
         entity.setEvaluationFailure(decisionEvaluation.getEvaluationFailureMessage());
       }

@@ -108,10 +108,10 @@ public class IncidentZeebeRecordProcessor {
           OperationType.RESOLVE_INCIDENT, batchRequest);
       //resolved incident is not updated directly, only in post importer
     } else if (intentStr.equals(IncidentIntent.CREATED.toString())) {
-      IncidentEntity incident = new IncidentEntity();
-      incident.setId( ConversionUtils.toStringOrNull(incidentKey));
-      incident.setKey(incidentKey);
-      incident.setPartitionId(record.getPartitionId());
+      IncidentEntity incident = new IncidentEntity()
+          .setId( ConversionUtils.toStringOrNull(incidentKey))
+          .setKey(incidentKey)
+          .setPartitionId(record.getPartitionId());
       if (recordValue.getJobKey() > 0) {
         incident.setJobKey(recordValue.getJobKey());
       }
@@ -123,14 +123,15 @@ public class IncidentZeebeRecordProcessor {
       }
       incident.setBpmnProcessId(recordValue.getBpmnProcessId());
       String errorMessage = StringUtils.trimWhitespace(recordValue.getErrorMessage());
-      incident.setErrorMessage(errorMessage);
-      incident.setErrorType(ErrorType.fromZeebeErrorType(recordValue.getErrorType() == null ? null : recordValue.getErrorType().name()));
-      incident.setFlowNodeId(recordValue.getElementId());
+      incident.setErrorMessage(errorMessage)
+          .setErrorType(ErrorType.fromZeebeErrorType(recordValue.getErrorType() == null ? null : recordValue.getErrorType().name()))
+          .setFlowNodeId(recordValue.getElementId());
       if (recordValue.getElementInstanceKey() > 0) {
         incident.setFlowNodeInstanceKey(recordValue.getElementInstanceKey());
       }
-      incident.setState(IncidentState.PENDING);
-      incident.setCreationTime(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
+      incident.setState(IncidentState.PENDING)
+          .setCreationTime(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())))
+          .setTenantId(recordValue.getTenantId());
 
       logger.debug("Index incident: id {}", incident.getId());
       //we only insert incidents but never update -> update will be performed in post importer

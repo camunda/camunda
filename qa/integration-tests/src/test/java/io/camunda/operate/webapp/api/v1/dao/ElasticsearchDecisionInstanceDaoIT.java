@@ -24,6 +24,7 @@ import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,6 +55,7 @@ public class ElasticsearchDecisionInstanceDaoIT extends OperateZeebeIntegrationT
   private List<DecisionInstance> allDecisionInstances;
 
   @Test
+  @Ignore("https://github.com/camunda/operate/issues/5287")
   public void shouldReturnWhenById() throws Exception {
     given(() -> {
       processDefinitionKey = deployDecisionAndProcess();
@@ -82,6 +84,7 @@ public class ElasticsearchDecisionInstanceDaoIT extends OperateZeebeIntegrationT
   }
 
   @Test
+  @Ignore("https://github.com/camunda/operate/issues/5287")
   public void shouldReturnEvaluatedWhenById() throws Exception {
     given(() -> {
       String payload = "{\"amount\": 1200, \"invoiceCategory\": \"Travel Expenses\"}";

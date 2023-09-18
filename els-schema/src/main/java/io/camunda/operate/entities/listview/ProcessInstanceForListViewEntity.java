@@ -50,40 +50,45 @@ public class ProcessInstanceForListViewEntity extends OperateZeebeEntity<Process
     return getKey();
   }
 
-  public void setProcessInstanceKey(Long processInstanceKey) {
+  public ProcessInstanceForListViewEntity setProcessInstanceKey(Long processInstanceKey) {
     this.setKey(processInstanceKey);
+    return this;
   }
 
   public Long getProcessDefinitionKey() {
     return processDefinitionKey;
   }
 
-  public void setProcessDefinitionKey(Long processDefinitionKey) {
+  public ProcessInstanceForListViewEntity setProcessDefinitionKey(Long processDefinitionKey) {
     this.processDefinitionKey = processDefinitionKey;
+    return this;
   }
 
   public String getProcessName() {
     return processName;
   }
 
-  public void setProcessName(String processName) {
+  public ProcessInstanceForListViewEntity setProcessName(String processName) {
     this.processName = processName;
+    return this;
   }
 
   public Integer getProcessVersion() {
     return processVersion;
   }
 
-  public void setProcessVersion(Integer processVersion) {
+  public ProcessInstanceForListViewEntity setProcessVersion(Integer processVersion) {
     this.processVersion = processVersion;
+    return this;
   }
 
   public OffsetDateTime getStartDate() {
     return startDate;
   }
 
-  public void setStartDate(OffsetDateTime startDate) {
+  public ProcessInstanceForListViewEntity setStartDate(OffsetDateTime startDate) {
     this.startDate = startDate;
+    return this;
   }
 
   public OffsetDateTime getEndDate() {
@@ -108,8 +113,9 @@ public class ProcessInstanceForListViewEntity extends OperateZeebeEntity<Process
     return batchOperationIds;
   }
 
-  public void setBatchOperationIds(List<String> batchOperationIds) {
+  public ProcessInstanceForListViewEntity setBatchOperationIds(List<String> batchOperationIds) {
     this.batchOperationIds = batchOperationIds;
+    return this;
   }
 
   public String getBpmnProcessId() {
@@ -125,8 +131,7 @@ public class ProcessInstanceForListViewEntity extends OperateZeebeEntity<Process
     return parentProcessInstanceKey;
   }
 
-  public ProcessInstanceForListViewEntity setParentProcessInstanceKey(
-      final Long parentProcessInstanceKey) {
+  public ProcessInstanceForListViewEntity setParentProcessInstanceKey(Long parentProcessInstanceKey) {
     this.parentProcessInstanceKey = parentProcessInstanceKey;
     return this;
   }
@@ -135,8 +140,7 @@ public class ProcessInstanceForListViewEntity extends OperateZeebeEntity<Process
     return parentFlowNodeInstanceKey;
   }
 
-  public ProcessInstanceForListViewEntity setParentFlowNodeInstanceKey(
-      final Long parentFlowNodeInstanceKey) {
+  public ProcessInstanceForListViewEntity setParentFlowNodeInstanceKey(Long parentFlowNodeInstanceKey) {
     this.parentFlowNodeInstanceKey = parentFlowNodeInstanceKey;
     return this;
   }
@@ -145,7 +149,7 @@ public class ProcessInstanceForListViewEntity extends OperateZeebeEntity<Process
     return treePath;
   }
 
-  public ProcessInstanceForListViewEntity setTreePath(final String treePath) {
+  public ProcessInstanceForListViewEntity setTreePath(String treePath) {
     this.treePath = treePath;
     return this;
   }
@@ -154,7 +158,7 @@ public class ProcessInstanceForListViewEntity extends OperateZeebeEntity<Process
     return incident;
   }
 
-  public ProcessInstanceForListViewEntity setIncident(final boolean incident) {
+  public ProcessInstanceForListViewEntity setIncident(boolean incident) {
     this.incident = incident;
     return this;
   }
@@ -172,16 +176,18 @@ public class ProcessInstanceForListViewEntity extends OperateZeebeEntity<Process
     return joinRelation;
   }
 
-  public void setJoinRelation(ListViewJoinRelation joinRelation) {
+  public ProcessInstanceForListViewEntity setJoinRelation(ListViewJoinRelation joinRelation) {
     this.joinRelation = joinRelation;
+    return this;
   }
 
   public Object[] getSortValues() {
     return sortValues;
   }
 
-  public void setSortValues(final Object[] sortValues) {
+  public ProcessInstanceForListViewEntity setSortValues(Object[] sortValues) {
     this.sortValues = sortValues;
+    return this;
   }
 
   @Override

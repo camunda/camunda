@@ -79,12 +79,12 @@ public class ProcessZeebeRecordProcessor {
   }
 
   private ProcessEntity createEntity(Process process) {
-    ProcessEntity processEntity = new ProcessEntity();
-
-    processEntity.setId(String.valueOf(process.getProcessDefinitionKey()));
-    processEntity.setKey(process.getProcessDefinitionKey());
-    processEntity.setBpmnProcessId(process.getBpmnProcessId());
-    processEntity.setVersion(process.getVersion());
+    ProcessEntity processEntity = new ProcessEntity()
+        .setId(String.valueOf(process.getProcessDefinitionKey()))
+        .setKey(process.getProcessDefinitionKey())
+        .setBpmnProcessId(process.getBpmnProcessId())
+        .setVersion(process.getVersion())
+        .setTenantId(process.getTenantId());
 
     byte[] byteArray = process.getResource();
 
@@ -96,8 +96,8 @@ public class ProcessZeebeRecordProcessor {
 
     final Optional<ProcessEntity> diagramData = xmlUtil.extractDiagramData(byteArray);
     if (diagramData.isPresent()) {
-      processEntity.setName(diagramData.get().getName());
-      processEntity.setFlowNodes(diagramData.get().getFlowNodes());
+      processEntity.setName(diagramData.get().getName())
+          .setFlowNodes(diagramData.get().getFlowNodes());
     }
     return processEntity;
   }

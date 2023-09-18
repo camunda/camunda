@@ -69,7 +69,8 @@ public class DecisionRequirementsZeebeRecordProcessor {
         .setDecisionRequirementsId(decisionRequirements.getDecisionRequirementsId())
         .setVersion(decisionRequirements.getDecisionRequirementsVersion())
         .setResourceName(decisionRequirements.getResourceName())
-        .setXml(dmn);
+        .setXml(dmn)
+        .setTenantId(decisionRequirements.getTenantId());
   }
 
 }

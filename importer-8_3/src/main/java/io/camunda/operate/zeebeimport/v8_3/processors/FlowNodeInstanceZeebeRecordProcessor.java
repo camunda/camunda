@@ -70,14 +70,15 @@ public class FlowNodeInstanceZeebeRecordProcessor {
     IncidentRecordValue recordValue = (IncidentRecordValue)record.getValue();
 
     //update activity instance
-    FlowNodeInstanceEntity entity = new FlowNodeInstanceEntity();
-    entity.setId(ConversionUtils.toStringOrNull(recordValue.getElementInstanceKey()));
-    entity.setKey(recordValue.getElementInstanceKey());
-    entity.setPartitionId(record.getPartitionId());
-    entity.setFlowNodeId(recordValue.getElementId());
-    entity.setProcessInstanceKey(recordValue.getProcessInstanceKey());
-    entity.setProcessDefinitionKey(recordValue.getProcessDefinitionKey());
-    entity.setBpmnProcessId(recordValue.getBpmnProcessId());
+    FlowNodeInstanceEntity entity = new FlowNodeInstanceEntity()
+        .setId(ConversionUtils.toStringOrNull(recordValue.getElementInstanceKey()))
+        .setKey(recordValue.getElementInstanceKey())
+        .setPartitionId(record.getPartitionId())
+        .setFlowNodeId(recordValue.getElementId())
+        .setProcessInstanceKey(recordValue.getProcessInstanceKey())
+        .setProcessDefinitionKey(recordValue.getProcessDefinitionKey())
+        .setBpmnProcessId(recordValue.getBpmnProcessId())
+        .setTenantId(recordValue.getTenantId());
     if (intentStr.equals(IncidentIntent.CREATED.name())) {
       entity.setIncidentKey(record.getKey());
     } else if (intentStr.equals(IncidentIntent.RESOLVED.name())) {

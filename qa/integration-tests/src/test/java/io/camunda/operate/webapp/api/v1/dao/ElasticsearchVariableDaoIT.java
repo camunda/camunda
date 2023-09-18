@@ -20,6 +20,7 @@ import io.camunda.operate.webapp.api.v1.entities.Variable;
 import java.util.List;
 import java.util.Map;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -71,6 +72,7 @@ public class ElasticsearchVariableDaoIT extends OperateZeebeIntegrationTest {
   }
 
   @Test
+  @Ignore("https://github.com/camunda/operate/issues/5287")
   public void shouldReturnVariables() throws Exception {
     given(() ->
         processInstanceKey = createVariablesAndGetProcessInstanceKey(

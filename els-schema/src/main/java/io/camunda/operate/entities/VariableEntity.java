@@ -37,16 +37,18 @@ public class VariableEntity extends OperateZeebeEntity<VariableEntity> {
     return name;
   }
 
-  public void setName(String name) {
+  public VariableEntity setName(String name) {
     this.name = name;
+    return this;
   }
 
   public String getValue() {
     return value;
   }
 
-  public void setValue(String value) {
+  public VariableEntity setValue(String value) {
     this.value = value;
+    return this;
   }
 
   public String getFullValue() {
@@ -71,32 +73,36 @@ public class VariableEntity extends OperateZeebeEntity<VariableEntity> {
     return scopeKey;
   }
 
-  public void setScopeKey(Long scopeKey) {
+  public VariableEntity setScopeKey(Long scopeKey) {
     this.scopeKey = scopeKey;
+    return this;
   }
 
   public Long getProcessInstanceKey() {
     return processInstanceKey;
   }
 
-  public void setProcessInstanceKey(Long processInstanceKey) {
+  public VariableEntity setProcessInstanceKey(Long processInstanceKey) {
     this.processInstanceKey = processInstanceKey;
+    return this;
   }
 
   public Long getProcessDefinitionKey() {
     return processDefinitionKey;
   }
 
-  public void setProcessDefinitionKey(Long processDefinitionKey) {
+  public VariableEntity setProcessDefinitionKey(Long processDefinitionKey) {
     this.processDefinitionKey = processDefinitionKey;
+    return this;
   }
 
   public String getBpmnProcessId() {
     return bpmnProcessId;
   }
 
-  public void setBpmnProcessId(String bpmnProcessId) {
+  public VariableEntity setBpmnProcessId(String bpmnProcessId) {
     this.bpmnProcessId = bpmnProcessId;
+    return this;
   }
 
   public String getTenantId() {

@@ -143,15 +143,15 @@ public class EventZeebeRecordProcessor {
   private void processProcessInstance(Record record, ProcessInstanceRecordValue recordValue, BatchRequest batchRequest)
     throws PersistenceException {
     if (!isProcessEvent(recordValue)) {   //we do not need to store process level events
-      EventEntity eventEntity = new EventEntity();
-
-      eventEntity.setId(String.format(ID_PATTERN, recordValue.getProcessInstanceKey(), record.getKey()));
+      EventEntity eventEntity = new EventEntity()
+          .setId(String.format(ID_PATTERN, recordValue.getProcessInstanceKey(), record.getKey()));
 
       loadEventGeneralData(record, eventEntity);
 
-      eventEntity.setProcessDefinitionKey(recordValue.getProcessDefinitionKey());
-      eventEntity.setProcessInstanceKey(recordValue.getProcessInstanceKey());
-      eventEntity.setBpmnProcessId(recordValue.getBpmnProcessId());
+      eventEntity.setProcessDefinitionKey(recordValue.getProcessDefinitionKey())
+          .setProcessInstanceKey(recordValue.getProcessInstanceKey())
+          .setBpmnProcessId(recordValue.getBpmnProcessId())
+          .setTenantId(recordValue.getTenantId());
 
       if (recordValue.getElementId() != null) {
         eventEntity.setFlowNodeId(recordValue.getElementId());
@@ -168,9 +168,8 @@ public class EventZeebeRecordProcessor {
   private void processMessage(final Record record,
       final ProcessMessageSubscriptionRecordValue recordValue, final BatchRequest batchRequest)
       throws PersistenceException {
-    EventEntity eventEntity = new EventEntity();
-
-    eventEntity.setId(String.format(ID_PATTERN, recordValue.getProcessInstanceKey(), recordValue.getElementInstanceKey()));
+    EventEntity eventEntity = new EventEntity()
+        .setId(String.format(ID_PATTERN, recordValue.getProcessInstanceKey(), recordValue.getElementInstanceKey()));
 
     loadEventGeneralData(record, eventEntity);
 
@@ -179,9 +178,9 @@ public class EventZeebeRecordProcessor {
       eventEntity.setProcessInstanceKey(processInstanceKey);
     }
 
-    eventEntity.setBpmnProcessId(recordValue.getBpmnProcessId());
-
-    eventEntity.setFlowNodeId(recordValue.getElementId());
+    eventEntity.setBpmnProcessId(recordValue.getBpmnProcessId())
+        .setFlowNodeId(recordValue.getElementId())
+        .setTenantId(recordValue.getTenantId());
 
     final long activityInstanceKey = recordValue.getElementInstanceKey();
     if (activityInstanceKey > 0) {
@@ -199,9 +198,8 @@ public class EventZeebeRecordProcessor {
   }
 
   private void processJob(Record record, JobRecordValue recordValue, BatchRequest batchRequest) throws PersistenceException {
-    EventEntity eventEntity = new EventEntity();
-
-    eventEntity.setId(String.format(ID_PATTERN, recordValue.getProcessInstanceKey(), recordValue.getElementInstanceKey()));
+    EventEntity eventEntity = new EventEntity()
+        .setId(String.format(ID_PATTERN, recordValue.getProcessInstanceKey(), recordValue.getElementInstanceKey()));
 
     loadEventGeneralData(record, eventEntity);
 
@@ -215,9 +213,9 @@ public class EventZeebeRecordProcessor {
       eventEntity.setProcessInstanceKey(processInstanceKey);
     }
 
-    eventEntity.setBpmnProcessId(recordValue.getBpmnProcessId());
-
-    eventEntity.setFlowNodeId(recordValue.getElementId());
+    eventEntity.setBpmnProcessId(recordValue.getBpmnProcessId())
+        .setFlowNodeId(recordValue.getElementId())
+        .setTenantId(recordValue.getTenantId());
 
     final long activityInstanceKey = recordValue.getElementInstanceKey();
     if (activityInstanceKey > 0) {
@@ -246,17 +244,16 @@ public class EventZeebeRecordProcessor {
   }
 
   private void processIncident(Record record, IncidentRecordValue recordValue, BatchRequest batchRequest) throws PersistenceException {
-    EventEntity eventEntity = new EventEntity();
-
-    eventEntity.setId(String.format(ID_PATTERN, recordValue.getProcessInstanceKey(), recordValue.getElementInstanceKey()));
-
+    EventEntity eventEntity = new EventEntity()
+        .setId(String.format(ID_PATTERN, recordValue.getProcessInstanceKey(), recordValue.getElementInstanceKey()));
     loadEventGeneralData(record, eventEntity);
 
     if (recordValue.getProcessInstanceKey() > 0) {
       eventEntity.setProcessInstanceKey(recordValue.getProcessInstanceKey());
     }
-    eventEntity.setBpmnProcessId(recordValue.getBpmnProcessId());
-    eventEntity.setFlowNodeId(recordValue.getElementId());
+    eventEntity.setBpmnProcessId(recordValue.getBpmnProcessId())
+        .setFlowNodeId(recordValue.getElementId())
+        .setTenantId(recordValue.getTenantId());
     if (recordValue.getElementInstanceKey() > 0) {
       eventEntity.setFlowNodeInstanceKey(recordValue.getElementInstanceKey());
     }

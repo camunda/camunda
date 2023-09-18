@@ -42,96 +42,117 @@ public class FlowNodeInstanceEntity extends OperateZeebeEntity<FlowNodeInstanceE
     return flowNodeId;
   }
 
-  public void setFlowNodeId(String flowNodeId) {
+  public FlowNodeInstanceEntity setFlowNodeId(String flowNodeId) {
     this.flowNodeId = flowNodeId;
+    return this;
   }
 
   public OffsetDateTime getStartDate() {
     return startDate;
   }
 
-  public void setStartDate(OffsetDateTime startDate) {
+  public FlowNodeInstanceEntity setStartDate(OffsetDateTime startDate) {
     this.startDate = startDate;
+    return this;
   }
 
   public OffsetDateTime getEndDate() {
     return endDate;
   }
 
-  public void setEndDate(OffsetDateTime endDate) {
+  public FlowNodeInstanceEntity setEndDate(OffsetDateTime endDate) {
     this.endDate = endDate;
+    return this;
   }
 
   public FlowNodeState getState() {
     return state;
   }
 
-  public void setState(FlowNodeState state) {
+  public FlowNodeInstanceEntity setState(FlowNodeState state) {
     this.state = state;
+    return this;
   }
 
   public FlowNodeType getType() {
     return type;
   }
 
-  public void setType(FlowNodeType type) {
+  public FlowNodeInstanceEntity setType(FlowNodeType type) {
     this.type = type;
+    return this;
   }
 
   public Long getIncidentKey() {
     return incidentKey;
   }
 
-  public void setIncidentKey(Long incidentKey) {
+  public FlowNodeInstanceEntity setIncidentKey(Long incidentKey) {
     this.incidentKey = incidentKey;
-  }
-
-  public String getTreePath() {
-    return treePath;
-  }
-
-  public void setTreePath(final String treePath) {
-    this.treePath = treePath;
-  }
-
-  public int getLevel() {
-    return level;
-  }
-
-  public void setLevel(final int level) {
-    this.level = level;
+    return this;
   }
 
   public Long getProcessInstanceKey() {
     return processInstanceKey;
   }
 
-  public void setProcessInstanceKey(Long processInstanceKey) {
+  public FlowNodeInstanceEntity setProcessInstanceKey(Long processInstanceKey) {
     this.processInstanceKey = processInstanceKey;
+    return this;
   }
 
   public Long getProcessDefinitionKey() {
     return processDefinitionKey;
   }
 
-  public void setProcessDefinitionKey(Long processDefinitionKey) {
+  public FlowNodeInstanceEntity setProcessDefinitionKey(Long processDefinitionKey) {
     this.processDefinitionKey = processDefinitionKey;
+    return this;
   }
 
   public String getBpmnProcessId() {
     return bpmnProcessId;
   }
 
-  public void setBpmnProcessId(String bpmnProcessId) {
+  public FlowNodeInstanceEntity setBpmnProcessId(String bpmnProcessId) {
     this.bpmnProcessId = bpmnProcessId;
+    return this;
+  }
+
+  public String getTreePath() {
+    return treePath;
+  }
+
+  public FlowNodeInstanceEntity setTreePath(String treePath) {
+    this.treePath = treePath;
+    return this;
+  }
+
+  public int getLevel() {
+    return level;
+  }
+
+  public FlowNodeInstanceEntity setLevel(int level) {
+    this.level = level;
+    return this;
   }
 
   public Long getPosition() {
     return position;
   }
 
-  public void setPosition(Long position) {
+  public FlowNodeInstanceEntity setPosition(Long position) {
     this.position = position;
+    return this;
+  }
+
+  public Object[] getSortValues() {
+    return sortValues;
+  }
+
+  public FlowNodeInstanceEntity setSortValues(Object[] sortValues) {
+    this.sortValues = sortValues;
+    return this;
   }
 
   public boolean isIncident() {
@@ -150,14 +171,6 @@ public class FlowNodeInstanceEntity extends OperateZeebeEntity<FlowNodeInstanceE
   public FlowNodeInstanceEntity setTenantId(String tenantId) {
     this.tenantId = tenantId;
     return this;
-  }
-
-  public Object[] getSortValues() {
-    return sortValues;
-  }
-
-  public void setSortValues(final Object[] sortValues) {
-    this.sortValues = sortValues;
   }
 
   @Override

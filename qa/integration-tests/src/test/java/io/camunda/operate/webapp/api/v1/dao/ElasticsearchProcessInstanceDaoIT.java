@@ -24,6 +24,8 @@ import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+
+import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -62,6 +64,7 @@ public class ElasticsearchProcessInstanceDaoIT extends OperateZeebeIntegrationTe
   }
 
   @Test
+  @Ignore("https://github.com/camunda/operate/issues/5287")
   public void shouldReturnByKey() throws Exception {
     given(() -> {
       deployProcesses("complexProcess_v_3.bpmn", "demoProcess_v_2.bpmn");

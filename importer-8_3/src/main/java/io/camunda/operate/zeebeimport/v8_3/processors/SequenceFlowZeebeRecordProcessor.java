@@ -37,12 +37,13 @@ public class SequenceFlowZeebeRecordProcessor {
   }
 
   private void persistSequenceFlow(Record record, ProcessInstanceRecordValue recordValue, BatchRequest batchRequest) throws PersistenceException {
-    SequenceFlowEntity entity = new SequenceFlowEntity();
-    entity.setId(String.format(ID_PATTERN, recordValue.getProcessInstanceKey(), recordValue.getElementId()));
-    entity.setProcessInstanceKey(recordValue.getProcessInstanceKey());
-    entity.setProcessDefinitionKey(recordValue.getProcessDefinitionKey());
-    entity.setBpmnProcessId(recordValue.getBpmnProcessId());
-    entity.setActivityId(recordValue.getElementId());
+    SequenceFlowEntity entity = new SequenceFlowEntity()
+        .setId(String.format(ID_PATTERN, recordValue.getProcessInstanceKey(), recordValue.getElementId()))
+        .setProcessInstanceKey(recordValue.getProcessInstanceKey())
+        .setProcessDefinitionKey(recordValue.getProcessDefinitionKey())
+        .setBpmnProcessId(recordValue.getBpmnProcessId())
+        .setActivityId(recordValue.getElementId())
+        .setTenantId(recordValue.getTenantId());
 
     logger.debug("Index sequence flow: id {}", entity.getId());
     batchRequest.add(sequenceFlowTemplate.getFullQualifiedName(), entity);

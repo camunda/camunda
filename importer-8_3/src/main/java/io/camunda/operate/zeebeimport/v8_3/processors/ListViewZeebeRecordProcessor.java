@@ -267,16 +267,15 @@ public class ListViewZeebeRecordProcessor {
     final var recordValue = record.getValue();
     final var intentStr = record.getIntent().name();
 
-    piEntity.setId(String.valueOf(recordValue.getProcessInstanceKey()));
-    piEntity.setProcessInstanceKey(recordValue.getProcessInstanceKey());
-    piEntity.setKey(recordValue.getProcessInstanceKey());
-
-    piEntity.setPartitionId(record.getPartitionId());
-    piEntity.setProcessDefinitionKey(recordValue.getProcessDefinitionKey());
-    piEntity.setBpmnProcessId(recordValue.getBpmnProcessId());
-    piEntity.setProcessVersion(recordValue.getVersion());
-
-    piEntity.setProcessName(processCache.getProcessNameOrDefaultValue(piEntity.getProcessDefinitionKey(), recordValue.getBpmnProcessId()));
+    piEntity.setId(String.valueOf(recordValue.getProcessInstanceKey()))
+        .setProcessInstanceKey(recordValue.getProcessInstanceKey())
+        .setKey(recordValue.getProcessInstanceKey())
+        .setTenantId(recordValue.getTenantId())
+        .setPartitionId(record.getPartitionId())
+        .setProcessDefinitionKey(recordValue.getProcessDefinitionKey())
+        .setBpmnProcessId(recordValue.getBpmnProcessId())
+        .setProcessVersion(recordValue.getVersion())
+        .setProcessName(processCache.getProcessNameOrDefaultValue(piEntity.getProcessDefinitionKey(), recordValue.getBpmnProcessId()));
 
     OffsetDateTime timestamp = DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp()));
     final boolean isRootProcessInstance = recordValue.getParentProcessInstanceKey() == EMPTY_PARENT_PROCESS_INSTANCE_ID;
@@ -289,8 +288,8 @@ public class ListViewZeebeRecordProcessor {
         piEntity.setState(ProcessInstanceState.COMPLETED);
       }
     } else if (intentStr.equals(ELEMENT_ACTIVATING.name())) {
-      piEntity.setStartDate(timestamp);
-      piEntity.setState(ProcessInstanceState.ACTIVE);
+      piEntity.setStartDate(timestamp)
+          .setState(ProcessInstanceState.ACTIVE);
       if(isRootProcessInstance){
         registerStartedRootProcessInstance(piEntity, batchRequest, timestamp);
       }
@@ -300,8 +299,7 @@ public class ListViewZeebeRecordProcessor {
     //call activity related fields
     if (!isRootProcessInstance) {
       piEntity
-          .setParentProcessInstanceKey(recordValue.getParentProcessInstanceKey());
-      piEntity
+          .setParentProcessInstanceKey(recordValue.getParentProcessInstanceKey())
           .setParentFlowNodeInstanceKey(recordValue.getParentElementInstanceKey());
       if (piEntity.getTreePath() == null) {
         final String treePath = getTreePathForCalledProcess(recordValue);

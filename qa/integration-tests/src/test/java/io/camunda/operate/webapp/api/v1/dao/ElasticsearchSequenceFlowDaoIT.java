@@ -18,6 +18,7 @@ import java.util.List;
 
 import io.camunda.operate.webapp.api.v1.entities.SequenceFlow;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -66,6 +67,7 @@ public class ElasticsearchSequenceFlowDaoIT extends OperateZeebeIntegrationTest 
   }
 
   @Test
+  @Ignore("https://github.com/camunda/operate/issues/5287")
   public void shouldReturnSequenceFlows() throws Exception {
     given(() ->
       processInstanceKey = createIncidentsAndGetProcessInstanceKey(

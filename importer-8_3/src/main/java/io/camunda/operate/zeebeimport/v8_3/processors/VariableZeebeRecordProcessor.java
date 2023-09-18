@@ -85,14 +85,15 @@ public class VariableZeebeRecordProcessor {
   private void processVariableRecord(Record<VariableRecordValue> record, VariableEntity entity) {
     final var recordValue = record.getValue();
 
-    entity.setId(VariableForListViewEntity.getIdBy(recordValue.getScopeKey(), recordValue.getName()));
-    entity.setKey(record.getKey());
-    entity.setPartitionId(record.getPartitionId());
-    entity.setScopeKey(recordValue.getScopeKey());
-    entity.setProcessInstanceKey(recordValue.getProcessInstanceKey());
-    entity.setProcessDefinitionKey(recordValue.getProcessDefinitionKey());
-    entity.setBpmnProcessId(recordValue.getBpmnProcessId());
-    entity.setName(recordValue.getName());
+    entity.setId(VariableForListViewEntity.getIdBy(recordValue.getScopeKey(), recordValue.getName()))
+        .setKey(record.getKey())
+        .setPartitionId(record.getPartitionId())
+        .setScopeKey(recordValue.getScopeKey())
+        .setProcessInstanceKey(recordValue.getProcessInstanceKey())
+        .setProcessDefinitionKey(recordValue.getProcessDefinitionKey())
+        .setBpmnProcessId(recordValue.getBpmnProcessId())
+        .setName(recordValue.getName())
+        .setTenantId(recordValue.getTenantId());
     if (recordValue.getValue().length() > operateProperties.getImporter().getVariableSizeThreshold()) {
       // store preview
       entity.setValue(
