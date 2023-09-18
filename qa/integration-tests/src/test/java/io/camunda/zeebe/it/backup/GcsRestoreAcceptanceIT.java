@@ -18,35 +18,27 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.BackupStoreType;
 import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig.GcsBackupStoreAuth;
-import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
 import io.camunda.zeebe.qa.util.cluster.TestRestoreApp;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.testcontainers.GcsContainer;
-import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.camunda.zeebe.restore.BackupNotFoundException;
 import io.camunda.zeebe.shared.management.openapi.models.BackupInfo;
 import io.camunda.zeebe.shared.management.openapi.models.StateCode;
 import io.camunda.zeebe.shared.management.openapi.models.TakeBackupResponse;
-import io.zeebe.containers.ZeebeContainer;
 import java.time.Duration;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.testcontainers.containers.Network;
-import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers
 final class GcsRestoreAcceptanceIT {
-  private static final Logger LOG = LoggerFactory.getLogger(GcsRestoreAcceptanceIT.class);
-  private static final Network NETWORK = Network.newNetwork();
   private static final String BUCKET_NAME = RandomStringUtils.randomAlphabetic(10).toLowerCase();
 
-  @Container private static final GcsContainer GCS = new GcsContainer(NETWORK, "gcs.local");
+  @Container private static final GcsContainer GCS = new GcsContainer();
 
   @BeforeAll
   static void setupBucket() throws Exception {
@@ -84,24 +76,13 @@ final class GcsRestoreAcceptanceIT {
 
   private void takeBackup(final long backupId) {
     try (final var zeebe =
-        new ZeebeContainer(ZeebeTestContainerDefaults.defaultTestImage())
-            .withLogConsumer(new Slf4jLogConsumer(LOG))
-            .withNetwork(NETWORK)
-            .dependsOn(GCS)
-            .withoutTopologyCheck()
-            .withEnv("ZEEBE_BROKER_DATA_BACKUP_STORE", "GCS")
-            .withEnv("ZEEBE_BROKER_DATA_BACKUP_GCS_BUCKETNAME", BUCKET_NAME)
-            .withEnv("ZEEBE_BROKER_DATA_BACKUP_GCS_AUTH", "none")
-            .withEnv("ZEEBE_BROKER_DATA_BACKUP_GCS_HOST", GCS.internalEndpoint())) {
-      zeebe.start();
+        new TestStandaloneBroker()
+            .withBrokerConfig(this::configureBackupStore)
+            .start()
+            .awaitCompleteTopology()) {
+      final var actuator = BackupActuator.ofAddress(zeebe.monitoringAddress());
 
-      final var actuator = BackupActuator.of(zeebe);
-
-      try (final var client =
-          ZeebeClient.newClientBuilder()
-              .gatewayAddress(zeebe.getExternalGatewayAddress())
-              .usePlaintext()
-              .build()) {
+      try (final var client = zeebe.newClientBuilder().build()) {
         client.newPublishMessageCommand().messageName("name").correlationKey("key").send().join();
       }
 

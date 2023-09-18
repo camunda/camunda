@@ -95,6 +95,12 @@ abstract class TestSpringApplication<T extends TestSpringApplication<T>>
     return springContext.getBean(type);
   }
 
+  @Override
+  public T withProperty(final String key, final Object value) {
+    propertyOverrides.put(key, value);
+    return self();
+  }
+
   /** Returns the command line arguments that will be passed when the application is started. */
   protected String[] commandLineArgs() {
     return new String[0];
@@ -132,5 +138,10 @@ abstract class TestSpringApplication<T extends TestSpringApplication<T>>
     }
 
     return Integer.parseInt(portProperty.toString());
+  }
+
+  @Override
+  public String toString() {
+    return getClass().getSimpleName() + "{nodeId = " + nodeId() + "}";
   }
 }

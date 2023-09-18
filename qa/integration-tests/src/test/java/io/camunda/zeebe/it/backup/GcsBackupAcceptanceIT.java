@@ -14,30 +14,29 @@ import com.google.cloud.storage.BucketInfo;
 import feign.FeignException;
 import io.camunda.zeebe.backup.gcs.GcsBackupConfig;
 import io.camunda.zeebe.backup.gcs.GcsBackupStore;
+import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.BackupStoreType;
+import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig;
+import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig.GcsBackupStoreAuth;
+import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
+import io.camunda.zeebe.qa.util.cluster.TestApplication;
+import io.camunda.zeebe.qa.util.cluster.TestCluster;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.testcontainers.GcsContainer;
-import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.camunda.zeebe.shared.management.openapi.models.BackupInfo;
 import io.camunda.zeebe.shared.management.openapi.models.PartitionBackupInfo;
 import io.camunda.zeebe.shared.management.openapi.models.StateCode;
 import io.camunda.zeebe.shared.management.openapi.models.TakeBackupResponse;
-import io.camunda.zeebe.test.util.testcontainers.ContainerLogsDumper;
-import io.zeebe.containers.ZeebeBrokerNode;
-import io.zeebe.containers.ZeebeNode;
-import io.zeebe.containers.ZeebePort;
-import io.zeebe.containers.cluster.ZeebeCluster;
-import io.zeebe.containers.engine.ContainerEngine;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import java.time.Duration;
-import org.agrona.CloseHelper;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.assertj.core.groups.Tuple;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
-import org.testcontainers.containers.Network;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -52,19 +51,19 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  * <p>NOTE: this does not test the consistency of backups, nor that partition leaders correctly
  * maintain consistency via checkpoint records. Other test suites should be set up for this.
  */
+@AutoCloseResources
 @Testcontainers
 final class GcsBackupAcceptanceIT {
-  private static final Network NETWORK = Network.newNetwork();
 
   private static final String BUCKET_NAME = RandomStringUtils.randomAlphabetic(10).toLowerCase();
 
-  @Container private static final GcsContainer GCS = new GcsContainer(NETWORK, "gcs.local");
+  @Container private static final GcsContainer GCS = new GcsContainer();
 
   private final String basePath = RandomStringUtils.randomAlphabetic(10).toLowerCase();
-  private final ZeebeCluster cluster =
-      ZeebeCluster.builder()
-          .withImage(ZeebeTestContainerDefaults.defaultTestImage())
-          .withNetwork(NETWORK)
+
+  @AutoCloseResource
+  private final TestCluster cluster =
+      TestCluster.builder()
           .withBrokersCount(2)
           .withGatewaysCount(1)
           .withReplicationFactor(1)
@@ -74,17 +73,7 @@ final class GcsBackupAcceptanceIT {
           .withNodeConfig(this::configureNode)
           .build();
 
-  @RegisterExtension
-  @SuppressWarnings("unused")
-  final ContainerLogsDumper logsWatcher = new ContainerLogsDumper(cluster::getNodes);
-
-  @Container
-  private final ContainerEngine engine = ContainerEngine.builder().withCluster(cluster).build();
-
-  @AfterAll
-  static void afterAll() {
-    CloseHelper.quietCloseAll(NETWORK);
-  }
+  @AutoCloseResource private ZeebeClient client;
 
   @BeforeAll
   static void beforeAll() throws Exception {
@@ -100,13 +89,17 @@ final class GcsBackupAcceptanceIT {
     }
   }
 
+  @BeforeEach
+  void beforeEach() {
+    cluster.start().awaitCompleteTopology();
+    client = cluster.newClientBuilder().build();
+  }
+
   @Test
   void shouldTakeBackup() {
     // given
-    final var actuator = BackupActuator.of(cluster.getAvailableGateway());
-    try (final var client = engine.createClient()) {
-      client.newPublishMessageCommand().messageName("name").correlationKey("key").send().join();
-    }
+    final var actuator = BackupActuator.ofAddress(cluster.availableGateway().monitoringAddress());
+    client.newPublishMessageCommand().messageName("name").correlationKey("key").send().join();
 
     // when
     final var response = actuator.take(1);
@@ -136,10 +129,8 @@ final class GcsBackupAcceptanceIT {
   @Test
   void shouldListBackups() {
     // given
-    final var actuator = BackupActuator.of(cluster.getAvailableGateway());
-    try (final var client = engine.createClient()) {
-      client.newPublishMessageCommand().messageName("name").correlationKey("key").send().join();
-    }
+    final var actuator = BackupActuator.ofAddress(cluster.availableGateway().monitoringAddress());
+    client.newPublishMessageCommand().messageName("name").correlationKey("key").send().join();
 
     // when
     actuator.take(1);
@@ -160,7 +151,7 @@ final class GcsBackupAcceptanceIT {
   @Test
   void shouldDeleteBackup() {
     // given
-    final var actuator = BackupActuator.of(cluster.getAvailableGateway());
+    final var actuator = BackupActuator.ofAddress(cluster.availableGateway().monitoringAddress());
     final long backupId = 1;
     actuator.take(backupId);
     waitUntilBackupIsCompleted(actuator, backupId);
@@ -179,17 +170,22 @@ final class GcsBackupAcceptanceIT {
                     .isEqualTo(404));
   }
 
-  private void configureBroker(final ZeebeBrokerNode<?> broker) {
-    broker
-        .withEnv("ZEEBE_BROKER_DATA_BACKUP_STORE", "GCS")
-        .withEnv("ZEEBE_BROKER_DATA_BACKUP_GCS_BUCKETNAME", BUCKET_NAME)
-        .withEnv("ZEEBE_BROKER_DATA_BACKUP_GCS_BASEPATH", basePath)
-        .withEnv("ZEEBE_BROKER_DATA_BACKUP_GCS_AUTH", "none")
-        .withEnv("ZEEBE_BROKER_DATA_BACKUP_GCS_HOST", GCS.internalEndpoint());
+  private void configureBroker(final TestStandaloneBroker broker) {
+    broker.withBrokerConfig(
+        cfg -> {
+          final var backup = cfg.getData().getBackup();
+          backup.setStore(BackupStoreType.GCS);
+
+          final var config = new GcsBackupStoreConfig();
+          config.setAuth(GcsBackupStoreAuth.NONE);
+          config.setBasePath(basePath);
+          config.setBucketName(BUCKET_NAME);
+          config.setHost(GCS.externalEndpoint());
+          backup.setGcs(config);
+        });
   }
 
-  private void configureNode(final ZeebeNode<?> node) {
-    node.withEnv("MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE", "*").dependsOn(GCS);
-    node.addExposedPort(ZeebePort.MONITORING.getPort());
+  private void configureNode(final TestApplication<?> node) {
+    node.withProperty("management.endpoints.web.exposure.include", "*");
   }
 }

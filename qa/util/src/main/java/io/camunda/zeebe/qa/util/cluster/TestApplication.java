@@ -140,4 +140,15 @@ public interface TestApplication<T extends TestApplication<T>> extends AutoClose
    * @param <V> the expected bean type
    */
   <V> V bean(final Class<V> type);
+
+  /**
+   * Configures Spring via properties. This does not work with properties that would be applied to
+   * injected beans (e.g. via {@link #withBean(String, Object, Class)}), since there will be
+   * property resolution for these beans.
+   *
+   * @param key the property key
+   * @param value the new value
+   * @return itself for chaining
+   */
+  T withProperty(final String key, final Object value);
 }
