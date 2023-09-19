@@ -36,7 +36,7 @@ public final class IdleStrategyConfig {
 
   @Bean
   public IdleStrategySupplier toSupplier() {
-    return new IdleStrategySupplierImpl(
+    return new IdleStrategySupplier(
         properties.maxSpins(),
         properties.maxYields(),
         properties.minParkPeriodNs(),
@@ -45,17 +45,17 @@ public final class IdleStrategyConfig {
 
   @ConfigurationProperties(prefix = "zeebe.actor.idle")
   public record IdleStrategyProperties(
-      @Nullable Integer maxSpins,
-      @Nullable Integer maxYields,
+      @Nullable Long maxSpins,
+      @Nullable Long maxYields,
       @Nullable Duration minParkPeriod,
       @Nullable Duration maxParkPeriod) {
     @Override
-    public Integer maxSpins() {
+    public Long maxSpins() {
       return maxSpins == null ? ActorSchedulerBuilder.DEFAULT_MAX_SPINS : maxSpins;
     }
 
     @Override
-    public Integer maxYields() {
+    public Long maxYields() {
       return maxYields == null ? ActorSchedulerBuilder.DEFAULT_MAX_YIELDS : maxYields;
     }
 
@@ -72,29 +72,17 @@ public final class IdleStrategyConfig {
     }
   }
 
-  private record IdleStrategySupplierImpl(
-      int maxSpins, int maxYields, long minParkPeriodNs, long maxParkPeriodNs)
-      implements IdleStrategySupplier {
+  public record IdleStrategySupplier(
+      long maxSpins, long maxYields, long minParkPeriodNs, long maxParkPeriodNs)
+      implements Supplier<IdleStrategy> {
 
     @Override
     public IdleStrategy get() {
       return new BackoffIdleStrategy(maxSpins, maxYields, minParkPeriodNs, maxParkPeriodNs);
     }
-  }
 
-  /** This interface exists mostly to allow introspecting the strategy that'll we be building up. */
-  public interface IdleStrategySupplier extends Supplier<IdleStrategy> {
-
-    int maxSpins();
-
-    int maxYields();
-
-    long minParkPeriodNs();
-
-    long maxParkPeriodNs();
-
-    static IdleStrategySupplier ofDefault() {
-      return new IdleStrategySupplierImpl(
+    public static IdleStrategySupplier ofDefault() {
+      return new IdleStrategySupplier(
           ActorSchedulerBuilder.DEFAULT_MAX_SPINS,
           ActorSchedulerBuilder.DEFAULT_MAX_YIELDS,
           ActorSchedulerBuilder.DEFAULT_MIN_PARK_PERIOD_NS,

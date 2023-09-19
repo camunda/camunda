@@ -103,8 +103,8 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
 
   public static class ActorSchedulerBuilder {
 
-    public static final int DEFAULT_MAX_SPINS = 100;
-    public static final int DEFAULT_MAX_YIELDS = 100;
+    public static final long DEFAULT_MAX_SPINS = 100;
+    public static final long DEFAULT_MAX_YIELDS = 100;
     public static final long DEFAULT_MIN_PARK_PERIOD_NS = 1;
     public static final long DEFAULT_MAX_PARK_PERIOD_NS = 1_000_000;
 
