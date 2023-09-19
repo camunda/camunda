@@ -265,6 +265,7 @@ public final class CatchEventBehavior {
     subscription.setCorrelationKey(correlationKey);
     subscription.setElementId(event.getId());
     subscription.setInterrupting(event.isInterrupting());
+    subscription.setTenantId(context.getTenantId());
 
     final var subscriptionKey = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(

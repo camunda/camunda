@@ -102,7 +102,8 @@ public final class MessageStreamProcessorTest {
             eq(subscription.getProcessInstanceKey()),
             eq(subscription.getElementInstanceKey()),
             any(),
-            anyBoolean());
+            anyBoolean(),
+            TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   }
 
   @Test
@@ -229,7 +230,8 @@ public final class MessageStreamProcessorTest {
         .closeProcessMessageSubscription(
             eq(subscription.getProcessInstanceKey()),
             eq(subscription.getElementInstanceKey()),
-            any(DirectBuffer.class));
+            any(DirectBuffer.class),
+            TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   }
 
   @Test

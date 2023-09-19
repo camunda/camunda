@@ -66,7 +66,10 @@ public class SubscriptionCommandSenderTest {
 
     // when
     subscriptionCommandSender.closeProcessMessageSubscription(
-        DIFFERENT_RECEIVER_PARTITION_KEY, DEFAULT_ELEMENT_INSTANCE_KEY, DEFAULT_MESSAGE_NAME);
+        DIFFERENT_RECEIVER_PARTITION_KEY,
+        DEFAULT_ELEMENT_INSTANCE_KEY,
+        DEFAULT_MESSAGE_NAME,
+        TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
     // then
     verify(mockProcessingResultBuilder).appendPostCommitTask(any());
@@ -79,7 +82,10 @@ public class SubscriptionCommandSenderTest {
 
     // when
     subscriptionCommandSender.closeProcessMessageSubscription(
-        SAME_RECEIVER_PARTITION_KEY, DEFAULT_ELEMENT_INSTANCE_KEY, DEFAULT_MESSAGE_NAME);
+        SAME_RECEIVER_PARTITION_KEY,
+        DEFAULT_ELEMENT_INSTANCE_KEY,
+        DEFAULT_MESSAGE_NAME,
+        TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
     // then
     verify(mockProcessingResultBuilder, never()).appendPostCommitTask(any());
@@ -138,7 +144,8 @@ public class SubscriptionCommandSenderTest {
         DEFAULT_MESSAGE_NAME,
         DEFAULT_MESSAGE_KEY,
         DEFAULT_VARIABLES,
-        DEFAULT_CORRELATION_KEY);
+        DEFAULT_CORRELATION_KEY,
+        TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
     // then
     verify(mockInterPartitionCommandSender)
@@ -280,7 +287,11 @@ public class SubscriptionCommandSenderTest {
 
     // when
     subscriptionCommandSender.openProcessMessageSubscription(
-        DIFFERENT_PARTITION, DIFFERENT_RECEIVER_PARTITION_KEY, DEFAULT_MESSAGE_NAME, true);
+        DIFFERENT_PARTITION,
+        DIFFERENT_RECEIVER_PARTITION_KEY,
+        DEFAULT_MESSAGE_NAME,
+        true,
+        TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
     // then
     verify(mockProcessingResultBuilder).appendPostCommitTask(any());
@@ -293,7 +304,11 @@ public class SubscriptionCommandSenderTest {
 
     // when
     subscriptionCommandSender.openProcessMessageSubscription(
-        SAME_RECEIVER_PARTITION_KEY, DIFFERENT_RECEIVER_PARTITION_KEY, DEFAULT_MESSAGE_NAME, true);
+        SAME_RECEIVER_PARTITION_KEY,
+        DIFFERENT_RECEIVER_PARTITION_KEY,
+        DEFAULT_MESSAGE_NAME,
+        true,
+        TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
     // then
     verify(mockProcessingResultBuilder, never()).appendPostCommitTask(any());
