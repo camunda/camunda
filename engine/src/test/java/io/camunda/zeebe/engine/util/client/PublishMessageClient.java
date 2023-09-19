@@ -98,6 +98,11 @@ public final class PublishMessageClient {
     return this;
   }
 
+  public PublishMessageClient withTenantId(final String tenantId) {
+    messageRecord.setTenantId(tenantId);
+    return this;
+  }
+
   public PublishMessageClient onPartition(final int partitionId) {
     this.partitionId = partitionId;
     return this;
