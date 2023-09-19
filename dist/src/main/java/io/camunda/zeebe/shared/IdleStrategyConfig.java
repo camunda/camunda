@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.shared;
 
+import io.camunda.zeebe.scheduler.ActorScheduler.ActorSchedulerBuilder;
 import io.camunda.zeebe.util.EnsureUtil;
 import java.time.Duration;
 import java.util.Objects;
@@ -19,13 +20,13 @@ import org.springframework.context.annotation.Configuration;
 @Configuration(proxyBeanMethods = false)
 @ConfigurationProperties(prefix = "zeebe.actor.idle")
 public final class IdleStrategyConfig {
-  private static final long DEFAULT_MAX_SPINS = 100;
-  private static final long DEFAULT_MAX_YIELDS = 100;
-  private static final Duration DEFAULT_MAX_PARK_PERIOD = Duration.ofNanos(1);
-  private static final Duration DEFAULT_MIN_PARK_PERIOD = Duration.ofMillis(1);
+  private static final Duration DEFAULT_MAX_PARK_PERIOD =
+      Duration.ofNanos(ActorSchedulerBuilder.DEFAULT_MIN_PARK_PERIOD_NS);
+  private static final Duration DEFAULT_MIN_PARK_PERIOD =
+      Duration.ofNanos(ActorSchedulerBuilder.DEFAULT_MAX_PARK_PERIOD_NS);
 
-  private long maxSpins = DEFAULT_MAX_SPINS;
-  private long maxYields = DEFAULT_MAX_YIELDS;
+  private long maxSpins = ActorSchedulerBuilder.DEFAULT_MAX_SPINS;
+  private long maxYields = ActorSchedulerBuilder.DEFAULT_MAX_YIELDS;
   private Duration minParkPeriod = DEFAULT_MAX_PARK_PERIOD;
   private Duration maxParkPeriod = DEFAULT_MAX_PARK_PERIOD;
 

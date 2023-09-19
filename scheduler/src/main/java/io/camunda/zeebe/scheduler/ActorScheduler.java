@@ -103,6 +103,11 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
 
   public static class ActorSchedulerBuilder {
 
+    public static final int DEFAULT_MAX_SPINS = 100;
+    public static final int DEFAULT_MAX_YIELDS = 100;
+    public static final long DEFAULT_MIN_PARK_PERIOD_NS = 1;
+    public static final long DEFAULT_MAX_PARK_PERIOD_NS = 1_000_000;
+
     private String schedulerName = "";
     private ActorClock actorClock;
     private int cpuBoundThreadsCount = Math.max(1, Runtime.getRuntime().availableProcessors() - 2);
@@ -117,7 +122,11 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
         ActorSchedulerBuilder::defaultIdleStrategySupplier;
 
     public static IdleStrategy defaultIdleStrategySupplier() {
-      return new BackoffIdleStrategy(100, 100, 1, TimeUnit.MILLISECONDS.toNanos(1));
+      return new BackoffIdleStrategy(
+          DEFAULT_MAX_SPINS,
+          DEFAULT_MAX_YIELDS,
+          DEFAULT_MIN_PARK_PERIOD_NS,
+          DEFAULT_MAX_PARK_PERIOD_NS);
     }
 
     public String getSchedulerName() {
