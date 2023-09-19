@@ -36,6 +36,7 @@ message TopologyChangeOperation {
     PartitionJoinOperation partitionJoin = 2;
     PartitionLeaveOperation partitionLeave = 3;
     MemberJoinOperation memberJoin = 4;
+    MemberLeaveOperation memberLeave = 5;
   }
 }
 
@@ -49,6 +50,8 @@ message PartitionLeaveOperation {
 }
 
 message MemberJoinOperation {}
+
+message MemberLeaveOperation {}
 
 enum State {
   UNKNOWN = 0;
