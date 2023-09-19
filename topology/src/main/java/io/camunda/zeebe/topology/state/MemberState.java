@@ -23,17 +23,22 @@ import java.util.function.UnaryOperator;
  * @param state current state of the member
  * @param partitions state of all partitions that the member is replicating
  */
-public record MemberState(long version, State state, Map<Integer, PartitionState> partitions) {
+public record MemberState(
+    long version, long lastUpdatedTimestamp, State state, Map<Integer, PartitionState> partitions) {
   public static MemberState initializeAsActive(
       final Map<Integer, PartitionState> initialPartitions) {
-    return new MemberState(0, State.ACTIVE, Map.copyOf(initialPartitions));
+    return new MemberState(
+        0, System.currentTimeMillis(), State.ACTIVE, Map.copyOf(initialPartitions));
   }
 
   public static MemberState uninitialized() {
-    return new MemberState(0, State.UNINITIALIZED, Map.of());
+    return new MemberState(0, 0, State.UNINITIALIZED, Map.of());
   }
 
   public MemberState toJoining() {
+    if (state == State.JOINING) {
+      return this;
+    }
     if (state == State.LEAVING) {
       throw new IllegalStateException(
           String.format("Cannot transition to JOINING when current state is %s", state));
@@ -42,6 +47,9 @@ public record MemberState(long version, State state, Map<Integer, PartitionState
   }
 
   public MemberState toActive() {
+    if (state == State.ACTIVE) {
+      return this;
+    }
     if (state == State.LEFT || state == State.LEAVING) {
       throw new IllegalStateException(
           String.format("Cannot transition to ACTIVE when current state is %s", state));
@@ -50,6 +58,9 @@ public record MemberState(long version, State state, Map<Integer, PartitionState
   }
 
   public MemberState toLeaving() {
+    if (state == State.LEAVING) {
+      return this;
+    }
     if (state == State.LEFT) {
       throw new IllegalStateException(
           String.format("Cannot transition to LEAVING when current state is %s", state));
@@ -58,6 +69,9 @@ public record MemberState(long version, State state, Map<Integer, PartitionState
   }
 
   public MemberState toLeft() {
+    if (state == State.LEFT) {
+      return this;
+    }
     return update(State.LEFT, partitions);
   }
 
@@ -130,7 +144,7 @@ public record MemberState(long version, State state, Map<Integer, PartitionState
   }
 
   private MemberState update(final State state, final Map<Integer, PartitionState> partitions) {
-    return new MemberState(version + 1, state, partitions);
+    return new MemberState(version + 1, System.currentTimeMillis(), state, partitions);
   }
 
   public boolean hasPartition(final int partitionId) {

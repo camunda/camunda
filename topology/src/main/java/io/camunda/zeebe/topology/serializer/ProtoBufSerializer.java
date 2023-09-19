@@ -11,6 +11,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.topology.gossip.ClusterTopologyGossipState;
 import io.camunda.zeebe.topology.protocol.Topology;
+import io.camunda.zeebe.topology.protocol.Topology.MemberState;
 import io.camunda.zeebe.topology.state.ClusterChangePlan;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.PartitionState;
@@ -107,7 +108,10 @@ public class ProtoBufSerializer implements ClusterTopologySerializer {
             .map(e -> Map.entry(e.getKey(), decodePartitionState(e.getValue())))
             .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
     return new io.camunda.zeebe.topology.state.MemberState(
-        memberState.getVersion(), toMemberState(memberState.getState()), partitions);
+        memberState.getVersion(),
+        memberState.getLastUpdatedTimestamp(),
+        toMemberState(memberState.getState()),
+        partitions);
   }
 
   private io.camunda.zeebe.topology.state.PartitionState decodePartitionState(
@@ -122,8 +126,9 @@ public class ProtoBufSerializer implements ClusterTopologySerializer {
         memberState.partitions().entrySet().stream()
             .map(e -> Map.entry(e.getKey(), encodePartitions(e.getValue())))
             .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
-    return Topology.MemberState.newBuilder()
+    return MemberState.newBuilder()
         .setVersion(memberState.version())
+        .setLastUpdatedTimestamp(memberState.lastUpdatedTimestamp())
         .setState(toSerializedState(memberState.state()))
         .putAllPartitions(partitions)
         .build();

@@ -15,8 +15,9 @@ message ClusterTopology {
 
 message MemberState {
   int64 version = 1;
-  State state = 2;
-  map<int32, PartitionState> partitions = 3;
+  int64 lastUpdatedTimestamp = 2;
+  State state = 3;
+  map<int32, PartitionState> partitions = 4;
 }
 
 message PartitionState {
