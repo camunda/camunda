@@ -24,6 +24,7 @@ import io.atomix.raft.protocol.PollRequest;
 import io.atomix.raft.protocol.PollResponse;
 import io.atomix.raft.protocol.RaftRequest;
 import io.atomix.raft.protocol.RaftResponse;
+import io.atomix.raft.protocol.RaftResponse.Status;
 import io.atomix.raft.protocol.VoteRequest;
 import io.atomix.raft.protocol.VoteResponse;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
@@ -60,6 +61,16 @@ public abstract class ActiveRole extends PassiveRole {
   public CompletableFuture<PollResponse> onPoll(final PollRequest request) {
     raft.checkThread();
     logRequest(request);
+    if (hasRecentHeartbeat()) {
+      log.debug("Rejected {}: leader is probably active", request);
+      final var rejection =
+          PollResponse.builder()
+              .withStatus(Status.OK)
+              .withTerm(raft.getTerm())
+              .withAccepted(false)
+              .build();
+      return CompletableFuture.completedFuture(logResponse(rejection));
+    }
     updateTermAndLeader(request.term(), null);
     return CompletableFuture.completedFuture(logResponse(handlePoll(request)));
   }
@@ -82,7 +93,7 @@ public abstract class ActiveRole extends PassiveRole {
   }
 
   /** Handles a poll request. */
-  protected PollResponse handlePoll(final PollRequest request) {
+  private PollResponse handlePoll(final PollRequest request) {
     // If the request term is not as great as the current context term then don't
     // vote for the candidate. We want to vote for candidates that are at least
     // as up to date as us.
@@ -108,8 +119,20 @@ public abstract class ActiveRole extends PassiveRole {
     }
   }
 
+  /**
+   * Useful to check if the leader is likely to be active because it has sent a heartbeat recently.
+   *
+   * @return true if the last heartbeat from the leader was recent, i.e. the election timeout wasn't
+   *     exceeded.
+   */
+  private boolean hasRecentHeartbeat() {
+    final var timeSinceLastHeartbeat = System.currentTimeMillis() - raft.getLastHeartbeat();
+    return timeSinceLastHeartbeat < raft.getElectionTimeout().toMillis();
+  }
+
   /** Returns a boolean value indicating whether the given candidate's log is up-to-date. */
-  boolean isLogUpToDate(final long lastIndex, final long lastTerm, final RaftRequest request) {
+  private boolean isLogUpToDate(
+      final long lastIndex, final long lastTerm, final RaftRequest request) {
     // If the log is empty then vote for the candidate.
     if (raft.getLog().isEmpty()) {
       log.debug("Accepted {}: candidate's log is up-to-date", request);
