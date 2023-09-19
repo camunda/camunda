@@ -14,12 +14,15 @@ import io.camunda.zeebe.client.api.response.DeploymentEvent;
 import io.camunda.zeebe.client.api.response.Process;
 import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder;
+import io.camunda.zeebe.gateway.impl.configuration.AuthenticationCfg.AuthMode;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
-import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
+import io.camunda.zeebe.qa.util.cluster.TestHealthProbe;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.test.util.Strings;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.testcontainers.ContainerLogsDumper;
-import io.zeebe.containers.ZeebeContainer;
 import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -46,6 +49,7 @@ import org.testcontainers.utility.DockerImageName;
 
 /** Verifies that data can be isolated per tenant using Identity as the tenant provider. */
 @Testcontainers
+@AutoCloseResources
 public class MultiTenancyOverIdentityIT {
 
   @TempDir private static Path credentialsCacheDir;
@@ -160,44 +164,48 @@ public class MultiTenancyOverIdentityIT {
                   .forStatusCode(200))
           .withNetworkAliases("identity");
 
-  @Container
-  private static final ZeebeContainer ZEEBE =
-      new ZeebeContainer(ZeebeTestContainerDefaults.defaultTestImage())
-          .dependsOn(KEYCLOAK, IDENTITY)
-          .withoutTopologyCheck()
-          .withEnv("ZEEBE_BROKER_GATEWAY_MULTITENANCY_ENABLED", "true")
-          .withEnv("ZEEBE_LOG_LEVEL", "DEBUG")
-          .withEnv("ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_MODE", "identity")
-          .withEnv(
-              "ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_BASEURL",
-              "http://identity:8080")
-          .withEnv(
-              "ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_ISSUERBACKENDURL",
-              "http://keycloak:8080" + KEYCLOAK_PATH_CAMUNDA_REALM)
-          .withEnv(
-              "ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_AUDIENCE",
-              ZEEBE_CLIENT_AUDIENCE)
-          .withNetwork(NETWORK);
+  @AutoCloseResource private static final TestStandaloneBroker ZEEBE = new TestStandaloneBroker();
 
   @SuppressWarnings("unused")
   @RegisterExtension
   final ContainerLogsDumper logsWatcher =
       new ContainerLogsDumper(
-          () ->
-              Map.of(
-                  "postgres",
-                  POSTGRES,
-                  "keycloak",
-                  KEYCLOAK,
-                  "identity",
-                  IDENTITY,
-                  "zeebe",
-                  ZEEBE));
+          () -> Map.of("postgres", POSTGRES, "keycloak", KEYCLOAK, "identity", IDENTITY));
 
   private BpmnModelInstance process;
 
   @BeforeAll
   static void init() throws Exception {
+    ZEEBE
+        .withGatewayConfig(
+            gateway -> {
+              gateway.getMultiTenancy().setEnabled(true);
+              gateway.getSecurity().getAuthentication().setMode(AuthMode.IDENTITY);
+              gateway
+                  .getSecurity()
+                  .getAuthentication()
+                  .getIdentity()
+                  .setBaseUrl(
+                      "http://%s:%d".formatted(IDENTITY.getHost(), IDENTITY.getMappedPort(8080)));
+              gateway
+                  .getSecurity()
+                  .getAuthentication()
+                  .getIdentity()
+                  .setIssuerBackendUrl(
+                      "http://%s:%d%s"
+                          .formatted(
+                              KEYCLOAK.getHost(),
+                              KEYCLOAK.getMappedPort(8080),
+                              KEYCLOAK_PATH_CAMUNDA_REALM));
+              gateway
+                  .getSecurity()
+                  .getAuthentication()
+                  .getIdentity()
+                  .setAudience(ZEEBE_CLIENT_AUDIENCE);
+            })
+        .start()
+        .await(TestHealthProbe.READY);
+
     associateTenantsWithClient(List.of("tenant-a"), ZEEBE_CLIENT_ID_TENANT_A);
     associateTenantsWithClient(List.of("tenant-b"), ZEEBE_CLIENT_ID_TENANT_B);
     associateTenantsWithClient(List.of("tenant-a", "tenant-b"), ZEEBE_CLIENT_ID_TENANT_A_AND_B);
@@ -359,8 +367,8 @@ public class MultiTenancyOverIdentityIT {
    * @return A new Zeebe Client to use in these tests
    */
   private static ZeebeClient createZeebeClient(final String clientId) {
-    return ZeebeClient.newClientBuilder()
-        .gatewayAddress(ZEEBE.getExternalGatewayAddress())
+    return ZEEBE
+        .newClientBuilder()
         .credentialsProvider(
             new OAuthCredentialsProviderBuilder()
                 .clientId(clientId)
@@ -372,7 +380,6 @@ public class MultiTenancyOverIdentityIT {
                 .credentialsCachePath(credentialsCacheDir.resolve(clientId).toString())
                 .build())
         .defaultRequestTimeout(Duration.ofSeconds(10))
-        .usePlaintext()
         .build();
   }
 
