@@ -92,8 +92,8 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
   }
 
   @Override
-  public CompletableFuture<Void> join() {
-    return raft.join();
+  public CompletableFuture<Void> join(final Collection<MemberId> cluster) {
+    return raft.join(cluster);
   }
 
   @Override

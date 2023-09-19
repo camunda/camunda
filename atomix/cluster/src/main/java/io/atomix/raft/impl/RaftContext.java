@@ -22,7 +22,6 @@ import static com.google.common.base.Preconditions.checkState;
 import static io.atomix.utils.concurrent.Threads.namedThreads;
 
 import io.atomix.cluster.ClusterMembershipService;
-import io.atomix.cluster.Member;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.MessagingException.NoRemoteHandler;
 import io.atomix.cluster.messaging.MessagingException.NoSuchMemberException;
@@ -79,6 +78,7 @@ import io.camunda.zeebe.util.logging.ThrottledLogger;
 import java.net.ConnectException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Queue;
@@ -624,7 +624,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     return future;
   }
 
-  public CompletableFuture<Void> join() {
+  public CompletableFuture<Void> join(final Collection<MemberId> clusterMembers) {
     final var result = new CompletableFuture<Void>();
     threadContext.execute(
         () -> {
@@ -632,9 +632,8 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
               new DefaultRaftMember(
                   cluster.getLocalMember().memberId(), Type.ACTIVE, Instant.now());
           final var assistingMembers =
-              membershipService.getMembers().stream()
-                  .map(Member::id)
-                  .filter(id -> !id.equals(joining.memberId()))
+              clusterMembers.stream()
+                  .filter(memberId -> !memberId.equals(joining.memberId()))
                   .collect(Collectors.toCollection(LinkedBlockingQueue::new));
           if (assistingMembers.isEmpty()) {
             result.completeExceptionally(

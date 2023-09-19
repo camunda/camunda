@@ -202,7 +202,7 @@ final class ReconfigurationTest {
       // when - a new member joins
       final var id4 = MemberId.from("4");
       final var m4 = createServer(tmp, createMembershipService(id4, id1, id2, id3));
-      m4.join().join();
+      m4.join(id1, id2, id3).join();
 
       // then - all members show a configuration with 4 active members
       final var expected =
@@ -234,7 +234,7 @@ final class ReconfigurationTest {
       CompletableFuture.allOf(
               m1.bootstrap(id1, id2, id3), m2.bootstrap(id1, id2, id3), m3.bootstrap(id1, id2, id3))
           .join();
-      m4.join().join();
+      m4.join(id1, id2, id3).join();
 
       // when - appending a new entry
       final var leader = awaitLeader(m1, m2, m3, m4);
@@ -269,8 +269,8 @@ final class ReconfigurationTest {
               m1.bootstrap(id1, id2, id3), m2.bootstrap(id1, id2, id3), m3.bootstrap(id1, id2, id3))
           .join();
 
-      m4.join().join();
-      m5.join().join();
+      m4.join(id1, id2, id3).join();
+      m5.join(id1, id2, id3).join();
 
       // when - no quorum possible because three out of five members are down
       m1.shutdown().join();
@@ -302,8 +302,8 @@ final class ReconfigurationTest {
               m1.bootstrap(id1, id2, id3), m2.bootstrap(id1, id2, id3), m3.bootstrap(id1, id2, id3))
           .join();
 
-      m4.join().join();
-      m5.join().join();
+      m4.join(id1, id2, id3).join();
+      m5.join(id1, id2, id3).join();
 
       // when - original members fail so that quorum depends on new members
       m1.shutdown().join();
