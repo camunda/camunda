@@ -17,6 +17,7 @@
 package io.atomix.raft.roles;
 
 import com.google.common.base.Throwables;
+import io.atomix.cluster.MemberId;
 import io.atomix.raft.RaftError;
 import io.atomix.raft.RaftError.Type;
 import io.atomix.raft.RaftException;
@@ -65,6 +66,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.stream.Collectors;
 
 /** Leader state. */
 public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
@@ -140,8 +142,9 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
 
     // If the configuration request index is less than the last known configuration index for
     // the leader, fail the request to ensure servers can't reconfigure an old configuration.
-    if (request.index() > 0 && request.index() < raft.getCluster().getConfiguration().index()
-        || request.term() != raft.getCluster().getConfiguration().term()) {
+    final var configuration = raft.getCluster().getConfiguration();
+    if (request.index() > 0 && request.index() < configuration.index()
+        || request.term() != configuration.term()) {
       return CompletableFuture.completedFuture(
           logResponse(
               ReconfigureResponse.builder()
@@ -153,6 +156,18 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     // Write a new configuration entry with the updated member list.
     final var currentMembers = raft.getCluster().getMembers();
     final var updatedMembers = request.members();
+
+    if (equalMembership(currentMembers, updatedMembers)) {
+      return CompletableFuture.completedFuture(
+          logResponse(
+              ReconfigureResponse.builder()
+                  .withStatus(Status.OK)
+                  .withIndex(configuration.index())
+                  .withTerm(configuration.term())
+                  .withTime(configuration.time())
+                  .withMembers(currentMembers)
+                  .build()));
+    }
 
     final CompletableFuture<ReconfigureResponse> future = new CompletableFuture<>();
     configure(updatedMembers, currentMembers)
@@ -168,8 +183,8 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
                                     ReconfigureResponse.builder()
                                         .withStatus(RaftResponse.Status.OK)
                                         .withIndex(leftJointConsensusIndex)
-                                        .withTerm(raft.getCluster().getConfiguration().term())
-                                        .withTime(raft.getCluster().getConfiguration().time())
+                                        .withTerm(configuration.term())
+                                        .withTime(configuration.time())
                                         .withMembers(updatedMembers)
                                         .build()));
                           } else {
@@ -231,6 +246,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
   public CompletableFuture<LeaveResponse> onLeave(final LeaveRequest request) {
     raft.checkThread();
     final var currentConfiguration = raft.getCluster().getConfiguration();
+
     final var updatedMembers =
         currentConfiguration.newMembers().stream()
             .filter(member -> !member.memberId().equals(request.leavingMember().memberId()))
@@ -258,6 +274,23 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
                     .build();
               }
             });
+  }
+
+  /** Checks if the membership is equal in terms of member ids and types. */
+  private boolean equalMembership(
+      final Collection<RaftMember> currentMembers, final Collection<RaftMember> updatedMembers) {
+    // Unpack member id and type because DefaultRaftMember#equals only compares the id
+    record MemberIdAndType(MemberId memberId, RaftMember.Type type) {}
+
+    final var currentMembersWithTypes =
+        currentMembers.stream()
+            .map(member -> new MemberIdAndType(member.memberId(), member.getType()))
+            .collect(Collectors.toSet());
+    final var updatedMembersWithTypes =
+        updatedMembers.stream()
+            .map(member -> new MemberIdAndType(member.memberId(), member.getType()))
+            .collect(Collectors.toSet());
+    return currentMembersWithTypes.equals(updatedMembersWithTypes);
   }
 
   private ApplicationEntry findLastZeebeEntry() {
