@@ -11,7 +11,7 @@ import {
   validateOperationIdCharacters,
   validateOperationIdComplete,
   validateVariableNameComplete,
-  validateVariableValueComplete,
+  validateVariableValuesComplete,
   validateVariableValueValid,
   validateIdsLength,
   validateParentInstanceIdCharacters,
@@ -23,6 +23,7 @@ import {
   validatesDecisionIdsComplete,
   validateTimeComplete,
   validateTimeCharacters,
+  validateMultipleVariableValuesValid,
 } from '../index';
 import {mockMeta} from './mocks';
 
@@ -283,12 +284,12 @@ describe('validators', () => {
     expect(validateVariableNameComplete('test', {})).toBeUndefined();
     expect(
       validateVariableNameComplete('test', {
-        variableValue: 'somethingInvalid',
+        variableValues: 'somethingInvalid',
       }),
     ).toBeUndefined();
     expect(
       validateVariableNameComplete('test', {
-        variableValue: '"somethingValid"',
+        variableValues: '"somethingValid"',
       }),
     ).toBeUndefined();
 
@@ -297,53 +298,60 @@ describe('validators', () => {
 
   it('should validate variable name with delay', () => {
     expect(
-      validateVariableNameComplete('', {variableValue: '"somethingValid"'}),
+      validateVariableNameComplete('', {variableValues: '"somethingValid"'}),
     ).resolves.toBe('Name has to be filled');
     expect(
-      validateVariableNameComplete('', {variableValue: '123'}),
+      validateVariableNameComplete('', {variableValues: '123'}),
     ).resolves.toBe('Name has to be filled');
     expect(
-      validateVariableNameComplete('', {variableValue: true}),
+      validateVariableNameComplete('', {variableValues: true}),
     ).resolves.toBe('Name has to be filled');
     expect(
-      validateVariableNameComplete('', {variableValue: 'somethingInvalid'}),
+      validateVariableNameComplete('', {variableValues: 'somethingInvalid'}),
     ).resolves.toBe('Name has to be filled and Value has to be JSON');
 
     expect(setTimeoutSpy).toHaveBeenCalledTimes(4);
   });
 
   it('should validate variable value without delay', () => {
-    expect(validateVariableValueComplete('', {})).toBeUndefined();
+    expect(validateVariableValuesComplete('', {})).toBeUndefined();
     expect(
-      validateVariableValueComplete('{"test":123}', {variableName: 'test'}),
+      validateVariableValuesComplete('{"test":123}', {variableName: 'test'}),
     ).toBeUndefined();
     expect(
-      validateVariableValueComplete('123', {variableName: 'test'}),
+      validateVariableValuesComplete('123', {variableName: 'test'}),
     ).toBeUndefined();
     expect(
-      validateVariableValueComplete('"test"', {variableName: 'test'}),
+      validateVariableValuesComplete('"test"', {variableName: 'test'}),
     ).toBeUndefined();
 
     expect(
       validateVariableValueValid('', {variableName: 'test'}),
     ).toBeUndefined();
-    expect(validateVariableValueComplete('a', {})).toBeUndefined();
+    expect(validateVariableValuesComplete('a', {})).toBeUndefined();
 
     expect(setTimeoutSpy).toHaveBeenCalledTimes(0);
   });
 
   it('should validate variable value with delay', () => {
-    expect(validateVariableValueComplete('1', {})).toBeUndefined();
-    expect(validateVariableValueComplete('true', {})).toBeUndefined();
-    expect(validateVariableValueComplete('"test"', {})).toBeUndefined();
-    expect(validateVariableValueComplete('{"test": true}', {})).toBeUndefined();
+    expect(validateVariableValuesComplete('1', {})).toBeUndefined();
+    expect(validateVariableValuesComplete('true', {})).toBeUndefined();
+    expect(validateVariableValuesComplete('"test"', {})).toBeUndefined();
+    expect(
+      validateVariableValuesComplete('{"test": true}', {}),
+    ).toBeUndefined();
+    expect(validateVariableValuesComplete('1, 2', {})).toBeUndefined();
+    expect(
+      validateVariableValuesComplete('{"a": 1}, {"b": 99}', {}),
+    ).toBeUndefined();
+    expect(validateVariableValuesComplete('"one","two"', {})).toBeUndefined();
 
     expect(
       validateVariableValueValid('{"tes}', {variableName: 'test'}),
     ).resolves.toBe('Value has to be JSON');
 
     expect(
-      validateVariableValueComplete('', {variableName: 'test'}),
+      validateVariableValuesComplete('', {variableName: 'test'}),
     ).resolves.toBe('Value has to be filled');
 
     expect(validateVariableValueValid('a', {})).resolves.toBe(
@@ -351,6 +359,26 @@ describe('validators', () => {
     );
 
     expect(setTimeoutSpy).toHaveBeenCalledTimes(3);
+  });
+
+  it('should validate multi variable values without delay', () => {
+    expect(
+      validateMultipleVariableValuesValid('', {variableName: 'test'}),
+    ).toBeUndefined();
+
+    expect(setTimeoutSpy).toHaveBeenCalledTimes(0);
+  });
+
+  it('should validate multi variable values with delay', () => {
+    expect(
+      validateMultipleVariableValuesValid('2, {"tes}', {variableName: 'test'}),
+    ).resolves.toBe('Value has to be JSON');
+
+    expect(validateMultipleVariableValuesValid('a,a', {})).resolves.toBe(
+      'Value has to be JSON',
+    );
+
+    expect(setTimeoutSpy).toHaveBeenCalledTimes(2);
   });
 
   it('should validate decision ids without delay ', () => {

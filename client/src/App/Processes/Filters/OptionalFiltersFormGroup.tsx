@@ -69,7 +69,7 @@ const OPTIONAL_FILTER_FIELDS: Record<
   }
 > = {
   variable: {
-    keys: ['variableName', 'variableValue'],
+    keys: ['variableName', 'variableValues'],
     label: 'Variable',
   },
   ids: {
@@ -143,7 +143,7 @@ const OptionalFiltersFormGroup: React.FC<Props> = observer(
               : currentVisibleFilters),
             ...([
               ...intersection(Object.keys(filters), optionalFilters),
-              ...('variableName' in filters && 'variableValue' in filters
+              ...('variableName' in filters && 'variableValues' in filters
                 ? ['variable']
                 : []),
               ...('startDateAfter' in filters && 'startDateBefore' in filters

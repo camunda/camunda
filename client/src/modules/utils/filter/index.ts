@@ -10,6 +10,8 @@ import {processesStore} from 'modules/stores/processes';
 import {getSearchString} from 'modules/utils/getSearchString';
 import {Location} from 'react-router-dom';
 import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
+import {IS_VARIABLE_VALUE_IN_FILTER_ENABLED} from 'modules/feature-flags';
+import {getValidVariableValues} from './getValidVariableValues';
 
 type ProcessInstanceFilterField =
   | 'process'
@@ -19,7 +21,7 @@ type ProcessInstanceFilterField =
   | 'errorMessage'
   | 'flowNodeId'
   | 'variableName'
-  | 'variableValue'
+  | 'variableValues'
   | 'operationId'
   | 'active'
   | 'incidents'
@@ -50,7 +52,7 @@ type ProcessInstanceFilters = {
   errorMessage?: string;
   flowNodeId?: string;
   variableName?: string;
-  variableValue?: string;
+  variableValues?: string;
   operationId?: string;
   active?: boolean;
   incidents?: boolean;
@@ -91,10 +93,13 @@ type RequestFilters = {
   parentInstanceId?: string;
   startDateAfter?: string;
   startDateBefore?: string;
-  variable?: {
-    name: string;
-    value: string;
-  };
+  variable?:
+    | {
+        name: string;
+        values: string[];
+      }
+    // TODO: remove when IS_VARIABLE_VALUE_IN_FILTER_ENABLED is removed
+    | {name: string; value: string};
   processIds?: string[];
 };
 
@@ -116,7 +121,7 @@ const PROCESS_INSTANCE_FILTER_FIELDS: ProcessInstanceFilterField[] = [
   'errorMessage',
   'flowNodeId',
   'variableName',
-  'variableValue',
+  'variableValues',
   'operationId',
   'active',
   'incidents',
@@ -336,16 +341,26 @@ function getProcessInstancesRequestFilters(): RequestFilters {
         }
 
         if (
-          (key === 'variableName' || key === 'variableValue') &&
+          (key === 'variableName' || key === 'variableValues') &&
           filters.variableName !== undefined &&
-          filters.variableValue !== undefined
+          filters.variableValues !== undefined
         ) {
+          const values =
+            getValidVariableValues(filters.variableValues)?.map((value) =>
+              JSON.stringify(value),
+            ) ?? [];
+
           return {
             ...accumulator,
-            variable: {
-              name: filters.variableName,
-              value: filters.variableValue,
-            },
+            variable: IS_VARIABLE_VALUE_IN_FILTER_ENABLED
+              ? {
+                  name: filters.variableName,
+                  values,
+                }
+              : {
+                  name: filters.variableName,
+                  value: filters.variableValues,
+                },
           };
         }
 

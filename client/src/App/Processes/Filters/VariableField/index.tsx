@@ -10,7 +10,8 @@ import {observer} from 'mobx-react';
 import {
   validateVariableNameCharacters,
   validateVariableNameComplete,
-  validateVariableValueComplete,
+  validateVariableValuesComplete,
+  validateMultipleVariableValuesValid,
   validateVariableValueValid,
 } from 'modules/validators';
 import {Field, useForm, useFormState} from 'react-final-form';
@@ -25,9 +26,11 @@ import {Stack} from '@carbon/react';
 import {IconTextAreaField} from 'modules/components/IconTextAreaField';
 import {IS_VARIABLE_VALUE_IN_FILTER_ENABLED} from 'modules/feature-flags';
 import {IconTextInputField} from 'modules/components/IconTextInputField';
+import {Toggle, VariableValueContainer} from './styled';
 
 const Variable: React.FC = observer(() => {
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [isInMultipleMode, setIsInMultipleMode] = useState(false);
   const formState = useFormState();
   const form = useForm();
 
@@ -53,45 +56,75 @@ const Variable: React.FC = observer(() => {
             />
           )}
         </Field>
-        <Field
-          name="variableValue"
-          validate={mergeValidators(
-            validateVariableValueComplete,
-            validateVariableValueValid,
+        <VariableValueContainer>
+          <Field
+            name="variableValues"
+            validate={mergeValidators(
+              validateVariableValuesComplete,
+              isInMultipleMode
+                ? validateMultipleVariableValuesValid
+                : validateVariableValueValid,
+            )}
+          >
+            {({input}) => {
+              if (isInMultipleMode) {
+                return (
+                  <IconTextAreaField
+                    {...input}
+                    id="variableValues"
+                    placeholder="separated by comma"
+                    data-testid="optional-filter-variable-value"
+                    labelText="Values"
+                    buttonLabel="Open modal"
+                    onIconClick={() => {}}
+                    Icon={Popup}
+                  />
+                );
+              } else {
+                return (
+                  <IconTextInputField
+                    {...input}
+                    id="variableValues"
+                    size="sm"
+                    placeholder="in JSON format"
+                    data-testid="optional-filter-variable-value"
+                    labelText="Value"
+                    buttonLabel="Open JSON editor modal"
+                    onIconClick={() => {
+                      setIsModalVisible(true);
+                      tracking.track({
+                        eventName: 'json-editor-opened',
+                        variant: 'search-variable',
+                      });
+                    }}
+                    Icon={Popup}
+                  />
+                );
+              }
+            }}
+          </Field>
+          {IS_VARIABLE_VALUE_IN_FILTER_ENABLED && (
+            <Toggle
+              id="multiple-mode"
+              size="sm"
+              labelA="Multiple"
+              labelB="Multiple"
+              aria-label="Multiple"
+              toggled={isInMultipleMode}
+              onToggle={() => {
+                form.change('variableValues', '');
+                setIsInMultipleMode(!isInMultipleMode);
+              }}
+            />
           )}
-        >
-          {({input}) => {
-            const InputComponent = IS_VARIABLE_VALUE_IN_FILTER_ENABLED
-              ? IconTextAreaField
-              : IconTextInputField;
-
-            return (
-              <InputComponent
-                {...input}
-                id="variableValue"
-                size="sm"
-                placeholder="in JSON format"
-                data-testid="optional-filter-variable-value"
-                labelText="Value"
-                buttonLabel="Open JSON editor modal"
-                onIconClick={() => {
-                  setIsModalVisible(true);
-                  tracking.track({
-                    eventName: 'json-editor-opened',
-                    variant: 'search-variable',
-                  });
-                }}
-                Icon={Popup}
-              />
-            );
-          }}
-        </Field>
+        </VariableValueContainer>
       </Stack>
+
       {createPortal(
         <JSONEditorModal
           isVisible={isModalVisible}
           title="Edit Variable Value"
-          value={formState.values?.variableValue}
+          value={formState.values?.variableValues}
           onClose={() => {
             setIsModalVisible(false);
             tracking.track({
@@ -100,7 +133,7 @@ const Variable: React.FC = observer(() => {
             });
           }}
           onApply={(value) => {
-            form.change('variableValue', value);
+            form.change('variableValues', value);
             setIsModalVisible(false);
             tracking.track({
               eventName: 'json-editor-saved',

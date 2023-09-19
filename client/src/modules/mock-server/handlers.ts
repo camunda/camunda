@@ -5,8 +5,11 @@
  * except in compliance with the proprietary license.
  */
 
-import {IS_PROCESS_DEFINITION_DELETION_ENABLED} from 'modules/feature-flags';
-import {RequestHandler, rest} from 'msw';
+import {
+  IS_PROCESS_DEFINITION_DELETION_ENABLED,
+  IS_VARIABLE_VALUE_IN_FILTER_ENABLED,
+} from 'modules/feature-flags';
+import {RequestHandler, RestRequest, rest} from 'msw';
 
 const mockBatchOperations = IS_PROCESS_DEFINITION_DELETION_ENABLED
   ? [
@@ -65,9 +68,63 @@ const mockDeleteProcessDefinition = IS_PROCESS_DEFINITION_DELETION_ENABLED
     ]
   : [];
 
+// This mock only provides the first variable value as API parameter
+// in case the user enters a list of values.
+const mockProcessInstances = IS_VARIABLE_VALUE_IN_FILTER_ENABLED
+  ? [
+      rest.post(
+        '/api/process-instances',
+        async (req: RestRequest<any>, res, ctx) => {
+          const variable = req.body?.query?.variable;
+
+          if (variable !== undefined) {
+            req.body.query.variable = {
+              name: variable.name,
+              value: variable.values[0],
+            };
+          }
+          const response = await ctx.fetch(req);
+
+          if (response.status !== 200) {
+            return res(ctx.status(response.status));
+          }
+          return res(ctx.json(await response.json()));
+        },
+      ),
+    ]
+  : [];
+
+// This mock only provides the first variable value as API parameter
+// in case the user enters a list of values.
+const mockProcessInstancesStatistics = IS_VARIABLE_VALUE_IN_FILTER_ENABLED
+  ? [
+      rest.post(
+        '/api/process-instances/statistics',
+        async (req: RestRequest<any>, res, ctx) => {
+          const variable = req.body?.variable;
+
+          if (variable !== undefined) {
+            req.body.variable = {
+              name: variable.name,
+              value: variable.values[0],
+            };
+          }
+          const response = await ctx.fetch(req);
+
+          if (response.status !== 200) {
+            return res(ctx.status(response.status));
+          }
+          return res(ctx.json(await response.json()));
+        },
+      ),
+    ]
+  : [];
+
 const handlers: RequestHandler[] = [
   ...mockBatchOperations,
   ...mockDeleteProcessDefinition,
+  ...mockProcessInstances,
+  ...mockProcessInstancesStatistics,
 ];
 
 export {handlers};

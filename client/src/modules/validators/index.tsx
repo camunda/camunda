@@ -16,6 +16,7 @@ import {
 import {promisifyValidator} from 'modules/utils/validators/promisifyValidator';
 import {isValid} from 'date-fns';
 import {parseDate} from '../utils/date/formatDate';
+import {validateMultipleVariableValues} from './validateMultipleVariableValues';
 
 const ERRORS = {
   decisionsIds:
@@ -30,6 +31,7 @@ const ERRORS = {
     nameUnfilled: 'Name has to be filled',
     valueUnfilled: 'Value has to be filled',
     valueInvalid: 'Value has to be JSON',
+    mulipleValueInvalid: 'Values have to be comma separated JSON',
   },
 } as const;
 
@@ -195,10 +197,10 @@ const validateVariableNameCharacters: FieldValidator<string | undefined> = (
 const validateVariableNameComplete: FieldValidator<
   ProcessInstanceFilters['variableName']
 > = promisifyValidator(
-  (variableName = '', allValues: {variableValue?: string} | undefined) => {
-    const variableValue = allValues?.variableValue ?? '';
+  (variableName = '', allValues: {variableValues?: string} | undefined) => {
+    const variableValues = allValues?.variableValues ?? '';
 
-    if ((variableName === '' && variableValue === '') || variableName !== '') {
+    if ((variableName === '' && variableValues === '') || variableName !== '') {
       return undefined;
     }
 
@@ -207,13 +209,16 @@ const validateVariableNameComplete: FieldValidator<
   VALIDATION_TIMEOUT,
 );
 
-const validateVariableValueComplete: FieldValidator<
-  ProcessInstanceFilters['variableValue']
+const validateVariableValuesComplete: FieldValidator<
+  ProcessInstanceFilters['variableValues']
 > = promisifyValidator(
-  (variableValue = '', allValues: {variableName?: string} | undefined) => {
+  (variableValues = '', allValues: {variableName?: string} | undefined) => {
     const variableName = allValues?.variableName ?? '';
 
-    if ((variableName === '' && variableValue === '') || variableValue !== '') {
+    if (
+      (variableName === '' && variableValues === '') ||
+      variableValues !== ''
+    ) {
       return;
     }
 
@@ -223,13 +228,23 @@ const validateVariableValueComplete: FieldValidator<
 );
 
 const validateVariableValueValid: FieldValidator<
-  ProcessInstanceFilters['variableValue']
+  ProcessInstanceFilters['variableValues']
 > = promisifyValidator((variableValue = '') => {
   if (variableValue === '' || isValidJSON(variableValue)) {
     return undefined;
   }
 
   return ERRORS.variables.valueInvalid;
+}, VALIDATION_TIMEOUT);
+
+const validateMultipleVariableValuesValid: FieldValidator<
+  ProcessInstanceFilters['variableValues']
+> = promisifyValidator((variableValues = '') => {
+  if (validateMultipleVariableValues(variableValues)) {
+    return undefined;
+  }
+
+  return ERRORS.variables.mulipleValueInvalid;
 }, VALIDATION_TIMEOUT);
 
 const validateOperationIdCharacters: FieldValidator<
@@ -266,8 +281,9 @@ export {
   validateOperationIdComplete,
   validateVariableNameCharacters,
   validateVariableNameComplete,
-  validateVariableValueComplete,
+  validateVariableValuesComplete,
   validateVariableValueValid,
+  validateMultipleVariableValuesValid,
   validateDecisionIdsCharacters,
   validateDecisionIdsLength,
   validatesDecisionIdsComplete,
