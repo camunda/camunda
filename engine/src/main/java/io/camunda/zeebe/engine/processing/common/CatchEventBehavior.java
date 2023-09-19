@@ -62,8 +62,6 @@ public final class CatchEventBehavior {
   private final TimerRecord timerRecord = new TimerRecord();
   private final DueDateTimerChecker timerChecker;
   private final KeyGenerator keyGenerator;
-  private final int currentPartitionId;
-
   private final SignalSubscriptionRecord signalSubscription = new SignalSubscriptionRecord();
 
   public CatchEventBehavior(
@@ -88,8 +86,6 @@ public final class CatchEventBehavior {
 
     this.keyGenerator = keyGenerator;
     this.timerChecker = timerChecker;
-
-    currentPartitionId = processingState.getPartitionId();
   }
 
   /**
