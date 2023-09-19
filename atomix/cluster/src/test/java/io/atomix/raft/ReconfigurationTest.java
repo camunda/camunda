@@ -37,6 +37,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Nested;
@@ -317,7 +318,7 @@ final class ReconfigurationTest {
   @Nested
   final class Leaving {
     @Test
-    void shouldLeaveCluster(@TempDir final Path tmp) {
+    void followerCanLeaveCluster(@TempDir final Path tmp) {
       // given - a cluster with 3 members
       final var id1 = MemberId.from("1");
       final var id2 = MemberId.from("2");
@@ -330,18 +331,52 @@ final class ReconfigurationTest {
       CompletableFuture.allOf(
               m1.bootstrap(id1, id2, id3), m2.bootstrap(id1, id2, id3), m3.bootstrap(id1, id2, id3))
           .join();
+      awaitLeader(m1, m2, m3);
 
       // when - existing member leaves
-      m3.leave().join();
+      final var follower = Stream.of(m1, m2, m3).filter(s -> !s.isLeader()).findAny().orElseThrow();
+      final var others = Stream.of(m1, m2, m3).filter(s -> s != follower).toList();
+      follower.leave().join();
 
       // then - all members show a configuration with 2 active members
       final var expected =
-          List.of(
-              new DefaultRaftMember(id1, Type.ACTIVE, Instant.now()),
-              new DefaultRaftMember(id2, Type.ACTIVE, Instant.now()));
+          others.stream().map(server -> server.cluster().getLocalMember()).toList();
+      assertThat(others)
+          .allSatisfy(
+              member ->
+                  assertThat(member.cluster().getMembers())
+                      .containsExactlyInAnyOrderElementsOf(expected));
+    }
 
-      assertThat(m1.cluster().getMembers()).containsExactlyInAnyOrderElementsOf(expected);
-      assertThat(m2.cluster().getMembers()).containsExactlyInAnyOrderElementsOf(expected);
+    @Test
+    void leaderCanLeaveCluster(@TempDir final Path tmp) {
+      // given - a cluster with 3 members
+      final var id1 = MemberId.from("1");
+      final var id2 = MemberId.from("2");
+      final var id3 = MemberId.from("3");
+
+      final var m1 = createServer(tmp, createMembershipService(id1, id2, id3));
+      final var m2 = createServer(tmp, createMembershipService(id2, id1, id3));
+      final var m3 = createServer(tmp, createMembershipService(id3, id1, id2));
+
+      CompletableFuture.allOf(
+              m1.bootstrap(id1, id2, id3), m2.bootstrap(id1, id2, id3), m3.bootstrap(id1, id2, id3))
+          .join();
+      awaitLeader(m1, m2, m3);
+
+      // when - existing member leaves
+      final var leader = Stream.of(m1, m2, m3).filter(RaftServer::isLeader).findAny().orElseThrow();
+      final var others = Stream.of(m1, m2, m3).filter(s -> s != leader).toList();
+      leader.leave().join();
+
+      // then - all members show a configuration with 2 active members
+      final var expected =
+          others.stream().map(server -> server.cluster().getLocalMember()).toList();
+      assertThat(others)
+          .allSatisfy(
+              member ->
+                  assertThat(member.cluster().getMembers())
+                      .containsExactlyInAnyOrderElementsOf(expected));
     }
 
     @Test
