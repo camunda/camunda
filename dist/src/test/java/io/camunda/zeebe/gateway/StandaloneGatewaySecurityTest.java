@@ -19,7 +19,7 @@ import io.camunda.zeebe.gateway.impl.configuration.SecurityCfg;
 import io.camunda.zeebe.gateway.impl.stream.JobStreamClient;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.shared.ActorClockConfiguration;
-import io.camunda.zeebe.shared.IdleStrategyConfig;
+import io.camunda.zeebe.shared.IdleStrategyConfig.IdleStrategySupplier;
 import io.camunda.zeebe.test.util.asserts.SslAssert;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
@@ -138,9 +138,8 @@ final class StandaloneGatewaySecurityTest {
   private StandaloneGateway buildGateway(final GatewayCfg gatewayCfg) {
     atomixCluster = new GatewayClusterConfiguration().atomixCluster(gatewayCfg);
     final ActorSchedulerConfiguration actorSchedulerConfiguration =
-        new ActorSchedulerConfiguration(
-            gatewayCfg, new ActorClockConfiguration(false), new IdleStrategyConfig());
-    actorScheduler = actorSchedulerConfiguration.actorScheduler();
+        new ActorSchedulerConfiguration(gatewayCfg, new ActorClockConfiguration(false));
+    actorScheduler = actorSchedulerConfiguration.actorScheduler(IdleStrategySupplier.ofDefault());
     final BrokerClientComponent brokerClientComponent =
         new BrokerClientComponent(gatewayCfg, atomixCluster, actorScheduler);
     brokerClient = brokerClientComponent.brokerClient();
