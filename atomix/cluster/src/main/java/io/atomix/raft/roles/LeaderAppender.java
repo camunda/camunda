@@ -742,7 +742,7 @@ final class LeaderAppender {
 
   private boolean hasMoreEntries(final RaftMemberContext member) {
     // If the member's nextIndex is an entry in the local log then more entries can be sent.
-    return member.hasNextEntry();
+    return !member.hasReplicationContext() || member.hasNextEntry();
   }
 
   private void handleAppendResponseError(
