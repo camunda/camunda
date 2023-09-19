@@ -6,9 +6,9 @@
  */
 
 import {DecisionDto} from 'modules/api/decisions/fetchGroupedDecisions';
-import {mockGetRequest} from '../mockRequest';
+import {mockPostRequest} from '../mockRequest';
 
 const mockFetchGroupedDecisions = () =>
-  mockGetRequest<DecisionDto[]>('/api/decisions/grouped');
+  mockPostRequest<DecisionDto[]>('/api/decisions/grouped');
 
 export {mockFetchGroupedDecisions};

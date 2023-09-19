@@ -10,6 +10,7 @@ import {DecisionDto} from 'modules/api/decisions/fetchGroupedDecisions';
 const groupedDecisions: DecisionDto[] = [
   {
     decisionId: 'invoice-assign-approver',
+    tenantId: '<default>',
     name: 'Assign Approver Group',
     decisions: [
       {
@@ -27,6 +28,7 @@ const groupedDecisions: DecisionDto[] = [
   },
   {
     decisionId: 'invoiceClassification',
+    tenantId: '<default>',
     name: null,
     decisions: [
       {
@@ -39,6 +41,7 @@ const groupedDecisions: DecisionDto[] = [
   },
   {
     decisionId: 'calc-key-figures',
+    tenantId: '<default>',
     name: 'Calculate Credit History Key Figures',
     decisions: [
       {

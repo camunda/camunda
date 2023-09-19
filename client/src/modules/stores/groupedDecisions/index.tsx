@@ -55,9 +55,11 @@ class GroupedDecisions extends NetworkReconnectionHandler {
 
   fetchDecisions = this.retryOnConnectionLost(async () => {
     this.startFetching();
-    const {name} = getDecisionInstanceFilters(getSearchString());
+    const {name, tenant} = getDecisionInstanceFilters(getSearchString());
 
-    const response = await fetchGroupedDecisions();
+    const response = await fetchGroupedDecisions(
+      tenant === 'all' ? undefined : tenant,
+    );
 
     if (response.isSuccess) {
       const decisions = response.data;

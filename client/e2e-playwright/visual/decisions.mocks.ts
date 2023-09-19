@@ -11,6 +11,7 @@ import {DecisionDto} from 'modules/api/decisions/fetchGroupedDecisions';
 const mockGroupedDecisions: DecisionDto[] = [
   {
     decisionId: 'invoiceAssignApprover',
+    tenantId: '<default>',
     name: 'Assign Approver Group',
     permissions: [],
     decisions: [
@@ -28,6 +29,7 @@ const mockGroupedDecisions: DecisionDto[] = [
   },
   {
     decisionId: 'amountToString',
+    tenantId: '<default>',
     name: 'Convert amount to string',
     permissions: [],
     decisions: [
@@ -40,6 +42,7 @@ const mockGroupedDecisions: DecisionDto[] = [
   },
   {
     decisionId: 'invoiceClassification',
+    tenantId: '<default>',
     name: 'Invoice Classification',
     permissions: [],
     decisions: [

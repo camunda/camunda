@@ -16,11 +16,14 @@ type DecisionDto = {
     decisionId: string;
   }[];
   permissions?: ResourceBasedPermissionDto[] | null;
+  tenantId: string;
 };
 
-const fetchGroupedDecisions = async () => {
+const fetchGroupedDecisions = async (tenantId?: string) => {
   return requestAndParse<DecisionDto[]>({
     url: '/api/decisions/grouped',
+    method: 'POST',
+    body: {tenantId},
   });
 };
 
