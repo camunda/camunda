@@ -15,7 +15,7 @@ public class WebSecurityProperties {
            + " base-uri 'self';"
            + " script-src 'self';"
            + " script-src-elem 'self' cdn.jsdelivr.net *.mixpanel.com *.osano.com *.appcues.com;"
-           + " connect-src 'self' *.appcues.net wss://api.appcues.net;"
+           + " connect-src 'self' cdn.jsdelivr.net *.appcues.net wss://api.appcues.net;"
            + " style-src 'self' 'unsafe-inline' cdn.jsdelivr.net *.appcues.com;"
            + " img-src * data:;"
            + " block-all-mixed-content;"

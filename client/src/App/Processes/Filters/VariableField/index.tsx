@@ -27,6 +27,7 @@ import {IconTextAreaField} from 'modules/components/IconTextAreaField';
 import {IS_VARIABLE_VALUE_IN_FILTER_ENABLED} from 'modules/feature-flags';
 import {IconTextInputField} from 'modules/components/IconTextInputField';
 import {Toggle, VariableValueContainer} from './styled';
+import {MultipleValuesModal} from './MultipleValuesModal';
 
 const Variable: React.FC = observer(() => {
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -59,6 +60,8 @@ const Variable: React.FC = observer(() => {
         <VariableValueContainer>
           <Field
             name="variableValues"
+            // this key is needed to trigger validation after the user switched multiple mode
+            key={isInMultipleMode ? 'multipleValues' : 'singleValues'}
             validate={mergeValidators(
               validateVariableValuesComplete,
               isInMultipleMode
@@ -72,11 +75,17 @@ const Variable: React.FC = observer(() => {
                   <IconTextAreaField
                     {...input}
                     id="variableValues"
-                    placeholder="separated by comma"
+                    placeholder="In JSON format, separated by comma"
                     data-testid="optional-filter-variable-value"
                     labelText="Values"
-                    buttonLabel="Open modal"
-                    onIconClick={() => {}}
+                    buttonLabel="Open editor modal"
+                    onIconClick={() => {
+                      setIsModalVisible(true);
+                      tracking.track({
+                        eventName: 'json-editor-opened',
+                        variant: 'search-multiple-variables',
+                      });
+                    }}
                     Icon={Popup}
                   />
                 );
@@ -112,7 +121,6 @@ const Variable: React.FC = observer(() => {
               aria-label="Multiple"
               toggled={isInMultipleMode}
               onToggle={() => {
-                form.change('variableValues', '');
                 setIsInMultipleMode(!isInMultipleMode);
               }}
             />
@@ -120,29 +128,52 @@ const Variable: React.FC = observer(() => {
         </VariableValueContainer>
       </Stack>
 
-      {createPortal(
-        <JSONEditorModal
-          isVisible={isModalVisible}
-          title="Edit Variable Value"
-          value={formState.values?.variableValues}
-          onClose={() => {
-            setIsModalVisible(false);
-            tracking.track({
-              eventName: 'json-editor-closed',
-              variant: 'search-variable',
-            });
-          }}
-          onApply={(value) => {
-            form.change('variableValues', value);
-            setIsModalVisible(false);
-            tracking.track({
-              eventName: 'json-editor-saved',
-              variant: 'search-variable',
-            });
-          }}
-        />,
-        document.body,
-      )}
+      {isInMultipleMode
+        ? createPortal(
+            <MultipleValuesModal
+              isVisible={isModalVisible}
+              initialValue={formState.values?.variableValues}
+              onClose={() => {
+                setIsModalVisible(false);
+                tracking.track({
+                  eventName: 'json-editor-closed',
+                  variant: 'search-multiple-variables',
+                });
+              }}
+              onApply={(value) => {
+                form.change('variableValues', value);
+                setIsModalVisible(false);
+                tracking.track({
+                  eventName: 'json-editor-saved',
+                  variant: 'search-multiple-variables',
+                });
+              }}
+            />,
+            document.body,
+          )
+        : createPortal(
+            <JSONEditorModal
+              isVisible={isModalVisible}
+              title="Edit Variable Value"
+              value={formState.values?.variableValues}
+              onClose={() => {
+                setIsModalVisible(false);
+                tracking.track({
+                  eventName: 'json-editor-closed',
+                  variant: 'search-variable',
+                });
+              }}
+              onApply={(value) => {
+                form.change('variableValues', value);
+                setIsModalVisible(false);
+                tracking.track({
+                  eventName: 'json-editor-saved',
+                  variant: 'search-variable',
+                });
+              }}
+            />,
+            document.body,
+          )}
     </>
   );
 });

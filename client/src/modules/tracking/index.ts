@@ -129,15 +129,27 @@ type Events =
     }
   | {
       eventName: 'json-editor-opened';
-      variant: 'add-variable' | 'edit-variable' | 'search-variable';
+      variant:
+        | 'add-variable'
+        | 'edit-variable'
+        | 'search-variable'
+        | 'search-multiple-variables';
     }
   | {
       eventName: 'json-editor-closed';
-      variant: 'add-variable' | 'edit-variable' | 'search-variable';
+      variant:
+        | 'add-variable'
+        | 'edit-variable'
+        | 'search-variable'
+        | 'search-multiple-variables';
     }
   | {
       eventName: 'json-editor-saved';
-      variant: 'add-variable' | 'edit-variable' | 'search-variable';
+      variant:
+        | 'add-variable'
+        | 'edit-variable'
+        | 'search-variable'
+        | 'search-multiple-variables';
     }
   | {
       eventName: 'instance-history-end-time-toggled';

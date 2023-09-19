@@ -31,7 +31,7 @@ const ERRORS = {
     nameUnfilled: 'Name has to be filled',
     valueUnfilled: 'Value has to be filled',
     valueInvalid: 'Value has to be JSON',
-    mulipleValueInvalid: 'Values have to be comma separated JSON',
+    mulipleValueInvalid: 'Values have to be in JSON format, separated by comma',
   },
 } as const;
 
@@ -288,4 +288,5 @@ export {
   validateDecisionIdsLength,
   validatesDecisionIdsComplete,
   validateTimeRange,
+  ERRORS,
 };

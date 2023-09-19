@@ -29,6 +29,7 @@ import {
 import {removeOptionalFilter} from 'modules/testUtils/removeOptionalFilter';
 import {mockGetUser} from 'modules/mocks/api/getUser';
 import {authenticationStore} from 'modules/stores/authentication';
+import {IS_VARIABLE_VALUE_IN_FILTER_ENABLED} from 'modules/feature-flags';
 
 jest.unmock('modules/utils/date/formatDate');
 
@@ -410,6 +411,36 @@ describe('Filters', () => {
       await within(screen.getByRole('dialog')).findByTestId('monaco-editor'),
     ).toBeInTheDocument();
   });
+
+  (IS_VARIABLE_VALUE_IN_FILTER_ENABLED ? it : it.skip)(
+    'should have plain editor for variable value filter (multiple values)',
+    async () => {
+      const {user} = render(<Filters />, {
+        wrapper: getWrapper(),
+      });
+
+      await user.click(screen.getByRole('button', {name: 'More Filters'}));
+      await user.click(screen.getByText('Variable'));
+      await user.click(screen.getByRole('switch', {name: 'Multiple'}));
+      await user.type(screen.getByLabelText(/^values$/i), '1, 2, 3');
+      await user.click(
+        screen.getByRole('button', {name: /open editor modal/i}),
+      );
+
+      const withinDialog = within(screen.getByRole('dialog'));
+      expect(await withinDialog.findByText('1, 2, 3')).toBeInTheDocument();
+
+      await user.type(withinDialog.getByRole('textbox'), 'invalid');
+      expect(withinDialog.getByRole('button', {name: /apply/i})).toBeDisabled();
+
+      await user.clear(withinDialog.getByRole('textbox'));
+      await user.type(withinDialog.getByRole('textbox'), '"a", "b", "c"');
+      expect(withinDialog.getByRole('button', {name: /apply/i})).toBeEnabled();
+
+      await user.click(withinDialog.getByRole('button', {name: /apply/i}));
+      expect(screen.getByLabelText(/^values$/i)).toHaveValue('"a", "b", "c"');
+    },
+  );
 
   it('should enable the reset button', async () => {
     jest.useFakeTimers();
