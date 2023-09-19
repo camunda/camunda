@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.value.MessageRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -63,7 +64,8 @@ public final class PublishMessageTest {
         .hasName("order canceled")
         .hasCorrelationKey("order-123")
         .hasTimeToLive(1000L)
-        .hasMessageId("");
+        .hasMessageId("")
+        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   }
 
   @Test
@@ -103,6 +105,19 @@ public final class PublishMessageTest {
 
     // then
     Assertions.assertThat(publishedRecord.getValue()).hasTimeToLive(-1L);
+  }
+
+  @Test
+  public void shouldPublishMessageWithTenantId() {
+    // given
+    final var tenantId = "tenant-1";
+
+    // when
+    final Record<MessageRecordValue> publishedRecord =
+        messageClient.withTenantId(tenantId).publish();
+
+    // then
+    Assertions.assertThat(publishedRecord.getValue()).hasTenantId(tenantId);
   }
 
   @Test
