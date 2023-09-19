@@ -1678,6 +1678,7 @@
                   <dep>org.junit.vintage:junit-vintage-engine</dep>
                   <dep>com.tngtech.archunit:archunit-junit5-engine</dep>
                   <dep>org.openjdk.jmh:jmh-generator-annprocess</dep>
+                  <dep>org.postgresql:postgresql</dep>
                 </ignoredUnusedDeclaredDependencies>
               </configuration>
             </execution>
