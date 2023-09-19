@@ -8,112 +8,62 @@
 package io.camunda.zeebe.shared;
 
 import io.camunda.zeebe.scheduler.ActorScheduler.ActorSchedulerBuilder;
-import io.camunda.zeebe.util.EnsureUtil;
+import io.camunda.zeebe.shared.IdleStrategyConfig.IdleStrategyProperties;
 import java.time.Duration;
-import java.util.Objects;
 import java.util.function.Supplier;
 import org.agrona.concurrent.BackoffIdleStrategy;
 import org.agrona.concurrent.IdleStrategy;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration(proxyBeanMethods = false)
-@ConfigurationProperties(prefix = "zeebe.actor.idle")
+@EnableConfigurationProperties(IdleStrategyProperties.class)
 public final class IdleStrategyConfig {
-  private static final Duration DEFAULT_MAX_PARK_PERIOD =
-      Duration.ofNanos(ActorSchedulerBuilder.DEFAULT_MIN_PARK_PERIOD_NS);
-  private static final Duration DEFAULT_MIN_PARK_PERIOD =
-      Duration.ofNanos(ActorSchedulerBuilder.DEFAULT_MAX_PARK_PERIOD_NS);
+  private final IdleStrategyProperties properties;
 
-  private long maxSpins = ActorSchedulerBuilder.DEFAULT_MAX_SPINS;
-  private long maxYields = ActorSchedulerBuilder.DEFAULT_MAX_YIELDS;
-  private Duration minParkPeriod = DEFAULT_MAX_PARK_PERIOD;
-  private Duration maxParkPeriod = DEFAULT_MAX_PARK_PERIOD;
-
-  public long getMaxSpins() {
-    return maxSpins;
+  @Autowired
+  public IdleStrategyConfig(final IdleStrategyProperties properties) {
+    this.properties = properties;
   }
 
-  public IdleStrategyConfig setMaxSpins(final long maxSpins) {
-    this.maxSpins = EnsureUtil.ensureGreaterThan("maxSpins", maxSpins, 0);
-    return this;
-  }
-
-  public long getMaxYields() {
-    return maxYields;
-  }
-
-  public IdleStrategyConfig setMaxYields(final long maxYields) {
-    this.maxYields = EnsureUtil.ensureGreaterThan("maxYields", maxYields, 0);
-    return this;
-  }
-
-  public Duration getMinParkPeriod() {
-    return minParkPeriod;
-  }
-
-  public IdleStrategyConfig setMinParkPeriod(final Duration minParkPeriod) {
-    this.minParkPeriod = minParkPeriod != null ? minParkPeriod : DEFAULT_MIN_PARK_PERIOD;
-    return this;
-  }
-
-  public Duration getMaxParkPeriod() {
-    return maxParkPeriod;
-  }
-
-  public IdleStrategyConfig setMaxParkPeriod(final Duration maxParkPeriod) {
-    this.maxParkPeriod = maxParkPeriod != null ? maxParkPeriod : DEFAULT_MAX_PARK_PERIOD;
-    return this;
+  public IdleStrategyConfig() {
+    this(new IdleStrategyProperties(null, null, null, null));
   }
 
   public Supplier<IdleStrategy> toSupplier() {
-    return new IdleStrategySupplier(this);
+    final var maxSpins = properties.maxSpins();
+    final var maxYields = properties.maxYields();
+    final var minParkPeriod = properties.minParkPeriodNs();
+    final var maxParkPeriod = properties.maxParkPeriodNs();
+
+    return () -> new BackoffIdleStrategy(maxSpins, maxYields, minParkPeriod, maxParkPeriod);
   }
 
-  @Override
-  public int hashCode() {
-    return Objects.hash(maxSpins, maxYields, minParkPeriod, maxParkPeriod);
-  }
-
-  @Override
-  public boolean equals(final Object o) {
-    if (this == o) {
-      return true;
-    }
-
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-
-    final IdleStrategyConfig that = (IdleStrategyConfig) o;
-    return maxSpins == that.maxSpins
-        && maxYields == that.maxYields
-        && Objects.equals(minParkPeriod, that.minParkPeriod)
-        && Objects.equals(maxParkPeriod, that.maxParkPeriod);
-  }
-
-  @Override
-  public String toString() {
-    return "IdleStrategyConfig{"
-        + "maxSpins="
-        + maxSpins
-        + ", maxYields="
-        + maxYields
-        + ", minParkPeriod="
-        + minParkPeriod
-        + ", maxParkPeriod="
-        + maxParkPeriod
-        + '}';
-  }
-
-  private record IdleStrategySupplier(IdleStrategyConfig config) implements Supplier<IdleStrategy> {
+  @ConfigurationProperties(prefix = "zeebe.actor.idle")
+  public record IdleStrategyProperties(
+      Integer maxSpins, Integer maxYields, Duration minParkPeriod, Duration maxParkPeriod) {
     @Override
-    public IdleStrategy get() {
-      return new BackoffIdleStrategy(
-          config.getMaxSpins(),
-          config.getMaxYields(),
-          config.getMinParkPeriod().toNanos(),
-          config.getMaxParkPeriod().toNanos());
+    public Integer maxSpins() {
+      return maxSpins == null ? ActorSchedulerBuilder.DEFAULT_MAX_SPINS : maxSpins;
+    }
+
+    @Override
+    public Integer maxYields() {
+      return maxYields == null ? ActorSchedulerBuilder.DEFAULT_MAX_YIELDS : maxYields;
+    }
+
+    public long minParkPeriodNs() {
+      return minParkPeriod == null
+          ? ActorSchedulerBuilder.DEFAULT_MIN_PARK_PERIOD_NS
+          : minParkPeriod.toNanos();
+    }
+
+    public long maxParkPeriodNs() {
+      return maxParkPeriod == null
+          ? ActorSchedulerBuilder.DEFAULT_MAX_PARK_PERIOD_NS
+          : maxParkPeriod.toNanos();
     }
   }
 }
