@@ -20,18 +20,6 @@ import org.junit.jupiter.api.Test;
 class ClusterTopologyTest {
   @Test
   void canInitializeClusterWithPreExistingMembers() {
-    // given
-    final var expectedTopology =
-        new ClusterTopology(
-            0,
-            Map.of(
-                member(1),
-                withActivePartition(0, 1),
-                member(2),
-                withActivePartition(0, 2),
-                member(3),
-                withActivePartition(0, 3)),
-            ClusterChangePlan.empty());
     // when
     final var topology =
         ClusterTopology.init()
@@ -43,17 +31,23 @@ class ClusterTopologyTest {
                 member(3), MemberState.initializeAsActive(Map.of(3, PartitionState.active(1))));
 
     // then
-    assertThat(topology).isEqualTo(expectedTopology);
+    ClusterTopologyAssert.assertThatClusterTopology(topology)
+        .hasMemberWithState(1, State.ACTIVE)
+        .member(1)
+        .hasPartitionWithState(1, PartitionState.active(1));
+    ClusterTopologyAssert.assertThatClusterTopology(topology)
+        .hasMemberWithState(2, State.ACTIVE)
+        .member(2)
+        .hasPartitionWithState(2, PartitionState.active(1));
+    ClusterTopologyAssert.assertThatClusterTopology(topology)
+        .hasMemberWithState(3, State.ACTIVE)
+        .member(3)
+        .hasPartitionWithState(3, PartitionState.active(1));
   }
 
   @Test
   void shouldMergeConcurrentUpdatesToMembers() {
     // given
-    final var expectedMergedTopology =
-        new ClusterTopology(
-            0,
-            Map.of(member(1), withActivePartition(1, 1), member(2), withActivePartition(1, 2)),
-            ClusterChangePlan.empty());
     final var topology =
         ClusterTopology.init()
             .addMember(
@@ -73,25 +67,22 @@ class ClusterTopologyTest {
     final var mergedTopologyTwo = topologyInMemberTwo.merge(topologyInMemberOne);
 
     // then
-    assertThat(mergedTopologyOne).isEqualTo(expectedMergedTopology);
-    assertThat(mergedTopologyTwo).isEqualTo(expectedMergedTopology);
+
+    ClusterTopologyAssert.assertThatClusterTopology(mergedTopologyOne)
+        .hasMemberWithState(1, State.ACTIVE)
+        .member(1)
+        .hasPartitionWithState(1, PartitionState.active(1));
+    ClusterTopologyAssert.assertThatClusterTopology(mergedTopologyOne)
+        .hasMemberWithState(2, State.ACTIVE)
+        .member(2)
+        .hasPartitionWithState(2, PartitionState.active(1));
+
+    assertThat(mergedTopologyTwo).isEqualTo(mergedTopologyOne);
   }
 
   @Test
   void shouldAddANewMember() {
     // given
-    final var expectedTopology =
-        new ClusterTopology(
-            0,
-            Map.of(
-                member(1),
-                withActivePartition(0, 1),
-                member(2),
-                withActivePartition(0, 2),
-                member(3),
-                new MemberState(1, State.JOINING, Map.of())),
-            ClusterChangePlan.empty());
-
     final var initialTopology =
         ClusterTopology.init()
             .addMember(
@@ -106,13 +97,17 @@ class ClusterTopologyTest {
         initialTopology.addMember(member(3), MemberState.uninitialized().toJoining());
 
     // then
-    assertThat(updateTopology).isEqualTo(expectedTopology);
+    ClusterTopologyAssert.assertThatClusterTopology(updateTopology)
+        .describedAs("Update topology must have the new member and the old members")
+        .hasMemberWithState(3, State.JOINING)
+        .hasMemberWithState(1, State.ACTIVE)
+        .hasMemberWithState(2, State.ACTIVE);
 
     // when
     topologyOnAnotherMember = topologyOnAnotherMember.merge(updateTopology);
 
     // then
-    assertThat(topologyOnAnotherMember).isEqualTo(expectedTopology);
+    assertThat(topologyOnAnotherMember).isEqualTo(updateTopology);
   }
 
   @Test
@@ -158,12 +153,5 @@ class ClusterTopologyTest {
 
   private MemberId member(final int id) {
     return MemberId.from(Integer.toString(id));
-  }
-
-  private MemberState withActivePartition(final int version, final int partitionId) {
-    return new MemberState(
-        version,
-        State.ACTIVE,
-        Map.of(partitionId, new PartitionState(PartitionState.State.ACTIVE, 1)));
   }
 }

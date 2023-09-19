@@ -51,6 +51,12 @@ public final class ClusterTopologyAssert
     return MemberStateAssert.assertThat(actual.members().get(memberId));
   }
 
+  public MemberStateAssert member(final int memberId) {
+    final MemberId id = MemberId.from(String.valueOf(memberId));
+    assertThat(actual.members()).containsKey(id);
+    return MemberStateAssert.assertThat(actual.members().get(id));
+  }
+
   public ClusterTopologyAssert hasMemberWithState(final int member, final MemberState.State state) {
     final var memberId = MemberId.from(Integer.toString(member));
     assertThat(actual.members()).containsKey(memberId);
@@ -58,7 +64,7 @@ public final class ClusterTopologyAssert
     return this;
   }
 
-  ClusterTopologyAssert hasOnlyMembers(final Set<Integer> members) {
+  public ClusterTopologyAssert hasOnlyMembers(final Set<Integer> members) {
     final var memberIds =
         members.stream().map(id -> MemberId.from(String.valueOf(id))).collect(Collectors.toSet());
     assertThat(actual.members()).containsOnlyKeys(memberIds);

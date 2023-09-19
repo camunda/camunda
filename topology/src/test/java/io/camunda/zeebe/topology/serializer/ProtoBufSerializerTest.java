@@ -13,7 +13,6 @@ import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.topology.gossip.ClusterTopologyGossipState;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.MemberState;
-import io.camunda.zeebe.topology.state.MemberState.State;
 import io.camunda.zeebe.topology.state.PartitionState;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.MemberJoinOperation;
@@ -83,7 +82,7 @@ final class ProtoBufSerializerTest {
 
   private static ClusterTopology topologyWithOneJoiningMember() {
     return ClusterTopology.init()
-        .addMember(MemberId.from("1"), new MemberState(0, State.JOINING, Map.of()));
+        .addMember(MemberId.from("1"), MemberState.uninitialized().toJoining());
   }
 
   private static ClusterTopology topologyWithOneLeavingMember() {
