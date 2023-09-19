@@ -17,4 +17,9 @@ public class NoopTopologyMembershipChangeExecutor implements TopologyMembershipC
   public ActorFuture<Void> addBroker(final MemberId memberId) {
     return CompletableActorFuture.completed(null);
   }
+
+  @Override
+  public ActorFuture<Void> removeBroker(final MemberId memberId) {
+    return CompletableActorFuture.completed(null);
+  }
 }

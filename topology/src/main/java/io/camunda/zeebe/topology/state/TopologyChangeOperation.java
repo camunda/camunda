@@ -19,6 +19,8 @@ public sealed interface TopologyChangeOperation {
 
   record MemberJoinOperation(MemberId memberId) implements TopologyChangeOperation {}
 
+  record MemberLeaveOperation(MemberId memberId) implements TopologyChangeOperation {}
+
   sealed interface PartitionChangeOperation extends TopologyChangeOperation {
     int partitionId();
 
