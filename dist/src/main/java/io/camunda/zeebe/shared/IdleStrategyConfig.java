@@ -21,7 +21,7 @@ import org.springframework.context.annotation.Configuration;
 public final class IdleStrategyConfig {
   private static final long DEFAULT_MAX_SPINS = 100;
   private static final long DEFAULT_MAX_YIELDS = 100;
-  private static final Duration DEFAULT_MAX_PARK_PERIOD = Duration.ofMillis(1);
+  private static final Duration DEFAULT_MAX_PARK_PERIOD = Duration.ofNanos(1);
   private static final Duration DEFAULT_MIN_PARK_PERIOD = Duration.ofMillis(1);
 
   private long maxSpins = DEFAULT_MAX_SPINS;
