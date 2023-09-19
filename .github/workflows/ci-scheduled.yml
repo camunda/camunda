@@ -9,12 +9,22 @@ on:
     - cron: '0 5 * * 1-5'
 
 jobs:
-  master:
-    name: run
+  master-es:
+    name: run-es
     uses: ./.github/workflows/ci-reusable.yml
     secrets: inherit
     with:
       branch: master
+      testProfile: docker-es
+      database: elasticsearch
+  master-os:
+    name: run-os
+    uses: ./.github/workflows/ci-reusable.yml
+    secrets: inherit
+    with:
+      branch: master
+      testProfile: docker-os
+      database: opensearch
   stable_8_0:
     name: run
     uses: camunda/tasklist/.github/workflows/ci-reusable.yml@stable/8.0
