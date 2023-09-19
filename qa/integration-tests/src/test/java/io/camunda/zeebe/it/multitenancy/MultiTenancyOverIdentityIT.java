@@ -453,7 +453,7 @@ public class MultiTenancyOverIdentityIT {
    * Helper class to perform queries against the Postgres database. It will automatically create and
    * close the connection. To be used within a try-with-resources block.
    */
-  private static class PostgresHelper implements AutoCloseable {
+  private static final class PostgresHelper implements AutoCloseable {
     private final Supplier<Connection> connector;
     private Connection connection;
 
