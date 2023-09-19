@@ -103,7 +103,8 @@ public final class PendingProcessMessageSubscriptionChecker
         subscription.getRecord().getBpmnProcessIdBuffer(),
         subscription.getRecord().getMessageNameBuffer(),
         subscription.getRecord().getCorrelationKeyBuffer(),
-        subscription.getRecord().isInterrupting());
+        subscription.getRecord().isInterrupting(),
+        subscription.getRecord().getTenantId());
   }
 
   private void sendCloseCommand(final ProcessMessageSubscription subscription) {
@@ -111,6 +112,7 @@ public final class PendingProcessMessageSubscriptionChecker
         subscription.getRecord().getSubscriptionPartitionId(),
         subscription.getRecord().getProcessInstanceKey(),
         subscription.getRecord().getElementInstanceKey(),
-        subscription.getRecord().getMessageNameBuffer());
+        subscription.getRecord().getMessageNameBuffer(),
+        subscription.getRecord().getTenantId());
   }
 }

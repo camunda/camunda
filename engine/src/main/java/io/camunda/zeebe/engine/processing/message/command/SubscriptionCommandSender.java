@@ -58,7 +58,8 @@ public class SubscriptionCommandSender {
       final DirectBuffer bpmnProcessId,
       final DirectBuffer messageName,
       final DirectBuffer correlationKey,
-      final boolean closeOnCorrelate) {
+      final boolean closeOnCorrelate,
+      final String tenantId) {
     return handleFollowUpCommandBasedOnPartition(
         subscriptionPartitionId,
         ValueType.MESSAGE_SUBSCRIPTION,
@@ -70,7 +71,8 @@ public class SubscriptionCommandSender {
             .setMessageKey(-1)
             .setMessageName(messageName)
             .setCorrelationKey(correlationKey)
-            .setInterrupting(closeOnCorrelate));
+            .setInterrupting(closeOnCorrelate)
+            .setTenantId(tenantId));
   }
 
   /**
@@ -85,6 +87,7 @@ public class SubscriptionCommandSender {
    * @param messageName the name of the message for which the subscription should be correlated
    * @param correlationKey the correlation key for which the message should be correlated
    * @param closeOnCorrelate indicates whether the subscription should be closed after correlation
+   * @param tenantId the tenant id the message subscription is created for
    */
   public void sendDirectOpenMessageSubscription(
       final int subscriptionPartitionId,
@@ -93,7 +96,8 @@ public class SubscriptionCommandSender {
       final DirectBuffer bpmnProcessId,
       final DirectBuffer messageName,
       final DirectBuffer correlationKey,
-      final boolean closeOnCorrelate) {
+      final boolean closeOnCorrelate,
+      final String tenantId) {
     interPartitionCommandSender.sendCommand(
         subscriptionPartitionId,
         ValueType.MESSAGE_SUBSCRIPTION,
@@ -105,7 +109,8 @@ public class SubscriptionCommandSender {
             .setMessageKey(-1)
             .setMessageName(messageName)
             .setCorrelationKey(correlationKey)
-            .setInterrupting(closeOnCorrelate));
+            .setInterrupting(closeOnCorrelate)
+            .setTenantId(tenantId));
   }
 
   public boolean openProcessMessageSubscription(
@@ -192,7 +197,8 @@ public class SubscriptionCommandSender {
       final long processInstanceKey,
       final long elementInstanceKey,
       final DirectBuffer bpmnProcessId,
-      final DirectBuffer messageName) {
+      final DirectBuffer messageName,
+      final String tenantId) {
     return handleFollowUpCommandBasedOnPartition(
         subscriptionPartitionId,
         ValueType.MESSAGE_SUBSCRIPTION,
@@ -202,14 +208,16 @@ public class SubscriptionCommandSender {
             .setElementInstanceKey(elementInstanceKey)
             .setBpmnProcessId(bpmnProcessId)
             .setMessageKey(-1)
-            .setMessageName(messageName));
+            .setMessageName(messageName)
+            .setTenantId(tenantId));
   }
 
   public boolean closeMessageSubscription(
       final int subscriptionPartitionId,
       final long processInstanceKey,
       final long elementInstanceKey,
-      final DirectBuffer messageName) {
+      final DirectBuffer messageName,
+      final String tenantId) {
     return handleFollowUpCommandBasedOnPartition(
         subscriptionPartitionId,
         ValueType.MESSAGE_SUBSCRIPTION,
@@ -218,7 +226,8 @@ public class SubscriptionCommandSender {
             .setProcessInstanceKey(processInstanceKey)
             .setElementInstanceKey(elementInstanceKey)
             .setMessageKey(-1L)
-            .setMessageName(messageName));
+            .setMessageName(messageName)
+            .setTenantId(tenantId));
   }
 
   /**
@@ -230,12 +239,14 @@ public class SubscriptionCommandSender {
    * @param processInstanceKey the related process instance key
    * @param elementInstanceKey the related element instance key
    * @param messageName the name of the message for which the subscription should be closed
+   * @param tenantId the tenant for which the subscription should be closed
    */
   public void sendDirectCloseMessageSubscription(
       final int subscriptionPartitionId,
       final long processInstanceKey,
       final long elementInstanceKey,
-      final DirectBuffer messageName) {
+      final DirectBuffer messageName,
+      final String tenantId) {
     interPartitionCommandSender.sendCommand(
         subscriptionPartitionId,
         ValueType.MESSAGE_SUBSCRIPTION,
@@ -244,7 +255,8 @@ public class SubscriptionCommandSender {
             .setProcessInstanceKey(processInstanceKey)
             .setElementInstanceKey(elementInstanceKey)
             .setMessageKey(-1L)
-            .setMessageName(messageName));
+            .setMessageName(messageName)
+            .setTenantId(tenantId));
   }
 
   public boolean closeProcessMessageSubscription(
@@ -268,7 +280,8 @@ public class SubscriptionCommandSender {
       final DirectBuffer bpmnProcessId,
       final long messageKey,
       final DirectBuffer messageName,
-      final DirectBuffer correlationKey) {
+      final DirectBuffer correlationKey,
+      final String tenantId) {
     return handleFollowUpCommandBasedOnPartition(
         Protocol.decodePartitionId(processInstanceKey),
         ValueType.MESSAGE_SUBSCRIPTION,
@@ -280,7 +293,8 @@ public class SubscriptionCommandSender {
             .setMessageName(messageName)
             .setCorrelationKey(correlationKey)
             .setMessageKey(messageKey)
-            .setInterrupting(false));
+            .setInterrupting(false)
+            .setTenantId(tenantId));
   }
 
   /**

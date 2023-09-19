@@ -281,7 +281,8 @@ public final class CatchEventBehavior {
         bpmnProcessId,
         messageName,
         correlationKey,
-        event.isInterrupting());
+        event.isInterrupting(),
+        context.getTenantId());
   }
 
   private void subscribeToTimerEvents(
@@ -412,16 +413,21 @@ public final class CatchEventBehavior {
     stateWriter.appendFollowUpEvent(
         subscription.getKey(), ProcessMessageSubscriptionIntent.DELETING, subscription.getRecord());
     sendCloseMessageSubscriptionCommand(
-        subscriptionPartitionId, processInstanceKey, elementInstanceKey, messageName);
+        subscriptionPartitionId,
+        processInstanceKey,
+        elementInstanceKey,
+        messageName,
+        subscription.getRecord().getTenantId());
   }
 
   private boolean sendCloseMessageSubscriptionCommand(
       final int subscriptionPartitionId,
       final long processInstanceKey,
       final long elementInstanceKey,
-      final DirectBuffer messageName) {
+      final DirectBuffer messageName,
+      final String tenantId) {
     return subscriptionCommandSender.closeMessageSubscription(
-        subscriptionPartitionId, processInstanceKey, elementInstanceKey, messageName);
+        subscriptionPartitionId, processInstanceKey, elementInstanceKey, messageName, tenantId);
   }
 
   private boolean sendOpenMessageSubscription(
@@ -431,7 +437,8 @@ public final class CatchEventBehavior {
       final DirectBuffer bpmnProcessId,
       final DirectBuffer messageName,
       final DirectBuffer correlationKey,
-      final boolean closeOnCorrelate) {
+      final boolean closeOnCorrelate,
+      final String tenantId) {
     return subscriptionCommandSender.openMessageSubscription(
         subscriptionPartitionId,
         processInstanceKey,
@@ -439,7 +446,8 @@ public final class CatchEventBehavior {
         bpmnProcessId,
         messageName,
         correlationKey,
-        closeOnCorrelate);
+        closeOnCorrelate,
+        tenantId);
   }
 
   /**
