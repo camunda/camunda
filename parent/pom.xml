@@ -129,6 +129,7 @@
     <version.checker-qual>3.38.0</version.checker-qual>
     <version.java-jwt>4.4.0</version.java-jwt>
     <version.reactive-streams>1.0.4</version.reactive-streams>
+    <version.postgresql>42.6.0</version.postgresql>
 
     <!-- maven plugins -->
     <plugin.version.antrun>3.1.0</plugin.version.antrun>
@@ -906,6 +907,12 @@
             <artifactId>jmock-testjar</artifactId>
           </exclusion>
         </exclusions>
+      </dependency>
+
+      <dependency>
+        <groupId>org.postgresql</groupId>
+        <artifactId>postgresql</artifactId>
+        <version>${version.postgresql}</version>
       </dependency>
 
       <dependency>
