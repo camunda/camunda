@@ -1,6 +1,6 @@
 import { MouseEvent, RefObject, useState } from "react"
 
-export default function useAttachedMenu(anchor: RefObject<Element>) {
+export function useAttachedMenu(anchor: RefObject<Element>) {
 	const [open, setOpen] = useState(false)
 	const [position, setPosition] = useState([
 		[-1, -1],

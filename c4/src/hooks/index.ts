@@ -6,3 +6,4 @@
  */
 
 export { useId } from "./useId"
+export { useAttachedMenu } from "./useAttachedMenu"
