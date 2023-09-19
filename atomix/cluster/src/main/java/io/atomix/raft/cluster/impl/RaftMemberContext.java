@@ -35,6 +35,7 @@ public final class RaftMemberContext {
   private final DefaultRaftMember member;
   private final DescriptiveStatistics timeStats = new DescriptiveStatistics(APPEND_WINDOW_SIZE);
   private final int maxAppendsPerMember;
+  private boolean open = true;
   private long term;
   private long configIndex;
   private long snapshotIndex;
@@ -84,6 +85,16 @@ public final class RaftMemberContext {
     }
   }
 
+  public void close() {
+    open = false;
+    member.close();
+    closeReader();
+  }
+
+  public boolean isOpen() {
+    return open;
+  }
+
   private void closeReader() {
     if (reader != null) {
       reader.close();
@@ -96,6 +107,9 @@ public final class RaftMemberContext {
   }
 
   public void openReplicationContext(final RaftLog log) {
+    if (!open) {
+      throw new IllegalStateException("Member context already closed");
+    }
     resetState(log);
     openReader(log);
   }
@@ -135,11 +149,12 @@ public final class RaftMemberContext {
    * @return Indicates whether an append request can be sent to the member.
    */
   public boolean canAppend() {
-    return inFlightAppendCount == 0
-        || (appendSucceeded
-            && inFlightAppendCount < maxAppendsPerMember
-            && System.currentTimeMillis() - (timeStats.getMean() / maxAppendsPerMember)
-                >= appendTime);
+    return open
+        && (inFlightAppendCount == 0
+            || (appendSucceeded
+                && inFlightAppendCount < maxAppendsPerMember
+                && System.currentTimeMillis() - (timeStats.getMean() / maxAppendsPerMember)
+                    >= appendTime));
   }
 
   /**
@@ -148,7 +163,7 @@ public final class RaftMemberContext {
    * @return Indicates whether a heartbeat can be sent to the member.
    */
   public boolean canHeartbeat() {
-    return inFlightAppendCount == 0;
+    return open && inFlightAppendCount == 0;
   }
 
   /** Flags the last append to the member as successful. */
@@ -197,7 +212,7 @@ public final class RaftMemberContext {
    * @return Indicates whether a configure request can be sent to the member.
    */
   public boolean canConfigure() {
-    return !configuring;
+    return open && !configuring;
   }
 
   /** Starts a configure request to the member. */
@@ -216,7 +231,7 @@ public final class RaftMemberContext {
    * @return Indicates whether an install request can be sent to the member.
    */
   public boolean canInstall() {
-    return !installing;
+    return open && !installing;
   }
 
   /** Starts an install request to the member. */

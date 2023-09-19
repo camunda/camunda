@@ -41,6 +41,8 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
   private Function<ConfigureRequest, CompletableFuture<ConfigureResponse>> configureHandler;
   private Function<ReconfigureRequest, CompletableFuture<ReconfigureResponse>> reconfigureHandler;
   private Function<JoinRequest, CompletableFuture<JoinResponse>> joinHandler;
+  private Function<LeaveRequest, CompletableFuture<LeaveResponse>> leaveHandler;
+
   private Function<InstallRequest, CompletableFuture<InstallResponse>> installHandler;
   private Function<TransferRequest, CompletableFuture<TransferResponse>> transferHandler;
   private Function<PollRequest, CompletableFuture<PollResponse>> pollHandler;
@@ -186,6 +188,21 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
   }
 
   @Override
+  public CompletableFuture<LeaveResponse> leave(
+      final MemberId memberId, final LeaveRequest request) {
+    final var responseFuture = new CompletableFuture<LeaveResponse>();
+    send(
+        memberId,
+        () ->
+            getServer(memberId)
+                .thenCompose(listener -> listener.leave(request))
+                .thenAccept(
+                    response -> send(localMemberId, () -> responseFuture.complete(response), null)),
+        responseFuture);
+    return responseFuture;
+  }
+
+  @Override
   public CompletableFuture<InstallResponse> install(
       final MemberId memberId, final InstallRequest request) {
     final var responseFuture = new CompletableFuture<InstallResponse>();
@@ -309,6 +326,17 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
   }
 
   @Override
+  public void registerLeaveHandler(
+      final Function<LeaveRequest, CompletableFuture<LeaveResponse>> handler) {
+    leaveHandler = handler;
+  }
+
+  @Override
+  public void unregisterLeaveHandler() {
+    leaveHandler = null;
+  }
+
+  @Override
   public void registerInstallHandler(
       final Function<InstallRequest, CompletableFuture<InstallResponse>> handler) {
     installHandler = handler;
@@ -416,6 +444,14 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
   CompletableFuture<JoinResponse> join(final JoinRequest request) {
     if (joinHandler != null) {
       return joinHandler.apply(request);
+    } else {
+      return CompletableFuture.failedFuture(new ConnectException());
+    }
+  }
+
+  CompletableFuture<LeaveResponse> leave(final LeaveRequest request) {
+    if (leaveHandler != null) {
+      return leaveHandler.apply(request);
     } else {
       return CompletableFuture.failedFuture(new ConnectException());
     }

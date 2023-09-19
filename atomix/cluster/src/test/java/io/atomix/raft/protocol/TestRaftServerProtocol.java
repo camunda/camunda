@@ -31,6 +31,7 @@ public class TestRaftServerProtocol extends TestRaftProtocol implements RaftServ
   private Function<ConfigureRequest, CompletableFuture<ConfigureResponse>> configureHandler;
   private Function<ReconfigureRequest, CompletableFuture<ReconfigureResponse>> reconfigureHandler;
   private Function<JoinRequest, CompletableFuture<JoinResponse>> joinHandler;
+  private Function<LeaveRequest, CompletableFuture<LeaveResponse>> leaveHandler;
   private Function<InstallRequest, CompletableFuture<InstallResponse>> installHandler;
   private Function<TransferRequest, CompletableFuture<TransferResponse>> transferHandler;
   private Function<PollRequest, CompletableFuture<PollResponse>> pollHandler;
@@ -79,6 +80,12 @@ public class TestRaftServerProtocol extends TestRaftProtocol implements RaftServ
   @Override
   public CompletableFuture<JoinResponse> join(final MemberId memberId, final JoinRequest request) {
     return scheduleTimeout(getServer(memberId).thenCompose(listener -> listener.join(request)));
+  }
+
+  @Override
+  public CompletableFuture<LeaveResponse> leave(
+      final MemberId memberId, final LeaveRequest request) {
+    return scheduleTimeout(getServer(memberId).thenCompose(listener -> listener.leave(request)));
   }
 
   @Override
@@ -157,6 +164,17 @@ public class TestRaftServerProtocol extends TestRaftProtocol implements RaftServ
   @Override
   public void unregisterJoinHandler() {
     joinHandler = null;
+  }
+
+  @Override
+  public void registerLeaveHandler(
+      final Function<LeaveRequest, CompletableFuture<LeaveResponse>> handler) {
+    leaveHandler = handler;
+  }
+
+  @Override
+  public void unregisterLeaveHandler() {
+    leaveHandler = null;
   }
 
   @Override
@@ -269,6 +287,14 @@ public class TestRaftServerProtocol extends TestRaftProtocol implements RaftServ
   CompletableFuture<JoinResponse> join(final JoinRequest request) {
     if (joinHandler != null) {
       return joinHandler.apply(request);
+    } else {
+      return CompletableFuture.failedFuture(new ConnectException());
+    }
+  }
+
+  CompletableFuture<LeaveResponse> leave(final LeaveRequest request) {
+    if (leaveHandler != null) {
+      return leaveHandler.apply(request);
     } else {
       return CompletableFuture.failedFuture(new ConnectException());
     }

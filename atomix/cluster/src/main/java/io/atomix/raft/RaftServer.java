@@ -288,12 +288,32 @@ public interface RaftServer {
 
   /**
    * Starts this raft server by joining an existing replication group. A {@link
-   * io.atomix.raft.protocol.JoinRequest} is sent to an arbitrary member of the cluster, as provided
-   * by the {@link ClusterMembershipService}.
+   * io.atomix.raft.protocol.JoinRequest} is sent to an arbitrary member of the cluster.
    *
+   * @param cluster a list of member ids that are part of the cluster and assist in joining.
    * @return A completable future to be completed once the server has joined the cluster.
    */
-  CompletableFuture<RaftServer> join();
+  CompletableFuture<RaftServer> join(Collection<MemberId> cluster);
+
+  /**
+   * Starts this raft server by joining an existing replication group. A {@link
+   * io.atomix.raft.protocol.JoinRequest} is sent to an arbitrary member of the cluster.
+   *
+   * @param cluster a list of member ids that are part of the cluster and assist in joining.
+   * @return A completable future to be completed once the server has joined the cluster.
+   */
+  default CompletableFuture<RaftServer> join(final MemberId... cluster) {
+    return join(Arrays.asList(cluster));
+  }
+
+  /**
+   * Requests to leave the replication group by sending a {@link
+   * io.atomix.raft.protocol.LeaveRequest} to an arbitrary member of the cluster, as provided by the
+   * {@link ClusterMembershipService}.
+   *
+   * @return A future to be completed successfully once the server has left the cluster.
+   */
+  CompletableFuture<RaftServer> leave();
 
   /**
    * Promotes the server to leader if possible.

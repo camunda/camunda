@@ -22,7 +22,6 @@ import static com.google.common.base.Preconditions.checkState;
 import static io.atomix.utils.concurrent.Threads.namedThreads;
 
 import io.atomix.cluster.ClusterMembershipService;
-import io.atomix.cluster.Member;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.MessagingException.NoRemoteHandler;
 import io.atomix.cluster.messaging.MessagingException.NoSuchMemberException;
@@ -46,6 +45,7 @@ import io.atomix.raft.metrics.RaftServiceMetrics;
 import io.atomix.raft.partition.RaftElectionConfig;
 import io.atomix.raft.partition.RaftPartitionConfig;
 import io.atomix.raft.protocol.JoinRequest;
+import io.atomix.raft.protocol.LeaveRequest;
 import io.atomix.raft.protocol.ProtocolVersionHandler;
 import io.atomix.raft.protocol.RaftResponse;
 import io.atomix.raft.protocol.RaftResponse.Status;
@@ -78,7 +78,9 @@ import io.camunda.zeebe.util.logging.ThrottledLogger;
 import java.net.ConnectException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.Random;
 import java.util.Set;
@@ -301,6 +303,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     protocol.registerInstallHandler(request -> runOnContext(() -> role.onInstall(request)));
     protocol.registerReconfigureHandler(request -> runOnContext(() -> role.onReconfigure(request)));
     protocol.registerJoinHandler(request -> runOnContext(() -> role.onJoin(request)));
+    protocol.registerLeaveHandler(request -> runOnContext(() -> role.onLeave(request)));
     protocol.registerTransferHandler(request -> runOnContext(() -> role.onTransfer(request)));
     protocol.registerAppendV1Handler(
         request -> runOnContext(() -> role.onAppend(ProtocolVersionHandler.transform(request))));
@@ -621,7 +624,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     return future;
   }
 
-  public CompletableFuture<Void> join() {
+  public CompletableFuture<Void> join(final Collection<MemberId> clusterMembers) {
     final var result = new CompletableFuture<Void>();
     threadContext.execute(
         () -> {
@@ -629,9 +632,8 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
               new DefaultRaftMember(
                   cluster.getLocalMember().memberId(), Type.ACTIVE, Instant.now());
           final var assistingMembers =
-              membershipService.getMembers().stream()
-                  .map(Member::id)
-                  .filter(id -> !id.equals(joining.memberId()))
+              clusterMembers.stream()
+                  .filter(memberId -> !memberId.equals(joining.memberId()))
                   .collect(Collectors.toCollection(LinkedBlockingQueue::new));
           if (assistingMembers.isEmpty()) {
             result.completeExceptionally(
@@ -695,6 +697,33 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
                   },
                   threadContext);
         });
+  }
+
+  public CompletableFuture<Void> leave() {
+    final CompletableFuture<Void> future = new CompletableFuture<>();
+
+    threadContext.execute(
+        () -> {
+          final var leaving = cluster.getLocalMember();
+          final var receiver =
+              Optional.ofNullable(leader)
+                  .or(() -> cluster.getVotingMembers().stream().map(RaftMember::memberId).findAny())
+                  .orElseThrow();
+          protocol
+              .leave(receiver, LeaveRequest.builder().withLeavingMember(leaving).build())
+              .whenCompleteAsync(
+                  (response, error) -> {
+                    if (error != null) {
+                      future.completeExceptionally(error);
+                    } else if (response.status() == Status.OK) {
+                      future.complete(null);
+                    } else {
+                      future.completeExceptionally(response.error().createException());
+                    }
+                  },
+                  threadContext);
+        });
+    return future;
   }
 
   /**
@@ -912,6 +941,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     protocol.unregisterInstallHandler();
     protocol.unregisterReconfigureHandler();
     protocol.unregisterJoinHandler();
+    protocol.unregisterLeaveHandler();
     protocol.unregisterTransferHandler();
     protocol.unregisterAppendHandler();
     protocol.unregisterPollHandler();

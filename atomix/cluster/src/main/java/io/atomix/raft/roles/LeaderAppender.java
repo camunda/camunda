@@ -689,8 +689,15 @@ final class LeaderAppender {
    * @param member The member to which to send the append request.
    */
   private void appendEntries(final RaftMemberContext member) {
-    // Prevent recursive, asynchronous appends from being executed if the appender has been closed.
     if (!open) {
+      // Prevent recursive, asynchronous appends from being executed if the appender has been
+      // closed.
+      return;
+    }
+
+    if (!member.isOpen()) {
+      // Prevent recursive, asynchronous appends from being executed if the member is no longer
+      // open.
       return;
     }
 

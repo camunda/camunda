@@ -27,6 +27,8 @@ import io.atomix.raft.protocol.InstallResponse;
 import io.atomix.raft.protocol.InternalAppendRequest;
 import io.atomix.raft.protocol.JoinRequest;
 import io.atomix.raft.protocol.JoinResponse;
+import io.atomix.raft.protocol.LeaveRequest;
+import io.atomix.raft.protocol.LeaveResponse;
 import io.atomix.raft.protocol.PersistedRaftRecord;
 import io.atomix.raft.protocol.PollRequest;
 import io.atomix.raft.protocol.PollResponse;
@@ -302,6 +304,27 @@ public class PassiveRole extends InactiveRole {
           .exceptionally(
               error ->
                   JoinResponse.builder().withStatus(Status.ERROR).withError(Type.NO_LEADER).build())
+          .thenApply(this::logResponse);
+    }
+  }
+
+  @Override
+  public CompletableFuture<LeaveResponse> onLeave(final LeaveRequest request) {
+    raft.checkThread();
+    logRequest(request);
+
+    if (raft.getLeader() == null) {
+      return CompletableFuture.completedFuture(
+          logResponse(
+              LeaveResponse.builder().withStatus(Status.ERROR).withError(Type.NO_LEADER).build()));
+    } else {
+      return forward(request, raft.getProtocol()::leave)
+          .exceptionally(
+              error ->
+                  LeaveResponse.builder()
+                      .withStatus(Status.ERROR)
+                      .withError(Type.NO_LEADER)
+                      .build())
           .thenApply(this::logResponse);
     }
   }

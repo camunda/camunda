@@ -118,7 +118,7 @@ public class RaftPartitionServer implements HealthMonitorable {
     final long joinStartTime = System.currentTimeMillis();
     log.info("Server joining partition {}", partition.id());
     return server
-        .join()
+        .join(partitionMetadata.members())
         .whenComplete(
             (r, e) -> {
               if (e == null) {

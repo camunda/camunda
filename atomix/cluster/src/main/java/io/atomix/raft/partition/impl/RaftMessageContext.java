@@ -29,6 +29,7 @@ class RaftMessageContext {
   final String configureSubject;
   final String reconfigureSubject;
   final String joinSubject;
+  final String leaveSubject;
   final String installSubject;
   final String transferSubject;
   final String pollSubject;
@@ -48,6 +49,7 @@ class RaftMessageContext {
     configureSubject = getSubject(prefix, "configure");
     reconfigureSubject = getSubject(prefix, "reconfigure");
     joinSubject = getSubject(prefix, "join");
+    leaveSubject = getSubject(prefix, "leave");
     installSubject = getSubject(prefix, "install");
     transferSubject = getSubject(prefix, "transfer");
     pollSubject = getSubject(prefix, "poll");

@@ -99,8 +99,8 @@ public class DefaultRaftServer implements RaftServer {
   }
 
   @Override
-  public CompletableFuture<RaftServer> join() {
-    return start(() -> cluster().join());
+  public CompletableFuture<RaftServer> leave() {
+    return context.leave().thenApply(v -> this);
   }
 
   @Override
@@ -167,6 +167,11 @@ public class DefaultRaftServer implements RaftServer {
   public CompletableFuture<Void> stepDown() {
     return CompletableFuture.runAsync(
         () -> context.transition(Role.FOLLOWER), context.getThreadContext());
+  }
+
+  @Override
+  public CompletableFuture<RaftServer> join(final Collection<MemberId> cluster) {
+    return start(() -> cluster().join(cluster));
   }
 
   /** Starts the server. */

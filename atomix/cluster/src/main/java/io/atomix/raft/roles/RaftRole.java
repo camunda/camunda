@@ -25,6 +25,8 @@ import io.atomix.raft.protocol.InstallResponse;
 import io.atomix.raft.protocol.InternalAppendRequest;
 import io.atomix.raft.protocol.JoinRequest;
 import io.atomix.raft.protocol.JoinResponse;
+import io.atomix.raft.protocol.LeaveRequest;
+import io.atomix.raft.protocol.LeaveResponse;
 import io.atomix.raft.protocol.PollRequest;
 import io.atomix.raft.protocol.PollResponse;
 import io.atomix.raft.protocol.ReconfigureRequest;
@@ -72,6 +74,9 @@ public interface RaftRole extends Managed<RaftRole> {
 
   /** Handles a request to join the cluster. */
   CompletableFuture<JoinResponse> onJoin(JoinRequest request);
+
+  /** Handles a request to leave the cluster. */
+  CompletableFuture<LeaveResponse> onLeave(LeaveRequest request);
 
   /**
    * Handles a transfer request.
