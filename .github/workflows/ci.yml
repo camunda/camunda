@@ -14,7 +14,7 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-# set permissions to allow Dependabot to publish test results
+# set permissions to allow to publish test results
 permissions:
   contents: read
   issues: read
