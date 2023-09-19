@@ -1,0 +1,4 @@
+{"index":{"_index":"optimize-position-based-import-index","_id":"zeebeProcessDefinitionImportIndex-zeebe-record1"}}
+{"lastImportExecutionTimestamp":"2023-09-18T16:57:55.894+0000","timestampOfLastEntity":"2023-08-15T10:46:08.716+0000","dataSource":{"type":"zeebe","name":"zeebe-record","partitionId":1},"positionOfLastEntity":74755247,"sequenceOfLastEntity":2251799813685250,"esTypeIndexRefersTo":"zeebeProcessDefinitionImportIndex","hasSeenSequenceField":true}
+{"index":{"_index":"optimize-position-based-import-index","_id":"zeebeProcessInstanceImportIndex-zeebe-record1"}}
+{"lastImportExecutionTimestamp":"2023-09-18T16:57:52.189+0000","timestampOfLastEntity":"2023-09-18T16:57:46.945+0000","dataSource":{"type":"zeebe","name":"zeebe-record","partitionId":1},"positionOfLastEntity":292703695,"sequenceOfLastEntity":2251799907117927,"esTypeIndexRefersTo":"zeebeProcessInstanceImportIndex","hasSeenSequenceField":true}
