@@ -107,10 +107,12 @@ public class CommandApiRequestReader implements RequestReader<ExecuteCommandRequ
     }
 
     commandRequestDecoder.skipValue();
-    final int authOffset =
-        commandRequestDecoder.limit() + ExecuteCommandRequestDecoder.authorizationHeaderLength();
-    authInfo.wrap(buffer, authOffset, commandRequestDecoder.authorizationLength());
-    metadata.authorization(authInfo);
+    if (commandRequestDecoder.limit() != buffer.capacity()) {
+      final int authOffset =
+          commandRequestDecoder.limit() + ExecuteCommandRequestDecoder.authorizationHeaderLength();
+      authInfo.wrap(buffer, authOffset, commandRequestDecoder.authorizationLength());
+      metadata.authorization(authInfo);
+    }
   }
 
   public UnifiedRecordValue value() {
