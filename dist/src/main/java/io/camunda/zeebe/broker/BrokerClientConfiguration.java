@@ -37,6 +37,7 @@ final class BrokerClientConfiguration {
         cluster.getMessagingService(),
         cluster.getMembershipService(),
         cluster.getEventService(),
+        cluster.getCommunicationService(),
         scheduler);
   }
 }

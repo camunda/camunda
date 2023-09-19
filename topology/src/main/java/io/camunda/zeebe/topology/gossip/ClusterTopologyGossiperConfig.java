@@ -10,4 +10,4 @@ package io.camunda.zeebe.topology.gossip;
 import java.time.Duration;
 
 public record ClusterTopologyGossiperConfig(
-    Duration syncDelay, Duration syncRequestTimeout, int gossipFanout) {}
+    boolean enableSync, Duration syncDelay, Duration syncRequestTimeout, int gossipFanout) {}

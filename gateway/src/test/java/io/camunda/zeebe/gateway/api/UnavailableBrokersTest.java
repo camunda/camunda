@@ -68,6 +68,7 @@ class UnavailableBrokersTest {
             cluster.getMessagingService(),
             cluster.getMembershipService(),
             cluster.getEventService(),
+            cluster.getCommunicationService(),
             actorScheduler);
     jobStreamClient = new JobStreamClientImpl(actorScheduler, cluster.getCommunicationService());
     jobStreamClient.start().join();

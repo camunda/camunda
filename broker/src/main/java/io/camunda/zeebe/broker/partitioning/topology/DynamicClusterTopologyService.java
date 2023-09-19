@@ -106,6 +106,7 @@ public class DynamicClusterTopologyService implements ClusterTopologyService {
   }
 
   private ClusterTopologyGossiperConfig getDefaultClusterTopologyGossipConfig() {
-    return new ClusterTopologyGossiperConfig(Duration.ofSeconds(10), Duration.ofSeconds(2), 2);
+    return new ClusterTopologyGossiperConfig(
+        true, Duration.ofSeconds(10), Duration.ofSeconds(2), 2);
   }
 }

@@ -175,4 +175,9 @@ public final class ClusterTopologyManagerService extends Actor {
         ? Optional.of(new TopologyChangeCoordinatorImpl(clusterTopologyManager, this))
         : Optional.empty();
   }
+
+  @Override
+  protected void onActorClosing() {
+    clusterTopologyGossiper.closeAsync();
+  }
 }

@@ -84,14 +84,14 @@ final class ClusterTopologyGossiperTest {
     return Stream.of(
         Arguments.of(
             Named.of(
-                "by gossip", // Configure high delay for sync
+                "by gossip", // Disable sync
                 new ClusterTopologyGossiperConfig(
-                    Duration.ofMinutes(10), Duration.ofSeconds(1), 2))),
+                    false, Duration.ofMinutes(10), Duration.ofSeconds(1), 2))),
         Arguments.of(
             Named.of(
                 "by sync", // Set gossipFanout to 0
                 new ClusterTopologyGossiperConfig(
-                    Duration.ofMillis(100), Duration.ofSeconds(1), 0))));
+                    true, Duration.ofMillis(100), Duration.ofSeconds(1), 0))));
   }
 
   private Node createNode(final String id) {

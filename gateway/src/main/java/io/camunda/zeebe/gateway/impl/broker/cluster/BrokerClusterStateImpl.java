@@ -18,6 +18,7 @@ import org.agrona.collections.IntArrayList;
 
 public final class BrokerClusterStateImpl implements BrokerClusterState {
 
+  public static final int UNINITIALIZED_CLUSTER_SIZE = -1;
   private static final Long TERM_NONE = -1L;
   private final Int2IntHashMap partitionLeaders;
   private final Int2ObjectHashMap<Long> partitionLeaderTerms;
@@ -30,7 +31,7 @@ public final class BrokerClusterStateImpl implements BrokerClusterState {
   private final IntArrayList brokers;
   private final IntArrayList partitions;
   private final Random randomBroker;
-  private int clusterSize;
+  private int clusterSize = UNINITIALIZED_CLUSTER_SIZE;
   private int partitionsCount;
   private int replicationFactor;
 

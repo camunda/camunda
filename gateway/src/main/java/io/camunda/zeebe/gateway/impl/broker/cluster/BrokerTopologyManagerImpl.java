@@ -20,6 +20,8 @@ import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.topology.GatewayClusterTopologyService;
+import io.camunda.zeebe.topology.state.ClusterTopology;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
@@ -27,7 +29,9 @@ import java.util.function.Supplier;
 import org.slf4j.Logger;
 
 public final class BrokerTopologyManagerImpl extends Actor
-    implements BrokerTopologyManager, ClusterMembershipEventListener {
+    implements BrokerTopologyManager,
+        ClusterMembershipEventListener,
+        GatewayClusterTopologyService.Listener {
 
   private static final Logger LOG = Loggers.GATEWAY_LOGGER;
 
@@ -162,7 +166,13 @@ public final class BrokerTopologyManagerImpl extends Actor
   private void processProperties(
       final BrokerInfo distributedBrokerInfo, final BrokerClusterStateImpl newTopology) {
 
-    newTopology.setClusterSize(distributedBrokerInfo.getClusterSize());
+    // Do not overwrite clusterSize received from BrokerInfo. ClusterTopology received via
+    // GatewayClusterTopologyService.Listener. BrokerInfo contains the static clusterSize which is
+    // the initial clusterSize. However, we still have to initialize it because it should have the
+    // correct value even when the dynamic ClusterTopology is disabled.
+    if (newTopology.getClusterSize() == BrokerClusterStateImpl.UNINITIALIZED_CLUSTER_SIZE) {
+      newTopology.setClusterSize(distributedBrokerInfo.getClusterSize());
+    }
     newTopology.setPartitionsCount(distributedBrokerInfo.getPartitionsCount());
     newTopology.setReplicationFactor(distributedBrokerInfo.getReplicationFactor());
 
@@ -199,6 +209,25 @@ public final class BrokerTopologyManagerImpl extends Actor
           if (followers != null) {
             followers.forEach(broker -> topologyMetrics.setFollower(partition, broker));
           }
+        });
+  }
+
+  @Override
+  public void onClusterTopologyChanged(final ClusterTopology clusterTopology) {
+    actor.run(
+        () -> {
+          if (clusterTopology.isUninitialized()) {
+            return;
+          }
+
+          final BrokerClusterStateImpl newTopology = new BrokerClusterStateImpl(topology.get());
+
+          // Overwrite clusterSize. ClusterTopology is the source of truth.
+          newTopology.setClusterSize(clusterTopology.clusterSize());
+
+          LOG.debug(
+              "Received new cluster topology with clusterSize {}", newTopology.getClusterSize());
+          topology.set(newTopology);
         });
   }
 }

@@ -20,9 +20,13 @@ import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManagerImpl;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
+import io.camunda.zeebe.topology.state.ClusterTopology;
+import io.camunda.zeebe.topology.state.MemberState;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -378,6 +382,46 @@ final class TopologyUpdateTest {
     assertThat(topology.getBrokers())
         .describedAs("Listener should not get remove event")
         .contains(brokerId);
+  }
+
+  @Test
+  void shouldUpdateClusterSizeFromClusterTopology() {
+    // given
+    final BrokerInfo broker = createBroker(1);
+    notifyEvent(createMemberAddedEvent(broker));
+
+    assertThat(topologyManager.getTopology().getClusterSize()).isEqualTo(3);
+
+    // when
+    final ClusterTopology clusterTopologyWithTwoBrokers =
+        ClusterTopology.init()
+            .addMember(MemberId.from("1"), MemberState.initializeAsActive(Map.of()))
+            .addMember(MemberId.from("2"), MemberState.initializeAsActive(Map.of()));
+    topologyManager.onClusterTopologyChanged(clusterTopologyWithTwoBrokers);
+    actorSchedulerRule.workUntilDone();
+
+    // then
+    Awaitility.await()
+        .untilAsserted(
+            () -> assertThat(topologyManager.getTopology().getClusterSize()).isEqualTo(2));
+  }
+
+  @Test
+  void shouldNotOverwriteClusterSizeFromBrokerInfo() {
+    // given
+    final ClusterTopology clusterTopologyWithTwoBrokers =
+        ClusterTopology.init()
+            .addMember(MemberId.from("1"), MemberState.initializeAsActive(Map.of()))
+            .addMember(MemberId.from("2"), MemberState.initializeAsActive(Map.of()));
+    topologyManager.onClusterTopologyChanged(clusterTopologyWithTwoBrokers);
+    actorSchedulerRule.workUntilDone();
+
+    // when
+    final BrokerInfo broker = createBroker(1);
+    notifyEvent(createMemberAddedEvent(broker));
+
+    // then
+    assertThat(topologyManager.getTopology().getClusterSize()).isEqualTo(2);
   }
 
   private void addTopologyListener(final RecordingTopologyListener listener) {

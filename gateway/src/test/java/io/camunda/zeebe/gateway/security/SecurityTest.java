@@ -159,6 +159,7 @@ final class SecurityTest {
             atomix.getMessagingService(),
             atomix.getMembershipService(),
             atomix.getEventService(),
+            atomix.getCommunicationService(),
             actorScheduler);
     jobStreamClient = new JobStreamClientImpl(actorScheduler, atomix.getCommunicationService());
     jobStreamClient.start().join();
