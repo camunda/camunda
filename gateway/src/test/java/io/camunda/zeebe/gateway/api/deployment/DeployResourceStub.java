@@ -23,6 +23,9 @@ public final class DeployResourceStub
   private static final long KEY = 123;
   private static final long PROCESS_KEY = 234;
   private static final int PROCESS_VERSION = 345;
+  private static final String FORM_ID = "test-form-id";
+  private static final int FORM_VERSION = 12;
+  private static final long FORM_KEY = 11115647343L;
   private static final DirectBuffer CHECKSUM = wrapString("checksum");
 
   @Override
@@ -83,6 +86,16 @@ public final class DeployResourceStub
                     .setNamespace(r.getResourceName())
                     .setResourceName(r.getResourceName())
                     .setChecksum(BufferUtil.wrapString("checksum"))
+                    .setTenantId(tenantId);
+              } else if (r.getResourceName().endsWith(".form")) {
+                deploymentRecord
+                    .formMetadata()
+                    .add()
+                    .setFormId(FORM_ID)
+                    .setVersion(FORM_VERSION)
+                    .setFormKey(FORM_KEY)
+                    .setResourceName(r.getResourceName())
+                    .setChecksum(CHECKSUM)
                     .setTenantId(tenantId);
               }
             });

@@ -657,6 +657,11 @@
                 "id": 3,
                 "name": "decisionRequirements",
                 "type": "DecisionRequirementsMetadata"
+              },
+              {
+                "id": 4,
+                "name": "form",
+                "type": "FormMetadata"
               }
             ]
           },
@@ -760,6 +765,36 @@
               },
               {
                 "id": 6,
+                "name": "tenantId",
+                "type": "string"
+              }
+            ]
+          },
+          {
+            "name": "FormMetadata",
+            "fields": [
+              {
+                "id": 1,
+                "name": "formId",
+                "type": "string"
+              },
+              {
+                "id": 2,
+                "name": "version",
+                "type": "int32"
+              },
+              {
+                "id": 3,
+                "name": "formKey",
+                "type": "int64"
+              },
+              {
+                "id": 4,
+                "name": "resourceName",
+                "type": "string"
+              },
+              {
+                "id": 5,
                 "name": "tenantId",
                 "type": "string"
               }
