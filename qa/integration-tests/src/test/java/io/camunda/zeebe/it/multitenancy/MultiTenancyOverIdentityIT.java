@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
 import java.util.function.Supplier;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -206,9 +207,16 @@ public class MultiTenancyOverIdentityIT {
         .start()
         .await(TestHealthProbe.READY);
 
-    associateTenantsWithClient(List.of("tenant-a"), ZEEBE_CLIENT_ID_TENANT_A);
-    associateTenantsWithClient(List.of("tenant-b"), ZEEBE_CLIENT_ID_TENANT_B);
-    associateTenantsWithClient(List.of("tenant-a", "tenant-b"), ZEEBE_CLIENT_ID_TENANT_A_AND_B);
+    Awaitility.await("Wait for Identity to initialize, so we can associate tenants with clients")
+        .atMost(Duration.ofMinutes(1))
+        .pollInterval(Duration.ofSeconds(1))
+        .untilAsserted(
+            () -> {
+              associateTenantsWithClient(List.of("tenant-a"), ZEEBE_CLIENT_ID_TENANT_A);
+              associateTenantsWithClient(List.of("tenant-b"), ZEEBE_CLIENT_ID_TENANT_B);
+              associateTenantsWithClient(
+                  List.of("tenant-a", "tenant-b"), ZEEBE_CLIENT_ID_TENANT_A_AND_B);
+            });
   }
 
   @BeforeEach
@@ -407,7 +415,12 @@ public class MultiTenancyOverIdentityIT {
                 WHERE client_id = '%s'\
               )"""
                   .formatted(clientId))) {
-        resultSet.next();
+        if (!resultSet.next()) {
+          throw new IllegalStateException(
+              """
+              Expected to find service account associated to Zeebe Client registered in Identity.
+              This can happen when Identity has not yet completed its initialization.""");
+        }
         serviceAccountId = resultSet.getString(1);
       }
 
@@ -421,7 +434,12 @@ public class MultiTenancyOverIdentityIT {
               VALUES ('%s', 'APPLICATION', false) \
               RETURNING id"""
                   .formatted(serviceAccountId))) {
-        resultSet.next();
+        if (!resultSet.next()) {
+          throw new IllegalStateException(
+              """
+              Expected to find service account associated to Zeebe Client registered in Identity.
+              This can happen when Identity has not yet completed its initialization.""");
+        }
         accessRuleId = resultSet.getString(1);
       }
 
