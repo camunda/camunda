@@ -13,6 +13,7 @@ public final class IdentityCfg {
   private String issuerBackendUrl;
   private String audience = "zeebe-api";
   private OAuthType type = OAuthType.KEYCLOAK;
+  private String baseUrl;
 
   public String getIssuerBackendUrl() {
     return issuerBackendUrl;
@@ -38,9 +39,17 @@ public final class IdentityCfg {
     this.type = type;
   }
 
+  public String getBaseUrl() {
+    return baseUrl;
+  }
+
+  public void setBaseUrl(final String baseUrl) {
+    this.baseUrl = baseUrl;
+  }
+
   @Override
   public int hashCode() {
-    return Objects.hash(issuerBackendUrl, audience, type);
+    return Objects.hash(issuerBackendUrl, audience, type, baseUrl);
   }
 
   @Override
@@ -51,10 +60,11 @@ public final class IdentityCfg {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    final IdentityCfg identityCfg = (IdentityCfg) o;
-    return Objects.equals(issuerBackendUrl, identityCfg.issuerBackendUrl)
-        && Objects.equals(audience, identityCfg.audience)
-        && type == identityCfg.type;
+    final IdentityCfg that = (IdentityCfg) o;
+    return Objects.equals(issuerBackendUrl, that.issuerBackendUrl)
+        && Objects.equals(audience, that.audience)
+        && type == that.type
+        && Objects.equals(baseUrl, that.baseUrl);
   }
 
   @Override
@@ -68,6 +78,9 @@ public final class IdentityCfg {
         + '\''
         + ", type="
         + type
+        + ", baseUrl='"
+        + baseUrl
+        + '\''
         + '}';
   }
 
