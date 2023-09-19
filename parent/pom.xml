@@ -128,6 +128,7 @@
     <version.swagger-annotations>2.2.16</version.swagger-annotations>
     <version.checker-qual>3.38.0</version.checker-qual>
     <version.java-jwt>4.4.0</version.java-jwt>
+    <version.reactive-streams>1.0.4</version.reactive-streams>
 
     <!-- maven plugins -->
     <plugin.version.antrun>3.1.0</plugin.version.antrun>
@@ -193,7 +194,6 @@
     <sort.skip>${skipChecks}</sort.skip>
     <spotless.apply.skip>${skipChecks}</spotless.apply.skip>
     <spotless.checks.skip>${skipChecks}</spotless.checks.skip>
-    <version.reactive-streams>1.0.4</version.reactive-streams>
   </properties>
 
   <dependencyManagement>
