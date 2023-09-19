@@ -9,6 +9,7 @@ package io.camunda.zeebe.topology.state;
 
 import com.google.common.collect.ImmutableMap;
 import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.topology.state.MemberState.State;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -183,5 +184,15 @@ public record ClusterTopology(
 
   public boolean hasPendingChanges() {
     return !changes.pendingOperations().isEmpty();
+  }
+
+  public int clusterSize() {
+    return (int)
+        members.entrySet().stream()
+            .filter(
+                entry ->
+                    entry.getValue().state() != State.LEFT
+                        && entry.getValue().state() != State.UNINITIALIZED)
+            .count();
   }
 }

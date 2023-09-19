@@ -22,7 +22,6 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.topology.GatewayClusterTopologyService;
 import io.camunda.zeebe.topology.state.ClusterTopology;
-import io.camunda.zeebe.topology.state.MemberState.State;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
@@ -222,16 +221,12 @@ public final class BrokerTopologyManagerImpl extends Actor
           }
 
           final BrokerClusterStateImpl newTopology = new BrokerClusterStateImpl(topology.get());
-          final var clusterSize =
-              (int)
-                  clusterTopology.members().entrySet().stream()
-                      .filter(entry -> entry.getValue().state() != State.LEFT)
-                      .count();
 
           // Overwrite clusterSize. ClusterTopology is the source of truth.
-          newTopology.setClusterSize(clusterSize);
+          newTopology.setClusterSize(clusterTopology.clusterSize());
 
-          LOG.debug("Received new cluster topology with clusterSize {}", clusterSize);
+          LOG.debug(
+              "Received new cluster topology with clusterSize {}", newTopology.getClusterSize());
           topology.set(newTopology);
         });
   }
