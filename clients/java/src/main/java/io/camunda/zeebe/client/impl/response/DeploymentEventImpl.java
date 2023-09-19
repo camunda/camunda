@@ -19,6 +19,7 @@ import io.camunda.zeebe.client.api.command.CommandWithTenantStep;
 import io.camunda.zeebe.client.api.response.Decision;
 import io.camunda.zeebe.client.api.response.DecisionRequirements;
 import io.camunda.zeebe.client.api.response.DeploymentEvent;
+import io.camunda.zeebe.client.api.response.Form;
 import io.camunda.zeebe.client.api.response.Process;
 import io.camunda.zeebe.client.impl.Loggers;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessResponse;
@@ -41,6 +42,7 @@ public final class DeploymentEventImpl implements DeploymentEvent {
   private final List<Process> processes = new ArrayList<>();
   private final List<Decision> decisions = new ArrayList<>();
   private final List<DecisionRequirements> decisionRequirements = new ArrayList<>();
+  private final List<Form> forms = new ArrayList<>();
 
   public DeploymentEventImpl(final DeployProcessResponse response) {
     key = response.getKey();
@@ -62,6 +64,9 @@ public final class DeploymentEventImpl implements DeploymentEvent {
         case DECISIONREQUIREMENTS:
           decisionRequirements.add(
               new DecisionRequirementsImpl(deployment.getDecisionRequirements()));
+          break;
+        case FORM:
+          forms.add(new FormImpl(deployment.getForm()));
           break;
         case METADATA_NOT_SET:
         default:
@@ -89,6 +94,11 @@ public final class DeploymentEventImpl implements DeploymentEvent {
   @Override
   public List<DecisionRequirements> getDecisionRequirements() {
     return decisionRequirements;
+  }
+
+  @Override
+  public List<Form> getForm() {
+    return forms;
   }
 
   @Override

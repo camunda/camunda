@@ -39,6 +39,11 @@ public interface DeploymentEvent {
   List<DecisionRequirements> getDecisionRequirements();
 
   /**
+   * @return the deployed form metadata
+   */
+  List<Form> getForm();
+
+  /**
    * @return the tenant identifier that owns this deployment
    */
   String getTenantId();
