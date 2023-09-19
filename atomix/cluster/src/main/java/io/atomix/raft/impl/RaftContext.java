@@ -80,6 +80,7 @@ import java.net.ConnectException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.Random;
 import java.util.Set;
@@ -706,11 +707,9 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
         () -> {
           final var leaving = cluster.getLocalMember();
           final var receiver =
-              membershipService.getMembers().stream()
-                  .filter(member -> !member.id().equals(leaving.memberId()))
-                  .findAny()
-                  .orElseThrow()
-                  .id();
+              Optional.ofNullable(leader)
+                  .or(() -> cluster.getVotingMembers().stream().map(RaftMember::memberId).findAny())
+                  .orElseThrow();
           protocol
               .leave(receiver, LeaveRequest.builder().withLeavingMember(leaving).build())
               .whenCompleteAsync(
