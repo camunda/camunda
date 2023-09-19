@@ -432,7 +432,8 @@ public class MultiTenancyOverIdentityIT {
               INSERT INTO access_rules \
                 (member_id, member_type, global) \
               VALUES ('%s', 'APPLICATION', false) \
-              RETURNING id"""
+              RETURNING id \
+              ON CONFLICT DO NOTHING"""
                   .formatted(serviceAccountId))) {
         if (!resultSet.next()) {
           throw new IllegalStateException(
@@ -462,7 +463,8 @@ public class MultiTenancyOverIdentityIT {
                   """
                       INSERT INTO access_rules_tenants \
                         (tenant_id, access_rule_id) \
-                      VALUES ('%s', '%s')"""
+                      VALUES ('%s', '%s') \
+                      ON CONFLICT DO NOTHING"""
                       .formatted(tenantId, accessRuleId)));
     }
   }
