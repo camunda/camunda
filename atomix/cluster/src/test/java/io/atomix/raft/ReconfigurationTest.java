@@ -441,16 +441,17 @@ final class ReconfigurationTest {
               m5.bootstrap(id1, id2, id3, id4, id5))
           .join();
 
-      // when -- two members leave
+      // when -- two members leave and one shuts down without leaving
       awaitLeader(m1, m2, m3, m4, m5); // await leader so that join doesn't fail with NO_LEADER
       m4.leave().join();
       awaitLeader(m1, m2, m3, m5); // await leader so that join doesn't fail with NO_LEADER
       m5.leave().join();
       m4.shutdown().join();
       m5.shutdown().join();
+      m3.shutdown().join();
 
       // then -- remaining three can elect a leader and commit entries
-      final var leader = awaitLeader(m1, m2, m3);
+      final var leader = awaitLeader(m1, m2);
       assertThat(appendEntry(leader).commit()).succeedsWithin(Duration.ofSeconds(1));
     }
   }
