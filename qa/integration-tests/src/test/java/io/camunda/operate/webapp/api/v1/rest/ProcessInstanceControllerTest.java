@@ -9,6 +9,8 @@ package io.camunda.operate.webapp.api.v1.rest;
 import static io.camunda.operate.webapp.api.v1.entities.ProcessInstance.VERSION;
 import static io.camunda.operate.webapp.api.v1.rest.ProcessInstanceController.URI;
 import static io.camunda.operate.webapp.api.v1.rest.SearchController.SEARCH;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -18,6 +20,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.api.v1.dao.FlowNodeStatisticsDao;
 import io.camunda.operate.webapp.api.v1.dao.ProcessInstanceDao;
@@ -52,7 +55,10 @@ import java.util.List;
 public class ProcessInstanceControllerTest {
 
   @Autowired
-  WebApplicationContext context;
+  private WebApplicationContext context;
+
+  @Autowired
+  private ObjectMapper springObjectMapper;
 
   private MockMvc mockMvc;
 
@@ -101,6 +107,40 @@ public class ProcessInstanceControllerTest {
     assertPostToWithSucceed(URI + SEARCH, "{\"filter\": { \""+ VERSION +"\": \"1\" } }");
     verify(processInstanceDao).search(new Query<ProcessInstance>()
         .setFilter(new ProcessInstance().setProcessVersion(1)));
+  }
+
+  @Test
+  public void shouldAcceptQueryWithParentKeyFilter() throws Exception {
+    assertPostToWithSucceed(URI + SEARCH, "{\"filter\": { " +
+            "\"" + VERSION + "\": \"1\"," +
+            "\"parentKey\": 345} }");
+    verify(processInstanceDao).search(new Query<ProcessInstance>()
+            .setFilter(new ProcessInstance()
+                    .setProcessVersion(1)
+                    .setParentKey(345L)));
+  }
+
+  @Test
+  public void shouldAcceptQueryWithParentProcessInstanceKeyFilter() throws Exception {
+    assertPostToWithSucceed(URI + SEARCH, "{\"filter\": { " +
+            "\"" + VERSION + "\": \"1\"," +
+            "\"parentProcessInstanceKey\": 345} }");
+
+    verify(processInstanceDao).search(new Query<ProcessInstance>()
+            .setFilter(new ProcessInstance()
+                    .setProcessVersion(1)
+                    .setParentKey(345L)));
+  }
+
+  @Test
+  public void shouldNotIncludeParentProcessInstanceKeyInSerializedResult() throws Exception {
+    ProcessInstance processInstance = new ProcessInstance();
+    processInstance.setParentProcessInstanceKey(123L);
+    processInstance.setProcessVersion(5);
+
+    String jsonResult = springObjectMapper.writeValueAsString(processInstance);
+    assertFalse(jsonResult.contains("parentProcessInstanceKey"));
+    assertTrue(jsonResult.contains("parentKey"));
   }
 
   @Test

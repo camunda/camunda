@@ -70,15 +70,19 @@ public class ProcessInstance {
     return this;
   }
 
-  @JsonProperty("parentKey")
   public Long getParentKey() {
     return parentKey;
   }
 
-  @JsonProperty("parentProcessInstanceKey")
   public ProcessInstance setParentKey(final Long parentKey) {
     this.parentKey = parentKey;
     return this;
+  }
+
+  @JsonProperty("parentProcessInstanceKey")
+  public ProcessInstance setParentProcessInstanceKey(final Long parentProcessInstanceKey) {
+      this.parentKey = parentProcessInstanceKey;
+      return this;
   }
 
   public Long getParentFlowNodeInstanceKey() {
