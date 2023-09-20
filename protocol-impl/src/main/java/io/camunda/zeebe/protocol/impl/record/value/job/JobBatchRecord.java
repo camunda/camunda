@@ -19,6 +19,7 @@ import io.camunda.zeebe.msgpack.value.ValueArray;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -36,6 +37,8 @@ public final class JobBatchRecord extends UnifiedRecordValue implements JobBatch
   private final ArrayProperty<LongValue> jobKeysProp =
       new ArrayProperty<>("jobKeys", new LongValue());
   private final ArrayProperty<JobRecord> jobsProp = new ArrayProperty<>("jobs", new JobRecord());
+  private final ArrayProperty<StringValue> tenantIdsProp =
+      new ArrayProperty<>("tenantIds", new StringValue(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
   private final ArrayProperty<StringValue> variablesProp =
       new ArrayProperty<>("variables", new StringValue());
   private final BooleanProperty truncatedProp = new BooleanProperty("truncated", false);
@@ -48,7 +51,8 @@ public final class JobBatchRecord extends UnifiedRecordValue implements JobBatch
         .declareProperty(jobKeysProp)
         .declareProperty(jobsProp)
         .declareProperty(variablesProp)
-        .declareProperty(truncatedProp);
+        .declareProperty(truncatedProp)
+        .declareProperty(tenantIdsProp);
   }
 
   public JobBatchRecord setType(final DirectBuffer buf, final int offset, final int length) {
@@ -128,8 +132,10 @@ public final class JobBatchRecord extends UnifiedRecordValue implements JobBatch
 
   @Override
   public List<String> getTenantIds() {
-    // todo(#13318): replace dummy implementation
-    return List.of();
+    return StreamSupport.stream(tenantIdsProp.spliterator(), false)
+        .map(StringValue::getValue)
+        .map(BufferUtil::bufferAsString)
+        .collect(Collectors.toList());
   }
 
   public JobBatchRecord setTruncated(final boolean truncated) {
@@ -165,6 +171,10 @@ public final class JobBatchRecord extends UnifiedRecordValue implements JobBatch
   public JobBatchRecord setType(final String type) {
     typeProp.setValue(type);
     return this;
+  }
+
+  public ValueArray<StringValue> tenantIds() {
+    return tenantIdsProp;
   }
 
   @JsonIgnore

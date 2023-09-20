@@ -11,6 +11,7 @@ import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.util.buffer.BufferReader;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.Collection;
+import java.util.List;
 import org.agrona.DirectBuffer;
 
 /**
@@ -41,4 +42,12 @@ public interface JobActivationProperties extends BufferReader, BufferWriter {
    * @see JobRecordValue#getDeadline()
    */
   long timeout();
+
+  /**
+   * Returns the identifiers of the tenants that own the jobs requested to be activated by the
+   * worker.
+   *
+   * @return the identifiers of the tenants for which to activate jobs
+   */
+  List<String> getTenantIds();
 }

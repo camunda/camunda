@@ -12,9 +12,13 @@ import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
+import io.camunda.zeebe.msgpack.value.ValueArray;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -23,6 +27,8 @@ public class JobActivationPropertiesImpl extends UnpackedObject implements JobAc
   private final LongProperty timeoutProp = new LongProperty("timeout", -1);
   private final ArrayProperty<StringValue> fetchVariablesProp =
       new ArrayProperty<>("variables", new StringValue());
+  private final ArrayProperty<StringValue> tenantIdsProp =
+      new ArrayProperty<>("tenantIds", new StringValue(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
 
   public JobActivationPropertiesImpl() {
     declareProperty(workerProp).declareProperty(timeoutProp).declareProperty(fetchVariablesProp);
@@ -60,5 +66,17 @@ public class JobActivationPropertiesImpl extends UnpackedObject implements JobAc
   @Override
   public long timeout() {
     return timeoutProp.getValue();
+  }
+
+  @Override
+  public List<String> getTenantIds() {
+    return StreamSupport.stream(tenantIdsProp.spliterator(), false)
+        .map(StringValue::getValue)
+        .map(BufferUtil::bufferAsString)
+        .collect(Collectors.toList());
+  }
+
+  public ValueArray<StringValue> tenantIds() {
+    return tenantIdsProp;
   }
 }
