@@ -185,7 +185,8 @@ public final class RequestMapper {
     brokerRequest
         .setDecisionId(grpcRequest.getDecisionId())
         .setDecisionKey(grpcRequest.getDecisionKey())
-        .setVariables(ensureJsonSet(grpcRequest.getVariables()));
+        .setVariables(ensureJsonSet(grpcRequest.getVariables()))
+        .setTenantId(ensureTenantIdSet("EvaluateDecision", grpcRequest.getTenantId()));
 
     return brokerRequest;
   }

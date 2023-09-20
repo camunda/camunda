@@ -190,6 +190,8 @@ message EvaluateDecisionRequest {
   // [{ "a": 1, "b": 2 }] would not be a valid argument, as the root of the
   // JSON document is an array and not an object.
   string variables = 3;
+  // the tenant identifier of the decision
+  string tenantId = 4;
 }
 
 message EvaluateDecisionResponse {
@@ -219,6 +221,8 @@ message EvaluateDecisionResponse {
   string failedDecisionId = 9;
   // an optional message describing why the decision which was evaluated failed
   string failureMessage = 10;
+  // the tenant identifier of the evaluated decision
+  string tenantId = 11;
 }
 
 message EvaluatedDecision {
