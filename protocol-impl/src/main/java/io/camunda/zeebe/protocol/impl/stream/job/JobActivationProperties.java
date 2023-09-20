@@ -44,13 +44,10 @@ public interface JobActivationProperties extends BufferReader, BufferWriter {
   long timeout();
 
   /**
-   * When jobs are streamed from the engine, it is possible that the jobs belong to different
-   * tenants.
+   * Returns the identifiers of the tenants that own the jobs requested to be activated by the
+   * worker.
    *
-   * <p>This can be useful when requesting jobs for multiple tenants at once. Each of the activated
-   * jobs will be owned by the tenant that owns the corresponding process instance.
-   *
-   * @return the identifiers of the tenants for which to stream jobs
+   * @return the identifiers of the tenants for which to activate jobs
    */
   List<String> getTenantIds();
 }
