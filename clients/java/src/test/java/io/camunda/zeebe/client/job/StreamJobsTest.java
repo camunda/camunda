@@ -20,7 +20,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.client.api.command.ClientException;
-import io.camunda.zeebe.client.api.command.StreamJobsCommandStep1.StreamJobsCommandStep3;
 import io.camunda.zeebe.client.api.response.StreamJobsResponse;
 import io.camunda.zeebe.client.util.ClientTest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
@@ -53,6 +52,7 @@ public final class StreamJobsTest extends ClientTest {
             .setRetries(34)
             .setDeadline(1231)
             .setVariables("{\"key\": \"val\"}")
+            .setTenantId("test-tenant-1")
             .build();
     final ActivatedJob activatedJob2 =
         ActivatedJob.newBuilder()
@@ -69,6 +69,7 @@ public final class StreamJobsTest extends ClientTest {
             .setRetries(334)
             .setDeadline(3131)
             .setVariables("{\"bar\": 3}")
+            .setTenantId("test-tenant-2")
             .build();
     gatewayService.onStreamJobsRequest(activatedJob1, activatedJob2);
 
@@ -80,6 +81,7 @@ public final class StreamJobsTest extends ClientTest {
             .consumer(receivedJobs::add)
             .timeout(Duration.ofMillis(1000))
             .workerName("worker1")
+            .tenantIds("test-tenant-1", "test-tenant-2")
             .send()
             .join();
 
@@ -108,6 +110,7 @@ public final class StreamJobsTest extends ClientTest {
     assertThat(job.getRetries()).isEqualTo(activatedJob1.getRetries());
     assertThat(job.getDeadline()).isEqualTo(activatedJob1.getDeadline());
     assertThat(job.getVariables()).isEqualTo(activatedJob1.getVariables());
+    assertThat(job.getTenantId()).isEqualTo(activatedJob1.getTenantId());
 
     job = receivedJobs.get(1);
     assertThat(job.getKey()).isEqualTo(activatedJob2.getKey());
@@ -124,6 +127,7 @@ public final class StreamJobsTest extends ClientTest {
     assertThat(job.getRetries()).isEqualTo(activatedJob2.getRetries());
     assertThat(job.getDeadline()).isEqualTo(activatedJob2.getDeadline());
     assertThat(job.getVariables()).isEqualTo(activatedJob2.getVariables());
+    assertThat(job.getTenantId()).isEqualTo(activatedJob2.getTenantId());
   }
 
   @Test
@@ -248,50 +252,56 @@ public final class StreamJobsTest extends ClientTest {
   @Test
   public void shouldAllowSpecifyingTenantIdsAsList() {
     // given
-    final StreamJobsCommandStep3 builder =
-        client.newStreamJobsCommand().jobType("foo").consumer(ignored -> {});
+    client
+        .newStreamJobsCommand()
+        .jobType("foo")
+        .consumer(ignored -> {})
+        .tenantIds(Arrays.asList("tenant1", "tenant2"))
+        .send()
+        .join();
 
     // when
-    final StreamJobsCommandStep3 builderWithTenants =
-        builder.tenantIds(Arrays.asList("tenant1", "tenant2"));
+    final StreamActivatedJobsRequest request = gatewayService.getLastRequest();
+    ;
 
     // then
-    // todo(#13560): verify that tenant ids are set in the request
-    assertThat(builderWithTenants)
-        .describedAs("This method has no effect on the command builder while under development")
-        .isEqualTo(builder);
+    assertThat(request.getTenantIdsList()).containsExactly("tenant1", "tenant2");
   }
 
   @Test
   public void shouldAllowSpecifyingTenantIdsAsVarArgs() {
     // given
-    final StreamJobsCommandStep3 builder =
-        client.newStreamJobsCommand().jobType("foo").consumer(ignored -> {});
+    client
+        .newStreamJobsCommand()
+        .jobType("foo")
+        .consumer(ignored -> {})
+        .tenantIds("tenant1", "tenant2")
+        .send()
+        .join();
 
     // when
-    final StreamJobsCommandStep3 builderWithTenants = builder.tenantIds("tenant1", "tenant2");
+    final StreamActivatedJobsRequest request = gatewayService.getLastRequest();
 
     // then
-    // todo(#13560): verify that tenant ids are set in the request
-    assertThat(builderWithTenants)
-        .describedAs("This method has no effect on the command builder while under development")
-        .isEqualTo(builder);
+    assertThat(request.getTenantIdsList()).containsExactly("tenant1", "tenant2");
   }
 
   @Test
   public void shouldAllowSpecifyingTenantIds() {
     // given
-    final StreamJobsCommandStep3 builder =
-        client.newStreamJobsCommand().jobType("foo").consumer(ignored -> {});
+    client
+        .newStreamJobsCommand()
+        .jobType("foo")
+        .consumer(ignored -> {})
+        .tenantId("tenant1")
+        .tenantId("tenant2")
+        .send()
+        .join();
 
     // when
-    final StreamJobsCommandStep3 builderWithTenants =
-        builder.tenantId("tenant1").tenantId("tenant2");
+    final StreamActivatedJobsRequest request = gatewayService.getLastRequest();
 
     // then
-    // todo(#13560): verify that tenant ids are set in the request
-    assertThat(builderWithTenants)
-        .describedAs("This method has no effect on the command builder while under development")
-        .isEqualTo(builder);
+    assertThat(request.getTenantIdsList()).containsExactly("tenant1", "tenant2");
   }
 }
