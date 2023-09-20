@@ -432,8 +432,8 @@ public class MultiTenancyOverIdentityIT {
               INSERT INTO access_rules \
                 (member_id, member_type, global) \
               VALUES ('%s', 'APPLICATION', false) \
-              RETURNING id \
-              ON CONFLICT DO NOTHING"""
+              ON CONFLICT DO NOTHING \
+              RETURNING id"""
                   .formatted(serviceAccountId))) {
         if (!resultSet.next()) {
           throw new IllegalStateException(
