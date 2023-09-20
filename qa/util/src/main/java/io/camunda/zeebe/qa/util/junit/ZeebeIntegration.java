@@ -79,7 +79,7 @@ public @interface ZeebeIntegration {
      *
      * <p>If a {@link io.camunda.zeebe.qa.util.cluster.TestCluster} instance is annotated with this,
      * verifies this on all gateways. If the cluster size, partition count, and replication factor
-     * attributes are left to defaults (-1), uses the cluster's information to replace them.
+     * attributes are left to defaults (0), uses the cluster's information to replace them.
      * However, if they're set to something, this will override the cluster's settings.
      *
      * <p>If a {@link io.camunda.zeebe.qa.util.cluster.TestGateway} instance is annotated with this,
