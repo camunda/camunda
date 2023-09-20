@@ -16,6 +16,7 @@
 package io.camunda.zeebe.client;
 
 import java.time.Duration;
+import java.util.List;
 
 public final class ClientProperties {
 
@@ -34,6 +35,11 @@ public final class ClientProperties {
    * @see ZeebeClientBuilder#defaultTenantId(String)
    */
   public static final String DEFAULT_TENANT_ID = "zeebe.client.tenantId";
+
+  /**
+   * @see ZeebeClientBuilder#defaultJobWorkerTenantIds(List)
+   */
+  public static final String DEFAULT_JOB_WORKER_TENANT_IDS = "zeebe.client.worker.tenantIds";
 
   /**
    * @see ZeebeClientBuilder#numJobWorkerExecutionThreads(int)

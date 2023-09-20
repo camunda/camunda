@@ -19,6 +19,7 @@ import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep3;
 import io.grpc.ClientInterceptor;
 import java.time.Duration;
+import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -55,6 +56,12 @@ public interface ZeebeClientBuilder {
    *     io.camunda.zeebe.client.api.command.CommandWithTenantStep#DEFAULT_TENANT_IDENTIFIER}.
    */
   ZeebeClientBuilder defaultTenantId(String tenantId);
+
+  /**
+   * @param tenantIds the tenant identifiers which are used for job-activation commands when no
+   *     tenant identifiers are set. The default value is an empty list.
+   */
+  ZeebeClientBuilder defaultJobWorkerTenantIds(List<String> tenantIds);
 
   /**
    * @param maxJobsActive Default value for {@link JobWorkerBuilderStep3#maxJobsActive(int)}.

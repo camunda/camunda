@@ -40,26 +40,30 @@ import io.grpc.ClientInterceptor;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ScheduledExecutorService;
 
 public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientConfiguration {
+
   public static final String PLAINTEXT_CONNECTION_VAR = "ZEEBE_INSECURE_CONNECTION";
   public static final String CA_CERTIFICATE_VAR = "ZEEBE_CA_CERTIFICATE_PATH";
   public static final String KEEP_ALIVE_VAR = "ZEEBE_KEEP_ALIVE";
   public static final String OVERRIDE_AUTHORITY_VAR = "ZEEBE_OVERRIDE_AUTHORITY";
-
   public static final String ZEEBE_CLIENT_WORKER_STREAM_ENABLED =
       "ZEEBE_CLIENT_WORKER_STREAM_ENABLED";
   public static final String DEFAULT_GATEWAY_ADDRESS = "0.0.0.0:26500";
   public static final String DEFAULT_TENANT_ID_VAR = "ZEEBE_DEFAULT_TENANT_ID";
-
+  public static final String DEFAULT_JOB_WORKER_TENANT_IDS_VAR =
+      "ZEEBE_DEFAULT_JOB_WORKER_TENANT_IDS";
+  private static final String LIST_SEPARATOR = ", ";
   private boolean applyEnvironmentVariableOverrides = true;
 
   private final List<ClientInterceptor> interceptors = new ArrayList<>();
   private String gatewayAddress = DEFAULT_GATEWAY_ADDRESS;
   private String defaultTenantId = CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER;
+  private List<String> defaultJobWorkerTenantIds = Collections.emptyList();
   private int jobWorkerMaxJobsActive = 32;
   private int numJobWorkerExecutionThreads = 1;
   private String defaultJobWorkerName = "default";
@@ -86,6 +90,11 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   @Override
   public String getDefaultTenantId() {
     return defaultTenantId;
+  }
+
+  @Override
+  public List<String> getDefaultJobWorkerTenantIds() {
+    return defaultJobWorkerTenantIds;
   }
 
   @Override
@@ -191,6 +200,12 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
     if (properties.containsKey(ClientProperties.DEFAULT_TENANT_ID)) {
       defaultTenantId(properties.getProperty(ClientProperties.DEFAULT_TENANT_ID));
     }
+    if (properties.containsKey(ClientProperties.DEFAULT_JOB_WORKER_TENANT_IDS)) {
+      final String tenantIdsList =
+          properties.getProperty(ClientProperties.DEFAULT_JOB_WORKER_TENANT_IDS);
+      final List<String> tenantIds = Arrays.asList(tenantIdsList.split(LIST_SEPARATOR));
+      defaultJobWorkerTenantIds(tenantIds);
+    }
 
     if (properties.containsKey(ClientProperties.JOB_WORKER_EXECUTION_THREADS)) {
       numJobWorkerExecutionThreads(
@@ -269,6 +284,12 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   @Override
   public ZeebeClientBuilder defaultTenantId(final String tenantId) {
     defaultTenantId = tenantId;
+    return this;
+  }
+
+  @Override
+  public ZeebeClientBuilder defaultJobWorkerTenantIds(final List<String> tenantIds) {
+    defaultJobWorkerTenantIds = tenantIds;
     return this;
   }
 
@@ -420,6 +441,12 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
 
     if (Environment.system().isDefined(DEFAULT_TENANT_ID_VAR)) {
       defaultTenantId(Environment.system().get(DEFAULT_TENANT_ID_VAR));
+    }
+
+    if (Environment.system().isDefined(DEFAULT_JOB_WORKER_TENANT_IDS_VAR)) {
+      final String tenantIdsList = Environment.system().get(DEFAULT_JOB_WORKER_TENANT_IDS_VAR);
+      final List<String> tenantIds = Arrays.asList(tenantIdsList.split(LIST_SEPARATOR));
+      defaultJobWorkerTenantIds(tenantIds);
     }
 
     if (Environment.system().isDefined(ZEEBE_CLIENT_WORKER_STREAM_ENABLED)) {

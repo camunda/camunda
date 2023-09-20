@@ -31,6 +31,8 @@ import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder;
 import io.grpc.ClientInterceptor;
 import java.time.Duration;
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.ScheduledExecutorService;
@@ -99,6 +101,7 @@ public class ZeebeClientCloudBuilderImpl
 
     // todo(#14106): allow default tenant id setting for cloud client
     innerBuilder.defaultTenantId("");
+    innerBuilder.defaultJobWorkerTenantIds(Collections.emptyList());
 
     return this;
   }
@@ -119,6 +122,14 @@ public class ZeebeClientCloudBuilderImpl
   @Override
   @ExperimentalApi("https://github.com/camunda/zeebe/issues/14106")
   public ZeebeClientCloudBuilderStep4 defaultTenantId(final String tenantId) {
+    Loggers.LOGGER.debug(
+        "Multi-tenancy in Camunda 8 SaaS will be supported with https://github.com/camunda/zeebe/issues/14106.");
+    return this;
+  }
+
+  @Override
+  @ExperimentalApi("https://github.com/camunda/zeebe/issues/14106")
+  public ZeebeClientBuilder defaultJobWorkerTenantIds(final List<String> tenantIds) {
     Loggers.LOGGER.debug(
         "Multi-tenancy in Camunda 8 SaaS will be supported with https://github.com/camunda/zeebe/issues/14106.");
     return this;
