@@ -91,6 +91,10 @@ public class ZeebeClientCloudBuilderImpl
     if (properties.containsKey(ClientProperties.CLOUD_REGION)) {
       withRegion(properties.getProperty(ClientProperties.CLOUD_REGION));
     }
+    if (properties.containsKey(ClientProperties.STREAM_ENABLED)) {
+      defaultJobWorkerStreamEnabled(
+          Boolean.parseBoolean(properties.getProperty(ClientProperties.STREAM_ENABLED)));
+    }
     innerBuilder.withProperties(properties);
 
     // todo(#14106): allow default tenant id setting for cloud client
@@ -216,6 +220,12 @@ public class ZeebeClientCloudBuilderImpl
   public ZeebeClientBuilder maxMessageSize(final int maxMessageSize) {
     innerBuilder.maxMessageSize(maxMessageSize);
     return this;
+  }
+
+  @Override
+  public ZeebeClientBuilder defaultJobWorkerStreamEnabled(final boolean streamEnabled) {
+    innerBuilder.defaultJobWorkerStreamEnabled(streamEnabled);
+    return null;
   }
 
   @Override

@@ -71,6 +71,7 @@ public final class JobWorkerBuilderImpl
     maxJobsActive = configuration.getDefaultJobWorkerMaxJobsActive();
     pollInterval = configuration.getDefaultJobPollInterval();
     requestTimeout = configuration.getDefaultRequestTimeout();
+    enableStreaming = configuration.getDefaultJobWorkerStreamEnabled();
     backoffSupplier = DEFAULT_BACKOFF_SUPPLIER;
     streamingTimeout = DEFAULT_STREAMING_TIMEOUT;
   }
