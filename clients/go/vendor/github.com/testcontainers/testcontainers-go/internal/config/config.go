@@ -10,8 +10,10 @@ import (
 	"github.com/magiconair/properties"
 )
 
-var tcConfig Config
-var tcConfigOnce *sync.Once = new(sync.Once)
+var (
+	tcConfig     Config
+	tcConfigOnce *sync.Once = new(sync.Once)
+)
 
 // Config represents the configuration for Testcontainers
 // testcontainersConfig {
@@ -86,8 +88,6 @@ func read() Config {
 		fmt.Printf("invalid testcontainers properties file, returning an empty Testcontainers configuration: %v\n", err)
 		return applyEnvironmentConfiguration(config)
 	}
-
-	fmt.Printf("Testcontainers properties file has been found: %s\n", tcProp)
 
 	return applyEnvironmentConfiguration(config)
 }

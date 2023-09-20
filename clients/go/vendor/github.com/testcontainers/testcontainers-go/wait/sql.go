@@ -9,8 +9,10 @@ import (
 	"github.com/docker/go-connections/nat"
 )
 
-var _ Strategy = (*waitForSql)(nil)
-var _ StrategyTimeout = (*waitForSql)(nil)
+var (
+	_ Strategy        = (*waitForSql)(nil)
+	_ StrategyTimeout = (*waitForSql)(nil)
+)
 
 const defaultForSqlQuery = "SELECT 1"
 
@@ -85,7 +87,7 @@ func (w *waitForSql) WaitUntilReady(ctx context.Context, target StrategyTarget) 
 	for port == "" {
 		select {
 		case <-ctx.Done():
-			return fmt.Errorf("%s:%w", ctx.Err(), err)
+			return fmt.Errorf("%w: %w", ctx.Err(), err)
 		case <-ticker.C:
 			if err := checkTarget(ctx, target); err != nil {
 				return err
@@ -96,7 +98,7 @@ func (w *waitForSql) WaitUntilReady(ctx context.Context, target StrategyTarget) 
 
 	db, err := sql.Open(w.Driver, w.URL(host, port))
 	if err != nil {
-		return fmt.Errorf("sql.Open: %v", err)
+		return fmt.Errorf("sql.Open: %w", err)
 	}
 	defer db.Close()
 	for {
