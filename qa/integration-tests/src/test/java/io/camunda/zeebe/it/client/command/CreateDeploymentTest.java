@@ -20,6 +20,7 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -192,5 +193,31 @@ public final class CreateDeploymentTest {
                 assertThat(((DeploymentRecord) recordValue).getResources()).isEmpty();
               }
             });
+  }
+
+  @Test
+  public void shouldDeployForm() {
+    // given
+    final String resourceName = "form/test-form-1.form";
+
+    // when
+    final DeploymentEvent result =
+        CLIENT_RULE
+            .getClient()
+            .newDeployResourceCommand()
+            .addResourceFromClasspath(resourceName)
+            .send()
+            .join();
+
+    // then
+    assertThat(result.getKey()).isPositive();
+    assertThat(result.getForm()).hasSize(1);
+
+    final var form = result.getForm().get(0);
+    assertThat(form.getFormId()).isEqualTo("Form_0w7r08e");
+    assertThat(form.getResourceName()).isEqualTo(resourceName);
+    assertThat(form.getVersion()).isEqualTo(1);
+    assertThat(form.getTenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    assertThat(form.getFormKey()).isPositive();
   }
 }
