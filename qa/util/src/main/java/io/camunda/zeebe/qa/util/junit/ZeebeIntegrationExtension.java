@@ -283,8 +283,12 @@ final class ZeebeIntegrationExtension
           annotation.replicationFactor() <= 0
               ? cluster.replicationFactor()
               : annotation.replicationFactor();
-      cluster.awaitCompleteTopology(
-          clusterSize, partitionCount, replicationFactor, Duration.ofMinutes(clusterSize));
+      final var timeout =
+          annotation.topologyTimeoutMs() == 0
+              ? Duration.ofMinutes(clusterSize)
+              : Duration.ofMillis(annotation().topologyTimeoutMs());
+
+      cluster.awaitCompleteTopology(clusterSize, partitionCount, replicationFactor, timeout);
     }
   }
 
@@ -313,11 +317,15 @@ final class ZeebeIntegrationExtension
         return;
       }
 
+      final var timeout =
+          annotation.topologyTimeoutMs() == 0
+              ? Duration.ofMinutes(1)
+              : Duration.ofMillis(annotation().topologyTimeoutMs());
       gateway.awaitCompleteTopology(
           Math.max(1, annotation.clusterSize()),
-          Math.max(1, annotation.clusterSize()),
-          Math.max(1, annotation.clusterSize()),
-          Duration.ofSeconds(30));
+          Math.max(1, annotation.partitionCount()),
+          Math.max(1, annotation.replicationFactor()),
+          timeout);
     }
   }
 

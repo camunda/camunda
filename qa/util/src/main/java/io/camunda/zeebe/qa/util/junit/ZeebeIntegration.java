@@ -79,11 +79,13 @@ public @interface ZeebeIntegration {
      *
      * <p>If a {@link io.camunda.zeebe.qa.util.cluster.TestCluster} instance is annotated with this,
      * verifies this on all gateways. If the cluster size, partition count, and replication factor
-     * attributes are left to defaults (0), uses the cluster's information to replace them.
-     * However, if they're set to something, this will override the cluster's settings.
+     * attributes are left to defaults (0), uses the cluster's information to replace them. However,
+     * if they're set to something, this will override the cluster's settings.
      *
      * <p>If a {@link io.camunda.zeebe.qa.util.cluster.TestGateway} instance is annotated with this,
-     * and replaces the default cluster size, partition count, and replication factor by 1.
+     * then only this gateway is used to await the complete topology. In this case, the default for
+     * the annotation params ({@link #clusterSize()}, {@link #partitionCount()}, {@link
+     * #replicationFactor()}) are all 1.
      *
      * <p>Does nothing if a {@link io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker} is
      * annotated with this that does not have an embedded gateway.
@@ -100,5 +102,11 @@ public @interface ZeebeIntegration {
 
     /** The expected replication factor, used for {@link #awaitCompleteTopology()}. */
     int replicationFactor() default 0;
+
+    /**
+     * The expected topology timeout, used for {@link #awaitCompleteTopology()}; if omitted,
+     * defaults to 1 minute per brokers in the cluster.
+     */
+    long topologyTimeoutMs() default 0;
   }
 }
