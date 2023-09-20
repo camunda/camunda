@@ -58,6 +58,7 @@ public final class DeployResourceTest extends ClientTest {
   private static final String DMN_DECISION_REQUIREMENTS_NAME = "Force Users";
   private static final String FORM_FILENAME_1 = "/form/test-form-1.form";
   private static final String FORM_FILENAME_2 = "/form/test-form-2.form";
+  private static final String DEFAULT_TENANT = "<default>";
 
   @Test
   public void shouldDeployResourceFromFile() {
@@ -395,13 +396,12 @@ public final class DeployResourceTest extends ClientTest {
     final String filename = DeployResourceTest.class.getResource(FORM_FILENAME_1).getPath();
     final long deploymentKey = 123L;
     final int version = 1;
-    final String tenantId = "<default>";
     final long formKey = 234L;
     final String formId = "formId";
     gatewayService.onDeployResourceRequest(
         deploymentKey,
-        tenantId,
-        deployment(deployedForm(formId, version, formKey, filename, tenantId)));
+        DEFAULT_TENANT,
+        deployment(deployedForm(formId, version, formKey, filename, DEFAULT_TENANT)));
 
     // when
     final DeploymentEvent response =
@@ -410,23 +410,22 @@ public final class DeployResourceTest extends ClientTest {
     // then
     assertThat(response.getKey()).isEqualTo(deploymentKey);
     assertThat(response.getForm())
-        .containsExactly(new FormImpl(formId, version, formKey, filename, tenantId));
+        .containsExactly(new FormImpl(formId, version, formKey, filename, DEFAULT_TENANT));
   }
 
   @Test
   public void shouldDeployMultipleFormsAsResources() {
     // given
     final long key = 345L;
-    final String tenantId = "<default>";
     final String filename1 = FORM_FILENAME_1.substring(1);
     final String filename2 = FORM_FILENAME_2.substring(1);
     final String formId1 = "formId1";
     final String formId2 = "formId2";
     gatewayService.onDeployResourceRequest(
         key,
-        tenantId,
-        deployment(deployedForm(formId1, 1, 1, filename1, tenantId)),
-        deployment(deployedForm(formId2, 1, 2, filename2, tenantId)));
+        DEFAULT_TENANT,
+        deployment(deployedForm(formId1, 1, 1, filename1, DEFAULT_TENANT)),
+        deployment(deployedForm(formId2, 1, 2, filename2, DEFAULT_TENANT)));
 
     // when
     final DeploymentEvent response =
@@ -434,7 +433,7 @@ public final class DeployResourceTest extends ClientTest {
             .newDeployResourceCommand()
             .addResourceFromClasspath(filename1)
             .addResourceFromClasspath(filename2)
-            .tenantId(tenantId)
+            .tenantId(DEFAULT_TENANT)
             .send()
             .join();
 
@@ -442,8 +441,8 @@ public final class DeployResourceTest extends ClientTest {
     assertThat(response.getKey()).isEqualTo(key);
     assertThat(response.getForm())
         .containsExactly(
-            new FormImpl(formId1, 1, 1, filename1, tenantId),
-            new FormImpl(formId2, 1, 2, filename2, tenantId));
+            new FormImpl(formId1, 1, 1, filename1, DEFAULT_TENANT),
+            new FormImpl(formId2, 1, 2, filename2, DEFAULT_TENANT));
   }
 
   private byte[] getBytes(final String filename) {

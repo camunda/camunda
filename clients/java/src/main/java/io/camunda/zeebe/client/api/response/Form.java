@@ -19,7 +19,7 @@ public interface Form {
 
   /**
    * @return the form ID, as parsed during deployment; together with the versions forms a unique
-   *     identifier for a specific decision
+   *     identifier for a specific form
    */
   String getFormId();
 
