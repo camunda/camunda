@@ -21,7 +21,6 @@ import static org.mockito.Mockito.mock;
 
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.MemberId;
-import io.atomix.raft.RaftServer.Builder;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.impl.RaftContext;
@@ -68,9 +67,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BiFunction;
 import java.util.function.BooleanSupplier;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.awaitility.Awaitility;
@@ -98,17 +95,16 @@ public final class RaftRule extends ExternalResource {
   // Keep a reference to the snapshots to ensure they are persisted across the restarts.
   private Map<String, AtomicReference<InMemorySnapshot>> snapshots;
   private Map<String, TestSnapshotStore> snapshotStores;
-  private final BiFunction<MemberId, Builder, Builder> serverConfigurator;
+  private final Configurator configurator;
   private final Random random = new Random();
 
-  private RaftRule(
-      final int nodeCount, final BiFunction<MemberId, Builder, Builder> serverConfigurator) {
+  private RaftRule(final int nodeCount, final Configurator configurator) {
     this.nodeCount = nodeCount;
-    this.serverConfigurator = serverConfigurator;
+    this.configurator = configurator;
   }
 
   public static RaftRule withBootstrappedNodes(
-      final int nodeCount, final BiFunction<MemberId, Builder, Builder> serverConfigurator) {
+      final int nodeCount, final ServerConfigurator serverConfigurator) {
     if (nodeCount < 1) {
       throw new IllegalArgumentException("Expected to have at least one node to configure.");
     }
@@ -116,11 +112,7 @@ public final class RaftRule extends ExternalResource {
   }
 
   public static RaftRule withBootstrappedNodes(final int nodeCount) {
-    return new RaftRule(nodeCount, (m, b) -> b);
-  }
-
-  public static RaftRule withoutNodes() {
-    return new RaftRule(-1, (m, b) -> b);
+    return new RaftRule(nodeCount, new Configurator() {});
   }
 
   public RaftRule setEntryValidator(final EntryValidator entryValidator) {
@@ -148,7 +140,7 @@ public final class RaftRule extends ExternalResource {
     protocolFactory = new TestRaftProtocolFactory(context);
 
     if (nodeCount > 0) {
-      createServers(nodeCount, serverConfigurator);
+      createServers(nodeCount, configurator);
     }
   }
 
@@ -196,8 +188,7 @@ public final class RaftRule extends ExternalResource {
   }
 
   /** Creates a set of Raft servers. */
-  private List<RaftServer> createServers(
-      final int nodes, final BiFunction<MemberId, Builder, Builder> serverConfigurator)
+  private List<RaftServer> createServers(final int nodes, final Configurator configurator)
       throws Exception {
     final List<RaftServer> servers = new ArrayList<>();
 
@@ -209,7 +200,7 @@ public final class RaftRule extends ExternalResource {
 
     for (int i = 0; i < nodes; i++) {
       final var raftMember = members.get(i);
-      final RaftServer server = createServer(raftMember.memberId(), serverConfigurator);
+      final RaftServer server = createServer(raftMember.memberId(), configurator);
       server
           .bootstrap(members.stream().map(RaftMember::memberId).collect(Collectors.toList()))
           .thenAccept(this::addCommitListener)
@@ -234,15 +225,19 @@ public final class RaftRule extends ExternalResource {
 
   public void joinCluster(final String nodeId) throws Exception {
     final RaftMember member = getRaftMember(nodeId);
-    createServer(member.memberId(), serverConfigurator)
+    createServer(member.memberId(), configurator)
         .bootstrap(getMemberIds())
         .thenAccept(this::addCommitListener)
         .get(30, TimeUnit.SECONDS);
   }
 
   public void bootstrapNode(final String nodeId) throws Exception {
+    bootstrapNode(nodeId, configurator);
+  }
+
+  public void bootstrapNode(final String nodeId, final Configurator configurator) throws Exception {
     final RaftMember member = getRaftMember(nodeId);
-    createServer(member.memberId(), serverConfigurator)
+    createServer(member.memberId(), configurator)
         .bootstrap(getMemberIds())
         .thenAccept(this::addCommitListener)
         .get(30, TimeUnit.SECONDS);
@@ -251,7 +246,7 @@ public final class RaftRule extends ExternalResource {
   public void bootstrapNodeWithMemberIds(final String nodeId, final List<MemberId> memberIds)
       throws Exception {
     final RaftMember member = getRaftMember(nodeId);
-    createServer(member.memberId(), serverConfigurator)
+    createServer(member.memberId(), configurator)
         .bootstrap(memberIds)
         .thenAccept(this::addCommitListener)
         .get(30, TimeUnit.SECONDS);
@@ -501,12 +496,11 @@ public final class RaftRule extends ExternalResource {
     commitAwaiter.awaitCommit();
   }
 
-  private RaftServer createServer(
-      final MemberId memberId, final BiFunction<MemberId, Builder, Builder> configurator) {
+  private RaftServer createServer(final MemberId memberId, final Configurator configurator) {
     final TestRaftServerProtocol protocol = protocolFactory.newServerProtocol(memberId);
-    final var storage = createStorage(memberId);
+    final var storage = createStorage(memberId, configurator);
 
-    final RaftServer.Builder defaults =
+    final RaftServer.Builder builder =
         RaftServer.builder(memberId)
             .withPartitionConfig(
                 new RaftPartitionConfig()
@@ -516,14 +510,14 @@ public final class RaftRule extends ExternalResource {
             .withProtocol(protocol)
             .withEntryValidator(entryValidator)
             .withStorage(storage);
-    final RaftServer server = configurator.apply(memberId, defaults).build();
 
+    if (configurator instanceof final ServerConfigurator s) {
+      s.configureServer(memberId, builder);
+    }
+
+    final var server = builder.build();
     servers.put(memberId.id(), server);
     return server;
-  }
-
-  private RaftStorage createStorage(final MemberId memberId) {
-    return createStorage(memberId, Function.identity());
   }
 
   public void copySnapshotOffline(final String sourceNode, final String targetNode) {
@@ -536,21 +530,27 @@ public final class RaftRule extends ExternalResource {
     receivedSnapshot.persist();
   }
 
-  private RaftStorage createStorage(
-      final MemberId memberId,
-      final Function<RaftStorage.Builder, RaftStorage.Builder> configurator) {
-
+  private RaftStorage createStorage(final MemberId memberId, final Configurator configurator) {
     final var memberDirectory = getMemberDirectory(directory, memberId.toString());
-    final RaftStorage.Builder defaults =
+    final var snapshotStore = new TestSnapshotStore(getOrCreatePersistedSnapshot(memberId.id()));
+    snapshotStores.put(memberId.id(), snapshotStore);
+
+    if (configurator instanceof final SnapshotStoreConfigurator s) {
+      s.configureSnapshotStore(memberId, snapshotStore);
+    }
+
+    final var builder =
         RaftStorage.builder()
             .withDirectory(memberDirectory)
             .withMaxSegmentSize(1024 * 10)
             .withFreeDiskSpace(100)
-            .withSnapshotStore(
-                snapshotStores.compute(
-                    memberId.id(),
-                    (k, v) -> new TestSnapshotStore(getOrCreatePersistedSnapshot(memberId.id()))));
-    return configurator.apply(defaults).build();
+            .withSnapshotStore(snapshotStore);
+
+    if (configurator instanceof final StorageConfigurator s) {
+      s.configureStorage(memberId, builder);
+    }
+
+    return builder.build();
   }
 
   private File getMemberDirectory(final Path directory, final String s) {
@@ -736,5 +736,21 @@ public final class RaftRule extends ExternalResource {
     public ReplicatableJournalRecord getReplicatableJournalRecord() {
       throw new UnsupportedOperationException();
     }
+  }
+
+  public interface Configurator {}
+
+  @FunctionalInterface
+  public interface ServerConfigurator extends Configurator {
+    void configureServer(final MemberId id, final RaftServer.Builder builder);
+  }
+
+  public interface StorageConfigurator extends Configurator {
+    void configureStorage(final MemberId id, final RaftStorage.Builder builder);
+  }
+
+  @FunctionalInterface
+  public interface SnapshotStoreConfigurator extends Configurator {
+    void configureSnapshotStore(final MemberId id, final TestSnapshotStore snapshotStore);
   }
 }

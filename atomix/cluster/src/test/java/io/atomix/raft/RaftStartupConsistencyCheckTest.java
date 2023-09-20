@@ -10,8 +10,10 @@ package io.atomix.raft;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 
+import io.atomix.raft.RaftRule.SnapshotStoreConfigurator;
 import io.atomix.raft.snapshot.TestSnapshotStore;
 import java.util.concurrent.CompletableFuture;
+import org.agrona.LangUtil;
 import org.awaitility.Awaitility;
 import org.junit.Rule;
 import org.junit.Test;
@@ -72,5 +74,37 @@ public class RaftStartupConsistencyCheckTest {
             () ->
                 assertThat(raftRule.getPersistedSnapshotStore(followerId).getCurrentSnapshotIndex())
                     .isEqualTo(snapshotIndex));
+  }
+
+  @Test // regression test for https://github.com/camunda/zeebe/issues/14367
+  public void shouldHandleRetriedRequestsAfterSnapshotPersist() throws Exception {
+    // given -- force a follower to receive a snapshot on restart
+    final var leader = raftRule.getLeader().orElseThrow();
+    final var follower = raftRule.getFollower().orElseThrow();
+    raftRule.shutdownServer(follower);
+
+    final var snapshotIndex = raftRule.appendEntries(500);
+    raftRule.takeCompactingSnapshot(leader, snapshotIndex - 1, 3);
+    final var lastIndex = raftRule.appendEntries(10);
+    leader.getContext().setPreferSnapshotReplicationThreshold(1);
+
+    // when -- persisting the snapshot on the follower is too slow, the leader will retry the
+    // `install` requests
+    final Runnable interceptor =
+        () -> {
+          try {
+            // TODO: better way to force a timeout?
+            Thread.sleep(2_000);
+          } catch (final InterruptedException e) {
+            LangUtil.rethrowUnchecked(e);
+          }
+        };
+    raftRule.bootstrapNode(
+        follower.name(),
+        (SnapshotStoreConfigurator) (m, b) -> b.interceptOnNewSnapshot(interceptor));
+
+    // then -- rejoined follower should catch up
+    raftRule.allNodesHaveSnapshotWithIndex(snapshotIndex);
+    raftRule.awaitSameLogSizeOnAllNodes(lastIndex);
   }
 }
