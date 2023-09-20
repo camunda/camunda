@@ -38,6 +38,7 @@ public final class JobPollerImpl implements JobPoller {
   private final String workerName;
   private final Duration timeout;
   private final List<String> fetchVariables;
+  private final List<String> tenantIds;
 
   private int maxJobsToActivate;
 
@@ -54,6 +55,7 @@ public final class JobPollerImpl implements JobPoller {
       final String workerName,
       final Duration timeout,
       final List<String> fetchVariables,
+      final List<String> tenantIds,
       final int maxJobsToActivate) {
     this.requestTimeout = requestTimeout;
     this.jobClient = jobClient;
@@ -61,6 +63,7 @@ public final class JobPollerImpl implements JobPoller {
     this.workerName = workerName;
     this.timeout = timeout;
     this.fetchVariables = fetchVariables;
+    this.tenantIds = tenantIds;
     this.maxJobsToActivate = maxJobsToActivate;
   }
 
@@ -107,7 +110,8 @@ public final class JobPollerImpl implements JobPoller {
             .jobType(jobType)
             .maxJobsToActivate(maxJobsToActivate)
             .timeout(timeout)
-            .workerName(workerName);
+            .workerName(workerName)
+            .tenantIds(tenantIds);
     if (fetchVariables != null) {
       activateCommand.fetchVariables(fetchVariables);
     }
