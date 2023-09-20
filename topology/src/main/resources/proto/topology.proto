@@ -1,6 +1,8 @@
 syntax = 'proto3';
 package topology_protocol;
 
+import "google/protobuf/timestamp.proto";
+
 option java_package = "io.camunda.zeebe.topology.protocol";
 
 message GossipState {
@@ -15,7 +17,7 @@ message ClusterTopology {
 
 message MemberState {
   int64 version = 1;
-  int64 lastUpdatedTimestamp = 2;
+  google.protobuf.Timestamp lastUpdated = 2;
   State state = 3;
   map<int32, PartitionState> partitions = 4;
 }

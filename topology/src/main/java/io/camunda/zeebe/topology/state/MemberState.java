@@ -8,6 +8,7 @@
 package io.camunda.zeebe.topology.state;
 
 import com.google.common.collect.ImmutableMap;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.UnaryOperator;
@@ -24,15 +25,14 @@ import java.util.function.UnaryOperator;
  * @param partitions state of all partitions that the member is replicating
  */
 public record MemberState(
-    long version, long lastUpdatedTimestamp, State state, Map<Integer, PartitionState> partitions) {
+    long version, Instant lastUpdated, State state, Map<Integer, PartitionState> partitions) {
   public static MemberState initializeAsActive(
       final Map<Integer, PartitionState> initialPartitions) {
-    return new MemberState(
-        0, System.currentTimeMillis(), State.ACTIVE, Map.copyOf(initialPartitions));
+    return new MemberState(0, Instant.now(), State.ACTIVE, Map.copyOf(initialPartitions));
   }
 
   public static MemberState uninitialized() {
-    return new MemberState(0, 0, State.UNINITIALIZED, Map.of());
+    return new MemberState(0, Instant.MIN, State.UNINITIALIZED, Map.of());
   }
 
   public MemberState toJoining() {
@@ -144,7 +144,7 @@ public record MemberState(
   }
 
   private MemberState update(final State state, final Map<Integer, PartitionState> partitions) {
-    return new MemberState(version + 1, System.currentTimeMillis(), state, partitions);
+    return new MemberState(version + 1, Instant.now(), state, partitions);
   }
 
   public boolean hasPartition(final int partitionId) {

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.topology.serializer;
 
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.Timestamp;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.topology.gossip.ClusterTopologyGossipState;
 import io.camunda.zeebe.topology.protocol.Topology;
@@ -20,6 +21,7 @@ import io.camunda.zeebe.topology.state.TopologyChangeOperation.MemberJoinOperati
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.MemberLeaveOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
+import java.time.Instant;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
@@ -108,9 +110,10 @@ public class ProtoBufSerializer implements ClusterTopologySerializer {
         memberState.getPartitionsMap().entrySet().stream()
             .map(e -> Map.entry(e.getKey(), decodePartitionState(e.getValue())))
             .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+    final Timestamp lastUpdated = memberState.getLastUpdated();
     return new io.camunda.zeebe.topology.state.MemberState(
         memberState.getVersion(),
-        memberState.getLastUpdatedTimestamp(),
+        Instant.ofEpochSecond(lastUpdated.getSeconds(), lastUpdated.getNanos()),
         toMemberState(memberState.getState()),
         partitions);
   }
@@ -127,9 +130,14 @@ public class ProtoBufSerializer implements ClusterTopologySerializer {
         memberState.partitions().entrySet().stream()
             .map(e -> Map.entry(e.getKey(), encodePartitions(e.getValue())))
             .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+    final Instant lastUpdated = memberState.lastUpdated();
     return MemberState.newBuilder()
         .setVersion(memberState.version())
-        .setLastUpdatedTimestamp(memberState.lastUpdatedTimestamp())
+        .setLastUpdated(
+            Timestamp.newBuilder()
+                .setSeconds(lastUpdated.getEpochSecond())
+                .setNanos(lastUpdated.getNano())
+                .build())
         .setState(toSerializedState(memberState.state()))
         .putAllPartitions(partitions)
         .build();
