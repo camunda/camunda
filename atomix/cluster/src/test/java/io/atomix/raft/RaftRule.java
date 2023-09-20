@@ -520,16 +520,6 @@ public final class RaftRule extends ExternalResource {
     return server;
   }
 
-  public void copySnapshotOffline(final String sourceNode, final String targetNode) {
-    final var snapshotOnNode = getSnapshotOnNode(sourceNode);
-    final var targetSnapshotStore = new TestSnapshotStore(getOrCreatePersistedSnapshot(sourceNode));
-    final var receivedSnapshot = targetSnapshotStore.newReceivedSnapshot(snapshotOnNode.getId());
-    for (final var reader = snapshotOnNode.newChunkReader(); reader.hasNext(); ) {
-      receivedSnapshot.apply(reader.next());
-    }
-    receivedSnapshot.persist();
-  }
-
   private RaftStorage createStorage(final MemberId memberId, final Configurator configurator) {
     final var memberDirectory = getMemberDirectory(directory, memberId.toString());
     final var snapshotStore = new TestSnapshotStore(getOrCreatePersistedSnapshot(memberId.id()));
