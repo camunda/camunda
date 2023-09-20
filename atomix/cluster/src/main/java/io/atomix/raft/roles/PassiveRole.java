@@ -75,16 +75,9 @@ public class PassiveRole extends InactiveRole {
   @Override
   public CompletableFuture<Void> stop() {
     abortPendingSnapshots();
-
-    // as a safe guard, we clean up any orphaned pending snapshots
-    try {
-      raft.getPersistedSnapshotStore().purgePendingSnapshots().join();
-    } catch (final Exception e) {
-      log.warn(
-          "Failed to purge pending snapshots, which may result in unnecessary disk usage and should be monitored",
-          e);
-    }
-    return super.stop();
+    final var result = super.stop();
+    raft.getPersistedSnapshotStore().purgePendingSnapshots();
+    return result;
   }
 
   /** Truncates uncommitted entries from the log. */
