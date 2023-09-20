@@ -21,12 +21,14 @@ import io.camunda.zeebe.backup.processing.MockProcessingResult.MockProcessingRes
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.backup.processing.state.DbCheckpointState;
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
+import io.camunda.zeebe.db.MultiTenancySettings;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
 import io.camunda.zeebe.stream.impl.RecordProcessorContextImpl;
@@ -54,7 +56,9 @@ final class CheckpointRecordsProcessorTest {
   void setup() {
     zeebedb =
         new ZeebeRocksDbFactory<>(
-                new RocksDbConfiguration(), new ConsistencyChecksSettings(true, true))
+                new RocksDbConfiguration(),
+                new ConsistencyChecksSettings(true, true),
+                new MultiTenancySettings(TenantOwned.DEFAULT_TENANT_IDENTIFIER))
             .createDb(database.toFile());
     final RecordProcessorContextImpl context = createContext(executor, zeebedb);
 

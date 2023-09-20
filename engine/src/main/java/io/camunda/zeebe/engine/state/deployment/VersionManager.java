@@ -11,8 +11,6 @@ import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbString;
-import io.camunda.zeebe.db.impl.DbTenantAwareKey;
-import io.camunda.zeebe.db.impl.DbTenantAwareKey.PlacementType;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import java.util.HashMap;
 import java.util.Map;
@@ -24,10 +22,9 @@ public final class VersionManager {
 
   private final long initialValue;
 
-  private final ColumnFamily<DbTenantAwareKey<DbString>, VersionInfo> versionInfoColumnFamily;
+  private final ColumnFamily<DbString, VersionInfo> versionInfoColumnFamily;
   private final DbString idKey;
   private final DbString tenantIdKey;
-  private final DbTenantAwareKey<DbString> tenantAwareIdKey;
   private final VersionInfo nextVersion = new VersionInfo();
   private final Map<String, Object2ObjectHashMap<String, VersionInfo>> versionByTenantCache;
 
@@ -40,9 +37,9 @@ public final class VersionManager {
 
     tenantIdKey = new DbString();
     idKey = new DbString();
-    tenantAwareIdKey = new DbTenantAwareKey<>(tenantIdKey, idKey, PlacementType.PREFIX);
     versionInfoColumnFamily =
-        zeebeDb.createColumnFamily(columnFamily, transactionContext, tenantAwareIdKey, nextVersion);
+        zeebeDb.createTenantAwareColumnFamily(
+            columnFamily, transactionContext, idKey, nextVersion, tenantIdKey);
     versionByTenantCache = new HashMap<>();
   }
 
@@ -50,8 +47,7 @@ public final class VersionManager {
     final var versionInfo =
         versionByTenantCache
             .computeIfAbsent(tenantIdKey.toString(), key -> new Object2ObjectHashMap<>())
-            .computeIfAbsent(
-                idKey.toString(), (key) -> versionInfoColumnFamily.get(tenantAwareIdKey));
+            .computeIfAbsent(idKey.toString(), (key) -> versionInfoColumnFamily.get(idKey));
 
     if (versionInfo == null) {
       return new VersionInfo().setHighestVersionIfHigher(initialValue);
@@ -65,7 +61,7 @@ public final class VersionManager {
     idKey.wrapString(resourceId);
     final var versionInfo = getVersionInfo();
     versionInfo.addKnownVersion(value);
-    versionInfoColumnFamily.upsert(tenantAwareIdKey, versionInfo);
+    versionInfoColumnFamily.upsert(idKey, versionInfo);
     versionByTenantCache
         .computeIfAbsent(tenantId, key -> new Object2ObjectHashMap<>())
         .put(resourceId, versionInfo);
@@ -84,7 +80,7 @@ public final class VersionManager {
     idKey.wrapString(resourceId);
     final var versionInfo = getVersionInfo();
     versionInfo.removeKnownVersion(version);
-    versionInfoColumnFamily.update(tenantAwareIdKey, versionInfo);
+    versionInfoColumnFamily.update(idKey, versionInfo);
     versionByTenantCache
         .computeIfAbsent(tenantId, key -> new Object2ObjectHashMap<>())
         .put(resourceId, versionInfo);

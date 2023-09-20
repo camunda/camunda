@@ -9,7 +9,6 @@ package io.camunda.zeebe.db.impl.rocksdb.transaction;
 
 import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.db.impl.ZeebeDbConstants;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.Queue;
@@ -22,6 +21,8 @@ public class ColumnFamilyContext {
 
   private static final byte[] ZERO_SIZE_ARRAY = new byte[0];
 
+  private final ColumnFamilyKey columnFamilyKey;
+
   // we can also simply use one buffer
   private final ExpandableArrayBuffer keyBuffer = new ExpandableArrayBuffer();
   private final ExpandableArrayBuffer valueBuffer = new ExpandableArrayBuffer();
@@ -30,22 +31,30 @@ public class ColumnFamilyContext {
   private final DirectBuffer valueViewBuffer = new UnsafeBuffer(0, 0);
 
   private final Queue<ExpandableArrayBuffer> prefixKeyBuffers;
-  private int keyLength;
-  private final long columnFamilyPrefix;
 
-  ColumnFamilyContext(final long columnFamilyPrefix) {
-    this.columnFamilyPrefix = columnFamilyPrefix;
+  private int keyLength;
+
+  ColumnFamilyContext(final ColumnFamilyKey columnFamilyKey) {
+    this.columnFamilyKey = columnFamilyKey;
     prefixKeyBuffers = new ArrayDeque<>();
     prefixKeyBuffers.add(new ExpandableArrayBuffer());
     prefixKeyBuffers.add(new ExpandableArrayBuffer());
   }
 
   public void writeKey(final DbKey key) {
-    keyLength = 0;
-    keyBuffer.putLong(0, columnFamilyPrefix, ZeebeDbConstants.ZB_DB_BYTE_ORDER);
-    keyLength += Long.BYTES;
-    key.write(keyBuffer, Long.BYTES);
+    final int columnFamilyKeyLength;
+    int keyLength = 0;
+    int offset = 0;
+
+    columnFamilyKey.write(keyBuffer, offset);
+    columnFamilyKeyLength = columnFamilyKey.getLength();
+    keyLength += columnFamilyKeyLength;
+    offset += columnFamilyKeyLength;
+
+    key.write(keyBuffer, offset);
     keyLength += key.getLength();
+
+    this.keyLength = keyLength;
   }
 
   public int getKeyLength() {
@@ -66,8 +75,12 @@ public class ColumnFamilyContext {
 
   public void wrapKeyView(final byte[] key) {
     if (key != null) {
+      final int columnFamilyKeyLength = columnFamilyKey.getLength();
+      final int offset = columnFamilyKeyLength;
+      final int length = key.length - columnFamilyKeyLength;
+
       // wrap without the column family key
-      keyViewBuffer.wrap(key, Long.BYTES, key.length - Long.BYTES);
+      keyViewBuffer.wrap(key, offset, length);
     } else {
       keyViewBuffer.wrap(ZERO_SIZE_ARRAY);
     }
@@ -105,9 +118,16 @@ public class ColumnFamilyContext {
 
     final ExpandableArrayBuffer prefixKeyBuffer = prefixKeyBuffers.remove();
     try {
-      prefixKeyBuffer.putLong(0, columnFamilyPrefix, ZeebeDbConstants.ZB_DB_BYTE_ORDER);
-      key.write(prefixKeyBuffer, Long.BYTES);
-      final int prefixLength = Long.BYTES + key.getLength();
+      final int columFamilyKeyLength;
+      final int prefixLength;
+      final int offset;
+
+      columnFamilyKey.write(prefixKeyBuffer, 0);
+      columFamilyKeyLength = columnFamilyKey.getLength();
+      offset = columFamilyKeyLength;
+
+      key.write(prefixKeyBuffer, offset);
+      prefixLength = columFamilyKeyLength + key.getLength();
 
       prefixKeyConsumer.accept(prefixKeyBuffer.byteArray(), prefixLength);
     } finally {
@@ -116,11 +136,12 @@ public class ColumnFamilyContext {
   }
 
   ByteBuffer keyWithColumnFamily(DbKey key) {
-    final var bytes = ByteBuffer.allocate(Long.BYTES + key.getLength());
+    final var columnFamilyKeyLength = columnFamilyKey.getLength();
+    final var bytes = ByteBuffer.allocate(columnFamilyKeyLength + key.getLength());
     final var buffer = new UnsafeBuffer(bytes);
 
-    buffer.putLong(0, columnFamilyPrefix, ZeebeDbConstants.ZB_DB_BYTE_ORDER);
-    key.write(buffer, Long.BYTES);
+    columnFamilyKey.write(buffer, 0);
+    key.write(buffer, columnFamilyKeyLength);
     return bytes;
   }
 }

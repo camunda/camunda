@@ -22,9 +22,8 @@ public class DecisionRequirementsMigration implements MigrationTask {
   @Override
   public boolean needsToRun(final ProcessingState processingState) {
     return processingState.isEmpty(
-            ZbColumnFamilies
-                .DEPRECATED_DMN_DECISION_REQUIREMENTS_KEY_BY_DECISION_REQUIREMENT_ID_AND_VERSION)
-        && !processingState.isEmpty(ZbColumnFamilies.DEPRECATED_DMN_DECISION_REQUIREMENTS);
+            ZbColumnFamilies.DMN_DECISION_REQUIREMENTS_KEY_BY_DECISION_REQUIREMENT_ID_AND_VERSION)
+        && !processingState.isEmpty(ZbColumnFamilies.DMN_DECISION_REQUIREMENTS);
   }
 
   @Override

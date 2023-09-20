@@ -11,9 +11,11 @@ import static io.camunda.zeebe.backup.processing.state.CheckpointState.NO_CHECKP
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
+import io.camunda.zeebe.db.MultiTenancySettings;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.nio.file.Path;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,7 +37,9 @@ final class DbCheckpointStateTest {
   void before() {
     zeebedb =
         new ZeebeRocksDbFactory<>(
-                new RocksDbConfiguration(), new ConsistencyChecksSettings(true, true))
+                new RocksDbConfiguration(),
+                new ConsistencyChecksSettings(true, true),
+                new MultiTenancySettings(TenantOwned.DEFAULT_TENANT_IDENTIFIER))
             .createDb(database.toFile());
     state = new DbCheckpointState(zeebedb, zeebedb.createContext());
   }

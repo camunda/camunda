@@ -8,16 +8,21 @@
 package io.camunda.zeebe.engine.state;
 
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
+import io.camunda.zeebe.db.MultiTenancySettings;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 
 public final class DefaultZeebeDbFactory {
 
   public static ZeebeDbFactory<ZbColumnFamilies> defaultFactory() {
     // enable consistency checks for tests
     final var consistencyChecks = new ConsistencyChecksSettings(true, true);
-    return new ZeebeRocksDbFactory<>(new RocksDbConfiguration(), consistencyChecks);
+    return new ZeebeRocksDbFactory<>(
+        new RocksDbConfiguration(),
+        consistencyChecks,
+        new MultiTenancySettings(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
   }
 }

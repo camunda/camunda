@@ -44,11 +44,13 @@ import io.camunda.zeebe.broker.system.partitions.impl.steps.SnapshotDirectorPart
 import io.camunda.zeebe.broker.system.partitions.impl.steps.StreamProcessorTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.ZeebeDbPartitionTransitionStep;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
+import io.camunda.zeebe.db.MultiTenancySettings;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.startup.StartupStep;
@@ -195,7 +197,9 @@ public final class ZeebePartitionFactory {
 
     return new StateControllerImpl(
         new ZeebeRocksDbFactory<>(
-            databaseCfg.createRocksDbConfiguration(), consistencyChecks.getSettings()),
+            databaseCfg.createRocksDbConfiguration(),
+            consistencyChecks.getSettings(),
+            new MultiTenancySettings(TenantOwned.DEFAULT_TENANT_IDENTIFIER)),
         snapshotStore,
         runtimeDirectory,
         new AtomixRecordEntrySupplierImpl(raftPartition.getServer()),

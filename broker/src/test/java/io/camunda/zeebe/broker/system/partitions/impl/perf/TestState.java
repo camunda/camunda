@@ -9,11 +9,13 @@ package io.camunda.zeebe.broker.system.partitions.impl.perf;
 
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
+import io.camunda.zeebe.db.MultiTenancySettings;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
@@ -77,7 +79,9 @@ final class TestState {
 
   private ZeebeRocksDbFactory<ZbColumnFamilies> createDbFactory() {
     return new ZeebeRocksDbFactory<>(
-        new RocksDbConfiguration(), new ConsistencyChecksSettings(false, false));
+        new RocksDbConfiguration(),
+        new ConsistencyChecksSettings(false, false),
+        new MultiTenancySettings(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
   }
 
   private void insertData(final List<ColumnFamily<DbString, DbString>> columns) {

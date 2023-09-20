@@ -33,16 +33,13 @@ public class LegacyDecisionState {
     dbPersistedDecision = new PersistedDecision();
     decisionsByKeyColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.DEPRECATED_DMN_DECISIONS,
-            transactionContext,
-            dbDecisionKey,
-            dbPersistedDecision);
+            ZbColumnFamilies.DMN_DECISIONS, transactionContext, dbDecisionKey, dbPersistedDecision);
 
     dbDecisionRequirementsKey = new DbLong();
     dbPersistedDecisionRequirements = new PersistedDecisionRequirements();
     decisionRequirementsByKey =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.DEPRECATED_DMN_DECISION_REQUIREMENTS,
+            ZbColumnFamilies.DMN_DECISION_REQUIREMENTS,
             transactionContext,
             dbDecisionRequirementsKey,
             dbPersistedDecisionRequirements);

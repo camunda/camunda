@@ -35,7 +35,11 @@ final class ForeignKeyCheckerTest {
     // given
     final var db = mock(ZeebeTransactionDb.class);
     final var tx = mock(ZeebeTransaction.class);
-    final var check = new ForeignKeyChecker(db, new ConsistencyChecksSettings(true, true));
+    final var check =
+        new ForeignKeyChecker(
+            db,
+            new ConsistencyChecksSettings(true, true),
+            (e) -> new DefaultColumnFamilyKey(e.ordinal()));
     final var key = new DbLong();
     key.wrapLong(1);
 
@@ -55,7 +59,11 @@ final class ForeignKeyCheckerTest {
     // given
     final var db = mock(ZeebeTransactionDb.class);
     final var tx = mock(ZeebeTransaction.class);
-    final var check = new ForeignKeyChecker(db, new ConsistencyChecksSettings(true, true));
+    final var check =
+        new ForeignKeyChecker(
+            db,
+            new ConsistencyChecksSettings(true, true),
+            (e) -> new DefaultColumnFamilyKey(e.ordinal()));
     final var key = new DbLong();
     key.wrapLong(1);
 
@@ -71,7 +79,11 @@ final class ForeignKeyCheckerTest {
     // given
     final var db = mock(ZeebeTransactionDb.class);
     final var tx = mock(ZeebeTransaction.class);
-    final var check = new ForeignKeyChecker(db, new ConsistencyChecksSettings(true, true));
+    final var check =
+        new ForeignKeyChecker(
+            db,
+            new ConsistencyChecksSettings(true, true),
+            (e) -> new DefaultColumnFamilyKey(e.ordinal()));
     final var key = new DbLong();
 
     // when -- tx says no key exists
@@ -99,7 +111,11 @@ final class ForeignKeyCheckerTest {
     // given
     final var db = mock(ZeebeTransactionDb.class);
     final var tx = mock(ZeebeTransaction.class);
-    final var check = new ForeignKeyChecker(db, new ConsistencyChecksSettings(true, true));
+    final var check =
+        new ForeignKeyChecker(
+            db,
+            new ConsistencyChecksSettings(true, true),
+            (e) -> new DefaultColumnFamilyKey(e.ordinal()));
     final var key = new DbLong();
 
     // when -- tx says no key exists
@@ -133,7 +149,9 @@ final class ForeignKeyCheckerTest {
 
     final var check =
         new ForeignKeyChecker(
-            (ZeebeTransactionDb<?>) db, new ConsistencyChecksSettings(true, true));
+            (ZeebeTransactionDb<?>) db,
+            new ConsistencyChecksSettings(true, true),
+            (e) -> new DefaultColumnFamilyKey(e.ordinal()));
 
     // when -- key 1 exists in first column family
     final var cf1Key = new DbLong();
@@ -165,7 +183,9 @@ final class ForeignKeyCheckerTest {
 
     final var check =
         new ForeignKeyChecker(
-            (ZeebeTransactionDb<?>) db, new ConsistencyChecksSettings(true, true));
+            (ZeebeTransactionDb<?>) db,
+            new ConsistencyChecksSettings(true, true),
+            (e) -> new DefaultColumnFamilyKey(e.ordinal()));
 
     // when -- key 1 exists in first column family
     cf1.insert(cf1Key, DbNil.INSTANCE);
@@ -196,7 +216,9 @@ final class ForeignKeyCheckerTest {
 
     final var check =
         new ForeignKeyChecker(
-            (ZeebeTransactionDb<?>) db, new ConsistencyChecksSettings(true, true));
+            (ZeebeTransactionDb<?>) db,
+            new ConsistencyChecksSettings(true, true),
+            (e) -> new DefaultColumnFamilyKey(e.ordinal()));
 
     // when -- key 1 exists in first column family
     cf1.insert(cf1Key, DbNil.INSTANCE);

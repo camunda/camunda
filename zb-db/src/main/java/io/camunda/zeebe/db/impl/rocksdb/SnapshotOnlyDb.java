@@ -13,6 +13,7 @@ import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbException;
+import io.camunda.zeebe.db.impl.DbString;
 import java.io.File;
 import java.util.Collections;
 import java.util.List;
@@ -43,6 +44,17 @@ final class SnapshotOnlyDb<ColumnFamilyType extends Enum<ColumnFamilyType>>
           final TransactionContext context,
           final KeyType keyInstance,
           final ValueType valueInstance) {
+    throw unsupported("createColumnFamily");
+  }
+
+  @Override
+  public <KeyType extends DbKey, ValueType extends DbValue>
+      ColumnFamily<KeyType, ValueType> createTenantAwareColumnFamily(
+          ColumnFamilyType columnFamily,
+          TransactionContext context,
+          KeyType keyInstance,
+          ValueType valueInstance,
+          DbString tenantKey) {
     throw unsupported("createColumnFamily");
   }
 

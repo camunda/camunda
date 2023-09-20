@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.db;
 
+import io.camunda.zeebe.db.impl.DbString;
 import java.io.File;
 import java.util.Optional;
 
@@ -41,6 +42,14 @@ public interface ZeebeDb<ColumnFamilyType extends Enum<ColumnFamilyType>> extend
           TransactionContext context,
           KeyType keyInstance,
           ValueType valueInstance);
+
+  <KeyType extends DbKey, ValueType extends DbValue>
+      ColumnFamily<KeyType, ValueType> createTenantAwareColumnFamily(
+          ColumnFamilyType columnFamily,
+          TransactionContext context,
+          KeyType keyInstance,
+          ValueType valueInstance,
+          DbString tenantKey);
 
   /**
    * Creates a snapshot of the current database in the given directory.

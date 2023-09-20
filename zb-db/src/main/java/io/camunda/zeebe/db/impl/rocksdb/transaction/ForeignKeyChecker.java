@@ -12,9 +12,9 @@ import io.camunda.zeebe.db.ContainsForeignKeys;
 import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.ZeebeDbInconsistentException;
 import io.camunda.zeebe.db.impl.DbForeignKey;
-import io.camunda.zeebe.db.impl.ZeebeDbConstants;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.nio.ByteBuffer;
+import java.util.function.Function;
 import org.agrona.ExpandableArrayBuffer;
 
 /**
@@ -22,14 +22,19 @@ import org.agrona.ExpandableArrayBuffer;
  * Can be used to check that a foreign key is valid.
  */
 public final class ForeignKeyChecker {
+
   private final ZeebeTransactionDb<?> transactionDb;
   private final ExpandableArrayBuffer keyBuffer = new ExpandableArrayBuffer();
   private final boolean enabled;
+  private final Function<Enum<?>, ColumnFamilyKey> columnFamilyKeySupplier;
 
   public ForeignKeyChecker(
-      final ZeebeTransactionDb<?> transactionDb, final ConsistencyChecksSettings settings) {
+      final ZeebeTransactionDb<?> transactionDb,
+      final ConsistencyChecksSettings settings,
+      final Function<Enum<?>, ColumnFamilyKey> columnFamilyKeySupplier) {
     this.transactionDb = transactionDb;
     enabled = settings.enableForeignKeyChecks();
+    this.columnFamilyKeySupplier = columnFamilyKeySupplier;
   }
 
   public void assertExists(
@@ -49,9 +54,17 @@ public final class ForeignKeyChecker {
       return;
     }
 
-    keyBuffer.putLong(0, foreignKey.columnFamily().ordinal(), ZeebeDbConstants.ZB_DB_BYTE_ORDER);
-    foreignKey.write(keyBuffer, Long.BYTES);
-    final var keyBufferLength = Long.BYTES + foreignKey.getLength();
+    final int keyBufferLength;
+    final int columnFamilyKeyLength;
+    final int offset;
+
+    final var columnFamilyKey = columnFamilyKeySupplier.apply(foreignKey.columnFamily());
+    columnFamilyKey.write(keyBuffer, 0);
+    columnFamilyKeyLength = columnFamilyKey.getLength();
+    offset = columnFamilyKeyLength;
+
+    foreignKey.write(keyBuffer, offset);
+    keyBufferLength = columnFamilyKeyLength + foreignKey.getLength();
 
     switch (foreignKey.match()) {
       case Full -> assertKeyExists(transaction, foreignKey, keyBuffer.byteArray(), keyBufferLength);

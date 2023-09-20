@@ -58,16 +58,18 @@ class TransactionalColumnFamily<
       final ConsistencyChecksSettings consistencyChecksSettings,
       final ColumnFamilyNames columnFamily,
       final TransactionContext context,
+      final ColumnFamilyKey columnFamilyKey,
       final KeyType keyInstance,
-      final ValueType valueInstance) {
+      final ValueType valueInstance,
+      final ForeignKeyChecker foreignKeyChecker) {
     this.transactionDb = transactionDb;
     this.consistencyChecksSettings = consistencyChecksSettings;
     this.columnFamily = columnFamily;
     this.context = context;
     this.keyInstance = keyInstance;
     this.valueInstance = valueInstance;
-    columnFamilyContext = new ColumnFamilyContext(columnFamily.ordinal());
-    foreignKeyChecker = new ForeignKeyChecker(transactionDb, consistencyChecksSettings);
+    this.columnFamilyContext = new ColumnFamilyContext(columnFamilyKey);
+    this.foreignKeyChecker = foreignKeyChecker;
   }
 
   @Override

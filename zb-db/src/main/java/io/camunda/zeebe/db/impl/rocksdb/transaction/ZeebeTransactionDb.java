@@ -11,10 +11,12 @@ import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
+import io.camunda.zeebe.db.MultiTenancySettings;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbException;
 import io.camunda.zeebe.db.impl.DbNil;
+import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.db.impl.rocksdb.Loggers;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import java.io.File;
@@ -46,18 +48,21 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
   private final ColumnFamilyHandle defaultHandle;
   private final long defaultNativeHandle;
   private final ConsistencyChecksSettings consistencyChecksSettings;
+  private final MultiTenancySettings multiTenancySettings;
 
   protected ZeebeTransactionDb(
       final ColumnFamilyHandle defaultHandle,
       final OptimisticTransactionDB optimisticTransactionDB,
       final List<AutoCloseable> closables,
       final RocksDbConfiguration rocksDbConfiguration,
-      final ConsistencyChecksSettings consistencyChecksSettings) {
+      final ConsistencyChecksSettings consistencyChecksSettings,
+      final MultiTenancySettings multiTenancySettings) {
     this.defaultHandle = defaultHandle;
     defaultNativeHandle = getNativeHandle(defaultHandle);
     this.optimisticTransactionDB = optimisticTransactionDB;
     this.closables = closables;
     this.consistencyChecksSettings = consistencyChecksSettings;
+    this.multiTenancySettings = multiTenancySettings;
 
     prefixReadOptions =
         new ReadOptions()
@@ -80,7 +85,8 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
           final String path,
           final List<AutoCloseable> closables,
           final RocksDbConfiguration rocksDbConfiguration,
-          final ConsistencyChecksSettings consistencyChecksSettings)
+          final ConsistencyChecksSettings consistencyChecksSettings,
+          final MultiTenancySettings multiTenancySettings)
           throws RocksDBException {
     final OptimisticTransactionDB optimisticTransactionDB =
         OptimisticTransactionDB.open(options, path);
@@ -92,7 +98,8 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
         optimisticTransactionDB,
         closables,
         rocksDbConfiguration,
-        consistencyChecksSettings);
+        consistencyChecksSettings,
+        multiTenancySettings);
   }
 
   static long getNativeHandle(final RocksObject object) {
@@ -128,7 +135,34 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
           final KeyType keyInstance,
           final ValueType valueInstance) {
     return new TransactionalColumnFamily<>(
-        this, consistencyChecksSettings, columnFamily, context, keyInstance, valueInstance);
+        this,
+        consistencyChecksSettings,
+        columnFamily,
+        context,
+        new DefaultColumnFamilyKey(columnFamily.ordinal()),
+        keyInstance,
+        valueInstance,
+        new ForeignKeyChecker(
+            this, consistencyChecksSettings, (e) -> new DefaultColumnFamilyKey(e.ordinal())));
+  }
+
+  @Override
+  public <KeyType extends DbKey, ValueType extends DbValue>
+      ColumnFamily<KeyType, ValueType> createTenantAwareColumnFamily(
+          ColumnFamilyNames columnFamily,
+          TransactionContext context,
+          KeyType keyInstance,
+          ValueType valueInstance,
+          DbString tenantKey) {
+    return new TenantAwareColumnFamily<>(
+        this,
+        consistencyChecksSettings,
+        multiTenancySettings,
+        columnFamily,
+        context,
+        keyInstance,
+        valueInstance,
+        tenantKey);
   }
 
   @Override

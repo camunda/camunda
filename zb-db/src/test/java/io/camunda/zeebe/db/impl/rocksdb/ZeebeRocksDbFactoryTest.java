@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
+import io.camunda.zeebe.db.MultiTenancySettings;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.TransactionOperation;
 import io.camunda.zeebe.db.ZeebeDb;
@@ -83,7 +84,8 @@ final class ZeebeRocksDbFactoryTest {
     final var factoryWithCustomOptions =
         new ZeebeRocksDbFactory<>(
             new RocksDbConfiguration().setColumnFamilyOptions(customProperties),
-            new ConsistencyChecksSettings());
+            new ConsistencyChecksSettings(),
+            new MultiTenancySettings("<default>"));
 
     // when
     final var defaults = factoryWithDefaults.createColumnFamilyOptions(new ArrayList<>());
@@ -115,7 +117,8 @@ final class ZeebeRocksDbFactoryTest {
     final var factoryWithCustomOptions =
         new ZeebeRocksDbFactory<>(
             new RocksDbConfiguration().setColumnFamilyOptions(customProperties),
-            new ConsistencyChecksSettings());
+            new ConsistencyChecksSettings(),
+            new MultiTenancySettings("<default>"));
 
     // expect
     //noinspection resource

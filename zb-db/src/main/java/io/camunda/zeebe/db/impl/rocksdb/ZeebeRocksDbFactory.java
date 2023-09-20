@@ -8,6 +8,7 @@
 package io.camunda.zeebe.db.impl.rocksdb;
 
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
+import io.camunda.zeebe.db.MultiTenancySettings;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.impl.rocksdb.transaction.ZeebeTransactionDb;
@@ -47,12 +48,15 @@ public final class ZeebeRocksDbFactory<ColumnFamilyType extends Enum<ColumnFamil
 
   private final RocksDbConfiguration rocksDbConfiguration;
   private final ConsistencyChecksSettings consistencyChecksSettings;
+  private final MultiTenancySettings multiTenancySettings;
 
   public ZeebeRocksDbFactory(
       final RocksDbConfiguration rocksDbConfiguration,
-      final ConsistencyChecksSettings consistencyChecksSettings) {
+      final ConsistencyChecksSettings consistencyChecksSettings,
+      final MultiTenancySettings multiTenancySettings) {
     this.rocksDbConfiguration = Objects.requireNonNull(rocksDbConfiguration);
     this.consistencyChecksSettings = Objects.requireNonNull(consistencyChecksSettings);
+    this.multiTenancySettings = Objects.requireNonNull(multiTenancySettings);
   }
 
   @Override
@@ -64,7 +68,8 @@ public final class ZeebeRocksDbFactory<ColumnFamilyType extends Enum<ColumnFamil
           pathName.getAbsolutePath(),
           closeables,
           rocksDbConfiguration,
-          consistencyChecksSettings);
+          consistencyChecksSettings,
+          multiTenancySettings);
     } catch (final RocksDBException e) {
       CloseHelper.quietCloseAll(closeables);
       throw new IllegalStateException("Unexpected error occurred trying to open the database", e);
