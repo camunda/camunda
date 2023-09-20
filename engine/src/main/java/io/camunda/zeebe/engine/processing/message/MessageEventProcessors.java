@@ -53,7 +53,6 @@ public final class MessageEventProcessors {
             ValueType.MESSAGE,
             MessageIntent.PUBLISH,
             new MessagePublishProcessor(
-                processingState.getPartitionId(),
                 messageState,
                 subscriptionState,
                 startEventSubscriptionState,

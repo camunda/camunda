@@ -33,6 +33,8 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
   private final BooleanProperty interruptingProp = new BooleanProperty("interrupting", true);
 
   private final DocumentProperty variablesProp = new DocumentProperty("variables");
+  private final StringProperty tenantIdProp =
+      new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
   public MessageSubscriptionRecord() {
     declareProperty(processInstanceKeyProp)
@@ -42,7 +44,8 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
         .declareProperty(correlationKeyProp)
         .declareProperty(interruptingProp)
         .declareProperty(bpmnProcessIdProp)
-        .declareProperty(variablesProp);
+        .declareProperty(variablesProp)
+        .declareProperty(tenantIdProp);
   }
 
   public void wrap(final MessageSubscriptionRecord record) {
@@ -54,6 +57,7 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
     setInterrupting(record.isInterrupting());
     setBpmnProcessId(record.getBpmnProcessIdBuffer());
     setVariables(record.getVariablesBuffer());
+    setTenantId(record.getTenantId());
   }
 
   @JsonIgnore
@@ -158,7 +162,11 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
 
   @Override
   public String getTenantId() {
-    // todo(#13289): replace dummy implementation
-    return TenantOwned.DEFAULT_TENANT_IDENTIFIER;
+    return bufferAsString(tenantIdProp.getValue());
+  }
+
+  public MessageSubscriptionRecord setTenantId(final String tenantId) {
+    tenantIdProp.setValue(tenantId);
+    return this;
   }
 }

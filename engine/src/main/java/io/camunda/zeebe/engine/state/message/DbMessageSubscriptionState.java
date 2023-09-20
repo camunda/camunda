@@ -98,6 +98,7 @@ public final class DbMessageSubscriptionState
 
   @Override
   public void visitSubscriptions(
+      final String tenantId,
       final DirectBuffer messageName,
       final DirectBuffer correlationKey,
       final MessageSubscriptionVisitor visitor) {

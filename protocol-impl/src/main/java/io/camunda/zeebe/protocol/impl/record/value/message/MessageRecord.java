@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.message;
 
+import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
@@ -15,7 +17,6 @@ import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
-import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Map;
 import org.agrona.DirectBuffer;
 
@@ -29,6 +30,8 @@ public final class MessageRecord extends UnifiedRecordValue implements MessageRe
 
   private final DocumentProperty variablesProp = new DocumentProperty("variables");
   private final StringProperty messageIdProp = new StringProperty("messageId", "");
+  private final StringProperty tenantIdProp =
+      new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
   public MessageRecord() {
     declareProperty(nameProp)
@@ -36,7 +39,8 @@ public final class MessageRecord extends UnifiedRecordValue implements MessageRe
         .declareProperty(timeToLiveProp)
         .declareProperty(variablesProp)
         .declareProperty(messageIdProp)
-        .declareProperty(deadlineProp);
+        .declareProperty(deadlineProp)
+        .declareProperty(tenantIdProp);
   }
 
   public void wrap(final MessageRecord record) {
@@ -46,6 +50,7 @@ public final class MessageRecord extends UnifiedRecordValue implements MessageRe
     setDeadline(record.getDeadline());
     setVariables(record.getVariablesBuffer());
     setMessageId(record.getMessageIdBuffer());
+    setTenantId(record.getTenantId());
   }
 
   public boolean hasMessageId() {
@@ -64,17 +69,17 @@ public final class MessageRecord extends UnifiedRecordValue implements MessageRe
 
   @Override
   public String getName() {
-    return BufferUtil.bufferAsString(nameProp.getValue());
+    return bufferAsString(nameProp.getValue());
   }
 
   @Override
   public String getCorrelationKey() {
-    return BufferUtil.bufferAsString(correlationKeyProp.getValue());
+    return bufferAsString(correlationKeyProp.getValue());
   }
 
   @Override
   public String getMessageId() {
-    return BufferUtil.bufferAsString(messageIdProp.getValue());
+    return bufferAsString(messageIdProp.getValue());
   }
 
   @Override
@@ -149,7 +154,11 @@ public final class MessageRecord extends UnifiedRecordValue implements MessageRe
 
   @Override
   public String getTenantId() {
-    // todo(#13289): replace dummy implementation
-    return TenantOwned.DEFAULT_TENANT_IDENTIFIER;
+    return bufferAsString(tenantIdProp.getValue());
+  }
+
+  public MessageRecord setTenantId(final String tenantId) {
+    tenantIdProp.setValue(tenantId);
+    return this;
   }
 }

@@ -90,7 +90,9 @@ public final class DbMessageStartEventSubscriptionState
 
   @Override
   public void visitSubscriptionsByMessageName(
-      final DirectBuffer messageName, final MessageStartEventSubscriptionVisitor visitor) {
+      final String tenantId,
+      final DirectBuffer messageName,
+      final MessageStartEventSubscriptionVisitor visitor) {
 
     this.messageName.wrapBuffer(messageName);
     subscriptionsColumnFamily.whileEqualPrefix(

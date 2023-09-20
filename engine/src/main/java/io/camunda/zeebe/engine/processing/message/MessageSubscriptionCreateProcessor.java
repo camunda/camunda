@@ -99,6 +99,7 @@ public final class MessageSubscriptionCreateProcessor
         subscriptionRecord.getProcessInstanceKey(),
         subscriptionRecord.getElementInstanceKey(),
         subscriptionRecord.getMessageNameBuffer(),
-        subscriptionRecord.isInterrupting());
+        subscriptionRecord.isInterrupting(),
+        subscriptionRecord.getTenantId());
   }
 }
