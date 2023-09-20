@@ -22,6 +22,8 @@ import io.camunda.zeebe.qa.util.actuator.BackupActuator;
 import io.camunda.zeebe.qa.util.cluster.TestApplication;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.qa.util.testcontainers.GcsContainer;
 import io.camunda.zeebe.shared.management.openapi.models.BackupInfo;
 import io.camunda.zeebe.shared.management.openapi.models.PartitionBackupInfo;
@@ -53,6 +55,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  */
 @AutoCloseResources
 @Testcontainers
+@ZeebeIntegration
 final class GcsBackupAcceptanceIT {
 
   private static final String BUCKET_NAME = RandomStringUtils.randomAlphabetic(10).toLowerCase();
@@ -61,7 +64,7 @@ final class GcsBackupAcceptanceIT {
 
   private final String basePath = RandomStringUtils.randomAlphabetic(10).toLowerCase();
 
-  @AutoCloseResource
+  @TestZeebe
   private final TestCluster cluster =
       TestCluster.builder()
           .withBrokersCount(2)
@@ -91,7 +94,6 @@ final class GcsBackupAcceptanceIT {
 
   @BeforeEach
   void beforeEach() {
-    cluster.start().awaitCompleteTopology();
     client = cluster.newClientBuilder().build();
   }
 

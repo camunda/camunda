@@ -14,42 +14,27 @@ import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.impl.broker.response.BrokerRejection;
 import io.camunda.zeebe.protocol.record.RejectionType;
-import io.camunda.zeebe.qa.util.cluster.TestHealthProbe;
-import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
-import io.camunda.zeebe.qa.util.cluster.TestStandaloneGateway;
-import io.camunda.zeebe.qa.util.cluster.TestZeebePort;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
-import java.util.List;
+import io.camunda.zeebe.qa.util.cluster.TestCluster;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-@AutoCloseResources
+@ZeebeIntegration
 final class GatewayIntegrationTest {
-  @AutoCloseResource
-  private final TestStandaloneBroker broker =
-      new TestStandaloneBroker().withBrokerConfig(config -> config.getGateway().setEnable(false));
-
-  @AutoCloseResource
-  private final TestStandaloneGateway gateway =
-      new TestStandaloneGateway()
-          .withGatewayConfig(
-              config ->
-                  config
-                      .getCluster()
-                      .setInitialContactPoints(List.of(broker.address(TestZeebePort.CLUSTER))));
-
-  @BeforeEach
-  void beforeEach() {
-    broker.start().await(TestHealthProbe.READY);
-    gateway.start().awaitCompleteTopology();
-  }
+  @TestZeebe
+  private final TestCluster cluster =
+      TestCluster.builder()
+          .withEmbeddedGateway(false)
+          .withGatewaysCount(1)
+          .withBrokersCount(1)
+          .build();
 
   @Test
   void shouldReturnRejectionWithCorrectTypeAndReason() throws InterruptedException {
     // given
+    final var gateway = cluster.availableGateway();
     final var latch = new CountDownLatch(1);
     final AtomicReference<Throwable> errorResponse = new AtomicReference<>();
     final var client = gateway.bean(BrokerClient.class);

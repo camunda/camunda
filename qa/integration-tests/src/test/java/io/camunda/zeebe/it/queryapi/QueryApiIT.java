@@ -22,6 +22,8 @@ import io.camunda.zeebe.it.queryapi.util.TestAuthorizationServerInterceptor;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.grpc.CloseAwareListener;
 import io.grpc.StatusRuntimeException;
 import java.io.File;
@@ -34,12 +36,11 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import net.bytebuddy.ByteBuddy;
-import org.agrona.CloseHelper;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+@ZeebeIntegration
 final class QueryApiIT {
   private static final BpmnModelInstance PROCESS =
       Bpmn.createExecutableProcess("tenantA.process")
@@ -48,6 +49,7 @@ final class QueryApiIT {
           .endEvent()
           .done();
 
+  @TestZeebe
   private static final TestStandaloneBroker BROKER =
       new TestStandaloneBroker()
           .withBrokerConfig(cfg -> cfg.getExperimental().getQueryApi().setEnabled(true))
@@ -64,18 +66,11 @@ final class QueryApiIT {
 
   @BeforeAll
   static void beforeAll() {
-    BROKER.start().awaitCompleteTopology();
-
     try (final var client = createZeebeClient("beforeAll")) {
       final var deployment =
           client.newDeployResourceCommand().addProcessModel(PROCESS, "process.bpmn").send().join();
       processDefinitionKey = deployment.getProcesses().get(0).getProcessDefinitionKey();
     }
-  }
-
-  @AfterAll
-  static void afterAll() {
-    CloseHelper.quietClose(BROKER);
   }
 
   @Test
