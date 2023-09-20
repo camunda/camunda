@@ -111,7 +111,8 @@ public class ZeebeTestNode {
               return new RaftPartition(
                   partitionMetadata,
                   raftPartitionConfig,
-                  new File(new File(directory, "log"), "" + member.id()));
+                  new File(new File(directory, "log"), "" + member.id()),
+                  null);
             })
         .toList();
   }

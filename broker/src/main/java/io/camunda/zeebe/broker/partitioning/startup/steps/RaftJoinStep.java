@@ -25,7 +25,10 @@ public class RaftJoinStep implements StartupStep<PartitionStartupContext> {
     final var partition =
         context
             .raftPartitionFactory()
-            .createRaftPartition(context.partitionMetadata(), context.partitionDirectory());
+            .createRaftPartition(
+                context.partitionMetadata(),
+                context.partitionDirectory(),
+                context.schedulingService());
 
     partition
         .join(context.partitionManagementService(), context.snapshotStore())

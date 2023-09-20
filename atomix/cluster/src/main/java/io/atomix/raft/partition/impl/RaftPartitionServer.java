@@ -27,6 +27,8 @@ import io.atomix.raft.RaftRoleChangeListener;
 import io.atomix.raft.RaftServer;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.SnapshotReplicationListener;
+import io.atomix.raft.impl.ActorThreadContextFactory;
+import io.atomix.raft.impl.DefaultRaftSingleThreadContextFactory;
 import io.atomix.raft.metrics.RaftStartupMetrics;
 import io.atomix.raft.partition.RaftElectionConfig;
 import io.atomix.raft.partition.RaftPartition;
@@ -39,6 +41,7 @@ import io.atomix.raft.zeebe.ZeebeLogAppender;
 import io.atomix.utils.logging.ContextualLoggerFactory;
 import io.atomix.utils.logging.LoggerContext;
 import io.atomix.utils.serializer.Serializer;
+import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
 import io.camunda.zeebe.util.FileUtil;
@@ -66,6 +69,7 @@ public class RaftPartitionServer implements HealthMonitorable {
   private final Duration snapshotRequestTimeout;
   private final ReceivableSnapshotStore persistedSnapshotStore;
   private final RaftServer server;
+  private final ActorSchedulingService actorSchedulingService;
 
   public RaftPartitionServer(
       final RaftPartition partition,
@@ -74,7 +78,8 @@ public class RaftPartitionServer implements HealthMonitorable {
       final ClusterMembershipService membershipService,
       final ClusterCommunicationService clusterCommunicator,
       final ReceivableSnapshotStore persistedSnapshotStore,
-      final PartitionMetadata partitionMetadata) {
+      final PartitionMetadata partitionMetadata,
+      final ActorSchedulingService actorSchedulingService) {
     this.partition = partition;
     this.config = config;
     this.localMemberId = localMemberId;
@@ -88,6 +93,7 @@ public class RaftPartitionServer implements HealthMonitorable {
     this.partitionMetadata = partitionMetadata;
     requestTimeout = config.getRequestTimeout();
     snapshotRequestTimeout = config.getSnapshotRequestTimeout();
+    this.actorSchedulingService = actorSchedulingService;
     server = buildServer();
   }
 
@@ -154,6 +160,10 @@ public class RaftPartitionServer implements HealthMonitorable {
         .withProtocol(createServerProtocol())
         .withPartitionConfig(config)
         .withStorage(createRaftStorage())
+        .withThreadContextFactory(
+            actorSchedulingService != null
+                ? new ActorThreadContextFactory(actorSchedulingService)
+                : new DefaultRaftSingleThreadContextFactory())
         .withEntryValidator(config.getEntryValidator())
         .withElectionConfig(electionConfig)
         .build();

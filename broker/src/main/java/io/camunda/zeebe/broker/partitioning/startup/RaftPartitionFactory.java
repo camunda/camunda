@@ -18,6 +18,7 @@ import io.camunda.zeebe.broker.raft.ZeebeEntryValidator;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ExperimentalCfg;
 import io.camunda.zeebe.broker.system.configuration.RaftCfg.FlushConfig;
+import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -45,11 +46,13 @@ public final class RaftPartitionFactory {
     } catch (final IOException e) {
       throw new UncheckedIOException(e);
     }
-    return createRaftPartition(partitionMetadata, partitionDirectory);
+    return createRaftPartition(partitionMetadata, partitionDirectory, null);
   }
 
   public RaftPartition createRaftPartition(
-      final PartitionMetadata partitionMetadata, final Path partitionDirectory) {
+      final PartitionMetadata partitionMetadata,
+      final Path partitionDirectory,
+      final ActorSchedulingService actorSchedulingService) {
     final var storageConfig = new RaftStorageConfig();
     final var partitionConfig = new RaftPartitionConfig();
 
@@ -92,7 +95,8 @@ public final class RaftPartitionFactory {
     partitionConfig.setPreferSnapshotReplicationThreshold(
         brokerCfg.getExperimental().getRaft().getPreferSnapshotReplicationThreshold());
 
-    return new RaftPartition(partitionMetadata, partitionConfig, partitionDirectory.toFile());
+    return new RaftPartition(
+        partitionMetadata, partitionConfig, partitionDirectory.toFile(), actorSchedulingService);
   }
 
   private RaftLogFlusher.Factory createFlusherFactory(

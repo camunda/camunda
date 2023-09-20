@@ -26,6 +26,7 @@ import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.raft.RaftRoleChangeListener;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.impl.RaftPartitionServer;
+import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.health.FailureListener;
@@ -51,15 +52,18 @@ public final class RaftPartition implements Partition, HealthMonitorable {
       new CopyOnWriteArraySet<>();
   private final PartitionMetadata partitionMetadata;
   private RaftPartitionServer server;
+  private final ActorSchedulingService actorSchedulingService;
 
   public RaftPartition(
       final PartitionMetadata partitionMetadata,
       final RaftPartitionConfig config,
-      final File dataDirectory) {
+      final File dataDirectory,
+      final ActorSchedulingService actorSchedulingService) {
     partitionId = partitionMetadata.id();
     this.partitionMetadata = partitionMetadata;
     this.config = config;
     this.dataDirectory = dataDirectory;
+    this.actorSchedulingService = actorSchedulingService;
   }
 
   public void addRoleChangeListener(final RaftRoleChangeListener listener) {
@@ -126,7 +130,8 @@ public final class RaftPartition implements Partition, HealthMonitorable {
         managementService.getMembershipService(),
         managementService.getMessagingService(),
         snapshotStore,
-        partitionMetadata);
+        partitionMetadata,
+        actorSchedulingService);
   }
 
   /**

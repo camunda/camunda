@@ -161,7 +161,8 @@ public final class RaftRolesTest {
                   return new RaftPartition(
                       metadata,
                       raftPartitionConfig,
-                      new File(new File(atomixClusterRule.getDataDir(), "log"), "" + nodeId));
+                      new File(new File(atomixClusterRule.getDataDir(), "log"), "" + nodeId),
+                      null);
                 })
             .toList();
 

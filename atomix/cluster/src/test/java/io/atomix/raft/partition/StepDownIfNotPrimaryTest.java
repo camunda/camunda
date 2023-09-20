@@ -29,7 +29,7 @@ final class StepDownIfNotPrimaryTest {
     final var metadata = new PartitionMetadata(partitionId, Set.of(), Map.of(), 1, primaryMemberId);
 
     final var raftPartitionConfig = new RaftPartitionConfig();
-    final var partition = new RaftPartition(metadata, raftPartitionConfig, tempDir.toFile());
+    final var partition = new RaftPartition(metadata, raftPartitionConfig, tempDir.toFile(), null);
     final var mockRaftPartitionServer = Mockito.mock(RaftPartitionServer.class);
     Mockito.when(mockRaftPartitionServer.getMemberId()).thenReturn(new MemberId("1"));
 
@@ -50,7 +50,7 @@ final class StepDownIfNotPrimaryTest {
     final var primaryMemberId = new MemberId("1");
     final var raftPartitionConfig = new RaftPartitionConfig();
     final var metadata = new PartitionMetadata(partitionId, Set.of(), Map.of(), 1, primaryMemberId);
-    final var partition = new RaftPartition(metadata, raftPartitionConfig, tempDir.toFile());
+    final var partition = new RaftPartition(metadata, raftPartitionConfig, tempDir.toFile(), null);
 
     final var mockRaftPartitionServer = Mockito.mock(RaftPartitionServer.class);
     Mockito.when(mockRaftPartitionServer.getMemberId()).thenReturn(new MemberId("1"));
@@ -73,7 +73,7 @@ final class StepDownIfNotPrimaryTest {
     final var raftPartitionConfig = new RaftPartitionConfig();
     final var primaryMemberId = new MemberId("2");
     final var metadata = new PartitionMetadata(partitionId, Set.of(), Map.of(), 1, primaryMemberId);
-    final var partition = new RaftPartition(metadata, raftPartitionConfig, tempDir.toFile());
+    final var partition = new RaftPartition(metadata, raftPartitionConfig, tempDir.toFile(), null);
     final var mockRaftPartitionServer = Mockito.mock(RaftPartitionServer.class);
     Mockito.when(mockRaftPartitionServer.getMemberId()).thenReturn(new MemberId("1"));
 
@@ -95,7 +95,7 @@ final class StepDownIfNotPrimaryTest {
     final MemberId primaryMemberId = null;
     final var raftPartitionConfig = new RaftPartitionConfig();
     final var metadata = new PartitionMetadata(partitionId, Set.of(), Map.of(), 1, primaryMemberId);
-    final var partition = new RaftPartition(metadata, raftPartitionConfig, tempDir.toFile());
+    final var partition = new RaftPartition(metadata, raftPartitionConfig, tempDir.toFile(), null);
     final var mockRaftPartitionServer = Mockito.mock(RaftPartitionServer.class);
     Mockito.when(mockRaftPartitionServer.getMemberId()).thenReturn(new MemberId("1"));
 

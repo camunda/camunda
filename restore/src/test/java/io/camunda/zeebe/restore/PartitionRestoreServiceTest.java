@@ -95,7 +95,7 @@ class PartitionRestoreServiceTest {
         new PartitionMetadata(
             PartitionId.from("raft", partitionId), Set.of(), Map.of(), 1, new MemberId("1"));
     final var raftPartition =
-        new RaftPartition(partitionMetadata, null, dataDirectoryToRestore.toFile());
+        new RaftPartition(partitionMetadata, null, dataDirectoryToRestore.toFile(), null);
     restoreService = new PartitionRestoreService(backupStore, raftPartition, Set.of(1, 2));
 
     journal =
