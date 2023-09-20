@@ -23,6 +23,11 @@ import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.testcontainers.ContainerLogsDumper;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.net.http.HttpResponse.BodyHandlers;
 import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -207,16 +212,11 @@ public class MultiTenancyOverIdentityIT {
         .start()
         .await(TestHealthProbe.READY);
 
-    Awaitility.await("Wait for Identity to initialize, so we can associate tenants with clients")
-        .atMost(Duration.ofMinutes(1))
-        .pollInterval(Duration.ofSeconds(1))
-        .untilAsserted(
-            () -> {
-              associateTenantsWithClient(List.of("tenant-a"), ZEEBE_CLIENT_ID_TENANT_A);
-              associateTenantsWithClient(List.of("tenant-b"), ZEEBE_CLIENT_ID_TENANT_B);
-              associateTenantsWithClient(
-                  List.of("tenant-a", "tenant-b"), ZEEBE_CLIENT_ID_TENANT_A_AND_B);
-            });
+    awaitCamundaRealmAvailabilityOnKeycloak();
+
+    associateTenantsWithClient(List.of("tenant-a"), ZEEBE_CLIENT_ID_TENANT_A);
+    associateTenantsWithClient(List.of("tenant-b"), ZEEBE_CLIENT_ID_TENANT_B);
+    associateTenantsWithClient(List.of("tenant-a", "tenant-b"), ZEEBE_CLIENT_ID_TENANT_A_AND_B);
   }
 
   @BeforeEach
@@ -365,6 +365,32 @@ public class MultiTenancyOverIdentityIT {
           .describedAs("Process definition should exist for tenant-a but not for tenant-b")
           .withMessageContaining("and tenant ID 'tenant-b', but none found");
     }
+  }
+
+  /**
+   * Awaits the presence of the Camunda realm and openid keys on the keycloak container. Once
+   * Keycloak and Identity booted up, Identity will eventually configure the Camunda Realm on
+   * Keycloak.
+   */
+  private static void awaitCamundaRealmAvailabilityOnKeycloak() {
+    final var httpClient = HttpClient.newHttpClient();
+    final HttpRequest request =
+        HttpRequest.newBuilder()
+            .uri(
+                URI.create(
+                    "http://localhost:%d%s/protocol/openid-connect/certs"
+                        .formatted(KEYCLOAK.getFirstMappedPort(), KEYCLOAK_PATH_CAMUNDA_REALM)))
+            .build();
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(120))
+        .pollInterval(Duration.ofSeconds(5))
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final HttpResponse<String> response =
+                  httpClient.send(request, BodyHandlers.ofString());
+              assertThat(response.statusCode()).isEqualTo(200);
+            });
   }
 
   /**
