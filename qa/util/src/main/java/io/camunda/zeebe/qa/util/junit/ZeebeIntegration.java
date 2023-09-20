@@ -86,7 +86,7 @@ public @interface ZeebeIntegration {
      * and replaces the default cluster size, partition count, and replication factor by 1.
      *
      * <p>Does nothing if a {@link io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker} is
-     * annotated with this that does not have an embedded broker.
+     * annotated with this that does not have an embedded gateway.
      *
      * <p>Does nothing if {@link #autoStart()} is false.
      */
