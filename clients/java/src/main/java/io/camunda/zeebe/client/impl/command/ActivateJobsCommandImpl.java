@@ -58,6 +58,7 @@ public final class ActivateJobsCommandImpl
     requestTimeout(config.getDefaultRequestTimeout());
     timeout(config.getDefaultJobTimeout());
     workerName(config.getDefaultJobWorkerName());
+    tenantIds(config.getDefaultJobWorkerTenantIds());
   }
 
   @Override
@@ -129,13 +130,13 @@ public final class ActivateJobsCommandImpl
 
   @Override
   public ActivateJobsCommandStep3 tenantId(final String tenantId) {
-    // todo(#13560): replace dummy implementation
+    builder.addTenantIds(tenantId);
     return this;
   }
 
   @Override
   public ActivateJobsCommandStep3 tenantIds(final List<String> tenantIds) {
-    // todo(#13560): replace dummy implementation
+    builder.addAllTenantIds(tenantIds);
     return this;
   }
 

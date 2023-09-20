@@ -61,7 +61,9 @@ public final class StreamJobsCommandImpl
     this.retryPredicate = retryPredicate;
     builder = StreamActivatedJobsRequest.newBuilder();
 
-    timeout(config.getDefaultJobTimeout()).workerName(config.getDefaultJobWorkerName());
+    timeout(config.getDefaultJobTimeout());
+    workerName(config.getDefaultJobWorkerName());
+    tenantIds(config.getDefaultJobWorkerTenantIds());
   }
 
   @Override
@@ -133,13 +135,13 @@ public final class StreamJobsCommandImpl
 
   @Override
   public StreamJobsCommandStep3 tenantId(final String tenantId) {
-    // todo(#13560): replace dummy implementation
+    builder.addTenantIds(tenantId);
     return this;
   }
 
   @Override
   public StreamJobsCommandStep3 tenantIds(final List<String> tenantIds) {
-    // todo(#13560): replace dummy implementation
+    builder.addAllTenantIds(tenantIds);
     return this;
   }
 
