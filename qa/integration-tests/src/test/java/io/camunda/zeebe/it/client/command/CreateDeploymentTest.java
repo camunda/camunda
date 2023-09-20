@@ -148,7 +148,7 @@ public final class CreateDeploymentTest {
     final var modelThatFitsJustWithinMaxMessageSize =
         Bpmn.createExecutableProcess("PROCESS")
             .startEvent()
-            .documentation("x".repeat((1046900)))
+            .documentation("x".repeat((1046700)))
             .done();
     final var command =
         CLIENT_RULE
