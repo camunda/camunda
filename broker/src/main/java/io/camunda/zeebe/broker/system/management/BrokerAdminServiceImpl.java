@@ -38,11 +38,9 @@ import org.slf4j.Logger;
 public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminService {
 
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
-  private PartitionManagerImpl partitionManager;
+  private final PartitionManagerImpl partitionManager;
 
-  public BrokerAdminServiceImpl() {}
-
-  public void injectPartitionManager(final PartitionManagerImpl partitionManager) {
+  public BrokerAdminServiceImpl(final PartitionManagerImpl partitionManager) {
     this.partitionManager = partitionManager;
   }
 
