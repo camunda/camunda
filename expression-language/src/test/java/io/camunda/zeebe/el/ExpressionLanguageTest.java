@@ -174,12 +174,10 @@ public class ExpressionLanguageTest {
     final var evaluationResult = expressionLanguage.evaluateExpression(expression, EMPTY_CONTEXT);
 
     assertThat(evaluationResult).isNotNull();
-    assertThat(evaluationResult.isFailure()).isTrue();
-    assertThat(evaluationResult.getFailureMessage())
-        .startsWith("failed to evaluate expression 'x': no variable found for name 'x'");
+    assertThat(evaluationResult.isFailure()).isFalse();
+    assertThat(evaluationResult.getType()).isEqualTo(ResultType.NULL);
     assertThat(evaluationResult.getExpression()).isEqualTo("x");
     assertThat(expression.getVariableName()).contains("x");
-    assertThat(evaluationResult.getType()).isNull();
-    assertThat(evaluationResult.getString()).isNull();
+    assertThat(evaluationResult.getFailureMessage()).isNull();
   }
 }
