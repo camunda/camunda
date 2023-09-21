@@ -12,18 +12,22 @@ import {
   ProcessInstanceFilters,
   getDecisionInstanceFilters,
 } from 'modules/utils/filter';
+import {variableFilterStore} from 'modules/stores/variableFilter';
 
 const useFilters = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
   const setFiltersToURL = (filters: ProcessInstanceFilters) => {
+    const {variableName, variableValues, ...filtersWithoutVariable} = filters;
+
     navigate({
-      search: updateProcessFiltersSearchString(location.search, filters),
+      search: updateProcessFiltersSearchString(
+        location.search,
+        filtersWithoutVariable,
+      ),
     });
   };
-
-  const getFiltersFromUrl = () => getProcessInstanceFilters(location.search);
 
   const areProcessInstanceStatesApplied = () => {
     const filters = getProcessInstanceFilters(location.search);
@@ -42,9 +46,34 @@ const useFilters = () => {
     return filters.evaluated || filters.failed;
   };
 
+  const setFilters = (filters: ProcessInstanceFilters) => {
+    setFiltersToURL(filters);
+    if (
+      filters.variableName !== undefined &&
+      filters.variableValues !== undefined
+    ) {
+      variableFilterStore.setVariable({
+        name: filters.variableName,
+        values: filters.variableValues,
+      });
+    }
+  };
+
+  const getFilters = () => {
+    return {
+      ...getProcessInstanceFilters(location.search),
+      ...(variableFilterStore.state.variable !== undefined
+        ? {
+            variableName: variableFilterStore.state.variable?.name,
+            variableValues: variableFilterStore.state.variable?.values,
+          }
+        : {}),
+    };
+  };
+
   return {
-    setFiltersToURL,
-    getFiltersFromUrl,
+    setFilters,
+    getFilters,
     areProcessInstanceStatesApplied,
     areDecisionInstanceStatesApplied,
   };

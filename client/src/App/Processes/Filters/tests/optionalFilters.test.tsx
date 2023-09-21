@@ -239,8 +239,6 @@ describe('Optional Filters', () => {
       endDateBefore: '2021-02-23 18:17:18',
       endDateAfter: '2021-02-23 22:00:00',
       flowNodeId: 'ServiceTask_0kt6c5i',
-      variableName: 'foo',
-      variableValues: '"bar"',
       operationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
       active: 'true',
       incidents: 'true',
@@ -258,6 +256,11 @@ describe('Optional Filters', () => {
       `?${new URLSearchParams(Object.entries(MOCK_PARAMS)).toString()}`,
     );
 
+    await user.click(screen.getByRole('button', {name: /^more filters$/i}));
+    await user.click(screen.getByTestId('optional-filter-menuitem-variable'));
+    await user.type(screen.getByRole('textbox', {name: /^name$/i}), 'foo');
+    await user.type(screen.getByRole('textbox', {name: /^value$/i}), '"bar"');
+
     expect(
       screen.getByLabelText(/^process instance key\(s\)$/i),
     ).toBeInTheDocument();
@@ -268,11 +271,6 @@ describe('Optional Filters', () => {
 
     expect(screen.getByLabelText(/^start date range$/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/^end date range$/i)).toBeInTheDocument();
-
-    expect(
-      screen.getByTestId('optional-filter-variable-name'),
-    ).toBeInTheDocument();
-    expect(screen.getByLabelText(/^value$/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/^operation id$/i)).toBeInTheDocument();
 
     await removeOptionalFilter({
@@ -294,8 +292,6 @@ describe('Optional Filters', () => {
             endDateBefore: '2021-02-23 18:17:18',
             endDateAfter: '2021-02-23 22:00:00',
             flowNodeId: 'ServiceTask_0kt6c5i',
-            variableName: 'foo',
-            variableValues: '"bar"',
             operationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
             active: 'true',
             incidents: 'true',
@@ -305,7 +301,6 @@ describe('Optional Filters', () => {
         ).toString()}`,
       ),
     );
-
     expect(
       screen.queryByLabelText('Process Instance Key(s)'),
     ).not.toBeInTheDocument();
@@ -328,8 +323,6 @@ describe('Optional Filters', () => {
             endDateBefore: '2021-02-23 18:17:18',
             endDateAfter: '2021-02-23 22:00:00',
             flowNodeId: 'ServiceTask_0kt6c5i',
-            variableName: 'foo',
-            variableValues: '"bar"',
             operationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
             active: 'true',
             incidents: 'true',
@@ -356,8 +349,6 @@ describe('Optional Filters', () => {
             endDateBefore: '2021-02-23 18:17:18',
             endDateAfter: '2021-02-23 22:00:00',
             flowNodeId: 'ServiceTask_0kt6c5i',
-            variableName: 'foo',
-            variableValues: '"bar"',
             operationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
             active: 'true',
             incidents: 'true',
@@ -380,8 +371,6 @@ describe('Optional Filters', () => {
             endDateBefore: '2021-02-23 18:17:18',
             endDateAfter: '2021-02-23 22:00:00',
             flowNodeId: 'ServiceTask_0kt6c5i',
-            variableName: 'foo',
-            variableValues: '"bar"',
             operationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
             active: 'true',
             incidents: 'true',
@@ -402,8 +391,6 @@ describe('Optional Filters', () => {
             process: 'bigVarProcess',
             version: '1',
             flowNodeId: 'ServiceTask_0kt6c5i',
-            variableName: 'foo',
-            variableValues: '"bar"',
             operationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
             active: 'true',
             incidents: 'true',
@@ -415,29 +402,34 @@ describe('Optional Filters', () => {
     );
     expect(screen.queryByLabelText('End Date Range')).not.toBeInTheDocument();
 
+    expect(screen.getByRole('textbox', {name: /^name$/i})).toBeInTheDocument();
+    expect(screen.getByRole('textbox', {name: /^value$/i})).toBeInTheDocument();
     await user.hover(screen.getByTestId('optional-filter-variable-name'));
     await user.click(screen.getByLabelText(`Remove Variable Filter`));
 
-    await waitFor(() =>
-      expect(screen.getByTestId('search').textContent).toBe(
-        `?${new URLSearchParams(
-          Object.entries({
-            process: 'bigVarProcess',
-            version: '1',
-            flowNodeId: 'ServiceTask_0kt6c5i',
-            operationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
-            active: 'true',
-            incidents: 'true',
-            completed: 'true',
-            canceled: 'true',
-          }),
-        ).toString()}`,
-      ),
+    expect(screen.getByTestId('search').textContent).toBe(
+      `?${new URLSearchParams(
+        Object.entries({
+          process: 'bigVarProcess',
+          version: '1',
+          flowNodeId: 'ServiceTask_0kt6c5i',
+          operationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
+          active: 'true',
+          incidents: 'true',
+          completed: 'true',
+          canceled: 'true',
+        }),
+      ).toString()}`,
     );
     expect(
       screen.queryByTestId('optional-filter-variable-name'),
     ).not.toBeInTheDocument();
-    expect(screen.queryByLabelText(/value/i)).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('textbox', {name: /^name$/i}),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('textbox', {name: /^value$/i}),
+    ).not.toBeInTheDocument();
 
     await removeOptionalFilter({user, screen, label: 'Operation Id'});
 
@@ -471,9 +463,6 @@ describe('Optional Filters', () => {
       endDateBefore: '2021-02-23 18:17:18',
       endDateAfter: '2021-02-23 22:00:00',
       flowNodeId: 'ServiceTask_0kt6c5i',
-      variableName: 'foo',
-      variableValues: '"bar"',
-
       operationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
       active: 'true',
       incidents: 'true',
@@ -486,6 +475,11 @@ describe('Optional Filters', () => {
         `/?${new URLSearchParams(Object.entries(MOCK_PARAMS)).toString()}`,
       ),
     });
+
+    await user.click(screen.getByRole('button', {name: /^more filters$/i}));
+    await user.click(screen.getByTestId('optional-filter-menuitem-variable'));
+    await user.type(screen.getByRole('textbox', {name: /^name$/i}), 'foo');
+    await user.type(screen.getByRole('textbox', {name: /^value$/i}), '"bar"');
 
     expect(screen.getByTestId('search').textContent).toBe(
       `?${new URLSearchParams(Object.entries(MOCK_PARAMS)).toString()}`,

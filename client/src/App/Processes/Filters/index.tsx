@@ -44,12 +44,12 @@ const initialValues: ProcessInstanceFilters = {
 const Filters: React.FC = observer(() => {
   const filters = useFilters();
   const [visibleFilters, setVisibleFilters] = useState<OptionalFilter[]>([]);
-  const filtersFromUrl = filters.getFiltersFromUrl();
+  const filtersFromUrl = filters.getFilters();
 
   return (
     <Form<ProcessInstanceFilters>
       onSubmit={(values) => {
-        filters.setFiltersToURL({
+        filters.setFilters({
           ...values,
           ...(values.process !== undefined
             ? {
@@ -81,7 +81,7 @@ const Filters: React.FC = observer(() => {
             }
             onResetClick={() => {
               form.reset();
-              filters.setFiltersToURL(initialValues);
+              filters.setFilters(initialValues);
               setVisibleFilters([]);
             }}
           >

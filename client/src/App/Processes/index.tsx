@@ -22,6 +22,8 @@ import {processInstancesSelectionStore} from 'modules/stores/processInstancesSel
 import {processInstancesStore} from 'modules/stores/processInstances';
 import {PAGE_TITLE} from 'modules/constants';
 import {notificationsStore} from 'modules/stores/notifications';
+import {variableFilterStore} from 'modules/stores/variableFilter';
+import {reaction} from 'mobx';
 
 type LocationType = Omit<Location, 'state'> & {
   state: {refreshContent?: boolean};
@@ -77,6 +79,19 @@ const Processes: React.FC = observer(() => {
       processInstancesStore.fetchProcessInstancesFromFilters();
     }
   }, [isInitialLoadComplete, location.state]);
+
+  useEffect(() => {
+    const disposer = reaction(
+      () => variableFilterStore.state.variable,
+      () => {
+        if (processesStatus === 'fetched') {
+          processInstancesStore.fetchProcessInstancesFromFilters();
+        }
+      },
+    );
+
+    return disposer;
+  }, [processesStatus]);
 
   useEffect(() => {
     if (processesStatus === 'fetched') {

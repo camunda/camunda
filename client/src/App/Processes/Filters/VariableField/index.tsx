@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 import {observer} from 'mobx-react';
 import {
   validateVariableNameCharacters,
@@ -27,12 +27,17 @@ import {IconTextAreaField} from 'modules/components/IconTextAreaField';
 import {IconTextInputField} from 'modules/components/IconTextInputField';
 import {Toggle, VariableValueContainer} from './styled';
 import {MultipleValuesModal} from './MultipleValuesModal';
+import {variableFilterStore} from 'modules/stores/variableFilter';
 
 const Variable: React.FC = observer(() => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isInMultipleMode, setIsInMultipleMode] = useState(false);
   const formState = useFormState();
   const form = useForm();
+
+  useEffect(() => {
+    return variableFilterStore.reset;
+  }, []);
 
   return (
     <>

@@ -11,6 +11,7 @@ import {getSearchString} from 'modules/utils/getSearchString';
 import {Location} from 'react-router-dom';
 import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
 import {getValidVariableValues} from './getValidVariableValues';
+import {variableFilterStore} from 'modules/stores/variableFilter';
 
 type ProcessInstanceFilterField =
   | 'process'
@@ -183,11 +184,15 @@ function getFilters<Fields extends string, Filters>(
 function getProcessInstanceFilters(
   searchParams: string,
 ): ProcessInstanceFilters {
-  return getFilters<ProcessInstanceFilterField, ProcessInstanceFilters>(
+  const {variableName, variableValues, ...filters} = getFilters<
+    ProcessInstanceFilterField,
+    ProcessInstanceFilters
+  >(
     searchParams,
     PROCESS_INSTANCE_FILTER_FIELDS,
     BOOLEAN_PROCESS_INSTANCE_FILTER_FIELDS,
   );
+  return filters;
 }
 
 function getDecisionInstanceFilters(
@@ -278,7 +283,13 @@ function getDecisionIds(name: string, decisionVersion: string) {
 }
 
 function getProcessInstancesRequestFilters(): RequestFilters {
-  const filters = getProcessInstanceFilters(getSearchString());
+  const {variable} = variableFilterStore.state;
+
+  const filters = {
+    ...getProcessInstanceFilters(getSearchString()),
+    variableName: variable?.name,
+    variableValues: variable?.values,
+  };
 
   return Object.entries(filters).reduce<RequestFilters>(
     (accumulator, [key, value]): RequestFilters => {

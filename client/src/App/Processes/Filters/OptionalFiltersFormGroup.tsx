@@ -143,9 +143,6 @@ const OptionalFiltersFormGroup: React.FC<Props> = observer(
               : currentVisibleFilters),
             ...([
               ...intersection(Object.keys(filters), optionalFilters),
-              ...('variableName' in filters && 'variableValues' in filters
-                ? ['variable']
-                : []),
               ...('startDateAfter' in filters && 'startDateBefore' in filters
                 ? ['startDateRange']
                 : []),

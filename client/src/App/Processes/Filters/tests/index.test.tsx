@@ -77,8 +77,6 @@ describe('Filters', () => {
       parentInstanceId: '1954699813693756',
       errorMessage: 'a random error',
       flowNodeId: 'ServiceTask_0kt6c5i',
-      variableName: 'foo',
-      variableValues: 'bar',
       operationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
       active: 'true',
       incidents: 'true',
@@ -122,12 +120,6 @@ describe('Filters', () => {
       screen.getByDisplayValue(MOCK_PARAMS.errorMessage),
     ).toBeInTheDocument();
 
-    expect(
-      screen.getByDisplayValue(MOCK_PARAMS.variableName),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByDisplayValue(MOCK_PARAMS.variableValues),
-    ).toBeInTheDocument();
     expect(
       screen.getByDisplayValue(MOCK_PARAMS.operationId),
     ).toBeInTheDocument();
@@ -186,8 +178,6 @@ describe('Filters', () => {
       parentInstanceId: '1954699813693756',
       errorMessage: 'an error',
       flowNodeId: 'ServiceTask_0kt6c5i',
-      variableName: 'variableFoo',
-      variableValues: 'true',
       operationId: '90fdfe82-090b-4d84-af31-5db612514191',
       active: 'true',
       incidents: 'true',
@@ -241,14 +231,6 @@ describe('Filters', () => {
 
     await user.click(screen.getByRole('button', {name: 'More Filters'}));
     await user.click(screen.getByText('Variable'));
-    await user.type(
-      screen.getByTestId('optional-filter-variable-name'),
-      MOCK_VALUES.variableName,
-    );
-    await user.type(
-      screen.getByLabelText(/^value$/i),
-      MOCK_VALUES.variableValues,
-    );
 
     await user.click(screen.getByRole('button', {name: 'More Filters'}));
     await user.click(screen.getByText('Operation Id'));
