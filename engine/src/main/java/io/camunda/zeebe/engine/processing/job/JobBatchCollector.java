@@ -78,6 +78,7 @@ final class JobBatchCollector {
 
     jobState.forEachActivatableJobs(
         value.getTypeBuffer(),
+        value.getTenantIds(),
         (key, jobRecord) -> {
           // fill in the job record properties first in order to accurately estimate its size before
           // adding it to the batch
