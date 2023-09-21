@@ -51,7 +51,7 @@ public final class ClusterTopologyManagerImpl implements ClusterTopologyManager 
   private Consumer<ClusterTopology> topologyGossiper;
   private final ActorFuture<Void> startFuture;
 
-  private final TopologyChangeAppliers changeAppliers;
+  private TopologyChangeAppliers changeAppliers;
   private final MemberId localMemberId;
 
   // Indicates whether there is a topology change operation in progress on this member.
@@ -60,12 +60,10 @@ public final class ClusterTopologyManagerImpl implements ClusterTopologyManager 
   ClusterTopologyManagerImpl(
       final ConcurrencyControl executor,
       final MemberId localMemberId,
-      final PersistedClusterTopology persistedClusterTopology,
-      final TopologyChangeAppliers changeAppliers) {
+      final PersistedClusterTopology persistedClusterTopology) {
     this.executor = executor;
     this.persistedClusterTopology = persistedClusterTopology;
     startFuture = executor.createFuture();
-    this.changeAppliers = changeAppliers;
     this.localMemberId = localMemberId;
   }
 
@@ -87,9 +85,7 @@ public final class ClusterTopologyManagerImpl implements ClusterTopologyManager 
                 .ifRightOrLeft(
                     updated -> {
                       future.complete(updated);
-                      if (shouldApplyTopologyChangeOperation(updatedTopology)) {
-                        applyTopologyChangeOperation(updatedTopology);
-                      }
+                      applyTopologyChangeOperation(updatedTopology);
                     },
                     future::completeExceptionally);
           } catch (final Exception e) {
@@ -166,9 +162,7 @@ public final class ClusterTopologyManagerImpl implements ClusterTopologyManager 
                     receivedTopology,
                     mergedTopology);
                 persistedClusterTopology.update(mergedTopology);
-                if (shouldApplyTopologyChangeOperation(mergedTopology)) {
-                  applyTopologyChangeOperation(mergedTopology);
-                }
+                applyTopologyChangeOperation(mergedTopology);
               }
             }
             result.complete(persistedClusterTopology.getTopology());
@@ -190,10 +184,16 @@ public final class ClusterTopologyManagerImpl implements ClusterTopologyManager 
     // an extra precaution we check if there is an ongoing operation before applying
     // one.
     return !onGoingTopologyChangeOperation
-        && mergedTopology.pendingChangesFor(localMemberId).isPresent();
+        && mergedTopology.pendingChangesFor(localMemberId).isPresent()
+        // changeApplier is registered only after PartitionManager in the Broker is started.
+        && changeAppliers != null;
   }
 
   private void applyTopologyChangeOperation(final ClusterTopology mergedTopology) {
+    if (!shouldApplyTopologyChangeOperation(mergedTopology)) {
+      return;
+    }
+
     onGoingTopologyChangeOperation = true;
     final var operation = mergedTopology.pendingChangesFor(localMemberId).orElseThrow();
     LOG.info("Applying topology change operation {}", operation);
@@ -246,5 +246,14 @@ public final class ClusterTopologyManagerImpl implements ClusterTopologyManager 
     } catch (final Exception e) {
       return Either.left(e);
     }
+  }
+
+  void registerTopologyChangeAppliers(final TopologyChangeAppliers topologyChangeAppliers) {
+    executor.run(
+        () -> {
+          changeAppliers = topologyChangeAppliers;
+          // Continue applying the topology change operation, after a broker restart.
+          applyTopologyChangeOperation(persistedClusterTopology.getTopology());
+        });
   }
 }
