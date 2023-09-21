@@ -46,6 +46,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluateDecisionReque
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluateDecisionResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.FailJobResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.FormMetadata;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Partition;
@@ -160,6 +161,10 @@ public final class RecordingGatewayService extends GatewayImplBase {
     return Deployment.newBuilder().setDecisionRequirements(metadata).build();
   }
 
+  public static Deployment deployment(final FormMetadata metadata) {
+    return Deployment.newBuilder().setForm(metadata).build();
+  }
+
   public static ProcessMetadata deployedProcess(
       final String bpmnProcessId,
       final int version,
@@ -251,6 +256,21 @@ public final class RecordingGatewayService extends GatewayImplBase {
         .setDmnDecisionRequirementsName(dmnDecisionRequirementsName)
         .setVersion(version)
         .setDecisionRequirementsKey(decisionRequirementsKey)
+        .setResourceName(resourceName)
+        .setTenantId(tenantId)
+        .build();
+  }
+
+  public static FormMetadata deployedForm(
+      final String formId,
+      final int version,
+      final long formKey,
+      final String resourceName,
+      final String tenantId) {
+    return FormMetadata.newBuilder()
+        .setFormId(formId)
+        .setVersion(version)
+        .setFormKey(formKey)
         .setResourceName(resourceName)
         .setTenantId(tenantId)
         .build();

@@ -15,36 +15,31 @@
  */
 package io.camunda.zeebe.client.api.response;
 
-import java.util.List;
+public interface Form {
 
-public interface DeploymentEvent {
   /**
-   * @return the unique key of the deployment
+   * @return the form ID, as parsed during deployment; together with the versions forms a unique
+   *     identifier for a specific form
    */
-  long getKey();
+  String getFormId();
 
   /**
-   * @return the processes which are deployed
+   * @return the assigned form version
    */
-  List<Process> getProcesses();
+  int getVersion();
 
   /**
-   * @return the decisions which are deployed
+   * @return the assigned form key, which acts as a unique identifier for this form
    */
-  List<Decision> getDecisions();
+  long getFormKey();
 
   /**
-   * @return the decision requirements which are deployed
+   * @return the resource name of the form, as parsed during deployment
    */
-  List<DecisionRequirements> getDecisionRequirements();
+  String getResourceName();
 
   /**
-   * @return the deployed form metadata
-   */
-  List<Form> getForm();
-
-  /**
-   * @return the tenant identifier that owns this deployment
+   * @return the tenant identifier that owns this form
    */
   String getTenantId();
 }

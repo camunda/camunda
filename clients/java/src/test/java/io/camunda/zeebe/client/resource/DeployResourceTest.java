@@ -17,6 +17,7 @@ package io.camunda.zeebe.client.resource;
 
 import static io.camunda.zeebe.client.util.RecordingGatewayService.deployedDecision;
 import static io.camunda.zeebe.client.util.RecordingGatewayService.deployedDecisionRequirements;
+import static io.camunda.zeebe.client.util.RecordingGatewayService.deployedForm;
 import static io.camunda.zeebe.client.util.RecordingGatewayService.deployedProcess;
 import static io.camunda.zeebe.client.util.RecordingGatewayService.deployment;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -27,6 +28,7 @@ import io.camunda.zeebe.client.api.response.DeploymentEvent;
 import io.camunda.zeebe.client.impl.command.StreamUtil;
 import io.camunda.zeebe.client.impl.response.DecisionImpl;
 import io.camunda.zeebe.client.impl.response.DecisionRequirementsImpl;
+import io.camunda.zeebe.client.impl.response.FormImpl;
 import io.camunda.zeebe.client.impl.response.ProcessImpl;
 import io.camunda.zeebe.client.util.ClientTest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceRequest;
@@ -54,6 +56,9 @@ public final class DeployResourceTest extends ClientTest {
   private static final String DMN_DECISION_NAME_2 = "Jedi or Sith?";
   private static final String DMN_DECISION_REQUIREMENTS_ID = "force_users";
   private static final String DMN_DECISION_REQUIREMENTS_NAME = "Force Users";
+  private static final String FORM_FILENAME_1 = "/form/test-form-1.form";
+  private static final String FORM_FILENAME_2 = "/form/test-form-2.form";
+  private static final String DEFAULT_TENANT = "<default>";
 
   @Test
   public void shouldDeployResourceFromFile() {
@@ -383,6 +388,61 @@ public final class DeployResourceTest extends ClientTest {
 
     // then
     rule.verifyRequestTimeout(requestTimeout);
+  }
+
+  @Test
+  public void shouldDeployFormAsResource() {
+    // given
+    final String filename = DeployResourceTest.class.getResource(FORM_FILENAME_1).getPath();
+    final long deploymentKey = 123L;
+    final int version = 1;
+    final long formKey = 234L;
+    final String formId = "formId";
+    gatewayService.onDeployResourceRequest(
+        deploymentKey,
+        DEFAULT_TENANT,
+        deployment(deployedForm(formId, version, formKey, filename, DEFAULT_TENANT)));
+
+    // when
+    final DeploymentEvent response =
+        client.newDeployResourceCommand().addResourceFile(filename).send().join();
+
+    // then
+    assertThat(response.getKey()).isEqualTo(deploymentKey);
+    assertThat(response.getForm())
+        .containsExactly(new FormImpl(formId, version, formKey, filename, DEFAULT_TENANT));
+  }
+
+  @Test
+  public void shouldDeployMultipleFormsAsResources() {
+    // given
+    final long key = 345L;
+    final String filename1 = FORM_FILENAME_1.substring(1);
+    final String filename2 = FORM_FILENAME_2.substring(1);
+    final String formId1 = "formId1";
+    final String formId2 = "formId2";
+    gatewayService.onDeployResourceRequest(
+        key,
+        DEFAULT_TENANT,
+        deployment(deployedForm(formId1, 1, 1, filename1, DEFAULT_TENANT)),
+        deployment(deployedForm(formId2, 1, 2, filename2, DEFAULT_TENANT)));
+
+    // when
+    final DeploymentEvent response =
+        client
+            .newDeployResourceCommand()
+            .addResourceFromClasspath(filename1)
+            .addResourceFromClasspath(filename2)
+            .tenantId(DEFAULT_TENANT)
+            .send()
+            .join();
+
+    // then
+    assertThat(response.getKey()).isEqualTo(key);
+    assertThat(response.getForm())
+        .containsExactly(
+            new FormImpl(formId1, 1, 1, filename1, DEFAULT_TENANT),
+            new FormImpl(formId2, 1, 2, filename2, DEFAULT_TENANT));
   }
 
   private byte[] getBytes(final String filename) {
