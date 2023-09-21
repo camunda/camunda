@@ -17,6 +17,7 @@ package io.camunda.zeebe.client.impl.worker;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.mock;
@@ -133,6 +134,7 @@ class JobWorkerBuilderImplTest {
     final StreamJobsCommandStep3 lastStep = Mockito.mock(Answers.RETURNS_SELF);
     Mockito.when(jobClient.newStreamJobsCommand().jobType(anyString()).consumer(any()))
         .thenReturn(lastStep);
+    Mockito.when(lastStep.tenantIds(anyList())).thenReturn(lastStep);
     Mockito.when(lastStep.send()).thenReturn(Mockito.mock());
 
     // when
@@ -157,6 +159,7 @@ class JobWorkerBuilderImplTest {
     final StreamJobsCommandStep3 lastStep = Mockito.mock(Answers.RETURNS_SELF);
     Mockito.when(jobClient.newStreamJobsCommand().jobType(anyString()).consumer(any()))
         .thenReturn(lastStep);
+    Mockito.when(lastStep.tenantIds(anyList())).thenReturn(lastStep);
     Mockito.when(lastStep.send()).thenReturn(Mockito.mock());
 
     // when
