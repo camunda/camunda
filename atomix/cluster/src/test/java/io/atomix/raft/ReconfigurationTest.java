@@ -75,7 +75,7 @@ final class ReconfigurationTest {
 
   private static AppendResult appendEntry(final LeaderRole leader) {
     final var result = new AppendResult();
-    leader.appendEntry(0, 1, ByteBuffer.wrap(new byte[0]), result);
+    leader.appendEntry(-1, -1, ByteBuffer.wrap(new byte[0]), result);
     return result;
   }
 
