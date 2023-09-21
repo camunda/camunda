@@ -23,6 +23,7 @@ import io.camunda.zeebe.test.util.socket.SocketUtil;
 import java.nio.file.Path;
 import java.util.function.Consumer;
 import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.util.unit.DataSize;
 
 /** Represents an instance of the {@link StandaloneBroker} Spring application. */
 @SuppressWarnings("UnusedReturnValue")
@@ -40,6 +41,12 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     config.getNetwork().getCommandApi().setPort(SocketUtil.getNextAddress().getPort());
     config.getNetwork().getInternalApi().setPort(SocketUtil.getNextAddress().getPort());
     config.getGateway().getNetwork().setPort(SocketUtil.getNextAddress().getPort());
+
+    // set a smaller default log segment size since we pre-allocate, which might be a lot in tests
+    // for local development; also lower the watermarks for local testing
+    config.getData().setLogSegmentSize(DataSize.ofMegabytes(16));
+    config.getData().getDisk().getFreeSpace().setProcessing(DataSize.ofMegabytes(128));
+    config.getData().getDisk().getFreeSpace().setReplication(DataSize.ofMegabytes(64));
 
     //noinspection resource
     withBean("uninitializedBrokerCfg", config, BrokerCfg.class);
