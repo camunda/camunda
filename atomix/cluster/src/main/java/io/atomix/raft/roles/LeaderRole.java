@@ -137,7 +137,11 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     // See https://groups.google.com/forum/#!topic/raft-dev/t4xj6dJTP6E
     if (configuring() || initializing() || jointConsensus()) {
       return CompletableFuture.completedFuture(
-          logResponse(ReconfigureResponse.builder().withStatus(RaftResponse.Status.ERROR).build()));
+          logResponse(
+              ReconfigureResponse.builder()
+                  .withStatus(RaftResponse.Status.ERROR)
+                  .withError(Type.CONFIGURATION_ERROR)
+                  .build()));
     }
 
     // If the configuration request index is less than the last known configuration index for
