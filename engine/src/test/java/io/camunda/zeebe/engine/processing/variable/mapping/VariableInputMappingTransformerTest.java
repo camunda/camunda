@@ -13,8 +13,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
 import io.camunda.zeebe.el.ResultType;
+import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.VariableMappingTransformer;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeMapping;
+import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.test.util.MsgPackUtil;
 import java.util.List;
 import java.util.Map;
@@ -39,7 +41,8 @@ public final class VariableInputMappingTransformerTest {
 
   private final VariableMappingTransformer transformer = new VariableMappingTransformer();
   private final ExpressionLanguage expressionLanguage =
-      ExpressionLanguageFactory.createExpressionLanguage();
+      ExpressionLanguageFactory.createExpressionLanguage(
+          new ZeebeFeelEngineClock(ActorClock.current()));
 
   @Parameters(name = "with {0} to {2}")
   public static Object[][] parameters() {

@@ -9,6 +9,7 @@ package io.camunda.zeebe.el;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.el.util.TestFeelEngineClock;
 import io.camunda.zeebe.test.util.MsgPackUtil;
 import java.util.Map;
 import org.junit.Test;
@@ -18,7 +19,7 @@ public class FeelCycleFunctionTest {
   private static final EvaluationContext EMPTY_CONTEXT = x -> null;
 
   private final ExpressionLanguage expressionLanguage =
-      ExpressionLanguageFactory.createExpressionLanguage();
+      ExpressionLanguageFactory.createExpressionLanguage(new TestFeelEngineClock());
 
   @Test
   public void emptyDuration() {

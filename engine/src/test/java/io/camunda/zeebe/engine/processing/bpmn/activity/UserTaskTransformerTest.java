@@ -11,12 +11,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
+import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerTask;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.BpmnTransformer;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.UserTaskBuilder;
+import io.camunda.zeebe.scheduler.clock.ActorClock;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -32,7 +34,8 @@ class UserTaskTransformerTest {
   private static final String TASK_ID = "user-task";
 
   private final ExpressionLanguage expressionLanguage =
-      ExpressionLanguageFactory.createExpressionLanguage();
+      ExpressionLanguageFactory.createExpressionLanguage(
+          new ZeebeFeelEngineClock(ActorClock.current()));
   private final BpmnTransformer transformer = new BpmnTransformer(expressionLanguage);
 
   private BpmnModelInstance processWithUserTask(final Consumer<UserTaskBuilder> userTaskModifier) {

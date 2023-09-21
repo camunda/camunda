@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
+import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor.EvaluationContextLookup;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -18,6 +19,7 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.traversal.ModelWalker;
 import io.camunda.zeebe.model.bpmn.validation.ValidationVisitor;
 import io.camunda.zeebe.model.bpmn.validation.zeebe.ZeebeDesignTimeValidators;
+import io.camunda.zeebe.scheduler.clock.ActorClock;
 import java.util.Collection;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -50,7 +52,8 @@ public class ProcessValidationUtil {
   private static ValidationResults validate(final BpmnModelInstance model) {
     final ModelWalker walker = new ModelWalker(model);
     final ExpressionLanguage expressionLanguage =
-        ExpressionLanguageFactory.createExpressionLanguage();
+        ExpressionLanguageFactory.createExpressionLanguage(
+            new ZeebeFeelEngineClock(ActorClock.current()));
     final EvaluationContextLookup emptyLookup = scopeKey -> name -> null;
     final var expressionProcessor = new ExpressionProcessor(expressionLanguage, emptyLookup);
     final ValidationVisitor visitor =

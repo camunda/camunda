@@ -11,7 +11,7 @@ import static io.camunda.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.el.impl.FeelExpressionLanguage;
-import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
+import io.camunda.zeebe.el.util.TestFeelEngineClock;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
@@ -22,7 +22,7 @@ public class FeelExpressionTest {
 
   private static final EvaluationContext EMPTY_CONTEXT = name -> null;
 
-  private final ControlledActorClock clock = new ControlledActorClock();
+  private final TestFeelEngineClock clock = new TestFeelEngineClock();
 
   private final ExpressionLanguage expressionLanguage = new FeelExpressionLanguage(clock);
 

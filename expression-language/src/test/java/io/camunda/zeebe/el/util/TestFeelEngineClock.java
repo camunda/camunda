@@ -1,0 +1,27 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
+ */
+package io.camunda.zeebe.el.util;
+
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import org.camunda.feel.FeelEngineClock;
+
+public class TestFeelEngineClock implements FeelEngineClock {
+
+  private long currentTime = -1;
+
+  @Override
+  public ZonedDateTime getCurrentTime() {
+    return Instant.ofEpochMilli(currentTime).atZone(ZoneId.systemDefault());
+  }
+
+  public void setCurrentTime(final Instant currentTime) {
+    this.currentTime = currentTime.toEpochMilli();
+  }
+}

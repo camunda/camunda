@@ -110,6 +110,12 @@
       <artifactId>guava</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>org.camunda.feel</groupId>
+      <artifactId>feel-engine</artifactId>
+      <version>1.16.1</version>
+    </dependency>
+
     <!-- TEST DEPENDENCIES -->
     <dependency>
       <groupId>io.camunda</groupId>

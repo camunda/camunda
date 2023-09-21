@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.bpmn.behavior;
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
 import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.ProcessInstanceStateTransitionGuard;
+import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.common.DecisionBehavior;
 import io.camunda.zeebe.engine.processing.common.ElementActivationBehavior;
@@ -22,6 +23,7 @@ import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.processing.variable.VariableStateEvaluationContextLookup;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.scheduler.clock.ActorClock;
 
 public final class BpmnBehaviorsImpl implements BpmnBehaviors {
 
@@ -56,7 +58,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
       final JobStreamer jobStreamer) {
     expressionBehavior =
         new ExpressionProcessor(
-            ExpressionLanguageFactory.createExpressionLanguage(),
+            ExpressionLanguageFactory.createExpressionLanguage(
+                new ZeebeFeelEngineClock(ActorClock.current())),
             new VariableStateEvaluationContextLookup(processingState.getVariableState()));
 
     variableBehavior =
