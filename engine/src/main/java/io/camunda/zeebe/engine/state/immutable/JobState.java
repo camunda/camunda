@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.state.immutable;
 
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import org.agrona.DirectBuffer;
@@ -22,7 +23,10 @@ public interface JobState {
 
   boolean isInState(long key, State state);
 
-  void forEachActivatableJobs(DirectBuffer type, BiFunction<Long, JobRecord, Boolean> callback);
+  void forEachActivatableJobs(
+      DirectBuffer type,
+      final List<String> tenantIds,
+      BiFunction<Long, JobRecord, Boolean> callback);
 
   JobRecord getJob(long key);
 
