@@ -262,7 +262,6 @@ public final class StreamJobsTest extends ClientTest {
 
     // when
     final StreamActivatedJobsRequest request = gatewayService.getLastRequest();
-    ;
 
     // then
     assertThat(request.getTenantIdsList()).containsExactly("tenant1", "tenant2");
