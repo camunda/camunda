@@ -230,6 +230,25 @@ public class MultiTenancyOverIdentityIT {
   }
 
   @Test
+  void shouldAuthorizeDeployProcess() {
+    // given
+    try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A)) {
+      // when
+      final Future<DeploymentEvent> response =
+          client
+              .newDeployResourceCommand()
+              .addProcessModel(process, "process.bpmn")
+              .tenantId("tenant-a")
+              .send();
+
+      // then
+      assertThat(response)
+          .describedAs("Expect that process can be deployed for tenant a")
+          .succeedsWithin(Duration.ofSeconds(10));
+    }
+  }
+
+  @Test
   void shouldDenyDeployProcessWhenUnauthorized() {
     // given
     try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A)) {
