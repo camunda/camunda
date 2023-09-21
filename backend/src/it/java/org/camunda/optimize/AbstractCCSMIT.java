@@ -119,6 +119,14 @@ public abstract class AbstractCCSMIT extends AbstractIT {
     );
   }
 
+  protected void waitUntilRecordMatchingQueryExported(final String indexName, final BoolQueryBuilder boolQuery) {
+    waitUntilRecordMatchingQueryExported(1, indexName, boolQuery);
+  }
+
+  protected void waitUntilRecordMatchingQueryExported(final long minRecordCount, final String indexName, final BoolQueryBuilder boolQuery) {
+    waitUntilMinimumDataExportedCount(minRecordCount, indexName, boolQuery, 10);
+  }
+
   protected String getFlowNodeInstanceIdFromProcessInstanceForActivity(final ProcessInstanceDto processInstanceDto,
                                                                        final String activityId) {
     return getPropertyIdFromProcessInstanceForActivity(
@@ -153,6 +161,12 @@ public abstract class AbstractCCSMIT extends AbstractIT {
   protected static boolean isZeebeVersionPre82() {
     final Pattern zeebeVersionPreSequenceField = Pattern.compile("8.0.*|8.1.*");
     return zeebeVersionPreSequenceField.matcher(IntegrationTestConfigurationUtil.getZeebeDockerVersion()).matches();
+  }
+
+  protected static boolean isZeebeVersionWithMultiTenancy() {
+    // multi tenancy is introduced with zeebe 8.3.0
+    final Pattern zeebeVersionPattern = Pattern.compile("8.0.*|8.1.*|8.2.*");
+    return !zeebeVersionPattern.matcher(IntegrationTestConfigurationUtil.getZeebeDockerVersion()).matches();
   }
 
   private BoolQueryBuilder getInstanceRecordIdQuery(final String expectedRecordId) {

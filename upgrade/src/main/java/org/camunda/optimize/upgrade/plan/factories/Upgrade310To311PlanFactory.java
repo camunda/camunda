@@ -36,9 +36,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.camunda.optimize.service.util.InstanceIndexUtil.isInstanceIndexNotFoundException;
-import static org.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.POSITION_BASED_IMPORT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_MULTI_ALIAS;
+import static org.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT_ID;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ZEEBE_DATA_SOURCE;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
@@ -85,7 +85,7 @@ public class Upgrade310To311PlanFactory implements UpgradePlanFactory {
     return new UpdateDataStep(
       new ProcessDefinitionIndex(),
       query,
-      String.format("ctx._source.tenantId = '%s';", ZEEBE_DEFAULT_TENANT)
+      String.format("ctx._source.tenantId = '%s';", ZEEBE_DEFAULT_TENANT_ID)
     );
   }
 
@@ -95,7 +95,7 @@ public class Upgrade310To311PlanFactory implements UpgradePlanFactory {
       .mustNot(existsQuery(ProcessInstanceIndex.TENANT_ID));
     final StringSubstitutor substitutor = new StringSubstitutor(
       ImmutableMap.<String, String>builder()
-        .put("defaultTenantId", ZEEBE_DEFAULT_TENANT)
+        .put("defaultTenantId", ZEEBE_DEFAULT_TENANT_ID)
         .build()
     );
     final String script = substitutor.replace(
@@ -120,7 +120,7 @@ public class Upgrade310To311PlanFactory implements UpgradePlanFactory {
   private UpgradeStep updateDefaultTenantIdOfProcessReportsInC8() {
     final StringSubstitutor substitutor = new StringSubstitutor(
       ImmutableMap.<String, String>builder()
-        .put("defaultTenantId", ZEEBE_DEFAULT_TENANT)
+        .put("defaultTenantId", ZEEBE_DEFAULT_TENANT_ID)
         .build()
     );
     // @formatter:off
@@ -135,7 +135,7 @@ public class Upgrade310To311PlanFactory implements UpgradePlanFactory {
   private UpgradeStep updateDefaultTenantIdOfCollectionScopesInC8() {
     final StringSubstitutor substitutor = new StringSubstitutor(
       ImmutableMap.<String, String>builder()
-        .put("defaultTenantId", ZEEBE_DEFAULT_TENANT)
+        .put("defaultTenantId", ZEEBE_DEFAULT_TENANT_ID)
         .build()
     );
     // @formatter:off

@@ -22,7 +22,7 @@ import java.util.function.Function;
 
 import static java.util.stream.Collectors.toMap;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT;
+import static org.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT_ID;
 
 public class MigrateReportIndicesIT extends AbstractUpgrade311IT {
 
@@ -158,7 +158,7 @@ public class MigrateReportIndicesIT extends AbstractUpgrade311IT {
       .extracting(ReportDefinitionDto::getData)
       .flatExtracting(ProcessReportDataDto::getDefinitions)
       .extracting(ReportDataDefinitionDto::getTenantIds)
-      .allSatisfy(tenantIds -> assertThat(tenantIds).singleElement().isEqualTo(ZEEBE_DEFAULT_TENANT));
+      .allSatisfy(tenantIds -> assertThat(tenantIds).singleElement().isEqualTo(ZEEBE_DEFAULT_TENANT_ID));
   }
 
   private Map<String, SingleProcessReportDefinitionRequestDto> getAllProcessReportsById() {

@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT;
+import static org.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT_ID;
 
 public class MigrateProcessInstanceIndexIT extends AbstractUpgrade311IT {
 
@@ -85,33 +85,33 @@ public class MigrateProcessInstanceIndexIT extends AbstractUpgrade311IT {
     assertThat(alwaysCompletingProcessInstances)
       .extracting(ProcessInstanceDto::getTenantId)
       .hasSize(4)
-      .containsOnly(ZEEBE_DEFAULT_TENANT);
+      .containsOnly(ZEEBE_DEFAULT_TENANT_ID);
     assertThat(alwaysCompletingProcessInstances)
       .flatExtracting(ProcessInstanceDto::getIncidents)
       .extracting(IncidentDto::getTenantId)
       .hasSize(4)
-      .containsOnly(ZEEBE_DEFAULT_TENANT);
+      .containsOnly(ZEEBE_DEFAULT_TENANT_ID);
     assertThat(alwaysCompletingProcessInstances)
       .flatExtracting(ProcessInstanceDto::getFlowNodeInstances)
       .extracting(FlowNodeInstanceDto::getTenantId)
       .hasSize(4)
-      .containsOnly(ZEEBE_DEFAULT_TENANT);
+      .containsOnly(ZEEBE_DEFAULT_TENANT_ID);
 
     List<ProcessInstanceDto> onlyIncidentsProcessInstances = getAllDocumentsOfIndexAs(new ProcessInstanceIndex(
       ONLY_INCIDENT_PROCESS).getIndexName(), ProcessInstanceDto.class);
     assertThat(onlyIncidentsProcessInstances)
       .extracting(ProcessInstanceDto::getTenantId)
       .hasSize(4)
-      .containsOnly(ZEEBE_DEFAULT_TENANT);
+      .containsOnly(ZEEBE_DEFAULT_TENANT_ID);
     assertThat(onlyIncidentsProcessInstances)
       .flatExtracting(ProcessInstanceDto::getIncidents)
       .extracting(IncidentDto::getTenantId)
       .hasSize(4)
-      .containsOnly(ZEEBE_DEFAULT_TENANT);
+      .containsOnly(ZEEBE_DEFAULT_TENANT_ID);
     assertThat(onlyIncidentsProcessInstances)
       .flatExtracting(ProcessInstanceDto::getFlowNodeInstances)
       .extracting(FlowNodeInstanceDto::getTenantId)
       .hasSize(8)
-      .containsOnly(ZEEBE_DEFAULT_TENANT);
+      .containsOnly(ZEEBE_DEFAULT_TENANT_ID);
   }
 }

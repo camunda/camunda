@@ -11,6 +11,9 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.FieldNameConstants;
+import org.apache.commons.lang3.StringUtils;
+
+import static org.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT_ID;
 
 @FieldNameConstants
 @EqualsAndHashCode
@@ -36,5 +39,9 @@ public class ZeebeProcessInstanceDataDto implements ProcessInstanceRecordValue {
   @Override
   public BpmnEventType getBpmnEventType() {
     throw new UnsupportedOperationException("Operation not supported");
+  }
+
+  public String getTenantId() {
+    return StringUtils.isEmpty(tenantId) ? ZEEBE_DEFAULT_TENANT_ID : tenantId;
   }
 }

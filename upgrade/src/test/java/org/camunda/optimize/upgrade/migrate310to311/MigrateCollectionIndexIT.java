@@ -17,7 +17,7 @@ import java.util.Map;
 
 import static java.util.stream.Collectors.toMap;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT;
+import static org.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT_ID;
 
 public class MigrateCollectionIndexIT extends AbstractUpgrade311IT {
   @Test
@@ -99,7 +99,7 @@ public class MigrateCollectionIndexIT extends AbstractUpgrade311IT {
     scopeTenantsByCollectionId.remove("noScopeCollection");
     assertThat(scopeTenantsByCollectionId.values())
       .allSatisfy(tenantIdLists -> assertThat(tenantIdLists).isNotEmpty()
-        .allSatisfy(tenantIds -> assertThat(tenantIds).containsExactly(ZEEBE_DEFAULT_TENANT)
+        .allSatisfy(tenantIds -> assertThat(tenantIds).containsExactly(ZEEBE_DEFAULT_TENANT_ID)
         ));
   }
 }

@@ -13,7 +13,7 @@ import org.camunda.optimize.service.es.schema.index.events.EventProcessDefinitio
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT;
+import static org.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT_ID;
 
 public class MigrateProcessDefinitionIndexIT extends AbstractUpgrade311IT {
 
@@ -93,7 +93,7 @@ public class MigrateProcessDefinitionIndexIT extends AbstractUpgrade311IT {
     assertThat(getAllDocumentsOfIndexAs(new ProcessDefinitionIndex().getIndexName(), ProcessDefinitionOptimizeDto.class))
       .hasSize(2)
       .allSatisfy(processDefinition -> {
-        assertThat(processDefinition.getTenantId()).isEqualTo(ZEEBE_DEFAULT_TENANT);
+        assertThat(processDefinition.getTenantId()).isEqualTo(ZEEBE_DEFAULT_TENANT_ID);
       });
   }
 

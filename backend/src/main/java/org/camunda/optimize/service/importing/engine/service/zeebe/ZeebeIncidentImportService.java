@@ -65,7 +65,8 @@ public class ZeebeIncidentImportService extends ZeebeProcessInstanceSubEntityImp
     final ProcessInstanceDto instanceToAdd = createSkeletonProcessInstance(
       firstRecordValue.getBpmnProcessId(),
       firstRecordValue.getProcessInstanceKey(),
-      firstRecordValue.getProcessDefinitionKey()
+      firstRecordValue.getProcessDefinitionKey(),
+      firstRecordValue.getTenantId()
     );
     return updateIncidents(instanceToAdd, recordsForInstance);
   }

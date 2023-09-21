@@ -39,6 +39,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT_ID;
 import static org.camunda.optimize.util.ZeebeBpmnModels.END_EVENT;
 import static org.camunda.optimize.util.ZeebeBpmnModels.END_EVENT_2;
 import static org.camunda.optimize.util.ZeebeBpmnModels.SEND_TASK;
@@ -83,7 +84,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
         assertThat(savedInstance.getProcessDefinitionVersion()).isEqualTo(String.valueOf(deployedInstance.getVersion()));
         assertThat(savedInstance.getDataSource().getName()).isEqualTo(getConfiguredZeebeName());
         assertThat(savedInstance.getState()).isEqualTo(ProcessInstanceConstants.COMPLETED_STATE);
-        assertThat(savedInstance.getTenantId()).isNull();
+        assertThat(savedInstance.getTenantId()).isEqualTo(ZEEBE_DEFAULT_TENANT_ID);
         assertThat(savedInstance.getBusinessKey()).isNull();
         assertThat(savedInstance.getIncidents()).isEmpty();
         assertThat(savedInstance.getVariables()).isEmpty();
@@ -176,7 +177,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
         assertThat(savedInstance.getProcessDefinitionVersion()).isEqualTo(String.valueOf(deployedInstance.getVersion()));
         assertThat(savedInstance.getDataSource().getName()).isEqualTo(getConfiguredZeebeName());
         assertThat(savedInstance.getState()).isEqualTo(ProcessInstanceConstants.ACTIVE_STATE);
-        assertThat(savedInstance.getTenantId()).isNull();
+        assertThat(savedInstance.getTenantId()).isEqualTo(ZEEBE_DEFAULT_TENANT_ID);
         assertThat(savedInstance.getBusinessKey()).isNull();
         assertThat(savedInstance.getIncidents()).isEmpty();
         assertThat(savedInstance.getVariables()).isEmpty();
@@ -191,7 +192,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
             new FlowNodeInstanceDto(
               String.valueOf(deployedInstance.getBpmnProcessId()),
               String.valueOf(deployedInstance.getVersion()),
-              null,
+              ZEEBE_DEFAULT_TENANT_ID ,
               String.valueOf(deployedInstance.getProcessInstanceKey()),
               USER_TASK,
               getBpmnElementTypeNameForType(BpmnElementType.USER_TASK),
@@ -231,7 +232,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
         assertThat(savedInstance.getProcessDefinitionVersion()).isEqualTo(String.valueOf(deployedInstance.getVersion()));
         assertThat(savedInstance.getDataSource().getName()).isEqualTo(getConfiguredZeebeName());
         assertThat(savedInstance.getState()).isEqualTo(ProcessInstanceConstants.EXTERNALLY_TERMINATED_STATE);
-        assertThat(savedInstance.getTenantId()).isNull();
+        assertThat(savedInstance.getTenantId()).isEqualTo(ZEEBE_DEFAULT_TENANT_ID);
         assertThat(savedInstance.getBusinessKey()).isNull();
         assertThat(savedInstance.getIncidents()).isEmpty();
         assertThat(savedInstance.getVariables()).isEmpty();
@@ -278,7 +279,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
         assertThat(savedInstance.getProcessDefinitionVersion()).isEqualTo(String.valueOf(deployedInstance.getVersion()));
         assertThat(savedInstance.getDataSource().getName()).isEqualTo(getConfiguredZeebeName());
         assertThat(savedInstance.getState()).isEqualTo(ProcessInstanceConstants.COMPLETED_STATE);
-        assertThat(savedInstance.getTenantId()).isNull();
+        assertThat(savedInstance.getTenantId()).isEqualTo(ZEEBE_DEFAULT_TENANT_ID);
         assertThat(savedInstance.getBusinessKey()).isNull();
         assertThat(savedInstance.getIncidents()).isEmpty();
         assertThat(savedInstance.getVariables()).isEmpty();
@@ -492,7 +493,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
                 FlowNodeInstanceDto.Fields.definitionVersion,
                 String.valueOf(processInstance.getVersion())
               )
-              .hasFieldOrPropertyWithValue(FlowNodeInstanceDto.Fields.tenantId, null);
+              .hasFieldOrPropertyWithValue(FlowNodeInstanceDto.Fields.tenantId, ZEEBE_DEFAULT_TENANT_ID);
           })
           .extracting(FlowNodeInstanceDto::getFlowNodeId, FlowNodeInstanceDto::getFlowNodeType)
           .containsExactlyInAnyOrder(
@@ -538,6 +539,30 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
         ));
   }
 
+  // Test backwards compatibility for default tenantID applied when importing records pre multi tenancy introduction
+  @DisabledIf("isZeebeVersionWithMultiTenancy")
+  @Test
+  public void importZeebeProcess_defaultTenantIdForRecordsWithoutTenantId() {
+    // given a process deployed before zeebe implemented multi tenancy (pre 8.3.0 this test is disabled)
+    deployAndStartInstanceForProcess(createStartEndProcess("someProcess"));
+    waitUntilInstanceRecordWithElementIdExported(START_EVENT);
+
+    // when
+    importAllZeebeEntitiesFromScratch();
+
+    // then
+    final List<ProcessInstanceDto> instances = elasticSearchIntegrationTestExtension.getAllProcessInstances();
+    assertThat(instances)
+      .extracting(ProcessInstanceDto::getTenantId)
+      .singleElement()
+      .isEqualTo(ZEEBE_DEFAULT_TENANT_ID);
+    assertThat(instances)
+      .flatExtracting(ProcessInstanceDto::getFlowNodeInstances)
+      .extracting(FlowNodeInstanceDto::getTenantId)
+      .hasSize(2)
+      .containsOnly(ZEEBE_DEFAULT_TENANT_ID);
+  }
+
   private FlowNodeInstanceDto createFlowNodeInstance(final ProcessInstanceEvent deployedInstance,
                                                      final Map<String, List<ZeebeProcessInstanceRecordDto>> events,
                                                      final String eventId,
@@ -545,7 +570,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
     return new FlowNodeInstanceDto(
       String.valueOf(deployedInstance.getBpmnProcessId()),
       String.valueOf(deployedInstance.getVersion()),
-      null,
+      ZEEBE_DEFAULT_TENANT_ID,
       String.valueOf(deployedInstance.getProcessInstanceKey()),
       eventId,
       getBpmnElementTypeNameForType(eventType),
@@ -612,14 +637,12 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
   }
 
   private void waitUntilInstanceRecordWithElementIdExported(final String instanceElementId) {
-    waitUntilMinimumDataExportedCount(
-      1,
+    waitUntilRecordMatchingQueryExported(
       ElasticsearchConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME,
       boolQuery().must(termQuery(
         ZeebeProcessInstanceRecordDto.Fields.value + "." + ZeebeProcessInstanceDataDto.Fields.elementId,
         instanceElementId
-      )),
-      10
+      ))
     );
   }
 

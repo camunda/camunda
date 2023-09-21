@@ -71,7 +71,7 @@ public class ZeebeBpmnModels {
   }
 
   public static BpmnModelInstance createIncidentProcess(final String processName) {
-    return Bpmn.createExecutableProcess()
+    return Bpmn.createExecutableProcess(processName)
       .name(processName)
       .startEvent(START_EVENT).name(START_EVENT)
       .intermediateCatchEvent(
