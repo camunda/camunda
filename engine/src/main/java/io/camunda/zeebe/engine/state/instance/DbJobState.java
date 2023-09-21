@@ -37,6 +37,7 @@ public final class DbJobState implements JobState, MutableJobState {
   private final JobRecordValue jobRecordToWrite = new JobRecordValue();
 
   private final DbLong jobKey;
+  private final DbString tenantIdKey;
   private final DbForeignKey<DbLong> fkJob;
   private final ColumnFamily<DbLong, JobRecordValue> jobsColumnFamily;
 
@@ -66,6 +67,7 @@ public final class DbJobState implements JobState, MutableJobState {
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
 
     jobKey = new DbLong();
+    tenantIdKey = new DbString();
     fkJob = new DbForeignKey<>(jobKey, ZbColumnFamilies.JOBS);
     jobsColumnFamily =
         zeebeDb.createColumnFamily(
@@ -355,6 +357,7 @@ public final class DbJobState implements JobState, MutableJobState {
 
   private void createJobRecord(final long key, final JobRecord record) {
     jobKey.wrapLong(key);
+    tenantIdKey.wrapString(record.getTenantId());
     // do not persist variables in job state
     jobRecordToWrite.setRecordWithoutVariables(record);
     jobsColumnFamily.insert(jobKey, jobRecordToWrite);
@@ -363,6 +366,7 @@ public final class DbJobState implements JobState, MutableJobState {
   /** Updates the job record without updating variables */
   private void updateJobRecord(final long key, final JobRecord updatedValue) {
     jobKey.wrapLong(key);
+    tenantIdKey.wrapString(updatedValue.getTenantId());
     // do not persist variables in job state
     jobRecordToWrite.setRecordWithoutVariables(updatedValue);
     jobsColumnFamily.update(jobKey, jobRecordToWrite);
