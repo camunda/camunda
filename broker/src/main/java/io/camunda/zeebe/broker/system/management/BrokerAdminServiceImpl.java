@@ -7,21 +7,18 @@
  */
 package io.camunda.zeebe.broker.system.management;
 
-import static java.util.Objects.requireNonNull;
-
 import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
-import io.camunda.zeebe.broker.partitioning.NoOpPartitionAdminAccess;
 import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
+import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.ActorFutureCollector;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -41,18 +38,10 @@ import org.slf4j.Logger;
 public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminService {
 
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
-  private PartitionAdminAccess adminAccess = new NoOpPartitionAdminAccess();
-  private Collection<ZeebePartition> partitions = Collections.emptyList();
+  private final PartitionManagerImpl partitionManager;
 
-  public BrokerAdminServiceImpl() {}
-
-  public void injectAdminAccess(final PartitionAdminAccess adminAccess) {
-    this.adminAccess = requireNonNull(adminAccess);
-  }
-
-  public void injectPartitionInfoSource(
-      @Deprecated /* TODO find smaller interface */ final Collection<ZeebePartition> partitions) {
-    this.partitions = partitions;
+  public BrokerAdminServiceImpl(final PartitionManagerImpl partitionManager) {
+    this.partitionManager = partitionManager;
   }
 
   @Override
@@ -62,8 +51,7 @@ public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminSe
 
   @Override
   public void resumeStreamProcessing() {
-    LOG.info("Resuming paused StreamProcessor on all partitions.");
-    actor.call(() -> adminAccess.resumeProcessing());
+    actor.call(this::resumeStreamProcessingOnAllPartitions);
   }
 
   @Override
@@ -73,8 +61,7 @@ public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminSe
 
   @Override
   public void resumeExporting() {
-    LOG.info("Resuming exporting on all partitions.");
-    actor.call(() -> adminAccess.resumeExporting());
+    actor.call(this::resumeExportingOnAllPartitions);
   }
 
   @Override
@@ -91,7 +78,7 @@ public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminSe
   public Map<Integer, PartitionStatus> getPartitionStatus() {
     final CompletableFuture<Map<Integer, PartitionStatus>> future = new CompletableFuture<>();
     final Map<Integer, PartitionStatus> partitionStatuses = new ConcurrentHashMap<>();
-
+    final var partitions = partitionManager.getZeebePartitions();
     actor.call(
         () -> {
           if (partitions.isEmpty()) {
@@ -217,18 +204,43 @@ public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminSe
     actor.runOnCompletion(pauseAll, t -> takeSnapshotOnAllPartitions());
   }
 
-  private ActorFuture<Void> pauseStreamProcessingOnAllPartitions() {
+  private ActorFuture<List<Void>> pauseStreamProcessingOnAllPartitions() {
     LOG.info("Pausing StreamProcessor on all partitions.");
-    return adminAccess.pauseProcessing();
+    return partitionManager.getZeebePartitions().stream()
+        .map(ZeebePartition::getAdminAccess)
+        .map(PartitionAdminAccess::pauseProcessing)
+        .collect(new ActorFutureCollector<>(actor));
   }
 
-  private ActorFuture<Void> takeSnapshotOnAllPartitions() {
+  private ActorFuture<List<Void>> resumeStreamProcessingOnAllPartitions() {
+    LOG.info("Pausing StreamProcessor on all partitions.");
+    return partitionManager.getZeebePartitions().stream()
+        .map(ZeebePartition::getAdminAccess)
+        .map(PartitionAdminAccess::resumeProcessing)
+        .collect(new ActorFutureCollector<>(actor));
+  }
+
+  private ActorFuture<List<Void>> takeSnapshotOnAllPartitions() {
     LOG.info("Triggering Snapshots on all partitions.");
-    return adminAccess.takeSnapshot();
+    return partitionManager.getZeebePartitions().stream()
+        .map(ZeebePartition::getAdminAccess)
+        .map(PartitionAdminAccess::takeSnapshot)
+        .collect(new ActorFutureCollector<>(actor));
   }
 
-  private ActorFuture<Void> pauseExportingOnAllPartitions() {
+  private ActorFuture<List<Void>> pauseExportingOnAllPartitions() {
     LOG.info("Pausing exporting on all partitions.");
-    return adminAccess.pauseExporting();
+    return partitionManager.getZeebePartitions().stream()
+        .map(ZeebePartition::getAdminAccess)
+        .map(PartitionAdminAccess::pauseExporting)
+        .collect(new ActorFutureCollector<>(actor));
+  }
+
+  private ActorFuture<List<Void>> resumeExportingOnAllPartitions() {
+    LOG.info("Resuming exporting on all partitions.");
+    return partitionManager.getZeebePartitions().stream()
+        .map(ZeebePartition::getAdminAccess)
+        .map(PartitionAdminAccess::resumeExporting)
+        .collect(new ActorFutureCollector<>(actor));
   }
 }

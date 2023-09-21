@@ -42,9 +42,6 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
         () -> {
           try {
             partitionManager.start();
-            final var adminService = brokerStartupContext.getBrokerAdminService();
-            adminService.injectAdminAccess(partitionManager.createAdminAccess(adminService));
-            adminService.injectPartitionInfoSource(partitionManager.getZeebePartitions());
             brokerStartupContext.setPartitionManager(partitionManager);
             brokerStartupContext
                 .getClusterTopology()

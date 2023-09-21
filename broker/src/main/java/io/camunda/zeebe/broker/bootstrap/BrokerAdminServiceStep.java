@@ -24,7 +24,7 @@ final class BrokerAdminServiceStep extends AbstractBrokerStartupStep {
       final ConcurrencyControl concurrencyControl,
       final ActorFuture<BrokerStartupContext> startupFuture) {
 
-    final var adminService = new BrokerAdminServiceImpl();
+    final var adminService = new BrokerAdminServiceImpl(brokerStartupContext.getPartitionManager());
 
     final var submitActorFuture =
         brokerStartupContext.getActorSchedulingService().submitActor(adminService);

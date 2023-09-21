@@ -53,7 +53,6 @@ public final class BrokerStartupProcess {
     result.add(new DiskSpaceUsageMonitorStep());
 
     result.add(new MonitoringServerStep());
-    result.add(new BrokerAdminServiceStep());
 
     result.add(new ApiMessagingServiceStep());
     result.add(new GatewayBrokerTransportStep());
@@ -65,6 +64,7 @@ public final class BrokerStartupProcess {
 
     result.add(new JobStreamServiceStep());
     result.add(new PartitionManagerStep());
+    result.add(new BrokerAdminServiceStep());
 
     return result;
   }
