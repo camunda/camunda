@@ -15,49 +15,52 @@ import io.camunda.zeebe.backup.s3.S3BackupConfig.Builder;
 import io.camunda.zeebe.backup.s3.S3BackupStore;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.BackupStoreType;
-import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
 import io.camunda.zeebe.qa.util.cluster.TestRestoreApp;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.qa.util.testcontainers.MinioContainer;
-import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.camunda.zeebe.restore.BackupNotFoundException;
 import io.camunda.zeebe.shared.management.openapi.models.BackupInfo;
 import io.camunda.zeebe.shared.management.openapi.models.StateCode;
 import io.camunda.zeebe.shared.management.openapi.models.TakeBackupResponse;
-import io.zeebe.containers.ZeebeContainer;
 import java.time.Duration;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.containers.Network;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers
+@ZeebeIntegration
 final class S3RestoreAcceptanceIT {
-  private static final Network NETWORK = Network.newNetwork();
   private static final String BUCKET_NAME = RandomStringUtils.randomAlphabetic(10).toLowerCase();
 
   private static final long BACKUP_ID = 1;
 
   @Container
   private static final MinioContainer MINIO =
-      new MinioContainer().withNetwork(NETWORK).withDomain("minio.local", BUCKET_NAME);
+      new MinioContainer().withDomain("minio.local", BUCKET_NAME);
 
-  @Container
-  private final ZeebeContainer zeebe =
-      new ZeebeContainer(ZeebeTestContainerDefaults.defaultTestImage())
-          .withNetwork(NETWORK)
-          .dependsOn(MINIO)
-          .withoutTopologyCheck()
-          .withEnv("MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE", "*")
-          .withEnv("ZEEBE_BROKER_DATA_BACKUP_STORE", "S3")
-          .withEnv("ZEEBE_BROKER_DATA_BACKUP_S3_BUCKETNAME", BUCKET_NAME)
-          .withEnv("ZEEBE_BROKER_DATA_BACKUP_S3_ENDPOINT", MINIO.internalEndpoint())
-          .withEnv("ZEEBE_BROKER_DATA_BACKUP_S3_REGION", MINIO.region())
-          .withEnv("ZEEBE_BROKER_DATA_BACKUP_S3_ACCESSKEY", MINIO.accessKey())
-          .withEnv("ZEEBE_BROKER_DATA_BACKUP_S3_SECRETKEY", MINIO.secretKey());
+  @TestZeebe(awaitCompleteTopology = false)
+  private final TestStandaloneBroker zeebe =
+      new TestStandaloneBroker()
+          .withProperty("management.endpoints.web.exposure.include", "*")
+          .withBrokerConfig(
+              cfg -> {
+                final var backup = cfg.getData().getBackup();
+                final var s3 = backup.getS3();
+
+                backup.setStore(BackupStoreType.S3);
+                s3.setBucketName(BUCKET_NAME);
+                s3.setEndpoint(MINIO.externalEndpoint());
+                s3.setRegion(MINIO.region());
+                s3.setAccessKey(MINIO.accessKey());
+                s3.setSecretKey(MINIO.secretKey());
+                s3.setForcePathStyleAccess(true);
+              });
 
   @BeforeAll
   static void setupBucket() {
@@ -78,12 +81,8 @@ final class S3RestoreAcceptanceIT {
   @Test
   void shouldRunRestore() {
     // given
-    final var actuator = BackupActuator.of(zeebe);
-    try (final var client =
-        ZeebeClient.newClientBuilder()
-            .gatewayAddress(zeebe.getExternalGatewayAddress())
-            .usePlaintext()
-            .build()) {
+    final var actuator = BackupActuator.ofAddress(zeebe.monitoringAddress());
+    try (final var client = zeebe.newClientBuilder().build()) {
       client.newPublishMessageCommand().messageName("name").correlationKey("key").send().join();
     }
     final var response = actuator.take(BACKUP_ID);
@@ -124,12 +123,8 @@ final class S3RestoreAcceptanceIT {
   @Test
   void shouldFailForNonExistingBackup() {
     // given
-    final var actuator = BackupActuator.of(zeebe);
-    try (final var client =
-        ZeebeClient.newClientBuilder()
-            .gatewayAddress(zeebe.getExternalGatewayAddress())
-            .usePlaintext()
-            .build()) {
+    final var actuator = BackupActuator.ofAddress(zeebe.monitoringAddress());
+    try (final var client = zeebe.newClientBuilder().build()) {
       client.newPublishMessageCommand().messageName("name").correlationKey("key").send().join();
     }
     final var response = actuator.take(BACKUP_ID);
