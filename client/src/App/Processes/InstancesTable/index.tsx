@@ -229,6 +229,7 @@ const InstancesTable: React.FC = observer(() => {
                 }}
                 permissions={processesStore.getPermissions(
                   instance.bpmnProcessId,
+                  instance.tenantId,
                 )}
               />
             ) : undefined,

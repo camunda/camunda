@@ -6,7 +6,7 @@
  */
 
 import {parse, isValid} from 'date-fns';
-import {processesStore} from 'modules/stores/processes';
+import {processesStore, generateProcessKey} from 'modules/stores/processes';
 import {getSearchString} from 'modules/utils/getSearchString';
 import {Location} from 'react-router-dom';
 import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
@@ -241,13 +241,27 @@ function parseFilterTime(value: string) {
   }
 }
 
-function getProcessIds(process: string, processVersion: string) {
+function getProcessIds({
+  process,
+  processVersion,
+  tenant,
+}: {
+  process: string;
+  processVersion: string;
+  tenant?: string;
+}) {
   if (processVersion === 'all') {
-    return processesStore.versionsByProcess?.[process]?.map(({id}) => id) ?? [];
+    return (
+      processesStore.versionsByProcessAndTenant?.[
+        generateProcessKey(process, tenant)
+      ]?.map(({id}) => id) ?? []
+    );
   }
 
   return (
-    processesStore.versionsByProcess?.[process]
+    processesStore.versionsByProcessAndTenant?.[
+      generateProcessKey(process, tenant)
+    ]
       ?.filter(({version}) => version === parseInt(processVersion))
       ?.map(({id}) => id) ?? []
   );
@@ -330,7 +344,11 @@ function getProcessInstancesRequestFilters(): RequestFilters {
           filters.process !== undefined &&
           value !== undefined
         ) {
-          const processIds = getProcessIds(filters.process, value);
+          const processIds = getProcessIds({
+            process: filters.process,
+            processVersion: value,
+            tenant: filters.tenant,
+          });
 
           if (processIds.length > 0) {
             return {

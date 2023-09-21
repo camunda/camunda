@@ -35,7 +35,9 @@ jest.unmock('modules/utils/date/formatDate');
 
 describe('Filters', () => {
   beforeEach(async () => {
-    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+    mockFetchGroupedProcesses().withSuccess(
+      groupedProcessesMock.filter(({tenantId}) => tenantId === '<default>'),
+    );
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
     mockFetchProcessXML().withSuccess(mockProcessXML);
     mockGetUser().withSuccess(

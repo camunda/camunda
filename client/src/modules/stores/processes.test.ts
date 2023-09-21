@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {processesStore} from './processes';
+import {generateProcessKey, processesStore} from './processes';
 import {waitFor} from 'modules/testing-library';
 import {groupedProcessesMock} from 'modules/testUtils';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
@@ -27,7 +27,12 @@ describe('stores/processes', () => {
     processesStore.fetchProcesses();
 
     await waitFor(() =>
-      expect(processesStore.state.processes).toEqual(groupedProcessesMock),
+      expect(
+        processesStore.state.processes.map((process) => {
+          const {key, ...processDto} = process;
+          return processDto;
+        }),
+      ).toEqual(groupedProcessesMock),
     );
 
     const firstGroupedProcess = groupedProcessesMock[0]!;
@@ -38,9 +43,12 @@ describe('stores/processes', () => {
     eventListeners.online();
 
     await waitFor(() =>
-      expect(processesStore.state.processes).toEqual(
-        newGroupedProcessesResponse,
-      ),
+      expect(
+        processesStore.state.processes.map((process) => {
+          const {key, ...processDto} = process;
+          return processDto;
+        }),
+      ).toEqual(newGroupedProcessesResponse),
     );
 
     window.addEventListener = originalEventListener;
@@ -51,25 +59,37 @@ describe('stores/processes', () => {
 
     processesStore.fetchProcesses();
 
-    await waitFor(() =>
-      expect(processesStore.state.processes).toEqual(groupedProcessesMock),
-    );
+    await waitFor(() => expect(processesStore.state.status).toBe('fetched'));
 
-    expect(processesStore.getProcessId('demoProcess', '1')).toBe(
-      'demoProcess1',
-    );
-    expect(processesStore.getProcessId('demoProcess', '2')).toBe(
-      'demoProcess2',
-    );
-    expect(processesStore.getProcessId('demoProcess', '3')).toBe(
-      'demoProcess3',
-    );
-    expect(processesStore.getProcessId('eventBasedGatewayProcess', '1')).toBe(
-      '2251799813685911',
-    );
+    expect(
+      processesStore.getProcessId({process: 'demoProcess', version: '1'}),
+    ).toBe('demoProcess1');
+    expect(
+      processesStore.getProcessId({process: 'demoProcess', version: '2'}),
+    ).toBe('demoProcess2');
+    expect(
+      processesStore.getProcessId({process: 'demoProcess', version: '3'}),
+    ).toBe('demoProcess3');
+    expect(
+      processesStore.getProcessId({
+        process: 'eventBasedGatewayProcess',
+        version: '1',
+      }),
+    ).toBe('2251799813685911');
     expect(processesStore.getProcessId()).toBeUndefined();
-    expect(processesStore.getProcessId('demoProcess')).toBeUndefined();
-    expect(processesStore.getProcessId('demoProcess', 'all')).toBeUndefined();
+    expect(
+      processesStore.getProcessId({process: 'demoProcess'}),
+    ).toBeUndefined();
+    expect(
+      processesStore.getProcessId({process: 'demoProcess', version: 'all'}),
+    ).toBeUndefined();
+    expect(
+      processesStore.getProcessId({
+        process: 'bigVarProcess',
+        version: '1',
+        tenant: '<tenant-A>',
+      }),
+    ).toBe('2251799813685894');
   });
 
   it('should get versions by process', async () => {
@@ -78,7 +98,12 @@ describe('stores/processes', () => {
     processesStore.fetchProcesses();
 
     await waitFor(() =>
-      expect(processesStore.state.processes).toEqual(groupedProcessesMock),
+      expect(
+        processesStore.state.processes.map((process) => {
+          const {key, ...processDto} = process;
+          return processDto;
+        }),
+      ).toEqual(groupedProcessesMock),
     );
 
     expect(processesStore.versionsByProcess['demoProcess']?.[1]).toEqual({
@@ -96,5 +121,105 @@ describe('stores/processes', () => {
       name: 'Event based gateway with message start',
       version: 1,
     });
+  });
+
+  it('should get versions by process and tenant', async () => {
+    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+
+    processesStore.fetchProcesses();
+
+    await waitFor(() =>
+      expect(
+        processesStore.state.processes.map((process) => {
+          const {key, ...processDto} = process;
+          return processDto;
+        }),
+      ).toEqual(groupedProcessesMock),
+    );
+
+    expect(
+      processesStore.versionsByProcessAndTenant[
+        generateProcessKey('demoProcess')
+      ]?.[1],
+    ).toEqual({
+      bpmnProcessId: 'demoProcess',
+      id: 'demoProcess2',
+      name: 'Demo process',
+      version: 2,
+    });
+
+    expect(
+      processesStore.versionsByProcessAndTenant[
+        generateProcessKey('eventBasedGatewayProcess')
+      ]?.[0],
+    ).toEqual({
+      bpmnProcessId: 'eventBasedGatewayProcess',
+      id: '2251799813685911',
+      name: 'Event based gateway with message start',
+      version: 1,
+    });
+
+    expect(
+      processesStore.versionsByProcessAndTenant[
+        generateProcessKey('bigVarProcess', '<default>')
+      ]?.[0],
+    ).toEqual({
+      id: '2251799813685892',
+      name: 'Big variable process',
+      version: 1,
+      bpmnProcessId: 'bigVarProcess',
+    });
+
+    expect(
+      processesStore.versionsByProcessAndTenant[
+        generateProcessKey('bigVarProcess', '<tenant-A>')
+      ]?.[0],
+    ).toEqual({
+      id: '2251799813685894',
+      name: 'Big variable process',
+      version: 1,
+      bpmnProcessId: 'bigVarProcess',
+    });
+  });
+
+  it('should get process', async () => {
+    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+
+    processesStore.fetchProcesses();
+
+    await waitFor(() => expect(processesStore.state.status).toBe('fetched'));
+
+    expect(
+      processesStore.getProcess({bpmnProcessId: 'orderProcess'})?.key,
+    ).toBe('{orderProcess}-{<default>}');
+    expect(
+      processesStore.getProcess({
+        bpmnProcessId: 'orderProcess',
+        tenantId: '<default>',
+      })?.key,
+    ).toBe('{orderProcess}-{<default>}');
+    expect(
+      processesStore.getProcess({
+        bpmnProcessId: 'orderProcess',
+        tenantId: '<some-tenant>',
+      })?.key,
+    ).toBeUndefined();
+    expect(
+      processesStore.getProcess({
+        bpmnProcessId: 'bigVarProcess',
+        tenantId: '<tenant-A>',
+      })?.key,
+    ).toBe('{bigVarProcess}-{<tenant-A>}');
+    expect(
+      processesStore.getProcess({
+        bpmnProcessId: 'bigVarProcess',
+        tenantId: '<default>',
+      })?.key,
+    ).toBe('{bigVarProcess}-{<default>}');
+    expect(
+      processesStore.getProcess({
+        bpmnProcessId: 'bigVarProcess',
+      })?.key,
+    ).toBe('{bigVarProcess}-{<default>}');
   });
 });

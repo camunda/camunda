@@ -43,15 +43,16 @@ function setSearchParam(
 const DiagramPanel: React.FC = observer(() => {
   const navigate = useNavigate();
   const location = useLocation();
-  const {process, version, flowNodeId} = getProcessInstanceFilters(
+  const {process, version, flowNodeId, tenant} = getProcessInstanceFilters(
     location.search,
   );
 
   const isVersionSelected = version !== undefined && version !== 'all';
 
-  const selectedProcess = processesStore.state.processes.find(
-    ({bpmnProcessId}) => bpmnProcessId === process,
-  );
+  const selectedProcess = processesStore.getProcess({
+    bpmnProcessId: process,
+    tenantId: tenant,
+  });
 
   const bpmnProcessId = selectedProcess?.bpmnProcessId;
   const processName = selectedProcess?.name ?? bpmnProcessId ?? 'Process';
@@ -64,7 +65,7 @@ const DiagramPanel: React.FC = observer(() => {
     ({type}) => type.match(/^statistics/) !== null,
   );
 
-  const processId = processesStore.getProcessId(process, version);
+  const processId = processesStore.getProcessId({process, tenant, version});
 
   useEffect(() => {
     processDiagramStore.init();
@@ -122,7 +123,10 @@ const DiagramPanel: React.FC = observer(() => {
                 scopes={['write']}
                 resourceBasedRestrictions={{
                   scopes: ['DELETE'],
-                  permissions: processesStore.getPermissions(bpmnProcessId),
+                  permissions: processesStore.getPermissions(
+                    bpmnProcessId,
+                    tenant,
+                  ),
                 }}
               >
                 <ProcessOperations

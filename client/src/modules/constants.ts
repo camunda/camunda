@@ -48,6 +48,7 @@ const COLLAPSABLE_PANEL_MIN_WIDTH = 'var(--cds-spacing-09)';
 const INSTANCE_HISTORY_LEFT_PADDING = 'var(--cds-spacing-05)';
 const COLLAPSABLE_PANEL_HEADER_HEIGHT = 'var(--cds-spacing-09)';
 const ARROW_ICON_WIDTH = 'var(--cds-spacing-08)';
+const DEFAULT_TENANT = '<default>';
 
 export {
   ACTIVE_OPERATION_STATES,
@@ -60,4 +61,5 @@ export {
   INSTANCE_HISTORY_LEFT_PADDING,
   COLLAPSABLE_PANEL_HEADER_HEIGHT,
   ARROW_ICON_WIDTH,
+  DEFAULT_TENANT,
 };

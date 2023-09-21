@@ -40,6 +40,7 @@ const mockGroupedProcesses = [
   {
     bpmnProcessId: 'call-activity-process',
     name: 'Call Activity Process',
+    tenantId: '<default>',
     permissions: [],
     processes: [
       {
@@ -53,6 +54,7 @@ const mockGroupedProcesses = [
   {
     bpmnProcessId: 'invoice',
     name: 'DMN invoice',
+    tenantId: '<default>',
     permissions: [],
     processes: [
       {
@@ -66,6 +68,7 @@ const mockGroupedProcesses = [
   {
     bpmnProcessId: 'dataStoreProcess',
     name: 'Data store process',
+    tenantId: '<default>',
     permissions: [],
     processes: [
       {
@@ -79,6 +82,7 @@ const mockGroupedProcesses = [
   {
     bpmnProcessId: 'errorProcess',
     name: 'Error Process',
+    tenantId: '<default>',
     permissions: [],
     processes: [
       {
@@ -92,6 +96,7 @@ const mockGroupedProcesses = [
   {
     bpmnProcessId: 'escalationEvents',
     name: 'Escalation events',
+    tenantId: '<default>',
     permissions: [],
     processes: [
       {
@@ -111,6 +116,7 @@ const mockGroupedProcesses = [
   {
     bpmnProcessId: 'eventSubprocessProcess',
     name: 'Event Subprocess Process',
+    tenantId: '<default>',
     permissions: [],
     processes: [
       {
@@ -124,6 +130,7 @@ const mockGroupedProcesses = [
   {
     bpmnProcessId: 'eventBasedGatewayProcess',
     name: 'Event based gateway with timer start',
+    tenantId: '<default>',
     permissions: [],
     processes: [
       {
@@ -143,6 +150,7 @@ const mockGroupedProcesses = [
   {
     bpmnProcessId: 'flightRegistration',
     name: 'Flight registration',
+    tenantId: '<default>',
     permissions: [],
     processes: [
       {
@@ -162,6 +170,7 @@ const mockGroupedProcesses = [
   {
     bpmnProcessId: 'inclusiveGatewayProcess',
     name: 'Inclusive gateway',
+    tenantId: '<default>',
     permissions: [],
     processes: [
       {
@@ -175,6 +184,7 @@ const mockGroupedProcesses = [
   {
     bpmnProcessId: 'Process_b1711b2e-ec8e-4dad-908c-8c12e028f32f',
     name: 'Input Output Mapping Test',
+    tenantId: '<default>',
     permissions: [],
     processes: [
       {
@@ -188,6 +198,7 @@ const mockGroupedProcesses = [
   {
     bpmnProcessId: 'linkEventProcess',
     name: 'Link events process',
+    tenantId: '<default>',
     permissions: [],
     processes: [
       {
@@ -201,6 +212,7 @@ const mockGroupedProcesses = [
   {
     bpmnProcessId: 'multiInstanceProcess',
     name: 'Multi-Instance Process',
+    tenantId: '<default>',
     permissions: [],
     processes: [
       {
@@ -220,6 +232,7 @@ const mockGroupedProcesses = [
   {
     bpmnProcessId: 'prWithSubprocess',
     name: 'Nested subprocesses',
+    tenantId: '<default>',
     permissions: [],
     processes: [
       {
@@ -233,6 +246,7 @@ const mockGroupedProcesses = [
   {
     bpmnProcessId: 'onlyIncidentsProcess',
     name: 'Only Incidents Process',
+    tenantId: '<default>',
     permissions: [],
     processes: [
       {
@@ -252,6 +266,7 @@ const mockGroupedProcesses = [
   {
     bpmnProcessId: 'orderProcess',
     name: 'Order process',
+    tenantId: '<default>',
     permissions: [],
     processes: [
       {
@@ -271,6 +286,7 @@ const mockGroupedProcesses = [
   {
     bpmnProcessId: 'signalEventProcess',
     name: 'Signal event',
+    tenantId: '<default>',
     permissions: [],
     processes: [
       {
@@ -284,6 +300,7 @@ const mockGroupedProcesses = [
   {
     bpmnProcessId: 'terminateEndEvent',
     name: 'Terminate End Event',
+    tenantId: '<default>',
     permissions: [],
     processes: [
       {
@@ -297,6 +314,7 @@ const mockGroupedProcesses = [
   {
     bpmnProcessId: 'timerProcess',
     name: 'Timer process',
+    tenantId: '<default>',
     permissions: [],
     processes: [
       {
@@ -316,6 +334,7 @@ const mockGroupedProcesses = [
   {
     bpmnProcessId: 'withoutIncidentsProcess',
     name: 'Without Incidents Process',
+    tenantId: '<default>',
     permissions: [],
     processes: [
       {
@@ -335,6 +354,7 @@ const mockGroupedProcesses = [
   {
     bpmnProcessId: 'noInstancesProcess',
     name: 'Without Instances Process',
+    tenantId: '<default>',
     permissions: [],
     processes: [
       {
@@ -354,6 +374,7 @@ const mockGroupedProcesses = [
   {
     bpmnProcessId: 'undefined-task-process',
     name: 'undefined-task',
+    tenantId: '<default>',
     permissions: [],
     processes: [
       {
@@ -367,6 +388,7 @@ const mockGroupedProcesses = [
   {
     bpmnProcessId: 'bigProcess',
     name: null,
+    tenantId: '<default>',
     permissions: [],
     processes: [
       {
@@ -380,6 +402,7 @@ const mockGroupedProcesses = [
   {
     bpmnProcessId: 'called-process',
     name: null,
+    tenantId: '<default>',
     permissions: [],
     processes: [
       {
@@ -399,6 +422,7 @@ const mockGroupedProcesses = [
   {
     bpmnProcessId: 'complexProcess',
     name: null,
+    tenantId: '<default>',
     permissions: [],
     processes: [
       {
@@ -424,6 +448,7 @@ const mockGroupedProcesses = [
   {
     bpmnProcessId: 'error-end-process',
     name: null,
+    tenantId: '<default>',
     permissions: [],
     processes: [
       {
@@ -437,6 +462,7 @@ const mockGroupedProcesses = [
   {
     bpmnProcessId: 'intermediate-message-throw-event-process',
     name: null,
+    tenantId: '<default>',
     permissions: [],
     processes: [
       {
@@ -450,6 +476,7 @@ const mockGroupedProcesses = [
   {
     bpmnProcessId: 'intermediate-none-event-process',
     name: null,
+    tenantId: '<default>',
     permissions: [],
     processes: [
       {
@@ -463,6 +490,7 @@ const mockGroupedProcesses = [
   {
     bpmnProcessId: 'interruptingBoundaryEvent',
     name: null,
+    tenantId: '<default>',
     permissions: [],
     processes: [
       {
@@ -482,6 +510,7 @@ const mockGroupedProcesses = [
   {
     bpmnProcessId: 'loanProcess',
     name: null,
+    tenantId: '<default>',
     permissions: [],
     processes: [
       {
@@ -495,6 +524,7 @@ const mockGroupedProcesses = [
   {
     bpmnProcessId: 'manual-task-process',
     name: null,
+    tenantId: '<default>',
     permissions: [],
     processes: [
       {
@@ -508,6 +538,7 @@ const mockGroupedProcesses = [
   {
     bpmnProcessId: 'message-end-event-process',
     name: null,
+    tenantId: '<default>',
     permissions: [],
     processes: [
       {
@@ -521,6 +552,7 @@ const mockGroupedProcesses = [
   {
     bpmnProcessId: 'nonInterruptingBoundaryEvent',
     name: null,
+    tenantId: '<default>',
     permissions: [],
     processes: [
       {

@@ -213,6 +213,26 @@ export const groupedProcessesMock: ProcessDto[] = [
     permissions: ['DELETE_PROCESS_INSTANCE'],
   },
   {
+    bpmnProcessId: 'bigVarProcess',
+    name: 'Big variable process',
+    tenantId: '<tenant-A>',
+    processes: [
+      {
+        id: '2251799813685893',
+        name: 'Big variable process',
+        version: 2,
+        bpmnProcessId: 'bigVarProcess',
+      },
+      {
+        id: '2251799813685894',
+        name: 'Big variable process',
+        version: 1,
+        bpmnProcessId: 'bigVarProcess',
+      },
+    ],
+    permissions: ['DELETE_PROCESS_INSTANCE'],
+  },
+  {
     bpmnProcessId: 'orderProcess',
     tenantId: '<default>',
     name: 'Order',

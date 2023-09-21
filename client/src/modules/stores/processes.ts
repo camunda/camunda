@@ -16,16 +16,21 @@ import {getProcessInstanceFilters} from 'modules/utils/filter';
 import {getSearchString} from 'modules/utils/getSearchString';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 import {sortOptions} from 'modules/utils/sortOptions';
-import {PERMISSIONS} from 'modules/constants';
+import {DEFAULT_TENANT, PERMISSIONS} from 'modules/constants';
 
+type Process = ProcessDto & {key: string};
 type State = {
-  processes: ProcessDto[];
+  processes: Process[];
   status: 'initial' | 'fetching' | 'fetched' | 'fetch-error';
 };
 
 const INITIAL_STATE: State = {
   processes: [],
   status: 'initial',
+};
+
+const generateProcessKey = (bpmnProcessId: string, tenantId?: string) => {
+  return `{${bpmnProcessId}}-{${tenantId ?? DEFAULT_TENANT}}`;
 };
 
 class Processes extends NetworkReconnectionHandler {
@@ -42,6 +47,7 @@ class Processes extends NetworkReconnectionHandler {
       handleFetchSuccess: action,
       processes: computed,
       versionsByProcess: computed,
+      versionsByProcessAndTenant: computed,
       reset: override,
     });
   }
@@ -81,7 +87,12 @@ class Processes extends NetworkReconnectionHandler {
   };
 
   handleFetchSuccess = (processes: ProcessDto[]) => {
-    this.state.processes = processes;
+    this.state.processes = processes.map((process) => {
+      return {
+        key: generateProcessKey(process.bpmnProcessId, process.tenantId),
+        ...process,
+      };
+    });
     this.state.status = 'fetched';
   };
 
@@ -125,12 +136,40 @@ class Processes extends NetworkReconnectionHandler {
     );
   }
 
-  getProcessId = (process?: string, version?: string) => {
+  get versionsByProcessAndTenant(): {
+    [key: string]: ProcessVersionDto[];
+  } {
+    return this.state.processes.reduce<{
+      [key: string]: ProcessVersionDto[];
+    }>(
+      (versionsByProcessAndTenant, {key, processes}) => ({
+        ...versionsByProcessAndTenant,
+        [key]: processes
+          .slice()
+          .sort(
+            (process, nextProcess) => process.version - nextProcess.version,
+          ),
+      }),
+      {},
+    );
+  }
+
+  getProcessId = ({
+    process,
+    tenant,
+    version,
+  }: {
+    process?: string;
+    tenant?: string;
+    version?: string;
+  } = {}) => {
     if (process === undefined || version === undefined || version === 'all') {
       return undefined;
     }
 
-    const processVersions = this.versionsByProcess[process] ?? [];
+    const processVersions =
+      this.versionsByProcessAndTenant[generateProcessKey(process, tenant)] ??
+      [];
 
     return processVersions.find(
       (processVersion) => processVersion.version === parseInt(version),
@@ -145,7 +184,25 @@ class Processes extends NetworkReconnectionHandler {
     this.retryCount = 0;
   };
 
-  getPermissions = (processId?: string) => {
+  getProcess = ({
+    bpmnProcessId,
+    tenantId,
+  }: {
+    bpmnProcessId?: string;
+    tenantId?: string;
+  }) => {
+    if (bpmnProcessId === undefined) {
+      return undefined;
+    }
+
+    return this.state.processes.find(
+      (process) =>
+        process.bpmnProcessId === bpmnProcessId &&
+        process.tenantId === (tenantId ?? DEFAULT_TENANT),
+    );
+  };
+
+  getPermissions = (processId?: string, tenantId?: string) => {
     if (!window.clientConfig?.resourcePermissionsEnabled) {
       return PERMISSIONS;
     }
@@ -154,9 +211,7 @@ class Processes extends NetworkReconnectionHandler {
       return [];
     }
 
-    return this.state.processes.find(
-      (process) => process.bpmnProcessId === processId,
-    )?.permissions;
+    return this.getProcess({bpmnProcessId: processId, tenantId})?.permissions;
   };
 
   reset() {
@@ -168,4 +223,4 @@ class Processes extends NetworkReconnectionHandler {
 
 const processesStore = new Processes();
 
-export {processesStore};
+export {processesStore, generateProcessKey};

@@ -32,7 +32,7 @@ const Processes: React.FC = observer(() => {
   const navigate = useNavigate();
 
   const filters = getProcessInstanceFilters(location.search);
-  const {process} = filters;
+  const {process, tenant} = filters;
   const {status: processesStatus} = processesStore.state;
   const filtersJSON = JSON.stringify(filters);
 
@@ -73,8 +73,10 @@ const Processes: React.FC = observer(() => {
     if (processesStatus === 'fetched') {
       if (
         process !== undefined &&
-        processesStore.processes.filter((item) => item.value === process)
-          .length === 0
+        processesStore.getProcess({
+          bpmnProcessId: process,
+          tenantId: tenant,
+        }) === undefined
       ) {
         navigate(deleteSearchParams(location, ['process', 'version']));
         notificationsStore.displayNotification({
@@ -84,7 +86,7 @@ const Processes: React.FC = observer(() => {
         });
       }
     }
-  }, [process, navigate, processesStatus, location]);
+  }, [process, tenant, navigate, processesStatus, location]);
 
   return (
     <>
