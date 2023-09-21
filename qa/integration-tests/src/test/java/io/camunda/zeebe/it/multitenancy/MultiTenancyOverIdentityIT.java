@@ -17,11 +17,13 @@ import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder;
 import io.camunda.zeebe.gateway.impl.configuration.AuthenticationCfg.AuthMode;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.qa.util.cluster.TestHealthProbe;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.testcontainers.ContainerLogsDumper;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -210,6 +212,7 @@ public class MultiTenancyOverIdentityIT {
                   .getIdentity()
                   .setAudience(ZEEBE_CLIENT_AUDIENCE);
             })
+        .withRecordingExporter(true)
         .start()
         .await(TestHealthProbe.READY);
 
@@ -222,6 +225,7 @@ public class MultiTenancyOverIdentityIT {
 
   @BeforeEach
   void setup() {
+    RecordingExporter.reset();
     processId = Strings.newRandomValidBpmnId();
     process =
         Bpmn.createExecutableProcess(processId)
@@ -416,6 +420,51 @@ public class MultiTenancyOverIdentityIT {
           .withMessageContaining("NOT_FOUND")
           .withMessageContaining("Expected to find process definition with key")
           .withMessageContaining("but none found");
+    }
+  }
+
+  @Test
+  void shouldNotFindOtherTenantsProcessInCallActivity() {
+    // given
+    try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A)) {
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(process, "process.bpmn")
+          .tenantId("tenant-a")
+          .send()
+          .join();
+    }
+
+    try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_B)) {
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(
+              Bpmn.createExecutableProcess("parent")
+                  .startEvent()
+                  .callActivity("call", c -> c.zeebeProcessId(processId))
+                  .endEvent()
+                  .done(),
+              "parent.bpmn")
+          .tenantId("tenant-b")
+          .send()
+          .join();
+    }
+
+    try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_B)) {
+      // when
+      client
+          .newCreateInstanceCommand()
+          .bpmnProcessId("parent")
+          .latestVersion()
+          .tenantId("tenant-b")
+          .send();
+
+      // then
+      Assertions.assertThat(
+              RecordingExporter.incidentRecords().withBpmnProcessId("parent").getFirst().getValue())
+          .hasErrorMessage(
+              "Expected process with BPMN process id '%s' to be deployed, but not found."
+                  .formatted(processId));
     }
   }
 
