@@ -18,13 +18,11 @@ import io.camunda.zeebe.topology.TopologyInitializer.FileInitializer;
 import io.camunda.zeebe.topology.TopologyInitializer.GossipInitializer;
 import io.camunda.zeebe.topology.TopologyInitializer.StaticInitializer;
 import io.camunda.zeebe.topology.TopologyInitializer.SyncInitializer;
-import io.camunda.zeebe.topology.changes.NoopPartitionChangeExecutor;
 import io.camunda.zeebe.topology.changes.NoopTopologyMembershipChangeExecutor;
 import io.camunda.zeebe.topology.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.topology.changes.TopologyChangeAppliersImpl;
 import io.camunda.zeebe.topology.changes.TopologyChangeCoordinator;
 import io.camunda.zeebe.topology.changes.TopologyChangeCoordinatorImpl;
-import io.camunda.zeebe.topology.changes.TopologyMembershipChangeExecutor;
 import io.camunda.zeebe.topology.gossip.ClusterTopologyGossiper;
 import io.camunda.zeebe.topology.gossip.ClusterTopologyGossiperConfig;
 import io.camunda.zeebe.topology.serializer.ProtoBufSerializer;
@@ -52,22 +50,6 @@ public final class ClusterTopologyManagerService extends Actor {
       final ClusterCommunicationService communicationService,
       final ClusterMembershipService memberShipService,
       final ClusterTopologyGossiperConfig config) {
-    this(
-        dataRootDirectory,
-        communicationService,
-        memberShipService,
-        config,
-        new NoopPartitionChangeExecutor(),
-        new NoopTopologyMembershipChangeExecutor());
-  }
-
-  public ClusterTopologyManagerService(
-      final Path dataRootDirectory,
-      final ClusterCommunicationService communicationService,
-      final ClusterMembershipService memberShipService,
-      final ClusterTopologyGossiperConfig config,
-      final PartitionChangeExecutor partitionChangeExecutor,
-      final TopologyMembershipChangeExecutor topologyMembershipChangeExecutor) {
     try {
       FileUtil.ensureDirectoryExists(dataRootDirectory);
     } catch (final IOException e) {
@@ -78,12 +60,7 @@ public final class ClusterTopologyManagerService extends Actor {
     topologyFile = dataRootDirectory.resolve(TOPOLOGY_FILE_NAME);
     persistedClusterTopology = new PersistedClusterTopology(topologyFile, new ProtoBufSerializer());
     clusterTopologyManager =
-        new ClusterTopologyManagerImpl(
-            this,
-            localMemberId,
-            persistedClusterTopology,
-            new TopologyChangeAppliersImpl(
-                partitionChangeExecutor, topologyMembershipChangeExecutor));
+        new ClusterTopologyManagerImpl(this, localMemberId, persistedClusterTopology);
     clusterTopologyGossiper =
         new ClusterTopologyGossiper(
             this,
@@ -179,5 +156,17 @@ public final class ClusterTopologyManagerService extends Actor {
   @Override
   protected void onActorClosing() {
     clusterTopologyGossiper.closeAsync();
+  }
+
+  public void registerPartitionChangeExecutor(
+      final PartitionChangeExecutor partitionChangeExecutor) {
+    // TODO: pass concrete TopologyMembershipChangeExecutor
+    clusterTopologyManager.registerTopologyChangeAppliers(
+        new TopologyChangeAppliersImpl(
+            partitionChangeExecutor, new NoopTopologyMembershipChangeExecutor()));
+  }
+
+  public void removePartitionChangeExecutor() {
+    clusterTopologyManager.removeTopologyChangeAppliers();
   }
 }

@@ -46,6 +46,9 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
             adminService.injectAdminAccess(partitionManager.createAdminAccess(adminService));
             adminService.injectPartitionInfoSource(partitionManager.getZeebePartitions());
             brokerStartupContext.setPartitionManager(partitionManager);
+            brokerStartupContext
+                .getClusterTopology()
+                .registerPartitionChangeExecutor(partitionManager);
             startupFuture.complete(brokerStartupContext);
           } catch (final Exception e) {
             startupFuture.completeExceptionally(e);
@@ -63,6 +66,8 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
       shutdownFuture.complete(null);
       return;
     }
+
+    brokerShutdownContext.getClusterTopology().removePartitionChangeExecutor();
 
     concurrencyControl.runOnCompletion(
         partitionManager.stop(),

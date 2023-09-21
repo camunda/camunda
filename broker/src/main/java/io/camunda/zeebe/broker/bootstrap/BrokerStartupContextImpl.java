@@ -56,7 +56,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private PartitionManagerImpl partitionManager;
   private BrokerAdminServiceImpl brokerAdminService;
   private JobStreamService jobStreamService;
-  private ClusterTopologyService partitionDistribution;
+  private ClusterTopologyService clusterTopologyService;
 
   public BrokerStartupContextImpl(
       final BrokerInfo brokerInfo,
@@ -249,11 +249,11 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
 
   @Override
   public ClusterTopologyService getClusterTopology() {
-    return partitionDistribution;
+    return clusterTopologyService;
   }
 
   @Override
   public void setClusterTopology(final ClusterTopologyService clusterTopologyService) {
-    partitionDistribution = clusterTopologyService;
+    this.clusterTopologyService = clusterTopologyService;
   }
 }

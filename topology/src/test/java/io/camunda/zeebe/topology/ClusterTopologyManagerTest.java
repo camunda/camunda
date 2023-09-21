@@ -67,7 +67,7 @@ final class ClusterTopologyManagerTest {
   private ActorFuture<ClusterTopologyManagerImpl> startTopologyManager(
       final TopologyInitializer topologyInitializer,
       final TopologyChangeAppliers operationsAppliers) {
-    final var clusterTopologyManager = createTopologyManager(operationsAppliers);
+    final var clusterTopologyManager = createTopologyManager();
 
     final ActorFuture<ClusterTopologyManagerImpl> startFuture = new TestActorFuture<>();
 
@@ -76,6 +76,7 @@ final class ClusterTopologyManagerTest {
         .onComplete(
             (ignore, error) -> {
               if (error == null) {
+                clusterTopologyManager.registerTopologyChangeAppliers(operationsAppliers);
                 startFuture.complete(clusterTopologyManager);
               } else {
                 startFuture.completeExceptionally(error);
@@ -84,15 +85,10 @@ final class ClusterTopologyManagerTest {
     return startFuture;
   }
 
-  private ClusterTopologyManagerImpl createTopologyManager(
-      final TopologyChangeAppliers operationsAppliers) {
-
+  private ClusterTopologyManagerImpl createTopologyManager() {
     final ClusterTopologyManagerImpl clusterTopologyManager =
         new ClusterTopologyManagerImpl(
-            new TestConcurrencyControl(),
-            localMemberId,
-            persistedClusterTopology,
-            operationsAppliers);
+            new TestConcurrencyControl(), localMemberId, persistedClusterTopology);
     clusterTopologyManager.setTopologyGossiper(gossipHandler);
     return clusterTopologyManager;
   }
@@ -175,6 +171,31 @@ final class ClusterTopologyManagerTest {
     final ClusterTopology topologyFromOtherMember =
         initialTopology.startTopologyChange(List.of(new PartitionLeaveOperation(localMemberId, 1)));
     clusterTopologyManager.onGossipReceived(topologyFromOtherMember).join();
+
+    // then
+    Awaitility.await("ClusterTopology is updated after applying topology change operation.")
+        .untilAsserted(
+            () ->
+                ClusterTopologyAssert.assertThatClusterTopology(
+                        clusterTopologyManager.getClusterTopology().join())
+                    .hasPendingOperationsWithSize(0)
+                    .hasMemberWithState(1, MemberState.State.LEFT));
+    assertThat(gossipState.get())
+        .describedAs("Updated topology is gossiped")
+        .isEqualTo(clusterTopologyManager.getClusterTopology().join());
+  }
+
+  @Test
+  void shouldContinueClusterTopologyChangeOnRestart() {
+    // given
+    final ClusterTopology topologyWithPendingOperation =
+        initialTopology.startTopologyChange(List.of(new PartitionLeaveOperation(localMemberId, 1)));
+    final TopologyInitializer initializer =
+        () -> CompletableActorFuture.completed(topologyWithPendingOperation);
+
+    // when
+    final ClusterTopologyManagerImpl clusterTopologyManager =
+        startTopologyManager(initializer, new TestMemberLeaver()).join();
 
     // then
     Awaitility.await("ClusterTopology is updated after applying topology change operation.")
