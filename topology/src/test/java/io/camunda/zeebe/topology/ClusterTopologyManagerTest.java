@@ -185,6 +185,31 @@ final class ClusterTopologyManagerTest {
         .isEqualTo(clusterTopologyManager.getClusterTopology().join());
   }
 
+  @Test
+  void shouldContinueClusterTopologyChangeOnRestart() {
+    // given
+    final ClusterTopology topologyWithPendingOperation =
+        initialTopology.startTopologyChange(List.of(new PartitionLeaveOperation(localMemberId, 1)));
+    final TopologyInitializer initializer =
+        () -> CompletableActorFuture.completed(topologyWithPendingOperation);
+
+    // when
+    final ClusterTopologyManagerImpl clusterTopologyManager =
+        startTopologyManager(initializer, new TestMemberLeaver()).join();
+
+    // then
+    Awaitility.await("ClusterTopology is updated after applying topology change operation.")
+        .untilAsserted(
+            () ->
+                ClusterTopologyAssert.assertThatClusterTopology(
+                        clusterTopologyManager.getClusterTopology().join())
+                    .hasPendingOperationsWithSize(0)
+                    .hasMemberWithState(1, MemberState.State.LEFT));
+    assertThat(gossipState.get())
+        .describedAs("Updated topology is gossiped")
+        .isEqualTo(clusterTopologyManager.getClusterTopology().join());
+  }
+
   private static final class TestMemberLeaver implements TopologyChangeAppliers {
 
     @Override
