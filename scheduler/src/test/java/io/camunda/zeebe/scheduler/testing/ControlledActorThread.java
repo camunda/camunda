@@ -15,6 +15,7 @@ import io.camunda.zeebe.scheduler.clock.ActorClock;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 import org.agrona.LangUtil;
+import org.agrona.concurrent.IdleStrategy;
 
 public final class ControlledActorThread extends ActorThread {
   private final CyclicBarrier barrier = new CyclicBarrier(2);
@@ -25,9 +26,10 @@ public final class ControlledActorThread extends ActorThread {
       final ActorThreadGroup threadGroup,
       final TaskScheduler taskScheduler,
       final ActorClock clock,
-      final ActorTimerQueue timerQueue) {
-    super(name, id, threadGroup, taskScheduler, clock, timerQueue, false);
-    idleStrategy = new ControlledIdleStartegy();
+      final ActorTimerQueue timerQueue,
+      final IdleStrategy idleStrategy) {
+    super(name, id, threadGroup, taskScheduler, clock, timerQueue, false, idleStrategy);
+    this.idleStrategy = new ControlledIdleStrategy(idleStrategy);
   }
 
   public void resumeTasks() {
@@ -51,7 +53,12 @@ public final class ControlledActorThread extends ActorThread {
     waitUntilDone();
   }
 
-  class ControlledIdleStartegy extends ActorTaskRunnerIdleStrategy {
+  private final class ControlledIdleStrategy extends ActorTaskRunnerIdleStrategy {
+
+    private ControlledIdleStrategy(final IdleStrategy idleStrategy) {
+      super(idleStrategy);
+    }
+
     @Override
     protected void onIdle() {
       super.onIdle();

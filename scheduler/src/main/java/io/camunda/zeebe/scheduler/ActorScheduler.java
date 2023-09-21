@@ -9,9 +9,13 @@ package io.camunda.zeebe.scheduler;
 
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import java.util.Objects;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
+import org.agrona.concurrent.BackoffIdleStrategy;
+import org.agrona.concurrent.IdleStrategy;
 
 public final class ActorScheduler implements AutoCloseable, ActorSchedulingService {
   private final AtomicReference<SchedulerState> state = new AtomicReference<>();
@@ -98,19 +102,32 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
   }
 
   public static class ActorSchedulerBuilder {
+
+    public static final long DEFAULT_MAX_SPINS = 100;
+    public static final long DEFAULT_MAX_YIELDS = 100;
+    public static final long DEFAULT_MIN_PARK_PERIOD_NS = 1;
+    public static final long DEFAULT_MAX_PARK_PERIOD_NS = 1_000_000;
+
     private String schedulerName = "";
     private ActorClock actorClock;
     private int cpuBoundThreadsCount = Math.max(1, Runtime.getRuntime().availableProcessors() - 2);
     private ActorThreadGroup cpuBoundActorGroup;
     private int ioBoundThreadsCount = 2;
     private ActorThreadGroup ioBoundActorGroup;
-
     private ActorThreadFactory actorThreadFactory;
     private ActorExecutor actorExecutor;
-
     private ActorTimerQueue actorTimerQueue;
-
     private boolean enableMetrics = false;
+    private Supplier<IdleStrategy> idleStrategySupplier =
+        ActorSchedulerBuilder::defaultIdleStrategySupplier;
+
+    public static IdleStrategy defaultIdleStrategySupplier() {
+      return new BackoffIdleStrategy(
+          DEFAULT_MAX_SPINS,
+          DEFAULT_MAX_YIELDS,
+          DEFAULT_MIN_PARK_PERIOD_NS,
+          DEFAULT_MAX_PARK_PERIOD_NS);
+    }
 
     public String getSchedulerName() {
       return schedulerName;
@@ -127,6 +144,16 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
 
     public ActorSchedulerBuilder setActorClock(final ActorClock actorClock) {
       this.actorClock = actorClock;
+      return this;
+    }
+
+    public Supplier<IdleStrategy> getIdleStrategySupplier() {
+      return idleStrategySupplier;
+    }
+
+    public ActorSchedulerBuilder setIdleStrategySupplier(
+        final Supplier<IdleStrategy> idleStrategySupplier) {
+      this.idleStrategySupplier = Objects.requireNonNull(idleStrategySupplier);
       return this;
     }
 
@@ -230,9 +257,10 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
         final TaskScheduler taskScheduler,
         final ActorClock clock,
         final ActorTimerQueue timerQueue,
-        final boolean metricsEnabled) {
+        final boolean metricsEnabled,
+        final IdleStrategy idleStrategy) {
       return new ActorThread(
-          name, id, threadGroup, taskScheduler, clock, timerQueue, metricsEnabled);
+          name, id, threadGroup, taskScheduler, clock, timerQueue, metricsEnabled, idleStrategy);
     }
   }
 
@@ -244,7 +272,8 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
         final TaskScheduler taskScheduler,
         final ActorClock clock,
         final ActorTimerQueue timerQueue,
-        final boolean metricsEnabled);
+        final boolean metricsEnabled,
+        final IdleStrategy idleStrategy);
   }
 
   private enum SchedulerState {

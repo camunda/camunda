@@ -20,6 +20,7 @@ import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.util.concurrent.Callable;
+import org.agrona.concurrent.IdleStrategy;
 import org.junit.rules.ExternalResource;
 
 public final class ControlledActorSchedulerRule extends ExternalResource {
@@ -107,9 +108,11 @@ public final class ControlledActorSchedulerRule extends ExternalResource {
         final TaskScheduler taskScheduler,
         final ActorClock clock,
         final ActorTimerQueue timerQueue,
-        final boolean metricsEnabled) {
+        final boolean metricsEnabled,
+        final IdleStrategy idleStrategy) {
       controlledThread =
-          new ControlledActorThread(name, id, threadGroup, taskScheduler, clock, timerQueue);
+          new ControlledActorThread(
+              name, id, threadGroup, taskScheduler, clock, timerQueue, idleStrategy);
       return controlledThread;
     }
   }

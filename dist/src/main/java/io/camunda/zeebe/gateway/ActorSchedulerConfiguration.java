@@ -10,32 +10,34 @@ package io.camunda.zeebe.gateway;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.shared.ActorClockConfiguration;
+import io.camunda.zeebe.shared.IdleStrategyConfig.IdleStrategySupplier;
 import io.camunda.zeebe.util.VisibleForTesting;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
-import org.springframework.stereotype.Component;
+import org.springframework.context.annotation.Configuration;
 
-@Component
+@Configuration(proxyBeanMethods = false)
 @VisibleForTesting
-public final class ActorSchedulerComponent {
+public final class ActorSchedulerConfiguration {
 
   private final GatewayCfg config;
   private final ActorClockConfiguration clockConfiguration;
 
   @Autowired
-  public ActorSchedulerComponent(
+  public ActorSchedulerConfiguration(
       final GatewayCfg config, final ActorClockConfiguration clockConfiguration) {
     this.config = config;
     this.clockConfiguration = clockConfiguration;
   }
 
   @Bean(destroyMethod = "close")
-  public ActorScheduler actorScheduler() {
+  public ActorScheduler actorScheduler(final IdleStrategySupplier idleStrategySupplier) {
     return ActorScheduler.newActorScheduler()
         .setCpuBoundActorThreadCount(config.getThreads().getManagementThreads())
         .setIoBoundActorThreadCount(0)
         .setSchedulerName("Gateway-%s".formatted(config.getCluster().getMemberId()))
         .setActorClock(clockConfiguration.getClock().orElse(null))
+        .setIdleStrategySupplier(idleStrategySupplier)
         .build();
   }
 }
