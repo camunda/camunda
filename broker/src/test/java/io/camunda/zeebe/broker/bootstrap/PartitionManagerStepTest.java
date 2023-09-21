@@ -186,6 +186,8 @@ class PartitionManagerStepTest {
               Collections.emptyList());
 
       testBrokerStartupContext.setPartitionManager(mockPartitionManager);
+      final ClusterTopologyService mockClusterTopology = mock(ClusterTopologyService.class);
+      testBrokerStartupContext.setClusterTopology(mockClusterTopology);
       shutdownFuture = CONCURRENCY_CONTROL.createFuture();
     }
 
