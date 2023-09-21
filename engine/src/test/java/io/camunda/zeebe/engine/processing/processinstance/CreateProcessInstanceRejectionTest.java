@@ -192,8 +192,10 @@ public class CreateProcessInstanceRejectionTest {
         .hasIntent(ProcessInstanceCreationIntent.CREATE)
         .hasRejectionType(RejectionType.INVALID_ARGUMENT)
         .hasRejectionReason(
-            "Expected to subscribe to catch event(s) of 'subprocess' but failed to evaluate "
-                + "expression 'unknown_var': no variable found for name 'unknown_var'");
+            """
+            Expected to subscribe to catch event(s) of 'subprocess' but \
+            Failed to extract the correlation key for 'unknown_var': \
+            The value must be either a string or a number, but was NULL.""");
 
     Assertions.assertThat(
             RecordingExporter.records()

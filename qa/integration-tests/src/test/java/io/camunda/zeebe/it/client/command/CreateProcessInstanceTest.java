@@ -339,7 +339,8 @@ public final class CreateProcessInstanceTest {
         .hasMessageContaining(
             """
             Expected to subscribe to catch event(s) of \
-            'process-shouldRejectCreateWithStartInstructions-2' but failed to evaluate expression \
-            'missing_var': no variable found for name 'missing_var'""");
+            'process-shouldRejectCreateWithStartInstructions-2' but \
+            Failed to extract the correlation key for 'missing_var': \
+            The value must be either a string or a number, but was NULL.""");
   }
 }

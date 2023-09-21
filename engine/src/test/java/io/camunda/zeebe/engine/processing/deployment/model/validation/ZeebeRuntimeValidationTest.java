@@ -299,8 +299,7 @@ public final class ZeebeRuntimeValidationTest {
         List.of(
             expect(
                 StartEvent.class,
-                "Expected constant expression but found '=variableReference', which could not be evaluated without context: "
-                    + "failed to evaluate expression 'variableReference': no variable found for name 'variableReference'"))
+                "Expected constant expression of type String for message name '=variableReference', but was NULL"))
       },
       {
         /* message on start event has expression that evaluates to something other than string

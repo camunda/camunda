@@ -105,11 +105,7 @@ public final class MultiInstanceIncidentTest {
         .hasElementId(elementInstance.getValue().getElementId())
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
-            "failed to evaluate expression '"
-                + INPUT_COLLECTION
-                + "': no variable found for name '"
-                + INPUT_COLLECTION
-                + "'");
+            "Expected result of the expression 'items' to be 'ARRAY', but was 'NULL'.");
   }
 
   @Test
@@ -439,7 +435,7 @@ public final class MultiInstanceIncidentTest {
 
     Assertions.assertThat(incidentEvent.getValue())
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
-        .hasErrorMessage("failed to evaluate expression 'x': no variable found for name 'x'")
+        .hasErrorMessage("Expected result of the expression 'x' to be 'BOOLEAN', but was 'NULL'.")
         .hasProcessInstanceKey(processInstanceKey)
         .hasElementInstanceKey(activityEvent.getKey())
         .hasVariableScopeKey(activityEvent.getKey());

@@ -69,7 +69,7 @@ public class EscalationIncidentTest {
     Assertions.assertThat(incidentEvent.getValue())
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
-            "failed to evaluate expression 'escalationCodeLookup': no variable found for name 'escalationCodeLookup'")
+            "Expected result of the expression 'escalationCodeLookup' to be 'STRING', but was 'NULL'.")
         .hasBpmnProcessId(endEvent.getValue().getBpmnProcessId())
         .hasProcessDefinitionKey(endEvent.getValue().getProcessDefinitionKey())
         .hasProcessInstanceKey(endEvent.getValue().getProcessInstanceKey())
@@ -154,7 +154,7 @@ public class EscalationIncidentTest {
     Assertions.assertThat(incidentEvent.getValue())
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
-            "failed to evaluate expression 'escalationCodeLookup': no variable found for name 'escalationCodeLookup'")
+            "Expected result of the expression 'escalationCodeLookup' to be 'STRING', but was 'NULL'.")
         .hasBpmnProcessId(intermediateThrowEvent.getValue().getBpmnProcessId())
         .hasProcessDefinitionKey(intermediateThrowEvent.getValue().getProcessDefinitionKey())
         .hasProcessInstanceKey(intermediateThrowEvent.getValue().getProcessInstanceKey())

@@ -140,11 +140,7 @@ public final class CallActivityIncidentTest {
         .hasElementId(elementInstance.getValue().getElementId())
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
-            "failed to evaluate expression '"
-                + PROCESS_ID_VARIABLE
-                + "': no variable found for name '"
-                + PROCESS_ID_VARIABLE
-                + "'");
+            "Expected result of the expression 'wfChild' to be 'STRING', but was 'NULL'.");
   }
 
   @Test
