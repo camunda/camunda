@@ -13,7 +13,7 @@ import {
 import {invoiceClassification} from 'modules/mocks/mockDecisionInstance';
 import {decisionInstanceDetailsStore} from 'modules/stores/decisionInstanceDetails';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
-import {Header} from './index';
+import {Header} from '../index';
 import {mockFetchDecisionInstance} from 'modules/mocks/api/decisionInstances/fetchDecisionInstance';
 import {Paths} from 'modules/Routes';
 
@@ -84,7 +84,7 @@ describe('<Header />', () => {
     ).toBeInTheDocument();
     expect(
       await screen.findByRole('link', {
-        description: `View decision ${invoiceClassification.decisionName} version ${invoiceClassification.decisionVersion} instances`,
+        description: `View decision "${invoiceClassification.decisionName} version ${invoiceClassification.decisionVersion}" instances`,
       }),
     ).toHaveTextContent(invoiceClassification.decisionVersion.toString());
     expect(

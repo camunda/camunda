@@ -9,6 +9,7 @@ import {DecisionInstanceDto} from 'modules/api/decisionInstances/fetchDecisionIn
 
 const invoiceClassification: DecisionInstanceDto = {
   id: '3ß945876576324-1',
+  tenantId: '<default>',
   decisionDefinitionId: '111',
   decisionId: 'invoiceClassification',
   state: 'EVALUATED',
@@ -103,6 +104,7 @@ const invoiceClassification: DecisionInstanceDto = {
 
 const assignApproverGroup: DecisionInstanceDto = {
   id: '29283472932831-1',
+  tenantId: '<default>',
   decisionDefinitionId: '111',
   decisionId: 'invoice-assign-approver',
   state: 'FAILED',
@@ -139,6 +141,7 @@ const assignApproverGroupWithoutVariables: DecisionInstanceDto = {
 
 const literalExpression: DecisionInstanceDto = {
   id: '247986278462738-1',
+  tenantId: '<default>',
   decisionDefinitionId: '111',
   decisionId: 'calc-key-figures',
   state: 'EVALUATED',

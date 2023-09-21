@@ -10,6 +10,7 @@ import {DrdDataDto} from 'modules/api/decisionInstances/fetchDrdData';
 
 const mockEvaluatedDecisionInstance: DecisionInstanceDto = {
   id: '2251799813830820-1',
+  tenantId: '<default>',
   state: 'EVALUATED',
   decisionType: 'DECISION_TABLE',
   decisionDefinitionId: '2251799813687886',
@@ -224,6 +225,7 @@ const mockEvaluatedXml = `<?xml version="1.0" encoding="UTF-8"?>
 
 const mockEvaluatedDecisionInstanceWithoutPanels: DecisionInstanceDto = {
   id: '2251799813830820-2',
+  tenantId: '<default>',
   state: 'EVALUATED',
   decisionType: 'LITERAL_EXPRESSION',
   decisionDefinitionId: '2251799813687887',
@@ -419,6 +421,7 @@ const mockEvaluatedXmlWithoutPanels = `<?xml version="1.0" encoding="UTF-8"?>
 
 const mockFailedDecisionInstance: DecisionInstanceDto = {
   id: '6755399441062312-1',
+  tenantId: '<default>',
   state: 'FAILED',
   decisionType: 'DECISION_TABLE',
   decisionDefinitionId: '2251799813687886',

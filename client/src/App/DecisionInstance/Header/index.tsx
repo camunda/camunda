@@ -16,29 +16,40 @@ import {useParams} from 'react-router-dom';
 import {Link} from 'modules/components/Link';
 import {Locations, Paths} from 'modules/Routes';
 import {formatDate} from 'modules/utils/date';
+import {authenticationStore} from 'modules/stores/authentication';
 
-const headerColumns = [
-  {
-    name: 'Decision Name',
-    skeletonWidth: '136px',
-  },
-  {
-    name: 'Decision Instance Key',
-    skeletonWidth: '137px',
-  },
-  {
-    name: 'Version',
-    skeletonWidth: '33px',
-  },
-  {
-    name: 'Evaluation Date',
-    skeletonWidth: '143px',
-  },
-  {
-    name: 'Process Instance Key',
-    skeletonWidth: '137px',
-  },
-];
+const getHeaderColumns = (isMultiTenancyEnabled: boolean = false) => {
+  return [
+    {
+      name: 'Decision Name',
+      skeletonWidth: '136px',
+    },
+    {
+      name: 'Decision Instance Key',
+      skeletonWidth: '137px',
+    },
+    {
+      name: 'Version',
+      skeletonWidth: '33px',
+    },
+    ...(isMultiTenancyEnabled
+      ? [
+          {
+            name: 'Tenant',
+            skeletonWidth: '34px',
+          },
+        ]
+      : []),
+    {
+      name: 'Evaluation Date',
+      skeletonWidth: '143px',
+    },
+    {
+      name: 'Process Instance Key',
+      skeletonWidth: '137px',
+    },
+  ];
+};
 
 const Header: React.FC = observer(() => {
   const {
@@ -46,11 +57,22 @@ const Header: React.FC = observer(() => {
   } = decisionInstanceDetailsStore;
   const {decisionInstanceId} = useParams<{decisionInstanceId: string}>();
 
+  const isMultiTenancyEnabled = window.clientConfig?.multiTenancyEnabled;
+  const headerColumns = getHeaderColumns(isMultiTenancyEnabled);
+
   if (status === 'initial') {
     return <Skeleton headerColumns={headerColumns} />;
   }
 
   if (status === 'fetched' && decisionInstance !== null) {
+    const tenantId = decisionInstance.tenantId;
+    const tenantName = authenticationStore.tenantsById?.[tenantId] ?? tenantId;
+    const versionColumnTitle = `View decision "${
+      decisionInstance.decisionName
+    } version ${decisionInstance.decisionVersion}" instances${
+      isMultiTenancyEnabled ? ` - ${tenantName}` : ''
+    }`;
+
     return (
       <InstanceHeader
         state={decisionInstance.state}
@@ -72,8 +94,14 @@ const Header: React.FC = observer(() => {
                   name: decisionInstance.decisionId,
                   evaluated: true,
                   failed: true,
+                  ...(isMultiTenancyEnabled
+                    ? {
+                        tenant: tenantId,
+                      }
+                    : {}),
                 })}
-                title={`View decision ${decisionInstance.decisionName} version ${decisionInstance.decisionVersion} instances`}
+                title={versionColumnTitle}
+                aria-label={versionColumnTitle}
                 onClick={() => {
                   tracking.track({
                     eventName: 'navigation',
@@ -85,6 +113,14 @@ const Header: React.FC = observer(() => {
               </Link>
             ),
           },
+          ...(isMultiTenancyEnabled
+            ? [
+                {
+                  title: tenantName,
+                  content: tenantName,
+                },
+              ]
+            : []),
           {
             title: formatDate(decisionInstance.evaluationDate) ?? '--',
             content: formatDate(decisionInstance.evaluationDate),

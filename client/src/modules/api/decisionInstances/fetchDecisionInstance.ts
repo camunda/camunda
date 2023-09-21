@@ -15,6 +15,7 @@ type DecisionInstanceDto = {
   decisionId: string;
   decisionName: string;
   decisionVersion: number;
+  tenantId: string;
   evaluationDate: string;
   errorMessage: string | null;
   processInstanceId: string | null;
