@@ -10,7 +10,6 @@ import {processesStore, generateProcessKey} from 'modules/stores/processes';
 import {getSearchString} from 'modules/utils/getSearchString';
 import {Location} from 'react-router-dom';
 import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
-import {IS_VARIABLE_VALUE_IN_FILTER_ENABLED} from 'modules/feature-flags';
 import {getValidVariableValues} from './getValidVariableValues';
 
 type ProcessInstanceFilterField =
@@ -93,13 +92,10 @@ type RequestFilters = {
   parentInstanceId?: string;
   startDateAfter?: string;
   startDateBefore?: string;
-  variable?:
-    | {
-        name: string;
-        values: string[];
-      }
-    // TODO: remove when IS_VARIABLE_VALUE_IN_FILTER_ENABLED is removed
-    | {name: string; value: string};
+  variable?: {
+    name: string;
+    values: string[];
+  };
   processIds?: string[];
 };
 
@@ -370,15 +366,10 @@ function getProcessInstancesRequestFilters(): RequestFilters {
 
           return {
             ...accumulator,
-            variable: IS_VARIABLE_VALUE_IN_FILTER_ENABLED
-              ? {
-                  name: filters.variableName,
-                  values,
-                }
-              : {
-                  name: filters.variableName,
-                  value: filters.variableValues,
-                },
+            variable: {
+              name: filters.variableName,
+              values,
+            },
           };
         }
 

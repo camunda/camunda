@@ -24,7 +24,6 @@ import {TextInputField} from 'modules/components/TextInputField';
 import {createPortal} from 'react-dom';
 import {Stack} from '@carbon/react';
 import {IconTextAreaField} from 'modules/components/IconTextAreaField';
-import {IS_VARIABLE_VALUE_IN_FILTER_ENABLED} from 'modules/feature-flags';
 import {IconTextInputField} from 'modules/components/IconTextInputField';
 import {Toggle, VariableValueContainer} from './styled';
 import {MultipleValuesModal} from './MultipleValuesModal';
@@ -112,19 +111,17 @@ const Variable: React.FC = observer(() => {
               }
             }}
           </Field>
-          {IS_VARIABLE_VALUE_IN_FILTER_ENABLED && (
-            <Toggle
-              id="multiple-mode"
-              size="sm"
-              labelA="Multiple"
-              labelB="Multiple"
-              aria-label="Multiple"
-              toggled={isInMultipleMode}
-              onToggle={() => {
-                setIsInMultipleMode(!isInMultipleMode);
-              }}
-            />
-          )}
+          <Toggle
+            id="multiple-mode"
+            size="sm"
+            labelA="Multiple"
+            labelB="Multiple"
+            aria-label="Multiple"
+            toggled={isInMultipleMode}
+            onToggle={() => {
+              setIsInMultipleMode(!isInMultipleMode);
+            }}
+          />
         </VariableValueContainer>
       </Stack>
 

@@ -19,7 +19,6 @@ import {Filters} from '../index';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstancesStatistics';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
-import {IS_VARIABLE_VALUE_IN_FILTER_ENABLED} from 'modules/feature-flags';
 
 jest.unmock('modules/utils/date/formatDate');
 
@@ -211,57 +210,58 @@ describe('Validations', () => {
     expect(screen.getByTestId('search')).toBeEmptyDOMElement();
   });
 
-  (IS_VARIABLE_VALUE_IN_FILTER_ENABLED ? it : it.skip)(
-    'should validate multiple variable values',
-    async () => {
-      const {user} = render(<Filters />, {
-        wrapper: getWrapper(),
-      });
-      expect(screen.getByTestId('search')).toBeEmptyDOMElement();
+  it('should validate multiple variable values', async () => {
+    const {user} = render(<Filters />, {
+      wrapper: getWrapper(),
+    });
+    expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
-      await user.click(screen.getByRole('button', {name: 'More Filters'}));
-      await user.click(screen.getByText('Variable'));
-      await user.click(screen.getByRole('switch', {name: 'Multiple'}));
+    await user.click(screen.getByRole('button', {name: 'More Filters'}));
+    await user.click(screen.getByText('Variable'));
+    await user.click(screen.getByRole('switch', {name: 'Multiple'}));
 
-      await user.type(
-        screen.getByTestId('optional-filter-variable-name'),
-        'aRandomVariable',
-      );
+    await user.type(
+      screen.getByTestId('optional-filter-variable-name'),
+      'aRandomVariable',
+    );
 
-      expect(
-        await screen.findByText('Value has to be filled'),
-      ).toBeInTheDocument();
+    expect(
+      await screen.findByText('Value has to be filled'),
+    ).toBeInTheDocument();
 
-      expect(screen.getByTestId('search')).toBeEmptyDOMElement();
+    expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
-      await user.clear(screen.getByTestId('optional-filter-variable-name'));
+    await user.clear(screen.getByTestId('optional-filter-variable-name'));
 
-      expect(
-        screen.queryByText('Value has to be filled'),
-      ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('Value has to be filled'),
+    ).not.toBeInTheDocument();
 
-      await user.type(screen.getByLabelText(/^values$/i), 'invalidValue');
+    await user.type(screen.getByLabelText(/^values$/i), 'invalidValue');
 
-      expect(
-        await screen.findByText('Values have to be comma separated JSON'),
-      ).toBeInTheDocument();
-      expect(
-        await screen.findByText('Name has to be filled'),
-      ).toBeInTheDocument();
-      expect(screen.getByTestId('search')).toBeEmptyDOMElement();
+    expect(
+      await screen.findByText(
+        'Values have to be in JSON format, separated by comma',
+      ),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByText('Name has to be filled'),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
-      await user.type(
-        screen.getByTestId('optional-filter-variable-name'),
-        'aRandomVariable',
-      );
+    await user.type(
+      screen.getByTestId('optional-filter-variable-name'),
+      'aRandomVariable',
+    );
 
-      expect(
-        await screen.findByText('Values have to be comma separated JSON'),
-      ).toBeInTheDocument();
+    expect(
+      await screen.findByText(
+        'Values have to be in JSON format, separated by comma',
+      ),
+    ).toBeInTheDocument();
 
-      expect(screen.getByTestId('search')).toBeEmptyDOMElement();
-    },
-  );
+    expect(screen.getByTestId('search')).toBeEmptyDOMElement();
+  });
 
   it('should validate operation id', async () => {
     const {user} = render(<Filters />, {
