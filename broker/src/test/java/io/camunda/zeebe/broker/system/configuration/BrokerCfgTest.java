@@ -15,7 +15,6 @@ import static io.camunda.zeebe.broker.system.configuration.NetworkCfg.DEFAULT_IN
 import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.broker.exporter.debug.DebugLogExporter;
 import io.camunda.zeebe.broker.exporter.metrics.MetricsExporter;
 import io.camunda.zeebe.broker.system.configuration.backpressure.BackpressureCfg;
@@ -508,25 +507,6 @@ public final class BrokerCfgTest {
         .hasSize(1)
         .containsKey("elasticsearch")
         .containsEntry("elasticsearch", expected);
-  }
-
-  @Test
-  public void shouldNotPrintConfidentialInformation() throws Exception {
-    // given
-    final var brokerCfg = TestConfigReader.readConfig("elasticexporter", environment);
-
-    // when
-    final var json = brokerCfg.toJson();
-
-    // then
-    final var objectMapper = new ObjectMapper();
-    final var jsonNode = objectMapper.readTree(json);
-
-    final var arguments =
-        jsonNode.get("exporters").get("elasticsearch").get("args").get("authentication");
-
-    assertThat(arguments.get("password").asText()).isEqualTo("***");
-    assertThat(arguments.get("username").asText()).isEqualTo("***");
   }
 
   @Test

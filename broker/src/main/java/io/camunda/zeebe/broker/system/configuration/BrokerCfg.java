@@ -7,14 +7,10 @@
  */
 package io.camunda.zeebe.broker.system.configuration;
 
-import static io.camunda.zeebe.util.ObjectWriterFactory.getDefaultJsonObjectWriter;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
 import io.camunda.zeebe.broker.exporter.debug.DebugLogExporter;
 import io.camunda.zeebe.broker.exporter.metrics.MetricsExporter;
 import io.camunda.zeebe.broker.system.configuration.backpressure.BackpressureCfg;
 import io.camunda.zeebe.util.Environment;
-import io.camunda.zeebe.util.exception.UncheckedExecutionException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -169,13 +165,5 @@ public final class BrokerCfg {
         + ", executionMetricsExporterEnabled="
         + executionMetricsExporterEnabled
         + '}';
-  }
-
-  public String toJson() {
-    try {
-      return getDefaultJsonObjectWriter().writeValueAsString(this);
-    } catch (final JsonProcessingException e) {
-      throw new UncheckedExecutionException("Writing to JSON failed", e);
-    }
   }
 }
