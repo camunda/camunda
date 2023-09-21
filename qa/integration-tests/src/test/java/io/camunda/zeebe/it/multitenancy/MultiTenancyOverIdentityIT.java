@@ -348,7 +348,40 @@ public class MultiTenancyOverIdentityIT {
   }
 
   @Test
-  void shouldNotFindOtherTenantsProcess() {
+  void shouldNotFindOtherTenantsProcessById() {
+    // given
+    try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A)) {
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(process, "process.bpmn")
+          .tenantId("tenant-a")
+          .send()
+          .join();
+    }
+
+    try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_B)) {
+      // when
+      final Future<ProcessInstanceEvent> result =
+          client
+              .newCreateInstanceCommand()
+              .bpmnProcessId(processId)
+              .latestVersion()
+              .tenantId("tenant-b")
+              .send();
+
+      // then
+      assertThat(result)
+          .failsWithin(Duration.ofSeconds(10))
+          .withThrowableThat()
+          .describedAs("Process definition should exist for tenant-a but not for tenant-b")
+          .withMessageContaining("NOT_FOUND")
+          .withMessageContaining("Expected to find process definition with process ID")
+          .withMessageContaining("but none found");
+    }
+  }
+
+  @Test
+  void shouldNotFindOtherTenantsProcessByKey() {
     // given
     final long processDefinitionKey;
     try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A)) {
