@@ -20,6 +20,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.assertj.core.api.AbstractObjectAssert;
+import org.assertj.core.api.Assertions;
 
 /** Convenience class to assert certain properties of a Zeebe cluster {@link Topology}. */
 @SuppressWarnings("UnusedReturnValue")
@@ -237,6 +238,23 @@ public final class TopologyAssert extends AbstractObjectAssert<TopologyAssert, T
             partitionId, leaders.stream().map(PartitionBroker::brokerInfo).toList());
       }
     }
+
+    return myself;
+  }
+
+  public TopologyAssert hasLeaderForPartition(final int partitionId, final int expectedLeaderId) {
+    isNotNull();
+
+    final Map<Integer, List<PartitionBroker>> partitionMap = buildPartitionsMap();
+
+    Assertions.assertThat(partitionMap).containsKey(partitionId);
+    final var partitionBrokers = partitionMap.get(partitionId);
+    final var leader =
+        partitionBrokers.stream()
+            .filter(p -> p.partitionInfo.isLeader())
+            .map(p -> p.brokerInfo.getNodeId())
+            .findFirst();
+    Assertions.assertThat(leader).hasValue(expectedLeaderId);
 
     return myself;
   }
