@@ -33,8 +33,15 @@ import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {useEffect} from 'react';
 import {Paths} from 'modules/Routes';
 import {mockFetchBatchOperations} from 'modules/mocks/api/fetchBatchOperations';
+import {notificationsStore} from 'modules/stores/notifications';
 
 jest.mock('modules/utils/bpmn');
+const handleRefetchSpy = jest.spyOn(processesStore, 'handleRefetch');
+jest.mock('modules/stores/notifications', () => ({
+  notificationsStore: {
+    displayNotification: jest.fn(() => () => {}),
+  },
+}));
 
 function getWrapper(initialPath: string = Paths.processes()) {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
@@ -233,6 +240,13 @@ describe('Instances', () => {
     await waitFor(() =>
       expect(processDiagramStore.state.statistics).toEqual([]),
     );
+
+    await waitFor(() =>
+      expect(screen.queryByTestId('diagram-spinner')).not.toBeInTheDocument(),
+    );
+    await waitFor(() =>
+      expect(screen.queryByTestId('data-table-loader')).not.toBeInTheDocument(),
+    );
   });
 
   it('should refetch data when navigated from header', async () => {
@@ -252,8 +266,8 @@ describe('Instances', () => {
       expect(screen.queryByTestId('diagram-spinner')).not.toBeInTheDocument(),
     );
 
-    mockFetchProcessInstances().withSuccess(mockProcessInstances);
-    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+    mockFetchProcessInstances().withDelay(mockProcessInstances);
+    mockFetchGroupedProcesses().withDelay(groupedProcessesMock);
 
     await user.click(
       within(
@@ -265,15 +279,85 @@ describe('Instances', () => {
       }),
     );
     expect(await screen.findByTestId('diagram-spinner')).toBeInTheDocument();
+    expect(await screen.findByTestId('data-table-loader')).toBeInTheDocument();
 
     await waitFor(() =>
       expect(screen.queryByTestId('diagram-spinner')).not.toBeInTheDocument(),
     );
 
-    expect(await screen.findByTestId('data-table-loader')).toBeInTheDocument();
-
     await waitFor(() =>
       expect(screen.queryByTestId('data-table-loader')).not.toBeInTheDocument(),
     );
+  });
+
+  it('should poll 3 times for grouped processes and redirect to initial processes page if process does not exist', async () => {
+    jest.useFakeTimers();
+
+    const queryString =
+      '?active=true&incidents=true&process=non-existing-process&version=all';
+
+    const originalWindow = {...window};
+
+    const locationSpy = jest.spyOn(window, 'location', 'get');
+
+    locationSpy.mockImplementation(() => ({
+      ...originalWindow.location,
+      search: queryString,
+    }));
+
+    render(<Processes />, {
+      wrapper: getWrapper(`${Paths.processes()}${queryString}`),
+    });
+
+    expect(screen.getByTestId('data-table-skeleton')).toBeInTheDocument();
+
+    expect(screen.getByTestId('search').textContent).toBe(queryString);
+
+    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+
+    await waitFor(() => expect(processesStore.state.status).toBe('fetching'));
+    expect(handleRefetchSpy).toHaveBeenCalledTimes(1);
+
+    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+
+    jest.runOnlyPendingTimers();
+
+    await waitFor(() => expect(handleRefetchSpy).toHaveBeenCalledTimes(2));
+
+    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+
+    jest.runOnlyPendingTimers();
+    await waitFor(() => expect(handleRefetchSpy).toHaveBeenCalledTimes(3));
+
+    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+
+    mockFetchProcessInstances().withSuccess({
+      processInstances: [],
+      totalCount: 0,
+    });
+
+    expect(screen.getByTestId('diagram-spinner')).toBeInTheDocument();
+    expect(screen.getByTestId('data-table-skeleton')).toBeInTheDocument();
+
+    jest.runOnlyPendingTimers();
+
+    await waitFor(() => {
+      expect(processesStore.processes.length).toBe(5);
+      expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/processes/);
+      expect(screen.getByTestId('search').textContent).toBe(
+        '?active=true&incidents=true',
+      );
+    });
+
+    expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+      isDismissable: true,
+      kind: 'error',
+      title: 'Process could not be found',
+    });
+
+    jest.clearAllTimers();
+    jest.useRealTimers();
+
+    locationSpy.mockRestore();
   });
 });

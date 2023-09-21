@@ -21,7 +21,7 @@ import {DEFAULT_TENANT, PERMISSIONS} from 'modules/constants';
 type Process = ProcessDto & {key: string};
 type State = {
   processes: Process[];
-  status: 'initial' | 'fetching' | 'fetched' | 'fetch-error';
+  status: 'initial' | 'first-fetch' | 'fetching' | 'fetched' | 'fetch-error';
 };
 
 const INITIAL_STATE: State = {
@@ -48,13 +48,18 @@ class Processes extends NetworkReconnectionHandler {
       processes: computed,
       versionsByProcessAndTenant: computed,
       reset: override,
+      isInitialLoadComplete: computed,
     });
   }
 
-  fetchProcesses = this.retryOnConnectionLost(async () => {
+  fetchProcesses = this.retryOnConnectionLost(async (tenantId?: string) => {
     this.startFetching();
 
-    const {process, tenant} = getProcessInstanceFilters(getSearchString());
+    const {process, tenant: tenantFromURL} = getProcessInstanceFilters(
+      getSearchString(),
+    );
+
+    const tenant = tenantId ?? tenantFromURL;
 
     const response = await fetchGroupedProcesses(
       tenant === 'all' ? undefined : tenant,
@@ -78,12 +83,24 @@ class Processes extends NetworkReconnectionHandler {
   });
 
   startFetching = () => {
-    this.state.status = 'fetching';
+    if (this.state.status === 'initial') {
+      this.state.status = 'first-fetch';
+    } else {
+      this.state.status = 'fetching';
+    }
   };
 
   handleFetchError = () => {
     this.state.status = 'fetch-error';
   };
+
+  get isInitialLoadComplete() {
+    if (['initial', 'first-fetch'].includes(this.state.status)) {
+      return false;
+    }
+
+    return this.state.status !== 'fetching' || this.retryCount === 0;
+  }
 
   handleFetchSuccess = (processes: ProcessDto[]) => {
     this.state.processes = processes.map((process) => {

@@ -88,6 +88,7 @@ const Filters: React.FC = observer(() => {
             <Container>
               <AutoSubmit
                 fieldsToSkipTimeout={[
+                  'tenant',
                   'process',
                   'version',
                   'flowNodeId',
@@ -101,7 +102,14 @@ const Filters: React.FC = observer(() => {
                 {window.clientConfig?.multiTenancyEnabled && (
                   <div>
                     <Title>Tenant</Title>
-                    <TenantField />
+                    <TenantField
+                      onChange={(selectedItem) => {
+                        form.change('process', undefined);
+                        form.change('version', undefined);
+
+                        processesStore.fetchProcesses(selectedItem);
+                      }}
+                    />
                   </div>
                 )}
                 <div>

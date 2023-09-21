@@ -33,7 +33,10 @@ const Processes: React.FC = observer(() => {
 
   const filters = getProcessInstanceFilters(location.search);
   const {process, tenant} = filters;
-  const {status: processesStatus} = processesStore.state;
+  const {
+    state: {status: processesStatus},
+    isInitialLoadComplete,
+  } = processesStore;
   const filtersJSON = JSON.stringify(filters);
 
   useEffect(() => {
@@ -64,10 +67,16 @@ const Processes: React.FC = observer(() => {
   }, [filtersJSON]);
 
   useEffect(() => {
-    if (processesStatus === 'fetched') {
+    if (isInitialLoadComplete && !location.state?.refreshContent) {
       processInstancesStore.fetchProcessInstancesFromFilters();
     }
-  }, [location.search, processesStatus]);
+  }, [location.search, isInitialLoadComplete, location.state]);
+
+  useEffect(() => {
+    if (isInitialLoadComplete && location.state?.refreshContent) {
+      processInstancesStore.fetchProcessInstancesFromFilters();
+    }
+  }, [isInitialLoadComplete, location.state]);
 
   useEffect(() => {
     if (processesStatus === 'fetched') {

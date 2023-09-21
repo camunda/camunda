@@ -58,8 +58,9 @@ const DiagramPanel: React.FC = observer(() => {
   const processName = selectedProcess?.name ?? bpmnProcessId ?? 'Process';
   const isDiagramLoading =
     processDiagramStore.state.status === 'fetching' ||
-    processesStore.state.status === 'initial' ||
-    processesStore.state.status === 'fetching';
+    !processesStore.isInitialLoadComplete ||
+    (processesStore.state.status === 'fetching' &&
+      location.state?.refreshContent);
 
   const statisticsOverlays = diagramOverlaysStore.state.overlays.filter(
     ({type}) => type.match(/^statistics/) !== null,

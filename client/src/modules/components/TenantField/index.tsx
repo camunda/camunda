@@ -11,7 +11,11 @@ import {observer} from 'mobx-react';
 import {Dropdown} from '@carbon/react';
 import {authenticationStore} from 'modules/stores/authentication';
 
-const TenantField: React.FC = observer(() => {
+type Props = {
+  onChange?: (selectedItem: string) => void;
+};
+
+const TenantField: React.FC<Props> = observer(({onChange}) => {
   const {
     state: {tenants},
     tenantsById,
@@ -30,6 +34,7 @@ const TenantField: React.FC = observer(() => {
             id="tenant"
             onChange={({selectedItem}) => {
               input.onChange(selectedItem);
+              onChange?.(selectedItem);
             }}
             items={items}
             itemToString={(item: string) => {

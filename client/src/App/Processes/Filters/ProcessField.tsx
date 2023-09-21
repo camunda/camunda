@@ -63,6 +63,7 @@ const ProcessField: React.FC = observer(() => {
             };
           })}
           value={input.value}
+          disabled={isMultiTenancyEnabled && selectedTenant === ''}
         />
       )}
     </Field>

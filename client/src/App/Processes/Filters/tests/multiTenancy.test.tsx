@@ -129,8 +129,7 @@ describe('Filters', () => {
       wrapper: getWrapper(),
     });
 
-    // Wait for data to be fetched
-    await waitFor(() => expect(screen.getByLabelText('Name')).toBeEnabled());
+    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
 
     await selectTenant({user, option: 'All tenants'});
     expect(screen.getByRole('combobox', {name: /tenant/i})).toHaveTextContent(
@@ -151,6 +150,8 @@ describe('Filters', () => {
       ),
     );
 
+    await waitFor(() => expect(screen.getByLabelText('Name')).toBeEnabled());
+
     await selectProcess({
       user,
       option: 'Big variable process - Tenant A',
@@ -170,6 +171,69 @@ describe('Filters', () => {
         ),
       ).toEqual(expect.objectContaining(MOCK_VALUES)),
     );
+
+    window.clientConfig = undefined;
+  });
+
+  it('should disable processes field when tenant is not selected', async () => {
+    window.clientConfig = {
+      multiTenancyEnabled: true,
+    };
+
+    render(<Filters />, {
+      wrapper: getWrapper(),
+    });
+
+    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+
+    await waitFor(() => expect(processesStore.state.status).toBe('fetched'));
+    expect(screen.getByLabelText('Name')).toBeDisabled();
+
+    window.clientConfig = undefined;
+  });
+
+  it('should clear process and version field when tenant filter is changed', async () => {
+    window.clientConfig = {
+      multiTenancyEnabled: true,
+    };
+
+    const {user} = render(<Filters />, {
+      wrapper: getWrapper(),
+    });
+
+    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+
+    await waitFor(() => expect(processesStore.state.status).toBe('fetched'));
+    expect(screen.getByLabelText('Name')).toBeDisabled();
+
+    await selectTenant({user, option: 'All tenants'});
+    expect(screen.getByRole('combobox', {name: /tenant/i})).toHaveTextContent(
+      /all tenants/i,
+    );
+
+    await waitFor(() => expect(screen.getByLabelText('Name')).toBeEnabled());
+
+    await selectProcess({
+      user,
+      option: 'Big variable process - Default Tenant',
+    });
+
+    expect(screen.getByLabelText('Name')).toHaveValue('Big variable process');
+    expect(
+      screen.getByLabelText('Version', {selector: 'button'}),
+    ).toHaveTextContent('1');
+    expect(screen.getByRole('combobox', {name: /tenant/i})).toHaveTextContent(
+      /default tenant/i,
+    );
+
+    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+    await selectTenant({user, option: 'Tenant B'});
+    await waitFor(() => expect(processesStore.state.status).toBe('fetched'));
+
+    expect(screen.getByLabelText('Name')).toHaveValue('');
+    expect(
+      screen.getByLabelText('Version', {selector: 'button'}),
+    ).toHaveTextContent(/select a process version/i);
 
     window.clientConfig = undefined;
   });

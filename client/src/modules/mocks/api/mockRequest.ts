@@ -31,7 +31,7 @@ const mockPostRequest = function <Type extends DefaultBodyType>(url: string) {
     withDelay: (responseData: Type) => {
       mockServer.use(
         rest.post(url, (_, res, ctx) =>
-          res.once(ctx.delay(1000), ctx.json(responseData)),
+          res.once(ctx.delay(100), ctx.json(responseData)),
         ),
       );
     },

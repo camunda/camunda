@@ -17,10 +17,11 @@ type Props = {
   placeholder?: string;
   onChange: (data: {[selectedItem: string]: Item | null | undefined}) => void;
   items: Item[];
+  disabled?: boolean;
 };
 
 const ComboBox: React.FC<Props> = observer(
-  ({id, items, onChange, value, ...props}) => {
+  ({id, items, onChange, value, disabled, ...props}) => {
     const getItemById = (id: string) => {
       return items.find((item) => item.id === id);
     };
@@ -31,7 +32,7 @@ const ComboBox: React.FC<Props> = observer(
         items={items}
         onChange={onChange}
         selectedItem={getItemById(value) ?? null}
-        disabled={items.length === 0}
+        disabled={disabled || items.length === 0}
         shouldFilterItem={(data) => {
           const {inputValue, item} = data;
           return (
