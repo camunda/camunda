@@ -12,13 +12,12 @@ import static io.camunda.zeebe.topology.state.MemberState.State.JOINING;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.MemberState;
 import java.time.Duration;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.Test;
 
 final class MemberJoinApplierTest {
@@ -111,15 +110,9 @@ final class MemberJoinApplierTest {
     final var result = memberJoinApplier.apply();
 
     // then
-    assertThat(result).failsWithin(Duration.ofMillis(100));
-  }
-
-  private static final class FailingTopologyMembershipChangeExecutor
-      implements TopologyMembershipChangeExecutor {
-
-    @Override
-    public ActorFuture<Void> addBroker(final MemberId memberId) {
-      return CompletableActorFuture.completedExceptionally(new RuntimeException("Expected"));
-    }
+    assertThat(result)
+        .failsWithin(Duration.ofMillis(100))
+        .withThrowableOfType(ExecutionException.class)
+        .withMessageContaining("Force failure");
   }
 }

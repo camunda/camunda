@@ -13,8 +13,10 @@ import static org.junit.jupiter.api.Assertions.*;
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
+import io.camunda.zeebe.topology.ClusterTopologyAssert;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.MemberState;
+import io.camunda.zeebe.topology.state.MemberState.State;
 import io.camunda.zeebe.topology.state.PartitionState;
 import java.util.Map;
 import java.util.Set;
@@ -42,28 +44,29 @@ class TopologyUtilTest {
             3,
             member(0));
 
-    final ClusterTopology expectedTopology =
-        ClusterTopology.init()
-            .addMember(
-                member(0),
-                MemberState.initializeAsActive(
-                    Map.of(1, PartitionState.active(1), 2, PartitionState.active(3))))
-            .addMember(
-                member(1),
-                MemberState.initializeAsActive(
-                    Map.of(1, PartitionState.active(2), 2, PartitionState.active(2))))
-            .addMember(
-                member(2),
-                MemberState.initializeAsActive(
-                    Map.of(1, PartitionState.active(3), 2, PartitionState.active(1))));
-
     final var partitionDistribution = Set.of(partitionTwo, partitionOne);
 
     // when
     final var topology = TopologyUtil.getClusterTopologyFrom(partitionDistribution);
 
     // then
-    assertThat(topology).isEqualTo(expectedTopology);
+    ClusterTopologyAssert.assertThatClusterTopology(topology)
+        .hasMemberWithState(0, State.ACTIVE)
+        .member(0)
+        .hasPartitionWithState(1, PartitionState.active(1))
+        .hasPartitionWithState(2, PartitionState.active(3));
+
+    ClusterTopologyAssert.assertThatClusterTopology(topology)
+        .hasMemberWithState(1, State.ACTIVE)
+        .member(1)
+        .hasPartitionWithState(1, PartitionState.active(2))
+        .hasPartitionWithState(2, PartitionState.active(2));
+
+    ClusterTopologyAssert.assertThatClusterTopology(topology)
+        .hasMemberWithState(2, State.ACTIVE)
+        .member(2)
+        .hasPartitionWithState(1, PartitionState.active(3))
+        .hasPartitionWithState(2, PartitionState.active(1));
   }
 
   @Test

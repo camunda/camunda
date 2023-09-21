@@ -11,15 +11,15 @@ import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 
-public class NoopTopologyMembershipChangeExecutor implements TopologyMembershipChangeExecutor {
+final class FailingTopologyMembershipChangeExecutor implements TopologyMembershipChangeExecutor {
 
   @Override
   public ActorFuture<Void> addBroker(final MemberId memberId) {
-    return CompletableActorFuture.completed(null);
+    return CompletableActorFuture.completedExceptionally(new RuntimeException("Force failure"));
   }
 
   @Override
   public ActorFuture<Void> removeBroker(final MemberId memberId) {
-    return CompletableActorFuture.completed(null);
+    return CompletableActorFuture.completedExceptionally(new RuntimeException("Force failure"));
   }
 }

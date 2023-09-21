@@ -7,40 +7,42 @@
  */
 package io.camunda.zeebe.topology.changes;
 
+import static io.camunda.zeebe.topology.state.TopologyChangeOperation.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.topology.state.TopologyChangeOperation;
+import io.camunda.zeebe.topology.state.TopologyChangeOperation.MemberJoinOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
-import org.junit.jupiter.api.Test;
+import java.util.stream.Stream;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 final class TopologyChangeAppliersImplTest {
 
-  private final MemberId localMemberId = MemberId.from("1");
-
-  @Test
-  void shouldReturnPartitionJoinApplier() {
+  @ParameterizedTest
+  @MethodSource("provideArguments")
+  void shouldReturnExpectedApplier(
+      final TopologyChangeOperation operation, final Class<?> expectedClass) {
     // given
     final var topologyChangeAppliers = new TopologyChangeAppliersImpl(null, null);
-    final var partitionOperation = new PartitionJoinOperation(localMemberId, 1, 1);
 
     // when
-    final var applier = topologyChangeAppliers.getApplier(partitionOperation);
+    final var applier = topologyChangeAppliers.getApplier(operation);
 
     // then
-    assertThat(applier).isInstanceOf(PartitionJoinApplier.class);
+    assertThat(applier).isInstanceOf(expectedClass);
   }
 
-  @Test
-  void shouldReturnPartitionLeaveApplier() {
-    // given
-    final var topologyChangeAppliers = new TopologyChangeAppliersImpl(null, null);
-    final var partitionOperation = new PartitionLeaveOperation(localMemberId, 1);
+  static Stream<Arguments> provideArguments() {
 
-    // when
-    final var applier = topologyChangeAppliers.getApplier(partitionOperation);
-
-    // then
-    assertThat(applier).isInstanceOf(PartitionLeaveApplier.class);
+    final MemberId localMemberId = MemberId.from("1");
+    return Stream.of(
+        Arguments.of(new PartitionJoinOperation(localMemberId, 1, 1), PartitionJoinApplier.class),
+        Arguments.of(new PartitionLeaveOperation(localMemberId, 1), PartitionLeaveApplier.class),
+        Arguments.of(new MemberJoinOperation(localMemberId), MemberJoinApplier.class),
+        Arguments.of(new MemberLeaveOperation(localMemberId), MemberLeaveApplier.class));
   }
 }

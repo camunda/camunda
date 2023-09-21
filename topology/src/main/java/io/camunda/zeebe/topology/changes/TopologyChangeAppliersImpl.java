@@ -13,6 +13,7 @@ import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.MemberState;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.MemberJoinOperation;
+import io.camunda.zeebe.topology.state.TopologyChangeOperation.MemberLeaveOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.util.Either;
@@ -44,7 +45,9 @@ public class TopologyChangeAppliersImpl implements TopologyChangeAppliers {
     } else if (operation instanceof final MemberJoinOperation memberJoinOperation) {
       return new MemberJoinApplier(
           memberJoinOperation.memberId(), topologyMembershipChangeExecutor);
-
+    } else if (operation instanceof final MemberLeaveOperation memberLeaveOperation) {
+      return new MemberLeaveApplier(
+          memberLeaveOperation.memberId(), topologyMembershipChangeExecutor);
     } else {
       return new FailingApplier(operation);
     }

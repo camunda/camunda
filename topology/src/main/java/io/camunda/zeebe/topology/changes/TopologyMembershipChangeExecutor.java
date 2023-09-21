@@ -20,4 +20,12 @@ public interface TopologyMembershipChangeExecutor {
    * @return future when the operation is completed.
    */
   ActorFuture<Void> addBroker(MemberId memberId);
+
+  /**
+   * The implementation of this method can react to a node leaving the cluster.
+   *
+   * @param memberId id of the member that is leaving the cluster
+   * @return future when the operation is completed
+   */
+  ActorFuture<Void> removeBroker(MemberId memberId);
 }
