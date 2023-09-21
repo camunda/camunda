@@ -67,7 +67,7 @@ final class ClusterTopologyManagerTest {
   private ActorFuture<ClusterTopologyManagerImpl> startTopologyManager(
       final TopologyInitializer topologyInitializer,
       final TopologyChangeAppliers operationsAppliers) {
-    final var clusterTopologyManager = createTopologyManager(operationsAppliers);
+    final var clusterTopologyManager = createTopologyManager();
 
     final ActorFuture<ClusterTopologyManagerImpl> startFuture = new TestActorFuture<>();
 
@@ -76,6 +76,7 @@ final class ClusterTopologyManagerTest {
         .onComplete(
             (ignore, error) -> {
               if (error == null) {
+                clusterTopologyManager.registerTopologyChangeAppliers(operationsAppliers);
                 startFuture.complete(clusterTopologyManager);
               } else {
                 startFuture.completeExceptionally(error);
@@ -84,9 +85,7 @@ final class ClusterTopologyManagerTest {
     return startFuture;
   }
 
-  private ClusterTopologyManagerImpl createTopologyManager(
-      final TopologyChangeAppliers operationsAppliers) {
-
+  private ClusterTopologyManagerImpl createTopologyManager() {
     final ClusterTopologyManagerImpl clusterTopologyManager =
         new ClusterTopologyManagerImpl(
             new TestConcurrencyControl(), localMemberId, persistedClusterTopology);
