@@ -63,8 +63,8 @@ class DmnEvaluationTest {
   }
 
   @Test
-  @DisplayName("Should result in failure when context does not contain required value")
-  void shouldResultInFailureWhenContextMissesRequiredValue() {
+  @DisplayName("Should result in null when context does not contain required value")
+  void shouldResultInNullWhenContextMissesRequiredValue() {
     // given
     final var inputStream = getClass().getResourceAsStream(VALID_DRG);
     final var parsedDrg = decisionEngine.parse(inputStream);
@@ -74,19 +74,20 @@ class DmnEvaluationTest {
 
     // then
     assertThat(result.isFailure())
-        .describedAs("Expect that the result is not evaluated successfully")
-        .isTrue();
+        .describedAs("Expect that the result is evaluated successfully")
+        .isFalse();
 
     assertThat(result.getFailureMessage())
-        .isNotNull()
-        .describedAs("Expect that the evaluation failed because of a missing variable")
-        .contains("no variable found for");
+        .describedAs("Expect that a successful result has no failure message")
+        .isNull();
 
-    assertThat(result.getFailedDecisionId()).isEqualTo("jedi_or_sith");
+    assertThat(result.getFailedDecisionId())
+        .describedAs("Expect that a successful result has no failed decision")
+        .isNull();
 
     assertThat(result.getOutput())
-        .describedAs("Expect that a failed evaluation has no output")
-        .isNull();
+        .describedAs("Expect that the output is null if no rule matched")
+        .isEqualTo(asMsgPack("null"));
   }
 
   @Test
