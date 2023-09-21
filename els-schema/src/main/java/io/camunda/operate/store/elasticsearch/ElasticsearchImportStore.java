@@ -8,6 +8,7 @@ package io.camunda.operate.store.elasticsearch;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.Metrics;
+import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.entities.meta.ImportPositionEntity;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.indices.ImportPositionIndex;
@@ -27,7 +28,7 @@ import org.elasticsearch.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Profile;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -39,8 +40,8 @@ import java.util.concurrent.Callable;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
+@Conditional(ElasticsearchCondition.class)
 @Component
-@Profile("!opensearch")
 public class ElasticsearchImportStore implements ImportStore {
 
   private static final Logger logger = LoggerFactory.getLogger(ElasticsearchImportStore.class);

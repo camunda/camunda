@@ -19,7 +19,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import io.camunda.operate.data.util.DecisionDataUtil;
 import io.camunda.operate.entities.dmn.definition.DecisionDefinitionEntity;
 import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.operate.util.ElasticsearchTestRule;
+import io.camunda.operate.util.SearchTestRule;
 import io.camunda.operate.util.OperateZeebeIntegrationTest;
 import io.camunda.operate.webapp.reader.DecisionReader;
 import io.camunda.operate.webapp.rest.dto.DecisionRequestDto;
@@ -42,7 +42,7 @@ public class DecisionIT extends OperateZeebeIntegrationTest {
   private static final String QUERY_DECISION_XML_URL = "/api/decisions/%s/xml";
 
   @Rule
-  public ElasticsearchTestRule elasticsearchTestRule = new ElasticsearchTestRule();
+  public SearchTestRule searchTestRule = new SearchTestRule();
 
   @Autowired
   private DecisionDataUtil testDataUtil;
@@ -205,7 +205,7 @@ public class DecisionIT extends OperateZeebeIntegrationTest {
   }
 
   private void createData() throws PersistenceException {
-    elasticsearchTestRule.persistOperateEntitiesNew(testDataUtil.createDecisionDefinitions());
+    searchTestRule.persistOperateEntitiesNew(testDataUtil.createDecisionDefinitions());
   }
 
 }

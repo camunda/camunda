@@ -8,6 +8,8 @@ package io.camunda.operate.schema.migration.elasticsearch;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.operate.conditions.ElasticsearchCondition;
+import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.store.elasticsearch.RetryElasticsearchClient;
 import io.camunda.operate.exceptions.MigrationException;
 import io.camunda.operate.property.MigrationProperties;
@@ -24,7 +26,7 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Profile;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
@@ -46,8 +48,8 @@ import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROT
  * data from list-view index and reindex the batch of source data combining data from
  * source index and list-view.
  */
-@Profile("!opensearch")
 @Component
+@Conditional(ElasticsearchCondition.class)
 @Scope(SCOPE_PROTOTYPE)
 public class ElasticsearchReindexWithQueryAndScriptPlan implements ReindexWithQueryAndScriptPlan {
 

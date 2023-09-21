@@ -6,6 +6,7 @@
  */
 package io.camunda.operate.webapp.reader;
 
+import io.camunda.operate.entities.FlowNodeInstanceEntity;
 import io.camunda.operate.entities.FlowNodeState;
 import io.camunda.operate.webapp.rest.dto.FlowNodeStatisticsDto;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceRequestDto;
@@ -43,4 +44,6 @@ public interface FlowNodeInstanceReader {
     List<Long> getFlowNodeInstanceKeysByIdAndStates(Long processInstanceId, String flowNodeId, List<FlowNodeState> states);
 
     Collection<FlowNodeStatisticsDto> getFlowNodeStatisticsForProcessInstance(Long processInstanceId);
+
+    List<FlowNodeInstanceEntity> getAllFlowNodeInstances(Long processInstanceKey);
 }

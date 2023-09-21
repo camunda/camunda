@@ -6,69 +6,42 @@
  */
 package io.camunda.operate.util;
 
-import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllProcessInstancesQuery;
-import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllProcessInstancesRequest;
-import static org.assertj.core.api.Assertions.assertThat;
-import static io.camunda.operate.util.CollectionUtil.filter;
-import static io.camunda.operate.util.ElasticsearchUtil.scroll;
-import static io.camunda.operate.webapp.rest.FlowNodeInstanceRestService.FLOW_NODE_INSTANCE_URL;
-import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
-import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.archiver.ArchiveBatch;
 import io.camunda.operate.archiver.ProcessInstancesArchiverJob;
-import io.camunda.operate.entities.*;
-import io.camunda.operate.webapp.elasticsearch.reader.OperationReader;
+import io.camunda.operate.entities.FlowNodeInstanceEntity;
+import io.camunda.operate.entities.FlowNodeState;
+import io.camunda.operate.entities.FlowNodeType;
+import io.camunda.operate.entities.OperationType;
+import io.camunda.operate.exceptions.OperateRuntimeException;
+import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
 import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
 import io.camunda.operate.webapp.reader.IncidentReader;
 import io.camunda.operate.webapp.reader.ListViewReader;
+import io.camunda.operate.webapp.reader.OperationReader;
 import io.camunda.operate.webapp.rest.dto.OperationDto;
+import io.camunda.operate.webapp.rest.dto.VariableDto;
+import io.camunda.operate.webapp.rest.dto.VariableRequestDto;
 import io.camunda.operate.webapp.rest.dto.activity.*;
+import io.camunda.operate.webapp.rest.dto.incidents.IncidentDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
+import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataDto;
+import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.BatchOperationDto;
+import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
+import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
+import io.camunda.operate.webapp.zeebe.operation.OperationExecutor;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.Future;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-
 import org.apache.commons.lang3.Validate;
 import org.apache.http.HttpStatus;
-import io.camunda.operate.exceptions.OperateRuntimeException;
-import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
-import io.camunda.operate.webapp.rest.dto.VariableDto;
-import io.camunda.operate.webapp.rest.dto.VariableRequestDto;
-import io.camunda.operate.webapp.rest.dto.incidents.IncidentDto;
-import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
-import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataRequestDto;
-import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
-import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
-import io.camunda.operate.webapp.zeebe.operation.OperationExecutor;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.index.query.TermQueryBuilder;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.BeanFactory;
@@ -78,6 +51,23 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+
+import java.util.*;
+import java.util.concurrent.Future;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
+import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllProcessInstancesQuery;
+import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllProcessInstancesRequest;
+import static io.camunda.operate.util.CollectionUtil.filter;
+import static io.camunda.operate.webapp.rest.FlowNodeInstanceRestService.FLOW_NODE_INSTANCE_URL;
+import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @Component
 @Scope(SCOPE_PROTOTYPE)
@@ -90,7 +80,7 @@ public class OperateTester {
 
   private ZeebeClient zeebeClient;
   private MockMvcTestRule mockMvcTestRule;
-  private ElasticsearchTestRule elasticsearchTestRule;
+  private SearchTestRule searchTestRule;
 
   private Long processDefinitionKey;
   private Long processInstanceKey;
@@ -209,7 +199,7 @@ public class OperateTester {
   private FlowNodeInstanceTemplate flowNodeInstanceTemplate;
 
   @Autowired
-  private RestHighLevelClient esClient;
+  private OperationReader operationReader;
 
   @Autowired
   private ObjectMapper objectMapper;
@@ -218,10 +208,10 @@ public class OperateTester {
   private BatchOperationDto operation;
   private List<String> processDefinitions;
 
-  public OperateTester(ZeebeClient zeebeClient, MockMvcTestRule mockMvcTestRule, ElasticsearchTestRule elasticsearchTestRule) {
+  public OperateTester(ZeebeClient zeebeClient, MockMvcTestRule mockMvcTestRule, SearchTestRule searchTestRule) {
     this.zeebeClient = zeebeClient;
     this.mockMvcTestRule = mockMvcTestRule;
-    this.elasticsearchTestRule = elasticsearchTestRule;
+    this.searchTestRule = searchTestRule;
   }
 
   public Long getProcessInstanceKey() {
@@ -237,7 +227,7 @@ public class OperateTester {
   }
 
   public List<OperationDto> getOperations() {
-    return beanFactory.getBean(OperationReader.class).getOperationsByBatchOperationId(operation.getId());
+    return operationReader.getOperationsByBatchOperationId(operation.getId());
   }
 
   public OperateTester createAndDeploySimpleProcess(String processId,String activityId) {
@@ -269,18 +259,18 @@ public class OperateTester {
   }
 
   public OperateTester processIsDeployed() {
-    elasticsearchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processDefinitionKey);
+    searchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processDefinitionKey);
     logger.debug("Process is deployed with key: {}", processDefinitionKey);
     return this;
   }
 
   public OperateTester decisionsAreDeployed(int count) {
-    elasticsearchTestRule.processAllRecordsAndWait(decisionsAreDeployedCheck, count);
+    searchTestRule.processAllRecordsAndWait(decisionsAreDeployedCheck, count);
     return this;
   }
 
   public OperateTester decisionInstancesAreCreated(int count) {
-    elasticsearchTestRule.processAllRecordsAndWait(decisionInstancesAreCreated, count);
+    searchTestRule.processAllRecordsAndWait(decisionInstancesAreCreated, count);
     return this;
   }
 
@@ -309,27 +299,27 @@ public class OperateTester {
   }
 
   public OperateTester processInstanceIsStarted() {
-    elasticsearchTestRule.processAllRecordsAndWait(processInstancesAreStartedCheck, Arrays.asList(processInstanceKey));
+    searchTestRule.processAllRecordsAndWait(processInstancesAreStartedCheck, Arrays.asList(processInstanceKey));
     return this;
   }
 
   public OperateTester processInstanceExists() {
-    elasticsearchTestRule.processAllRecordsAndWait(processInstanceExistsCheck, Arrays.asList(processInstanceKey));
+    searchTestRule.processAllRecordsAndWait(processInstanceExistsCheck, Arrays.asList(processInstanceKey));
     return this;
   }
 
   public OperateTester processInstanceIsFinished() {
-    elasticsearchTestRule.processAllRecordsAndWait(processInstancesAreFinishedCheck, Arrays.asList(processInstanceKey));
+    searchTestRule.processAllRecordsAndWait(processInstancesAreFinishedCheck, Arrays.asList(processInstanceKey));
     return this;
   }
 
   public OperateTester processInstanceIsCompleted() {
-    elasticsearchTestRule.processAllRecordsAndWait(processInstanceIsCompletedCheck, processInstanceKey);
+    searchTestRule.processAllRecordsAndWait(processInstanceIsCompletedCheck, processInstanceKey);
     return this;
   }
 
   public OperateTester processInstanceIsCanceled() {
-    elasticsearchTestRule.processAllRecordsAndWait(processInstanceIsCanceledCheck, processInstanceKey);
+    searchTestRule.processAllRecordsAndWait(processInstanceIsCanceledCheck, processInstanceKey);
     return this;
   }
 
@@ -358,51 +348,51 @@ public class OperateTester {
   }
 
   public OperateTester incidentIsActive() {
-    elasticsearchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, processInstanceKey);
+    searchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, processInstanceKey);
     return this;
   }
 
   public OperateTester incidentsInAnyInstanceAreActive(long count) {
-    elasticsearchTestRule.processAllRecordsAndWait(incidentsInAnyInstanceAreActiveCheck, count);
+    searchTestRule.processAllRecordsAndWait(incidentsInAnyInstanceAreActiveCheck, count);
     return this;
   }
 
   public OperateTester flowNodeIsActive(String activityId) {
-    elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, activityId);
+    searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, activityId);
     logger.debug("FlowNode {} is active.", activityId);
     return this;
   }
 
   public OperateTester eventIsImported(String jobType) {
-    elasticsearchTestRule.processAllRecordsAndWait(eventIsImportedCheck, processInstanceKey, jobType);
+    searchTestRule.processAllRecordsAndWait(eventIsImportedCheck, processInstanceKey, jobType);
     return this;
   }
 
   public OperateTester flowNodesAreActive(String activityId, int count) {
-    elasticsearchTestRule.processAllRecordsAndWait(flowNodesAreActiveCheck, processInstanceKey, activityId, count);
+    searchTestRule.processAllRecordsAndWait(flowNodesAreActiveCheck, processInstanceKey, activityId, count);
     logger.debug("{} FlowNodes {} are active.", count, activityId);
     return this;
   }
 
   public OperateTester flowNodesExist(String activityId, int count) {
-    elasticsearchTestRule.processAllRecordsAndWait(flowNodesExistCheck, processInstanceKey, activityId, count);
+    searchTestRule.processAllRecordsAndWait(flowNodesExistCheck, processInstanceKey, activityId, count);
     logger.debug("{} FlowNodes {} exist.", count, activityId);
     return this;
   }
 
   public OperateTester flowNodesInAnyInstanceAreActive(String activityId, int count) {
-    elasticsearchTestRule.processAllRecordsAndWait(flowNodesInAnyInstanceAreActiveCheck, activityId, count);
+    searchTestRule.processAllRecordsAndWait(flowNodesInAnyInstanceAreActiveCheck, activityId, count);
     return this;
   }
 
   public OperateTester flowNodeIsCompleted(String activityId) {
-    elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsCompletedCheck, processInstanceKey, activityId);
+    searchTestRule.processAllRecordsAndWait(flowNodeIsCompletedCheck, processInstanceKey, activityId);
     logger.debug("FlowNode {} is completed.", activityId);
     return this;
   }
 
   public OperateTester flowNodesAreCompleted(String activityId, int count) {
-    elasticsearchTestRule.processAllRecordsAndWait(flowNodesAreCompletedCheck, processInstanceKey, activityId, count);
+    searchTestRule.processAllRecordsAndWait(flowNodesAreCompletedCheck, processInstanceKey, activityId, count);
     logger.debug("{} FlowNodes {} is completed.", count, activityId);
     return this;
   }
@@ -422,7 +412,7 @@ public class OperateTester {
   }
 
   public OperateTester flowNodeIsTerminated(final String activityId) {
-    elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsTerminatedCheck, processInstanceKey, activityId);
+    searchTestRule.processAllRecordsAndWait(flowNodeIsTerminatedCheck, processInstanceKey, activityId);
     logger.debug("FlowNode {} is terminated.", activityId);
     return this;
   }
@@ -432,7 +422,7 @@ public class OperateTester {
   }
 
   public OperateTester flowNodesAreTerminated(final String activityId, final int count) {
-    elasticsearchTestRule.processAllRecordsAndWait(flowNodesAreTerminatedCheck, processInstanceKey, activityId, count);
+    searchTestRule.processAllRecordsAndWait(flowNodesAreTerminatedCheck, processInstanceKey, activityId, count);
     logger.debug("{} FlowNodes {} are active.", count, activityId);
     return this;
   }
@@ -474,7 +464,7 @@ public class OperateTester {
     op.setVariableValue(varValue);
     op.setVariableScopeId(ConversionUtils.toStringOrNull(processInstanceKey));
     postOperation(op);
-    elasticsearchTestRule.refreshIndexesInElasticsearch();
+    searchTestRule.refreshSerchIndexes();
     return this;
   }
 
@@ -485,7 +475,7 @@ public class OperateTester {
         .setModifications(modifications);
 
     postOperation(op);
-    elasticsearchTestRule.refreshIndexesInElasticsearch();
+    searchTestRule.refreshSerchIndexes();
     return this;
   }
 
@@ -525,13 +515,13 @@ public class OperateTester {
         = new CreateBatchOperationRequestDto(processInstanceQuery, OperationType.CANCEL_PROCESS_INSTANCE);
 
     postOperation(batchOperationDto);
-    elasticsearchTestRule.refreshIndexesInElasticsearch();
+    searchTestRule.refreshSerchIndexes();
     return this;
   }
 
   public OperateTester deleteProcessInstance() throws Exception {
     postOperation(new CreateOperationRequestDto(OperationType.DELETE_PROCESS_INSTANCE));
-    elasticsearchTestRule.refreshIndexesInElasticsearch();
+    searchTestRule.refreshSerchIndexes();
     return this;
   }
 
@@ -564,12 +554,12 @@ public class OperateTester {
 
   public OperateTester operationIsCompleted() throws Exception {
     executeOneBatch();
-    elasticsearchTestRule.processAllRecordsAndWait(operationsByProcessInstanceAreCompletedCheck, processInstanceKey);
+    searchTestRule.processAllRecordsAndWait(operationsByProcessInstanceAreCompletedCheck, processInstanceKey);
     return this;
   }
   public OperateTester operationIsFailed() throws Exception {
     executeOneBatch();
-    elasticsearchTestRule.processAllRecordsAndWait(operationsByProcessInstanceAreFailedCheck, processInstanceKey);
+    searchTestRule.processAllRecordsAndWait(operationsByProcessInstanceAreFailedCheck, processInstanceKey);
     return this;
   }
 
@@ -626,37 +616,37 @@ public class OperateTester {
 
   public OperateTester executeOperations() throws Exception {
      executeOneBatch();
-     elasticsearchTestRule.refreshOperateESIndices();
+     searchTestRule.refreshOperateSearchIndices();
      return this;
   }
 
   public OperateTester archiveIsDone() {
-    elasticsearchTestRule.refreshOperateESIndices();
+    searchTestRule.refreshOperateSearchIndices();
     return this;
   }
 
   public OperateTester variableExists(String name) {
-    elasticsearchTestRule.processAllRecordsAndWait(variableExistsCheck, processInstanceKey, name);
+    searchTestRule.processAllRecordsAndWait(variableExistsCheck, processInstanceKey, name);
     return this;
   }
 
   public OperateTester variableExistsIn(final String name, final Long scopeKey) {
-    elasticsearchTestRule.processAllRecordsAndWait(variableExistsInCheck, processInstanceKey, name, scopeKey);
+    searchTestRule.processAllRecordsAndWait(variableExistsInCheck, processInstanceKey, name, scopeKey);
     return this;
   }
 
   public OperateTester variableHasValue(final String name, final Object value) {
-    elasticsearchTestRule.processAllRecordsAndWait(variableHasValue, processInstanceKey, name, value, processInstanceKey);
+    searchTestRule.processAllRecordsAndWait(variableHasValue, processInstanceKey, name, value, processInstanceKey);
     return this;
   }
 
   public OperateTester variableHasValue(final String name, final Object value,final Long scopeKey) {
-    elasticsearchTestRule.processAllRecordsAndWait(variableHasValue, processInstanceKey, name, value, scopeKey);
+    searchTestRule.processAllRecordsAndWait(variableHasValue, processInstanceKey, name, value, scopeKey);
     return this;
   }
 
   public OperateTester conditionIsMet(Predicate<Object[]> elsCheck, Object... arguments) {
-    elasticsearchTestRule.processAllRecordsAndWait(elsCheck, arguments);
+    searchTestRule.processAllRecordsAndWait(elsCheck, arguments);
     return this;
   }
 
@@ -702,16 +692,7 @@ public class OperateTester {
   }
 
   public List<FlowNodeInstanceEntity> getAllFlowNodeInstances(Long processInstanceKey) {
-    final TermQueryBuilder processInstanceKeyQuery = termQuery(FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY, processInstanceKey);
-    final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(flowNodeInstanceTemplate)
-        .source(new SearchSourceBuilder()
-            .query(constantScoreQuery(processInstanceKeyQuery))
-            .sort(FlowNodeInstanceTemplate.POSITION, SortOrder.ASC));
-    try {
-      return scroll(searchRequest, FlowNodeInstanceEntity.class, objectMapper, esClient);
-    } catch (IOException e) {
-      throw new OperateRuntimeException(e);
-    }
+    return flowNodeInstanceReader.getAllFlowNodeInstances(processInstanceKey);
   }
 
   public FlowNodeInstanceEntity getFlowNodeInstanceEntityFor(final Long flowNodeInstanceKey){

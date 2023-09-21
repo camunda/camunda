@@ -118,7 +118,7 @@ public class ProcessIT extends OperateZeebeIntegrationTest {
     final Long loanProcessV1Id = createAndDeployProcess(super.getClient(), loanProcessId, null);
 
     //when
-    elasticsearchTestRule.processAllRecordsAndWait(processIsDeployedCheck, loanProcessV1Id);
+    searchTestRule.processAllRecordsAndWait(processIsDeployedCheck, loanProcessV1Id);
     //elasticsearchTestRule.refreshIndexesInElasticsearch();
 
     //then

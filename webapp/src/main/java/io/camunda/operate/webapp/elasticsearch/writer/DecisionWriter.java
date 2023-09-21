@@ -6,6 +6,7 @@
  */
 package io.camunda.operate.webapp.elasticsearch.writer;
 
+import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.schema.indices.DecisionIndex;
 import io.camunda.operate.schema.indices.DecisionRequirementsIndex;
 import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
@@ -13,12 +14,10 @@ import io.camunda.operate.store.DecisionStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Profile("!opensearch")
 @Component
 public class DecisionWriter implements io.camunda.operate.webapp.writer.DecisionWriter {
 

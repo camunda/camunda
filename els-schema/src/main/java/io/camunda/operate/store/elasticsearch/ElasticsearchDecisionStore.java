@@ -6,6 +6,7 @@
  */
 package io.camunda.operate.store.elasticsearch;
 
+import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.schema.indices.DecisionIndex;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.store.DecisionStore;
@@ -24,7 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Profile;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -32,7 +33,8 @@ import java.util.Optional;
 
 import static org.elasticsearch.search.aggregations.AggregationBuilders.cardinality;
 
-@Profile("!opensearch")
+
+@Conditional(ElasticsearchCondition.class)
 @Component
 public class ElasticsearchDecisionStore implements DecisionStore {
 

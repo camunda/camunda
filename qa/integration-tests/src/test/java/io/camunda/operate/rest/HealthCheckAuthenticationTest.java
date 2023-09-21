@@ -6,24 +6,21 @@
  */
 package io.camunda.operate.rest;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.BDDMockito.given;
-
 import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.connect.ElasticsearchConnector;
-import io.camunda.operate.store.elasticsearch.ElasticsearchTask;
-import io.camunda.operate.store.elasticsearch.RetryElasticsearchClient;
+import io.camunda.operate.management.IndicesHealthIndicator;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.rest.HealthCheckTest.AddManagementPropertiesInitializer;
 import io.camunda.operate.schema.indices.OperateWebSessionIndex;
+import io.camunda.operate.store.TaskStore;
+import io.camunda.operate.store.elasticsearch.ElasticsearchTaskStore;
+import io.camunda.operate.store.elasticsearch.RetryElasticsearchClient;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
-import io.camunda.operate.management.IndicesHealthIndicator;
 import io.camunda.operate.webapp.security.ElasticsearchSessionRepository;
+import io.camunda.operate.webapp.security.WebSecurityConfig;
 import io.camunda.operate.webapp.security.oauth2.CCSaaSJwtAuthenticationTokenValidator;
 import io.camunda.operate.webapp.security.oauth2.Jwt2AuthenticationTokenConverter;
 import io.camunda.operate.webapp.security.oauth2.OAuth2WebConfigurer;
-import io.camunda.operate.webapp.security.WebSecurityConfig;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -40,6 +37,10 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import java.io.IOException;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.BDDMockito.given;
+
 /**
  * Tests the health check with enabled authentication.
  */
@@ -53,7 +54,7 @@ import java.io.IOException;
       Jwt2AuthenticationTokenConverter.class,
       CCSaaSJwtAuthenticationTokenValidator.class,
       WebSecurityConfig.class,
-      ElasticsearchTask.class,
+      ElasticsearchTaskStore.class,
       ElasticsearchSessionRepository.class,
       RetryElasticsearchClient.class,
       OperateWebSessionIndex.class,
@@ -73,7 +74,7 @@ public class HealthCheckAuthenticationTest {
   private IndicesHealthIndicator probes;
 
   @Autowired
-  private ElasticsearchTask elasticsearchTask;
+  private TaskStore taskStore;
 
   @Test
   public void testHealthStateEndpointIsNotSecured() {
@@ -88,8 +89,8 @@ public class HealthCheckAuthenticationTest {
   @Ignore // unless you have a reindex task in ELS for mentioned indices
   @Test
   public void testAccessElasticsearchTaskStatusFields() throws IOException {
-    assertThat(elasticsearchTask.getRunningReindexTasksIdsFor("operate-flownode-instances-1.3.0_*", "operate-flownode-instance-8.2.0_")).isEmpty();
-    assertThat(elasticsearchTask.getRunningReindexTasksIdsFor("operate-flownode-instance-1.3.0_*", "operate-flownode-instance-8.2.0_")).hasSize(1);
+    assertThat(taskStore.getRunningReindexTasksIdsFor("operate-flownode-instances-1.3.0_*", "operate-flownode-instance-8.2.0_")).isEmpty();
+    assertThat(taskStore.getRunningReindexTasksIdsFor("operate-flownode-instance-1.3.0_*", "operate-flownode-instance-8.2.0_")).hasSize(1);
   }
 
 }

@@ -92,7 +92,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
 
     //when
     final Long processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
-    elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "taskA");
+    searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "taskA");
 
     //then
     final ProcessInstanceForListViewEntity processInstanceEntity = processInstanceReader.getProcessInstanceByKey(processInstanceKey);
@@ -133,9 +133,9 @@ public class ImportIT extends OperateZeebeIntegrationTest {
 
     //when TC 1
     final Long processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
-    elasticsearchTestRule.processAllRecordsAndWait(processInstanceIsCreatedCheck, processInstanceKey);
-    elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "taskA");
-    elasticsearchTestRule.processAllRecordsAndWait(variableExistsCheck, processInstanceKey, "a");
+    searchTestRule.processAllRecordsAndWait(processInstanceIsCreatedCheck, processInstanceKey);
+    searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "taskA");
+    searchTestRule.processAllRecordsAndWait(variableExistsCheck, processInstanceKey, "a");
 
     //then we can find the instance by 2 variable values: a = b, foo = b
     assertVariableExists(processInstanceKey, "a", "\"b\"");
@@ -146,7 +146,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     //update variable
     ZeebeTestUtil.updateVariables(zeebeClient, processInstanceKey, "{\"a\": \"c\"}");
     //elasticsearchTestRule.processAllEvents(2, ImportValueType.VARIABLE);
-    elasticsearchTestRule.processAllRecordsAndWait(variableEqualsCheck, processInstanceKey,processInstanceKey,"a","\"c\"");
+    searchTestRule.processAllRecordsAndWait(variableEqualsCheck, processInstanceKey,processInstanceKey,"a","\"c\"");
     //then we can find the instance by 2 variable values: foo = b
     assertVariableDoesNotExist(processInstanceKey, "a", "\"b\"");
     assertVariableExists(processInstanceKey, "foo", "\"b\"");
@@ -195,11 +195,11 @@ public class ImportIT extends OperateZeebeIntegrationTest {
 
     //when
     final long processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, processId, null);
-    elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "task1");
+    searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "task1");
 
     completeTask(processInstanceKey, "task1", null);
 
-    elasticsearchTestRule.processAllRecordsAndWait(processInstanceIsCompletedCheck, processInstanceKey);
+    searchTestRule.processAllRecordsAndWait(processInstanceIsCompletedCheck, processInstanceKey);
 
     //then
     final ProcessInstanceForListViewEntity processInstanceEntity = processInstanceReader.getProcessInstanceByKey(processInstanceKey);
@@ -229,13 +229,13 @@ public class ImportIT extends OperateZeebeIntegrationTest {
       .done();
     deployProcess(process, "demoProcess_v_1.bpmn");
     final long processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, processId, null);
-    elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "task1");
+    searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "task1");
     //remember start date
     final OffsetDateTime startDate = processInstanceReader.getProcessInstanceByKey(processInstanceKey).getStartDate();
 
     //when
     completeTask(processInstanceKey, "task1", null);
-    elasticsearchTestRule.processAllRecordsAndWait(processInstanceIsCompletedCheck, processInstanceKey);
+    searchTestRule.processAllRecordsAndWait(processInstanceIsCompletedCheck, processInstanceKey);
 
     //then
     final ProcessInstanceForListViewEntity processInstanceEntity = processInstanceReader.getProcessInstanceByKey(processInstanceKey);
@@ -265,7 +265,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     List<IncidentEntity> allIncidents = incidentReader.getAllIncidentsByProcessInstanceKey(processInstanceKey);
     assertThat(allIncidents).hasSize(1);
     ZeebeTestUtil.resolveIncident(zeebeClient, allIncidents.get(0).getJobKey(), allIncidents.get(0).getKey());
-    elasticsearchTestRule.processAllRecordsAndWait(noActivitiesHaveIncident, processInstanceKey);
+    searchTestRule.processAllRecordsAndWait(noActivitiesHaveIncident, processInstanceKey);
 
     //then
     allIncidents = incidentReader.getAllIncidentsByProcessInstanceKey(processInstanceKey);
@@ -346,7 +346,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
 
     //when
     final Long processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");      //wrong payload provokes incident
-    elasticsearchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, processInstanceKey);
+    searchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, processInstanceKey);
 
     //then incident created, activity in INCIDENT state
     final List<IncidentEntity> allIncidents = incidentReader.getAllIncidentsByProcessInstanceKey(processInstanceKey);
@@ -413,7 +413,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
 
     //when
     final Long processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");      //wrong payload provokes incident
-    elasticsearchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, processInstanceKey);
+    searchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, processInstanceKey);
 
     //then incident created, activity in INCIDENT state
     List<IncidentEntity> allIncidents = incidentReader.getAllIncidentsByProcessInstanceKey(processInstanceKey);
@@ -425,8 +425,8 @@ public class ImportIT extends OperateZeebeIntegrationTest {
 
     //when I cancel process instance
     ZeebeTestUtil.cancelProcessInstance(zeebeClient, processInstanceKey);
-    elasticsearchTestRule.processAllRecordsAndWait(processInstanceIsCanceledCheck, processInstanceKey);
-    elasticsearchTestRule.processAllRecordsAndWait(noActivitiesHaveIncident, processInstanceKey);
+    searchTestRule.processAllRecordsAndWait(processInstanceIsCanceledCheck, processInstanceKey);
+    searchTestRule.processAllRecordsAndWait(noActivitiesHaveIncident, processInstanceKey);
 
     //then incident is deleted
     ProcessInstanceForListViewEntity processInstanceEntity = processInstanceReader.getProcessInstanceByKey(processInstanceKey);
@@ -470,7 +470,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
 
     //when
     final long processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"foo\": 6}");
-    elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "task2");
+    searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "task2");
 
     //assert flow node instances
     final List<FlowNodeInstanceEntity> allFlowNodeInstances = tester
@@ -504,7 +504,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
 
     //when
     final long processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"key1\": \"value1\", \"key2\": \"value2\"}");
-    elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "gateway");
+    searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "gateway");
 
     //assert flow node instances
     final List<FlowNodeInstanceEntity> allFlowNodeInstances = tester
@@ -525,7 +525,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     String processId = "demoProcess";
     deployProcess("demoProcess_v_1.bpmn");
     final Long processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
-    elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "taskA");
+    searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "taskA");
 
     //when
     cancelProcessInstance(processInstanceKey);
@@ -614,7 +614,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
 
     //when
     sendMessages("clientMessage", "{\"messageVar\": \"someValue\"}", 20);
-    elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "taskA");
+    searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "taskA");
 
     //assert flow node instances
     final List<FlowNodeInstanceEntity> allFlowNodeInstances = tester
@@ -637,7 +637,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     String processId = "demoProcess";
     deployProcess("demoProcess_v_1.bpmn");
     final long processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
-    elasticsearchTestRule.processAllRecordsAndWait(processInstanceIsCreatedCheck, processInstanceKey);
+    searchTestRule.processAllRecordsAndWait(processInstanceIsCreatedCheck, processInstanceKey);
 
     final ProcessInstanceForListViewEntity processInstanceById = processInstanceReader.getProcessInstanceByKey(processInstanceKey);
     assertThat(processInstanceById).isNotNull();
@@ -651,11 +651,11 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     String processId = "demoProcess";
     deployProcess("demoProcess_v_1.bpmn");
     final long processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
-    elasticsearchTestRule.processAllRecordsAndWait(processInstanceIsCreatedCheck, processInstanceKey);
+    searchTestRule.processAllRecordsAndWait(processInstanceIsCreatedCheck, processInstanceKey);
 
     //create an incident
     failTaskWithNoRetriesLeft(activityId, processInstanceKey, errorMessage);
-    elasticsearchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, processInstanceKey);
+    searchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, processInstanceKey);
 
     final ProcessInstanceForListViewEntity processInstanceById = processInstanceReader.getProcessInstanceByKey(processInstanceKey);
     assertThat(processInstanceById).isNotNull();
@@ -732,7 +732,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     sleepFor(5_000);
 
     //when
-    elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsTerminatedCheck, processInstanceKey, "taskA");
+    searchTestRule.processAllRecordsAndWait(flowNodeIsTerminatedCheck, processInstanceKey, "taskA");
 
     //assert flow node instances
     final List<FlowNodeInstanceEntity> allFlowNodeInstances = tester
@@ -749,7 +749,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     String processId = "demoProcess";
     deployProcess("demoProcess_v_1.bpmn");
     final long processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
-    elasticsearchTestRule.processAllRecordsAndWait(processInstanceIsCreatedCheck, processInstanceKey);
+    searchTestRule.processAllRecordsAndWait(processInstanceIsCreatedCheck, processInstanceKey);
 
     /*final ProcessInstanceForListViewEntity processInstanceById =*/ processInstanceReader.getProcessInstanceByKey(-42L);
   }
@@ -763,7 +763,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
 
     //when
     final Long processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
-    elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "taskA");
+    searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "taskA");
 
     //then
     final List<SequenceFlowEntity> sequenceFlowEntities = sequenceFlowStore.getSequenceFlowsByProcessInstanceKey(processInstanceKey);
@@ -785,7 +785,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
 
     //when
     final Long processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
-    elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "taskA");
+    searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "taskA");
 
     //then
     final List<VariableEntity> variableEntities = getVariablesByProcessInstanceKey(processInstanceKey);

@@ -29,7 +29,7 @@ import io.camunda.operate.entities.listview.ProcessInstanceState;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentByProcessStatisticsDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentsByErrorMsgStatisticsDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentsByProcessGroupStatisticsDto;
-import io.camunda.operate.util.ElasticsearchTestRule;
+import io.camunda.operate.util.SearchTestRule;
 import io.camunda.operate.util.OperateIntegrationTest;
 import io.camunda.operate.util.TestUtil;
 
@@ -64,7 +64,7 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
   private PermissionsService permissionsService;
 
   @Rule
-  public ElasticsearchTestRule elasticsearchTestRule = new ElasticsearchTestRule();
+  public SearchTestRule searchTestRule = new SearchTestRule();
 
   private Random random = new Random();
 
@@ -80,7 +80,7 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
     ProcessInstanceForListViewEntity processInstance = createProcessInstanceEntity(ProcessInstanceState.ACTIVE, processDefinitionKey, "process");
     entities.add(processInstance);
     entities.addAll(createIncidents(processInstance, 1, 0));
-    elasticsearchTestRule.persistNew(entities.toArray(new OperateEntity[entities.size()]));
+    searchTestRule.persistNew(entities.toArray(new OperateEntity[entities.size()]));
 
     List<IncidentsByErrorMsgStatisticsDto> response = requestIncidentsByError();
 
@@ -372,7 +372,7 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
 
   private void createDemoProcessData() {
     List<ProcessEntity> processVersions = createProcessVersions(DEMO_BPMN_PROCESS_ID, DEMO_PROCESS_NAME, 2, tenantId1);
-    elasticsearchTestRule.persistNew(processVersions.toArray(new OperateEntity[processVersions.size()]));
+    searchTestRule.persistNew(processVersions.toArray(new OperateEntity[processVersions.size()]));
 
     List<OperateEntity> entities = new ArrayList<>();
 
@@ -410,12 +410,12 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
       entities.add(createProcessInstanceEntity(ProcessInstanceState.COMPLETED, processDefinitionKey, DEMO_BPMN_PROCESS_ID));
     }
 
-    elasticsearchTestRule.persistNew(entities.toArray(new OperateEntity[entities.size()]));
+    searchTestRule.persistNew(entities.toArray(new OperateEntity[entities.size()]));
   }
 
   private void createOrderProcessData() {
     List<ProcessEntity> processVersions = createProcessVersions(ORDER_BPMN_PROCESS_ID, ORDER_PROCESS_NAME, 2, tenantId2);
-    elasticsearchTestRule.persistNew(processVersions.toArray(new OperateEntity[processVersions.size()]));
+    searchTestRule.persistNew(processVersions.toArray(new OperateEntity[processVersions.size()]));
 
     List<OperateEntity> entities = new ArrayList<>();
     //Order process v1
@@ -440,13 +440,13 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
       entities.add(createProcessInstanceEntity(ProcessInstanceState.ACTIVE, processDefinitionKey, ORDER_BPMN_PROCESS_ID));
     }
 
-    elasticsearchTestRule.persistNew(entities.toArray(new OperateEntity[entities.size()]));
+    searchTestRule.persistNew(entities.toArray(new OperateEntity[entities.size()]));
   }
 
   private void createLoanProcessData() {
     //Loan process v1
     List<ProcessEntity> processVersions = createProcessVersions(LOAN_BPMN_PROCESS_ID, LOAN_PROCESS_NAME, 1, tenantId1);
-    elasticsearchTestRule.persistNew(processVersions.get(0));
+    searchTestRule.persistNew(processVersions.get(0));
 
     List<OperateEntity> entities = new ArrayList<>();
     Long processDefinitionKey = processVersions.get(0).getKey();
@@ -461,12 +461,12 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
       entities.add(createProcessInstanceEntity(ProcessInstanceState.ACTIVE, processDefinitionKey, LOAN_BPMN_PROCESS_ID));
     }
 
-    elasticsearchTestRule.persistNew(entities.toArray(new OperateEntity[entities.size()]));
+    searchTestRule.persistNew(entities.toArray(new OperateEntity[entities.size()]));
   }
 
   private void createNoInstancesProcessData(int versionCount) {
     createProcessVersions(NO_INSTANCES_PROCESS_ID, NO_INSTANCES_PROCESS_NAME, versionCount, tenantId2)
-      .forEach( processVersion -> elasticsearchTestRule.persistNew(processVersion));
+      .forEach( processVersion -> searchTestRule.persistNew(processVersion));
   }
 
   private List<IncidentsByProcessGroupStatisticsDto> requestIncidentsByProcess() throws Exception {

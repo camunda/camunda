@@ -14,6 +14,7 @@ import java.util.concurrent.CompletableFuture;
 import io.camunda.operate.Metrics;
 import io.camunda.operate.archiver.ArchiveBatch;
 import io.camunda.operate.archiver.ProcessInstancesArchiverJob;
+import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.schema.templates.ProcessInstanceDependant;
@@ -36,7 +37,7 @@ import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Profile;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
@@ -48,10 +49,10 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.topHits;
 import static org.elasticsearch.search.aggregations.PipelineAggregatorBuilders.bucketSort;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
-@Profile("!opensearch")
+@Conditional(ElasticsearchCondition.class)
 @Component
 @Scope(SCOPE_PROTOTYPE)
-public class ElasticsearchProcessInstancesArchiverJob extends AbstractArchiverJob implements ProcessInstancesArchiverJob {
+public class ElasticsearchProcessInstancesArchiverJob extends AbstractElasticsearchArchiverJob implements ProcessInstancesArchiverJob {
 
   private static final Logger logger = LoggerFactory.getLogger(ElasticsearchProcessInstancesArchiverJob.class);
 

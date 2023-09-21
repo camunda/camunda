@@ -73,7 +73,7 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
   protected ZeebeContainer zeebeContainer;
 
   @Rule
-  public ElasticsearchTestRule elasticsearchTestRule = new ElasticsearchTestRule();
+  public SearchTestRule searchTestRule = new SearchTestRule();
 
   @Autowired
   protected PartitionHolder partitionHolder;
@@ -209,7 +209,7 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
     zeebeClient = getClient();
     workerName = TestUtil.createRandomString(10);
 
-    tester = beanFactory.getBean(OperateTester.class, zeebeClient, mockMvcTestRule, elasticsearchTestRule);
+    tester = beanFactory.getBean(OperateTester.class, zeebeClient, mockMvcTestRule, searchTestRule);
 
     processCache.clearCache();
     importPositionHolder.cancelScheduledImportPositionUpdateTask().join();
@@ -239,19 +239,19 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
 
   public Long failTaskWithNoRetriesLeft(String taskName, long processInstanceKey, String errorMessage) {
     Long jobKey = ZeebeTestUtil.failTask(getClient(), taskName, getWorkerName(), 3, errorMessage);
-    elasticsearchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, processInstanceKey);
+    searchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, processInstanceKey);
     return jobKey;
   }
 
   protected Long deployProcess(String... classpathResources) {
     final Long processDefinitionKey = ZeebeTestUtil.deployProcess(getClient(), classpathResources);
-    elasticsearchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processDefinitionKey);
+    searchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processDefinitionKey);
     return processDefinitionKey;
   }
 
   protected Long deployProcess(BpmnModelInstance process, String resourceName) {
     final Long processId = ZeebeTestUtil.deployProcess(getClient(), process, resourceName);
-    elasticsearchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId);
+    searchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId);
     return processId;
   }
 
@@ -262,7 +262,7 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
   protected void cancelProcessInstance(long processInstanceKey, boolean waitForData) {
     ZeebeTestUtil.cancelProcessInstance(getClient(), processInstanceKey);
     if (waitForData) {
-      elasticsearchTestRule.processAllRecordsAndWait(processInstanceIsCanceledCheck, processInstanceKey);
+      searchTestRule.processAllRecordsAndWait(processInstanceIsCanceledCheck, processInstanceKey);
     }
   }
 
@@ -273,7 +273,7 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
   protected void completeTask(long processInstanceKey, String activityId, String payload, boolean waitForData) {
     ZeebeTestUtil.completeTask(getClient(), activityId, getWorkerName(), payload);
     if (waitForData) {
-      elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsCompletedCheck, processInstanceKey, activityId);
+      searchTestRule.processAllRecordsAndWait(flowNodeIsCompletedCheck, processInstanceKey, activityId);
     }
   }
 
@@ -339,7 +339,7 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
       mockMvc.perform(postOperationRequest)
         .andExpect(status().is(expectedStatus))
         .andReturn();
-    elasticsearchTestRule.refreshIndexesInElasticsearch();
+    searchTestRule.refreshSerchIndexes();
     return mvcResult;
   }
 
@@ -362,7 +362,7 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
       mockMvc.perform(postOperationRequest)
         .andExpect(status().is(expectedStatus))
         .andReturn();
-    elasticsearchTestRule.refreshIndexesInElasticsearch();
+    searchTestRule.refreshSerchIndexes();
     return mvcResult;
   }
 

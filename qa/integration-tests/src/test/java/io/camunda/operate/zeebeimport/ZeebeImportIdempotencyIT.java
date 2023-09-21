@@ -32,8 +32,8 @@ public class ZeebeImportIdempotencyIT extends ZeebeImportIT {
 
   @Override
   protected void processImportTypeAndWait(ImportValueType importValueType, Predicate<Object[]> waitTill, Object... arguments) {
-    elasticsearchTestRule.processRecordsWithTypeAndWait(importValueType, waitTill, arguments);
-    elasticsearchTestRule.processRecordsWithTypeAndWait(importValueType, waitTill, arguments);
+    searchTestRule.processRecordsWithTypeAndWait(importValueType, waitTill, arguments);
+    searchTestRule.processRecordsWithTypeAndWait(importValueType, waitTill, arguments);
     elasticsearchBulkProcessor.cancelAttempts();
   }
 

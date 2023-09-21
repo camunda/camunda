@@ -14,7 +14,7 @@ import java.util.Comparator;
 import java.util.List;
 import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.entities.OperateEntity;
-import io.camunda.operate.util.ElasticsearchTestRule;
+import io.camunda.operate.util.SearchTestRule;
 import io.camunda.operate.util.OperateIntegrationTest;
 import io.camunda.operate.webapp.rest.BatchOperationRestService;
 import io.camunda.operate.webapp.rest.dto.operation.BatchOperationDto;
@@ -36,7 +36,7 @@ public class BatchOperationReaderIT extends OperateIntegrationTest {
   public static final String USER_2 = "user2";
 
   @Rule
-  public ElasticsearchTestRule elasticsearchTestRule = new ElasticsearchTestRule();
+  public SearchTestRule searchTestRule = new SearchTestRule();
 
   private ArrayList<String> user1OperationIds = new ArrayList<>();
   private ArrayList<String> user2OperationIds = new ArrayList<>();
@@ -70,8 +70,8 @@ public class BatchOperationReaderIT extends OperateIntegrationTest {
     //finish 1st operation
     BatchOperationEntity batchOperationEntity = createBatchOperationEntity(op1.getStartDate(), OffsetDateTime.now(), USER_1);
     batchOperationEntity.setId(op1.getId());
-    elasticsearchTestRule.persistNew(batchOperationEntity);
-    elasticsearchTestRule.refreshOperateESIndices();
+    searchTestRule.persistNew(batchOperationEntity);
+    searchTestRule.refreshOperateSearchIndices();
 
     BatchOperationDto op2 = assert3Pages();
     assertThat(op1.getId()).isNotEqualTo(op2.getId());
@@ -137,7 +137,7 @@ public class BatchOperationReaderIT extends OperateIntegrationTest {
     entities.add(createBatchOperation(now.minus(5, ChronoUnit.MINUTES), null, USER_2, user2OperationIds));
     entities.add(createBatchOperation(now.minus(4, ChronoUnit.MINUTES), now.minus(3, ChronoUnit.MINUTES), USER_2, user2OperationIds));  //finished
 
-    elasticsearchTestRule.persistNew(entities.toArray(new OperateEntity[entities.size()]));
+    searchTestRule.persistNew(entities.toArray(new OperateEntity[entities.size()]));
 
   }
 

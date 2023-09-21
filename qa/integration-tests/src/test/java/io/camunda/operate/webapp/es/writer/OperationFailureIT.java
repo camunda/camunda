@@ -77,13 +77,13 @@ public class OperationFailureIT extends OperateZeebeIntegrationTest {
     } catch (Exception ex) {
       //expected
     }
-    elasticsearchTestRule.refreshIndexesInElasticsearch();
+    searchTestRule.refreshSerchIndexes();
     //and execute the operation
     executeOneBatch();
 
     //then
     //import works without being stuck on empty batch operation
-    elasticsearchTestRule.processAllRecordsAndWait(processInstanceIsCanceledCheck, processInstanceSource1.getProcessInstanceKey());
+    searchTestRule.processAllRecordsAndWait(processInstanceIsCanceledCheck, processInstanceSource1.getProcessInstanceKey());
     ListViewResponseDto processInstances = getProcessInstances(processInstanceQuery);
     assertThat(processInstances.getProcessInstances()).hasSize(2);
     assertThat(processInstances.getProcessInstances()).extracting(pi -> {

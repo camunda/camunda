@@ -6,13 +6,14 @@
  */
 package io.camunda.operate.property;
 
-import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
 
 /**
  * This class contains all project configuration parameters.
@@ -24,6 +25,7 @@ import org.springframework.stereotype.Component;
 public class OperateProperties {
 
   public static final String PREFIX = "camunda.operate";
+
   public static final long BATCH_OPERATION_MAX_SIZE_DEFAULT = 1_000_000L;
 
   private static final String UNKNOWN_VERSION = "unknown-version";
@@ -65,7 +67,13 @@ public class OperateProperties {
   private OperateElasticsearchProperties elasticsearch = new OperateElasticsearchProperties();
 
   @NestedConfigurationProperty
+  private OperateOpensearchProperties opensearch = new OperateOpensearchProperties();
+
+  @NestedConfigurationProperty
   private ZeebeElasticsearchProperties zeebeElasticsearch = new ZeebeElasticsearchProperties();
+
+  @NestedConfigurationProperty
+  private ZeebeOpensearchProperties zeebeOpensearch = new ZeebeOpensearchProperties();
 
   @NestedConfigurationProperty
   private ZeebeProperties zeebe = new ZeebeProperties();
@@ -155,8 +163,12 @@ public class OperateProperties {
     return elasticsearch;
   }
 
-  public void setElasticsearch(OperateElasticsearchProperties elasticsearch) {
-    this.elasticsearch = elasticsearch;
+  public OperateOpensearchProperties getOpensearch() {
+    return opensearch;
+  }
+
+  public void setOpensearch(OperateOpensearchProperties opensearch) {
+    this.opensearch = opensearch;
   }
 
   public ZeebeElasticsearchProperties getZeebeElasticsearch() {
@@ -167,6 +179,13 @@ public class OperateProperties {
     this.zeebeElasticsearch = zeebeElasticsearch;
   }
 
+  public ZeebeOpensearchProperties getZeebeOpensearch() {
+    return zeebeOpensearch;
+  }
+
+  public void setZeebeOpensearch(ZeebeOpensearchProperties zeebeOpensearch) {
+    this.zeebeOpensearch = zeebeOpensearch;
+  }
   public ZeebeProperties getZeebe() {
     return zeebe;
   }

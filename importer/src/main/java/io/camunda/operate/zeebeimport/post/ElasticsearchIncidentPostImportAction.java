@@ -7,6 +7,7 @@
 package io.camunda.operate.zeebeimport.post;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.entities.IncidentEntity;
 import io.camunda.operate.entities.IncidentState;
 import io.camunda.operate.entities.meta.ImportPositionEntity;
@@ -38,7 +39,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.annotation.Profile;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Scope;
 import org.springframework.lang.Nullable;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
@@ -66,7 +67,7 @@ import static java.util.stream.Collectors.toMap;
 import static org.elasticsearch.index.query.QueryBuilders.*;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
-@Profile("!opensearch")
+@Conditional(ElasticsearchCondition.class)
 @Component
 @Scope(SCOPE_PROTOTYPE)
 public class ElasticsearchIncidentPostImportAction implements PostImportAction {

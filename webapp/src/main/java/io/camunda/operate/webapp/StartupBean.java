@@ -7,13 +7,14 @@
 package io.camunda.operate.webapp;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import jakarta.annotation.PostConstruct;
-import jakarta.annotation.PreDestroy;
-
-import io.camunda.operate.data.DataGenerator;
+import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.connect.ElasticsearchConnector;
+import io.camunda.operate.data.DataGenerator;
+import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.webapp.security.auth.OperateUserDetailsService;
 import io.camunda.operate.webapp.zeebe.operation.OperationExecutor;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,28 +30,31 @@ public class StartupBean {
 
   private static final Logger logger = LoggerFactory.getLogger(StartupBean.class);
 
-  @Autowired
+  @Autowired(required = false)
   private RestHighLevelClient esClient;
 
-  @Autowired
+  @Autowired(required = false)
   private RestHighLevelClient zeebeEsClient;
 
-  @Autowired
+  @Autowired(required = false)
   private ElasticsearchClient elasticsearchClient;
 
   @Autowired(required = false)
-  private OperateUserDetailsService elasticsearchUserDetailsService;
+  private OperateUserDetailsService operateUserDetailsService;
 
   @Autowired
   private DataGenerator dataGenerator;
 
   @Autowired
+  private OperateProperties operateProperties;
+
+  @Autowired
   private OperationExecutor operationExecutor;
   @PostConstruct
   public void initApplication() {
-    if (elasticsearchUserDetailsService != null) {
-      logger.info("INIT: Create users in elasticsearch if not exists ...");
-      elasticsearchUserDetailsService.initializeUsers();
+    if (operateUserDetailsService != null) {
+      logger.info("INIT: Create users in {} if not exists ...", DatabaseInfo.getCurrent().getCode());
+      operateUserDetailsService.initializeUsers();
     }
     logger.debug("INIT: Generate demo data...");
     try {
@@ -66,9 +70,11 @@ public class StartupBean {
 
   @PreDestroy
   public void shutdown() {
-    logger.info("Shutdown elasticsearch clients.");
-    ElasticsearchConnector.closeEsClient(esClient);
-    ElasticsearchConnector.closeEsClient(zeebeEsClient);
+    if(DatabaseInfo.isElasticsearch()) {
+      logger.info("Shutdown elasticsearch clients.");
+      ElasticsearchConnector.closeEsClient(esClient);
+      ElasticsearchConnector.closeEsClient(zeebeEsClient);
+    }
   }
 
 }

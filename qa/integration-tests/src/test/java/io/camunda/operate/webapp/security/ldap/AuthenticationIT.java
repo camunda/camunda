@@ -8,7 +8,7 @@ package io.camunda.operate.webapp.security.ldap;
 
 import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.connect.ElasticsearchConnector;
-import io.camunda.operate.store.elasticsearch.ElasticsearchTask;
+import io.camunda.operate.store.elasticsearch.ElasticsearchTaskStore;
 import io.camunda.operate.store.elasticsearch.RetryElasticsearchClient;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.indices.OperateWebSessionIndex;
@@ -53,7 +53,7 @@ import static org.assertj.core.api.Assertions.assertThat;
         LDAPWebSecurityConfig.class,
         LDAPUserService.class,
         RetryElasticsearchClient.class,
-        ElasticsearchTask.class,
+        ElasticsearchTaskStore.class,
         ElasticsearchSessionRepository.class,
         OperateWebSessionIndex.class,
         OperateProfileService.class,

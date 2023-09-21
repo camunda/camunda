@@ -7,7 +7,7 @@
 package io.camunda.operate.store.elasticsearch;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-
+import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.entities.ErrorType;
 import io.camunda.operate.entities.IncidentEntity;
 import io.camunda.operate.entities.IncidentState;
@@ -35,7 +35,7 @@ import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Profile;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -50,7 +50,7 @@ import static org.elasticsearch.index.query.QueryBuilders.*;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 
-@Profile("!opensearch")
+@Conditional(ElasticsearchCondition.class)
 @Component
 public class ElasticsearchIncidentStore implements IncidentStore {
 

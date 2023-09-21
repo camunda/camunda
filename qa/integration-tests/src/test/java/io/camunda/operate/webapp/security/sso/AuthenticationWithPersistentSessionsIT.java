@@ -29,7 +29,7 @@ import com.auth0.Tokens;
 
 import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.connect.ElasticsearchConnector;
-import io.camunda.operate.store.elasticsearch.ElasticsearchTask;
+import io.camunda.operate.store.elasticsearch.ElasticsearchTaskStore;
 import io.camunda.operate.store.elasticsearch.RetryElasticsearchClient;
 import io.camunda.operate.management.IndicesCheck;
 import io.camunda.operate.property.OperateProperties;
@@ -101,7 +101,7 @@ import org.springframework.web.client.RestTemplate;
         SessionRepositoryConfig.class,
         OperateWebSessionIndex.class,
         RetryElasticsearchClient.class,
-        ElasticsearchTask.class,
+        ElasticsearchTaskStore.class,
         OperateProfileService.class,
         ElasticsearchConnector.class
     },

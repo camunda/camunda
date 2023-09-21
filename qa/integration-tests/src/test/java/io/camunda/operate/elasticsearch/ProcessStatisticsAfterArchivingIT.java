@@ -42,10 +42,10 @@ public class ProcessStatisticsAfterArchivingIT extends ProcessStatisticsIT {
     Archiver archiver = beanFactory.getBean(Archiver.class);
     ProcessInstancesArchiverJob archiverJob = beanFactory.getBean(ProcessInstancesArchiverJob.class, archiver, partitionHolder.getPartitionIds());
     runArchiving(archiverJob, () -> {
-      elasticsearchTestRule.refreshIndexesInElasticsearch();
+      searchTestRule.refreshSerchIndexes();
       return null;
     });
-    elasticsearchTestRule.refreshIndexesInElasticsearch();
+    searchTestRule.refreshSerchIndexes();
   }
 
 }

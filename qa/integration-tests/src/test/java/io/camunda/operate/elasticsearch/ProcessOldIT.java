@@ -8,8 +8,8 @@ package io.camunda.operate.elasticsearch;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.camunda.operate.entities.ProcessEntity;
-import io.camunda.operate.util.ElasticsearchTestRule;
 import io.camunda.operate.util.OperateIntegrationTest;
+import io.camunda.operate.util.SearchTestRule;
 import io.camunda.operate.webapp.rest.ProcessRestService;
 import io.camunda.operate.webapp.rest.dto.ProcessGroupDto;
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
@@ -39,7 +39,7 @@ public class ProcessOldIT extends OperateIntegrationTest {
   private PermissionsService permissionsService;
 
   @Rule
-  public ElasticsearchTestRule elasticsearchTestRule = new ElasticsearchTestRule();
+  public SearchTestRule elasticsearchTestRule = new SearchTestRule();
 
   @Test
   public void testProcessesGroupedWithPermissionWhenNotAllowed() throws Exception {

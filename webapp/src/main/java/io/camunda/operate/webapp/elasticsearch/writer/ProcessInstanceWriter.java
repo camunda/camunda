@@ -6,6 +6,7 @@
  */
 package io.camunda.operate.webapp.elasticsearch.writer;
 
+import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.schema.templates.OperationTemplate;
@@ -20,10 +21,10 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Profile;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@Profile("!opensearch")
+@Conditional(ElasticsearchCondition.class)
 @Component
 public class ProcessInstanceWriter implements io.camunda.operate.webapp.writer.ProcessInstanceWriter {
 

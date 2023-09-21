@@ -38,6 +38,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
+
+import io.camunda.operate.store.opensearch.client.sync.OpenSearchIndexOperations;
+import io.camunda.operate.store.opensearch.client.sync.OpenSearchTemplateOperations;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.client.RequestOptions;
@@ -346,6 +349,16 @@ public abstract class TestUtil {
         esClient.indices().deleteIndexTemplate(new DeleteComposableIndexTemplateRequest(template), RequestOptions.DEFAULT);
       }
     } catch (ElasticsearchStatusException | IOException ex) {
+      logger.error(ex.getMessage(), ex);
+    }
+  }
+
+  public static void removeAllIndices(OpenSearchIndexOperations indexOperations, OpenSearchTemplateOperations templateOperations, String prefix) {
+    try {
+      logger.info("Removing indices");
+      indexOperations.deleteIndicesWithRetries(prefix + "*");
+      templateOperations.deleteTemplatesWithRetries(prefix + "*");
+    } catch (Exception ex) {
       logger.error(ex.getMessage(), ex);
     }
   }

@@ -6,6 +6,7 @@
  */
 package io.camunda.operate.schema.indices;
 
+import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.property.OperateProperties;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -18,7 +19,11 @@ public abstract class AbstractIndexDescriptor implements IndexDescriptor {
 
   @Override
   public String getFullQualifiedName() {
-    return String.format("%s-%s-%s_", operateProperties.getElasticsearch().getIndexPrefix(), getIndexName(), getVersion());
+    if(DatabaseInfo.isElasticsearch()) {
+      return String.format("%s-%s-%s_", operateProperties.getElasticsearch().getIndexPrefix(), getIndexName(), getVersion());
+    }else{
+      return String.format("%s-%s-%s_", operateProperties.getOpensearch().getIndexPrefix(), getIndexName(), getVersion());
+    }
   }
 
 }

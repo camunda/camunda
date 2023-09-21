@@ -17,7 +17,7 @@ import io.camunda.operate.entities.OperateEntity;
 import io.camunda.operate.entities.OperationState;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceState;
-import io.camunda.operate.util.ElasticsearchTestRule;
+import io.camunda.operate.util.SearchTestRule;
 import io.camunda.operate.util.OperateIntegrationTest;
 import io.camunda.operate.util.TestUtil;
 import io.camunda.operate.webapp.rest.dto.VariableDto;
@@ -65,7 +65,7 @@ public class OperationReaderIT extends OperateIntegrationTest {
   private static final long INCIDENT_3 = 3;
 
   @Rule
-  public ElasticsearchTestRule elasticsearchTestRule = new ElasticsearchTestRule();
+  public SearchTestRule searchTestRule = new SearchTestRule();
 
   @Before
   public void before() {
@@ -205,7 +205,7 @@ public class OperationReaderIT extends OperateIntegrationTest {
     entities.add(TestUtil.createOperationEntity(inst.getProcessInstanceKey(), null, null, OperationState.COMPLETED, USER_4, false));
     entities.add(inst);
 
-    elasticsearchTestRule.persistNew(entities.toArray(new OperateEntity[entities.size()]));
+    searchTestRule.persistNew(entities.toArray(new OperateEntity[entities.size()]));
 
   }
 

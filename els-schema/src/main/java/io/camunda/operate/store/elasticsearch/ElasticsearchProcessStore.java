@@ -7,7 +7,7 @@
 package io.camunda.operate.store.elasticsearch;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-
+import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.entities.ProcessEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceState;
@@ -44,7 +44,7 @@ import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Profile;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
@@ -60,7 +60,7 @@ import static io.camunda.operate.util.ElasticsearchUtil.*;
 import static org.elasticsearch.index.query.QueryBuilders.*;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.*;
 
-@Profile("!opensearch")
+@Conditional(ElasticsearchCondition.class)
 @Component
 public class ElasticsearchProcessStore implements ProcessStore {
   public static final FilterAggregationBuilder INCIDENTS_AGGREGATION = AggregationBuilders.filter(

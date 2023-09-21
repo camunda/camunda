@@ -6,6 +6,7 @@
  */
 package io.camunda.operate.schema.templates;
 
+import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.property.OperateProperties;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -18,7 +19,8 @@ public abstract class AbstractTemplateDescriptor implements TemplateDescriptor {
 
   @Override
   public String getFullQualifiedName() {
-    return String.format("%s-%s-%s_", operateProperties.getElasticsearch().getIndexPrefix(), getIndexName(), getVersion());
+    var indexPrefix = DatabaseInfo.isOpensearch() ? operateProperties.getOpensearch().getIndexPrefix() : operateProperties.getElasticsearch().getIndexPrefix();
+    return String.format("%s-%s-%s_", indexPrefix, getIndexName(), getVersion());
   }
 
 }

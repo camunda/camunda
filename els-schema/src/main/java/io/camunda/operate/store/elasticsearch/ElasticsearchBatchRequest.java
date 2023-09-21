@@ -8,6 +8,7 @@ package io.camunda.operate.store.elasticsearch;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.entities.OperateEntity;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateProperties;
@@ -23,7 +24,7 @@ import org.elasticsearch.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Profile;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
@@ -35,8 +36,8 @@ import static io.camunda.operate.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
 @Component
+@Conditional(ElasticsearchCondition.class)
 @Scope(SCOPE_PROTOTYPE)
-@Profile("!opensearch")
 public class ElasticsearchBatchRequest implements BatchRequest {
 
   private static final Logger logger = LoggerFactory.getLogger(ElasticsearchBatchRequest.class);

@@ -49,6 +49,7 @@
     <version.snakeyaml>2.2</version.snakeyaml>
     <version.apache.http5>5.2.1</version.apache.http5>
     <version.thymeleaf>3.1.2.RELEASE</version.thymeleaf>
+    <version.failsafe>2.4.4</version.failsafe>
 
     <zeebe-test-container.version>3.6.0</zeebe-test-container.version>
     <elasticsearch-test-container.version>1.19.0</elasticsearch-test-container.version>
@@ -152,6 +153,12 @@
       </dependency>
 
       <!-- End Opensearch  -->
+        <dependency>
+            <groupId>net.jodah</groupId>
+            <artifactId>failsafe</artifactId>
+            <version>${version.failsafe}</version>
+        </dependency>
+
         <dependency>
           <groupId>org.yaml</groupId>
           <artifactId>snakeyaml</artifactId>

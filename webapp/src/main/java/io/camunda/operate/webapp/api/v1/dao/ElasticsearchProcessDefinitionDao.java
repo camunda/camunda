@@ -9,6 +9,7 @@ package io.camunda.operate.webapp.api.v1.dao;
 import static io.camunda.operate.schema.indices.ProcessIndex.BPMN_XML;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
+import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.schema.indices.ProcessIndex;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.webapp.api.v1.entities.ProcessDefinition;
@@ -28,8 +29,10 @@ import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
+@Conditional(ElasticsearchCondition.class)
 @Component("ElasticsearchProcessDefinitionDaoV1")
 public class ElasticsearchProcessDefinitionDao extends ElasticsearchDao<ProcessDefinition>
     implements ProcessDefinitionDao {

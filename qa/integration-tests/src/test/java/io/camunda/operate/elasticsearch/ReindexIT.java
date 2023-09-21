@@ -7,7 +7,7 @@
 package io.camunda.operate.elasticsearch;
 
 import io.camunda.operate.property.MigrationProperties;
-import io.camunda.operate.schema.SchemaManager;
+import io.camunda.operate.schema.elasticsearch.ElasticsearchSchemaManager;
 import io.camunda.operate.schema.migration.Plan;
 import io.camunda.operate.schema.migration.ReindexPlan;
 import io.camunda.operate.store.elasticsearch.RetryElasticsearchClient;
@@ -42,7 +42,7 @@ public class ReindexIT extends OperateIntegrationTest {
   @Autowired
   private RetryElasticsearchClient retryElasticsearchClient;
   @Autowired
-  private SchemaManager schemaManager;
+  private ElasticsearchSchemaManager schemaManager;
   @Autowired
   private MigrationProperties migrationProperties;
 

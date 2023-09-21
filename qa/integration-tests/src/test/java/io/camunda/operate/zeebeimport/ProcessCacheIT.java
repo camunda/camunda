@@ -11,7 +11,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import io.camunda.operate.entities.ProcessEntity;
 import io.camunda.operate.util.OperateZeebeIntegrationTest;
 import io.camunda.operate.util.ZeebeTestUtil;
 import io.camunda.operate.cache.ProcessCache;
@@ -42,8 +41,8 @@ public class ProcessCacheIT extends OperateZeebeIntegrationTest {
     Long processDefinitionKey1 = ZeebeTestUtil.deployProcess(zeebeClient, "demoProcess_v_1.bpmn");
     Long processDefinitionKey2 = ZeebeTestUtil.deployProcess(zeebeClient, "processWithGateway.bpmn");
 
-    elasticsearchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processDefinitionKey1);
-    elasticsearchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processDefinitionKey2);
+    searchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processDefinitionKey1);
+    searchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processDefinitionKey2);
 
     String demoProcessName = processCache.getProcessNameOrDefaultValue(processDefinitionKey1,null);
     assertThat(demoProcessName).isNotNull();
@@ -60,8 +59,8 @@ public class ProcessCacheIT extends OperateZeebeIntegrationTest {
     Long processDefinitionKey1 = ZeebeTestUtil.deployProcess(zeebeClient, "demoProcess_v_1.bpmn");
     Long processDefinitionKey2 = ZeebeTestUtil.deployProcess(zeebeClient, "processWithGateway.bpmn");
 
-    elasticsearchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processDefinitionKey1);
-    elasticsearchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processDefinitionKey2);
+    searchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processDefinitionKey1);
+    searchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processDefinitionKey2);
 
     String flowNodeName = processCache.getFlowNodeNameOrDefaultValue(processDefinitionKey1, "start", null);
     assertThat(flowNodeName).isEqualTo("start");

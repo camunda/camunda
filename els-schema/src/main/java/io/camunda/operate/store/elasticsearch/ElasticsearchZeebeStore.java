@@ -6,6 +6,8 @@
  */
 package io.camunda.operate.store.elasticsearch;
 
+import io.camunda.operate.conditions.ElasticsearchCondition;
+import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.store.ZeebeStore;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
@@ -18,13 +20,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.annotation.Profile;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
+@Conditional(ElasticsearchCondition.class)
 @Component
-@Profile("!opensearch")
 public class ElasticsearchZeebeStore implements ZeebeStore {
 
   private static final Logger logger = LoggerFactory.getLogger(ZeebeStore.class);

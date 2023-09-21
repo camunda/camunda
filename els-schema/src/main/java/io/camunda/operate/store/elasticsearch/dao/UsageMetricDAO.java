@@ -7,12 +7,15 @@
 package io.camunda.operate.store.elasticsearch.dao;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.entities.MetricEntity;
 import io.camunda.operate.schema.indices.MetricIndex;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
+@Conditional(ElasticsearchCondition.class)
 @Component
 public class UsageMetricDAO extends GenericDAO<MetricEntity, MetricIndex> {
   @Autowired

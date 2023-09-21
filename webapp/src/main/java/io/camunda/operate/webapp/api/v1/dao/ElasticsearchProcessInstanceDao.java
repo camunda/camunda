@@ -11,6 +11,7 @@ import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_INSTA
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
+import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.webapp.writer.ProcessInstanceWriter;
@@ -33,9 +34,11 @@ import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Component;
 
+@Conditional(ElasticsearchCondition.class)
 @Component("ElasticsearchProcessInstanceDaoV1")
 public class ElasticsearchProcessInstanceDao extends ElasticsearchDao<ProcessInstance>
     implements ProcessInstanceDao {

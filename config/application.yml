@@ -4,10 +4,19 @@ camunda.operate:
     clusterName: docker-cluster
     host: localhost
     port: 9200
+  opensearch:
+    clusterName: opensearch-cluster
+    host: localhost
+    port: 9200
   zeebe:
     gatewayAddress: localhost:26500
   zeebeElasticsearch:
     clusterName: docker-cluster
+    host: localhost
+    port: 9200
+    prefix: zeebe-record
+  zeebeOpensearch:
+    clusterName: opensearch-cluster
     host: localhost
     port: 9200
     prefix: zeebe-record

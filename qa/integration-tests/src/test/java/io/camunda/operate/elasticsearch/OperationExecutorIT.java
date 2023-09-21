@@ -23,7 +23,7 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.OperationTemplate;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.DateUtil;
-import io.camunda.operate.util.ElasticsearchTestRule;
+import io.camunda.operate.util.SearchTestRule;
 import io.camunda.operate.util.OperateIntegrationTest;
 import io.camunda.operate.util.TestUtil;
 import io.camunda.operate.webapp.reader.OperationReader;
@@ -45,7 +45,7 @@ public class OperationExecutorIT extends OperateIntegrationTest {
   private Random random = new Random();
 
   @Rule
-  public ElasticsearchTestRule elasticsearchTestRule = new ElasticsearchTestRule();
+  public SearchTestRule searchTestRule = new SearchTestRule();
 
   @Autowired
   private OperateProperties operateProperties;
@@ -116,7 +116,7 @@ public class OperationExecutorIT extends OperateIntegrationTest {
       instances.addAll(createProcessInstanceAndOperations());
     }
     //persist instances
-    elasticsearchTestRule.persistNew(instances.toArray(new OperateEntity[instances.size()]));
+    searchTestRule.persistNew(instances.toArray(new OperateEntity[instances.size()]));
   }
 
   private List<OperateEntity> createProcessInstanceAndOperations() {

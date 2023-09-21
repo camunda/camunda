@@ -21,6 +21,7 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 
+import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.entities.FlowNodeType;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
@@ -41,8 +42,10 @@ import org.elasticsearch.search.aggregations.bucket.filter.Filter;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
+@Conditional(ElasticsearchCondition.class)
 @Component("ElasticsearchFlowNodeStatisticsDaoV1")
 public class ElasticsearchFlowNodeStatisticsDao extends ElasticsearchDao<FlowNodeStatistics> implements FlowNodeStatisticsDao {
 

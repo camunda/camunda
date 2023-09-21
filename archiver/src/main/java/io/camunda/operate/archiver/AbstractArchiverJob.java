@@ -4,34 +4,22 @@
  * See the License.txt file for more information. You may not use this file
  * except in compliance with the proprietary license.
  */
-package io.camunda.operate.archiver.elasticsearch;
-
-import io.camunda.operate.archiver.ArchiveBatch;
-import jakarta.annotation.PreDestroy;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
+package io.camunda.operate.archiver;
 
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.BackoffIdleStrategy;
-import io.camunda.operate.util.ElasticsearchUtil;
-
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.search.SearchHits;
-import org.elasticsearch.search.aggregations.bucket.histogram.Histogram;
-import org.elasticsearch.search.aggregations.metrics.TopHits;
+import jakarta.annotation.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 
-public abstract class AbstractArchiverJob implements io.camunda.operate.archiver.ArchiverJob {
+import java.time.Instant;
+import java.util.Date;
+import java.util.concurrent.CompletableFuture;
+
+public abstract class AbstractArchiverJob implements ArchiverJob {
 
   private static final Logger logger = LoggerFactory.getLogger(AbstractArchiverJob.class);
 
@@ -46,9 +34,6 @@ public abstract class AbstractArchiverJob implements io.camunda.operate.archiver
   @Autowired
   @Qualifier("archiverThreadPoolExecutor")
   protected ThreadPoolTaskScheduler archiverExecutor;
-
-  @Autowired
-  private RestHighLevelClient esClient;
 
   @Autowired
   private OperateProperties operateProperties;
@@ -97,30 +82,8 @@ public abstract class AbstractArchiverJob implements io.camunda.operate.archiver
     return getNextBatch().thenCompose(this::archiveBatch);
   }
 
-  protected ArchiveBatch createArchiveBatch(SearchResponse searchResponse, String datesAggName, String instancesAggName) {
-    final List<? extends Histogram.Bucket> buckets =
-        ((Histogram) searchResponse.getAggregations().get(datesAggName))
-            .getBuckets();
-
-    if (buckets.size() > 0) {
-      final Histogram.Bucket bucket = buckets.get(0);
-      final String finishDate = bucket.getKeyAsString();
-      SearchHits hits = ((TopHits)bucket.getAggregations().get(instancesAggName)).getHits();
-      final ArrayList<Object> ids = Arrays.stream(hits.getHits())
-          .collect(ArrayList::new, (list, hit) -> list.add(hit.getId()), (list1, list2) -> list1.addAll(list2));
-      return new ArchiveBatch(finishDate, ids);
-    } else {
-      return null;
-    }
-  }
-
-  protected CompletableFuture<SearchResponse> sendSearchRequest(final SearchRequest searchRequest) {
-    return ElasticsearchUtil.searchAsync(searchRequest, archiverExecutor, esClient);
-  }
-
   @PreDestroy
   public void shutdown() {
     shutdown = true;
   }
-
 }

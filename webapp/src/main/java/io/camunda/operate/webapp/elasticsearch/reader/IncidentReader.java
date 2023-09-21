@@ -7,6 +7,7 @@
 package io.camunda.operate.webapp.elasticsearch.reader;
 
 import io.camunda.operate.cache.ProcessCache;
+import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.entities.ErrorType;
 import io.camunda.operate.entities.IncidentEntity;
 import io.camunda.operate.entities.OperationEntity;
@@ -22,7 +23,7 @@ import io.camunda.operate.webapp.rest.dto.incidents.IncidentResponseDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Profile;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -30,7 +31,7 @@ import java.util.stream.Collectors;
 
 import static io.camunda.operate.webapp.rest.dto.incidents.IncidentDto.FALLBACK_PROCESS_DEFINITION_NAME;
 
-@Profile("!opensearch")
+@Conditional(ElasticsearchCondition.class)
 @Component
 public class IncidentReader extends AbstractReader implements io.camunda.operate.webapp.reader.IncidentReader {
 

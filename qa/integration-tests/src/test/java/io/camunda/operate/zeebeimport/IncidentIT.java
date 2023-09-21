@@ -7,8 +7,6 @@
 package io.camunda.operate.zeebeimport;
 
 import static io.camunda.operate.entities.ErrorType.JOB_NO_RETRIES;
-import static io.camunda.operate.schema.templates.ListViewTemplate.*;
-import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -29,19 +27,10 @@ import io.camunda.operate.webapp.zeebe.operation.UpdateVariableHandler;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 
-import java.io.IOException;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.action.update.UpdateRequest;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.script.Script;
-import org.elasticsearch.script.ScriptType;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -164,7 +153,7 @@ public class IncidentIT extends OperateZeebeIntegrationTest {
     final String errorMsg = "some error";
     final String activityId = "alwaysFailingTask";
     ZeebeTestUtil.failTask(zeebeClient, activityId, getWorkerName(), 3, errorMsg);
-    elasticsearchTestRule.processAllRecordsAndWait(incidentsInAnyInstanceAreActiveCheck, 4L);
+    searchTestRule.processAllRecordsAndWait(incidentsInAnyInstanceAreActiveCheck, 4L);
     //elasticsearchTestRule.refreshIndexesInElasticsearch();
 
     //when

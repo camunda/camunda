@@ -7,13 +7,11 @@
 package io.camunda.operate.it;
 
 import java.util.List;
+
+import io.camunda.operate.util.*;
 import org.assertj.core.api.Assertions;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.rest.HealthCheckTest.AddManagementPropertiesInitializer;
-import io.camunda.operate.util.ElasticsearchTestRule;
-import io.camunda.operate.util.OperateIntegrationTest;
-import io.camunda.operate.util.OperateZeebeRule;
-import io.camunda.operate.util.TestApplication;
 import io.camunda.operate.zeebe.PartitionHolder;
 import io.camunda.operate.zeebeimport.ZeebeImporter;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -36,7 +34,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 public class ZeebeConnectorIT extends OperateIntegrationTest {
 
   @Rule
-  public ElasticsearchTestRule elasticsearchTestRule = new ElasticsearchTestRule();
+  public SearchTestRule searchTestRule = new SearchTestRule();
 
   @Autowired
   private ZeebeImporter zeebeImporter;
@@ -48,16 +46,11 @@ public class ZeebeConnectorIT extends OperateIntegrationTest {
   private OperateProperties operateProperties;
 
   @Autowired
-  @Qualifier("zeebeEsClient")
-  private RestHighLevelClient zeebeEsClient;
-
-  private OperateZeebeRule operateZeebeRule;
+  private OperateZeebeRuleProvider operateZeebeRuleProvider;
 
   @After
   public void cleanup() {
-    if (operateZeebeRule != null) {
-      operateZeebeRule.finished(null);
-    }
+    operateZeebeRuleProvider.finished(null);
   }
 
   @Test
@@ -91,14 +84,10 @@ public class ZeebeConnectorIT extends OperateIntegrationTest {
   }
 
   private void startZeebe() {
-    operateZeebeRule = new OperateZeebeRule();
-    operateZeebeRule.setOperateProperties(operateProperties);
-    operateZeebeRule.setZeebeEsClient(zeebeEsClient);
+    operateZeebeRuleProvider.starting(null);
+    operateProperties.getZeebeElasticsearch().setPrefix(operateZeebeRuleProvider.getPrefix());
 
-    operateZeebeRule.starting(null);
-    operateProperties.getZeebeElasticsearch().setPrefix(operateZeebeRule.getPrefix());
-
-    partitionHolder.setZeebeClient(operateZeebeRule.getClient());
+    partitionHolder.setZeebeClient(operateZeebeRuleProvider.getClient());
   }
 
   @Test
@@ -113,8 +102,8 @@ public class ZeebeConnectorIT extends OperateIntegrationTest {
 
     //when 2
     //Zeebe is restarted
-    operateZeebeRule.finished(null);
-    operateZeebeRule.starting(null);
+    operateZeebeRuleProvider.finished(null);
+    operateZeebeRuleProvider.starting(null);
 
     //then 2
     //data import is still working

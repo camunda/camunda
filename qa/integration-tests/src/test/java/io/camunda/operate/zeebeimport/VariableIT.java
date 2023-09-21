@@ -79,8 +79,8 @@ public class VariableIT extends OperateZeebeIntegrationTest {
 
     //TC 1 - when process instance is started
     final Long processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"var1\": \"initialValue\", \"otherVar\": 123}");
-    elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "task1");
-    elasticsearchTestRule.processAllRecordsAndWait(variableExistsCheck, processInstanceKey, "otherVar");
+    searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "task1");
+    searchTestRule.processAllRecordsAndWait(variableExistsCheck, processInstanceKey, "otherVar");
 
     //then
     List<VariableDto> variables = getVariables(processInstanceKey);
@@ -91,8 +91,8 @@ public class VariableIT extends OperateZeebeIntegrationTest {
 
     //TC2 - when subprocess and task with input mapping are activated
     completeTask(processInstanceKey, "task1", null);
-    elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "task2");
-    elasticsearchTestRule.processAllRecordsAndWait(variableExistsCheck, processInstanceKey, "taskVarIn");
+    searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "task2");
+    searchTestRule.processAllRecordsAndWait(variableExistsCheck, processInstanceKey, "taskVarIn");
 
 
     //then
@@ -106,8 +106,8 @@ public class VariableIT extends OperateZeebeIntegrationTest {
 
     //TC3 - when activity with output mapping is completed
     completeTask(processInstanceKey, "task2", "{\"taskVarOut\": \"someResult\", \"otherTaskVar\": 456}");
-    elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "task3");
-    elasticsearchTestRule.processAllRecordsAndWait(variableExistsCheck, processInstanceKey, "otherTaskVar");
+    searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "task3");
+    searchTestRule.processAllRecordsAndWait(variableExistsCheck, processInstanceKey, "otherTaskVar");
 
     //then
     variables = getVariables(processInstanceKey,"task2");
@@ -127,8 +127,8 @@ public class VariableIT extends OperateZeebeIntegrationTest {
     //TC4 - when variables are updated
     ZeebeTestUtil.updateVariables(zeebeClient, processInstanceKey, "{\"var1\": \"updatedValue\" , \"newVar\": 555 }");
     //elasticsearchTestRule.processAllEvents(2, ImportValueType.VARIABLE);
-    elasticsearchTestRule.processAllRecordsAndWait(variableEqualsCheck, processInstanceKey,processInstanceKey,"var1","\"updatedValue\"");
-    elasticsearchTestRule.processAllRecordsAndWait(variableEqualsCheck, processInstanceKey,processInstanceKey,"newVar","555");
+    searchTestRule.processAllRecordsAndWait(variableEqualsCheck, processInstanceKey,processInstanceKey,"var1","\"updatedValue\"");
+    searchTestRule.processAllRecordsAndWait(variableEqualsCheck, processInstanceKey,processInstanceKey,"newVar","555");
 
     variables = getVariables(processInstanceKey);
     assertThat(variables).hasSize(4);
@@ -139,7 +139,7 @@ public class VariableIT extends OperateZeebeIntegrationTest {
 
     //TC5 - when task is completed with new payload and process instance is finished
     completeTask(processInstanceKey, "task3", "{\"task3Completed\": true}");
-    elasticsearchTestRule.processAllRecordsAndWait(variableExistsCheck, processInstanceKey, "task3Completed");
+    searchTestRule.processAllRecordsAndWait(variableExistsCheck, processInstanceKey, "task3Completed");
 
     //then
     variables = getVariables(processInstanceKey);
@@ -403,10 +403,10 @@ public class VariableIT extends OperateZeebeIntegrationTest {
     final String varName = "var1";
     final String newVarValue = "\"aaa\"";
     postUpdateVariableOperation(processInstanceKey, varName, newVarValue);
-    elasticsearchTestRule.refreshOperateESIndices();
+    searchTestRule.refreshOperateSearchIndices();
     //execute the operation
     executeOneBatch();
-    elasticsearchTestRule.processAllRecordsAndWait(operationsByProcessInstanceAreCompleted, processInstanceKey);
+    searchTestRule.processAllRecordsAndWait(operationsByProcessInstanceAreCompleted, processInstanceKey);
 
     //when one variable is requested
     VariableDto variable = getOneVariable(processInstanceKey, String.format("%d-%s", processInstanceKey, varName));
@@ -448,7 +448,7 @@ public class VariableIT extends OperateZeebeIntegrationTest {
     final String newVarName = "newVar";
     postUpdateVariableOperation(processInstanceKey, varName, newVarValue + VAR_SUFFIX);
     postAddVariableOperation(processInstanceKey, newVarName, newVarValue + VAR_SUFFIX);
-    elasticsearchTestRule.refreshOperateESIndices();
+    searchTestRule.refreshOperateSearchIndices();
 
     //then variable with new value is returned
     List<VariableDto> variables = getVariables(processInstanceKey);

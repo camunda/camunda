@@ -7,7 +7,7 @@
 package io.camunda.operate.store.elasticsearch;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-
+import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.entities.SequenceFlowEntity;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.schema.templates.SequenceFlowTemplate;
@@ -23,7 +23,7 @@ import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Profile;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -32,7 +32,7 @@ import java.util.List;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
-@Profile("!opensearch")
+@Conditional(ElasticsearchCondition.class)
 @Component
 public class ElasticsearchSequenceFlowStore implements SequenceFlowStore {
   private static final Logger logger = LoggerFactory.getLogger(ElasticsearchSequenceFlowStore.class);

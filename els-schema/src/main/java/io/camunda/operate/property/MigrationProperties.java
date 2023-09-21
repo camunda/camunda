@@ -7,8 +7,6 @@
 package io.camunda.operate.property;
 
 import io.camunda.operate.exceptions.OperateRuntimeException;
-import org.elasticsearch.core.TimeValue;
-import org.elasticsearch.index.reindex.AbstractBulkByScrollRequest;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Component;
@@ -21,7 +19,7 @@ public class MigrationProperties {
   private static final int DEFAULT_REINDEX_BATCH_SIZE = 5_000;
   private static final int DEFAULT_SCRIPT_PARAMS_COUNT = 1_000;
   private static final int DEFAULT_THREADS_COUNT = 5;
-  private static final TimeValue DEFAULT_SCROLL_KEEP_ALIVE = TimeValue.timeValueMinutes(20);
+  private static final int DEFAULT_SCROLL_KEEP_ALIVE = 20 * 60 * 1000; // 20 minutes TimeValue.timeValueMinutes(20);
 
   private boolean migrationEnabled = true;
   private boolean deleteSrcSchema = true;
@@ -39,9 +37,9 @@ public class MigrationProperties {
 
   private int scriptParamsCount = DEFAULT_SCRIPT_PARAMS_COUNT;
   // AUTO=0 means 1 slice per shard
-  private int slices = AbstractBulkByScrollRequest.AUTO_SLICES;
+  private int slices = 0;
 
-  private TimeValue scrollKeepAlive = DEFAULT_SCROLL_KEEP_ALIVE;
+  private int scrollKeepAlive = DEFAULT_SCROLL_KEEP_ALIVE;
 
   public boolean isMigrationEnabled() {
     return migrationEnabled;
@@ -120,11 +118,11 @@ public class MigrationProperties {
     this.threadsCount = threadsCount;
   }
 
-  public TimeValue getScrollKeepAlive() {
+  public int getScrollKeepAlive() {
     return scrollKeepAlive;
   }
 
-  public MigrationProperties setScrollKeepAlive(TimeValue scrollKeepAlive) {
+  public MigrationProperties setScrollKeepAlive(int scrollKeepAlive) {
     this.scrollKeepAlive = scrollKeepAlive;
     return this;
   }

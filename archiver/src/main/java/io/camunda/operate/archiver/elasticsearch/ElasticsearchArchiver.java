@@ -15,6 +15,8 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 import io.camunda.operate.archiver.Archiver;
+import io.camunda.operate.conditions.ElasticsearchCondition;
+import io.camunda.operate.conditions.OpensearchCondition;
 import jakarta.annotation.PostConstruct;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -36,14 +38,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.DependsOn;
-import org.springframework.context.annotation.Profile;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Component;
 
-@Profile("!opensearch")
 @Component
 @DependsOn("schemaStartup")
+@Conditional(ElasticsearchCondition.class)
 public class ElasticsearchArchiver implements Archiver {
 
   public static final int INTERNAL_SCROLL_KEEP_ALIVE_MS = 30000;    //this scroll timeout value is used for reindex and delete queries

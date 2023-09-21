@@ -97,7 +97,7 @@ public class ElasticsearchProcessInstanceDaoIT extends OperateZeebeIntegrationTe
     then(() -> {
       assertThat(changeStatus.getDeleted()).isEqualTo(1);
       assertThat(changeStatus.getMessage()).contains(""+key);
-      elasticsearchTestRule.refreshIndexesInElasticsearch();
+      searchTestRule.refreshSerchIndexes();
       processInstanceResults = dao.search(new Query<>());
       assertThat(processInstanceResults.getItems().stream()
           .noneMatch(pi -> pi.getKey().equals(key))).isTrue();

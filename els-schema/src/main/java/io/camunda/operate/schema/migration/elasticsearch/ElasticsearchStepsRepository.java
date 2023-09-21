@@ -17,6 +17,8 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+
+import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.store.elasticsearch.RetryElasticsearchClient;
 import io.camunda.operate.exceptions.MigrationException;
 import io.camunda.operate.property.OperateProperties;
@@ -32,6 +34,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.stereotype.Component;
@@ -40,6 +43,8 @@ import org.springframework.stereotype.Component;
  * After creation it updates the repository index by looking in classpath folder for new steps.<br>
  *
  */
+
+@Conditional(ElasticsearchCondition.class)
 @Component
 public class ElasticsearchStepsRepository implements StepsRepository {
 

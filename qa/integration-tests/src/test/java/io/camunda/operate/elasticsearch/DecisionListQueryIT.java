@@ -27,7 +27,7 @@ import io.camunda.operate.entities.dmn.DecisionInstanceEntity;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
 import io.camunda.operate.schema.templates.ListViewTemplate;
-import io.camunda.operate.util.ElasticsearchTestRule;
+import io.camunda.operate.util.SearchTestRule;
 import io.camunda.operate.util.OperateIntegrationTest;
 import io.camunda.operate.webapp.rest.dto.SortingDto;
 import io.camunda.operate.webapp.rest.dto.dmn.DecisionInstanceStateDto;
@@ -61,7 +61,7 @@ public class DecisionListQueryIT extends OperateIntegrationTest {
   private static final String QUERY_INSTANCES_URL = DECISION_INSTANCE_URL;
 
   @Rule
-  public ElasticsearchTestRule elasticsearchTestRule = new ElasticsearchTestRule();
+  public SearchTestRule searchTestRule = new SearchTestRule();
 
   @Autowired
   private DecisionDataUtil testDataUtil;
@@ -231,7 +231,7 @@ public class DecisionListQueryIT extends OperateIntegrationTest {
     final DecisionInstanceEntity decisionInstance1 = testDataUtil.createDecisionInstance(date1);
     final DecisionInstanceEntity decisionInstance2 = testDataUtil.createDecisionInstance(date2);
     final DecisionInstanceEntity decisionInstance3 = testDataUtil.createDecisionInstance(date3);
-    elasticsearchTestRule.persistNew(decisionInstance1, decisionInstance2, decisionInstance3);
+    searchTestRule.persistNew(decisionInstance1, decisionInstance2, decisionInstance3);
 
     //when
     DecisionInstanceListRequestDto query = createGetAllDecisionInstancesRequest(q -> {
@@ -588,7 +588,7 @@ public class DecisionListQueryIT extends OperateIntegrationTest {
   }
 
   protected void createData() throws PersistenceException {
-    elasticsearchTestRule.persistOperateEntitiesNew(testDataUtil.createDecisionInstances());
+    searchTestRule.persistOperateEntitiesNew(testDataUtil.createDecisionInstances());
   }
 
   private String query() {

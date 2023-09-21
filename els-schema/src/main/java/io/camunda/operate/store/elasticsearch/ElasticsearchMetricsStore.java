@@ -6,6 +6,7 @@
  */
 package io.camunda.operate.store.elasticsearch;
 
+import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.entities.MetricEntity;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.exceptions.PersistenceException;
@@ -18,7 +19,7 @@ import io.camunda.operate.store.elasticsearch.dao.response.AggregationResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Profile;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 import java.time.OffsetDateTime;
@@ -28,11 +29,11 @@ import static io.camunda.operate.schema.indices.MetricIndex.VALUE;
 import static io.camunda.operate.store.elasticsearch.dao.Query.range;
 import static io.camunda.operate.store.elasticsearch.dao.Query.whereEquals;
 
-@Profile("!opensearch")
+@Conditional(ElasticsearchCondition.class)
 @Component
 public class ElasticsearchMetricsStore implements MetricsStore {
 
-  private static final Logger logger = LoggerFactory.getLogger(ElasticsearchOperationStore.class);
+  private static final Logger logger = LoggerFactory.getLogger(ElasticsearchMetricsStore.class);
   @Autowired
   private MetricIndex metricIndex;
 

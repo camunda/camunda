@@ -1,0 +1,8 @@
+{
+  "description": "Delete field pending",
+  "@type": "processorStep",
+  "indexName": "incident",
+  "version": "8.3.0",
+  "order": 2,
+  "content": "{ \"remove\": { \"field\": \"pending\" , \"ignore_missing\": true} }"
+}

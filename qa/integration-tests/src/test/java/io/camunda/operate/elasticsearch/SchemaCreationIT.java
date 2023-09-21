@@ -17,7 +17,7 @@ import io.camunda.operate.schema.indices.OperateWebSessionIndex;
 import io.camunda.operate.schema.migration.ProcessorStep;
 import io.camunda.operate.schema.templates.EventTemplate;
 import io.camunda.operate.schema.templates.IncidentTemplate;
-import io.camunda.operate.util.ElasticsearchTestRule;
+import io.camunda.operate.util.SearchTestRule;
 import io.camunda.operate.util.OperateIntegrationTest;
 import java.io.IOException;
 import java.util.List;
@@ -36,7 +36,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 public class SchemaCreationIT extends OperateIntegrationTest {
 
   @Rule
-  public ElasticsearchTestRule elasticsearchTestRule = new ElasticsearchTestRule();
+  public SearchTestRule searchTestRule = new SearchTestRule();
   @Autowired
   private RestHighLevelClient esClient;
   @Autowired

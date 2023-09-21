@@ -11,7 +11,7 @@ import java.util.HashMap;
 import java.util.Map;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.indices.UserIndex;
-import io.camunda.operate.util.ElasticsearchTestRule;
+import io.camunda.operate.util.SearchTestRule;
 import io.camunda.operate.util.OperateIntegrationTest;
 import io.camunda.operate.util.TestApplication;
 import io.camunda.operate.webapp.security.auth.OperateUserDetailsService;
@@ -63,11 +63,11 @@ public class ElasticSearchUserDetailsServiceIT extends OperateIntegrationTest {
   private PasswordEncoder passwordEncoder;
 
   @Rule
-  public ElasticsearchTestRule elasticsearchTestRule = new ElasticsearchTestRule();
+  public SearchTestRule searchTestRule = new SearchTestRule();
 
   @Before
   public void setUp() {
-    elasticsearchTestRule.refreshOperateESIndices();
+    searchTestRule.refreshOperateSearchIndices();
   }
 
   @After
@@ -79,7 +79,7 @@ public class ElasticSearchUserDetailsServiceIT extends OperateIntegrationTest {
   public void testCustomUserIsAdded() {
     //when
     userDetailsService.initializeUsers();
-    elasticsearchTestRule.refreshOperateESIndices();
+    searchTestRule.refreshOperateSearchIndices();
 
     //and
     updateUserRealName();
@@ -99,7 +99,7 @@ public class ElasticSearchUserDetailsServiceIT extends OperateIntegrationTest {
               TEST_USER_ID)
           .doc(jsonMap);
       esClient.update(request, RequestOptions.DEFAULT);
-      elasticsearchTestRule.refreshOperateESIndices();
+      searchTestRule.refreshOperateSearchIndices();
     } catch (IOException e) {
       throw new RuntimeException(e);
     }

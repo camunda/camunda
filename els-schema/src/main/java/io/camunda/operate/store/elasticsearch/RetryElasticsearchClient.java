@@ -18,6 +18,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.util.RetryOperation;
 import org.elasticsearch.ElasticsearchException;
@@ -67,10 +68,10 @@ import org.elasticsearch.search.SearchHit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Profile;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@Profile("!opensearch")
+@Conditional(ElasticsearchCondition.class)
 @Component
 public class RetryElasticsearchClient {
 
@@ -85,7 +86,7 @@ public class RetryElasticsearchClient {
   @Autowired
   private RestHighLevelClient esClient;
   @Autowired
-  private ElasticsearchTask elasticsearchTask;
+  private ElasticsearchTaskStore elasticsearchTaskStore;
   private RequestOptions requestOptions = RequestOptions.DEFAULT;
   private int numberOfRetries = DEFAULT_NUMBER_OF_RETRIES;
   private int delayIntervalInSeconds = DEFAULT_DELAY_INTERVAL_IN_SECONDS;
@@ -335,7 +336,7 @@ public class RetryElasticsearchClient {
               return true;
             }
           }
-          final List<String> taskIds = elasticsearchTask.getRunningReindexTasksIdsFor(srcIndices,dstIndex);
+          final List<String> taskIds = elasticsearchTaskStore.getRunningReindexTasksIdsFor(srcIndices,dstIndex);
           String taskId;
           if(taskIds.isEmpty()) {
              taskId = esClient.submitReindexTask(reindexRequest, requestOptions).getTask();
@@ -368,17 +369,17 @@ public class RetryElasticsearchClient {
     final Long smallTaskId = Long.parseLong(taskIdParts[1]);
     Optional<GetTaskResponse> taskResponse = executeWithGivenRetries(Integer.MAX_VALUE ,"GetTaskInfo{" + nodeId + "},{" + smallTaskId + "}",
         () -> {
-          elasticsearchTask.checkForErrorsOrFailures(nodeId, smallTaskId.intValue());
+          elasticsearchTaskStore.checkForErrorsOrFailures(nodeId, smallTaskId.intValue());
           final Optional<GetTaskResponse> getTaskResponse = esClient.tasks()
             .get(new GetTaskRequest(nodeId, smallTaskId), requestOptions);
           getTaskResponse.ifPresent(theTaskResponse -> logger.info(
             "TaskId: {}, Progress: {}%",
-            taskId, String.format("%.2f", elasticsearchTask.getProgress(theTaskResponse) * 100.0D)
+            taskId, String.format("%.2f", elasticsearchTaskStore.getProgress(theTaskResponse) * 100.0D)
           ));
           return getTaskResponse;
-        }, elasticsearchTask::needsToPollAgain);
+        }, elasticsearchTaskStore::needsToPollAgain);
     if (taskResponse.isPresent()) {
-      final long total = elasticsearchTask.getTotal(taskResponse.get());
+      final long total = elasticsearchTaskStore.getTotal(taskResponse.get());
       if (srcCount != null) {
         logger.info("Source docs: {}, Migrated docs: {}", srcCount, total);
         return total == srcCount;

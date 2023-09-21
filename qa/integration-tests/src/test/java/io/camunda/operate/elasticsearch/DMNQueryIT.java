@@ -13,7 +13,7 @@ import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.entities.dmn.DecisionInstanceEntity;
 import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
-import io.camunda.operate.util.ElasticsearchTestRule;
+import io.camunda.operate.util.SearchTestRule;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.util.OperateIntegrationTest;
 import java.util.List;
@@ -29,7 +29,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 public class DMNQueryIT extends OperateIntegrationTest {
 
   @Rule
-  public ElasticsearchTestRule elasticsearchTestRule = new ElasticsearchTestRule();
+  public SearchTestRule searchTestRule = new SearchTestRule();
 
   @Autowired
   private DecisionInstanceTemplate decisionInstanceTemplate;
@@ -57,7 +57,7 @@ public class DMNQueryIT extends OperateIntegrationTest {
   }
 
   protected void createData() {
-    elasticsearchTestRule.persistNew(createDecisionInstanceEntity(), createDecisionInstanceEntity());
+    searchTestRule.persistNew(createDecisionInstanceEntity(), createDecisionInstanceEntity());
   }
 
 }

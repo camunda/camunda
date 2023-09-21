@@ -6,15 +6,14 @@
  */
 package io.camunda.operate.webapp.elasticsearch.reader;
 
-import java.io.IOException;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-
+import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.entities.FlowNodeState;
 import io.camunda.operate.entities.FlowNodeType;
-import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.exceptions.OperateRuntimeException;
+import io.camunda.operate.schema.templates.ListViewTemplate;
+import io.camunda.operate.util.CollectionUtil;
+import io.camunda.operate.util.ElasticsearchUtil;
+import io.camunda.operate.webapp.elasticsearch.QueryHelper;
 import io.camunda.operate.webapp.reader.FlowNodeStatisticsReader;
 import io.camunda.operate.webapp.reader.ListViewReader;
 import io.camunda.operate.webapp.rest.dto.FlowNodeStatisticsDto;
@@ -35,17 +34,22 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Profile;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ALL;
-import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
-import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ONLY_RUNTIME;
+import java.io.IOException;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+
 import static io.camunda.operate.schema.templates.ListViewTemplate.ACTIVITIES_JOIN_RELATION;
 import static io.camunda.operate.schema.templates.ListViewTemplate.ACTIVITY_ID;
 import static io.camunda.operate.schema.templates.ListViewTemplate.ACTIVITY_STATE;
 import static io.camunda.operate.schema.templates.ListViewTemplate.ACTIVITY_TYPE;
 import static io.camunda.operate.schema.templates.ListViewTemplate.INCIDENT;
+import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ALL;
+import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ONLY_RUNTIME;
+import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -54,7 +58,7 @@ import static org.elasticsearch.join.aggregations.JoinAggregationBuilders.parent
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 
-@Profile("!opensearch")
+@Conditional(ElasticsearchCondition.class)
 @Component
 public class ElasticsearchFlowNodeStatisticsReader implements FlowNodeStatisticsReader {
 
@@ -68,6 +72,9 @@ public class ElasticsearchFlowNodeStatisticsReader implements FlowNodeStatistics
 
   @Autowired
   private ListViewTemplate listViewTemplate;
+
+  @Autowired
+  private QueryHelper queryHelper;
 
   @FunctionalInterface
   private interface MapUpdater {
@@ -112,7 +119,7 @@ public class ElasticsearchFlowNodeStatisticsReader implements FlowNodeStatistics
 
   @Override
   public SearchRequest createQuery(ListViewQueryDto query, ElasticsearchUtil.QueryType queryType) {
-    final QueryBuilder q = constantScoreQuery(listViewReader.createQueryFragment(query, queryType));
+    final QueryBuilder q = constantScoreQuery(queryHelper.createQueryFragment(query, queryType));
 
     ChildrenAggregationBuilder agg =
         children(AGG_ACTIVITIES, ACTIVITIES_JOIN_RELATION);

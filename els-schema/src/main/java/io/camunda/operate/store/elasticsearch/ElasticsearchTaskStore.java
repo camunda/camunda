@@ -6,7 +6,9 @@
  */
 package io.camunda.operate.store.elasticsearch;
 
+import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
+import io.camunda.operate.store.TaskStore;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -19,6 +21,7 @@ import org.elasticsearch.tasks.RawTaskStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -30,11 +33,12 @@ import java.util.Optional;
 
 import static org.elasticsearch.index.query.QueryBuilders.*;
 
+@Conditional(ElasticsearchCondition.class)
 @Component
-public class ElasticsearchTask {
+public class ElasticsearchTaskStore implements TaskStore {
 
   public static final String ID = "id";
-  private static final Logger logger = LoggerFactory.getLogger(ElasticsearchTask.class);
+  private static final Logger logger = LoggerFactory.getLogger(ElasticsearchTaskStore.class);
 
   public static final String ERROR = "error";
   public static final String REASON = "reason";

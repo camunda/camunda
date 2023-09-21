@@ -1,0 +1,8 @@
+{
+  "description": "Set bpmnProcessId to incidents",
+  "@type": "setBpmnProcessIdStep",
+  "indexName": "incident",
+  "version": "8.2.0",
+  "order": 1,
+  "content": "if (params.bpmnProcessIds[String.valueOf(ctx._source.processInstanceKey)] != null ) { ctx._source.bpmnProcessId = params.bpmnProcessIds[String.valueOf(ctx._source.processInstanceKey)].left; }"
+}

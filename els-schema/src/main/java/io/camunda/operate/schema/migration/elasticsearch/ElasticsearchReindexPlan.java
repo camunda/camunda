@@ -13,6 +13,7 @@ import java.util.Optional;
 import static io.camunda.operate.util.CollectionUtil.*;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
+import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.store.elasticsearch.RetryElasticsearchClient;
 import io.camunda.operate.exceptions.MigrationException;
 import io.camunda.operate.property.MigrationProperties;
@@ -25,7 +26,7 @@ import org.elasticsearch.script.ScriptType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Profile;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
@@ -36,8 +37,8 @@ import org.springframework.stereotype.Component;
  * The steps will be applied in the order they were added.<br>
  */
 
-@Profile("!opensearch")
 @Component
+@Conditional(ElasticsearchCondition.class)
 @Scope(SCOPE_PROTOTYPE)
 public class ElasticsearchReindexPlan implements ReindexPlan {
 

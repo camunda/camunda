@@ -8,6 +8,7 @@ package io.camunda.operate.webapp.elasticsearch.backup;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateElasticsearchConnectionException;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
@@ -44,6 +45,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -61,7 +63,7 @@ import java.util.stream.Collectors;
 import static java.util.stream.Collectors.*;
 import static org.elasticsearch.snapshots.SnapshotState.*;
 
-@Profile("!opensearch")
+@Conditional(ElasticsearchCondition.class)
 @Component
 @Configuration
 public class BackupManager implements BackupService {

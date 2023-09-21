@@ -198,15 +198,15 @@ public class IncidentPostImportIT extends OperateZeebeIntegrationTest {
 
   protected void processImportTypeAndWait(ImportValueType importValueType,
       Predicate<Object[]> waitTill, Object... arguments) {
-    elasticsearchTestRule.processRecordsWithTypeAndWait(importValueType, waitTill, arguments);
+    searchTestRule.processRecordsWithTypeAndWait(importValueType, waitTill, arguments);
   }
 
   private void processAllRecordsWithoutPostImporterAndWait(Predicate<Object[]> waitTill, Object... arguments) {
-    elasticsearchTestRule.processAllRecordsAndWait(false, waitTill, null, arguments);
+    searchTestRule.processAllRecordsAndWait(false, waitTill, null, arguments);
   }
 
   private void processRecordTypeWithoutPostImporterAndWait(ImportValueType valueType, Predicate<Object[]> waitTill, Object... arguments) {
-    elasticsearchTestRule.processRecordsWithTypeAndWait(valueType, false, waitTill, arguments);
+    searchTestRule.processRecordsWithTypeAndWait(valueType, false, waitTill, arguments);
   }
 
   protected ListViewProcessInstanceDto getSingleProcessInstanceForListView() {

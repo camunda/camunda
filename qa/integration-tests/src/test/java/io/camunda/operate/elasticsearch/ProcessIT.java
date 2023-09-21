@@ -8,7 +8,7 @@ package io.camunda.operate.elasticsearch;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.camunda.operate.entities.ProcessEntity;
-import io.camunda.operate.util.ElasticsearchTestRule;
+import io.camunda.operate.util.SearchTestRule;
 import io.camunda.operate.util.OperateIntegrationTest;
 import io.camunda.operate.webapp.rest.ProcessRestService;
 import io.camunda.operate.webapp.rest.dto.ProcessGroupDto;
@@ -38,7 +38,7 @@ public class ProcessIT extends OperateIntegrationTest {
   private PermissionsService permissionsService;
 
   @Rule
-  public ElasticsearchTestRule elasticsearchTestRule = new ElasticsearchTestRule();
+  public SearchTestRule searchTestRule = new SearchTestRule();
 
   @Test
   public void testProcessesGroupedWithPermissionWhenNotAllowed() throws Exception {
@@ -53,7 +53,7 @@ public class ProcessIT extends OperateIntegrationTest {
     final ProcessEntity process1 = new ProcessEntity().setId(id1).setBpmnProcessId(bpmnProcessId1);
     final ProcessEntity process2 = new ProcessEntity().setId(id2).setBpmnProcessId(bpmnProcessId2);
     final ProcessEntity process3 = new ProcessEntity().setId(id3).setBpmnProcessId(bpmnProcessId3);
-    elasticsearchTestRule.persistNew(process1, process2, process3);
+    searchTestRule.persistNew(process1, process2, process3);
 
     // when
     when(permissionsService.getProcessesWithPermission(IdentityPermission.READ)).thenReturn(
@@ -80,7 +80,7 @@ public class ProcessIT extends OperateIntegrationTest {
     final ProcessEntity process1 = new ProcessEntity().setId(id1).setBpmnProcessId(bpmnProcessId1);
     final ProcessEntity process2 = new ProcessEntity().setId(id2).setBpmnProcessId(bpmnProcessId2);
     final ProcessEntity process3 = new ProcessEntity().setId(id3).setBpmnProcessId(bpmnProcessId3);
-    elasticsearchTestRule.persistNew(process1, process2, process3);
+    searchTestRule.persistNew(process1, process2, process3);
 
     // when
     when(permissionsService.getProcessesWithPermission(IdentityPermission.READ)).thenReturn(PermissionsService.ResourcesAllowed.all());
@@ -108,7 +108,7 @@ public class ProcessIT extends OperateIntegrationTest {
     final ProcessEntity process1 = new ProcessEntity().setId(id1).setBpmnProcessId(bpmnProcessId1);
     final ProcessEntity process2 = new ProcessEntity().setId(id2).setBpmnProcessId(bpmnProcessId2);
     final ProcessEntity process3 = new ProcessEntity().setId(id3).setBpmnProcessId(bpmnProcessId3);
-    elasticsearchTestRule.persistNew(process1, process2, process3);
+    searchTestRule.persistNew(process1, process2, process3);
 
     // when
     when(permissionsService.getProcessesWithPermission(IdentityPermission.READ)).thenReturn(
@@ -145,7 +145,7 @@ public class ProcessIT extends OperateIntegrationTest {
     final ProcessEntity process1_2_2 = new ProcessEntity().setId(id122).setVersion(2).setBpmnProcessId(bpmnProcessId1).setTenantId(tenantId2);
     final ProcessEntity process2 = new ProcessEntity().setId(id2).setVersion(1).setBpmnProcessId(bpmnProcessId2).setTenantId(tenantId1);
     final ProcessEntity process3 = new ProcessEntity().setId(id3).setVersion(1).setBpmnProcessId(bpmnProcessId3).setTenantId(tenantId2);
-    elasticsearchTestRule.persistNew(process1_1_1, process1_2_1, process1_1_2, process1_2_2, process2, process3);
+    searchTestRule.persistNew(process1_1_1, process1_2_1, process1_1_2, process1_2_2, process2, process3);
     when(permissionsService.getProcessesWithPermission(IdentityPermission.READ)).thenReturn(PermissionsService.ResourcesAllowed.all());
 
     // when

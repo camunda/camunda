@@ -9,18 +9,20 @@ package io.camunda.operate.tenant;
 import java.io.IOException;
 import java.util.concurrent.Callable;
 
+import io.camunda.operate.conditions.ElasticsearchCondition;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import io.camunda.operate.exceptions.OperateRuntimeException;
 
-@Profile("!opensearch")
+@Conditional(ElasticsearchCondition.class)
 @Component
 public class TenantAwareElasticsearchClient implements TenantAwareClient<SearchRequest, SearchResponse> {
 

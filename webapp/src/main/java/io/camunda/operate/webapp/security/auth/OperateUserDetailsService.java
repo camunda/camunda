@@ -7,13 +7,11 @@
 package io.camunda.operate.webapp.security.auth;
 
 
-import static io.camunda.operate.util.CollectionUtil.map;
-
 import io.camunda.operate.OperateProfileService;
-import io.camunda.operate.store.UserStore;
-import java.util.List;
+import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.entities.UserEntity;
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.store.UserStore;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,6 +24,10 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.util.List;
+
+import static io.camunda.operate.util.CollectionUtil.map;
+
 @Configuration
 @Profile("!" + OperateProfileService.LDAP_AUTH_PROFILE
     + " & !" + OperateProfileService.SSO_AUTH_PROFILE
@@ -33,8 +35,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 )
 public class OperateUserDetailsService implements UserDetailsService {
 
-  private static final Logger logger = LoggerFactory.getLogger(
-      OperateUserDetailsService.class);
+  private static final Logger logger = LoggerFactory.getLogger(OperateUserDetailsService.class);
 
   private static final String ACT_USERNAME = "act", ACT_PASSWORD = ACT_USERNAME;
   private static final String READ_ONLY_USER = "view";
@@ -51,7 +52,7 @@ public class OperateUserDetailsService implements UserDetailsService {
   }
 
   public void initializeUsers() {
-    if (operateProperties.getElasticsearch().isCreateSchema()) {
+    if (needsToCreateUser()) {
       String userId = operateProperties.getUserId();
       if (!userExists(userId)) {
         addUserWith(userId, operateProperties.getDisplayName(), operateProperties.getPassword(),
@@ -66,9 +67,17 @@ public class OperateUserDetailsService implements UserDetailsService {
     }
   }
 
+  private boolean needsToCreateUser(){
+    if(DatabaseInfo.isOpensearch()){
+      return operateProperties.getOpensearch().isCreateSchema();
+    } else {
+      return operateProperties.getElasticsearch().isCreateSchema();
+    }
+  }
+
   private OperateUserDetailsService addUserWith(final String userId, final String displayName,
                                                 final String password, final List<String> roles) {
-    logger.info("Create user in ElasticSearch for userId {}", userId);
+    logger.info("Create user in {} for userId {}", DatabaseInfo.getCurrent().getCode(), userId);
     final String passwordEncoded = getPasswordEncoder().encode(password);
     final UserEntity userEntity = new UserEntity()
         .setId(userId)

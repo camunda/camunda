@@ -65,7 +65,7 @@ public class ProcessInstanceWriterIT extends OperateZeebeIntegrationTest {
     // when
     processInstanceWriter.deleteInstanceById(finishedProcessInstanceKey);
     // and indices are updated
-    elasticsearchTestRule.refreshIndexesInElasticsearch();
+    searchTestRule.refreshSerchIndexes();
     // then
     assertThatProcessInstanceIsDeleted(finishedProcessInstanceKey);
     // and
@@ -86,7 +86,7 @@ public class ProcessInstanceWriterIT extends OperateZeebeIntegrationTest {
     // when
     processInstanceWriter.deleteInstanceById(canceledProcessInstanceKey);
     // and indices are updated
-    elasticsearchTestRule.refreshIndexesInElasticsearch();
+    searchTestRule.refreshSerchIndexes();
     // then
     assertThatProcessInstanceIsDeleted(canceledProcessInstanceKey);
     // and

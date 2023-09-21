@@ -6,13 +6,16 @@
  */
 package io.camunda.operate.qa.util;
 
+import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.schema.elasticsearch.ElasticsearchSchemaManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 @Component("schemaManager")
+@Conditional(ElasticsearchCondition.class)
 @Profile("test")
 public class TestElasticsearchSchemaManager extends ElasticsearchSchemaManager{
 

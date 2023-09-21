@@ -89,7 +89,7 @@ public class IncidentWithFailingOperationIT extends OperateZeebeIntegrationTest 
     final String errorMsg = "some error";
     final String activityId = "alwaysFailingTask";
     ZeebeTestUtil.failTask(zeebeClient, activityId, getWorkerName(), 3, errorMsg);
-    elasticsearchTestRule.processAllRecordsAndWait(incidentsAreActiveCheck, processInstanceKey, 4);
+    searchTestRule.processAllRecordsAndWait(incidentsAreActiveCheck, processInstanceKey, 4);
 
     postOperationWithOKResponse(processInstanceKey, new CreateOperationRequestDto(OperationType.RESOLVE_INCIDENT));
     executeOneBatch();
@@ -98,7 +98,7 @@ public class IncidentWithFailingOperationIT extends OperateZeebeIntegrationTest 
     //we need to wait at least 3 X 2sec time to cover 3 backoff of importer
     Thread.sleep(8000L);
 
-    elasticsearchTestRule.processAllRecordsAndWait(incidentsAreActiveCheck, processInstanceKey, 3);
+    searchTestRule.processAllRecordsAndWait(incidentsAreActiveCheck, processInstanceKey, 3);
 
     //when
     MvcResult mvcResult = getRequest(getIncidentsURL(processInstanceKey));

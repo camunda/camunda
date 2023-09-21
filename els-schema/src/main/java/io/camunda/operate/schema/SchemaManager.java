@@ -47,5 +47,4 @@ public interface SchemaManager {
 
   Map<String, String> getIndexSettingsFor(String s, String... fields);
 
-  void createIndex(String indexName, Map<String, ?> mapping);
 }

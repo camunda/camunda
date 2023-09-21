@@ -40,6 +40,7 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.topHits;
 
 import io.camunda.operate.cache.ProcessCache;
+import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.entities.*;
 import io.camunda.operate.entities.dmn.DecisionInstanceState;
 import io.camunda.operate.exceptions.OperateRuntimeException;
@@ -93,10 +94,10 @@ import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Profile;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@Profile("!opensearch")
+@Conditional(ElasticsearchCondition.class)
 @Component
 public class FlowNodeInstanceReader extends AbstractReader implements io.camunda.operate.webapp.reader.FlowNodeInstanceReader {
 
@@ -1026,6 +1027,19 @@ public class FlowNodeInstanceReader extends AbstractReader implements io.camunda
       final String message = String.format(
           "Exception occurred, while obtaining statistics for process instance flow nodes: %s", e.getMessage());
       throw new OperateRuntimeException(message, e);
+    }
+  }
+
+  public List<FlowNodeInstanceEntity> getAllFlowNodeInstances(Long processInstanceKey) {
+    final TermQueryBuilder processInstanceKeyQuery = termQuery(FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY, processInstanceKey);
+    final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(flowNodeInstanceTemplate)
+        .source(new SearchSourceBuilder()
+            .query(constantScoreQuery(processInstanceKeyQuery))
+            .sort(FlowNodeInstanceTemplate.POSITION, SortOrder.ASC));
+    try {
+      return ElasticsearchUtil.scroll(searchRequest, FlowNodeInstanceEntity.class, objectMapper, esClient);
+    } catch (IOException e) {
+      throw new OperateRuntimeException(e);
     }
   }
 }

@@ -10,6 +10,9 @@ import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import io.camunda.operate.cache.ProcessCache;
+import io.camunda.operate.conditions.ElasticsearchCondition;
+import io.camunda.operate.entities.ProcessEntity;
+import io.camunda.operate.entities.ProcessFlowNodeEntity;
 import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.webapp.api.v1.entities.FlowNodeInstance;
@@ -29,8 +32,10 @@ import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
+@Conditional(ElasticsearchCondition.class)
 @Component("ElasticsearchFlowNodeInstanceDaoV1")
 public class ElasticsearchFlowNodeInstanceDao extends ElasticsearchDao<FlowNodeInstance> implements FlowNodeInstanceDao {
 

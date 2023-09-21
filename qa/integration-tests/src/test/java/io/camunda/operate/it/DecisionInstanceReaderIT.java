@@ -24,7 +24,7 @@ import io.camunda.operate.data.util.DecisionDataUtil;
 import io.camunda.operate.entities.dmn.DecisionInstanceEntity;
 import io.camunda.operate.entities.dmn.DecisionInstanceState;
 import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.operate.util.ElasticsearchTestRule;
+import io.camunda.operate.util.SearchTestRule;
 import io.camunda.operate.util.OperateIntegrationTest;
 import io.camunda.operate.webapp.rest.dto.dmn.DRDDataEntryDto;
 import io.camunda.operate.webapp.rest.dto.dmn.DecisionInstanceDto;
@@ -42,7 +42,7 @@ public class DecisionInstanceReaderIT extends OperateIntegrationTest {
   private static final String QUERY_DECISION_INSTANCES_URL = DECISION_INSTANCE_URL + "/%s";
 
   @Rule
-  public ElasticsearchTestRule elasticsearchTestRule = new ElasticsearchTestRule();
+  public SearchTestRule searchTestRule = new SearchTestRule();
 
   @Autowired
   private DecisionDataUtil testDataUtil;
@@ -134,7 +134,7 @@ public class DecisionInstanceReaderIT extends OperateIntegrationTest {
 
   private DecisionInstanceEntity createData() throws PersistenceException {
     final List<DecisionInstanceEntity> decisionInstances = testDataUtil.createDecisionInstances();
-    elasticsearchTestRule.persistOperateEntitiesNew(decisionInstances);
+    searchTestRule.persistOperateEntitiesNew(decisionInstances);
     return decisionInstances.get(0);
   }
 

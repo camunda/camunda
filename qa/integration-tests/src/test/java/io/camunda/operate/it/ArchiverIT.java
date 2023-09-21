@@ -142,7 +142,7 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
     //finish instances 2 days ago
     final Instant endDate1 = currentTime.minus(2, ChronoUnit.DAYS);
     finishInstances(count1, endDate1, activityId);
-    elasticsearchTestRule.processAllRecordsAndWait(processInstancesAreFinishedCheck, ids1);
+    searchTestRule.processAllRecordsAndWait(processInstancesAreFinishedCheck, ids1);
 
     //start instances 2 days ago
     int count2 = random.nextInt(6) + 5;
@@ -151,7 +151,7 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
     //finish instances 1 day ago
     final Instant endDate2 = currentTime.minus(1, ChronoUnit.DAYS);
     finishInstances(count2, endDate2, activityId);
-    elasticsearchTestRule.processAllRecordsAndWait(processInstancesAreFinishedCheck, ids2);
+    searchTestRule.processAllRecordsAndWait(processInstancesAreFinishedCheck, ids2);
 
     //assert metrics for finished process instances
     assertThatMetricsFrom(mockMvc, new MetricAssert.ValueMatcher("operate_events_processed_finished_process_instances_total", d -> d.doubleValue() == count1 + count2));
@@ -164,12 +164,12 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
 
     //when
     assertThat(archiverJob.archiveNextBatch().join()).isEqualTo(count1);
-    elasticsearchTestRule.refreshIndexesInElasticsearch();
+    searchTestRule.refreshSerchIndexes();
     assertThat(archiverJob.archiveNextBatch().join()).isEqualTo(count2);
-    elasticsearchTestRule.refreshIndexesInElasticsearch();
+    searchTestRule.refreshSerchIndexes();
     assertThat(archiverJob.archiveNextBatch().join()).isEqualTo(0);     //3rd run should not move anything, as the rest of the instances are not completed
 
-    elasticsearchTestRule.refreshIndexesInElasticsearch();
+    searchTestRule.refreshSerchIndexes();
 
     //then
     assertInstancesInCorrectIndex(count1, ids1, endDate1, true);
@@ -208,17 +208,17 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
     OffsetDateTime now = OffsetDateTime.now();
     OffsetDateTime twoHoursAgo = now.minus(2, ChronoUnit.HOURS);
     BatchOperationEntity bo1 = createBatchOperationEntity(now);
-    elasticsearchTestRule.persistNew(bo1);
+    searchTestRule.persistNew(bo1);
     BatchOperationEntity bo2 = createBatchOperationEntity(twoHoursAgo);
-    elasticsearchTestRule.persistNew(bo2);
+    searchTestRule.persistNew(bo2);
     BatchOperationEntity bo3 = createBatchOperationEntity(twoHoursAgo);
-    elasticsearchTestRule.persistNew(bo3);
+    searchTestRule.persistNew(bo3);
 
     //when
     BatchOperationArchiverJob batchOperationArchiverJob = beanFactory.getBean(BatchOperationArchiverJob.class);
     int count = batchOperationArchiverJob.archiveNextBatch().join();
     assertThat(count).isEqualTo(2);
-    elasticsearchTestRule.refreshOperateESIndices();
+    searchTestRule.refreshOperateSearchIndices();
 
     //then
     assertBatchOperationsInCorrectIndex(2, Arrays.asList(bo2.getId(), bo3.getId()), twoHoursAgo.toInstant());
@@ -261,7 +261,7 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
     resetZeebeTime();
 
     assertThat(archiverJob.archiveNextBatch().join()).isEqualTo(1);
-    elasticsearchTestRule.refreshIndexesInElasticsearch();
+    searchTestRule.refreshSerchIndexes();
     assertInstancesInCorrectIndex(1, Arrays.asList(processInstanceKey), endDate, true);
 
   }
@@ -292,7 +292,7 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
     //finish instances 1 hour ago
     final Instant endDate1 = currentTime.minus(1, ChronoUnit.HOURS);
     finishInstances(count1, endDate1, activityId);
-    elasticsearchTestRule.processAllRecordsAndWait(processInstancesAreFinishedCheck, ids1);
+    searchTestRule.processAllRecordsAndWait(processInstancesAreFinishedCheck, ids1);
 
     //start instances 1 hour ago
     int count2 = random.nextInt(6) + 5;
@@ -300,17 +300,17 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
     //finish instances 59 minutes ago
     final Instant endDate2 = currentTime.minus(50, ChronoUnit.MINUTES);
     finishInstances(count2, endDate2, activityId);
-    elasticsearchTestRule.processAllRecordsAndWait(processInstancesAreFinishedCheck, ids2);
+    searchTestRule.processAllRecordsAndWait(processInstancesAreFinishedCheck, ids2);
 
     resetZeebeTime();
 
     //when
     assertThat(archiverJob.archiveNextBatch().join()).isEqualTo(count1);
-    elasticsearchTestRule.refreshIndexesInElasticsearch();
+    searchTestRule.refreshSerchIndexes();
     //2rd run should not move anything, as the rest of the instances are somcpleted less then 1 hour ago
     assertThat(archiverJob.archiveNextBatch().join()).isEqualTo(0);
 
-    elasticsearchTestRule.refreshIndexesInElasticsearch();
+    searchTestRule.refreshSerchIndexes();
 
     //then
     assertInstancesInCorrectIndex(count1, ids1, endDate1,true);
@@ -333,7 +333,7 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
     final Instant endDate = currentTime.minus(4, ChronoUnit.DAYS);
     pinZeebeTime(endDate);
     final Long processDefinitionKey = deployProcess("sequential-noop.bpmn");
-    elasticsearchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processDefinitionKey);
+    searchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processDefinitionKey);
     String processId = "sequential-noop";
 
     //start instance with 3000 of vars in loop
@@ -343,13 +343,13 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
     final long processInstanceKey = ZeebeTestUtil
         .startProcessInstance(zeebeClient, processId, payload);
     //wait till it's finished
-    elasticsearchTestRule.processAllRecordsAndWait(400, processInstanceIsCompletedCheck, processInstanceKey);
+    searchTestRule.processAllRecordsAndWait(400, processInstanceIsCompletedCheck, processInstanceKey);
 
     resetZeebeTime();
 
     //when
     assertThat(archiverJob.archiveNextBatch().join()).isEqualTo(1);
-    elasticsearchTestRule.refreshIndexesInElasticsearch();
+    searchTestRule.refreshSerchIndexes();
 
     //then
     assertInstancesInCorrectIndex(1, Arrays.asList(processInstanceKey), endDate, true);
@@ -464,7 +464,7 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
     for (int i = 0; i < count; i++) {
       ids.add(ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"var\": 123}"));
     }
-    elasticsearchTestRule.processAllRecordsAndWait(processInstancesAreStartedCheck, ids);
+    searchTestRule.processAllRecordsAndWait(processInstancesAreStartedCheck, ids);
     return ids;
   }
 

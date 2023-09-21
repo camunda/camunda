@@ -20,7 +20,7 @@ import org.elasticsearch.search.aggregations.Aggregations;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-public class AbstractReader {
+public abstract class AbstractReader {
 
   @Autowired
   protected RestHighLevelClient esClient;

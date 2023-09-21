@@ -11,7 +11,7 @@ import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceState;
-import io.camunda.operate.util.ElasticsearchTestRule;
+import io.camunda.operate.util.SearchTestRule;
 import io.camunda.operate.util.OperateIntegrationTest;
 import io.camunda.operate.webapp.rest.ProcessInstanceRestService;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
@@ -47,7 +47,7 @@ public class BatchOperationWriterIT extends OperateIntegrationTest {
   private PermissionsService permissionsService;
 
   @Rule
-  public ElasticsearchTestRule elasticsearchTestRule = new ElasticsearchTestRule();
+  public SearchTestRule searchTestRule = new SearchTestRule();
 
   @Test
   public void testBatchUpdateWithPermisssionWhenAllowed() throws Exception {
@@ -184,6 +184,6 @@ public class BatchOperationWriterIT extends OperateIntegrationTest {
     processInstance2.setProcessDefinitionKey(processInstance2.getProcessInstanceKey() + 1);
     final ProcessInstanceForListViewEntity processInstance3 = createProcessInstance(ProcessInstanceState.ACTIVE).setBpmnProcessId(bpmnProcessId3);
     processInstance3.setProcessDefinitionKey(processInstance3.getProcessInstanceKey() + 1);
-    elasticsearchTestRule.persistNew(processInstance1, processInstance2, processInstance3);
+    searchTestRule.persistNew(processInstance1, processInstance2, processInstance3);
   }
 }

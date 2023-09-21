@@ -6,6 +6,7 @@
  */
 package io.camunda.operate.schema.elasticsearch;
 
+import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.store.elasticsearch.RetryElasticsearchClient;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateElasticsearchProperties;
@@ -32,6 +33,7 @@ import org.elasticsearch.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
@@ -39,8 +41,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
 
+@Conditional(ElasticsearchCondition.class)
 @Component("schemaManager")
-@Profile("!test && !opensearch")
+@Profile("!test")
 public class ElasticsearchSchemaManager implements SchemaManager {
 
   private static final Logger logger = LoggerFactory.getLogger(ElasticsearchSchemaManager.class);
@@ -126,7 +129,6 @@ public class ElasticsearchSchemaManager implements SchemaManager {
     return retryElasticsearchClient.getIndexSettingsFor(indexName, fields);
   }
 
-  @Override
   public void createIndex(String indexName, Map<String, ?> mapping) {
     retryElasticsearchClient.createIndex(new CreateIndexRequest(indexName).mapping(mapping));
   }

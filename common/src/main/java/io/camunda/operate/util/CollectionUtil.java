@@ -9,6 +9,8 @@ package io.camunda.operate.util;
 import static io.camunda.operate.util.ConversionUtils.stringToLong;
 
 import io.camunda.operate.exceptions.OperateRuntimeException;
+
+import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -83,7 +85,7 @@ public abstract class CollectionUtil {
     return result;
   }
 
-  public static <S,T> List<T> map(Collection<S> sourceList,Function<S,T> mapper){
+  public static <S,T> List<T> map(Collection<S> sourceList,Function<? super S,T> mapper){
     return map(sourceList.stream(),mapper);
   }
 
@@ -91,7 +93,7 @@ public abstract class CollectionUtil {
     return map(Arrays.stream(sourceArray).parallel(), mapper);
   }
 
-  public static <S,T> List<T> map(Stream<S> sequenceStream, Function<S, T> mapper) {
+  public static <S,T> List<T> map(Stream<S> sequenceStream, Function<? super S, T> mapper) {
     return sequenceStream.map(mapper).collect(Collectors.toList());
   }
 
@@ -176,5 +178,19 @@ public abstract class CollectionUtil {
 
   public static long countNonNullObjects(Object... objects) {
     return Arrays.stream(objects).filter(Objects::nonNull).count();
+  }
+
+  public static <T> List<T> reversedView(final List<T> list) {
+    return new AbstractList<T>() {
+      @Override
+      public T get(int index) {
+        return list.get(list.size() - 1 - index);
+      }
+
+      @Override
+      public int size() {
+        return list.size();
+      }
+    };
   }
 }

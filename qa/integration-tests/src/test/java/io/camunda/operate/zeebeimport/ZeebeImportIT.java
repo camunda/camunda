@@ -112,7 +112,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
 
   protected void processImportTypeAndWait(ImportValueType importValueType,
       Predicate<Object[]> waitTill, Object... arguments) {
-    elasticsearchTestRule.processRecordsWithTypeAndWait(importValueType, waitTill, arguments);
+    searchTestRule.processRecordsWithTypeAndWait(importValueType, waitTill, arguments);
   }
 
   @Test
@@ -128,8 +128,8 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     final Long processDefinitionKey = deployProcess(model,"emptyNameProcess.bpmn");
 
     final long processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
-    elasticsearchTestRule.processAllRecordsAndWait(processInstanceIsCreatedCheck, processInstanceKey);
-    elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "taskA");
+    searchTestRule.processAllRecordsAndWait(processInstanceIsCreatedCheck, processInstanceKey);
+    searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "taskA");
 
     // then it should returns the processId instead of an empty name
     final ProcessInstanceForListViewEntity processInstanceEntity = processInstanceReader.getProcessInstanceByKey(processInstanceKey);
@@ -374,7 +374,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
 
     //create an incident
     final Long jobKey = ZeebeTestUtil.failTask(getClient(), activityId, getWorkerName(), 3, "Some error");
-    elasticsearchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, processInstanceKey);
+    searchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, processInstanceKey);
     final long incidentKey = getOnlyIncidentKey(processInstanceKey);
 
     //when update retries
@@ -424,7 +424,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
 
     //create an incident
     final Long jobKey = ZeebeTestUtil.failTask(getClient(), activityId, getWorkerName(), 3, "Some error");
-    elasticsearchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, processInstanceKey);
+    searchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, processInstanceKey);
     final long incidentKey = getOnlyIncidentKey(processInstanceKey);
 
     //when update retries

@@ -8,8 +8,8 @@ package io.camunda.operate.elasticsearch;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.camunda.operate.entities.dmn.definition.DecisionDefinitionEntity;
-import io.camunda.operate.util.ElasticsearchTestRule;
 import io.camunda.operate.util.OperateIntegrationTest;
+import io.camunda.operate.util.SearchTestRule;
 import io.camunda.operate.webapp.rest.DecisionRestService;
 import io.camunda.operate.webapp.rest.dto.dmn.DecisionGroupDto;
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
@@ -37,7 +37,7 @@ public class DecisionOldIT extends OperateIntegrationTest {
   private PermissionsService permissionsService;
 
   @Rule
-  public ElasticsearchTestRule elasticsearchTestRule = new ElasticsearchTestRule();
+  public SearchTestRule elasticsearchTestRule = new SearchTestRule();
 
   @Test
   public void testDecisionsGroupedWithPermisssionWhenNotAllowed() throws Exception {

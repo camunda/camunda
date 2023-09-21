@@ -239,7 +239,7 @@ public class FlowNodeInstanceReaderIT extends OperateZeebeIntegrationTest {
 
   private List<FlowNodeStatisticsDto> getFlowNodeStatisticsForProcessInstance(final Long processInstanceKey)
       throws Exception {
-    elasticsearchTestRule.refreshIndexesInElasticsearch();
+    searchTestRule.refreshSerchIndexes();
     return mockMvcTestRule.listFromResponse(
         getRequest("/api/process-instances/"+processInstanceKey+"/statistics"), FlowNodeStatisticsDto.class);
   }

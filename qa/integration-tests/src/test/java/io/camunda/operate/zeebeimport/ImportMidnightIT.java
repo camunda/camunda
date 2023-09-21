@@ -23,7 +23,7 @@ import io.camunda.operate.util.TestApplication;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceState;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.util.ElasticsearchTestRule;
+import io.camunda.operate.util.SearchTestRule;
 import io.camunda.operate.util.OperateZeebeIntegrationTest;
 import io.camunda.operate.util.ZeebeTestUtil;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
@@ -68,9 +68,9 @@ public class ImportMidnightIT extends OperateZeebeIntegrationTest {
   private RestHighLevelClient esClient;
 
   @Rule
-  public ElasticsearchTestRule elasticsearchTestRule  = new ElasticsearchTestRule() {
+  public SearchTestRule searchTestRule = new SearchTestRule() {
     @Override
-    public void refreshZeebeESIndices() {
+    public void refreshZeebeIndices() {
       //do nothing
     }
   };
@@ -113,7 +113,7 @@ public class ImportMidnightIT extends OperateZeebeIntegrationTest {
 
     //when
     //refresh 2nd date index and load all data
-    elasticsearchTestRule.processAllRecordsAndWait(processInstanceIsCompletedCheck, () -> {
+    searchTestRule.processAllRecordsAndWait(processInstanceIsCompletedCheck, () -> {
       zeebeRule.refreshIndices(secondDate);
       return null;
     }, processInstanceKey);
@@ -186,12 +186,12 @@ public class ImportMidnightIT extends OperateZeebeIntegrationTest {
     cancelProcessInstance(processInstanceKey, false);
     sleepFor(2000);
     zeebeRule.refreshIndices(firstDate);
-    elasticsearchTestRule.processAllRecordsAndWait(processInstanceIsCanceledCheck, processInstanceKey);
+    searchTestRule.processAllRecordsAndWait(processInstanceIsCanceledCheck, processInstanceKey);
     processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
     cancelProcessInstance(processInstanceKey, false);
     sleepFor(2000);
     zeebeRule.refreshIndices(firstDate);
-    elasticsearchTestRule.processAllRecordsAndWait(processInstanceIsCanceledCheck, processInstanceKey);
+    searchTestRule.processAllRecordsAndWait(processInstanceIsCanceledCheck, processInstanceKey);
   }
 
 }

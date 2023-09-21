@@ -16,7 +16,7 @@ import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.store.UserStore;
 import io.camunda.operate.entities.UserEntity;
 import io.camunda.operate.connect.ElasticsearchConnector;
-import io.camunda.operate.store.elasticsearch.ElasticsearchTask;
+import io.camunda.operate.store.elasticsearch.ElasticsearchTaskStore;
 import io.camunda.operate.store.elasticsearch.RetryElasticsearchClient;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
@@ -73,7 +73,7 @@ import org.springframework.test.context.junit4.SpringRunner;
       RolePermissionService.class,
       AuthenticationRestService.class,
       OperateUserDetailsService.class,
-      ElasticsearchTask.class,
+      ElasticsearchTaskStore.class,
       RetryElasticsearchClient.class,
       OperateProfileService.class,
       ElasticsearchConnector.class

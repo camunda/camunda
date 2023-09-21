@@ -6,11 +6,9 @@
  */
 package io.camunda.operate.util;
 
-import static io.camunda.operate.util.ThreadUtil.sleepFor;
-import static org.assertj.core.api.Assertions.assertThat;
-
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.operate.conditions.OpensearchCondition;
+import io.camunda.operate.connect.OpensearchConnector;
 import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.entities.IncidentEntity;
 import io.camunda.operate.entities.OperateEntity;
@@ -23,9 +21,8 @@ import io.camunda.operate.entities.dmn.definition.DecisionRequirementsEntity;
 import io.camunda.operate.entities.listview.FlowNodeInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.VariableForListViewEntity;
-import io.camunda.operate.connect.ElasticsearchConnector;
 import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.operate.property.OperateElasticsearchProperties;
+import io.camunda.operate.property.OperateOpensearchProperties;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.SchemaManager;
 import io.camunda.operate.schema.indices.DecisionIndex;
@@ -37,55 +34,50 @@ import io.camunda.operate.schema.templates.IncidentTemplate;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.schema.templates.OperationTemplate;
 import io.camunda.operate.schema.templates.VariableTemplate;
+import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.zeebe.ImportValueType;
 import io.camunda.operate.zeebeimport.RecordsReader;
 import io.camunda.operate.zeebeimport.RecordsReaderHolder;
 import io.camunda.operate.zeebeimport.ZeebeImporter;
 import io.camunda.operate.zeebeimport.ZeebePostImporter;
 import io.camunda.operate.zeebeimport.post.PostImportAction;
+import org.junit.runner.Description;
+import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch._types.ExpandWildcard;
+import org.opensearch.client.opensearch.indices.GetIndexResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Conditional;
+import org.springframework.stereotype.Component;
+
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
-import org.elasticsearch.action.bulk.BulkRequest;
-import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.action.support.IndicesOptions;
-import org.elasticsearch.client.Request;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.Response;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.client.indices.GetIndexRequest;
-import org.elasticsearch.client.indices.GetIndexResponse;
-import org.elasticsearch.xcontent.XContentType;
-import org.junit.rules.TestWatcher;
-import org.junit.runner.Description;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 
-public class ElasticsearchTestRule extends TestWatcher {
+import static io.camunda.operate.store.opensearch.dsl.RequestDSL.getIndexRequestBuilder;
+import static io.camunda.operate.util.ThreadUtil.sleepFor;
+import static org.assertj.core.api.Assertions.assertThat;
 
-  protected static final Logger logger = LoggerFactory.getLogger(ElasticsearchTestRule.class);
+@Conditional(OpensearchCondition.class)
+@Component
+public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
 
-  // Scroll contexts constants
-  private static final String OPEN_SCROLL_CONTEXT_FIELD = "open_contexts";
-  // Path to find search statistics for all indexes
-  private static final String PATH_SEARCH_STATISTICS = "/_nodes/stats/indices/search?filter_path=nodes.*.indices.search";
+  protected static final Logger logger = LoggerFactory.getLogger(OpensearchTestRuleProvider.class);
 
   @Autowired
-  protected RestHighLevelClient esClient;
+  protected RichOpenSearchClient richOpenSearchClient;
 
   @Autowired
-  @Qualifier("zeebeEsClient")
-  protected RestHighLevelClient zeebeEsClient;
+  @Qualifier("zeebeOpensearchClient")
+  protected OpenSearchClient zeebeOsClient;
 
   @Autowired
   private ListViewTemplate listViewTemplate;
@@ -136,48 +128,44 @@ public class ElasticsearchTestRule extends TestWatcher {
   private TestImportListener testImportListener;
 
   @Autowired
-  ElasticsearchConnector esConnector;
+  OpensearchConnector osConnector;
 
-  Map<Class<? extends OperateEntity>, String> entityToESAliasMap;
+  Map<Class<? extends OperateEntity>, String> entityToAliasMap;
 
   protected boolean failed = false;
 
   private String indexPrefix;
 
-  public ElasticsearchTestRule() {
-  }
-
-  public ElasticsearchTestRule(String indexPrefix) {
+  public void setIndexPrefix(String indexPrefix) {
     this.indexPrefix = indexPrefix;
   }
 
   @Override
-  protected void failed(Throwable e, Description description) {
-    super.failed(e, description);
+  public void failed(Throwable e, Description description) {
     this.failed = true;
   }
 
   @Override
-  protected void starting(Description description) {
+  public void starting(Description description) {
     if (indexPrefix == null) {
       indexPrefix = TestUtil.createRandomString(10) + "-operate";
     }
-    operateProperties.getElasticsearch().setIndexPrefix(indexPrefix);
-    if (operateProperties.getElasticsearch().isCreateSchema()) {
+    operateProperties.getOpensearch().setIndexPrefix(indexPrefix);
+    if (operateProperties.getOpensearch().isCreateSchema()) {
       schemaManager.createSchema();
       assertThat(areIndicesCreatedAfterChecks(indexPrefix, 5, 5 * 60 /*sec*/))
-          .describedAs("Elasticsearch %s (min %d) indices are created", indexPrefix, 5)
+          .describedAs("Opensearch %s (min %d) indices are created", indexPrefix, 5)
           .isTrue();
     }
   }
 
   @Override
-  protected void finished(Description description) {
+  public void finished(Description description) {
     if (!failed) {
-      String indexPrefix = operateProperties.getElasticsearch().getIndexPrefix();
-      TestUtil.removeAllIndices(esClient, indexPrefix);
+      String indexPrefix = operateProperties.getOpensearch().getIndexPrefix();
+      TestUtil.removeAllIndices(richOpenSearchClient.index(), richOpenSearchClient.template(), indexPrefix);
     }
-    operateProperties.getElasticsearch().setIndexPrefix(OperateElasticsearchProperties.DEFAULT_INDEX_PREFIX);
+    operateProperties.getOpensearch().setIndexPrefix(OperateOpensearchProperties.DEFAULT_INDEX_PREFIX);
     zeebePostImporter.getPostImportActions().stream().forEach(PostImportAction::clearCache);
     assertMaxOpenScrollContexts(15);
   }
@@ -188,26 +176,27 @@ public class ElasticsearchTestRule extends TestWatcher {
       .isLessThanOrEqualTo(maxOpenScrollContexts);
   }
 
-  public void refreshIndexesInElasticsearch() {
-    refreshZeebeESIndices();
-    refreshOperateESIndices();
+  @Override
+  public void refreshSearchIndices() {
+    refreshZeebeIndices();
+    refreshOperateSearchIndices();
   }
 
-  public void refreshZeebeESIndices() {
+  @Override
+  public void refreshZeebeIndices() {
     try {
-      RefreshRequest refreshRequest = new RefreshRequest(operateProperties.getZeebeElasticsearch().getPrefix() + "*");
-      zeebeEsClient.indices().refresh(refreshRequest, RequestOptions.DEFAULT);
+      zeebeOsClient.indices().refresh(r -> r.index(operateProperties.getZeebeOpensearch().getPrefix() + "*"));
     } catch (Exception t) {
-      logger.error("Could not refresh Zeebe Elasticsearch indices", t);
+      logger.error("Could not refresh Zeebe Opensearch indices", t);
     }
   }
 
-  public void refreshOperateESIndices() {
+  @Override
+  public void refreshOperateSearchIndices() {
     try {
-      RefreshRequest refreshRequest = new RefreshRequest(operateProperties.getElasticsearch().getIndexPrefix() + "*");
-      esClient.indices().refresh(refreshRequest, RequestOptions.DEFAULT);
+      richOpenSearchClient.index().refresh(operateProperties.getOpensearch().getIndexPrefix() + "*");
     } catch (Exception t) {
-      logger.error("Could not refresh Operate Elasticsearch indices", t);
+      logger.error("Could not refresh Operate Opensearch indices", t);
     }
   }
 
@@ -244,9 +233,9 @@ public class ElasticsearchTestRule extends TestWatcher {
         if (supplier != null) {
           supplier.get();
         }
-        refreshIndexesInElasticsearch();
+        refreshSearchIndices();
         zeebeImporter.performOneRoundOfImportFor(readers);
-        refreshOperateESIndices();
+        refreshOperateSearchIndices();
         if (runPostImport) {
           runPostImportActions();
         }
@@ -262,7 +251,7 @@ public class ElasticsearchTestRule extends TestWatcher {
         try {
           sleepFor(2000);
           zeebeImporter.performOneRoundOfImportFor(readers);
-          refreshOperateESIndices();
+          refreshOperateSearchIndices();
           if (runPostImport) {
             runPostImportActions();
           }
@@ -275,7 +264,7 @@ public class ElasticsearchTestRule extends TestWatcher {
         logger.debug(" {} of {} imports processed", testImportListener.getImportedCount(),
             testImportListener.getScheduledCount());
       }
-      refreshOperateESIndices();
+      refreshOperateSearchIndices();
       found = predicate.test(arguments);
       if (!found) {
         sleepFor(2000);
@@ -311,24 +300,26 @@ public class ElasticsearchTestRule extends TestWatcher {
     while (!areCreated && checks <= maxChecks) {
       checks++;
       try {
-        areCreated = areIndicesAreCreated(indexPrefix, minCountOfIndices);
+        areCreated = areIndicesCreated(indexPrefix, minCountOfIndices);
       } catch (Exception t) {
-        logger.error("Elasticsearch indices (min {}) are not created yet. Waiting {}/{}",minCountOfIndices, checks, maxChecks);
+        logger.error("Opensearch indices (min {}) are not created yet. Waiting {}/{}",minCountOfIndices, checks, maxChecks);
         sleepFor(200);
       }
     }
-    logger.debug("Elasticsearch indices are created after {} checks", checks);
+    logger.debug("Opensearch indices are created after {} checks", checks);
     return areCreated;
   }
 
-  private boolean areIndicesAreCreated(String indexPrefix, int minCountOfIndices)
-      throws IOException {
-    GetIndexResponse response = esClient.indices().get(
-        new GetIndexRequest(indexPrefix + "*")
-            .indicesOptions(IndicesOptions.fromOptions(true, false, true, false)),
-        RequestOptions.DEFAULT);
-    String[] indices = response.getIndices();
-    return indices != null && indices.length >= minCountOfIndices;
+  private boolean areIndicesCreated(String indexPrefix, int minCountOfIndices) throws IOException {
+    var indexRequestBuilder = getIndexRequestBuilder(indexPrefix + "*")
+      .ignoreUnavailable(true)
+      .allowNoIndices(false)
+      .expandWildcards(ExpandWildcard.Open);
+
+    GetIndexResponse response = richOpenSearchClient.index().get(indexRequestBuilder);
+
+    var result = response.result();
+    return result.size() >= minCountOfIndices;
   }
 
   public List<RecordsReader> getRecordsReaders(ImportValueType importValueType) {
@@ -343,76 +334,37 @@ public class ElasticsearchTestRule extends TestWatcher {
       logger.error("Unable to persist entities: " + e.getMessage(), e);
       throw new RuntimeException(e);
     }
-    refreshIndexesInElasticsearch();
+    refreshSearchIndices();
   }
 
   public void persistOperateEntitiesNew(List<? extends OperateEntity> operateEntities) throws PersistenceException {
-    try {
-      BulkRequest bulkRequest = new BulkRequest();
-      for (OperateEntity entity : operateEntities) {
-        final String alias = getEntityToESAliasMap().get(entity.getClass());
-        if (alias == null) {
-          throw new RuntimeException("Index not configured for " + entity.getClass().getName());
-        }
-        final IndexRequest indexRequest = new IndexRequest(alias)
-            .id(entity.getId())
-            .source(objectMapper.writeValueAsString(entity), XContentType.JSON);
-        if (entity instanceof FlowNodeInstanceForListViewEntity) {
-          indexRequest.routing(((FlowNodeInstanceForListViewEntity)entity).getProcessInstanceKey().toString());
-        }
-        if (entity instanceof VariableForListViewEntity) {
-          indexRequest.routing(((VariableForListViewEntity)entity).getProcessInstanceKey().toString());
-        }
-        bulkRequest.add(indexRequest);
-      }
-      ElasticsearchUtil.processBulkRequest(esClient, bulkRequest, true, operateProperties.getElasticsearch().getBulkRequestMaxSizeInBytes());
-    } catch (Exception ex) {
-      throw new PersistenceException(ex);
-    }
-
+    throw new UnsupportedOperationException();
   }
 
-  public Map<Class<? extends OperateEntity>, String> getEntityToESAliasMap(){
-    if (entityToESAliasMap == null) {
-      entityToESAliasMap = new HashMap<>();
-      entityToESAliasMap.put(ProcessEntity.class, processIndex.getFullQualifiedName());
-      entityToESAliasMap.put(IncidentEntity.class, incidentTemplate.getFullQualifiedName());
-      entityToESAliasMap.put(ProcessInstanceForListViewEntity.class, listViewTemplate.getFullQualifiedName());
-      entityToESAliasMap.put(FlowNodeInstanceForListViewEntity.class, listViewTemplate.getFullQualifiedName());
-      entityToESAliasMap.put(VariableForListViewEntity.class, listViewTemplate.getFullQualifiedName());
-      entityToESAliasMap.put(VariableEntity.class, variableTemplate.getFullQualifiedName());
-      entityToESAliasMap.put(OperationEntity.class, operationTemplate.getFullQualifiedName());
-      entityToESAliasMap.put(BatchOperationEntity.class, batchOperationTemplate.getFullQualifiedName());
-      entityToESAliasMap.put(DecisionInstanceEntity.class, decisionInstanceTemplate.getFullQualifiedName());
-      entityToESAliasMap.put(DecisionRequirementsEntity.class, decisionRequirementsIndex.getFullQualifiedName());
-      entityToESAliasMap.put(DecisionDefinitionEntity.class, decisionIndex.getFullQualifiedName());
+  public Map<Class<? extends OperateEntity>, String> getEntityToAliasMap(){
+    if (entityToAliasMap == null) {
+      entityToAliasMap = new HashMap<>();
+      entityToAliasMap.put(ProcessEntity.class, processIndex.getFullQualifiedName());
+      entityToAliasMap.put(IncidentEntity.class, incidentTemplate.getFullQualifiedName());
+      entityToAliasMap.put(ProcessInstanceForListViewEntity.class, listViewTemplate.getFullQualifiedName());
+      entityToAliasMap.put(FlowNodeInstanceForListViewEntity.class, listViewTemplate.getFullQualifiedName());
+      entityToAliasMap.put(VariableForListViewEntity.class, listViewTemplate.getFullQualifiedName());
+      entityToAliasMap.put(VariableEntity.class, variableTemplate.getFullQualifiedName());
+      entityToAliasMap.put(OperationEntity.class, operationTemplate.getFullQualifiedName());
+      entityToAliasMap.put(BatchOperationEntity.class, batchOperationTemplate.getFullQualifiedName());
+      entityToAliasMap.put(DecisionInstanceEntity.class, decisionInstanceTemplate.getFullQualifiedName());
+      entityToAliasMap.put(DecisionRequirementsEntity.class, decisionRequirementsIndex.getFullQualifiedName());
+      entityToAliasMap.put(DecisionDefinitionEntity.class, decisionIndex.getFullQualifiedName());
     }
-    return entityToESAliasMap;
+    return entityToAliasMap;
   }
 
   public int getOpenScrollcontextSize() {
-    return getIntValueForJSON(PATH_SEARCH_STATISTICS, OPEN_SCROLL_CONTEXT_FIELD, 0);
-  }
-
-  private int getIntValueForJSON(final String path,final String fieldname,final int defaultValue) {
-    Optional<JsonNode> jsonNode = getJsonFor(path);
-    if(jsonNode.isPresent()) {
-      JsonNode field = jsonNode.get().findValue(fieldname);
-      if(field != null) {
-        return field.asInt(defaultValue);
-      }
-    }
-    return defaultValue;
-  }
-
-  private Optional<JsonNode> getJsonFor(final String path) {
-    try {
-      ObjectMapper objectMapper = new ObjectMapper();
-      Response response = esClient.getLowLevelClient().performRequest(new Request("GET",path));
-      return Optional.of(objectMapper.readTree(response.getEntity().getContent()));
+    try{
+      return richOpenSearchClient.cluster().totalOpenContexts();
     } catch (Exception e) {
-      logger.error("Couldn't retrieve json object from elasticsearch. Return Optional.Empty.",e);
-      return Optional.empty();
+      logger.error("Failed to retrieve open contexts from opensearch! Returning 0.", e);
+      return 0;
     }
   }
 

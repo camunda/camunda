@@ -55,7 +55,7 @@ public class FlowNodeInstanceIT extends OperateZeebeIntegrationTest {
     final Long processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, processId, null);
     //let the boundary event happen
     //Thread.sleep(1500L);
-    elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "task2");
+    searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "task2");
 
     //when
     final String processInstanceId = String.valueOf(processInstanceKey);
@@ -95,9 +95,9 @@ public class FlowNodeInstanceIT extends OperateZeebeIntegrationTest {
     final long processInstanceKey = ZeebeTestUtil
         .startProcessInstance(zeebeClient, processId, "{\"items\": [0, 1]}");
     ZeebeTestUtil.completeTask(zeebeClient, jobKey, getWorkerName(), null, 3);
-    elasticsearchTestRule
+    searchTestRule
         .processAllRecordsAndWait(flowNodesAreCompletedCheck, processInstanceKey, flowNodeId1, 2);
-    elasticsearchTestRule
+    searchTestRule
         .processAllRecordsAndWait(flowNodesAreCompletedCheck, processInstanceKey, subprocessFlowNodeId, 1);
 
     //find out subprocess instance ids
@@ -163,13 +163,13 @@ public class FlowNodeInstanceIT extends OperateZeebeIntegrationTest {
     deployProcess("subProcess.bpmn");
     final Long processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"items\": [0, 1, 2, 3, 4, 5]}");
     ZeebeTestUtil.completeTask(zeebeClient, "taskA", getWorkerName(), null);
-    elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "taskB");
+    searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "taskB");
     ZeebeTestUtil.completeTask(zeebeClient, "taskB", getWorkerName(), null, 6);
-    elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "taskC");
+    searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "taskC");
     ZeebeTestUtil.failTask(zeebeClient, "taskC", getWorkerName(), 3, "some error");
-    elasticsearchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, processInstanceKey);
+    searchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, processInstanceKey);
 
-    elasticsearchTestRule.refreshIndexesInElasticsearch();
+    searchTestRule.refreshSerchIndexes();
 
     //when - test level 0
     final String processInstanceId = String.valueOf(processInstanceKey);
@@ -336,9 +336,9 @@ public class FlowNodeInstanceIT extends OperateZeebeIntegrationTest {
     final long processInstanceKey = ZeebeTestUtil
         .startProcessInstance(zeebeClient, processId, "{\"items\": [0]}");
     ZeebeTestUtil.completeTask(zeebeClient, "taskA", getWorkerName(), null);
-    elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "taskB");
+    searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "taskB");
     ZeebeTestUtil.failTask(zeebeClient, "taskB", getWorkerName(), 3, "some error");
-    elasticsearchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, processInstanceKey);
+    searchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, processInstanceKey);
 
     //when
     final String processInstanceId = String.valueOf(processInstanceKey);
@@ -381,9 +381,9 @@ public class FlowNodeInstanceIT extends OperateZeebeIntegrationTest {
     final long processInstanceKey = ZeebeTestUtil
         .startProcessInstance(zeebeClient, processId, "{\"items\": [0]}");
     ZeebeTestUtil.completeTask(zeebeClient, "taskA", getWorkerName(), null);
-    elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "taskB");
+    searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "taskB");
     ZeebeTestUtil.failTask(zeebeClient, "taskB", getWorkerName(), 3, "some error");
-    elasticsearchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, processInstanceKey);
+    searchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, processInstanceKey);
 
     //when
     final String processInstanceId = String.valueOf(processInstanceKey);
@@ -506,9 +506,9 @@ public class FlowNodeInstanceIT extends OperateZeebeIntegrationTest {
     final long processInstanceKey = ZeebeTestUtil
         .startProcessInstance(zeebeClient, processId, "{\"items\": [0]}");
     ZeebeTestUtil.completeTask(zeebeClient, "taskA", getWorkerName(), null);
-    elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "taskB");
+    searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "taskB");
     ZeebeTestUtil.failTask(zeebeClient, "taskB", getWorkerName(), 3, "some error");
-    elasticsearchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, processInstanceKey);
+    searchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, processInstanceKey);
 
     //when
     final Map<String, FlowNodeStateDto> FlowNodeStateDtos = getFlowNodeStateDtosFromRest(
@@ -533,9 +533,9 @@ public class FlowNodeInstanceIT extends OperateZeebeIntegrationTest {
     final long processInstanceKey = ZeebeTestUtil
         .startProcessInstance(zeebeClient, processId, "{\"items\": [0,1,2,3,4,5,6,7,8,9]}");
     ZeebeTestUtil.completeTask(zeebeClient, "taskA", getWorkerName(), null);
-    elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "taskB");
+    searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "taskB");
     ZeebeTestUtil.completeTask(zeebeClient, "taskB", getWorkerName(), null, 9);
-    elasticsearchTestRule.processAllRecordsAndWait(flowNodesAreCompletedCheck, processInstanceKey, "taskB", 9);
+    searchTestRule.processAllRecordsAndWait(flowNodesAreCompletedCheck, processInstanceKey, "taskB", 9);
 
     //when
     final Map<String, FlowNodeStateDto> FlowNodeStateDtos = getFlowNodeStateDtosFromRest(

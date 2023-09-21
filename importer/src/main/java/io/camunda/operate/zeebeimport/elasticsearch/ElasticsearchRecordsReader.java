@@ -15,6 +15,7 @@ import static org.elasticsearch.index.query.QueryBuilders.*;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
 import io.camunda.operate.Metrics;
+import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.entities.HitEntity;
 import io.camunda.operate.entities.meta.ImportPositionEntity;
 import io.camunda.operate.exceptions.NoSuchIndexException;
@@ -56,7 +57,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.annotation.Profile;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Scope;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
@@ -67,7 +68,7 @@ import org.springframework.stereotype.Component;
  * for import execution. Each reader can have its own backoff, so that we make a pause in case there is no data currently
  * for given partition and value type.
  */
-@Profile("!opensearch")
+@Conditional(ElasticsearchCondition.class)
 @Component
 @Scope(SCOPE_PROTOTYPE)
 public class ElasticsearchRecordsReader implements RecordsReader {

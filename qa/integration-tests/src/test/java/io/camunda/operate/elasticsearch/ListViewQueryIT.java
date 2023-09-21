@@ -28,7 +28,7 @@ import io.camunda.operate.entities.listview.ProcessInstanceState;
 import io.camunda.operate.entities.listview.VariableForListViewEntity;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.util.CollectionUtil;
-import io.camunda.operate.util.ElasticsearchTestRule;
+import io.camunda.operate.util.SearchTestRule;
 import io.camunda.operate.util.OperateIntegrationTest;
 import io.camunda.operate.util.TestUtil;
 import io.camunda.operate.webapp.rest.dto.SortingDto;
@@ -64,7 +64,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
   private PermissionsService permissionsService;
 
   @Rule
-  public ElasticsearchTestRule elasticsearchTestRule = new ElasticsearchTestRule();
+  public SearchTestRule searchTestRule = new SearchTestRule();
 
   private ProcessInstanceForListViewEntity instanceWithoutIncident;
   private ProcessInstanceForListViewEntity runningInstance;
@@ -159,7 +159,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     final ProcessInstanceForListViewEntity processInstance1 = createProcessInstance(date1, date5);
     final ProcessInstanceForListViewEntity processInstance2 = createProcessInstance(date2, date4);
     final ProcessInstanceForListViewEntity processInstance3 = createProcessInstance(date3, null);
-    elasticsearchTestRule.persistNew(processInstance1, processInstance2, processInstance3);
+    searchTestRule.persistNew(processInstance1, processInstance2, processInstance3);
 
     //when
     ListViewRequestDto query = createGetAllProcessInstancesRequest(q -> {
@@ -237,7 +237,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     final FlowNodeInstanceForListViewEntity activityInstance2 = createFlowNodeInstanceWithIncident(processInstance2.getProcessInstanceKey(), FlowNodeState.ACTIVE,
       "other error message");
 
-    elasticsearchTestRule.persistNew(processInstance1, activityInstance1, processInstance2, activityInstance2);
+    searchTestRule.persistNew(processInstance1, activityInstance1, processInstance2, activityInstance2);
 
     //given
     ListViewRequestDto query = new ListViewRequestDto(createGetAllProcessInstancesQuery(q -> q.setErrorMessage(errorMessage)));
@@ -323,7 +323,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     final String activityId = "taskA";
 
     final OperateEntity[] data = createDataForActiveActivityIdQuery(activityId);
-    elasticsearchTestRule.persistNew(data);
+    searchTestRule.persistNew(data);
 
     //when
     ListViewRequestDto query = createProcessInstanceRequest(q -> {
@@ -382,7 +382,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     final String activityId = "taskA";
 
     final OperateEntity[] data = createDataForIncidentActivityIdQuery(activityId);
-    elasticsearchTestRule.persistNew(data);
+    searchTestRule.persistNew(data);
 
     //when
     ListViewRequestDto query = createProcessInstanceRequest(q -> {
@@ -452,7 +452,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     final String activityId = "taskA";
 
     final OperateEntity[] data = createDataForTerminatedActivityIdQuery(activityId);
-    elasticsearchTestRule.persistNew(data);
+    searchTestRule.persistNew(data);
 
     //when
     ListViewRequestDto query = createProcessInstanceRequest(q -> {
@@ -518,17 +518,17 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     OperateEntity[] data = createDataForActiveActivityIdQuery(activityId);
     selectedIds.add(data[0].getId());
     selectedIds.add(data[1].getId());
-    elasticsearchTestRule.persistNew(data);
+    searchTestRule.persistNew(data);
 
     data = createDataForIncidentActivityIdQuery(activityId);
     selectedIds.add(data[0].getId());
     selectedIds.add(data[2].getId());
-    elasticsearchTestRule.persistNew(data);
+    searchTestRule.persistNew(data);
 
     data = createDataForTerminatedActivityIdQuery(activityId);
     selectedIds.add(data[0].getId());
     selectedIds.add(data[6].getId());
-    elasticsearchTestRule.persistNew(data);
+    searchTestRule.persistNew(data);
 
     //when
     ListViewRequestDto query = createProcessInstanceRequest(q -> {
@@ -580,7 +580,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     final FlowNodeInstanceForListViewEntity completedEndEventWithIdActivityInstance2 = TestUtil
         .createFlowNodeInstance(processInstance4.getProcessInstanceKey(), FlowNodeState.COMPLETED, activityId, FlowNodeType.END_EVENT);
 
-    elasticsearchTestRule.persistNew(processInstance1, completedEndEventWithIdActivityInstance, completedWithoutIdActivityInstance,
+    searchTestRule.persistNew(processInstance1, completedEndEventWithIdActivityInstance, completedWithoutIdActivityInstance,
       processInstance2, activeEndEventWithIdActivityInstance,
       processInstance3, completedWithIdActivityInstance,
       processInstance4, completedEndEventWithIdActivityInstance2);
@@ -610,7 +610,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     final ProcessInstanceForListViewEntity processInstance1 = createProcessInstance(ProcessInstanceState.ACTIVE);
     final ProcessInstanceForListViewEntity processInstance2 = createProcessInstance(ProcessInstanceState.CANCELED);
     final ProcessInstanceForListViewEntity processInstance3 = createProcessInstance(ProcessInstanceState.COMPLETED);
-    elasticsearchTestRule.persistNew(processInstance1, processInstance2, processInstance3);
+    searchTestRule.persistNew(processInstance1, processInstance2, processInstance3);
 
     ListViewRequestDto query = createGetAllProcessInstancesRequest(q ->
       q.setIds(Arrays.asList(processInstance1.getId(), processInstance2.getId()))
@@ -650,7 +650,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     final ProcessInstanceForListViewEntity processInstance2 = createProcessInstance(ProcessInstanceState.CANCELED);
     final ProcessInstanceForListViewEntity processInstance3 = createProcessInstance(ProcessInstanceState.COMPLETED);
     final ProcessInstanceForListViewEntity processInstance4 = createProcessInstance(ProcessInstanceState.COMPLETED);
-    elasticsearchTestRule.persistNew(processInstance1, processInstance2, processInstance3, processInstance4);
+    searchTestRule.persistNew(processInstance1, processInstance2, processInstance3, processInstance4);
 
     ListViewRequestDto query = createGetAllProcessInstancesRequest(q ->
       q.setExcludeIds(Arrays.asList(processInstance1.getId(), processInstance3.getId()))
@@ -680,7 +680,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     processInstance3.setProcessDefinitionKey(wfKey3);
     processInstance4.setProcessDefinitionKey(wfKey3);
 
-    elasticsearchTestRule.persistNew(processInstance1, processInstance2, processInstance3, processInstance4);
+    searchTestRule.persistNew(processInstance1, processInstance2, processInstance3, processInstance4);
 
     ListViewRequestDto query = createGetAllProcessInstancesRequest(q -> q.setProcessIds(Arrays.asList(wfKey1.toString(), wfKey3.toString())));
 
@@ -713,7 +713,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     processInstance3.setBpmnProcessId(bpmnProcessId2);
     processInstance3.setProcessVersion(version1);
 
-    elasticsearchTestRule.persistNew(processInstance1, processInstance2, processInstance3);
+    searchTestRule.persistNew(processInstance1, processInstance2, processInstance3);
 
     ListViewRequestDto query = createGetAllProcessInstancesRequest(q -> {
       q.setBpmnProcessId(bpmnProcessId1);
@@ -798,7 +798,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     processInstance3.setBpmnProcessId(bpmnProcessId2);
     processInstance3.setProcessVersion(version1);
 
-    elasticsearchTestRule.persistNew(processInstance1, processInstance2, processInstance3);
+    searchTestRule.persistNew(processInstance1, processInstance2, processInstance3);
 
     ListViewRequestDto query = createGetAllProcessInstancesRequest(q -> q.setBpmnProcessId(bpmnProcessId1));
 
@@ -1210,7 +1210,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     final ProcessInstanceForListViewEntity processInstance1 = createProcessInstance(ProcessInstanceState.ACTIVE).setBpmnProcessId(bpmnProcessId1);
     final ProcessInstanceForListViewEntity processInstance2 = createProcessInstance(ProcessInstanceState.CANCELED).setBpmnProcessId(bpmnProcessId2);
     final ProcessInstanceForListViewEntity processInstance3 = createProcessInstance(ProcessInstanceState.COMPLETED).setBpmnProcessId(bpmnProcessId3);
-    elasticsearchTestRule.persistNew(processInstance1, processInstance2, processInstance3);
+    searchTestRule.persistNew(processInstance1, processInstance2, processInstance3);
 
     ListViewRequestDto query = createGetAllProcessInstancesRequest();
 
@@ -1238,7 +1238,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     final ProcessInstanceForListViewEntity processInstance1 = createProcessInstance(ProcessInstanceState.ACTIVE).setBpmnProcessId(bpmnProcessId1);
     final ProcessInstanceForListViewEntity processInstance2 = createProcessInstance(ProcessInstanceState.CANCELED).setBpmnProcessId(bpmnProcessId2);
     final ProcessInstanceForListViewEntity processInstance3 = createProcessInstance(ProcessInstanceState.COMPLETED).setBpmnProcessId(bpmnProcessId3);
-    elasticsearchTestRule.persistNew(processInstance1, processInstance2, processInstance3);
+    searchTestRule.persistNew(processInstance1, processInstance2, processInstance3);
 
     ListViewRequestDto query = createGetAllProcessInstancesRequest();
 
@@ -1264,7 +1264,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     final ProcessInstanceForListViewEntity processInstance1 = createProcessInstance(ProcessInstanceState.ACTIVE).setBpmnProcessId(bpmnProcessId1);
     final ProcessInstanceForListViewEntity processInstance2 = createProcessInstance(ProcessInstanceState.CANCELED).setBpmnProcessId(bpmnProcessId2);
     final ProcessInstanceForListViewEntity processInstance3 = createProcessInstance(ProcessInstanceState.COMPLETED).setBpmnProcessId(bpmnProcessId3);
-    elasticsearchTestRule.persistNew(processInstance1, processInstance2, processInstance3);
+    searchTestRule.persistNew(processInstance1, processInstance2, processInstance3);
 
     ListViewRequestDto query = createGetAllProcessInstancesRequest();
 
@@ -1348,7 +1348,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     ProcessInstanceForListViewEntity lowerProcess = createProcessInstance(ProcessInstanceState.ACTIVE, 23L, null);
     lowerProcess.setProcessName("upper_lower_process_name");
 
-    elasticsearchTestRule.persistNew(upperProcess,lowerProcess);
+    searchTestRule.persistNew(upperProcess,lowerProcess);
   }
 
   private void createProcessInstanceWithoutProcessname() {
@@ -1356,7 +1356,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     processWithoutName.setBpmnProcessId("lower_process_id");
     processWithoutName.setProcessName(processWithoutName.getBpmnProcessId());
 
-    elasticsearchTestRule.persistNew(processWithoutName);
+    searchTestRule.persistNew(processWithoutName);
   }
 
   protected void createData() {
@@ -1413,10 +1413,10 @@ public class ListViewQueryIT extends OperateIntegrationTest {
         .createFlowNodeInstance(instanceWithoutIncident.getProcessInstanceKey(), FlowNodeState.COMPLETED);
 
     //persist instances
-    elasticsearchTestRule.persistNew(runningInstance, completedInstance, instanceWithIncident, instanceWithoutIncident, canceledInstance,
+    searchTestRule.persistNew(runningInstance, completedInstance, instanceWithIncident, instanceWithoutIncident, canceledInstance,
       activityInstance1, activityInstance2, activityInstance3, activityInstance4, activityInstance5, activityInstance6);
 
-    elasticsearchTestRule.persistNew(vars.toArray(new OperateEntity[vars.size()]));
+    searchTestRule.persistNew(vars.toArray(new OperateEntity[vars.size()]));
   }
 
   private String query() {

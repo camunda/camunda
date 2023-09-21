@@ -6,6 +6,7 @@
  */
 package io.camunda.operate.webapp.elasticsearch.reader;
 
+import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.webapp.rest.dto.DtoCreator;
 import java.io.IOException;
 import java.time.OffsetDateTime;
@@ -36,7 +37,7 @@ import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Profile;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 import static io.camunda.operate.schema.templates.OperationTemplate.BATCH_OPERATION_ID;
@@ -57,7 +58,7 @@ import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
-@Profile("!opensearch")
+@Conditional(ElasticsearchCondition.class)
 @Component
 public class OperationReader extends AbstractReader implements io.camunda.operate.webapp.reader.OperationReader {
 

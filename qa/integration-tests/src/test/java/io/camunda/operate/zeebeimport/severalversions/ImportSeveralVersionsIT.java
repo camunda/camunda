@@ -24,7 +24,7 @@ import io.camunda.operate.qa.util.ElasticsearchUtil;
 import io.camunda.operate.schema.indices.ProcessIndex;
 import io.camunda.operate.schema.templates.IncidentTemplate;
 import io.camunda.operate.schema.templates.ListViewTemplate;
-import io.camunda.operate.util.ElasticsearchTestRule;
+import io.camunda.operate.util.SearchTestRule;
 import io.camunda.operate.util.OperateIntegrationTest;
 import io.camunda.operate.util.TestImportListener;
 import io.camunda.operate.util.TestUtil;
@@ -56,7 +56,7 @@ public class ImportSeveralVersionsIT extends OperateIntegrationTest {
   private static final int TIMEOUT_IN_MILLIS = TIMEOUT_IN_SECONDS * 1000; // 5 minutes
 
   @Rule
-  public ElasticsearchTestRule elasticsearchTestRule = new ElasticsearchTestRule(OPERATE_PREFIX);
+  public SearchTestRule searchTestRule = new SearchTestRule(OPERATE_PREFIX);
 
   @Autowired
   private ZeebeImporter zeebeImporter;

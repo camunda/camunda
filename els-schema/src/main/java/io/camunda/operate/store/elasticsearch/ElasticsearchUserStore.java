@@ -9,6 +9,7 @@ package io.camunda.operate.store.elasticsearch;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.OperateProfileService;
+import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.entities.UserEntity;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.schema.indices.UserIndex;
@@ -26,16 +27,18 @@ import org.elasticsearch.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
+
+@Conditional(ElasticsearchCondition.class)
 @Component
 @DependsOn("schemaStartup")
-@Profile("!opensearch"
-    +  "& !" + OperateProfileService.LDAP_AUTH_PROFILE
+@Profile("!" + OperateProfileService.LDAP_AUTH_PROFILE
     + " & !" + OperateProfileService.SSO_AUTH_PROFILE
     + " & !" + OperateProfileService.IDENTITY_AUTH_PROFILE
 )

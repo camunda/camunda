@@ -31,7 +31,7 @@ import io.camunda.operate.webapp.rest.dto.FlowNodeStatisticsDto;
 import io.camunda.operate.webapp.rest.dto.ProcessInstanceCoreStatisticsDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import io.camunda.operate.util.CollectionUtil;
-import io.camunda.operate.util.ElasticsearchTestRule;
+import io.camunda.operate.util.SearchTestRule;
 import io.camunda.operate.util.OperateIntegrationTest;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
@@ -56,7 +56,7 @@ public class ProcessStatisticsIT extends OperateIntegrationTest {
   private PermissionsService permissionsService;
 
   @Rule
-  public ElasticsearchTestRule elasticsearchTestRule = new ElasticsearchTestRule();
+  public SearchTestRule searchTestRule = new SearchTestRule();
 
   @Test
   public void testOneProcessStatistics() throws Exception {
@@ -186,7 +186,7 @@ public class ProcessStatisticsIT extends OperateIntegrationTest {
     entities.add(TestUtil.createFlowNodeInstance(processInstance.getProcessInstanceKey(), FlowNodeState.ACTIVE, "taskA", null));
     entities.add(TestUtil.createFlowNodeInstance(processInstance.getProcessInstanceKey(), FlowNodeState.ACTIVE, "taskB", null));
     entities.add(processInstance);
-    elasticsearchTestRule.persistNew(entities.toArray(new OperateEntity[entities.size()]));
+    searchTestRule.persistNew(entities.toArray(new OperateEntity[entities.size()]));
 
     ListViewQueryDto queryRequest = createGetAllProcessInstancesQuery(processDefinitionKey);
 
@@ -215,7 +215,7 @@ public class ProcessStatisticsIT extends OperateIntegrationTest {
     entities.add(TestUtil.createFlowNodeInstance(processInstance.getProcessInstanceKey(), FlowNodeState.ACTIVE, "taskA", null));
     entities.add(TestUtil.createFlowNodeInstance(processInstance.getProcessInstanceKey(), FlowNodeState.ACTIVE, "taskB", null));
     entities.add(processInstance);
-    elasticsearchTestRule.persistNew(entities.toArray(new OperateEntity[entities.size()]));
+    searchTestRule.persistNew(entities.toArray(new OperateEntity[entities.size()]));
 
     ListViewQueryDto queryRequest = createGetAllProcessInstancesQuery(processDefinitionKey);
 
@@ -240,7 +240,7 @@ public class ProcessStatisticsIT extends OperateIntegrationTest {
     final ProcessInstanceForListViewEntity processInstance1 = createProcessInstance(ProcessInstanceState.ACTIVE).setBpmnProcessId(bpmnProcessId1);
     final ProcessInstanceForListViewEntity processInstance2 = createProcessInstance(ProcessInstanceState.ACTIVE).setBpmnProcessId(bpmnProcessId2);
     final ProcessInstanceForListViewEntity processInstance3 = createProcessInstance(ProcessInstanceState.ACTIVE).setBpmnProcessId(bpmnProcessId3);
-    elasticsearchTestRule.persistNew(processInstance1, processInstance2, processInstance3);
+    searchTestRule.persistNew(processInstance1, processInstance2, processInstance3);
 
     ListViewRequestDto queryRequest = createGetAllProcessInstancesRequest();
 
@@ -263,7 +263,7 @@ public class ProcessStatisticsIT extends OperateIntegrationTest {
     final ProcessInstanceForListViewEntity processInstance1 = createProcessInstance(ProcessInstanceState.ACTIVE).setBpmnProcessId(bpmnProcessId1);
     final ProcessInstanceForListViewEntity processInstance2 = createProcessInstance(ProcessInstanceState.ACTIVE).setBpmnProcessId(bpmnProcessId2);
     final ProcessInstanceForListViewEntity processInstance3 = createProcessInstance(ProcessInstanceState.ACTIVE).setBpmnProcessId(bpmnProcessId3);
-    elasticsearchTestRule.persistNew(processInstance1, processInstance2, processInstance3);
+    searchTestRule.persistNew(processInstance1, processInstance2, processInstance3);
 
     ListViewRequestDto queryRequest = createGetAllProcessInstancesRequest();
 
@@ -464,7 +464,7 @@ public class ProcessStatisticsIT extends OperateIntegrationTest {
         .createFlowNodeInstance(inst.getProcessInstanceKey(), FlowNodeState.COMPLETED, "end", FlowNodeType.END_EVENT));
     entities.add(inst);
 
-    elasticsearchTestRule.persistNew(entities.toArray(new OperateEntity[entities.size()]));
+    searchTestRule.persistNew(entities.toArray(new OperateEntity[entities.size()]));
 
   }
 }

@@ -6,6 +6,7 @@
  */
 package io.camunda.operate.webapp.api.v1.dao;
 
+import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.webapp.api.v1.entities.DecisionInstance;
@@ -21,6 +22,7 @@ import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -30,6 +32,7 @@ import java.util.List;
 import static io.camunda.operate.schema.templates.DecisionInstanceTemplate.*;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
+@Conditional(ElasticsearchCondition.class)
 @Component("ElasticsearchDecisionInstanceDaoV1")
 public class ElasticsearchDecisionInstanceDao extends ElasticsearchDao<DecisionInstance>
     implements DecisionInstanceDao {

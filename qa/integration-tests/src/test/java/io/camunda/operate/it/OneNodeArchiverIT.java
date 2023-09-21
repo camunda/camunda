@@ -124,17 +124,17 @@ public class OneNodeArchiverIT extends OperateZeebeIntegrationTest {
     //finish instances 2 days ago
     final Instant endDate = currentTime.minus(2, ChronoUnit.DAYS);
     finishInstances(count, endDate, activityId);
-    elasticsearchTestRule.processAllRecordsAndWait(getPartOfProcessInstancesAreFinishedCheck(), ids1);
+    searchTestRule.processAllRecordsAndWait(getPartOfProcessInstancesAreFinishedCheck(), ids1);
 
     pinZeebeTime(currentTime);
 
     //when
     int expectedCount = count / operateProperties.getClusterNode().getNodeCount(); // we're archiving only part of the partitions
     assertThat(archiverJob.archiveNextBatch().join()).isGreaterThanOrEqualTo(expectedCount);
-    elasticsearchTestRule.refreshIndexesInElasticsearch();
+    searchTestRule.refreshSerchIndexes();
     assertThat(archiverJob.archiveNextBatch().join()).isLessThanOrEqualTo(expectedCount + 1);
 
-    elasticsearchTestRule.refreshIndexesInElasticsearch();
+    searchTestRule.refreshSerchIndexes();
 
     //then
     assertInstancesInCorrectIndex(expectedCount, endDate);

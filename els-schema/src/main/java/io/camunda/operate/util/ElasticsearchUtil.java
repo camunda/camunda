@@ -485,13 +485,14 @@ public abstract class ElasticsearchUtil {
 
   public static void scroll(SearchRequest searchRequest, Consumer<SearchHits> searchHitsProcessor,
       RestHighLevelClient esClient) throws IOException {
-    scroll(searchRequest, searchHitsProcessor, esClient, TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
+    scroll(searchRequest, searchHitsProcessor, esClient, SCROLL_KEEP_ALIVE_MS);
   }
 
   public static void scroll(SearchRequest searchRequest, Consumer<SearchHits> searchHitsProcessor,
-      RestHighLevelClient esClient, TimeValue scrollKeepAlive) throws IOException {
+      RestHighLevelClient esClient, long scrollKeepAlive) throws IOException {
+    var scrollKeepAliveTimeValue = TimeValue.timeValueMillis(scrollKeepAlive);
 
-    searchRequest.scroll(scrollKeepAlive);
+    searchRequest.scroll(scrollKeepAliveTimeValue);
     SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
 
     String scrollId = response.getScrollId();
@@ -505,7 +506,7 @@ public abstract class ElasticsearchUtil {
       }
 
       SearchScrollRequest scrollRequest = new SearchScrollRequest(scrollId);
-      scrollRequest.scroll(scrollKeepAlive);
+      scrollRequest.scroll(scrollKeepAliveTimeValue);
 
       response = esClient
           .scroll(scrollRequest, RequestOptions.DEFAULT);
