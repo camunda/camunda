@@ -17,8 +17,6 @@ import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
-import io.camunda.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
-import io.camunda.zeebe.test.util.MsgPackUtil;
 import io.camunda.zeebe.test.util.bpmn.random.steps.AbstractExecutionStep;
 import io.camunda.zeebe.test.util.bpmn.random.steps.StepActivateAndCompleteJob;
 import io.camunda.zeebe.test.util.bpmn.random.steps.StepActivateAndFailJob;
@@ -27,7 +25,6 @@ import io.camunda.zeebe.test.util.bpmn.random.steps.StepActivateJobAndThrowError
 import io.camunda.zeebe.test.util.bpmn.random.steps.StepCompleteUserTask;
 import io.camunda.zeebe.test.util.bpmn.random.steps.StepPublishMessage;
 import io.camunda.zeebe.test.util.bpmn.random.steps.StepPublishStartMessage;
-import io.camunda.zeebe.test.util.bpmn.random.steps.StepRaiseIncidentThenResolveAndPickConditionCase;
 import io.camunda.zeebe.test.util.bpmn.random.steps.StepStartProcessInstance;
 import io.camunda.zeebe.test.util.bpmn.random.steps.StepThrowError;
 import io.camunda.zeebe.test.util.bpmn.random.steps.StepTriggerTimerBoundaryEvent;
@@ -74,9 +71,6 @@ public class ProcessExecutor {
       final StepActivateJobAndThrowError activateJobAndThrowError =
           (StepActivateJobAndThrowError) step;
       activateJobAndThrowError(activateJobAndThrowError);
-    } else if (step instanceof StepRaiseIncidentThenResolveAndPickConditionCase) {
-      final var expressionIncident = (StepRaiseIncidentThenResolveAndPickConditionCase) step;
-      resolveExpressionIncident(expressionIncident);
     } else if (step instanceof StepTriggerTimerStartEvent) {
       final StepTriggerTimerStartEvent timerStep = (StepTriggerTimerStartEvent) step;
       triggerTimerStartEvent(timerStep);
@@ -287,35 +281,6 @@ public class ProcessExecutor {
         .withKey(jobRecord.getKey())
         .withErrorCode(stepThrowError.getErrorCode())
         .throwError();
-  }
-
-  private void resolveExpressionIncident(
-      final StepRaiseIncidentThenResolveAndPickConditionCase expressionIncident) {
-    final var incident =
-        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
-            .withElementId(expressionIncident.getGatewayElementId())
-            .findFirst()
-            .get();
-
-    engineRule
-        .variables()
-        .ofScope(incident.getValue().getProcessInstanceKey())
-        .withDocument(
-            MsgPackUtil.asMsgPack(
-                Map.of(
-                    expressionIncident.getGatewayConditionVariable(),
-                    expressionIncident.getEdgeId())))
-        .withUpdateSemantic(VariableDocumentUpdateSemantic.LOCAL)
-        .update();
-
-    engineRule
-        .incident()
-        .ofInstance(incident.getValue().getProcessInstanceKey())
-        .withKey(incident.getKey())
-        .resolve();
-    RecordingExporter.incidentRecords(IncidentIntent.RESOLVED)
-        .withElementId(expressionIncident.getGatewayElementId())
-        .await();
   }
 
   private void waitUntilRecordIsProcessed(final String condition, final Record<?> record) {
