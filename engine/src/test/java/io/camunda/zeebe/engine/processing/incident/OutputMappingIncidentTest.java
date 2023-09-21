@@ -42,6 +42,12 @@ public class OutputMappingIncidentTest {
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
   private static final String PROCESS_ID = "processId";
 
+  /**
+   * Using the `assert()` function to force the evaluation to fail. Without the function, the engine
+   * would replace the non-existing variable with `null`.
+   */
+  private static final String OUTPUT_SOURCE_EXPRESSION = "assert(foo, foo != null)";
+
   @Parameter public String description;
 
   @Parameter(1)
@@ -66,7 +72,9 @@ public class OutputMappingIncidentTest {
                         .startEvent()
                         .serviceTask(
                             "serviceTaskId",
-                            b -> b.zeebeJobType("type").zeebeOutputExpression("foo", "bar"))
+                            b ->
+                                b.zeebeJobType("type")
+                                    .zeebeOutputExpression(OUTPUT_SOURCE_EXPRESSION, "bar"))
                         .endEvent()
                         .done()),
             "serviceTaskId",
@@ -80,7 +88,8 @@ public class OutputMappingIncidentTest {
                     Bpmn.createExecutableProcess(PROCESS_ID)
                         .startEvent()
                         .intermediateThrowEvent(
-                            "intermediateThrowEventId", b -> b.zeebeOutputExpression("foo", "bar"))
+                            "intermediateThrowEventId",
+                            b -> b.zeebeOutputExpression(OUTPUT_SOURCE_EXPRESSION, "bar"))
                         .endEvent()
                         .done()),
             "intermediateThrowEventId",
@@ -100,7 +109,7 @@ public class OutputMappingIncidentTest {
                                 b.zeebeCalledDecisionId("jedi_or_sith")
                                     .zeebeResultVariable("result")
                                     .zeebeInputExpression("\"blue\"", "lightsaberColor")
-                                    .zeebeOutputExpression("foo", "bar"))
+                                    .zeebeOutputExpression(OUTPUT_SOURCE_EXPRESSION, "bar"))
                         .endEvent()
                         .done()),
             "businessRuleTaskId",
@@ -113,7 +122,9 @@ public class OutputMappingIncidentTest {
                 .withXmlResource(
                     Bpmn.createExecutableProcess(PROCESS_ID)
                         .startEvent()
-                        .endEvent("endEventId", b -> b.zeebeOutputExpression("foo", "bar"))
+                        .endEvent(
+                            "endEventId",
+                            b -> b.zeebeOutputExpression(OUTPUT_SOURCE_EXPRESSION, "bar"))
                         .done()),
             "endEventId",
             false
@@ -158,7 +169,7 @@ public class OutputMappingIncidentTest {
         .hasVariableScopeKey(failureCommand.getKey());
 
     assertThat(incidentEvent.getValue().getErrorMessage())
-        .contains("no variable found for name 'foo'");
+        .contains("Assertion failure on evaluate the expression");
   }
 
   @Test
@@ -191,7 +202,7 @@ public class OutputMappingIncidentTest {
         .hasProcessInstanceKey(processInstanceKey)
         .hasElementId(elementId);
     assertThat(resolvedIncidentRecord.getValue().getErrorMessage())
-        .contains("no variable found for name 'foo'");
+        .contains("Assertion failure on evaluate the expression");
     assertTrue(
         RecordingExporter.processInstanceRecords()
             .withProcessInstanceKey(processInstanceKey)
@@ -236,7 +247,7 @@ public class OutputMappingIncidentTest {
         .hasProcessInstanceKey(processInstanceKey)
         .hasElementId(elementId);
     assertThat(resolvedIncidentRecord.getValue().getErrorMessage())
-        .contains("no variable found for name 'foo'");
+        .contains("Assertion failure on evaluate the expression");
     assertTrue(
         RecordingExporter.processInstanceRecords()
             .withProcessInstanceKey(processInstanceKey)

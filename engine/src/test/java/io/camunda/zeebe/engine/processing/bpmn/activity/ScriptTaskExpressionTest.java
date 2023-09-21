@@ -277,7 +277,7 @@ public final class ScriptTaskExpressionTest {
         .withXmlResource(
             processWithScriptTask(
                 t ->
-                    t.zeebeExpression("x")
+                    t.zeebeExpression("assert(x, x != null)")
                         .zeebeResultVariable(RESULT_VARIABLE)
                         .zeebeOutputExpression(RESULT_VARIABLE, OUTPUT_TARGET)))
         .deploy();
@@ -300,7 +300,10 @@ public final class ScriptTaskExpressionTest {
 
     Assertions.assertThat(incidentRecord.getValue())
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
-        .hasErrorMessage("failed to evaluate expression 'x': no variable found for name 'x'")
+        .hasErrorMessage(
+            """
+            Assertion failure on evaluate the expression 'assert(x, x != null)': \
+            The condition is not fulfilled""")
         .hasBpmnProcessId(scriptTask.getValue().getBpmnProcessId())
         .hasProcessDefinitionKey(scriptTask.getValue().getProcessDefinitionKey())
         .hasProcessInstanceKey(scriptTask.getValue().getProcessInstanceKey())
@@ -318,7 +321,7 @@ public final class ScriptTaskExpressionTest {
         .withXmlResource(
             processWithScriptTask(
                 t ->
-                    t.zeebeExpression("x")
+                    t.zeebeExpression("assert(x, x != null)")
                         .zeebeResultVariable(RESULT_VARIABLE)
                         .zeebeOutputExpression(RESULT_VARIABLE, OUTPUT_TARGET)))
         .deploy();

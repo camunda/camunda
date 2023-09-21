@@ -394,7 +394,10 @@ public final class ProcessInstanceTokenTest {
                 .endEvent("end-1")
                 .moveToLastGateway()
                 .serviceTask(
-                    "task-2", t -> t.zeebeJobType("task-2").zeebeOutputExpression("result", "r"))
+                    "task-2",
+                    t ->
+                        t.zeebeJobType("task-2")
+                            .zeebeOutputExpression("assert(result, result != null)", "r"))
                 .endEvent("end-2")
                 .done())
         .deploy();

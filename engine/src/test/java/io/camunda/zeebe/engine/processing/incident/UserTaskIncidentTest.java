@@ -70,7 +70,9 @@ public class UserTaskIncidentTest {
     // given
     ENGINE
         .deployment()
-        .withXmlResource(processWithUserTask(u -> u.zeebeAssigneeExpression("MISSING_VAR")))
+        .withXmlResource(
+            processWithUserTask(
+                u -> u.zeebeAssigneeExpression("assert(MISSING_VAR, MISSING_VAR != null)")))
         .deploy();
 
     // when
@@ -87,7 +89,9 @@ public class UserTaskIncidentTest {
     assertIncidentCreated(processInstanceKey, userTaskActivating.getKey())
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
-            "failed to evaluate expression 'MISSING_VAR': no variable found for name 'MISSING_VAR'");
+            """
+            Assertion failure on evaluate the expression \
+            'assert(MISSING_VAR, MISSING_VAR != null)': The condition is not fulfilled""");
   }
 
   @Test
@@ -201,7 +205,9 @@ public class UserTaskIncidentTest {
     // given
     ENGINE
         .deployment()
-        .withXmlResource(processWithUserTask(u -> u.zeebeCandidateGroupsExpression("MISSING_VAR")))
+        .withXmlResource(
+            processWithUserTask(
+                u -> u.zeebeCandidateGroupsExpression("assert(MISSING_VAR, MISSING_VAR != null)")))
         .deploy();
 
     // when
@@ -218,7 +224,9 @@ public class UserTaskIncidentTest {
     assertIncidentCreated(processInstanceKey, userTaskActivating.getKey())
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
-            "failed to evaluate expression 'MISSING_VAR': no variable found for name 'MISSING_VAR'");
+            """
+            Assertion failure on evaluate the expression \
+            'assert(MISSING_VAR, MISSING_VAR != null)': The condition is not fulfilled""");
   }
 
   @Test
@@ -321,7 +329,9 @@ public class UserTaskIncidentTest {
     // given
     ENGINE
         .deployment()
-        .withXmlResource(processWithUserTask(u -> u.zeebeCandidateUsersExpression("MISSING_VAR")))
+        .withXmlResource(
+            processWithUserTask(
+                u -> u.zeebeCandidateUsersExpression("assert(MISSING_VAR, MISSING_VAR != null)")))
         .deploy();
 
     // when
@@ -338,7 +348,9 @@ public class UserTaskIncidentTest {
     assertIncidentCreated(processInstanceKey, userTaskActivating.getKey())
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
-            "failed to evaluate expression 'MISSING_VAR': no variable found for name 'MISSING_VAR'");
+            """
+            Assertion failure on evaluate the expression \
+            'assert(MISSING_VAR, MISSING_VAR != null)': The condition is not fulfilled""");
   }
 
   @Test
@@ -444,7 +456,9 @@ public class UserTaskIncidentTest {
     // given
     ENGINE
         .deployment()
-        .withXmlResource(processWithUserTask(u -> u.zeebeDueDateExpression("MISSING_VAR")))
+        .withXmlResource(
+            processWithUserTask(
+                u -> u.zeebeDueDateExpression("assert(MISSING_VAR, MISSING_VAR != null)")))
         .deploy();
 
     // when
@@ -461,7 +475,9 @@ public class UserTaskIncidentTest {
     assertIncidentCreated(processInstanceKey, userTaskActivating.getKey())
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
-            "failed to evaluate expression 'MISSING_VAR': no variable found for name 'MISSING_VAR'");
+            """
+            Assertion failure on evaluate the expression \
+            'assert(MISSING_VAR, MISSING_VAR != null)': The condition is not fulfilled""");
   }
 
   @Test
@@ -494,7 +510,9 @@ public class UserTaskIncidentTest {
     // given
     ENGINE
         .deployment()
-        .withXmlResource(processWithUserTask(t -> t.zeebeDueDateExpression("MISSING_VAR")))
+        .withXmlResource(
+            processWithUserTask(
+                t -> t.zeebeDueDateExpression("assert(MISSING_VAR, MISSING_VAR != null)")))
         .deploy();
 
     // and an instance of that process is created without a variable for the dueDate expression
@@ -532,7 +550,9 @@ public class UserTaskIncidentTest {
     // given
     ENGINE
         .deployment()
-        .withXmlResource(processWithUserTask(t -> t.zeebeDueDateExpression("MISSING_VAR")))
+        .withXmlResource(
+            processWithUserTask(
+                t -> t.zeebeDueDateExpression("assert(MISSING_VAR, MISSING_VAR != null)")))
         .deploy();
 
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
@@ -575,7 +595,9 @@ public class UserTaskIncidentTest {
     // given
     ENGINE
         .deployment()
-        .withXmlResource(processWithUserTask(u -> u.zeebeFollowUpDateExpression("MISSING_VAR")))
+        .withXmlResource(
+            processWithUserTask(
+                u -> u.zeebeFollowUpDateExpression("assert(MISSING_VAR, MISSING_VAR != null)")))
         .deploy();
 
     // when
@@ -592,7 +614,9 @@ public class UserTaskIncidentTest {
     assertIncidentCreated(processInstanceKey, userTaskActivating.getKey())
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
-            "failed to evaluate expression 'MISSING_VAR': no variable found for name 'MISSING_VAR'");
+            """
+            Assertion failure on evaluate the expression \
+            'assert(MISSING_VAR, MISSING_VAR != null)': The condition is not fulfilled""");
   }
 
   @Test
@@ -625,7 +649,9 @@ public class UserTaskIncidentTest {
     // given
     ENGINE
         .deployment()
-        .withXmlResource(processWithUserTask(t -> t.zeebeFollowUpDateExpression("MISSING_VAR")))
+        .withXmlResource(
+            processWithUserTask(
+                t -> t.zeebeFollowUpDateExpression("assert(MISSING_VAR, MISSING_VAR != null)")))
         .deploy();
 
     // and an instance of that process is created without a variable for the followUpDate expression
@@ -663,7 +689,9 @@ public class UserTaskIncidentTest {
     // given
     ENGINE
         .deployment()
-        .withXmlResource(processWithUserTask(t -> t.zeebeFollowUpDateExpression("MISSING_VAR")))
+        .withXmlResource(
+            processWithUserTask(
+                t -> t.zeebeFollowUpDateExpression("assert(MISSING_VAR, MISSING_VAR != null)")))
         .deploy();
 
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();

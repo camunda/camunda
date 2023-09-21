@@ -699,7 +699,11 @@ public final class UserTaskTest {
     // given
     ENGINE
         .deployment()
-        .withXmlResource(process(t -> t.zeebeInputExpression("nonexisting_variable", "target")))
+        .withXmlResource(
+            process(
+                t ->
+                    t.zeebeInputExpression(
+                        "assert(nonexisting_variable, nonexisting_variable != null)", "target")))
         .deploy();
     final long processInstanceKey =
         ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable("foo", 10).create();

@@ -535,7 +535,9 @@ public final class CallActivityTest {
     // given
     ENGINE
         .deployment()
-        .withXmlResource("wf-parent.bpmn", parentProcess(c -> c.zeebeOutputExpression("x", "y")))
+        .withXmlResource(
+            "wf-parent.bpmn",
+            parentProcess(c -> c.zeebeOutputExpression("assert(x, x != null)", "y")))
         .deploy();
 
     final var processInstanceKey =
@@ -638,7 +640,9 @@ public final class CallActivityTest {
     // given
     ENGINE
         .deployment()
-        .withXmlResource("wf-parent.bpmn", parentProcess(c -> c.zeebeInputExpression("x", "y")))
+        .withXmlResource(
+            "wf-parent.bpmn",
+            parentProcess(c -> c.zeebeInputExpression("assert(x, x != null)", "y")))
         .deploy();
 
     // when

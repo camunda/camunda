@@ -75,7 +75,8 @@ public final class MultiInstanceIncidentTest {
                                 b ->
                                     b.zeebeInputCollectionExpression(INPUT_COLLECTION)
                                         .zeebeInputElement(INPUT_ELEMENT)
-                                        .zeebeOutputElementExpression("{x: undefined_var}")
+                                        .zeebeOutputElementExpression(
+                                            "{x: assert(undefined_var, undefined_var != null)}")
                                         .zeebeOutputCollection("results")))
                 .endEvent()
                 .done())
@@ -170,8 +171,10 @@ public final class MultiInstanceIncidentTest {
         .hasElementId(elementInstance.getValue().getElementId())
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
-            "failed to evaluate expression '{x: undefined_var}': "
-                + "no variable found for name 'undefined_var'");
+            """
+            Assertion failure on evaluate the expression \
+            '{x: assert(undefined_var, undefined_var != null)}': \
+            The condition is not fulfilled""");
   }
 
   @Test
@@ -271,7 +274,7 @@ public final class MultiInstanceIncidentTest {
             Bpmn.createExecutableProcess(MULTI_SUB_PROC_PROCESS)
                 .startEvent()
                 .subProcess("sub-process")
-                .zeebeInputExpression("y", "y")
+                .zeebeInputExpression("assert(y, y != null)", "y")
                 .multiInstance(
                     b ->
                         b.parallel()

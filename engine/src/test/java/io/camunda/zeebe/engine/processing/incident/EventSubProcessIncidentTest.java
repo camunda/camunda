@@ -145,7 +145,7 @@ public class EventSubProcessIncidentTest {
         .hasVariableScopeKey(failureEvent.getKey());
 
     assertThat(incidentEventValue.getErrorMessage())
-        .contains("no variable found for name 'source'");
+        .contains("Assertion failure on evaluate the expression");
   }
 
   @Test
@@ -252,7 +252,7 @@ public class EventSubProcessIncidentTest {
         .apply(
             process
                 .eventSubProcess("event_sub_proc")
-                .zeebeInputExpression("=source", "localScope")
+                .zeebeInputExpression("= assert(source, source != null)", "localScope")
                 .startEvent("event_sub_start")
                 .interrupting(true))
         .endEvent("event_sub_end");
