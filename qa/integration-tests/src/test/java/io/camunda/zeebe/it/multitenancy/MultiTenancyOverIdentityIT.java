@@ -178,6 +178,7 @@ public class MultiTenancyOverIdentityIT {
       new ContainerLogsDumper(
           () -> Map.of("postgres", POSTGRES, "keycloak", KEYCLOAK, "identity", IDENTITY));
 
+  private String processId;
   private BpmnModelInstance process;
 
   @BeforeAll
@@ -221,8 +222,9 @@ public class MultiTenancyOverIdentityIT {
 
   @BeforeEach
   void setup() {
+    processId = Strings.newRandomValidBpmnId();
     process =
-        Bpmn.createExecutableProcess(Strings.newRandomValidBpmnId())
+        Bpmn.createExecutableProcess(processId)
             .startEvent()
             .serviceTask("task", b -> b.zeebeJobType("type"))
             .endEvent()
@@ -268,6 +270,46 @@ public class MultiTenancyOverIdentityIT {
           .withMessageContaining(
               "Expected to handle gRPC request DeployResource with tenant identifier `tenant-b`")
           .withMessageContaining("but tenant is not authorized to perform this request");
+    }
+  }
+
+  @Test
+  void shouldIncrementProcessVersionPerTenant() {
+    // given
+    try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A)) {
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(process, "process.bpmn")
+          .tenantId("tenant-a")
+          .send()
+          .join();
+    }
+    try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_B)) {
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(process, "process.bpmn")
+          .tenantId("tenant-b")
+          .send()
+          .join();
+    }
+
+    try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_B)) {
+      // when
+      final var processV2 = Bpmn.createExecutableProcess(processId).startEvent().done();
+      final Future<DeploymentEvent> result =
+          client
+              .newDeployResourceCommand()
+              .addProcessModel(processV2, "process.bpmn")
+              .tenantId("tenant-b")
+              .send();
+
+      // then
+      assertThat(result)
+          .succeedsWithin(Duration.ofSeconds(10))
+          .describedAs("Process version is incremented for tenant-b but not for tenant-a")
+          .extracting(deploymentEvent -> deploymentEvent.getProcesses().get(0))
+          .extracting(Process::getVersion, Process::getTenantId)
+          .containsExactly(2, "tenant-b");
     }
   }
 
