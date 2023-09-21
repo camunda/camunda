@@ -225,7 +225,7 @@ public class FeelExpressionTest {
     final var evaluationResult = evaluateExpression("is defined(x)", context::get);
 
     assertThat(evaluationResult.getType()).isEqualTo(ResultType.BOOLEAN);
-    assertThat(evaluationResult.getBoolean()).isTrue();
+    assertThat(evaluationResult.getBoolean()).isFalse();
   }
 
   private EvaluationResult evaluateExpression(
