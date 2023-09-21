@@ -165,4 +165,8 @@ public final class ClusterTopologyManagerService extends Actor {
         new TopologyChangeAppliersImpl(
             partitionChangeExecutor, new NoopTopologyMembershipChangeExecutor()));
   }
+
+  public void removePartitionChangeExecutor() {
+    clusterTopologyManager.removeTopologyChangeAppliers();
+  }
 }

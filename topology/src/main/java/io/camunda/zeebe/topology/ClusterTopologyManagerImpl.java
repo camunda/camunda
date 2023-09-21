@@ -256,4 +256,8 @@ public final class ClusterTopologyManagerImpl implements ClusterTopologyManager 
           applyTopologyChangeOperation(persistedClusterTopology.getTopology());
         });
   }
+
+  public void removeTopologyChangeAppliers() {
+    executor.run(() -> changeAppliers = null);
+  }
 }
