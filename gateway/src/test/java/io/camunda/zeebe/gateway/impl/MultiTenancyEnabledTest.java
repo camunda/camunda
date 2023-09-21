@@ -28,6 +28,8 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DecisionRequirementsM
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceRequest.Builder;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluateDecisionRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluateDecisionResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ProcessMetadata;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.grpc.Status;
@@ -46,6 +48,7 @@ public class MultiTenancyEnabledTest extends GatewayTest {
   public void setup() {
     new DeployResourceStub().registerWith(brokerClient);
     new CreateProcessInstanceStub().registerWith(brokerClient);
+    new TenantAwareEvaluateDecisionStub().registerWith(brokerClient);
   }
 
   private void assertThatTenantIdsSet(
@@ -208,6 +211,64 @@ public class MultiTenancyEnabledTest extends GatewayTest {
     final CreateProcessInstanceResponse response =
         client.createProcessInstance(
             CreateProcessInstanceRequest.newBuilder().setTenantId("tenant-b").build());
+    assertThat(response).isNotNull();
+
+    // then
+    assertThat(response.getTenantId()).isEqualTo("tenant-b");
+  }
+
+  @Test
+  public void evaluateDecisionRequestShouldContainAuthorizedTenants() {
+    // given
+    when(gateway.getIdentityMock().tenants().forToken(anyString()))
+        .thenReturn(List.of(new Tenant("tenant-a", "A"), new Tenant("tenant-b", "B")));
+
+    final var request = EvaluateDecisionRequest.newBuilder().setTenantId("tenant-b").build();
+
+    // when
+    final EvaluateDecisionResponse response = client.evaluateDecision(request);
+    assertThat(response).isNotNull();
+
+    // then
+    assertThatTenantIdsSet("tenant-b", List.of("tenant-a", "tenant-b"));
+  }
+
+  @Test
+  public void evaluateDecisionRequestRequiresTenantId() {
+    // given
+    when(gateway.getIdentityMock().tenants().forToken(anyString()))
+        .thenReturn(List.of(new Tenant("tenant-a", "A"), new Tenant("tenant-b", "B")));
+
+    final var request = EvaluateDecisionRequest.newBuilder().build();
+
+    // when/then
+    assertThatRejectsRequestMissingTenantId(
+        () -> client.evaluateDecision(request), "EvaluateDecision");
+  }
+
+  @Test
+  public void evaluateDecisionRequestRequiresValidTenantId() {
+    // given
+    when(gateway.getIdentityMock().tenants().forToken(anyString()))
+        .thenReturn(List.of(new Tenant("tenant-a", "A"), new Tenant("tenant-b", "B")));
+
+    final var request = EvaluateDecisionRequest.newBuilder().setTenantId("tenant-c").build();
+
+    // when/then
+    assertThatRejectsUnauthorizedRequest(
+        () -> client.evaluateDecision(request), "EvaluateDecision");
+  }
+
+  @Test
+  public void evaluateDecisionResponseHasTenantId() {
+    // given
+    when(gateway.getIdentityMock().tenants().forToken(anyString()))
+        .thenReturn(List.of(new Tenant("tenant-a", "A"), new Tenant("tenant-b", "B")));
+
+    final var request = EvaluateDecisionRequest.newBuilder().setTenantId("tenant-b").build();
+
+    // when
+    final EvaluateDecisionResponse response = client.evaluateDecision(request);
     assertThat(response).isNotNull();
 
     // then
