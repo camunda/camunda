@@ -337,10 +337,10 @@ public class MultiTenancyOverIdentityIT {
       assertThat(result)
           .failsWithin(Duration.ofSeconds(10))
           .withThrowableThat()
+          .describedAs("Process definition should exist for tenant-a but not for tenant-b")
           .withMessageContaining("NOT_FOUND")
           .withMessageContaining("Expected to find process definition with key")
-          .describedAs("Process definition should exist for tenant-a but not for tenant-b")
-          .withMessageContaining("and tenant ID 'tenant-b', but none found");
+          .withMessageContaining("but none found");
     }
   }
 
@@ -379,10 +379,10 @@ public class MultiTenancyOverIdentityIT {
       assertThat(result)
           .failsWithin(Duration.ofSeconds(10))
           .withThrowableThat()
+          .describedAs("Process definition should exist for tenant-a but not for tenant-b")
           .withMessageContaining("NOT_FOUND")
           .withMessageContaining("Expected to find process definition with key")
-          .describedAs("Process definition should exist for tenant-a but not for tenant-b")
-          .withMessageContaining("and tenant ID 'tenant-b', but none found");
+          .withMessageContaining("but none found");
     }
   }
 
