@@ -46,7 +46,6 @@ class Processes extends NetworkReconnectionHandler {
       handleFetchError: action,
       handleFetchSuccess: action,
       processes: computed,
-      versionsByProcess: computed,
       versionsByProcessAndTenant: computed,
       reset: override,
     });
@@ -111,29 +110,13 @@ class Processes extends NetworkReconnectionHandler {
 
   get processes() {
     return this.state.processes
-      .map(({bpmnProcessId, name}) => ({
-        value: bpmnProcessId,
+      .map(({key, tenantId, bpmnProcessId, name}) => ({
+        id: key,
         label: name ?? bpmnProcessId,
+        bpmnProcessId,
+        tenantId,
       }))
       .sort(sortOptions);
-  }
-
-  get versionsByProcess(): {
-    [bpmnProcessId: string]: ProcessVersionDto[];
-  } {
-    return this.state.processes.reduce<{
-      [bpmnProcessId: string]: ProcessVersionDto[];
-    }>(
-      (accumulator, {bpmnProcessId, processes}) => ({
-        ...accumulator,
-        [bpmnProcessId]: processes
-          .slice()
-          .sort(
-            (process, nextProcess) => process.version - nextProcess.version,
-          ),
-      }),
-      {},
-    );
   }
 
   get versionsByProcessAndTenant(): {

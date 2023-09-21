@@ -6,14 +6,21 @@
  */
 
 import React from 'react';
-import {Field, useForm} from 'react-final-form';
+import {Field, useField, useForm} from 'react-final-form';
 import {observer} from 'mobx-react';
 import {processesStore} from 'modules/stores/processes';
 import {ComboBox} from 'modules/components/ComboBox';
+import {authenticationStore} from 'modules/stores/authentication';
 
 const ProcessField: React.FC = observer(() => {
-  const {processes, versionsByProcess} = processesStore;
+  const {processes, versionsByProcessAndTenant} = processesStore;
   const form = useForm();
+
+  const selectedTenant = useField('tenant').input.value;
+  const isMultiTenancyEnabled = window.clientConfig?.multiTenancyEnabled;
+
+  const isSpecificTenantSelected =
+    selectedTenant !== '' && selectedTenant !== 'all';
 
   return (
     <Field name="process" data-testid="filter-process-name-field">
@@ -25,7 +32,7 @@ const ProcessField: React.FC = observer(() => {
           placeholder="Search by Process Name"
           onChange={({selectedItem}) => {
             const versions = selectedItem
-              ? versionsByProcess[selectedItem.id]
+              ? versionsByProcessAndTenant[selectedItem.id]
               : [];
             const initialVersionSelection =
               versions === undefined
@@ -36,11 +43,23 @@ const ProcessField: React.FC = observer(() => {
 
             form.change('version', initialVersionSelection);
             form.change('flowNodeId', undefined);
+
+            if (isMultiTenancyEnabled) {
+              const tenant = processes.find(({id}) => id === selectedItem?.id)
+                ?.tenantId;
+
+              if (tenant !== undefined) {
+                form.change('tenant', tenant);
+              }
+            }
           }}
-          items={processes.map((option) => {
+          items={processes.map(({id, label, tenantId}) => {
             return {
-              label: option.label,
-              id: option.value,
+              label:
+                isMultiTenancyEnabled && !isSpecificTenantSelected
+                  ? `${label} - ${authenticationStore.tenantsById?.[tenantId]}`
+                  : label,
+              id,
             };
           })}
           value={input.value}

@@ -12,9 +12,9 @@ import {Dropdown} from '@carbon/react';
 import {processesStore} from 'modules/stores/processes';
 
 const ProcessVersionField: React.FC = observer(() => {
-  const {versionsByProcess} = processesStore;
-  const selectedProcess = useField('process').input.value;
-  const versions = versionsByProcess[selectedProcess] ?? [];
+  const {versionsByProcessAndTenant} = processesStore;
+  const selectedProcessKey = useField('process').input.value;
+  const versions = versionsByProcessAndTenant[selectedProcessKey] ?? [];
   const items = ['all', ...versions.map(({version}) => version)];
   const form = useForm();
 

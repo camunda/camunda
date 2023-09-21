@@ -34,6 +34,7 @@ import {
   OptionalFiltersFormGroup,
 } from './OptionalFiltersFormGroup';
 import {TenantField} from 'modules/components/TenantField';
+import {processesStore} from 'modules/stores/processes';
 
 const initialValues: ProcessInstanceFilters = {
   active: true,
@@ -43,13 +44,33 @@ const initialValues: ProcessInstanceFilters = {
 const Filters: React.FC = observer(() => {
   const filters = useFilters();
   const [visibleFilters, setVisibleFilters] = useState<OptionalFilter[]>([]);
+  const filtersFromUrl = filters.getFiltersFromUrl();
 
   return (
     <Form<ProcessInstanceFilters>
       onSubmit={(values) => {
-        filters.setFiltersToURL(values);
+        filters.setFiltersToURL({
+          ...values,
+          ...(values.process !== undefined
+            ? {
+                process: processesStore.state.processes.find(
+                  ({key}) => key === values.process,
+                )?.bpmnProcessId,
+              }
+            : {}),
+        });
       }}
-      initialValues={filters.getFiltersFromUrl()}
+      initialValues={{
+        ...filtersFromUrl,
+        ...(filtersFromUrl.process !== undefined
+          ? {
+              process: processesStore.getProcess({
+                bpmnProcessId: filtersFromUrl.process,
+                tenantId: filtersFromUrl.tenant,
+              })?.key,
+            }
+          : {}),
+      }}
     >
       {({handleSubmit, form, values}) => (
         <StyledForm onSubmit={handleSubmit}>

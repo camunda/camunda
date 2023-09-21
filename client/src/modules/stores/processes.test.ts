@@ -92,37 +92,6 @@ describe('stores/processes', () => {
     ).toBe('2251799813685894');
   });
 
-  it('should get versions by process', async () => {
-    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
-
-    processesStore.fetchProcesses();
-
-    await waitFor(() =>
-      expect(
-        processesStore.state.processes.map((process) => {
-          const {key, ...processDto} = process;
-          return processDto;
-        }),
-      ).toEqual(groupedProcessesMock),
-    );
-
-    expect(processesStore.versionsByProcess['demoProcess']?.[1]).toEqual({
-      bpmnProcessId: 'demoProcess',
-      id: 'demoProcess2',
-      name: 'Demo process',
-      version: 2,
-    });
-
-    expect(
-      processesStore.versionsByProcess['eventBasedGatewayProcess']?.[0],
-    ).toEqual({
-      bpmnProcessId: 'eventBasedGatewayProcess',
-      id: '2251799813685911',
-      name: 'Event based gateway with message start',
-      version: 1,
-    });
-  });
-
   it('should get versions by process and tenant', async () => {
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
 
