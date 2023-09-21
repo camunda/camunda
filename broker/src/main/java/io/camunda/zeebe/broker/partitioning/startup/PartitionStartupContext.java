@@ -10,7 +10,10 @@ package io.camunda.zeebe.broker.partitioning.startup;
 import io.atomix.primitive.partition.PartitionManagementService;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.raft.partition.RaftPartition;
+import io.camunda.zeebe.broker.partitioning.topology.TopologyManager;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
+import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
@@ -19,7 +22,10 @@ import java.nio.file.Path;
 
 public final class PartitionStartupContext {
   private final ActorSchedulingService schedulingService;
+  private final TopologyManager topologyManager;
   private final ConcurrencyControl concurrencyControl;
+  private final DiskSpaceUsageMonitor diskSpaceUsageMonitor;
+  private final BrokerHealthCheckService healthCheckService;
   private final PartitionManagementService partitionManagementService;
   private final PartitionMetadata partitionMetadata;
   private final RaftPartitionFactory raftPartitionFactory;
@@ -35,13 +41,19 @@ public final class PartitionStartupContext {
   public PartitionStartupContext(
       final ActorSchedulingService schedulingService,
       final ConcurrencyControl concurrencyControl,
+      final TopologyManager topologyManager,
+      final DiskSpaceUsageMonitor diskSpaceUsageMonitor,
+      final BrokerHealthCheckService healthCheckService,
       final PartitionManagementService partitionManagementService,
       final PartitionMetadata partitionMetadata,
       final RaftPartitionFactory raftPartitionFactory,
       final ZeebePartitionFactory zeebePartitionFactory,
       final BrokerCfg brokerConfig) {
     this.schedulingService = schedulingService;
+    this.topologyManager = topologyManager;
     this.concurrencyControl = concurrencyControl;
+    this.diskSpaceUsageMonitor = diskSpaceUsageMonitor;
+    this.healthCheckService = healthCheckService;
     this.partitionManagementService = partitionManagementService;
     this.partitionMetadata = partitionMetadata;
     this.raftPartitionFactory = raftPartitionFactory;
@@ -60,6 +72,18 @@ public final class PartitionStartupContext {
 
   public ConcurrencyControl concurrencyControl() {
     return concurrencyControl;
+  }
+
+  public TopologyManager topologyManager() {
+    return topologyManager;
+  }
+
+  public DiskSpaceUsageMonitor diskSpaceUsageMonitor() {
+    return diskSpaceUsageMonitor;
+  }
+
+  public BrokerHealthCheckService brokerHealthCheckService() {
+    return healthCheckService;
   }
 
   public PartitionManagementService partitionManagementService() {

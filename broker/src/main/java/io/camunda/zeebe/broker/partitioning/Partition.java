@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.partitioning;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.broker.partitioning.startup.PartitionStartupContext;
 import io.camunda.zeebe.broker.partitioning.startup.steps.PartitionDirectoryStep;
+import io.camunda.zeebe.broker.partitioning.startup.steps.PartitionRegistrationStep;
 import io.camunda.zeebe.broker.partitioning.startup.steps.RaftBootstrapStep;
 import io.camunda.zeebe.broker.partitioning.startup.steps.RaftJoinStep;
 import io.camunda.zeebe.broker.partitioning.startup.steps.SnapshotStoreStep;
@@ -64,7 +65,8 @@ public final class Partition {
                 new PartitionDirectoryStep(),
                 new SnapshotStoreStep(),
                 new RaftBootstrapStep(),
-                new ZeebePartitionStep())));
+                new ZeebePartitionStep(),
+                new PartitionRegistrationStep())));
   }
 
   public static Partition joining(final PartitionStartupContext context) {
@@ -75,7 +77,8 @@ public final class Partition {
                 new PartitionDirectoryStep(),
                 new SnapshotStoreStep(),
                 new RaftJoinStep(),
-                new ZeebePartitionStep())));
+                new ZeebePartitionStep(),
+                new PartitionRegistrationStep())));
   }
 
   public ActorFuture<Partition> start() {

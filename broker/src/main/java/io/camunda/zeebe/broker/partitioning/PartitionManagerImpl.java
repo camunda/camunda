@@ -20,13 +20,10 @@ import io.camunda.zeebe.broker.partitioning.startup.PartitionStartupContext;
 import io.camunda.zeebe.broker.partitioning.startup.RaftPartitionFactory;
 import io.camunda.zeebe.broker.partitioning.startup.ZeebePartitionFactory;
 import io.camunda.zeebe.broker.partitioning.topology.PartitionDistribution;
-import io.camunda.zeebe.broker.partitioning.topology.TopologyManager;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
-import io.camunda.zeebe.broker.partitioning.topology.TopologyPartitionListener;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
-import io.camunda.zeebe.broker.system.partitions.PartitionHealthBroadcaster;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
@@ -48,8 +45,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class PartitionManagerImpl
-    implements PartitionManager, TopologyManager, PartitionChangeExecutor {
+public final class PartitionManagerImpl implements PartitionManager, PartitionChangeExecutor {
 
   public static final String GROUP_NAME = "raft-partition";
 
@@ -103,7 +99,6 @@ public final class PartitionManagerImpl
             commandApiService,
             clusterServices,
             exporterRepository,
-            healthCheckService,
             diskSpaceUsageMonitor,
             gatewayBrokerTransport,
             jobStreamer,
@@ -138,6 +133,9 @@ public final class PartitionManagerImpl
         new PartitionStartupContext(
             actorSchedulingService,
             concurrencyControl,
+            topologyManager,
+            diskSpaceUsageMonitor,
+            healthCheckService,
             managementService,
             partitionMetadata,
             raftPartitionFactory,
@@ -147,7 +145,7 @@ public final class PartitionManagerImpl
     partitions.put(id, partition);
 
     concurrencyControl.runOnCompletion(
-        partition.start(), (started, error) -> completePartitionStart(id, started, error, result));
+        partition.start(), (started, error) -> completePartitionStart(id, error, result));
     return result;
   }
 
@@ -158,6 +156,9 @@ public final class PartitionManagerImpl
         new PartitionStartupContext(
             actorSchedulingService,
             concurrencyControl,
+            topologyManager,
+            diskSpaceUsageMonitor,
+            healthCheckService,
             managementService,
             partitionMetadata,
             raftPartitionFactory,
@@ -173,30 +174,21 @@ public final class PartitionManagerImpl
     concurrencyControl.run(
         () ->
             concurrencyControl.runOnCompletion(
-                partition.start(),
-                (started, error) -> completePartitionStart(id, started, error, result)));
+                partition.start(), (started, error) -> completePartitionStart(id, error, result)));
     return result;
   }
 
   private void completePartitionStart(
-      final int partitionId,
-      final Partition partition,
-      final Throwable error,
-      final ActorFuture<Void> future) {
+      final int partitionId, final Throwable error, final ActorFuture<Void> future) {
 
     if (error != null) {
       LOGGER.error("Failed to start partition {}", partitionId, error);
-      onHealthChanged(partitionId, HealthStatus.DEAD);
+      topologyManager.onHealthChanged(partitionId, HealthStatus.DEAD);
       future.completeExceptionally(error);
       return;
     }
 
     LOGGER.info("Started partition {}", partitionId);
-    final var zeebePartition = partition.zeebePartition();
-
-    zeebePartition.addFailureListener(
-        new PartitionHealthBroadcaster(partitionId, this::onHealthChanged));
-    diskSpaceUsageMonitor.addDiskUsageListener(zeebePartition);
     future.complete(null);
   }
 
@@ -223,20 +215,6 @@ public final class PartitionManagerImpl
   @Override
   public String toString() {
     return "PartitionManagerImpl{partitions=" + partitions + '}';
-  }
-
-  public void onHealthChanged(final int i, final HealthStatus healthStatus) {
-    topologyManager.onHealthChanged(i, healthStatus);
-  }
-
-  @Override
-  public void removeTopologyPartitionListener(final TopologyPartitionListener listener) {
-    topologyManager.removeTopologyPartitionListener(listener);
-  }
-
-  @Override
-  public void addTopologyPartitionListener(final TopologyPartitionListener listener) {
-    topologyManager.addTopologyPartitionListener(listener);
   }
 
   @Override
