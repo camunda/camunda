@@ -110,6 +110,7 @@ final class JobStreamImplTest {
             .addTenantIds(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER)
             .addFetchVariable("foo")
             .addFetchVariable("bar")
+            .addTenantIds("test-tenant")
             .build();
 
     // when
@@ -178,6 +179,7 @@ final class JobStreamImplTest {
         "worker",
         Duration.ofSeconds(10),
         Arrays.asList("foo", "bar"),
+        Arrays.asList("test-tenant"),
         Duration.ofHours(8),
         ignored -> 10_000L,
         scheduler);
@@ -224,6 +226,7 @@ final class JobStreamImplTest {
               .setDeadline(System.currentTimeMillis() + request.getTimeout())
               .setWorker(request.getWorker())
               .setVariables(JsonUtil.toJson(variables))
+              .setTenantId("test-tenant")
               .setKey(keyGenerator++)
               .build();
 
