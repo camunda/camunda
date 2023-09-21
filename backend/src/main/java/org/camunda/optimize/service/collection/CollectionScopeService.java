@@ -6,6 +6,8 @@
 package org.camunda.optimize.service.collection;
 
 import com.google.common.collect.Sets;
+import jakarta.ws.rs.ForbiddenException;
+import jakarta.ws.rs.NotFoundException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.DefinitionType;
@@ -25,7 +27,6 @@ import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
 import org.camunda.optimize.dto.optimize.rest.DefinitionVersionResponseDto;
 import org.camunda.optimize.dto.optimize.rest.collection.CollectionScopeEntryResponseDto;
 import org.camunda.optimize.service.DefinitionService;
-import org.camunda.optimize.service.TenantService;
 import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.writer.CollectionWriter;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -34,10 +35,9 @@ import org.camunda.optimize.service.exceptions.conflict.OptimizeCollectionConfli
 import org.camunda.optimize.service.report.ReportService;
 import org.camunda.optimize.service.security.AuthorizedCollectionService;
 import org.camunda.optimize.service.security.util.definition.DataSourceDefinitionAuthorizationService;
+import org.camunda.optimize.service.tenant.TenantService;
 import org.springframework.stereotype.Component;
 
-import jakarta.ws.rs.ForbiddenException;
-import jakarta.ws.rs.NotFoundException;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -381,19 +381,18 @@ public class CollectionScopeService {
                                                         final CollectionScopeEntryDto currentScope) {
     final List<String> unauthorizedTenantsOfCurrentScope = currentScope.getTenants()
       .stream()
-      .filter(tenant -> !tenantService.isAuthorizedToSeeTenant(userId, tenant))
-      .collect(Collectors.toList());
-    final List<String> allTenants = tenantService.getTenants()
-      .stream()
-      .map(TenantDto::getId)
-      .collect(Collectors.toList());
+      .filter(tenantId -> !tenantService.isAuthorizedToSeeTenant(userId, tenantId))
+      .toList();
     final List<String> allTenantsWithMaskedTenantsBeingResolved =
       Stream.concat(
-        scopeUpdate.getTenants().stream().filter(allTenants::contains),
-        unauthorizedTenantsOfCurrentScope.stream()
-      )
+          // tenants in the scope the user isn't authorized to access are displayed as fake "unauthorized" tenants in FE and
+          // need to be removed from scope before persisting
+          scopeUpdate.getTenants().stream().filter(tenantId -> !UNAUTHORIZED_TENANT_MASK_ID.equals(tenantId)),
+          // this adds any tenants already in the scope that the current user wasn't authorized to see
+          unauthorizedTenantsOfCurrentScope.stream()
+        )
         .distinct()
-        .collect(Collectors.toList());
+        .toList();
     scopeUpdate.setTenants(allTenantsWithMaskedTenantsBeingResolved);
   }
 
@@ -440,10 +439,10 @@ public class CollectionScopeService {
 
   private String getDefinitionName(final String userId, final CollectionScopeEntryResponseDto scope) {
     return definitionService.getDefinitionWithAvailableTenants(
-      scope.getDefinitionType(),
-      scope.getDefinitionKey(),
-      userId
-    )
+        scope.getDefinitionType(),
+        scope.getDefinitionKey(),
+        userId
+      )
       .map(DefinitionResponseDto::getName)
       .orElse(scope.getDefinitionKey());
   }

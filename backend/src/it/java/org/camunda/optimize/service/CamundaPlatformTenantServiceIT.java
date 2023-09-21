@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.service.tenant.CamundaPlatformTenantService.TENANT_NOT_DEFINED;
 import static org.camunda.optimize.service.util.importing.EngineConstants.ALL_PERMISSION;
 import static org.camunda.optimize.service.util.importing.EngineConstants.ALL_RESOURCES_RESOURCE_ID;
 import static org.camunda.optimize.service.util.importing.EngineConstants.AUTHORIZATION_TYPE_GRANT;
@@ -23,7 +24,7 @@ import static org.camunda.optimize.service.util.importing.EngineConstants.RESOUR
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_INDEX_NAME;
 
-public class TenantServiceIT extends AbstractPlatformIT {
+public class CamundaPlatformTenantServiceIT extends AbstractPlatformIT {
 
   @Test
   public void getStoredTenants() {
@@ -34,11 +35,11 @@ public class TenantServiceIT extends AbstractPlatformIT {
     addTenantToElasticsearch(new TenantDto(tenantId, tenantName, DEFAULT_ENGINE_ALIAS));
 
     // when
-    final List<TenantDto> tenants = embeddedOptimizeExtension.getTenantService().getTenants();
+    final List<TenantDto> tenants = embeddedOptimizeExtension.getPlatformTenantService().getAvailableTenants();
 
     // then
     assertThat(tenants).hasSize(2);
-    assertThat(tenants.get(0)).isEqualTo(TenantService.TENANT_NOT_DEFINED);
+    assertThat(tenants.get(0)).isEqualTo(TENANT_NOT_DEFINED);
     assertThat(tenants.get(1).getId()).isEqualTo(tenantId);
     assertThat(tenants.get(1).getName()).isEqualTo(tenantName);
   }
@@ -52,11 +53,11 @@ public class TenantServiceIT extends AbstractPlatformIT {
     embeddedOptimizeExtension.reloadConfiguration();
 
     // when
-    final List<TenantDto> tenants = embeddedOptimizeExtension.getTenantService().getTenants();
+    final List<TenantDto> tenants = embeddedOptimizeExtension.getPlatformTenantService().getAvailableTenants();
 
     // then
     assertThat(tenants).hasSize(2);
-    assertThat(tenants.get(0)).isEqualTo(TenantService.TENANT_NOT_DEFINED);
+    assertThat(tenants.get(0)).isEqualTo(TENANT_NOT_DEFINED);
     assertThat(tenants.get(1).getId()).isEqualTo(tenantId);
     assertThat(tenants.get(1).getName()).isEqualTo(tenantName);
   }
@@ -69,11 +70,11 @@ public class TenantServiceIT extends AbstractPlatformIT {
     embeddedOptimizeExtension.reloadConfiguration();
 
     // when
-    final List<TenantDto> tenants = embeddedOptimizeExtension.getTenantService().getTenants();
+    final List<TenantDto> tenants = embeddedOptimizeExtension.getPlatformTenantService().getAvailableTenants();
 
     // then
     assertThat(tenants).hasSize(2);
-    assertThat(tenants.get(0)).isEqualTo(TenantService.TENANT_NOT_DEFINED);
+    assertThat(tenants.get(0)).isEqualTo(TENANT_NOT_DEFINED);
     assertThat(tenants.get(1).getId()).isEqualTo(tenantId);
     assertThat(tenants.get(1).getName()).isEqualTo(tenantId);
   }
@@ -91,11 +92,11 @@ public class TenantServiceIT extends AbstractPlatformIT {
     embeddedOptimizeExtension.reloadConfiguration();
 
     // when
-    final List<TenantDto> tenants = embeddedOptimizeExtension.getTenantService().getTenants();
+    final List<TenantDto> tenants = embeddedOptimizeExtension.getPlatformTenantService().getAvailableTenants();
 
     // then
     assertThat(tenants).hasSize(3);
-    assertThat(tenants.get(0)).isEqualTo(TenantService.TENANT_NOT_DEFINED);
+    assertThat(tenants.get(0)).isEqualTo(TENANT_NOT_DEFINED);
     assertThat(tenants.get(1).getId()).isEqualTo(defaultTenantId);
     assertThat(tenants.get(1).getName()).isEqualTo(defaultTenantName);
     assertThat(tenants.get(2).getId()).isEqualTo(storedTenantId);
@@ -113,7 +114,7 @@ public class TenantServiceIT extends AbstractPlatformIT {
     createOptimizeUser(tenantUser);
 
     // when
-    final boolean isAuthorized = embeddedOptimizeExtension.getTenantService()
+    final boolean isAuthorized = embeddedOptimizeExtension.getPlatformTenantService()
       .isAuthorizedToSeeTenant(tenantUser, tenantId);
 
     // then
@@ -131,7 +132,7 @@ public class TenantServiceIT extends AbstractPlatformIT {
     createUserWithTenantAuthorization(tenantUser, ImmutableList.of(ALL_PERMISSION), ALL_RESOURCES_RESOURCE_ID);
 
     // when
-    final boolean isAuthorized = embeddedOptimizeExtension.getTenantService()
+    final boolean isAuthorized = embeddedOptimizeExtension.getPlatformTenantService()
       .isAuthorizedToSeeTenant(tenantUser, tenantId);
 
     // then
@@ -149,7 +150,7 @@ public class TenantServiceIT extends AbstractPlatformIT {
     createUserWithTenantAuthorization(tenantUser, ImmutableList.of(ALL_PERMISSION), tenantId);
 
     // when
-    final boolean isAuthorized = embeddedOptimizeExtension.getTenantService()
+    final boolean isAuthorized = embeddedOptimizeExtension.getPlatformTenantService()
       .isAuthorizedToSeeTenant(tenantUser, tenantId);
 
     // then
@@ -168,66 +169,11 @@ public class TenantServiceIT extends AbstractPlatformIT {
     createTenantAuthorization(tenantUser, ImmutableList.of(ALL_PERMISSION), tenantId, AUTHORIZATION_TYPE_REVOKE);
 
     // when
-    final boolean isAuthorized = embeddedOptimizeExtension.getTenantService()
+    final boolean isAuthorized = embeddedOptimizeExtension.getPlatformTenantService()
       .isAuthorizedToSeeTenant(tenantUser, tenantId);
 
     // then
     assertThat(isAuthorized).isFalse();
-  }
-
-  @Test
-  public void getAuthorizedTenantsOnly() {
-    // given
-    final String storedTenantId1 = "1";
-    final String storedTenantName1 = "My Tenant 1";
-    final String storedTenantId2 = "2";
-    final String storedTenantName2 = "My Tenant 2";
-
-    final String tenantUserId = "tenantUser";
-
-    createUserWithTenantAuthorization(tenantUserId, ImmutableList.of(ALL_PERMISSION), storedTenantId1);
-    addTenantToElasticsearch(new TenantDto(storedTenantId1, storedTenantName1, DEFAULT_ENGINE_ALIAS));
-    addTenantToElasticsearch(new TenantDto(storedTenantId2, storedTenantName2, DEFAULT_ENGINE_ALIAS));
-
-    // when
-    final List<TenantDto> tenantsForUser = embeddedOptimizeExtension.getTenantService().getTenantsForUserByEngine(
-      tenantUserId, DEFAULT_ENGINE_ALIAS
-    );
-
-    // then
-    assertThat(tenantsForUser).hasSize(2);
-    assertThat(tenantsForUser.get(0)).isEqualTo(TenantService.TENANT_NOT_DEFINED);
-    assertThat(tenantsForUser.get(1).getId()).isEqualTo(storedTenantId1);
-  }
-
-  @Test
-  public void getAuthorizedTenantsOnly_withDefaultEngineTenant() {
-    // given
-    final String storedTenantId1 = "1";
-    final String storedTenantName1 = "My Tenant 1";
-    final String storedTenantId2 = "2";
-    final String storedTenantName2 = "My Tenant 2";
-    final String defaultTenantId = "myTenantId";
-    final String defaultTenantName = "Default Tenant";
-    setDefaultTenant(new DefaultTenant(defaultTenantId, defaultTenantName));
-    embeddedOptimizeExtension.reloadConfiguration();
-
-    final String tenantUserId = "tenantUser";
-
-    createUserWithTenantAuthorization(tenantUserId, ImmutableList.of(ALL_PERMISSION), storedTenantId1);
-    addTenantToElasticsearch(new TenantDto(storedTenantId1, storedTenantName1, DEFAULT_ENGINE_ALIAS));
-    addTenantToElasticsearch(new TenantDto(storedTenantId2, storedTenantName2, DEFAULT_ENGINE_ALIAS));
-
-    // when
-    final List<TenantDto> tenantsForUser = embeddedOptimizeExtension.getTenantService().getTenantsForUserByEngine(
-      tenantUserId, DEFAULT_ENGINE_ALIAS
-    );
-
-    // then
-    assertThat(tenantsForUser).hasSize(3);
-    assertThat(tenantsForUser.get(0)).isEqualTo(TenantService.TENANT_NOT_DEFINED);
-    assertThat(tenantsForUser.get(1).getId()).isEqualTo(defaultTenantId);
-    assertThat(tenantsForUser.get(2).getId()).isEqualTo(storedTenantId1);
   }
 
   private void createUserWithTenantAuthorization(final String tenantUser,

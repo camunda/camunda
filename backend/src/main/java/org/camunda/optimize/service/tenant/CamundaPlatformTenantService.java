@@ -3,7 +3,7 @@
  * Licensed under a proprietary license. See the License.txt file for more information.
  * You may not use this file except in compliance with the proprietary license.
  */
-package org.camunda.optimize.service;
+package org.camunda.optimize.service.tenant;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
@@ -15,7 +15,9 @@ import org.camunda.optimize.service.security.util.tenant.DataSourceTenantAuthori
 import org.camunda.optimize.service.util.configuration.CacheConfiguration;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.condition.CamundaPlatformCondition;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -24,19 +26,19 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 @Component
-public class TenantService implements ConfigurationReloadable {
+@Conditional(CamundaPlatformCondition.class)
+public class CamundaPlatformTenantService implements TenantService, ConfigurationReloadable {
   public static final TenantDto TENANT_NOT_DEFINED = new TenantDto(null, "Not defined", null);
 
   private final TenantReader tenantReader;
   private final DataSourceTenantAuthorizationService tenantAuthorizationService;
   private final ConfigurationService configurationService;
   private final LoadingCache<String, List<TenantDto>> tenantsReadCache;
-
   private List<TenantDto> configuredDefaultTenants;
 
-  public TenantService(final TenantReader tenantReader,
-                       final DataSourceTenantAuthorizationService tenantAuthorizationService,
-                       final ConfigurationService configurationService) {
+  public CamundaPlatformTenantService(final TenantReader tenantReader,
+                                      final DataSourceTenantAuthorizationService tenantAuthorizationService,
+                                      final ConfigurationService configurationService) {
     this.tenantReader = tenantReader;
     this.tenantAuthorizationService = tenantAuthorizationService;
     this.configurationService = configurationService;
@@ -55,16 +57,19 @@ public class TenantService implements ConfigurationReloadable {
       .build(key -> fetchTenants());
   }
 
+  @Override
   public boolean isAuthorizedToSeeTenant(final String userId, final String tenantId) {
     return tenantAuthorizationService.isAuthorizedToSeeTenant(userId, IdentityType.USER, tenantId);
   }
 
-  public List<String> getTenantIdsForUser(final String userId) {
-    return getTenantsForUser(userId).stream().map(TenantDto::getId).toList();
+  @Override
+  public boolean isMultiTenantEnvironment() {
+    return getAvailableTenants().size() > 1;
   }
 
+  @Override
   public List<TenantDto> getTenantsForUser(final String userId) {
-    return getTenants().stream()
+    return getAvailableTenants().stream()
       .filter(tenantDto -> tenantAuthorizationService.isAuthorizedToSeeTenant(
         userId,
         IdentityType.USER,
@@ -74,29 +79,14 @@ public class TenantService implements ConfigurationReloadable {
       .toList();
   }
 
-  public List<TenantDto> getTenantsForUserByEngine(final String userId, final String engineAlias) {
-    return getTenantsByEngine(engineAlias).stream()
-      .filter(tenantDto -> tenantAuthorizationService.isAuthorizedToSeeTenant(
-        userId,
-        IdentityType.USER,
-        tenantDto.getId(),
-        engineAlias
-      ))
-      .toList();
-  }
-
   public List<TenantDto> getTenantsByEngine(final String engineAlias) {
-    return getTenants().stream()
+    return getAvailableTenants().stream()
       .filter(tenantDto -> tenantDto.equals(TENANT_NOT_DEFINED) || tenantDto.getEngine().equals(engineAlias))
       .toList();
   }
 
-  public List<TenantDto> getTenants() {
+  public List<TenantDto> getAvailableTenants() {
     return tenantsReadCache.get("getTenants");
-  }
-
-  public boolean isMultiTenantEnvironment() {
-    return getTenants().size() > 1;
   }
 
   private List<TenantDto> fetchTenants() {
@@ -123,3 +113,4 @@ public class TenantService implements ConfigurationReloadable {
     tenantsReadCache.invalidateAll();
   }
 }
+

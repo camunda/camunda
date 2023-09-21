@@ -29,7 +29,6 @@ import org.camunda.optimize.service.KpiEvaluationSchedulerService;
 import org.camunda.optimize.service.KpiService;
 import org.camunda.optimize.service.LocalizationService;
 import org.camunda.optimize.service.SettingsService;
-import org.camunda.optimize.service.TenantService;
 import org.camunda.optimize.service.alert.AlertService;
 import org.camunda.optimize.service.archive.ProcessInstanceArchivingService;
 import org.camunda.optimize.service.cleanup.CleanupScheduler;
@@ -72,6 +71,7 @@ import org.camunda.optimize.service.importing.page.TimestampBasedImportPage;
 import org.camunda.optimize.service.importing.zeebe.mediator.StorePositionBasedImportProgressMediator;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.telemetry.TelemetryScheduler;
+import org.camunda.optimize.service.tenant.CamundaPlatformTenantService;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
@@ -511,8 +511,8 @@ public class EmbeddedOptimizeExtension
     log.info("done resetting config");
   }
 
-  public void reloadTenantCache() {
-    getTenantService().reloadConfiguration(null);
+  public void reloadEngineTenantCache() {
+    getPlatformTenantService().reloadConfiguration(null);
   }
 
   public final WebTarget target(String path) {
@@ -657,8 +657,8 @@ public class EmbeddedOptimizeExtension
     return getBean(DigestService.class);
   }
 
-  public TenantService getTenantService() {
-    return getBean(TenantService.class);
+  public CamundaPlatformTenantService getPlatformTenantService() {
+    return getBean(CamundaPlatformTenantService.class);
   }
 
   public KpiService getKpiService() {

@@ -10,23 +10,18 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
-import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewDto;
 import org.camunda.optimize.service.DefinitionService;
-import org.camunda.optimize.service.TenantService;
 import org.camunda.optimize.service.email.EmailService;
 import org.camunda.optimize.service.es.reader.ProcessOverviewReader;
 import org.camunda.optimize.service.identity.AbstractIdentityService;
+import org.camunda.optimize.service.tenant.TenantService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-
-import static java.util.stream.Collectors.toList;
-import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 
 @AllArgsConstructor
 @Component
@@ -54,11 +49,9 @@ public class OnboardingEmailNotificationService {
       final Optional<UserDto> optProcessOwner = identityService.getUserById(ownerId);
       if (optProcessOwner.isPresent()) {
         UserDto processOwner = optProcessOwner.get();
-        final String definitionName = definitionService.getDefinition(
+        final String definitionName = definitionService.getLatestCachedDefinitionOnAnyTenant(
           DefinitionType.PROCESS,
-          overviewDto.getProcessDefinitionKey(),
-          List.of(ALL_VERSIONS),
-          tenantService.getTenants().stream().map(TenantDto::getId).collect(toList())
+          overviewDto.getProcessDefinitionKey()
         ).map(DefinitionOptimizeResponseDto::getName).orElse(overviewDto.getProcessDefinitionKey());
 
         emailService.sendTemplatedEmailWithErrorHandling(

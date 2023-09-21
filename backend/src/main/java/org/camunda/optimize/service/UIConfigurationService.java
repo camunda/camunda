@@ -16,6 +16,7 @@ import org.camunda.optimize.dto.optimize.query.ui_configuration.WebappsEndpointD
 import org.camunda.optimize.rest.cloud.CloudSaasMetaInfoService;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.metadata.OptimizeVersionService;
+import org.camunda.optimize.service.tenant.TenantService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants;
 import org.camunda.optimize.service.util.configuration.engine.EngineConfiguration;

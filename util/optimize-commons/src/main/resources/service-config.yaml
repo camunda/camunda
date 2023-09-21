@@ -703,6 +703,11 @@ caches:
     maxSize: ${CAMUNDA_OPTIMIZE_CLOUD_USER_CACHE_MAX_SIZE:10000}
     # the minimum interval (in seconds) between each request to repopulate the cache.
     minFetchIntervalSeconds: ${CAMUNDA_OPTIMIZE_CLOUD_USER_CACHE_MIN_FETCH_INTERVAL_SECONDS:600}
+  # This cache is used to hold user tenant authorizations in CCSM
+  cloudTenantAuthorizations:
+    maxSize: ${CAMUNDA_OPTIMIZE_CACHES_CLOUD_TENANT_AUTHORIZATIONS_MAX_SIZE:10000}
+    # the time (in millis) the tenant authorizations will be cached
+    defaultTtlMillis: ${CAMUNDA_OPTIMIZE_CACHES_CLOUD_TENANT_AUTHORIZATIONS_MIN_FETCH_INTERVAL_SECONDS:600000}
 
 externalVariable:
   import:
@@ -722,3 +727,8 @@ externalVariable:
     scheduleIntervalInMinutes: 10
     # A rollover is triggered when the size of the current external variable index matches or exceeds the maxIndexSizeGB threshold.
     maxIndexSizeGB: 50
+
+multiTenancy:
+  # Currently only available in C8SM. Determines whether multi tenancy is enabled in Optimize.
+  # Note that multi tenancy is active by default in Optimize C7 and therefore this flag will have no influence on a C7 system.
+  enabled: ${CAMUNDA_OPTIMIZE_MULTI_TENANCY_ENABLED:false}

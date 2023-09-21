@@ -28,7 +28,6 @@ import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResponseDto;
 import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.service.TenantService;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
 import org.camunda.optimize.service.es.report.util.MapResultAsserter;
 import org.camunda.optimize.service.es.report.util.MapResultUtil;
@@ -41,6 +40,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import jakarta.ws.rs.core.Response;
+
 import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.Comparator;
@@ -59,6 +59,7 @@ import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.S
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
+import static org.camunda.optimize.service.tenant.CamundaPlatformTenantService.TENANT_NOT_DEFINED;
 import static org.camunda.optimize.util.BpmnModels.SERVICE_TASK_ID_1;
 import static org.camunda.optimize.util.BpmnModels.SERVICE_TASK_ID_2;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
@@ -191,7 +192,7 @@ public class FlowNodeFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
   public void orderOfTenantSelectionDoesNotAffectResult() {
     // given
     final String definitionKey = "aKey";
-    final String noneTenantId = TenantService.TENANT_NOT_DEFINED.getId();
+    final String noneTenantId = TENANT_NOT_DEFINED.getId();
     final String otherTenantId = "tenant1";
 
     engineIntegrationExtension.createTenant(otherTenantId);
@@ -220,7 +221,7 @@ public class FlowNodeFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
     // given
     final String definitionKey = "aKey";
     final String tenantId1 = "tenantId1";
-    final String noneTenantId = TenantService.TENANT_NOT_DEFINED.getId();
+    final String noneTenantId = TENANT_NOT_DEFINED.getId();
     engineIntegrationExtension.createTenant(tenantId1);
 
     // To create specific tenant instances with a shared def, start instance on noneTenant and update tenantID after

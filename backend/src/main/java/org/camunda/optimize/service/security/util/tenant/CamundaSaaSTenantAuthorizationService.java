@@ -6,15 +6,15 @@
 package org.camunda.optimize.service.security.util.tenant;
 
 import org.camunda.optimize.dto.optimize.IdentityType;
-import org.camunda.optimize.service.util.configuration.condition.CamundaCloudCondition;
+import org.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-@Conditional(CamundaCloudCondition.class)
+@Conditional(CCSaaSCondition.class)
 @Component
-public class CamundaCloudTenantAuthorizationService implements DataSourceTenantAuthorizationService {
+public class CamundaSaaSTenantAuthorizationService implements DataSourceTenantAuthorizationService {
 
   @Override
   public boolean isAuthorizedToSeeAllTenants(final String identityId, final IdentityType identityType,

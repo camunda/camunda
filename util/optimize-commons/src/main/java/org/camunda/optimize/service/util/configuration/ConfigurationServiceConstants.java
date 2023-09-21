@@ -153,6 +153,7 @@ public class ConfigurationServiceConstants {
   public static final String ELASTICSEARCH_PROFILE = "elasticsearch";
   public static final String OPENSEARCH_PROFILE = "opensearch";
   public static final List<String> optimizeDatabaseProfiles = List.of(ELASTICSEARCH_PROFILE, OPENSEARCH_PROFILE);
+  public static final String MULTI_TENANCY_ENABLED = "$.multiTenancy.enabled";
   //@formatter:on
 
 }

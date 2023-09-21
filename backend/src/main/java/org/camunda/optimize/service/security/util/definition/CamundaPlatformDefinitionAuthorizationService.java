@@ -15,8 +15,8 @@ import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.SimpleDefinitionDto;
 import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
-import org.camunda.optimize.service.TenantService;
 import org.camunda.optimize.service.security.EventProcessAuthorizationService;
+import org.camunda.optimize.service.tenant.TenantService;
 import org.camunda.optimize.service.util.configuration.condition.CamundaPlatformCondition;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -32,9 +32,8 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static java.util.Comparator.naturalOrder;
-import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
-import static org.camunda.optimize.service.TenantService.TENANT_NOT_DEFINED;
+import static org.camunda.optimize.service.tenant.CamundaPlatformTenantService.TENANT_NOT_DEFINED;
 
 @RequiredArgsConstructor
 @Conditional(CamundaPlatformCondition.class)

@@ -37,6 +37,7 @@ import org.mockserver.verify.VerificationTimes;
 import org.slf4j.event.Level;
 
 import jakarta.ws.rs.core.Response;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -47,7 +48,7 @@ import static jakarta.ws.rs.HttpMethod.POST;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
-import static org.camunda.optimize.service.TenantService.TENANT_NOT_DEFINED;
+import static org.camunda.optimize.service.tenant.CamundaPlatformTenantService.TENANT_NOT_DEFINED;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANTS;
@@ -429,37 +430,6 @@ public class CollectionRestServiceScopeIT extends AbstractPlatformIT {
   }
 
   @Test
-  public void updateUnknownTenantsAreFilteredOut() {
-    // given
-    addProcessDefinitionToElasticsearch(DEFAULT_DEFINITION_KEY, null);
-    final String collectionId = collectionClient.createNewCollection();
-    final CollectionScopeEntryDto entry = createSimpleScopeEntry(DEFAULT_DEFINITION_KEY);
-    collectionClient.addScopeEntryToCollection(collectionId, entry);
-
-    importAllEngineEntitiesFromScratch();
-
-    // when
-    final String tenant1 = "tenant1";
-    addTenantToElasticsearch(tenant1);
-    entry.setTenants(Lists.newArrayList(null, tenant1, "fooTenant"));
-    embeddedOptimizeExtension.getRequestExecutor()
-      .buildUpdateCollectionScopeEntryRequest(collectionId, entry.getId(), new CollectionScopeEntryUpdateDto(entry))
-      .execute(Response.Status.NO_CONTENT.getStatusCode());
-
-    // then
-    List<CollectionScopeEntryResponseDto> scope = collectionClient.getCollectionScope(collectionId);
-
-    assertThat(scope)
-      .hasSize(1)
-      .singleElement()
-      .satisfies(
-        scopeEntryDto -> assertThat(scopeEntryDto.getTenants())
-          .extracting(TenantDto::getId)
-          .containsExactly(null, tenant1)
-      );
-  }
-
-  @Test
   public void updatingNonExistingDefinitionScopeEntryFails() {
     // given
     final String collectionId = collectionClient.createNewCollection();
@@ -815,7 +785,7 @@ public class CollectionRestServiceScopeIT extends AbstractPlatformIT {
   private void addTenantToElasticsearch(final String tenantId) {
     TenantDto tenantDto = new TenantDto(tenantId, "ATenantName", DEFAULT_ENGINE_ALIAS);
     elasticSearchIntegrationTestExtension.addEntryToElasticsearch(TENANT_INDEX_NAME, tenantId, tenantDto);
-    embeddedOptimizeExtension.reloadTenantCache();
+    embeddedOptimizeExtension.reloadEngineTenantCache();
   }
 
   private Response buildAndExecuteBulkDeleteScopeEntriesFromCollectionRequest(List<String> collectionScopeIds,

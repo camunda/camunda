@@ -5,13 +5,15 @@
  */
 package org.camunda.optimize.service.digest;
 
+import jakarta.annotation.Nullable;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
-import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.KpiResultDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.KpiType;
@@ -24,13 +26,13 @@ import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.TargetValueUnit;
 import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.KpiService;
-import org.camunda.optimize.service.TenantService;
 import org.camunda.optimize.service.email.EmailService;
 import org.camunda.optimize.service.es.reader.ProcessOverviewReader;
 import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.writer.ProcessOverviewWriter;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.identity.AbstractIdentityService;
+import org.camunda.optimize.service.tenant.TenantService;
 import org.camunda.optimize.service.util.DurationFormatterUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -40,9 +42,6 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.stereotype.Component;
 
-import jakarta.annotation.Nullable;
-import jakarta.annotation.PostConstruct;
-import jakarta.annotation.PreDestroy;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -50,8 +49,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ScheduledFuture;
 
-import static java.util.stream.Collectors.toList;
-import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.query.processoverview.KpiType.QUALITY;
 import static org.camunda.optimize.dto.optimize.query.processoverview.KpiType.TIME;
 
@@ -184,11 +181,9 @@ public class DigestService implements ConfigurationReloadable {
   private void composeAndSendDigestEmail(final ProcessOverviewDto overviewDto,
                                          final List<KpiResultDto> currentKpiReportResults) {
     final Optional<UserDto> processOwner = identityService.getUserById(overviewDto.getOwner());
-    final String definitionName = definitionService.getDefinition(
+    final String definitionName = definitionService.getLatestCachedDefinitionOnAnyTenant(
       DefinitionType.PROCESS,
-      overviewDto.getProcessDefinitionKey(),
-      List.of(ALL_VERSIONS),
-      tenantService.getTenants().stream().map(TenantDto::getId).collect(toList())
+      overviewDto.getProcessDefinitionKey()
     ).map(DefinitionOptimizeResponseDto::getName).orElse(overviewDto.getProcessDefinitionKey());
 
     emailService.sendTemplatedEmailWithErrorHandling(

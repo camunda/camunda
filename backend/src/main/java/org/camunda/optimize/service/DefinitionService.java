@@ -27,6 +27,7 @@ import org.camunda.optimize.dto.optimize.rest.DefinitionVersionResponseDto;
 import org.camunda.optimize.service.es.reader.CamundaActivityEventReader;
 import org.camunda.optimize.service.es.reader.DefinitionReader;
 import org.camunda.optimize.service.security.util.definition.DataSourceDefinitionAuthorizationService;
+import org.camunda.optimize.service.tenant.TenantService;
 import org.camunda.optimize.service.util.BpmnModelUtil;
 import org.camunda.optimize.service.util.configuration.CacheConfiguration;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
@@ -52,7 +53,7 @@ import java.util.stream.Stream;
 
 import static java.util.Comparator.naturalOrder;
 import static java.util.stream.Collectors.toMap;
-import static org.camunda.optimize.service.TenantService.TENANT_NOT_DEFINED;
+import static org.camunda.optimize.service.tenant.CamundaPlatformTenantService.TENANT_NOT_DEFINED;
 import static org.camunda.optimize.service.util.DefinitionVersionHandlingUtil.isDefinitionVersionSetToAllOrLatest;
 import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 
@@ -227,7 +228,7 @@ public class DefinitionService implements ConfigurationReloadable {
     final List<DefinitionWithTenantIdsDto> fullyImportedDefinitions = definitionReader
       .getFullyImportedDefinitionsWithTenantIds(definitionType, keys, tenantsToFilterFor);
     return filterAndMapDefinitionsWithTenantIdsByAuthorizations(userId, fullyImportedDefinitions)
-      // sort by name case insensitive
+      // sort by name case-insensitive
       .sorted(Comparator.comparing(a -> a.getName() == null ? a.getKey().toLowerCase() : a.getName().toLowerCase()))
       .toList();
   }
@@ -399,6 +400,15 @@ public class DefinitionService implements ConfigurationReloadable {
         .map(ProcessDefinitionOptimizeDto.class::cast)
         .collect(Collectors.toList())
     );
+  }
+
+  public Optional<DefinitionOptimizeResponseDto> getLatestCachedDefinitionOnAnyTenant(final DefinitionType type,
+                                                                                      final String definitionKey) {
+    return getCachedTenantToLatestDefinitionMap(type, definitionKey).entrySet()
+      .stream()
+      .sorted(Comparator.comparing(e -> Integer.parseInt(e.getValue().getVersion())))
+      .map(Map.Entry::getValue)
+      .findFirst();
   }
 
   private Map<String, DefinitionOptimizeResponseDto> fetchLatestProcessDefinition(final String definitionKey) {

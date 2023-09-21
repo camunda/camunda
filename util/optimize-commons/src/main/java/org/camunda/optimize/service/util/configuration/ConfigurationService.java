@@ -232,6 +232,8 @@ public class ConfigurationService {
 
   private M2mAuth0ClientConfiguration m2mAuth0ClientConfiguration;
 
+  private Boolean multiTenancyEnabled;
+
   @JsonCreator
   public static ConfigurationService createDefault() {
     return ConfigurationServiceBuilder.createDefaultConfiguration();
@@ -1273,7 +1275,10 @@ public class ConfigurationService {
 
   public PanelNotificationConfiguration getPanelNotificationConfiguration() {
     if (panelNotificationConfiguration == null) {
-      panelNotificationConfiguration = configJsonContext.read(PANEL_NOTIFICATION_CONFIGURATION, PanelNotificationConfiguration.class);
+      panelNotificationConfiguration = configJsonContext.read(
+        PANEL_NOTIFICATION_CONFIGURATION,
+        PanelNotificationConfiguration.class
+      );
     }
     return panelNotificationConfiguration;
   }
@@ -1283,6 +1288,14 @@ public class ConfigurationService {
       m2mAuth0ClientConfiguration = configJsonContext.read(M2M_CLIENT_CONFIGURATION, M2mAuth0ClientConfiguration.class);
     }
     return m2mAuth0ClientConfiguration;
+  }
+
+  public boolean isMultiTenancyEnabled() {
+    if (multiTenancyEnabled == null) {
+      multiTenancyEnabled =
+        configJsonContext.read(ConfigurationServiceConstants.MULTI_TENANCY_ENABLED, Boolean.class);
+    }
+    return multiTenancyEnabled;
   }
 
 }

@@ -12,7 +12,7 @@ import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.SimpleDefinitionDto;
 import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.service.util.configuration.condition.CamundaCloudCondition;
+import org.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -21,9 +21,9 @@ import java.util.List;
 import java.util.Set;
 
 @RequiredArgsConstructor
-@Conditional(CamundaCloudCondition.class)
+@Conditional(CCSaaSCondition.class)
 @Component
-public class CamundaCloudDefinitionAuthorizationService implements DataSourceDefinitionAuthorizationService {
+public class CamundaSaaSDefinitionAuthorizationService implements DataSourceDefinitionAuthorizationService {
 
   private final ConfigurationService configurationService;
 
