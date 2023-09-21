@@ -215,7 +215,8 @@ final class ZeebeIntegrationExtension
 
   private Path createManagedDirectory(final Store store, final String prefix) {
     try {
-      final var directory = Files.createTempDirectory(prefix);
+      // add the common junit prefix to clearly indicate these are test folders
+      final var directory = Files.createTempDirectory("junit-" + prefix);
       store.put(directory, new DirectoryResource(directory));
       return directory;
     } catch (final IOException e) {
