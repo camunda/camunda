@@ -27,6 +27,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -59,9 +61,13 @@ public final class RemoteStreamerImpl<M extends BufferReader, P extends BufferWr
   }
 
   @Override
-  public Optional<RemoteStream<M, P>> streamFor(final DirectBuffer streamType) {
+  public Optional<RemoteStream<M, P>> streamFor(
+      final DirectBuffer streamType, final Predicate<M> filter) {
     final UnsafeBuffer streamTypeBuffer = new UnsafeBuffer(streamType);
-    final var consumers = registry.get(streamTypeBuffer);
+    final var consumers =
+        registry.get(streamTypeBuffer).stream()
+            .filter(s -> filter.test(s.metadata()))
+            .collect(Collectors.toSet());
     if (consumers.isEmpty()) {
       return Optional.empty();
     }

@@ -10,6 +10,7 @@ package io.camunda.zeebe.transport.stream.api;
 import io.camunda.zeebe.util.buffer.BufferReader;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.Optional;
+import java.util.function.Predicate;
 import org.agrona.DirectBuffer;
 
 /**
@@ -24,6 +25,20 @@ import org.agrona.DirectBuffer;
 public interface RemoteStreamer<M extends BufferReader, P extends BufferWriter> {
   /**
    * Returns a valid stream for the given streamType, or {@link Optional#empty()} if there is none.
+   *
+   * <p>The predicate should return false to exclude streams from the list of possible streams.
+   *
+   * @param streamType the job type to look for
+   * @param filter a filter to include/exclude eligible job streams based on their properties
+   * @return a job stream which matches the type and given filter, or {@link Optional#empty()} if
+   *     none match
    */
-  Optional<RemoteStream<M, P>> streamFor(DirectBuffer streamType);
+  Optional<RemoteStream<M, P>> streamFor(DirectBuffer streamType, Predicate<M> filter);
+
+  /**
+   * Returns a valid stream for the given streamType, or {@link Optional#empty()} if there is none.
+   */
+  default Optional<RemoteStream<M, P>> streamFor(final DirectBuffer jobType) {
+    return streamFor(jobType, ignored -> true);
+  }
 }
