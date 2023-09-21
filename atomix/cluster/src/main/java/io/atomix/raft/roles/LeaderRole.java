@@ -131,16 +131,25 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     raft.checkThread();
     logRequest(request);
 
-    // If another configuration change is already under way, reject the configuration.
-    // If the leader index is 0 or is greater than the commitIndex, reject the promote requests.
     // Configuration changes should not be allowed until the leader has committed a no-op entry.
     // See https://groups.google.com/forum/#!topic/raft-dev/t4xj6dJTP6E
-    if (configuring() || initializing() || jointConsensus()) {
+    if (initializing()) {
       return CompletableFuture.completedFuture(
           logResponse(
               ReconfigureResponse.builder()
                   .withStatus(RaftResponse.Status.ERROR)
-                  .withError(Type.CONFIGURATION_ERROR)
+                  .withError(Type.CONFIGURATION_ERROR, "Not ready to make configuration changes")
+                  .build()));
+    }
+
+    // If another configuration change is already under way, reject the configuration.
+    if (configuring() || jointConsensus()) {
+      return CompletableFuture.completedFuture(
+          logResponse(
+              ReconfigureResponse.builder()
+                  .withStatus(RaftResponse.Status.ERROR)
+                  .withError(
+                      Type.CONFIGURATION_ERROR, "Another configuration change is in progress")
                   .build()));
     }
 
@@ -153,7 +162,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
           logResponse(
               ReconfigureResponse.builder()
                   .withStatus(RaftResponse.Status.ERROR)
-                  .withError(RaftError.Type.CONFIGURATION_ERROR)
+                  .withError(RaftError.Type.CONFIGURATION_ERROR, "Stale configuration")
                   .build()));
     }
 
