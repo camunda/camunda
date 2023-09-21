@@ -16,6 +16,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Predicate;
 import org.agrona.DirectBuffer;
 
 public class RecordingJobStreamer implements JobStreamer {
@@ -31,7 +32,9 @@ public class RecordingJobStreamer implements JobStreamer {
   }
 
   @Override
-  public Optional<JobStream> streamFor(final DirectBuffer jobType) {
+  public Optional<JobStream> streamFor(
+      final DirectBuffer jobType, final Predicate<JobActivationProperties> ignored) {
+    // TODO: filter by activation properties using the predicate :)
     return Optional.ofNullable(jobStreams.get(jobType));
   }
 

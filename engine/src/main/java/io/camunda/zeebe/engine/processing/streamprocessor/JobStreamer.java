@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.streamprocessor;
 import io.camunda.zeebe.protocol.impl.stream.job.ActivatedJob;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import java.util.Optional;
+import java.util.function.Predicate;
 import org.agrona.DirectBuffer;
 
 /**
@@ -26,7 +27,7 @@ import org.agrona.DirectBuffer;
 @FunctionalInterface
 public interface JobStreamer {
   static JobStreamer noop() {
-    return jobType -> Optional.empty();
+    return (jobType, filter) -> Optional.empty();
   }
 
   /**
@@ -36,8 +37,23 @@ public interface JobStreamer {
    */
   default void notifyWorkAvailable(final String jobType) {}
 
+  /**
+   * Returns a job stream for the job type, or {@link Optional#empty()} if there is none.
+   *
+   * <p>The predicate should return false to exclude job streams from the list of possible streams.
+   *
+   * @param jobType the job type to look for
+   * @param filter a filter to include/exclude eligible job streams based on their properties
+   * @return a job stream which matches the type and given filter, or {@link Optional#empty()} if
+   *     none match
+   */
+  Optional<JobStream> streamFor(
+      final DirectBuffer jobType, final Predicate<JobActivationProperties> filter);
+
   /** Returns a job stream for the job type, or {@link Optional#empty()} if there is none. */
-  Optional<JobStream> streamFor(final DirectBuffer jobType);
+  default Optional<JobStream> streamFor(final DirectBuffer jobType) {
+    return streamFor(jobType, ignored -> true);
+  }
 
   /** A {@link JobStream} allows consumers to push out activated jobs. */
   interface JobStream {
