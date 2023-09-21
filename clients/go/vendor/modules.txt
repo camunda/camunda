@@ -186,7 +186,7 @@ github.com/spf13/pflag
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/require
 github.com/stretchr/testify/suite
-# github.com/testcontainers/testcontainers-go v0.24.0
+# github.com/testcontainers/testcontainers-go v0.24.1
 ## explicit; go 1.20
 github.com/testcontainers/testcontainers-go
 github.com/testcontainers/testcontainers-go/exec
