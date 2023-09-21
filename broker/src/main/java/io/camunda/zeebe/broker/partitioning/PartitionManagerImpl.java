@@ -45,7 +45,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,10 +59,6 @@ public final class PartitionManagerImpl
   private final BrokerHealthCheckService healthCheckService;
   private final ActorSchedulingService actorSchedulingService;
   private final TopologyManagerImpl topologyManager;
-
-  private final List<ZeebePartition> zeebePartitions = new CopyOnWriteArrayList<>();
-  private final List<RaftPartition> raftPartitions = new CopyOnWriteArrayList<>();
-  private final Map<Integer, PartitionAdminAccess> adminAccess = new ConcurrentHashMap<>();
   private final Map<Integer, Partition> partitions = new ConcurrentHashMap<>();
   private final DiskSpaceUsageMonitor diskSpaceUsageMonitor;
   private final PartitionDistribution partitionDistribution;
@@ -120,10 +115,6 @@ public final class PartitionManagerImpl
         new DefaultPartitionManagementService(
             clusterServices.getMembershipService(), clusterServices.getCommunicationService());
     raftPartitionFactory = new RaftPartitionFactory(brokerCfg);
-  }
-
-  public PartitionAdminAccess createAdminAccess(final ConcurrencyControl concurrencyControl) {
-    return new MultiPartitionAdminAccess(concurrencyControl, adminAccess);
   }
 
   public void start() {
@@ -202,14 +193,10 @@ public final class PartitionManagerImpl
 
     LOGGER.info("Started partition {}", partitionId);
     final var zeebePartition = partition.zeebePartition();
-    final var raftPartition = partition.raftPartition();
 
     zeebePartition.addFailureListener(
         new PartitionHealthBroadcaster(partitionId, this::onHealthChanged));
     diskSpaceUsageMonitor.addDiskUsageListener(zeebePartition);
-    adminAccess.put(partitionId, zeebePartition.getAdminAccess());
-    zeebePartitions.add(zeebePartition);
-    raftPartitions.add(raftPartition);
     future.complete(null);
   }
 
@@ -227,9 +214,6 @@ public final class PartitionManagerImpl
             result.completeExceptionally(error);
           } else {
             partitions.clear();
-            raftPartitions.clear();
-            zeebePartitions.clear();
-            adminAccess.clear();
             topologyManager.closeAsync().onComplete(result);
           }
         });
@@ -238,7 +222,7 @@ public final class PartitionManagerImpl
 
   @Override
   public String toString() {
-    return "PartitionManagerImpl{partitions=" + zeebePartitions + '}';
+    return "PartitionManagerImpl{partitions=" + partitions + '}';
   }
 
   public void onHealthChanged(final int i, final HealthStatus healthStatus) {
@@ -257,17 +241,17 @@ public final class PartitionManagerImpl
 
   @Override
   public RaftPartition getRaftPartition(final int partitionId) {
-    return raftPartitions.stream().filter(p -> p.id().id() == partitionId).findFirst().orElse(null);
+    return partitions.get(partitionId).raftPartition();
   }
 
   @Override
   public Collection<RaftPartition> getRaftPartitions() {
-    return raftPartitions;
+    return partitions.values().stream().map(Partition::raftPartition).toList();
   }
 
   @Override
   public Collection<ZeebePartition> getZeebePartitions() {
-    return zeebePartitions;
+    return partitions.values().stream().map(Partition::zeebePartition).toList();
   }
 
   @Override
