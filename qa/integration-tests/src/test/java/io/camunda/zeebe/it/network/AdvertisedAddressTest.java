@@ -9,21 +9,21 @@ package io.camunda.zeebe.it.network;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.qa.util.cluster.TestCluster;
+import io.camunda.zeebe.qa.util.cluster.TestGateway;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.qa.util.cluster.TestZeebePort;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.qa.util.testcontainers.ProxyRegistry;
 import io.camunda.zeebe.qa.util.testcontainers.ProxyRegistry.ContainerProxy;
-import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
-import io.zeebe.containers.ZeebeBrokerNode;
-import io.zeebe.containers.ZeebeGatewayNode;
-import io.zeebe.containers.cluster.ZeebeCluster;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import org.agrona.CloseHelper;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.containers.Network;
 import org.testcontainers.containers.ToxiproxyContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -35,59 +35,55 @@ import org.testcontainers.utility.DockerImageName;
  * brokers can still find each other.
  */
 @Testcontainers
+@ZeebeIntegration
 final class AdvertisedAddressTest {
-  private static final String TOXIPROXY_NETWORK_ALIAS = "toxiproxy";
   private static final String TOXIPROXY_IMAGE = "shopify/toxiproxy:2.1.0";
 
-  private final Network network = Network.newNetwork();
-
   @Container
-  private final ToxiproxyContainer toxiproxy =
-      new ToxiproxyContainer(DockerImageName.parse(TOXIPROXY_IMAGE))
-          .withNetwork(network)
-          .withNetworkAliases(TOXIPROXY_NETWORK_ALIAS);
+  private static final ToxiproxyContainer TOXIPROXY =
+      ProxyRegistry.addExposedPorts(new ToxiproxyContainer(DockerImageName.parse(TOXIPROXY_IMAGE)))
+          .withAccessToHost(true);
 
-  private final ProxyRegistry proxyRegistry = new ProxyRegistry(toxiproxy);
+  private static final ProxyRegistry PROXY_REGISTRY = new ProxyRegistry(TOXIPROXY);
 
-  private final List<String> initialContactPoints = new ArrayList<>();
-  private final ZeebeCluster cluster =
-      ZeebeCluster.builder()
-          .withImage(ZeebeTestContainerDefaults.defaultTestImage())
-          .withNetwork(network)
+  @TestZeebe(autoStart = false)
+  private final TestCluster cluster =
+      TestCluster.builder()
           .withEmbeddedGateway(false)
           .withGatewaysCount(1)
           .withBrokersCount(3)
           .withPartitionsCount(1)
           .withReplicationFactor(3)
+          .withBrokerConfig(this::configureBroker)
+          .withGatewayConfig(this::configureGateway)
           .build();
 
+  /**
+   * A beforeEach is needed to rebuild the initial contact points using proxies, something the
+   * cluster is unfortunately not aware of.
+   */
   @BeforeEach
   void beforeEach() {
-    cluster.getBrokers().values().forEach(this::configureBroker);
-    cluster.getGateways().values().forEach(this::configureGateway);
-
-    // the first pass of configureBroker builds up the initial contact points; this has to be done
-    // as we're also creating the proxies. we use a second pass such that all nodes known about all
-    // others during bootstrapping.
+    final var contactPoints = proxiedContactPoints();
     cluster
-        .getBrokers()
+        .brokers()
         .values()
         .forEach(
-            broker ->
-                broker.withEnv(
-                    "ZEEBE_BROKER_CLUSTER_INITIALCONTACTPOINTS",
-                    String.join(",", initialContactPoints)));
-  }
-
-  @AfterEach
-  void afterEach() {
-    CloseHelper.quietCloseAll(cluster, network);
+            b ->
+                b.withBrokerConfig(cfg -> cfg.getCluster().setInitialContactPoints(contactPoints)));
+    cluster
+        .gateways()
+        .values()
+        .forEach(
+            g ->
+                g.withGatewayConfig(
+                    cfg -> cfg.getCluster().setInitialContactPoints(contactPoints)));
   }
 
   @Test
   void shouldCommunicateOverProxy() {
     // given
-    cluster.start();
+    cluster.start().awaitCompleteTopology();
 
     // when - send a message to verify the gateway can talk to the broker directly not just via
     // gossip
@@ -103,9 +99,12 @@ final class AdvertisedAddressTest {
 
       // then - gateway can talk to the broker
       final var proxiedPorts =
-          cluster.getBrokers().values().stream()
-              .map(node -> proxyRegistry.getOrCreateProxy(node.getInternalCommandAddress()))
+          cluster.brokers().values().stream()
+              .map(
+                  node ->
+                      PROXY_REGISTRY.getOrCreateHostProxy(node.mappedPort(TestZeebePort.COMMAND)))
               .map(ContainerProxy::internalPort)
+              .map(TOXIPROXY::getMappedPort)
               .toList();
       TopologyAssert.assertThat(topology)
           .hasClusterSize(3)
@@ -115,56 +114,67 @@ final class AdvertisedAddressTest {
               b ->
                   assertThat(b.getAddress())
                       .as("broker 0 advertises the correct proxied address")
-                      .isEqualTo(TOXIPROXY_NETWORK_ALIAS + ":" + proxiedPorts.get(0)))
+                      .isEqualTo(TOXIPROXY.getHost() + ":" + proxiedPorts.get(0)))
           .hasBrokerSatisfying(
               b ->
                   assertThat(b.getAddress())
                       .as("broker 1 advertises the correct proxied address")
-                      .isEqualTo(TOXIPROXY_NETWORK_ALIAS + ":" + proxiedPorts.get(1)))
+                      .isEqualTo(TOXIPROXY.getHost() + ":" + proxiedPorts.get(1)))
           .hasBrokerSatisfying(
               b ->
                   assertThat(b.getAddress())
                       .as("broker 2 advertises the correct proxied address")
-                      .isEqualTo(TOXIPROXY_NETWORK_ALIAS + ":" + proxiedPorts.get(2)));
+                      .isEqualTo(TOXIPROXY.getHost() + ":" + proxiedPorts.get(2)));
       assertThat(messageSend.getMessageKey()).isPositive();
     }
   }
 
-  private void configureBroker(final ZeebeBrokerNode<?> broker) {
-    final var commandApiProxy = proxyRegistry.getOrCreateProxy(broker.getInternalCommandAddress());
-    final var internalApiProxy = proxyRegistry.getOrCreateProxy(broker.getInternalClusterAddress());
+  private void configureBroker(final TestStandaloneBroker broker) {
+    final var commandApiProxy =
+        PROXY_REGISTRY.getOrCreateHostProxy(broker.mappedPort(TestZeebePort.COMMAND));
+    final var internalApiProxy =
+        PROXY_REGISTRY.getOrCreateHostProxy(broker.mappedPort(TestZeebePort.CLUSTER));
 
-    initialContactPoints.add(TOXIPROXY_NETWORK_ALIAS + ":" + internalApiProxy.internalPort());
-    broker
-        .withEnv("ZEEBE_LOG_LEVEL", "DEBUG")
-        .withEnv("ATOMIX_LOG_LEVEL", "INFO")
-        .withEnv("ZEEBE_BROKER_NETWORK_COMMANDAPI_ADVERTISEDHOST", TOXIPROXY_NETWORK_ALIAS)
-        .withEnv(
-            "ZEEBE_BROKER_NETWORK_COMMANDAPI_ADVERTISEDPORT",
-            String.valueOf(commandApiProxy.internalPort()))
-        .withEnv("ZEEBE_BROKER_NETWORK_INTERNALAPI_ADVERTISEDHOST", TOXIPROXY_NETWORK_ALIAS)
-        .withEnv(
-            "ZEEBE_BROKER_NETWORK_INTERNALAPI_ADVERTISEDPORT",
-            String.valueOf(internalApiProxy.internalPort()))
-        // Since gossip does not work with Toxiproxy, increase the sync interval so changes are
-        // propagated faster
-        .withEnv("ZEEBE_BROKER_CLUSTER_MEMBERSHIP_SYNCINTERVAL", "100ms");
+    broker.withBrokerConfig(
+        cfg -> {
+          final var network = cfg.getNetwork();
+          network.getInternalApi().setAdvertisedHost(TOXIPROXY.getHost());
+          network
+              .getInternalApi()
+              .setAdvertisedPort(TOXIPROXY.getMappedPort(internalApiProxy.internalPort()));
+          network.getCommandApi().setAdvertisedHost(TOXIPROXY.getHost());
+          network
+              .getCommandApi()
+              .setAdvertisedPort(TOXIPROXY.getMappedPort(commandApiProxy.internalPort()));
+
+          // Since gossip does not work with Toxiproxy, increase the sync interval so changes are
+          // propagated faster
+          cfg.getCluster().getMembership().setSyncInterval(Duration.ofMillis(100));
+        });
   }
 
-  private void configureGateway(final ZeebeGatewayNode<?> gateway) {
+  private void configureGateway(final TestGateway<?> gateway) {
     final var gatewayClusterProxy =
-        proxyRegistry.getOrCreateProxy(gateway.getInternalClusterAddress());
-    final var contactPoint = cluster.getBrokers().get(0);
-    final var contactPointProxy =
-        proxyRegistry.getOrCreateProxy(contactPoint.getInternalClusterAddress());
+        PROXY_REGISTRY.getOrCreateHostProxy(gateway.mappedPort(TestZeebePort.CLUSTER));
 
-    gateway
-        .withEnv(
-            "ZEEBE_GATEWAY_CLUSTER_CONTACTPOINT",
-            TOXIPROXY_NETWORK_ALIAS + ":" + contactPointProxy.internalPort())
-        .withEnv("ZEEBE_GATEWAY_CLUSTER_ADVERTISEDHOST", TOXIPROXY_NETWORK_ALIAS)
-        .withEnv(
-            "ZEEBE_GATEWAY_CLUSTER_ADVERTISEDPORT",
-            String.valueOf(gatewayClusterProxy.internalPort()));
+    gateway.withGatewayConfig(
+        cfg -> {
+          cfg.getCluster()
+              .setAdvertisedHost(TOXIPROXY.getHost())
+              .setAdvertisedPort(TOXIPROXY.getMappedPort(gatewayClusterProxy.internalPort()));
+        });
+  }
+
+  private List<String> proxiedContactPoints() {
+    final List<String> contactPoints = new ArrayList<>();
+
+    for (final var broker : cluster.brokers().values()) {
+      final var internalApiProxy =
+          PROXY_REGISTRY.getOrCreateHostProxy(broker.mappedPort(TestZeebePort.CLUSTER));
+      contactPoints.add(
+          TOXIPROXY.getHost() + ":" + TOXIPROXY.getMappedPort(internalApiProxy.internalPort()));
+    }
+
+    return contactPoints;
   }
 }

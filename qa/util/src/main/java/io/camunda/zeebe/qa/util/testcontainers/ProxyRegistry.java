@@ -14,6 +14,8 @@ import java.io.UncheckedIOException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.IntStream;
+import org.testcontainers.Testcontainers;
 import org.testcontainers.containers.ToxiproxyContainer;
 
 /**
@@ -26,10 +28,13 @@ import org.testcontainers.containers.ToxiproxyContainer;
  * <p>NOTE: this class should be extended based on usage, i.e. as needed.
  */
 public final class ProxyRegistry {
+
   // used to generate unique listen ports on the Toxiproxy container; each proxy will use a single
   // port, which must be unique to avoid collisions. Starts at 1024, since ports below are reserved
   // by the kernel
-  private static final AtomicInteger PORT_GENERATOR = new AtomicInteger(1024);
+  private static final int MIN_EXPOSED_PORT = 10_000;
+  private static final int MAX_EXPOSED_PORT = MIN_EXPOSED_PORT + 32;
+  private static final AtomicInteger PORT_GENERATOR = new AtomicInteger(MIN_EXPOSED_PORT);
 
   // concurrent to allow static usage along with static containers and parallel tests
   private final ConcurrentMap<String, ContainerProxy> proxies = new ConcurrentHashMap<>();
@@ -38,6 +43,12 @@ public final class ProxyRegistry {
 
   public ProxyRegistry(final ToxiproxyContainer toxiproxy) {
     this.toxiproxy = toxiproxy;
+  }
+
+  public static ToxiproxyContainer addExposedPorts(final ToxiproxyContainer container) {
+    container.addExposedPorts(IntStream.range(MIN_EXPOSED_PORT, MAX_EXPOSED_PORT).toArray());
+    container.withAccessToHost(true);
+    return container;
   }
 
   /**
@@ -50,8 +61,26 @@ public final class ProxyRegistry {
     return proxies.computeIfAbsent(upstream, this::createProxy);
   }
 
+  /**
+   * Returns the proxy associated with the given port on the local host, or creates a new instance.
+   *
+   * @param port the upstream port that the proxy points to
+   * @return a {@link ContainerProxy} which can be used to access the proxy
+   */
+  public ContainerProxy getOrCreateHostProxy(final int port) {
+    final var upstream = "host.testcontainers.internal:" + port;
+    Testcontainers.exposeHostPorts(port);
+    return getOrCreateProxy(upstream);
+  }
+
   private ContainerProxy createProxy(final String upstream) {
     final var proxyPort = PORT_GENERATOR.getAndIncrement();
+
+    if (proxyPort >= MAX_EXPOSED_PORT) {
+      throw new IllegalStateException(
+          "Cannot proxy more than %d ports with a single container"
+              .formatted(MAX_EXPOSED_PORT - MIN_EXPOSED_PORT));
+    }
 
     try {
       final var proxy =
