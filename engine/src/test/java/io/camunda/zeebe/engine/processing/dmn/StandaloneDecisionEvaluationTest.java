@@ -16,6 +16,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import org.junit.ClassRule;
@@ -52,7 +53,9 @@ public class StandaloneDecisionEvaluationTest {
 
     // then
     assertThat(record.getIntent()).isEqualTo(DecisionEvaluationIntent.EVALUATED);
-    assertThat(record.getValue()).hasDecisionOutput(EXPECTED_DECISION_OUTPUT);
+    assertThat(record.getValue())
+        .hasDecisionOutput(EXPECTED_DECISION_OUTPUT)
+        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   }
 
   @Test
@@ -66,8 +69,10 @@ public class StandaloneDecisionEvaluationTest {
 
     // then
     assertThat(record.getIntent()).isEqualTo(DecisionEvaluationIntent.FAILED);
-    assertThat(record.getValue()).hasFailedDecisionId(DECISION_ID);
-    assertThat(record.getValue()).hasEvaluationFailureMessage(EXPECTED_FAILURE_MSG);
+    assertThat(record.getValue())
+        .hasFailedDecisionId(DECISION_ID)
+        .hasEvaluationFailureMessage(EXPECTED_FAILURE_MSG)
+        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   }
 
   @Test
@@ -93,8 +98,10 @@ public class StandaloneDecisionEvaluationTest {
             .get()
             .getVersion();
     assertThat(record.getIntent()).isEqualTo(DecisionEvaluationIntent.EVALUATED);
-    assertThat(record.getValue()).hasDecisionOutput(EXPECTED_DECISION_OUTPUT);
-    assertThat(record.getValue()).hasDecisionVersion(deployedVersion);
+    assertThat(record.getValue())
+        .hasDecisionOutput(EXPECTED_DECISION_OUTPUT)
+        .hasDecisionVersion(deployedVersion)
+        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   }
 
   @Test
@@ -119,7 +126,9 @@ public class StandaloneDecisionEvaluationTest {
 
     // then
     assertThat(record.getIntent()).isEqualTo(DecisionEvaluationIntent.EVALUATED);
-    assertThat(record.getValue()).hasDecisionOutput(EXPECTED_DECISION_OUTPUT);
+    assertThat(record.getValue())
+        .hasDecisionOutput(EXPECTED_DECISION_OUTPUT)
+        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   }
 
   @Test
@@ -133,6 +142,7 @@ public class StandaloneDecisionEvaluationTest {
     assertThat(record.getIntent()).isEqualTo(DecisionEvaluationIntent.EVALUATE);
     assertThat(record.getRejectionReason())
         .isEqualTo("Expected either a decision id or a valid decision key, but none provided");
+    assertThat(record.getValue()).hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   }
 
   @Test
@@ -154,6 +164,7 @@ public class StandaloneDecisionEvaluationTest {
                 + "', but no decision found for id '"
                 + falseDecisionId
                 + "'");
+    assertThat(record.getValue()).hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   }
 
   @Test
@@ -175,5 +186,6 @@ public class StandaloneDecisionEvaluationTest {
                 + "', but no decision found for key '"
                 + falseDecisionKey
                 + "'");
+    assertThat(record.getValue()).hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   }
 }

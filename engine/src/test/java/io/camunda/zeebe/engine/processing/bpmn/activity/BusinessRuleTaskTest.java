@@ -320,7 +320,8 @@ public final class BusinessRuleTaskTest {
         .hasDecisionRequirementsId(calledDecision.getDecisionRequirementsId())
         .hasDecisionOutput("\"Obi-Wan Kenobi\"")
         .hasFailedDecisionId("")
-        .hasEvaluationFailureMessage("");
+        .hasEvaluationFailureMessage("")
+        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
     assertThat(decisionEvaluationValue)
         .hasProcessDefinitionKey(businessRuleTaskActivated.getValue().getProcessDefinitionKey())
@@ -481,6 +482,7 @@ public final class BusinessRuleTaskTest {
         .hasDecisionVersion(calledDecision.getVersion())
         .hasDecisionRequirementsKey(calledDecision.getDecisionRequirementsKey())
         .hasDecisionRequirementsId(calledDecision.getDecisionRequirementsId())
+        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
         .hasDecisionOutput("null")
         .hasFailedDecisionId("jedi_or_sith")
         .hasEvaluationFailureMessage(
@@ -609,6 +611,7 @@ public final class BusinessRuleTaskTest {
 
     assertThat(decisionEvaluationRecord.getValue())
         .hasDecisionKey(lastDeployedDecision.getDecisionKey())
-        .hasDecisionRequirementsKey(lastDeployedDecisionRequirements.getDecisionRequirementsKey());
+        .hasDecisionRequirementsKey(lastDeployedDecisionRequirements.getDecisionRequirementsKey())
+        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   }
 }

@@ -73,6 +73,11 @@ public class DecisionEvaluationClient {
     return this;
   }
 
+  public DecisionEvaluationClient withTenant(final String tenantId) {
+    decisionEvaluationRecord.setTenantId(tenantId);
+    return this;
+  }
+
   public Record<DecisionEvaluationRecordValue> evaluate() {
     final long position =
         writer.writeCommand(DecisionEvaluationIntent.EVALUATE, decisionEvaluationRecord);
