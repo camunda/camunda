@@ -99,7 +99,6 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
     final var properties = currentTask.getActor().getContext();
     boolean resubmit = false;
 
-    MDC.put("actor-scheduler", actorThreadGroup.getSchedulerName());
     for (final var property : properties.entrySet()) {
       MDC.put(property.getKey(), property.getValue());
     }
@@ -200,6 +199,7 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
   @Override
   public void run() {
     idleStrategy.init();
+    MDC.put("actor-scheduler", actorThreadGroup.getSchedulerName());
 
     while (state == ActorThreadState.RUNNING) {
       try {
