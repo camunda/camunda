@@ -104,11 +104,11 @@ public final class RaftRule extends ExternalResource {
   }
 
   public static RaftRule withBootstrappedNodes(
-      final int nodeCount, final ServerConfigurator serverConfigurator) {
+      final int nodeCount, final Configurator configurator) {
     if (nodeCount < 1) {
       throw new IllegalArgumentException("Expected to have at least one node to configure.");
     }
-    return new RaftRule(nodeCount, serverConfigurator);
+    return new RaftRule(nodeCount, configurator);
   }
 
   public static RaftRule withBootstrappedNodes(final int nodeCount) {
@@ -510,10 +510,7 @@ public final class RaftRule extends ExternalResource {
             .withProtocol(protocol)
             .withEntryValidator(entryValidator)
             .withStorage(storage);
-
-    if (configurator instanceof final ServerConfigurator s) {
-      s.configureServer(memberId, builder);
-    }
+    configurator.configure(memberId, builder);
 
     final var server = builder.build();
     servers.put(memberId.id(), server);
@@ -524,10 +521,7 @@ public final class RaftRule extends ExternalResource {
     final var memberDirectory = getMemberDirectory(directory, memberId.toString());
     final var snapshotStore = new TestSnapshotStore(getOrCreatePersistedSnapshot(memberId.id()));
     snapshotStores.put(memberId.id(), snapshotStore);
-
-    if (configurator instanceof final SnapshotStoreConfigurator s) {
-      s.configureSnapshotStore(memberId, snapshotStore);
-    }
+    configurator.configure(memberId, snapshotStore);
 
     final var builder =
         RaftStorage.builder()
@@ -536,10 +530,7 @@ public final class RaftRule extends ExternalResource {
             .withFreeDiskSpace(100)
             .withSnapshotStore(snapshotStore);
 
-    if (configurator instanceof final StorageConfigurator s) {
-      s.configureStorage(memberId, builder);
-    }
-
+    configurator.configure(memberId, builder);
     return builder.build();
   }
 
@@ -728,19 +719,11 @@ public final class RaftRule extends ExternalResource {
     }
   }
 
-  public interface Configurator {}
+  public interface Configurator {
+    default void configure(final MemberId id, final RaftServer.Builder builder) {}
 
-  @FunctionalInterface
-  public interface ServerConfigurator extends Configurator {
-    void configureServer(final MemberId id, final RaftServer.Builder builder);
-  }
+    default void configure(final MemberId id, final RaftStorage.Builder builder) {}
 
-  public interface StorageConfigurator extends Configurator {
-    void configureStorage(final MemberId id, final RaftStorage.Builder builder);
-  }
-
-  @FunctionalInterface
-  public interface SnapshotStoreConfigurator extends Configurator {
-    void configureSnapshotStore(final MemberId id, final TestSnapshotStore snapshotStore);
+    default void configure(final MemberId id, final TestSnapshotStore snapshotStore) {}
   }
 }

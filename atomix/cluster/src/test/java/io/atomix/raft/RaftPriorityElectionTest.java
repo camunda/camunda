@@ -15,6 +15,9 @@
  */
 package io.atomix.raft;
 
+import io.atomix.cluster.MemberId;
+import io.atomix.raft.RaftRule.Configurator;
+import io.atomix.raft.RaftServer.Builder;
 import io.atomix.raft.partition.RaftElectionConfig;
 import org.junit.Rule;
 import org.junit.Test;
@@ -34,24 +37,35 @@ public class RaftPriorityElectionTest {
       new Object[] {
         RaftRule.withBootstrappedNodes(
             3,
-            (member, builder) ->
-                // Assign node priority as the same value as nodeId
+            new Configurator() {
+              @Override
+              public void configure(final MemberId id, final Builder builder) {
                 builder.withElectionConfig(
-                    RaftElectionConfig.ofPriorityElection(3, Integer.parseInt(member.id()) + 1)))
+                    RaftElectionConfig.ofPriorityElection(3, Integer.parseInt(id.id()) + 1));
+              }
+            })
       },
       new Object[] {
         RaftRule.withBootstrappedNodes(
             4,
-            (member, builder) ->
+            new Configurator() {
+              @Override
+              public void configure(final MemberId id, final Builder builder) {
                 builder.withElectionConfig(
-                    RaftElectionConfig.ofPriorityElection(4, Integer.parseInt(member.id()) + 1)))
+                    RaftElectionConfig.ofPriorityElection(4, Integer.parseInt(id.id()) + 1));
+              }
+            })
       },
       new Object[] {
         RaftRule.withBootstrappedNodes(
             5,
-            (member, builder) ->
+            new Configurator() {
+              @Override
+              public void configure(final MemberId id, final Builder builder) {
                 builder.withElectionConfig(
-                    RaftElectionConfig.ofPriorityElection(5, Integer.parseInt(member.id()) + 1)))
+                    RaftElectionConfig.ofPriorityElection(5, Integer.parseInt(id.id()) + 1));
+              }
+            })
       }
     };
   }

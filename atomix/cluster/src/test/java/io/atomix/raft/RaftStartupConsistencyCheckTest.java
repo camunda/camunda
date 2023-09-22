@@ -10,7 +10,8 @@ package io.atomix.raft;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 
-import io.atomix.raft.RaftRule.SnapshotStoreConfigurator;
+import io.atomix.cluster.MemberId;
+import io.atomix.raft.RaftRule.Configurator;
 import io.atomix.raft.snapshot.TestSnapshotStore;
 import java.util.concurrent.CompletableFuture;
 import org.agrona.LangUtil;
@@ -101,7 +102,12 @@ public class RaftStartupConsistencyCheckTest {
         };
     raftRule.bootstrapNode(
         follower.name(),
-        (SnapshotStoreConfigurator) (m, b) -> b.interceptOnNewSnapshot(interceptor));
+        new Configurator() {
+          @Override
+          public void configure(final MemberId id, final TestSnapshotStore snapshotStore) {
+            snapshotStore.interceptOnNewSnapshot(interceptor);
+          }
+        });
 
     // then -- rejoined follower should catch up
     raftRule.allNodesHaveSnapshotWithIndex(snapshotIndex);
