@@ -474,6 +474,11 @@
                 "name": "evaluatedInputs",
                 "type": "EvaluatedDecisionInput",
                 "is_repeated": true
+              },
+              {
+                "id": 9,
+                "name": "tenantId",
+                "type": "string"
               }
             ]
           },
