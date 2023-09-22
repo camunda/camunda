@@ -35,12 +35,10 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceRespons
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluateDecisionRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluateDecisionResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ProcessMetadata;
-import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.grpc.Status;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.Before;
 import org.junit.Test;
@@ -315,7 +313,7 @@ public class MultiTenancyEnabledTest extends GatewayTest {
   }
 
   @Test
-  public void activateJobsRequestUsesAuthorizedTenantIds() {
+  public void activateJobsRequestRequiresTenantIds() {
     // given
     when(gateway.getIdentityMock().tenants().forToken(anyString()))
         .thenReturn(List.of(new Tenant("tenant-a", "A"), new Tenant("tenant-b", "B")));
@@ -330,17 +328,37 @@ public class MultiTenancyEnabledTest extends GatewayTest {
             .setMaxJobsToActivate(maxJobsToActivate)
             .build();
     final var response = client.activateJobs(request);
-    assertThat(response.hasNext()).isTrue();
 
     // when/then
-    final var brokerRequest = brokerClient.getSingleBrokerRequest();
-    final Map<String, Object> authorizations =
-        ((BrokerExecuteCommand<?>) brokerRequest).getAuthorization().toDecodedMap();
-    final JobBatchRecord batchRecord = (JobBatchRecord) brokerRequest.getRequestWriter();
-    assertThat(authorizations)
-        .hasEntrySatisfying(
-            Authorization.AUTHORIZED_TENANTS,
-            v -> assertThat(v).asList().containsExactlyElementsOf(batchRecord.getTenantIds()));
+    assertThatThrownBy(() -> response.next())
+        .is(statusRuntimeExceptionWithStatusCode(Status.INVALID_ARGUMENT.getCode()))
+        .hasMessageContaining(
+            "Expected to handle gRPC request ActivateJobs with tenant identifiers")
+        .hasMessageContaining("but no tenant identifiers were provided");
+  }
+
+  @Test
+  public void activateJobsRequestRequiresValidTenantId() {
+    // given
+    when(gateway.getIdentityMock().tenants().forToken(anyString()))
+        .thenReturn(List.of(new Tenant("tenant-a", "A"), new Tenant("tenant-b", "B")));
+    final String jobType = "testType";
+    final String jobWorker = "testWorker";
+    final int maxJobsToActivate = 1;
+    activateJobsStub.addAvailableJobs(jobType, maxJobsToActivate);
+    final var request =
+        ActivateJobsRequest.newBuilder()
+            .setType(jobType)
+            .setWorker(jobWorker)
+            .setMaxJobsToActivate(maxJobsToActivate)
+            .addTenantIds("tenant-c")
+            .build();
+
+    // when
+    final var response = client.activateJobs(request);
+
+    // then
+    assertThatRejectsUnauthorizedRequest(() -> response.next(), "ActivateJobs");
   }
 
   @Test
@@ -357,6 +375,7 @@ public class MultiTenancyEnabledTest extends GatewayTest {
             .setType(jobType)
             .setWorker(jobWorker)
             .setMaxJobsToActivate(maxJobsToActivate)
+            .addTenantIds("tenant-a")
             .addTenantIds("tenant-c")
             .build();
 
