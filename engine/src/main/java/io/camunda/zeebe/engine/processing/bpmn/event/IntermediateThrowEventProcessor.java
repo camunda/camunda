@@ -45,9 +45,12 @@ public class IntermediateThrowEventProcessor
     if (element.getJobWorkerProperties() != null) {
       variableMappingBehavior
           .applyInputMappings(context, element)
-          .flatMap(ok -> jobBehavior.createNewJob(context, element))
+          .flatMap(ok -> jobBehavior.evaluateJobExpressions(element, context))
           .ifRightOrLeft(
-              ok -> stateTransitionBehavior.transitionToActivated(context),
+              jobProperties -> {
+                jobBehavior.createNewJob(context, element, jobProperties);
+                stateTransitionBehavior.transitionToActivated(context);
+              },
               failure -> incidentBehavior.createIncident(failure, context));
 
     } else {
