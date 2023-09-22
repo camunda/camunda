@@ -35,6 +35,7 @@ public class EvaluatedDecisionImpl implements EvaluatedDecision {
   private final String decisionOutput;
   private final List<MatchedDecisionRule> matchedRules = new ArrayList<>();
   private final List<EvaluatedDecisionInput> evaluatedInputs = new ArrayList<>();
+  private final String tenantId;
 
   public EvaluatedDecisionImpl(
       final JsonMapper jsonMapper, final GatewayOuterClass.EvaluatedDecision evaluatedDecision) {
@@ -46,6 +47,7 @@ public class EvaluatedDecisionImpl implements EvaluatedDecision {
     decisionVersion = evaluatedDecision.getDecisionVersion();
     decisionType = evaluatedDecision.getDecisionType();
     decisionOutput = evaluatedDecision.getDecisionOutput();
+    tenantId = evaluatedDecision.getTenantId();
 
     evaluatedDecision.getEvaluatedInputsList().stream()
         .map(evaluatedInput -> new EvaluatedDecisionInputImpl(jsonMapper, evaluatedInput))
@@ -94,6 +96,11 @@ public class EvaluatedDecisionImpl implements EvaluatedDecision {
   @Override
   public List<MatchedDecisionRule> getMatchedRules() {
     return matchedRules;
+  }
+
+  @Override
+  public String getTenantId() {
+    return tenantId;
   }
 
   @Override

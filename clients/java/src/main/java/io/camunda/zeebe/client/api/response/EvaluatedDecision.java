@@ -64,4 +64,9 @@ public interface EvaluatedDecision {
    * @return the record encoded as JSON
    */
   String toJson();
+
+  /**
+   * @return the tenant identifier that owns this decision evaluation result
+   */
+  String getTenantId();
 }
