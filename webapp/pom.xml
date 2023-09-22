@@ -282,7 +282,7 @@
             <image>docker.io/camunda/tasklist</image>
           </to>
           <to>
-            <image>registry.camunda.cloud/team-operate/tasklist</image>
+            <image>registry.camunda.cloud/team-hto/tasklist</image>
             <auth>
               <username>${env.HARBOR_REGISTRY_USR}</username>
               <password>${env.HARBOR_REGISTRY_PSW}</password>

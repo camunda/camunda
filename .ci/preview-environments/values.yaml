@@ -33,7 +33,7 @@ camunda-platform:
   tasklist:
     fullnameOverride: tasklist
     image:
-      repository: registry.camunda.cloud/team-operate/tasklist
+      repository: registry.camunda.cloud/team-hto/tasklist
     env:
     - name: JAVA_OPTS
       value: "-XX:MaxRAMFraction=1"

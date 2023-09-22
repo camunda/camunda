@@ -52,7 +52,7 @@ env:
   IS_MASTER_BRANCH: ${{ inputs.branch == 'master' }}
   IS_FE_BRANCH: ${{ startsWith(inputs.branch, 'fe-') }}
   LIMITS_CPU: ${{ inputs.forkCount }} # consumed by `maven-surefire-plugin` & `maven-failsafe-plugin` plugins defined in main `pom.xml` file
-  ZEEBE_TASKLIST_DOCKER_IMAGE: "registry.camunda.cloud/team-operate/tasklist"
+  ZEEBE_TASKLIST_DOCKER_IMAGE: "registry.camunda.cloud/team-hto/tasklist"
 
 jobs:
   build:
