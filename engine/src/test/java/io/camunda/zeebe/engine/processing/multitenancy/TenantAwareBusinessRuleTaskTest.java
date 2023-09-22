@@ -155,6 +155,9 @@ public class TenantAwareBusinessRuleTaskTest {
         .hasDecisionRequirementsKey(calledDecision.getDecisionRequirementsKey())
         .hasDecisionRequirementsId(calledDecision.getDecisionRequirementsId())
         .hasTenantId(tenantOne);
+
+    final var evaluatedDecision = decisionEvaluationValue.getEvaluatedDecisions().get(0);
+    assertThat(evaluatedDecision).hasTenantId(tenantOne);
   }
 
   @Test
@@ -190,6 +193,9 @@ public class TenantAwareBusinessRuleTaskTest {
             Expected to evaluate decision 'jedi_or_sith', but \
             Assertion failure on evaluate the expression \
             'assert(lightsaberColor, lightsaberColor != null)': The condition is not fulfilled""");
+
+    final var evaluatedDecision = decisionEvaluationValue.getEvaluatedDecisions().get(0);
+    assertThat(evaluatedDecision).hasTenantId(tenantOne);
   }
 
   @Test

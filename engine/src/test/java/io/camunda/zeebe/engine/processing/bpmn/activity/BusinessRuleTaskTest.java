@@ -342,6 +342,7 @@ public final class BusinessRuleTaskTest {
         .hasDecisionVersion(requiredDecision.getVersion())
         .hasDecisionType("DECISION_TABLE")
         .hasDecisionOutput("\"Jedi\"")
+        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
         .satisfies(
             evaluatedDecision -> {
               assertThat(evaluatedDecision.getEvaluatedInputs()).hasSize(1);
@@ -371,6 +372,7 @@ public final class BusinessRuleTaskTest {
         .hasDecisionVersion(calledDecision.getVersion())
         .hasDecisionType("DECISION_TABLE")
         .hasDecisionOutput("\"Obi-Wan Kenobi\"")
+        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
         .satisfies(
             evaluatedDecision -> {
               assertThat(evaluatedDecision.getEvaluatedInputs()).hasSize(2);
@@ -510,6 +512,7 @@ public final class BusinessRuleTaskTest {
         .hasDecisionVersion(requiredDecision.getVersion())
         .hasDecisionType("DECISION_TABLE")
         .hasDecisionOutput("null")
+        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
         .satisfies(
             evaluatedDecision -> {
               assertThat(evaluatedDecision.getEvaluatedInputs()).isEmpty();
