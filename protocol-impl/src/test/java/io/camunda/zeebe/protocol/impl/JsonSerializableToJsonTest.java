@@ -1562,6 +1562,7 @@ final class JsonSerializableToJsonTest {
               "decisionVersion":7,
               "decisionOutput":'"decision-output"',
               "decisionType":"DECISION_TABLE",
+              "tenantId": "<default>",
               "evaluatedInputs":[
                 {
                   "inputId":"input-id",
@@ -1587,6 +1588,115 @@ final class JsonSerializableToJsonTest {
           "evaluationFailureMessage":"evaluation-failure-message",
           "failedDecisionId":"failed-decision-id",
           "tenantId": "<default>"
+        }
+        """
+      },
+
+      // custom tenant
+      {
+        "DecisionEvaluationRecord",
+        (Supplier<UnifiedRecordValue>)
+            () -> {
+              final var record =
+                  new DecisionEvaluationRecord()
+                      .setDecisionKey(1L)
+                      .setDecisionId("decision-id")
+                      .setDecisionName("decision-name")
+                      .setDecisionVersion(1)
+                      .setDecisionRequirementsKey(2L)
+                      .setDecisionRequirementsId("decision-requirements-id")
+                      .setDecisionOutput(toMessagePack("'decision-output'"))
+                      .setVariables(VARIABLES_MSGPACK)
+                      .setProcessDefinitionKey(3L)
+                      .setBpmnProcessId("bpmn-process-id")
+                      .setDecisionVersion(1)
+                      .setProcessInstanceKey(4L)
+                      .setElementInstanceKey(5L)
+                      .setElementId("element-id")
+                      .setEvaluationFailureMessage("evaluation-failure-message")
+                      .setFailedDecisionId("failed-decision-id")
+                      .setTenantId("tenant-test");
+
+              final var evaluatedDecisionRecord = record.evaluatedDecisions().add();
+              evaluatedDecisionRecord
+                  .setDecisionId("decision-id")
+                  .setDecisionName("decision-name")
+                  .setDecisionKey(6L)
+                  .setDecisionVersion(7)
+                  .setDecisionType("DECISION_TABLE")
+                  .setDecisionOutput(toMessagePack("'decision-output'"))
+                  .setTenantId("tenant-test");
+
+              evaluatedDecisionRecord
+                  .evaluatedInputs()
+                  .add()
+                  .setInputId("input-id")
+                  .setInputName("input-name")
+                  .setInputValue(toMessagePack("'input-value'"));
+
+              final var matchedRuleRecord = evaluatedDecisionRecord.matchedRules().add();
+              matchedRuleRecord.setRuleId("rule-id").setRuleIndex(1);
+
+              matchedRuleRecord
+                  .evaluatedOutputs()
+                  .add()
+                  .setOutputId("output-id")
+                  .setOutputName("output-name")
+                  .setOutputValue(toMessagePack("'output-value'"));
+
+              return record;
+            },
+        """
+        {
+          "decisionKey":1,
+          "decisionId":"decision-id",
+          "decisionName":"decision-name",
+          "decisionVersion":1,
+          "decisionRequirementsKey":2,
+          "decisionRequirementsId":"decision-requirements-id",
+          "decisionOutput":'"decision-output"',
+          "variables": {
+            "foo": "bar"
+          },
+          "processDefinitionKey":3,
+          "bpmnProcessId":"bpmn-process-id",
+          "processInstanceKey":4,
+          "elementInstanceKey":5,
+          "elementId":"element-id",
+          "evaluatedDecisions":[
+            {
+              "decisionId":"decision-id",
+              "decisionName":"decision-name",
+              "decisionKey":6,
+              "decisionVersion":7,
+              "decisionOutput":'"decision-output"',
+              "decisionType":"DECISION_TABLE",
+              "tenantId": "tenant-test",
+              "evaluatedInputs":[
+                {
+                  "inputId":"input-id",
+                  "inputName":"input-name",
+                  "inputValue":'"input-value"'
+                }
+              ],
+              "matchedRules":[
+                {
+                  "ruleId":"rule-id",
+                  "ruleIndex":1,
+                  "evaluatedOutputs":[
+                    {
+                      "outputId":"output-id",
+                      "outputName":"output-name",
+                      "outputValue":'"output-value"'
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "evaluationFailureMessage":"evaluation-failure-message",
+          "failedDecisionId":"failed-decision-id",
+          "tenantId": "tenant-test"
         }
         """
       },
