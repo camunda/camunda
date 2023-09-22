@@ -3,7 +3,7 @@
  * Licensed under a proprietary license. See the License.txt file for more information.
  * You may not use this file except in compliance with the proprietary license.
  */
-package org.camunda.optimize.upgrade.migrate310to311;
+package org.camunda.optimize.upgrade.migrate310to720;
 
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
@@ -19,7 +19,7 @@ import static java.util.stream.Collectors.toMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT_ID;
 
-public class MigrateCollectionIndexIT extends AbstractUpgrade311IT {
+public class MigrateCollectionIndexIT extends AbstractUpgrade720IT {
   @Test
   public void updateDefaultTenantIdForCollectionScopesInC8_zeebeImportEnabled() {
     // given

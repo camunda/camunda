@@ -3,7 +3,7 @@
  * Licensed under a proprietary license. See the License.txt file for more information.
  * You may not use this file except in compliance with the proprietary license.
  */
-package org.camunda.optimize.upgrade.migrate310to311;
+package org.camunda.optimize.upgrade.migrate310to720;
 
 import org.camunda.optimize.service.es.schema.index.DashboardIndex;
 import org.junit.jupiter.api.Test;
@@ -12,7 +12,7 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class MigrateDashboardIndexIT extends AbstractUpgrade311IT {
+public class MigrateDashboardIndexIT extends AbstractUpgrade720IT {
 
   @Test
   public void addDashboardDescriptionField() {

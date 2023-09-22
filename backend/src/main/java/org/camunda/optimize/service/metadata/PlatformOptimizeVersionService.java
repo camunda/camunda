@@ -5,16 +5,16 @@
  */
 package org.camunda.optimize.service.metadata;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
+import org.camunda.optimize.service.util.configuration.condition.CamundaPlatformCondition;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@Getter
-@AllArgsConstructor
-public abstract class OptimizeVersionService {
+@Conditional(CamundaPlatformCondition.class)
+public class PlatformOptimizeVersionService extends OptimizeVersionService {
 
-  private final String rawVersion;
-  private final String version;
+  public PlatformOptimizeVersionService() {
+    super(Version.RAW_VERSION, Version.VERSION);
+  }
 
 }
