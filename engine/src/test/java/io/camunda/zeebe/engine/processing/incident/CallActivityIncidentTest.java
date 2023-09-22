@@ -205,6 +205,45 @@ public final class CallActivityIncidentTest {
         .contains(ProcessInstanceIntent.ELEMENT_ACTIVATED);
   }
 
+  @Test
+  public void shouldResolveIncidentWithMessageBoundaryEvent() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(parentProcessId)
+                .startEvent()
+                .callActivity("call", c -> c.zeebeProcessId(childProcessId))
+                .boundaryEvent("boundary")
+                .message(m -> m.name("message").zeebeCorrelationKeyExpression("123"))
+                .endEvent()
+                .done())
+        .deploy();
+
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(parentProcessId).create();
+
+    final Record<IncidentRecordValue> incident = getIncident(processInstanceKey);
+
+    // when
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(childProcessId).startEvent().endEvent().done())
+        .deploy();
+
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .onlyEvents()
+                .withRecordKey(incident.getValue().getElementInstanceKey())
+                .limit(2))
+        .extracting(Record::getIntent)
+        .contains(ProcessInstanceIntent.ELEMENT_ACTIVATED);
+  }
+
   private Record<ProcessInstanceRecordValue> getCallActivityInstance(
       final long processInstanceKey) {
     return RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
