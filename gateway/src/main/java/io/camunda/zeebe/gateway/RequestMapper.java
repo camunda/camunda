@@ -341,26 +341,13 @@ public final class RequestMapper {
   public static List<String> ensureTenantIdsSet(
       final String commandName, final List<String> tenantIds) {
 
-    if (!isMultiTenancyEnabled) {
-      final int tenantIdNum = tenantIds.size();
-      if (tenantIdNum > 1
-          || (tenantIdNum == 1
-              && !tenantIds.contains(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
-              && !tenantIds.contains(""))) {
-        throw new InvalidTenantRequestException(
-            commandName, tenantIds, "multi-tenancy is disabled");
-      }
-
-      return List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-    }
-
     if (tenantIds.isEmpty()) {
-      try {
-        return Context.current().call(IdentityInterceptor.AUTHORIZED_TENANTS_KEY::get);
-      } catch (final Exception e) {
-        throw new InvalidTenantRequestException(
-            commandName, tenantIds, "tenants could not be retrieved from the request context", e);
+      if (!isMultiTenancyEnabled) {
+        return List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
       }
+
+      throw new InvalidTenantRequestException(
+          commandName, tenantIds, "no tenant identifiers were provided.");
     }
 
     tenantIds.stream().forEach(tenantId -> ensureTenantIdSet(commandName, tenantId));
