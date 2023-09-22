@@ -41,6 +41,7 @@ import static io.camunda.operate.store.opensearch.dsl.QueryDSL.term;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.clearScrollRequest;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.getRequest;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.scrollRequest;
+import static io.camunda.operate.store.opensearch.dsl.RequestDSL.time;
 
 
 public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
@@ -87,7 +88,7 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
     Runnable failedShardHandler,
     Class<R> clazz
   ) throws IOException {
-    var searchRequest = searchRequestBuilder.scroll(Time.of(t -> t.time(SCROLL_KEEP_ALIVE_MS))).build();
+    var searchRequest = searchRequestBuilder.scroll(time(SCROLL_KEEP_ALIVE_MS)).build();
     String scrollId = null;
 
     try {

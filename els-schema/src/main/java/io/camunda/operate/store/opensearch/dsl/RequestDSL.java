@@ -8,13 +8,18 @@ package io.camunda.operate.store.opensearch.dsl;
 
 import io.camunda.operate.schema.templates.TemplateDescriptor;
 import org.opensearch.client.opensearch._types.Time;
+import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.cluster.PutComponentTemplateRequest;
 import org.opensearch.client.opensearch.core.ClearScrollRequest;
+import org.opensearch.client.opensearch.core.DeleteByQueryRequest;
 import org.opensearch.client.opensearch.core.GetRequest;
 import org.opensearch.client.opensearch.core.IndexRequest;
+import org.opensearch.client.opensearch.core.ReindexRequest;
 import org.opensearch.client.opensearch.core.ScrollRequest;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.UpdateRequest;
+import org.opensearch.client.opensearch.core.reindex.Destination;
+import org.opensearch.client.opensearch.core.reindex.Source;
 import org.opensearch.client.opensearch.indices.GetIndexRequest;
 
 import static io.camunda.operate.store.opensearch.client.sync.OpenSearchDocumentOperations.SCROLL_KEEP_ALIVE_MS;
@@ -32,6 +37,10 @@ public interface RequestDSL {
     };
   }
 
+  static DeleteByQueryRequest.Builder deleteByQueryRequestBuilder(String index) {
+    return new DeleteByQueryRequest.Builder().index(index);
+  }
+
   static <R> IndexRequest.Builder<R> indexRequestBuilder(String index) {
     return new IndexRequest.Builder<R>().index(index);
   }
@@ -42,6 +51,12 @@ public interface RequestDSL {
 
   static PutComponentTemplateRequest.Builder componentTemplateRequestBuilder(String name) {
     return new PutComponentTemplateRequest.Builder().name(name);
+  }
+
+  static ReindexRequest.Builder reindexRequestBuilder(String srcIndex, Query srcQuery, String dstIndex) {
+    return new ReindexRequest.Builder()
+      .source(Source.of(b -> b.index(srcIndex).query(srcQuery)))
+      .dest(Destination.of(b -> b.index(dstIndex)));
   }
 
   static SearchRequest.Builder searchRequestBuilder(String index) {
@@ -73,7 +88,7 @@ public interface RequestDSL {
   static ScrollRequest scrollRequest(String scrollId, String time) {
     return new ScrollRequest.Builder()
       .scrollId(scrollId)
-      .scroll(Time.of(t -> t.time(time)))
+      .scroll(time(time))
       .build();
   }
 
@@ -83,5 +98,9 @@ public interface RequestDSL {
 
   static ClearScrollRequest clearScrollRequest(String scrollId) {
     return new ClearScrollRequest.Builder().scrollId(scrollId).build();
+  }
+
+  static Time time(String value) {
+    return Time.of(b -> b.time(value));
   }
 }

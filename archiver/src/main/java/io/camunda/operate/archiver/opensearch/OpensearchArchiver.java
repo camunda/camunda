@@ -6,116 +6,92 @@
  */
 package io.camunda.operate.archiver.opensearch;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.Metrics;
-import io.camunda.operate.archiver.Archiver;
+import io.camunda.operate.archiver.AbstractArchiver;
 import io.camunda.operate.conditions.OpensearchCondition;
-import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.util.CollectionUtil;
-import io.camunda.operate.zeebe.PartitionHolder;
-import jakarta.annotation.PostConstruct;
-import org.opensearch.client.opensearch.OpenSearchClient;
+import io.camunda.operate.store.opensearch.client.sync.OpenSearchDocumentOperations;
+import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
+import org.opensearch.client.opensearch._types.Conflicts;
+import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.DependsOn;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
+import static io.camunda.operate.schema.SchemaManager.OPERATE_DELETE_ARCHIVED_INDICES;
+import static io.camunda.operate.store.opensearch.dsl.QueryDSL.stringTerms;
+import static io.camunda.operate.store.opensearch.dsl.RequestDSL.deleteByQueryRequestBuilder;
+import static io.camunda.operate.store.opensearch.dsl.RequestDSL.reindexRequestBuilder;
+import static io.camunda.operate.store.opensearch.dsl.RequestDSL.time;
+import static io.camunda.operate.util.FutureHelper.withTimer;
+import static java.lang.String.format;
+
 @Component
 @DependsOn("schemaStartup")
 @Conditional(OpensearchCondition.class)
-public class OpensearchArchiver implements Archiver {
-
-  public static final int INTERNAL_SCROLL_KEEP_ALIVE_MS = 30000;    //this scroll timeout value is used for reindex and delete queries
-  private static final String INDEX_NAME_PATTERN = "%s%s";
+public class OpensearchArchiver extends AbstractArchiver {
   private static final Logger logger = LoggerFactory.getLogger(OpensearchArchiver.class);
 
   @Autowired
-  private BeanFactory beanFactory;
-
-  @Autowired
-  private OperateProperties operateProperties;
-
-  @Autowired
-  private PartitionHolder partitionHolder;
-
-  @Autowired
-  private OpenSearchClient openSearchClient;
-
-  @Autowired
-  @Qualifier("archiverThreadPoolExecutor")
-  private ThreadPoolTaskScheduler archiverExecutor;
-
-  @Autowired
-  private ObjectMapper objectMapper;
+  private RichOpenSearchClient richOpenSearchClient;
 
   @Autowired
   private Metrics metrics;
 
   @Override
-  @PostConstruct
-  public void startArchiving() {
-    if (operateProperties.getArchiver().isRolloverEnabled()) {
-      logger.info("INIT: Start archiving data...");
+  protected Logger getLogger() {
+    return logger;
+  }
 
-      //split the list of partitionIds to parallelize
-      List<Integer> partitionIds = partitionHolder.getPartitionIds();
-      logger.info("Starting archiver for partitions: {}", partitionIds);
-      int threadsCount = operateProperties.getArchiver().getThreadsCount();
-      if (threadsCount > partitionIds.size()) {
-        logger.warn("Too many archiver threads are configured, not all of them will be in use. Number of threads: {}, number of partitions to parallelize by: {}",
-            threadsCount, partitionIds.size());
-      }
+  private long getAutoSlices(){
+    return operateProperties.getOpensearch().getNumberOfShards();
+  }
 
-      for (int i=0; i < threadsCount; i++) {
-        List<Integer> partitionIdsSubset = CollectionUtil.splitAndGetSublist(partitionIds, threadsCount, i);
-        if (!partitionIdsSubset.isEmpty()) {
-          final var archiverJob = beanFactory.getBean(OpensearchProcessInstancesArchiverJob.class, this, partitionIdsSubset);
-          archiverExecutor.execute(archiverJob);
-        }
-        if (partitionIdsSubset.contains(1)) {
-          final var batchOperationArchiverJob = beanFactory.getBean(OpensearchBatchOperationArchiverJob.class, this);
-          archiverExecutor.execute(batchOperationArchiverJob);
-        }
+  @Override
+  protected void setIndexLifeCycle(final String destinationIndexName){
+    try {
+      if ( operateProperties.getArchiver().isIlmEnabled() ) {
+        richOpenSearchClient.index().setIndexLifeCycle(destinationIndexName, OPERATE_DELETE_ARCHIVED_INDICES);
       }
+    } catch (Exception e){
+      logger.warn("Could not set ILM policy {} for index {}: {}", OPERATE_DELETE_ARCHIVED_INDICES, destinationIndexName, e.getMessage());
     }
   }
 
   @Override
-  public CompletableFuture<Void> moveDocuments(String sourceIndexName, String idFieldName, String finishDate,
-                                               List<Object> ids) {
-    final var destinationIndexName = getDestinationIndexName(sourceIndexName, finishDate);
-    return reindexDocuments(sourceIndexName, destinationIndexName, idFieldName, ids).thenCompose(
-        (ignore) -> {
-          setIndexLifeCycle(destinationIndexName);
-          return deleteDocuments(sourceIndexName, idFieldName, ids);
-        });
-  }
+  protected CompletableFuture<Void> deleteDocuments(final String sourceIndexName, final String idFieldName,
+      final List<Object> processInstanceKeys) {
+    var deleteByQueryRequestBuilder = deleteByQueryRequestBuilder(sourceIndexName)
+      .query(stringTerms(idFieldName, processInstanceKeys.stream().map(Object::toString).toList()))
+      .waitForCompletion(false)
+      .slices(getAutoSlices())
+      .conflicts(Conflicts.Proceed);
 
-  private void setIndexLifeCycle(final String destinationIndexName){
-    throw new UnsupportedOperationException();
+    return withTimer(metrics.getTimer(Metrics.TIMER_NAME_ARCHIVER_DELETE_QUERY), () ->
+      richOpenSearchClient.async().doc().delete(deleteByQueryRequestBuilder, e -> "Failed to delete asynchronously from " + sourceIndexName)
+        .thenAccept(response -> richOpenSearchClient.async().task().totalImpactedByTask(response.task(), archiverExecutor))
+    );
   }
 
   @Override
-  public String getDestinationIndexName(String sourceIndexName, String finishDate) {
-    return String.format(INDEX_NAME_PATTERN, sourceIndexName, finishDate);
-  }
-
-  private CompletableFuture<Void> deleteDocuments(final String sourceIndexName, final String idFieldName,
-      final List<Object> processInstanceKeys) {
-    throw new UnsupportedOperationException();
-  }
-
-  private CompletableFuture<Void> reindexDocuments(final String sourceIndexName, final String destinationIndexName,
+  protected CompletableFuture<Void> reindexDocuments(final String sourceIndexName, final String destinationIndexName,
       final String idFieldName, final List<Object> processInstanceKeys) {
-    throw new UnsupportedOperationException();
-  }
+    final String errorMessage = format("Failed to reindex asynchronously from %s to %s!", sourceIndexName, destinationIndexName);
+    final Query sourceQuery  = stringTerms(idFieldName, processInstanceKeys.stream().map(Object::toString).toList());
+    final var reindexRequest = reindexRequestBuilder(sourceIndexName, sourceQuery, destinationIndexName)
+      .waitForCompletion(false)
+      .scroll(time(OpenSearchDocumentOperations.INTERNAL_SCROLL_KEEP_ALIVE_MS))
+      .slices(getAutoSlices())
+      .conflicts(Conflicts.Proceed);
 
+    return withTimer(metrics.getTimer(Metrics.TIMER_NAME_ARCHIVER_REINDEX_QUERY), () ->
+      richOpenSearchClient.async().index().reindex(reindexRequest, e -> errorMessage)
+        .thenAccept(response -> richOpenSearchClient.async().task().totalImpactedByTask(response.task(), archiverExecutor))
+    );
+  }
 }

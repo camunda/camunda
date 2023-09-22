@@ -30,12 +30,9 @@ public class OpenSearchAsyncDocumentOperations extends OpenSearchAsyncOperation 
     return safe(() -> openSearchAsyncClient.scroll(scrollRequest, Object.class), errorMessageSupplier);
   }
 
-  // TODO check unsued
-  private CompletableFuture<DeleteByQueryResponse> deleteByQueryAsync(
-    final DeleteByQueryRequest deleteRequest,
-    Function<Exception, String> errorMessageSupplier
-    ) {
-    return safe(() -> openSearchAsyncClient.deleteByQuery(deleteRequest), errorMessageSupplier);
+  public CompletableFuture<DeleteByQueryResponse> delete(DeleteByQueryRequest.Builder requestBuilder,
+    Function<Exception, String> errorMessageSupplier) {
+    return safe(() -> openSearchAsyncClient.deleteByQuery(requestBuilder.build()), errorMessageSupplier);
   }
 
   // TODO check unsued

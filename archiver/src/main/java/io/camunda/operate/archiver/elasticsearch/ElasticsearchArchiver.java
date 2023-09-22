@@ -6,27 +6,12 @@
  */
 package io.camunda.operate.archiver.elasticsearch;
 
-import static io.camunda.operate.schema.SchemaManager.*;
-import static io.camunda.operate.util.ElasticsearchUtil.*;
-import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
-import static org.elasticsearch.index.reindex.AbstractBulkByScrollRequest.AUTO_SLICES;
-
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-
-import io.camunda.operate.archiver.Archiver;
-import io.camunda.operate.conditions.ElasticsearchCondition;
-import io.camunda.operate.conditions.OpensearchCondition;
-import jakarta.annotation.PostConstruct;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.Metrics;
-import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.util.CollectionUtil;
+import io.camunda.operate.archiver.AbstractArchiver;
+import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.util.ElasticsearchUtil;
-import io.camunda.operate.zeebe.PartitionHolder;
 import io.micrometer.core.instrument.Timer;
-
 import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -35,38 +20,29 @@ import org.elasticsearch.core.TimeValue;
 import org.elasticsearch.index.reindex.ReindexRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.DependsOn;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+
+import static io.camunda.operate.schema.SchemaManager.INDEX_LIFECYCLE_NAME;
+import static io.camunda.operate.schema.SchemaManager.OPERATE_DELETE_ARCHIVED_INDICES;
+import static io.camunda.operate.util.ElasticsearchUtil.deleteAsyncWithConnectionRelease;
+import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
+import static org.elasticsearch.index.reindex.AbstractBulkByScrollRequest.AUTO_SLICES;
 
 @Component
 @DependsOn("schemaStartup")
 @Conditional(ElasticsearchCondition.class)
-public class ElasticsearchArchiver implements Archiver {
-
+public class ElasticsearchArchiver extends AbstractArchiver {
   public static final int INTERNAL_SCROLL_KEEP_ALIVE_MS = 30000;    //this scroll timeout value is used for reindex and delete queries
-  private static final String INDEX_NAME_PATTERN = "%s%s";
   private static final Logger logger = LoggerFactory.getLogger(ElasticsearchArchiver.class);
 
   @Autowired
-  private BeanFactory beanFactory;
-
-  @Autowired
-  private OperateProperties operateProperties;
-
-  @Autowired
-  private PartitionHolder partitionHolder;
-
-  @Autowired
   private RestHighLevelClient esClient;
-
-  @Autowired
-  @Qualifier("archiverThreadPoolExecutor")
-  private ThreadPoolTaskScheduler archiverExecutor;
 
   @Autowired
   private ObjectMapper objectMapper;
@@ -75,46 +51,12 @@ public class ElasticsearchArchiver implements Archiver {
   private Metrics metrics;
 
   @Override
-  @PostConstruct
-  public void startArchiving() {
-    if (operateProperties.getArchiver().isRolloverEnabled()) {
-      logger.info("INIT: Start archiving data...");
-
-      //split the list of partitionIds to parallelize
-      List<Integer> partitionIds = partitionHolder.getPartitionIds();
-      logger.info("Starting archiver for partitions: {}", partitionIds);
-      int threadsCount = operateProperties.getArchiver().getThreadsCount();
-      if (threadsCount > partitionIds.size()) {
-        logger.warn("Too many archiver threads are configured, not all of them will be in use. Number of threads: {}, number of partitions to parallelize by: {}",
-            threadsCount, partitionIds.size());
-      }
-
-      for (int i=0; i < threadsCount; i++) {
-        List<Integer> partitionIdsSubset = CollectionUtil.splitAndGetSublist(partitionIds, threadsCount, i);
-        if (!partitionIdsSubset.isEmpty()) {
-          final var archiverJob = beanFactory.getBean(ElasticsearchProcessInstancesArchiverJob.class, this, partitionIdsSubset);
-          archiverExecutor.execute(archiverJob);
-        }
-        if (partitionIdsSubset.contains(1)) {
-          final var batchOperationArchiverJob = beanFactory.getBean(ElasticsearchBatchOperationArchiverJob.class, this);
-          archiverExecutor.execute(batchOperationArchiverJob);
-        }
-      }
-    }
+  protected Logger getLogger(){
+    return logger;
   }
 
   @Override
-  public CompletableFuture<Void> moveDocuments(String sourceIndexName, String idFieldName, String finishDate,
-                                               List<Object> ids) {
-    final var destinationIndexName = getDestinationIndexName(sourceIndexName, finishDate);
-    return reindexDocuments(sourceIndexName, destinationIndexName, idFieldName, ids).thenCompose(
-        (ignore) -> {
-          setIndexLifeCycle(destinationIndexName);
-          return deleteDocuments(sourceIndexName, idFieldName, ids);
-        });
-  }
-
-  private void setIndexLifeCycle(final String destinationIndexName){
+  protected void setIndexLifeCycle(final String destinationIndexName){
     try {
       if ( operateProperties.getArchiver().isIlmEnabled() ) {
         esClient.indices().putSettings(new UpdateSettingsRequest(destinationIndexName).settings(
@@ -126,11 +68,7 @@ public class ElasticsearchArchiver implements Archiver {
   }
 
   @Override
-  public String getDestinationIndexName(String sourceIndexName, String finishDate) {
-    return String.format(INDEX_NAME_PATTERN, sourceIndexName, finishDate);
-  }
-
-  private CompletableFuture<Void> deleteDocuments(final String sourceIndexName, final String idFieldName,
+  protected CompletableFuture<Void> deleteDocuments(final String sourceIndexName, final String idFieldName,
       final List<Object> processInstanceKeys) {
     final var deleteFuture = new CompletableFuture<Void>();
 
@@ -147,7 +85,8 @@ public class ElasticsearchArchiver implements Archiver {
     return deleteFuture;
   }
 
-  private CompletableFuture<Void> reindexDocuments(final String sourceIndexName, final String destinationIndexName,
+  @Override
+  protected CompletableFuture<Void> reindexDocuments(final String sourceIndexName, final String destinationIndexName,
       final String idFieldName, final List<Object> processInstanceKeys) {
     final var reindexFuture = new CompletableFuture<Void>();
     final var reindexRequest = createReindexRequestWithDefaults().setSourceIndices(sourceIndexName)

@@ -151,6 +151,15 @@ public class OpenSearchIndexOperations extends OpenSearchRetryOperation {
     return numbersOfReplica;
   }
 
+  public PutIndicesSettingsResponse putSettings(PutIndicesSettingsRequest request) throws IOException {
+    return openSearchClient.indices().putSettings(request);
+  }
+
+  public PutIndicesSettingsResponse setIndexLifeCycle(String index, String value) throws IOException {
+    var request = PutIndicesSettingsRequest.of(b -> b.index(index).settings(s -> s.lifecycleName(value)));
+    return putSettings(request);
+  }
+
   public boolean setIndexSettingsFor(IndexSettings settings, String indexPattern) {
     return executeWithRetries(
       "SetIndexSettings " + indexPattern,
