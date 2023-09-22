@@ -860,21 +860,20 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader i
       ))
       .size(0);
 
-    return richOpenSearchClient.doc().searchAggregations(searchRequestBuilder)
-      .get(FLOW_NODE_ID_AGG)
-      .sterms()
-      .buckets()
-      .keyed()
-      .entrySet()
-      .stream()
-      .map(entry -> new FlowNodeStatisticsDto()
-        .setActivityId(entry.getKey())
-        .setCanceled(entry.getValue().aggregations().get(COUNT_CANCELED).filter().docCount())
-        .setIncidents(entry.getValue().aggregations().get(COUNT_INCIDENT).filter().docCount())
-        .setCompleted(entry.getValue().aggregations().get(COUNT_COMPLETED).filter().docCount())
-        .setActive(entry.getValue().aggregations().get(COUNT_ACTIVE).filter().docCount())
+    return  richOpenSearchClient.doc().searchAggregations(searchRequestBuilder)
+        .get(FLOW_NODE_ID_AGG)
+        .sterms()
+        .buckets()
+        .array()
+        .stream()
+        .map(entry -> new FlowNodeStatisticsDto()
+            .setActivityId(entry.key())
+            .setCanceled(entry.aggregations().get(COUNT_CANCELED).filter().docCount())
+            .setIncidents(entry.aggregations().get(COUNT_INCIDENT).filter().docCount())
+            .setCompleted(entry.aggregations().get(COUNT_COMPLETED).filter().docCount())
+            .setActive(entry.aggregations().get(COUNT_ACTIVE).filter().docCount())
         )
-      .toList();
+        .toList();
   }
 
   @Override
