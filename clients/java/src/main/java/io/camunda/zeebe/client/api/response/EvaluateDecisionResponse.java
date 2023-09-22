@@ -15,7 +15,6 @@
  */
 package io.camunda.zeebe.client.api.response;
 
-import io.camunda.zeebe.client.api.ExperimentalApi;
 import java.util.List;
 
 public interface EvaluateDecisionResponse {
@@ -75,6 +74,5 @@ public interface EvaluateDecisionResponse {
   /**
    * @return the tenant identifier that owns this decision evaluation result
    */
-  @ExperimentalApi("https://github.com/camunda/zeebe/issues/13557")
   String getTenantId();
 }
