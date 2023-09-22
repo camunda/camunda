@@ -204,7 +204,8 @@ public final class ResponseMapper {
               .setDecisionName(intermediateDecision.getDecisionName())
               .setDecisionVersion(intermediateDecision.getDecisionVersion())
               .setDecisionType(intermediateDecision.getDecisionType())
-              .setDecisionOutput(intermediateDecision.getDecisionOutput());
+              .setDecisionOutput(intermediateDecision.getDecisionOutput())
+              .setTenantId(intermediateDecision.getTenantId());
 
       intermediateDecision.getEvaluatedInputs().stream()
           .map(
