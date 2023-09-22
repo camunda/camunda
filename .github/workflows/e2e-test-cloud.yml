@@ -8,7 +8,7 @@ jobs:
     timeout-minutes: 60
     services:
       elasticsearch:
-        image: docker.elastic.co/elasticsearch/elasticsearch:7.17.12
+        image: docker.elastic.co/elasticsearch/elasticsearch:7.17.13@sha256:67b2d720621da7092ef18fe5ccca2eeb7b863b55d4bcee30108224520aebd92c
         env:
           discovery.type: single-node
           ES_JAVA_OPTS: -Xms1024m -Xmx1024m
