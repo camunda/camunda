@@ -87,16 +87,6 @@ public final class BpmnJobBehavior {
         .flatMap(p -> evalCandidateGroupsExp(jobWorkerProps, scopeKey).map(p::candidateGroups));
   }
 
-  public Either<Failure, ?> createNewJob(
-      final BpmnElementContext context, final ExecutableJobWorkerElement element) {
-    return evaluateJobExpressions(element, context)
-        .map(
-            jobProperties -> {
-              createNewJob(context, element, jobProperties);
-              return null;
-            });
-  }
-
   public void createNewJob(
       final BpmnElementContext context,
       final ExecutableJobWorkerElement element,
