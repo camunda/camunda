@@ -1,6 +1,8 @@
 name: e2e tests
 
-on: [push]
+on:
+  push:
+  workflow_dispatch: 
 
 permissions:
   contents: read  # for git clone
