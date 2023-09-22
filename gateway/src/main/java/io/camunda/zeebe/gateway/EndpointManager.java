@@ -16,6 +16,7 @@ import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.RequestRetryHandler;
 import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
 import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerRequest;
 import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
@@ -169,7 +170,15 @@ public final class EndpointManager {
   public void activateJobs(
       final ActivateJobsRequest request,
       final ServerStreamObserver<ActivateJobsResponse> responseObserver) {
-    activateJobsHandler.activateJobs(request, responseObserver);
+    try {
+      final BrokerActivateJobsRequest brokerRequest =
+          (BrokerActivateJobsRequest)
+              mapToBrokerRequest(request, RequestMapper::toActivateJobsRequest);
+      activateJobsHandler.activateJobs(
+          brokerRequest, responseObserver, request.getRequestTimeout());
+    } catch (final Exception e) {
+      responseObserver.onError(e);
+    }
   }
 
   public void cancelProcessInstance(

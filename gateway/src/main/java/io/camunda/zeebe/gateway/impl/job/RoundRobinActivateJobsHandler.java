@@ -21,9 +21,9 @@ import io.camunda.zeebe.gateway.impl.broker.PartitionIdIterator;
 import io.camunda.zeebe.gateway.impl.broker.RequestDispatchStrategy;
 import io.camunda.zeebe.gateway.impl.broker.RoundRobinDispatchStrategy;
 import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerFailJobRequest;
 import io.camunda.zeebe.gateway.impl.broker.response.BrokerResponse;
-import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
@@ -51,19 +51,12 @@ public final class RoundRobinActivateJobsHandler implements ActivateJobsHandler 
       new ConcurrentHashMap<>();
   private final BrokerClient brokerClient;
   private final BrokerTopologyManager topologyManager;
-  private final boolean isMultiTenancyEnabled;
 
   private ActorControl actor;
 
   public RoundRobinActivateJobsHandler(final BrokerClient brokerClient) {
-    this(brokerClient, false);
-  }
-
-  public RoundRobinActivateJobsHandler(
-      final BrokerClient brokerClient, final boolean isMultiTenancyEnabled) {
     this.brokerClient = brokerClient;
     topologyManager = brokerClient.getTopologyManager();
-    this.isMultiTenancyEnabled = isMultiTenancyEnabled;
   }
 
   @Override
@@ -73,12 +66,13 @@ public final class RoundRobinActivateJobsHandler implements ActivateJobsHandler 
 
   @Override
   public void activateJobs(
-      final ActivateJobsRequest request,
-      final ServerStreamObserver<ActivateJobsResponse> responseObserver) {
+      final BrokerActivateJobsRequest request,
+      final ServerStreamObserver<ActivateJobsResponse> responseObserver,
+      final long requestTimeout) {
     final var topology = topologyManager.getTopology();
     if (topology != null) {
       final var inflightRequest =
-          toInflightActivateJobsRequest(request, responseObserver, isMultiTenancyEnabled);
+          toInflightActivateJobsRequest(request, responseObserver, requestTimeout);
       activateJobs(
           topology.getPartitionsCount(),
           inflightRequest,

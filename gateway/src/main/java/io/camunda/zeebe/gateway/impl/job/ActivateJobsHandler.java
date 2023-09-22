@@ -8,7 +8,7 @@
 package io.camunda.zeebe.gateway.impl.job;
 
 import io.camunda.zeebe.gateway.grpc.ServerStreamObserver;
-import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.camunda.zeebe.scheduler.ActorControl;
 import java.util.concurrent.atomic.AtomicLong;
@@ -26,16 +26,18 @@ public interface ActivateJobsHandler extends Consumer<ActorControl> {
    * @param responseObserver The stream to write the responses to
    */
   void activateJobs(
-      ActivateJobsRequest request, ServerStreamObserver<ActivateJobsResponse> responseObserver);
+      BrokerActivateJobsRequest request,
+      ServerStreamObserver<ActivateJobsResponse> responseObserver,
+      final long requestTimeout);
 
   public static InflightActivateJobsRequest toInflightActivateJobsRequest(
-      final ActivateJobsRequest request,
+      final BrokerActivateJobsRequest request,
       final ServerStreamObserver<ActivateJobsResponse> responseObserver,
-      final boolean isMultiTenancyEnabled) {
+      final long longPollingTimeout) {
     return new InflightActivateJobsRequest(
         ACTIVATE_JOBS_REQUEST_ID_GENERATOR.getAndIncrement(),
         request,
         responseObserver,
-        isMultiTenancyEnabled);
+        longPollingTimeout);
   }
 }
