@@ -39,7 +39,7 @@ business processes.
 
 ## Building Optimize
 
-Apache Maven 3 and Java JDK 8 are prerequisites for building Camunda
+Apache Maven 3 and Java JDK 17 are prerequisites for building Camunda
 Optimize. Once you have setup Java and Maven, run
 
 ```
