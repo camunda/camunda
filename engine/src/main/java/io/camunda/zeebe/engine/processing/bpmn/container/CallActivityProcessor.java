@@ -61,10 +61,10 @@ public final class CallActivityProcessor
   public void onActivate(final ExecutableCallActivity element, final BpmnElementContext context) {
     variableMappingBehavior
         .applyInputMappings(context, element)
-        .flatMap(ok -> eventSubscriptionBehavior.subscribeToEvents(element, context))
         .flatMap(ok -> evaluateProcessId(context, element))
         .flatMap(this::getProcessForProcessId)
         .flatMap(this::checkProcessHasNoneStartEvent)
+        .flatMap(p -> eventSubscriptionBehavior.subscribeToEvents(element, context).map(ok -> p))
         .ifRightOrLeft(
             process -> {
               final var activated = stateTransitionBehavior.transitionToActivated(context);

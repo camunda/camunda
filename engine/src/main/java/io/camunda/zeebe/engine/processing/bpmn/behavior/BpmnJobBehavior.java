@@ -77,26 +77,23 @@ public final class BpmnJobBehavior {
     this.jobMetrics = jobMetrics;
   }
 
-  public Either<Failure, ?> createNewJob(
-      final BpmnElementContext context, final ExecutableJobWorkerElement element) {
-    final var jobWorkerProperties = element.getJobWorkerProperties();
+  public Either<Failure, JobProperties> evaluateJobExpressions(
+      final ExecutableJobWorkerElement element, final BpmnElementContext context) {
+    final var jobWorkerProps = element.getJobWorkerProperties();
     final var scopeKey = context.getElementInstanceKey();
-    return evaluateJobExpressions(jobWorkerProperties, scopeKey)
-        .map(
-            jobProperties -> {
-              writeJobCreatedEvent(context, element, jobProperties);
-              jobMetrics.jobCreated(jobProperties.getType());
-              return null;
-            });
-  }
-
-  private Either<Failure, JobProperties> evaluateJobExpressions(
-      final JobWorkerProperties jobWorkerProps, final long scopeKey) {
     return Either.<Failure, JobProperties>right(new JobProperties())
         .flatMap(p -> evalTypeExp(jobWorkerProps, scopeKey).map(p::type))
         .flatMap(p -> evalRetriesExp(jobWorkerProps, scopeKey).map(p::retries))
         .flatMap(p -> evalAssigneeExp(jobWorkerProps, scopeKey).map(p::assignee))
         .flatMap(p -> evalCandidateGroupsExp(jobWorkerProps, scopeKey).map(p::candidateGroups));
+  }
+
+  public void createNewJob(
+      final BpmnElementContext context,
+      final ExecutableJobWorkerElement element,
+      final JobProperties jobProperties) {
+    writeJobCreatedEvent(context, element, jobProperties);
+    jobMetrics.jobCreated(jobProperties.getType());
   }
 
   private Either<Failure, String> evalTypeExp(
@@ -193,7 +190,7 @@ public final class BpmnJobBehavior {
     }
   }
 
-  private static final class JobProperties {
+  public static final class JobProperties {
     private String type;
     private Long retries;
     private String assignee;
