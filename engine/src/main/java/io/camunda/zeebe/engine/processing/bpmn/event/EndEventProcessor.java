@@ -180,9 +180,12 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
     public void onActivate(final ExecutableEndEvent element, final BpmnElementContext activating) {
       variableMappingBehavior
           .applyInputMappings(activating, element)
-          .flatMap(ok -> jobBehavior.createNewJob(activating, element))
+          .flatMap(ok -> jobBehavior.evaluateJobExpressions(element, activating))
           .ifRightOrLeft(
-              ok -> stateTransitionBehavior.transitionToActivated(activating),
+              jobProperties -> {
+                jobBehavior.createNewJob(activating, element, jobProperties);
+                stateTransitionBehavior.transitionToActivated(activating);
+              },
               failure -> incidentBehavior.createIncident(failure, activating));
     }
 

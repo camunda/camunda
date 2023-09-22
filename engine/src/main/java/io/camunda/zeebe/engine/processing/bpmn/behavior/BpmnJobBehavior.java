@@ -110,16 +110,6 @@ public final class BpmnJobBehavior {
             p -> evalFormIdExp(jobWorkerProps.getFormId(), scopeKey, tenantId).map(p::formKey));
   }
 
-  public Either<Failure, ?> createNewJob(
-      final BpmnElementContext context, final ExecutableJobWorkerElement element) {
-    return evaluateJobExpressions(element, context)
-        .map(
-            jobProperties -> {
-              createNewJob(context, element, jobProperties);
-              return null;
-            });
-  }
-
   public void createNewJob(
       final BpmnElementContext context,
       final ExecutableJobWorkerElement element,
