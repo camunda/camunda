@@ -15,8 +15,10 @@
  */
 package io.camunda.zeebe.client.impl.command;
 
+import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
+import io.camunda.zeebe.client.api.command.CommandWithTenantStep;
 import io.camunda.zeebe.client.api.command.EvaluateDecisionCommandStep1;
 import io.camunda.zeebe.client.api.command.EvaluateDecisionCommandStep1.EvaluateDecisionCommandStep2;
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
@@ -44,6 +46,31 @@ public class EvaluateDecisionCommandImpl extends CommandWithVariables<EvaluateDe
   public EvaluateDecisionCommandImpl(
       final GatewayStub asyncStub,
       final JsonMapper jsonMapper,
+      final ZeebeClientConfiguration config,
+      final Predicate<Throwable> retryPredicate) {
+    super(jsonMapper);
+    this.asyncStub = asyncStub;
+    requestTimeout = config.getDefaultRequestTimeout();
+    this.retryPredicate = retryPredicate;
+    this.jsonMapper = jsonMapper;
+    builder = EvaluateDecisionRequest.newBuilder();
+    tenantId(config.getDefaultTenantId());
+  }
+
+  /**
+   * A constructor that provides an instance with the <code><default></code> tenantId set.
+   *
+   * <p>From version 8.3.0, the java client supports multi-tenancy for this command, which requires
+   * the <code>tenantId</code> property to be defined. This constructor is only intended for
+   * backwards compatibility in tests.
+   *
+   * @deprecated since 8.3.0, use {@link
+   *     EvaluateDecisionCommandImpl#EvaluateDecisionCommandImpl(GatewayStub asyncStub, JsonMapper
+   *     jsonMapper, ZeebeClientConfiguration config, Predicate retryPredicate)}
+   */
+  public EvaluateDecisionCommandImpl(
+      final GatewayStub asyncStub,
+      final JsonMapper jsonMapper,
       final Duration requestTimeout,
       final Predicate<Throwable> retryPredicate) {
     super(jsonMapper);
@@ -52,6 +79,7 @@ public class EvaluateDecisionCommandImpl extends CommandWithVariables<EvaluateDe
     this.jsonMapper = jsonMapper;
     this.requestTimeout = requestTimeout;
     builder = EvaluateDecisionRequest.newBuilder();
+    tenantId(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
   }
 
   @Override
@@ -97,7 +125,7 @@ public class EvaluateDecisionCommandImpl extends CommandWithVariables<EvaluateDe
 
   @Override
   public EvaluateDecisionCommandStep2 tenantId(final String tenantId) {
-    // todo(#13557): replace dummy implementation
+    builder.setTenantId(tenantId);
     return this;
   }
 

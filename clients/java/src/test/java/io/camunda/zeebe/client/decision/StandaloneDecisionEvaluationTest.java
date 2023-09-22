@@ -21,7 +21,7 @@ import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import io.camunda.zeebe.client.api.command.ClientException;
-import io.camunda.zeebe.client.api.command.EvaluateDecisionCommandStep1.EvaluateDecisionCommandStep2;
+import io.camunda.zeebe.client.api.command.CommandWithTenantStep;
 import io.camunda.zeebe.client.api.response.EvaluateDecisionResponse;
 import io.camunda.zeebe.client.api.response.EvaluatedDecision;
 import io.camunda.zeebe.client.api.response.EvaluatedDecisionInput;
@@ -259,34 +259,39 @@ public class StandaloneDecisionEvaluationTest extends ClientTest {
   }
 
   @Test
-  public void shouldAllowSpecifyingTenantIdByDecisionId() {
-    // given
-    final EvaluateDecisionCommandStep2 builder = client.newEvaluateDecisionCommand().decisionId("");
-
+  public void shouldUseDefaultTenantId() {
     // when
-    final EvaluateDecisionCommandStep2 builderWithTenant = builder.tenantId("custom tenant");
+    client.newEvaluateDecisionCommand().decisionId("dmn").send().join();
 
     // then
-    // todo(#13557): verify that tenant id is set in the request
-    assertThat(builderWithTenant)
-        .describedAs("This method has no effect on the command builder while under development")
-        .isEqualTo(builder);
+    final EvaluateDecisionRequest request = gatewayService.getLastRequest();
+    assertThat(request.getTenantId()).isEqualTo(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
+  }
+
+  @Test
+  public void shouldAllowSpecifyingTenantIdByDecisionId() {
+    // given
+    final String tenantId = "test-tenant";
+
+    // when
+    client.newEvaluateDecisionCommand().decisionId("dmn").tenantId(tenantId).send().join();
+
+    // then
+    final EvaluateDecisionRequest request = gatewayService.getLastRequest();
+    assertThat(request.getTenantId()).isEqualTo(tenantId);
   }
 
   @Test
   public void shouldAllowSpecifyingTenantIdByDecisionKey() {
     // given
-    final EvaluateDecisionCommandStep2 builder =
-        client.newEvaluateDecisionCommand().decisionKey(1L);
+    final String tenantId = "test-tenant";
 
     // when
-    final EvaluateDecisionCommandStep2 builderWithTenant = builder.tenantId("custom tenant");
+    client.newEvaluateDecisionCommand().decisionKey(1L).tenantId(tenantId).send().join();
 
     // then
-    // todo(#13557): verify that tenant id is set in the request
-    assertThat(builderWithTenant)
-        .describedAs("This method has no effect on the command builder while under development")
-        .isEqualTo(builder);
+    final EvaluateDecisionRequest request = gatewayService.getLastRequest();
+    assertThat(request.getTenantId()).isEqualTo(tenantId);
   }
 
   private void assertResponse(final EvaluateDecisionResponse response) {
