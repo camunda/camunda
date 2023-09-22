@@ -39,7 +39,7 @@ public class ZeebeUserTaskValidationTest extends AbstractZeebeValidationTest {
         singletonList(
             expect(
                 ZeebeFormDefinition.class,
-                "Exactly one of the attributes 'formId, formKey' must be present and not empty"))
+                "Exactly one of the attributes 'formId, formKey' must be present and not blank"))
       },
       {
         Bpmn.createExecutableProcess("process")
@@ -51,7 +51,7 @@ public class ZeebeUserTaskValidationTest extends AbstractZeebeValidationTest {
         singletonList(
             expect(
                 ZeebeFormDefinition.class,
-                "Exactly one of the attributes 'formId, formKey' must be present and not empty"))
+                "Exactly one of the attributes 'formId, formKey' must be present and not blank"))
       },
       {
         Bpmn.createExecutableProcess("process")
@@ -64,7 +64,7 @@ public class ZeebeUserTaskValidationTest extends AbstractZeebeValidationTest {
         singletonList(
             expect(
                 ZeebeFormDefinition.class,
-                "Exactly one of the attributes 'formId, formKey' must be present and not empty"))
+                "Exactly one of the attributes 'formId, formKey' must be present and not blank"))
       },
       {
         Bpmn.createExecutableProcess("process")
@@ -77,7 +77,55 @@ public class ZeebeUserTaskValidationTest extends AbstractZeebeValidationTest {
         singletonList(
             expect(
                 ZeebeFormDefinition.class,
-                "Exactly one of the attributes 'formId, formKey' must be present and not empty"))
+                "Exactly one of the attributes 'formId, formKey' must be present and not blank"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task")
+            .zeebeFormId(" ")
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                ZeebeFormDefinition.class,
+                "Exactly one of the attributes 'formId, formKey' must be present and not blank"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task")
+            .zeebeFormKey(" ")
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                ZeebeFormDefinition.class,
+                "Exactly one of the attributes 'formId, formKey' must be present and not blank"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task")
+            .zeebeFormId("  ")
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                ZeebeFormDefinition.class,
+                "Exactly one of the attributes 'formId, formKey' must be present and not blank"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task")
+            .zeebeFormKey("  ")
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                ZeebeFormDefinition.class,
+                "Exactly one of the attributes 'formId, formKey' must be present and not blank"))
       },
       {
         Bpmn.createExecutableProcess("process")

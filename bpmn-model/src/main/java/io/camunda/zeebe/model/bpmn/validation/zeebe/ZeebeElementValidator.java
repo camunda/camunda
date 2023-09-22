@@ -61,7 +61,7 @@ public final class ZeebeElementValidator<T extends ModelElementInstance>
         final String attributes = getAttributeNames();
         final String errorMessage =
             String.format(
-                "Exactly one of the attributes '%s' must be present and not empty", attributes);
+                "Exactly one of the attributes '%s' must be present and not blank", attributes);
         validationResultCollector.addError(0, errorMessage);
       }
     }
@@ -92,7 +92,7 @@ public final class ZeebeElementValidator<T extends ModelElementInstance>
         .filter(
             assertion -> {
               final String attributeValue = assertion.attributeSupplier.apply(element);
-              return attributeValue != null && !attributeValue.isEmpty();
+              return attributeValue != null && !attributeValue.trim().isEmpty();
             })
         .count();
   }
