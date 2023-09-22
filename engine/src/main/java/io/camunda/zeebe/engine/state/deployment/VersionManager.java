@@ -45,16 +45,17 @@ public final class VersionManager {
   }
 
   private VersionInfo getVersionInfo() {
-    final var versionInfo =
-        versionByTenantCache.computeIfAbsent(
-            new TenantIdAndResourceId(tenantIdKey.toString(), idKey.toString()),
-            (key) -> versionInfoColumnFamily.get(tenantAwareIdKey));
+    return versionByTenantCache.computeIfAbsent(
+        new TenantIdAndResourceId(tenantIdKey.toString(), idKey.toString()),
+        (key) -> {
+          final var persistedVersionInfo = versionInfoColumnFamily.get(tenantAwareIdKey);
 
-    if (versionInfo == null) {
-      return new VersionInfo().setHighestVersionIfHigher(initialValue);
-    }
-
-    return versionInfo;
+          if (persistedVersionInfo == null) {
+            return new VersionInfo().setHighestVersionIfHigher(initialValue);
+          } else {
+            return new VersionInfo(persistedVersionInfo);
+          }
+        });
   }
 
   public void addResourceVersion(final String resourceId, final long value, final String tenantId) {

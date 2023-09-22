@@ -12,6 +12,7 @@ import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.value.LongValue;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.StreamSupport;
@@ -26,6 +27,11 @@ public final class VersionInfo extends UnpackedObject implements DbValue {
 
   public VersionInfo() {
     declareProperty(highestVersionProp).declareProperty(knownVersions);
+  }
+
+  public VersionInfo(final VersionInfo other) {
+    this();
+    wrap(BufferUtil.createCopy(other));
   }
 
   /**
