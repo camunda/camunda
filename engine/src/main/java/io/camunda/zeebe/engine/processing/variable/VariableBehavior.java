@@ -69,12 +69,12 @@ public final class VariableBehavior {
       return;
     }
 
-    // TODO(#13388): pass tenant id to variable record
     variableRecord
         .setScopeKey(scopeKey)
         .setProcessDefinitionKey(processDefinitionKey)
         .setProcessInstanceKey(processInstanceKey)
-        .setBpmnProcessId(bpmnProcessId);
+        .setBpmnProcessId(bpmnProcessId)
+        .setTenantId(tenantId);
     for (final DocumentEntry entry : indexedDocument) {
       applyEntryToRecord(entry);
       setLocalVariable(variableRecord);
@@ -117,11 +117,11 @@ public final class VariableBehavior {
     long currentScope = scopeKey;
     long parentScope;
 
-    // TODO(#13388): pass tenant id to variable record
     variableRecord
         .setProcessDefinitionKey(processDefinitionKey)
         .setProcessInstanceKey(processInstanceKey)
-        .setBpmnProcessId(bpmnProcessId);
+        .setBpmnProcessId(bpmnProcessId)
+        .setTenantId(tenantId);
     while ((parentScope = variableState.getParentScopeKey(currentScope)) > 0) {
       final Iterator<DocumentEntry> entryIterator = indexedDocument.iterator();
 
@@ -176,12 +176,12 @@ public final class VariableBehavior {
       final int valueOffset,
       final int valueLength) {
 
-    // TODO(#13388): pass tenant id to variable record
     variableRecord
         .setScopeKey(scopeKey)
         .setProcessDefinitionKey(processDefinitionKey)
         .setProcessInstanceKey(processInstanceKey)
         .setBpmnProcessId(bpmnProcessId)
+        .setTenantId(tenantId)
         .setName(name)
         .setValue(value, valueOffset, valueLength);
 

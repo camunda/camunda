@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.variable;
 
+import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.BinaryProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
@@ -26,6 +28,8 @@ public final class VariableRecord extends UnifiedRecordValue implements Variable
   private final LongProperty processInstanceKeyProp = new LongProperty("processInstanceKey");
   private final LongProperty processDefinitionKeyProp = new LongProperty("processDefinitionKey");
   private final StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId", "");
+  private final StringProperty tenantIdProp =
+      new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
   public VariableRecord() {
     declareProperty(nameProp)
@@ -33,7 +37,8 @@ public final class VariableRecord extends UnifiedRecordValue implements Variable
         .declareProperty(scopeKeyProp)
         .declareProperty(processInstanceKeyProp)
         .declareProperty(processDefinitionKeyProp)
-        .declareProperty(bpmnProcessIdProp);
+        .declareProperty(bpmnProcessIdProp)
+        .declareProperty(tenantIdProp);
   }
 
   @Override
@@ -118,7 +123,11 @@ public final class VariableRecord extends UnifiedRecordValue implements Variable
 
   @Override
   public String getTenantId() {
-    // todo(#13388): replace dummy implementation
-    return TenantOwned.DEFAULT_TENANT_IDENTIFIER;
+    return bufferAsString(tenantIdProp.getValue());
+  }
+
+  public VariableRecord setTenantId(final String tenantId) {
+    tenantIdProp.setValue(tenantId);
+    return this;
   }
 }
