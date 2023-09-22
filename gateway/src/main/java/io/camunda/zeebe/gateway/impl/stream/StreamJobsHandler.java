@@ -7,12 +7,10 @@
  */
 package io.camunda.zeebe.gateway.impl.stream;
 
-import static io.camunda.zeebe.gateway.RequestMapper.toJobActivationProperties;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.camunda.zeebe.gateway.ResponseMapper;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
-import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StreamActivatedJobsRequest;
 import io.camunda.zeebe.protocol.impl.stream.job.ActivatedJobImpl;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.scheduler.Actor;
@@ -45,26 +43,32 @@ public class StreamJobsHandler extends Actor {
   }
 
   public void handle(
-      final StreamActivatedJobsRequest request,
+      final String jobType,
+      final JobActivationProperties jobActivationProperties,
       final ServerCallStreamObserver<ActivatedJob> responseObserver) {
-    if (request.getType().isBlank()) {
+    // TODO(#14452): move validations to RequestMapper and convert
+    //  to exceptions that can be used in the GrpcErrorMapper
+    if (jobType.isBlank()) {
       handleError(responseObserver, "type", "present", "blank");
       return;
     }
-    if (request.getTimeout() < 1) {
+    if (jobActivationProperties.timeout() < 1) {
       handleError(
-          responseObserver, "timeout", "greater than zero", Long.toString(request.getTimeout()));
+          responseObserver,
+          "timeout",
+          "greater than zero",
+          Long.toString(jobActivationProperties.timeout()));
       return;
     }
 
-    handleInternal(request, responseObserver);
+    handleInternal(jobType, jobActivationProperties, responseObserver);
   }
 
   private void handleInternal(
-      final StreamActivatedJobsRequest request,
+      final String jobType,
+      final JobActivationProperties jobActivationProperties,
       final ServerCallStreamObserver<ActivatedJob> responseObserver) {
-    final var jobActivationProperties = toJobActivationProperties(request);
-    final var streamType = wrapString(request.getType());
+    final var streamType = wrapString(jobType);
     final var consumer = new JobStreamConsumer(responseObserver, actor);
     final var cleaner = new AsyncJobStreamRemover(jobStreamer);
 
