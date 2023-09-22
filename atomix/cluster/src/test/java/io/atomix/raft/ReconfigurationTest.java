@@ -75,7 +75,7 @@ final class ReconfigurationTest {
 
   private static AppendResult appendEntry(final LeaderRole leader) {
     final var result = new AppendResult();
-    leader.appendEntry(0, 1, ByteBuffer.wrap(new byte[0]), result);
+    leader.appendEntry(-1, -1, ByteBuffer.wrap(new byte[0]), result);
     return result;
   }
 
@@ -392,7 +392,7 @@ final class ReconfigurationTest {
 
       // when - m2 left
       assertThat(m2.leave()).succeedsWithin(Duration.ofSeconds(5));
-      awaitLeader(m1);
+      appendEntry(awaitLeader(m1)).commit().join();
 
       // then - m2 can request leave again
       assertThat(m2.leave()).succeedsWithin(Duration.ofSeconds(5));
@@ -442,12 +442,20 @@ final class ReconfigurationTest {
           .join();
 
       // when -- two members leave and one shuts down without leaving
-      awaitLeader(m1, m2, m3, m4, m5); // await leader so that join doesn't fail with NO_LEADER
+
+      // commit an entry to ensure that the leader is ready to accept new configuration
+      assertThat(appendEntry(awaitLeader(m1, m2, m3, m4, m5)).commit())
+          .succeedsWithin(Duration.ofSeconds(1));
       m4.leave().join();
-      awaitLeader(m1, m2, m3, m5); // await leader so that join doesn't fail with NO_LEADER
-      m5.leave().join();
       m4.shutdown().join();
+
+      // commit an entry to ensure that the leader is ready to accept new configuration
+      assertThat(appendEntry(awaitLeader(m1, m2, m3, m5)).commit())
+          .succeedsWithin(Duration.ofSeconds(1));
+      m5.leave().join();
       m5.shutdown().join();
+
+      // shut down m3 without leaving
       m3.shutdown().join();
 
       // then -- remaining three can elect a leader and commit entries
