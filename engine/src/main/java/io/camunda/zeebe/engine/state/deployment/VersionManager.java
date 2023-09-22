@@ -26,7 +26,7 @@ public final class VersionManager {
   private final DbString idKey;
   private final DbString tenantIdKey;
   private final DbTenantAwareKey<DbString> tenantAwareIdKey;
-  private final VersionInfo nextVersion = new VersionInfo();
+  private final VersionInfo versionInfo = new VersionInfo();
   private final Object2ObjectHashMap<TenantIdAndResourceId, VersionInfo> versionByTenantCache;
 
   public VersionManager(
@@ -40,7 +40,7 @@ public final class VersionManager {
     idKey = new DbString();
     tenantAwareIdKey = new DbTenantAwareKey<>(tenantIdKey, idKey, PlacementType.PREFIX);
     versionInfoColumnFamily =
-        zeebeDb.createColumnFamily(columnFamily, transactionContext, tenantAwareIdKey, nextVersion);
+        zeebeDb.createColumnFamily(columnFamily, transactionContext, tenantAwareIdKey, versionInfo);
     versionByTenantCache = new Object2ObjectHashMap<>();
   }
 
