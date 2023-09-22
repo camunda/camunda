@@ -42,6 +42,7 @@ import org.junit.Test;
 public class StandaloneDecisionEvaluationTest extends ClientTest {
 
   private static final long DECISION_KEY = 123L;
+  private static final String TENANT_ID = "foo";
   private static GatewayOuterClass.EvaluatedDecisionOutput evaluatedOutput;
   private static GatewayOuterClass.MatchedDecisionRule matchedRule;
   private static GatewayOuterClass.EvaluatedDecisionInput evaluatedInput;
@@ -79,6 +80,7 @@ public class StandaloneDecisionEvaluationTest extends ClientTest {
             .setDecisionVersion(1)
             .setDecisionType("TABLE")
             .setDecisionOutput("testOutput")
+            .setTenantId(TENANT_ID)
             .addEvaluatedInputs(evaluatedInput)
             .addMatchedRules(matchedRule)
             .build();
@@ -94,6 +96,7 @@ public class StandaloneDecisionEvaluationTest extends ClientTest {
             .setDecisionRequirementsKey(124L)
             .setFailedDecisionId("my-decision")
             .setFailureMessage("decision-evaluation-failure")
+            .setTenantId(TENANT_ID)
             .addEvaluatedDecisions(evaluatedDecision)
             .build();
   }
@@ -311,7 +314,7 @@ public class StandaloneDecisionEvaluationTest extends ClientTest {
         .isEqualTo(evaluateDecisionResponse.getFailedDecisionId());
     assertThat(response.getFailureMessage())
         .isEqualTo(evaluateDecisionResponse.getFailureMessage());
-    assertThat(response.getTenantId()).isEqualTo("");
+    assertThat(response.getTenantId()).isEqualTo(evaluateDecisionResponse.getTenantId());
 
     // assert EvaluatedDecision
     assertThat(response.getEvaluatedDecisions()).hasSize(1);
@@ -328,6 +331,7 @@ public class StandaloneDecisionEvaluationTest extends ClientTest {
         .isEqualTo(evaluatedDecision.getDecisionType());
     assertThat(evaluatedDecisionResponse.getDecisionOutput())
         .isEqualTo(evaluatedDecision.getDecisionOutput());
+    assertThat(evaluatedDecisionResponse.getTenantId()).isEqualTo(evaluatedDecision.getTenantId());
 
     // assert EvaluatedDecisionInput
     assertThat(evaluatedDecisionResponse.getEvaluatedInputs()).hasSize(1);
