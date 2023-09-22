@@ -11,6 +11,7 @@ import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
 import io.camunda.zeebe.model.bpmn.builder.AbstractThrowEventBuilder;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import java.util.Collection;
+import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -28,6 +29,14 @@ public final class JobWorkerElementBuilderProvider implements ArgumentsProvider 
   public Stream<? extends Arguments> provideArguments(final ExtensionContext extensionContext)
       throws Exception {
     return builders().map(Arguments::of);
+  }
+
+  public static List<BpmnElementType> getSupportedActivities() {
+    return List.of(
+        BpmnElementType.SERVICE_TASK,
+        BpmnElementType.BUSINESS_RULE_TASK,
+        BpmnElementType.SCRIPT_TASK,
+        BpmnElementType.SEND_TASK);
   }
 
   public static Stream<JobWorkerElementBuilder> builders() {
