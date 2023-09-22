@@ -61,7 +61,7 @@ public final class TimerIncidentTest {
             ELEMENT_ID,
             serviceTaskBuilder ->
                 serviceTaskBuilder
-                    .zeebeJobTypeExpression("boundary_timer_test")
+                    .zeebeJobType("boundary_timer_test")
                     .boundaryEvent(
                         "boundary-event-1",
                         timerBoundaryEventBuilder ->
@@ -80,7 +80,7 @@ public final class TimerIncidentTest {
             ELEMENT_ID,
             serviceTaskBuilder ->
                 serviceTaskBuilder
-                    .zeebeJobTypeExpression("boundary_timer_test")
+                    .zeebeJobType("boundary_timer_test")
                     .boundaryEvent(
                         "boundary-event-1",
                         timerBoundaryEventBuilder ->
