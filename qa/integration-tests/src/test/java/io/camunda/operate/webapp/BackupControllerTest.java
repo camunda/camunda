@@ -51,6 +51,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import java.io.IOException;
 import java.time.OffsetDateTime;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
@@ -575,19 +576,26 @@ public class BackupControllerTest {
 
     List<GetBackupStateResponseDto> backups = backupController.getBackups();
     assertThat(backups).hasSize(3);
-    GetBackupStateResponseDto backup3 = backups.get(0);
+
+    GetBackupStateResponseDto backup3 = backups.stream().filter(response ->
+            backupId3.equals(response.getBackupId())).findAny().orElse(null);
+    assertThat(backup3).isNotNull();
     assertThat(backup3.getState()).isEqualTo(IN_PROGRESS);
     assertThat(backup3.getBackupId()).isEqualTo(backupId3);
     assertThat(backup3.getFailureReason()).isNull();
     assertBackupDetails(List.of(snapshotInfo3_1, snapshotInfo3_2), backup3);
 
-    GetBackupStateResponseDto backup2 = backups.get(1);
+    GetBackupStateResponseDto backup2 = backups.stream().filter(response ->
+            backupId2.equals(response.getBackupId())).findAny().orElse(null);
+    assertThat(backup2).isNotNull();
     assertThat(backup2.getState()).isEqualTo(INCOMPLETE);
     assertThat(backup2.getBackupId()).isEqualTo(backupId2);
     assertThat(backup2.getFailureReason()).isNull();
     assertBackupDetails(List.of(snapshotInfo2_1, snapshotInfo2_2), backup2);
 
-    GetBackupStateResponseDto backup1 = backups.get(2);
+    GetBackupStateResponseDto backup1 = backups.stream().filter(response ->
+            backupId1.equals(response.getBackupId())).findAny().orElse(null);
+    assertThat(backup1).isNotNull();
     assertThat(backup1.getState()).isEqualTo(COMPLETED);
     assertThat(backup1.getBackupId()).isEqualTo(backupId1);
     assertThat(backup1.getFailureReason()).isNull();
