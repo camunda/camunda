@@ -92,16 +92,6 @@ public final class BpmnJobBehavior {
         .flatMap(p -> evalDateExp(jobWorkerProps.getFollowUpDate(), scopeKey).map(p::followUpDate));
   }
 
-  public Either<Failure, ?> createNewJob(
-      final BpmnElementContext context, final ExecutableJobWorkerElement element) {
-    return evaluateJobExpressions(element, context)
-        .map(
-            jobProperties -> {
-              createNewJob(context, element, jobProperties);
-              return null;
-            });
-  }
-
   public void createNewJob(
       final BpmnElementContext context,
       final ExecutableJobWorkerElement element,
