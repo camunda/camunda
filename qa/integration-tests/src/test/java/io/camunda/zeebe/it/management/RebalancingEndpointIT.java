@@ -7,46 +7,41 @@
  */
 package io.camunda.zeebe.it.management;
 
+import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.response.PartitionInfo;
 import io.camunda.zeebe.qa.util.actuator.RebalanceActuator;
-import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
-import io.camunda.zeebe.test.util.testcontainers.ContainerLogsDumper;
-import io.zeebe.containers.ZeebeGatewayNode;
-import io.zeebe.containers.cluster.ZeebeCluster;
+import io.camunda.zeebe.qa.util.cluster.TestCluster;
+import io.camunda.zeebe.qa.util.cluster.TestGateway;
+import io.camunda.zeebe.qa.util.cluster.TestHealthProbe;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import java.time.Duration;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
-import org.testcontainers.containers.Network;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
-@Testcontainers
+@ZeebeIntegration
+@AutoCloseResources
 final class RebalancingEndpointIT {
-  private final Network network = Network.newNetwork();
-
-  @Container
-  private final ZeebeCluster cluster =
-      ZeebeCluster.builder()
-          .withImage(ZeebeTestContainerDefaults.defaultTestImage())
+  @TestZeebe
+  private final TestCluster cluster =
+      TestCluster.builder()
           .withEmbeddedGateway(true)
           .withBrokersCount(3)
           .withPartitionsCount(3)
           .withReplicationFactor(3)
-          .withNetwork(network)
           .build();
 
-  @RegisterExtension
-  @SuppressWarnings("unused")
-  final ContainerLogsDumper logsWatcher = new ContainerLogsDumper(cluster::getNodes);
-
-  private ZeebeClient client;
+  @AutoCloseResource private ZeebeClient client;
 
   @BeforeEach
   void setup() {
-    client = cluster.newClientBuilder().build();
+    // we use broker 1 as the "restart" broker if we have a good leadership distribution, so make
+    // sure the client is from another broker
+    client = cluster.brokers().get(MemberId.from("0")).newClientBuilder().build();
   }
 
   @Test
@@ -62,18 +57,20 @@ final class RebalancingEndpointIT {
   }
 
   private void triggerRebalancing() {
-    final ZeebeGatewayNode<?> gateway = cluster.getAvailableGateway();
+    final TestGateway<?> gateway = cluster.availableGateway();
     RebalanceActuator.of(gateway).rebalance();
   }
 
+  @SuppressWarnings("resource")
   private void forceBadLeaderDistribution() {
     // Only restart a broker if we currently have a good distribution.
     // Otherwise, restarting might accidentally create a good distribution and
     // `waitForBadLeaderDistribution` times out.
     if (hasGoodLeaderDistribution()) {
-      cluster.getBrokers().get(1).stop();
-      cluster.getBrokers().get(1).start();
+      final var brokerId = MemberId.from("1");
+      final var stoppedBroker = cluster.brokers().get(brokerId).stop();
       waitForBadLeaderDistribution();
+      stoppedBroker.start().await(TestHealthProbe.READY);
     }
   }
 

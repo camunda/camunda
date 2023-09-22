@@ -14,6 +14,7 @@ import feign.Retryer;
 import feign.Target.HardCodedTarget;
 import feign.jackson.JacksonDecoder;
 import feign.jackson.JacksonEncoder;
+import io.camunda.zeebe.qa.util.cluster.TestApplication;
 import io.zeebe.containers.ZeebeNode;
 
 /**
@@ -39,6 +40,17 @@ public interface RebalanceActuator {
   static RebalanceActuator of(final ZeebeNode<?> node) {
     final var endpoint =
         String.format("http://%s/actuator/rebalance", node.getExternalMonitoringAddress());
+    return of(endpoint);
+  }
+
+  /**
+   * Returns a {@link RebalanceActuator} instance using the given node as upstream.
+   *
+   * @param node the node to connect to
+   * @return a new instance of {@link RebalanceActuator}
+   */
+  static RebalanceActuator of(final TestApplication<?> node) {
+    final var endpoint = String.format("http://%s/actuator/rebalance", node.monitoringAddress());
     return of(endpoint);
   }
 

@@ -7,64 +7,36 @@
  */
 package io.camunda.zeebe.it.management;
 
+import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.qa.util.actuator.BanningActuator;
-import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
-import io.camunda.zeebe.test.util.socket.SocketUtil;
-import io.zeebe.containers.cluster.ZeebeCluster;
-import io.zeebe.containers.exporter.DebugReceiver;
-import java.util.concurrent.CopyOnWriteArrayList;
+import io.camunda.zeebe.qa.util.cluster.TestCluster;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
-@Testcontainers
+@ZeebeIntegration
 public class BanningEndpointIT {
 
-  private static final CopyOnWriteArrayList<Record<?>> EXPORTED_RECORDS =
-      new CopyOnWriteArrayList<>();
-  private static final DebugReceiver DEBUG_RECEIVER =
-      new DebugReceiver(EXPORTED_RECORDS::add, SocketUtil.getNextAddress()).start();
-
-  @Container
-  private static final ZeebeCluster CLUSTER =
-      ZeebeCluster.builder()
-          .withImage(ZeebeTestContainerDefaults.defaultTestImage())
-          .withBrokerConfig(
-              broker -> broker.withDebugExporter(DEBUG_RECEIVER.serverAddress().getPort()))
+  @TestZeebe
+  private static final TestCluster CLUSTER =
+      TestCluster.builder()
+          .useRecordingExporter(true)
           .withEmbeddedGateway(true)
           .withBrokersCount(2)
           .withPartitionsCount(1)
           .withReplicationFactor(2)
           .build();
 
-  @BeforeAll
-  public static void setup() {
-    DEBUG_RECEIVER.start();
-  }
-
-  @AfterAll
-  public static void teardown() {
-    DEBUG_RECEIVER.stop();
-  }
-
-  @BeforeEach
-  public void cleanup() {
-    EXPORTED_RECORDS.clear();
-  }
-
   @Test
   void shouldBanInstance() {
     // given - a process instance
-    final var actuator = BanningActuator.of(CLUSTER.getBrokers().get(0));
+    final var actuator = banningActuator();
     final long processInstanceKey;
     try (final var client = CLUSTER.newClientBuilder().build()) {
       final var process = Bpmn.createExecutableProcess("processId").startEvent().endEvent().done();
@@ -87,7 +59,7 @@ public class BanningEndpointIT {
   @Test
   void shouldWriteErrorEventWhenBanningInstance() {
     // given
-    final var actuator = BanningActuator.of(CLUSTER.getBrokers().get(0));
+    final var actuator = banningActuator();
     final long processInstanceKey;
     try (final var client = CLUSTER.newClientBuilder().build()) {
       final var process = Bpmn.createExecutableProcess("processId").startEvent().endEvent().done();
@@ -111,12 +83,18 @@ public class BanningEndpointIT {
         .untilAsserted(
             () -> {
               final var errorEvents =
-                  EXPORTED_RECORDS.stream()
+                  RecordingExporter.records()
                       .filter(record -> record.getRecordType() == RecordType.EVENT)
                       .filter(record -> record.getValueType() == ValueType.ERROR)
                       .filter(record -> record.getKey() == processInstanceKey)
+                      .limit(1)
                       .toList();
               Assertions.assertThat(errorEvents).isNotEmpty();
             });
+  }
+
+  private BanningActuator banningActuator() {
+    final var broker = CLUSTER.brokers().get(MemberId.from("0"));
+    return BanningActuator.of(broker);
   }
 }

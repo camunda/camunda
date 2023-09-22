@@ -7,68 +7,36 @@
  */
 package io.camunda.zeebe.it.management;
 
-import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
 
-import io.camunda.zeebe.broker.StandaloneBroker;
-import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.it.smoke.CollectorRegistryInitializer;
-import io.camunda.zeebe.it.smoke.RandomPortInitializer;
 import io.camunda.zeebe.qa.util.actuator.JobStreamActuator;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.shared.management.JobStreamEndpoint.RemoteJobStream;
 import io.camunda.zeebe.shared.management.JobStreamEndpoint.RemoteStreamId;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import java.time.Duration;
-import org.agrona.CloseHelper;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-@ExtendWith(SpringExtension.class)
-@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT, classes = StandaloneBroker.class)
-@ContextConfiguration(
-    initializers = {RandomPortInitializer.class, CollectorRegistryInitializer.class})
-@ActiveProfiles("test")
-public class JobStreamEndpointIT {
-  @Autowired private BrokerCfg config;
+@ZeebeIntegration
+@AutoCloseResources
+final class JobStreamEndpointIT {
+  @TestZeebe private static final TestStandaloneBroker BROKER = new TestStandaloneBroker();
 
-  @SuppressWarnings("unused")
-  @LocalServerPort
-  private int managementPort;
+  @AutoCloseResource private final ZeebeClient client = BROKER.newClientBuilder().build();
 
-  private ZeebeClient client;
-  private JobStreamActuator actuator;
-
-  @BeforeEach
-  void beforeEach() {
-    await("until broker is ready").untilAsserted(this::assertBrokerIsReady);
-
-    client =
-        ZeebeClient.newClientBuilder()
-            .usePlaintext()
-            .gatewayAddress(
-                config.getGateway().getNetwork().getHost()
-                    + ":"
-                    + config.getGateway().getNetwork().getPort())
-            .build();
-    actuator =
-        JobStreamActuator.of("http://localhost:%d/actuator/jobstreams".formatted(managementPort));
-  }
+  private final JobStreamActuator actuator = JobStreamActuator.of(BROKER);
 
   @AfterEach
   void afterEach() {
-    CloseHelper.quietClose(client);
+    // ensure we close all open streams
+    client.close();
 
     // avoid flakiness between tests by waiting until the registries are empty
     Awaitility.await("until no streams are registered")
@@ -207,9 +175,5 @@ public class JobStreamEndpointIT {
                   .containsExactlyInAnyOrder("bar", "barz");
               assertThat(stream.id()).isNotNull();
             });
-  }
-
-  private void assertBrokerIsReady() {
-    given().port(managementPort).when().get("/ready").then().statusCode(204);
   }
 }

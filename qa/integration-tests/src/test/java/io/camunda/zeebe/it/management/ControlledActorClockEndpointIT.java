@@ -16,13 +16,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.process.test.assertions.BpmnAssert;
-import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordAssert;
-import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
-import io.camunda.zeebe.test.util.socket.SocketUtil;
-import io.zeebe.containers.ZeebeContainer;
-import io.zeebe.containers.engine.ContainerEngine;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -39,43 +39,26 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Map;
-import java.util.concurrent.TimeoutException;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
-// NOTE: once https://github.com/camunda-community-hub/zeebe-test-container/issues/318 is completed,
-// we can reduce execution time by sharing the same engine and resetting the clock in between
-@Testcontainers
+@ZeebeIntegration
+@AutoCloseResources
 final class ControlledActorClockEndpointIT {
   private static final ObjectMapper MAPPER =
       new ObjectMapper().registerModule(new JavaTimeModule());
 
-  private final ZeebeContainer container =
-      new ZeebeContainer(ZeebeTestContainerDefaults.defaultTestImage())
-          .withEnv("ZEEBE_CLOCK_CONTROLLED", "true");
+  @TestZeebe
+  private final TestStandaloneBroker broker =
+      new TestStandaloneBroker()
+          .withRecordingExporter(true)
+          .withProperty("zeebe.clock.controlled", true);
 
-  @Container
-  private final ContainerEngine engine =
-      ContainerEngine.builder()
-          .withDebugReceiverPort(SocketUtil.getNextAddress().getPort())
-          .withContainer(container)
-          .withIdlePeriod(Duration.ofSeconds(2))
-          .build();
+  @AutoCloseResource private final ZeebeClient zeebeClient = broker.newClientBuilder().build();
 
   private final HttpClient httpClient = HttpClient.newHttpClient();
-  private ZeebeClient zeebeClient;
-
-  @BeforeEach
-  void beforeEach() {
-    zeebeClient = engine.createClient();
-  }
 
   @Test
-  void testPinningTime() throws IOException, InterruptedException, TimeoutException {
+  void testPinningTime() throws IOException, InterruptedException {
     // given - Zeebe actor clock is pinned
     final var now = System.currentTimeMillis();
     final var request =
@@ -87,12 +70,12 @@ final class ControlledActorClockEndpointIT {
 
     // when - producing records
     zeebeClient.newDeployResourceCommand().addProcessModel(process, "process.bpmn").send().join();
+    RecordingExporter.records().limit(1).await();
 
     // then - records are exported with a timestamp matching the pinned time
-    engine.waitForIdleState(Duration.ofSeconds(5));
     assertThat(response.statusCode()).as("/pin request was successful").isEqualTo(200);
     assertThat(response.body().epochMilli()).as("response returned pinned time").isEqualTo(now);
-    assertThat(getExportedRecords())
+    assertThat(RecordingExporter.getRecords())
         .as("all exported records after /pin have the pinned timestamp")
         .isNotEmpty()
         .allSatisfy(record -> RecordAssert.assertThat(record).hasTimestamp(now));
@@ -114,6 +97,7 @@ final class ControlledActorClockEndpointIT {
 
     // when - producing records
     zeebeClient.newDeployResourceCommand().addProcessModel(process, "process.bpmn").send().join();
+    RecordingExporter.records().limit(1).await();
 
     // then - records are exported with a timestamp matching the offset time
     final var expectedUpperBound = Instant.now().plus(offset);
@@ -122,7 +106,7 @@ final class ControlledActorClockEndpointIT {
     assertThat(response.body().instant())
         .as("returned instant is close to expected bound")
         .isCloseTo(expectedUpperBound, within(30, ChronoUnit.SECONDS));
-    assertThat(getExportedRecords())
+    assertThat(RecordingExporter.getRecords())
         .as("all exported records after the /add request have an offset of 5 hours")
         .isNotEmpty()
         .allSatisfy(
@@ -133,20 +117,9 @@ final class ControlledActorClockEndpointIT {
                     .isAfter(expectedLowerBound));
   }
 
-  // it's necessary to make a copied stream out of this, as passing the iterable directly to AssertJ
-  // will cause it to close the underlying stream after the assertion
-  private Stream<Record<?>> getExportedRecords() {
-    final var exportedRecords = BpmnAssert.getRecordStream().records();
-    return StreamSupport.stream(exportedRecords.spliterator(), false);
-  }
-
   private Builder buildRequest(final String operation) {
     return HttpRequest.newBuilder(
-            URI.create(
-                "http://"
-                    + container.getExternalMonitoringAddress()
-                    + "/actuator/clock/"
-                    + operation))
+            URI.create("http://" + broker.monitoringAddress() + "/actuator/clock/" + operation))
         .headers("Content-Type", "application/json", "Accept", "application/json");
   }
 

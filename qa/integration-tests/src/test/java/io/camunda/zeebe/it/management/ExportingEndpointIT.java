@@ -12,114 +12,95 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.qa.util.actuator.ExportingActuator;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
-import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
-import io.camunda.zeebe.test.util.socket.SocketUtil;
-import io.zeebe.containers.cluster.ZeebeCluster;
-import io.zeebe.containers.exporter.DebugReceiver;
+import io.camunda.zeebe.qa.util.cluster.TestCluster;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
-import java.util.concurrent.CopyOnWriteArrayList;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
-@Testcontainers
+@ZeebeIntegration
+@AutoCloseResources
 final class ExportingEndpointIT {
-  private static final CopyOnWriteArrayList<Record<?>> EXPORTED_RECORDS =
-      new CopyOnWriteArrayList<>();
-
-  private static final DebugReceiver DEBUG_RECEIVER =
-      new DebugReceiver(EXPORTED_RECORDS::add, SocketUtil.getNextAddress()).start();
-  private static ZeebeClient client;
-
-  @Container
-  private static final ZeebeCluster CLUSTER =
-      ZeebeCluster.builder()
-          .withImage(ZeebeTestContainerDefaults.defaultTestImage())
-          .withEmbeddedGateway(true)
-          .withBrokerConfig(
-              zeebeBrokerNode ->
-                  zeebeBrokerNode.withDebugExporter(DEBUG_RECEIVER.serverAddress().getPort()))
+  @TestZeebe
+  private static final TestCluster CLUSTER =
+      TestCluster.builder()
+          .useRecordingExporter(true)
           .withBrokersCount(2)
           .withPartitionsCount(2)
           .withReplicationFactor(1)
+          .withEmbeddedGateway(true)
           .build();
 
-  @BeforeEach
-  void resetExportedRecords() {
-    EXPORTED_RECORDS.clear();
-  }
+  @AutoCloseResource private final ZeebeClient client = CLUSTER.newClientBuilder().build();
 
   @BeforeAll
-  static void setupClient() {
-    client = CLUSTER.newClientBuilder().build();
-  }
-
-  @AfterAll
-  static void closeClient() {
-    client.close();
+  static void beforeAll() {
+    try (final var client = CLUSTER.newClientBuilder().build()) {
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(
+              Bpmn.createExecutableProcess("processId").startEvent().endEvent().done(),
+              "process.bpmn")
+          .send()
+          .join();
+    }
   }
 
   @Test
   void shouldPauseExporting() {
-
-    deployProcess(client);
-    startProcess(client);
+    // given
+    startProcess();
 
     final var recordsBeforePause =
         Awaitility.await()
             .atMost(Duration.ofSeconds(30))
             .during(Duration.ofSeconds(5))
-            .until(EXPORTED_RECORDS::size, hasStableValue());
+            .until(RecordingExporter.getRecords()::size, hasStableValue());
 
     // when
-    ExportingActuator.of(CLUSTER.getAvailableGateway()).pause();
-    startProcess(client);
+    getActuator().pause();
+    startProcess();
 
     // then
-    Awaitility.await()
-        .atMost(Duration.ofSeconds(30))
-        .during(Duration.ofSeconds(10))
-        .failFast(() -> assertThat(EXPORTED_RECORDS).hasSize(recordsBeforePause));
-
+    RecordingExporter.records().limit(recordsBeforePause + 1).await();
     Awaitility.await().untilAsserted(this::allPartitionsPausedExporting);
   }
 
   @Test
   void shouldResumeExporting() {
     // given
-    final var actuator = ExportingActuator.of(CLUSTER.getAvailableGateway());
+    final var actuator = getActuator();
     actuator.pause();
 
-    deployProcess(client);
-    startProcess(client);
+    startProcess();
 
     final var recordsBeforePause =
         Awaitility.await()
             .atMost(Duration.ofSeconds(30))
             .during(Duration.ofSeconds(5))
-            .until(EXPORTED_RECORDS::size, hasStableValue());
+            .until(RecordingExporter.getRecords()::size, hasStableValue());
 
     // when
-    ExportingActuator.of(CLUSTER.getAvailableGateway()).resume();
-    startProcess(client);
+    getActuator().resume();
+    startProcess();
 
     // then
-    Awaitility.await()
-        .atMost(Duration.ofSeconds(30))
-        .during(Duration.ofSeconds(10))
-        .untilAsserted(() -> assertThat(EXPORTED_RECORDS).hasSizeGreaterThan(recordsBeforePause));
-
+    RecordingExporter.records().limit(recordsBeforePause + 1).await();
     Awaitility.await().untilAsserted(this::allPartitionsExporting);
   }
 
-  private static void startProcess(final ZeebeClient client) {
+  private ExportingActuator getActuator() {
+    return ExportingActuator.of(CLUSTER.availableGateway());
+  }
+
+  private void startProcess() {
     client
         .newCreateInstanceCommand()
         .bpmnProcessId("processId")
@@ -129,18 +110,8 @@ final class ExportingEndpointIT {
         .join();
   }
 
-  private static void deployProcess(final ZeebeClient client) {
-    client
-        .newDeployResourceCommand()
-        .addProcessModel(
-            Bpmn.createExecutableProcess("processId").startEvent().endEvent().done(),
-            "process.bpmn")
-        .send()
-        .join();
-  }
-
   private void allPartitionsPausedExporting() {
-    for (final var broker : ExportingEndpointIT.CLUSTER.getBrokers().values()) {
+    for (final var broker : CLUSTER.brokers().values()) {
       assertThat(PartitionsActuator.of(broker).query().values())
           .allMatch(
               status -> status.exporterPhase() == null || status.exporterPhase().equals("PAUSED"),
@@ -149,7 +120,7 @@ final class ExportingEndpointIT {
   }
 
   private void allPartitionsExporting() {
-    for (final var broker : ExportingEndpointIT.CLUSTER.getBrokers().values()) {
+    for (final var broker : CLUSTER.brokers().values()) {
       assertThat(PartitionsActuator.of(broker).query().values())
           .allMatch(
               status ->
