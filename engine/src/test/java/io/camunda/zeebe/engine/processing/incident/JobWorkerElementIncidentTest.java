@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.incident;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
+import static org.assertj.core.api.Assumptions.assumeThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.JobWorkerElementBuilder;
@@ -340,6 +341,11 @@ public class JobWorkerElementIncidentTest {
 
   @Test
   public void shouldResolveIncidentWithMessageBoundaryEvent() {
+    assumeThat(elementBuilder.getElementType())
+        .describedAs(
+            "Only activities can have boundary events, this test is not relevant to job worker events")
+        .isIn(JobWorkerElementBuilderProvider.getSupportedActivities());
+
     // given
     ENGINE
         .deployment()
