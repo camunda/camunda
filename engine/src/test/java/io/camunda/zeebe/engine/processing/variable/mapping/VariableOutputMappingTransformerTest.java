@@ -140,7 +140,7 @@ public final class VariableOutputMappingTransformerTest {
         Map.of(),
         """
         Assertion failure on evaluate the expression \
-        '{a:if (a != null and is defined({b: assert(x, x != null)})) then put all(a,{b: assert(x, x != null)}) else {b: assert(x, x != null)}}': \
+        '{a:if (a != null) then context merge(a,{b: assert(x, x != null)}) else {b: assert(x, x != null)}}': \
         The condition is not fulfilled"""
       }, // #9543
     };
