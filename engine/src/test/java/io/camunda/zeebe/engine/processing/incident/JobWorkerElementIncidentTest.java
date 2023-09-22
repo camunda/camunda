@@ -22,10 +22,12 @@ import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
+import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.test.util.collection.Maps;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Collection;
+import java.util.Map;
 import java.util.function.Consumer;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -334,5 +336,54 @@ public class JobWorkerElementIncidentTest {
                 .withRecordKey(incidentCreated.getKey()))
         .extracting(Record::getIntent)
         .containsExactly(IncidentIntent.CREATED, IncidentIntent.RESOLVED);
+  }
+
+  @Test
+  public void shouldResolveIncidentWithMessageBoundaryEvent() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            elementBuilder
+                .build(
+                    Bpmn.createExecutableProcess(PROCESS_ID).startEvent(),
+                    element ->
+                        element.zeebeJobType("test").zeebeJobTypeExpression("invalid_job_type"))
+                .id("task")
+                .endEvent()
+                .moveToActivity("task")
+                .boundaryEvent()
+                .message(m -> m.name("message").zeebeCorrelationKeyExpression("123"))
+                .endEvent()
+                .done())
+        .deploy();
+
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable("invalid_job_type", Map.of("x", true))
+            .create();
+
+    final Record<IncidentRecordValue> incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    // when
+    ENGINE
+        .variables()
+        .ofScope(incident.getValue().getProcessInstanceKey())
+        .withDocument(Map.of("invalid_job_type", "task"))
+        .update();
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withRecordKey(incident.getValue().getElementInstanceKey())
+                .findFirst())
+        .describedAs("Expect that the element could be fully activated")
+        .isPresent();
   }
 }
