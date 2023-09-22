@@ -217,6 +217,29 @@ public final class ProcessStateTest {
   }
 
   @Test
+  // Regression test for https://github.com/camunda/zeebe/issues/14309#issuecomment-1731052065
+  public void shouldStoreVersionsInCacheSeparately() {
+    // given
+    final var process1V1 = creatingProcessRecord(processingState, "process1").setVersion(1);
+    final var process2V1 = creatingProcessRecord(processingState, "process2").setVersion(1);
+    final var process2V2 = creatingProcessRecord(processingState, "process2").setVersion(2);
+    processState.putProcess(process1V1.getKey(), process1V1);
+    processState.putProcess(process2V1.getKey(), process2V1);
+    processState.putProcess(process2V2.getKey(), process2V2);
+
+    // when
+    // After clearing the cache we must get the object from the state to ensure that they are
+    // available in the cache.
+    processState.clearCache();
+    processState.getNextProcessVersion("process1", TENANT_ID);
+    processState.getNextProcessVersion("process2", TENANT_ID);
+
+    // then
+    // The processes in the cache should not reference the same object.
+    assertThat(processState.getNextProcessVersion("process1", TENANT_ID)).isEqualTo(2);
+  }
+
+  @Test
   public void shouldReturnNullOnGetLatest() {
     // given
 

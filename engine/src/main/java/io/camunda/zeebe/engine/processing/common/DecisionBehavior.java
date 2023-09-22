@@ -108,7 +108,8 @@ public class DecisionBehavior {
             .setDecisionName(decision.getDecisionName())
             .setDecisionVersion(decision.getVersion())
             .setDecisionRequirementsKey(decision.getDecisionRequirementsKey())
-            .setDecisionRequirementsId(decision.getDecisionRequirementsId());
+            .setDecisionRequirementsId(decision.getDecisionRequirementsId())
+            .setTenantId(decision.getTenantId());
 
     final var decisionKeysByDecisionId =
         decisionState

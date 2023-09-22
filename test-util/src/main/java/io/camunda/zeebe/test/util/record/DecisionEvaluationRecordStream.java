@@ -48,4 +48,8 @@ public final class DecisionEvaluationRecordStream
   public DecisionEvaluationRecordStream withDecisionName(final String decisionName) {
     return valueFilter(v -> v.getDecisionName().equals(decisionName));
   }
+
+  public DecisionEvaluationRecordStream withTenantId(final String tenantId) {
+    return valueFilter(v -> tenantId.equals(v.getTenantId()));
+  }
 }
