@@ -167,5 +167,5 @@ yarn start:e2e
 ### Run Tests
 
 ```
-yarn test:e2e:playwright
+yarn test:e2e
 ```

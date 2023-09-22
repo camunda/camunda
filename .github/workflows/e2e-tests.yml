@@ -1,4 +1,4 @@
-name: E2E Tests (Playwright)
+name: E2E Tests
 on: push
 jobs:
   test:
@@ -78,7 +78,7 @@ jobs:
         run: mvn -q -B spring-boot:start -f webapp/pom.xml -Dspring-boot.run.fork=true
       - name: Run tests
         working-directory: ./client
-        run: yarn run test:e2e:playwright:ci
+        run: yarn run test:e2e:ci
         env:
           ZEEBE_GATEWAY_ADDRESS: localhost:26500
       - uses: actions/upload-artifact@v3
