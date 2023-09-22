@@ -184,11 +184,11 @@ public final class TimerIncidentTest {
 
     // then
     assertThat(
-            RecordingExporter.processInstanceRecords()
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
                 .withProcessInstanceKey(processInstanceKey)
-                .limitToProcessInstanceCompleted()
-                .withRecordKey(incident.getValue().getElementInstanceKey()))
-        .extracting(Record::getIntent)
-        .contains(ProcessInstanceIntent.ELEMENT_ACTIVATED);
+                .withRecordKey(incident.getValue().getElementInstanceKey())
+                .findAny())
+        .describedAs("Expect that element was activated")
+        .isPresent();
   }
 }
