@@ -192,7 +192,8 @@ public final class ResponseMapper {
             .setDecisionName(brokerResponse.getDecisionName())
             .setDecisionVersion(brokerResponse.getDecisionVersion())
             .setDecisionRequirementsId(brokerResponse.getDecisionRequirementsId())
-            .setDecisionRequirementsKey(brokerResponse.getDecisionRequirementsKey());
+            .setDecisionRequirementsKey(brokerResponse.getDecisionRequirementsKey())
+            .setTenantId(brokerResponse.getTenantId());
 
     for (final EvaluatedDecisionValue intermediateDecision :
         brokerResponse.getEvaluatedDecisions()) {

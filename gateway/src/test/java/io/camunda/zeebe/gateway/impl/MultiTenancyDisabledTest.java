@@ -17,6 +17,7 @@ import static org.mockito.Mockito.when;
 import com.google.protobuf.ByteString;
 import io.camunda.identity.sdk.tenants.dto.Tenant;
 import io.camunda.zeebe.auth.impl.Authorization;
+import io.camunda.zeebe.gateway.api.decision.EvaluateDecisionStub;
 import io.camunda.zeebe.gateway.api.deployment.DeployResourceStub;
 import io.camunda.zeebe.gateway.api.process.CreateProcessInstanceStub;
 import io.camunda.zeebe.gateway.api.util.GatewayTest;
@@ -28,6 +29,8 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DecisionRequirementsM
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceRequest.Builder;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluateDecisionRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluateDecisionResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ProcessMetadata;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.grpc.Status;
@@ -46,6 +49,7 @@ public class MultiTenancyDisabledTest extends GatewayTest {
   public void setup() {
     new DeployResourceStub().registerWith(brokerClient);
     new CreateProcessInstanceStub().registerWith(brokerClient);
+    new EvaluateDecisionStub().registerWith(brokerClient);
   }
 
   private void assertThatDefaultTenantIdSet() {
@@ -160,6 +164,44 @@ public class MultiTenancyDisabledTest extends GatewayTest {
     // when
     final CreateProcessInstanceResponse response =
         client.createProcessInstance(CreateProcessInstanceRequest.newBuilder().build());
+    assertThat(response).isNotNull();
+
+    // then
+    assertThat(response.getTenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  }
+
+  @Test
+  public void evaluateDecisionShouldContainDefaultTenantAsAuthorizedTenants() {
+    // given
+    final var request = EvaluateDecisionRequest.newBuilder().build();
+
+    // when
+    final var response = client.evaluateDecision(request);
+    assertThat(response).isNotNull();
+
+    // then
+    assertThatDefaultTenantIdSet();
+  }
+
+  @Test
+  public void evaluateDecisionRequestRejectsTenantId() {
+    // given
+    final var request = EvaluateDecisionRequest.newBuilder().setTenantId("tenant-a").build();
+
+    // when/then
+    assertThatRejectsRequest(() -> client.evaluateDecision(request), "EvaluateDecision");
+  }
+
+  @Test
+  public void evaluateDecisionResponseHasTenantId() {
+    // given
+    when(gateway.getIdentityMock().tenants().forToken(anyString()))
+        .thenReturn(List.of(new Tenant("tenant-a", "A"), new Tenant("tenant-b", "B")));
+
+    final var request = EvaluateDecisionRequest.newBuilder().build();
+
+    // when
+    final EvaluateDecisionResponse response = client.evaluateDecision(request);
     assertThat(response).isNotNull();
 
     // then

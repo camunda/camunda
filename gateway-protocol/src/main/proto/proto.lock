@@ -361,6 +361,11 @@
                 "id": 3,
                 "name": "variables",
                 "type": "string"
+              },
+              {
+                "id": 4,
+                "name": "tenantId",
+                "type": "string"
               }
             ]
           },
@@ -416,6 +421,11 @@
               {
                 "id": 10,
                 "name": "failureMessage",
+                "type": "string"
+              },
+              {
+                "id": 11,
+                "name": "tenantId",
                 "type": "string"
               }
             ]

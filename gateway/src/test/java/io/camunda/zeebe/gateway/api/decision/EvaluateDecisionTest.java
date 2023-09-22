@@ -17,6 +17,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluateDecisionRespo
 import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.JsonUtil;
 import io.camunda.zeebe.test.util.MsgPackUtil;
 import java.util.Collections;
@@ -51,6 +52,7 @@ public class EvaluateDecisionTest extends GatewayTest {
     assertThat(record.getDecisionId()).isEqualTo(DECISION_RECORD.getDecisionId());
     assertThat(record.getDecisionKey()).isEqualTo(DECISION_RECORD.getDecisionKey());
     MsgPackUtil.assertEqualityExcluding(record.getVariablesBuffer(), variables);
+    assertThat(record.getTenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   }
 
   @Test
@@ -84,6 +86,7 @@ public class EvaluateDecisionTest extends GatewayTest {
     assertThat(response.getDecisionRequirementsKey())
         .isEqualTo(DECISION_RECORD.getDecisionRequirementsKey());
     assertThat(response.getDecisionOutput()).isEqualTo(DECISION_RECORD.getDecisionOutput());
+    assertThat(response.getTenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
     // assert EvaluatedDecisionRecord mapping
     assertThat(response.getEvaluatedDecisionsCount()).isOne();
