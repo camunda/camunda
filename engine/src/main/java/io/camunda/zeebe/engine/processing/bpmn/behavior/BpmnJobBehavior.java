@@ -15,7 +15,6 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerElement;
-import io.camunda.zeebe.engine.processing.deployment.model.element.JobWorkerProperties;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.ExpressionTransformer;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -88,22 +87,11 @@ public final class BpmnJobBehavior {
     this.formState = formState;
   }
 
-  public Either<Failure, ?> createNewJob(
-      final BpmnElementContext context, final ExecutableJobWorkerElement element) {
-    final var jobWorkerProperties = element.getJobWorkerProperties();
+  public Either<Failure, JobProperties> evaluateJobExpressions(
+      final ExecutableJobWorkerElement element, final BpmnElementContext context) {
+    final var jobWorkerProps = element.getJobWorkerProperties();
     final var scopeKey = context.getElementInstanceKey();
     final var tenantId = context.getTenantId();
-    return evaluateJobExpressions(jobWorkerProperties, scopeKey, tenantId)
-        .map(
-            jobProperties -> {
-              writeJobCreatedEvent(context, element, jobProperties);
-              jobMetrics.jobCreated(jobProperties.getType());
-              return null;
-            });
-  }
-
-  private Either<Failure, JobProperties> evaluateJobExpressions(
-      final JobWorkerProperties jobWorkerProps, final long scopeKey, final String tenantId) {
     return Either.<Failure, JobProperties>right(new JobProperties())
         .flatMap(p -> evalTypeExp(jobWorkerProps.getType(), scopeKey).map(p::type))
         .flatMap(p -> evalRetriesExp(jobWorkerProps.getRetries(), scopeKey).map(p::retries))
@@ -120,6 +108,24 @@ public final class BpmnJobBehavior {
         .flatMap(p -> evalDateExp(jobWorkerProps.getFollowUpDate(), scopeKey).map(p::followUpDate))
         .flatMap(
             p -> evalFormIdExp(jobWorkerProps.getFormId(), scopeKey, tenantId).map(p::formKey));
+  }
+
+  public Either<Failure, ?> createNewJob(
+      final BpmnElementContext context, final ExecutableJobWorkerElement element) {
+    return evaluateJobExpressions(element, context)
+        .map(
+            jobProperties -> {
+              createNewJob(context, element, jobProperties);
+              return null;
+            });
+  }
+
+  public void createNewJob(
+      final BpmnElementContext context,
+      final ExecutableJobWorkerElement element,
+      final JobProperties jobProperties) {
+    writeJobCreatedEvent(context, element, jobProperties);
+    jobMetrics.jobCreated(jobProperties.getType());
   }
 
   private Either<Failure, String> evalTypeExp(final Expression type, final long scopeKey) {
@@ -276,7 +282,7 @@ public final class BpmnJobBehavior {
     }
   }
 
-  private static final class JobProperties {
+  public static final class JobProperties {
     private String type;
     private Long retries;
     private String assignee;
