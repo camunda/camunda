@@ -10,65 +10,51 @@ package io.camunda.zeebe.it.health;
 import static io.restassured.RestAssured.given;
 import static org.awaitility.Awaitility.await;
 
-import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.filter.log.RequestLoggingFilter;
 import io.restassured.filter.log.ResponseLoggingFilter;
 import io.restassured.http.ContentType;
 import io.restassured.specification.RequestSpecification;
-import io.zeebe.containers.ZeebeContainer;
-import io.zeebe.containers.ZeebePort;
 import java.util.concurrent.TimeUnit;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
+@ZeebeIntegration
 public final class BrokerMonitoringEndpointTest {
 
-  static ZeebeContainer sutBroker;
-
   static RequestSpecification brokerServerSpec;
+  @TestZeebe private static final TestStandaloneBroker BROKER = new TestStandaloneBroker();
 
-  @BeforeClass
-  public static void setUpClass() {
-    sutBroker = new ZeebeContainer(ZeebeTestContainerDefaults.defaultTestImage());
-
-    sutBroker.start();
-
-    final Integer monitoringPort = sutBroker.getMappedPort(ZeebePort.MONITORING.getPort());
-    final String containerIPAddress = sutBroker.getExternalHost();
-
+  @BeforeAll
+  static void setUpClass() {
     brokerServerSpec =
         new RequestSpecBuilder()
             .setContentType(ContentType.TEXT)
-            .setBaseUri("http://" + containerIPAddress)
-            .setPort(monitoringPort)
+            .setBaseUri("http://" + BROKER.monitoringAddress())
             .addFilter(new ResponseLoggingFilter())
             .addFilter(new RequestLoggingFilter())
             .build();
   }
 
-  @AfterClass
-  public static void tearDownClass() {
-    sutBroker.stop();
-  }
-
   @Test
-  public void shouldGetReadyStatus() {
+  void shouldGetReadyStatus() {
     await("Ready Status")
         .atMost(60, TimeUnit.SECONDS)
         .until(() -> given().spec(brokerServerSpec).when().get("ready").statusCode() == 204);
   }
 
   @Test
-  public void shouldGetHealthStatus() {
+  void shouldGetHealthStatus() {
     await("Health Status")
         .atMost(60, TimeUnit.SECONDS)
         .until(() -> given().spec(brokerServerSpec).when().get("health").statusCode() == 204);
   }
 
   @Test
-  public void shouldGetStartupStatus() {
+  void shouldGetStartupStatus() {
     await("Startup Status")
         .atMost(60, TimeUnit.SECONDS)
         .until(() -> given().spec(brokerServerSpec).when().get("startup").statusCode() == 204);
