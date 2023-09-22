@@ -12,6 +12,7 @@ import static org.junit.Assert.fail;
 
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
+import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor.EvaluationContextLookup;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.ExpressionTransformer;
@@ -31,6 +32,7 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskSchedule;
 import io.camunda.zeebe.model.bpmn.traversal.ModelWalker;
 import io.camunda.zeebe.model.bpmn.validation.ValidationVisitor;
 import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.scheduler.clock.ActorClock;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -460,7 +462,8 @@ public final class ZeebeRuntimeValidationTest {
   private static ValidationResults validate(final BpmnModelInstance model) {
     final ModelWalker walker = new ModelWalker(model);
     final ExpressionLanguage expressionLanguage =
-        ExpressionLanguageFactory.createExpressionLanguage();
+        ExpressionLanguageFactory.createExpressionLanguage(
+            new ZeebeFeelEngineClock(ActorClock.current()));
     final EvaluationContextLookup emptyLookup = scopeKey -> name -> null;
     final var expressionProcessor = new ExpressionProcessor(expressionLanguage, emptyLookup);
     final ValidationVisitor visitor =

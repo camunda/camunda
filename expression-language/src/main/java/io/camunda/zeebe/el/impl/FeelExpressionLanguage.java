@@ -18,10 +18,10 @@ import io.camunda.zeebe.el.impl.feel.FeelVariableContext;
 import io.camunda.zeebe.feel.impl.FeelFunctionProvider;
 import io.camunda.zeebe.feel.impl.FeelToMessagePackTransformer;
 import io.camunda.zeebe.feel.impl.MessagePackValueMapper;
-import io.camunda.zeebe.scheduler.clock.ActorClock;
 import java.util.regex.Pattern;
 import org.camunda.feel.FeelEngine;
 import org.camunda.feel.FeelEngine.Failure;
+import org.camunda.feel.FeelEngineClock;
 import org.camunda.feel.syntaxtree.ParsedExpression;
 import org.camunda.feel.syntaxtree.Val;
 import scala.util.Either;
@@ -42,12 +42,12 @@ public final class FeelExpressionLanguage implements ExpressionLanguage {
 
   private final FeelEngine feelEngine;
 
-  public FeelExpressionLanguage(final ActorClock clock) {
+  public FeelExpressionLanguage(final FeelEngineClock clock) {
     feelEngine =
         new FeelEngine.Builder()
             .customValueMapper(new MessagePackValueMapper())
             .functionProvider(new FeelFunctionProvider())
-            .clock(new ZeebeFeelEngineClock(clock))
+            .clock(clock)
             .build();
   }
 

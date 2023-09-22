@@ -18,6 +18,7 @@ import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.ResultType;
 import io.camunda.zeebe.el.impl.FeelExpressionLanguage;
+import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.StartEvent;
@@ -45,7 +46,7 @@ public class ProcessMessageStartEventMessageNameValidatorTest {
 
     final var sutValidator =
         new ProcessMessageStartEventMessageNameValidator(
-            new FeelExpressionLanguage(ActorClock.current()));
+            new FeelExpressionLanguage(new ZeebeFeelEngineClock(ActorClock.current())));
 
     // when
     assertThatNoException()

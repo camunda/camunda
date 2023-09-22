@@ -10,6 +10,7 @@ package io.camunda.zeebe.el;
 import static io.camunda.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.el.util.TestFeelEngineClock;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.Period;
@@ -21,7 +22,7 @@ import org.junit.Test;
 public class EvaluationResultTest {
 
   private final ExpressionLanguage expressionLanguage =
-      ExpressionLanguageFactory.createExpressionLanguage();
+      ExpressionLanguageFactory.createExpressionLanguage(new TestFeelEngineClock());
 
   @Test
   public void staticString() {

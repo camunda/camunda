@@ -5,29 +5,23 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.el.impl;
+package io.camunda.zeebe.el.util;
 
-import io.camunda.zeebe.scheduler.clock.ActorClock;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import org.camunda.feel.FeelEngineClock;
 
-public final class ZeebeFeelEngineClock implements FeelEngineClock {
+public class TestFeelEngineClock implements FeelEngineClock {
 
-  private final ActorClock clock;
-
-  public ZeebeFeelEngineClock(final ActorClock clock) {
-    this.clock = clock;
-  }
+  private Instant currentTime = null;
 
   @Override
   public ZonedDateTime getCurrentTime() {
+    return currentTime.atZone(ZoneId.systemDefault());
+  }
 
-    final long currentMillis = clock.getTimeMillis();
-    final var instant = Instant.ofEpochMilli(currentMillis);
-    final var zone = ZoneId.systemDefault();
-
-    return instant.atZone(zone);
+  public void setCurrentTime(final Instant currentTime) {
+    this.currentTime = currentTime;
   }
 }

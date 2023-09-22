@@ -8,7 +8,7 @@
 package io.camunda.zeebe.el;
 
 import io.camunda.zeebe.el.impl.FeelExpressionLanguage;
-import io.camunda.zeebe.scheduler.clock.ActorClock;
+import org.camunda.feel.FeelEngineClock;
 
 /** The entry point to create the default {@link ExpressionLanguage}. */
 public class ExpressionLanguageFactory {
@@ -16,7 +16,7 @@ public class ExpressionLanguageFactory {
   /**
    * @return a new instance of the {@link ExpressionLanguage}
    */
-  public static ExpressionLanguage createExpressionLanguage() {
-    return new FeelExpressionLanguage(ActorClock.current());
+  public static ExpressionLanguage createExpressionLanguage(final FeelEngineClock feelEngineClock) {
+    return new FeelExpressionLanguage(feelEngineClock);
   }
 }

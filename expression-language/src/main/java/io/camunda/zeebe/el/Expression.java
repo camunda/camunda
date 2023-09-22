@@ -24,7 +24,7 @@ public interface Expression {
   Optional<String> getVariableName();
 
   /**
-   * @return {@code true} if it is an static expression that does not require additional context
+   * @return {@code true} if it is a static expression that does not require additional context
    *     variables
    */
   boolean isStatic();

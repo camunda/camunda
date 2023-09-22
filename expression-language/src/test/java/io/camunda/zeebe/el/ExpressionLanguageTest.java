@@ -11,6 +11,7 @@ import static io.camunda.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.el.impl.StaticExpression;
+import io.camunda.zeebe.el.util.TestFeelEngineClock;
 import java.util.Map;
 import org.junit.Test;
 
@@ -19,7 +20,7 @@ public class ExpressionLanguageTest {
   private static final EvaluationContext EMPTY_CONTEXT = name -> null;
 
   private final ExpressionLanguage expressionLanguage =
-      ExpressionLanguageFactory.createExpressionLanguage();
+      ExpressionLanguageFactory.createExpressionLanguage(new TestFeelEngineClock());
 
   @Test
   public void shouldParseStaticStringValue() {

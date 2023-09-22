@@ -9,21 +9,27 @@ package io.camunda.zeebe.engine.processing.deployment.model;
 
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
+import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.BpmnTransformer;
 import io.camunda.zeebe.engine.processing.deployment.transform.BpmnValidator;
+import io.camunda.zeebe.scheduler.clock.ActorClock;
 
 public final class BpmnFactory {
 
   public static BpmnTransformer createTransformer() {
-    return new BpmnTransformer(createExpressionLanguage());
+    return new BpmnTransformer(
+        createExpressionLanguage(new ZeebeFeelEngineClock(ActorClock.current())));
   }
 
   public static BpmnValidator createValidator(final ExpressionProcessor expressionProcessor) {
-    return new BpmnValidator(createExpressionLanguage(), expressionProcessor);
+    return new BpmnValidator(
+        createExpressionLanguage(new ZeebeFeelEngineClock(ActorClock.current())),
+        expressionProcessor);
   }
 
-  private static ExpressionLanguage createExpressionLanguage() {
-    return ExpressionLanguageFactory.createExpressionLanguage();
+  private static ExpressionLanguage createExpressionLanguage(
+      final ZeebeFeelEngineClock zeebeFeelEngineClock) {
+    return ExpressionLanguageFactory.createExpressionLanguage(zeebeFeelEngineClock);
   }
 }

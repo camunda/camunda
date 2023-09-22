@@ -12,7 +12,9 @@ import static io.camunda.zeebe.test.util.asserts.EitherAssert.assertThat;
 import io.camunda.zeebe.el.EvaluationContext;
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
+import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor.EvaluationContextLookup;
+import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
 import java.util.stream.Stream;
@@ -26,7 +28,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 class ExpressionProcessorTest {
 
   private static final ExpressionLanguage EXPRESSION_LANGUAGE =
-      ExpressionLanguageFactory.createExpressionLanguage();
+      ExpressionLanguageFactory.createExpressionLanguage(
+          new ZeebeFeelEngineClock(ActorClock.current()));
   private static final EvaluationContext EMPTY_LOOKUP = x -> null;
   private static final EvaluationContextLookup DEFAULT_CONTEXT_LOOKUP = scope -> EMPTY_LOOKUP;
 
