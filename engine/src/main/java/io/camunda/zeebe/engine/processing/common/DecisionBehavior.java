@@ -176,7 +176,8 @@ public class DecisionBehavior {
         .setDecisionKey(decisionInfo.key())
         .setDecisionVersion(decisionInfo.version())
         .setDecisionType(evaluatedDecision.decisionType().name())
-        .setDecisionOutput(evaluatedDecision.decisionOutput());
+        .setDecisionOutput(evaluatedDecision.decisionOutput())
+        .setTenantId(decisionEvaluationEvent.getTenantId());
 
     evaluatedDecision
         .evaluatedInputs()
