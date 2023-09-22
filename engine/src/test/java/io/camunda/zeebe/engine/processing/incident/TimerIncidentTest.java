@@ -61,7 +61,7 @@ public final class TimerIncidentTest {
             ELEMENT_ID,
             serviceTaskBuilder ->
                 serviceTaskBuilder
-                    .zeebeJobTypeExpression("boundary_timer_test")
+                    .zeebeJobType("boundary_timer_test")
                     .boundaryEvent(
                         "boundary-event-1",
                         timerBoundaryEventBuilder ->
@@ -80,7 +80,7 @@ public final class TimerIncidentTest {
             ELEMENT_ID,
             serviceTaskBuilder ->
                 serviceTaskBuilder
-                    .zeebeJobTypeExpression("boundary_timer_test")
+                    .zeebeJobType("boundary_timer_test")
                     .boundaryEvent(
                         "boundary-event-1",
                         timerBoundaryEventBuilder ->
@@ -264,11 +264,11 @@ public final class TimerIncidentTest {
 
     // then
     assertThat(
-            RecordingExporter.processInstanceRecords()
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
                 .withProcessInstanceKey(processInstanceKey)
-                .limitToProcessInstanceCompleted()
-                .withRecordKey(incident.getValue().getElementInstanceKey()))
-        .extracting(Record::getIntent)
-        .contains(ProcessInstanceIntent.ELEMENT_ACTIVATED);
+                .withRecordKey(incident.getValue().getElementInstanceKey())
+                .findAny())
+        .describedAs("Expect that element was activated")
+        .isPresent();
   }
 }

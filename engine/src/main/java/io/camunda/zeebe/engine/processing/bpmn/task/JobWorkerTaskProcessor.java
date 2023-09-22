@@ -50,10 +50,13 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
   public void onActivate(final ExecutableJobWorkerTask element, final BpmnElementContext context) {
     variableMappingBehavior
         .applyInputMappings(context, element)
-        .flatMap(ok -> eventSubscriptionBehavior.subscribeToEvents(element, context))
-        .flatMap(ok -> jobBehavior.createNewJob(context, element))
+        .flatMap(ok -> jobBehavior.evaluateJobExpressions(element, context))
+        .flatMap(j -> eventSubscriptionBehavior.subscribeToEvents(element, context).map(ok -> j))
         .ifRightOrLeft(
-            ok -> stateTransitionBehavior.transitionToActivated(context),
+            jobProperties -> {
+              jobBehavior.createNewJob(context, element, jobProperties);
+              stateTransitionBehavior.transitionToActivated(context);
+            },
             failure -> incidentBehavior.createIncident(failure, context));
   }
 
