@@ -14,8 +14,6 @@ import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.db.impl.DbTenantAwareKey;
 import io.camunda.zeebe.db.impl.DbTenantAwareKey.PlacementType;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Object2ObjectHashMap;
@@ -29,7 +27,7 @@ public final class VersionManager {
   private final DbString tenantIdKey;
   private final DbTenantAwareKey<DbString> tenantAwareIdKey;
   private final VersionInfo nextVersion = new VersionInfo();
-  private final Map<String, Object2ObjectHashMap<String, VersionInfo>> versionByTenantCache;
+  private final Object2ObjectHashMap<TenantIdAndResourceId, VersionInfo> versionByTenantCache;
 
   public VersionManager(
       final long initialValue,
@@ -43,15 +41,14 @@ public final class VersionManager {
     tenantAwareIdKey = new DbTenantAwareKey<>(tenantIdKey, idKey, PlacementType.PREFIX);
     versionInfoColumnFamily =
         zeebeDb.createColumnFamily(columnFamily, transactionContext, tenantAwareIdKey, nextVersion);
-    versionByTenantCache = new HashMap<>();
+    versionByTenantCache = new Object2ObjectHashMap<>();
   }
 
   private VersionInfo getVersionInfo() {
     final var versionInfo =
-        versionByTenantCache
-            .computeIfAbsent(tenantIdKey.toString(), key -> new Object2ObjectHashMap<>())
-            .computeIfAbsent(
-                idKey.toString(), (key) -> versionInfoColumnFamily.get(tenantAwareIdKey));
+        versionByTenantCache.computeIfAbsent(
+            new TenantIdAndResourceId(tenantIdKey.toString(), idKey.toString()),
+            (key) -> versionInfoColumnFamily.get(tenantAwareIdKey));
 
     if (versionInfo == null) {
       return new VersionInfo().setHighestVersionIfHigher(initialValue);
@@ -66,9 +63,7 @@ public final class VersionManager {
     final var versionInfo = getVersionInfo();
     versionInfo.addKnownVersion(value);
     versionInfoColumnFamily.upsert(tenantAwareIdKey, versionInfo);
-    versionByTenantCache
-        .computeIfAbsent(tenantId, key -> new Object2ObjectHashMap<>())
-        .put(resourceId, versionInfo);
+    versionByTenantCache.put(new TenantIdAndResourceId(tenantId, resourceId), versionInfo);
   }
 
   /**
@@ -85,9 +80,7 @@ public final class VersionManager {
     final var versionInfo = getVersionInfo();
     versionInfo.removeKnownVersion(version);
     versionInfoColumnFamily.update(tenantAwareIdKey, versionInfo);
-    versionByTenantCache
-        .computeIfAbsent(tenantId, key -> new Object2ObjectHashMap<>())
-        .put(resourceId, versionInfo);
+    versionByTenantCache.put(new TenantIdAndResourceId(tenantId, resourceId), versionInfo);
   }
 
   public void clear() {
@@ -160,4 +153,6 @@ public final class VersionManager {
     idKey.wrapString(resourceId);
     return getVersionInfo().findVersionBefore(version);
   }
+
+  private record TenantIdAndResourceId(String tenantId, String resourceId) {}
 }
