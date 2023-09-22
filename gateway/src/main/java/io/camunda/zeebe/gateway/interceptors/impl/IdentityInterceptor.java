@@ -49,6 +49,7 @@ public final class IdentityInterceptor implements ServerInterceptor {
             .withIssuerBackendUrl(config.getIssuerBackendUrl())
             .withAudience(config.getAudience())
             .withType(config.getType().name())
+            .withBaseUrl(config.getBaseUrl())
             .build());
   }
 

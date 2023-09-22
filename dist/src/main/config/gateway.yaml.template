@@ -177,6 +177,11 @@
             # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_TYPE.
             # type: keycloak
 
+            # The URL to the Identity instance. Must be defined when multi-tenancy is enabled and authentication mode is set to 'identity'.
+            # This is used to retrieve the authorized tenants for requests based on the token.
+            # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_BASEURL.
+            # baseUrl:
+
       # Configure compression algorithm for all messages sent between the gateway and
       # the brokers. Available options are NONE, GZIP and SNAPPY.
       # This feature is useful when the network latency between the nodes is very high (for example when nodes are deployed in different data centers).

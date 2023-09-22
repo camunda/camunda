@@ -11,6 +11,7 @@ import static io.camunda.zeebe.protocol.record.ExecuteCommandRequestDecoder.TEMP
 
 import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler.RequestReader;
 import io.camunda.zeebe.broker.transport.RequestReaderException;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
@@ -61,6 +62,7 @@ public class CommandApiRequestReader implements RequestReader<ExecuteCommandRequ
 
   private UnifiedRecordValue value;
   private final RecordMetadata metadata = new RecordMetadata();
+  private final AuthInfo authInfo = new AuthInfo();
   private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
   private final ExecuteCommandRequestDecoder commandRequestDecoder =
       new ExecuteCommandRequestDecoder();
@@ -102,6 +104,14 @@ public class CommandApiRequestReader implements RequestReader<ExecuteCommandRequ
       final int valueLength = commandRequestDecoder.valueLength();
       value = recordSupplier.get();
       value.wrap(buffer, valueOffset, valueLength);
+    }
+
+    commandRequestDecoder.skipValue();
+    if (commandRequestDecoder.limit() < buffer.capacity()) {
+      final int authOffset =
+          commandRequestDecoder.limit() + ExecuteCommandRequestDecoder.authorizationHeaderLength();
+      authInfo.wrap(buffer, authOffset, commandRequestDecoder.authorizationLength());
+      metadata.authorization(authInfo);
     }
   }
 
