@@ -14,14 +14,14 @@ import org.camunda.feel.FeelEngineClock;
 
 public class TestFeelEngineClock implements FeelEngineClock {
 
-  private long currentTime = -1;
+  private Instant currentTime = null;
 
   @Override
   public ZonedDateTime getCurrentTime() {
-    return Instant.ofEpochMilli(currentTime).atZone(ZoneId.systemDefault());
+    return currentTime.atZone(ZoneId.systemDefault());
   }
 
   public void setCurrentTime(final Instant currentTime) {
-    this.currentTime = currentTime.toEpochMilli();
+    this.currentTime = currentTime;
   }
 }

@@ -113,7 +113,6 @@
     <dependency>
       <groupId>org.camunda.feel</groupId>
       <artifactId>feel-engine</artifactId>
-      <version>1.16.1</version>
     </dependency>
 
     <!-- TEST DEPENDENCIES -->
