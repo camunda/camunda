@@ -21,6 +21,7 @@ import io.camunda.zeebe.gateway.api.deployment.DeployResourceStub;
 import io.camunda.zeebe.gateway.api.job.ActivateJobsStub;
 import io.camunda.zeebe.gateway.api.process.CreateProcessInstanceStub;
 import io.camunda.zeebe.gateway.api.util.GatewayTest;
+import io.camunda.zeebe.gateway.api.util.TestStreamObserver;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerExecuteCommand;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
@@ -35,11 +36,14 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceRespons
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluateDecisionRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluateDecisionResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ProcessMetadata;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StreamActivatedJobsRequest;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.grpc.Status;
+import java.time.Duration;
 import java.util.Iterator;
 import java.util.List;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
+import org.awaitility.Awaitility;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -242,7 +246,8 @@ public class MultiTenancyEnabledTest extends GatewayTest {
     assertThat(response).isNotNull();
 
     // then
-    assertThatTenantIdsSet("tenant-b", List.of("tenant-a", "tenant-b"));
+    assertThatAuthorizedTenantIdsSet(List.of("tenant-a", "tenant-b"));
+    assertThatTenantIdsSet("tenant-b");
   }
 
   @Test
@@ -412,5 +417,113 @@ public class MultiTenancyEnabledTest extends GatewayTest {
     for (final ActivatedJob activatedJob : response.getJobsList()) {
       assertThat(activatedJob.getTenantId()).isEqualTo("tenant-b");
     }
+  }
+
+  @Test
+  public void streamJobsRequestRequiresTenantIds() {
+    // given
+    final String jobType = "testType";
+    final String jobWorker = "testWorker";
+    final StreamActivatedJobsRequest request =
+        StreamActivatedJobsRequest.newBuilder()
+            .setType(jobType)
+            .setWorker(jobWorker)
+            .setTimeout(Duration.ofMinutes(1).toMillis())
+            .build();
+    final TestStreamObserver streamObserver = new TestStreamObserver();
+
+    // when
+    asyncClient.streamActivatedJobs(request, streamObserver);
+
+    // then
+    Awaitility.await("until validation error propagated")
+        .until(() -> !streamObserver.getErrors().isEmpty());
+    assertThat(streamObserver.getErrors().get(0))
+        .is(statusRuntimeExceptionWithStatusCode(Status.INVALID_ARGUMENT.getCode()))
+        .hasMessageContaining("Expected to handle gRPC request StreamActivatedJobs")
+        .hasMessageContaining("but no tenant identifiers were provided");
+  }
+
+  @Test
+  public void streamJobsRequestRequiresValidTenantIds() {
+    // given
+    final String jobType = "testType";
+    final String jobWorker = "testWorker";
+    final StreamActivatedJobsRequest request =
+        StreamActivatedJobsRequest.newBuilder()
+            .setType(jobType)
+            .setWorker(jobWorker)
+            .setTimeout(Duration.ofMinutes(1).toMillis())
+            .addTenantIds("test-tenant!@#")
+            .build();
+    final TestStreamObserver streamObserver = new TestStreamObserver();
+
+    // when
+    asyncClient.streamActivatedJobs(request, streamObserver);
+
+    // then
+    Awaitility.await("until validation error propagated")
+        .until(() -> !streamObserver.getErrors().isEmpty());
+    assertThat(streamObserver.getErrors().get(0))
+        .is(statusRuntimeExceptionWithStatusCode(Status.INVALID_ARGUMENT.getCode()))
+        .hasMessageContaining("Expected to handle gRPC request StreamActivatedJobs")
+        .hasMessageContaining("but tenant identifier contains illegal characters");
+  }
+
+  @Test
+  public void streamJobsRequestRequiresAuthorizedTenantId() {
+    // given
+    when(gateway.getIdentityMock().tenants().forToken(anyString()))
+        .thenReturn(List.of(new Tenant("tenant-a", "A"), new Tenant("tenant-b", "B")));
+    final String jobType = "testType";
+    final String jobWorker = "testWorker";
+    final StreamActivatedJobsRequest request =
+        StreamActivatedJobsRequest.newBuilder()
+            .setType(jobType)
+            .setWorker(jobWorker)
+            .setTimeout(Duration.ofMinutes(1).toMillis())
+            .addTenantIds("tenant-c")
+            .build();
+    final TestStreamObserver streamObserver = new TestStreamObserver();
+
+    // when
+    asyncClient.streamActivatedJobs(request, streamObserver);
+
+    // then
+    Awaitility.await("until validation error propagated")
+        .until(() -> !streamObserver.getErrors().isEmpty());
+    assertThat(streamObserver.getErrors().get(0))
+        .is(statusRuntimeExceptionWithStatusCode(Status.PERMISSION_DENIED.getCode()))
+        .hasMessageContaining("Expected to handle gRPC request StreamActivatedJobs")
+        .hasMessageContaining("tenant is not authorized to perform this request");
+  }
+
+  @Test
+  public void streamJobsRequestRequiresAuthorizedTenantIds() {
+    // given
+    when(gateway.getIdentityMock().tenants().forToken(anyString()))
+        .thenReturn(List.of(new Tenant("tenant-a", "A"), new Tenant("tenant-b", "B")));
+    final String jobType = "testType";
+    final String jobWorker = "testWorker";
+    final StreamActivatedJobsRequest request =
+        StreamActivatedJobsRequest.newBuilder()
+            .setType(jobType)
+            .setWorker(jobWorker)
+            .setTimeout(Duration.ofMinutes(1).toMillis())
+            .addTenantIds("tenant-a")
+            .addTenantIds("tenant-c")
+            .build();
+    final TestStreamObserver streamObserver = new TestStreamObserver();
+
+    // when
+    asyncClient.streamActivatedJobs(request, streamObserver);
+
+    // then
+    Awaitility.await("until validation error propagated")
+        .until(() -> !streamObserver.getErrors().isEmpty());
+    assertThat(streamObserver.getErrors().get(0))
+        .is(statusRuntimeExceptionWithStatusCode(Status.PERMISSION_DENIED.getCode()))
+        .hasMessageContaining("Expected to handle gRPC request StreamActivatedJobs")
+        .hasMessageContaining("tenant is not authorized to perform this request");
   }
 }
