@@ -59,6 +59,8 @@ import io.netty.handler.codec.compression.ZlibWrapper;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslProvider;
+import io.netty.resolver.dns.DnsAddressResolverGroup;
+import io.netty.resolver.dns.DnsNameResolverBuilder;
 import io.netty.util.concurrent.DefaultThreadFactory;
 import io.netty.util.concurrent.Future;
 import java.net.ConnectException;
@@ -724,6 +726,25 @@ public final class NettyMessagingService implements ManagedMessagingService {
     bootstrap.channel(clientChannelClass);
     bootstrap.remoteAddress(resolvedAddress);
     bootstrap.handler(new BasicClientChannelInitializer(future));
+
+    final Duration DEFAULT_CACHE_MAX_TIME_TO_LIVE = Duration.ofSeconds(Integer.MAX_VALUE);
+    final Duration DEFAULT_CACHE_MIN_TIME_TO_LIVE = Duration.ofSeconds(0);
+    final Duration DEFAULT_CACHE_NEGATIVE_TIME_TO_LIVE = Duration.ofSeconds(0);
+    final boolean DEFAULT_COMPLETE_ONCE_PREFERRED_RESOLVED = true;
+    final int DEFAULT_MAX_PAYLOAD_SIZE = 4096;
+    final int DEFAULT_MAX_QUERIES_PER_RESOLVE = 16;
+    final int DEFAULT_NDOTS = -1;
+    final Duration DEFAULT_QUERY_TIMEOUT = Duration.ofSeconds(5);
+    bootstrap.resolver(
+        new DnsAddressResolverGroup(
+            new DnsNameResolverBuilder()
+            //                .maxPayloadSize(DEFAULT_MAX_PAYLOAD_SIZE)
+            //                .maxQueriesPerResolve(DEFAULT_MAX_QUERIES_PER_RESOLVE)
+            //                .ndots(DEFAULT_NDOTS)
+            //
+            // .completeOncePreferredResolved(DEFAULT_COMPLETE_ONCE_PREFERRED_RESOLVED)
+            //                .queryTimeoutMillis(DEFAULT_QUERY_TIMEOUT.toMillis())
+            ));
     final Channel channel =
         bootstrap
             .connect()
