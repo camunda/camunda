@@ -89,11 +89,12 @@ public final class VariableMappingTransformerTest {
 
     // then
     assertThat(result.isFailure())
-        .describedAs("Expected evaluation failure: %s", expression.getFailureMessage())
-        .isTrue();
+        .describedAs("Expected valid result: %s", expression.getFailureMessage())
+        .isFalse();
 
-    assertThat(result.getFailureMessage())
-        .isEqualTo("failed to evaluate expression '{a:x}': no variable found for name 'x'");
+    assertThat(result.getType())
+        .describedAs("Expected to replace a non-existing variable with `null`")
+        .isEqualTo(ResultType.OBJECT);
   }
 
   private static ZeebeMapping mapping(final String source, final String target) {
