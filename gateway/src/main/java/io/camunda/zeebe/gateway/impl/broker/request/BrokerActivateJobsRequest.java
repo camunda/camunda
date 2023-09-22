@@ -50,9 +50,7 @@ public final class BrokerActivateJobsRequest extends BrokerExecuteCommand<JobBat
   }
 
   public BrokerActivateJobsRequest setTenantIds(final List<String> tenantIds) {
-    final ValueArray<StringValue> tenants = requestDto.tenantIds();
-    tenantIds.stream().map(BufferUtil::wrapString).forEach(buffer -> tenants.add().wrap(buffer));
-
+    requestDto.setTenantIds(tenantIds);
     return this;
   }
 

@@ -138,6 +138,12 @@ public final class JobBatchRecord extends UnifiedRecordValue implements JobBatch
         .collect(Collectors.toList());
   }
 
+  public JobBatchRecord setTenantIds(final List<String> tenantIds) {
+    tenantIdsProp.reset();
+    tenantIds.forEach(tenantId -> tenantIdsProp.add().wrap(BufferUtil.wrapString(tenantId)));
+    return this;
+  }
+
   public JobBatchRecord setTruncated(final boolean truncated) {
     truncatedProp.setValue(truncated);
     return this;

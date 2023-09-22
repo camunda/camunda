@@ -262,7 +262,7 @@ public final class RequestMapper {
         .setWorker(worker, 0, worker.capacity())
         .setTimeout(request.getTimeout())
         .setFetchVariables(request.getFetchVariableList().stream().map(StringValue::new).toList())
-        .setTenantIds(tenantIds.stream().map(StringValue::new).toList());
+        .setTenantIds(tenantIds);
 
     return jobActivationProperties;
   }
