@@ -81,7 +81,7 @@
     <sonar.junit.reportPaths>
       ${project.build.directory}/surefire-reports/,${project.build.directory}/failsafe-reports/,${project.build.directory}/failsafe-reports/1/,${project.build.directory}/failsafe-reports/2/,${project.build.directory}/failsafe-reports/3/,${project.build.directory}/failsafe-reports/4/
     </sonar.junit.reportPaths>
-    <h2.version>2.2.220</h2.version>
+    <h2.version>2.2.224</h2.version>
 
     <maven.compiler.target>17</maven.compiler.target>
     <maven.compiler.source>17</maven.compiler.source>
