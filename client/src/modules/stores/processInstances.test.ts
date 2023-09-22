@@ -13,6 +13,8 @@ import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetc
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstancesStatistics';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
+import {mockServer} from 'modules/mock-server/node';
+import {rest} from 'msw';
 
 const instance: ProcessInstanceEntity = {
   id: '2251799813685625',
@@ -609,23 +611,32 @@ describe('stores/processInstances', () => {
       processInstancesStore.processInstanceIdsWithActiveOperations,
     ).toEqual(['2251799813685627']);
 
-    mockFetchProcessInstances().withSuccess({
-      processInstances: [
-        instance,
-        {...instanceWithActiveOperation, hasActiveOperation: false},
-      ],
-      totalCount: 2,
-    });
+    mockServer.use(
+      rest.post('/api/process-instances', (_, res, ctx) =>
+        res.once(
+          ctx.json({
+            processInstances: [
+              instance,
+              {...instanceWithActiveOperation, hasActiveOperation: false},
+            ],
+            totalCount: 2,
+          }),
+        ),
+      ),
+      rest.post('/api/process-instances', (_, res, ctx) =>
+        res.once(
+          ctx.json({
+            processInstances: [
+              instance,
+              {...instanceWithActiveOperation, hasActiveOperation: false},
+            ],
+            totalCount: 3,
+          }),
+        ),
+      ),
+    );
 
     jest.runOnlyPendingTimers();
-
-    mockFetchProcessInstances().withSuccess({
-      processInstances: [
-        instance,
-        {...instanceWithActiveOperation, hasActiveOperation: false},
-      ],
-      totalCount: 3,
-    });
 
     await waitFor(() =>
       expect(processInstancesStore.state.filteredProcessInstancesCount).toBe(3),
@@ -658,31 +669,40 @@ describe('stores/processInstances', () => {
       processInstancesStore.processInstanceIdsWithActiveOperations,
     ).toEqual(['2']);
 
-    mockFetchProcessInstances().withSuccess({
-      processInstances: [
-        {
-          ...instanceWithActiveOperation,
-          hasActiveOperation: false,
-          id: '2',
-        },
-      ],
-      totalCount: 100,
-    });
+    mockServer.use(
+      rest.post('/api/process-instances', (_, res, ctx) =>
+        res.once(
+          ctx.json({
+            processInstances: [
+              {
+                ...instanceWithActiveOperation,
+                hasActiveOperation: false,
+                id: '2',
+              },
+            ],
+            totalCount: 100,
+          }),
+        ),
+      ),
+      // mock for refreshing instances when an instance operation is complete
+      rest.post('/api/process-instances', (_, res, ctx) =>
+        res.once(
+          ctx.json({
+            processInstances: [
+              {...instance, id: '1'},
+              {
+                ...instanceWithActiveOperation,
+                id: '2',
+                hasActiveOperation: false,
+              },
+            ],
+            totalCount: 2,
+          }),
+        ),
+      ),
+    );
 
     jest.runOnlyPendingTimers();
-
-    // mock for refreshing instances when an instance operation is completed
-    mockFetchProcessInstances().withSuccess({
-      processInstances: [
-        {...instance, id: '1'},
-        {
-          ...instanceWithActiveOperation,
-          id: '2',
-          hasActiveOperation: false,
-        },
-      ],
-      totalCount: 2,
-    });
 
     await waitFor(() => {
       expect(processInstancesStore.state.filteredProcessInstancesCount).toEqual(

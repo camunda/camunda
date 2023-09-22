@@ -19,6 +19,8 @@ import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetc
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {mockFetchProcessCoreStatistics} from 'modules/mocks/api/processInstances/fetchProcessCoreStatistics';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
+import {mockServer} from 'modules/mock-server/node';
+import {rest} from 'msw';
 
 const mockInstance = createInstance({id: '2251799813685625'});
 
@@ -85,20 +87,23 @@ describe('stores/statistics', () => {
   it('should start polling on init', async () => {
     jest.useFakeTimers();
     statisticsStore.init();
+    jest.runOnlyPendingTimers();
     await waitFor(() => expect(statisticsStore.state.status).toBe('fetched'));
-
-    // mock for when current instance is set
-    mockFetchProcessCoreStatistics().withSuccess(statistics);
 
     expect(statisticsStore.state.running).toBe(1087);
     expect(statisticsStore.state.active).toBe(210);
     expect(statisticsStore.state.withIncidents).toBe(877);
 
+    mockFetchProcessCoreStatistics().withSuccess({
+      running: 1088,
+      active: 211,
+      withIncidents: 878,
+    });
     jest.runOnlyPendingTimers();
 
-    await waitFor(() => expect(statisticsStore.state.running).toBe(1087));
-    expect(statisticsStore.state.active).toBe(210);
-    expect(statisticsStore.state.withIncidents).toBe(877);
+    await waitFor(() => expect(statisticsStore.state.running).toBe(1088));
+    expect(statisticsStore.state.active).toBe(211);
+    expect(statisticsStore.state.withIncidents).toBe(878);
 
     jest.clearAllTimers();
     jest.useRealTimers();
@@ -107,22 +112,21 @@ describe('stores/statistics', () => {
   it('should fetch statistics depending on completed operations', async () => {
     jest.useFakeTimers();
 
+    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+    mockFetchProcessXML().withSuccess(mockProcessXML);
+    mockFetchProcessInstances().withSuccess({
+      processInstances: [{...mockInstance, hasActiveOperation: true}],
+      totalCount: 1,
+    });
+
     statisticsStore.init();
 
+    jest.runOnlyPendingTimers();
     await waitFor(() => expect(statisticsStore.state.status).toBe('fetched'));
 
     expect(statisticsStore.state.running).toBe(1087);
     expect(statisticsStore.state.active).toBe(210);
     expect(statisticsStore.state.withIncidents).toBe(877);
-
-    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
-
-    mockFetchProcessXML().withSuccess(mockProcessXML);
-
-    mockFetchProcessInstances().withSuccess({
-      processInstances: [{...mockInstance, hasActiveOperation: true}],
-      totalCount: 1,
-    });
 
     processInstancesStore.init();
     processInstancesStore.fetchProcessInstancesFromFilters();
@@ -131,36 +135,48 @@ describe('stores/statistics', () => {
       expect(processInstancesStore.state.status).toBe('fetched'),
     );
 
-    expect(statisticsStore.state.running).toBe(1087);
-    expect(statisticsStore.state.active).toBe(210);
-    expect(statisticsStore.state.withIncidents).toBe(877);
-
-    mockFetchProcessInstances().withSuccess({
-      processInstances: [{...mockInstance}],
-      totalCount: 1,
-    });
-
     // mock for next poll
-    mockFetchProcessCoreStatistics().withSuccess(statistics);
+
+    mockServer.use(
+      rest.post('/api/process-instances', (_, res, ctx) =>
+        res.once(
+          ctx.json({
+            processInstances: [{...mockInstance}],
+            totalCount: 1,
+          }),
+        ),
+      ),
+      rest.post('/api/process-instances', (_, res, ctx) =>
+        res.once(
+          ctx.json({
+            processInstances: [{...mockInstance}],
+            totalCount: 2,
+          }),
+        ),
+      ),
+      rest.get('/api/process-instances/core-statistics', (_, res, ctx) =>
+        res.once(
+          ctx.json({
+            ...statistics,
+          }),
+        ),
+      ),
+      rest.get('/api/process-instances/core-statistics', (_, res, ctx) =>
+        res.once(
+          ctx.json({
+            ...statistics,
+            running: 1088,
+          }),
+        ),
+      ),
+    );
 
     jest.runOnlyPendingTimers();
 
-    // mock for when there are completed operations
-    mockFetchProcessCoreStatistics().withSuccess({
-      ...statistics,
-      running: 1088,
-    });
-
-    mockFetchProcessInstances().withSuccess({
-      processInstances: [{...mockInstance}],
-      totalCount: 2,
-    });
-
+    await waitFor(() => expect(statisticsStore.state.running).toBe(1088));
     await waitFor(() =>
       expect(processInstancesStore.state.filteredProcessInstancesCount).toBe(2),
     );
-
-    await waitFor(() => expect(statisticsStore.state.running).toBe(1088));
     expect(statisticsStore.state.active).toBe(210);
     expect(statisticsStore.state.withIncidents).toBe(877);
 

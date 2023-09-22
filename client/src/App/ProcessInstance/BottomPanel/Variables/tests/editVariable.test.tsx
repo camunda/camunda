@@ -254,7 +254,7 @@ describe('Edit variable', () => {
 
     expect(screen.getByText('"value-preview"')).toBeInTheDocument();
 
-    mockFetchVariable().withSuccess(
+    mockFetchVariable().withDelay(
       createVariable({
         name: 'clientNo',
         value: '"full-value"',
@@ -307,7 +307,7 @@ describe('Edit variable', () => {
 
     expect(screen.getByText('"value-preview"')).toBeInTheDocument();
 
-    mockFetchVariable().withServerError();
+    mockFetchVariable().withDelayedServerError();
 
     await user.click(
       within(screen.getByTestId('variable-testVariableName')).getByRole(

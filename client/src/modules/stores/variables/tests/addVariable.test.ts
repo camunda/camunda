@@ -86,6 +86,10 @@ describe('Add Variable', () => {
   });
 
   it('should not add variable on network error', async () => {
+    const consoleErrorMock = jest
+      .spyOn(global.console, 'error')
+      .mockImplementation();
+
     expect(variablesStore.state.items).toEqual([]);
 
     mockApplyOperation().withNetworkError();
@@ -100,5 +104,7 @@ describe('Add Variable', () => {
     });
     expect(variablesStore.state.items).toEqual([]);
     expect(mockOnError).toHaveBeenCalled();
+
+    consoleErrorMock.mockRestore();
   });
 });

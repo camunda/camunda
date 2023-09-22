@@ -187,6 +187,10 @@ describe('<Login />', () => {
   });
 
   it('should handle request failures', async () => {
+    const consoleErrorMock = jest
+      .spyOn(global.console, 'error')
+      .mockImplementation();
+
     mockLogin().withNetworkError();
 
     const {user} = render(<Login />, {
@@ -198,5 +202,7 @@ describe('<Login />', () => {
     await user.click(screen.getByRole('button', {name: 'Login'}));
 
     expect(await screen.findByText(GENERIC_ERROR)).toBeInTheDocument();
+
+    consoleErrorMock.mockRestore();
   });
 });

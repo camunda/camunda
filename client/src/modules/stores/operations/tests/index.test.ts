@@ -44,6 +44,8 @@ describe('stores/operations', () => {
 
     await operationsStore.fetchNextOperations();
     expect(operationsStore.state.page).toBe(2);
+
+    await waitFor(() => expect(operationsStore.state.status).toBe('fetched'));
   });
 
   it('should increase page', () => {

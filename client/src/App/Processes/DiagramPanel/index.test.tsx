@@ -143,6 +143,10 @@ describe('DiagramPanel', () => {
   });
 
   it('should show an error message', async () => {
+    const consoleErrorMock = jest
+      .spyOn(global.console, 'error')
+      .mockImplementation();
+
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
     mockFetchProcessXML().withNetworkError();
 
@@ -168,7 +172,7 @@ describe('DiagramPanel', () => {
       processDiagramStore.fetchProcessDiagram('2');
     });
 
-    expect(await screen.findByTestId('diagram-spinner')).toBeInTheDocument();
+    expect(screen.getByTestId('diagram-spinner')).toBeInTheDocument();
     await waitForElementToBeRemoved(screen.getByTestId('diagram-spinner'));
 
     expect(
@@ -188,5 +192,7 @@ describe('DiagramPanel', () => {
     expect(
       screen.queryByText(/There is no Process selected/),
     ).not.toBeInTheDocument();
+
+    consoleErrorMock.mockRestore();
   });
 });

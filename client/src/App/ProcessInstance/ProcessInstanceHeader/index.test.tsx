@@ -319,7 +319,7 @@ describe('InstanceHeader', () => {
   it('should remove spinner when operation fails', async () => {
     mockFetchProcessInstance().withSuccess(mockInstanceWithoutOperations);
     mockFetchProcessXML().withSuccess(mockProcessXML);
-    mockApplyOperation().withServerError();
+    mockApplyOperation().withDelayedServerError();
 
     const {user} = render(<ProcessInstanceHeader />, {wrapper: Wrapper});
     processInstanceDetailsDiagramStore.init();

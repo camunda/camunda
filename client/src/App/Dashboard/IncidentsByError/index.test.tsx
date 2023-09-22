@@ -23,6 +23,7 @@ import {panelStatesStore} from 'modules/stores/panelStates';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {mockFetchIncidentsByError} from 'modules/mocks/api/incidents/fetchIncidentsByError';
 import {Paths} from 'modules/Routes';
+import {incidentsByErrorStore} from 'modules/stores/incidentsByError';
 
 function createWrapper(initialPath: string = Paths.dashboard()) {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
@@ -74,6 +75,10 @@ describe('IncidentsByError', () => {
   });
 
   it('should handle network errors', async () => {
+    const consoleErrorMock = jest
+      .spyOn(global.console, 'error')
+      .mockImplementation();
+
     mockFetchIncidentsByError().withNetworkError();
 
     render(<IncidentsByError />, {
@@ -83,6 +88,8 @@ describe('IncidentsByError', () => {
     expect(
       await screen.findByText('Data could not be fetched'),
     ).toBeInTheDocument();
+
+    consoleErrorMock.mockRestore();
   });
 
   it('should display information message when there are no processes', async () => {
@@ -100,7 +107,7 @@ describe('IncidentsByError', () => {
     ).toBeInTheDocument();
   });
 
-  it.skip('should render process incidents by error message', async () => {
+  it('should render process incidents by error message', async () => {
     mockFetchIncidentsByError().withSuccess(mockIncidentsByError);
 
     const {user} = render(<IncidentsByError />, {
@@ -179,11 +186,15 @@ describe('IncidentsByError', () => {
       }),
     ).toBeInTheDocument();
 
+    await waitFor(() =>
+      expect(incidentsByErrorStore.isPollRequestRunning).toBe(false),
+    );
+
     jest.clearAllTimers();
     jest.useRealTimers();
   });
 
-  it.skip('should truncate the error message search param', async () => {
+  it('should truncate the error message search param', async () => {
     mockFetchIncidentsByError().withSuccess(
       mockIncidentsByErrorWithBigErrorMessage,
     );

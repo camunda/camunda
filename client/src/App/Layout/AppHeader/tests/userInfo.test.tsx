@@ -5,11 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {
-  render,
-  screen,
-  waitForElementToBeRemoved,
-} from 'modules/testing-library';
+import {act, render, screen, waitFor} from 'modules/testing-library';
 import {AppHeader} from '../index';
 import {authenticationStore} from 'modules/stores/authentication';
 import {mockLogout} from 'modules/mocks/api/logout';
@@ -43,7 +39,9 @@ describe('User info', () => {
       wrapper: Wrapper,
     });
 
-    authenticationStore.authenticate();
+    await act(async () => {
+      await authenticationStore.authenticate();
+    });
 
     await user.click(
       await screen.findByRole('button', {
@@ -61,7 +59,9 @@ describe('User info', () => {
       wrapper: Wrapper,
     });
 
-    authenticationStore.authenticate();
+    await act(async () => {
+      await authenticationStore.authenticate();
+    });
 
     await user.click(
       await screen.findByRole('button', {
@@ -85,7 +85,9 @@ describe('User info', () => {
       wrapper: Wrapper,
     });
 
-    authenticationStore.authenticate();
+    await act(async () => {
+      await authenticationStore.authenticate();
+    });
 
     await user.click(
       await screen.findByRole('button', {
@@ -107,7 +109,9 @@ describe('User info', () => {
       }),
     );
 
-    await waitForElementToBeRemoved(() => screen.getByText('Franz Kafka'));
+    await waitFor(() =>
+      expect(screen.queryByText('Franz Kafka')).not.toBeInTheDocument(),
+    );
   });
 
   it('should render links', async () => {
@@ -121,7 +125,9 @@ describe('User info', () => {
       wrapper: Wrapper,
     });
 
-    authenticationStore.authenticate();
+    await act(async () => {
+      await authenticationStore.authenticate();
+    });
 
     await user.click(
       await screen.findByRole('button', {
@@ -186,7 +192,9 @@ describe('User info', () => {
       wrapper: Wrapper,
     });
 
-    authenticationStore.authenticate();
+    await act(async () => {
+      await authenticationStore.authenticate();
+    });
 
     await user.click(
       await screen.findByRole('button', {
@@ -196,7 +204,9 @@ describe('User info', () => {
 
     expect(await screen.findByText('Franz Kafka')).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', {name: 'Cookie preferences'}));
+    await user.click(
+      await screen.findByRole('button', {name: 'Cookie preferences'}),
+    );
 
     expect(mockShowDrawer).toHaveBeenLastCalledWith(
       'osano-cm-dom-info-dialog-open',

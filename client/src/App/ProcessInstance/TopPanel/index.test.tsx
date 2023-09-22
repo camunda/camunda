@@ -104,6 +104,7 @@ describe('TopPanel', () => {
         canceled: 0,
       },
     ]);
+    processInstanceDetailsDiagramStore.init();
     processInstanceDetailsStatisticsStore.init('id');
   });
 
@@ -122,7 +123,6 @@ describe('TopPanel', () => {
 
     processInstanceDetailsStore.init({id: 'active_instance'});
 
-    processInstanceDetailsDiagramStore.fetchProcessXml('1');
     expect(screen.getByTestId('diagram-spinner')).toBeInTheDocument();
     await waitForElementToBeRemoved(screen.getByTestId('diagram-spinner'));
   });
@@ -133,7 +133,6 @@ describe('TopPanel', () => {
     });
 
     processInstanceDetailsStore.init({id: 'instance_with_incident'});
-    await processInstanceDetailsDiagramStore.fetchProcessXml('1');
     expect(await screen.findByText('1 Incident occurred')).toBeInTheDocument();
   });
 
@@ -145,7 +144,6 @@ describe('TopPanel', () => {
     });
 
     processInstanceDetailsStore.init({id: 'instance_with_incident'});
-    processInstanceDetailsDiagramStore.fetchProcessXml('1');
 
     expect(
       await screen.findByText('Data could not be fetched'),
@@ -153,6 +151,10 @@ describe('TopPanel', () => {
   });
 
   it('should show an error when a network error occurs', async () => {
+    const consoleErrorMock = jest
+      .spyOn(global.console, 'error')
+      .mockImplementation();
+
     mockFetchProcessXML().withNetworkError();
 
     render(<TopPanel />, {
@@ -160,11 +162,12 @@ describe('TopPanel', () => {
     });
 
     processInstanceDetailsStore.init({id: 'instance_with_incident'});
-    processInstanceDetailsDiagramStore.fetchProcessXml('1');
 
     expect(
       await screen.findByText('Data could not be fetched'),
     ).toBeInTheDocument();
+
+    consoleErrorMock.mockRestore();
   });
 
   it('should toggle incident bar', async () => {
@@ -173,7 +176,6 @@ describe('TopPanel', () => {
     });
 
     processInstanceDetailsStore.init({id: 'instance_with_incident'});
-    await processInstanceDetailsDiagramStore.fetchProcessXml('1');
 
     expect(
       screen.queryByText('Incidents View - 1 result'),
@@ -191,7 +193,6 @@ describe('TopPanel', () => {
   });
 
   it('should render metadata for default mode and modification dropdown for modification mode', async () => {
-    processInstanceDetailsDiagramStore.init();
     mockFetchFlowNodeMetadata().withSuccess(calledInstanceMetadata);
 
     processInstanceDetailsStore.setProcessInstance(
@@ -255,8 +256,6 @@ describe('TopPanel', () => {
   });
 
   it('should display move token banner in moving mode', async () => {
-    processInstanceDetailsDiagramStore.init();
-
     mockFetchFlowNodeMetadata().withSuccess(calledInstanceMetadata);
 
     processInstanceDetailsStore.setProcessInstance(
@@ -299,7 +298,6 @@ describe('TopPanel', () => {
 
   it('should display multiple instances banner when a flow node with multiple running instances is selected', async () => {
     processInstanceDetailsStore.init({id: 'active_instance'});
-    processInstanceDetailsDiagramStore.init();
 
     mockFetchFlowNodeMetadata().withSuccess(incidentFlowNodeMetaData);
 

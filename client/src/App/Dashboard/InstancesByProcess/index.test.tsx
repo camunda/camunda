@@ -83,6 +83,10 @@ describe('InstancesByProcess', () => {
   });
 
   it('should handle network errors', async () => {
+    const consoleErrorMock = jest
+      .spyOn(global.console, 'error')
+      .mockImplementation();
+
     mockFetchProcessInstancesByName().withNetworkError();
     processInstancesByNameStore.getProcessInstancesByName();
 
@@ -93,6 +97,8 @@ describe('InstancesByProcess', () => {
     expect(
       await screen.findByText('Data could not be fetched'),
     ).toBeInTheDocument();
+
+    consoleErrorMock.mockRestore();
   });
 
   it('should display information message when there are no processes', async () => {

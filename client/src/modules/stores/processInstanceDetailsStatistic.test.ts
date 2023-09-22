@@ -64,17 +64,20 @@ const mockProcessInstanceDetailsStatistics = [
   },
 ];
 
+const mockAndFetchDiagram = () => {
+  mockFetchProcessXML().withSuccess(mockComplexProcess);
+  processInstanceDetailsDiagramStore.fetchProcessXml(PROCESS_INSTANCE_ID);
+};
+
 describe('stores/processInstanceDetailsStatistics', () => {
   beforeEach(async () => {
     mockFetchProcessInstanceDetailStatistics().withSuccess(
       mockProcessInstanceDetailsStatistics,
     );
-    mockFetchProcessXML().withSuccess(mockComplexProcess);
     mockFetchProcessInstance().withSuccess(
       createInstance({id: PROCESS_INSTANCE_ID, state: 'INCIDENT'}),
     );
     processInstanceDetailsStore.fetchProcessInstance(PROCESS_INSTANCE_ID);
-    processInstanceDetailsDiagramStore.fetchProcessXml(PROCESS_INSTANCE_ID);
   });
 
   afterEach(() => {
@@ -83,6 +86,7 @@ describe('stores/processInstanceDetailsStatistics', () => {
   });
 
   it('should get statistics', async () => {
+    mockAndFetchDiagram();
     processInstanceDetailsStatisticsStore.init(PROCESS_INSTANCE_ID);
 
     await waitFor(() => {
@@ -144,9 +148,17 @@ describe('stores/processInstanceDetailsStatistics', () => {
   });
 
   it('should start polling', async () => {
+    mockAndFetchDiagram();
+
     jest.useFakeTimers();
 
     processInstanceDetailsStatisticsStore.init(PROCESS_INSTANCE_ID);
+
+    await waitFor(() => {
+      expect(processInstanceDetailsStatisticsStore.state.statistics).toEqual(
+        mockProcessInstanceDetailsStatistics,
+      );
+    });
 
     mockFetchProcessInstanceDetailStatistics().withSuccess([
       ...mockProcessInstanceDetailsStatistics,
@@ -179,6 +191,8 @@ describe('stores/processInstanceDetailsStatistics', () => {
   });
 
   it('should stop polling when process instance is not running', async () => {
+    mockAndFetchDiagram();
+
     processInstanceDetailsStatisticsStore.init(PROCESS_INSTANCE_ID);
 
     mockFetchProcessInstanceDetailStatistics().withSuccess(
@@ -203,6 +217,8 @@ describe('stores/processInstanceDetailsStatistics', () => {
   });
 
   it('should retry fetch on network reconnection', async () => {
+    mockAndFetchDiagram();
+
     const eventListeners: any = {};
     const originalEventListener = window.addEventListener;
     window.addEventListener = jest.fn((event: string, cb: any) => {
@@ -295,6 +311,9 @@ describe('stores/processInstanceDetailsStatistics', () => {
 
     await waitFor(() => {
       expect(processInstanceDetailsDiagramStore.state.status).toBe('fetched');
+    });
+
+    await waitFor(() => {
       expect(processInstanceDetailsStatisticsStore.state.statistics).toEqual(
         subProcessStatistics,
       );
@@ -308,6 +327,8 @@ describe('stores/processInstanceDetailsStatistics', () => {
   });
 
   it('should return selectable flow nodes', async () => {
+    mockAndFetchDiagram();
+
     mockFetchProcessInstanceDetailStatistics().withSuccess([
       {
         activityId: 'startEvent1',

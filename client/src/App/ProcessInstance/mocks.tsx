@@ -32,6 +32,13 @@ import {
   flowNodeSelectionStore,
 } from 'modules/stores/flowNodeSelection';
 import {useEffect} from 'react';
+import {waitFor} from '@testing-library/react';
+import {variablesStore} from 'modules/stores/variables';
+import {sequenceFlowsStore} from 'modules/stores/sequenceFlows';
+import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
+import {incidentsStore} from 'modules/stores/incidents';
+import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
+import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 
 const processInstancesMock = createMultiInstanceFlowNodeInstances('4294980768');
 
@@ -119,6 +126,19 @@ function getWrapper(options?: {
   return Wrapper;
 }
 
-export {getWrapper, testData};
+const waitForPollingsToBeComplete = async () => {
+  await waitFor(() => {
+    expect(variablesStore.isPollRequestRunning).toBe(false);
+    expect(sequenceFlowsStore.isPollRequestRunning).toBe(false);
+    expect(processInstanceDetailsStore.isPollRequestRunning).toBe(false);
+    expect(incidentsStore.isPollRequestRunning).toBe(false);
+    expect(flowNodeInstanceStore.isPollRequestRunning).toBe(false);
+    expect(processInstanceDetailsStatisticsStore.isPollRequestRunning).toBe(
+      false,
+    );
+  });
+};
+
+export {getWrapper, testData, waitForPollingsToBeComplete};
 
 export {mockRequests};

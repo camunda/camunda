@@ -269,11 +269,11 @@ describe('<InstancesTable />', () => {
 
     expect(screen.queryByTestId('data-table-loader')).not.toBeInTheDocument();
 
-    mockFetchDecisionInstances().withSuccess(mockDecisionInstances);
+    mockFetchDecisionInstances().withDelay(mockDecisionInstances);
 
     await user.click(screen.getByRole('button', {name: 'Sort by Name'}));
 
-    expect(await screen.findByTestId('data-table-loader')).toBeInTheDocument();
+    expect(screen.getByTestId('data-table-loader')).toBeInTheDocument();
 
     await waitForElementToBeRemoved(screen.getByTestId('data-table-loader'));
   });
@@ -292,7 +292,7 @@ describe('<InstancesTable />', () => {
 
     await waitForElementToBeRemoved(screen.getByTestId('data-table-skeleton'));
 
-    mockFetchDecisionInstances().withSuccess(mockDecisionInstances);
+    mockFetchDecisionInstances().withDelay(mockDecisionInstances);
 
     await user.click(
       within(
@@ -304,7 +304,7 @@ describe('<InstancesTable />', () => {
       }),
     );
 
-    expect(await screen.findByTestId('data-table-loader')).toBeInTheDocument();
+    expect(screen.getByTestId('data-table-loader')).toBeInTheDocument();
 
     await waitFor(() =>
       expect(screen.queryByTestId('data-table-loader')).not.toBeInTheDocument(),

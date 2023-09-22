@@ -150,6 +150,10 @@ describe('<MetricPanel />', () => {
   });
 
   it('should handle networks errors', async () => {
+    const consoleErrorMock = jest
+      .spyOn(global.console, 'error')
+      .mockImplementation();
+
     mockFetchProcessCoreStatistics().withNetworkError();
 
     render(<MetricPanel />, {
@@ -159,5 +163,6 @@ describe('<MetricPanel />', () => {
     expect(
       await screen.findByText('Process statistics could not be fetched'),
     ).toBeInTheDocument();
+    consoleErrorMock.mockRestore();
   });
 });

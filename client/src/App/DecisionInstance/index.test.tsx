@@ -56,6 +56,7 @@ describe('<DecisionInstance />', () => {
     render(<DecisionInstance />, {wrapper: Wrapper});
 
     await waitForElementToBeRemoved(screen.queryByTestId('inputs-skeleton'));
+    expect(await screen.findByTestId('diagram-body')).toBeInTheDocument();
 
     expect(
       await screen.findByText('Definitions Name Mock'),
@@ -72,6 +73,7 @@ describe('<DecisionInstance />', () => {
     });
 
     await waitForElementToBeRemoved(screen.queryByTestId('inputs-skeleton'));
+    expect(await screen.findByTestId('diagram-body')).toBeInTheDocument();
 
     expect(screen.getByTestId('drd-panel')).toBeInTheDocument();
     expect(screen.getByTestId('drd')).toBeInTheDocument();
@@ -93,6 +95,7 @@ describe('<DecisionInstance />', () => {
     const {user} = render(<DecisionInstance />, {wrapper: Wrapper});
 
     await waitForElementToBeRemoved(screen.queryByTestId('inputs-skeleton'));
+    expect(await screen.findByTestId('diagram-body')).toBeInTheDocument();
 
     await user.click(
       within(screen.getByTestId('drd')).getByRole('button', {
@@ -113,6 +116,7 @@ describe('<DecisionInstance />', () => {
     const {user} = render(<DecisionInstance />, {wrapper: Wrapper});
 
     await waitForElementToBeRemoved(screen.queryByTestId('inputs-skeleton'));
+    expect(await screen.findByTestId('diagram-body')).toBeInTheDocument();
 
     await user.click(
       within(screen.getByTestId('drd')).getByRole('button', {
@@ -138,6 +142,7 @@ describe('<DecisionInstance />', () => {
     const {user} = render(<DecisionInstance />, {wrapper: Wrapper});
 
     await waitForElementToBeRemoved(screen.queryByTestId('inputs-skeleton'));
+    expect(await screen.findByTestId('diagram-body')).toBeInTheDocument();
 
     await user.click(
       await screen.findByRole('button', {
@@ -164,6 +169,7 @@ describe('<DecisionInstance />', () => {
     const {unmount, user} = render(<DecisionInstance />, {wrapper: Wrapper});
 
     await waitForElementToBeRemoved(screen.queryByTestId('inputs-skeleton'));
+    expect(await screen.findByTestId('diagram-body')).toBeInTheDocument();
 
     await user.click(
       await screen.findByRole('button', {
@@ -183,6 +189,7 @@ describe('<DecisionInstance />', () => {
     render(<DecisionInstance />, {wrapper: Wrapper});
 
     await waitForElementToBeRemoved(screen.queryByTestId('inputs-skeleton'));
+    expect(await screen.findByTestId('diagram-body')).toBeInTheDocument();
 
     expect(screen.queryByTestId('drd-panel')).not.toBeInTheDocument();
     expect(screen.queryByTestId('drd')).not.toBeInTheDocument();
@@ -194,6 +201,7 @@ describe('<DecisionInstance />', () => {
     });
 
     await waitForElementToBeRemoved(screen.queryByTestId('inputs-skeleton'));
+    expect(await screen.findByTestId('diagram-body')).toBeInTheDocument();
 
     expect(
       screen.getByRole('heading', {
@@ -245,6 +253,7 @@ describe('<DecisionInstance />', () => {
     render(<DecisionInstance />, {wrapper: Wrapper});
 
     await waitForElementToBeRemoved(screen.queryByTestId('inputs-skeleton'));
+    expect(await screen.findByTestId('diagram-body')).toBeInTheDocument();
 
     expect(
       screen.getByRole('heading', {

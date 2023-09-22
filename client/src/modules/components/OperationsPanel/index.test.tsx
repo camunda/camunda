@@ -84,6 +84,10 @@ describe('OperationsPanel', () => {
   });
 
   it('should show an error message', async () => {
+    const consoleErrorMock = jest
+      .spyOn(global.console, 'error')
+      .mockImplementation();
+
     mockFetchBatchOperations().withServerError();
     const {unmount} = render(<OperationsPanel />, {wrapper: Wrapper});
 
@@ -100,5 +104,7 @@ describe('OperationsPanel', () => {
     expect(
       await screen.findByText('Operations could not be fetched'),
     ).toBeInTheDocument();
+
+    consoleErrorMock.mockRestore();
   });
 });

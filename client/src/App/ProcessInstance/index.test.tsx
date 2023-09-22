@@ -28,7 +28,7 @@ import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetc
 import {PAGE_TITLE} from 'modules/constants';
 import {getProcessName} from 'modules/utils/instance';
 import {notificationsStore} from 'modules/stores/notifications';
-import {getWrapper, mockRequests} from './mocks';
+import {getWrapper, mockRequests, waitForPollingsToBeComplete} from './mocks';
 
 const handleRefetchSpy = jest.spyOn(
   processInstanceDetailsStore,
@@ -438,6 +438,8 @@ describe('ProcessInstance', () => {
       ).toHaveBeenCalledTimes(3);
     });
 
+    await waitForPollingsToBeComplete();
+
     jest.clearAllTimers();
     jest.useRealTimers();
   });
@@ -526,6 +528,8 @@ describe('ProcessInstance', () => {
     expect(
       handlePollingProcessInstanceDetailStatisticsSpy,
     ).toHaveBeenCalledTimes(2);
+
+    await waitForPollingsToBeComplete();
 
     jest.clearAllTimers();
     jest.useRealTimers();

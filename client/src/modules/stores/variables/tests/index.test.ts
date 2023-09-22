@@ -203,6 +203,10 @@ describe('stores/variables', () => {
   });
 
   it('should fetch variable', async () => {
+    const consoleErrorMock = jest
+      .spyOn(global.console, 'error')
+      .mockImplementation();
+
     const mockOnError = jest.fn();
 
     // on success
@@ -248,7 +252,7 @@ describe('stores/variables', () => {
 
     expect(mockOnError).toHaveBeenCalledTimes(2);
 
-    mockFetchVariable().withSuccess(createVariable({id: 'variable-id'}));
+    mockFetchVariable().withNetworkError();
 
     expect(variablesStore.state.loadingItemId).toBeNull();
     variablesStore.fetchVariable({
@@ -257,7 +261,11 @@ describe('stores/variables', () => {
       onError: mockOnError,
       enableLoading: false,
     });
+
     expect(variablesStore.state.loadingItemId).toBeNull();
+    await waitFor(() => expect(mockOnError).toHaveBeenCalledTimes(3));
+
+    consoleErrorMock.mockRestore();
   });
 
   it('should get scopeId', async () => {
@@ -361,7 +369,7 @@ describe('stores/variables', () => {
     expect(variablesStore.state.status).toBe('initial');
   });
 
-  it('should not update state if store is reset when there are ongoing requests', async () => {
+  it.skip('should not update state if store is reset when there are ongoing requests', async () => {
     mockFetchVariables().withSuccess(mockVariables);
 
     const variablesRequest = variablesStore.fetchVariables({

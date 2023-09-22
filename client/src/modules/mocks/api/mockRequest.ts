@@ -25,6 +25,17 @@ const mockPostRequest = function <Type extends DefaultBodyType>(url: string) {
         ),
       );
     },
+    withDelayedServerError: (statusCode: number = 500) => {
+      mockServer.use(
+        rest.post(url, (_, res, ctx) =>
+          res.once(
+            ctx.delay(100),
+            ctx.status(statusCode),
+            ctx.json({error: 'an error occured'}),
+          ),
+        ),
+      );
+    },
     withNetworkError: () => {
       mockServer.use(rest.post(url, (_, res) => res.networkError('')));
     },
@@ -55,13 +66,24 @@ const mockGetRequest = function <Type extends DefaultBodyType>(url: string) {
         ),
       );
     },
+    withDelayedServerError: (statusCode: number = 500) => {
+      mockServer.use(
+        rest.get(url, (_, res, ctx) =>
+          res.once(
+            ctx.delay(100),
+            ctx.status(statusCode),
+            ctx.json({error: 'an error occured'}),
+          ),
+        ),
+      );
+    },
     withNetworkError: () => {
       mockServer.use(rest.get(url, (_, res) => res.networkError('')));
     },
     withDelay: (responseData: Type) => {
       mockServer.use(
         rest.get(url, (_, res, ctx) =>
-          res.once(ctx.delay(1000), ctx.json(responseData)),
+          res.once(ctx.delay(100), ctx.json(responseData)),
         ),
       );
     },
@@ -91,7 +113,7 @@ const mockDeleteRequest = function <Type extends DefaultBodyType>(url: string) {
     withDelay: (responseData: Type) => {
       mockServer.use(
         rest.delete(url, (_, res, ctx) =>
-          res.once(ctx.delay(1000), ctx.json(responseData)),
+          res.once(ctx.delay(100), ctx.json(responseData)),
         ),
       );
     },
@@ -118,7 +140,7 @@ const mockXmlGetRequest = (url: string) => {
     withDelay: (initialValue: string) => {
       mockServer.use(
         rest.post(url, (_, res, ctx) =>
-          res.once(ctx.delay(1000), ctx.text(initialValue)),
+          res.once(ctx.delay(100), ctx.text(initialValue)),
         ),
       );
     },

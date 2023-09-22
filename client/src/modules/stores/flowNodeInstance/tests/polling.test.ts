@@ -58,6 +58,10 @@ describe('polling', () => {
     await waitFor(() => {
       expect(pollInstancesSpy).toHaveBeenCalled();
     });
+
+    await waitFor(() => {
+      expect(flowNodeInstanceStore.isPollRequestRunning).toBe(false);
+    });
   });
 
   it('should not start polling when process instance is completed', async () => {

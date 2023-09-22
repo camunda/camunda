@@ -87,7 +87,7 @@
     "jest-styled-components": "7.1.1",
     "lint-staged": "14.0.1",
     "monaco-editor": "0.41.0",
-    "msw": "0.42.1",
+    "msw": "1.2.3",
     "prettier": "3.0.2",
     "react-scripts": "5.0.1",
     "react-test-renderer": "18.2.0",

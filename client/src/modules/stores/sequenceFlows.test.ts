@@ -83,6 +83,10 @@ describe('stores/sequenceFlows', () => {
         processInstanceId: '2251799813693731',
         activityId: 'SequenceFlow_1sz6737',
       },
+      {
+        processInstanceId: '2251799813693732',
+        activityId: 'SequenceFlow_1sz6738',
+      },
     ]);
 
     jest.runOnlyPendingTimers();
@@ -94,6 +98,7 @@ describe('stores/sequenceFlows', () => {
         'SequenceFlow_1dwqvrt',
         'SequenceFlow_1fgekwd',
         'SequenceFlow_1sz6737',
+        'SequenceFlow_1sz6738',
       ]),
     );
 
@@ -112,6 +117,7 @@ describe('stores/sequenceFlows', () => {
         'SequenceFlow_1dwqvrt',
         'SequenceFlow_1fgekwd',
         'SequenceFlow_1sz6737',
+        'SequenceFlow_1sz6738',
       ]),
     );
 

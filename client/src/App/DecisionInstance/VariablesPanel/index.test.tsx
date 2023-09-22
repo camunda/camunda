@@ -17,10 +17,17 @@ import {
 } from 'modules/mocks/mockDecisionInstance';
 import {decisionInstanceDetailsStore} from 'modules/stores/decisionInstanceDetails';
 import {mockFetchDecisionInstance} from 'modules/mocks/api/decisionInstances/fetchDecisionInstance';
+import {useEffect} from 'react';
 
 describe('<VariablesPanel />', () => {
+  const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
+    useEffect(() => decisionInstanceDetailsStore.reset);
+
+    return <>{children}</>;
+  };
+
   it('should have 2 tabs', () => {
-    render(<VariablesPanel />);
+    render(<VariablesPanel />, {wrapper: Wrapper});
 
     expect(
       screen.getByRole('tab', {
@@ -35,7 +42,7 @@ describe('<VariablesPanel />', () => {
   });
 
   it('should render the default tab content', () => {
-    render(<VariablesPanel />);
+    render(<VariablesPanel />, {wrapper: Wrapper});
 
     expect(
       screen.getByRole('heading', {
@@ -54,7 +61,7 @@ describe('<VariablesPanel />', () => {
 
     decisionInstanceDetailsStore.fetchDecisionInstance('1');
 
-    const {user} = render(<VariablesPanel />);
+    const {user} = render(<VariablesPanel />, {wrapper: Wrapper});
 
     await waitForElementToBeRemoved(() =>
       screen.getByTestId('inputs-skeleton'),
@@ -66,13 +73,15 @@ describe('<VariablesPanel />', () => {
       }),
     );
 
-    expect(screen.getByTestId('results-json-viewer')).toBeInTheDocument();
+    expect(screen.getByTestId('results-json-viewer')).toBeVisible();
 
     await user.click(
       screen.getByRole('tab', {
         name: /inputs and outputs/i,
       }),
     );
+
+    expect(screen.getByTestId('results-json-viewer')).not.toBeVisible();
 
     expect(
       screen.getByRole('heading', {
@@ -91,7 +100,7 @@ describe('<VariablesPanel />', () => {
 
     decisionInstanceDetailsStore.fetchDecisionInstance('1');
 
-    render(<VariablesPanel />);
+    render(<VariablesPanel />, {wrapper: Wrapper});
 
     expect(
       await screen.findByTestId('results-json-viewer'),

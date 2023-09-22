@@ -27,7 +27,7 @@ import {Paths} from 'modules/Routes';
 import {singleInstanceMetadata} from 'modules/mocks/metadata';
 import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
 import {mockModify} from 'modules/mocks/api/processInstances/modify';
-import {getWrapper, mockRequests} from './mocks';
+import {getWrapper, mockRequests, waitForPollingsToBeComplete} from './mocks';
 import {modificationsStore} from 'modules/stores/modifications';
 
 const clearPollingStates = () => {
@@ -336,6 +336,8 @@ describe('ProcessInstance - modification mode', () => {
         handlePollingProcessInstanceDetailStatisticsSpy,
       ).toHaveBeenCalledTimes(3);
     });
+
+    await waitForPollingsToBeComplete();
 
     jest.clearAllTimers();
     jest.useRealTimers();

@@ -221,9 +221,7 @@ describe('<DecisionOperations />', () => {
     );
 
     await user.click(screen.getByRole('button', {name: /danger Delete/}));
-    expect(
-      await screen.findByTestId('delete-operation-spinner'),
-    ).toBeInTheDocument();
+    expect(screen.getByTestId('delete-operation-spinner')).toBeInTheDocument();
     expect(
       screen.getByRole('button', {
         name: /^delete decision definition "myDecision - version 2"$/i,
@@ -247,6 +245,10 @@ describe('<DecisionOperations />', () => {
   });
 
   it('should enable button and remove spinner when delete operation failed', async () => {
+    const consoleErrorMock = jest
+      .spyOn(global.console, 'error')
+      .mockImplementation();
+
     mockApplyDeleteDefinitionOperation().withNetworkError();
 
     const {user} = render(
@@ -271,9 +273,7 @@ describe('<DecisionOperations />', () => {
     );
 
     await user.click(screen.getByRole('button', {name: /danger Delete/}));
-    expect(
-      await screen.findByTestId('delete-operation-spinner'),
-    ).toBeInTheDocument();
+    expect(screen.getByTestId('delete-operation-spinner')).toBeInTheDocument();
     expect(
       screen.getByRole('button', {
         name: /^delete decision definition "myDecision - version 2"$/i,
@@ -289,6 +289,8 @@ describe('<DecisionOperations />', () => {
         name: /^delete decision definition "myDecision - version 2"$/i,
       }),
     ).toBeEnabled();
+
+    consoleErrorMock.mockRestore();
   });
 
   it('should show warning when clicking apply without confirmation', async () => {

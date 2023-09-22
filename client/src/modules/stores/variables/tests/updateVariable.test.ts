@@ -149,6 +149,10 @@ describe('Update Variable', () => {
   });
 
   it('should not update variable on network error', async () => {
+    const consoleErrorMock = jest
+      .spyOn(global.console, 'error')
+      .mockImplementation();
+
     await variablesStore.fetchVariables({
       fetchType: 'initial',
       instanceId: '1',
@@ -167,5 +171,7 @@ describe('Update Variable', () => {
     });
     expect(variablesStore.state.items).toEqual(mockVariables);
     expect(mockOnError).toHaveBeenCalled();
+
+    consoleErrorMock.mockRestore();
   });
 });

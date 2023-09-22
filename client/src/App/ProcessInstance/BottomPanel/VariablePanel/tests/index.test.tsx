@@ -181,6 +181,10 @@ describe('VariablePanel', () => {
   it.each([true, false])(
     'should show failed placeholder if network error occurs while fetching variables - modification mode: %p',
     async (enableModificationMode) => {
+      const consoleErrorMock = jest
+        .spyOn(global.console, 'error')
+        .mockImplementation();
+
       if (enableModificationMode) {
         modificationsStore.enableModificationMode();
       }
@@ -208,6 +212,8 @@ describe('VariablePanel', () => {
       expect(
         screen.queryByRole('button', {name: /add variable/i}),
       ).not.toBeInTheDocument();
+
+      consoleErrorMock.mockRestore();
     },
   );
 
@@ -558,7 +564,7 @@ describe('VariablePanel', () => {
       '"bar"',
     );
 
-    mockApplyOperation().withServerError();
+    mockApplyOperation().withDelayedServerError();
 
     await waitFor(() =>
       expect(
@@ -627,7 +633,7 @@ describe('VariablePanel', () => {
       '"bar"',
     );
 
-    mockApplyOperation().withServerError(403);
+    mockApplyOperation().withDelayedServerError(403);
 
     await waitFor(() =>
       expect(
@@ -838,7 +844,7 @@ describe('VariablePanel', () => {
     render(<VariablePanel />, {wrapper: Wrapper});
     await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
 
-    mockFetchVariables().withSuccess([createVariable()]);
+    mockFetchVariables().withDelay([createVariable()]);
 
     act(() => {
       variablesStore.fetchVariables({
@@ -848,7 +854,7 @@ describe('VariablePanel', () => {
       });
     });
 
-    expect(await screen.findByTestId('variables-spinner')).toBeInTheDocument();
+    expect(screen.getByTestId('variables-spinner')).toBeInTheDocument();
 
     await waitForElementToBeRemoved(() =>
       screen.getByTestId('variables-spinner'),
@@ -881,12 +887,20 @@ describe('VariablePanel', () => {
     expect(screen.getByText('localVariable2')).toBeInTheDocument();
 
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
+    mockFetchVariables().withSuccess([createVariable({name: 'test2'})]);
 
     act(() => {
       flowNodeSelectionStore.setSelection({
         flowNodeId: 'Event_0bonl61',
       });
     });
+
+    await waitFor(() =>
+      expect(flowNodeSelectionStore.state.selection?.flowNodeId).toBe(
+        'Event_0bonl61',
+      ),
+    );
+    await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
 
     expect(screen.getByText('No Input Mappings defined')).toBeInTheDocument();
 
@@ -911,6 +925,7 @@ describe('VariablePanel', () => {
     expect(
       screen.queryByRole('tab', {name: 'Output Mappings'}),
     ).not.toBeInTheDocument();
+    await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
 
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     mockFetchVariables().withSuccess([]);
@@ -936,6 +951,8 @@ describe('VariablePanel', () => {
     expect(
       screen.getByRole('tab', {name: 'Output Mappings'}),
     ).toBeInTheDocument();
+
+    await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
   });
 
   it('should display spinner for variables tab when switching between tabs', async () => {
@@ -943,7 +960,7 @@ describe('VariablePanel', () => {
     await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
     expect(screen.getByText('testVariableName')).toBeInTheDocument();
 
-    mockFetchVariables().withSuccess([createVariable({name: 'test2'})]);
+    mockFetchVariables().withDelay([createVariable({name: 'test2'})]);
 
     act(() => {
       flowNodeSelectionStore.setSelection({
@@ -952,29 +969,30 @@ describe('VariablePanel', () => {
       });
     });
 
-    expect(await screen.findByTestId('variables-spinner')).toBeInTheDocument();
+    expect(screen.getByTestId('variables-spinner')).toBeInTheDocument();
     await waitForElementToBeRemoved(screen.getByTestId('variables-spinner'));
     expect(screen.getByText('test2')).toBeInTheDocument();
 
     await user.click(screen.getByRole('tab', {name: 'Input Mappings'}));
 
-    mockFetchVariables().withSuccess([createVariable({name: 'test2'})]);
+    mockFetchVariables().withDelay([createVariable({name: 'test2'})]);
 
     await user.click(screen.getByRole('tab', {name: 'Variables'}));
     await waitForElementToBeRemoved(screen.getByTestId('variables-spinner'));
   });
 
   it('should not display spinner for variables tab when switching between tabs if scope does not exist', async () => {
+    modificationsStore.enableModificationMode();
+
     const {user} = render(<VariablePanel />, {wrapper: Wrapper});
     await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
 
     expect(screen.getByText('testVariableName')).toBeInTheDocument();
 
-    mockFetchVariables().withSuccess([]);
-
     act(() => {
       flowNodeSelectionStore.setSelection({
         flowNodeId: 'non-existing',
+        isPlaceholder: true,
       });
     });
 
@@ -983,22 +1001,18 @@ describe('VariablePanel', () => {
     await user.click(screen.getByRole('tab', {name: 'Input Mappings'}));
     expect(screen.getByText('No Input Mappings defined')).toBeInTheDocument();
 
-    mockFetchVariables().withSuccess([]);
-
     await user.click(screen.getByRole('tab', {name: 'Variables'}));
     expect(screen.queryByTestId('variables-spinner')).not.toBeInTheDocument();
   });
 
   it('should display correct state for a flow node that has no running or finished tokens on it', async () => {
+    modificationsStore.enableModificationMode();
+
     const {user} = render(<VariablePanel />, {wrapper: Wrapper});
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
-    act(() => {
-      modificationsStore.enableModificationMode();
-    });
-
     expect(
-      screen.getByRole('button', {name: /add variable/i}),
+      await screen.findByRole('button', {name: /add variable/i}),
     ).toBeInTheDocument();
     expect(screen.getByText('testVariableName')).toBeInTheDocument();
 

@@ -111,6 +111,10 @@ describe('FlowNodeInstanceLog', () => {
     expect(
       await screen.findByText('Instance History could not be fetched'),
     ).toBeInTheDocument();
+
+    await waitFor(() =>
+      expect(processInstanceDetailsDiagramStore.state.status).toBe('error'),
+    );
   });
 
   it('should continue polling after poll failure', async () => {

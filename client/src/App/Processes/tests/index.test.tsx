@@ -82,13 +82,21 @@ describe('Instances', () => {
     mockFetchBatchOperations().withSuccess([]);
   });
 
-  it('should render title and document title', () => {
+  it('should render title and document title', async () => {
     render(<Processes />, {
       wrapper: getWrapper(`${Paths.processes()}?incidents=true&active=true`),
     });
 
     expect(screen.getByText('Operate Process Instances')).toBeInTheDocument();
     expect(document.title).toBe('Operate: Process Instances');
+    expect(
+      await screen.findByText('There is no Process selected'),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', {
+        name: /process instances - 912 results/i,
+      }),
+    ).toBeInTheDocument();
   });
 
   it('should render page components', async () => {
@@ -150,7 +158,7 @@ describe('Instances', () => {
       withinRow.getByRole('checkbox', {name: /select row/i}),
     ).toBeChecked();
 
-    mockFetchProcessInstances().withSuccess(mockProcessInstances);
+    mockFetchProcessInstances().withDelay(mockProcessInstances);
     await user.click(screen.getByText(/go to active/i));
     await waitForElementToBeRemoved(screen.getByTestId('data-table-loader'));
 
@@ -164,7 +172,11 @@ describe('Instances', () => {
       wrapper: getWrapper(`${Paths.processes()}?active=true&incidents=true`),
     });
 
-    await waitForElementToBeRemoved(screen.getByTestId('data-table-skeleton'));
+    expect(
+      await screen.findByRole('heading', {
+        name: /process instances - 912 results/i,
+      }),
+    ).toBeInTheDocument();
 
     const withinRow = within(
       screen.getByRole('row', {
@@ -181,10 +193,10 @@ describe('Instances', () => {
       withinRow.getByRole('checkbox', {name: /select row/i}),
     ).toBeChecked();
 
-    mockFetchProcessInstances().withSuccess(mockProcessInstances);
+    mockFetchProcessInstances().withDelay(mockProcessInstances);
     await user.click(screen.getByRole('button', {name: 'Sort by Name'}));
 
-    expect(await screen.findByTestId('data-table-loader')).toBeInTheDocument();
+    expect(screen.getByTestId('data-table-loader')).toBeInTheDocument();
     await waitForElementToBeRemoved(screen.getByTestId('data-table-loader'));
 
     expect(
@@ -221,12 +233,9 @@ describe('Instances', () => {
     await user.click(screen.getByText(/go to event based/i));
 
     await waitFor(() =>
-      expect(processDiagramStore.state.status).toBe('fetching'),
+      expect(screen.queryByTestId('diagram-spinner')).not.toBeInTheDocument(),
     );
 
-    await waitFor(() =>
-      expect(processDiagramStore.state.status).toBe('fetched'),
-    );
     expect(processDiagramStore.state.diagramModel).not.toBe(null);
     expect(processDiagramStore.state.statistics).toEqual(mockProcessStatistics);
 

@@ -54,6 +54,10 @@ describe('Apply Operation', () => {
   });
 
   it('should not prepend operations and call error callback when a network error occurred', async () => {
+    const consoleErrorMock = jest
+      .spyOn(global.console, 'error')
+      .mockImplementation();
+
     mockFetchBatchOperations().withSuccess(operations);
     mockApplyOperation().withNetworkError();
 
@@ -69,5 +73,7 @@ describe('Apply Operation', () => {
     });
     expect(operationsStore.state.operations).toEqual(operations);
     expect(mockOnError).toHaveBeenCalled();
+
+    consoleErrorMock.mockRestore();
   });
 });

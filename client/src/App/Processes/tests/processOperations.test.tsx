@@ -11,7 +11,6 @@ import {Processes} from '..';
 import {createWrapper} from './mocks';
 import {
   groupedProcessesMock,
-  mockProcessInstances,
   mockProcessXML,
   operations,
 } from 'modules/testUtils';
@@ -27,7 +26,14 @@ jest.mock('modules/feature-flags', () => ({
 
 describe('<Processes /> - operations', () => {
   beforeEach(() => {
-    mockFetchProcessInstances().withSuccess(mockProcessInstances);
+    mockFetchProcessInstances().withSuccess({
+      processInstances: [],
+      totalCount: 0,
+    });
+    mockFetchProcessInstances().withSuccess({
+      processInstances: [],
+      totalCount: 0,
+    });
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
     mockFetchProcessInstancesStatistics().withSuccess([]);
     mockFetchProcessXML().withSuccess(mockProcessXML);
@@ -40,29 +46,34 @@ describe('<Processes /> - operations', () => {
     });
 
     expect(
+      await screen.findByRole('heading', {name: 'New demo process'}),
+    ).toBeInTheDocument();
+
+    expect(
+      await screen.findByRole('heading', {
+        name: 'Process Instances',
+      }),
+    );
+    expect(
       await screen.findByRole('button', {
         name: /^delete process definition "new demo process - version 1"$/i,
       }),
     ).toBeInTheDocument();
   });
 
-  it('should not show delete button when no process is selected', () => {
+  it('should not show delete button when no process is selected', async () => {
     render(<Processes />, {
       wrapper: createWrapper('/processes'),
     });
 
     expect(
-      screen.queryByRole('button', {
-        name: /delete process definition/i,
+      await screen.findByText('There is no Process selected'),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', {
+        name: 'Process Instances',
       }),
-    ).not.toBeInTheDocument();
-  });
-
-  it('should not show delete button when no version is selected', () => {
-    render(<Processes />, {
-      wrapper: createWrapper('/processes?process=demoProcess'),
-    });
-
+    );
     expect(
       screen.queryByRole('button', {
         name: /delete process definition/i,
@@ -70,7 +81,27 @@ describe('<Processes /> - operations', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('should not show delete button when user has no permissions', () => {
+  it('should not show delete button when no version is selected', async () => {
+    render(<Processes />, {
+      wrapper: createWrapper('/processes?process=demoProcess'),
+    });
+
+    expect(
+      await screen.findByRole('heading', {name: 'New demo process'}),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', {
+        name: 'Process Instances',
+      }),
+    );
+    expect(
+      screen.queryByRole('button', {
+        name: /delete process definition/i,
+      }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('should not show delete button when user has no permissions', async () => {
     authenticationStore.setUser({
       displayName: 'demo',
       permissions: ['read'],
@@ -86,6 +117,14 @@ describe('<Processes /> - operations', () => {
       wrapper: createWrapper('/processes?process=demoProcess&version=1'),
     });
 
+    expect(
+      await screen.findByRole('heading', {name: 'New demo process'}),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', {
+        name: 'Process Instances',
+      }),
+    );
     expect(
       screen.queryByRole('button', {
         name: /delete process definition/i,

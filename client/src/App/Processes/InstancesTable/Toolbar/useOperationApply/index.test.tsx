@@ -26,6 +26,8 @@ import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInst
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockApplyBatchOperation} from 'modules/mocks/api/processInstances/operations';
 import * as operationsApi from 'modules/api/processInstances/operations';
+import {mockServer} from 'modules/mock-server/node';
+import {rest} from 'msw';
 
 jest.mock('modules/utils/getSearchString');
 
@@ -209,11 +211,6 @@ describe('useOperationApply', () => {
       expect(processInstancesStore.state.processInstances).toHaveLength(3),
     );
 
-    mockFetchProcessInstances().withSuccess({
-      ...mockProcessInstances,
-      totalCount: 100,
-    });
-
     // @ts-expect-error ts-migrate(2554) FIXME: Expected 0 arguments, but got 1.
     renderUseOperationApply(context);
 
@@ -221,12 +218,27 @@ describe('useOperationApply', () => {
       processInstancesStore.processInstanceIdsWithActiveOperations,
     ).toEqual(['2251799813685594', '2251799813685596', '2251799813685598']);
 
-    jest.runOnlyPendingTimers();
+    mockServer.use(
+      rest.post('/api/process-instances', (_, res, ctx) =>
+        res.once(
+          ctx.json({
+            ...mockProcessInstances,
+            totalCount: 100,
+          }),
+        ),
+      ),
+      // mock for refreshing instances when an instance operation is complete
+      rest.post('/api/process-instances', (_, res, ctx) =>
+        res.once(
+          ctx.json({
+            ...mockProcessInstances,
+            totalCount: 200,
+          }),
+        ),
+      ),
+    );
 
-    mockFetchProcessInstances().withSuccess({
-      ...mockProcessInstances,
-      totalCount: 200,
-    });
+    jest.runOnlyPendingTimers();
 
     await waitFor(() => {
       expect(
@@ -259,17 +271,27 @@ describe('useOperationApply', () => {
       processInstancesStore.processInstanceIdsWithActiveOperations,
     ).toEqual(['2251799813685594']);
 
-    mockFetchProcessInstances().withSuccess({
-      ...mockProcessInstances,
-      totalCount: 100,
-    });
+    mockServer.use(
+      rest.post('/api/process-instances', (_, res, ctx) =>
+        res.once(
+          ctx.json({
+            ...mockProcessInstances,
+            totalCount: 100,
+          }),
+        ),
+      ),
+      // mock for refreshing instances when an instance operation is complete
+      rest.post('/api/process-instances', (_, res, ctx) =>
+        res.once(
+          ctx.json({
+            ...mockProcessInstances,
+            totalCount: 200,
+          }),
+        ),
+      ),
+    );
 
     jest.runOnlyPendingTimers();
-
-    mockFetchProcessInstances().withSuccess({
-      ...mockProcessInstances,
-      totalCount: 200,
-    });
 
     await waitFor(() => {
       expect(

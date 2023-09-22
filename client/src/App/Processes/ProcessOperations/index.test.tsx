@@ -261,9 +261,7 @@ describe('<ProcessOperations />', () => {
     );
 
     await user.click(screen.getByRole('button', {name: /danger Delete/}));
-    expect(
-      await screen.findByTestId('delete-operation-spinner'),
-    ).toBeInTheDocument();
+    expect(screen.getByTestId('delete-operation-spinner')).toBeInTheDocument();
     expect(
       screen.getByRole('button', {
         name: /^delete process definition "myProcess - version 2"$/i,
@@ -272,6 +270,10 @@ describe('<ProcessOperations />', () => {
   });
 
   it('should enable button and remove spinner when delete operation failed', async () => {
+    const consoleErrorMock = jest
+      .spyOn(global.console, 'error')
+      .mockImplementation();
+
     mockApplyProcessDefinitionOperation().withNetworkError();
     mockFetchProcessInstances().withSuccess({
       processInstances: [],
@@ -300,9 +302,7 @@ describe('<ProcessOperations />', () => {
     );
 
     await user.click(screen.getByRole('button', {name: /danger Delete/}));
-    expect(
-      await screen.findByTestId('delete-operation-spinner'),
-    ).toBeInTheDocument();
+    expect(screen.getByTestId('delete-operation-spinner')).toBeInTheDocument();
     expect(
       screen.getByRole('button', {
         name: /^delete process definition "myProcess - version 2"$/i,
@@ -318,6 +318,8 @@ describe('<ProcessOperations />', () => {
         name: /^delete process definition "myProcess - version 2"$/i,
       }),
     ).toBeEnabled();
+
+    consoleErrorMock.mockRestore();
   });
 
   it('should show warning when clicking apply without confirmation', async () => {
