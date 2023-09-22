@@ -4,6 +4,12 @@ on:
   push:
   workflow_dispatch: 
 
+# Will limit the workflow to 1 concurrent run per ref (branch / PR)
+# If a new commits occurs, the current run will be canceled
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read  # for git clone
   id-token: write # for authenticating with GCP
