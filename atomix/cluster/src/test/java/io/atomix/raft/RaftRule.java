@@ -521,7 +521,7 @@ public final class RaftRule extends ExternalResource {
     final var memberDirectory = getMemberDirectory(directory, memberId.toString());
     final var snapshotStore = new TestSnapshotStore(getOrCreatePersistedSnapshot(memberId.id()));
     snapshotStores.put(memberId.id(), snapshotStore);
-    configurator.configure(memberId, snapshotStore);
+    configurator.configure(snapshotStore);
 
     final var builder =
         RaftStorage.builder()
@@ -530,7 +530,6 @@ public final class RaftRule extends ExternalResource {
             .withFreeDiskSpace(100)
             .withSnapshotStore(snapshotStore);
 
-    configurator.configure(memberId, builder);
     return builder.build();
   }
 
@@ -722,8 +721,6 @@ public final class RaftRule extends ExternalResource {
   public interface Configurator {
     default void configure(final MemberId id, final RaftServer.Builder builder) {}
 
-    default void configure(final MemberId id, final RaftStorage.Builder builder) {}
-
-    default void configure(final MemberId id, final TestSnapshotStore snapshotStore) {}
+    default void configure(final TestSnapshotStore snapshotStore) {}
   }
 }

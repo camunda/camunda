@@ -23,6 +23,8 @@ import java.net.ConnectException;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 /** Test server protocol. */
@@ -38,6 +40,7 @@ public class TestRaftServerProtocol extends TestRaftProtocol implements RaftServ
   private Function<VoteRequest, CompletableFuture<VoteResponse>> voteHandler;
   private Function<VersionedAppendRequest, CompletableFuture<AppendResponse>> appendHandler;
   private final Set<MemberId> partitions = Sets.newCopyOnWriteArraySet();
+  private final Map<Class<?>, Consumer<?>> interceptors = new ConcurrentHashMap<>();
 
   public TestRaftServerProtocol(
       final MemberId memberId,
@@ -227,6 +230,10 @@ public class TestRaftServerProtocol extends TestRaftProtocol implements RaftServ
     appendHandler = null;
   }
 
+  public <T> void interceptRequest(final Class<T> requestType, final Consumer<T> interceptor) {
+    interceptors.put(requestType, interceptor);
+  }
+
   private CompletableFuture<TestRaftServerProtocol> getServer(final MemberId memberId) {
     final TestRaftServerProtocol server = server(memberId);
     if (server != null) {
@@ -270,9 +277,18 @@ public class TestRaftServerProtocol extends TestRaftProtocol implements RaftServ
 
   CompletableFuture<InstallResponse> install(final InstallRequest request) {
     if (installHandler != null) {
+      intercept(request, InstallRequest.class);
       return installHandler.apply(request);
     } else {
       return CompletableFuture.failedFuture(new ConnectException());
+    }
+  }
+
+  @SuppressWarnings("unchecked")
+  private <T> void intercept(final T request, final Class<T> requestType) {
+    final var interceptor = (Consumer<T>) interceptors.get(requestType);
+    if (interceptor != null) {
+      interceptor.accept(request);
     }
   }
 
