@@ -13,6 +13,7 @@ import io.camunda.zeebe.protocol.impl.stream.job.ActivatedJob;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamer;
 import java.util.Optional;
+import java.util.function.Predicate;
 import org.agrona.DirectBuffer;
 
 public final class RemoteJobStreamer implements JobStreamer {
@@ -34,7 +35,8 @@ public final class RemoteJobStreamer implements JobStreamer {
   }
 
   @Override
-  public Optional<JobStream> streamFor(final DirectBuffer jobType) {
-    return delegate.streamFor(jobType).map(RemoteJobStream::new);
+  public Optional<JobStream> streamFor(
+      final DirectBuffer jobType, final Predicate<JobActivationProperties> filter) {
+    return delegate.streamFor(jobType, filter).map(RemoteJobStream::new);
   }
 }
