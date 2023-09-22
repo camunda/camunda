@@ -1176,6 +1176,40 @@ final class JsonSerializableToJsonTest {
         """
       },
 
+      // custom tenant
+      {
+        "VariableRecord",
+        (Supplier<UnifiedRecordValue>)
+            () -> {
+              final String name = "x";
+              final String value = "1";
+              final long scopeKey = 3;
+              final long processInstanceKey = 2;
+              final long processDefinitionKey = 4;
+              final String bpmnProcessId = "process";
+
+              return new VariableRecord()
+                  .setName(wrapString(name))
+                  .setValue(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(value)))
+                  .setScopeKey(scopeKey)
+                  .setProcessInstanceKey(processInstanceKey)
+                  .setProcessDefinitionKey(processDefinitionKey)
+                  .setBpmnProcessId(wrapString(bpmnProcessId))
+                  .setTenantId("tenant-test");
+            },
+        """
+        {
+          "scopeKey": 3,
+          "processInstanceKey": 2,
+          "processDefinitionKey": 4,
+          "bpmnProcessId": "process",
+          "name": "x",
+          "value": "1",
+          "tenantId": "tenant-test"
+        }
+        """
+      },
+
       /////////////////////////////////////////////////////////////////////////////////////////////
       ///////////////////////////////// VariableDocumentRecord ////////////////////////////////////
       /////////////////////////////////////////////////////////////////////////////////////////////
