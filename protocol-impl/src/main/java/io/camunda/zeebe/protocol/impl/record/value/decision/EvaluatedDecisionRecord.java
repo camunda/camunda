@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.EvaluatedDecisionValue;
 import io.camunda.zeebe.protocol.record.value.EvaluatedInputValue;
 import io.camunda.zeebe.protocol.record.value.MatchedRuleValue;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
 import java.util.List;
@@ -42,6 +43,9 @@ public final class EvaluatedDecisionRecord extends UnifiedRecordValue
   private final ArrayProperty<MatchedRuleRecord> matchedRulesProp =
       new ArrayProperty<>("matchedRules", new MatchedRuleRecord());
 
+  private final StringProperty tenantIdProp =
+      new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+
   public EvaluatedDecisionRecord() {
     declareProperty(decisionIdProp)
         .declareProperty(decisionNameProp)
@@ -50,7 +54,8 @@ public final class EvaluatedDecisionRecord extends UnifiedRecordValue
         .declareProperty(decisionTypeProp)
         .declareProperty(decisionOutputProp)
         .declareProperty(evaluatedInputsProp)
-        .declareProperty(matchedRulesProp);
+        .declareProperty(matchedRulesProp)
+        .declareProperty(tenantIdProp);
   }
 
   @Override
@@ -169,5 +174,15 @@ public final class EvaluatedDecisionRecord extends UnifiedRecordValue
   @JsonIgnore
   public DirectBuffer getDecisionTypeBuffer() {
     return decisionTypeProp.getValue();
+  }
+
+  @Override
+  public String getTenantId() {
+    return bufferAsString(tenantIdProp.getValue());
+  }
+
+  public EvaluatedDecisionRecord setTenantId(final String tenantId) {
+    tenantIdProp.setValue(tenantId);
+    return this;
   }
 }
