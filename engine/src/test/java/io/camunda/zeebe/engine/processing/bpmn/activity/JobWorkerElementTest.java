@@ -32,7 +32,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -252,7 +251,6 @@ public final class JobWorkerElementTest {
   }
 
   @Test
-  @Ignore("https://github.com/camunda/zeebe/issues/13287")
   public void shouldCompleteTaskWithCustomTenant() {
     // given
     final String tenantId = "foo";
