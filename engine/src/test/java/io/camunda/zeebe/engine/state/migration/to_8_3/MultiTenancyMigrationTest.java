@@ -108,5 +108,43 @@ public class MultiTenancyMigrationTest {
               Bpmn.convertToString(model));
       assertThat(legacyState.getProcessByKey(123)).isNull();
     }
+
+    @Test
+    void shouldMigrateProcessByIdAndVersionColumnFamily() {
+      // given
+      final var model = Bpmn.createExecutableProcess("processId").startEvent().done();
+      legacyState.putProcess(
+          123,
+          new ProcessRecord()
+              .setKey(123)
+              .setBpmnProcessId("processId")
+              .setVersion(1)
+              .setResourceName("resourceName")
+              .setResource(wrapString(Bpmn.convertToString(model)))
+              .setChecksum(wrapString("checksum")));
+
+      // when
+      sut.runMigration(processingState);
+
+      // then
+      assertThat(
+              processState.getProcessByProcessIdAndVersion(
+                  wrapString("processId"), 1, TenantOwned.DEFAULT_TENANT_IDENTIFIER))
+          .extracting(
+              p -> bufferAsString(p.getBpmnProcessId()),
+              DeployedProcess::getVersion,
+              DeployedProcess::getState,
+              p -> bufferAsString(p.getResourceName()),
+              DeployedProcess::getTenantId,
+              p -> bufferAsString(p.getResource()))
+          .containsExactly(
+              "processId",
+              1,
+              PersistedProcessState.ACTIVE,
+              "resourceName",
+              TenantOwned.DEFAULT_TENANT_IDENTIFIER,
+              Bpmn.convertToString(model));
+      assertThat(legacyState.getProcessByProcessIdAndVersion(wrapString("processId"), 1)).isNull();
+    }
   }
 }
