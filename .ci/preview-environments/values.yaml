@@ -41,6 +41,12 @@ camunda-platform:
       requests:
         cpu: 0.5
         memory: 512Mi
+    readinessProbe:
+      enabled: true
+    livenessProbe:
+      enabled: true
+      # Force a restart if pod is not ready
+      probePath: /actuator/health/readiness
     nodeSelector:
       cloud.google.com/gke-nodepool: previews
     tolerations:
