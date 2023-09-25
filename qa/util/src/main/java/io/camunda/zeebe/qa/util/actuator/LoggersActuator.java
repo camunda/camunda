@@ -18,6 +18,7 @@ import feign.Retryer;
 import feign.Target.HardCodedTarget;
 import feign.jackson.JacksonDecoder;
 import feign.jackson.JacksonEncoder;
+import io.camunda.zeebe.qa.util.cluster.TestApplication;
 import io.zeebe.containers.ZeebeNode;
 import org.slf4j.event.Level;
 
@@ -44,6 +45,17 @@ public interface LoggersActuator {
   static LoggersActuator of(final ZeebeNode<?> node) {
     final var endpoint =
         String.format("http://%s/actuator/loggers", node.getExternalMonitoringAddress());
+    return of(endpoint);
+  }
+
+  /**
+   * Returns a {@link LoggersActuator} instance using the given node as upstream.
+   *
+   * @param node the node to connect to
+   * @return a new instance of {@link LoggersActuator}
+   */
+  static LoggersActuator of(final TestApplication<?> node) {
+    final var endpoint = String.format("http://%s/actuator/loggers", node.monitoringAddress());
     return of(endpoint);
   }
 
