@@ -26,7 +26,6 @@ import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscri
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
-import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import org.agrona.DirectBuffer;
 
@@ -82,9 +81,7 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
 
     final ProcessMessageSubscription subscription =
         subscriptionState.getSubscription(
-            elementInstanceKey,
-            record.getMessageNameBuffer(),
-            TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+            elementInstanceKey, record.getMessageNameBuffer(), record.getTenantId());
 
     if (subscription == null) {
       rejectCommand(command, RejectionType.NOT_FOUND, NO_SUBSCRIPTION_FOUND_MESSAGE);
