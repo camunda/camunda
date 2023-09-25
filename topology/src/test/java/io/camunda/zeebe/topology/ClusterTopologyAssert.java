@@ -75,4 +75,9 @@ public final class ClusterTopologyAssert
     assertThat(actual.changes().pendingOperations()).hasSize(expectedSize);
     return this;
   }
+
+  public void doesNotHaveMember(final int id) {
+    final MemberId memberId = MemberId.from(String.valueOf(id));
+    assertThat(actual.members()).doesNotContainKey(memberId);
+  }
 }
