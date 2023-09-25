@@ -171,7 +171,31 @@ public record ClusterTopology(
   }
 
   private ClusterTopology advance() {
-    return new ClusterTopology(version, members, changes.advance());
+    final ClusterTopology result = new ClusterTopology(version, members, changes.advance());
+    if (!result.hasPendingChanges()) {
+      // The last change has been applied. Clean up the members that are marked as LEFT in the
+      // topology. This operation will be executed in the member that executes the last operation.
+      // This is ok because it is guaranteed that no other concurrent modification will be applied
+      // to the topology. This is because all the operations are applied sequentially, and no
+      // topology update will be done without adding a ClusterChangePlan.
+      return result.gc();
+    }
+    return result;
+  }
+
+  private ClusterTopology gc() {
+    if (hasPendingChanges()) {
+      throw new IllegalStateException(
+          "Expected to remove members that are left from the topology, but there are pending changes "
+              + changes);
+    }
+    // remove members that are marked as LEFT
+    final var currentMembers =
+        members().entrySet().stream()
+            .filter(entry -> entry.getValue().state() != State.LEFT)
+            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    // Increment the version so that other members can merge by overwriting their local topology.
+    return new ClusterTopology(version + 1, currentMembers, changes);
   }
 
   public boolean hasMember(final MemberId memberId) {
