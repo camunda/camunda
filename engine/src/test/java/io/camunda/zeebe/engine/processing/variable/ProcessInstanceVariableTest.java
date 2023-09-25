@@ -17,6 +17,7 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.test.util.collection.Maps;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -71,6 +72,7 @@ public final class ProcessInstanceVariableTest {
     Assertions.assertThat(variableRecord.getValue())
         .hasScopeKey(processInstanceKey)
         .hasProcessDefinitionKey(processDefinitionKey)
+        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
         .hasName("x")
         .hasValue("1");
   }
@@ -97,6 +99,7 @@ public final class ProcessInstanceVariableTest {
     Assertions.assertThat(variableRecord.getValue())
         .hasScopeKey(processInstanceKey)
         .hasProcessDefinitionKey(processDefinitionKey)
+        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
         .hasName("x")
         .hasValue("1");
   }
@@ -143,6 +146,7 @@ public final class ProcessInstanceVariableTest {
     Assertions.assertThat(variableRecord.getValue())
         .hasScopeKey(processInstanceKey)
         .hasProcessDefinitionKey(processDefinitionKey)
+        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
         .hasName("y")
         .hasValue("1");
   }
@@ -168,6 +172,7 @@ public final class ProcessInstanceVariableTest {
     Assertions.assertThat(variableRecord.getValue())
         .hasScopeKey(processInstanceKey)
         .hasProcessDefinitionKey(processDefinitionKey)
+        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
         .hasName("x")
         .hasValue("1");
   }
@@ -217,6 +222,7 @@ public final class ProcessInstanceVariableTest {
     Assertions.assertThat(variableRecord.getValue())
         .hasScopeKey(processInstanceKey)
         .hasProcessDefinitionKey(processDefinitionKey)
+        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
         .hasName("x")
         .hasValue("2");
   }
@@ -263,6 +269,7 @@ public final class ProcessInstanceVariableTest {
     Assertions.assertThat(variableRecord.getValue())
         .hasScopeKey(processInstanceKey)
         .hasProcessDefinitionKey(processDefinitionKey)
+        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
         .hasName("y")
         .hasValue("2");
   }
@@ -288,6 +295,7 @@ public final class ProcessInstanceVariableTest {
     Assertions.assertThat(variableRecord.getValue())
         .hasScopeKey(processInstanceKey)
         .hasProcessDefinitionKey(processDefinitionKey)
+        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
         .hasName("x")
         .hasValue("2");
   }

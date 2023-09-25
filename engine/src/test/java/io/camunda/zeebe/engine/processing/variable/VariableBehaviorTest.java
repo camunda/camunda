@@ -451,6 +451,212 @@ final class VariableBehaviorTest {
     assertThat(events).isEmpty();
   }
 
+  @Test
+  void shouldAssignCustomTenantOnCreateLocalVariable() {
+    // given
+    final var tenantId = "foo";
+
+    final int processDefinitionKey = 1;
+    final int parentScopeKey = 1;
+    final int childScopeKey = 2;
+
+    final DirectBuffer bpmnProcessId = BufferUtil.wrapString("process");
+    final DirectBuffer variableName = BufferUtil.wrapString("foo");
+    final DirectBuffer variableValue = packString("bar");
+
+    state.createScope(parentScopeKey, VariableState.NO_PARENT);
+    state.createScope(childScopeKey, parentScopeKey);
+
+    // when
+    behavior.setLocalVariable(
+        childScopeKey,
+        processDefinitionKey,
+        parentScopeKey,
+        bpmnProcessId,
+        tenantId,
+        variableName,
+        variableValue,
+        0,
+        variableValue.capacity());
+
+    // then
+    final List<RecordedEvent<VariableRecordValue>> events = getFollowUpEvents();
+    assertThat(events)
+        .satisfiesExactlyInAnyOrder(
+            event -> {
+              assertThat(event.intent).isEqualTo(VariableIntent.CREATED);
+              VariableRecordValueAssert.assertThat(event.value)
+                  .hasName("foo")
+                  .hasValue("\"bar\"")
+                  .hasScopeKey(childScopeKey)
+                  .hasProcessDefinitionKey(processDefinitionKey)
+                  .hasProcessInstanceKey(parentScopeKey)
+                  .hasBpmnProcessId("process")
+                  .hasTenantId(tenantId);
+            });
+  }
+
+  @Test
+  void shouldAssignCustomTenantOnUpdateLocalVariable() {
+    // given
+    final var tenantId = "foo";
+
+    final long processDefinitionKey = 1;
+    final long parentScopeKey = 1;
+    final long childScopeKey = 2;
+    final long parentFooKey = 3;
+
+    final DirectBuffer bpmnProcessId = BufferUtil.wrapString("process");
+    final DirectBuffer variableName = BufferUtil.wrapString("foo");
+    final DirectBuffer variableValue = packString("bar");
+
+    state.createScope(parentScopeKey, VariableState.NO_PARENT);
+    state.createScope(childScopeKey, parentScopeKey);
+
+    setVariable(parentFooKey, parentScopeKey, processDefinitionKey, "foo", "qux");
+
+    // when
+    behavior.setLocalVariable(
+        parentScopeKey,
+        processDefinitionKey,
+        parentScopeKey,
+        bpmnProcessId,
+        tenantId,
+        variableName,
+        variableValue,
+        0,
+        variableValue.capacity());
+
+    // then
+    final List<RecordedEvent<VariableRecordValue>> events = getFollowUpEvents();
+    assertThat(events)
+        .satisfiesExactlyInAnyOrder(
+            event -> {
+              assertThat(event.intent).isEqualTo(VariableIntent.UPDATED);
+              assertThat(event.key).isEqualTo(parentFooKey);
+              VariableRecordValueAssert.assertThat(event.value)
+                  .hasName("foo")
+                  .hasValue("\"bar\"")
+                  .hasScopeKey(parentScopeKey)
+                  .hasProcessDefinitionKey(processDefinitionKey)
+                  .hasProcessInstanceKey(parentScopeKey)
+                  .hasBpmnProcessId("process")
+                  .hasTenantId(tenantId);
+            });
+  }
+
+  @Test
+  void shouldAssignCustomTenantOnMergeLocalDocument() {
+    // given
+    final var tenantId = "foo";
+
+    final long processDefinitionKey = 1;
+    final long parentScopeKey = 1;
+    final long childScopeKey = 2;
+    final long childFooKey = 3;
+
+    final DirectBuffer bpmnProcessId = BufferUtil.wrapString("process");
+    final Map<String, Object> document = Map.of("foo", "bar", "baz", "buz");
+
+    state.createScope(parentScopeKey, VariableState.NO_PARENT);
+    state.createScope(childScopeKey, parentScopeKey);
+
+    setVariable(childFooKey, childScopeKey, processDefinitionKey, "foo", "qux");
+
+    // when
+    behavior.mergeLocalDocument(
+        childScopeKey,
+        processDefinitionKey,
+        parentScopeKey,
+        bpmnProcessId,
+        tenantId,
+        MsgPackUtil.asMsgPack(document));
+
+    // then
+    final List<RecordedEvent<VariableRecordValue>> events = getFollowUpEvents();
+    assertThat(events)
+        .satisfiesExactlyInAnyOrder(
+            event -> {
+              assertThat(event.intent).isEqualTo(VariableIntent.CREATED);
+              VariableRecordValueAssert.assertThat(event.value)
+                  .hasName("baz")
+                  .hasValue("\"buz\"")
+                  .hasScopeKey(childScopeKey)
+                  .hasProcessDefinitionKey(processDefinitionKey)
+                  .hasProcessInstanceKey(parentScopeKey)
+                  .hasBpmnProcessId("process")
+                  .hasTenantId(tenantId);
+            },
+            event -> {
+              assertThat(event.intent).isEqualTo(VariableIntent.UPDATED);
+              assertThat(event.key).isEqualTo(childFooKey);
+              VariableRecordValueAssert.assertThat(event.value)
+                  .hasName("foo")
+                  .hasValue("\"bar\"")
+                  .hasScopeKey(childScopeKey)
+                  .hasProcessDefinitionKey(processDefinitionKey)
+                  .hasProcessInstanceKey(parentScopeKey)
+                  .hasBpmnProcessId("process")
+                  .hasTenantId(tenantId);
+            });
+  }
+
+  @Test
+  void shouldAssignCustomTenantOnMergeDocument() {
+    // given
+    final var tenantId = "foo";
+
+    final long processDefinitionKey = 1;
+    final long rootScopeKey = 1;
+    final long parentScopeKey = 2;
+    final long childScopeKey = 3;
+
+    final DirectBuffer bpmnProcessId = BufferUtil.wrapString("process");
+    final Map<String, Object> document = Map.of("foo", "bar", "buz", "baz");
+
+    state.createScope(rootScopeKey, VariableState.NO_PARENT);
+    state.createScope(parentScopeKey, rootScopeKey);
+    state.createScope(childScopeKey, parentScopeKey);
+
+    setVariable(123456L, parentScopeKey, processDefinitionKey, "foo", "qux");
+
+    // when
+    behavior.mergeDocument(
+        childScopeKey,
+        processDefinitionKey,
+        rootScopeKey,
+        bpmnProcessId,
+        tenantId,
+        MsgPackUtil.asMsgPack(document));
+
+    // then
+    final List<RecordedEvent<VariableRecordValue>> events = getFollowUpEvents();
+    assertThat(events)
+        .satisfiesExactlyInAnyOrder(
+            event -> {
+              assertThat(event.intent).isEqualTo(VariableIntent.CREATED);
+              VariableRecordValueAssert.assertThat(event.value)
+                  .hasName("buz")
+                  .hasValue("\"baz\"")
+                  .hasScopeKey(rootScopeKey)
+                  .hasProcessDefinitionKey(processDefinitionKey)
+                  .hasProcessInstanceKey(rootScopeKey)
+                  .hasBpmnProcessId("process")
+                  .hasTenantId(tenantId);
+            },
+            event -> {
+              assertThat(event.intent).isEqualTo(VariableIntent.UPDATED);
+              VariableRecordValueAssert.assertThat(event.value)
+                  .hasName("foo")
+                  .hasValue("\"bar\"")
+                  .hasScopeKey(parentScopeKey)
+                  .hasProcessDefinitionKey(processDefinitionKey)
+                  .hasProcessInstanceKey(rootScopeKey)
+                  .hasBpmnProcessId("process")
+                  .hasTenantId(tenantId);
+            });
+  }
+
   @SuppressWarnings("unchecked")
   private List<RecordedEvent<VariableRecordValue>> getFollowUpEvents() {
     return eventWriter.getEvents().stream()
