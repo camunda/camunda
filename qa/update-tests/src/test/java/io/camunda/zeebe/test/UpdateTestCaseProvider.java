@@ -267,7 +267,14 @@ public class UpdateTestCaseProvider implements ArgumentsProvider {
   private BpmnModelInstance incidentProcess() {
     return Bpmn.createExecutableProcess(PROCESS_ID)
         .startEvent()
-        .serviceTask("failingTask", t -> t.zeebeJobType(TASK).zeebeInputExpression("foo", "foo"))
+        .exclusiveGateway("gateway")
+        .sequenceFlowId("to-a")
+        .conditionExpression("x > 10")
+        .endEvent("a")
+        .moveToLastExclusiveGateway()
+        .sequenceFlowId("to-b")
+        .defaultFlow()
+        .endEvent("b")
         .done();
   }
 
@@ -276,14 +283,11 @@ public class UpdateTestCaseProvider implements ArgumentsProvider {
     state
         .client()
         .newSetVariablesCommand(processInstanceKey)
-        .variables(Map.of("foo", "bar"))
+        .variables(Map.of("x", 21))
         .send()
         .join();
 
     state.client().newResolveIncidentCommand(key).send().join();
-    final ActivateJobsResponse job =
-        state.client().newActivateJobsCommand().jobType(TASK).maxJobsToActivate(1).send().join();
-    state.client().newCompleteCommand(job.getJobs().get(0).getKey()).send().join();
   }
 
   private BpmnModelInstance parentProcess() {

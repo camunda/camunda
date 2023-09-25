@@ -70,8 +70,14 @@ public final class BrokerReprocessingTest {
   private static final BpmnModelInstance PROCESS_INCIDENT =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent("start")
-          .serviceTask("task", t -> t.zeebeJobType("test").zeebeInputExpression("foo", "foo"))
-          .endEvent("end")
+          .exclusiveGateway("gateway")
+          .sequenceFlowId("to-a")
+          .conditionExpression("x > 10")
+          .endEvent("a")
+          .moveToLastExclusiveGateway()
+          .sequenceFlowId("to-b")
+          .defaultFlow()
+          .endEvent("b")
           .done();
   private static final BpmnModelInstance PROCESS_MESSAGE =
       Bpmn.createExecutableProcess(PROCESS_ID)
@@ -330,7 +336,7 @@ public final class BrokerReprocessingTest {
             .join();
 
     ZeebeAssertHelper.assertIncidentCreated();
-    ZeebeAssertHelper.assertElementReady("task");
+    ZeebeAssertHelper.assertElementReady("gateway");
 
     final Record<IncidentRecordValue> incident =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED).getFirst();
@@ -341,7 +347,7 @@ public final class BrokerReprocessingTest {
     clientRule
         .getClient()
         .newSetVariablesCommand(instanceEvent.getProcessInstanceKey())
-        .variables("{\"foo\":\"bar\"}")
+        .variables("{\"x\":21}")
         .send()
         .join();
 
@@ -349,7 +355,6 @@ public final class BrokerReprocessingTest {
 
     // then
     ZeebeAssertHelper.assertIncidentResolved();
-    ZeebeAssertHelper.assertJobCreated("test");
   }
 
   @Test
@@ -367,7 +372,7 @@ public final class BrokerReprocessingTest {
             .join();
 
     ZeebeAssertHelper.assertIncidentCreated();
-    ZeebeAssertHelper.assertElementReady("task");
+    ZeebeAssertHelper.assertElementReady("gateway");
 
     Record<IncidentRecordValue> incident =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED).getFirst();
@@ -391,7 +396,7 @@ public final class BrokerReprocessingTest {
     clientRule
         .getClient()
         .newSetVariablesCommand(instanceEvent.getProcessInstanceKey())
-        .variables("{\"foo\":\"bar\"}")
+        .variables("{\"x\":21}")
         .send()
         .join();
 
@@ -399,7 +404,6 @@ public final class BrokerReprocessingTest {
 
     // then
     ZeebeAssertHelper.assertIncidentResolved();
-    ZeebeAssertHelper.assertJobCreated("test");
   }
 
   @Test

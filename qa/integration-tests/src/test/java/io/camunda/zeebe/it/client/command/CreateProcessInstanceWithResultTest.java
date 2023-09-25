@@ -314,8 +314,14 @@ public final class CreateProcessInstanceWithResultTest {
         .addProcessModel(
             Bpmn.createExecutableProcess(processId)
                 .startEvent("start_event_with_output_mapping")
-                .zeebeOutputExpression("missing_variable", "output_variable")
-                .endEvent()
+                .exclusiveGateway("gateway")
+                .sequenceFlowId("to-a")
+                .conditionExpression("x > 10")
+                .endEvent("a")
+                .moveToLastExclusiveGateway()
+                .sequenceFlowId("to-b")
+                .defaultFlow()
+                .endEvent("b")
                 .done(),
             "process.bpmn")
         .send()
@@ -331,20 +337,19 @@ public final class CreateProcessInstanceWithResultTest {
 
     final var incident =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
-            .withElementId("start_event_with_output_mapping")
+            .withElementId("gateway")
             .getFirst();
 
     // when
     client
         .newSetVariablesCommand(incident.getValue().getElementInstanceKey())
-        .variables(Map.of("missing_variable", "incident resolved"))
+        .variables(Map.of("x", 21))
         .send()
         .join();
     client.newResolveIncidentCommand(incident.getKey()).send().join();
 
     // then
-    assertThat(processInstanceResult.join().getVariablesAsMap())
-        .containsEntry("missing_variable", "incident resolved");
+    assertThat(processInstanceResult.join().getVariablesAsMap()).containsEntry("x", 21);
   }
 
   @Test
