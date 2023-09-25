@@ -222,6 +222,10 @@ declare module '@carbon/react/icons' {
   export const RowCollapse: Icon;
   export const SortAscending: Icon;
   export const Checkmark: Icon;
+  export const Error: Icon;
+  export const WarningFilled: Icon;
+  export const CheckmarkOutline: Icon;
+  export const RadioButtonChecked: Icon;
 }
 
 declare module '@carbon/elements' {

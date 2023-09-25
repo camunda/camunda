@@ -70,7 +70,7 @@ type Process = {
 type ProcessInstance = {
   id: string;
   process: Process;
-  state: 'pending' | 'completed' | 'terminated' | 'failed';
+  state: 'active' | 'completed' | 'canceled' | 'incident' | 'terminated';
   creationDate: string;
   sortValues: [string, string];
   isFirst: boolean;

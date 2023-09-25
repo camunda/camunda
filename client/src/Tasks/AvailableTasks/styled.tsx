@@ -25,20 +25,6 @@ const EmptyMessageText = styled.div`
   grid-gap: 0;
 `;
 
-const EmptyMessageFirstLine = styled.p`
-  ${({theme}) => css`
-    color: var(--cds-text-primary);
-    ${theme.bodyLong02};
-  `}
-`;
-
-const EmptyMessageSecondLine = styled.p`
-  ${({theme}) => css`
-    color: var(--cds-text-secondary);
-    ${theme.bodyLong01};
-  `}
-`;
-
 const ListContainer = styled.div`
   overflow-y: auto;
   width: 100%;
@@ -73,8 +59,6 @@ export {
   EmptyMessage,
   ListContainer,
   Container,
-  EmptyMessageFirstLine,
-  EmptyMessageSecondLine,
   EmptyMessageText,
   EmptyListIcon,
 };

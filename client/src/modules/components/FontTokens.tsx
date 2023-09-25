@@ -7,30 +7,60 @@
 
 import styled, {css} from 'styled-components';
 
-type BodyCompactProps = {
+const textOverflowStyles = css`
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+`;
+
+type BaseProps = {
+  $showEllipsisOnOverflow?: boolean;
+};
+
+type Props = {
   $color?: 'primary' | 'secondary';
   $variant?: '01' | '02';
 };
 
-const BodyCompact = styled.span<BodyCompactProps>`
-  ${({theme, $color = 'primary', $variant = '01'}) => css`
+const BodyCompact = styled.span<Props & BaseProps>`
+  ${({
+    theme,
+    $color = 'primary',
+    $variant = '01',
+    $showEllipsisOnOverflow,
+  }) => css`
     color: var(--cds-text-${$color});
     ${$variant === '01' ? theme.bodyShort01 : theme.bodyShort02};
+    ${$showEllipsisOnOverflow ? textOverflowStyles : ''};
   `}
 `;
 
-type LabelProps = {
-  $color: 'primary' | 'secondary';
-  $variant?: '01' | '02';
-};
+const BodyLong = styled.span<Props & BaseProps>`
+  ${({
+    theme,
+    $color = 'primary',
+    $variant = '01',
+    $showEllipsisOnOverflow,
+  }) => css`
+    color: var(--cds-text-${$color});
+    ${$variant === '01' ? theme.bodyLong01 : theme.bodyLong02};
+    ${$showEllipsisOnOverflow ? textOverflowStyles : ''};
+  `}
+`;
 
-const Label = styled.span<LabelProps>`
-  ${({theme, $color = 'primary', $variant = '01'}) => css`
+const Label = styled.span<Props & BaseProps>`
+  ${({
+    theme,
+    $color = 'primary',
+    $variant = '01',
+    $showEllipsisOnOverflow,
+  }) => css`
     display: inline-flex;
     align-items: center;
     color: var(--cds-text-${$color});
     ${$variant === '01' ? theme.label01 : theme.label02};
+    ${$showEllipsisOnOverflow ? textOverflowStyles : ''};
   `}
 `;
 
-export {BodyCompact, Label};
+export {BodyCompact, Label, BodyLong};

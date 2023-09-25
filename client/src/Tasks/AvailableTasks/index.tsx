@@ -10,8 +10,6 @@ import {
   EmptyMessage,
   ListContainer,
   Container,
-  EmptyMessageFirstLine,
-  EmptyMessageSecondLine,
   EmptyMessageText,
   EmptyListIcon,
 } from './styled';
@@ -21,6 +19,7 @@ import {Skeleton} from './Skeleton';
 import {useTaskFilters} from 'modules/hooks/useTaskFilters';
 import {Task as TaskType} from 'modules/types';
 import {useCurrentUser} from 'modules/queries/useCurrentUser';
+import {BodyCompact, BodyLong} from 'modules/components/FontTokens';
 
 type Props = {
   onScrollUp: () => Promise<TaskType[]>;
@@ -100,10 +99,10 @@ const AvailableTasks: React.FC<Props> = ({
             <Stack as={EmptyMessage} gap={5} orientation="horizontal">
               <EmptyListIcon size={24} alt="" />
               <Stack gap={1} as={EmptyMessageText}>
-                <EmptyMessageFirstLine>No tasks found</EmptyMessageFirstLine>
-                <EmptyMessageSecondLine>
+                <BodyCompact $variant="02">No tasks found</BodyCompact>
+                <BodyLong $color="secondary">
                   There are no tasks matching your filter criteria.
-                </EmptyMessageSecondLine>
+                </BodyLong>
               </Stack>
             </Stack>
           )}

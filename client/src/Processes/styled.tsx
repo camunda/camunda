@@ -9,17 +9,48 @@ import {rem} from '@carbon/elements';
 import styled, {css} from 'styled-components';
 import {SkeletonPlaceholder} from '@carbon/react';
 
-const Container = styled.main`
+type ContainerProps = {
+  $isSingleColumn: boolean;
+};
+
+const Container = styled.main<ContainerProps>`
+  ${({$isSingleColumn}) => css`
+    width: 100%;
+    height: 100%;
+    display: grid;
+    ${$isSingleColumn
+      ? css`
+          grid-template-columns: 1fr;
+        `
+      : css`
+          grid-template-columns: 1fr 300px;
+        `}
+    grid-column-gap: var(--cds-spacing-02);
+    padding: 0;
+  `}
+`;
+
+const Aside = styled.aside`
+  width: 100%;
+  height: 100%;
+  background-color: var(--cds-layer);
+  overflow-y: auto;
+`;
+
+const Content = styled.div`
   ${({theme}) => css`
-    padding: var(--cds-spacing-08) 0 var(--cds-spacing-08) var(--cds-spacing-13);
+    --horizontal-margin: min(var(--cds-spacing-13), 20%);
+    padding: var(--cds-spacing-08) 0 var(--cds-spacing-08)
+      var(--horizontal-margin);
     width: 100%;
     height: 100%;
     box-sizing: border-box;
     align-items: flex-start;
     align-content: flex-start;
+    overflow-y: auto;
 
     & .cds--tile {
-      margin-right: var(--cds-spacing-13);
+      margin-right: var(--horizontal-margin);
     }
 
     & .cds--tile a {
@@ -57,7 +88,6 @@ const ProcessesContainer = styled.div`
   gap: var(--cds-spacing-04);
   padding-bottom: var(--cds-spacing-08);
   padding-right: var(--cds-spacing-13);
-  overflow-y: auto;
 `;
 
 const TileSkeleton = styled(SkeletonPlaceholder)`
@@ -65,4 +95,11 @@ const TileSkeleton = styled(SkeletonPlaceholder)`
   height: ${rem(132)};
 `;
 
-export {Container, SearchContainer, ProcessesContainer, TileSkeleton};
+export {
+  Container,
+  Content,
+  SearchContainer,
+  ProcessesContainer,
+  TileSkeleton,
+  Aside,
+};
