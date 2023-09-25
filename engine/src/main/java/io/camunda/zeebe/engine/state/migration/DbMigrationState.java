@@ -386,6 +386,10 @@ public class DbMigrationState implements MutableMigrationState {
   }
 
   @Override
+  public void migrateProcessStateForMultiTenancy() {
+  }
+
+  @Override
   public void markMigrationFinished(final String identifier) {
     migrationIdentifier.wrapString(identifier);
     migrationStateColumnFamily.insert(
