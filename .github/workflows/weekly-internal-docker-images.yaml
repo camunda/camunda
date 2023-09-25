@@ -28,7 +28,7 @@ jobs:
     timeout-minutes: 45
     steps:
       - name: Check out repository code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       # See https://github.com/marketplace/actions/authenticate-to-google-cloud#setup
       - uses: google-github-actions/auth@v1
         id: auth

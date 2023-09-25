@@ -9,7 +9,7 @@ jobs:
       options: --user 1001:1000
     steps:
       - name: Check out repository code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Setup yarn cache
         uses: actions/setup-node@v3
         with:

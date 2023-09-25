@@ -48,7 +48,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       # Initializes the CodeQL tools for scanning.
       - name: Initialize CodeQL
@@ -63,7 +63,7 @@ jobs:
           # queries: security-extended,security-and-quality
 
       - name: Check out repository code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - uses: hadolint/hadolint-action@v3.1.0
         with:
           ignore: DL3018 # redundant when pinning the base image
