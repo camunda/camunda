@@ -28,6 +28,7 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -145,6 +146,32 @@ public class MultiTenancyMigrationTest {
               TenantOwned.DEFAULT_TENANT_IDENTIFIER,
               Bpmn.convertToString(model));
       assertThat(legacyState.getProcessByProcessIdAndVersion(wrapString("processId"), 1)).isNull();
+    }
+
+    @Test
+    void shouldMigrateDigestByIdColumnFamily() {
+      // given
+      final var model = Bpmn.createExecutableProcess("processId").startEvent().done();
+      legacyState.putProcess(
+          123,
+          new ProcessRecord()
+              .setKey(123)
+              .setBpmnProcessId("processId")
+              .setVersion(1)
+              .setResourceName("resourceName")
+              .setResource(wrapString(Bpmn.convertToString(model)))
+              .setChecksum(wrapString("checksum")));
+
+      // when
+      sut.runMigration(processingState);
+
+      // then
+      assertThat(
+              processState.getLatestVersionDigest(
+                  wrapString("processId"), TenantOwned.DEFAULT_TENANT_IDENTIFIER))
+          .extracting(BufferUtil::bufferAsString)
+          .isEqualTo("checksum");
+      assertThat(legacyState.getLatestVersionDigest(wrapString("processId"))).isNull();
     }
   }
 }
