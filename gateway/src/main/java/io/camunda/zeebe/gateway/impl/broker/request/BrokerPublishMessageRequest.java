@@ -40,6 +40,11 @@ public final class BrokerPublishMessageRequest extends BrokerExecuteCommand<Mess
     return this;
   }
 
+  public BrokerPublishMessageRequest setTenantId(final String tenantId) {
+    requestDto.setTenantId(tenantId);
+    return this;
+  }
+
   @Override
   public MessageRecord getRequestWriter() {
     return requestDto;

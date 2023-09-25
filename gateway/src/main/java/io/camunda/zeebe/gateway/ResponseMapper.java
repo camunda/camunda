@@ -138,7 +138,10 @@ public final class ResponseMapper {
 
   public static PublishMessageResponse toPublishMessageResponse(
       final long key, final MessageRecord brokerResponse) {
-    return PublishMessageResponse.newBuilder().setKey(key).build();
+    return PublishMessageResponse.newBuilder()
+        .setKey(key)
+        .setTenantId(brokerResponse.getTenantId())
+        .build();
   }
 
   public static UpdateJobRetriesResponse toUpdateJobRetriesResponse(
