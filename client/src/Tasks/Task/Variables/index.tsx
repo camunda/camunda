@@ -297,9 +297,9 @@ const Variables: React.FC<Props> = ({
                               </VariableNameCell>
                               <VariableValueCell>
                                 <ScrollableCellContent>
-                                  {`${variable.value}${
-                                    variable.isValueTruncated ? '...' : ''
-                                  }`}
+                                  {variable.isValueTruncated
+                                    ? `${variable.previewValue}...`
+                                    : variable.value}
                                 </ScrollableCellContent>
                               </VariableValueCell>
                               <ControlsCell />

@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {Variable} from 'modules/types';
+import {FullVariable, Variable} from 'modules/types';
 
 const variables: Variable[] = [
   {
@@ -48,25 +48,25 @@ const truncatedVariables: Variable[] = [
     id: '0-myVar',
     name: 'myVar',
     previewValue: '"000',
-    value: '"000',
+    value: null,
     isValueTruncated: true,
   },
   {
     id: '1-myVar',
     name: 'myVar1',
     previewValue: '"111',
-    value: '"111',
+    value: null,
     isValueTruncated: true,
   },
 ];
 
-const fullVariable = (variable: Partial<Variable> = {}): Variable => {
+const fullVariable = (
+  variable: Partial<Pick<FullVariable, 'id' | 'name' | 'value'>> = {},
+): Pick<FullVariable, 'id' | 'name' | 'value'> => {
   const baseVariable = {
     id: '0-myVar',
     name: 'myVar',
-    previewValue: '"0001"',
     value: '"0001"',
-    isValueTruncated: true,
   };
   return {
     ...baseVariable,

@@ -30,7 +30,7 @@ function formatVariablesToFormData(variables: Variable[]) {
   return variables.reduce(
     (accumulator, {name, value}) => ({
       ...accumulator,
-      [name]: JSON.parse(value),
+      [name]: value === null ? '' : JSON.parse(value),
     }),
     {},
   );

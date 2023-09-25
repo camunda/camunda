@@ -21,13 +21,23 @@ type CurrentUser = {
   }[];
 };
 
-type Variable = {
+type FullVariable = {
   id: string;
   name: string;
   value: string;
   previewValue: string;
-  isValueTruncated: boolean;
+  isValueTruncated: false;
 };
+
+type TruncatedVariable = {
+  id: string;
+  name: string;
+  value: null;
+  previewValue: string;
+  isValueTruncated: true;
+};
+
+type Variable = FullVariable | TruncatedVariable;
 
 type TaskState = 'CREATED' | 'COMPLETED' | 'CANCELED';
 
@@ -115,4 +125,6 @@ export type {
   Process,
   ProcessInstance,
   TasksSearchBody,
+  FullVariable,
+  TruncatedVariable,
 };

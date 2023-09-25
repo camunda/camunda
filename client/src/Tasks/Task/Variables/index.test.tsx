@@ -887,6 +887,50 @@ describe('<Variables />', () => {
     expect(screen.getByDisplayValue(mockNewValue)).toBeInTheDocument();
   });
 
+  it('should show the preview value of a truncated variable', async () => {
+    nodeMockServer.use(
+      rest.get('/v1/internal/users/current', (_, res, ctx) => {
+        return res.once(ctx.json(userMocks.currentUser));
+      }),
+      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
+        return res.once(ctx.json(variableMocks.truncatedVariables));
+      }),
+      rest.get('/v1/internal/users/current', (_, res, ctx) => {
+        return res.once(ctx.json(userMocks.currentUser));
+      }),
+      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
+        return res.once(ctx.json(variableMocks.truncatedVariables));
+      }),
+    );
+    const mockOnSubmit = jest.fn();
+    const {rerender} = render(
+      <Variables
+        task={taskMocks.unassignedTask()}
+        user={currentUser}
+        onSubmit={mockOnSubmit}
+        onSubmitFailure={noop}
+        onSubmitSuccess={noop}
+      />,
+      {
+        wrapper: Wrapper,
+      },
+    );
+
+    expect(await screen.findByText('"000...')).toBeInTheDocument();
+
+    rerender(
+      <Variables
+        task={taskMocks.completedTask()}
+        user={currentUser}
+        onSubmit={mockOnSubmit}
+        onSubmitFailure={noop}
+        onSubmitSuccess={noop}
+      />,
+    );
+
+    expect(await screen.findByText('"000...')).toBeInTheDocument();
+  });
+
   describe('Duplicate variable validations', () => {
     it('should display error if name is the same with one of the existing variables', async () => {
       nodeMockServer.use(

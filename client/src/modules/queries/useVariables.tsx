@@ -8,7 +8,7 @@
 import {useQuery, useQueryClient, UseQueryOptions} from '@tanstack/react-query';
 import {api} from 'modules/api';
 import {request, RequestError} from 'modules/request';
-import {Task, Variable} from 'modules/types';
+import {FullVariable, Task, Variable} from 'modules/types';
 import {useState} from 'react';
 
 type Params = {
@@ -76,7 +76,7 @@ function useVariables(
               ...variable,
               ...fullVariable,
               isValueTruncated: false,
-            };
+            } as FullVariable;
           }
 
           return variable;
