@@ -178,6 +178,7 @@ public final class ZeebePartition extends Actor
 
           removeListeners();
           context.getComponentHealthMonitor().removeComponent(zeebePartitionHealth.getName());
+          context.getComponentHealthMonitor().removeComponent(context.getRaftPartition().name());
 
           final var inactiveTransitionFuture = transitionToInactive();
 

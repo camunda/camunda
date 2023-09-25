@@ -15,7 +15,6 @@ import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.logstreams.state.StatePositionSupplier;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
-import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.system.partitions.PartitionStartupAndTransitionContextImpl;
 import io.camunda.zeebe.broker.system.partitions.PartitionStartupContext;
@@ -91,7 +90,6 @@ public final class ZeebePartitionFactory {
   private final CommandApiService commandApiService;
   private final ClusterServices clusterServices;
   private final ExporterRepository exporterRepository;
-  private final BrokerHealthCheckService healthCheckService;
   private final DiskSpaceUsageMonitor diskSpaceUsageMonitor;
   private final AtomixServerTransport gatewayBrokerTransport;
   private final JobStreamer jobStreamer;
@@ -107,7 +105,6 @@ public final class ZeebePartitionFactory {
       final CommandApiService commandApiService,
       final ClusterServices clusterServices,
       final ExporterRepository exporterRepository,
-      final BrokerHealthCheckService healthCheckService,
       final DiskSpaceUsageMonitor diskSpaceUsageMonitor,
       final AtomixServerTransport gatewayBrokerTransport,
       final JobStreamer jobStreamer,
@@ -121,7 +118,6 @@ public final class ZeebePartitionFactory {
     this.commandApiService = commandApiService;
     this.clusterServices = clusterServices;
     this.exporterRepository = exporterRepository;
-    this.healthCheckService = healthCheckService;
     this.diskSpaceUsageMonitor = diskSpaceUsageMonitor;
     this.gatewayBrokerTransport = gatewayBrokerTransport;
     this.jobStreamer = jobStreamer;
@@ -168,8 +164,6 @@ public final class ZeebePartitionFactory {
 
     final ZeebePartition zeebePartition =
         new ZeebePartition(context, newTransitionBehavior, STARTUP_STEPS);
-
-    healthCheckService.registerMonitoredPartition(zeebePartition.getPartitionId(), zeebePartition);
     return zeebePartition;
   }
 

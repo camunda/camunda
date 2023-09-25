@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.broker.partitioning.topology;
 
+import io.camunda.zeebe.util.health.HealthStatus;
+
 /**
  * Maintains the cluster topology.
  *
@@ -20,4 +22,6 @@ public interface TopologyManager {
   void removeTopologyPartitionListener(TopologyPartitionListener listener);
 
   void addTopologyPartitionListener(TopologyPartitionListener listener);
+
+  void onHealthChanged(int partitionId, HealthStatus status);
 }

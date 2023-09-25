@@ -220,12 +220,7 @@ public final class TopologyManagerImpl extends Actor
         });
   }
 
-  private void notifyPartitionLeaderUpdated(final int partitionId, final BrokerInfo member) {
-    for (final TopologyPartitionListener listener : topologyPartitionListeners) {
-      LogUtil.catchAndLog(LOG, () -> listener.onPartitionLeaderUpdated(partitionId, member));
-    }
-  }
-
+  @Override
   public void onHealthChanged(final int partitionId, final HealthStatus status) {
     actor.run(
         () -> {
@@ -238,5 +233,11 @@ public final class TopologyManagerImpl extends Actor
           }
           publishTopologyChanges();
         });
+  }
+
+  private void notifyPartitionLeaderUpdated(final int partitionId, final BrokerInfo member) {
+    for (final TopologyPartitionListener listener : topologyPartitionListeners) {
+      LogUtil.catchAndLog(LOG, () -> listener.onPartitionLeaderUpdated(partitionId, member));
+    }
   }
 }
