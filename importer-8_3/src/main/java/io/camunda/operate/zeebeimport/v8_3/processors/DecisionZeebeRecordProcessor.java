@@ -22,6 +22,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
+
 @Component
 public class DecisionZeebeRecordProcessor {
 
@@ -65,7 +67,7 @@ public class DecisionZeebeRecordProcessor {
         .setDecisionId(decision.getDecisionId())
         .setDecisionRequirementsId(decision.getDecisionRequirementsId())
         .setDecisionRequirementsKey(decision.getDecisionRequirementsKey())
-        .setTenantId(decision.getTenantId());
+        .setTenantId(tenantOrDefault(decision.getTenantId()));
   }
 
 }

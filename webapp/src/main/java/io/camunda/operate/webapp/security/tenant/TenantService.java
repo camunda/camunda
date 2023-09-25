@@ -19,6 +19,8 @@ import org.springframework.stereotype.Component;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
 
+import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
+
 @Component
 public class TenantService {
 
@@ -28,10 +30,15 @@ public class TenantService {
   private OperateProperties operateProperties;
 
   public AuthenticatedTenants getAuthenticatedTenants() {
-    if (!isMultiTenancyEnabled()) {
-      // disabled means no tenant check necessary.
-      // thus, the user/app has access to all tenants.
+    if (!securityContextPresent()) {
+      // if the query comes from the source without security context,
+      // we don't apply any tenant filtering
       return AuthenticatedTenants.allTenants();
+    }
+
+    if (!isMultiTenancyEnabled()) {
+      // the user/app has access to only <default> tenant
+      return AuthenticatedTenants.assignedTenants(List.of(DEFAULT_TENANT_ID));
     }
 
     final var authentication = getCurrentTenantAwareAuthentication();
@@ -77,8 +84,11 @@ public class TenantService {
   }
 
   private boolean isMultiTenancyEnabled() {
-    return operateProperties.getMultiTenancy().isEnabled()
-        && SecurityContextHolder.getContext().getAuthentication()!=null;
+    return operateProperties.getMultiTenancy().isEnabled();
+  }
+
+  private boolean securityContextPresent() {
+    return SecurityContextHolder.getContext().getAuthentication() != null;
   }
 
   public static class AuthenticatedTenants {

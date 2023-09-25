@@ -53,9 +53,6 @@ public class DecisionIT extends OperateIntegrationTest {
   @Rule
   public SearchTestRule searchTestRule = new SearchTestRule();
 
-  @MockBean
-  private TenantService tenantService;
-
   @Test
   public void testDecisionsGroupedWithPermisssionWhenNotAllowed() throws Exception {
     // given
@@ -70,8 +67,6 @@ public class DecisionIT extends OperateIntegrationTest {
     final DecisionDefinitionEntity decision2 = new DecisionDefinitionEntity().setId(id2).setDecisionId(decisionId2);
     final DecisionDefinitionEntity decision3 = new DecisionDefinitionEntity().setId(id3).setDecisionId(decisionId3);
     searchTestRule.persistNew(decision1, decision2, decision3);
-
-    doReturn(AuthenticatedTenants.allTenants()).when(tenantService).getAuthenticatedTenants();
 
     // when
     when(permissionsService.getDecisionsWithPermission(IdentityPermission.READ)).thenReturn(
@@ -99,8 +94,6 @@ public class DecisionIT extends OperateIntegrationTest {
     final DecisionDefinitionEntity decision2 = new DecisionDefinitionEntity().setId(id2).setDecisionId(decisionId2);
     final DecisionDefinitionEntity decision3 = new DecisionDefinitionEntity().setId(id3).setDecisionId(decisionId3);
     searchTestRule.persistNew(decision1, decision2, decision3);
-
-    doReturn(AuthenticatedTenants.allTenants()).when(tenantService).getAuthenticatedTenants();
 
     // when
     when(permissionsService.getDecisionsWithPermission(IdentityPermission.READ)).thenReturn(
@@ -130,8 +123,6 @@ public class DecisionIT extends OperateIntegrationTest {
     final DecisionDefinitionEntity decision2 = new DecisionDefinitionEntity().setId(id2).setDecisionId(decisionId2);
     final DecisionDefinitionEntity decision3 = new DecisionDefinitionEntity().setId(id3).setDecisionId(decisionId3);
     searchTestRule.persistNew(decision1, decision2, decision3);
-
-    doReturn(AuthenticatedTenants.allTenants()).when(tenantService).getAuthenticatedTenants();
 
     // when
     when(permissionsService.getDecisionsWithPermission(IdentityPermission.READ)).thenReturn(
@@ -172,8 +163,6 @@ public class DecisionIT extends OperateIntegrationTest {
 
     when(permissionsService.getDecisionsWithPermission(IdentityPermission.READ)).thenReturn(
         PermissionsService.ResourcesAllowed.all());
-
-    doReturn(AuthenticatedTenants.allTenants()).when(tenantService).getAuthenticatedTenants();
 
     // when
     MvcResult mvcResult = postRequest(QUERY_DECISION_GROUPED_URL, new DecisionRequestDto().setTenantId(tenantId1));

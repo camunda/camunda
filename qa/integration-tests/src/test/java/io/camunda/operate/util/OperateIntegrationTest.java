@@ -7,6 +7,7 @@
 package io.camunda.operate.util;
 
 import static io.camunda.operate.util.OperateIntegrationTest.DEFAULT_USER;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -24,6 +25,7 @@ import io.camunda.operate.archiver.ProcessInstancesArchiverJob;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.qa.util.DependencyInjectionTestExecutionListener;
 import io.camunda.operate.webapp.security.UserService;
+import io.camunda.operate.webapp.security.tenant.TenantService;
 import io.camunda.operate.zeebe.PartitionHolder;
 import org.junit.Before;
 import org.junit.Rule;
@@ -45,7 +47,8 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
   classes = {TestApplication.class},
   properties = {OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
     OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",
-    "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER"})
+    "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER",
+    OperateProperties.PREFIX + ".multiTenancy.enabled = true"})
 @WebAppConfiguration
 @TestExecutionListeners(listeners = DependencyInjectionTestExecutionListener.class, mergeMode = TestExecutionListeners.MergeMode.MERGE_WITH_DEFAULTS)
 @WithMockUser(DEFAULT_USER)
@@ -63,6 +66,9 @@ public abstract class OperateIntegrationTest {
   @MockBean
   protected UserService userService;
 
+  @MockBean
+  protected TenantService tenantService;
+
   @Before
   public void before() {
     testStartTime = OffsetDateTime.now();
@@ -70,6 +76,7 @@ public abstract class OperateIntegrationTest {
     when(userService.getCurrentUser()).thenReturn(
         new UserDto().setUserId(DEFAULT_USER)
             .setPermissions(List.of(Permission.WRITE)));
+    doReturn(TenantService.AuthenticatedTenants.allTenants()).when(tenantService).getAuthenticatedTenants();
   }
 
   protected MvcResult getRequest(String requestUrl) throws Exception {

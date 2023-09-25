@@ -26,6 +26,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
+
 @Component
 public class ProcessZeebeRecordProcessor {
 
@@ -84,7 +86,7 @@ public class ProcessZeebeRecordProcessor {
         .setKey(process.getProcessDefinitionKey())
         .setBpmnProcessId(process.getBpmnProcessId())
         .setVersion(process.getVersion())
-        .setTenantId(process.getTenantId());
+        .setTenantId(tenantOrDefault(process.getTenantId()));
 
     byte[] byteArray = process.getResource();
 

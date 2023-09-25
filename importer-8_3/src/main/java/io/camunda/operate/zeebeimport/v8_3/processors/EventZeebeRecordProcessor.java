@@ -10,6 +10,7 @@ import static io.camunda.operate.entities.EventType.ELEMENT_ACTIVATING;
 import static io.camunda.operate.entities.EventType.ELEMENT_COMPLETING;
 import static io.camunda.operate.schema.templates.EventTemplate.METADATA;
 import static io.camunda.operate.util.LambdaExceptionUtil.rethrowConsumer;
+import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATED;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_COMPLETED;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_TERMINATED;
@@ -151,7 +152,7 @@ public class EventZeebeRecordProcessor {
       eventEntity.setProcessDefinitionKey(recordValue.getProcessDefinitionKey())
           .setProcessInstanceKey(recordValue.getProcessInstanceKey())
           .setBpmnProcessId(recordValue.getBpmnProcessId())
-          .setTenantId(recordValue.getTenantId());
+          .setTenantId(tenantOrDefault(recordValue.getTenantId()));
 
       if (recordValue.getElementId() != null) {
         eventEntity.setFlowNodeId(recordValue.getElementId());
@@ -180,7 +181,7 @@ public class EventZeebeRecordProcessor {
 
     eventEntity.setBpmnProcessId(recordValue.getBpmnProcessId())
         .setFlowNodeId(recordValue.getElementId())
-        .setTenantId(recordValue.getTenantId());
+        .setTenantId(tenantOrDefault(recordValue.getTenantId()));
 
     final long activityInstanceKey = recordValue.getElementInstanceKey();
     if (activityInstanceKey > 0) {
@@ -215,7 +216,7 @@ public class EventZeebeRecordProcessor {
 
     eventEntity.setBpmnProcessId(recordValue.getBpmnProcessId())
         .setFlowNodeId(recordValue.getElementId())
-        .setTenantId(recordValue.getTenantId());
+        .setTenantId(tenantOrDefault(recordValue.getTenantId()));
 
     final long activityInstanceKey = recordValue.getElementInstanceKey();
     if (activityInstanceKey > 0) {
@@ -253,7 +254,7 @@ public class EventZeebeRecordProcessor {
     }
     eventEntity.setBpmnProcessId(recordValue.getBpmnProcessId())
         .setFlowNodeId(recordValue.getElementId())
-        .setTenantId(recordValue.getTenantId());
+        .setTenantId(tenantOrDefault(recordValue.getTenantId()));
     if (recordValue.getElementInstanceKey() > 0) {
       eventEntity.setFlowNodeInstanceKey(recordValue.getElementInstanceKey());
     }

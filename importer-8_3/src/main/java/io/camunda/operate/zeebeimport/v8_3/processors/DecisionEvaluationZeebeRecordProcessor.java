@@ -32,6 +32,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
+
 @Component
 public class DecisionEvaluationZeebeRecordProcessor {
 
@@ -74,6 +76,7 @@ public class DecisionEvaluationZeebeRecordProcessor {
           .getEvaluatedDecisions().get(i - 1);
       OffsetDateTime timestamp = DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp()));
       final DecisionInstanceState state = getState(record, decisionEvaluation, i);
+
       final DecisionInstanceEntity entity = new DecisionInstanceEntity()
           .setId(record.getKey(), i)
           .setKey(record.getKey())
@@ -100,7 +103,7 @@ public class DecisionEvaluationZeebeRecordProcessor {
           .setResult(decision.getDecisionOutput())
           .setEvaluatedOutputs(createEvaluationOutputs(decision.getMatchedRules()))
           .setEvaluatedInputs(createEvaluationInputs(decision.getEvaluatedInputs()))
-          .setTenantId(decisionEvaluation.getTenantId());
+          .setTenantId(tenantOrDefault(decisionEvaluation.getTenantId()));
       if (state.equals(DecisionInstanceState.FAILED)) {
         entity.setEvaluationFailure(decisionEvaluation.getEvaluationFailureMessage());
       }

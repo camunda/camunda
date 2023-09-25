@@ -28,6 +28,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
+
 @Component
 public class VariableZeebeRecordProcessor {
 
@@ -93,7 +95,7 @@ public class VariableZeebeRecordProcessor {
         .setProcessDefinitionKey(recordValue.getProcessDefinitionKey())
         .setBpmnProcessId(recordValue.getBpmnProcessId())
         .setName(recordValue.getName())
-        .setTenantId(recordValue.getTenantId());
+        .setTenantId(tenantOrDefault(recordValue.getTenantId()));
     if (recordValue.getValue().length() > operateProperties.getImporter().getVariableSizeThreshold()) {
       // store preview
       entity.setValue(

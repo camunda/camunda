@@ -38,6 +38,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
+import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
+
 @Component
 public class IncidentZeebeRecordProcessor {
 
@@ -131,7 +133,7 @@ public class IncidentZeebeRecordProcessor {
       }
       incident.setState(IncidentState.PENDING)
           .setCreationTime(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())))
-          .setTenantId(recordValue.getTenantId());
+          .setTenantId(tenantOrDefault(recordValue.getTenantId()));
 
       logger.debug("Index incident: id {}", incident.getId());
       //we only insert incidents but never update -> update will be performed in post importer

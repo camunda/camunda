@@ -19,6 +19,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
+
 @Component
 public class SequenceFlowZeebeRecordProcessor {
 
@@ -43,7 +45,7 @@ public class SequenceFlowZeebeRecordProcessor {
         .setProcessDefinitionKey(recordValue.getProcessDefinitionKey())
         .setBpmnProcessId(recordValue.getBpmnProcessId())
         .setActivityId(recordValue.getElementId())
-        .setTenantId(recordValue.getTenantId());
+        .setTenantId(tenantOrDefault(recordValue.getTenantId()));
 
     logger.debug("Index sequence flow: id {}", entity.getId());
     batchRequest.add(sequenceFlowTemplate.getFullQualifiedName(), entity);
