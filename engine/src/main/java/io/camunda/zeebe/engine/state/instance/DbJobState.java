@@ -412,9 +412,7 @@ public final class DbJobState implements JobState, MutableJobState {
 
     jobTypeKey.wrapBuffer(type);
     jobKey.wrapLong(key);
-    if (!TenantOwned.DEFAULT_TENANT_IDENTIFIER.equals(tenantId)) {
-      tenantIdKey.wrapString(tenantId);
-    }
+    tenantIdKey.wrapString(TenantOwned.DEFAULT_TENANT_IDENTIFIER.equals(tenantId) ? "" : tenantId);
     // Need to upsert here because jobs can be marked as failed (and thus made activatable)
     // without activating them first
     activatableColumnFamily.upsert(tenantAwareTypeJobKey, DbNil.INSTANCE);
@@ -424,9 +422,7 @@ public final class DbJobState implements JobState, MutableJobState {
     EnsureUtil.ensureNotNullOrEmpty("type", type);
 
     jobTypeKey.wrapBuffer(type);
-    if (!TenantOwned.DEFAULT_TENANT_IDENTIFIER.equals(tenantId)) {
-      tenantIdKey.wrapString(tenantId);
-    }
+    tenantIdKey.wrapString(TenantOwned.DEFAULT_TENANT_IDENTIFIER.equals(tenantId) ? "" : tenantId);
     activatableColumnFamily.deleteIfExists(tenantAwareTypeJobKey);
   }
 

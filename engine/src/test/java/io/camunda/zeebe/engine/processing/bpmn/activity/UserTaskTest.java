@@ -157,6 +157,7 @@ public final class UserTaskTest {
     ENGINE
         .deployment()
         .withXmlResource(process(t -> t.zeebeInputExpression("processVariable", "taskVariable")))
+        .withTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
         .deploy();
 
     // when
@@ -165,6 +166,7 @@ public final class UserTaskTest {
             .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
             .withVariable("processVariable", "processValue")
+            .withTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
             .create();
 
     // then
@@ -178,6 +180,7 @@ public final class UserTaskTest {
             .withType(Protocol.USER_TASK_JOB_TYPE)
             .withMaxJobsToActivate(Integer.MAX_VALUE)
             .withTimeout(200)
+            .withTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
             .activate()
             .getValue()
             .getJobs()
