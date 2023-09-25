@@ -19,7 +19,6 @@ import io.camunda.zeebe.msgpack.value.ValueArray;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
-import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -38,7 +37,7 @@ public final class JobBatchRecord extends UnifiedRecordValue implements JobBatch
       new ArrayProperty<>("jobKeys", new LongValue());
   private final ArrayProperty<JobRecord> jobsProp = new ArrayProperty<>("jobs", new JobRecord());
   private final ArrayProperty<StringValue> tenantIdsProp =
-      new ArrayProperty<>("tenantIds", new StringValue(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
+      new ArrayProperty<>("tenantIds", new StringValue());
   private final ArrayProperty<StringValue> variablesProp =
       new ArrayProperty<>("variables", new StringValue());
   private final BooleanProperty truncatedProp = new BooleanProperty("truncated", false);

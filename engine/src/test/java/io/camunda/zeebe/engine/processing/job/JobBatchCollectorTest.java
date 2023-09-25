@@ -24,6 +24,7 @@ import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValueAssert;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValueAssert;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.test.util.MsgPackUtil;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
@@ -292,6 +293,10 @@ final class JobBatchCollectorTest {
             .setMaxJobsToActivate(10)
             .setType(JOB_TYPE)
             .setWorker("test");
+    batchRecord
+        .tenantIds()
+        .add()
+        .wrap(BufferUtil.wrapString(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
 
     return new MockTypedRecord<>(state.getKeyGenerator().nextKey(), metadata, batchRecord);
   }

@@ -13,6 +13,7 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Arrays;
@@ -54,6 +55,7 @@ public final class JobActivationClient {
 
     jobBatchRecord = new JobBatchRecord();
     jobBatchRecord.setTimeout(DEFAULT_TIMEOUT).setMaxJobsToActivate(DEFAULT_MAX_ACTIVATE);
+    withTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
     partitionId = DEFAULT_PARTITION;
   }
 
@@ -64,6 +66,16 @@ public final class JobActivationClient {
 
   public JobActivationClient withTimeout(final long timeout) {
     jobBatchRecord.setTimeout(timeout);
+    return this;
+  }
+
+  public JobActivationClient withTenantId(final String tenantId) {
+    jobBatchRecord.tenantIds().add().wrap(BufferUtil.wrapString(tenantId));
+    return this;
+  }
+
+  public JobActivationClient withTenantIds(final List<String> tenantIds) {
+    tenantIds.stream().forEach(this::withTenantId);
     return this;
   }
 
