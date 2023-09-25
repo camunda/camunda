@@ -55,8 +55,9 @@ public final class DbProcessState implements MutableProcessState {
       processesByTenantAndProcessIdAndVersionCache = new HashMap<>();
   private final Map<String, Long2ObjectHashMap<DeployedProcess>> processByTenantAndKeyCache;
 
-  // process
+  /** [tenant id | process definition key] => process */
   private final ColumnFamily<DbTenantAwareKey<DbLong>, PersistedProcess> processColumnFamily;
+
   private final DbLong processDefinitionKey;
   private final PersistedProcess persistedProcess;
   private final DbString tenantIdKey;

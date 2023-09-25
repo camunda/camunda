@@ -84,6 +84,11 @@ public final class PersistedProcess extends UnpackedObject implements DbValue {
     return bufferAsString(tenantIdProp.getValue());
   }
 
+  public PersistedProcess setTenantId(final String tenantId) {
+    tenantIdProp.setValue(tenantId);
+    return this;
+  }
+
   public enum PersistedProcessState {
     ACTIVE(0),
     PENDING_DELETION(1);

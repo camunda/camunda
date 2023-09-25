@@ -16,8 +16,11 @@ import io.camunda.zeebe.db.impl.DbInt;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
+import io.camunda.zeebe.db.impl.DbTenantAwareKey;
+import io.camunda.zeebe.db.impl.DbTenantAwareKey.PlacementType;
 import io.camunda.zeebe.engine.state.deployment.PersistedDecision;
 import io.camunda.zeebe.engine.state.deployment.PersistedDecisionRequirements;
+import io.camunda.zeebe.engine.state.deployment.PersistedProcess;
 import io.camunda.zeebe.engine.state.deployment.VersionInfo;
 import io.camunda.zeebe.engine.state.immutable.PendingMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.PendingProcessMessageSubscriptionState;
@@ -31,6 +34,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionSt
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
@@ -95,12 +99,22 @@ public class DbMigrationState implements MutableMigrationState {
   private final DbLong processDefinitionKey;
   private final DbCompositeKey<DbLong, DbLong> processInstanceKeyByProcessDefinitionKey;
 
-  /** [process definition key | process instance key] => [Nil] */
   private final ColumnFamily<DbCompositeKey<DbLong, DbLong>, DbNil>
       processInstanceKeyByProcessDefinitionKeyColumnFamily;
 
   private final DbString processIdKey;
   private final ColumnFamily<DbString, VersionInfo> processVersionInfoColumnFamily;
+
+  private final PersistedProcess persistedProcess;
+
+  /** [process definition key] => process */
+  private final ColumnFamily<DbLong, PersistedProcess> deprecatedProcessCacheColumnFamily;
+
+  private final DbString tenantIdKey;
+  private final DbTenantAwareKey<DbLong> tenantAwareProcessDefinitionKey;
+
+  /** [tenant id | process definition key] => process */
+  private final ColumnFamily<DbTenantAwareKey<DbLong>, PersistedProcess> processColumnFamily;
 
   public DbMigrationState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
@@ -224,6 +238,27 @@ public class DbMigrationState implements MutableMigrationState {
             transactionContext,
             processIdKey,
             new VersionInfo());
+
+    /* ==== ColumnFamilies for multi-tenancy migration ==== */
+
+    /* Process State ColumnFamilies */
+    persistedProcess = new PersistedProcess();
+    deprecatedProcessCacheColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.DEPRECATED_PROCESS_CACHE,
+            transactionContext,
+            processDefinitionKey,
+            persistedProcess);
+
+    tenantIdKey = new DbString();
+    tenantAwareProcessDefinitionKey =
+        new DbTenantAwareKey<>(tenantIdKey, processDefinitionKey, PlacementType.PREFIX);
+    processColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.PROCESS_CACHE,
+            transactionContext,
+            tenantAwareProcessDefinitionKey,
+            persistedProcess);
   }
 
   @Override
@@ -387,6 +422,14 @@ public class DbMigrationState implements MutableMigrationState {
 
   @Override
   public void migrateProcessStateForMultiTenancy() {
+    deprecatedProcessCacheColumnFamily.forEach(
+        (key, value) -> {
+          value.setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+          tenantIdKey.wrapString(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+          processDefinitionKey.wrapLong(key.getValue());
+          processColumnFamily.insert(tenantAwareProcessDefinitionKey, value);
+          deprecatedProcessCacheColumnFamily.deleteExisting(key);
+        });
   }
 
   @Override
