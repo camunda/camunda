@@ -456,10 +456,11 @@ public class DbMigrationState implements MutableMigrationState {
 
   @Override
   public void migrateProcessStateForMultiTenancy() {
+    tenantIdKey.wrapString(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+
     deprecatedProcessCacheColumnFamily.forEach(
         (key, value) -> {
           value.setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-          tenantIdKey.wrapString(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
           processDefinitionKey.wrapLong(key.getValue());
           processColumnFamily.insert(tenantAwareProcessDefinitionKey, value);
           deprecatedProcessCacheColumnFamily.deleteExisting(key);
@@ -468,7 +469,6 @@ public class DbMigrationState implements MutableMigrationState {
     deprecatedProcessCacheByIdAndVersionColumnFamily.forEach(
         (key, value) -> {
           value.setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-          tenantIdKey.wrapString(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
           processId.wrapBuffer(value.getBpmnProcessId());
           processVersion.wrapLong(value.getVersion());
           processByIdAndVersionColumnFamily.insert(tenantAwareProcessIdAndVersionKey, value);
