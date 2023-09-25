@@ -109,6 +109,7 @@ type DecisionRequestFilters = {
   evaluationDateAfter?: string;
   evaluationDateBefore?: string;
   decisionDefinitionIds?: string[];
+  tenantId?: string;
 };
 
 const PROCESS_INSTANCE_FILTER_FIELDS: ProcessInstanceFilterField[] = [
@@ -458,6 +459,13 @@ function getDecisionInstancesRequestFilters() {
           return {
             ...accumulator,
             [key]: value,
+          };
+        }
+
+        if (key === 'tenant' && value !== 'all') {
+          return {
+            ...accumulator,
+            tenantId: value,
           };
         }
       }

@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {deleteSearchParams, parseFilterTime} from './index';
+import {deleteSearchParams, parseFilterTime} from '../index';
 
 describe('utils/filter', () => {
   it('should delete search params', () => {
