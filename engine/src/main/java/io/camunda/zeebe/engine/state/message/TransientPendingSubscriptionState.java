@@ -50,5 +50,5 @@ public final class TransientPendingSubscriptionState {
         .collect(Collectors.toList());
   }
 
-  public record PendingSubscription(long elementInstanceKey, String messageName) {}
+  public record PendingSubscription(long elementInstanceKey, String messageName, String tenantId) {}
 }

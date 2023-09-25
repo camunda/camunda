@@ -244,7 +244,10 @@ public class DbMigrationState implements MutableMigrationState {
           if (messageSubscription != null) {
             messageSubscriptionState.updateToCorrelatingState(messageSubscription.getRecord());
             transientState.onSent(
-                elementInstanceKey, BufferUtil.bufferAsString(messageName), sentTime);
+                elementInstanceKey,
+                BufferUtil.bufferAsString(messageName),
+                TenantOwned.DEFAULT_TENANT_IDENTIFIER,
+                sentTime);
           }
 
           messageSubscriptionSentTimeColumnFamily.deleteExisting(key);

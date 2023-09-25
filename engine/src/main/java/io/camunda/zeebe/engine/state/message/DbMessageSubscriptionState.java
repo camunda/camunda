@@ -91,7 +91,8 @@ public final class DbMessageSubscriptionState
         subscription -> {
           if (subscription.isCorrelating()) {
             transientState.add(
-                new PendingSubscription(elementInstanceKey.getValue(), messageName.toString()),
+                new PendingSubscription(
+                    elementInstanceKey.getValue(), messageName.toString(), tenantIdKey.toString()),
                 ActorClock.currentTimeMillis());
           }
         });
@@ -171,17 +172,18 @@ public final class DbMessageSubscriptionState
     transientState.update(
         new PendingSubscription(
             subscription.getRecord().getElementInstanceKey(),
-            subscription.getRecord().getMessageName()),
+            subscription.getRecord().getMessageName(),
+            subscription.getRecord().getTenantId()),
         ActorClock.currentTimeMillis());
   }
 
   @Override
   public void updateToCorrelatedState(final MessageSubscription subscription) {
     updateCorrelatingFlag(subscription, false);
+    final var record = subscription.getRecord();
     transientState.remove(
         new PendingSubscription(
-            subscription.getRecord().getElementInstanceKey(),
-            subscription.getRecord().getMessageName()));
+            record.getElementInstanceKey(), record.getMessageName(), record.getTenantId()));
   }
 
   @Override
@@ -211,7 +213,8 @@ public final class DbMessageSubscriptionState
         tenantAwareNameCorrelationAndElementInstanceKey);
 
     transientState.remove(
-        new PendingSubscription(elementInstanceKey.getValue(), messageName.toString()));
+        new PendingSubscription(
+            elementInstanceKey.getValue(), messageName.toString(), tenantIdKey.toString()));
   }
 
   private void updateCorrelatingFlag(
@@ -253,7 +256,11 @@ public final class DbMessageSubscriptionState
 
   @Override
   public void onSent(
-      final long elementInstanceKey, final String messageName, final long timestampMs) {
-    transientState.update(new PendingSubscription(elementInstanceKey, messageName), timestampMs);
+      final long elementInstanceKey,
+      final String messageName,
+      final String tenantId,
+      final long timestampMs) {
+    transientState.update(
+        new PendingSubscription(elementInstanceKey, messageName, tenantId), timestampMs);
   }
 }
