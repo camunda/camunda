@@ -24,6 +24,7 @@ import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscri
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.ArrayList;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -117,6 +118,8 @@ public class DbMigrationStateTest {
   }
 
   @Test
+  @Disabled(
+      "Broken because of Multi-Tenancy. Needs the data migration part of https://github.com/camunda/zeebe/issues/13289")
   public void testMigrateProcessMessageSubscriptionSentTime() {
     // given database with legacy records
     final var legacySubscriptionState =
