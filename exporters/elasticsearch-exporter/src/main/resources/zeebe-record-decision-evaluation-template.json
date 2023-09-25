@@ -86,6 +86,9 @@
                 "decisionOutput": {
                   "enabled": false
                 },
+                "tenantId": {
+                  "type": "keyword"
+                },
                 "evaluatedInputs": {
                   "properties": {
                     "inputId": {

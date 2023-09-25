@@ -104,6 +104,8 @@ public class EvaluateDecisionTest extends GatewayTest {
         .isEqualTo(expectedIntermediateDecisionResult.getDecisionVersion());
     assertThat(intermediateResultResponse.getDecisionOutput())
         .isEqualTo(expectedIntermediateDecisionResult.getDecisionOutput());
+    assertThat(intermediateResultResponse.getTenantId())
+        .isEqualTo(expectedIntermediateDecisionResult.getTenantId());
 
     // assert EvaluatedInputRecord mapping
     assertThat(intermediateResultResponse.getEvaluatedInputsCount()).isOne();

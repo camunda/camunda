@@ -245,6 +245,8 @@ message EvaluatedDecision {
   repeated MatchedDecisionRule matchedRules = 7;
   // the decision inputs that were evaluated within this decision evaluation
   repeated EvaluatedDecisionInput evaluatedInputs = 8;
+  // the tenant identifier of the evaluated decision
+  string tenantId = 9;
 }
 
 message EvaluatedDecisionInput {

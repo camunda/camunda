@@ -30,7 +30,6 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -39,7 +38,9 @@ public class TenantAwareBusinessRuleTaskTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
-  private static final String DMN_DECISION_TABLE = "/dmn/decision-table-with-assertions.dmn";
+  private static final String DMN_DECISION_TABLE = "/dmn/decision-table.dmn";
+  private static final String DMN_DECISION_TABLE_WITH_ASSERTION =
+      "/dmn/decision-table-with-assertions.dmn";
 
   private static final String PROCESS_ID = "process";
   private static final String TASK_ID = "task";
@@ -62,8 +63,9 @@ public class TenantAwareBusinessRuleTaskTest {
         .done();
   }
 
-  @Before
-  public void init() {
+  @Test
+  public void shouldActivateBusinessRuleTask() {
+    // given
     final var process = processWithBusinessRuleTask();
 
     final var deployment =
@@ -79,10 +81,7 @@ public class TenantAwareBusinessRuleTaskTest {
             .collect(Collectors.toMap(DecisionRecordValue::getDecisionId, Function.identity()));
 
     ENGINE.deployment().withXmlResource("process.bpmn", process).withTenantId(tenantTwo).deploy();
-  }
 
-  @Test
-  public void shouldActivateBusinessRuleTask() {
     // when
     final var processInstanceKey =
         ENGINE
@@ -123,6 +122,23 @@ public class TenantAwareBusinessRuleTaskTest {
 
   @Test
   public void shouldWriteDecisionEvaluationEvent() {
+    // given
+    final var process = processWithBusinessRuleTask();
+
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource("process.bpmn", process)
+            .withXmlClasspathResource(DMN_DECISION_TABLE)
+            .withTenantId(tenantOne)
+            .deploy();
+
+    deployedDecisionsById =
+        deployment.getValue().getDecisionsMetadata().stream()
+            .collect(Collectors.toMap(DecisionRecordValue::getDecisionId, Function.identity()));
+
+    ENGINE.deployment().withXmlResource("process.bpmn", process).withTenantId(tenantTwo).deploy();
+
     // when
     final var processInstanceKey =
         ENGINE
@@ -155,10 +171,30 @@ public class TenantAwareBusinessRuleTaskTest {
         .hasDecisionRequirementsKey(calledDecision.getDecisionRequirementsKey())
         .hasDecisionRequirementsId(calledDecision.getDecisionRequirementsId())
         .hasTenantId(tenantOne);
+
+    final var evaluatedDecision = decisionEvaluationValue.getEvaluatedDecisions().get(0);
+    assertThat(evaluatedDecision).hasTenantId(tenantOne);
   }
 
   @Test
   public void shouldWriteDecisionEvaluationEventIfEvaluationFailed() {
+    // given
+    final var process = processWithBusinessRuleTask();
+
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource("process.bpmn", process)
+            .withXmlClasspathResource(DMN_DECISION_TABLE_WITH_ASSERTION)
+            .withTenantId(tenantOne)
+            .deploy();
+
+    deployedDecisionsById =
+        deployment.getValue().getDecisionsMetadata().stream()
+            .collect(Collectors.toMap(DecisionRecordValue::getDecisionId, Function.identity()));
+
+    ENGINE.deployment().withXmlResource("process.bpmn", process).withTenantId(tenantTwo).deploy();
+
     // when
     final var processInstanceKey =
         ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withTenantId(tenantOne).create();
@@ -190,10 +226,30 @@ public class TenantAwareBusinessRuleTaskTest {
             Expected to evaluate decision 'jedi_or_sith', but \
             Assertion failure on evaluate the expression \
             'assert(lightsaberColor, lightsaberColor != null)': The condition is not fulfilled""");
+
+    final var evaluatedDecision = decisionEvaluationValue.getEvaluatedDecisions().get(0);
+    assertThat(evaluatedDecision).hasTenantId(tenantOne);
   }
 
   @Test
   public void shouldNotActivateBusinessRuleTask() {
+    // given
+    final var process = processWithBusinessRuleTask();
+
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource("process.bpmn", process)
+            .withXmlClasspathResource(DMN_DECISION_TABLE)
+            .withTenantId(tenantOne)
+            .deploy();
+
+    deployedDecisionsById =
+        deployment.getValue().getDecisionsMetadata().stream()
+            .collect(Collectors.toMap(DecisionRecordValue::getDecisionId, Function.identity()));
+
+    ENGINE.deployment().withXmlResource("process.bpmn", process).withTenantId(tenantTwo).deploy();
+
     // when
     final var processInstanceKey =
         ENGINE
