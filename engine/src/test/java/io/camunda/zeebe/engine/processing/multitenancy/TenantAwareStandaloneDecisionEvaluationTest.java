@@ -30,7 +30,7 @@ public class TenantAwareStandaloneDecisionEvaluationTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
-  private static final String DMN_DECISION_TABLE = "/dmn/decision-table.dmn";
+  private static final String DMN_DECISION_TABLE = "/dmn/decision-table-with-assertions.dmn";
   private static final String DECISION_ID = "jedi_or_sith";
 
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
@@ -105,10 +105,10 @@ public class TenantAwareStandaloneDecisionEvaluationTest {
         .hasDecisionRequirementsId(calledDecision.getDecisionRequirementsId())
         .hasTenantId(tenantOne)
         .hasEvaluationFailureMessage(
-            "Expected to evaluate decision '"
-                + DECISION_ID
-                + "', but failed to evaluate expression 'lightsaberColor': "
-                + "no variable found for name 'lightsaberColor'");
+            """
+            Expected to evaluate decision 'jedi_or_sith', but \
+            Assertion failure on evaluate the expression \
+            'assert(lightsaberColor, lightsaberColor != null)': The condition is not fulfilled""");
   }
 
   @Test

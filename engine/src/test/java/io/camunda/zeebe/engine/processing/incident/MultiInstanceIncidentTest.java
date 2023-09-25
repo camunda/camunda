@@ -75,7 +75,8 @@ public final class MultiInstanceIncidentTest {
                                 b ->
                                     b.zeebeInputCollectionExpression(INPUT_COLLECTION)
                                         .zeebeInputElement(INPUT_ELEMENT)
-                                        .zeebeOutputElementExpression("{x: undefined_var}")
+                                        .zeebeOutputElementExpression(
+                                            "{x: assert(undefined_var, undefined_var != null)}")
                                         .zeebeOutputCollection("results")))
                 .endEvent()
                 .done())
@@ -105,11 +106,7 @@ public final class MultiInstanceIncidentTest {
         .hasElementId(elementInstance.getValue().getElementId())
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
-            "failed to evaluate expression '"
-                + INPUT_COLLECTION
-                + "': no variable found for name '"
-                + INPUT_COLLECTION
-                + "'");
+            "Expected result of the expression 'items' to be 'ARRAY', but was 'NULL'.");
   }
 
   @Test
@@ -174,8 +171,10 @@ public final class MultiInstanceIncidentTest {
         .hasElementId(elementInstance.getValue().getElementId())
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
-            "failed to evaluate expression '{x: undefined_var}': "
-                + "no variable found for name 'undefined_var'");
+            """
+            Assertion failure on evaluate the expression \
+            '{x: assert(undefined_var, undefined_var != null)}': \
+            The condition is not fulfilled""");
   }
 
   @Test
@@ -275,7 +274,7 @@ public final class MultiInstanceIncidentTest {
             Bpmn.createExecutableProcess(MULTI_SUB_PROC_PROCESS)
                 .startEvent()
                 .subProcess("sub-process")
-                .zeebeInputExpression("y", "y")
+                .zeebeInputExpression("assert(y, y != null)", "y")
                 .multiInstance(
                     b ->
                         b.parallel()
@@ -439,7 +438,7 @@ public final class MultiInstanceIncidentTest {
 
     Assertions.assertThat(incidentEvent.getValue())
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
-        .hasErrorMessage("failed to evaluate expression 'x': no variable found for name 'x'")
+        .hasErrorMessage("Expected result of the expression 'x' to be 'BOOLEAN', but was 'NULL'.")
         .hasProcessInstanceKey(processInstanceKey)
         .hasElementInstanceKey(activityEvent.getKey())
         .hasVariableScopeKey(activityEvent.getKey());

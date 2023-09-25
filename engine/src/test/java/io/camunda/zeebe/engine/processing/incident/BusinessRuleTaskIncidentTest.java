@@ -35,7 +35,7 @@ public class BusinessRuleTaskIncidentTest {
   private static final String PROCESS_ID = "process";
   private static final String TASK_ELEMENT_ID = "business-rule-task";
 
-  private static final String DMN_RESOURCE = "/dmn/drg-force-user.dmn";
+  private static final String DMN_RESOURCE = "/dmn/drg-force-user-with-assertions.dmn";
   private static final String DECISION_ID = "jedi_or_sith";
   private static final String DECISION_ID_VARIABLE = "decisionIdVariable";
   private static final String RESULT_VARIABLE = "result";
@@ -126,10 +126,9 @@ public class BusinessRuleTaskIncidentTest {
         .hasErrorType(ErrorType.DECISION_EVALUATION_ERROR)
         .hasErrorMessage(
             """
-            Expected to evaluate decision 'jedi_or_sith', \
-            but failed to evaluate expression 'lightsaberColor': \
-            no variable found for name 'lightsaberColor'\
-            """);
+            Expected to evaluate decision 'jedi_or_sith', but \
+            Assertion failure on evaluate the expression \
+            'assert(lightsaberColor, lightsaberColor != null)': The condition is not fulfilled""");
   }
 
   @Test
@@ -159,10 +158,7 @@ public class BusinessRuleTaskIncidentTest {
     assertIncidentCreated(processInstanceKey, taskActivating.getKey())
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
-            """
-            failed to evaluate expression 'decisionIdVariable': \
-            no variable found for name 'decisionIdVariable'\
-            """);
+            "Expected result of the expression 'decisionIdVariable' to be 'STRING', but was 'NULL'.");
   }
 
   @Test

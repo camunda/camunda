@@ -49,8 +49,14 @@ public final class IncidentTest {
     final BpmnModelInstance process =
         Bpmn.createExecutableProcess("process")
             .startEvent()
-            .serviceTask(
-                "failingTask", t -> t.zeebeJobType(jobType).zeebeInputExpression("foo", "foo"))
+            .exclusiveGateway()
+            .sequenceFlowId("to-a")
+            .conditionExpression("x > 10")
+            .endEvent("a")
+            .moveToLastExclusiveGateway()
+            .sequenceFlowId("to-b")
+            .defaultFlow()
+            .endEvent("b")
             .done();
 
     processDefinitionKey = CLIENT_RULE.deployProcess(process);
@@ -86,14 +92,13 @@ public final class IncidentTest {
     CLIENT_RULE
         .getClient()
         .newSetVariablesCommand(processInstanceKey)
-        .variables(Map.of("foo", "bar"))
+        .variables(Map.of("x", 21))
         .send()
         .join();
 
     CLIENT_RULE.getClient().newResolveIncidentCommand(incident.getKey()).send().join();
 
     // then
-    ZeebeAssertHelper.assertJobCreated(jobType);
     ZeebeAssertHelper.assertIncidentResolved();
   }
 
@@ -109,14 +114,13 @@ public final class IncidentTest {
     CLIENT_RULE
         .getClient()
         .newSetVariablesCommand(processInstanceKey)
-        .variables(Map.of("foo", "bar"))
+        .variables(Map.of("x", 21))
         .send()
         .join();
 
     CLIENT_RULE.getClient().newResolveIncidentCommand(incident.getKey()).send().join();
 
     // then
-    ZeebeAssertHelper.assertJobCreated(jobType);
     ZeebeAssertHelper.assertIncidentResolved();
 
     final var expectedMessage =

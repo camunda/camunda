@@ -41,13 +41,15 @@ public final class MappingIncidentTest {
       Bpmn.createExecutableProcess("process")
           .startEvent()
           .serviceTask(
-              "failingTask", t -> t.zeebeJobType("test").zeebeInputExpression("foo", "foo"))
+              "failingTask",
+              t -> t.zeebeJobType("test").zeebeInputExpression("assert(foo, foo != null)", "foo"))
           .done();
   private static final BpmnModelInstance PROCESS_OUTPUT_MAPPING =
       Bpmn.createExecutableProcess("process")
           .startEvent()
           .serviceTask(
-              "failingTask", t -> t.zeebeJobType("test").zeebeOutputExpression("foo", "foo"))
+              "failingTask",
+              t -> t.zeebeJobType("test").zeebeOutputExpression("assert(foo, foo != null)", "foo"))
           .done();
   private static final Map<String, Object> VARIABLES = Maps.of(entry("foo", "bar"));
   private static final String VARIABLES_JSON =
@@ -100,7 +102,8 @@ public final class MappingIncidentTest {
         .hasElementInstanceKey(failureCommand.getKey())
         .hasVariableScopeKey(failureCommand.getKey());
 
-    assertThat(incidentEventValue.getErrorMessage()).contains("no variable found for name 'foo'");
+    assertThat(incidentEventValue.getErrorMessage())
+        .contains("Assertion failure on evaluate the expression");
   }
 
   @Test
@@ -115,7 +118,8 @@ public final class MappingIncidentTest {
                     "service",
                     t ->
                         t.zeebeJobType("external")
-                            .zeebeInputExpression("notExisting", "nullVal")
+                            .zeebeInputExpression(
+                                "assert(notExisting, notExisting != null)", "nullVal")
                             .zeebeInputExpression("string", "existing"))
                 .endEvent()
                 .done())
@@ -151,7 +155,7 @@ public final class MappingIncidentTest {
         .hasVariableScopeKey(failureEvent.getKey());
 
     assertThat(incidentEvent.getValue().getErrorMessage())
-        .contains("no variable found for name 'notExisting'");
+        .contains("Assertion failure on evaluate the expression");
   }
 
   @Test
@@ -212,7 +216,7 @@ public final class MappingIncidentTest {
         .hasVariableScopeKey(failureEvent.getKey());
 
     assertThat(incidentEvent.getValue().getErrorMessage())
-        .contains("no variable found for name 'foo'");
+        .contains("Assertion failure on evaluate the expression");
   }
 
   @Test
@@ -275,7 +279,7 @@ public final class MappingIncidentTest {
         .hasVariableScopeKey(failureEvent.getKey());
 
     assertThat(incidentResolvedEvent.getValue().getErrorMessage())
-        .contains("no variable found for name 'foo'");
+        .contains("Assertion failure on evaluate the expression");
   }
 
   @Test
@@ -288,8 +292,8 @@ public final class MappingIncidentTest {
                 "failingTask",
                 t ->
                     t.zeebeJobType("external")
-                        .zeebeInputExpression("foo", "foo")
-                        .zeebeInputExpression("bar", "bar"))
+                        .zeebeInputExpression("assert(foo, foo != null)", "foo")
+                        .zeebeInputExpression("assert(bar, bar != null)", "bar"))
             .done();
 
     ENGINE.deployment().withXmlResource(modelInstance).deploy();
@@ -309,7 +313,7 @@ public final class MappingIncidentTest {
             .getFirst();
 
     assertThat(incidentEvent.getValue().getErrorMessage())
-        .contains("no variable found for name 'foo'");
+        .contains("Assertion failure on evaluate the expression");
 
     // when
     ENGINE.variables().ofScope(failureEvent.getKey()).withDocument(VARIABLES).update();
@@ -336,7 +340,7 @@ public final class MappingIncidentTest {
         .hasVariableScopeKey(failureEvent.getKey());
 
     assertThat(secondIncidentEvent.getValue().getErrorMessage())
-        .contains("no variable found for name 'bar'");
+        .contains("Assertion failure on evaluate the expression");
   }
 
   @Test
@@ -386,7 +390,7 @@ public final class MappingIncidentTest {
         .hasVariableScopeKey(failureEvent.getKey());
 
     assertThat(secondResolvedIncident.getValue().getErrorMessage())
-        .contains("no variable found for name 'foo'");
+        .contains("Assertion failure on evaluate the expression");
   }
 
   @Test
@@ -470,7 +474,7 @@ public final class MappingIncidentTest {
         .hasVariableScopeKey(incidentResolvedEvent.getValue().getElementInstanceKey());
 
     assertThat(incidentResolvedEvent.getValue().getErrorMessage())
-        .contains("no variable found for name 'foo'");
+        .contains("Assertion failure on evaluate the expression");
   }
 
   @Test
@@ -516,6 +520,6 @@ public final class MappingIncidentTest {
         .hasVariableScopeKey(incidentEvent.getValue().getElementInstanceKey());
 
     assertThat(incidentEvent.getValue().getErrorMessage())
-        .contains("no variable found for name 'foo'");
+        .contains("Assertion failure on evaluate the expression");
   }
 }

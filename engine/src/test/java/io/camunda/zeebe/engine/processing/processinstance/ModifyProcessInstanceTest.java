@@ -1169,7 +1169,7 @@ public class ModifyProcessInstanceTest {
         Bpmn.createExecutableProcess(PROCESS_ID)
             .startEvent()
             .callActivity("callActivity", c -> c.zeebeProcessId("child"))
-            .zeebeOutputExpression("x", "y")
+            .zeebeOutputExpression("assert(x, x != null)", "y")
             .manualTask("task")
             .endEvent()
             .done();

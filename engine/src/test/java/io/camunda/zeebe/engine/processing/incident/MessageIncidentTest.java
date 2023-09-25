@@ -87,7 +87,7 @@ public final class MessageIncidentTest {
     Assertions.assertThat(incidentRecord.getValue())
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
-            "failed to evaluate expression 'nameLookup': no variable found for name 'nameLookup'")
+            "Expected result of the expression 'nameLookup' to be 'STRING', but was 'NULL'.")
         .hasBpmnProcessId("UNRESOLVABLE_NAME_EXPRESSION")
         .hasProcessInstanceKey(processInstanceKey)
         .hasElementId("catch")
@@ -197,7 +197,9 @@ public final class MessageIncidentTest {
     Assertions.assertThat(incidentRecord.getValue())
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
-            "failed to evaluate expression 'orderId': no variable found for name 'orderId'")
+            """
+            Failed to extract the correlation key for 'orderId': \
+            The value must be either a string or a number, but was NULL.""")
         .hasBpmnProcessId(PROCESS_ID)
         .hasProcessInstanceKey(processInstanceKey)
         .hasElementId("catch")

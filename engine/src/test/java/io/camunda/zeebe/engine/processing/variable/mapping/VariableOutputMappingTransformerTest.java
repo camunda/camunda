@@ -136,9 +136,12 @@ public final class VariableOutputMappingTransformerTest {
   public static Object[][] parametersEvaluationToFailure() {
     return new Object[][] {
       {
-        List.of(mapping("x", "a.b")),
+        List.of(mapping("assert(x, x != null)", "a.b")),
         Map.of(),
-        "failed to evaluate expression '{a:if (a != null and is defined({b: x})) then put all(a,{b: x}) else {b: x}}': no variable found for name 'x'"
+        """
+        Assertion failure on evaluate the expression \
+        '{a:if (a != null) then context merge(a,{b: assert(x, x != null)}) else {b: assert(x, x != null)}}': \
+        The condition is not fulfilled"""
       }, // #9543
     };
   }

@@ -46,6 +46,8 @@ public final class BusinessRuleTaskTest {
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
   private static final String DMN_RESOURCE = "/dmn/drg-force-user.dmn";
+
+  private static final String DMN_WITH_ASSERTION = "/dmn/drg-force-user-with-assertions.dmn";
   private static final String DMN_RESOURCE_WITH_NAMELESS_OUTPUTS =
       "/dmn/drg-force-user-nameless-input-outputs.dmn";
 
@@ -436,7 +438,7 @@ public final class BusinessRuleTaskTest {
     final var deployment =
         ENGINE
             .deployment()
-            .withXmlClasspathResource(DMN_RESOURCE)
+            .withXmlClasspathResource(DMN_WITH_ASSERTION)
             .withXmlResource(
                 processWithBusinessRuleTask(
                     t ->
@@ -488,9 +490,8 @@ public final class BusinessRuleTaskTest {
         .hasEvaluationFailureMessage(
             """
             Expected to evaluate decision 'force_user', \
-            but failed to evaluate expression 'lightsaberColor': \
-            no variable found for name 'lightsaberColor'\
-            """);
+            but Assertion failure on evaluate the expression \
+            'assert(lightsaberColor, lightsaberColor != null)': The condition is not fulfilled""");
 
     assertThat(decisionEvaluationValue)
         .hasProcessDefinitionKey(businessRuleTaskActivating.getValue().getProcessDefinitionKey())

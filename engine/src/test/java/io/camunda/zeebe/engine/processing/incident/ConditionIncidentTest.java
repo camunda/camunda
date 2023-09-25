@@ -114,7 +114,7 @@ public final class ConditionIncidentTest {
     Assertions.assertThat(incidentEvent.getValue())
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
-            "failed to evaluate expression 'foo > 10': ValString(bar) can not be compared to ValNumber(10)")
+            "Expected result of the expression 'foo > 10' to be 'BOOLEAN', but was 'NULL'.")
         .hasBpmnProcessId(failingEvent.getValue().getBpmnProcessId())
         .hasProcessInstanceKey(failingEvent.getValue().getProcessInstanceKey())
         .hasElementId(failingEvent.getValue().getElementId())

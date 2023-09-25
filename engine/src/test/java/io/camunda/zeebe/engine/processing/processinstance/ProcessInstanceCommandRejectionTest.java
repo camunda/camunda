@@ -43,7 +43,7 @@ public final class ProcessInstanceCommandRejectionTest {
                 .subProcess(
                     "subprocess",
                     s ->
-                        s.zeebeInputExpression("notExisting", "x")
+                        s.zeebeInputExpression("assert(notExisting, notExisting != null)", "x")
                             .embeddedSubProcess()
                             .startEvent("subprocess-start")
                             .endEvent())
@@ -93,7 +93,7 @@ public final class ProcessInstanceCommandRejectionTest {
                 .subProcess(
                     "subprocess",
                     s ->
-                        s.zeebeOutputExpression("notExisting", "x")
+                        s.zeebeOutputExpression("assert(notExisting, notExisting != null)", "x")
                             .embeddedSubProcess()
                             .startEvent("subprocess-start")
                             .endEvent())
@@ -384,7 +384,11 @@ public final class ProcessInstanceCommandRejectionTest {
         createProcessInstance(
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .startEvent()
-                .serviceTask("a", t -> t.zeebeJobType("a").zeebeInputExpression("notExisting", "x"))
+                .serviceTask(
+                    "a",
+                    t ->
+                        t.zeebeJobType("a")
+                            .zeebeInputExpression("assert(notExisting, notExisting != null)", "x"))
                 .endEvent()
                 .done());
 

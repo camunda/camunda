@@ -177,8 +177,10 @@ public class ModifyProcessInstanceRejectionTest {
         .describedAs("Expect that flow scope could not be created")
         .hasRejectionType(RejectionType.INVALID_ARGUMENT)
         .hasRejectionReason(
-            ("Expected to subscribe to catch event(s) of 'sp' but failed to evaluate expression "
-                + "'missingVariable': no variable found for name 'missingVariable'"));
+            """
+            Expected to subscribe to catch event(s) of 'sp' but \
+            Failed to extract the correlation key for 'missingVariable': \
+            The value must be either a string or a number, but was NULL.""");
   }
 
   @Test
@@ -482,7 +484,7 @@ public class ModifyProcessInstanceRejectionTest {
                 .startEvent()
                 .subProcess(
                     "sp", sp -> sp.embeddedSubProcess().startEvent().userTask("A").endEvent())
-                .zeebeInputExpression("doesNotExist", "variable")
+                .zeebeInputExpression("assert(doesNotExist, doesNotExist != null)", "variable")
                 .endEvent()
                 .done())
         .deploy();

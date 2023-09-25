@@ -285,11 +285,9 @@ public final class EventSubscriptionIncidentTest {
     Assertions.assertThat(incidentRecord.getValue())
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
-            "failed to evaluate expression '"
-                + CORRELATION_VARIABLE_2
-                + "': no variable found for name '"
-                + CORRELATION_VARIABLE_2
-                + "'")
+            """
+            Failed to extract the correlation key for 'key2': \
+            The value must be either a string or a number, but was NULL.""")
         .hasBpmnProcessId(processId)
         .hasProcessInstanceKey(processInstanceKey)
         .hasElementId(failureEvent.getValue().getElementId())

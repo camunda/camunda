@@ -27,6 +27,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 class DmnEvaluatedDecisionsTest {
 
   private static final String VALID_DRG = "/drg-force-user.dmn";
+  private static final String DRG_WITH_ASSERTIONS = "/drg-force-user-with-assertions.dmn";
 
   private final DecisionEngine decisionEngine = DecisionEngineFactory.createDecisionEngine();
 
@@ -122,7 +123,7 @@ class DmnEvaluatedDecisionsTest {
   @DisplayName("Should return output of required decision if evaluation fails on root decision")
   void shouldReturnOutputOfRequiredDecisionIfEvaluationFailsOnRootDecision() {
     // given
-    final var inputStream = getClass().getResourceAsStream(VALID_DRG);
+    final var inputStream = getClass().getResourceAsStream(DRG_WITH_ASSERTIONS);
     final var parsedDrg = decisionEngine.parse(inputStream);
 
     // when
@@ -137,8 +138,10 @@ class DmnEvaluatedDecisionsTest {
 
     assertThat(result.getFailureMessage())
         .isEqualTo(
-            "Expected to evaluate decision 'force_user', but failed to evaluate expression 'height': "
-                + "no variable found for name 'height'");
+            """
+            Expected to evaluate decision 'force_user', but \
+            Assertion failure on evaluate the expression 'assert(height, height != null)': \
+            The condition is not fulfilled""");
 
     assertThat(result.getFailedDecisionId()).isEqualTo("force_user");
 
@@ -157,7 +160,7 @@ class DmnEvaluatedDecisionsTest {
   @DisplayName("Should return partial output if evaluation fails on required decision")
   void shouldReturnPartialOutputIfEvaluationFailsOnRequiredDecision() {
     // given
-    final var inputStream = getClass().getResourceAsStream(VALID_DRG);
+    final var inputStream = getClass().getResourceAsStream(DRG_WITH_ASSERTIONS);
     final var parsedDrg = decisionEngine.parse(inputStream);
 
     // when
@@ -171,10 +174,9 @@ class DmnEvaluatedDecisionsTest {
     assertThat(result.getFailureMessage())
         .isEqualTo(
             """
-            Expected to evaluate decision 'force_user', \
-            but failed to evaluate expression 'lightsaberColor': \
-            no variable found for name 'lightsaberColor'\
-            """);
+            Expected to evaluate decision 'force_user', but Assertion failure on evaluate the \
+            expression 'assert(lightsaberColor, lightsaberColor != null)': \
+            The condition is not fulfilled""");
 
     assertThat(result.getFailedDecisionId()).isEqualTo("jedi_or_sith");
 

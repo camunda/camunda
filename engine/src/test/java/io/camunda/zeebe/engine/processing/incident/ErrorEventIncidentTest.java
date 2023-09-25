@@ -405,7 +405,7 @@ public final class ErrorEventIncidentTest {
     Assertions.assertThat(incidentEvent.getValue())
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
-            "failed to evaluate expression 'unknown_error_code': no variable found for name 'unknown_error_code'")
+            "Expected result of the expression 'unknown_error_code' to be 'STRING', but was 'NULL'.")
         .hasBpmnProcessId(endEvent.getValue().getBpmnProcessId())
         .hasProcessDefinitionKey(endEvent.getValue().getProcessDefinitionKey())
         .hasProcessInstanceKey(endEvent.getValue().getProcessInstanceKey())

@@ -76,12 +76,7 @@ public final class TimerValidationTest {
     final var process = timerEventWithExpressionBuilder.apply("x");
 
     ProcessValidationUtil.validateProcess(
-        process,
-        expect(
-            StartEvent.class,
-            "Invalid timer "
-                + timerType
-                + " expression (failed to evaluate expression 'x': no variable found for name 'x')"));
+        process, expect(StartEvent.class, "Invalid timer " + timerType + " expression"));
   }
 
   @ParameterizedTest(name = "[{index}] {0} with {1}")

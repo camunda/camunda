@@ -17,7 +17,6 @@ import io.camunda.zeebe.test.util.bpmn.random.ExecutionPathSegment;
 import io.camunda.zeebe.test.util.bpmn.random.IDGenerator;
 import io.camunda.zeebe.test.util.bpmn.random.steps.StepPickConditionCase;
 import io.camunda.zeebe.test.util.bpmn.random.steps.StepPickDefaultCase;
-import io.camunda.zeebe.test.util.bpmn.random.steps.StepRaiseIncidentThenResolveAndPickConditionCase;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -101,7 +100,7 @@ public class ExclusiveGatewayBlockBuilder extends AbstractBlockBuilder {
 
     final int branch = branchContainingStartElement.orElse(random.nextInt(branchIds.size()));
     if (branchContainingStartElement.isEmpty()) {
-      addRandomGatewayExecutionStep(result, random, branch);
+      addRandomGatewayExecutionStep(result, branch);
     }
     addRandomBranchExecutionSteps(context, result, branch);
 
@@ -117,19 +116,13 @@ public class ExclusiveGatewayBlockBuilder extends AbstractBlockBuilder {
     return allBlockBuilders;
   }
 
-  private void addRandomGatewayExecutionStep(
-      final ExecutionPathSegment result, final Random random, final int branch) {
+  private void addRandomGatewayExecutionStep(final ExecutionPathSegment result, final int branch) {
     // If the branch is the default flow we should always add the default steps
-    // If not we randomly match the condition, or throw an incident and resolve it before matching
-    final int randomNextStepNumber = isDefaultFlow(branch) ? 0 : random.nextInt(1, 3);
     final var executionStep =
-        switch (randomNextStepNumber) {
-          case 0 -> new StepPickDefaultCase(getElementId(), gatewayConditionVariable);
-          case 1 -> new StepPickConditionCase(
-              getElementId(), gatewayConditionVariable, branchIds.get(branch));
-          default -> new StepRaiseIncidentThenResolveAndPickConditionCase(
-              getElementId(), gatewayConditionVariable, branchIds.get(branch));
-        };
+        isDefaultFlow(branch)
+            ? new StepPickDefaultCase(getElementId(), gatewayConditionVariable)
+            : new StepPickConditionCase(
+                getElementId(), gatewayConditionVariable, branchIds.get(branch));
     result.appendDirectSuccessor(executionStep);
   }
 

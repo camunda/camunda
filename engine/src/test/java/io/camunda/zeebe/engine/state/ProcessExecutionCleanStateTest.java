@@ -759,7 +759,7 @@ public final class ProcessExecutionCleanStateTest {
         .withXmlResource(
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .startEvent()
-                .serviceTask("task", t -> t.zeebeJobType("test").zeebeOutputExpression("x", "y"))
+                .serviceTask("task", t -> t.zeebeJobType("test"))
                 .endEvent()
                 .done())
         .deploy();
@@ -768,7 +768,7 @@ public final class ProcessExecutionCleanStateTest {
     final var processInstanceKey =
         engineRule.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
-    engineRule.job().ofInstance(processInstanceKey).withType("test").complete();
+    engineRule.job().ofInstance(processInstanceKey).withType("test").withRetries(0).fail();
 
     RecordingExporter.incidentRecords(IncidentIntent.CREATED)
         .withProcessInstanceKey(processInstanceKey)

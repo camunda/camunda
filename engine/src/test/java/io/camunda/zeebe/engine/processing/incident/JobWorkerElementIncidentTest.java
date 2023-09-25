@@ -94,7 +94,7 @@ public class JobWorkerElementIncidentTest {
 
     Assertions.assertThat(incidentCreated.getValue())
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
-        .hasErrorMessage("failed to evaluate expression 'x': no variable found for name 'x'")
+        .hasErrorMessage("Expected result of the expression 'x' to be 'STRING', but was 'NULL'.")
         .hasElementId(TASK_ELEMENT_ID)
         .hasElementInstanceKey(recordThatLeadsToIncident.getKey())
         .hasJobKey(-1L)
@@ -196,7 +196,7 @@ public class JobWorkerElementIncidentTest {
 
     Assertions.assertThat(incidentCreated.getValue())
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
-        .hasErrorMessage("failed to evaluate expression 'x': no variable found for name 'x'")
+        .hasErrorMessage("Expected result of the expression 'x' to be 'NUMBER', but was 'NULL'.")
         .hasElementId(TASK_ELEMENT_ID)
         .hasElementInstanceKey(recordThatLeadsToIncident.getKey())
         .hasJobKey(-1L)
@@ -281,7 +281,9 @@ public class JobWorkerElementIncidentTest {
     // given a deployed process with a service task with an input expression
     ENGINE
         .deployment()
-        .withXmlResource(process(t -> t.zeebeInputExpression("unknown_var", "input")))
+        .withXmlResource(
+            process(
+                t -> t.zeebeInputExpression("assert(unknown_var, unknown_var != null)", "input")))
         .deploy();
 
     // and an instance of that process is created without a variable for the input expression

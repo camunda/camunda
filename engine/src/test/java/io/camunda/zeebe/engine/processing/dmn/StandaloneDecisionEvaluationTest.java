@@ -27,12 +27,16 @@ public class StandaloneDecisionEvaluationTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
   private static final String DMN_RESOURCE = "/dmn/drg-force-user.dmn";
+  private static final String DMN_WITH_ASSERTION = "/dmn/drg-force-user-with-assertions.dmn";
   private static final String DMN_DECISION_TABLE = "/dmn/decision-table.dmn";
   private static final String DMN_DECISION_TABLE_V2 = "/dmn/decision-table_v2.dmn";
   private static final String DECISION_ID = "jedi_or_sith";
   private static final String EXPECTED_DECISION_OUTPUT = "\"Jedi\"";
   private static final String EXPECTED_FAILURE_MSG =
-      "Expected to evaluate decision 'jedi_or_sith', but failed to evaluate expression 'lightsaberColor': no variable found for name 'lightsaberColor'";
+      """
+      Expected to evaluate decision 'jedi_or_sith', but \
+      Assertion failure on evaluate the expression \
+      'assert(lightsaberColor, lightsaberColor != null)': The condition is not fulfilled""";
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -61,7 +65,7 @@ public class StandaloneDecisionEvaluationTest {
   @Test
   public void shouldFailEvaluationOfDecisionById() {
     // given
-    ENGINE.deployment().withXmlClasspathResource(DMN_RESOURCE).deploy();
+    ENGINE.deployment().withXmlClasspathResource(DMN_WITH_ASSERTION).deploy();
 
     // when
     final Record<DecisionEvaluationRecordValue> record =
