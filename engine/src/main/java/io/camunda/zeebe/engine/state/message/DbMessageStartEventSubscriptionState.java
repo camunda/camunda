@@ -14,6 +14,8 @@ import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
+import io.camunda.zeebe.db.impl.DbTenantAwareKey;
+import io.camunda.zeebe.db.impl.DbTenantAwareKey.PlacementType;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageStartEventSubscriptionState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
@@ -22,26 +24,35 @@ import org.agrona.DirectBuffer;
 public final class DbMessageStartEventSubscriptionState
     implements MutableMessageStartEventSubscriptionState {
 
+  private final DbString tenantIdKey;
   private final DbString messageName;
+  private final DbTenantAwareKey<DbString> tenantAwareMessageName;
   private final DbLong processDefinitionKey;
 
-  // (messageName, processDefinitionKey => MessageSubscription)
-  private final DbCompositeKey<DbString, DbLong> messageNameAndProcessDefinitionKey;
-  private final ColumnFamily<DbCompositeKey<DbString, DbLong>, MessageStartEventSubscription>
+  // (tenant aware messageName, processDefinitionKey => MessageSubscription)
+  private final DbCompositeKey<DbTenantAwareKey<DbString>, DbLong>
+      messageNameAndProcessDefinitionKey;
+  private final ColumnFamily<
+          DbCompositeKey<DbTenantAwareKey<DbString>, DbLong>, MessageStartEventSubscription>
       subscriptionsColumnFamily;
   private final MessageStartEventSubscription messageStartEventSubscription =
       new MessageStartEventSubscription();
 
-  // (processDefinitionKey, messageName) => \0  : to find existing subscriptions of a process
-  private final DbCompositeKey<DbLong, DbString> processDefinitionKeyAndMessageName;
-  private final ColumnFamily<DbCompositeKey<DbLong, DbString>, DbNil>
+  // (processDefinitionKey, tenant aware messageName) => \0  : to find existing subscriptions of a
+  // process
+  private final DbCompositeKey<DbLong, DbTenantAwareKey<DbString>>
+      processDefinitionKeyAndMessageName;
+  private final ColumnFamily<DbCompositeKey<DbLong, DbTenantAwareKey<DbString>>, DbNil>
       subscriptionsOfProcessDefinitionKeyColumnFamily;
 
   public DbMessageStartEventSubscriptionState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
+    tenantIdKey = new DbString();
     messageName = new DbString();
+    tenantAwareMessageName = new DbTenantAwareKey<>(tenantIdKey, messageName, PlacementType.PREFIX);
     processDefinitionKey = new DbLong();
-    messageNameAndProcessDefinitionKey = new DbCompositeKey<>(messageName, processDefinitionKey);
+    messageNameAndProcessDefinitionKey =
+        new DbCompositeKey<>(tenantAwareMessageName, processDefinitionKey);
     subscriptionsColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.MESSAGE_START_EVENT_SUBSCRIPTION_BY_NAME_AND_KEY,
@@ -49,7 +60,8 @@ public final class DbMessageStartEventSubscriptionState
             messageNameAndProcessDefinitionKey,
             messageStartEventSubscription);
 
-    processDefinitionKeyAndMessageName = new DbCompositeKey<>(processDefinitionKey, messageName);
+    processDefinitionKeyAndMessageName =
+        new DbCompositeKey<>(processDefinitionKey, tenantAwareMessageName);
     subscriptionsOfProcessDefinitionKeyColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.MESSAGE_START_EVENT_SUBSCRIPTION_BY_KEY_AND_NAME,
@@ -62,6 +74,7 @@ public final class DbMessageStartEventSubscriptionState
   public void put(final long key, final MessageStartEventSubscriptionRecord subscription) {
     messageStartEventSubscription.setKey(key).setRecord(subscription);
 
+    tenantIdKey.wrapString(subscription.getTenantId());
     messageName.wrapBuffer(subscription.getMessageNameBuffer());
     processDefinitionKey.wrapLong(subscription.getProcessDefinitionKey());
     subscriptionsColumnFamily.upsert(
@@ -71,7 +84,9 @@ public final class DbMessageStartEventSubscriptionState
   }
 
   @Override
-  public void remove(final long processDefinitionKey, final DirectBuffer messageName) {
+  public void remove(
+      final long processDefinitionKey, final DirectBuffer messageName, final String tenantId) {
+    tenantIdKey.wrapString(tenantId);
     this.processDefinitionKey.wrapLong(processDefinitionKey);
     this.messageName.wrapBuffer(messageName);
 
@@ -82,6 +97,7 @@ public final class DbMessageStartEventSubscriptionState
 
   @Override
   public boolean exists(final MessageStartEventSubscriptionRecord subscription) {
+    tenantIdKey.wrapString(subscription.getTenantId());
     messageName.wrapBuffer(subscription.getMessageNameBuffer());
     processDefinitionKey.wrapLong(subscription.getProcessDefinitionKey());
 
@@ -94,9 +110,10 @@ public final class DbMessageStartEventSubscriptionState
       final DirectBuffer messageName,
       final MessageStartEventSubscriptionVisitor visitor) {
 
+    tenantIdKey.wrapString(tenantId);
     this.messageName.wrapBuffer(messageName);
     subscriptionsColumnFamily.whileEqualPrefix(
-        this.messageName,
+        tenantAwareMessageName,
         (key, value) -> {
           visitor.visit(value);
         });
@@ -110,6 +127,7 @@ public final class DbMessageStartEventSubscriptionState
     subscriptionsOfProcessDefinitionKeyColumnFamily.whileEqualPrefix(
         this.processDefinitionKey,
         (key, value) -> {
+          tenantIdKey.wrapBuffer(key.second().tenantKey().getBuffer());
           final var subscription =
               subscriptionsColumnFamily.get(messageNameAndProcessDefinitionKey);
 
