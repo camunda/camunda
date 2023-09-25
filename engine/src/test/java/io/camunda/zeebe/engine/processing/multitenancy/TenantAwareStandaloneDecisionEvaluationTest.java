@@ -21,7 +21,6 @@ import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -30,7 +29,9 @@ public class TenantAwareStandaloneDecisionEvaluationTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
-  private static final String DMN_DECISION_TABLE = "/dmn/decision-table-with-assertions.dmn";
+  private static final String DMN_DECISION_TABLE = "/dmn/decision-table.dmn";
+  private static final String DMN_DECISION_TABLE_WITH_ASSERTIONS =
+      "/dmn/decision-table-with-assertions.dmn";
   private static final String DECISION_ID = "jedi_or_sith";
 
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
@@ -40,14 +41,9 @@ public class TenantAwareStandaloneDecisionEvaluationTest {
 
   private Map<String, DecisionRecordValue> deployedDecisionsById;
 
-  @Before
-  public void init() {
+  private void deployForTenant(final String process, final String tenant) {
     final var deployment =
-        ENGINE
-            .deployment()
-            .withXmlClasspathResource(DMN_DECISION_TABLE)
-            .withTenantId(tenantOne)
-            .deploy();
+        ENGINE.deployment().withXmlClasspathResource(process).withTenantId(tenant).deploy();
 
     deployedDecisionsById =
         deployment.getValue().getDecisionsMetadata().stream()
@@ -56,6 +52,9 @@ public class TenantAwareStandaloneDecisionEvaluationTest {
 
   @Test
   public void shouldEvaluateDecision() {
+    // given
+    deployForTenant(DMN_DECISION_TABLE, tenantOne);
+
     // when
     final Record<DecisionEvaluationRecordValue> record =
         ENGINE
@@ -86,6 +85,9 @@ public class TenantAwareStandaloneDecisionEvaluationTest {
 
   @Test
   public void shouldWriteDecisionEvaluationEventIfEvaluationFailed() {
+    // given
+    deployForTenant(DMN_DECISION_TABLE_WITH_ASSERTIONS, tenantOne);
+
     // when
     final Record<DecisionEvaluationRecordValue> record =
         ENGINE
@@ -119,6 +121,9 @@ public class TenantAwareStandaloneDecisionEvaluationTest {
 
   @Test
   public void shouldRejectDecisionEvaluationWithCustomTenant() {
+    // given
+    deployForTenant(DMN_DECISION_TABLE, tenantOne);
+
     // when
     final Record<DecisionEvaluationRecordValue> record =
         ENGINE
@@ -144,6 +149,9 @@ public class TenantAwareStandaloneDecisionEvaluationTest {
 
   @Test
   public void shouldRejectDecisionEvaluationWithDefaultTenant() {
+    // given
+    deployForTenant(DMN_DECISION_TABLE, tenantOne);
+
     // when
     final Record<DecisionEvaluationRecordValue> record =
         ENGINE
