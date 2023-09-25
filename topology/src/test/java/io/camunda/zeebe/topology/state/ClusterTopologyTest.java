@@ -132,6 +132,25 @@ class ClusterTopologyTest {
   }
 
   @Test
+  void shouldIncrementVersionWhenChangeIsCompleted() {
+    // given
+    final var initialTopology =
+        ClusterTopology.init()
+            .addMember(member(1), MemberState.initializeAsActive(Map.of()))
+            .startTopologyChange(List.of(new PartitionLeaveOperation(member(1), 1)));
+
+    // when
+    final var updatedTopology =
+        initialTopology.advanceTopologyChange(member(1), MemberState::toLeft);
+
+    // then
+    ClusterTopologyAssert.assertThatClusterTopology(updatedTopology)
+        .doesNotHaveMember(1)
+        .hasPendingOperationsWithSize(0)
+        .hasVersion(initialTopology.version() + 1);
+  }
+
+  @Test
   void shouldMergeClusterTopologyChanges() {
     final var initialTopology =
         ClusterTopology.init()

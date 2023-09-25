@@ -76,8 +76,14 @@ public final class ClusterTopologyAssert
     return this;
   }
 
-  public void doesNotHaveMember(final int id) {
+  public ClusterTopologyAssert doesNotHaveMember(final int id) {
     final MemberId memberId = MemberId.from(String.valueOf(id));
     assertThat(actual.members()).doesNotContainKey(memberId);
+    return this;
+  }
+
+  public ClusterTopologyAssert hasVersion(final long version) {
+    assertThat(actual.version()).isEqualTo(version);
+    return this;
   }
 }
