@@ -263,11 +263,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   }
 
   private void onNewPersistedSnapshot(final PersistedSnapshot persistedSnapshot) {
-    threadContext.execute(
-        () -> {
-          currentSnapshot = persistedSnapshot;
-          logCompactor.compactFromSnapshots(persistedSnapshotStore);
-        });
+    threadContext.execute(() -> setCurrentSnapshot(persistedSnapshot));
   }
 
   private void onUncaughtException(final Throwable error) {
@@ -1242,6 +1238,12 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
 
   public PersistedSnapshot getCurrentSnapshot() {
     return currentSnapshot;
+  }
+
+  public void setCurrentSnapshot(final PersistedSnapshot snapshot) {
+    checkThread();
+    currentSnapshot = snapshot;
+    logCompactor.compactFromSnapshots(persistedSnapshotStore);
   }
 
   public long getCurrentSnapshotIndex() {

@@ -21,6 +21,7 @@ import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.PersistedSnapshotListener;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
 import io.camunda.zeebe.snapshots.ReceivedSnapshot;
+import io.camunda.zeebe.snapshots.SnapshotException.SnapshotAlreadyExistsException;
 import io.camunda.zeebe.snapshots.SnapshotId;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -114,6 +115,13 @@ public class TestSnapshotStore implements ReceivableSnapshotStore {
 
   @Override
   public ReceivedSnapshot newReceivedSnapshot(final String snapshotId) {
+    if (Optional.ofNullable(currentPersistedSnapshot.get())
+        .map(PersistedSnapshot::getId)
+        .orElse("")
+        .equals(snapshotId)) {
+      throw new SnapshotAlreadyExistsException("Snapshot with this ID is already persisted");
+    }
+
     final var newSnapshot = new InMemorySnapshot(this, snapshotId);
     receivedSnapshots.add(newSnapshot);
     return newSnapshot;

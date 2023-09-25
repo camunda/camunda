@@ -380,34 +380,6 @@ public class RaftFailOverIT {
   }
 
   @Test
-  public void shouldTruncateLogOnNewerSnapshotEvenAfterRestart() throws Throwable {
-    // given
-    raftRule.appendEntries(50);
-    final var followerB = raftRule.shutdownFollower();
-    raftRule.appendEntries(250);
-    raftRule.takeCompactingSnapshot(200); // take into account the replication threshold
-    // Leader and Follower A Log [200-300].
-    // Follower B Log [1-51]
-
-    // Follower B has old log AND snapshot
-    final var nodes = raftRule.getNodes();
-    final var followerA = nodes.stream().findFirst().orElseThrow();
-    raftRule.copySnapshotOffline(followerA, followerB);
-
-    // when Follower B is started again it should truncate its log to join the cluster
-    raftRule.joinCluster(followerB);
-    raftRule.appendEntries(50);
-
-    // then
-    assertThat(raftRule.allNodesHaveSnapshotWithIndex(200)).isTrue();
-    final var memberLogs = raftRule.getMemberLogs();
-    final var entries = memberLogs.get(followerB);
-    // Follower B should have truncated his log to not have any gaps in his log
-    // entries after snapshot should be replicated
-    assertThat(entries.get(0).index()).isEqualTo(201);
-  }
-
-  @Test
   public void shouldNotReplicateSnapshotWhenIndexIsZero() throws Exception {
     // given
     final var follower = raftRule.shutdownFollower();

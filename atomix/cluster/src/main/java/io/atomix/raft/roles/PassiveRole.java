@@ -46,6 +46,7 @@ import io.atomix.raft.storage.log.RaftLogReader;
 import io.camunda.zeebe.journal.JournalException;
 import io.camunda.zeebe.journal.JournalException.InvalidChecksum;
 import io.camunda.zeebe.journal.JournalException.InvalidIndex;
+import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.ReceivedSnapshot;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
@@ -233,14 +234,15 @@ public class PassiveRole extends InactiveRole {
     // snapshot offset.
     if (request.complete()) {
       final long elapsed = System.currentTimeMillis() - pendingSnapshotStartTimestamp;
+      final PersistedSnapshot persistedSnapshot;
       log.debug("Committing snapshot {}", pendingSnapshot);
       try {
         // Reset before committing to prevent the edge case where the system crashes after
         // committing the snapshot, and restart with a snapshot and invalid log.
         resetLogOnReceivingSnapshot(pendingSnapshot.index());
 
-        final var snapshot = pendingSnapshot.persist().join();
-        log.info("Committed snapshot {}", snapshot);
+        persistedSnapshot = pendingSnapshot.persist().join();
+        log.info("Committed snapshot {}", persistedSnapshot);
       } catch (final Exception e) {
         log.error("Failed to commit pending snapshot {}, rolling back", pendingSnapshot, e);
         abortPendingSnapshots();
@@ -257,6 +259,7 @@ public class PassiveRole extends InactiveRole {
       pendingSnapshotStartTimestamp = 0L;
       snapshotReplicationMetrics.decrementCount();
       snapshotReplicationMetrics.observeDuration(elapsed);
+      raft.setCurrentSnapshot(persistedSnapshot);
       onSnapshotReceiveCompletedOrAborted();
     } else {
       setNextExpected(request.nextChunkId());

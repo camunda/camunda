@@ -369,6 +369,7 @@ final class LeaderAppender {
         log.warn(
             "Expected to send Snapshot {} to {}. But could not open SnapshotChunkReader. Will retry.",
             persistedSnapshot.getId(),
+            member,
             e);
         return Optional.empty();
       }
@@ -593,7 +594,7 @@ final class LeaderAppender {
     // when attempting to send entries to down followers.
     final int failures = member.incrementFailureCount();
     if (failures <= 3 || failures % 100 == 0) {
-      log.warn("{} to {} failed: {}", request, member.getMember().memberId(), error);
+      log.warn("{} to {} failed", request, member.getMember().memberId(), error);
     }
 
     // Fail heartbeat futures.
