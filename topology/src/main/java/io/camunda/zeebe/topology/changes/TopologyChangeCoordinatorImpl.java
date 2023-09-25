@@ -77,11 +77,20 @@ public class TopologyChangeCoordinatorImpl implements TopologyChangeCoordinator 
 
               if (currentClusterTopology.version() == version) {
                 future.complete(!currentClusterTopology.hasPendingChanges());
-              } else {
+              } else if (currentClusterTopology.version() == version + 1) {
+                // We always increment the version, when the changes are completed.
+                future.complete(true);
+              } else if (currentClusterTopology.version() > version + 1) {
                 future.completeExceptionally(
                     new UnknownStatus(
                         String.format(
                             "The topology has changed since the version %d. The current version is %d. The topology change would have been already completed.",
+                            version, currentClusterTopology.version())));
+              } else if (currentClusterTopology.version() < version) {
+                future.completeExceptionally(
+                    new IllegalArgumentException(
+                        String.format(
+                            "Expected version >= %d, but the current version is %d.",
                             version, currentClusterTopology.version())));
               }
             });
