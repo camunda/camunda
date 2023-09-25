@@ -146,6 +146,17 @@ public class DbMigrationState implements MutableMigrationState {
   private final ColumnFamily<DbForeignKey<DbTenantAwareKey<DbString>>, Digest>
       digestByIdColumnFamily;
 
+  private final VersionInfo versionInfo = new VersionInfo();
+
+  /** [process id] => version info */
+  private final ColumnFamily<DbString, VersionInfo> deprecatedNextValueColumnFamily;
+
+  private final DbString idKey;
+  private final DbTenantAwareKey<DbString> tenantAwareIdKey;
+
+  /** [tenant id | (process) id] => version info */
+  private final ColumnFamily<DbTenantAwareKey<DbString>, VersionInfo> versionInfoColumnFamily;
+
   public DbMigrationState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     migrationIdentifier = new DbString();
@@ -334,6 +345,19 @@ public class DbMigrationState implements MutableMigrationState {
             transactionContext,
             fkTenantAwareProcessId,
             digest);
+
+    deprecatedNextValueColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.DEPRECATED_PROCESS_VERSION,
+            transactionContext,
+            processIdKey,
+            versionInfo);
+
+    idKey = new DbString();
+    tenantAwareIdKey = new DbTenantAwareKey<>(tenantIdKey, idKey, PlacementType.PREFIX);
+    versionInfoColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.PROCESS_VERSION, transactionContext, tenantAwareIdKey, versionInfo);
   }
 
   @Override
@@ -521,6 +545,13 @@ public class DbMigrationState implements MutableMigrationState {
           processId.wrapBuffer(key.inner().getBuffer());
           digestByIdColumnFamily.insert(fkTenantAwareProcessId, value);
           deprecatedDigestByIdColumnFamily.deleteExisting(key);
+        });
+
+    deprecatedNextValueColumnFamily.forEach(
+        (key, value) -> {
+          idKey.wrapBuffer(key.getBuffer());
+          versionInfoColumnFamily.insert(tenantAwareIdKey, value);
+          deprecatedNextValueColumnFamily.deleteExisting(key);
         });
   }
 
