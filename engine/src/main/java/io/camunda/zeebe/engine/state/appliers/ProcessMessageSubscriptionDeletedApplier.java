@@ -26,6 +26,7 @@ public final class ProcessMessageSubscriptionDeletedApplier
   @Override
   public void applyState(final long key, final ProcessMessageSubscriptionRecord value) {
 
-    subscriptionState.remove(value.getElementInstanceKey(), value.getMessageNameBuffer());
+    subscriptionState.remove(
+        value.getElementInstanceKey(), value.getMessageNameBuffer(), value.getTenantId());
   }
 }

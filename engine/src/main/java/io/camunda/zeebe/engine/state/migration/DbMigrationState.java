@@ -31,6 +31,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionSt
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
@@ -263,7 +264,8 @@ public class DbMigrationState implements MutableMigrationState {
           final var messageName = elementKeyAndMessageName.second().getBuffer();
 
           final var processMessageSubscription =
-              persistentState.getSubscription(elementInstanceKey, messageName);
+              persistentState.getSubscription(
+                  elementInstanceKey, messageName, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
           if (processMessageSubscription != null) {
 
             final var record = processMessageSubscription.getRecord();

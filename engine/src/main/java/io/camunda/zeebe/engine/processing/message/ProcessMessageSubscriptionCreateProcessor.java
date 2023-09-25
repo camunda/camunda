@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.state.message.ProcessMessageSubscription;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 
@@ -46,7 +47,9 @@ public final class ProcessMessageSubscriptionCreateProcessor
     final ProcessMessageSubscriptionRecord subscriptionRecord = command.getValue();
     final ProcessMessageSubscription subscription =
         subscriptionState.getSubscription(
-            subscriptionRecord.getElementInstanceKey(), subscriptionRecord.getMessageNameBuffer());
+            subscriptionRecord.getElementInstanceKey(),
+            subscriptionRecord.getMessageNameBuffer(),
+            TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
     if (subscription != null && subscription.isOpening()) {
       stateWriter.appendFollowUpEvent(

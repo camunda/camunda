@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.state.immutable.ProcessMessageSubscriptionState;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 
@@ -43,7 +44,9 @@ public final class ProcessMessageSubscriptionDeleteProcessor
 
     final var subscription =
         subscriptionState.getSubscription(
-            command.getValue().getElementInstanceKey(), subscriptionRecord.getMessageNameBuffer());
+            command.getValue().getElementInstanceKey(),
+            subscriptionRecord.getMessageNameBuffer(),
+            TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
     if (subscription == null) {
       rejectCommand(command);

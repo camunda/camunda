@@ -21,5 +21,5 @@ public interface MutableProcessMessageSubscriptionState extends ProcessMessageSu
 
   void updateToClosingState(ProcessMessageSubscriptionRecord record);
 
-  boolean remove(long elementInstanceKey, DirectBuffer messageName);
+  boolean remove(long elementInstanceKey, DirectBuffer messageName, final String tenantId);
 }
