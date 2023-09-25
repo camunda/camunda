@@ -15,6 +15,7 @@ import feign.Retryer;
 import feign.Target.HardCodedTarget;
 import feign.jackson.JacksonDecoder;
 import feign.jackson.JacksonEncoder;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.zeebe.containers.ZeebeBrokerNode;
 import java.util.Map;
 
@@ -45,6 +46,19 @@ public interface PartitionsActuator {
   static PartitionsActuator of(final ZeebeBrokerNode<?> node) {
     final var endpoint =
         String.format("http://%s/actuator/partitions", node.getExternalMonitoringAddress());
+    return of(endpoint);
+  }
+
+  /**
+   * Returns a {@link PartitionsActuator} instance using the given node as upstream. This only
+   * accepts {@link TestStandaloneBroker} at the moment, as only the broker has this actuator. It
+   * can be changed if we move these to the gateway.
+   *
+   * @param node the node to connect to
+   * @return a new instance of {@link PartitionsActuator}
+   */
+  static PartitionsActuator of(final TestStandaloneBroker node) {
+    final var endpoint = String.format("http://%s/actuator/partitions", node.monitoringAddress());
     return of(endpoint);
   }
 
