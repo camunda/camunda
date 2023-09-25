@@ -15,6 +15,7 @@ import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.*;
+import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.ThreadUtil;
@@ -594,12 +595,9 @@ class OpensearchPostImporterRequests {
       throws PersistenceException {
 
     BulkRequest bulkRequest = BulkRequest.of(b -> {
-      b.operations(o -> {
-        listViewRequests.values().forEach( u -> o.update(u));
-        flowNodeInstanceRequests.values().forEach(u -> o.update(u));
-        incidentRequests.values().stream().forEach(u -> o.update(u));
-        return o;
-      });
+      listViewRequests.values().forEach( u -> b.operations( o -> o.update(u)));
+      flowNodeInstanceRequests.values().forEach(u -> b.operations( o -> o.update(u)));
+      incidentRequests.values().stream().forEach(u ->  b.operations( o -> o.update(u)));
       return b;
     });
     richOpenSearchClient.batch().bulk(bulkRequest);
