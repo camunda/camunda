@@ -39,6 +39,12 @@ public final class MessageCorrelationMultiplePartitionsTest {
           entry(START_PARTITION_ID + 1, "item-1"),
           entry(START_PARTITION_ID + 2, "item-0"));
 
+  private static final Map<Integer, String> TENANT_IDS =
+      Maps.of(
+          entry(START_PARTITION_ID, "foo"),
+          entry(START_PARTITION_ID + 1, "bar"),
+          entry(START_PARTITION_ID + 2, "baz"));
+
   private static final String PROCESS_ID = "process";
 
   private static final BpmnModelInstance PROCESS =
@@ -53,14 +59,16 @@ public final class MessageCorrelationMultiplePartitionsTest {
 
   @Before
   public void init() {
-    assertThat(getPartitionId(CORRELATION_KEYS.get(START_PARTITION_ID)))
-        .isEqualTo(START_PARTITION_ID);
-    assertThat(getPartitionId(CORRELATION_KEYS.get(START_PARTITION_ID + 1)))
-        .isEqualTo(START_PARTITION_ID + 1);
-    assertThat(getPartitionId(CORRELATION_KEYS.get(START_PARTITION_ID + 2)))
-        .isEqualTo(START_PARTITION_ID + 2);
+    for (int i = 0; i < 3; i++) {
+      assertThat(getPartitionId(CORRELATION_KEYS.get(START_PARTITION_ID + i)))
+          .isEqualTo(START_PARTITION_ID + i);
 
-    engine.deployment().withXmlResource(PROCESS).deploy();
+      engine
+          .deployment()
+          .withXmlResource(PROCESS)
+          .withTenantId(TENANT_IDS.get(START_PARTITION_ID + i))
+          .deploy();
+    }
   }
 
   @Test
@@ -73,12 +81,15 @@ public final class MessageCorrelationMultiplePartitionsTest {
                   engine.processInstance().ofBpmnProcessId(PROCESS_ID);
               processInstanceCreationClient
                   .withVariable("key", CORRELATION_KEYS.get(START_PARTITION_ID))
+                  .withTenantId(TENANT_IDS.get(START_PARTITION_ID))
                   .create();
               processInstanceCreationClient
                   .withVariable("key", CORRELATION_KEYS.get(START_PARTITION_ID + 1))
+                  .withTenantId(TENANT_IDS.get(START_PARTITION_ID + 1))
                   .create();
               processInstanceCreationClient
                   .withVariable("key", CORRELATION_KEYS.get(START_PARTITION_ID + 2))
+                  .withTenantId(TENANT_IDS.get(START_PARTITION_ID + 2))
                   .create();
             });
 
@@ -86,15 +97,29 @@ public final class MessageCorrelationMultiplePartitionsTest {
     assertThat(
             RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
                 .limit(30))
-        .extracting(r -> tuple(r.getPartitionId(), r.getValue().getCorrelationKey()))
+        .extracting(
+            r ->
+                tuple(
+                    r.getPartitionId(),
+                    r.getValue().getCorrelationKey(),
+                    r.getValue().getTenantId()))
         .containsOnly(
-            tuple(START_PARTITION_ID, CORRELATION_KEYS.get(START_PARTITION_ID)),
-            tuple(START_PARTITION_ID + 1, CORRELATION_KEYS.get(START_PARTITION_ID + 1)),
-            tuple(START_PARTITION_ID + 2, CORRELATION_KEYS.get(START_PARTITION_ID + 2)));
+            tuple(
+                START_PARTITION_ID,
+                CORRELATION_KEYS.get(START_PARTITION_ID),
+                TENANT_IDS.get(START_PARTITION_ID)),
+            tuple(
+                START_PARTITION_ID + 1,
+                CORRELATION_KEYS.get(START_PARTITION_ID + 1),
+                TENANT_IDS.get(START_PARTITION_ID + 1)),
+            tuple(
+                START_PARTITION_ID + 2,
+                CORRELATION_KEYS.get(START_PARTITION_ID + 2),
+                TENANT_IDS.get(START_PARTITION_ID + 2)));
   }
 
   @Test
-  public void shouldCorrelateMessageOnDifferentPartitions() throws InterruptedException {
+  public void shouldCorrelateMessageOnDifferentPartitions() {
     // given
     engine.forEachPartition(
         partitionId ->
@@ -104,6 +129,7 @@ public final class MessageCorrelationMultiplePartitionsTest {
                 .withName("message")
                 .withCorrelationKey(CORRELATION_KEYS.get(partitionId))
                 .withVariables(asMsgPack("p", "p" + partitionId))
+                .withTenantId(TENANT_IDS.get(partitionId))
                 .publish());
 
     // when
@@ -112,14 +138,17 @@ public final class MessageCorrelationMultiplePartitionsTest {
     final long processInstanceKey1 =
         processInstanceCreationClient
             .withVariable("key", CORRELATION_KEYS.get(START_PARTITION_ID))
+            .withTenantId(TENANT_IDS.get(START_PARTITION_ID))
             .create();
     final long processInstanceKey2 =
         processInstanceCreationClient
             .withVariable("key", CORRELATION_KEYS.get(START_PARTITION_ID + 1))
+            .withTenantId(TENANT_IDS.get(START_PARTITION_ID + 1))
             .create();
     final long processInstanceKey3 =
         processInstanceCreationClient
             .withVariable("key", CORRELATION_KEYS.get(START_PARTITION_ID + 2))
+            .withTenantId(TENANT_IDS.get(START_PARTITION_ID + 2))
             .create();
 
     // then
@@ -143,12 +172,15 @@ public final class MessageCorrelationMultiplePartitionsTest {
             i -> {
               processInstanceCreationClient
                   .withVariable("key", CORRELATION_KEYS.get(START_PARTITION_ID))
+                  .withTenantId(TENANT_IDS.get(START_PARTITION_ID))
                   .create();
               processInstanceCreationClient
                   .withVariable("key", CORRELATION_KEYS.get(START_PARTITION_ID + 1))
+                  .withTenantId(TENANT_IDS.get(START_PARTITION_ID + 1))
                   .create();
               processInstanceCreationClient
                   .withVariable("key", CORRELATION_KEYS.get(START_PARTITION_ID + 2))
+                  .withTenantId(TENANT_IDS.get(START_PARTITION_ID + 2))
                   .create();
             });
 
@@ -168,12 +200,15 @@ public final class MessageCorrelationMultiplePartitionsTest {
             i -> {
               processInstanceCreationClient
                   .withVariable("key", CORRELATION_KEYS.get(START_PARTITION_ID))
+                  .withTenantId(TENANT_IDS.get(START_PARTITION_ID))
                   .create();
               processInstanceCreationClient
                   .withVariable("key", CORRELATION_KEYS.get(START_PARTITION_ID + 1))
+                  .withTenantId(TENANT_IDS.get(START_PARTITION_ID + 1))
                   .create();
               processInstanceCreationClient
                   .withVariable("key", CORRELATION_KEYS.get(START_PARTITION_ID + 2))
+                  .withTenantId(TENANT_IDS.get(START_PARTITION_ID + 2))
                   .create();
             });
 
@@ -181,12 +216,26 @@ public final class MessageCorrelationMultiplePartitionsTest {
     assertThat(
             RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
                 .limit(30))
-        .extracting(r -> tuple(r.getPartitionId(), r.getValue().getCorrelationKey()))
+        .extracting(
+            r ->
+                tuple(
+                    r.getPartitionId(),
+                    r.getValue().getCorrelationKey(),
+                    r.getValue().getTenantId()))
         .hasSize(30)
         .containsOnly(
-            tuple(START_PARTITION_ID, CORRELATION_KEYS.get(START_PARTITION_ID)),
-            tuple(START_PARTITION_ID + 1, CORRELATION_KEYS.get(START_PARTITION_ID + 1)),
-            tuple(START_PARTITION_ID + 2, CORRELATION_KEYS.get(START_PARTITION_ID + 2)));
+            tuple(
+                START_PARTITION_ID,
+                CORRELATION_KEYS.get(START_PARTITION_ID),
+                TENANT_IDS.get(START_PARTITION_ID)),
+            tuple(
+                START_PARTITION_ID + 1,
+                CORRELATION_KEYS.get(START_PARTITION_ID + 1),
+                TENANT_IDS.get(START_PARTITION_ID + 1)),
+            tuple(
+                START_PARTITION_ID + 2,
+                CORRELATION_KEYS.get(START_PARTITION_ID + 2),
+                TENANT_IDS.get(START_PARTITION_ID + 2)));
   }
 
   private int getPartitionId(final String correlationKey) {
