@@ -149,6 +149,46 @@ public class MultiTenancyMigrationTest {
     }
 
     @Test
+    void shouldMigrateProcessByIdAndVersionColumnFamilyUsingVersionManager() {
+      // given
+      final var model = Bpmn.createExecutableProcess("processId").startEvent().done();
+      legacyState.putProcess(
+          123,
+          new ProcessRecord()
+              .setKey(123)
+              .setBpmnProcessId("processId")
+              .setVersion(1)
+              .setResourceName("resourceName")
+              .setResource(wrapString(Bpmn.convertToString(model)))
+              .setChecksum(wrapString("checksum")));
+      // the version manager must be migrated first to ensure that the known versions are set
+      new ProcessDefinitionVersionMigration().runMigration(processingState);
+
+      // when
+      sut.runMigration(processingState);
+
+      // then
+      assertThat(
+              processState.getLatestProcessVersionByProcessId(
+                  wrapString("processId"), TenantOwned.DEFAULT_TENANT_IDENTIFIER))
+          .extracting(
+              p -> bufferAsString(p.getBpmnProcessId()),
+              DeployedProcess::getVersion,
+              DeployedProcess::getState,
+              p -> bufferAsString(p.getResourceName()),
+              DeployedProcess::getTenantId,
+              p -> bufferAsString(p.getResource()))
+          .containsExactly(
+              "processId",
+              1,
+              PersistedProcessState.ACTIVE,
+              "resourceName",
+              TenantOwned.DEFAULT_TENANT_IDENTIFIER,
+              Bpmn.convertToString(model));
+      assertThat(legacyState.getLatestProcessVersionByProcessId(wrapString("processId"))).isNull();
+    }
+
+    @Test
     void shouldMigrateDigestByIdColumnFamily() {
       // given
       final var model = Bpmn.createExecutableProcess("processId").startEvent().done();
