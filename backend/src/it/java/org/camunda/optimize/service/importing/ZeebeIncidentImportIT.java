@@ -248,7 +248,7 @@ public class ZeebeIncidentImportIT extends AbstractCCSMIT {
     incident.setId(String.valueOf(createdRecord.getKey()));
     incident.setDefinitionKey(deployedInstance.getBpmnProcessId());
     incident.setDefinitionVersion(String.valueOf(deployedInstance.getVersion()));
-    incident.setTenantId(null);
+    incident.setTenantId(ZEEBE_DEFAULT_TENANT_ID);
     incident.setProcessInstanceId(null);
     incident.setActivityId(String.valueOf(getFlowNodeIdFromProcessInstanceForActivity(
       processInstanceDto,

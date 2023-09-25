@@ -145,7 +145,6 @@ public class ZeebeProcessInstanceImportService
           flowNodeForKey.setStartDate(dateForTimestamp(zeebeFlowNodeInstanceRecord));
         }
         updateDurationIfMissing(flowNodeForKey);
-        flowNodeForKey.setTenantId(instanceToAdd.getTenantId());
         flowNodeInstancesByRecordKey.put(recordKey, flowNodeForKey);
       });
     instanceToAdd.setFlowNodeInstances(new ArrayList<>(flowNodeInstancesByRecordKey.values()));

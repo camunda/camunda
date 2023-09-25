@@ -156,6 +156,7 @@ public class ZeebeVariableImportService extends ZeebeProcessInstanceSubEntityImp
       processVariableDto.setVersion(variableRecordDto.getPosition());
       processVariableDto.setType(type);
       processVariableDto.setValue(zeebeVariableDataDto.getValue());
+      processVariableDto.setTenantId(zeebeVariableDataDto.getTenantId());
       if (type.equals(STRING_TYPE)) {
         processVariableDto.setValue(stripExtraDoubleQuotationsIfExist(zeebeVariableDataDto.getValue()));
       } else if (OBJECT_TYPE.equalsIgnoreCase(type)) {

@@ -107,6 +107,7 @@ public class ZeebeIncidentImportService extends ZeebeProcessInstanceSubEntityImp
     incidentDto.setIncidentType(IncidentType.valueOfId(incidentDataDto.getErrorType().toString()));
     incidentDto.setActivityId(String.valueOf(incidentDataDto.getElementInstanceKey()));
     incidentDto.setIncidentMessage(incidentDataDto.getErrorMessage());
+    incidentDto.setTenantId(incidentDataDto.getTenantId());
     return incidentDto;
   }
 
