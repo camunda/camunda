@@ -9,20 +9,56 @@ import {getAccordionItemLabel} from './getAccordionItemLabel';
 
 describe('getAccordionItemLabel', () => {
   it('should get label for multiple instances', () => {
-    expect(getAccordionItemLabel('myProcessName', 77, 3)).toBe(
-      'myProcessName – 77 Instances in Version 3',
-    );
+    expect(
+      getAccordionItemLabel({
+        name: 'myProcessName',
+        instancesCount: 77,
+        version: 3,
+      }),
+    ).toBe('myProcessName – 77 Instances in Version 3');
+    expect(
+      getAccordionItemLabel({
+        name: 'myProcessName',
+        instancesCount: 77,
+        version: 3,
+        tenant: 'Tenant A',
+      }),
+    ).toBe('myProcessName – 77 Instances in Version 3 – Tenant A');
   });
 
   it('should get label for single instance', () => {
-    expect(getAccordionItemLabel('myProcessName', 1, 5)).toBe(
-      'myProcessName – 1 Instance in Version 5',
-    );
+    expect(
+      getAccordionItemLabel({
+        name: 'myProcessName',
+        instancesCount: 1,
+        version: 5,
+      }),
+    ).toBe('myProcessName – 1 Instance in Version 5');
+    expect(
+      getAccordionItemLabel({
+        name: 'myProcessName',
+        instancesCount: 1,
+        version: 5,
+        tenant: 'Tenant A',
+      }),
+    ).toBe('myProcessName – 1 Instance in Version 5 – Tenant A');
   });
 
   it('should get label for no instances', () => {
-    expect(getAccordionItemLabel('myProcessName', 0, 2)).toBe(
-      'myProcessName – 0 Instances in Version 2',
-    );
+    expect(
+      getAccordionItemLabel({
+        name: 'myProcessName',
+        instancesCount: 0,
+        version: 2,
+      }),
+    ).toBe('myProcessName – 0 Instances in Version 2');
+    expect(
+      getAccordionItemLabel({
+        name: 'myProcessName',
+        instancesCount: 0,
+        version: 2,
+        tenant: 'Tenant A',
+      }),
+    ).toBe('myProcessName – 0 Instances in Version 2 – Tenant A');
   });
 });

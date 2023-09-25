@@ -18,6 +18,7 @@ const mockIncidentsByError = [
     processes: [
       {
         processId: '2251799813687201',
+        tenantId: '<default>',
         version: 2,
         name: null,
         bpmnProcessId: 'complexProcess',
@@ -27,6 +28,7 @@ const mockIncidentsByError = [
       },
       {
         processId: '2251799813686137',
+        tenantId: '<default>',
         version: 1,
         name: 'Nested subprocesses',
         bpmnProcessId: 'prWithSubprocess',
@@ -36,6 +38,7 @@ const mockIncidentsByError = [
       },
       {
         processId: '2251799813687192',
+        tenantId: '<default>',
         version: 2,
         name: 'Multi-Instance Process',
         bpmnProcessId: 'multiInstanceProcess',
@@ -45,6 +48,7 @@ const mockIncidentsByError = [
       },
       {
         processId: '2251799813687208',
+        tenantId: '<default>',
         version: 2,
         name: null,
         bpmnProcessId: 'nonInterruptingBoundaryEvent',
@@ -54,6 +58,7 @@ const mockIncidentsByError = [
       },
       {
         processId: '2251799813687210',
+        tenantId: '<default>',
         version: 1,
         name: 'Called Process',
         bpmnProcessId: 'called-process',
@@ -63,6 +68,7 @@ const mockIncidentsByError = [
       },
       {
         processId: '2251799813686132',
+        tenantId: '<default>',
         version: 1,
         name: null,
         bpmnProcessId: 'complexProcess',
@@ -72,6 +78,7 @@ const mockIncidentsByError = [
       },
       {
         processId: '2251799813687190',
+        tenantId: '<default>',
         version: 2,
         name: 'Flight registration',
         bpmnProcessId: 'flightRegistration',
@@ -81,6 +88,7 @@ const mockIncidentsByError = [
       },
       {
         processId: '2251799813686118',
+        tenantId: '<default>',
         version: 1,
         name: 'Flight registration',
         bpmnProcessId: 'flightRegistration',
@@ -90,6 +98,7 @@ const mockIncidentsByError = [
       },
       {
         processId: '2251799813686147',
+        tenantId: '<default>',
         version: 1,
         name: 'Event Subprocess Process',
         bpmnProcessId: 'eventSubprocessProcess',
@@ -99,6 +108,7 @@ const mockIncidentsByError = [
       },
       {
         processId: '2251799813687206',
+        tenantId: '<default>',
         version: 2,
         name: null,
         bpmnProcessId: 'interruptingBoundaryEvent',
@@ -108,6 +118,7 @@ const mockIncidentsByError = [
       },
       {
         processId: '2251799813687188',
+        tenantId: '<default>',
         version: 2,
         name: 'Order process',
         bpmnProcessId: 'orderProcess',
@@ -117,6 +128,7 @@ const mockIncidentsByError = [
       },
       {
         processId: '2251799813686134',
+        tenantId: '<default>',
         version: 1,
         name: 'Event based gateway with message start',
         bpmnProcessId: 'eventBasedGatewayProcess',
@@ -126,6 +138,7 @@ const mockIncidentsByError = [
       },
       {
         processId: '2251799813686161',
+        tenantId: '<default>',
         version: 1,
         name: 'Link events process',
         bpmnProcessId: 'linkEventProcess',
@@ -135,6 +148,7 @@ const mockIncidentsByError = [
       },
       {
         processId: '2251799813686116',
+        tenantId: '<default>',
         version: 1,
         name: null,
         bpmnProcessId: 'loanProcess',
@@ -144,6 +158,7 @@ const mockIncidentsByError = [
       },
       {
         processId: '2251799813686141',
+        tenantId: '<default>',
         version: 1,
         name: null,
         bpmnProcessId: 'nonInterruptingBoundaryEvent',
@@ -153,6 +168,7 @@ const mockIncidentsByError = [
       },
       {
         processId: '2251799813686114',
+        tenantId: '<default>',
         version: 1,
         name: 'Order process',
         bpmnProcessId: 'orderProcess',
@@ -162,6 +178,7 @@ const mockIncidentsByError = [
       },
       {
         processId: '2251799813686149',
+        tenantId: '<default>',
         version: 1,
         name: null,
         bpmnProcessId: 'bigProcess',
@@ -171,6 +188,7 @@ const mockIncidentsByError = [
       },
       {
         processId: '2251799813686139',
+        tenantId: '<default>',
         version: 1,
         name: null,
         bpmnProcessId: 'interruptingBoundaryEvent',
@@ -187,6 +205,7 @@ const mockIncidentsByError = [
     processes: [
       {
         processId: '2251799813687188',
+        tenantId: '<default>',
         version: 2,
         name: 'Order process',
         bpmnProcessId: 'orderProcess',
@@ -204,6 +223,7 @@ const mockIncidentsByError = [
     processes: [
       {
         processId: '2251799813687889',
+        tenantId: '<default>',
         version: 3,
         name: null,
         bpmnProcessId: 'complexProcess',
@@ -214,6 +234,7 @@ const mockIncidentsByError = [
       },
       {
         processId: '2251799813687203',
+        tenantId: '<default>',
         version: 2,
         name: 'Event based gateway with timer start',
         bpmnProcessId: 'eventBasedGatewayProcess',
@@ -231,6 +252,7 @@ const mockIncidentsByError = [
     processes: [
       {
         processId: '2251799813687889',
+        tenantId: '<default>',
         version: 3,
         name: null,
         bpmnProcessId: 'complexProcess',
@@ -241,6 +263,7 @@ const mockIncidentsByError = [
       },
       {
         processId: '2251799813686168',
+        tenantId: '<default>',
         version: 1,
         name: 'Inclusive gateway',
         bpmnProcessId: 'inclusiveGatewayProcess',
@@ -258,6 +281,7 @@ const mockIncidentsByError = [
     processes: [
       {
         processId: '2251799813687889',
+        tenantId: '<default>',
         version: 3,
         name: null,
         bpmnProcessId: 'complexProcess',
@@ -275,6 +299,7 @@ const mockIncidentsByError = [
     processes: [
       {
         processId: '2251799813687889',
+        tenantId: '<default>',
         version: 3,
         name: null,
         bpmnProcessId: 'complexProcess',
@@ -292,6 +317,7 @@ const mockIncidentsByError = [
     processes: [
       {
         processId: '2251799813687889',
+        tenantId: '<default>',
         version: 3,
         name: null,
         bpmnProcessId: 'complexProcess',
@@ -309,6 +335,7 @@ const mockIncidentsByError = [
     processes: [
       {
         processId: '2251799813686145',
+        tenantId: '<default>',
         version: 1,
         name: 'Call Activity Process',
         bpmnProcessId: 'call-activity-process',
@@ -326,6 +353,7 @@ const mockIncidentsByError = [
     processes: [
       {
         processId: '2251799813686153',
+        tenantId: '<default>',
         version: 1,
         name: null,
         bpmnProcessId: 'error-end-process',
@@ -343,6 +371,7 @@ const mockIncidentsByError = [
     processes: [
       {
         processId: '2251799813686130',
+        tenantId: '<default>',
         version: 1,
         name: 'DMN invoice',
         bpmnProcessId: 'invoice',
@@ -360,6 +389,7 @@ const mockIncidentsByError = [
     processes: [
       {
         processId: '2251799813686151',
+        tenantId: '<default>',
         version: 1,
         name: 'Error Process',
         bpmnProcessId: 'errorProcess',
@@ -377,6 +407,7 @@ const mockIncidentsByError = [
     processes: [
       {
         processId: '2251799813686130',
+        tenantId: '<default>',
         version: 1,
         name: 'DMN invoice',
         bpmnProcessId: 'invoice',
@@ -393,6 +424,7 @@ const mockIncidentsByError = [
     processes: [
       {
         processId: '2251799813686116',
+        tenantId: '<default>',
         version: 1,
         name: null,
         bpmnProcessId: 'loanProcess',
@@ -408,6 +440,7 @@ const mockIncidentsByError = [
     processes: [
       {
         processId: '2251799813687188',
+        tenantId: '<default>',
         version: 2,
         name: 'Order process',
         bpmnProcessId: 'orderProcess',
@@ -417,6 +450,7 @@ const mockIncidentsByError = [
       },
       {
         processId: '2251799813686114',
+        tenantId: '<default>',
         version: 1,
         name: 'Order process',
         bpmnProcessId: 'orderProcess',
@@ -433,6 +467,7 @@ const mockIncidentsByError = [
     processes: [
       {
         processId: '2251799813687188',
+        tenantId: '<default>',
         version: 2,
         name: 'Order process',
         bpmnProcessId: 'orderProcess',
@@ -450,6 +485,7 @@ const mockIncidentsByError = [
     processes: [
       {
         processId: '2251799813686114',
+        tenantId: '<default>',
         version: 1,
         name: 'Order process',
         bpmnProcessId: 'orderProcess',
@@ -466,6 +502,7 @@ const mockIncidentsByError = [
     processes: [
       {
         processId: '2251799813686116',
+        tenantId: '<default>',
         version: 1,
         name: null,
         bpmnProcessId: 'loanProcess',
@@ -481,6 +518,7 @@ const mockIncidentsByError = [
     processes: [
       {
         processId: '2251799813685257',
+        tenantId: '<default>',
         version: 1,
         name: 'Only Incidents Process',
         bpmnProcessId: 'onlyIncidentsProcess',
@@ -496,6 +534,7 @@ const mockIncidentsByError = [
     processes: [
       {
         processId: '2251799813685301',
+        tenantId: '<default>',
         version: 2,
         name: 'Only Incidents Process',
         bpmnProcessId: 'onlyIncidentsProcess',
@@ -511,6 +550,7 @@ const mockIncidentsByError = [
     processes: [
       {
         processId: '2251799813686141',
+        tenantId: '<default>',
         version: 1,
         name: null,
         bpmnProcessId: 'nonInterruptingBoundaryEvent',
@@ -527,6 +567,7 @@ const mockIncidentsByError = [
     processes: [
       {
         processId: '2251799813687188',
+        tenantId: '<default>',
         version: 2,
         name: 'Order process',
         bpmnProcessId: 'orderProcess',
@@ -544,6 +585,7 @@ const mockIncidentsByError = [
     processes: [
       {
         processId: '2251799813686114',
+        tenantId: '<default>',
         version: 1,
         name: 'Order process',
         bpmnProcessId: 'orderProcess',
@@ -559,12 +601,14 @@ const mockIncidentsByError = [
 const mockIncidentsByProcess = [
   {
     bpmnProcessId: 'orderProcess',
+    tenantId: '<default>',
     processName: 'Order process',
     instancesWithActiveIncidentsCount: 141,
     activeInstancesCount: 5,
     processes: [
       {
         processId: '2251799813687188',
+        tenantId: '<default>',
         version: 2,
         name: 'Order process',
         bpmnProcessId: 'orderProcess',
@@ -574,6 +618,7 @@ const mockIncidentsByProcess = [
       },
       {
         processId: '2251799813686114',
+        tenantId: '<default>',
         version: 1,
         name: 'Order process',
         bpmnProcessId: 'orderProcess',
@@ -585,12 +630,14 @@ const mockIncidentsByProcess = [
   },
   {
     bpmnProcessId: 'call-activity-process',
+    tenantId: '<default>',
     processName: 'Call Activity Process',
     instancesWithActiveIncidentsCount: 90,
     activeInstancesCount: 15,
     processes: [
       {
         processId: '2251799813686145',
+        tenantId: '<default>',
         version: 1,
         name: 'Call Activity Process',
         bpmnProcessId: 'call-activity-process',
@@ -602,12 +649,14 @@ const mockIncidentsByProcess = [
   },
   {
     bpmnProcessId: 'complexProcess',
+    tenantId: '<default>',
     processName: null,
     instancesWithActiveIncidentsCount: 90,
     activeInstancesCount: 13,
     processes: [
       {
         processId: '2251799813687889',
+        tenantId: '<default>',
         version: 3,
         name: null,
         bpmnProcessId: 'complexProcess',
@@ -617,6 +666,7 @@ const mockIncidentsByProcess = [
       },
       {
         processId: '2251799813687201',
+        tenantId: '<default>',
         version: 2,
         name: null,
         bpmnProcessId: 'complexProcess',
@@ -626,6 +676,7 @@ const mockIncidentsByProcess = [
       },
       {
         processId: '2251799813686132',
+        tenantId: '<default>',
         version: 1,
         name: null,
         bpmnProcessId: 'complexProcess',
@@ -637,12 +688,14 @@ const mockIncidentsByProcess = [
   },
   {
     bpmnProcessId: 'called-process',
+    tenantId: '<default>',
     processName: null,
     instancesWithActiveIncidentsCount: 70,
     activeInstancesCount: 0,
     processes: [
       {
         processId: '2251799813687891',
+        tenantId: '<default>',
         version: 2,
         name: null,
         bpmnProcessId: 'called-process',
@@ -652,6 +705,7 @@ const mockIncidentsByProcess = [
       },
       {
         processId: '2251799813687210',
+        tenantId: '<default>',
         version: 1,
         name: 'Called Process',
         bpmnProcessId: 'called-process',
@@ -663,12 +717,14 @@ const mockIncidentsByProcess = [
   },
   {
     bpmnProcessId: 'invoice',
+    tenantId: '<default>',
     processName: 'DMN invoice',
     instancesWithActiveIncidentsCount: 33,
     activeInstancesCount: 35,
     processes: [
       {
         processId: '2251799813686130',
+        tenantId: '<default>',
         version: 1,
         name: 'DMN invoice',
         bpmnProcessId: 'invoice',
@@ -680,12 +736,14 @@ const mockIncidentsByProcess = [
   },
   {
     bpmnProcessId: 'eventBasedGatewayProcess',
+    tenantId: '<default>',
     processName: 'Event based gateway with timer start',
     instancesWithActiveIncidentsCount: 26,
     activeInstancesCount: 0,
     processes: [
       {
         processId: '2251799813687203',
+        tenantId: '<default>',
         version: 2,
         name: 'Event based gateway with timer start',
         bpmnProcessId: 'eventBasedGatewayProcess',
@@ -695,6 +753,7 @@ const mockIncidentsByProcess = [
       },
       {
         processId: '2251799813686134',
+        tenantId: '<default>',
         version: 1,
         name: 'Event based gateway with message start',
         bpmnProcessId: 'eventBasedGatewayProcess',
@@ -706,12 +765,14 @@ const mockIncidentsByProcess = [
   },
   {
     bpmnProcessId: 'flightRegistration',
+    tenantId: '<default>',
     processName: 'Flight registration',
     instancesWithActiveIncidentsCount: 23,
     activeInstancesCount: 4,
     processes: [
       {
         processId: '2251799813687190',
+        tenantId: '<default>',
         version: 2,
         name: 'Flight registration',
         bpmnProcessId: 'flightRegistration',
@@ -721,6 +782,7 @@ const mockIncidentsByProcess = [
       },
       {
         processId: '2251799813686118',
+        tenantId: '<default>',
         version: 1,
         name: 'Flight registration',
         bpmnProcessId: 'flightRegistration',
@@ -732,12 +794,14 @@ const mockIncidentsByProcess = [
   },
   {
     bpmnProcessId: 'error-end-process',
+    tenantId: '<default>',
     processName: null,
     instancesWithActiveIncidentsCount: 20,
     activeInstancesCount: 0,
     processes: [
       {
         processId: '2251799813686153',
+        tenantId: '<default>',
         version: 1,
         name: null,
         bpmnProcessId: 'error-end-process',
@@ -749,12 +813,14 @@ const mockIncidentsByProcess = [
   },
   {
     bpmnProcessId: 'nonInterruptingBoundaryEvent',
+    tenantId: '<default>',
     processName: null,
     instancesWithActiveIncidentsCount: 19,
     activeInstancesCount: 0,
     processes: [
       {
         processId: '2251799813687208',
+        tenantId: '<default>',
         version: 2,
         name: null,
         bpmnProcessId: 'nonInterruptingBoundaryEvent',
@@ -764,6 +830,7 @@ const mockIncidentsByProcess = [
       },
       {
         processId: '2251799813686141',
+        tenantId: '<default>',
         version: 1,
         name: null,
         bpmnProcessId: 'nonInterruptingBoundaryEvent',
@@ -775,12 +842,14 @@ const mockIncidentsByProcess = [
   },
   {
     bpmnProcessId: 'prWithSubprocess',
+    tenantId: '<default>',
     processName: 'Nested subprocesses',
     instancesWithActiveIncidentsCount: 19,
     activeInstancesCount: 0,
     processes: [
       {
         processId: '2251799813686137',
+        tenantId: '<default>',
         version: 1,
         name: 'Nested subprocesses',
         bpmnProcessId: 'prWithSubprocess',
@@ -792,12 +861,14 @@ const mockIncidentsByProcess = [
   },
   {
     bpmnProcessId: 'multiInstanceProcess',
+    tenantId: '<default>',
     processName: 'Multi-Instance Process',
     instancesWithActiveIncidentsCount: 17,
     activeInstancesCount: 15,
     processes: [
       {
         processId: '2251799813687192',
+        tenantId: '<default>',
         version: 2,
         name: 'Multi-Instance Process',
         bpmnProcessId: 'multiInstanceProcess',
@@ -807,6 +878,7 @@ const mockIncidentsByProcess = [
       },
       {
         processId: '2251799813686120',
+        tenantId: '<default>',
         version: 1,
         name: 'Sequential Multi-Instance Process',
         bpmnProcessId: 'multiInstanceProcess',
@@ -818,12 +890,14 @@ const mockIncidentsByProcess = [
   },
   {
     bpmnProcessId: 'errorProcess',
+    tenantId: '<default>',
     processName: 'Error Process',
     instancesWithActiveIncidentsCount: 17,
     activeInstancesCount: 0,
     processes: [
       {
         processId: '2251799813686151',
+        tenantId: '<default>',
         version: 1,
         name: 'Error Process',
         bpmnProcessId: 'errorProcess',
@@ -835,12 +909,14 @@ const mockIncidentsByProcess = [
   },
   {
     bpmnProcessId: 'loanProcess',
+    tenantId: '<default>',
     processName: null,
     instancesWithActiveIncidentsCount: 15,
     activeInstancesCount: 0,
     processes: [
       {
         processId: '2251799813686116',
+        tenantId: '<default>',
         version: 1,
         name: null,
         bpmnProcessId: 'loanProcess',
@@ -852,12 +928,14 @@ const mockIncidentsByProcess = [
   },
   {
     bpmnProcessId: 'eventSubprocessProcess',
+    tenantId: '<default>',
     processName: 'Event Subprocess Process',
     instancesWithActiveIncidentsCount: 9,
     activeInstancesCount: 0,
     processes: [
       {
         processId: '2251799813686147',
+        tenantId: '<default>',
         version: 1,
         name: 'Event Subprocess Process',
         bpmnProcessId: 'eventSubprocessProcess',
@@ -869,12 +947,14 @@ const mockIncidentsByProcess = [
   },
   {
     bpmnProcessId: 'interruptingBoundaryEvent',
+    tenantId: '<default>',
     processName: null,
     instancesWithActiveIncidentsCount: 9,
     activeInstancesCount: 0,
     processes: [
       {
         processId: '2251799813687206',
+        tenantId: '<default>',
         version: 2,
         name: null,
         bpmnProcessId: 'interruptingBoundaryEvent',
@@ -884,6 +964,7 @@ const mockIncidentsByProcess = [
       },
       {
         processId: '2251799813686139',
+        tenantId: '<default>',
         version: 1,
         name: null,
         bpmnProcessId: 'interruptingBoundaryEvent',
@@ -895,12 +976,14 @@ const mockIncidentsByProcess = [
   },
   {
     bpmnProcessId: 'inclusiveGatewayProcess',
+    tenantId: '<default>',
     processName: 'Inclusive gateway',
     instancesWithActiveIncidentsCount: 7,
     activeInstancesCount: 12,
     processes: [
       {
         processId: '2251799813686168',
+        tenantId: '<default>',
         version: 1,
         name: 'Inclusive gateway',
         bpmnProcessId: 'inclusiveGatewayProcess',
@@ -912,12 +995,14 @@ const mockIncidentsByProcess = [
   },
   {
     bpmnProcessId: 'linkEventProcess',
+    tenantId: '<default>',
     processName: 'Link events process',
     instancesWithActiveIncidentsCount: 6,
     activeInstancesCount: 0,
     processes: [
       {
         processId: '2251799813686161',
+        tenantId: '<default>',
         version: 1,
         name: 'Link events process',
         bpmnProcessId: 'linkEventProcess',
@@ -929,12 +1014,14 @@ const mockIncidentsByProcess = [
   },
   {
     bpmnProcessId: 'onlyIncidentsProcess',
+    tenantId: '<default>',
     processName: 'Only Incidents Process',
     instancesWithActiveIncidentsCount: 2,
     activeInstancesCount: 20,
     processes: [
       {
         processId: '2251799813685257',
+        tenantId: '<default>',
         version: 1,
         name: 'Only Incidents Process',
         bpmnProcessId: 'onlyIncidentsProcess',
@@ -944,6 +1031,7 @@ const mockIncidentsByProcess = [
       },
       {
         processId: '2251799813685301',
+        tenantId: '<default>',
         version: 2,
         name: 'Only Incidents Process',
         bpmnProcessId: 'onlyIncidentsProcess',
@@ -955,12 +1043,14 @@ const mockIncidentsByProcess = [
   },
   {
     bpmnProcessId: 'bigProcess',
+    tenantId: '<default>',
     processName: null,
     instancesWithActiveIncidentsCount: 1,
     activeInstancesCount: 0,
     processes: [
       {
         processId: '2251799813686149',
+        tenantId: '<default>',
         version: 1,
         name: null,
         bpmnProcessId: 'bigProcess',
@@ -972,12 +1062,14 @@ const mockIncidentsByProcess = [
   },
   {
     bpmnProcessId: 'escalationEvents',
+    tenantId: '<default>',
     processName: 'Escalation events',
     instancesWithActiveIncidentsCount: 0,
     activeInstancesCount: 46,
     processes: [
       {
         processId: '2251799813687212',
+        tenantId: '<default>',
         version: 2,
         name: 'Escalation events',
         bpmnProcessId: 'escalationEvents',
@@ -987,6 +1079,7 @@ const mockIncidentsByProcess = [
       },
       {
         processId: '2251799813686163',
+        tenantId: '<default>',
         version: 1,
         name: 'Escalation events',
         bpmnProcessId: 'escalationEvents',
@@ -998,12 +1091,14 @@ const mockIncidentsByProcess = [
   },
   {
     bpmnProcessId: 'withoutIncidentsProcess',
+    tenantId: '<default>',
     processName: 'Without Incidents Process',
     instancesWithActiveIncidentsCount: 0,
     activeInstancesCount: 26,
     processes: [
       {
         processId: '2251799813685364',
+        tenantId: '<default>',
         version: 2,
         name: 'Without Incidents Process',
         bpmnProcessId: 'withoutIncidentsProcess',
@@ -1013,6 +1108,7 @@ const mockIncidentsByProcess = [
       },
       {
         processId: '2251799813685350',
+        tenantId: '<default>',
         version: 1,
         name: 'Without Incidents Process',
         bpmnProcessId: 'withoutIncidentsProcess',
@@ -1024,12 +1120,14 @@ const mockIncidentsByProcess = [
   },
   {
     bpmnProcessId: 'signalEventProcess',
+    tenantId: '<default>',
     processName: 'Signal event',
     instancesWithActiveIncidentsCount: 0,
     activeInstancesCount: 20,
     processes: [
       {
         processId: '2251799813686165',
+        tenantId: '<default>',
         version: 1,
         name: 'Signal event',
         bpmnProcessId: 'signalEventProcess',
@@ -1041,12 +1139,14 @@ const mockIncidentsByProcess = [
   },
   {
     bpmnProcessId: 'intermediate-message-throw-event-process',
+    tenantId: '<default>',
     processName: null,
     instancesWithActiveIncidentsCount: 0,
     activeInstancesCount: 17,
     processes: [
       {
         processId: '2251799813686124',
+        tenantId: '<default>',
         version: 1,
         name: null,
         bpmnProcessId: 'intermediate-message-throw-event-process',
@@ -1058,12 +1158,14 @@ const mockIncidentsByProcess = [
   },
   {
     bpmnProcessId: 'terminateEndEvent',
+    tenantId: '<default>',
     processName: 'Terminate End Event',
     instancesWithActiveIncidentsCount: 0,
     activeInstancesCount: 16,
     processes: [
       {
         processId: '2251799813686155',
+        tenantId: '<default>',
         version: 1,
         name: 'Terminate End Event',
         bpmnProcessId: 'terminateEndEvent',
@@ -1075,12 +1177,14 @@ const mockIncidentsByProcess = [
   },
   {
     bpmnProcessId: 'dataStoreProcess',
+    tenantId: '<default>',
     processName: 'Data store process',
     instancesWithActiveIncidentsCount: 0,
     activeInstancesCount: 14,
     processes: [
       {
         processId: '2251799813686159',
+        tenantId: '<default>',
         version: 1,
         name: 'Data store process',
         bpmnProcessId: 'dataStoreProcess',
@@ -1092,12 +1196,14 @@ const mockIncidentsByProcess = [
   },
   {
     bpmnProcessId: 'message-end-event-process',
+    tenantId: '<default>',
     processName: null,
     instancesWithActiveIncidentsCount: 0,
     activeInstancesCount: 14,
     processes: [
       {
         processId: '2251799813686128',
+        tenantId: '<default>',
         version: 1,
         name: null,
         bpmnProcessId: 'message-end-event-process',
@@ -1109,12 +1215,14 @@ const mockIncidentsByProcess = [
   },
   {
     bpmnProcessId: 'timerProcess',
+    tenantId: '<default>',
     processName: 'Timer process',
     instancesWithActiveIncidentsCount: 0,
     activeInstancesCount: 3,
     processes: [
       {
         processId: '2251799813687198',
+        tenantId: '<default>',
         version: 2,
         name: 'Timer process',
         bpmnProcessId: 'timerProcess',
@@ -1124,6 +1232,7 @@ const mockIncidentsByProcess = [
       },
       {
         processId: '2251799813686143',
+        tenantId: '<default>',
         version: 1,
         name: 'Timer process',
         bpmnProcessId: 'timerProcess',
@@ -1135,12 +1244,14 @@ const mockIncidentsByProcess = [
   },
   {
     bpmnProcessId: 'bigVarProcess',
+    tenantId: '<default>',
     processName: 'Big variable process',
     instancesWithActiveIncidentsCount: 0,
     activeInstancesCount: 2,
     processes: [
       {
         processId: '2251799813685430',
+        tenantId: '<default>',
         version: 1,
         name: 'Big variable process',
         bpmnProcessId: 'bigVarProcess',
@@ -1152,12 +1263,14 @@ const mockIncidentsByProcess = [
   },
   {
     bpmnProcessId: 'Process_b1711b2e-ec8e-4dad-908c-8c12e028f32f',
+    tenantId: '<default>',
     processName: 'Input Output Mapping Test',
     instancesWithActiveIncidentsCount: 0,
     activeInstancesCount: 1,
     processes: [
       {
         processId: '2251799813685251',
+        tenantId: '<default>',
         version: 1,
         name: 'Input Output Mapping Test',
         bpmnProcessId: 'Process_b1711b2e-ec8e-4dad-908c-8c12e028f32f',
@@ -1169,12 +1282,14 @@ const mockIncidentsByProcess = [
   },
   {
     bpmnProcessId: 'always-completing-process',
+    tenantId: '<default>',
     processName: 'Always completing process',
     instancesWithActiveIncidentsCount: 0,
     activeInstancesCount: 0,
     processes: [
       {
         processId: '2251799813685249',
+        tenantId: '<default>',
         version: 1,
         name: 'Always completing process',
         bpmnProcessId: 'always-completing-process',
@@ -1186,12 +1301,14 @@ const mockIncidentsByProcess = [
   },
   {
     bpmnProcessId: 'intermediate-none-event-process',
+    tenantId: '<default>',
     processName: null,
     instancesWithActiveIncidentsCount: 0,
     activeInstancesCount: 0,
     processes: [
       {
         processId: '2251799813686126',
+        tenantId: '<default>',
         version: 1,
         name: null,
         bpmnProcessId: 'intermediate-none-event-process',
@@ -1203,12 +1320,14 @@ const mockIncidentsByProcess = [
   },
   {
     bpmnProcessId: 'manual-task-process',
+    tenantId: '<default>',
     processName: null,
     instancesWithActiveIncidentsCount: 0,
     activeInstancesCount: 0,
     processes: [
       {
         processId: '2251799813686122',
+        tenantId: '<default>',
         version: 1,
         name: null,
         bpmnProcessId: 'manual-task-process',
@@ -1220,12 +1339,14 @@ const mockIncidentsByProcess = [
   },
   {
     bpmnProcessId: 'noInstancesProcess',
+    tenantId: '<default>',
     processName: 'Without Instances Process',
     instancesWithActiveIncidentsCount: 0,
     activeInstancesCount: 0,
     processes: [
       {
         processId: '2251799813685253',
+        tenantId: '<default>',
         version: 1,
         name: 'Without Instances Process',
         bpmnProcessId: 'noInstancesProcess',
@@ -1235,6 +1356,7 @@ const mockIncidentsByProcess = [
       },
       {
         processId: '2251799813685255',
+        tenantId: '<default>',
         version: 2,
         name: 'Without Instances Process',
         bpmnProcessId: 'noInstancesProcess',
@@ -1246,12 +1368,14 @@ const mockIncidentsByProcess = [
   },
   {
     bpmnProcessId: 'undefined-task-process',
+    tenantId: '<default>',
     processName: 'undefined-task',
     instancesWithActiveIncidentsCount: 0,
     activeInstancesCount: 0,
     processes: [
       {
         processId: '2251799813686157',
+        tenantId: '<default>',
         version: 1,
         name: 'undefined-task',
         bpmnProcessId: 'undefined-task-process',

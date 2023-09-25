@@ -18,6 +18,7 @@ describe('stores/incidentsByError', () => {
       processes: [
         {
           processId: '2251799813698839',
+          tenantId: '<default>',
           version: 3,
           name: null,
           bpmnProcessId: 'complexProcess',
@@ -28,6 +29,7 @@ describe('stores/incidentsByError', () => {
         },
         {
           processId: '2251799813695224',
+          tenantId: '<default>',
           version: 2,
           name: 'Event based gateway with timer start',
           bpmnProcessId: 'eventBasedGatewayProcess',
@@ -45,6 +47,7 @@ describe('stores/incidentsByError', () => {
       processes: [
         {
           processId: '2251799813698839',
+          tenantId: '<default>',
           version: 3,
           name: null,
           bpmnProcessId: 'complexProcess',

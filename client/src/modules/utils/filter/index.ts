@@ -6,12 +6,13 @@
  */
 
 import {parse, isValid} from 'date-fns';
-import {processesStore, generateProcessKey} from 'modules/stores/processes';
+import {processesStore} from 'modules/stores/processes';
 import {getSearchString} from 'modules/utils/getSearchString';
 import {Location} from 'react-router-dom';
 import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
 import {getValidVariableValues} from './getValidVariableValues';
 import {variableFilterStore} from 'modules/stores/variableFilter';
+import {generateProcessKey} from '../generateProcessKey';
 
 type ProcessInstanceFilterField =
   | 'process'

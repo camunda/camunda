@@ -21,6 +21,7 @@ import {EmptyState} from 'modules/components/EmptyState';
 import {ReactComponent as EmptyStateProcessInstancesByName} from 'modules/components/Icon/empty-state-process-instances-by-name.svg';
 import {authenticationStore} from 'modules/stores/authentication';
 import {Details} from './Details';
+import {generateProcessKey} from 'modules/utils/generateProcessKey';
 
 const InstancesByProcess: React.FC = observer(() => {
   const {
@@ -29,6 +30,7 @@ const InstancesByProcess: React.FC = observer(() => {
   } = processInstancesByNameStore;
 
   const modelerLink = authenticationStore.state.c8Links.modeler;
+  const isMultiTenancyEnabled = window.clientConfig?.multiTenancyEnabled;
 
   if (['initial', 'first-fetch'].includes(status)) {
     return <Skeleton />;
@@ -76,21 +78,24 @@ const InstancesByProcess: React.FC = observer(() => {
     <PartiallyExpandableDataTable
       dataTestId="instances-by-process"
       headers={[{key: 'instance', header: 'instance'}]}
-      rows={processInstances.map((item, index) => {
+      rows={processInstances.map((item) => {
         const {
           instancesWithActiveIncidentsCount,
           activeInstancesCount,
           processName,
           bpmnProcessId,
           processes,
+          tenantId,
         } = item;
         const name = processName || bpmnProcessId;
         const version = processes.length === 1 ? processes[0]!.version : 'all';
         const totalInstancesCount =
           instancesWithActiveIncidentsCount + activeInstancesCount;
+        const tenantName =
+          authenticationStore.tenantsById?.[item.tenantId] ?? item.tenantId;
 
         return {
-          id: bpmnProcessId,
+          id: generateProcessKey(bpmnProcessId, tenantId),
           instance: (
             <LinkWrapper
               to={Locations.processes({
@@ -104,6 +109,11 @@ const InstancesByProcess: React.FC = observer(() => {
                       canceled: true,
                     }
                   : {}),
+                ...(isMultiTenancyEnabled
+                  ? {
+                      tenant: tenantId,
+                    }
+                  : {}),
               })}
               onClick={() => {
                 panelStatesStore.expandFiltersPanel();
@@ -112,21 +122,31 @@ const InstancesByProcess: React.FC = observer(() => {
                   link: 'dashboard-process-instances-by-name-all-versions',
                 });
               }}
-              title={getAccordionTitle(
-                name,
-                totalInstancesCount,
-                processes.length,
-              )}
+              title={getAccordionTitle({
+                processName: name,
+                instancesCount: totalInstancesCount,
+                versionsCount: processes.length,
+                ...(isMultiTenancyEnabled
+                  ? {
+                      tenant: tenantName,
+                    }
+                  : {}),
+              })}
             >
               <InstancesBar
                 label={{
                   type: 'process',
                   size: 'medium',
-                  text: getAccordionLabel(
+                  text: getAccordionLabel({
                     name,
-                    totalInstancesCount,
-                    processes.length,
-                  ),
+                    instancesCount: totalInstancesCount,
+                    versionsCount: processes.length,
+                    ...(isMultiTenancyEnabled
+                      ? {
+                          tenant: tenantName,
+                        }
+                      : {}),
+                  }),
                 }}
                 incidentsCount={instancesWithActiveIncidentsCount}
                 activeInstancesCount={activeInstancesCount}
@@ -137,14 +157,14 @@ const InstancesByProcess: React.FC = observer(() => {
         };
       })}
       expandedContents={processInstances.reduce(
-        (accumulator, {bpmnProcessId, processName, processes}) => {
+        (accumulator, {bpmnProcessId, tenantId, processName, processes}) => {
           if (processes.length <= 1) {
             return accumulator;
           }
 
           return {
             ...accumulator,
-            [bpmnProcessId]: (
+            [generateProcessKey(bpmnProcessId, tenantId)]: (
               <Details
                 processName={processName || bpmnProcessId}
                 processes={processes}

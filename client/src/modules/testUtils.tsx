@@ -247,6 +247,7 @@ export const groupedProcessesMock: ProcessDto[] = [
 export const createProcess = (options = {}) => {
   return {
     processId: randomProcessIdIterator.next().value,
+    tenantId: '<default>',
     name: 'mockProcess',
     version: 1,
     bpmnProcessId: 'mockProcess',
@@ -266,6 +267,7 @@ export const createInstanceByProcess = (
 ): ProcessInstanceByNameDto => {
   return {
     bpmnProcessId: 'loanProcess',
+    tenantId: '<default>',
     processName: null,
     instancesWithActiveIncidentsCount: 16,
     activeInstancesCount: 122,

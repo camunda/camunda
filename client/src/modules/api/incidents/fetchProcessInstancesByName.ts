@@ -12,12 +12,14 @@ type ProcessDto = {
   version: number;
   name: null | string;
   bpmnProcessId: string;
+  tenantId: string;
   errorMessage: null | string;
   instancesWithActiveIncidentsCount: number;
   activeInstancesCount: number;
 };
 type ProcessInstanceByNameDto = {
   bpmnProcessId: string;
+  tenantId: string;
   processName: null | string;
   instancesWithActiveIncidentsCount: number;
   activeInstancesCount: number;

@@ -5,13 +5,10 @@
  * except in compliance with the proprietary license.
  */
 
-import pluralSuffix from 'modules/utils/pluralSuffix';
+import {DEFAULT_TENANT} from 'modules/constants';
 
-function getExpandAccordionTitle(name: string, instancesCount: number) {
-  return `Expand ${pluralSuffix(
-    instancesCount,
-    'Instance',
-  )} of Process ${name}`;
-}
+const generateProcessKey = (bpmnProcessId: string, tenantId?: string) => {
+  return `{${bpmnProcessId}}-{${tenantId ?? DEFAULT_TENANT}}`;
+};
 
-export {getExpandAccordionTitle};
+export {generateProcessKey};

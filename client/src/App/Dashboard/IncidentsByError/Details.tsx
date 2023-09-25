@@ -14,6 +14,8 @@ import {tracking} from 'modules/tracking';
 import {ProcessDto} from 'modules/api/incidents/fetchIncidentsByError';
 import {Li, LinkWrapper} from '../styled';
 import {InstancesBar} from 'modules/components/InstancesBar';
+import {authenticationStore} from 'modules/stores/authentication';
+import {observer} from 'mobx-react';
 
 type Props = {
   errorMessage: string;
@@ -21,51 +23,75 @@ type Props = {
   tabIndex?: number;
 };
 
-const Details: React.FC<Props> = ({errorMessage, processes, tabIndex}) => {
-  return (
-    <ul>
-      {processes.map((item) => {
-        const name = item.name || item.bpmnProcessId;
+const Details: React.FC<Props> = observer(
+  ({errorMessage, processes, tabIndex}) => {
+    const isMultiTenancyEnabled = window.clientConfig?.multiTenancyEnabled;
+    return (
+      <ul>
+        {processes.map((item) => {
+          const name = item.name || item.bpmnProcessId;
 
-        return (
-          <Li key={item.processId}>
-            <LinkWrapper
-              tabIndex={tabIndex ?? 0}
-              to={Locations.processes({
-                process: item.bpmnProcessId,
-                version: item.version.toString(),
-                errorMessage: truncateErrorMessage(errorMessage),
-                incidents: true,
-              })}
-              onClick={() => {
-                panelStatesStore.expandFiltersPanel();
-                tracking.track({
-                  eventName: 'navigation',
-                  link: 'dashboard-process-incidents-by-error-message-single-version',
-                });
-              }}
-              title={getAccordionItemTitle(
-                name,
-                item.instancesWithActiveIncidentsCount,
-                item.version,
-                errorMessage,
-              )}
-            >
-              <InstancesBar
-                label={{
-                  type: 'incident',
-                  size: 'small',
-                  text: getAccordionItemLabel(name, item.version),
+          const tenantName =
+            authenticationStore.tenantsById?.[item.tenantId] ?? item.tenantId;
+
+          return (
+            <Li key={item.processId}>
+              <LinkWrapper
+                tabIndex={tabIndex ?? 0}
+                to={Locations.processes({
+                  process: item.bpmnProcessId,
+                  version: item.version.toString(),
+                  errorMessage: truncateErrorMessage(errorMessage),
+                  incidents: true,
+                  ...(isMultiTenancyEnabled
+                    ? {
+                        tenant: item.tenantId,
+                      }
+                    : {}),
+                })}
+                onClick={() => {
+                  panelStatesStore.expandFiltersPanel();
+                  tracking.track({
+                    eventName: 'navigation',
+                    link: 'dashboard-process-incidents-by-error-message-single-version',
+                  });
                 }}
-                incidentsCount={item.instancesWithActiveIncidentsCount}
-                size="small"
-              />
-            </LinkWrapper>
-          </Li>
-        );
-      })}
-    </ul>
-  );
-};
+                title={getAccordionItemTitle({
+                  processName: name,
+                  instancesCount: item.instancesWithActiveIncidentsCount,
+                  versionName: item.version,
+                  errorMessage,
+                  ...(isMultiTenancyEnabled
+                    ? {
+                        tenant: tenantName,
+                      }
+                    : {}),
+                })}
+              >
+                <InstancesBar
+                  label={{
+                    type: 'incident',
+                    size: 'small',
+                    text: getAccordionItemLabel({
+                      name,
+                      version: item.version,
+                      ...(isMultiTenancyEnabled
+                        ? {
+                            tenant: tenantName,
+                          }
+                        : {}),
+                    }),
+                  }}
+                  incidentsCount={item.instancesWithActiveIncidentsCount}
+                  size="small"
+                />
+              </LinkWrapper>
+            </Li>
+          );
+        })}
+      </ul>
+    );
+  },
+);
 
 export {Details};

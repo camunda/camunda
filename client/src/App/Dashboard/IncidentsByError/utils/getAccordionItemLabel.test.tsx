@@ -9,6 +9,15 @@ import {getAccordionItemLabel} from './getAccordionItemLabel';
 
 describe('getAccordionItemLabel', () => {
   it('should get label', () => {
-    expect(getAccordionItemLabel('myProcess', 2)).toBe('myProcess – Version 2');
+    expect(getAccordionItemLabel({name: 'myProcess', version: 2})).toBe(
+      'myProcess – Version 2',
+    );
+    expect(
+      getAccordionItemLabel({
+        name: 'myProcess',
+        version: 2,
+        tenant: 'Tenant A',
+      }),
+    ).toBe('myProcess – Version 2 – Tenant A');
   });
 });

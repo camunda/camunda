@@ -7,16 +7,25 @@
 
 import pluralSuffix from 'modules/utils/pluralSuffix';
 
-function getAccordionItemTitle(
-  processName: string,
-  instancesCount: number,
-  versionName: number,
-  errorMessage: string,
-) {
+function getAccordionItemTitle({
+  processName,
+  instancesCount,
+  versionName,
+  errorMessage,
+  tenant,
+}: {
+  processName: string;
+  instancesCount: number;
+  versionName: number;
+  errorMessage: string;
+  tenant?: string;
+}) {
   return `View ${pluralSuffix(
     instancesCount,
     'Instance',
-  )} with error ${errorMessage} in version ${versionName} of Process ${processName}`;
+  )} with error ${errorMessage} in version ${versionName} of Process ${processName}${
+    tenant ? ` – ${tenant}` : ''
+  }`;
 }
 
 export {getAccordionItemTitle};

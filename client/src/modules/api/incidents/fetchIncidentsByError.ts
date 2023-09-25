@@ -9,6 +9,7 @@ import {requestAndParse} from 'modules/request';
 
 type ProcessDto = {
   processId: string;
+  tenantId: string;
   version: number;
   name: null | string;
   bpmnProcessId: string;

@@ -13,12 +13,14 @@ describe('stores/processInstancesByName', () => {
   const mockInstancesByProcess = [
     {
       bpmnProcessId: 'withoutIncidentsProcess',
+      tenantId: '<default>',
       processName: 'Without Incidents Process',
       instancesWithActiveIncidentsCount: 0,
       activeInstancesCount: 28,
       processes: [
         {
           processId: '2251799813685668',
+          tenantId: '<default>',
           version: 1,
           name: 'Without Incidents Process',
           bpmnProcessId: 'withoutIncidentsProcess',
@@ -28,6 +30,7 @@ describe('stores/processInstancesByName', () => {
         },
         {
           processId: '2251799813685737',
+          tenantId: '<default>',
           version: 2,
           name: 'Without Incidents Process',
           bpmnProcessId: 'withoutIncidentsProcess',
@@ -39,12 +42,14 @@ describe('stores/processInstancesByName', () => {
     },
     {
       bpmnProcessId: 'bigVarProcess',
+      tenantId: '<default>',
       processName: 'Big variable process',
       instancesWithActiveIncidentsCount: 0,
       activeInstancesCount: 1,
       processes: [
         {
           processId: '2251799813686019',
+          tenantId: '<default>',
           version: 1,
           name: 'Big variable process',
           bpmnProcessId: 'bigVarProcess',
@@ -138,6 +143,7 @@ describe('stores/processInstancesByName', () => {
       ...mockInstancesByProcess,
       {
         bpmnProcessId: 'anotherProcess',
+        tenantId: '<default>',
         processName: 'Another Process',
         instancesWithActiveIncidentsCount: 5,
         activeInstancesCount: 30,

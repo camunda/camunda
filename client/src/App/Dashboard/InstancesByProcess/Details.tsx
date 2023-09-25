@@ -13,6 +13,8 @@ import {tracking} from 'modules/tracking';
 import {ProcessInstanceByNameDto} from 'modules/api/incidents/fetchProcessInstancesByName';
 import {Li, LinkWrapper} from '../styled';
 import {InstancesBar} from 'modules/components/InstancesBar';
+import {authenticationStore} from 'modules/stores/authentication';
+import {observer} from 'mobx-react';
 
 type Props = {
   processName: string;
@@ -20,62 +22,85 @@ type Props = {
   tabIndex?: number;
 };
 
-const Details: React.FC<Props> = ({processName, processes, tabIndex}) => {
-  return (
-    <ul>
-      {processes.map((process) => {
-        const totalInstancesCount =
-          process.instancesWithActiveIncidentsCount +
-          process.activeInstancesCount;
-        return (
-          <Li key={process.processId}>
-            <LinkWrapper
-              tabIndex={tabIndex ?? 0}
-              to={Locations.processes({
-                process: process.bpmnProcessId,
-                version: process.version.toString(),
-                active: true,
-                incidents: true,
-                ...(totalInstancesCount === 0
-                  ? {
-                      completed: true,
-                      canceled: true,
-                    }
-                  : {}),
-              })}
-              onClick={() => {
-                panelStatesStore.expandFiltersPanel();
-                tracking.track({
-                  eventName: 'navigation',
-                  link: 'dashboard-process-instances-by-name-single-version',
-                });
-              }}
-              title={getAccordionItemTitle(
-                process.name || processName,
-                totalInstancesCount,
-                process.version,
-              )}
-            >
-              <InstancesBar
-                label={{
-                  type: 'process',
-                  size: 'small',
-                  text: getAccordionItemLabel(
-                    process.name || processName,
-                    totalInstancesCount,
-                    process.version,
-                  ),
+const Details: React.FC<Props> = observer(
+  ({processName, processes, tabIndex}) => {
+    const isMultiTenancyEnabled = window.clientConfig?.multiTenancyEnabled;
+
+    return (
+      <ul>
+        {processes.map((process) => {
+          const tenantName =
+            authenticationStore.tenantsById?.[process.tenantId] ??
+            process.tenantId;
+
+          const totalInstancesCount =
+            process.instancesWithActiveIncidentsCount +
+            process.activeInstancesCount;
+          return (
+            <Li key={process.processId}>
+              <LinkWrapper
+                tabIndex={tabIndex ?? 0}
+                to={Locations.processes({
+                  process: process.bpmnProcessId,
+                  version: process.version.toString(),
+                  active: true,
+                  incidents: true,
+                  ...(totalInstancesCount === 0
+                    ? {
+                        completed: true,
+                        canceled: true,
+                      }
+                    : {}),
+                  ...(isMultiTenancyEnabled
+                    ? {
+                        tenant: process.tenantId,
+                      }
+                    : {}),
+                })}
+                onClick={() => {
+                  panelStatesStore.expandFiltersPanel();
+                  tracking.track({
+                    eventName: 'navigation',
+                    link: 'dashboard-process-instances-by-name-single-version',
+                  });
                 }}
-                incidentsCount={process.instancesWithActiveIncidentsCount}
-                activeInstancesCount={process.activeInstancesCount}
-                size="small"
-              />
-            </LinkWrapper>
-          </Li>
-        );
-      })}
-    </ul>
-  );
-};
+                title={getAccordionItemTitle({
+                  processName: process.name || processName,
+                  instancesCount: totalInstancesCount,
+                  version: process.version,
+                  ...(isMultiTenancyEnabled
+                    ? {
+                        tenant: tenantName,
+                      }
+                    : {}),
+                })}
+              >
+                <InstancesBar
+                  label={{
+                    type: 'process',
+                    size: 'small',
+                    text: getAccordionItemLabel({
+                      name: process.name || processName,
+                      instancesCount: totalInstancesCount,
+                      version: process.version,
+                      ...(isMultiTenancyEnabled
+                        ? {
+                            tenant: tenantName,
+                          }
+                        : {}),
+                    }),
+                  }}
+                  incidentsCount={process.instancesWithActiveIncidentsCount}
+                  activeInstancesCount={process.activeInstancesCount}
+                  size="small"
+                />
+              </LinkWrapper>
+            </Li>
+          );
+        })}
+      </ul>
+    );
+  },
+);
 
 export {Details};

@@ -17,6 +17,7 @@ import {getSearchString} from 'modules/utils/getSearchString';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 import {sortOptions} from 'modules/utils/sortOptions';
 import {DEFAULT_TENANT, PERMISSIONS} from 'modules/constants';
+import {generateProcessKey} from 'modules/utils/generateProcessKey';
 
 type Process = ProcessDto & {key: string};
 type State = {
@@ -27,10 +28,6 @@ type State = {
 const INITIAL_STATE: State = {
   processes: [],
   status: 'initial',
-};
-
-const generateProcessKey = (bpmnProcessId: string, tenantId?: string) => {
-  return `{${bpmnProcessId}}-{${tenantId ?? DEFAULT_TENANT}}`;
 };
 
 class Processes extends NetworkReconnectionHandler {
@@ -223,4 +220,4 @@ class Processes extends NetworkReconnectionHandler {
 
 const processesStore = new Processes();
 
-export {processesStore, generateProcessKey};
+export {processesStore};

@@ -5,8 +5,16 @@
  * except in compliance with the proprietary license.
  */
 
-function getAccordionItemLabel(name: string, version: number) {
-  return `${name} – Version ${version}`;
+function getAccordionItemLabel({
+  name,
+  version,
+  tenant,
+}: {
+  name: string;
+  version: number;
+  tenant?: string;
+}) {
+  return `${name} – Version ${version}${tenant ? ` – ${tenant}` : ''}`;
 }
 
 export {getAccordionItemLabel};
