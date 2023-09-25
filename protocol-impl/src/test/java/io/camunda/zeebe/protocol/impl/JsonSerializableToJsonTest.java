@@ -813,7 +813,8 @@ final class JsonSerializableToJsonTest {
                   .setVariables(VARIABLES_MSGPACK)
                   .setTimeToLive(timeToLive)
                   .setDeadline(22L)
-                  .setMessageId(wrapString(messageId));
+                  .setMessageId(wrapString(messageId))
+                  .setTenantId("foo");
             },
         """
         {
@@ -825,7 +826,7 @@ final class JsonSerializableToJsonTest {
           "messageId": "test-id",
           "name": "test-message",
           "deadline": 22,
-          "tenantId": "<default>"
+          "tenantId": "foo"
         }
         """
       },
