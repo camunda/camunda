@@ -116,6 +116,21 @@ public class DbMigrationState implements MutableMigrationState {
   /** [tenant id | process definition key] => process */
   private final ColumnFamily<DbTenantAwareKey<DbLong>, PersistedProcess> processColumnFamily;
 
+  private final DbString processId;
+  private final DbLong processVersion;
+  private final DbCompositeKey<DbString, DbLong> idAndVersionKey;
+
+  /** [process id | process version] => process */
+  private final ColumnFamily<DbCompositeKey<DbString, DbLong>, PersistedProcess>
+      deprecatedProcessCacheByIdAndVersionColumnFamily;
+
+  private final DbTenantAwareKey<DbCompositeKey<DbString, DbLong>>
+      tenantAwareProcessIdAndVersionKey;
+
+  /** [tenant id | process id | process version] => process */
+  private final ColumnFamily<DbTenantAwareKey<DbCompositeKey<DbString, DbLong>>, PersistedProcess>
+      processByIdAndVersionColumnFamily;
+
   public DbMigrationState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     migrationIdentifier = new DbString();
@@ -258,6 +273,25 @@ public class DbMigrationState implements MutableMigrationState {
             ZbColumnFamilies.PROCESS_CACHE,
             transactionContext,
             tenantAwareProcessDefinitionKey,
+            persistedProcess);
+
+    processId = new DbString();
+    processVersion = new DbLong();
+    idAndVersionKey = new DbCompositeKey<>(processId, processVersion);
+    deprecatedProcessCacheByIdAndVersionColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.DEPRECATED_PROCESS_CACHE_BY_ID_AND_VERSION,
+            transactionContext,
+            idAndVersionKey,
+            persistedProcess);
+
+    tenantAwareProcessIdAndVersionKey =
+        new DbTenantAwareKey<>(tenantIdKey, idAndVersionKey, PlacementType.PREFIX);
+    processByIdAndVersionColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.PROCESS_CACHE_BY_ID_AND_VERSION,
+            transactionContext,
+            tenantAwareProcessIdAndVersionKey,
             persistedProcess);
   }
 
@@ -429,6 +463,16 @@ public class DbMigrationState implements MutableMigrationState {
           processDefinitionKey.wrapLong(key.getValue());
           processColumnFamily.insert(tenantAwareProcessDefinitionKey, value);
           deprecatedProcessCacheColumnFamily.deleteExisting(key);
+        });
+
+    deprecatedProcessCacheByIdAndVersionColumnFamily.forEach(
+        (key, value) -> {
+          value.setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+          tenantIdKey.wrapString(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+          processId.wrapBuffer(value.getBpmnProcessId());
+          processVersion.wrapLong(value.getVersion());
+          processByIdAndVersionColumnFamily.insert(tenantAwareProcessIdAndVersionKey, value);
+          deprecatedProcessCacheByIdAndVersionColumnFamily.deleteExisting(key);
         });
   }
 
