@@ -88,7 +88,7 @@ public final class LongPollingActivateJobsHandler implements ActivateJobsHandler
       final BrokerActivateJobsRequest request,
       final ServerStreamObserver<ActivateJobsResponse> responseObserver,
       final long requestTimeout) {
-    final var type = request.getType();
+    final var type = request.getRequestWriter().getType();
     final var longPollingRequest =
         toInflightActivateJobsRequest(request, responseObserver, requestTimeout);
     activateJobs(longPollingRequest);
