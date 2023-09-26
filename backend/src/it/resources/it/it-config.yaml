@@ -3,6 +3,7 @@ container:
   ports:
     http: ${optimizeHttpPort:8090}
     https: ${optimizeHttpsPort:8091}
+  enableSniCheck: false
 
 api:
   accessToken: secret

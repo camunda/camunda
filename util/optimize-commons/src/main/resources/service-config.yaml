@@ -119,6 +119,8 @@ container:
   keystore:
     location: ${CAMUNDA_OPTIMIZE_CONTAINER_KEYSTORE_LOCATION:keystore.jks}
     password: ${CAMUNDA_OPTIMIZE_CONTAINER_KEYSTORE_PASSWORD:optimize}
+  # Determines whether SNI checking should be enabled
+  enableSniCheck: ${CAMUNDA_OPTIMIZE_CONTAINER_ENABLE_SNI_CHECK:true}
   # configuration of status reporting web socket
   status:
     # max number of threads\sessions that will be kept to report status

@@ -47,7 +47,6 @@ import java.util.Optional;
 
 import static org.camunda.optimize.jetty.OptimizeResourceConstants.STATUS_WEBSOCKET_PATH;
 import static org.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants.CONTEXT_PATH;
-import static org.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants.INTEGRATION_TESTS;
 import static org.eclipse.jetty.servlet.ServletContextHandler.getServletContextHandler;
 
 @Configuration
@@ -128,8 +127,7 @@ public class JettyConfig {
     https.setSendServerVersion(false);
     final SecureRequestCustomizer customizer =
       new SecureRequestCustomizer(
-        // We disable SNI checks for integration tests
-        !Boolean.parseBoolean(environment.getProperty(INTEGRATION_TESTS)),
+        configurationService.getContainerEnableSniCheck(),
         configurationService
           .getSecurityConfiguration()
           .getResponseHeaders()

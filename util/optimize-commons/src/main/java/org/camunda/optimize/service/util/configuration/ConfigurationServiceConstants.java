@@ -99,6 +99,7 @@ public class ConfigurationServiceConstants {
   public static final String CONTAINER_CONTEXT_PATH = "$.container.contextPath";
   public static final String CONTAINER_KEYSTORE_PASSWORD = "$.container.keystore.password";
   public static final String CONTAINER_KEYSTORE_LOCATION = "$.container.keystore.location";
+  public static final String CONTAINER_ENABLE_SNI_CHECK = "$.container.enableSniCheck";
   public static final String CONTAINER_HTTPS_PORT = "$.container.ports.https";
   public static final String CONTAINER_HTTP_PORT = "$.container.ports.http";
 

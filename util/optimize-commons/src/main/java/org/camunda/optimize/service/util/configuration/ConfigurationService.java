@@ -162,6 +162,7 @@ public class ConfigurationService {
   private String contextPath;
   private String containerKeystorePassword;
   private String containerKeystoreLocation;
+  private Boolean containerEnableSniCheck;
   private Integer containerHttpsPort;
   private Integer actuatorPort;
 
@@ -810,6 +811,15 @@ public class ConfigurationService {
         .toExternalForm();
     }
     return containerKeystoreLocation;
+  }
+
+  public Boolean getContainerEnableSniCheck() {
+    if (containerEnableSniCheck == null) {
+      containerEnableSniCheck = configJsonContext.read(
+        ConfigurationServiceConstants.CONTAINER_ENABLE_SNI_CHECK, Boolean.class
+      );
+    }
+    return containerEnableSniCheck;
   }
 
   public Integer getContainerHttpsPort() {
