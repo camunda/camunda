@@ -132,7 +132,7 @@ public class OpensearchRecordsReader implements RecordsReader {
 
   @PostConstruct
   private void postConstruct() {
-    this.batchSizeThrottle = new NumberThrottleable.DivideNumberThrottle(operateProperties.getZeebeElasticsearch().getBatchSize());
+    this.batchSizeThrottle = new NumberThrottleable.DivideNumberThrottle(operateProperties.getZeebeOpensearch().getBatchSize());
   }
 
   @Override
@@ -194,7 +194,7 @@ public class OpensearchRecordsReader implements RecordsReader {
 
   @Override
   public ImportBatch readNextBatchBySequence(final Long sequence, final Long lastSequence) throws NoSuchIndexException {
-    final String aliasName = importValueType.getAliasName(operateProperties.getZeebeElasticsearch().getPrefix());
+    final String aliasName = importValueType.getAliasName(operateProperties.getZeebeOpensearch().getPrefix());
     int batchSize = batchSizeThrottle.get();
     if (batchSize != batchSizeThrottle.getOriginal()) {
       logger.warn("Use new batch size {} (original {})", batchSize, batchSizeThrottle.getOriginal());

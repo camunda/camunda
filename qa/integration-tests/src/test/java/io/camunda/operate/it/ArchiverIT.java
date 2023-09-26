@@ -6,28 +6,37 @@
  */
 package io.camunda.operate.it;
 
-import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllProcessInstancesQuery;
-import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllProcessInstancesRequest;
-import static org.assertj.core.api.Assertions.assertThat;
-import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
-import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
-import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
-import static io.camunda.operate.util.MetricAssert.assertThatMetricsFrom;
-import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
-import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
-import static org.hamcrest.CoreMatchers.allOf;
-import static org.hamcrest.CoreMatchers.containsString;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.archiver.Archiver;
 import io.camunda.operate.archiver.BatchOperationArchiverJob;
 import io.camunda.operate.archiver.ProcessInstancesArchiverJob;
+import io.camunda.operate.entities.BatchOperationEntity;
+import io.camunda.operate.entities.OperationType;
+import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
+import io.camunda.operate.exceptions.ArchiverException;
+import io.camunda.operate.schema.templates.BatchOperationTemplate;
+import io.camunda.operate.schema.templates.IncidentTemplate;
+import io.camunda.operate.schema.templates.ListViewTemplate;
+import io.camunda.operate.schema.templates.ProcessInstanceDependant;
+import io.camunda.operate.schema.templates.SequenceFlowTemplate;
+import io.camunda.operate.util.CollectionUtil;
+import io.camunda.operate.util.MetricAssert;
+import io.camunda.operate.util.OperateZeebeIntegrationTest;
+import io.camunda.operate.util.ZeebeTestUtil;
 import io.camunda.operate.webapp.reader.ListViewReader;
+import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
+import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
+import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
+import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import io.camunda.operate.webapp.writer.BatchOperationWriter;
+import io.camunda.operate.webapp.zeebe.operation.CancelProcessInstanceHandler;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.springframework.beans.factory.BeanFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
@@ -38,45 +47,21 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import io.camunda.operate.entities.BatchOperationEntity;
-import io.camunda.operate.entities.OperationType;
-import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
-import io.camunda.operate.exceptions.ArchiverException;
-import io.camunda.operate.schema.templates.BatchOperationTemplate;
-import io.camunda.operate.schema.templates.IncidentTemplate;
-import io.camunda.operate.schema.templates.ListViewTemplate;
-import io.camunda.operate.schema.templates.SequenceFlowTemplate;
-import io.camunda.operate.schema.templates.ProcessInstanceDependant;
-import io.camunda.operate.util.CollectionUtil;
-import io.camunda.operate.util.ElasticsearchUtil;
-import io.camunda.operate.util.MetricAssert;
-import io.camunda.operate.util.OperateZeebeIntegrationTest;
-import io.camunda.operate.util.ZeebeTestUtil;
-import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
-import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
-import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
-import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
-import io.camunda.operate.webapp.zeebe.operation.CancelProcessInstanceHandler;
-import org.elasticsearch.ElasticsearchStatusException;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.index.query.IdsQueryBuilder;
-import org.elasticsearch.index.query.TermQueryBuilder;
-import org.elasticsearch.index.query.TermsQueryBuilder;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.springframework.beans.factory.BeanFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllProcessInstancesQuery;
+import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllProcessInstancesRequest;
+import static io.camunda.operate.util.MetricAssert.assertThatMetricsFrom;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.CoreMatchers.containsString;
 
 public class ArchiverIT extends OperateZeebeIntegrationTest {
+  @Autowired
+  private ArchiverITRepository archiverITRepository;
 
   @Autowired
   private ListViewReader listViewReader;
@@ -88,9 +73,6 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
   private Archiver archiver;
 
   @Autowired
-  private RestHighLevelClient esClient;
-
-  @Autowired
   private ListViewTemplate processInstanceTemplate;
 
   @Autowired
@@ -98,9 +80,6 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
 
   @Autowired
   private BatchOperationWriter batchOperationWriter;
-
-  @Autowired
-  private ObjectMapper objectMapper;
 
   @Autowired
   private List<ProcessInstanceDependant> processInstanceDependantTemplates;
@@ -371,17 +350,9 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
     } else {
       destinationIndexName = archiver.getDestinationIndexName(batchOperationTemplate.getFullQualifiedName(), "");
     }
-    final IdsQueryBuilder idsQ = idsQuery().addIds(CollectionUtil.toSafeArrayOfStrings(ids));
 
-    final SearchRequest searchRequest = new SearchRequest(destinationIndexName)
-        .source(new SearchSourceBuilder()
-            .query(constantScoreQuery(idsQ))
-            .size(100));
+    final List<BatchOperationEntity> bos = archiverITRepository.getBatchOperationEntities(destinationIndexName, ids);
 
-    final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
-
-    final List<BatchOperationEntity> bos = ElasticsearchUtil
-        .mapSearchHits(response.getHits().getHits(), objectMapper, BatchOperationEntity.class);
     assertThat(bos).hasSize(instancesCount);
     assertThat(bos).extracting(BatchOperationTemplate.ID).containsExactlyInAnyOrderElementsOf(ids);
   }
@@ -406,27 +377,14 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
     } else {
       destinationIndexName = archiver.getDestinationIndexName(processInstanceTemplate.getFullQualifiedName(), "");
     }
-    final IdsQueryBuilder idsQ = idsQuery().addIds(CollectionUtil.toSafeArrayOfStrings(ids));
-    final TermQueryBuilder isProcessInstanceQuery = termQuery(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION);
 
-    final SearchRequest searchRequest = new SearchRequest(destinationIndexName)
-      .source(new SearchSourceBuilder()
-        .query(constantScoreQuery(joinWithAnd(idsQ, isProcessInstanceQuery)))
-        .size(100));
-
-    final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
-
-    final List<ProcessInstanceForListViewEntity> processInstances = ElasticsearchUtil
-      .mapSearchHits(response.getHits().getHits(), objectMapper, ProcessInstanceForListViewEntity.class);
-    assertThat(processInstances).hasSize(instancesCount);
+    final List<ProcessInstanceForListViewEntity> processInstances = archiverITRepository.getProcessInstances(destinationIndexName, ids);
     assertThat(processInstances).extracting(ListViewTemplate.PROCESS_INSTANCE_KEY).containsExactlyInAnyOrderElementsOf(ids);
     if (endDate != null) {
       assertThat(processInstances).extracting(ListViewTemplate.END_DATE).allMatch(ed -> ((OffsetDateTime) ed).toInstant().equals(endDate));
     }
     //TODO assert children records - activities
   }
-
-
 
   private void assertDependentIndex(String mainIndexName, String idFieldName, List<Long> ids, Instant endDate, boolean ignoreAbsentIndex) throws IOException {
     final String destinationIndexName;
@@ -435,21 +393,10 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
     } else {
       destinationIndexName = archiver.getDestinationIndexName(mainIndexName, "");
     }
-    try {
-      final TermsQueryBuilder q = termsQuery(idFieldName, CollectionUtil.toSafeArrayOfStrings(ids));
-      final SearchRequest request = new SearchRequest(destinationIndexName)
-          .source(new SearchSourceBuilder()
-              .query(q)
-              .size(100));
-      final List<Long> idsFromEls = ElasticsearchUtil
-          .scrollFieldToList(request, idFieldName, esClient);
-      assertThat(idsFromEls).as(mainIndexName).isSubsetOf(ids);
-    } catch (ElasticsearchStatusException ex) {
-      if (!ex.getMessage().contains("index_not_found_exception") || !ignoreAbsentIndex) {
-        throw ex;
-      }
-      //else ignore
-    }
+
+    final Optional<List<Long>> maybeIdsFromDstIndex = archiverITRepository.getIds(destinationIndexName, idFieldName, ids, ignoreAbsentIndex);
+
+    maybeIdsFromDstIndex.ifPresent(idsFromDstIndex -> assertThat(idsFromDstIndex).as(mainIndexName).isSubsetOf(ids));
   }
 
   private void finishInstances(int count, Instant currentTime, String taskId) {
@@ -484,7 +431,8 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
           .done();
 
     tester
-      .deployProcess(startEndProcess, "startEndProcess.bpmn").processIsDeployed()
+      .deployProcess(startEndProcess, "startEndProcess.bpmn")
+      .processIsDeployed()
       .and()
       .startProcessInstance(bpmnProcessId)
       .waitUntil()

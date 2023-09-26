@@ -93,15 +93,19 @@ public interface QueryDSL {
     return ids(List.of(ids));
   }
 
+  static <C extends Collection<Integer>> Query intTerms(String field, C values) {
+    return terms(field, values, FieldValue::of);
+  }
+
   static <A> JsonData json(A value) {
     return JsonData.of(value);
   }
 
   static <C extends Collection<Long>> Query longTerms(String field, C values) {
-    return longTerms(field, values, FieldValue::of);
+    return terms(field, values, FieldValue::of);
   }
 
-  static <A> Query longTerms(String field, Collection<A> values, Function<A, FieldValue> toFieldValue) {
+  static <A> Query terms(String field, Collection<A> values, Function<A, FieldValue> toFieldValue) {
     final List<FieldValue> fieldValues = values.stream().map(toFieldValue).toList();
     return TermsQuery.of(q -> q
       .field(field)
@@ -178,7 +182,7 @@ public interface QueryDSL {
   }
 
   static <C extends Collection<String>> Query stringTerms(String field, C values) {
-    return longTerms(field, values, FieldValue::of);
+    return terms(field, values, FieldValue::of);
   }
 
   static Query term(String field, Integer value) {

@@ -23,8 +23,8 @@ public abstract class AbstractArchiverJob implements ArchiverJob {
 
   private static final Logger logger = LoggerFactory.getLogger(AbstractArchiverJob.class);
 
-  protected static final String DATES_AGG = "datesAgg";
-  protected static final String INSTANCES_AGG = "instancesAgg";
+  public static final String DATES_AGG = "datesAgg";
+  public static final String INSTANCES_AGG = "instancesAgg";
 
   private final BackoffIdleStrategy idleStrategy;
   private final BackoffIdleStrategy errorStrategy;

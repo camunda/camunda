@@ -6,23 +6,50 @@
  */
 package io.camunda.operate.store.opensearch.dsl;
 
+import io.camunda.operate.exceptions.OperateRuntimeException;
 import org.opensearch.client.opensearch._types.SortOptions;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.aggregations.*;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
+import org.springframework.lang.Nullable;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.sourceInclude;
+import static java.lang.String.format;
 
 public interface AggregationDSL {
+  static BucketSortAggregation bucketSortAggregation(@Nullable Integer size, SortOptions... sortOptions) {
+    return BucketSortAggregation.of(a -> a.sort(Arrays.asList(sortOptions)).size(size));
+  }
+
   static CardinalityAggregation cardinalityAggregation(String field) {
     return CardinalityAggregation.of(a -> a.field(field));
   }
 
   static CardinalityAggregation cardinalityAggregation(String field, int precisionThreshold) {
     return CardinalityAggregation.of(a -> a.field(field).precisionThreshold(precisionThreshold));
+  }
+
+  static CalendarInterval calendarIntervalByAlias(String alias) {
+    return Arrays.stream(CalendarInterval.values())
+      .filter(ci -> Arrays.asList(ci.aliases()).contains(alias))
+      .findFirst()
+      .orElseThrow(() -> {
+        List<String> legalAliases = Arrays.stream(CalendarInterval.values()).flatMap(v -> Arrays.stream(v.aliases())).sorted().toList();
+        return new OperateRuntimeException(format("Unknown CalendarInterval alias %s! Legal aliases: %s", alias, legalAliases));
+      });
+  }
+
+  static DateHistogramAggregation dateHistogramAggregation(String field, String calendarIntervalAlias, String format, boolean keyed) {
+    return DateHistogramAggregation.of(a ->
+      a.field(field)
+        .calendarInterval(calendarIntervalByAlias(calendarIntervalAlias))
+        .format(format)
+        .keyed(keyed)
+    );
   }
 
   static FiltersAggregation filtersAggregation(Map<String, Query> queries) {
@@ -45,12 +72,12 @@ public interface AggregationDSL {
     return TopHitsAggregation.of(a -> a.size(size).sort(List.of(sortOptions)));
   }
 
-  static Aggregation withSubaggregations(TermsAggregation termsAggregation, Map<String, Aggregation> aggregations) {
-    return Aggregation.of(a -> a.terms(termsAggregation).aggregations(aggregations));
+  static Aggregation withSubaggregations(DateHistogramAggregation aggregation, Map<String, Aggregation> aggregations) {
+    return Aggregation.of(a -> a.dateHistogram(aggregation).aggregations(aggregations));
   }
 
-  static Aggregation withSubaggregations(FiltersAggregation filtersAggregation, Map<String, Aggregation> aggregations) {
-    return Aggregation.of(a -> a.filters(filtersAggregation).aggregations(aggregations));
+  static Aggregation withSubaggregations(FiltersAggregation aggregation, Map<String, Aggregation> aggregations) {
+    return Aggregation.of(a -> a.filters(aggregation).aggregations(aggregations));
   }
 
   static Aggregation withSubaggregations(ChildrenAggregation childrenAggregation, Map<String, Aggregation> aggregations) {
@@ -59,6 +86,10 @@ public interface AggregationDSL {
 
   static Aggregation withSubaggregations(Query query, Map<String, Aggregation> aggregations) {
     return Aggregation.of(a -> a.filter(query).aggregations(aggregations));
+  }
+
+  static Aggregation withSubaggregations(TermsAggregation aggregation, Map<String, Aggregation> aggregations) {
+    return Aggregation.of(a -> a.terms(aggregation).aggregations(aggregations));
   }
 
   static ParentAggregation parent(String type){

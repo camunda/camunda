@@ -35,10 +35,7 @@ public class OpenSearchAsyncDocumentOperations extends OpenSearchAsyncOperation 
     return safe(() -> openSearchAsyncClient.deleteByQuery(requestBuilder.build()), errorMessageSupplier);
   }
 
-  // TODO check unsued
-  private CompletableFuture<SearchResponse<Object>> searchAsync(
-    final SearchRequest searchRequest,
-    Function<Exception, String> errorMessageSupplier) {
-    return safe(() -> openSearchAsyncClient.search(searchRequest, Object.class), errorMessageSupplier);
+  public <R> CompletableFuture<SearchResponse<R>> search(SearchRequest.Builder searchRequestBuilder, Class<R> clazz, Function<Exception, String> errorMessageSupplier) {
+    return safe(() -> openSearchAsyncClient.search(searchRequestBuilder.build(), clazz), errorMessageSupplier);
   }
 }
