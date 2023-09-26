@@ -27,7 +27,7 @@ const Decision: React.FC = observer(() => {
   const navigate = useNavigate();
 
   const {
-    state: {status, decisions},
+    state: {status},
     getDecisionName,
     getDecisionDefinitionId,
   } = groupedDecisionsStore;
@@ -35,18 +35,21 @@ const Decision: React.FC = observer(() => {
   const params = new URLSearchParams(location.search);
   const version = params.get('version');
   const decisionId = params.get('name');
+  const tenant = params.get('tenant');
   const [currentDecisionId, setCurrentDecisionId] = useState<string | null>(
     null,
   );
 
   const isDecisionSelected = decisionId !== null;
   const isVersionSelected = version !== null && version !== 'all';
-  const decisionName = getDecisionName(decisionId) ?? 'Decision';
+  const decisionName =
+    getDecisionName({decisionId, tenantId: tenant}) ?? 'Decision';
 
   const decisionDefinitionId =
     isDecisionSelected && isVersionSelected
       ? getDecisionDefinitionId({
           decisionId,
+          tenantId: tenant,
           version: Number(version),
         })
       : null;
@@ -57,7 +60,10 @@ const Decision: React.FC = observer(() => {
         decisionXmlStore.reset();
 
         if (
-          !groupedDecisionsStore.isSelectedDecisionValid(decisions, decisionId)
+          !groupedDecisionsStore.isSelectedDecisionValid({
+            decisionId,
+            tenantId: tenant,
+          })
         ) {
           navigate(deleteSearchParams(location, ['name', 'version']));
           notificationsStore.displayNotification({
@@ -75,9 +81,9 @@ const Decision: React.FC = observer(() => {
     isDecisionSelected,
     status,
     decisionId,
+    tenant,
     location,
     navigate,
-    decisions,
   ]);
 
   useEffect(() => {
@@ -140,6 +146,7 @@ const Decision: React.FC = observer(() => {
                 scopes: ['DELETE'],
                 permissions: groupedDecisionsStore.getPermissions(
                   decisionId ?? undefined,
+                  tenant,
                 ),
               }}
             >

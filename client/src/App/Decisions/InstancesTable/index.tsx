@@ -39,24 +39,28 @@ const InstancesTable: React.FC = observer(() => {
   const filters = useFilters();
 
   const {
-    state: {status: groupedDecisionsStatus, decisions},
+    state: {status: groupedDecisionsStatus},
   } = groupedDecisionsStore;
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const decisionId = params.get('name');
+    const tenantId = params.get('tenant');
 
     if (groupedDecisionsStatus === 'fetched') {
       if (
         decisionId !== null &&
-        !groupedDecisionsStore.isSelectedDecisionValid(decisions, decisionId)
+        !groupedDecisionsStore.isSelectedDecisionValid({
+          decisionId,
+          tenantId,
+        })
       ) {
         return;
       }
 
       decisionInstancesStore.fetchDecisionInstancesFromFilters();
     }
-  }, [location.search, groupedDecisionsStatus, decisions]);
+  }, [location.search, groupedDecisionsStatus]);
 
   const getTableState = () => {
     if (['initial', 'first-fetch'].includes(status)) {

@@ -21,16 +21,21 @@ import {sortOptions} from 'modules/utils/sortOptions';
 import {NetworkReconnectionHandler} from '../networkReconnectionHandler';
 import {getSearchString} from 'modules/utils/getSearchString';
 import {getDecisionInstanceFilters} from 'modules/utils/filter';
-import {PERMISSIONS} from 'modules/constants';
+import {DEFAULT_TENANT, PERMISSIONS} from 'modules/constants';
 
+type Decision = DecisionDto & {key: string};
 type State = {
-  decisions: DecisionDto[];
+  decisions: Decision[];
   status: 'initial' | 'fetching' | 'fetched' | 'error';
 };
 
 const DEFAULT_STATE: State = {
   decisions: [],
   status: 'initial',
+};
+
+const generateDecisionKey = (decisionId: string, tenantId?: string | null) => {
+  return `{${decisionId}}-{${tenantId ?? DEFAULT_TENANT}}`;
 };
 
 class GroupedDecisions extends NetworkReconnectionHandler {
@@ -50,6 +55,7 @@ class GroupedDecisions extends NetworkReconnectionHandler {
       reset: override,
       decisions: computed,
       decisionVersionsById: computed,
+      decisionVersionsByKey: computed,
     });
   }
 
@@ -65,7 +71,11 @@ class GroupedDecisions extends NetworkReconnectionHandler {
       const decisions = response.data;
       if (
         name !== undefined &&
-        !this.isSelectedDecisionValid(decisions, name)
+        decisions.find(
+          (decision) =>
+            decision.decisionId === name &&
+            decision.tenantId === (tenant ?? DEFAULT_TENANT),
+        ) === undefined
       ) {
         this.handleRefetch(decisions);
       } else {
@@ -95,11 +105,16 @@ class GroupedDecisions extends NetworkReconnectionHandler {
   };
 
   handleFetchSuccess = (decisions: DecisionDto[]) => {
-    this.state.decisions = decisions;
+    this.state.decisions = decisions.map((decision) => {
+      return {
+        key: generateDecisionKey(decision.decisionId, decision.tenantId),
+        ...decision,
+      };
+    });
     this.state.status = 'fetched';
   };
 
-  handleFetchFailure = (error?: unknown) => {
+  handleFetchFailure = () => {
     this.state.status = 'error';
   };
 
@@ -125,32 +140,54 @@ class GroupedDecisions extends NetworkReconnectionHandler {
     }, {});
   }
 
-  isSelectedDecisionValid = (decisions: DecisionDto[], decisionId: string) => {
-    return (
-      decisions.find((decision) => decision.decisionId === decisionId) !==
-      undefined
-    );
+  get decisionVersionsByKey() {
+    return this.state.decisions.reduce<{
+      [key: string]: DecisionDto['decisions'];
+    }>((decisionVersions, decision) => {
+      return {
+        ...decisionVersions,
+        [decision.key]: [...decision.decisions].sort(
+          (decisionA, decisionB) => decisionA.version - decisionB.version,
+        ),
+      };
+    }, {});
+  }
+
+  isSelectedDecisionValid = ({
+    decisionId,
+    tenantId,
+  }: {
+    decisionId: string;
+    tenantId?: string | null;
+  }) => {
+    return this.getDecision(decisionId, tenantId) !== undefined;
   };
 
-  getDecisionName = (decisionId: string | null) => {
-    const decision = this.state.decisions.find(
-      (decision) => decision.decisionId === decisionId,
-    );
+  getDecisionName = ({
+    decisionId,
+    tenantId,
+  }: {
+    decisionId: string | null;
+    tenantId?: string | null;
+  }) => {
+    const decision = this.getDecision(decisionId, tenantId);
 
     return decision?.name ?? decision?.decisionId;
   };
 
   getDecisionDefinitionId = ({
     decisionId,
+    tenantId,
     version,
   }: {
     decisionId: string;
+    tenantId?: string | null;
     version: number;
   }) => {
     return (
-      this.decisionVersionsById[decisionId]?.find(
-        (decision) => decision.version === version,
-      )?.id ?? null
+      this.decisionVersionsByKey[
+        generateDecisionKey(decisionId, tenantId)
+      ]?.find((decision) => decision.version === version)?.id ?? null
     );
   };
 
@@ -177,7 +214,15 @@ class GroupedDecisions extends NetworkReconnectionHandler {
     this.retryCount = 0;
   };
 
-  getPermissions = (decisionId?: string) => {
+  getDecision = (decisionId?: string | null, tenant?: string | null) => {
+    return this.state.decisions.find(
+      (decision) =>
+        decision.decisionId === decisionId &&
+        decision.tenantId === (tenant ?? DEFAULT_TENANT),
+    );
+  };
+
+  getPermissions = (decisionId?: string, tenant?: string | null) => {
     if (!window.clientConfig?.resourcePermissionsEnabled) {
       return PERMISSIONS;
     }
@@ -186,9 +231,7 @@ class GroupedDecisions extends NetworkReconnectionHandler {
       return [];
     }
 
-    return this.state.decisions.find(
-      (decision) => decision.decisionId === decisionId,
-    )?.permissions;
+    return this.getDecision(decisionId, tenant)?.permissions;
   };
 
   reset() {
@@ -198,3 +241,4 @@ class GroupedDecisions extends NetworkReconnectionHandler {
 }
 
 export const groupedDecisionsStore = new GroupedDecisions();
+export {generateDecisionKey};

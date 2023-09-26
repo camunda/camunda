@@ -9,7 +9,10 @@ import {parse, isValid} from 'date-fns';
 import {processesStore} from 'modules/stores/processes';
 import {getSearchString} from 'modules/utils/getSearchString';
 import {Location} from 'react-router-dom';
-import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
+import {
+  generateDecisionKey,
+  groupedDecisionsStore,
+} from 'modules/stores/groupedDecisions';
 import {getValidVariableValues} from './getValidVariableValues';
 import {variableFilterStore} from 'modules/stores/variableFilter';
 import {generateProcessKey} from '../generateProcessKey';
@@ -271,17 +274,25 @@ function getProcessIds({
   );
 }
 
-function getDecisionIds(name: string, decisionVersion: string) {
-  if (decisionVersion === 'all') {
-    return (
-      groupedDecisionsStore.decisionVersionsById[name]?.map(({id}) => id) ?? []
-    );
-  }
-
+function getDecisionIds({
+  name,
+  decisionVersion,
+  tenant,
+}: {
+  name: string;
+  decisionVersion: string;
+  tenant?: string;
+}) {
   return (
-    groupedDecisionsStore.decisionVersionsById?.[name]
-      ?.filter(({version}) => version === parseInt(decisionVersion))
-      ?.map(({id}) => id) ?? []
+    groupedDecisionsStore.decisionVersionsByKey[
+      generateDecisionKey(name, tenant)
+    ]
+      ?.filter(({version}) =>
+        decisionVersion === 'all'
+          ? true
+          : version === parseInt(decisionVersion),
+      )
+      .map(({id}) => id) ?? []
   );
 }
 
@@ -453,7 +464,11 @@ function getDecisionInstancesRequestFilters() {
           filters.name !== undefined &&
           value !== undefined
         ) {
-          const decisionDefinitionIds = getDecisionIds(filters.name, value);
+          const decisionDefinitionIds = getDecisionIds({
+            name: filters.name,
+            decisionVersion: value,
+            tenant: filters.tenant,
+          });
 
           if (decisionDefinitionIds.length > 0) {
             return {

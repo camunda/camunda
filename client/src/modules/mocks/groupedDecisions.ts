@@ -14,7 +14,25 @@ const groupedDecisions: DecisionDto[] = [
     name: 'Assign Approver Group',
     decisions: [
       {
+        id: '1',
+        version: 2,
+        decisionId: 'invoice-assign-approver',
+      },
+      {
         id: '0',
+        version: 1,
+        decisionId: 'invoice-assign-approver',
+      },
+    ],
+    permissions: ['READ'],
+  },
+  {
+    decisionId: 'invoice-assign-approver',
+    tenantId: 'tenant-A',
+    name: 'Assign Approver Group for tenant A',
+    decisions: [
+      {
+        id: '1',
         version: 2,
         decisionId: 'invoice-assign-approver',
       },

@@ -129,7 +129,7 @@ describe('<Decisions />', () => {
     jest.runOnlyPendingTimers();
 
     await waitFor(() => {
-      expect(groupedDecisionsStore.decisions.length).toBe(3);
+      expect(groupedDecisionsStore.decisions.length).toBe(4);
       expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions/);
       expect(screen.getByTestId('search').textContent).toBe(
         '?evaluated=true&failed=true',
