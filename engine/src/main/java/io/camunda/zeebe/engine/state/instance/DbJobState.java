@@ -348,6 +348,15 @@ public final class DbJobState implements JobState, MutableJobState {
   }
 
   @Override
+  public JobRecord getJob(final long key, final List<String> authorizedTenantIds) {
+    final JobRecord jobRecord = getJob(key);
+    if (authorizedTenantIds.contains(jobRecord.getTenantId())) {
+      return jobRecord;
+    }
+    return null;
+  }
+
+  @Override
   public long findBackedOffJobs(final long timestamp, final BiPredicate<Long, JobRecord> callback) {
     nextBackOffDueDate = -1L;
     backoffColumnFamily.whileTrue(

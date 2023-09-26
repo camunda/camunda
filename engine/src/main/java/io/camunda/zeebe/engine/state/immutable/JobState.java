@@ -30,6 +30,8 @@ public interface JobState {
 
   JobRecord getJob(long key);
 
+  JobRecord getJob(final long key, final List<String> authorizedTenantIds);
+
   long findBackedOffJobs(final long timestamp, final BiPredicate<Long, JobRecord> callback);
 
   enum State {
