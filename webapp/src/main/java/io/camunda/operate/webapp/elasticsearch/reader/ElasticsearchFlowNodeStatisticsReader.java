@@ -15,11 +15,9 @@ import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.webapp.elasticsearch.QueryHelper;
 import io.camunda.operate.webapp.reader.FlowNodeStatisticsReader;
-import io.camunda.operate.webapp.reader.ListViewReader;
 import io.camunda.operate.webapp.rest.dto.FlowNodeStatisticsDto;
-import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.tenant.TenantAwareElasticsearchClient;
-import io.camunda.operate.util.CollectionUtil;
+
 import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -68,9 +66,6 @@ public class ElasticsearchFlowNodeStatisticsReader implements FlowNodeStatistics
   private TenantAwareElasticsearchClient tenantAwareClient;
 
   @Autowired
-  private ListViewReader listViewReader;
-
-  @Autowired
   private ListViewTemplate listViewTemplate;
 
   @Autowired
@@ -94,8 +89,7 @@ public class ElasticsearchFlowNodeStatisticsReader implements FlowNodeStatistics
     return statisticsMap.values();
   }
 
-  @Override
-  public Map<String, FlowNodeStatisticsDto> runQueryAndCollectStats(SearchRequest searchRequest) {
+  private Map<String, FlowNodeStatisticsDto> runQueryAndCollectStats(SearchRequest searchRequest) {
     try {
       Map<String, FlowNodeStatisticsDto> statisticsMap = new HashMap<>();
       final SearchResponse searchResponse = tenantAwareClient.search(searchRequest);
@@ -116,9 +110,7 @@ public class ElasticsearchFlowNodeStatisticsReader implements FlowNodeStatistics
       throw new OperateRuntimeException(message, e);
     }
   }
-
-  @Override
-  public SearchRequest createQuery(ListViewQueryDto query, ElasticsearchUtil.QueryType queryType) {
+  private SearchRequest createQuery(ListViewQueryDto query, ElasticsearchUtil.QueryType queryType) {
     final QueryBuilder q = constantScoreQuery(queryHelper.createQueryFragment(query, queryType));
 
     ChildrenAggregationBuilder agg =
@@ -135,7 +127,7 @@ public class ElasticsearchFlowNodeStatisticsReader implements FlowNodeStatistics
     }
     agg = agg.subAggregation(getFinishedActivitiesAgg());
 
-    logger.debug("Activities statistics request: \n{}\n and aggregation: \n{}", q.toString(), agg.toString());
+    logger.debug("Activities statistics request: \n{}\n and aggregation: \n{}", q, agg);
 
     SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(listViewTemplate, queryType);
 

@@ -6,13 +6,10 @@
  */
 package io.camunda.operate.webapp.reader;
 
-import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.webapp.rest.dto.FlowNodeStatisticsDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
-import org.elasticsearch.action.search.SearchRequest;
 
 import java.util.Collection;
-import java.util.Map;
 
 public interface FlowNodeStatisticsReader {
     String AGG_ACTIVITIES = "activities";
@@ -25,7 +22,4 @@ public interface FlowNodeStatisticsReader {
 
     Collection<FlowNodeStatisticsDto> getFlowNodeStatistics(ListViewQueryDto query);
 
-    Map<String, FlowNodeStatisticsDto> runQueryAndCollectStats(SearchRequest searchRequest);
-
-    SearchRequest createQuery(ListViewQueryDto query, ElasticsearchUtil.QueryType queryType);
 }

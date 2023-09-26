@@ -8,12 +8,7 @@ package io.camunda.operate.store.opensearch.dsl;
 
 import org.opensearch.client.opensearch._types.SortOptions;
 import org.opensearch.client.opensearch._types.SortOrder;
-import org.opensearch.client.opensearch._types.aggregations.Aggregation;
-import org.opensearch.client.opensearch._types.aggregations.Buckets;
-import org.opensearch.client.opensearch._types.aggregations.CardinalityAggregation;
-import org.opensearch.client.opensearch._types.aggregations.FiltersAggregation;
-import org.opensearch.client.opensearch._types.aggregations.TermsAggregation;
-import org.opensearch.client.opensearch._types.aggregations.TopHitsAggregation;
+import org.opensearch.client.opensearch._types.aggregations.*;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 
 import java.util.List;
@@ -58,8 +53,20 @@ public interface AggregationDSL {
     return Aggregation.of(a -> a.filters(filtersAggregation).aggregations(aggregations));
   }
 
+  static Aggregation withSubaggregations(ChildrenAggregation childrenAggregation, Map<String, Aggregation> aggregations) {
+    return Aggregation.of(a -> a.children(childrenAggregation).aggregations(aggregations));
+  }
+
   static Aggregation withSubaggregations(Query query, Map<String, Aggregation> aggregations) {
     return Aggregation.of(a -> a.filter(query).aggregations(aggregations));
+  }
+
+  static ParentAggregation parent(String type){
+    return ParentAggregation.of(p -> p.type(type));
+  }
+
+  static ChildrenAggregation children(String type){
+    return ChildrenAggregation.of(c -> c.type(type));
   }
 }
 
