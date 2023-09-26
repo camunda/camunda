@@ -12,22 +12,18 @@ import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbForeignKey;
-import io.camunda.zeebe.db.impl.DbForeignKey.MatchType;
 import io.camunda.zeebe.db.impl.DbInt;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
-import io.camunda.zeebe.db.impl.DbTenantAwareKey;
-import io.camunda.zeebe.db.impl.DbTenantAwareKey.PlacementType;
-import io.camunda.zeebe.engine.state.deployment.Digest;
 import io.camunda.zeebe.engine.state.deployment.PersistedDecision;
 import io.camunda.zeebe.engine.state.deployment.PersistedDecisionRequirements;
-import io.camunda.zeebe.engine.state.deployment.PersistedProcess;
 import io.camunda.zeebe.engine.state.deployment.VersionInfo;
 import io.camunda.zeebe.engine.state.immutable.PendingMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.PendingProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.migration.MigrationTaskState.State;
+import io.camunda.zeebe.engine.state.migration.to_8_3.DbProcessMigrationState;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
@@ -36,7 +32,6 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionSt
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
-import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
@@ -106,56 +101,7 @@ public class DbMigrationState implements MutableMigrationState {
 
   private final DbString processIdKey;
   private final ColumnFamily<DbString, VersionInfo> processVersionInfoColumnFamily;
-
-  private final PersistedProcess persistedProcess;
-
-  /** [process definition key] => process */
-  private final ColumnFamily<DbLong, PersistedProcess> deprecatedProcessCacheColumnFamily;
-
-  private final DbString tenantIdKey;
-  private final DbTenantAwareKey<DbLong> tenantAwareProcessDefinitionKey;
-
-  /** [tenant id | process definition key] => process */
-  private final ColumnFamily<DbTenantAwareKey<DbLong>, PersistedProcess> processColumnFamily;
-
-  private final DbString processId;
-  private final DbLong processVersion;
-  private final DbCompositeKey<DbString, DbLong> idAndVersionKey;
-
-  /** [process id | process version] => process */
-  private final ColumnFamily<DbCompositeKey<DbString, DbLong>, PersistedProcess>
-      deprecatedProcessCacheByIdAndVersionColumnFamily;
-
-  private final DbTenantAwareKey<DbCompositeKey<DbString, DbLong>>
-      tenantAwareProcessIdAndVersionKey;
-
-  /** [tenant id | process id | process version] => process */
-  private final ColumnFamily<DbTenantAwareKey<DbCompositeKey<DbString, DbLong>>, PersistedProcess>
-      processByIdAndVersionColumnFamily;
-
-  private final Digest digest;
-  private final DbForeignKey<DbString> fkProcessId;
-
-  /** [process id] => digest */
-  private final ColumnFamily<DbForeignKey<DbString>, Digest> deprecatedDigestByIdColumnFamily;
-
-  private final DbTenantAwareKey<DbString> tenantAwareProcessId;
-  private final DbForeignKey<DbTenantAwareKey<DbString>> fkTenantAwareProcessId;
-
-  /** [tenant id | process id] => digest */
-  private final ColumnFamily<DbForeignKey<DbTenantAwareKey<DbString>>, Digest>
-      digestByIdColumnFamily;
-
-  private final VersionInfo versionInfo = new VersionInfo();
-
-  /** [process id] => version info */
-  private final ColumnFamily<DbString, VersionInfo> deprecatedNextValueColumnFamily;
-
-  private final DbString idKey;
-  private final DbTenantAwareKey<DbString> tenantAwareIdKey;
-
-  /** [tenant id | (process) id] => version info */
-  private final ColumnFamily<DbTenantAwareKey<DbString>, VersionInfo> versionInfoColumnFamily;
+  private final DbProcessMigrationState processMigrationState;
 
   public DbMigrationState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
@@ -280,84 +226,7 @@ public class DbMigrationState implements MutableMigrationState {
             processIdKey,
             new VersionInfo());
 
-    /* ==== ColumnFamilies for multi-tenancy migration ==== */
-
-    /* Process State ColumnFamilies */
-    persistedProcess = new PersistedProcess();
-    deprecatedProcessCacheColumnFamily =
-        zeebeDb.createColumnFamily(
-            ZbColumnFamilies.DEPRECATED_PROCESS_CACHE,
-            transactionContext,
-            processDefinitionKey,
-            persistedProcess);
-
-    tenantIdKey = new DbString();
-    tenantAwareProcessDefinitionKey =
-        new DbTenantAwareKey<>(tenantIdKey, processDefinitionKey, PlacementType.PREFIX);
-    processColumnFamily =
-        zeebeDb.createColumnFamily(
-            ZbColumnFamilies.PROCESS_CACHE,
-            transactionContext,
-            tenantAwareProcessDefinitionKey,
-            persistedProcess);
-
-    processId = new DbString();
-    processVersion = new DbLong();
-    idAndVersionKey = new DbCompositeKey<>(processId, processVersion);
-    deprecatedProcessCacheByIdAndVersionColumnFamily =
-        zeebeDb.createColumnFamily(
-            ZbColumnFamilies.DEPRECATED_PROCESS_CACHE_BY_ID_AND_VERSION,
-            transactionContext,
-            idAndVersionKey,
-            persistedProcess);
-
-    tenantAwareProcessIdAndVersionKey =
-        new DbTenantAwareKey<>(tenantIdKey, idAndVersionKey, PlacementType.PREFIX);
-    processByIdAndVersionColumnFamily =
-        zeebeDb.createColumnFamily(
-            ZbColumnFamilies.PROCESS_CACHE_BY_ID_AND_VERSION,
-            transactionContext,
-            tenantAwareProcessIdAndVersionKey,
-            persistedProcess);
-
-    digest = new Digest();
-    fkProcessId =
-        new DbForeignKey<>(
-            processId,
-            ZbColumnFamilies.DEPRECATED_PROCESS_CACHE_BY_ID_AND_VERSION,
-            MatchType.Prefix);
-    deprecatedDigestByIdColumnFamily =
-        zeebeDb.createColumnFamily(
-            ZbColumnFamilies.DEPRECATED_PROCESS_CACHE_DIGEST_BY_ID,
-            transactionContext,
-            fkProcessId,
-            digest);
-
-    tenantAwareProcessId = new DbTenantAwareKey<>(tenantIdKey, processId, PlacementType.PREFIX);
-    fkTenantAwareProcessId =
-        new DbForeignKey<>(
-            tenantAwareProcessId,
-            ZbColumnFamilies.PROCESS_CACHE_BY_ID_AND_VERSION,
-            MatchType.Prefix);
-    digestByIdColumnFamily =
-        zeebeDb.createColumnFamily(
-            ZbColumnFamilies.PROCESS_CACHE_DIGEST_BY_ID,
-            transactionContext,
-            fkTenantAwareProcessId,
-            digest);
-
-    deprecatedNextValueColumnFamily =
-        zeebeDb.createColumnFamily(
-            ZbColumnFamilies.DEPRECATED_PROCESS_VERSION,
-            transactionContext,
-            processIdKey,
-            versionInfo);
-
-    idKey = new DbString();
-    tenantAwareIdKey = new DbTenantAwareKey<>(tenantIdKey, idKey, PlacementType.PREFIX);
-    versionInfoColumnFamily =
-        zeebeDb.createColumnFamily(
-            ZbColumnFamilies.PROCESS_VERSION, transactionContext, tenantAwareIdKey, versionInfo);
+    processMigrationState = new DbProcessMigrationState(zeebeDb, transactionContext);
   }
 
   @Override
@@ -521,38 +390,7 @@ public class DbMigrationState implements MutableMigrationState {
 
   @Override
   public void migrateProcessStateForMultiTenancy() {
-    tenantIdKey.wrapString(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-
-    deprecatedProcessCacheColumnFamily.forEach(
-        (key, value) -> {
-          value.setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-          processDefinitionKey.wrapLong(key.getValue());
-          processColumnFamily.insert(tenantAwareProcessDefinitionKey, value);
-          deprecatedProcessCacheColumnFamily.deleteExisting(key);
-        });
-
-    deprecatedProcessCacheByIdAndVersionColumnFamily.forEach(
-        (key, value) -> {
-          value.setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-          processId.wrapBuffer(value.getBpmnProcessId());
-          processVersion.wrapLong(value.getVersion());
-          processByIdAndVersionColumnFamily.insert(tenantAwareProcessIdAndVersionKey, value);
-          deprecatedProcessCacheByIdAndVersionColumnFamily.deleteExisting(key);
-        });
-
-    deprecatedDigestByIdColumnFamily.forEach(
-        (key, value) -> {
-          processId.wrapBuffer(key.inner().getBuffer());
-          digestByIdColumnFamily.insert(fkTenantAwareProcessId, value);
-          deprecatedDigestByIdColumnFamily.deleteExisting(key);
-        });
-
-    deprecatedNextValueColumnFamily.forEach(
-        (key, value) -> {
-          idKey.wrapBuffer(key.getBuffer());
-          versionInfoColumnFamily.insert(tenantAwareIdKey, value);
-          deprecatedNextValueColumnFamily.deleteExisting(key);
-        });
+    processMigrationState.migrateProcessStateForMultiTenancy();
   }
 
   @Override
