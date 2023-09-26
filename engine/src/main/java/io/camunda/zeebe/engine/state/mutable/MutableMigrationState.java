@@ -33,6 +33,8 @@ public interface MutableMigrationState extends MigrationState {
 
   void migrateProcessDefinitionVersions();
 
+  void migrateProcessStateForMultiTenancy();
+
   /**
    * Changes the state of a migration to FINISHED to indicate it has been executed.
    *
