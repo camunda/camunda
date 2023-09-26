@@ -8,8 +8,8 @@
 package io.camunda.zeebe.transport.stream.impl;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.transport.stream.api.ClientStream;
 import io.camunda.zeebe.transport.stream.api.ClientStreamConsumer;
 import io.camunda.zeebe.util.buffer.BufferWriter;
@@ -25,14 +25,12 @@ record ClientStreamImpl<M extends BufferWriter>(
     ClientStreamConsumer clientStreamConsumer)
     implements ClientStream<M> {
 
-  ActorFuture<Void> push(final DirectBuffer payload, final ConcurrencyControl executor) {
-    final ActorFuture<Void> result = executor.createFuture();
+  ActorFuture<Void> push(final DirectBuffer payload) {
     try {
-      clientStreamConsumer.push(payload).whenComplete(result);
+      return clientStreamConsumer.push(payload);
     } catch (final Exception e) {
-      result.completeExceptionally(e);
+      return CompletableActorFuture.completedExceptionally(e);
     }
-    return result;
   }
 
   @Override

@@ -9,22 +9,25 @@ package io.camunda.zeebe.gateway.impl.stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.gateway.impl.stream.ClientStreamAdapter.ClientStreamConsumerImpl;
+import io.camunda.zeebe.gateway.impl.stream.StreamJobsHandler.JobStreamConsumer;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
 import io.camunda.zeebe.protocol.impl.stream.job.ActivatedJobImpl;
+import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.grpc.stub.StreamObserver;
 import java.time.Duration;
 import org.agrona.LangUtil;
 import org.junit.jupiter.api.Test;
 
-final class ClientStreamConsumerImplTest {
+final class JobStreamConsumerTest {
+  private final TestConcurrencyControl executor = new TestConcurrencyControl();
+
   @Test
   void shouldRethrowExceptionOnPushFailure() {
     // given
     final var failure = new RuntimeException("failed");
     final var failingObserver = new FailingStreamObserver(failure);
-    final var consumer = new ClientStreamConsumerImpl(failingObserver, Runnable::run);
+    final var consumer = new JobStreamConsumer(failingObserver, executor);
 
     // when
     final var result = consumer.push(BufferUtil.createCopy(new ActivatedJobImpl()));

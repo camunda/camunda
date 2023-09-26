@@ -19,6 +19,7 @@ import io.camunda.zeebe.gateway.impl.configuration.SecurityCfg;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.RoundRobinActivateJobsHandler;
+import io.camunda.zeebe.gateway.impl.stream.StreamJobsHandler;
 import io.camunda.zeebe.gateway.interceptors.impl.ContextInjectingInterceptor;
 import io.camunda.zeebe.gateway.interceptors.impl.DecoratedInterceptor;
 import io.camunda.zeebe.gateway.interceptors.impl.IdentityInterceptor;
@@ -46,6 +47,7 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinPool.ForkJoinWorkerThreadFactory;
@@ -100,7 +102,7 @@ public final class Gateway implements CloseableSilently {
     healthManager.setStatus(Status.STARTING);
 
     createAndStartActivateJobsHandler(brokerClient)
-        .thenApply(this::createServer)
+        .thenCombine(startClientStreamAdapter(), this::createServer)
         .thenAccept(this::startServer)
         .thenApply(ok -> this)
         .whenComplete(resultFuture);
@@ -120,7 +122,28 @@ public final class Gateway implements CloseableSilently {
     healthManager.setStatus(Status.RUNNING);
   }
 
-  private Server createServer(final ActivateJobsHandler activateJobsHandler) {
+  private CompletionStage<StreamJobsHandler> startClientStreamAdapter() {
+    final var adapter = new StreamJobsHandler(jobStreamer);
+    final var future = new CompletableFuture<StreamJobsHandler>();
+
+    actorSchedulingService
+        .submitActor(adapter)
+        .onComplete(
+            (ok, error) -> {
+              if (error != null) {
+                future.completeExceptionally(error);
+                return;
+              }
+
+              future.complete(adapter);
+            },
+            ForkJoinPool.commonPool());
+
+    return future;
+  }
+
+  private Server createServer(
+      final ActivateJobsHandler activateJobsHandler, final StreamJobsHandler streamJobsHandler) {
     final NetworkCfg network = gatewayCfg.getNetwork();
     final MultiTenancyCfg multiTenancy = gatewayCfg.getMultiTenancy();
 
@@ -129,8 +152,7 @@ public final class Gateway implements CloseableSilently {
     applySecurityConfiguration(serverBuilder);
 
     final var endpointManager =
-        new EndpointManager(
-            brokerClient, activateJobsHandler, jobStreamer, grpcExecutor, multiTenancy);
+        new EndpointManager(brokerClient, activateJobsHandler, streamJobsHandler, multiTenancy);
     final var gatewayGrpcService = new GatewayGrpcService(endpointManager);
     return buildServer(serverBuilder, gatewayGrpcService);
   }

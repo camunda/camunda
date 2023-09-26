@@ -9,8 +9,8 @@ package io.camunda.zeebe.transport.stream.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestActorFuture;
-import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.transport.stream.api.ClientStreamConsumer;
 import io.camunda.zeebe.transport.stream.api.ClientStreamId;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -18,7 +18,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -26,7 +25,7 @@ import org.junit.jupiter.api.Test;
 
 class AggregatedClientStreamTest {
   private static final ClientStreamConsumer CLIENT_STREAM_CONSUMER =
-      p -> CompletableFuture.completedFuture(null);
+      p -> CompletableActorFuture.completed(null);
 
   private final UnsafeBuffer streamType = new UnsafeBuffer(BufferUtil.wrapString("foo"));
   private final TestSerializableData metadata = new TestSerializableData(1234);
@@ -34,8 +33,6 @@ class AggregatedClientStreamTest {
   final AggregatedClientStream<TestSerializableData> stream =
       new AggregatedClientStream<>(
           UUID.randomUUID(), new LogicalId<>(streamType, metadata), metrics);
-
-  private final TestConcurrencyControl executor = new TestConcurrencyControl();
 
   @Test
   void shouldRetryWithAllAvailableClientsIfPushFailed() {
@@ -49,7 +46,7 @@ class AggregatedClientStreamTest {
 
     // when
     final TestActorFuture<Void> future = new TestActorFuture<>();
-    stream.push(null, future, executor);
+    stream.push(null, future);
 
     // then
     assertThat(future).failsWithin(Duration.ofMillis(100));
@@ -68,12 +65,12 @@ class AggregatedClientStreamTest {
         streamId,
         p -> {
           pushSucceeded.set(true);
-          return CompletableFuture.completedFuture(null);
+          return CompletableActorFuture.completed(null);
         });
 
     // when
     final TestActorFuture<Void> future = new TestActorFuture<>();
-    stream.push(null, future, executor);
+    stream.push(null, future);
 
     // then
     assertThat(future).succeedsWithin(Duration.ofMillis(100));

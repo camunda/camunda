@@ -66,7 +66,7 @@ public final class ClientStreamServiceImpl<M extends BufferWriter> extends Actor
               () -> {
                 try {
                   final ActorFuture<Void> payloadPushed = new CompletableActorFuture<>();
-                  clientStreamManager.onPayloadReceived(request, payloadPushed, actor);
+                  clientStreamManager.onPayloadReceived(request, payloadPushed);
                   payloadPushed.onComplete(
                       (ok, error) -> {
                         if (error == null) {

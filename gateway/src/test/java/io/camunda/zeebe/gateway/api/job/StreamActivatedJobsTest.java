@@ -16,13 +16,17 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.stream.job.ActivatedJobImpl;
 import io.camunda.zeebe.test.util.MsgPackUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import io.grpc.stub.ClientCallStreamObserver;
 import io.grpc.stub.ClientResponseObserver;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.awaitility.Awaitility;
 import org.junit.Test;
 
@@ -181,6 +185,31 @@ public class StreamActivatedJobsTest extends GatewayTest {
             "INVALID_ARGUMENT: Expected to stream activated jobs with timeout to be greater than zero, but it was 0");
   }
 
+  @Test
+  public void shouldFailWhenStreamCannotBeAdded() {
+    // given
+    final var jobType = "testJobOnCancel";
+    final var timeout = Duration.ofMinutes(1);
+    final var fetchVariables = List.of("foo");
+    final var failure = new RuntimeException("failed");
+    jobStreamer.setFailOnAdd(failure);
+
+    // when
+    final var streamObserver =
+        getStreamActivatedJobsRequest(jobType, WORKER, timeout, fetchVariables, false);
+
+    // then
+    Awaitility.await("until the stream is closed").until(streamObserver::isClosed);
+    assertThat(streamObserver.getErrors())
+        .hasSize(1)
+        .first()
+        .isInstanceOf(StatusRuntimeException.class)
+        .asInstanceOf(InstanceOfAssertFactories.throwable(StatusRuntimeException.class))
+        .extracting(StatusRuntimeException::getStatus)
+        .extracting(Status::getCode)
+        .isEqualTo(Status.UNAVAILABLE.getCode());
+  }
+
   private TestStreamObserver getStreamActivatedJobsRequestUnblocking(
       final String jobType,
       final String worker,
@@ -203,7 +232,8 @@ public class StreamActivatedJobsTest extends GatewayTest {
       final Duration timeout,
       final List<String> fetchVariables,
       final boolean waitStreamToBeAvailable) {
-    final StreamActivatedJobsRequest request =
+    final var streamObserver = new TestStreamObserver();
+    final var request =
         StreamActivatedJobsRequest.newBuilder()
             .setType(jobType)
             .setWorker(worker)
@@ -211,8 +241,6 @@ public class StreamActivatedJobsTest extends GatewayTest {
             .addAllFetchVariable(fetchVariables)
             .build();
 
-    final List<ActivatedJob> streamedJobs = new ArrayList<>();
-    final TestStreamObserver streamObserver = new TestStreamObserver(streamedJobs);
     asyncClient.streamActivatedJobs(request, streamObserver);
     if (waitStreamToBeAvailable) {
       jobStreamer.waitStreamToBeAvailable(BufferUtil.wrapString(jobType));
@@ -221,15 +249,12 @@ public class StreamActivatedJobsTest extends GatewayTest {
     return streamObserver;
   }
 
-  private static class TestStreamObserver
+  private static final class TestStreamObserver
       implements ClientResponseObserver<StreamActivatedJobsRequest, ActivatedJob> {
-    private ClientCallStreamObserver<StreamActivatedJobsRequest> requestStream;
-    private final List<ActivatedJob> streamedJobs;
-    private final List<Throwable> errors = new ArrayList<>();
-
-    public TestStreamObserver(final List<ActivatedJob> streamedJobs) {
-      this.streamedJobs = streamedJobs;
-    }
+    private final List<ActivatedJob> streamedJobs = Collections.synchronizedList(new ArrayList<>());
+    private final List<Throwable> errors = Collections.synchronizedList(new ArrayList<>());
+    private volatile boolean isClosed;
+    private volatile ClientCallStreamObserver<StreamActivatedJobsRequest> requestStream;
 
     public List<Throwable> getErrors() {
       return errors;
@@ -248,10 +273,13 @@ public class StreamActivatedJobsTest extends GatewayTest {
     public void onError(final Throwable t) {
       errors.add(t);
       requestStream.onError(t);
+      isClosed = true;
     }
 
     @Override
-    public void onCompleted() {}
+    public void onCompleted() {
+      isClosed = true;
+    }
 
     @Override
     public void beforeStart(
@@ -261,6 +289,11 @@ public class StreamActivatedJobsTest extends GatewayTest {
 
     public void cancel() {
       requestStream.cancel("test cancel", new RuntimeException());
+      isClosed = true;
+    }
+
+    public boolean isClosed() {
+      return isClosed;
     }
   }
 }

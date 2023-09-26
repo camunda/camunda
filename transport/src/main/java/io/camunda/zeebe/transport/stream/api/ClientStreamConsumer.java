@@ -7,13 +7,14 @@
  */
 package io.camunda.zeebe.transport.stream.api;
 
-import java.util.concurrent.CompletableFuture;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
 import org.agrona.DirectBuffer;
 
 /**
  * Represents a consumer of a stream which can consume data pushed from the server. The data is
  * typically pushed from a broker, and consumed by gateway.
  */
+@FunctionalInterface
 public interface ClientStreamConsumer {
 
   /**
@@ -23,5 +24,5 @@ public interface ClientStreamConsumer {
    *
    * @param payload the data to be consumed by the client
    */
-  CompletableFuture<Void> push(DirectBuffer payload);
+  ActorFuture<Void> push(DirectBuffer payload);
 }
