@@ -35,7 +35,8 @@ type ProcessInstanceFilterField =
   | 'startDateBefore'
   | 'endDateAfter'
   | 'endDateBefore'
-  | 'tenant';
+  | 'tenant'
+  | 'retriesLeft';
 
 type DecisionInstanceFilterField =
   | 'tenant'
@@ -67,6 +68,7 @@ type ProcessInstanceFilters = {
   endDateAfter?: string;
   endDateBefore?: string;
   tenant?: string;
+  retriesLeft?: boolean;
 };
 
 type DecisionInstanceFilters = {
@@ -103,6 +105,7 @@ type RequestFilters = {
   };
   processIds?: string[];
   tenantId?: string;
+  retriesLeft?: boolean;
 };
 
 type DecisionRequestFilters = {
@@ -135,6 +138,7 @@ const PROCESS_INSTANCE_FILTER_FIELDS: ProcessInstanceFilterField[] = [
   'endDateAfter',
   'endDateBefore',
   'tenant',
+  'retriesLeft',
 ];
 const DECISION_INSTANCE_FILTER_FIELDS: DecisionInstanceFilterField[] = [
   'name',
@@ -153,6 +157,7 @@ const BOOLEAN_PROCESS_INSTANCE_FILTER_FIELDS: ProcessInstanceFilterField[] = [
   'incidents',
   'completed',
   'canceled',
+  'retriesLeft',
 ];
 
 const BOOLEAN_DECISION_INSTANCE_FILTER_FIELDS: DecisionInstanceFilterField[] = [
@@ -326,6 +331,10 @@ function getProcessInstancesRequestFilters(): RequestFilters {
             [key]: value,
             ...(value === true ? {finished: true} : {}),
           };
+        }
+
+        if (key === 'retriesLeft' && value === true) {
+          return {...accumulator, retriesLeft: true};
         }
       } else {
         if (key === 'errorMessage') {

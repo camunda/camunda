@@ -96,6 +96,7 @@ const Filters: React.FC = observer(() => {
                   'incidents',
                   'completed',
                   'canceled',
+                  'retriesLeft',
                 ]}
               />
               <Stack gap={5}>

@@ -144,6 +144,7 @@ declare module '@carbon/react' {
         data: {checked: boolean; id: string},
       ) => void;
       onClick?: (evt: React.MouseEvent<HTMLInputElement>) => void;
+      autoFocus?: boolean;
     }
   >;
 

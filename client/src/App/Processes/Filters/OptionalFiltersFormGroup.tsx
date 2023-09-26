@@ -30,7 +30,7 @@ import {tracking} from 'modules/tracking';
 import {OptionalFiltersMenu} from 'modules/components/OptionalFilters';
 import {DateRangeField} from 'modules/components/DateRangeField';
 import {Field, useForm} from 'react-final-form';
-import {IconButton, Stack} from '@carbon/react';
+import {Checkbox, IconButton, Stack} from '@carbon/react';
 import {TextInputField} from 'modules/components/TextInputField';
 import {TextAreaField} from 'modules/components/TextAreaField';
 import {
@@ -38,6 +38,7 @@ import {
   FieldContainer,
 } from 'modules/components/FiltersPanel/styled';
 import {Variable} from './VariableField';
+import {IS_RETRIES_LEFT_FILTER_ENABLED} from 'modules/feature-flags';
 
 type OptionalFilter =
   | 'variable'
@@ -45,6 +46,7 @@ type OptionalFilter =
   | 'parentInstanceId'
   | 'operationId'
   | 'errorMessage'
+  | 'retriesLeft'
   | 'startDateRange'
   | 'endDateRange';
 
@@ -54,6 +56,7 @@ const optionalFilters: Array<OptionalFilter> = [
   'operationId',
   'parentInstanceId',
   'errorMessage',
+  'retriesLeft',
   'startDateRange',
   'endDateRange',
 ];
@@ -62,7 +65,7 @@ const OPTIONAL_FILTER_FIELDS: Record<
   {
     label: string;
     placeholder?: string;
-    type?: 'multiline' | 'text';
+    type?: 'multiline' | 'text' | 'checkbox';
     rows?: number;
     validate?: FieldValidator<string | undefined>;
     keys: ProcessInstanceFilterField[];
@@ -107,6 +110,11 @@ const OPTIONAL_FILTER_FIELDS: Record<
     keys: ['errorMessage'],
     label: 'Error Message',
     type: 'text',
+  },
+  retriesLeft: {
+    keys: ['retriesLeft'],
+    label: 'Failed job but retries left',
+    type: 'checkbox',
   },
   startDateRange: {
     keys: ['startDateAfter', 'startDateBefore'],
@@ -164,10 +172,16 @@ const OptionalFiltersFormGroup: React.FC<Props> = observer(
       <Stack gap={8}>
         <OptionalFiltersMenu<OptionalFilter>
           visibleFilters={visibleFilters}
-          optionalFilters={optionalFilters.map((id) => ({
-            id,
-            label: OPTIONAL_FILTER_FIELDS[id].label,
-          }))}
+          optionalFilters={optionalFilters
+            // TODO: Remove this filter when removing feature flag
+            .filter(
+              (filterName) =>
+                IS_RETRIES_LEFT_FILTER_ENABLED || filterName !== 'retriesLeft',
+            )
+            .map((id) => ({
+              id,
+              label: OPTIONAL_FILTER_FIELDS[id].label,
+            }))}
           onFilterSelect={(filter) => {
             onVisibleFilterChange(
               Array.from(new Set([...visibleFilters, ...[filter]])),
@@ -188,6 +202,13 @@ const OptionalFiltersFormGroup: React.FC<Props> = observer(
           {visibleFilters.map((filter) => (
             <FieldContainer key={filter}>
               {(() => {
+                if (
+                  !IS_RETRIES_LEFT_FILTER_ENABLED &&
+                  filter === 'retriesLeft'
+                ) {
+                  return;
+                }
+
                 switch (filter) {
                   case 'variable':
                     return <Variable />;
@@ -222,6 +243,7 @@ const OptionalFiltersFormGroup: React.FC<Props> = observer(
                       <Field
                         name={filter}
                         validate={OPTIONAL_FILTER_FIELDS[filter].validate}
+                        type={OPTIONAL_FILTER_FIELDS[filter].type}
                       >
                         {({input}) => {
                           const field = OPTIONAL_FILTER_FIELDS[filter];
@@ -246,6 +268,16 @@ const OptionalFiltersFormGroup: React.FC<Props> = observer(
                                 labelText={field.label}
                                 placeholder={field.placeholder}
                                 rows={field.rows}
+                                autoFocus
+                              />
+                            );
+                          }
+                          if (field.type === 'checkbox') {
+                            return (
+                              <Checkbox
+                                {...input}
+                                id={filter}
+                                labelText={field.label}
                                 autoFocus
                               />
                             );

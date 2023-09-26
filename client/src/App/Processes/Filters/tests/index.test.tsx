@@ -28,6 +28,10 @@ import {removeOptionalFilter} from 'modules/testUtils/removeOptionalFilter';
 
 jest.unmock('modules/utils/date/formatDate');
 
+jest.mock('modules/feature-flags', () => ({
+  IS_RETRIES_LEFT_FILTER_ENABLED: true,
+}));
+
 describe('Filters', () => {
   beforeEach(async () => {
     mockFetchGroupedProcesses().withSuccess(
@@ -82,6 +86,7 @@ describe('Filters', () => {
       incidents: 'true',
       completed: 'true',
       canceled: 'true',
+      retriesLeft: 'true',
     } as const;
 
     render(<Filters />, {
@@ -127,6 +132,11 @@ describe('Filters', () => {
     expect(screen.getByRole('checkbox', {name: 'Incidents'})).toBeChecked();
     expect(screen.getByRole('checkbox', {name: 'Completed'})).toBeChecked();
     expect(screen.getByRole('checkbox', {name: 'Canceled'})).toBeChecked();
+    expect(
+      screen.getByRole('checkbox', {
+        name: 'Failed job but retries left',
+      }),
+    ).toBeChecked();
   });
 
   it('should load values from the URL - date ranges', async () => {
@@ -183,6 +193,7 @@ describe('Filters', () => {
       incidents: 'true',
       completed: 'true',
       canceled: 'true',
+      retriesLeft: 'true',
     } as const;
     const {user} = render(<Filters />, {
       wrapper: getWrapper(),
@@ -238,6 +249,14 @@ describe('Filters', () => {
       screen.getByLabelText(/^operation id$/i),
 
       MOCK_VALUES.operationId,
+    );
+
+    await user.click(screen.getByRole('button', {name: 'More Filters'}));
+    await user.click(screen.getByText('Failed job but retries left'));
+    await user.click(
+      screen.getByRole('checkbox', {
+        name: 'Failed job but retries left',
+      }),
     );
 
     await user.click(screen.getByRole('checkbox', {name: 'Active'}));
