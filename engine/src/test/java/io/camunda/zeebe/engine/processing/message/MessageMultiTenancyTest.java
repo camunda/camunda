@@ -22,6 +22,7 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.time.Duration;
 import java.util.UUID;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -30,7 +31,8 @@ import org.junit.rules.TestWatcher;
 
 public class MessageMultiTenancyTest {
 
-  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
+  @ClassRule
+  public static final EngineRule ENGINE = EngineRule.singlePartition().maxCommandsInBatch(1);
 
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
 
@@ -189,6 +191,80 @@ public class MessageMultiTenancyTest {
     assertProcessInstanceNotCompleted(processId, tenantId);
   }
 
+  @Test
+  public void shouldCorrelateBufferedMessageToCorrectTenant() {
+    // given a buffered message
+    final var tenantId = "tenant" + UUID.randomUUID();
+    final var otherTenant = "otherTenant" + UUID.randomUUID();
+    final var processId = Strings.newRandomValidBpmnId();
+    final String messageName = "msg" + UUID.randomUUID();
+    final String correlationKey = "corr" + UUID.randomUUID().toString().replace("-", "");
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .intermediateCatchEvent(
+                    "catch",
+                    c -> c.message(m -> m.name(messageName).zeebeCorrelationKeyExpression("key")))
+                .endEvent()
+                .done())
+        .withTenantId(tenantId)
+        .deploy();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .intermediateCatchEvent(
+                    "catch",
+                    c -> c.message(m -> m.name(messageName).zeebeCorrelationKeyExpression("key")))
+                .endEvent()
+                .done())
+        .withTenantId(otherTenant)
+        .deploy();
+    ENGINE
+        .message()
+        .withTenantId(tenantId)
+        .withName(messageName)
+        .withCorrelationKey(correlationKey)
+        .withTimeToLive(Duration.ofMinutes(5))
+        .publish();
+
+    // when creating a process instance for each tenant
+    final long processInstanceKeyOtherTenant =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(processId)
+            .withVariable("key", correlationKey)
+            .withTenantId(otherTenant)
+            .create();
+    final long processInstanceKeyTenant =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(processId)
+            .withVariable("key", correlationKey)
+            .withTenantId(tenantId)
+            .create();
+
+    // then only the process matching the message tenant is correlated
+    assertMessagePublishedForTenantId(messageName, tenantId);
+    assertProcessMessageSubscriptionCreatedForTenantId(
+        otherTenant, messageName, processInstanceKeyOtherTenant);
+    assertMessageSubscriptionCreatedForTenantId(tenantId, messageName, processInstanceKeyTenant);
+    assertMessageSubscriptionCreatedForTenantId(
+        otherTenant, messageName, processInstanceKeyOtherTenant);
+    assertProcessMessageSubscriptionCorrelatedForTenantId(
+        tenantId, messageName, processInstanceKeyTenant);
+    assertProcessMessageSubscriptionNotCorrelatedForTenantId(
+        otherTenant, messageName, processInstanceKeyOtherTenant);
+    assertMessageSubscriptionCorrelatedForTenantId(tenantId, messageName, processInstanceKeyTenant);
+    assertMessageSubscriptionNotCorrelatedForTenantId(
+        otherTenant, messageName, processInstanceKeyOtherTenant);
+    assertProcessInstanceCompleted(processId, tenantId);
+    assertProcessInstanceNotCompleted(processId, otherTenant);
+  }
+
   private static void assertMessageSubscriptionCreatedForTenantId(
       final String tenantId, final String messageName, final long processInstanceKey) {
     assertThat(
@@ -241,6 +317,7 @@ public class MessageMultiTenancyTest {
                     ProcessMessageSubscriptionIntent.CREATED)
                 .withProcessInstanceKey(processInstanceKey)
                 .withMessageName(messageName)
+                .withTenantId(tenantId)
                 .limit(2))
         .extracting(Record::getIntent, r -> r.getValue().getTenantId())
         .containsExactly(
@@ -255,6 +332,7 @@ public class MessageMultiTenancyTest {
                 .withIntent(ProcessMessageSubscriptionIntent.CORRELATED)
                 .withProcessInstanceKey(processInstanceKey)
                 .withMessageName(messageName)
+                .withTenantId(tenantId)
                 .limit(1))
         .extracting(Record::getIntent, r -> r.getValue().getTenantId())
         .containsExactly(tuple(ProcessMessageSubscriptionIntent.CORRELATED, tenantId));
@@ -294,6 +372,7 @@ public class MessageMultiTenancyTest {
                 .withIntent(MessageStartEventSubscriptionIntent.CREATED)
                 .withBpmnProcessId(processId)
                 .withMessageName(messageName)
+                .withTenantId(tenantId)
                 .limit(1))
         .extracting(Record::getIntent, r -> r.getValue().getTenantId())
         .containsExactly(tuple(MessageStartEventSubscriptionIntent.CREATED, tenantId));
@@ -306,6 +385,7 @@ public class MessageMultiTenancyTest {
                 .withIntent(MessageStartEventSubscriptionIntent.CORRELATED)
                 .withBpmnProcessId(processId)
                 .withMessageName(messageName)
+                .withTenantId(tenantId)
                 .limit(1))
         .extracting(Record::getIntent, r -> r.getValue().getTenantId())
         .containsExactly(tuple(MessageStartEventSubscriptionIntent.CORRELATED, tenantId));
