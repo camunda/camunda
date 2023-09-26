@@ -23,11 +23,16 @@ import {notificationsStore} from 'modules/stores/notifications';
 import {ReactQueryProvider} from 'modules/ReactQueryProvider';
 import * as formMocks from 'modules/mock-schema/mocks/form';
 import * as userMocks from 'modules/mock-schema/mocks/current-user';
+import {DEFAULT_MOCK_CLIENT_CONFIG} from 'modules/mocks/window';
+import {LocationLog} from 'modules/utils/LocationLog';
 
 jest.mock('modules/stores/notifications', () => ({
   notificationsStore: {
     displayNotification: jest.fn(() => () => {}),
   },
+}));
+jest.mock('modules/featureFlags', () => ({
+  IS_MULTI_TENANCY_ENABLED: true,
 }));
 
 const mockedNotificationsStore = notificationsStore as jest.Mocked<
@@ -43,6 +48,7 @@ const Wrapper: React.FC<Props> = ({children}) => {
     <ReactQueryProvider>
       <MemoryRouter initialEntries={['/']}>
         <MockThemeProvider>{children}</MockThemeProvider>
+        <LocationLog />
       </MemoryRouter>
     </ReactQueryProvider>
   );
@@ -205,5 +211,76 @@ describe('Processes', () => {
         name: 'Start process',
       }),
     ).toBeDisabled();
+  });
+
+  it('should render a tenant dropdown', async () => {
+    window.localStorage.setItem('hasConsentedToStartProcess', 'true');
+    window.clientConfig = {
+      ...DEFAULT_MOCK_CLIENT_CONFIG,
+      isMultiTenancyEnabled: true,
+    };
+    nodeMockServer.use(
+      rest.get('/v1/internal/processes', (_, res, ctx) => {
+        return res(ctx.json([]));
+      }),
+      rest.get('/v1/internal/users/current', (_, res, ctx) => {
+        return res.once(ctx.json(userMocks.currentUserWithTenants));
+      }),
+    );
+
+    render(<Processes />, {
+      wrapper: Wrapper,
+    });
+
+    expect(screen.getByRole('combobox', {name: 'Tenant'})).toBeDisabled();
+
+    await waitForElementToBeRemoved(() =>
+      screen.getAllByTestId('process-skeleton'),
+    );
+
+    expect(screen.getByRole('combobox', {name: 'Tenant'})).toBeEnabled();
+
+    expect(screen.getByTestId('search')).toBeEmptyDOMElement();
+
+    fireEvent.click(screen.getByRole('combobox', {name: 'Tenant'}));
+    fireEvent.click(screen.getByRole('option', {name: 'Tenant A'}));
+
+    expect(screen.getByTestId('search').textContent).toContain(
+      'tenantId=tenantA',
+    );
+  });
+
+  it('should render a tenant dropdown with the current tenant selected', async () => {
+    window.localStorage.setItem('hasConsentedToStartProcess', 'true');
+    window.localStorage.setItem('tenantId', '"tenantA"');
+    window.clientConfig = {
+      ...DEFAULT_MOCK_CLIENT_CONFIG,
+      isMultiTenancyEnabled: true,
+    };
+    nodeMockServer.use(
+      rest.get('/v1/internal/processes', (_, res, ctx) => {
+        return res(ctx.json([]));
+      }),
+      rest.get('/v1/internal/users/current', (_, res, ctx) => {
+        return res.once(ctx.json(userMocks.currentUserWithTenants));
+      }),
+    );
+
+    render(<Processes />, {
+      wrapper: Wrapper,
+    });
+
+    await waitForElementToBeRemoved(() =>
+      screen.getAllByTestId('process-skeleton'),
+    );
+
+    expect(screen.getByTestId('search').textContent).toContain(
+      'tenantId=tenantA',
+    );
+    expect(
+      within(screen.getByRole('combobox', {name: 'Tenant'})).getByText(
+        'Tenant A',
+      ),
+    ).toBeInTheDocument();
   });
 });

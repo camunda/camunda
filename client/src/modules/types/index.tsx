@@ -19,6 +19,10 @@ type CurrentUser = {
     name: 'console' | 'modeler' | 'tasklist' | 'operate' | 'optimize';
     link: string;
   }[];
+  tenants: {
+    id: string;
+    name: string;
+  }[];
 };
 
 type FullVariable = {

@@ -16,11 +16,14 @@ type Data = {
   query?: string;
 };
 
-function useProcesses(query?: string) {
+function useProcesses(params: {query?: string; tenantId?: string}) {
+  const {query, tenantId} = params;
   return useQuery<Data, RequestError>({
-    queryKey: ['processes', query],
+    queryKey: ['processes', query, tenantId],
     queryFn: async () => {
-      const {response, error} = await request(api.getProcesses(query));
+      const {response, error} = await request(
+        api.getProcesses({query, tenantId}),
+      );
 
       if (response !== null) {
         return {

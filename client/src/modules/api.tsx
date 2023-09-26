@@ -47,13 +47,15 @@ const api = {
       },
     );
   },
-  getProcesses: (query?: string) => {
-    const url = new URL(window.location.href);
+  getProcesses: (params: {query?: string; tenantId?: string}) => {
+    const url = new URL(window.location.origin);
     url.pathname = mergePathname(BASENAME, '/v1/internal/processes');
 
-    if (query !== undefined && query !== '') {
-      url.searchParams.set('query', query);
-    }
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== '') {
+        url.searchParams.set(key, value);
+      }
+    });
 
     return new Request(url, {
       ...BASE_REQUEST_OPTIONS,

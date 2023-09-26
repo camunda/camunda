@@ -58,7 +58,7 @@ const App: React.FC = () => {
               }
             >
               <Route path="*" element={<Tasks />} />
-              <Route path={pages.processes} element={<Processes />} />
+              <Route path={pages.processes()} element={<Processes />} />
             </Route>
           </Routes>
         </BrowserRouter>

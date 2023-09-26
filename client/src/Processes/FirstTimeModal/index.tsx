@@ -18,7 +18,7 @@ const FirstTimeModal: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(
-    !Boolean(getStateLocally('hasConsentedToStartProcess') ?? false),
+    !(getStateLocally('hasConsentedToStartProcess') ?? false),
   );
   const goToInitialPage = () => {
     tracking.track({

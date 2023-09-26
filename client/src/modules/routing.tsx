@@ -15,7 +15,13 @@ const pages = {
   taskDetails(id: string = ':id') {
     return `/${id}`;
   },
-  processes: 'processes',
+  processes(tenantId?: string) {
+    if (tenantId !== undefined && window.clientConfig?.isMultiTenancyEnabled) {
+      return `processes?tenantId=${tenantId}`;
+    }
+
+    return 'processes';
+  },
   startProcessFromForm: '/new/:bpmnProcessId',
 } as const;
 

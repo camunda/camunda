@@ -5,9 +5,9 @@
  * except in compliance with the proprietary license.
  */
 
-import {rem} from '@carbon/elements';
+import {breakpoints, rem} from '@carbon/elements';
 import styled, {css} from 'styled-components';
-import {SkeletonPlaceholder} from '@carbon/react';
+import {SkeletonPlaceholder, Dropdown as BaseDropdown} from '@carbon/react';
 
 type ContainerProps = {
   $isSingleColumn: boolean;
@@ -75,6 +75,29 @@ const SearchContainer = styled.div`
   }
 `;
 
+const MultiTenancyContainer = styled.div`
+  width: 100%;
+  padding-right: var(--cds-spacing-13);
+  display: grid;
+  grid-template-rows: 1fr 1fr;
+  grid-template-columns: 1fr;
+  align-items: end;
+
+  @media (min-width: ${breakpoints.lg.width}) {
+    --column-gap: var(--cds-spacing-13);
+    --content-width: calc(100% - var(--column-gap));
+    grid-template-columns: calc(var(--content-width) * 0.25) calc(
+        var(--content-width) * 0.75
+      );
+    grid-template-rows: 1fr;
+    gap: var(--column-gap);
+  }
+`;
+
+const Dropdown = styled(BaseDropdown)`
+  width: 100%;
+`;
+
 const ProcessesContainer = styled.div`
   --min-column-width: 200px;
   --max-column-width: 400px;
@@ -102,4 +125,6 @@ export {
   ProcessesContainer,
   TileSkeleton,
   Aside,
+  MultiTenancyContainer,
+  Dropdown,
 };

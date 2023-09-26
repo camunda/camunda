@@ -5,42 +5,42 @@
  * except in compliance with the proprietary license.
  */
 
-function storeStateLocally(storageKey: 'hasCompletedTask', value: true): void;
-function storeStateLocally(storageKey: 'wasReloaded', value: boolean): void;
-function storeStateLocally(
-  storageKey: 'hasConsentedToStartProcess',
-  value: boolean,
-): void;
-function storeStateLocally(
-  storageKey: 'theme',
-  value: 'light' | 'dark' | 'system',
-): void;
-function storeStateLocally(storageKey: string, value: any) {
+import {z} from 'zod';
+
+const validators = {
+  tenantId: z.string(),
+  hasCompletedTask: z.boolean(),
+  wasReloaded: z.boolean(),
+  hasConsentedToStartProcess: z.boolean(),
+  theme: z.enum(['light', 'dark', 'system']),
+} as const;
+
+type Validators = typeof validators;
+type StorageKey = keyof Validators;
+
+function storeStateLocally<Key extends StorageKey>(
+  storageKey: Key,
+  value: z.infer<Validators[Key]>,
+) {
   localStorage.setItem(storageKey, JSON.stringify(value));
 }
 
-function clearStateLocally(
-  storageKey: 'hasCompletedTask' | 'wasReloaded' | 'theme',
-): void;
-function clearStateLocally(storageKey: string) {
+function clearStateLocally(storageKey: StorageKey) {
   localStorage.removeItem(storageKey);
 }
 
-function getStateLocally(
-  storageKey:
-    | 'hasCompletedTask'
-    | 'wasReloaded'
-    | 'theme'
-    | 'hasConsentedToStartProcess',
-): unknown;
-function getStateLocally(storageKey: string): unknown {
+function getStateLocally<Key extends StorageKey>(
+  storageKey: Key,
+): null | z.infer<Validators[Key]> {
   const value = localStorage.getItem(storageKey);
 
   if (value === null) {
     return null;
   }
 
-  return JSON.parse(value);
+  const result = validators[storageKey].safeParse(JSON.parse(value));
+
+  return result.success ? result.data : null;
 }
 
 export {storeStateLocally, clearStateLocally, getStateLocally};

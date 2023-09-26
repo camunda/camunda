@@ -30,6 +30,7 @@ export declare global {
       mixpanelToken?: null | string;
       mixpanelAPIHost?: null | string;
       isResourcePermissionsEnabled?: boolean;
+      isMultiTenancyEnabled?: boolean;
     };
     Osano?: {
       cm?: {

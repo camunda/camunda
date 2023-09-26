@@ -59,7 +59,7 @@ const NewProcessInstanceTasksPolling: React.FC = observer(() => {
 
       newProcessInstance.removeInstance(data);
 
-      if (data.length === 1 && location.pathname === `/${pages.processes}`) {
+      if (data.length === 1 && location.pathname === `/${pages.processes()}`) {
         const [{id}] = data;
 
         tracking.track({

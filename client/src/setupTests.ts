@@ -81,6 +81,7 @@ beforeAll(() => {
 
 afterEach(() => {
   reactQueryClient.clear();
+  window.clientConfig = DEFAULT_MOCK_CLIENT_CONFIG;
 });
 
 afterAll(() => nodeMockServer.close());

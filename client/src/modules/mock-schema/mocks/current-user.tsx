@@ -14,6 +14,7 @@ const currentUser: CurrentUser = {
   salesPlanType: null,
   roles: [],
   c8Links: [],
+  tenants: [],
 };
 
 const currentUserWithC8Links: CurrentUser = {
@@ -44,6 +45,7 @@ const currentUserWithC8Links: CurrentUser = {
       link: 'https://link-to-console',
     },
   ],
+  tenants: [],
 };
 
 const currentRestrictedUser: CurrentUser = {
@@ -53,6 +55,7 @@ const currentRestrictedUser: CurrentUser = {
   salesPlanType: null,
   roles: [],
   c8Links: [],
+  tenants: [],
 };
 
 const currentUserWithUnknownRole: CurrentUser = {
@@ -63,6 +66,7 @@ const currentUserWithUnknownRole: CurrentUser = {
   salesPlanType: null,
   roles: [],
   c8Links: [],
+  tenants: [],
 };
 
 const currentUserWithoutRole: CurrentUser = {
@@ -73,6 +77,26 @@ const currentUserWithoutRole: CurrentUser = {
   salesPlanType: null,
   roles: [],
   c8Links: [],
+  tenants: [],
+};
+
+const currentUserWithTenants: CurrentUser = {
+  userId: 'demo',
+  displayName: 'Demo User',
+  permissions: ['read', 'write'],
+  salesPlanType: null,
+  roles: [],
+  c8Links: [],
+  tenants: [
+    {
+      id: 'tenantA',
+      name: 'Tenant A',
+    },
+    {
+      id: 'tenantB',
+      name: 'Tenant B',
+    },
+  ],
 };
 
 export {
@@ -81,4 +105,5 @@ export {
   currentUserWithoutRole,
   currentUserWithUnknownRole,
   currentUserWithC8Links,
+  currentUserWithTenants,
 };

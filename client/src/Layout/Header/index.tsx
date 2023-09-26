@@ -17,6 +17,7 @@ import {ArrowRight} from '@carbon/react/icons';
 import {themeStore} from 'modules/stores/theme';
 import {observer} from 'mobx-react-lite';
 import {useCurrentUser} from 'modules/queries/useCurrentUser';
+import {getStateLocally} from 'modules/utils/localStorage';
 
 const orderedApps = [
   'console',
@@ -35,7 +36,7 @@ const Header: React.FC = observer(() => {
   const IS_ENTERPRISE = window.clientConfig?.isEnterprise === true;
   const location = useLocation();
   const isProcessesPage =
-    matchPath(pages.processes, location.pathname) !== null;
+    matchPath(pages.processes(), location.pathname) !== null;
   const {data: currentUser} = useCurrentUser();
   const {selectedTheme, changeTheme} = themeStore;
   const {displayName, salesPlanType, c8Links} = currentUser ?? {
@@ -107,7 +108,7 @@ const Header: React.FC = observer(() => {
             key: 'processes',
             label: 'Processes',
             routeProps: {
-              to: pages.processes,
+              to: pages.processes(getStateLocally('tenantId') ?? undefined),
               onClick: () => {
                 tracking.track({
                   eventName: 'navigation',

@@ -15,6 +15,26 @@ const handlers: RequestHandler[] = [
       ctx.json<ProcessInstance[]>(processInstancesMocks.processInstances),
     );
   }),
+  rest.get('/v1/internal/users/current', async (req, res, ctx) => {
+    const originalResponse = await ctx.fetch(req);
+    const originalBody = await originalResponse.json();
+
+    return res(
+      ctx.json({
+        ...originalBody,
+        tenants: [
+          {
+            id: 'tenantA',
+            name: 'Tenant A',
+          },
+          {
+            id: 'tenantB',
+            name: 'Tenant B',
+          },
+        ],
+      }),
+    );
+  }),
 ];
 
 export {handlers};

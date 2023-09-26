@@ -14,9 +14,11 @@ import {
   ProcessesContainer,
   TileSkeleton,
   Aside,
+  MultiTenancyContainer,
+  Dropdown,
 } from './styled';
 import debounce from 'lodash/debounce';
-import {useLocation, useNavigate} from 'react-router-dom';
+import {useLocation, useNavigate, Navigate} from 'react-router-dom';
 import {useEffect, useRef, useState} from 'react';
 import {C3EmptyState} from '@camunda/camunda-composite-components';
 import EmptyMessageImage from './empty-message-image.svg';
@@ -30,35 +32,52 @@ import {tracking} from 'modules/tracking';
 import {useProcesses} from 'modules/queries/useProcesses';
 import {usePermissions} from 'modules/hooks/usePermissions';
 import {History} from './History';
-import {IS_PROCESS_INSTANCES_ENABLED} from 'modules/featureFlags';
+import {
+  IS_MULTI_TENANCY_ENABLED,
+  IS_PROCESS_INSTANCES_ENABLED,
+} from 'modules/featureFlags';
+import {useCurrentUser} from 'modules/queries/useCurrentUser';
+import {CurrentUser} from 'modules/types';
+import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
+
+function getParam(param: 'search' | 'tenantId', params: URLSearchParams) {
+  return params.get(param) ?? undefined;
+}
 
 const Processes: React.FC = observer(() => {
   const {instance} = newProcessInstance;
   const {hasPermission} = usePermissions(['write']);
+  const {data: currentUser} = useCurrentUser();
   const location = useLocation();
   const navigate = useNavigate();
-  const searchParam =
-    new URLSearchParams(location.search).get('search') ?? undefined;
-  const {data, error, isInitialLoading} = useProcesses(searchParam);
-  const debouncedNavigate = useRef(
-    debounce(function navigateSearchParams(
-      search: string,
-      currentQueryString: string,
-    ) {
-      const searchParams = new URLSearchParams(currentQueryString);
+  const searchParams = new URLSearchParams(location.search);
+  const {data, error, isInitialLoading} = useProcesses({
+    query: getParam('search', searchParams),
+    tenantId: getParam('tenantId', searchParams),
+  });
+  function navigateSearchParams(params: {
+    name: 'search' | 'tenantId';
+    value: string;
+    currentQueryString: string;
+  }) {
+    const {name, value, currentQueryString} = params;
+    const searchParams = new URLSearchParams(currentQueryString);
 
-      if (search) {
-        searchParams.set('search', search);
-      } else {
-        searchParams.delete('search');
-      }
+    if (value) {
+      searchParams.set(name, value);
+    } else {
+      searchParams.delete(name);
+    }
 
-      navigate({
-        search: searchParams.toString(),
-      });
-    }, 500),
-  ).current;
-  const [searchValue, setSearchValue] = useState(searchParam ?? '');
+    navigate({
+      search: searchParams.toString(),
+    });
+  }
+  const debouncedNavigate = useRef(debounce(navigateSearchParams, 500)).current;
+  const initialTenantId = useRef(getStateLocally('tenantId')).current;
+  const [searchValue, setSearchValue] = useState(
+    getParam('search', searchParams) ?? '',
+  );
   const isFiltered = data?.query !== undefined && data.query !== '';
   const processes = data?.processes ?? [];
 
@@ -76,6 +95,41 @@ const Processes: React.FC = observer(() => {
     }
   }, [error]);
 
+  if (
+    getParam('tenantId', searchParams) === undefined &&
+    initialTenantId !== null
+  ) {
+    const newSearchParams = new URLSearchParams(location.search);
+
+    newSearchParams.set('tenantId', initialTenantId);
+
+    return (
+      <Navigate
+        to={{
+          search: newSearchParams.toString(),
+        }}
+        replace
+      />
+    );
+  }
+
+  const processSearchProps: React.ComponentProps<typeof Search> = {
+    size: 'md',
+    placeholder: 'Search processes',
+    labelText: 'Search processes',
+    closeButtonLabelText: 'Clear search processes',
+    value: searchValue,
+    onChange: (event) => {
+      setSearchValue(event.target.value);
+      debouncedNavigate({
+        name: 'search',
+        value: event.target.value,
+        currentQueryString: location.search,
+      });
+    },
+    disabled: isInitialLoading,
+  } as const;
+
   return (
     <Container
       className="cds--content"
@@ -83,20 +137,45 @@ const Processes: React.FC = observer(() => {
     >
       <NewProcessInstanceTasksPolling />
       <Stack as={Content} gap={6}>
-        <SearchContainer>
-          <Search
-            size="md"
-            placeholder="Search processes"
-            labelText="Search processes"
-            closeButtonLabelText="Clear search processes"
-            value={searchValue}
-            onChange={(event) => {
-              setSearchValue(event.target.value);
-              debouncedNavigate(event.target.value, location.search);
-            }}
-            disabled={isInitialLoading}
-          />
-        </SearchContainer>
+        {IS_MULTI_TENANCY_ENABLED &&
+        window.clientConfig?.isMultiTenancyEnabled ? (
+          <MultiTenancyContainer>
+            <Dropdown<CurrentUser['tenants'][0]>
+              key={`tenant-dropdown-${currentUser?.tenants.length ?? 0}`}
+              id="tenantId"
+              items={currentUser?.tenants ?? []}
+              itemToString={(item) => (item ? item.name : '')}
+              label="Tenant"
+              titleText="Tenant"
+              initialSelectedItem={currentUser?.tenants.find(({id}) =>
+                [
+                  getParam('tenantId', searchParams),
+                  getStateLocally('tenantId'),
+                ].includes(id),
+              )}
+              onChange={(event) => {
+                const id = event.selectedItem?.id;
+
+                if (!id) {
+                  return;
+                }
+
+                navigateSearchParams({
+                  name: 'tenantId',
+                  value: id,
+                  currentQueryString: location.search,
+                });
+                storeStateLocally('tenantId', id);
+              }}
+              disabled={isInitialLoading || currentUser === undefined}
+            />
+            <Search {...processSearchProps} />
+          </MultiTenancyContainer>
+        ) : (
+          <SearchContainer>
+            <Search {...processSearchProps} />
+          </SearchContainer>
+        )}
         {!isInitialLoading && processes.length === 0 ? (
           <C3EmptyState
             icon={
