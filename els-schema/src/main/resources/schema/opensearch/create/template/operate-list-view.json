@@ -1,9 +1,16 @@
 {
 	"settings": {
       "analysis": {
+        "normalizer": {
+          "case_insensitive": {
+            "type": "custom",
+            "char_filter": [],
+            "filter": ["lowercase"]
+          }
+        },
         "analyzer": {
           "ca_path_tree": {
-            "type": "standard",
+            "type": "custom",
             "tokenizer": "ca_hierarchy"
           }
         },
@@ -36,6 +43,7 @@
 				"type": "text"
 			},
 			"processName": {
+                "normalizer": "case_insensitive",
 				"type": "keyword"
 			},
 			"joinRelation": {

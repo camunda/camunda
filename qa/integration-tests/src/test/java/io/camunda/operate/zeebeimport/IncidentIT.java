@@ -9,7 +9,6 @@ package io.camunda.operate.zeebeimport;
 import static io.camunda.operate.entities.ErrorType.JOB_NO_RETRIES;
 import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.verify;
@@ -55,12 +54,6 @@ public class IncidentIT extends OperateZeebeIntegrationTest {
 
   @MockBean
   private IncidentNotifier incidentNotifier;
-
-  @Autowired
-  private RestHighLevelClient esClient;
-
-  @Autowired
-  private ListViewTemplate listViewTemplate;
 
   @Before
   public void before() {

@@ -3,7 +3,7 @@
 		"analysis": {
 			"analyzer": {
 				"ca_path_tree": {
-                    "type": "standard",
+                    "type": "custom",
 					"tokenizer": "ca_hierarchy"
 				}
 			},

@@ -38,13 +38,7 @@ import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeInstanceMetadataDto;
 import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataDto;
 import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataRequestDto;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
-import org.opensearch.client.opensearch._types.aggregations.Aggregate;
-import org.opensearch.client.opensearch._types.aggregations.Aggregation;
-import org.opensearch.client.opensearch._types.aggregations.Buckets;
-import org.opensearch.client.opensearch._types.aggregations.FilterAggregate;
-import org.opensearch.client.opensearch._types.aggregations.StringTermsAggregate;
-import org.opensearch.client.opensearch._types.aggregations.StringTermsBucket;
-import org.opensearch.client.opensearch._types.aggregations.TopHitsAggregate;
+import org.opensearch.client.opensearch._types.aggregations.*;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.search.Hit;
@@ -418,9 +412,9 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader i
       .size(0)
       .aggregations(LEVELS_AGG_NAME, getLevelsAggs());
 
-    Buckets<StringTermsBucket> buckets = richOpenSearchClient.doc().searchAggregations(searchRequestBuilder)
+    Buckets<LongTermsBucket> buckets = richOpenSearchClient.doc().searchAggregations(searchRequestBuilder)
       .get(LEVELS_AGG_NAME)
-      .sterms()
+      .lterms()
       .buckets();
 
     return buildBreadcrumbForFlowNodeId(buckets, level);
@@ -463,10 +457,10 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader i
 
     final FlowNodeMetadataDto result = new FlowNodeMetadataDto();
     final FlowNodeInstanceEntity flowNodeInstance = response.hits().hits().get(0).source();
-    final StringTermsAggregate levelsAgg = response.aggregations().get(LEVELS_AGG_NAME).sterms();
+    var levelsAgg = response.aggregations().get(LEVELS_AGG_NAME).lterms();
 
     if (levelsAgg != null && levelsAgg.buckets() != null && !levelsAgg.buckets().array().isEmpty()) {
-      StringTermsBucket bucketCurrentLevel = levelsAgg.buckets().keyed().get(String.valueOf(flowNodeInstance.getLevel()));
+      var bucketCurrentLevel = levelsAgg.buckets().array().get(flowNodeInstance.getLevel()-1);
       if (bucketCurrentLevel.docCount() == 1) {
         result.setInstanceMetadata(buildInstanceMetadata(flowNodeInstance));
         result.setFlowNodeInstanceId(flowNodeInstance.getId());
@@ -590,7 +584,7 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader i
     }
   }
 
-  private List<FlowNodeInstanceBreadcrumbEntryDto> buildBreadcrumbForFlowNodeId(final Buckets<StringTermsBucket> buckets, final int currentInstanceLevel) {
+  private List<FlowNodeInstanceBreadcrumbEntryDto> buildBreadcrumbForFlowNodeId(final Buckets<LongTermsBucket> buckets, final int currentInstanceLevel) {
     if (buckets.array().size() == 0) {
       return new ArrayList<>();
     }
@@ -598,8 +592,8 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader i
     final List<FlowNodeInstanceBreadcrumbEntryDto> breadcrumb = new ArrayList<>();
     final FlowNodeType firstBucketFlowNodeType = getFirstBucketFlowNodeType(buckets);
     if ((firstBucketFlowNodeType != null && firstBucketFlowNodeType.equals(FlowNodeType.MULTI_INSTANCE_BODY))
-      || buckets.keyed().get(String.valueOf(currentInstanceLevel)).docCount() > 1) {
-      for (StringTermsBucket levelBucket : buckets.array()) {
+      || buckets.array().get(currentInstanceLevel-1).docCount() > 1) {
+      for (LongTermsBucket levelBucket : buckets.array()) {
         final TopHitsAggregate levelTopHits = levelBucket.aggregations().get(LEVELS_TOP_HITS_AGG_NAME).topHits();
         record Result(Integer level, String flowNodeId, String type){}
         final Result result = levelTopHits.hits().hits().get(0).source().to(Result.class);
@@ -611,7 +605,7 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader i
     return breadcrumb;
   }
 
-  private FlowNodeType getFirstBucketFlowNodeType(final Buckets<StringTermsBucket> buckets) {
+  private FlowNodeType getFirstBucketFlowNodeType(final Buckets<LongTermsBucket> buckets) {
     var topHits = buckets.array().get(0).aggregations().get(LEVELS_TOP_HITS_AGG_NAME).topHits();
     if (topHits != null && topHits.hits().total().value() > 0) {
       record Result(String type){}
@@ -766,8 +760,8 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader i
     final Map<String, FlowNodeStateDto> result = new HashMap<>();
     if (flowNodesAgg != null) {
       record FlowNodeResult(String state, String treePath){}
-      for (Map.Entry<String, StringTermsBucket> entry : flowNodesAgg.buckets().keyed().entrySet()) {
-        final FlowNodeResult lastFlowNode = entry.getValue()
+      for (StringTermsBucket bucket : flowNodesAgg.buckets().array()) {
+        var lastFlowNode = bucket
           .aggregations()
           .get(latestFlowNodeAggName)
           .topHits()
@@ -781,7 +775,7 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader i
         if (flowNodeState == FlowNodeStateDto.ACTIVE && incidentPaths.contains(lastFlowNode.treePath())) {
           flowNodeState = FlowNodeStateDto.INCIDENT;
         }
-        result.put(entry.getKey(), flowNodeState);
+        result.put(bucket.key(), flowNodeState);
       }
     }
 
@@ -802,7 +796,7 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader i
       .buckets();
 
     if (buckets != null) {
-      return buckets.keyed().keySet();
+      return buckets.array().stream().map( b -> b.key()).collect(Collectors.toSet());
     }
 
     return new HashSet<>();
@@ -812,7 +806,7 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader i
     if(filterAggs != null) {
       StringTermsAggregate termsAggs = filterAggs.aggregations().get(AGG_INCIDENT_PATHS).sterms();
       if (termsAggs != null) {
-        return termsAggs.buckets().keyed().keySet();
+        return termsAggs.buckets().array().stream().map(b -> b.key()).collect(Collectors.toSet());
       }
     }
 
