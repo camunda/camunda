@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.job;
 import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_MAX_ERROR_MESSAGE_SIZE;
 import static io.camunda.zeebe.util.StringUtil.limitString;
 
+import io.camunda.zeebe.auth.impl.Authorization;
 import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventPublicationBehavior;
 import io.camunda.zeebe.engine.processing.common.Failure;
@@ -33,6 +34,7 @@ import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
+import java.util.List;
 import java.util.Optional;
 
 public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
@@ -43,6 +45,9 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
    * (particularly when no catch event can be found)
    */
   public static final String NO_CATCH_EVENT_FOUND = "NO_CATCH_EVENT_FOUND";
+
+  public static final String NO_JOB_FOUND_MESSAGE =
+      "Expected to cancel job with key '%d', but no such job was found";
 
   private final IncidentRecord incidentEvent = new IncidentRecord();
   private Either<Failure, CatchEventTuple> foundCatchEvent;
@@ -103,7 +108,14 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
       final TypedRecord<JobRecord> command, final CommandControl<JobRecord> commandControl) {
     final long jobKey = command.getKey();
 
-    final JobRecord job = jobState.getJob(jobKey);
+    final List<String> authorizedTenants =
+        (List<String>) command.getAuthorizations().get(Authorization.AUTHORIZED_TENANTS);
+    final JobRecord job = jobState.getJob(jobKey, authorizedTenants);
+    if (job == null) {
+      commandControl.reject(RejectionType.NOT_FOUND, String.format(NO_JOB_FOUND_MESSAGE, jobKey));
+      return;
+    }
+
     job.setErrorCode(command.getValue().getErrorCodeBuffer());
     job.setErrorMessage(
         limitString(command.getValue().getErrorMessage(), DEFAULT_MAX_ERROR_MESSAGE_SIZE));

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.job;
 
+import io.camunda.zeebe.auth.impl.Authorization;
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -14,6 +15,7 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import java.util.List;
 
 public final class JobUpdateRetriesProcessor implements CommandProcessor<JobRecord> {
 
@@ -36,7 +38,9 @@ public final class JobUpdateRetriesProcessor implements CommandProcessor<JobReco
     final int retries = command.getValue().getRetries();
 
     if (retries > 0) {
-      final JobRecord job = jobState.getJob(key);
+      final List<String> authorizedTenants =
+          (List<String>) command.getAuthorizations().get(Authorization.AUTHORIZED_TENANTS);
+      final JobRecord job = jobState.getJob(key, authorizedTenants);
 
       if (job != null) {
         // update retries for response sent to client

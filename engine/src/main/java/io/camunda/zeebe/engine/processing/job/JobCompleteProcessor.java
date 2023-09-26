@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.job;
 
+import io.camunda.zeebe.auth.impl.Authorization;
 import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
@@ -17,12 +18,17 @@ import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import java.util.List;
 
 public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
+
+  private static final String NO_JOB_FOUND_MESSAGE =
+      "Expected to update retries for job with key '%d', but no such job was found";
 
   private final JobState jobState;
   private final ElementInstanceState elementInstanceState;
@@ -75,7 +81,13 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
 
     final long jobKey = command.getKey();
 
-    final JobRecord job = jobState.getJob(jobKey);
+    final List<String> authorizedTenants =
+        (List<String>) command.getAuthorizations().get(Authorization.AUTHORIZED_TENANTS);
+    final JobRecord job = jobState.getJob(jobKey, authorizedTenants);
+    if (job == null) {
+      commandControl.reject(RejectionType.NOT_FOUND, String.format(NO_JOB_FOUND_MESSAGE, jobKey));
+      return;
+    }
 
     job.setVariables(command.getValue().getVariablesBuffer());
 
