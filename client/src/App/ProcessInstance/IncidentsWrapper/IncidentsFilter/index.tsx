@@ -39,7 +39,6 @@ const IncidentsFilter: React.FC = observer(() => {
             onChange={({selectedItems}) => {
               setFlowNodeSelection(selectedItems);
             }}
-            selectedItems={selectedFlowNodes}
             size="sm"
           />
           <MultiSelect
@@ -56,7 +55,6 @@ const IncidentsFilter: React.FC = observer(() => {
             onChange={({selectedItems}) => {
               setErrorTypeSelection(selectedItems);
             }}
-            selectedItems={selectedErrorTypes}
             size="sm"
           />
           <Button

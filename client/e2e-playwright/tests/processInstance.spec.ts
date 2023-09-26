@@ -100,10 +100,10 @@ test.describe('Process Instance', () => {
       .click();
 
     await expect(
-      page.getByRole('button', {name: /filter by incident type/i}),
+      page.getByRole('combobox', {name: /filter by incident type/i}),
     ).toBeVisible();
     await expect(
-      page.getByRole('button', {name: /filter by flow node/i}),
+      page.getByRole('combobox', {name: /filter by flow node/i}),
     ).toBeVisible();
 
     // edit goUp variable

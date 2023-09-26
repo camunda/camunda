@@ -45,7 +45,7 @@ describe('Filtering', () => {
     expect(table.getByText(/Extract value errortype/)).toBeInTheDocument();
 
     await user.click(
-      await screen.findByRole('button', {name: /filter by incident type/i}),
+      await screen.findByRole('combobox', {name: /filter by incident type/i}),
     );
 
     await user.click(
@@ -73,7 +73,7 @@ describe('Filtering', () => {
     expect(table.getByText(/flowNodeId_alwaysFailingTask/)).toBeInTheDocument();
 
     await user.click(
-      await screen.findByRole('button', {name: /filter by flow node/i}),
+      await screen.findByRole('combobox', {name: /filter by flow node/i}),
     );
 
     await user.click(
@@ -96,7 +96,7 @@ describe('Filtering', () => {
 
     expect(screen.getAllByRole('row')).toHaveLength(3);
     await user.click(
-      await screen.findByRole('button', {name: /filter by incident type/i}),
+      await screen.findByRole('combobox', {name: /filter by incident type/i}),
     );
 
     await user.click(
@@ -108,7 +108,7 @@ describe('Filtering', () => {
     expect(screen.getAllByRole('row')).toHaveLength(2);
 
     await user.click(
-      await screen.findByRole('button', {name: /filter by flow node/i}),
+      await screen.findByRole('combobox', {name: /filter by flow node/i}),
     );
 
     await user.click(
@@ -136,7 +136,7 @@ describe('Filtering', () => {
     expect(screen.getAllByRole('row')).toHaveLength(3);
 
     await user.click(
-      await screen.findByRole('button', {name: /filter by flow node/i}),
+      await screen.findByRole('combobox', {name: /filter by flow node/i}),
     );
 
     await user.click(
@@ -183,7 +183,7 @@ describe('Filtering', () => {
     expect(screen.getAllByRole('row')).toHaveLength(3);
 
     await user.click(
-      await screen.findByRole('button', {name: /filter by flow node/i}),
+      await screen.findByRole('combobox', {name: /filter by flow node/i}),
     );
 
     await user.click(
@@ -193,7 +193,7 @@ describe('Filtering', () => {
     );
 
     await user.click(
-      await screen.findByRole('button', {name: /filter by incident type/i}),
+      await screen.findByRole('combobox', {name: /filter by incident type/i}),
     );
 
     await user.click(

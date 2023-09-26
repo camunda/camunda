@@ -41,7 +41,7 @@ describe('IncidentsFilter', () => {
     });
 
     await user.click(
-      await screen.findByRole('button', {name: /filter by incident type/i}),
+      await screen.findByRole('combobox', {name: /filter by incident type/i}),
     );
 
     expect(
@@ -56,7 +56,7 @@ describe('IncidentsFilter', () => {
     ).toBeInTheDocument();
 
     await user.click(
-      await screen.findByRole('button', {name: /filter by flow node/i}),
+      await screen.findByRole('combobox', {name: /filter by flow node/i}),
     );
 
     expect(

@@ -34,7 +34,7 @@ describe('IncidentsFilter', () => {
     });
 
     await user.click(
-      screen.getByRole('button', {name: /filter by incident type/i}),
+      screen.getByRole('combobox', {name: /filter by incident type/i}),
     );
     expect(
       screen.getByRole('option', {name: 'Condition error'}),
@@ -44,7 +44,7 @@ describe('IncidentsFilter', () => {
     ).toBeInTheDocument();
 
     await user.click(
-      screen.getByRole('button', {name: /filter by flow node/i}),
+      screen.getByRole('combobox', {name: /filter by flow node/i}),
     );
     expect(
       screen.getByRole('option', {name: 'flowNodeId_exclusiveGateway'}),
@@ -66,7 +66,7 @@ describe('IncidentsFilter', () => {
     expect(screen.getByRole('button', {name: 'Reset Filters'})).toBeDisabled();
 
     await user.click(
-      screen.getByRole('button', {name: /filter by incident type/i}),
+      screen.getByRole('combobox', {name: /filter by incident type/i}),
     );
 
     await user.click(
