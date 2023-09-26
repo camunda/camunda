@@ -270,6 +270,29 @@ public final class PartitionManagerImpl implements PartitionManager, PartitionCh
 
   @Override
   public ActorFuture<Void> leave(final int partitionId) {
-    throw new UnsupportedOperationException("Not yet implemented");
+    final var result = concurrencyControl.<Void>createFuture();
+    concurrencyControl.run(
+        () -> {
+          final var partition = partitions.get(partitionId);
+          if (partition == null) {
+            result.completeExceptionally(
+                new IllegalArgumentException("No partition with id %s".formatted(partitionId)));
+            return;
+          }
+          LOGGER.info("Leaving partition {}", partitionId);
+          concurrencyControl.runOnCompletion(
+              partition.leave(),
+              (ok, error) -> {
+                if (error != null) {
+                  result.completeExceptionally(error);
+                  return;
+                }
+
+                partitions.remove(partitionId);
+                LOGGER.info("Left partition {}", partitionId);
+                result.complete(null);
+              });
+        });
+    return result;
   }
 }
