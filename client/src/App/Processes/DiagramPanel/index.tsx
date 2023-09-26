@@ -23,8 +23,9 @@ import {Diagram} from 'modules/components/Diagram';
 import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
 import {observer} from 'mobx-react';
 import {StateOverlay} from 'modules/components/StateOverlay';
-import {processDiagramStore} from 'modules/stores/processDiagram';
+import {processXmlStore} from 'modules/stores/processXml';
 import {CopiableContent} from 'modules/components/PanelHeader/CopiableContent';
+import {processStatisticsStore} from 'modules/stores/processStatistics';
 
 function setSearchParam(
   location: Location,
@@ -57,7 +58,7 @@ const DiagramPanel: React.FC = observer(() => {
   const bpmnProcessId = selectedProcess?.bpmnProcessId;
   const processName = selectedProcess?.name ?? bpmnProcessId ?? 'Process';
   const isDiagramLoading =
-    processDiagramStore.state.status === 'fetching' ||
+    processXmlStore.state.status === 'fetching' ||
     !processesStore.isInitialLoadComplete ||
     (processesStore.state.status === 'fetching' &&
       location.state?.refreshContent);
@@ -69,22 +70,29 @@ const DiagramPanel: React.FC = observer(() => {
   const processId = processesStore.getProcessId({process, tenant, version});
 
   useEffect(() => {
-    processDiagramStore.init();
+    processStatisticsStore.init();
     return () => {
-      processDiagramStore.reset();
+      processXmlStore.reset();
+      processStatisticsStore.reset();
     };
   }, []);
 
   useEffect(() => {
     if (processId === undefined) {
-      processDiagramStore.reset();
+      processXmlStore.reset();
+      processStatisticsStore.reset();
       return;
     }
 
-    processDiagramStore.fetchProcessDiagram(processId);
+    const fetchDiagram = async () => {
+      await processXmlStore.fetchProcessXml(processId);
+      await processStatisticsStore.fetchProcessStatistics();
+    };
+
+    fetchDiagram();
   }, [processId, location.search]);
 
-  const {xml} = processDiagramStore.state;
+  const {xml} = processXmlStore.state;
 
   const panelHeaderRef = useRef<HTMLDivElement>(null);
 
@@ -98,7 +106,7 @@ const DiagramPanel: React.FC = observer(() => {
     if (isDiagramLoading) {
       return 'loading';
     }
-    if (processDiagramStore.state.status === 'error') {
+    if (processXmlStore.state.status === 'error') {
       return 'error';
     }
     if (!isVersionSelected) {
@@ -157,7 +165,7 @@ const DiagramPanel: React.FC = observer(() => {
         {xml !== null && (
           <Diagram
             xml={xml}
-            selectableFlowNodes={processDiagramStore.selectableIds}
+            selectableFlowNodes={processXmlStore.selectableIds}
             selectedFlowNodeId={flowNodeId}
             onFlowNodeSelection={(flowNodeId) => {
               if (flowNodeId === null || flowNodeId === undefined) {
@@ -166,7 +174,7 @@ const DiagramPanel: React.FC = observer(() => {
                 navigate(setSearchParam(location, ['flowNodeId', flowNodeId]));
               }
             }}
-            overlaysData={processDiagramStore.overlaysData}
+            overlaysData={processStatisticsStore.overlaysData}
           >
             {statisticsOverlays?.map((overlay) => {
               const payload = overlay.payload as {

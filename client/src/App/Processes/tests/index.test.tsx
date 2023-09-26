@@ -22,7 +22,7 @@ import {
 } from 'modules/testUtils';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {processInstancesStore} from 'modules/stores/processInstances';
-import {processDiagramStore} from 'modules/stores/processDiagram';
+import {processXmlStore} from 'modules/stores/processXml';
 import {processesStore} from 'modules/stores/processes';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {AppHeader} from 'App/Layout/AppHeader';
@@ -34,6 +34,7 @@ import {useEffect} from 'react';
 import {Paths} from 'modules/Routes';
 import {mockFetchBatchOperations} from 'modules/mocks/api/fetchBatchOperations';
 import {notificationsStore} from 'modules/stores/notifications';
+import {processStatisticsStore} from 'modules/stores/processStatistics';
 
 jest.mock('modules/utils/bpmn');
 const handleRefetchSpy = jest.spyOn(processesStore, 'handleRefetch');
@@ -49,7 +50,8 @@ function getWrapper(initialPath: string = Paths.processes()) {
       return () => {
         processInstancesSelectionStore.reset();
         processInstancesStore.reset();
-        processDiagramStore.reset();
+        processXmlStore.reset();
+        processStatisticsStore.reset();
         processesStore.reset();
       };
     }, []);
@@ -221,23 +223,25 @@ describe('Instances', () => {
       ),
     });
 
+    await waitFor(() => expect(processXmlStore.state.status).toBe('fetched'));
     await waitFor(() =>
-      expect(processDiagramStore.state.status).toBe('fetched'),
+      expect(processStatisticsStore.state.statistics).toEqual(
+        firstProcessStatisticsResponse,
+      ),
     );
-
-    expect(processDiagramStore.state.diagramModel).not.toBe(null);
-    expect(processDiagramStore.state.statistics).toEqual(
-      firstProcessStatisticsResponse,
-    );
+    expect(processXmlStore.state.diagramModel).not.toBe(null);
 
     await user.click(screen.getByText(/go to event based/i));
 
-    await waitFor(() =>
-      expect(screen.queryByTestId('diagram-spinner')).not.toBeInTheDocument(),
-    );
+    await waitFor(() => expect(processXmlStore.state.status).toBe('fetching'));
 
-    expect(processDiagramStore.state.diagramModel).not.toBe(null);
-    expect(processDiagramStore.state.statistics).toEqual(mockProcessStatistics);
+    await waitFor(() => expect(processXmlStore.state.status).toBe('fetched'));
+    await waitFor(() =>
+      expect(processStatisticsStore.state.statistics).toEqual(
+        mockProcessStatistics,
+      ),
+    );
+    expect(processXmlStore.state.diagramModel).not.toBe(null);
 
     mockFetchProcessInstances().withSuccess({
       processInstances: [],
@@ -247,7 +251,7 @@ describe('Instances', () => {
     await user.click(screen.getByText(/go to no filters/i));
 
     await waitFor(() =>
-      expect(processDiagramStore.state.statistics).toEqual([]),
+      expect(processStatisticsStore.state.statistics).toEqual([]),
     );
 
     await waitFor(() =>

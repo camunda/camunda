@@ -10,15 +10,10 @@ import {getWrapper} from './mocks';
 
 import {Filters} from '../index';
 
-import {
-  groupedProcessesMock,
-  mockProcessStatistics,
-  mockProcessXML,
-} from 'modules/testUtils';
+import {groupedProcessesMock, mockProcessXML} from 'modules/testUtils';
 import {processesStore} from 'modules/stores/processes';
-import {processDiagramStore} from 'modules/stores/processDiagram';
+import {processXmlStore} from 'modules/stores/processXml';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
-import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstancesStatistics';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {
   selectFlowNode,
@@ -31,12 +26,11 @@ jest.unmock('modules/utils/date/formatDate');
 describe('Interaction with other fields during validation', () => {
   beforeEach(async () => {
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
-    mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
     mockFetchProcessXML().withSuccess(mockProcessXML);
 
     processesStore.fetchProcesses();
 
-    await processDiagramStore.fetchProcessDiagram('bigVarProcess');
+    await processXmlStore.fetchProcessXml('bigVarProcess');
     jest.useFakeTimers();
   });
 

@@ -18,7 +18,8 @@ import {
 } from 'modules/testUtils';
 import {DiagramPanel} from './index';
 import {processesStore} from 'modules/stores/processes';
-import {processDiagramStore} from 'modules/stores/processDiagram';
+import {processXmlStore} from 'modules/stores/processXml';
+import {processStatisticsStore} from 'modules/stores/processStatistics';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstancesStatistics';
@@ -33,7 +34,8 @@ function getWrapper(initialPath: string = Paths.dashboard()) {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     useEffect(() => {
       return () => {
-        processDiagramStore.reset();
+        processXmlStore.reset();
+        processStatisticsStore.reset();
         processesStore.reset();
       };
     }, []);
@@ -148,19 +150,18 @@ describe('DiagramPanel', () => {
       .mockImplementation();
 
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
-    mockFetchProcessXML().withNetworkError();
+    mockFetchProcessXML().withServerError();
 
     render(<DiagramPanel />, {
       wrapper: getWrapper(),
     });
 
-    act(() => {
-      processDiagramStore.fetchProcessDiagram('1');
+    await act(async () => {
+      await processXmlStore.fetchProcessXml('1');
+      await processStatisticsStore.fetchProcessStatistics();
     });
 
-    expect(
-      await screen.findByText('Data could not be fetched'),
-    ).toBeInTheDocument();
+    expect(screen.getByText('Data could not be fetched')).toBeInTheDocument();
     expect(
       screen.queryByText(/There is no Process selected/),
     ).not.toBeInTheDocument();
@@ -168,12 +169,10 @@ describe('DiagramPanel', () => {
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
     mockFetchProcessXML().withSuccess('');
 
-    act(() => {
-      processDiagramStore.fetchProcessDiagram('2');
+    await act(async () => {
+      await processXmlStore.fetchProcessXml('2');
+      await processStatisticsStore.fetchProcessStatistics();
     });
-
-    expect(screen.getByTestId('diagram-spinner')).toBeInTheDocument();
-    await waitForElementToBeRemoved(screen.getByTestId('diagram-spinner'));
 
     expect(
       screen.queryByText('Data could not be fetched'),
@@ -182,17 +181,66 @@ describe('DiagramPanel', () => {
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
     mockFetchProcessXML().withServerError();
 
-    act(() => {
-      processDiagramStore.fetchProcessDiagram('3');
+    await act(async () => {
+      await processXmlStore.fetchProcessXml('3');
+      await processStatisticsStore.fetchProcessStatistics();
     });
 
-    expect(
-      await screen.findByText('Data could not be fetched'),
-    ).toBeInTheDocument();
+    expect(screen.getByText('Data could not be fetched')).toBeInTheDocument();
     expect(
       screen.queryByText(/There is no Process selected/),
     ).not.toBeInTheDocument();
 
     consoleErrorMock.mockRestore();
+  });
+
+  it('should render diagram when statistics endpoint fails', async () => {
+    mockFetchProcessInstancesStatistics().withServerError();
+    mockFetchProcessXML().withSuccess('');
+
+    render(<DiagramPanel />, {
+      wrapper: getWrapper(
+        `${Paths.processes()}?process=bigVarProcess&version=1`,
+      ),
+    });
+
+    expect(await screen.findByTestId('diagram')).toBeInTheDocument();
+    expect(screen.queryByTestId('state-overlay')).not.toBeInTheDocument();
+  });
+
+  it('should render statistics', async () => {
+    mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
+    mockFetchProcessXML().withSuccess('');
+
+    render(<DiagramPanel />, {
+      wrapper: getWrapper(
+        `${Paths.processes()}?process=bigVarProcess&version=1`,
+      ),
+    });
+
+    expect(await screen.findByTestId('diagram')).toBeInTheDocument();
+    expect(await screen.findByTestId('state-overlay')).toBeInTheDocument();
+  });
+
+  it('should clear statistics before fetching new statistics', async () => {
+    mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
+    mockFetchProcessXML().withSuccess('');
+
+    render(<DiagramPanel />, {
+      wrapper: getWrapper(
+        `${Paths.processes()}?process=bigVarProcess&version=1`,
+      ),
+    });
+
+    expect(await screen.findByTestId('diagram')).toBeInTheDocument();
+    expect(await screen.findByTestId('state-overlay')).toBeInTheDocument();
+
+    mockFetchProcessInstancesStatistics().withServerError();
+
+    await act(async () => {
+      await processStatisticsStore.fetchProcessStatistics();
+    });
+
+    expect(screen.queryByTestId('state-overlay')).not.toBeInTheDocument();
   });
 });

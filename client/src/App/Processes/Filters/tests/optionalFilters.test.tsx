@@ -13,7 +13,7 @@ import {
   mockProcessXML,
 } from 'modules/testUtils';
 import {processesStore} from 'modules/stores/processes';
-import {processDiagramStore} from 'modules/stores/processDiagram';
+import {processXmlStore} from 'modules/stores/processXml';
 
 import {Filters} from '../index';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
@@ -31,7 +31,7 @@ describe('Optional Filters', () => {
 
     processesStore.fetchProcesses();
 
-    await processDiagramStore.fetchProcessDiagram('bigVarProcess');
+    await processXmlStore.fetchProcessXml('bigVarProcess');
   });
 
   afterEach(() => {

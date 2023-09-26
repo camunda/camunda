@@ -7,7 +7,7 @@
 
 import {diObject} from 'modules/testUtils';
 
-const mockedModules: {[module: string]: any} = {
+const createMockedModules = (container: any): {[module: string]: any} => ({
   canvas: {
     zoom: jest.fn(),
     addMarker: jest.fn(),
@@ -35,12 +35,12 @@ const mockedModules: {[module: string]: any} = {
   eventBus: {on: jest.fn()},
   overlays: {
     add: jest.fn((elementId, type, {html: children}) => {
-      document.body.appendChild(children);
+      container.appendChild(children);
     }),
     remove: jest.fn(),
     clear: jest.fn(),
   },
-};
+});
 
 class Viewer {
   bpmnRenderer: any;
@@ -60,7 +60,7 @@ class Viewer {
   on = jest.fn();
   off = jest.fn();
 
-  get = (module: string) => mockedModules[module];
+  get = (module: string) => createMockedModules(this.container)[module];
 }
 
 export default Viewer;

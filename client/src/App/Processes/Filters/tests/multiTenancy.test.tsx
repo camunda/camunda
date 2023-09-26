@@ -8,7 +8,7 @@
 import {render, screen, waitFor} from 'modules/testing-library';
 import {getWrapper} from './mocks';
 import {processesStore} from 'modules/stores/processes';
-import {processDiagramStore} from 'modules/stores/processDiagram';
+import {processXmlStore} from 'modules/stores/processXml';
 import {
   createUser,
   groupedProcessesMock,
@@ -44,7 +44,7 @@ describe('Filters', () => {
     );
     processesStore.fetchProcesses();
     await authenticationStore.authenticate();
-    await processDiagramStore.fetchProcessDiagram('bigVarProcess');
+    await processXmlStore.fetchProcessXml('bigVarProcess');
   });
 
   it('should load values from the URL when multi tenancy is enabled', async () => {

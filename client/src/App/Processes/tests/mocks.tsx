@@ -9,9 +9,10 @@ import {MemoryRouter} from 'react-router-dom';
 import {useEffect} from 'react';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {processInstancesStore} from 'modules/stores/processInstances';
-import {processDiagramStore} from 'modules/stores/processDiagram';
+import {processXmlStore} from 'modules/stores/processXml';
 import {operationsStore} from 'modules/stores/operations';
 import {processesStore} from 'modules/stores/processes';
+import {processStatisticsStore} from 'modules/stores/processStatistics';
 import {Paths} from 'modules/Routes';
 
 function createWrapper(initialPath: string = Paths.dashboard()) {
@@ -20,7 +21,8 @@ function createWrapper(initialPath: string = Paths.dashboard()) {
       return () => {
         processInstancesSelectionStore.reset();
         processInstancesStore.reset();
-        processDiagramStore.reset();
+        processXmlStore.reset();
+        processStatisticsStore.reset();
         operationsStore.reset();
         processesStore.reset();
       };

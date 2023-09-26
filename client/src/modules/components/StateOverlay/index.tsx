@@ -30,6 +30,7 @@ const StateOverlay: React.FC<Props> = observer(
 
     return createPortal(
       <Container
+        data-testid="state-overlay"
         $theme={currentTheme.theme}
         $state={state}
         $isFaded={isFaded}

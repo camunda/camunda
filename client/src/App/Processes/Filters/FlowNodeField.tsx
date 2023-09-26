@@ -8,11 +8,11 @@
 import React from 'react';
 import {observer} from 'mobx-react';
 import {Field} from 'react-final-form';
-import {processDiagramStore} from 'modules/stores/processDiagram';
+import {processXmlStore} from 'modules/stores/processXml';
 import {ComboBox} from 'modules/components/ComboBox';
 
 const FlowNodeField: React.FC = observer(() => {
-  const {flowNodeFilterOptions} = processDiagramStore;
+  const {flowNodeFilterOptions} = processXmlStore;
 
   return (
     <Field name="flowNodeId">

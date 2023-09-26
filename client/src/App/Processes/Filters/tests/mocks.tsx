@@ -9,7 +9,7 @@ import {Route, MemoryRouter, Routes} from 'react-router-dom';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {useEffect} from 'react';
 import {processesStore} from 'modules/stores/processes';
-import {processDiagramStore} from 'modules/stores/processDiagram';
+import {processXmlStore} from 'modules/stores/processXml';
 import {Paths} from 'modules/Routes';
 
 const GROUPED_BIG_VARIABLE_PROCESS = {
@@ -30,7 +30,7 @@ function getWrapper(initialPath: string = Paths.dashboard()) {
     useEffect(() => {
       return () => {
         processesStore.reset();
-        processDiagramStore.reset();
+        processXmlStore.reset();
       };
     }, []);
 

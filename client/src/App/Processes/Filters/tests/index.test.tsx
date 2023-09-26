@@ -8,7 +8,7 @@
 import {render, screen, waitFor, within} from 'modules/testing-library';
 import {getWrapper} from './mocks';
 import {processesStore} from 'modules/stores/processes';
-import {processDiagramStore} from 'modules/stores/processDiagram';
+import {processXmlStore} from 'modules/stores/processXml';
 import {
   groupedProcessesMock,
   mockProcessStatistics,
@@ -36,7 +36,7 @@ describe('Filters', () => {
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
     mockFetchProcessXML().withSuccess(mockProcessXML);
     processesStore.fetchProcesses();
-    await processDiagramStore.fetchProcessDiagram('bigVarProcess');
+    await processXmlStore.fetchProcessXml('bigVarProcess');
     jest.useFakeTimers();
   });
 
