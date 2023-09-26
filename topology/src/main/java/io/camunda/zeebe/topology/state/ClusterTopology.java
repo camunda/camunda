@@ -196,10 +196,8 @@ public record ClusterTopology(
             .count();
   }
 
-  public int getPartitionCount() {
-    return members.values().stream()
-        .flatMap(m -> m.partitions().keySet().stream())
-        .collect(Collectors.toSet())
-        .size();
+  public int partitionCount() {
+    return (int)
+        members.values().stream().flatMap(m -> m.partitions().keySet().stream()).distinct().count();
   }
 }

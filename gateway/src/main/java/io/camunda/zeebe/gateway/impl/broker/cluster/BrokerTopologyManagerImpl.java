@@ -224,7 +224,7 @@ public final class BrokerTopologyManagerImpl extends Actor
 
           // Overwrite clusterSize. ClusterTopology is the source of truth.
           newTopology.setClusterSize(clusterTopology.clusterSize());
-          newTopology.setPartitionsCount(clusterTopology.getPartitionCount());
+          newTopology.setPartitionsCount(clusterTopology.partitionCount());
 
           LOG.debug(
               "Received new cluster topology with clusterSize {}", newTopology.getClusterSize());
