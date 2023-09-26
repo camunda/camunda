@@ -74,7 +74,7 @@ test('create a dashboard and reports from a template', async (t) => {
   await clearAllAnnotations();
 
   await t.click(e.autoRefreshButton);
-  await t.click(Common.option('1 minute'));
+  await t.click(Common.menuOption('1 minute'));
 
   await u.save(t);
 

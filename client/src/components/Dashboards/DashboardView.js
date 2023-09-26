@@ -5,17 +5,17 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {useState, useEffect, useRef} from 'react';
+import {useState, useEffect, useRef} from 'react';
 import classnames from 'classnames';
 import {FullScreen, useFullScreenHandle} from 'react-full-screen';
 import {Link, useHistory} from 'react-router-dom';
+import {Button} from '@carbon/react';
+import {Copy, Edit, Filter, Maximize, Minimize, Share, TrashCan} from '@carbon/icons-react';
 
 import {
-  Button,
   ShareEntity,
   DashboardRenderer,
   LastModifiedInfo,
-  Icon,
   Popover,
   Deleter,
   EntityName,
@@ -176,43 +176,51 @@ export function DashboardView(props) {
             </div>
             <div className="tools">
               {!fullScreenHandle.active && (
-                <React.Fragment>
+                <>
                   {isInstantDashboard && (
                     <Button
+                      kind="primary"
+                      className="create-copy"
+                      hasIconOnly
+                      renderIcon={Copy}
+                      iconDescription={t('dashboard.copyInstantDashboard')}
                       onClick={() => setIsTemplateModalOpen(true)}
-                      main
-                      primary
-                      className="tool-button create-copy"
-                    >
-                      {t('dashboard.copyInstantDashboard')}
-                    </Button>
+                    />
                   )}
                   {currentUserRole === 'editor' && (
                     <>
-                      <Link className="tool-button edit-button" to="edit">
-                        <Button main tabIndex="-1">
-                          <Icon type="edit" />
-                          {t('common.edit')}
-                        </Button>
-                      </Link>
                       <Button
-                        main
+                        className="edit-button"
+                        as={Link}
+                        to="edit"
+                        hasIconOnly
+                        renderIcon={Edit}
+                        iconDescription={t('common.edit')}
+                      />
+                      <Button
+                        kind="ghost"
+                        hasIconOnly
+                        renderIcon={TrashCan}
+                        iconDescription={t('common.delete')}
                         onClick={() => setDeleting({...props, entityType: 'dashboard'})}
-                        className="tool-button delete-button"
-                      >
-                        <Icon type="delete" />
-                        {t('common.delete')}
-                      </Button>
+                        className="delete-button"
+                      />
                     </>
                   )}
                   {!isInstantDashboard && (
                     <Popover
-                      main
-                      className="tool-button share-button"
-                      icon="share"
-                      title={t('common.sharing.buttonTitle')}
-                      disabled={!sharingEnabled || !isAuthorizedToShare}
+                      isTabTip
+                      className="share-button"
+                      align="bottom-right"
                       tooltip={getShareTooltip()}
+                      trigger={
+                        <Popover.Button
+                          hasIconOnly
+                          iconDescription={t('common.sharing.buttonTitle')}
+                          renderIcon={Share}
+                          disabled={!sharingEnabled || !isAuthorizedToShare}
+                        />
+                      }
                     >
                       <ShareEntity
                         type="dashboard"
@@ -225,18 +233,18 @@ export function DashboardView(props) {
                       />
                     </Popover>
                   )}
-                </React.Fragment>
+                </>
               )}
               {fullScreenHandle.active && (
-                <Button main onClick={toggleTheme} className="tool-button theme-toggle">
+                <Button kind="ghost" onClick={toggleTheme} className="theme-toggle">
                   {t('dashboard.toggleTheme')}
                 </Button>
               )}
               {availableFilters?.length > 0 && (
                 <Button
-                  main
-                  className="tool-button filter-button"
-                  active={filtersShown}
+                  kind="ghost"
+                  className="filter-button"
+                  isSelected={filtersShown}
                   onClick={() => {
                     if (filtersShown) {
                       setFiltersShown(false);
@@ -246,26 +254,29 @@ export function DashboardView(props) {
                       setFilter(getDefaultFilter(availableFilters));
                     }
                   }}
-                >
-                  <Icon type="filter" /> {t('dashboard.filter.viewButtonText')}
-                </Button>
+                  hasIconOnly
+                  iconDescription={t('dashboard.filter.viewButtonText').toString()}
+                  renderIcon={Filter}
+                />
               )}
               {!fullScreenHandle.active &&
                 (optimizeProfile === 'cloud' || optimizeProfile === 'platform') && (
                   <AlertsDropdown dashboardTiles={tiles} />
                 )}
               <Button
-                main
+                kind="ghost"
+                hasIconOnly
+                renderIcon={fullScreenHandle.active ? Minimize : Maximize}
+                iconDescription={
+                  fullScreenHandle.active
+                    ? t('dashboard.leaveFullscreen')
+                    : t('dashboard.enterFullscreen')
+                }
                 onClick={() =>
                   fullScreenHandle.active ? fullScreenHandle.exit() : fullScreenHandle.enter()
                 }
-                className="tool-button fullscreen-button"
-              >
-                <Icon type={fullScreenHandle.active ? 'exit-fullscreen' : 'fullscreen'} />{' '}
-                {fullScreenHandle.active
-                  ? t('dashboard.leaveFullscreen')
-                  : t('dashboard.enterFullscreen')}
-              </Button>
+                className="fullscreen-button"
+              />
               <AutoRefreshSelect
                 refreshRateMs={autoRefreshInterval}
                 onChange={setAutoRefreshInterval}

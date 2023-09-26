@@ -9,7 +9,6 @@ import React from 'react';
 import {shallow} from 'enzyme';
 
 import AutoRefreshSelect from './AutoRefreshSelect';
-import {Select} from 'components';
 
 jest.useFakeTimers();
 jest.spyOn(global, 'setInterval');
@@ -38,19 +37,7 @@ it('should select a new refresh interval', () => {
   const node = shallow(<AutoRefreshSelect onChange={spy} onRefresh={refreshFunc} />);
   const newIternvalMins = 5;
 
-  node.find(Select).simulate('change', newIternvalMins);
-
-  expect(setInterval).toHaveBeenCalledWith(refreshFunc, newIternvalMins * 60 * 1000);
-  expect(spy).toHaveBeenCalledWith(newIternvalMins * 60 * 1000);
-});
-
-it('should select a new refresh interval', () => {
-  const refreshFunc = jest.fn();
-  const spy = jest.fn();
-  const node = shallow(<AutoRefreshSelect onChange={spy} onRefresh={refreshFunc} />);
-  const newIternvalMins = 5;
-
-  node.find(Select).simulate('change', newIternvalMins);
+  node.find({value: '5'}).simulate('change');
 
   expect(setInterval).toHaveBeenCalledWith(refreshFunc, newIternvalMins * 60 * 1000);
   expect(spy).toHaveBeenCalledWith(newIternvalMins * 60 * 1000);
@@ -60,7 +47,7 @@ it('should turn off refresh interval', () => {
   const spy = jest.fn();
   const node = shallow(<AutoRefreshSelect onChange={spy} onRefresh={jest.fn()} />);
 
-  node.find(Select).simulate('change', 'off');
+  node.find({value: 'off'}).simulate('change');
 
   expect(clearInterval).toHaveBeenCalled();
   expect(setInterval).not.toHaveBeenCalled();

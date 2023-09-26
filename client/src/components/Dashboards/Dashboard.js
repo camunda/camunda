@@ -5,27 +5,25 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import {Component} from 'react';
 import {Redirect} from 'react-router-dom';
+import {Loading} from '@carbon/react';
 
 import {format, BACKEND_DATE_FORMAT} from 'dates';
 import {withErrorHandling, withUser} from 'HOC';
 import {loadEntity, updateEntity, createEntity, getCollection} from 'services';
 import {isSharingEnabled, newReport} from 'config';
-
-import {ErrorPage, LoadingIndicator, PageTitle} from 'components';
-
+import {ErrorPage, PageTitle} from 'components';
 import {showError} from 'notifications';
 import {t} from 'translation';
 
 import {isAuthorizedToShareDashboard} from './service';
-
 import DashboardView from './DashboardView';
 import DashboardEdit from './DashboardEdit';
 
 import './Dashboard.scss';
 
-export class Dashboard extends React.Component {
+export class Dashboard extends Component {
   constructor(props) {
     super(props);
 
@@ -356,7 +354,7 @@ export class Dashboard extends React.Component {
     }
 
     if (!loaded) {
-      return <LoadingIndicator />;
+      return <Loading className="DashboardLoading" withOverlay={false} />;
     }
 
     if (redirect) {

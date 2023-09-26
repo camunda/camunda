@@ -187,10 +187,9 @@ it('should disable the share button if not authorized', async () => {
 
   await runAllEffects();
 
-  const shareButton = node.find('.share-button');
+  const shareButton = shallow(node.find('.share-button').prop('trigger'));
   expect(shareButton).toBeDisabled();
-  expect(shareButton.props()).toHaveProperty(
-    'tooltip',
+  expect(node.find('Popover').prop('tooltip')).toBe(
     'Sharing forbidden. Missing authorization for contained report.'
   );
 });
@@ -217,12 +216,12 @@ it('should show a filters toggle button if filters are available', () => {
 it('should toggle filters section', () => {
   const node = shallow(<DashboardView availableFilters={[{type: 'state'}]} />);
 
-  expect(node.find('.filter-button')).toHaveProp('active');
+  expect(node.find('.filter-button')).toHaveProp('isSelected');
   expect(node.find('FiltersView')).toExist();
 
   node.find('.filter-button').simulate('click');
 
-  expect(node.find('.filter-button').prop('active')).toBe(false);
+  expect(node.find('.filter-button').prop('isSelected')).toBe(false);
   expect(node.find('FiltersView')).not.toExist();
 });
 
