@@ -172,8 +172,8 @@ public final class BrokerTopologyManagerImpl extends Actor
     // correct value even when the dynamic ClusterTopology is disabled.
     if (newTopology.getClusterSize() == BrokerClusterStateImpl.UNINITIALIZED_CLUSTER_SIZE) {
       newTopology.setClusterSize(distributedBrokerInfo.getClusterSize());
+      newTopology.setPartitionsCount(distributedBrokerInfo.getPartitionsCount());
     }
-    newTopology.setPartitionsCount(distributedBrokerInfo.getPartitionsCount());
     newTopology.setReplicationFactor(distributedBrokerInfo.getReplicationFactor());
 
     final int nodeId = distributedBrokerInfo.getNodeId();
@@ -224,6 +224,7 @@ public final class BrokerTopologyManagerImpl extends Actor
 
           // Overwrite clusterSize. ClusterTopology is the source of truth.
           newTopology.setClusterSize(clusterTopology.clusterSize());
+          newTopology.setPartitionsCount(clusterTopology.partitionCount());
 
           LOG.debug(
               "Received new cluster topology with clusterSize {}", newTopology.getClusterSize());

@@ -195,4 +195,9 @@ public record ClusterTopology(
                         && entry.getValue().state() != State.UNINITIALIZED)
             .count();
   }
+
+  public int partitionCount() {
+    return (int)
+        members.values().stream().flatMap(m -> m.partitions().keySet().stream()).distinct().count();
+  }
 }
