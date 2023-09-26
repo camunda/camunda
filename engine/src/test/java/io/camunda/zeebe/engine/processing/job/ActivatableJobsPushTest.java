@@ -30,6 +30,7 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -82,6 +83,7 @@ public class ActivatableJobsPushTest {
         new JobActivationPropertiesImpl()
             .setWorker(worker, 0, worker.capacity())
             .setTimeout(timeout)
+            .setTenantIds(List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER))
             .setFetchVariables(
                 List.of(new StringValue("a"), new StringValue("b"), new StringValue("c")));
     jobStream = JOB_STREAMER.addJobStream(jobTypeBuffer, jobActivationProperties);
@@ -230,7 +232,8 @@ public class ActivatableJobsPushTest {
 
   private Long createJob(
       final String jobType, final String processId, final Map<String, Object> variables) {
-    final Record<JobRecordValue> jobRecord = ENGINE.createJob(jobType, processId, variables);
+    final Record<JobRecordValue> jobRecord =
+        ENGINE.createJob(jobType, processId, variables, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
     activeProcessInstances.add(jobRecord.getValue().getProcessInstanceKey());
     return jobRecord.getKey();
   }
@@ -261,6 +264,7 @@ public class ActivatableJobsPushTest {
               final JobRecord jobRecord = activatedJob.jobRecord();
               assertThat(jobRecord.getWorkerBuffer()).isEqualTo(worker);
               assertThat(jobRecord.getVariables()).isEqualTo(variables);
+              assertThat(jobRecord.getTenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
             });
   }
 }
