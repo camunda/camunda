@@ -190,7 +190,7 @@
     "label": "process",
     "label-plural": "processes",
     "adoptionDashboard": "Adoption",
-    "defaultDashboardAndKPI": "Processes Dashboards and KPIs",
+    "defaultDashboardAndKPI": "Process Dashboards and KPIs",
     "empty": "There are no processes imported yet",
     "owner": "Owner",
     "processOwner": "Process Owner",
@@ -1566,14 +1566,14 @@
     }
   },
   "managementDashboard": {
-    "dashboardName": "Adoption Dashboard",
+    "dashboardName": "Adoption",
     "report": {
-      "processInstanceUsage": "Process Instance Usage",
-      "incidentFreeRate": "Overall Incident-Free Rate",
-      "automationRate": "Automation Rate (<1 hour)",
-      "longRunningInstances": "Long-Running Process Instances",
-      "automationCandidates": "Automation Candidates",
-      "activeBottlenecks": "Active Bottlenecks"
+      "instancesCurrentlyInProgressName": "Currently in progress",
+      "instancesCurrentlyInProgressDescription": "This report shows how busy your cluster currently is.",
+      "instancesStartedInLastSixMonthsName": "Started in the last 6 months",
+      "instancesStartedInLastSixMonthsDescription": "This report provides insight into the overall adoption of process orchestration.",
+      "instancesEndedInLastSixMonthsName": "Ended in the last 6 months",
+      "instancesEndedInLastSixMonthsDescription": "This report shows the total number of automated process instances ended."
     }
   },
   "instantDashboard": {

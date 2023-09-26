@@ -167,7 +167,7 @@ import:
     includeUserMetaData: true
     # Cron expression for when the identity sync should run, defaults to every second hour.
     cronTrigger: '0 */2 * * *'
-  # Controls whether customer onboarding data should be loaded to optimize
+  # Controls whether Camunda Customer Onboarding Demo data should be loaded to optimize
   customer-onboarding: true
 
 serialization:

@@ -189,7 +189,7 @@
   "processes": {
     "label": "Prozess",
     "label-plural": "Prozesse",
-    "adoptionDashboard": "Adoption",
+    "adoptionDashboard": "Einführungsübersicht",
     "defaultDashboardAndKPI": "Prozess Dashboards und KPIs",
     "empty": "Es sind noch keine Prozesse importiert",
     "owner": "Eigentümer",
@@ -210,7 +210,7 @@
     "digestInfo": "Der Prozess Digest sendet regelmäßige E-Mails mit dem KPI-Status an den Prozesseigentümer. Standardmäßig wird der Digest jeden Montag um 9:00 Uhr versendet (wenn Sie die Standardversandzeit ändern möchten, wenden Sie sich bitte an Ihren Administrator).",
     "digestConfigured": "Ihr Prozess Digest wurde erfolgreich konfiguriert. Eine E-Mail wurde an {name} gesendet.",
     "configureKpis": "Erfahren Sie mehr über KPIs",
-    "analysing": "<b>{count}</b> orchestrate {label}.",
+    "analysing": "<b>{count}</b> orchestrierte {label}.",
     "processesListed": "{total} {label} aufgelistet",
     "processesListedOf": "{count} von {total} {label} aufgelistet",
     "timeGoals": {
@@ -1566,14 +1566,14 @@
     }
   },
   "managementDashboard": {
-    "dashboardName": "Adoption Dashboard",
+    "dashboardName": "Adoption",
     "report": {
-      "processInstanceUsage": "Anzahl der ausgeführten Prozessinstanzen",
-      "incidentFreeRate": "Prozessausführungen ohne Zwischenfälle",
-      "automationRate": "Automatisierungsrate (< 1 Stunde)",
-      "longRunningInstances": "Lang laufende Prozessinstanzen",
-      "automationCandidates": "Automatisierungskandidaten",
-      "activeBottlenecks": "Aktive Engpässe"
+      "instancesCurrentlyInProgressName": "Aktuell laufende Prozesse",
+      "instancesCurrentlyInProgressDescription": "Dieser Bericht zeigt, wie stark der Cluster aktuell genutzt wird.",
+      "instancesStartedInLastSixMonthsName": "In den letzten 6 Monaten gestartete Prozesse",
+      "instancesStartedInLastSixMonthsDescription": "Dieser Bericht gibt Aufschluss über die Verbreitung der Prozess Orchestrierung.",
+      "instancesEndedInLastSixMonthsName": "In den letzten 6 Monaten beendete Prozesse",
+      "instancesEndedInLastSixMonthsDescription": "Dieser Bericht zeigt die Anzahl der beendeten Prozess Instanzen."
     }
   },
   "instantDashboard": {
