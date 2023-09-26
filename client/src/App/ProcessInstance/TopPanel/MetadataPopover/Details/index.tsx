@@ -33,6 +33,7 @@ const NULL_METADATA = {
   calledDecisionInstanceId: null,
   calledDecisionDefinitionName: null,
   flowNodeType: null,
+  jobRetries: null,
 } as const;
 
 const Details: React.FC<Props> = ({metaData, flowNodeId}) => {
@@ -50,6 +51,7 @@ const Details: React.FC<Props> = ({metaData, flowNodeId}) => {
     calledDecisionInstanceId,
     calledDecisionDefinitionName,
     flowNodeType,
+    jobRetries,
   } = instanceMetadata ?? NULL_METADATA;
 
   return (
@@ -87,6 +89,15 @@ const Details: React.FC<Props> = ({metaData, flowNodeId}) => {
             {getExecutionDuration(startDate!, endDate)}
           </SummaryDataValue>
         </Stack>
+
+        {jobRetries !== null && (
+          <Stack gap={3}>
+            <SummaryDataKey>Retries Left</SummaryDataKey>
+            <SummaryDataValue data-testid="retries-left-count">
+              {jobRetries}
+            </SummaryDataValue>
+          </Stack>
+        )}
 
         {businessObject?.$type === 'bpmn:CallActivity' &&
           flowNodeType !== 'MULTI_INSTANCE_BODY' && (

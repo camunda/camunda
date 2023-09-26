@@ -206,6 +206,11 @@ const userTaskFlowNodeMetaData = {
   },
 };
 
+const retriesLeftFlowNodeMetaData = {
+  ...baseMetadata,
+  instanceMetadata: {...baseInstanceMetadata, jobRetries: 2},
+};
+
 export {
   baseMetadata as singleInstanceMetadata,
   incidentFlowNodeMetaData,
@@ -219,6 +224,7 @@ export {
   multiInstanceCallActivityMetadata,
   rootIncidentFlowNodeMetaData,
   userTaskFlowNodeMetaData,
+  retriesLeftFlowNodeMetaData,
   PROCESS_INSTANCE_ID,
   CALL_ACTIVITY_FLOW_NODE_ID,
   FLOW_NODE_ID,

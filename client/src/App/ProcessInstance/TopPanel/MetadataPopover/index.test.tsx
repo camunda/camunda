@@ -33,6 +33,8 @@ import {
   FLOW_NODE_ID,
   userTaskFlowNodeMetaData,
   USER_TASK_FLOW_NODE_ID,
+  retriesLeftFlowNodeMetaData,
+  singleInstanceMetadata,
 } from 'modules/mocks/metadata';
 import {metadataDemoProcess} from 'modules/mocks/metadataDemoProcess';
 import {LocationLog} from 'modules/utils/LocationLog';
@@ -41,6 +43,7 @@ import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetc
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {useEffect} from 'react';
 import {Paths} from 'modules/Routes';
+import {ProcessInstance} from 'modules/testUtils/pages/ProcessInstance';
 
 const MOCK_EXECUTION_DATE = '21 seconds';
 
@@ -82,11 +85,58 @@ const renderPopover = () => {
   );
 };
 
+const {
+  metadataPopover: {labels},
+} = new ProcessInstance();
+
 describe('MetadataPopover', () => {
   beforeEach(() => {
     flowNodeMetaDataStore.init();
     flowNodeSelectionStore.init();
     processInstanceDetailsDiagramStore.init();
+  });
+
+  it('should not show unrelated data', async () => {
+    mockFetchProcessXML().withSuccess(mockProcessXML);
+    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
+
+    processInstanceDetailsStore.setProcessInstance(
+      createInstance({
+        id: PROCESS_INSTANCE_ID,
+        state: 'ACTIVE',
+      }),
+    );
+    flowNodeSelectionStore.selectFlowNode({
+      flowNodeId: FLOW_NODE_ID,
+    });
+
+    renderPopover();
+
+    expect(
+      await screen.findByRole('heading', {name: labels.details}),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.queryByRole('heading', {name: labels.incidents}),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('heading', {name: labels.incident}),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(labels.calledProcessInstance),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(labels.calledDecisionInstance),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(labels.rootCauseProcessInstance),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(labels.rootCauseDecisionInstance),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText(labels.retriesLeft)).not.toBeInTheDocument();
+    expect(screen.queryByText(labels.type)).not.toBeInTheDocument();
+    expect(screen.queryByText(labels.errorMessage)).not.toBeInTheDocument();
   });
 
   it('should render meta data for incident flow node', async () => {
@@ -107,14 +157,24 @@ describe('MetadataPopover', () => {
     renderPopover();
 
     expect(
-      await screen.findByText(/Flow Node Instance Key/),
+      await screen.findByText(labels.flowNodeInstanceKey),
     ).toBeInTheDocument();
-    expect(screen.getByText(/Execution Duration/)).toBeInTheDocument();
-    expect(screen.getByText(/Type/)).toBeInTheDocument();
-    expect(screen.getByText(/Error Message/)).toBeInTheDocument();
-    expect(screen.getAllByText(/View/)).toHaveLength(2);
+    expect(screen.getByText(labels.executionDuration)).toBeInTheDocument();
+    expect(screen.getByText(labels.type)).toBeInTheDocument();
+    expect(screen.getByText(labels.errorMessage)).toBeInTheDocument();
     expect(
-      screen.queryByText(/Called Process Instance/),
+      screen.getByRole('button', {
+        name: labels.showMoreMetadata,
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {
+        name: labels.showIncident,
+      }),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.queryByText(labels.calledProcessInstance),
     ).not.toBeInTheDocument();
 
     const {incident, instanceMetadata} = incidentFlowNodeMetaData;
@@ -151,11 +211,13 @@ describe('MetadataPopover', () => {
     renderPopover();
 
     expect(
-      await screen.findByText(/Flow Node Instance Key/),
+      await screen.findByText(labels.flowNodeInstanceKey),
     ).toBeInTheDocument();
-    expect(screen.getByText(/Execution Duration/)).toBeInTheDocument();
-    expect(screen.getByText(/Called Process Instance/)).toBeInTheDocument();
-    expect(screen.getByText(/View/)).toBeInTheDocument();
+    expect(screen.getByText(labels.executionDuration)).toBeInTheDocument();
+    expect(screen.getByText(labels.calledProcessInstance)).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {name: labels.showMoreMetadata}),
+    ).toBeInTheDocument();
 
     expect(
       screen.getByText(
@@ -168,8 +230,6 @@ describe('MetadataPopover', () => {
         calledInstanceMetadata.instanceMetadata!.calledProcessInstanceId
       }`,
     );
-    expect(screen.queryByText(/incidentErrorType/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/incidentErrorMessage/)).not.toBeInTheDocument();
   });
 
   it('should render meta data modal', async () => {
@@ -189,13 +249,12 @@ describe('MetadataPopover', () => {
     const {user} = renderPopover();
 
     expect(
-      await screen.findByText(/Flow Node Instance Key/),
+      await screen.findByRole('heading', {name: labels.details}),
     ).toBeInTheDocument();
 
-    const [firstViewLink] = screen.getAllByText(/View/);
-    expect(firstViewLink).toBeInTheDocument();
-
-    await user.click(firstViewLink!);
+    await user.click(
+      screen.getByRole('button', {name: labels.showMoreMetadata}),
+    );
 
     expect(
       screen.getByText(
@@ -268,9 +327,11 @@ describe('MetadataPopover', () => {
       ),
     ).toBeInTheDocument();
     expect(screen.getByText(/3 incidents occurred/)).toBeInTheDocument();
-    expect(screen.getByText(/View/)).toBeInTheDocument();
     expect(
-      screen.queryByText(/Flow Node Instance Key/),
+      screen.getByRole('button', {name: labels.showIncidents}),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(labels.flowNodeInstanceKey),
     ).not.toBeInTheDocument();
   });
 
@@ -291,10 +352,10 @@ describe('MetadataPopover', () => {
     renderPopover();
 
     expect(
-      await screen.findByText(/Flow Node Instance Key/),
+      await screen.findByText(labels.flowNodeInstanceKey),
     ).toBeInTheDocument();
     expect(
-      screen.queryByText(/Called Process Instance/),
+      screen.queryByText(labels.calledProcessInstance),
     ).not.toBeInTheDocument();
   });
 
@@ -319,7 +380,7 @@ describe('MetadataPopover', () => {
     renderPopover();
 
     expect(
-      await screen.findByText(/Root Cause Process Instance/),
+      await screen.findByText(labels.rootCauseProcessInstance),
     ).toBeInTheDocument();
     expect(screen.getByText(/Current Instance/)).toBeInTheDocument();
     expect(
@@ -347,9 +408,15 @@ describe('MetadataPopover', () => {
 
     const {user} = renderPopover();
 
-    expect(await screen.findByText(/called decision/i)).toBeInTheDocument();
-    expect(screen.queryByText(/incident/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/root cause decision/i)).not.toBeInTheDocument();
+    expect(
+      await screen.findByText(labels.calledDecisionInstance),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('heading', {name: labels.incident}),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(labels.rootCauseDecisionInstance),
+    ).not.toBeInTheDocument();
 
     await user.click(
       screen.getByText(
@@ -389,8 +456,12 @@ describe('MetadataPopover', () => {
 
     const {user} = renderPopover();
 
-    expect(await screen.findByText(/called decision/i)).toBeInTheDocument();
-    expect(screen.getByText(/incident/i)).toBeInTheDocument();
+    expect(
+      await screen.findByText(labels.calledDecisionInstance),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', {name: labels.incident}),
+    ).toBeInTheDocument();
     expect(
       screen.getByText(
         `${instanceMetadata!.calledDecisionDefinitionName} - ${
@@ -398,8 +469,12 @@ describe('MetadataPopover', () => {
         }`,
       ),
     ).toBeInTheDocument();
-    expect(screen.getByText(/root cause decision/i)).toBeInTheDocument();
-    expect(screen.queryByText(/root cause instance/i)).not.toBeInTheDocument();
+    expect(
+      screen.getByText(labels.rootCauseDecisionInstance),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(labels.rootCauseProcessInstance),
+    ).not.toBeInTheDocument();
 
     await user.click(
       screen.getByText(
@@ -435,12 +510,16 @@ describe('MetadataPopover', () => {
 
     renderPopover();
 
-    expect(await screen.findByText(/called decision/i)).toBeInTheDocument();
+    expect(
+      await screen.findByText(labels.calledDecisionInstance),
+    ).toBeInTheDocument();
     expect(
       screen.getByText(instanceMetadata.calledDecisionDefinitionName),
     ).toBeInTheDocument();
-    expect(screen.queryByText(/incident/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/root cause decision/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(labels.incident)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(labels.rootCauseDecisionInstance),
+    ).not.toBeInTheDocument();
   });
 
   it('should render link to tasklist', async () => {
@@ -464,5 +543,24 @@ describe('MetadataPopover', () => {
     expect(
       await screen.findByRole('link', {name: 'Open Tasklist'}),
     ).toHaveAttribute('href', tasklistUrl);
+  });
+
+  it('should render retries left', async () => {
+    mockFetchProcessXML().withSuccess(metadataDemoProcess);
+    mockFetchFlowNodeMetadata().withSuccess(retriesLeftFlowNodeMetaData);
+
+    processInstanceDetailsStore.setProcessInstance(
+      createInstance({
+        id: PROCESS_INSTANCE_ID,
+        state: 'ACTIVE',
+      }),
+    );
+
+    flowNodeSelectionStore.selectFlowNode({flowNodeId: USER_TASK_FLOW_NODE_ID});
+
+    renderPopover();
+
+    expect(await screen.findByText(labels.retriesLeft)).toBeInTheDocument();
+    expect(screen.getByTestId('retries-left-count')).toHaveTextContent('2');
   });
 });
