@@ -40,7 +40,7 @@ public final class DbMessageSubscriptionState
   private final ColumnFamily<DbCompositeKey<DbLong, DbString>, MessageSubscription>
       subscriptionColumnFamily;
 
-  // (messageName, correlationKey, elementInstanceKey) => \0
+  // (tenant aware messageName, correlationKey, elementInstanceKey) => \0
   private final DbString tenantIdKey;
   private final DbString correlationKey;
   private final DbTenantAwareKey<DbCompositeKey<DbString, DbString>>
