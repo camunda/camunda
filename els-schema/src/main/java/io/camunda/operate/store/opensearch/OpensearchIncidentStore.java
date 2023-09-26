@@ -101,11 +101,16 @@ public class OpensearchIncidentStore implements IncidentStore {
   @Override
   public List<IncidentEntity> getIncidentsWithErrorTypesFor(String treePath, List<Map<ErrorType,Long>> errorTypes) {
     final String errorTypesAggName = "errorTypesAgg";
-    final SearchRequest.Builder searchRequestBuilder = RequestDSL.searchRequestBuilder(incidentTemplate, RequestDSL.QueryType.ONLY_RUNTIME)
-        .query(activeIncidentConstantScore(term(IncidentTemplate.TREE_PATH, treePath)))
-        .aggregations(errorTypesAggName, termAggregation(IncidentTemplate.ERROR_TYPE, ErrorType.values().length, Map.of(errorTypesAggName, SortOrder.Asc))._toAggregation());
+    var request = searchRequestBuilder(incidentTemplate, ONLY_RUNTIME)
+        .query(constantScore(
+            and(
+                term(IncidentTemplate.TREE_PATH, treePath),
+                ACTIVE_INCIDENT_QUERY
+            ))).aggregations(
+                Map.of(errorTypesAggName, termAggregation(IncidentTemplate.ERROR_TYPE, ErrorType.values().length,Map.of("_key", SortOrder.Asc))
+                    ._toAggregation()));
 
-    OpenSearchDocumentOperations.AggregatedResult<IncidentEntity> result = richOpenSearchClient.doc().searchValuesAndAggregations(searchRequestBuilder, IncidentEntity.class);
+    OpenSearchDocumentOperations.AggregatedResult<IncidentEntity> result = richOpenSearchClient.doc().searchValuesAndAggregations(request, IncidentEntity.class);
 
     result.aggregates()
       .get(errorTypesAggName)

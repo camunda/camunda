@@ -6,7 +6,6 @@
  */
 package io.camunda.operate.util;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.entities.EventEntity;
 import io.camunda.operate.entities.FlowNodeInstanceEntity;
@@ -53,9 +52,10 @@ import java.util.stream.Collectors;
 import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllFinishedRequest;
 import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllProcessInstancesRequest;
 import static io.camunda.operate.qa.util.RestAPITestUtil.createProcessInstanceRequest;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.constantScore;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.sortOptions;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.term;
+import static io.camunda.operate.schema.templates.IncidentTemplate.PROCESS_INSTANCE_KEY;
+import static io.camunda.operate.schema.templates.IncidentTemplate.STATE;
+import static io.camunda.operate.store.opensearch.OpensearchIncidentStore.ACTIVE_INCIDENT_QUERY;
+import static io.camunda.operate.store.opensearch.dsl.QueryDSL.*;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.opensearch.client.opensearch._types.SortOrder.Asc;
@@ -64,7 +64,6 @@ import static org.opensearch.client.opensearch._types.SortOrder.Asc;
 @Conditional(OpensearchCondition.class)
 @ConditionalOnProperty(prefix = OperateProperties.PREFIX, name = "webappEnabled", havingValue = "true", matchIfMissing = true)
 public class OpensearchChecks {
-
   @Autowired
   private RichOpenSearchClient richOpenSearchClient;
 
@@ -433,11 +432,15 @@ public class OpensearchChecks {
   }
 
   public List<EventEntity> getAllEvents(Long processInstanceKey) {
-    throw new UnsupportedOperationException();
+    return richOpenSearchClient.doc().searchValues(searchRequestBuilder(eventTemplate)
+        .query(constantScore(term(FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY, processInstanceKey))),
+        EventEntity.class);
   }
 
   public List<FlowNodeInstanceEntity> getAllFlowNodeInstances() {
-    throw new UnsupportedOperationException();
+    return richOpenSearchClient.doc().searchValues(searchRequestBuilder(flowNodeInstanceTemplate)
+        .query(matchAll()).sort(sortOptions(FlowNodeInstanceTemplate.POSITION, Asc)),
+        FlowNodeInstanceEntity.class);
   }
 
   /**
@@ -500,7 +503,9 @@ public class OpensearchChecks {
   }
 
   public List<VariableEntity> getAllVariables(Long processInstanceKey) {
-    throw new UnsupportedOperationException();
+    return richOpenSearchClient.doc().searchValues(searchRequestBuilder(variableTemplate)
+            .query(term(VariableTemplate.PROCESS_INSTANCE_KEY, processInstanceKey))
+        , VariableEntity.class);
   }
 
 
@@ -624,23 +629,38 @@ public class OpensearchChecks {
   }
 
   public long getActiveIncidentsCount() {
-    throw new UnsupportedOperationException();
+    return richOpenSearchClient.doc()
+        .docCount(
+            searchRequestBuilder(incidentTemplate)
+            .query(ACTIVE_INCIDENT_QUERY));
   }
 
   public long getPendingIncidentsCount() {
-    throw new UnsupportedOperationException();
+    return richOpenSearchClient.doc().docCount(
+        searchRequestBuilder(incidentTemplate)
+        .query(term(IncidentTemplate.STATE,IncidentState.PENDING.name())));
   }
 
   public long getPostImporterQueueCount() {
-    throw new UnsupportedOperationException();
+    return richOpenSearchClient.doc().docCount(
+        searchRequestBuilder(postImporterQueueTemplate)
+            .query(matchAll()));
   }
 
   public long getActiveIncidentsCount(Long processInstanceKey) {
-    throw new UnsupportedOperationException();
+    return richOpenSearchClient.doc().docCount(
+        searchRequestBuilder(incidentTemplate)
+            .query(
+                and(
+                    ACTIVE_INCIDENT_QUERY,
+                    term(PROCESS_INSTANCE_KEY, processInstanceKey))));
   }
 
   public long getIncidentsCount(Long processInstanceKey, IncidentState state) {
-    throw new UnsupportedOperationException();
+    return richOpenSearchClient.doc().docCount(
+        searchRequestBuilder(incidentTemplate).query(
+            and(term(STATE, state.name()),
+                term(PROCESS_INSTANCE_KEY, processInstanceKey))));
   }
 
   /**
@@ -649,7 +669,10 @@ public class OpensearchChecks {
    * @return
    */
   public long getIncidentsCount(Long processInstanceKey) {
-    throw new UnsupportedOperationException();
+    return richOpenSearchClient.doc().docCount(
+        searchRequestBuilder(incidentTemplate).query(
+            term(PROCESS_INSTANCE_KEY, processInstanceKey)
+        ));
   }
 
   /**
@@ -657,7 +680,9 @@ public class OpensearchChecks {
    * @return
    */
   public long getIncidentsCount() {
-    throw new UnsupportedOperationException();
+    return richOpenSearchClient.doc().docCount(
+        searchRequestBuilder(incidentTemplate)
+        .query(matchAll()));
   }
 
   /**

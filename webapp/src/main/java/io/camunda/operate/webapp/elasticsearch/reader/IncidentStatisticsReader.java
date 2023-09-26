@@ -208,7 +208,7 @@ public class IncidentStatisticsReader extends AbstractReader implements io.camun
         .field(IncidentTemplate.ERROR_MSG_HASH)
         .size(ElasticsearchUtil.TERMS_AGG_SIZE)
         .subAggregation(topHits(ERROR_MESSAGE).size(1).fetchSource(IncidentTemplate.ERROR_MSG,null))
-        .subAggregation(terms(GROUP_BY_PROCESS_KEYS)
+          .subAggregation(terms(GROUP_BY_PROCESS_KEYS)
             .field(IncidentTemplate.PROCESS_DEFINITION_KEY)
             .size(ElasticsearchUtil.TERMS_AGG_SIZE)
             .subAggregation(cardinality(UNIQ_PROCESS_INSTANCES)

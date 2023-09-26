@@ -338,7 +338,20 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
   }
 
   public void persistOperateEntitiesNew(List<? extends OperateEntity> operateEntities) throws PersistenceException {
-    throw new UnsupportedOperationException();
+    var batchRequest = richOpenSearchClient.batch().newBatchRequest();
+
+    for(OperateEntity entity: operateEntities) {
+      final String alias = getEntityToAliasMap().get(entity.getClass());
+      if (alias == null) {
+        throw new RuntimeException("Index not configured for " + entity.getClass().getName());
+      }
+      if (entity instanceof FlowNodeInstanceForListViewEntity) {
+        batchRequest.addWithRouting(alias, entity, ((FlowNodeInstanceForListViewEntity) entity).getProcessInstanceKey().toString());
+      } else {
+        batchRequest.add(alias, entity);
+      }
+    }
+    batchRequest.executeWithRefresh();
   }
 
   public Map<Class<? extends OperateEntity>, String> getEntityToAliasMap(){
