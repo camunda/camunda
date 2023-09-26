@@ -33,7 +33,7 @@
   "type": "default",
   "id": "subscribe",
   "executionPlatform": "Camunda Cloud",
-  "executionPlatformVersion": "8.2.0",
+  "executionPlatformVersion": "8.3.0",
   "exporter": {
     "name": "Camunda Modeler",
     "version": "5.12.0-nightly.20230524"

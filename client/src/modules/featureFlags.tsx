@@ -5,6 +5,6 @@
  * except in compliance with the proprietary license.
  */
 
-const IS_PROCESS_INSTANCES_ENABLED = process.env.NODE_ENV === 'development';
+const IS_PROCESS_INSTANCES_ENABLED = false;
 
 export {IS_PROCESS_INSTANCES_ENABLED};

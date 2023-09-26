@@ -288,7 +288,7 @@ test.describe('task details page', () => {
     await taskPanelPage.openTask('Date and Time Task');
     await taskDetailsPage.clickAssignToMeButton();
 
-    await taskDetailsPage.fillDate('01/01/3000');
+    await taskDetailsPage.fillDate('1/1/3000');
     await taskDetailsPage.enterTime('12:00 PM');
     await taskDetailsPage.clickCompleteTaskButton();
     await expect(page.getByText('Task completed')).toBeVisible();
@@ -296,7 +296,7 @@ test.describe('task details page', () => {
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.openTask('Date and Time Task');
 
-    await expect(taskDetailsPage.dateInput).toHaveValue('01/01/3000');
+    await expect(taskDetailsPage.dateInput).toHaveValue('1/1/3000');
     await expect(taskDetailsPage.timeInput).toHaveValue('12:00 PM');
   });
 

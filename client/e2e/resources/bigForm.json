@@ -1,80 +1,125 @@
 {
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.3.0",
+  "exporter": {
+    "name": "Camunda Web Modeler",
+    "version": "a4c8582"
+  },
+  "schemaVersion": 11,
   "components": [
     {
       "text": "# Title 1\n## Title 2\n### Title 3\n#### Title 4\n##### Title 5\n###### Title 6\n\n<br />\n\n- list\n- list\n\n1. foo\n2. foo\n\nFoo _italic_ **bold**\n\n> Multiline code\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus auctor sodales pretium. Donec id volutpat quam, sit amet elementum lectus. \n\nInline `code`\n\n```\nMultiline code\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus auctor sodales pretium. Donec id volutpat quam, sit amet elementum lectus. \n```\n\n[Link](https://camunda.com)\n",
       "type": "text",
       "id": "Field_1bbbwwg",
       "layout": {
-        "row": "Row_0lqavz4"
-      }
-    },
-    {
-      "label": "I am a textfield",
-      "type": "textfield",
-      "id": "Field_1l0t1m5",
-      "key": "textfield",
-      "description": "I am a textfield description",
-      "validate": {
-        "required": true
-      },
-      "defaultValue": "value",
-      "layout": {
-        "row": "Row_14setyc",
+        "row": "Row_1lqavz4",
         "columns": null
       }
     },
     {
-      "label": "I am a disabled textfield",
-      "type": "textfield",
-      "id": "Field_1r9b6p2",
-      "key": "disabled_textfield",
-      "description": "I am a disabled textfield description",
-      "disabled": true,
-      "defaultValue": "value",
+      "height": 60,
+      "label": "Spacer",
+      "type": "spacer",
       "layout": {
-        "row": "Row_14setyc",
-        "columns": null
-      }
-    },
-    {
-      "label": "I am a readonly textfield",
-      "type": "textfield",
-      "layout": {
-        "row": "Row_14setyc",
+        "row": "Row_0lqavz4",
         "columns": null
       },
-      "id": "Field_0wdruyf",
-      "key": "readonly_textfield",
-      "description": "I am a readonly textfield description",
-      "defaultValue": "readonly field value",
-      "readonly": true
+      "id": "Field_0iqqe2u"
     },
     {
-      "label": "I am a number field",
-      "type": "number",
-      "id": "Field_0ltb6av",
-      "key": "number_field",
-      "description": "I am a number field description",
-      "validate": {
-        "required": true
+      "components": [
+        {
+          "label": "I am a textfield",
+          "type": "textfield",
+          "id": "Field_1l0t1m5",
+          "key": "textfield",
+          "description": "I am a textfield description",
+          "validate": {
+            "required": true
+          },
+          "defaultValue": "value",
+          "layout": {
+            "row": "Row_14setyc",
+            "columns": null
+          }
+        },
+        {
+          "label": "I am a disabled textfield",
+          "type": "textfield",
+          "id": "Field_1r9b6p2",
+          "key": "disabled_textfield",
+          "description": "I am a disabled textfield description",
+          "disabled": true,
+          "defaultValue": "value",
+          "layout": {
+            "row": "Row_14setyc",
+            "columns": null
+          }
+        },
+        {
+          "label": "I am a readonly textfield",
+          "type": "textfield",
+          "layout": {
+            "row": "Row_14setyc",
+            "columns": null
+          },
+          "id": "Field_0wdruyf",
+          "key": "readonly_textfield",
+          "description": "I am a readonly textfield description",
+          "defaultValue": "readonly field value",
+          "readonly": true
+        }
+      ],
+      "showOutline": false,
+      "label": "No outline group",
+      "type": "group",
+      "layout": {
+        "row": "Row_15x8u2u",
+        "columns": null
       },
-      "defaultValue": 1,
-      "layout": {
-        "row": "Row_0m8z1wj",
-        "columns": 8
-      }
+      "id": "Field_1cd9gy5"
     },
     {
-      "label": "I am a number field",
-      "type": "number",
-      "id": "Field_1t8wtoa",
-      "key": "disabled_number_field",
-      "description": "I am a disabled number field description",
-      "disabled": true,
-      "defaultValue": 1,
+      "components": [
+        {
+          "label": "I am a number field",
+          "type": "number",
+          "id": "Field_0ltb6av",
+          "key": "number_field",
+          "description": "I am a number field description",
+          "validate": {
+            "required": true
+          },
+          "defaultValue": 1,
+          "layout": {
+            "row": "Row_0m8z1wj",
+            "columns": 8
+          }
+        },
+        {
+          "label": "I am a number field",
+          "type": "number",
+          "id": "Field_1t8wtoa",
+          "key": "disabled_number_field",
+          "description": "I am a disabled number field description",
+          "disabled": true,
+          "defaultValue": 1,
+          "layout": {
+            "row": "Row_0m8z1wj",
+            "columns": 8
+          }
+        }
+      ],
+      "showOutline": true,
+      "label": "Outline group",
+      "type": "group",
       "layout": {
-        "row": "Row_0m8z1wj",
-        "columns": 8
+        "row": "Row_0sjbv7b",
+        "columns": null
+      },
+      "id": "Field_1xgpuy1",
+      "conditional": {
+        "hide": "=checkbox"
       }
     },
     {
@@ -506,12 +551,5 @@
     }
   ],
   "type": "default",
-  "id": "Form_1a82jj2",
-  "executionPlatform": "Camunda Cloud",
-  "executionPlatformVersion": "8.2.0",
-  "exporter": {
-    "name": "Camunda Modeler",
-    "version": "5.12.0-nightly.20230524"
-  },
-  "schemaVersion": 8
+  "id": "Form_1a82jj2"
 }
