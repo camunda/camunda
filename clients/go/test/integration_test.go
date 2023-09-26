@@ -102,6 +102,29 @@ func (s *integrationTestSuite) TestDeployProcess() {
 	s.Greater(process.GetProcessDefinitionKey(), int64(0))
 }
 
+func (s *integrationTestSuite) TestDeployForm() {
+	// when
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	deployment, err := s.client.NewDeployResourceCommand().AddResourceFile("testdata/test-form-1.form").Send(ctx)
+	if err != nil {
+		s.T().Fatal(err)
+	}
+
+	// then
+	s.Greater(deployment.GetKey(), int64(0))
+
+	deployedResource := deployment.GetDeployments()[0]
+	s.NotNil(deployedResource)
+
+	process := deployedResource.GetProcess()
+	s.NotNil(process)
+	s.EqualValues("deploy_process", process.GetBpmnProcessId())
+	s.EqualValues(int32(1), process.GetVersion())
+	s.Greater(process.GetProcessDefinitionKey(), int64(0))
+}
+
 func (s *integrationTestSuite) TestCreateInstance() {
 	// given
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)

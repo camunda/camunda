@@ -27,7 +27,7 @@ var resourceNamesFlag []string
 // nolint
 var deployResourceCmd = &cobra.Command{
 	Use:     "resource <resourcePath>...",
-	Short:   "Deploys a new resource (e.g. process, decision) for each BPMN/DMN resource provided",
+	Short:   "Deploys a new resource (e.g. process, decision) for each BPMN, DMN or Form resource provided",
 	Args:    cobra.MinimumNArgs(1),
 	PreRunE: initClient,
 	RunE: func(cmd *cobra.Command, args []string) error {

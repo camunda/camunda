@@ -37,6 +37,14 @@
         "decisionRequirementsKey": "2251799813685250",
         "resourceName": "drg-force-user.dmn"
       }
+    },
+    {
+      "form": {
+        "formId": "form",
+        "version": 1,
+        "formKey": "2251799813685251",
+        "resourceName": "form.form"
+      }
     }
   ]
 }

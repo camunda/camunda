@@ -107,7 +107,7 @@ var tests = []testCase{
 	},
 	{
 		name:       "deploy resources",
-		cmd:        strings.Fields("--insecure deploy resource testdata/model.bpmn testdata/drg-force-user.dmn --resourceNames=model.bpmn,drg-force-user.dmn"),
+		cmd:        strings.Fields("--insecure deploy resource testdata/model.bpmn testdata/drg-force-user.dmn testdata/test-form-1.form --resourceNames=model.bpmn,drg-force-user.dmn,test-form-1.form"),
 		goldenFile: "testdata/deploy_resources.golden",
 		jsonOutput: true,
 	},
