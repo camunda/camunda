@@ -100,12 +100,15 @@ public record ClusterTopology(
   }
 
   public ClusterTopology startTopologyChange(final List<TopologyChangeOperation> operations) {
-    if (changes.pendingOperations().isEmpty()) {
-      return new ClusterTopology(version + 1, members, ClusterChangePlan.init(operations));
-    } else {
+    if (hasPendingChanges()) {
       throw new IllegalArgumentException(
           "Expected to start new topology change, but there is a topology change in progress "
               + changes);
+    } else if (operations.isEmpty()) {
+      throw new IllegalArgumentException(
+          "Expected to start new topology change, but there is no operation");
+    } else {
+      return new ClusterTopology(version + 1, members, ClusterChangePlan.init(operations));
     }
   }
 
@@ -171,31 +174,29 @@ public record ClusterTopology(
   }
 
   private ClusterTopology advance() {
+    if (!hasPendingChanges()) {
+      throw new IllegalStateException(
+          "Expected to advance the topology change, but there is no pending change");
+    }
     final ClusterTopology result = new ClusterTopology(version, members, changes.advance());
+
     if (!result.hasPendingChanges()) {
       // The last change has been applied. Clean up the members that are marked as LEFT in the
       // topology. This operation will be executed in the member that executes the last operation.
       // This is ok because it is guaranteed that no other concurrent modification will be applied
       // to the topology. This is because all the operations are applied sequentially, and no
       // topology update will be done without adding a ClusterChangePlan.
-      return result.gc();
-    }
-    return result;
-  }
+      final var currentMembers =
+          result.members().entrySet().stream()
+              // remove the members that are marked as LEFT
+              .filter(entry -> entry.getValue().state() != State.LEFT)
+              .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-  private ClusterTopology gc() {
-    if (hasPendingChanges()) {
-      throw new IllegalStateException(
-          "Expected to remove members that are left from the topology, but there are pending changes "
-              + changes);
+      // Increment the version so that other members can merge by overwriting their local topology.
+      return new ClusterTopology(result.version() + 1, currentMembers, ClusterChangePlan.empty());
     }
-    // remove members that are marked as LEFT
-    final var currentMembers =
-        members().entrySet().stream()
-            .filter(entry -> entry.getValue().state() != State.LEFT)
-            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-    // Increment the version so that other members can merge by overwriting their local topology.
-    return new ClusterTopology(version + 1, currentMembers, changes);
+
+    return result;
   }
 
   public boolean hasMember(final MemberId memberId) {
