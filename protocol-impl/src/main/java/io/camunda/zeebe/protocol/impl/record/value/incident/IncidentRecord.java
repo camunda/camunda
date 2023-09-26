@@ -32,6 +32,8 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
   private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey", -1L);
   private final LongProperty jobKeyProp = new LongProperty("jobKey", -1L);
   private final LongProperty variableScopeKeyProp = new LongProperty("variableScopeKey", -1L);
+  private final StringProperty tenantIdProp =
+      new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
   public IncidentRecord() {
     declareProperty(errorTypeProp)
@@ -42,7 +44,8 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
         .declareProperty(elementIdProp)
         .declareProperty(elementInstanceKeyProp)
         .declareProperty(jobKeyProp)
-        .declareProperty(variableScopeKeyProp);
+        .declareProperty(variableScopeKeyProp)
+        .declareProperty(tenantIdProp);
   }
 
   public void wrap(final IncidentRecord record) {
@@ -55,6 +58,7 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
     elementInstanceKeyProp.setValue(record.getElementInstanceKey());
     jobKeyProp.setValue(record.getJobKey());
     variableScopeKeyProp.setValue(record.getVariableScopeKey());
+    tenantIdProp.setValue(record.getTenantId());
   }
 
   public IncidentRecord initFromProcessInstanceFailure(
@@ -64,6 +68,7 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
     setBpmnProcessId(processInstanceEvent.getBpmnProcessIdBuffer());
     setProcessDefinitionKey(processInstanceEvent.getProcessDefinitionKey());
     setProcessInstanceKey(processInstanceEvent.getProcessInstanceKey());
+    setTenantId(processInstanceEvent.getTenantId());
     setElementId(processInstanceEvent.getElementIdBuffer());
     setVariableScopeKey(key);
 
@@ -182,7 +187,11 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
 
   @Override
   public String getTenantId() {
-    // todo(#13426): replace dummy implementation
-    return TenantOwned.DEFAULT_TENANT_IDENTIFIER;
+    return BufferUtil.bufferAsString(tenantIdProp.getValue());
+  }
+
+  public IncidentRecord setTenantId(final String tenantId) {
+    tenantIdProp.setValue(tenantId);
+    return this;
   }
 }
