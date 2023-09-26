@@ -52,6 +52,7 @@ public final class PublishMessageCommandImpl extends CommandWithVariables<Publis
     builder = PublishMessageRequest.newBuilder();
     requestTimeout = configuration.getDefaultRequestTimeout();
     builder.setTimeToLive(configuration.getDefaultMessageTimeToLive().toMillis());
+    tenantId(configuration.getDefaultTenantId());
   }
 
   @Override
@@ -85,6 +86,12 @@ public final class PublishMessageCommandImpl extends CommandWithVariables<Publis
   }
 
   @Override
+  public PublishMessageCommandStep3 tenantId(final String tenantId) {
+    builder.setTenantId(tenantId);
+    return this;
+  }
+
+  @Override
   public FinalCommandStep<PublishMessageResponse> requestTimeout(final Duration requestTimeout) {
     this.requestTimeout = requestTimeout;
     return this;
@@ -111,11 +118,5 @@ public final class PublishMessageCommandImpl extends CommandWithVariables<Publis
     asyncStub
         .withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
         .publishMessage(request, streamObserver);
-  }
-
-  @Override
-  public PublishMessageCommandStep3 tenantId(final String tenantId) {
-    // todo(#13559): replace dummy implementation
-    return this;
   }
 }
