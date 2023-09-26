@@ -179,7 +179,7 @@ final class ClusterTopologyManagerTest {
                 ClusterTopologyAssert.assertThatClusterTopology(
                         clusterTopologyManager.getClusterTopology().join())
                     .hasPendingOperationsWithSize(0)
-                    .hasMemberWithState(1, MemberState.State.LEFT));
+                    .doesNotHaveMember(1));
     assertThat(gossipState.get())
         .describedAs("Updated topology is gossiped")
         .isEqualTo(clusterTopologyManager.getClusterTopology().join());
@@ -204,7 +204,7 @@ final class ClusterTopologyManagerTest {
                 ClusterTopologyAssert.assertThatClusterTopology(
                         clusterTopologyManager.getClusterTopology().join())
                     .hasPendingOperationsWithSize(0)
-                    .hasMemberWithState(1, MemberState.State.LEFT));
+                    .doesNotHaveMember(1));
     assertThat(gossipState.get())
         .describedAs("Updated topology is gossiped")
         .isEqualTo(clusterTopologyManager.getClusterTopology().join());
