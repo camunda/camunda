@@ -16,6 +16,8 @@ import io.camunda.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.LongStream;
@@ -106,7 +108,8 @@ public class ActivateJobsStub
         partitionId,
         requestDto.getMaxJobsToActivate(),
         requestDto.getTypeBuffer(),
-        requestDto.getWorkerBuffer());
+        requestDto.getWorkerBuffer(),
+        requestDto.getTenantIds());
 
     return new BrokerResponse<>(
         response, partitionId, Protocol.encodePartitionId(partitionId, JOB_BATCH_KEY));
@@ -121,7 +124,8 @@ public class ActivateJobsStub
       final int partitionId,
       final int amount,
       final DirectBuffer type,
-      final DirectBuffer worker) {
+      final DirectBuffer worker,
+      final List<String> tenantIds) {
 
     final int availableAmount = availableJobs.computeIfAbsent(bufferAsString(type), k -> 0);
     final int jobsToActivate = Math.min(amount, availableAmount);
@@ -130,10 +134,8 @@ public class ActivateJobsStub
         .forEach(
             key -> {
               response.jobKeys().add().setValue(Protocol.encodePartitionId(partitionId, key));
-              response
-                  .jobs()
-                  .add()
-                  .setType(type)
+              final JobRecord job = response.jobs().add();
+              job.setType(type)
                   .setWorker(worker)
                   .setRetries(RETRIES)
                   .setDeadline(DEADLINE)
@@ -145,6 +147,10 @@ public class ActivateJobsStub
                   .setProcessDefinitionKey(PROCESS_KEY)
                   .setElementId(ELEMENT_ID)
                   .setElementInstanceKey(ELEMENT_INSTANCE_KEY);
+              final int tenantCount = tenantIds.size();
+              if (tenantCount > 0) {
+                job.setTenantId(tenantIds.get(((int) key % tenantCount)));
+              }
             });
   }
 

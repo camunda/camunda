@@ -8,10 +8,8 @@
 package io.camunda.zeebe.gateway.impl.job;
 
 import io.camunda.zeebe.gateway.Loggers;
-import io.camunda.zeebe.gateway.RequestMapper;
 import io.camunda.zeebe.gateway.grpc.ServerStreamObserver;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
-import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.camunda.zeebe.scheduler.ScheduledTimer;
 import io.camunda.zeebe.util.Either;
@@ -37,16 +35,17 @@ public class InflightActivateJobsRequest {
 
   public InflightActivateJobsRequest(
       final long requestId,
-      final ActivateJobsRequest request,
-      final ServerStreamObserver<ActivateJobsResponse> responseObserver) {
+      final BrokerActivateJobsRequest request,
+      final ServerStreamObserver<ActivateJobsResponse> responseObserver,
+      final long requestTimeout) {
     this(
         requestId,
-        RequestMapper.toActivateJobsRequest(request),
+        request,
         responseObserver,
-        request.getType(),
-        request.getWorker(),
-        request.getMaxJobsToActivate(),
-        request.getRequestTimeout());
+        request.getRequestWriter().getType(),
+        request.getRequestWriter().getWorker(),
+        request.getRequestWriter().getMaxJobsToActivate(),
+        requestTimeout);
   }
 
   private InflightActivateJobsRequest(

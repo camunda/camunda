@@ -16,8 +16,8 @@ import io.camunda.zeebe.gateway.Loggers;
 import io.camunda.zeebe.gateway.grpc.ServerStreamObserver;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.camunda.zeebe.gateway.metrics.LongPollingMetrics;
-import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.ScheduledTimer;
@@ -85,10 +85,12 @@ public final class LongPollingActivateJobsHandler implements ActivateJobsHandler
 
   @Override
   public void activateJobs(
-      final ActivateJobsRequest request,
-      final ServerStreamObserver<ActivateJobsResponse> responseObserver) {
-    final var type = request.getType();
-    final var longPollingRequest = toInflightActivateJobsRequest(request, responseObserver);
+      final BrokerActivateJobsRequest request,
+      final ServerStreamObserver<ActivateJobsResponse> responseObserver,
+      final long requestTimeout) {
+    final var type = request.getRequestWriter().getType();
+    final var longPollingRequest =
+        toInflightActivateJobsRequest(request, responseObserver, requestTimeout);
     activateJobs(longPollingRequest);
 
     // eagerly removing the request on cancellation may free up some resources

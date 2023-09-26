@@ -249,7 +249,7 @@ public class MultiTenancyOverIdentityIT {
 
       // then
       assertThat(response)
-          .describedAs("Expect that process can be deployed for tenant a")
+          .describedAs("Expect that process can be deployed for tenant-a")
           .succeedsWithin(Duration.ofSeconds(10));
     }
   }
@@ -272,7 +272,7 @@ public class MultiTenancyOverIdentityIT {
           .withThrowableThat()
           .withMessageContaining("PERMISSION_DENIED")
           .withMessageContaining(
-              "Expected to handle gRPC request DeployResource with tenant identifier `tenant-b`")
+              "Expected to handle gRPC request DeployResource with tenant identifier 'tenant-b'")
           .withMessageContaining("but tenant is not authorized to perform this request");
     }
   }

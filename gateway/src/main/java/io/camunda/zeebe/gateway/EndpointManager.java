@@ -16,6 +16,7 @@ import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.RequestRetryHandler;
 import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
 import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerRequest;
 import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
@@ -63,6 +64,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.TopologyResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
+import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.VersionUtil;
 import io.grpc.Context;
@@ -163,13 +165,27 @@ public final class EndpointManager {
   public void streamActivatedJobs(
       final StreamActivatedJobsRequest request,
       final ServerCallStreamObserver<ActivatedJob> responseObserver) {
-    streamJobsHandler.handle(request, responseObserver);
+    try {
+      final JobActivationProperties brokerRequest =
+          RequestMapper.toJobActivationProperties(request);
+      streamJobsHandler.handle(request.getType(), brokerRequest, responseObserver);
+    } catch (final Exception e) {
+      responseObserver.onError(e);
+    }
   }
 
   public void activateJobs(
       final ActivateJobsRequest request,
       final ServerStreamObserver<ActivateJobsResponse> responseObserver) {
-    activateJobsHandler.activateJobs(request, responseObserver);
+    try {
+      final BrokerActivateJobsRequest brokerRequest =
+          (BrokerActivateJobsRequest)
+              mapToBrokerRequest(request, RequestMapper::toActivateJobsRequest);
+      activateJobsHandler.activateJobs(
+          brokerRequest, responseObserver, request.getRequestTimeout());
+    } catch (final Exception e) {
+      responseObserver.onError(e);
+    }
   }
 
   public void cancelProcessInstance(

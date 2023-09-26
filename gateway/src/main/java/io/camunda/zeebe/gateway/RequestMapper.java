@@ -214,11 +214,16 @@ public final class RequestMapper {
 
   public static BrokerActivateJobsRequest toActivateJobsRequest(
       final ActivateJobsRequest grpcRequest) {
+
+    List<String> tenantIds = grpcRequest.getTenantIdsList();
+    tenantIds = ensureTenantIdsSet("ActivateJobs", tenantIds);
+
     return new BrokerActivateJobsRequest(grpcRequest.getType())
         .setTimeout(grpcRequest.getTimeout())
         .setWorker(grpcRequest.getWorker())
         .setMaxJobsToActivate(grpcRequest.getMaxJobsToActivate())
-        .setVariables(grpcRequest.getFetchVariableList());
+        .setVariables(grpcRequest.getFetchVariableList())
+        .setTenantIds(tenantIds);
   }
 
   public static BrokerResolveIncidentRequest toResolveIncidentRequest(
@@ -247,12 +252,17 @@ public final class RequestMapper {
 
   public static JobActivationProperties toJobActivationProperties(
       final StreamActivatedJobsRequest request) {
+
+    List<String> tenantIds = request.getTenantIdsList();
+    tenantIds = ensureTenantIdsSet("StreamActivatedJobs", tenantIds);
+
     final JobActivationPropertiesImpl jobActivationProperties = new JobActivationPropertiesImpl();
     final DirectBuffer worker = wrapString(request.getWorker());
-    jobActivationProperties.setWorker(worker, 0, worker.capacity());
-    jobActivationProperties.setTimeout(request.getTimeout());
-    jobActivationProperties.setFetchVariables(
-        request.getFetchVariableList().stream().map(StringValue::new).toList());
+    jobActivationProperties
+        .setWorker(worker, 0, worker.capacity())
+        .setTimeout(request.getTimeout())
+        .setFetchVariables(request.getFetchVariableList().stream().map(StringValue::new).toList())
+        .setTenantIds(tenantIds);
 
     return jobActivationProperties;
   }
@@ -326,5 +336,22 @@ public final class RequestMapper {
     }
 
     return tenantId;
+  }
+
+  public static List<String> ensureTenantIdsSet(
+      final String commandName, final List<String> tenantIds) {
+
+    if (tenantIds.isEmpty()) {
+      if (!isMultiTenancyEnabled) {
+        return List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+      }
+
+      throw new InvalidTenantRequestException(
+          commandName, tenantIds, "no tenant identifiers were provided.");
+    }
+
+    tenantIds.stream().forEach(tenantId -> ensureTenantIdSet(commandName, tenantId));
+
+    return tenantIds;
   }
 }

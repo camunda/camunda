@@ -60,6 +60,8 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
       new LongProperty("processDefinitionKey", -1L);
   private final StringProperty elementIdProp = new StringProperty("elementId", EMPTY_STRING);
   private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey", -1L);
+  private final StringProperty tenantIdProp =
+      new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
   public JobRecord() {
     declareProperty(deadlineProp)
@@ -77,7 +79,8 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
         .declareProperty(processDefinitionKeyProp)
         .declareProperty(processInstanceKeyProp)
         .declareProperty(elementIdProp)
-        .declareProperty(elementInstanceKeyProp);
+        .declareProperty(elementInstanceKeyProp)
+        .declareProperty(tenantIdProp);
   }
 
   public void wrapWithoutVariables(final JobRecord record) {
@@ -97,6 +100,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     processInstanceKeyProp.setValue(record.getProcessInstanceKey());
     elementIdProp.setValue(record.getElementIdBuffer());
     elementInstanceKeyProp.setValue(record.getElementInstanceKey());
+    tenantIdProp.setValue(record.getTenantId());
   }
 
   public void wrap(final JobRecord record) {
@@ -352,7 +356,11 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
 
   @Override
   public String getTenantId() {
-    // todo(#13345): replace dummy implementation
-    return TenantOwned.DEFAULT_TENANT_IDENTIFIER;
+    return bufferAsString(tenantIdProp.getValue());
+  }
+
+  public JobRecord setTenantId(final String tenantId) {
+    tenantIdProp.setValue(tenantId);
+    return this;
   }
 }

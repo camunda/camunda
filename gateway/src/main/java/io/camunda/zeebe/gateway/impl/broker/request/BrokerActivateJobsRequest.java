@@ -49,6 +49,11 @@ public final class BrokerActivateJobsRequest extends BrokerExecuteCommand<JobBat
     return this;
   }
 
+  public BrokerActivateJobsRequest setTenantIds(final List<String> tenantIds) {
+    requestDto.setTenantIds(tenantIds);
+    return this;
+  }
+
   @Override
   public JobBatchRecord getRequestWriter() {
     return requestDto;

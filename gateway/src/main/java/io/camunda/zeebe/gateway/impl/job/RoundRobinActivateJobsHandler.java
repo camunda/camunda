@@ -21,9 +21,9 @@ import io.camunda.zeebe.gateway.impl.broker.PartitionIdIterator;
 import io.camunda.zeebe.gateway.impl.broker.RequestDispatchStrategy;
 import io.camunda.zeebe.gateway.impl.broker.RoundRobinDispatchStrategy;
 import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerFailJobRequest;
 import io.camunda.zeebe.gateway.impl.broker.response.BrokerResponse;
-import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
@@ -60,17 +60,19 @@ public final class RoundRobinActivateJobsHandler implements ActivateJobsHandler 
   }
 
   @Override
-  public void accept(ActorControl actor) {
+  public void accept(final ActorControl actor) {
     this.actor = actor;
   }
 
   @Override
   public void activateJobs(
-      final ActivateJobsRequest request,
-      final ServerStreamObserver<ActivateJobsResponse> responseObserver) {
+      final BrokerActivateJobsRequest request,
+      final ServerStreamObserver<ActivateJobsResponse> responseObserver,
+      final long requestTimeout) {
     final var topology = topologyManager.getTopology();
     if (topology != null) {
-      final var inflightRequest = toInflightActivateJobsRequest(request, responseObserver);
+      final var inflightRequest =
+          toInflightActivateJobsRequest(request, responseObserver, requestTimeout);
       activateJobs(
           topology.getPartitionsCount(),
           inflightRequest,

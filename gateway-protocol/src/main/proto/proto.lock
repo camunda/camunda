@@ -61,6 +61,12 @@
                 "name": "fetchVariable",
                 "type": "string",
                 "is_repeated": true
+              },
+              {
+                "id": 6,
+                "name": "tenantIds",
+                "type": "string",
+                "is_repeated": true
               }
             ]
           },
@@ -97,6 +103,12 @@
                 "id": 6,
                 "name": "requestTimeout",
                 "type": "int64"
+              },
+              {
+                "id": 7,
+                "name": "tenantIds",
+                "type": "string",
+                "is_repeated": true
               }
             ]
           },
@@ -177,6 +189,11 @@
               {
                 "id": 13,
                 "name": "variables",
+                "type": "string"
+              },
+              {
+                "id": 14,
+                "name": "tenantId",
                 "type": "string"
               }
             ]

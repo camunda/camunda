@@ -305,6 +305,7 @@ public final class ResponseMapper {
         .setRetries(job.getRetries())
         .setDeadline(job.getDeadline())
         .setVariables(bufferAsJson(job.getVariablesBuffer()))
+        .setTenantId(job.getTenantId())
         .build();
   }
 

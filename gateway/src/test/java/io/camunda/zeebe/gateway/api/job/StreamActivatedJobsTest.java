@@ -14,16 +14,13 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StreamActivatedJobsRequest;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.stream.job.ActivatedJobImpl;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.MsgPackUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
-import io.grpc.stub.ClientCallStreamObserver;
-import io.grpc.stub.ClientResponseObserver;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import org.assertj.core.api.InstanceOfAssertFactories;
@@ -64,6 +61,8 @@ public class StreamActivatedJobsTest extends GatewayTest {
     assertThat(streamedActivatedJob.getWorker()).isEqualTo(WORKER);
     assertThat(streamedActivatedJob.getDeadline()).isEqualTo(DEADLINE);
     assertThat(activatedJob.jobRecord().getVariables()).isEqualTo(fetchedVariables);
+    assertThat(activatedJob.jobRecord().getTenantId())
+        .isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   }
 
   @Test
@@ -247,53 +246,5 @@ public class StreamActivatedJobsTest extends GatewayTest {
     }
 
     return streamObserver;
-  }
-
-  private static final class TestStreamObserver
-      implements ClientResponseObserver<StreamActivatedJobsRequest, ActivatedJob> {
-    private final List<ActivatedJob> streamedJobs = Collections.synchronizedList(new ArrayList<>());
-    private final List<Throwable> errors = Collections.synchronizedList(new ArrayList<>());
-    private volatile boolean isClosed;
-    private volatile ClientCallStreamObserver<StreamActivatedJobsRequest> requestStream;
-
-    public List<Throwable> getErrors() {
-      return errors;
-    }
-
-    public List<ActivatedJob> getStreamedJobs() {
-      return streamedJobs;
-    }
-
-    @Override
-    public void onNext(final ActivatedJob value) {
-      streamedJobs.add(value);
-    }
-
-    @Override
-    public void onError(final Throwable t) {
-      errors.add(t);
-      requestStream.onError(t);
-      isClosed = true;
-    }
-
-    @Override
-    public void onCompleted() {
-      isClosed = true;
-    }
-
-    @Override
-    public void beforeStart(
-        final ClientCallStreamObserver<StreamActivatedJobsRequest> requestStream) {
-      this.requestStream = requestStream;
-    }
-
-    public void cancel() {
-      requestStream.cancel("test cancel", new RuntimeException());
-      isClosed = true;
-    }
-
-    public boolean isClosed() {
-      return isClosed;
-    }
   }
 }
