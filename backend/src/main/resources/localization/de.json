@@ -189,7 +189,7 @@
   "processes": {
     "label": "Prozess",
     "label-plural": "Prozesse",
-    "adoptionDashboard": "Adoption Dashboard",
+    "adoptionDashboard": "Adoption",
     "defaultDashboardAndKPI": "Prozess Dashboards und KPIs",
     "empty": "Es sind noch keine Prozesse importiert",
     "owner": "Eigentümer",
@@ -210,7 +210,7 @@
     "digestInfo": "Der Prozess Digest sendet regelmäßige E-Mails mit dem KPI-Status an den Prozesseigentümer. Standardmäßig wird der Digest jeden Montag um 9:00 Uhr versendet (wenn Sie die Standardversandzeit ändern möchten, wenden Sie sich bitte an Ihren Administrator).",
     "digestConfigured": "Ihr Prozess Digest wurde erfolgreich konfiguriert. Eine E-Mail wurde an {name} gesendet.",
     "configureKpis": "Erfahren Sie mehr über KPIs",
-    "analysing": "<b>{count}</b> {label} analysiert.",
+    "analysing": "<b>{count}</b> orchestrate {label}.",
     "processesListed": "{total} {label} aufgelistet",
     "processesListedOf": "{count} von {total} {label} aufgelistet",
     "timeGoals": {

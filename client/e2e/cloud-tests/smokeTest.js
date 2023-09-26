@@ -10,8 +10,9 @@ import * as u from '../utils';
 
 import * as e from './smokeTest.elements.js';
 import * as Common from '../tests/Common.elements.js';
+import * as Collection from '../tests/Collection.elements.js';
 
-fixture('Smoke test').page(config.endpoint);
+fixture('Smoke test').page(config.collectionsEndpoint);
 
 test('create a report from a template', async (t) => {
   if (!process.argv.includes('ci')) {
@@ -26,6 +27,7 @@ test('create a report from a template', async (t) => {
     .click(e.submitButton);
 
   await t.click(e.whatsNewCloseBtn);
+  await t.click(Collection.navItem);
   await t.click(Common.createNewMenu);
   await t.click(Common.option('Report'));
   await t.click(e.emptyTemplate);

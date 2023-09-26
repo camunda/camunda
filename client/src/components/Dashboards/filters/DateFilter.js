@@ -24,7 +24,6 @@ export default function DateFilter({
   children,
   emptyText = t('common.select'),
   title,
-  simplified,
 }) {
   const isFixed = filter?.type === 'fixed' || filter?.type === 'rolling';
 
@@ -206,64 +205,56 @@ export default function DateFilter({
           <Dropdown.Option onClick={() => openDatePicker('between')}>
             {t('common.filter.dateModal.unit.between')}
           </Dropdown.Option>
-          {!simplified && (
-            <>
-              <Dropdown.Option onClick={() => openDatePicker('after')}>
-                {t('common.filter.dateModal.unit.after')}
-              </Dropdown.Option>
-              <Dropdown.Option onClick={() => openDatePicker('before')}>
-                {t('common.filter.dateModal.unit.before')}
-              </Dropdown.Option>
-              <Dropdown.Option checked={isFilter('days')} onClick={() => setRelativeFilter('days')}>
-                {t('common.filter.dateModal.unit.today')}
-              </Dropdown.Option>
+          <Dropdown.Option onClick={() => openDatePicker('after')}>
+            {t('common.filter.dateModal.unit.after')}
+          </Dropdown.Option>
+          <Dropdown.Option onClick={() => openDatePicker('before')}>
+            {t('common.filter.dateModal.unit.before')}
+          </Dropdown.Option>
+          <Dropdown.Option checked={isFilter('days')} onClick={() => setRelativeFilter('days')}>
+            {t('common.filter.dateModal.unit.today')}
+          </Dropdown.Option>
+          <Dropdown.Option
+            checked={isFilter('days', true)}
+            onClick={() => setRelativeFilter('days', true)}
+          >
+            {t('common.filter.dateModal.unit.yesterday')}
+          </Dropdown.Option>
+          <Dropdown.Submenu
+            label={t('dashboard.filter.date.last')}
+            checked={filter?.start.value === 1 && !isFilter('days', true)}
+          >
+            {['weeks', 'months', 'years', 'quarters'].map((unit) => (
               <Dropdown.Option
-                checked={isFilter('days', true)}
-                onClick={() => setRelativeFilter('days', true)}
+                key={unit}
+                checked={isFilter(unit, true)}
+                onClick={() => setRelativeFilter(unit, true)}
               >
-                {t('common.filter.dateModal.unit.yesterday')}
+                {t('dashboard.filter.date.units.' + unit)}
               </Dropdown.Option>
-              <Dropdown.Submenu
-                label={t('dashboard.filter.date.last')}
-                checked={filter?.start.value === 1 && !isFilter('days', true)}
+            ))}
+          </Dropdown.Submenu>
+          <Dropdown.Submenu
+            label={t('dashboard.filter.date.this')}
+            checked={filter?.start.value === 0 && !isFilter('days')}
+          >
+            {['weeks', 'months', 'years', 'quarters'].map((unit) => (
+              <Dropdown.Option
+                key={unit}
+                checked={isFilter(unit)}
+                onClick={() => setRelativeFilter(unit)}
               >
-                {['weeks', 'months', 'years', 'quarters'].map((unit) => (
-                  <Dropdown.Option
-                    key={unit}
-                    checked={isFilter(unit, true)}
-                    onClick={() => setRelativeFilter(unit, true)}
-                  >
-                    {t('dashboard.filter.date.units.' + unit)}
-                  </Dropdown.Option>
-                ))}
-              </Dropdown.Submenu>
-              <Dropdown.Submenu
-                label={t('dashboard.filter.date.this')}
-                checked={filter?.start.value === 0 && !isFilter('days')}
-              >
-                {['weeks', 'months', 'years', 'quarters'].map((unit) => (
-                  <Dropdown.Option
-                    key={unit}
-                    checked={isFilter(unit)}
-                    onClick={() => setRelativeFilter(unit)}
-                  >
-                    {t('dashboard.filter.date.units.' + unit)}
-                  </Dropdown.Option>
-                ))}
-              </Dropdown.Submenu>
-            </>
-          )}
+                {t('dashboard.filter.date.units.' + unit)}
+              </Dropdown.Option>
+            ))}
+          </Dropdown.Submenu>
           <Dropdown.Option onClick={() => openRollingFilter()}>
             {t('common.filter.dateModal.unit.custom')}
           </Dropdown.Option>
-          {!simplified && (
-            <>
-              <hr />
-              <Dropdown.Option disabled={!filter} onClick={() => setFilter()}>
-                {t('common.off')}
-              </Dropdown.Option>
-            </>
-          )}
+          <hr />
+          <Dropdown.Option disabled={!filter} onClick={() => setFilter()}>
+            {t('common.off')}
+          </Dropdown.Option>
         </Dropdown>
       )}
     </div>

@@ -16,7 +16,10 @@ import * as Common from './Common.elements.js';
 
 fixture('Decision Report Filter')
   .page(config.endpoint)
-  .beforeEach(u.login)
+  .beforeEach(async (t) => {
+    await u.login(t);
+    await t.navigateTo(config.collectionsEndpoint);
+  })
   .afterEach(cleanEntities);
 
 test('should apply a filter to the report result', async (t) => {

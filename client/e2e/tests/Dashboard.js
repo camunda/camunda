@@ -17,7 +17,13 @@ import * as Alert from './Alerts.elements.js';
 import * as Report from './ProcessReport.elements.js';
 import * as Collection from './Collection.elements.js';
 
-fixture('Dashboard').page(config.endpoint).beforeEach(u.login).afterEach(cleanEntities);
+fixture('Dashboard')
+  .page(config.endpoint)
+  .beforeEach(async (t) => {
+    await u.login(t);
+    await t.navigateTo(config.collectionsEndpoint);
+  })
+  .afterEach(cleanEntities);
 
 test('create a dashboard and reports from a template', async (t) => {
   await t.click(Common.createNewMenu).click(Common.option('Collection'));

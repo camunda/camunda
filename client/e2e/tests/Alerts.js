@@ -13,7 +13,13 @@ import * as Alert from './Alerts.elements.js';
 import * as Collection from './Collection.elements.js';
 import * as Common from './Common.elements.js';
 
-fixture('Alerts').page(config.endpoint).beforeEach(u.login).afterEach(cleanEntities);
+fixture('Alerts')
+  .page(config.endpoint)
+  .beforeEach(async (t) => {
+    await u.login(t);
+    await t.navigateTo(config.collectionsEndpoint);
+  })
+  .afterEach(cleanEntities);
 
 test('create, edit, copy and remove an alert', async (t) => {
   await t.click(Common.createNewMenu).click(Common.option('Collection'));

@@ -135,8 +135,8 @@ it('should show process update notification if digest & email are enabled', asyn
   expect(track).toHaveBeenCalledWith('emailDigestEnabled', {processDefinitionKey: 'defKey'});
 });
 
-it('should pass loaded tiles and filters to the management dashboard view component', async () => {
-  const testDashboard = {tiles: [], availableFilters: []};
+it('should pass loaded tiles to the management dashboard view component', async () => {
+  const testDashboard = {tiles: []};
   loadManagementDashboard.mockReturnValueOnce(testDashboard);
   const node = shallow(<Processes {...props} />);
 
@@ -145,9 +145,6 @@ it('should pass loaded tiles and filters to the management dashboard view compon
   expect(loadManagementDashboard).toHaveBeenCalled();
 
   expect(node.find('DashboardView').prop('tiles')).toEqual(testDashboard.tiles);
-  expect(node.find('DashboardView').prop('availableFilters')).toEqual(
-    testDashboard.availableFilters
-  );
 });
 
 it('should filter out invalid kpis', async () => {

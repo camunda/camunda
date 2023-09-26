@@ -13,7 +13,13 @@ import * as Report from './ProcessReport.elements.js';
 import * as Filter from './Filter.elements.js';
 import * as Common from './Common.elements';
 
-fixture('Process Report Filter').page(config.endpoint).beforeEach(u.login).afterEach(cleanEntities);
+fixture('Process Report Filter')
+  .page(config.endpoint)
+  .beforeEach(async (t) => {
+    await u.login(t);
+    await t.navigateTo(config.collectionsEndpoint);
+  })
+  .afterEach(cleanEntities);
 
 test('variable filter modal dependent on variable type', async (t) => {
   await u.createNewReport(t);

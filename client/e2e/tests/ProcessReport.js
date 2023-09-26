@@ -13,7 +13,13 @@ import {addAnnotation, clearAllAnnotations} from '../browserMagic';
 import * as e from './ProcessReport.elements.js';
 import * as Common from './Common.elements.js';
 
-fixture('Process Report').page(config.endpoint).beforeEach(u.login).afterEach(cleanEntities);
+fixture('Process Report')
+  .page(config.endpoint)
+  .beforeEach(async (t) => {
+    await u.login(t);
+    await t.navigateTo(config.collectionsEndpoint);
+  })
+  .afterEach(cleanEntities);
 
 test('create a report from a template', async (t) => {
   await t.resizeWindow(1300, 750);

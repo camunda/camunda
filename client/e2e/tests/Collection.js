@@ -12,7 +12,13 @@ import {login, save, getUser, createNewDashboard, addEditEntityDescription} from
 import * as Common from './Common.elements.js';
 import * as e from './Collection.elements.js';
 
-fixture('Collection').page(config.endpoint).beforeEach(login).afterEach(cleanEntities);
+fixture('Collection')
+  .page(config.endpoint)
+  .beforeEach(async (t) => {
+    await login(t);
+    await t.navigateTo(config.collectionsEndpoint);
+  })
+  .afterEach(cleanEntities);
 
 async function createCollection(t, name = 'Test Collection') {
   await t.click(Common.createNewMenu).click(Common.option('Collection'));
@@ -156,6 +162,7 @@ test('user permissions', async (t) => {
   await t.click(e.logoutButton);
 
   await login(t, 'user2');
+  await t.click(e.navItem);
 
   await t.click(Common.collectionItem);
   await t.click(e.userTab);

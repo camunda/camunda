@@ -20,13 +20,7 @@ import AssigneeFilter from './AssigneeFilter';
 
 import './FiltersView.scss';
 
-export default function FiltersView({
-  availableFilters,
-  filter = [],
-  setFilter,
-  reports = [],
-  simplifiedDateFilter,
-}) {
+export default function FiltersView({availableFilters, filter = [], setFilter, reports = []}) {
   // used by the individual filter components to reset internal state
   const [resetTrigger, setResetTrigger] = useState(false);
   useEffect(() => {
@@ -60,7 +54,6 @@ export default function FiltersView({
                     setFilter(rest);
                   }
                 }}
-                simplified={simplifiedDateFilter}
               />
             );
           case 'variable':

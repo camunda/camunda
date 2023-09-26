@@ -166,8 +166,8 @@ function createNavBarProps(showEventBased, enterpriseMode) {
       routeProps: {
         as: NavItem,
         name: t('navigation.dashboards'),
-        linksTo: '/processes',
-        active: ['/processes/', '/processes/*'],
+        linksTo: '/',
+        active: ['/', '/processes/', '/processes/*'],
         breadcrumbsEntities: [{entity: 'report'}],
       },
     },
@@ -177,8 +177,8 @@ function createNavBarProps(showEventBased, enterpriseMode) {
       routeProps: {
         as: NavItem,
         name: t('navigation.collections'),
-        linksTo: '/',
-        active: ['/', '/report/*', '/dashboard/*', '/collection/*'],
+        linksTo: '/collections',
+        active: ['/collections/', '/report/*', '/dashboard/*', '/collection/*'],
         breadcrumbsEntities: [{entity: 'collection'}, {entity: 'dashboard'}, {entity: 'report'}],
       },
     },

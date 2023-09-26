@@ -110,7 +110,7 @@ class App extends React.Component {
                 <UserProvider>
                   <DocsProvider>
                     <Switch>
-                      <PrivateRoute exact path="/" component={Home} />
+                      <PrivateRoute exact path="/" component={Processes} />
                       <PrivateRoute path="/analysis" component={Analysis} />
                       <PrivateRoute exact path="/events/processes" component={Events} />
                       <PrivateRoute path="/events/ingested" component={Events} />
@@ -119,7 +119,7 @@ class App extends React.Component {
                         path="/(report|dashboard/instant|dashboard|collection|events/processes|processes/report)/*"
                         render={this.renderEntity}
                       />
-                      <PrivateRoute path="/processes" component={Processes} />
+                      <PrivateRoute exact path="/collections" component={Home} />
                       <Route path="/license" component={License} />
                       <Route path="/logout" component={Logout} />
                       <PrivateRoute path="*" component={ErrorPage} />

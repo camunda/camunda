@@ -118,13 +118,3 @@ it('should render children', () => {
 
   expect(node.find('.childContent')).toExist();
 });
-
-it('Remove relative filters if simplified prop is specified', () => {
-  const node = shallow(
-    <DateFilter {...props} icon="customIcon" emptyText="customText" simplified />
-  );
-
-  expect(node.find(Dropdown.Option).length).toBe(2);
-  expect(node.find(Dropdown.Option).at(0).text()).toBe('Between');
-  expect(node.find(Dropdown.Option).at(1).text()).toBe('Rolling');
-});

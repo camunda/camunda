@@ -13,7 +13,13 @@ import * as Common from './Common.elements.js';
 import * as Report from './DecisionReport.elements.js';
 import * as ProcessReport from './ProcessReport.elements.js';
 
-fixture('Decision Report').page(config.endpoint).beforeEach(u.login).afterEach(cleanEntities);
+fixture('Decision Report')
+  .page(config.endpoint)
+  .beforeEach(async (t) => {
+    await u.login(t);
+    await t.navigateTo(config.collectionsEndpoint);
+  })
+  .afterEach(cleanEntities);
 
 test('create a dmn js table report', async (t) => {
   await t.resizeWindow(1400, 700);

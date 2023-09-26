@@ -361,3 +361,9 @@ it('should not delete collection in case of error if collection existed', async 
 
   expect(deleteEntity).not.toHaveBeenCalled();
 });
+
+it('should default available filters to an empty array', () => {
+  const node = shallow(<DashboardView />);
+
+  expect(node.find('DashboardRenderer').prop('filter')).toEqual([]);
+});

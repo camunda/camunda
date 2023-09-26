@@ -7,6 +7,7 @@
 
 import {Selector} from 'testcafe';
 
+export const navItem = Selector('.NavItem a').withText('Collections');
 export const collectionTitle = Selector('.Collection .header .text');
 export const collectionBreadcrumb = Selector('.cds--header__menu-bar .breadcrumb');
 export const collectionContextMenu = Selector('.Collection > .header .Dropdown button');
