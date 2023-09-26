@@ -426,6 +426,37 @@ public final class LegacyDecisionState {
     latestDecisionRequirementsKeysById.upsert(dbDecisionRequirementsId, fkDecisionRequirements);
   }
 
+  public ColumnFamily<DbCompositeKey<DbForeignKey<DbLong>, DbForeignKey<DbLong>>, DbNil>
+      getDecisionKeyByDecisionRequirementsKey() {
+    return decisionKeyByDecisionRequirementsKey;
+  }
+
+  public ColumnFamily<DbLong, PersistedDecision> getDecisionsByKey() {
+    return decisionsByKey;
+  }
+
+  public ColumnFamily<DbString, DbForeignKey<DbLong>> getLatestDecisionKeysByDecisionId() {
+    return latestDecisionKeysByDecisionId;
+  }
+
+  public ColumnFamily<DbCompositeKey<DbString, DbInt>, DbForeignKey<DbLong>>
+      getDecisionKeyByDecisionIdAndVersion() {
+    return decisionKeyByDecisionIdAndVersion;
+  }
+
+  public ColumnFamily<DbLong, PersistedDecisionRequirements> getDecisionRequirementsByKey() {
+    return decisionRequirementsByKey;
+  }
+
+  public ColumnFamily<DbString, DbForeignKey<DbLong>> getLatestDecisionRequirementsKeysById() {
+    return latestDecisionRequirementsKeysById;
+  }
+
+  public ColumnFamily<DbCompositeKey<DbString, DbInt>, DbForeignKey<DbLong>>
+      getDecisionRequirementsKeyByIdAndVersion() {
+    return decisionRequirementsKeyByIdAndVersion;
+  }
+
   /**
    * This exception is thrown when the drgCache can't find a DRG in the state for a given key. This
    * must be a checked exception, because of the way the {@link LoadingCache} works.

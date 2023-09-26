@@ -102,4 +102,8 @@ public final class PersistedDecisionRequirements extends UnpackedObject implemen
   public String getTenantId() {
     return bufferAsString(tenantIdProp.getValue());
   }
+
+  public void setTenantId(final String tenantId) {
+    tenantIdProp.setValue(tenantId);
+  }
 }
