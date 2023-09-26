@@ -192,6 +192,9 @@ describe('stores/processStatistics', () => {
     window.addEventListener = jest.fn((event: string, cb: any) => {
       eventListeners[event] = cb;
     });
+    const consoleErrorMock = jest
+      .spyOn(global.console, 'error')
+      .mockImplementation();
 
     mockFetchProcessInstancesStatistics().withNetworkError();
 
@@ -212,6 +215,7 @@ describe('stores/processStatistics', () => {
       ),
     );
 
+    consoleErrorMock.mockRestore();
     window.addEventListener = originalEventListener;
   });
 });

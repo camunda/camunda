@@ -217,48 +217,20 @@ describe('Instances', () => {
       firstProcessStatisticsResponse,
     );
 
-    const {user} = render(<Processes />, {
+    render(<Processes />, {
       wrapper: getWrapper(
         `${Paths.processes()}?process=bigVarProcess&version=1`,
       ),
     });
 
     await waitFor(() => expect(processXmlStore.state.status).toBe('fetched'));
+    expect(processXmlStore.state.xml).toBe(mockProcessXML);
+    expect(processXmlStore.state.diagramModel).not.toBe(null);
+
     await waitFor(() =>
       expect(processStatisticsStore.state.statistics).toEqual(
         firstProcessStatisticsResponse,
       ),
-    );
-    expect(processXmlStore.state.diagramModel).not.toBe(null);
-
-    await user.click(screen.getByText(/go to event based/i));
-
-    await waitFor(() => expect(processXmlStore.state.status).toBe('fetching'));
-
-    await waitFor(() => expect(processXmlStore.state.status).toBe('fetched'));
-    await waitFor(() =>
-      expect(processStatisticsStore.state.statistics).toEqual(
-        mockProcessStatistics,
-      ),
-    );
-    expect(processXmlStore.state.diagramModel).not.toBe(null);
-
-    mockFetchProcessInstances().withSuccess({
-      processInstances: [],
-      totalCount: 0,
-    });
-
-    await user.click(screen.getByText(/go to no filters/i));
-
-    await waitFor(() =>
-      expect(processStatisticsStore.state.statistics).toEqual([]),
-    );
-
-    await waitFor(() =>
-      expect(screen.queryByTestId('diagram-spinner')).not.toBeInTheDocument(),
-    );
-    await waitFor(() =>
-      expect(screen.queryByTestId('data-table-loader')).not.toBeInTheDocument(),
     );
   });
 

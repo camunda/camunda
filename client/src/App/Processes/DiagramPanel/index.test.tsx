@@ -8,6 +8,7 @@
 import {
   render,
   screen,
+  waitFor,
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
 import {MemoryRouter} from 'react-router-dom';
@@ -195,6 +196,11 @@ describe('DiagramPanel', () => {
   });
 
   it('should render diagram when statistics endpoint fails', async () => {
+    const handleFetchErrorSpy = jest.spyOn(
+      processStatisticsStore,
+      'handleFetchError',
+    );
+
     mockFetchProcessInstancesStatistics().withServerError();
     mockFetchProcessXML().withSuccess('');
 
@@ -205,6 +211,7 @@ describe('DiagramPanel', () => {
     });
 
     expect(await screen.findByTestId('diagram')).toBeInTheDocument();
+    await waitFor(() => expect(handleFetchErrorSpy).toHaveBeenCalled());
     expect(screen.queryByTestId('state-overlay')).not.toBeInTheDocument();
   });
 

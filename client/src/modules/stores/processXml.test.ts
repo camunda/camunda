@@ -55,6 +55,9 @@ describe('stores/processXml', () => {
     window.addEventListener = jest.fn((event: string, cb: any) => {
       eventListeners[event] = cb;
     });
+    const consoleErrorMock = jest
+      .spyOn(global.console, 'error')
+      .mockImplementation();
 
     mockFetchProcessXML().withNetworkError();
 
@@ -70,6 +73,7 @@ describe('stores/processXml', () => {
       expect(processXmlStore.state.xml).toEqual(mockProcessXml),
     );
 
+    consoleErrorMock.mockRestore();
     window.addEventListener = originalEventListener;
   });
 });

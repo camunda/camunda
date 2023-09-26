@@ -47,7 +47,6 @@ class ProcessStatistics extends NetworkReconnectionHandler {
       reset: override,
       startFetching: action,
       handleFetchStatisticsSuccess: action,
-      handleFetchError: action,
       flowNodeStates: computed,
       resetState: action,
       overlaysData: computed,
