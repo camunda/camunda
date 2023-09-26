@@ -90,14 +90,27 @@ const Filters: React.FC = observer(() => {
           >
             <Container>
               <AutoSubmit
-                fieldsToSkipTimeout={['name', 'version', 'evaluated', 'failed']}
+                fieldsToSkipTimeout={[
+                  'tenant',
+                  'name',
+                  'version',
+                  'evaluated',
+                  'failed',
+                ]}
               />
               <Stack gap={8}>
                 <Stack gap={5}>
                   {window.clientConfig?.multiTenancyEnabled && (
                     <div>
                       <Title>Tenant</Title>
-                      <TenantField />
+                      <TenantField
+                        onChange={(selectedItem) => {
+                          form.change('name', undefined);
+                          form.change('version', undefined);
+
+                          groupedDecisionsStore.fetchDecisions(selectedItem);
+                        }}
+                      />
                     </div>
                   )}
                   <DecisionsFormGroup />

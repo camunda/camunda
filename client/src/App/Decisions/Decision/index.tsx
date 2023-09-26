@@ -114,18 +114,23 @@ const Decision: React.FC = observer(() => {
   });
 
   const getStatus = () => {
+    if (
+      decisionXmlStore.state.status === 'fetching' ||
+      decisionName === undefined ||
+      !groupedDecisionsStore.isInitialLoadComplete ||
+      (groupedDecisionsStore.state.status === 'fetching' &&
+        location.state?.refreshContent)
+    ) {
+      return 'loading';
+    }
+
     if (decisionXmlStore.state.status === 'error') {
       return 'error';
     }
     if (!isVersionSelected) {
       return 'empty';
     }
-    if (
-      decisionXmlStore.state.status === 'fetching' ||
-      decisionName === undefined
-    ) {
-      return 'loading';
-    }
+
     return 'content';
   };
 

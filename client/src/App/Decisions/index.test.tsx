@@ -108,7 +108,12 @@ describe('<Decisions />', () => {
 
     expect(screen.getByTestId('search').textContent).toBe(queryString);
 
-    await waitFor(() => expect(handleRefetchSpy).toHaveBeenCalledTimes(1));
+    mockFetchGroupedDecisions().withSuccess(groupedDecisions);
+
+    await waitFor(() =>
+      expect(groupedDecisionsStore.state.status).toBe('fetching'),
+    );
+    expect(handleRefetchSpy).toHaveBeenCalledTimes(1);
 
     mockFetchGroupedDecisions().withSuccess(groupedDecisions);
 
@@ -126,6 +131,10 @@ describe('<Decisions />', () => {
       decisionInstances: [],
       totalCount: 0,
     });
+
+    expect(screen.getByTestId('diagram-spinner')).toBeInTheDocument();
+    expect(screen.getByTestId('data-table-skeleton')).toBeInTheDocument();
+
     jest.runOnlyPendingTimers();
 
     await waitFor(() => {

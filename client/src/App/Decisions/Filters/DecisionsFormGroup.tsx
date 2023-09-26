@@ -66,6 +66,7 @@ const DecisionsFormGroup: React.FC = observer(() => {
                 titleText="Name"
                 value={input.value}
                 placeholder="Search by Decision Name"
+                disabled={isMultiTenancyEnabled && selectedTenant === ''}
               />
             );
           }}

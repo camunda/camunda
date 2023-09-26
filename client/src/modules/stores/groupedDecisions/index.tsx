@@ -26,7 +26,7 @@ import {DEFAULT_TENANT, PERMISSIONS} from 'modules/constants';
 type Decision = DecisionDto & {key: string};
 type State = {
   decisions: Decision[];
-  status: 'initial' | 'fetching' | 'fetched' | 'error';
+  status: 'initial' | 'first-fetch' | 'fetching' | 'fetched' | 'error';
 };
 
 const DEFAULT_STATE: State = {
@@ -55,12 +55,17 @@ class GroupedDecisions extends NetworkReconnectionHandler {
       reset: override,
       decisions: computed,
       decisionVersionsByKey: computed,
+      isInitialLoadComplete: computed,
     });
   }
 
-  fetchDecisions = this.retryOnConnectionLost(async () => {
+  fetchDecisions = this.retryOnConnectionLost(async (tenantId?: string) => {
     this.startFetching();
-    const {name, tenant} = getDecisionInstanceFilters(getSearchString());
+    const {name, tenant: tenantFromURL} = getDecisionInstanceFilters(
+      getSearchString(),
+    );
+
+    const tenant = tenantId ?? tenantFromURL;
 
     const response = await fetchGroupedDecisions(
       tenant === 'all' ? undefined : tenant,
@@ -87,8 +92,20 @@ class GroupedDecisions extends NetworkReconnectionHandler {
   });
 
   startFetching = () => {
-    this.state.status = 'fetching';
+    if (this.state.status === 'initial') {
+      this.state.status = 'first-fetch';
+    } else {
+      this.state.status = 'fetching';
+    }
   };
+
+  get isInitialLoadComplete() {
+    if (['initial', 'first-fetch'].includes(this.state.status)) {
+      return false;
+    }
+
+    return this.state.status !== 'fetching' || this.retryCount === 0;
+  }
 
   handleRefetch = (decisions: DecisionDto[]) => {
     if (this.retryCount < 3) {

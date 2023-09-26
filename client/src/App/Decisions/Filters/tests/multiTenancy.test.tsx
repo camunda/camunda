@@ -99,9 +99,11 @@ describe('<Filters />', () => {
       wrapper: getWrapper(),
     });
 
+    mockFetchGroupedDecisions().withSuccess(groupedDecisions);
+    await selectTenant({user, option: 'All tenants'});
+
     await waitFor(() => expect(screen.getByLabelText('Name')).toBeEnabled());
 
-    await selectTenant({user, option: 'All tenants'});
     expect(screen.getByRole('combobox', {name: /tenant/i})).toHaveTextContent(
       /all tenants/i,
     );
@@ -179,5 +181,74 @@ describe('<Filters />', () => {
     expect(
       screen.queryByRole('combobox', {name: 'Tenant'}),
     ).not.toBeInTheDocument();
+  });
+
+  it('should disable decision name field when tenant is not selected', async () => {
+    window.clientConfig = {
+      multiTenancyEnabled: true,
+    };
+
+    render(<Filters />, {
+      wrapper: getWrapper(),
+    });
+
+    mockFetchGroupedDecisions().withSuccess(groupedDecisions);
+
+    await waitFor(() =>
+      expect(groupedDecisionsStore.state.status).toBe('fetched'),
+    );
+    expect(screen.getByLabelText('Name')).toBeDisabled();
+
+    window.clientConfig = undefined;
+  });
+
+  it('should clear decision name and version field when tenant filter is changed', async () => {
+    window.clientConfig = {
+      multiTenancyEnabled: true,
+    };
+
+    const {user} = render(<Filters />, {
+      wrapper: getWrapper(),
+    });
+
+    mockFetchGroupedDecisions().withSuccess(groupedDecisions);
+
+    await waitFor(() =>
+      expect(groupedDecisionsStore.state.status).toBe('fetched'),
+    );
+    expect(screen.getByLabelText('Name')).toBeDisabled();
+
+    await selectTenant({user, option: 'All tenants'});
+    expect(screen.getByRole('combobox', {name: /tenant/i})).toHaveTextContent(
+      /all tenants/i,
+    );
+
+    await waitFor(() => expect(screen.getByLabelText('Name')).toBeEnabled());
+
+    await selectDecision({
+      user,
+      option: 'Assign Approver Group - Default Tenant',
+    });
+
+    expect(screen.getByLabelText('Name')).toHaveValue('Assign Approver Group');
+    expect(
+      screen.getByLabelText('Version', {selector: 'button'}),
+    ).toHaveTextContent('2');
+    expect(screen.getByRole('combobox', {name: /tenant/i})).toHaveTextContent(
+      /default tenant/i,
+    );
+
+    mockFetchGroupedDecisions().withSuccess(groupedDecisions);
+    await selectTenant({user, option: 'Tenant A'});
+    await waitFor(() =>
+      expect(groupedDecisionsStore.state.status).toBe('fetched'),
+    );
+
+    expect(screen.getByLabelText('Name')).toHaveValue('');
+    expect(
+      screen.getByLabelText('Version', {selector: 'button'}),
+    ).toHaveTextContent(/select a decision version/i);
+
+    window.clientConfig = undefined;
   });
 });
