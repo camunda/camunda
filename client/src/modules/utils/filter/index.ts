@@ -99,6 +99,7 @@ type RequestFilters = {
     values: string[];
   };
   processIds?: string[];
+  tenantId?: string;
 };
 
 type DecisionRequestFilters = {
@@ -398,6 +399,13 @@ function getProcessInstancesRequestFilters(): RequestFilters {
           return {
             ...accumulator,
             [key]: value,
+          };
+        }
+
+        if (key === 'tenant' && value !== 'all') {
+          return {
+            ...accumulator,
+            tenantId: value,
           };
         }
       }
