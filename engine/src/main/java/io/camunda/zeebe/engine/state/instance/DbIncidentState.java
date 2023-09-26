@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.state.immutable.IncidentState;
 import io.camunda.zeebe.engine.state.mutable.MutableIncidentState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
+import java.util.List;
 import java.util.function.ObjLongConsumer;
 
 public final class DbIncidentState implements MutableIncidentState {
@@ -114,6 +115,16 @@ public final class DbIncidentState implements MutableIncidentState {
     final Incident incident = incidentColumnFamily.get(this.incidentKey);
     if (incident != null) {
       return incident.getRecord();
+    }
+    return null;
+  }
+
+  @Override
+  public IncidentRecord getIncidentRecord(
+      final long incidentKey, final List<String> authorizedTenantIds) {
+    final IncidentRecord incident = getIncidentRecord(incidentKey);
+    if (incident != null && authorizedTenantIds.contains(incident.getTenantId())) {
+      return incident;
     }
     return null;
   }

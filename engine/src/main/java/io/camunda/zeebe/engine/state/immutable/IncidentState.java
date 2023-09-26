@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.state.immutable;
 
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
+import java.util.List;
 import java.util.function.ObjLongConsumer;
 
 public interface IncidentState {
@@ -15,6 +16,8 @@ public interface IncidentState {
   int MISSING_INCIDENT = -1;
 
   IncidentRecord getIncidentRecord(long incidentKey);
+
+  IncidentRecord getIncidentRecord(long incidentKey, final List<String> tenantIds);
 
   long getProcessInstanceIncidentKey(long processInstanceKey);
 
