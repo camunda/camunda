@@ -12,6 +12,7 @@ import {decisionDefinitionStore} from 'modules/stores/decisionDefinition';
 import {drdDataStore} from 'modules/stores/drdData';
 import {OutlineModule} from './modules/Outline';
 import {Viewer} from './Viewer';
+import {drdRendererColors} from './styled';
 
 type DecisionStates = {
   decisionId: string;
@@ -51,6 +52,7 @@ class DrdViewer {
               definitionPropertiesView: ['value', null],
             },
           ],
+          drdRenderer: drdRendererColors,
         },
       });
     }

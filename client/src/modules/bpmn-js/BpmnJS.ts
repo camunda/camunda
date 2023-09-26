@@ -11,9 +11,7 @@ import NavigatedViewer, {
 } from 'bpmn-js/lib/NavigatedViewer';
 // @ts-expect-error Could not find a declaration file for module '@bpmn-io/element-templates-icons-renderer'
 import ElementTemplatesIconsRenderer from '@bpmn-io/element-template-icon-renderer';
-import {IReactionDisposer, reaction} from 'mobx';
 import isEqual from 'lodash/isEqual';
-import {currentTheme} from 'modules/stores/currentTheme';
 import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
 import {isNonSelectableFlowNode} from './utils/isNonSelectableFlowNode';
 import {isMultiInstance} from './utils/isMultiInstance';
@@ -47,8 +45,6 @@ type RenderOptions = {
 
 class BpmnJS {
   #navigatedViewer: NavigatedViewer | null = null;
-  #themeType: typeof currentTheme.theme = currentTheme.theme;
-  #themeChangeReactionDisposer: IReactionDisposer | null = null;
   #xml: string | null = null;
   #selectableFlowNodes: string[] = [];
   #nonSelectableFlowNodes: string[] = [];
@@ -103,21 +99,10 @@ class BpmnJS {
       this.#createViewer(container);
     }
 
-    if (this.#themeType !== currentTheme.theme || this.#xml !== xml) {
-      this.#themeType = currentTheme.theme;
-
+    if (this.#xml !== xml) {
       this.#xml = xml;
       await this.import(xml);
     }
-
-    this.#themeChangeReactionDisposer?.();
-    this.#themeChangeReactionDisposer = reaction(
-      () => currentTheme.theme,
-      () => {
-        this.#createViewer(container);
-        this.render(options);
-      },
-    );
 
     if (!isEqual(this.#selectableFlowNodes, selectableFlowNodes)) {
       // handle op-selectable markers
@@ -345,7 +330,6 @@ class BpmnJS {
   };
 
   #destroy = () => {
-    this.#themeChangeReactionDisposer?.();
     this.#navigatedViewer?.destroy();
   };
 

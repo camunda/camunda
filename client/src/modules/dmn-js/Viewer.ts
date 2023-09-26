@@ -21,6 +21,7 @@ type Options = {
   container?: HTMLElement;
   drd?: {
     additionalModules: Array<unknown>;
+    drdRenderer: {[key: string]: string};
   };
 };
 

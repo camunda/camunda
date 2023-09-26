@@ -25,23 +25,6 @@ const Container = styled.div`
   width: 100%;
   background: var(--cds-layer);
 
-  .dmn-drd-container .djs-visual rect {
-    stroke: var(--cds-icon-secondary) !important;
-    fill: var(--cds-layer) !important;
-  }
-
-  .dmn-drd-container .djs-label {
-    fill: var(--cds-text-primary) !important;
-  }
-
-  .dmn-drd-container .djs-connection path {
-    stroke: var(--cds-icon-secondary) !important;
-  }
-
-  marker#information-requirement-end {
-    fill: var(--cds-icon-secondary) !important;
-  }
-
   .ope-selectable {
     cursor: pointer;
 
