@@ -1,0 +1,183 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
+ * under one or more contributor license agreements. Licensed under a proprietary license.
+ * See the License.txt file for more information. You may not use this file
+ * except in compliance with the proprietary license.
+ */
+
+import {AppHeader} from 'App/Layout/AppHeader';
+import {render, screen, waitFor, within} from 'modules/testing-library';
+import {groupedDecisions} from 'modules/mocks/groupedDecisions';
+import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
+import {LocationLog} from 'modules/utils/LocationLog';
+import {MemoryRouter} from 'react-router-dom';
+import {Filters} from '../';
+import {mockFetchGroupedDecisions} from 'modules/mocks/api/decisions/fetchGroupedDecisions';
+import {useEffect} from 'react';
+import {
+  selectDecision,
+  selectTenant,
+} from 'modules/testUtils/selectComboBoxOption';
+import {Paths} from 'modules/Routes';
+import {mockGetUser} from 'modules/mocks/api/getUser';
+import {createUser} from 'modules/testUtils';
+import {authenticationStore} from 'modules/stores/authentication';
+
+function reset() {
+  jest.clearAllTimers();
+  jest.useRealTimers();
+}
+
+function getWrapper(initialPath: string = Paths.decisions()) {
+  const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
+    useEffect(() => {
+      return groupedDecisionsStore.reset;
+    }, []);
+
+    return (
+      <MemoryRouter initialEntries={[initialPath]}>
+        <AppHeader />
+        {children}
+        <LocationLog />
+      </MemoryRouter>
+    );
+  };
+
+  return Wrapper;
+}
+
+const expectVersion = (version: string) => {
+  expect(
+    within(screen.getByLabelText('Version', {selector: 'button'})).getByText(
+      version,
+    ),
+  ).toBeInTheDocument();
+};
+
+const MOCK_FILTERS_PARAMS = {
+  name: 'invoice-assign-approver',
+  version: '2',
+  evaluated: 'true',
+  failed: 'true',
+  decisionInstanceIds: '2251799813689540-1',
+  processInstanceId: '2251799813689549',
+  tenant: 'tenant-A',
+} as const;
+
+describe('<Filters />', () => {
+  beforeEach(async () => {
+    mockFetchGroupedDecisions().withSuccess(groupedDecisions);
+    mockGetUser().withSuccess(
+      createUser({
+        tenants: [
+          {tenantId: '<default>', name: 'Default Tenant'},
+          {tenantId: 'tenant-A', name: 'Tenant A'},
+        ],
+      }),
+    );
+
+    await authenticationStore.authenticate();
+
+    await groupedDecisionsStore.fetchDecisions();
+    jest.useFakeTimers();
+  });
+
+  afterEach(reset);
+
+  it('should write filters to url', async () => {
+    window.clientConfig = {
+      multiTenancyEnabled: true,
+    };
+
+    const MOCK_VALUES = {
+      name: 'invoice-assign-approver',
+      version: '3',
+      tenant: 'tenant-A',
+    } as const;
+
+    const {user} = render(<Filters />, {
+      wrapper: getWrapper(),
+    });
+
+    await waitFor(() => expect(screen.getByLabelText('Name')).toBeEnabled());
+
+    await selectTenant({user, option: 'All tenants'});
+    expect(screen.getByRole('combobox', {name: /tenant/i})).toHaveTextContent(
+      /all tenants/i,
+    );
+
+    await waitFor(() =>
+      expect(
+        Object.fromEntries(
+          new URLSearchParams(
+            screen.getByTestId('search').textContent ?? '',
+          ).entries(),
+        ),
+      ).toEqual(
+        expect.objectContaining({
+          tenant: 'all',
+        }),
+      ),
+    );
+
+    await selectDecision({
+      user,
+      option: 'Assign Approver Group for tenant A - Tenant A',
+    });
+
+    expect(screen.getByRole('combobox', {name: 'Name'})).toHaveValue(
+      'Assign Approver Group for tenant A',
+    );
+
+    expect(screen.getByRole('combobox', {name: /tenant/i})).toHaveTextContent(
+      /tenant a/i,
+    );
+
+    await waitFor(() =>
+      expect(
+        Object.fromEntries(
+          new URLSearchParams(
+            screen.getByTestId('search').textContent ?? '',
+          ).entries(),
+        ),
+      ).toEqual(MOCK_VALUES),
+    );
+
+    window.clientConfig = undefined;
+  });
+
+  it('initialise filter values from url', () => {
+    window.clientConfig = {
+      multiTenancyEnabled: true,
+    };
+
+    render(<Filters />, {
+      wrapper: getWrapper(`/?${new URLSearchParams(MOCK_FILTERS_PARAMS)}`),
+    });
+
+    expect(screen.getByLabelText('Name')).toHaveValue(
+      'Assign Approver Group for tenant A',
+    );
+    expectVersion('2');
+
+    expect(screen.getByRole('combobox', {name: 'Tenant'})).toHaveTextContent(
+      'Tenant A',
+    );
+
+    window.clientConfig = undefined;
+  });
+
+  it('should hide multi tenancy filter if its not enabled in client config', async () => {
+    render(<Filters />, {
+      wrapper: getWrapper(
+        `/?${new URLSearchParams(
+          Object.entries(MOCK_FILTERS_PARAMS),
+        ).toString()}`,
+      ),
+    });
+
+    expect(
+      screen.queryByRole('combobox', {name: 'Tenant'}),
+    ).not.toBeInTheDocument();
+  });
+});

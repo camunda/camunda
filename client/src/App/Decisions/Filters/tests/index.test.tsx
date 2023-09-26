@@ -11,7 +11,7 @@ import {groupedDecisions} from 'modules/mocks/groupedDecisions';
 import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {MemoryRouter} from 'react-router-dom';
-import {Filters} from './index';
+import {Filters} from '../';
 import {mockFetchGroupedDecisions} from 'modules/mocks/api/decisions/fetchGroupedDecisions';
 import {pickDateTimeRange} from 'modules/testUtils/dateTimeRange';
 import {useEffect} from 'react';
@@ -19,12 +19,8 @@ import {
   clearComboBox,
   selectDecision,
   selectDecisionVersion,
-  selectTenant,
 } from 'modules/testUtils/selectComboBoxOption';
 import {Paths} from 'modules/Routes';
-import {mockGetUser} from 'modules/mocks/api/getUser';
-import {createUser} from 'modules/testUtils';
-import {authenticationStore} from 'modules/stores/authentication';
 
 jest.unmock('modules/utils/date/formatDate');
 
@@ -67,23 +63,11 @@ const MOCK_FILTERS_PARAMS = {
   failed: 'true',
   decisionInstanceIds: '2251799813689540-1',
   processInstanceId: '2251799813689549',
-  tenant: 'tenant-a',
 } as const;
 
 describe('<Filters />', () => {
   beforeEach(async () => {
     mockFetchGroupedDecisions().withSuccess(groupedDecisions);
-    mockGetUser().withSuccess(
-      createUser({
-        tenants: [
-          {tenantId: '<default>', name: 'Default Tenant'},
-          {tenantId: 'tenant-a', name: 'Tenant A'},
-        ],
-      }),
-    );
-
-    await authenticationStore.authenticate();
-
     await groupedDecisionsStore.fetchDecisions();
     jest.useFakeTimers();
   });
@@ -118,10 +102,6 @@ describe('<Filters />', () => {
   });
 
   it('should write filters to url', async () => {
-    window.clientConfig = {
-      multiTenancyEnabled: true,
-    };
-
     const {user} = render(<Filters />, {
       wrapper: getWrapper(),
     });
@@ -131,7 +111,6 @@ describe('<Filters />', () => {
 
     await selectDecision({user, option: 'Assign Approver Group'});
     await selectDecisionVersion({user, option: '2'});
-    await selectTenant({user, option: 'Tenant A'});
 
     await user.click(screen.getByLabelText(/evaluated/i));
     await user.click(screen.getByLabelText(/failed/i));
@@ -169,8 +148,6 @@ describe('<Filters />', () => {
     expect(screen.getByTestId('search')).toHaveTextContent(
       /^\?evaluated=true&failed=true$/,
     );
-
-    window.clientConfig = undefined;
   });
 
   it('should write filters to url - evaluation date range', async () => {
@@ -216,10 +193,6 @@ describe('<Filters />', () => {
   });
 
   it('initialise filter values from url', () => {
-    window.clientConfig = {
-      multiTenancyEnabled: true,
-    };
-
     render(<Filters />, {
       wrapper: getWrapper(`/?${new URLSearchParams(MOCK_FILTERS_PARAMS)}`),
     });
@@ -227,30 +200,10 @@ describe('<Filters />', () => {
     expect(screen.getByLabelText('Name')).toHaveValue('Assign Approver Group');
     expectVersion('2');
 
-    expect(screen.getByRole('combobox', {name: 'Tenant'})).toHaveTextContent(
-      'Tenant A',
-    );
-
     expect(screen.getByLabelText(/evaluated/i)).toBeChecked();
     expect(screen.getByLabelText(/failed/i)).toBeChecked();
     expect(screen.getByDisplayValue(/2251799813689540-1/i)).toBeInTheDocument();
     expect(screen.getByDisplayValue(/2251799813689549/i)).toBeInTheDocument();
-
-    window.clientConfig = undefined;
-  });
-
-  it('should hide multi tenancy filter if its not enabled in client config', async () => {
-    render(<Filters />, {
-      wrapper: getWrapper(
-        `/?${new URLSearchParams(
-          Object.entries(MOCK_FILTERS_PARAMS),
-        ).toString()}`,
-      ),
-    });
-
-    expect(
-      screen.queryByRole('combobox', {name: 'Tenant'}),
-    ).not.toBeInTheDocument();
   });
 
   it('initialise filter values from url - evaluation date range', async () => {

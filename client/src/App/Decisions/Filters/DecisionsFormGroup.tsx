@@ -11,14 +11,19 @@ import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
 import {Title} from 'modules/components/FiltersPanel/styled';
 import {ComboBox} from 'modules/components/ComboBox';
 import {Dropdown, Stack} from '@carbon/react';
+import {authenticationStore} from 'modules/stores/authentication';
 
 const DecisionsFormGroup: React.FC = observer(() => {
   const {getVersions, getDefaultVersion, decisions} = groupedDecisionsStore;
 
   const form = useForm();
-  const selectedDecisionId = useField('name').input.value;
-  const versions = getVersions(selectedDecisionId);
+  const selectedDecisionKey = useField('name').input.value;
+  const selectedTenant = useField('tenant').input.value;
+  const versions = getVersions(selectedDecisionKey);
   const items = ['all', ...versions];
+  const isMultiTenancyEnabled = window.clientConfig?.multiTenancyEnabled;
+  const isSpecificTenantSelected =
+    selectedTenant !== '' && selectedTenant !== 'all';
 
   return (
     <div>
@@ -30,20 +35,33 @@ const DecisionsFormGroup: React.FC = observer(() => {
               <ComboBox
                 id="decisionName"
                 aria-label="Select a Decision"
-                items={decisions.map(({value, label}) => ({
-                  label,
-                  id: value,
+                items={decisions.map(({id, label, tenantId}) => ({
+                  label:
+                    isMultiTenancyEnabled && !isSpecificTenantSelected
+                      ? `${label} - ${authenticationStore.tenantsById?.[tenantId]}`
+                      : label,
+                  id,
                 }))}
                 onChange={({selectedItem}) => {
-                  const decisionId = selectedItem?.id;
+                  const decisionKey = selectedItem?.id;
 
-                  input.onChange(decisionId);
+                  input.onChange(decisionKey);
                   form.change(
                     'version',
-                    decisionId === undefined
+                    decisionKey === undefined
                       ? ''
-                      : getDefaultVersion(decisionId),
+                      : getDefaultVersion(decisionKey),
                   );
+
+                  if (isMultiTenancyEnabled) {
+                    const tenantId = decisions.find(
+                      ({id}) => id === decisionKey,
+                    )?.tenantId;
+
+                    if (tenantId !== undefined) {
+                      form.change('tenant', tenantId);
+                    }
+                  }
                 }}
                 titleText="Name"
                 value={input.value}

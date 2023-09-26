@@ -32,12 +32,17 @@ const groupedDecisions: DecisionDto[] = [
     name: 'Assign Approver Group for tenant A',
     decisions: [
       {
-        id: '1',
+        id: '4',
+        version: 3,
+        decisionId: 'invoice-assign-approver',
+      },
+      {
+        id: '3',
         version: 2,
         decisionId: 'invoice-assign-approver',
       },
       {
-        id: '0',
+        id: '2',
         version: 1,
         decisionId: 'invoice-assign-approver',
       },
@@ -50,7 +55,7 @@ const groupedDecisions: DecisionDto[] = [
     name: null,
     decisions: [
       {
-        id: '1',
+        id: '5',
         version: 1,
         decisionId: 'invoiceClassification',
       },
@@ -63,7 +68,7 @@ const groupedDecisions: DecisionDto[] = [
     name: 'Calculate Credit History Key Figures',
     decisions: [
       {
-        id: '2',
+        id: '6',
         version: 1,
         decisionId: 'calc-key-figures',
       },

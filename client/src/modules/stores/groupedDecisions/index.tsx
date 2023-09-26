@@ -54,7 +54,6 @@ class GroupedDecisions extends NetworkReconnectionHandler {
       startFetching: action,
       reset: override,
       decisions: computed,
-      decisionVersionsById: computed,
       decisionVersionsByKey: computed,
     });
   }
@@ -120,24 +119,13 @@ class GroupedDecisions extends NetworkReconnectionHandler {
 
   get decisions() {
     return this.state.decisions
-      .map(({decisionId, name}) => ({
-        value: decisionId,
+      .map(({key, tenantId, decisionId, name}) => ({
+        id: key,
+        decisionId,
         label: name ?? decisionId,
+        tenantId,
       }))
       .sort(sortOptions);
-  }
-
-  get decisionVersionsById() {
-    return this.state.decisions.reduce<{
-      [decisionId: string]: DecisionDto['decisions'];
-    }>((decisions, decision) => {
-      return {
-        ...decisions,
-        [decision.decisionId]: [...decision.decisions].sort(
-          (decisionA, decisionB) => decisionA.version - decisionB.version,
-        ),
-      };
-    }, {});
   }
 
   get decisionVersionsByKey() {
@@ -191,14 +179,14 @@ class GroupedDecisions extends NetworkReconnectionHandler {
     );
   };
 
-  getVersions = (decisionId: string) => {
+  getVersions = (decisionKey: string) => {
     return (
-      this.decisionVersionsById[decisionId]?.map(({version}) => version) ?? []
+      this.decisionVersionsByKey[decisionKey]?.map(({version}) => version) ?? []
     );
   };
 
-  getDefaultVersion = (decisionId: string) => {
-    const versions = this.getVersions(decisionId);
+  getDefaultVersion = (decisionKey: string) => {
+    const versions = this.getVersions(decisionKey);
     return versions[versions.length - 1];
   };
 

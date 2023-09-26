@@ -94,39 +94,29 @@ describe('groupedDecisionsStore', () => {
     expect(groupedDecisionsStore.decisions).toEqual([
       {
         label: 'Assign Approver Group',
-        value: 'invoice-assign-approver',
+        decisionId: 'invoice-assign-approver',
+        id: '{invoice-assign-approver}-{<default>}',
+        tenantId: '<default>',
       },
       {
         label: 'Assign Approver Group for tenant A',
-        value: 'invoice-assign-approver',
+        decisionId: 'invoice-assign-approver',
+        id: '{invoice-assign-approver}-{tenant-A}',
+        tenantId: 'tenant-A',
       },
       {
         label: 'Calculate Credit History Key Figures',
-        value: 'calc-key-figures',
+        decisionId: 'calc-key-figures',
+        id: '{calc-key-figures}-{<default>}',
+        tenantId: '<default>',
       },
       {
         label: 'invoiceClassification',
-        value: 'invoiceClassification',
+        decisionId: 'invoiceClassification',
+        id: '{invoiceClassification}-{<default>}',
+        tenantId: '<default>',
       },
     ]);
-  });
-
-  it('should get decision versions by id', () => {
-    const firstDecision = groupedDecisions[0]!;
-    const thirdDecision = groupedDecisions[2]!;
-    const fourthDecision = groupedDecisions[3]!;
-
-    const [version2, version1] = firstDecision.decisions;
-
-    expect(
-      groupedDecisionsStore.decisionVersionsById['invoice-assign-approver'],
-    ).toEqual([version1, version2]);
-    expect(
-      groupedDecisionsStore.decisionVersionsById['invoiceClassification'],
-    ).toEqual(thirdDecision.decisions);
-    expect(
-      groupedDecisionsStore.decisionVersionsById['calc-key-figures'],
-    ).toEqual(fourthDecision.decisions);
   });
 
   it('should get decision versions by key', () => {
@@ -136,7 +126,7 @@ describe('groupedDecisionsStore', () => {
     const fourthDecision = groupedDecisions[3]!;
 
     const [version2, version1] = firstDecision.decisions;
-    const [version4, version3] = secondDecision.decisions;
+    const [version5, version4, version3] = secondDecision.decisions;
 
     expect(
       groupedDecisionsStore.decisionVersionsByKey[
@@ -147,7 +137,7 @@ describe('groupedDecisionsStore', () => {
       groupedDecisionsStore.decisionVersionsByKey[
         generateDecisionKey('invoice-assign-approver', 'tenant-A')
       ],
-    ).toEqual([version3, version4]);
+    ).toEqual([version3, version4, version5]);
     expect(
       groupedDecisionsStore.decisionVersionsByKey[
         generateDecisionKey('invoiceClassification')
@@ -161,24 +151,48 @@ describe('groupedDecisionsStore', () => {
   });
 
   it('should get versions', () => {
-    expect(groupedDecisionsStore.getVersions('invoiceClassification')).toEqual([
-      1,
-    ]);
     expect(
-      groupedDecisionsStore.getVersions('invoice-assign-approver'),
+      groupedDecisionsStore.getVersions(
+        generateDecisionKey('invoiceClassification'),
+      ),
+    ).toEqual([1]);
+    expect(
+      groupedDecisionsStore.getVersions(
+        generateDecisionKey('invoice-assign-approver'),
+      ),
     ).toEqual([1, 2]);
-    expect(groupedDecisionsStore.getVersions('invalidDecisionId')).toEqual([]);
+    expect(
+      groupedDecisionsStore.getVersions(
+        generateDecisionKey('invoice-assign-approver', 'tenant-A'),
+      ),
+    ).toEqual([1, 2, 3]);
+    expect(
+      groupedDecisionsStore.getVersions(
+        generateDecisionKey('invalidDecisionId'),
+      ),
+    ).toEqual([]);
   });
 
   it('should get default version', () => {
     expect(
-      groupedDecisionsStore.getDefaultVersion('invoiceClassification'),
+      groupedDecisionsStore.getDefaultVersion(
+        generateDecisionKey('invoiceClassification'),
+      ),
     ).toBe(1);
     expect(
-      groupedDecisionsStore.getDefaultVersion('invoice-assign-approver'),
+      groupedDecisionsStore.getDefaultVersion(
+        generateDecisionKey('invoice-assign-approver'),
+      ),
     ).toBe(2);
     expect(
-      groupedDecisionsStore.getDefaultVersion('invalidDecisionId'),
+      groupedDecisionsStore.getDefaultVersion(
+        generateDecisionKey('invoice-assign-approver', 'tenant-A'),
+      ),
+    ).toBe(3);
+    expect(
+      groupedDecisionsStore.getDefaultVersion(
+        generateDecisionKey('invalidDecisionId'),
+      ),
     ).toBeUndefined();
   });
 
