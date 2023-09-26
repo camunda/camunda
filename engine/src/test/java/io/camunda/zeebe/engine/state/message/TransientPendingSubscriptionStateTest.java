@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState.PendingSubscription;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -35,9 +36,10 @@ public class TransientPendingSubscriptionStateTest {
   @Test
   public void shouldReturnEntriesBeforeDeadline() {
     // when
-    final var expected = new PendingSubscription(1, "message");
+    final var expected =
+        new PendingSubscription(1, "message", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
     sut.add(expected, 500);
-    sut.add(new PendingSubscription(2, "message"), 2000);
+    sut.add(new PendingSubscription(2, "message", TenantOwned.DEFAULT_TENANT_IDENTIFIER), 2000);
 
     // when
     final var actual = sut.entriesBefore(1000);
@@ -49,9 +51,9 @@ public class TransientPendingSubscriptionStateTest {
   @Test
   public void shouldReturnEntriesOrderedBySentTime() {
     // when
-    final var first = new PendingSubscription(1, "message");
-    final var second = new PendingSubscription(2, "message");
-    final var third = new PendingSubscription(3, "message");
+    final var first = new PendingSubscription(1, "message", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    final var second = new PendingSubscription(2, "message", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    final var third = new PendingSubscription(3, "message", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
     sut.add(second, 600);
     sut.add(first, 500);
@@ -67,7 +69,8 @@ public class TransientPendingSubscriptionStateTest {
   @Test
   public void shouldOverwriteExistingEntries() {
     // when
-    final var subscription = new PendingSubscription(1, "message");
+    final var subscription =
+        new PendingSubscription(1, "message", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
     sut.add(subscription, 500);
     sut.add(subscription, 600);
@@ -82,8 +85,8 @@ public class TransientPendingSubscriptionStateTest {
   @Test
   public void shouldAcceptEntriesWithTheSameSentTime() {
     // when
-    sut.add(new PendingSubscription(1, "message"), 500);
-    sut.add(new PendingSubscription(2, "message"), 500);
+    sut.add(new PendingSubscription(1, "message", TenantOwned.DEFAULT_TENANT_IDENTIFIER), 500);
+    sut.add(new PendingSubscription(2, "message", TenantOwned.DEFAULT_TENANT_IDENTIFIER), 500);
 
     // when
     final var actual = sut.entriesBefore(1000);
@@ -95,11 +98,12 @@ public class TransientPendingSubscriptionStateTest {
   @Test
   public void shouldReturnEntriesBasedOnUpdatedSentTime() {
     // when
-    sut.add(new PendingSubscription(1, "message"), 2000);
-    sut.add(new PendingSubscription(2, "message"), 3000);
+    sut.add(new PendingSubscription(1, "message", TenantOwned.DEFAULT_TENANT_IDENTIFIER), 2000);
+    sut.add(new PendingSubscription(2, "message", TenantOwned.DEFAULT_TENANT_IDENTIFIER), 3000);
 
     // when
-    final var expected = new PendingSubscription(1, "message");
+    final var expected =
+        new PendingSubscription(1, "message", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
     sut.update(expected, 500);
     final var actual = sut.entriesBefore(1000);
 
@@ -110,11 +114,11 @@ public class TransientPendingSubscriptionStateTest {
   @Test
   public void shouldNotReturnEntriesThatHaveBeenRemoved() {
     // when
-    sut.add(new PendingSubscription(1, "message"), 500);
-    sut.add(new PendingSubscription(2, "message"), 2000);
+    sut.add(new PendingSubscription(1, "message", TenantOwned.DEFAULT_TENANT_IDENTIFIER), 500);
+    sut.add(new PendingSubscription(2, "message", TenantOwned.DEFAULT_TENANT_IDENTIFIER), 2000);
 
     // when
-    sut.remove(new PendingSubscription(1, "message"));
+    sut.remove(new PendingSubscription(1, "message", TenantOwned.DEFAULT_TENANT_IDENTIFIER));
     final var actual = sut.entriesBefore(1000);
 
     // then
@@ -124,13 +128,21 @@ public class TransientPendingSubscriptionStateTest {
   @Test
   public void shouldBeTolerantWhenRemovingEntriesThatDoNotExist() {
     // when + then
-    assertThatNoException().isThrownBy(() -> sut.remove(new PendingSubscription(1, "message")));
+    assertThatNoException()
+        .isThrownBy(
+            () ->
+                sut.remove(
+                    new PendingSubscription(1, "message", TenantOwned.DEFAULT_TENANT_IDENTIFIER)));
   }
 
   @Test
   public void shouldBeTolerantWhenUpdatingEntriesThatDoNotExist() {
     // when + then
     assertThatNoException()
-        .isThrownBy(() -> sut.update(new PendingSubscription(1, "message"), 500));
+        .isThrownBy(
+            () ->
+                sut.update(
+                    new PendingSubscription(1, "message", TenantOwned.DEFAULT_TENANT_IDENTIFIER),
+                    500));
   }
 }

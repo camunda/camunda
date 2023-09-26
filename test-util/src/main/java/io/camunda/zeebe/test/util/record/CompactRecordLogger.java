@@ -634,7 +634,8 @@ public class CompactRecordLogger {
         .append("]")
         .append(
             summarizeProcessInformation(value.getBpmnProcessId(), value.getProcessInstanceKey()))
-        .append(summarizeVariables(value.getVariables()));
+        .append(summarizeVariables(value.getVariables()))
+        .append(" (tenant: %s)".formatted(value.getTenantId()));
 
     return result.toString();
   }

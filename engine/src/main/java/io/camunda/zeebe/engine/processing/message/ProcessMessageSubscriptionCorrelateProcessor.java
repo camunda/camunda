@@ -80,7 +80,8 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
     final var elementInstanceKey = record.getElementInstanceKey();
 
     final ProcessMessageSubscription subscription =
-        subscriptionState.getSubscription(elementInstanceKey, record.getMessageNameBuffer());
+        subscriptionState.getSubscription(
+            elementInstanceKey, record.getMessageNameBuffer(), record.getTenantId());
 
     if (subscription == null) {
       rejectCommand(command, RejectionType.NOT_FOUND, NO_SUBSCRIPTION_FOUND_MESSAGE);

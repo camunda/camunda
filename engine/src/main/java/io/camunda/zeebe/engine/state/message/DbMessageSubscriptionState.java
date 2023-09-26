@@ -14,6 +14,8 @@ import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
+import io.camunda.zeebe.db.impl.DbTenantAwareKey;
+import io.camunda.zeebe.db.impl.DbTenantAwareKey.PlacementType;
 import io.camunda.zeebe.engine.state.immutable.PendingMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState.PendingSubscription;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
@@ -38,12 +40,15 @@ public final class DbMessageSubscriptionState
   private final ColumnFamily<DbCompositeKey<DbLong, DbString>, MessageSubscription>
       subscriptionColumnFamily;
 
-  // (messageName, correlationKey, elementInstanceKey) => \0
+  // (tenant aware messageName, correlationKey, elementInstanceKey) => \0
+  private final DbString tenantIdKey;
   private final DbString correlationKey;
-  private final DbCompositeKey<DbString, DbString> nameAndCorrelationKey;
-  private final DbCompositeKey<DbCompositeKey<DbString, DbString>, DbLong>
-      nameCorrelationAndElementInstanceKey;
-  private final ColumnFamily<DbCompositeKey<DbCompositeKey<DbString, DbString>, DbLong>, DbNil>
+  private final DbTenantAwareKey<DbCompositeKey<DbString, DbString>>
+      tenantAwareNameAndCorrelationKey;
+  private final DbCompositeKey<DbTenantAwareKey<DbCompositeKey<DbString, DbString>>, DbLong>
+      tenantAwareNameCorrelationAndElementInstanceKey;
+  private final ColumnFamily<
+          DbCompositeKey<DbTenantAwareKey<DbCompositeKey<DbString, DbString>>, DbLong>, DbNil>
       messageNameAndCorrelationKeyColumnFamily;
 
   private final TransientPendingSubscriptionState transientState;
@@ -64,15 +69,18 @@ public final class DbMessageSubscriptionState
             elementKeyAndMessageName,
             messageSubscription);
 
+    tenantIdKey = new DbString();
     correlationKey = new DbString();
-    nameAndCorrelationKey = new DbCompositeKey<>(messageName, correlationKey);
-    nameCorrelationAndElementInstanceKey =
-        new DbCompositeKey<>(nameAndCorrelationKey, elementInstanceKey);
+    tenantAwareNameAndCorrelationKey =
+        new DbTenantAwareKey<>(
+            tenantIdKey, new DbCompositeKey<>(messageName, correlationKey), PlacementType.PREFIX);
+    tenantAwareNameCorrelationAndElementInstanceKey =
+        new DbCompositeKey<>(tenantAwareNameAndCorrelationKey, elementInstanceKey);
     messageNameAndCorrelationKeyColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.MESSAGE_SUBSCRIPTION_BY_NAME_AND_CORRELATION_KEY,
             transactionContext,
-            nameCorrelationAndElementInstanceKey,
+            tenantAwareNameCorrelationAndElementInstanceKey,
             DbNil.INSTANCE);
     this.transientState = transientState;
   }
@@ -83,7 +91,8 @@ public final class DbMessageSubscriptionState
         subscription -> {
           if (subscription.isCorrelating()) {
             transientState.add(
-                new PendingSubscription(elementInstanceKey.getValue(), messageName.toString()),
+                new PendingSubscription(
+                    elementInstanceKey.getValue(), messageName.toString(), tenantIdKey.toString()),
                 ActorClock.currentTimeMillis());
           }
         });
@@ -103,11 +112,12 @@ public final class DbMessageSubscriptionState
       final DirectBuffer correlationKey,
       final MessageSubscriptionVisitor visitor) {
 
+    tenantIdKey.wrapString(tenantId);
     this.messageName.wrapBuffer(messageName);
     this.correlationKey.wrapBuffer(correlationKey);
 
     messageNameAndCorrelationKeyColumnFamily.whileEqualPrefix(
-        nameAndCorrelationKey,
+        tenantAwareNameAndCorrelationKey,
         (compositeKey, nil) -> {
           return visitMessageSubscription(elementKeyAndMessageName, visitor);
         });
@@ -124,6 +134,7 @@ public final class DbMessageSubscriptionState
 
   @Override
   public void put(final long key, final MessageSubscriptionRecord record) {
+    tenantIdKey.wrapString(record.getTenantId());
     elementInstanceKey.wrapLong(record.getElementInstanceKey());
     messageName.wrapBuffer(record.getMessageNameBuffer());
 
@@ -133,7 +144,7 @@ public final class DbMessageSubscriptionState
 
     correlationKey.wrapBuffer(record.getCorrelationKeyBuffer());
     messageNameAndCorrelationKeyColumnFamily.insert(
-        nameCorrelationAndElementInstanceKey, DbNil.INSTANCE);
+        tenantAwareNameCorrelationAndElementInstanceKey, DbNil.INSTANCE);
   }
 
   @Override
@@ -161,17 +172,18 @@ public final class DbMessageSubscriptionState
     transientState.update(
         new PendingSubscription(
             subscription.getRecord().getElementInstanceKey(),
-            subscription.getRecord().getMessageName()),
+            subscription.getRecord().getMessageName(),
+            subscription.getRecord().getTenantId()),
         ActorClock.currentTimeMillis());
   }
 
   @Override
   public void updateToCorrelatedState(final MessageSubscription subscription) {
     updateCorrelatingFlag(subscription, false);
+    final var record = subscription.getRecord();
     transientState.remove(
         new PendingSubscription(
-            subscription.getRecord().getElementInstanceKey(),
-            subscription.getRecord().getMessageName()));
+            record.getElementInstanceKey(), record.getMessageName(), record.getTenantId()));
   }
 
   @Override
@@ -194,12 +206,15 @@ public final class DbMessageSubscriptionState
     subscriptionColumnFamily.deleteExisting(elementKeyAndMessageName);
 
     final var record = subscription.getRecord();
+    tenantIdKey.wrapString(record.getTenantId());
     messageName.wrapBuffer(record.getMessageNameBuffer());
     correlationKey.wrapBuffer(record.getCorrelationKeyBuffer());
-    messageNameAndCorrelationKeyColumnFamily.deleteExisting(nameCorrelationAndElementInstanceKey);
+    messageNameAndCorrelationKeyColumnFamily.deleteExisting(
+        tenantAwareNameCorrelationAndElementInstanceKey);
 
     transientState.remove(
-        new PendingSubscription(elementInstanceKey.getValue(), messageName.toString()));
+        new PendingSubscription(
+            elementInstanceKey.getValue(), messageName.toString(), tenantIdKey.toString()));
   }
 
   private void updateCorrelatingFlag(
@@ -241,7 +256,11 @@ public final class DbMessageSubscriptionState
 
   @Override
   public void onSent(
-      final long elementInstanceKey, final String messageName, final long timestampMs) {
-    transientState.update(new PendingSubscription(elementInstanceKey, messageName), timestampMs);
+      final long elementInstanceKey,
+      final String messageName,
+      final String tenantId,
+      final long timestampMs) {
+    transientState.update(
+        new PendingSubscription(elementInstanceKey, messageName, tenantId), timestampMs);
   }
 }

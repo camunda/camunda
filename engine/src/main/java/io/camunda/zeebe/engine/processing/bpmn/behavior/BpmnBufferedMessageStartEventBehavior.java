@@ -99,6 +99,7 @@ public final class BpmnBufferedMessageStartEventBehavior {
           final var messageName = subscriptionRecord.getMessageNameBuffer();
 
           messageState.visitMessages(
+              subscriptionRecord.getTenantId(),
               messageName,
               correlationKey,
               storedMessage -> {

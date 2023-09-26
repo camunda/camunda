@@ -43,7 +43,9 @@ public final class ProcessMessageSubscriptionDeleteProcessor
 
     final var subscription =
         subscriptionState.getSubscription(
-            command.getValue().getElementInstanceKey(), subscriptionRecord.getMessageNameBuffer());
+            command.getValue().getElementInstanceKey(),
+            subscriptionRecord.getMessageNameBuffer(),
+            subscriptionRecord.getTenantId());
 
     if (subscription == null) {
       rejectCommand(command);

@@ -23,9 +23,17 @@ public interface PendingMessageSubscriptionState {
    * last time a command was sent out for a subscription. Freshly sent-out subscriptions are not
    * visited by {@link #visitPending(long, MessageSubscriptionVisitor)}.
    */
-  void onSent(final long elementInstance, final String messageName, final long timestampMs);
+  void onSent(
+      final long elementInstance,
+      final String messageName,
+      final String tenantId,
+      final long timestampMs);
 
   default void onSent(final MessageSubscriptionRecord subscription, final long timestampMs) {
-    onSent(subscription.getElementInstanceKey(), subscription.getMessageName(), timestampMs);
+    onSent(
+        subscription.getElementInstanceKey(),
+        subscription.getMessageName(),
+        subscription.getTenantId(),
+        timestampMs);
   }
 }

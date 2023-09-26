@@ -149,8 +149,8 @@ public final class MessageStartEventSubscriptionStateTest {
         createSubscription("message2", "startEvent2", 2);
     state.put(2L, subscription2);
 
-    state.remove(1L, wrapString("message1"));
-    state.remove(2L, wrapString("message2"));
+    state.remove(1L, wrapString("message1"), TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    state.remove(2L, wrapString("message2"), TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
     assertThat(state.exists(subscription1)).isFalse();
     assertThat(state.exists(subscription2)).isFalse();
@@ -170,7 +170,7 @@ public final class MessageStartEventSubscriptionStateTest {
         createSubscription("message1", "startEvent1", 2);
     state.put(3L, subscription3);
 
-    state.remove(1L, wrapString("message1"));
+    state.remove(1L, wrapString("message1"), TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
     assertThat(state.exists(subscription1)).isFalse();
     assertThat(state.exists(subscription2)).isTrue();

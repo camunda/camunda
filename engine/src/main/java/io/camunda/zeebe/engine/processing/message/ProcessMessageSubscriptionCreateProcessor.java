@@ -46,7 +46,9 @@ public final class ProcessMessageSubscriptionCreateProcessor
     final ProcessMessageSubscriptionRecord subscriptionRecord = command.getValue();
     final ProcessMessageSubscription subscription =
         subscriptionState.getSubscription(
-            subscriptionRecord.getElementInstanceKey(), subscriptionRecord.getMessageNameBuffer());
+            subscriptionRecord.getElementInstanceKey(),
+            subscriptionRecord.getMessageNameBuffer(),
+            subscriptionRecord.getTenantId());
 
     if (subscription != null && subscription.isOpening()) {
       stateWriter.appendFollowUpEvent(

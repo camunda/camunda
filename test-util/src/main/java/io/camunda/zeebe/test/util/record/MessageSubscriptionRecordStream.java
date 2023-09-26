@@ -40,4 +40,8 @@ public final class MessageSubscriptionRecordStream
   public MessageSubscriptionRecordStream withCorrelationKey(final String correlationKey) {
     return valueFilter(v -> correlationKey.equals(v.getCorrelationKey()));
   }
+
+  public MessageSubscriptionRecordStream withTenantId(final String tenantId) {
+    return valueFilter(v -> tenantId.equals(v.getTenantId()));
+  }
 }

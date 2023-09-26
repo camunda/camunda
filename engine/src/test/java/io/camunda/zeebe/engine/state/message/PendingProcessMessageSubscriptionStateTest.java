@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.state.immutable.PendingProcessMessageSubscription
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.util.ProcessingStateRule;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.ArrayList;
 import java.util.List;
 import org.assertj.core.api.Assertions;
@@ -125,7 +126,9 @@ public final class PendingProcessMessageSubscriptionStateTest {
     // and
     final ProcessMessageSubscription existingSubscription =
         persistentState.getSubscription(
-            record.getElementInstanceKey(), record.getMessageNameBuffer());
+            record.getElementInstanceKey(),
+            record.getMessageNameBuffer(),
+            TenantOwned.DEFAULT_TENANT_IDENTIFIER);
     transientState.onSent(existingSubscription.getRecord(), 1_500);
 
     keys.clear();
@@ -143,7 +146,9 @@ public final class PendingProcessMessageSubscriptionStateTest {
 
     final ProcessMessageSubscription subscription =
         persistentState.getSubscription(
-            record.getElementInstanceKey(), record.getMessageNameBuffer());
+            record.getElementInstanceKey(),
+            record.getMessageNameBuffer(),
+            TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
     Assertions.assertThat(subscription.isOpening()).isTrue();
 
@@ -153,7 +158,9 @@ public final class PendingProcessMessageSubscriptionStateTest {
     // then
     final ProcessMessageSubscription updatedSubscription =
         persistentState.getSubscription(
-            record.getElementInstanceKey(), record.getMessageNameBuffer());
+            record.getElementInstanceKey(),
+            record.getMessageNameBuffer(),
+            TenantOwned.DEFAULT_TENANT_IDENTIFIER);
     Assertions.assertThat(updatedSubscription.isOpening()).isFalse();
 
     // and
@@ -176,7 +183,9 @@ public final class PendingProcessMessageSubscriptionStateTest {
     persistentState.updateToOpenedState(record.setSubscriptionPartitionId(3));
     final ProcessMessageSubscription subscription =
         persistentState.getSubscription(
-            record.getElementInstanceKey(), record.getMessageNameBuffer());
+            record.getElementInstanceKey(),
+            record.getMessageNameBuffer(),
+            TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
     Assertions.assertThat(subscription.isClosing()).isFalse();
 
@@ -187,7 +196,9 @@ public final class PendingProcessMessageSubscriptionStateTest {
     // then
     final ProcessMessageSubscription updatedSubscription =
         persistentState.getSubscription(
-            record.getElementInstanceKey(), record.getMessageNameBuffer());
+            record.getElementInstanceKey(),
+            record.getMessageNameBuffer(),
+            TenantOwned.DEFAULT_TENANT_IDENTIFIER);
     assertThat(updatedSubscription.isClosing()).isTrue();
 
     // and

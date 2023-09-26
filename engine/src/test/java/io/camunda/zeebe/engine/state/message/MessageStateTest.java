@@ -47,7 +47,11 @@ public final class MessageStateTest {
 
     // when
     final boolean exist =
-        messageState.exist(wrapString("otherName"), wrapString("correlationKey"), wrapString("id"));
+        messageState.exist(
+            wrapString("otherName"),
+            wrapString("correlationKey"),
+            wrapString("id"),
+            TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
     // then
     assertThat(exist).isFalse();
@@ -61,7 +65,11 @@ public final class MessageStateTest {
 
     // when
     final boolean exist =
-        messageState.exist(wrapString("name"), wrapString("otherCorrelationKey"), wrapString("id"));
+        messageState.exist(
+            wrapString("name"),
+            wrapString("otherCorrelationKey"),
+            wrapString("id"),
+            TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
     // then
     assertThat(exist).isFalse();
@@ -76,7 +84,10 @@ public final class MessageStateTest {
     // when
     final boolean exist =
         messageState.exist(
-            wrapString("name"), wrapString("otherCorrelationKey"), wrapString("otherId"));
+            wrapString("name"),
+            wrapString("otherCorrelationKey"),
+            wrapString("otherId"),
+            TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
     // then
     assertThat(exist).isFalse();
@@ -90,7 +101,11 @@ public final class MessageStateTest {
 
     // when
     final boolean exist =
-        messageState.exist(wrapString("name"), wrapString("correlationKey"), wrapString("id"));
+        messageState.exist(
+            wrapString("name"),
+            wrapString("correlationKey"),
+            wrapString("id"),
+            TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
     // then
     assertThat(exist).isTrue();
@@ -104,7 +119,11 @@ public final class MessageStateTest {
 
     // when
     final List<StoredMessage> messages = new ArrayList<>();
-    messageState.visitMessages(wrapString("name"), wrapString("correlationKey"), messages::add);
+    messageState.visitMessages(
+        TenantOwned.DEFAULT_TENANT_IDENTIFIER,
+        wrapString("name"),
+        wrapString("correlationKey"),
+        messages::add);
 
     // then
     assertThat(messages).hasSize(1);
@@ -126,7 +145,10 @@ public final class MessageStateTest {
     // when
     final List<Long> keys = new ArrayList<>();
     messageState.visitMessages(
-        wrapString("name"), wrapString("correlationKey"), m -> keys.add(m.getMessageKey()));
+        TenantOwned.DEFAULT_TENANT_IDENTIFIER,
+        wrapString("name"),
+        wrapString("correlationKey"),
+        m -> keys.add(m.getMessageKey()));
 
     // then
     assertThat(keys).hasSize(2).containsExactly(1L, 2L);
@@ -144,6 +166,7 @@ public final class MessageStateTest {
     // when
     final List<Long> keys = new ArrayList<>();
     messageState.visitMessages(
+        TenantOwned.DEFAULT_TENANT_IDENTIFIER,
         wrapString("name"),
         wrapString("correlationKey"),
         m -> {
@@ -164,7 +187,10 @@ public final class MessageStateTest {
     // when
     final List<Long> keys = new ArrayList<>();
     messageState.visitMessages(
-        wrapString("otherName"), wrapString("correlationKey"), m -> keys.add(m.getMessageKey()));
+        TenantOwned.DEFAULT_TENANT_IDENTIFIER,
+        wrapString("otherName"),
+        wrapString("correlationKey"),
+        m -> keys.add(m.getMessageKey()));
 
     // then
     assertThat(keys).isEmpty();
@@ -179,7 +205,10 @@ public final class MessageStateTest {
     // when
     final List<Long> keys = new ArrayList<>();
     messageState.visitMessages(
-        wrapString("name"), wrapString("otherCorrelationKey"), m -> keys.add(m.getMessageKey()));
+        TenantOwned.DEFAULT_TENANT_IDENTIFIER,
+        wrapString("name"),
+        wrapString("otherCorrelationKey"),
+        m -> keys.add(m.getMessageKey()));
 
     // then
     assertThat(keys).isEmpty();
@@ -351,14 +380,20 @@ public final class MessageStateTest {
     // and
     final List<Long> keys = new ArrayList<>();
     messageState.visitMessages(
-        wrapString("name"), wrapString("correlationKey"), m -> keys.add(m.getMessageKey()));
+        TenantOwned.DEFAULT_TENANT_IDENTIFIER,
+        wrapString("name"),
+        wrapString("correlationKey"),
+        m -> keys.add(m.getMessageKey()));
 
     assertThat(keys).isEmpty();
 
     // and
     final boolean exist =
         messageState.exist(
-            wrapString("messageName"), wrapString("correlationKey"), wrapString("id"));
+            wrapString("messageName"),
+            wrapString("correlationKey"),
+            wrapString("id"),
+            TenantOwned.DEFAULT_TENANT_IDENTIFIER);
     assertThat(exist).isFalse();
 
     // and
@@ -386,7 +421,10 @@ public final class MessageStateTest {
     // and
     final List<Long> keys = new ArrayList<>();
     messageState.visitMessages(
-        wrapString("name"), wrapString("correlationKey"), m -> keys.add(m.getMessageKey()));
+        TenantOwned.DEFAULT_TENANT_IDENTIFIER,
+        wrapString("name"),
+        wrapString("correlationKey"),
+        m -> keys.add(m.getMessageKey()));
 
     assertThat(keys).isEmpty();
   }
@@ -412,14 +450,20 @@ public final class MessageStateTest {
     // and
     final List<Long> keys = new ArrayList<>();
     messageState.visitMessages(
-        wrapString("name"), wrapString("correlationKey"), m -> keys.add(m.getMessageKey()));
+        TenantOwned.DEFAULT_TENANT_IDENTIFIER,
+        wrapString("name"),
+        wrapString("correlationKey"),
+        m -> keys.add(m.getMessageKey()));
 
     assertThat(keys).isEmpty();
 
     // and
     final boolean exist =
         messageState.exist(
-            wrapString("messageName"), wrapString("correlationKey"), wrapString("id"));
+            wrapString("messageName"),
+            wrapString("correlationKey"),
+            wrapString("id"),
+            TenantOwned.DEFAULT_TENANT_IDENTIFIER);
     assertThat(exist).isFalse();
   }
 
@@ -449,13 +493,20 @@ public final class MessageStateTest {
     // and
     final List<Long> keys = new ArrayList<>();
     messageState.visitMessages(
-        wrapString("name"), wrapString("correlationKey"), m -> keys.add(m.getMessageKey()));
+        TenantOwned.DEFAULT_TENANT_IDENTIFIER,
+        wrapString("name"),
+        wrapString("correlationKey"),
+        m -> keys.add(m.getMessageKey()));
 
     assertThat(keys).hasSize(1).contains(1L);
 
     // and
     final boolean exist =
-        messageState.exist(wrapString("name"), wrapString("correlationKey"), wrapString("id1"));
+        messageState.exist(
+            wrapString("name"),
+            wrapString("correlationKey"),
+            wrapString("id1"),
+            TenantOwned.DEFAULT_TENANT_IDENTIFIER);
     assertThat(exist).isTrue();
 
     // and

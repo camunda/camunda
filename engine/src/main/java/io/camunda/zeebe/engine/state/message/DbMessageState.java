@@ -18,6 +18,8 @@ import io.camunda.zeebe.db.impl.DbForeignKey;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
+import io.camunda.zeebe.db.impl.DbTenantAwareKey;
+import io.camunda.zeebe.db.impl.DbTenantAwareKey.PlacementType;
 import io.camunda.zeebe.engine.metrics.BufferedMessagesMetrics;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
@@ -40,18 +42,24 @@ public final class DbMessageState implements MutableMessageState {
   private final StoredMessage message;
 
   /**
-   * <pre>name | correlation key | key -> []
+   * <pre>tenant aware message name | correlation key | key -> []
    *
    * find message by name and correlation key - the message key ensures the queue ordering
    */
+  private final DbString tenantIdKey;
+
   private final DbString messageName;
+  private final DbTenantAwareKey<DbString> tenantAwareMessageName;
 
   private final DbString correlationKey;
-  private final DbCompositeKey<DbCompositeKey<DbString, DbString>, DbForeignKey<DbLong>>
+  private final DbCompositeKey<
+          DbCompositeKey<DbTenantAwareKey<DbString>, DbString>, DbForeignKey<DbLong>>
       nameCorrelationMessageKey;
-  private final DbCompositeKey<DbString, DbString> nameAndCorrelationKey;
+  private final DbCompositeKey<DbTenantAwareKey<DbString>, DbString> nameAndCorrelationKey;
   private final ColumnFamily<
-          DbCompositeKey<DbCompositeKey<DbString, DbString>, DbForeignKey<DbLong>>, DbNil>
+          DbCompositeKey<
+              DbCompositeKey<DbTenantAwareKey<DbString>, DbString>, DbForeignKey<DbLong>>,
+          DbNil>
       nameCorrelationMessageColumnFamily;
 
   /**
@@ -76,15 +84,16 @@ public final class DbMessageState implements MutableMessageState {
   private final ColumnFamily<DbString, DbLong> messagesDeadlineCountColumnFamily;
 
   /**
-   * <pre>name | correlation key | message id -> []
+   * <pre>tenant aware message name | correlation key | message id -> []
    *
    * exist a message for a given message name, correlation key and message id
    */
   private final DbString messageId;
 
-  private final DbCompositeKey<DbCompositeKey<DbString, DbString>, DbString>
+  private final DbCompositeKey<DbCompositeKey<DbTenantAwareKey<DbString>, DbString>, DbString>
       nameCorrelationMessageIdKey;
-  private final ColumnFamily<DbCompositeKey<DbCompositeKey<DbString, DbString>, DbString>, DbNil>
+  private final ColumnFamily<
+          DbCompositeKey<DbCompositeKey<DbTenantAwareKey<DbString>, DbString>, DbString>, DbNil>
       messageIdColumnFamily;
 
   /**
@@ -132,9 +141,11 @@ public final class DbMessageState implements MutableMessageState {
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.MESSAGE_KEY, transactionContext, messageKey, message);
 
+    tenantIdKey = new DbString();
     messageName = new DbString();
+    tenantAwareMessageName = new DbTenantAwareKey<>(tenantIdKey, messageName, PlacementType.PREFIX);
     correlationKey = new DbString();
-    nameAndCorrelationKey = new DbCompositeKey<>(messageName, correlationKey);
+    nameAndCorrelationKey = new DbCompositeKey<>(tenantAwareMessageName, correlationKey);
     nameCorrelationMessageKey = new DbCompositeKey<>(nameAndCorrelationKey, fkMessage);
     nameCorrelationMessageColumnFamily =
         zeebeDb.createColumnFamily(
@@ -216,6 +227,7 @@ public final class DbMessageState implements MutableMessageState {
     message.setMessageKey(key).setMessage(record);
     messageColumnFamily.insert(messageKey, message);
 
+    tenantIdKey.wrapString(record.getTenantId());
     messageName.wrapBuffer(record.getNameBuffer());
     correlationKey.wrapBuffer(record.getCorrelationKeyBuffer());
     nameCorrelationMessageColumnFamily.insert(nameCorrelationMessageKey, DbNil.INSTANCE);
@@ -308,6 +320,7 @@ public final class DbMessageState implements MutableMessageState {
     messageKey.wrapLong(storedMessage.getMessageKey());
     messageColumnFamily.deleteExisting(messageKey);
 
+    tenantIdKey.wrapString(storedMessage.getMessage().getTenantId());
     messageName.wrapBuffer(storedMessage.getMessage().getNameBuffer());
     correlationKey.wrapBuffer(storedMessage.getMessage().getCorrelationKeyBuffer());
 
@@ -369,8 +382,11 @@ public final class DbMessageState implements MutableMessageState {
 
   @Override
   public void visitMessages(
-      final DirectBuffer name, final DirectBuffer correlationKey, final MessageVisitor visitor) {
-
+      final String tenantId,
+      final DirectBuffer name,
+      final DirectBuffer correlationKey,
+      final MessageVisitor visitor) {
+    tenantIdKey.wrapString(tenantId);
     messageName.wrapBuffer(name);
     this.correlationKey.wrapBuffer(correlationKey);
 
@@ -419,7 +435,11 @@ public final class DbMessageState implements MutableMessageState {
 
   @Override
   public boolean exist(
-      final DirectBuffer name, final DirectBuffer correlationKey, final DirectBuffer messageId) {
+      final DirectBuffer name,
+      final DirectBuffer correlationKey,
+      final DirectBuffer messageId,
+      final String tenantId) {
+    tenantIdKey.wrapString(tenantId);
     messageName.wrapBuffer(name);
     this.correlationKey.wrapBuffer(correlationKey);
     this.messageId.wrapBuffer(messageId);
