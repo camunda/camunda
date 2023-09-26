@@ -23,7 +23,9 @@ import io.camunda.zeebe.dmn.DecisionEngine;
 import io.camunda.zeebe.dmn.DecisionEngineFactory;
 import io.camunda.zeebe.dmn.ParsedDecisionRequirementsGraph;
 import io.camunda.zeebe.engine.EngineConfiguration;
-import io.camunda.zeebe.engine.state.mutable.MutableDecisionState;
+import io.camunda.zeebe.engine.state.deployment.DeployedDrg;
+import io.camunda.zeebe.engine.state.deployment.PersistedDecision;
+import io.camunda.zeebe.engine.state.deployment.PersistedDecisionRequirements;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
@@ -38,7 +40,7 @@ import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import org.agrona.DirectBuffer;
 
-public final class DbDecisionState implements MutableDecisionState {
+public final class LegacyDecisionState {
 
   private final DecisionEngine decisionEngine = DecisionEngineFactory.createDecisionEngine();
 
@@ -75,7 +77,7 @@ public final class DbDecisionState implements MutableDecisionState {
 
   private final LoadingCache<Long, DeployedDrg> drgCache;
 
-  public DbDecisionState(
+  public LegacyDecisionState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
       final TransactionContext transactionContext,
       final EngineConfiguration config) {
@@ -154,7 +156,6 @@ public final class DbDecisionState implements MutableDecisionState {
                 });
   }
 
-  @Override
   public Optional<PersistedDecision> findLatestDecisionById(final DirectBuffer decisionId) {
     dbDecisionId.wrapBuffer(decisionId);
 
@@ -162,13 +163,11 @@ public final class DbDecisionState implements MutableDecisionState {
         .flatMap(decisionKey -> findDecisionByKey(decisionKey.inner().getValue()));
   }
 
-  @Override
   public Optional<PersistedDecision> findDecisionByKey(final long decisionKey) {
     dbDecisionKey.wrapLong(decisionKey);
     return Optional.ofNullable(decisionsByKey.get(dbDecisionKey)).map(PersistedDecision::copy);
   }
 
-  @Override
   public Optional<DeployedDrg> findLatestDecisionRequirementsById(
       final DirectBuffer decisionRequirementsId) {
     dbDecisionRequirementsId.wrapBuffer(decisionRequirementsId);
@@ -178,12 +177,10 @@ public final class DbDecisionState implements MutableDecisionState {
         .flatMap(this::findDecisionRequirementsByKey);
   }
 
-  @Override
   public Optional<DeployedDrg> findDecisionRequirementsByKey(final long decisionRequirementsKey) {
     return findDeployedDrg(decisionRequirementsKey);
   }
 
-  @Override
   public List<PersistedDecision> findDecisionsByDecisionRequirementsKey(
       final long decisionRequirementsKey) {
     final List<PersistedDecision> decisions = new ArrayList<>();
@@ -199,7 +196,6 @@ public final class DbDecisionState implements MutableDecisionState {
     return decisions;
   }
 
-  @Override
   public void clearCache() {
     drgCache.invalidateAll();
   }
@@ -284,7 +280,6 @@ public final class DbDecisionState implements MutableDecisionState {
     }
   }
 
-  @Override
   public void storeDecisionRecord(final DecisionRecord record) {
     dbDecisionKey.wrapLong(record.getDecisionKey());
     dbPersistedDecision.wrap(record);
@@ -302,7 +297,6 @@ public final class DbDecisionState implements MutableDecisionState {
     updateLatestDecisionVersion(record);
   }
 
-  @Override
   public void storeDecisionRequirements(final DecisionRequirementsRecord record) {
     dbDecisionRequirementsKey.wrapLong(record.getDecisionRequirementsKey());
     dbPersistedDecisionRequirements.wrap(record);
@@ -316,7 +310,6 @@ public final class DbDecisionState implements MutableDecisionState {
     updateLatestDecisionRequirementsVersion(record);
   }
 
-  @Override
   public void deleteDecision(final DecisionRecord record) {
     findLatestDecisionById(record.getDecisionIdBuffer())
         .map(PersistedDecision::getVersion)
@@ -348,7 +341,6 @@ public final class DbDecisionState implements MutableDecisionState {
     decisionKeyByDecisionIdAndVersion.deleteExisting(decisionIdAndVersion);
   }
 
-  @Override
   public void deleteDecisionRequirements(final DecisionRequirementsRecord record) {
     findLatestDecisionRequirementsById(record.getDecisionRequirementsIdBuffer())
         .map(DeployedDrg::getDecisionRequirementsVersion)
