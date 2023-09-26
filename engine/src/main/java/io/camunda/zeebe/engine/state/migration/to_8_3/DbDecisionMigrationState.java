@@ -34,7 +34,7 @@ public class DbDecisionMigrationState {
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     final var config = new EngineConfiguration();
     from = new LegacyDecisionState(zeebeDb, transactionContext, config);
-    to = new DbDecisionState(zeebeDb, transactionContext, config);
+    to = new DbDecisionState(zeebeDb, transactionContext);
   }
 
   public void migrateDecisionStateForMultiTenancy() {
@@ -198,9 +198,7 @@ public class DbDecisionMigrationState {
         decisionRequirementsKeyByIdAndVersion;
 
     public DbDecisionState(
-        final ZeebeDb<ZbColumnFamilies> zeebeDb,
-        final TransactionContext transactionContext,
-        final EngineConfiguration config) {
+        final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
       tenantIdKey = new DbString();
       dbDecisionKey = new DbLong();
       tenantAwareDecisionKey =
