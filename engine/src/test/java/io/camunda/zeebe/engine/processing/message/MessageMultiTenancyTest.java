@@ -90,6 +90,13 @@ public class MessageMultiTenancyTest {
             .withTenantId(tenantId)
             .create();
 
+    RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withMessageName(messageName)
+        .withCorrelationKey(correlationKey)
+        .limit(1)
+        .await();
+
     // when
     ENGINE
         .message()
