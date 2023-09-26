@@ -482,7 +482,11 @@ public final class RecordingGatewayService extends GatewayImplBase {
   public void onPublishMessageRequest(final long key) {
     addRequestHandler(
         PublishMessageRequest.class,
-        request -> PublishMessageResponse.newBuilder().setKey(key).build());
+        request ->
+            PublishMessageResponse.newBuilder()
+                .setKey(key)
+                .setTenantId(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER)
+                .build());
   }
 
   public void onBroadcastSignalRequest(final long key) {

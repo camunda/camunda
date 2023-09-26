@@ -21,7 +21,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;
 
 import io.camunda.zeebe.client.api.command.ClientException;
-import io.camunda.zeebe.client.api.command.PublishMessageCommandStep1.PublishMessageCommandStep3;
+import io.camunda.zeebe.client.api.command.CommandWithTenantStep;
 import io.camunda.zeebe.client.api.response.PublishMessageResponse;
 import io.camunda.zeebe.client.util.ClientTest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest;
@@ -57,8 +57,8 @@ public final class PublishMessageTest extends ClientTest {
     assertThat(request.getCorrelationKey()).isEqualTo("key");
     assertThat(request.getMessageId()).isEqualTo("theId");
     assertThat(request.getTimeToLive()).isEqualTo(Duration.ofDays(1).toMillis());
+    assertThat(request.getTenantId()).isEqualTo(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
     assertThat(response.getMessageKey()).isEqualTo(messageKey);
-    assertThat(response.getTenantId()).isEqualTo("");
 
     rule.verifyDefaultRequestTimeout();
   }
@@ -209,18 +209,18 @@ public final class PublishMessageTest extends ClientTest {
 
   @Test
   public void shouldAllowSpecifyingTenantId() {
-    // given
-    final PublishMessageCommandStep3 builder =
-        client.newPublishMessageCommand().messageName("").correlationKey("");
-
-    // when
-    final PublishMessageCommandStep3 builderWithTenant = builder.tenantId("custom tenant");
+    // given when
+    client
+        .newPublishMessageCommand()
+        .messageName("")
+        .correlationKey("")
+        .tenantId("custom tenant")
+        .send()
+        .join();
 
     // then
-    // todo(#13559): verify that tenant id is set in the request
-    assertThat(builderWithTenant)
-        .describedAs("This method has no effect on the command builder while under development")
-        .isEqualTo(builder);
+    final PublishMessageRequest request = gatewayService.getLastRequest();
+    assertThat(request.getTenantId()).isEqualTo("custom tenant");
   }
 
   public static class Variables {
