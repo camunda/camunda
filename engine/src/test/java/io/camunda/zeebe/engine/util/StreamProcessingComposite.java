@@ -18,6 +18,7 @@ import io.camunda.zeebe.logstreams.util.SynchronousLogStream;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -144,6 +145,7 @@ public class StreamProcessingComposite implements CommandWriter {
             .newRecord(getLogName(partitionId))
             .recordType(RecordType.COMMAND)
             .intent(intent)
+            .authorizations(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
             .event(value);
     return writeActor.submit(writer::write).join();
   }
@@ -156,6 +158,7 @@ public class StreamProcessingComposite implements CommandWriter {
             .recordType(RecordType.COMMAND)
             .key(key)
             .intent(intent)
+            .authorizations(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
             .event(value);
     return writeActor.submit(writer::write).join();
   }
@@ -173,6 +176,7 @@ public class StreamProcessingComposite implements CommandWriter {
             .requestId(requestId)
             .requestStreamId(requestStreamId)
             .intent(intent)
+            .authorizations(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
             .event(value);
     return writeActor.submit(writer::write).join();
   }
@@ -186,6 +190,7 @@ public class StreamProcessingComposite implements CommandWriter {
             .newRecord(getLogName(partition))
             .recordType(RecordType.COMMAND)
             .intent(intent)
+            .authorizations(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
             .event(value);
     return writeActor.submit(writer::write).join();
   }
@@ -199,6 +204,7 @@ public class StreamProcessingComposite implements CommandWriter {
             .key(key)
             .recordType(RecordType.COMMAND)
             .intent(intent)
+            .authorizations(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
             .event(value);
     return writeActor.submit(writer::write).join();
   }
