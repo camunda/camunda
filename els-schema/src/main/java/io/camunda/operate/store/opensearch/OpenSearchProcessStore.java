@@ -16,7 +16,6 @@ import io.camunda.operate.store.ProcessStore;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.util.TreePath;
 import org.opensearch.client.opensearch._types.SortOrder;
-import org.opensearch.client.opensearch._types.aggregations.Aggregation;
 import org.opensearch.client.opensearch._types.aggregations.FiltersBucket;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.BulkRequest;
@@ -162,7 +161,7 @@ public class OpenSearchProcessStore implements ProcessStore {
   public Map<Long, ProcessEntity> getProcessIdsToProcesses() {
     var searchRequestBuilder = searchRequestBuilder(processIndex.getAlias());
 
-    return richOpenSearchClient.doc().searchValues(searchRequestBuilder(processIndex.getAlias()), ProcessEntity.class)
+    return richOpenSearchClient.doc().scrollValues(searchRequestBuilder(processIndex.getAlias()), ProcessEntity.class)
       .stream()
       .collect(Collectors.toMap(
         ProcessEntity::getKey,
@@ -258,7 +257,7 @@ public class OpenSearchProcessStore implements ProcessStore {
       )
       .source(sourceInclude(ID, PROCESS_KEY, PROCESS_NAME, BPMN_PROCESS_ID));
 
-    return richOpenSearchClient.doc().searchValues(searchRequestBuilder, Result.class)
+    return richOpenSearchClient.doc().scrollValues(searchRequestBuilder, Result.class)
       .stream().map(r ->
         Map.of(
           "instanceId", r.id(),
@@ -298,7 +297,7 @@ public class OpenSearchProcessStore implements ProcessStore {
       .source(sourceInclude(TREE_PATH));
     final BulkRequest.Builder bulk = new BulkRequest.Builder();
 
-    richOpenSearchClient.doc().searchValues(searchRequestBuilder, Result.class).forEach(r ->
+    richOpenSearchClient.doc().scrollValues(searchRequestBuilder, Result.class).forEach(r ->
       bulk.operations(op ->
         op.update(upd -> {
           String newTreePath = new TreePath(r.treePath()).removeProcessInstance(processInstanceKey).toString();

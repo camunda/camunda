@@ -124,7 +124,7 @@ public class OpensearchOperationReader extends OpensearchAbstractReader implemen
         sortOptions(ID, Asc)
       );
 
-    richOpenSearchClient.doc().searchValues(searchRequestBuilder, OperationEntity.class)
+    richOpenSearchClient.doc().scrollValues(searchRequestBuilder, OperationEntity.class)
       .forEach( operationEntity -> CollectionUtil.addToMap(result, operationEntity.getProcessInstanceKey(), operationEntity));
 
     return result;
@@ -147,7 +147,7 @@ public class OpensearchOperationReader extends OpensearchAbstractReader implemen
         sortOptions(ID, Asc)
       );
 
-    richOpenSearchClient.doc().searchValues(searchRequestBuilder, OperationEntity.class)
+    richOpenSearchClient.doc().scrollValues(searchRequestBuilder, OperationEntity.class)
       .forEach(operationEntity -> CollectionUtil.addToMap(result, operationEntity.getIncidentKey(), operationEntity));
 
     return result;
@@ -169,7 +169,7 @@ public class OpensearchOperationReader extends OpensearchAbstractReader implemen
       .query(query)
       .sort(sortOptions(ID, Asc));
 
-    richOpenSearchClient.doc().searchValues(searchRequestBuilder, OperationEntity.class)
+    richOpenSearchClient.doc().scrollValues(searchRequestBuilder, OperationEntity.class)
       .forEach(operationEntity -> CollectionUtil.addToMap(result, operationEntity.getVariableName(), operationEntity));
 
     return result;
@@ -188,7 +188,7 @@ public class OpensearchOperationReader extends OpensearchAbstractReader implemen
       .query(query)
       .sort(sortOptions(ID, Asc));
 
-    return richOpenSearchClient.doc().searchValues(searchRequestBuilder, OperationEntity.class);
+    return richOpenSearchClient.doc().scrollValues(searchRequestBuilder, OperationEntity.class);
   }
 
   //this query will be extended
@@ -210,7 +210,7 @@ public class OpensearchOperationReader extends OpensearchAbstractReader implemen
     var searchRequestBuilder = searchRequestBuilder(operationTemplate, ALL)
       .query(term(BATCH_OPERATION_ID, batchOperationId));
 
-    final List<OperationEntity> operationEntities = richOpenSearchClient.doc().searchValues(searchRequestBuilder, OperationEntity.class);
+    final List<OperationEntity> operationEntities = richOpenSearchClient.doc().scrollValues(searchRequestBuilder, OperationEntity.class);
     return DtoCreator.create(operationEntities, OperationDto.class);
   }
 
@@ -224,7 +224,7 @@ public class OpensearchOperationReader extends OpensearchAbstractReader implemen
         term(VARIABLE_NAME, variableName)
       ));
 
-    final List<OperationEntity> operationEntities = richOpenSearchClient.doc().searchValues(searchRequestBuilder, OperationEntity.class);
+    final List<OperationEntity> operationEntities = richOpenSearchClient.doc().scrollValues(searchRequestBuilder, OperationEntity.class);
     return DtoCreator.create(operationEntities, OperationDto.class);
   }
 }

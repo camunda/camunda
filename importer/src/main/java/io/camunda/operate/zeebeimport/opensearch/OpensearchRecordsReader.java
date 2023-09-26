@@ -16,6 +16,7 @@ import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.indices.ImportPositionIndex;
 import io.camunda.operate.store.opensearch.client.sync.ZeebeRichOpenSearchClient;
+import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.util.NumberThrottleable;
 import io.camunda.operate.zeebe.ImportValueType;
 import io.camunda.operate.zeebeimport.ImportBatch;
@@ -220,8 +221,9 @@ public class OpensearchRecordsReader implements RecordsReader {
         .size(Math.min(maxNumberOfHits, QUERY_MAX_SIZE))
         .sort(sortOptions(ImportPositionIndex.SEQUENCE, SortOrder.Asc))
         .query(gtLte(ImportPositionIndex.SEQUENCE, sequence, lessThanEqualsSequence));
+    boolean scrollNeeded = maxNumberOfHits >= ElasticsearchUtil.QUERY_MAX_SIZE;
     try {
-      final HitEntity[] hits = withTimerSearchHits(() -> read(searchRequestBuilder));
+      final HitEntity[] hits = withTimerSearchHits(() -> read(searchRequestBuilder, scrollNeeded));
       return createImportBatch(hits);
     } catch (OpenSearchException ex) {
       if (ex.getMessage().contains("no such index")) {
@@ -243,18 +245,12 @@ public class OpensearchRecordsReader implements RecordsReader {
     }
   }
 
-  private HitEntity[] read(SearchRequest.Builder searchRequestBuilder) throws IOException {
-    Runnable failedShardHandler = () -> {
-      throw new OperateRuntimeException("Some OS shards failed. Ignoring search response and retrying, to prevent data loss.");
-    };
+  private HitEntity[] read(SearchRequest.Builder searchRequestBuilder, boolean scrollNeeded) throws IOException {
+    List<Hit<Object>> hits = scrollNeeded ?
+      zeebeRichOpenSearchClient.doc().scrollHits(searchRequestBuilder, Object.class).values() :
+      zeebeRichOpenSearchClient.doc().search(searchRequestBuilder, Object.class).hits().hits();
 
-    return withIOException( () ->
-      zeebeRichOpenSearchClient.doc().searchHits(searchRequestBuilder, Object.class, failedShardHandler)
-      .values()
-      .stream()
-      .map(this::searchHitToOperateHit)
-      .toArray(HitEntity[]::new)
-    );
+    return hits.stream().map(this::searchHitToOperateHit).toArray(HitEntity[]::new);
   }
 
   @Override
@@ -286,7 +282,15 @@ public class OpensearchRecordsReader implements RecordsReader {
       .requestCache(false);
 
     try {
-      final HitEntity[] hits = withTimerSearchHits(() -> read(searchRequestBuilder));
+      final HitEntity[] hits = withTimerSearchHits(() ->
+        zeebeRichOpenSearchClient.doc().search(searchRequestBuilder, Object.class)
+          .hits()
+          .hits()
+          .stream()
+          .map(this::searchHitToOperateHit)
+          .toArray(HitEntity[]::new)
+      );
+
       return createImportBatch(hits);
     } catch (OpenSearchException ex) {
       if (ex.getMessage().contains("no such index")) {

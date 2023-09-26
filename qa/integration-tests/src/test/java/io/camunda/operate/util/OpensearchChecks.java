@@ -428,17 +428,17 @@ public class OpensearchChecks {
       .query(constantScore(term(FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY, processInstanceKey)))
       .sort(sortOptions(FlowNodeInstanceTemplate.POSITION, Asc));
 
-    return richOpenSearchClient.doc().searchValues(searchRequestBuilder, FlowNodeInstanceEntity.class);
+    return richOpenSearchClient.doc().scrollValues(searchRequestBuilder, FlowNodeInstanceEntity.class);
   }
 
   public List<EventEntity> getAllEvents(Long processInstanceKey) {
-    return richOpenSearchClient.doc().searchValues(searchRequestBuilder(eventTemplate)
+    return richOpenSearchClient.doc().scrollValues(searchRequestBuilder(eventTemplate)
         .query(constantScore(term(FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY, processInstanceKey))),
         EventEntity.class);
   }
 
   public List<FlowNodeInstanceEntity> getAllFlowNodeInstances() {
-    return richOpenSearchClient.doc().searchValues(searchRequestBuilder(flowNodeInstanceTemplate)
+    return richOpenSearchClient.doc().scrollValues(searchRequestBuilder(flowNodeInstanceTemplate)
         .query(matchAll()).sort(sortOptions(FlowNodeInstanceTemplate.POSITION, Asc)),
         FlowNodeInstanceEntity.class);
   }
@@ -503,7 +503,7 @@ public class OpensearchChecks {
   }
 
   public List<VariableEntity> getAllVariables(Long processInstanceKey) {
-    return richOpenSearchClient.doc().searchValues(searchRequestBuilder(variableTemplate)
+    return richOpenSearchClient.doc().scrollValues(searchRequestBuilder(variableTemplate)
             .query(term(VariableTemplate.PROCESS_INSTANCE_KEY, processInstanceKey))
         , VariableEntity.class);
   }

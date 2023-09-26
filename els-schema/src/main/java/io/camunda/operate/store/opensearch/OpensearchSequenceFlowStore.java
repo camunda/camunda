@@ -46,6 +46,6 @@ public class OpensearchSequenceFlowStore implements SequenceFlowStore {
     var searchRequestBuilder = searchRequestBuilder(sequenceFlowTemplate, RequestDSL.QueryType.ALL)
       .query(constantScore(term(SequenceFlowTemplate.PROCESS_INSTANCE_KEY, processInstanceKey)))
       .sort(sortOptions(SequenceFlowTemplate.ACTIVITY_ID, SortOrder.Asc));
-    return richOpenSearchClient.doc().searchValues(searchRequestBuilder, SequenceFlowEntity.class);
+    return richOpenSearchClient.doc().scrollValues(searchRequestBuilder, SequenceFlowEntity.class);
   }
 }

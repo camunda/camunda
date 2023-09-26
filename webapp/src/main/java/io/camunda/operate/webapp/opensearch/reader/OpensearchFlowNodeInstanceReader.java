@@ -257,7 +257,7 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader i
   }
 
   private FlowNodeInstanceResponseDto scrollAllSearchHits(final SearchRequest.Builder searchRequestBuilder, String processInstanceId) throws IOException {
-    final OpenSearchDocumentOperations.AggregatedResult<Hit<FlowNodeInstanceEntity>> response = richOpenSearchClient.doc().searchHits(searchRequestBuilder, FlowNodeInstanceEntity.class);
+    final OpenSearchDocumentOperations.AggregatedResult<Hit<FlowNodeInstanceEntity>> response = richOpenSearchClient.doc().scrollHits(searchRequestBuilder, FlowNodeInstanceEntity.class);
     final List<FlowNodeInstanceEntity> children = response.values()
       .stream()
       .map(hit -> {
@@ -455,15 +455,15 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader i
       searchRequestBuilder.postFilter(term(TYPE, flowNodeType.name()));
     }
 
-    var response = richOpenSearchClient.doc().searchValuesAndAggregations(searchRequestBuilder, FlowNodeInstanceEntity.class);
+    var response = richOpenSearchClient.doc().search(searchRequestBuilder, FlowNodeInstanceEntity.class);
 
-    if (response.values().isEmpty()) {
+    if (response.hits().hits().isEmpty()) {
       throw new OperateRuntimeException("No data found for flow node instance.");
     }
 
     final FlowNodeMetadataDto result = new FlowNodeMetadataDto();
-    final FlowNodeInstanceEntity flowNodeInstance = response.values().get(0);
-    final StringTermsAggregate levelsAgg = response.aggregates().get(LEVELS_AGG_NAME).sterms();
+    final FlowNodeInstanceEntity flowNodeInstance = response.hits().hits().get(0).source();
+    final StringTermsAggregate levelsAgg = response.aggregations().get(LEVELS_AGG_NAME).sterms();
 
     if (levelsAgg != null && levelsAgg.buckets() != null && !levelsAgg.buckets().array().isEmpty()) {
       StringTermsBucket bucketCurrentLevel = levelsAgg.buckets().keyed().get(String.valueOf(flowNodeInstance.getLevel()));
@@ -881,6 +881,6 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader i
       .query(constantScore(term(FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY, processInstanceKey)))
       .sort(sortOptions(FlowNodeInstanceTemplate.POSITION, Asc));
 
-    return richOpenSearchClient.doc().searchValues(searchRequestBuilder, FlowNodeInstanceEntity.class);
+    return richOpenSearchClient.doc().scrollValues(searchRequestBuilder, FlowNodeInstanceEntity.class);
   }
 }

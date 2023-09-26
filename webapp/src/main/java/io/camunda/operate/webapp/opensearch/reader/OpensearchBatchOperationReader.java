@@ -45,8 +45,9 @@ public class OpensearchBatchOperationReader implements BatchOperationReader {
   @Override
   public List<BatchOperationEntity> getBatchOperations(BatchOperationRequestDto batchOperationRequestDto) {
     var searchRequestBuilder = createSearchRequest(batchOperationRequestDto);
-    List<BatchOperationEntity> batchOperationEntities = richOpenSearchClient.doc().searchHits(searchRequestBuilder, BatchOperationEntity.class)
-      .values()
+    List<BatchOperationEntity> batchOperationEntities = richOpenSearchClient.doc().search(searchRequestBuilder, BatchOperationEntity.class)
+      .hits()
+      .hits()
       .stream()
       .map(hit -> {
         BatchOperationEntity entity = hit.source();

@@ -55,8 +55,9 @@ public class OpensearchListViewStore implements ListViewStore {
       .query(ids(toSafeListOfStrings(map(processInstanceIds, Object::toString))));
 
     final Map<Long, String> processInstanceId2IndexName = withIOException( () ->
-      richOpenSearchClient.doc().searchHits(searchRequestBuilder, Void.class)
-        .values()
+      richOpenSearchClient.doc().search(searchRequestBuilder, Void.class)
+        .hits()
+        .hits()
         .stream()
         .collect(Collectors.toMap(
           hit -> Long.valueOf(hit.id()),
@@ -102,8 +103,9 @@ public class OpensearchListViewStore implements ListViewStore {
       )
       .source(s -> s.fetch(false));
 
-    return richOpenSearchClient.doc().searchHits(searchRequestBuilder, Void.class)
-      .values()
+    return richOpenSearchClient.doc().search(searchRequestBuilder, Void.class)
+      .hits()
+      .hits()
       .stream()
       .map(hit -> Long.valueOf(hit.id()))
       .toList();

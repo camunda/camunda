@@ -6,10 +6,11 @@
  */
 package io.camunda.operate.store.opensearch.client.sync;
 
+import io.camunda.operate.store.opensearch.client.OpenSearchOperation;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.slf4j.Logger;
 
-public class OpenSearchSyncOperation extends io.camunda.operate.store.opensearch.client.OpenSearchOperation {
+public class OpenSearchSyncOperation extends OpenSearchOperation {
   protected OpenSearchClient openSearchClient;
 
   public OpenSearchSyncOperation(Logger logger, OpenSearchClient openSearchClient) {

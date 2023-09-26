@@ -78,7 +78,7 @@ public class OpensearchIncidentStore implements IncidentStore {
       .query(activeIncidentConstantScore(term(IncidentTemplate.PROCESS_INSTANCE_KEY, processInstanceKey)))
       .sort(sortOptions(IncidentTemplate.CREATION_TIME, SortOrder.Asc));
 
-    return richOpenSearchClient.doc().searchValues(searchRequestBuilder, IncidentEntity.class);
+    return richOpenSearchClient.doc().scrollValues(searchRequestBuilder, IncidentEntity.class);
   }
 
   @Override
@@ -91,7 +91,7 @@ public class OpensearchIncidentStore implements IncidentStore {
         .size(batchSize);
     final Map<Long, List<Long>> result = new HashMap<>();
 
-    richOpenSearchClient.doc().searchHits(searchRequestBuilder, Result.class).values().forEach(
+    richOpenSearchClient.doc().search(searchRequestBuilder, Result.class).hits().hits().forEach(
       hit -> CollectionUtil.addToMap(result, hit.source().processInstanceKey(), Long.valueOf(hit.id()))
     );
 
@@ -110,7 +110,7 @@ public class OpensearchIncidentStore implements IncidentStore {
                 Map.of(errorTypesAggName, termAggregation(IncidentTemplate.ERROR_TYPE, ErrorType.values().length,Map.of("_key", SortOrder.Asc))
                     ._toAggregation()));
 
-    OpenSearchDocumentOperations.AggregatedResult<IncidentEntity> result = richOpenSearchClient.doc().searchValuesAndAggregations(request, IncidentEntity.class);
+    OpenSearchDocumentOperations.AggregatedResult<IncidentEntity> result = richOpenSearchClient.doc().scrollValuesAndAggregations(request, IncidentEntity.class);
 
     result.aggregates()
       .get(errorTypesAggName)

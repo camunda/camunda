@@ -7,9 +7,9 @@
 package io.camunda.operate.store.opensearch.client.sync;
 
 import io.camunda.operate.store.NotFoundException;
+import io.camunda.operate.store.opensearch.client.OpenSearchFailedShardsException;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.Result;
-import org.opensearch.client.opensearch._types.Time;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.DeleteByQueryRequest;
@@ -42,6 +42,7 @@ import static io.camunda.operate.store.opensearch.dsl.RequestDSL.clearScrollRequ
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.getRequest;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.scrollRequest;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.time;
+import static java.lang.String.format;
 
 
 public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
@@ -58,18 +59,16 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
   }
 
   private static  String defaultSearchErrorMessage(String index) {
-    return String.format("Failed to search index: %s", index);
+    return format("Failed to search index: %s", index);
   }
 
   private static  String defaultDeleteErrorMessage(String index) {
-    return String.format("Failed to delete index: %s", index);
+    return format("Failed to delete index: %s", index);
   }
 
   private static  String defaultPersistErrorMessage(String index) {
-    return String.format("Failed to persist index: %s", index);
+    return format("Failed to persist index: %s", index);
   }
-
-  private final Runnable ignoreFailedShardHandler = () -> {};
 
   private void clearScroll(String scrollId) {
     if (scrollId != null) {
@@ -81,11 +80,18 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
     }
   }
 
+  private void checkFailedShards(SearchRequest request, SearchResponse<?> response) {
+    if (!response.shards().failures().isEmpty()) {
+      throw new OpenSearchFailedShardsException(
+        format("Shards failed executing request (request=%s, failed shards=%s)", request, response.shards().failures())
+      );
+    }
+  }
+
   private <R> Map<String, Aggregate> scrollWith(
     SearchRequest.Builder searchRequestBuilder,
     Consumer<List<Hit<R>>> hitsConsumer,
     Consumer<HitsMetadata<R>> hitsMetadataConsumer,
-    Runnable failedShardHandler,
     Class<R> clazz
   ) throws IOException {
     var searchRequest = searchRequestBuilder.scroll(time(SCROLL_KEEP_ALIVE_MS)).build();
@@ -103,9 +109,7 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
       List<Hit<R>> hits = response.hits().hits();
 
       while (!hits.isEmpty() && scrollId != null) {
-        if (!response.shards().failures().isEmpty()) {
-          failedShardHandler.run();
-        }
+        checkFailedShards(searchRequest, response);
 
         if (hitsConsumer != null) {
           hitsConsumer.accept(hits);
@@ -130,30 +134,19 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
 
   private <R> Map<String, Aggregate> safeScrollWith(SearchRequest.Builder requestBuilder, Class<R> entityClass, Consumer<List<Hit<R>>> hitsConsumer, Consumer<HitsMetadata<R>> hitsMetadataConsumer) {
     return safe(
-      () -> scrollWith(requestBuilder, hitsConsumer, hitsMetadataConsumer, ignoreFailedShardHandler, entityClass),
+      () -> scrollWith(requestBuilder, hitsConsumer, hitsMetadataConsumer, entityClass),
       (e) -> defaultSearchErrorMessage(getIndex(requestBuilder))
     );
   }
 
-  private <R> AggregatedResult<R> scroll(
-    SearchRequest.Builder searchRequestBuilder,
-    Class<R> clazz)
-    throws IOException {
-    return scroll(searchRequestBuilder, clazz, ignoreFailedShardHandler);
-  }
-
-  private <R> AggregatedResult<R> scroll(
-    SearchRequest.Builder searchRequestBuilder,
-    Class<R> clazz,
-    Runnable failedShardHandler)
-    throws IOException {
-    var result = scrollHits(searchRequestBuilder, clazz, failedShardHandler);
+  private <R> AggregatedResult<R> scroll(SearchRequest.Builder searchRequestBuilder, Class<R> clazz) throws IOException {
+    var result = scrollHits(searchRequestBuilder, clazz);
     return new AggregatedResult<>(result.values().stream().map(Hit::source).toList(), result.aggregates());
   }
 
-  private <R> AggregatedResult<Hit<R>> scrollHits(SearchRequest.Builder searchRequestBuilder, Class<R> clazz, Runnable failedShardHandler) throws IOException {
+  public <R> AggregatedResult<Hit<R>> scrollHits(SearchRequest.Builder searchRequestBuilder, Class<R> clazz) throws IOException {
     final List<Hit<R>> result = new ArrayList<>();
-    var aggregates = scrollWith(searchRequestBuilder, result::addAll, null, failedShardHandler, clazz);
+    var aggregates = scrollWith(searchRequestBuilder, result::addAll, null, clazz);
     return new AggregatedResult<>(result, aggregates);
   }
 
@@ -165,24 +158,27 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
     safeScrollWith(requestBuilder, entityClass, hitsConsumer, hitsMetadataConsumer);
   }
 
-  public <R> AggregatedResult<Hit<R>> searchHits(SearchRequest.Builder requestBuilder, Class<R> entityClass, Runnable failedShardHandler) {
-    return safe(() -> scrollHits(requestBuilder, entityClass, failedShardHandler), (e) -> defaultSearchErrorMessage(getIndex(requestBuilder)));
-  }
-
-  public <R> AggregatedResult<Hit<R>> searchHits(SearchRequest.Builder requestBuilder, Class<R> entityClass) {
-    return searchHits(requestBuilder, entityClass, ignoreFailedShardHandler);
-  }
-
-  public <R> AggregatedResult<R> searchValuesAndAggregations(SearchRequest.Builder requestBuilder, Class<R> entityClass) {
+  public <R> AggregatedResult<R> scrollValuesAndAggregations(SearchRequest.Builder requestBuilder, Class<R> entityClass) {
     return safe(() -> scroll(requestBuilder, entityClass), (e) -> defaultSearchErrorMessage(getIndex(requestBuilder)));
   }
 
-  public <R> List<R> searchValues(SearchRequest.Builder requestBuilder, Class<R> entityClass) {
-    return searchValuesAndAggregations(requestBuilder, entityClass).values();
+  public <R> List<R> scrollValues(SearchRequest.Builder requestBuilder, Class<R> entityClass) {
+    return scrollValuesAndAggregations(requestBuilder, entityClass).values();
   }
 
   public <R> SearchResponse<R> search(SearchRequest.Builder requestBuilder, Class<R> entityClass) {
-    return safe(() -> openSearchClient.search(requestBuilder.build(), entityClass), (e) -> defaultSearchErrorMessage(getIndex(requestBuilder)));
+    return safe(
+      () -> {
+        var request = requestBuilder.build();
+        var response = openSearchClient.search(request, entityClass);
+        checkFailedShards(request, response);
+        return response;
+      },
+      (e) -> defaultSearchErrorMessage(getIndex(requestBuilder)));
+  }
+
+  public <R> List<R> searchValues(SearchRequest.Builder requestBuilder, Class<R> entityClass) {
+    return search(requestBuilder, entityClass).hits().hits().stream().map(Hit::source).toList();
   }
 
   public Map<String, Aggregate> searchAggregations(SearchRequest.Builder requestBuilder) {
@@ -196,9 +192,9 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
     if (response.hits().total().value() == 1) {
       return response.hits().hits().get(0).source();
     } else if (response.hits().total().value() > 1) {
-      throw new NotFoundException(String.format("Could not find unique %s with key '%s'.", getIndex(requestBuilder), key));
+      throw new NotFoundException(format("Could not find unique %s with key '%s'.", getIndex(requestBuilder), key));
     } else {
-      throw new NotFoundException(String.format("Could not find %s with key '%s'.", getIndex(requestBuilder), key));
+      throw new NotFoundException(format("Could not find %s with key '%s'.", getIndex(requestBuilder), key));
     }
   }
 
@@ -227,7 +223,7 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
   public boolean documentExistsWithGivenRetries(String name, String id) {
     return executeWithGivenRetries(
       10,
-      String.format("Exists document from %s with id %s", name, id),
+      format("Exists document from %s with id %s", name, id),
       () -> openSearchClient.exists(e -> e.index(name).id(id)).value(),
       null);
   }
@@ -235,7 +231,7 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
   public Map<String, Object> getDocumentWithGivenRetries(String index, String id) {
     return executeWithGivenRetries(
       10,
-      String.format("Get document from %s with id %s", index, id),
+      format("Get document from %s with id %s", index, id),
       () -> {
         final GetResponse response = openSearchClient.get(getRequest(index, id), Void.class);
         if (response.found()) {

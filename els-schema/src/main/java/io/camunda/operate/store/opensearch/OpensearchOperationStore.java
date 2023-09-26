@@ -83,7 +83,7 @@ public class OpensearchOperationStore implements OperationStore {
       .query(query)
       .size(1);
 
-    return richOpenSearchClient.doc().searchValues(searchRequestBuilder, OperationEntity.class);
+    return richOpenSearchClient.doc().scrollValues(searchRequestBuilder, OperationEntity.class);
   }
 
   @Override
