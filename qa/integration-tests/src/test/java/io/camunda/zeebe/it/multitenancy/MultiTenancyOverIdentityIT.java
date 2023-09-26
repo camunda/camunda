@@ -13,6 +13,7 @@ import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.response.DeploymentEvent;
 import io.camunda.zeebe.client.api.response.Process;
 import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
+import io.camunda.zeebe.client.api.response.PublishMessageResponse;
 import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder;
 import io.camunda.zeebe.gateway.impl.configuration.AuthenticationCfg.AuthMode;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -507,6 +508,71 @@ public class MultiTenancyOverIdentityIT {
           .withMessageContaining("NOT_FOUND")
           .withMessageContaining("Expected to find process definition with key")
           .withMessageContaining("but none found");
+    }
+  }
+
+  @Test
+  void shouldStartProcessWhenPublishingMessageForTenant() {
+    // given
+    final String messageName = "message";
+    process =
+        Bpmn.createExecutableProcess(processId).startEvent().message(messageName).endEvent().done();
+    try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A)) {
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(process, "process.bpmn")
+          .tenantId("tenant-a")
+          .send()
+          .join();
+
+      // when
+      final Future<PublishMessageResponse> result =
+          client
+              .newPublishMessageCommand()
+              .messageName(messageName)
+              .correlationKey("")
+              .tenantId("tenant-a")
+              .send();
+
+      // then
+      assertThat(result)
+          .describedAs(
+              "Expect that message can be published as the client has access process of tenant-a")
+          .succeedsWithin(Duration.ofSeconds(10));
+    }
+  }
+
+  @Test
+  void shouldDenyPublishMessageWhenUnauthorized() {
+    // given
+    final String messageName = "message";
+    process =
+        Bpmn.createExecutableProcess(processId).startEvent().message(messageName).endEvent().done();
+    try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A)) {
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(process, "process.bpmn")
+          .tenantId("tenant-a")
+          .send()
+          .join();
+
+      // when
+      final Future<PublishMessageResponse> result =
+          client
+              .newPublishMessageCommand()
+              .messageName(messageName)
+              .correlationKey("")
+              .tenantId("tenant-b")
+              .send();
+
+      // then
+      assertThat(result)
+          .failsWithin(Duration.ofSeconds(10))
+          .withThrowableThat()
+          .withMessageContaining("PERMISSION_DENIED")
+          .withMessageContaining(
+              "Expected to handle gRPC request PublishMessage with tenant identifier 'tenant-b'")
+          .withMessageContaining("but tenant is not authorized to perform this request");
     }
   }
 
