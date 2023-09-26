@@ -89,7 +89,8 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
         && messageState.exist(
             messageRecord.getNameBuffer(),
             messageRecord.getCorrelationKeyBuffer(),
-            messageRecord.getMessageIdBuffer())) {
+            messageRecord.getMessageIdBuffer(),
+            messageRecord.getTenantId())) {
       final String rejectionReason =
           String.format(
               ALREADY_PUBLISHED_MESSAGE, bufferAsString(messageRecord.getMessageIdBuffer()));

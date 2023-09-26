@@ -19,7 +19,11 @@ public interface MessageState {
 
   DirectBuffer getProcessInstanceCorrelationKey(long processInstanceKey);
 
-  void visitMessages(DirectBuffer name, DirectBuffer correlationKey, MessageVisitor visitor);
+  void visitMessages(
+      final String tenantId,
+      DirectBuffer name,
+      DirectBuffer correlationKey,
+      MessageVisitor visitor);
 
   StoredMessage getMessage(long messageKey);
 
@@ -40,7 +44,11 @@ public interface MessageState {
   boolean visitMessagesWithDeadlineBeforeTimestamp(
       long timestamp, final Index startAt, ExpiredMessageVisitor visitor);
 
-  boolean exist(DirectBuffer name, DirectBuffer correlationKey, DirectBuffer messageId);
+  boolean exist(
+      DirectBuffer name,
+      DirectBuffer correlationKey,
+      DirectBuffer messageId,
+      final String tenantId);
 
   /**
    * Index to point to a specific position in the messages with deadline column family.
