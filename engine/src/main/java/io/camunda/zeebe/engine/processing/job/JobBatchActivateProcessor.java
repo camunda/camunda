@@ -146,6 +146,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
             .setElementId(job.getElementIdBuffer())
             .setElementInstanceKey(job.getElementInstanceKey())
             .setJobKey(jobKey)
+            .setTenantId(job.getTenantId())
             .setVariableScopeKey(job.getElementInstanceKey());
 
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), IncidentIntent.CREATED, incidentEvent);

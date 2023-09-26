@@ -167,7 +167,8 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
         .setElementId(value.getElementIdBuffer())
         .setElementInstanceKey(value.getElementInstanceKey())
         .setJobKey(key)
-        .setVariableScopeKey(value.getElementInstanceKey());
+        .setVariableScopeKey(value.getElementInstanceKey())
+        .setTenantId(value.getTenantId());
 
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), IncidentIntent.CREATED, incidentEvent);
   }
