@@ -25,6 +25,7 @@ import io.camunda.zeebe.engine.state.migration.to_8_3.legacy.LegacyProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -92,21 +93,15 @@ public class MultiTenancyMigrationTest {
       sut.runMigration(processingState);
 
       // then
-      assertThat(processState.getProcessByKeyAndTenant(123, TenantOwned.DEFAULT_TENANT_IDENTIFIER))
-          .extracting(
-              p -> bufferAsString(p.getBpmnProcessId()),
-              DeployedProcess::getVersion,
-              DeployedProcess::getState,
-              p -> bufferAsString(p.getResourceName()),
-              DeployedProcess::getTenantId,
-              p -> bufferAsString(p.getResource()))
-          .containsExactly(
+      assertProcessPersisted(
+          processState.getProcessByKeyAndTenant(123, TenantOwned.DEFAULT_TENANT_IDENTIFIER),
+          new PersistedProcess(
               "processId",
               1,
               PersistedProcessState.ACTIVE,
               "resourceName",
               TenantOwned.DEFAULT_TENANT_IDENTIFIER,
-              Bpmn.convertToString(model));
+              model));
       assertThat(legacyState.getProcessByKey(123)).isNull();
     }
 
@@ -128,23 +123,16 @@ public class MultiTenancyMigrationTest {
       sut.runMigration(processingState);
 
       // then
-      assertThat(
-              processState.getProcessByProcessIdAndVersion(
-                  wrapString("processId"), 1, TenantOwned.DEFAULT_TENANT_IDENTIFIER))
-          .extracting(
-              p -> bufferAsString(p.getBpmnProcessId()),
-              DeployedProcess::getVersion,
-              DeployedProcess::getState,
-              p -> bufferAsString(p.getResourceName()),
-              DeployedProcess::getTenantId,
-              p -> bufferAsString(p.getResource()))
-          .containsExactly(
+      assertProcessPersisted(
+          processState.getProcessByProcessIdAndVersion(
+              wrapString("processId"), 1, TenantOwned.DEFAULT_TENANT_IDENTIFIER),
+          new PersistedProcess(
               "processId",
               1,
               PersistedProcessState.ACTIVE,
               "resourceName",
               TenantOwned.DEFAULT_TENANT_IDENTIFIER,
-              Bpmn.convertToString(model));
+              model));
       assertThat(legacyState.getProcessByProcessIdAndVersion(wrapString("processId"), 1)).isNull();
     }
 
@@ -168,23 +156,16 @@ public class MultiTenancyMigrationTest {
       sut.runMigration(processingState);
 
       // then
-      assertThat(
-              processState.getLatestProcessVersionByProcessId(
-                  wrapString("processId"), TenantOwned.DEFAULT_TENANT_IDENTIFIER))
-          .extracting(
-              p -> bufferAsString(p.getBpmnProcessId()),
-              DeployedProcess::getVersion,
-              DeployedProcess::getState,
-              p -> bufferAsString(p.getResourceName()),
-              DeployedProcess::getTenantId,
-              p -> bufferAsString(p.getResource()))
-          .containsExactly(
+      assertProcessPersisted(
+          processState.getLatestProcessVersionByProcessId(
+              wrapString("processId"), TenantOwned.DEFAULT_TENANT_IDENTIFIER),
+          new PersistedProcess(
               "processId",
               1,
               PersistedProcessState.ACTIVE,
               "resourceName",
               TenantOwned.DEFAULT_TENANT_IDENTIFIER,
-              Bpmn.convertToString(model));
+              model));
       assertThat(legacyState.getLatestProcessVersionByProcessId(wrapString("processId"))).isNull();
     }
 
@@ -213,5 +194,31 @@ public class MultiTenancyMigrationTest {
           .isEqualTo("checksum");
       assertThat(legacyState.getLatestVersionDigest(wrapString("processId"))).isNull();
     }
+
+    void assertProcessPersisted(final DeployedProcess actual, final PersistedProcess expected) {
+      assertThat(actual)
+          .extracting(
+              p -> bufferAsString(p.getBpmnProcessId()),
+              DeployedProcess::getVersion,
+              DeployedProcess::getState,
+              p -> bufferAsString(p.getResourceName()),
+              DeployedProcess::getTenantId,
+              p -> bufferAsString(p.getResource()))
+          .containsExactly(
+              expected.bpmnProcessId(),
+              expected.version(),
+              expected.state(),
+              expected.resourceName(),
+              expected.tenantId(),
+              Bpmn.convertToString(expected.model()));
+    }
+
+    record PersistedProcess(
+        String bpmnProcessId,
+        int version,
+        PersistedProcessState state,
+        String resourceName,
+        String tenantId,
+        BpmnModelInstance model) {}
   }
 }
