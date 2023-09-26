@@ -56,7 +56,7 @@ public class CCSMAuthenticationService extends AbstractAuthenticationService {
   @Override
   public Response loginCallback(final ContainerRequestContext requestContext,
                                 final AuthCodeDto authCode) {
-    final Tokens tokens = ccsmTokenService.exchangeAuthCode(authCode, requestContext.getUriInfo().getAbsolutePath().toString());
+    final Tokens tokens = ccsmTokenService.exchangeAuthCode(authCode, requestContext);
     final AccessToken accessToken;
     try {
       accessToken = ccsmTokenService.verifyToken(tokens.getAccessToken());

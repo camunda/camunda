@@ -14,6 +14,7 @@ import io.camunda.identity.sdk.authentication.UserDetails;
 import io.camunda.identity.sdk.authentication.dto.AuthCodeDto;
 import jakarta.servlet.http.Cookie;
 import jakarta.ws.rs.NotAuthorizedException;
+import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.NewCookie;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -105,16 +106,27 @@ public class CCSMTokenService {
     );
   }
 
-  public Tokens exchangeAuthCode(final AuthCodeDto authCode, final String redirectUri) {
+  public Tokens exchangeAuthCode(final AuthCodeDto authCode, final ContainerRequestContext requestContext) {
+    // If a redirect root URL is explicitly set, we use that. Otherwise, we use the one provided
+    final String redirectUri =
+      getConfiguredRedirectUrl().map(redirectRootUrl -> redirectRootUrl + requestContext.getUriInfo().getRequestUri().getPath())
+        .orElse(requestContext.getUriInfo().getAbsolutePath().toString());
     return authentication().exchangeAuthCode(authCode, redirectUri);
   }
 
   public URI buildAuthorizeUri(final String redirectUri) {
     // If a redirect root URL is explicitly set, we use that. Otherwise, we use the one provided
-    final String redirectRootUrl = configurationService.getAuthConfiguration().getCcsmAuthConfiguration().getRedirectRootUrl();
-    return authentication().authorizeUriBuilder(
-        StringUtils.isEmpty(redirectRootUrl) ? redirectUri : redirectRootUrl + REST_API_PATH + AUTHENTICATION_PATH + CALLBACK)
-      .build();
+    final String authorizeUri =
+      getConfiguredRedirectUrl().map(redirectRootUrl -> redirectRootUrl + REST_API_PATH + AUTHENTICATION_PATH + CALLBACK)
+        .orElse(redirectUri);
+    return authentication().authorizeUriBuilder(authorizeUri).build();
+  }
+
+  private Optional<String> getConfiguredRedirectUrl() {
+    final String configuredRedirectRootUrl = configurationService.getAuthConfiguration()
+      .getCcsmAuthConfiguration()
+      .getRedirectRootUrl();
+    return StringUtils.isEmpty(configuredRedirectRootUrl) ? Optional.empty() : Optional.of(configuredRedirectRootUrl);
   }
 
   public AccessToken verifyToken(final String accessToken) {
