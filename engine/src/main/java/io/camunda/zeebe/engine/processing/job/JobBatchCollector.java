@@ -15,10 +15,12 @@ import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.msgpack.value.ValueArray;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Collection;
+import java.util.List;
 import java.util.function.Predicate;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
@@ -75,10 +77,14 @@ final class JobBatchCollector {
     final var activatedCount = new MutableInteger(0);
     final var jobCopyBuffer = new ExpandableArrayBuffer();
     final var unwritableJob = new MutableReference<TooLargeJob>();
+    final var tenantIds =
+        value.getTenantIds().isEmpty()
+            ? List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+            : value.getTenantIds();
 
     jobState.forEachActivatableJobs(
         value.getTypeBuffer(),
-        value.getTenantIds(),
+        tenantIds,
         (key, jobRecord) -> {
           // fill in the job record properties first in order to accurately estimate its size before
           // adding it to the batch
