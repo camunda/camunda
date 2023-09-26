@@ -36,6 +36,7 @@ const unassignedTask = (
   dueDate: null,
   candidateGroups: ['accounting candidate'],
   candidateUsers: ['jane candidate'],
+  tenantId: '<default>',
 });
 
 const unassignedTaskWithForm = (
@@ -58,6 +59,7 @@ const unassignedTaskWithForm = (
   dueDate: null,
   candidateGroups: [],
   candidateUsers: [],
+  tenantId: '<default>',
 });
 
 const completedTask = (
@@ -80,6 +82,7 @@ const completedTask = (
   dueDate: null,
   candidateGroups: [],
   candidateUsers: [],
+  tenantId: '<default>',
 });
 
 const completedTaskWithForm = (
@@ -102,6 +105,7 @@ const completedTaskWithForm = (
   dueDate: null,
   candidateGroups: [],
   candidateUsers: [],
+  tenantId: '<default>',
 });
 
 const assignedTask = (
@@ -124,6 +128,7 @@ const assignedTask = (
   dueDate: null,
   candidateGroups: [],
   candidateUsers: [],
+  tenantId: '<default>',
 });
 
 const assignedTaskWithForm = (
@@ -146,6 +151,7 @@ const assignedTaskWithForm = (
   dueDate: null,
   candidateGroups: [],
   candidateUsers: [],
+  tenantId: '<default>',
 });
 
 export {

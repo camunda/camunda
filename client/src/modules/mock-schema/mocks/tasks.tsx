@@ -27,6 +27,7 @@ const tasks: Task[] = [
     dueDate: null,
     candidateGroups: [],
     candidateUsers: [],
+    tenantId: '<default>',
   },
   {
     id: '1',
@@ -46,6 +47,7 @@ const tasks: Task[] = [
     dueDate: null,
     candidateGroups: [],
     candidateUsers: [],
+    tenantId: '<default>',
   },
   {
     id: '2',
@@ -65,6 +67,7 @@ const tasks: Task[] = [
     dueDate: null,
     candidateGroups: [],
     candidateUsers: [],
+    tenantId: '<default>',
   },
 ];
 
@@ -103,6 +106,7 @@ const generateTask = (id: string, name?: string): Task => {
     formKey: null,
     candidateGroups: [],
     candidateUsers: [],
+    tenantId: '<default>',
   };
 };
 

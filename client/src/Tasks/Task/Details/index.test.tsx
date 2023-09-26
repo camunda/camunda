@@ -16,6 +16,11 @@ import * as taskMocks from 'modules/mock-schema/mocks/task';
 import * as userMocks from 'modules/mock-schema/mocks/current-user';
 import {ReactQueryProvider} from 'modules/ReactQueryProvider';
 import {useCurrentUser} from 'modules/queries/useCurrentUser';
+import {DEFAULT_MOCK_CLIENT_CONFIG} from 'modules/mocks/window';
+
+jest.mock('modules/featureFlags', () => ({
+  IS_MULTI_TENANCY_ENABLED: true,
+}));
 
 const UserName = () => {
   const {data: currentUser} = useCurrentUser();
@@ -43,14 +48,6 @@ const getWrapper = (id: string = '0') => {
 };
 
 describe('<Details />', () => {
-  beforeAll(() => {
-    global.IS_REACT_ACT_ENVIRONMENT = false;
-  });
-
-  afterAll(() => {
-    global.IS_REACT_ACT_ENVIRONMENT = true;
-  });
-
   beforeEach(() => {
     jest.useFakeTimers();
   });
@@ -58,6 +55,8 @@ describe('<Details />', () => {
   afterEach(() => {
     jest.clearAllTimers();
     jest.useRealTimers();
+
+    window.clientConfig = DEFAULT_MOCK_CLIENT_CONFIG;
   });
 
   it('should render completed task details', async () => {
@@ -304,5 +303,34 @@ describe('<Details />', () => {
     expect(screen.getByTestId('assignee')).toHaveTextContent(
       `Assigned to${MOCK_OTHER_ASSIGNEE}`,
     );
+  });
+
+  it('should render tenant name', () => {
+    window.clientConfig = {
+      ...DEFAULT_MOCK_CLIENT_CONFIG,
+      isMultiTenancyEnabled: true,
+    };
+
+    nodeMockServer.use(
+      rest.get('/v1/internal/users/current', (_, res, ctx) => {
+        return res(ctx.json(userMocks.currentUserWithTenants));
+      }),
+    );
+
+    render(
+      <Details
+        task={{
+          ...taskMocks.unassignedTask(),
+          tenantId: 'tenantA',
+        }}
+        user={userMocks.currentUserWithTenants}
+        onAssignmentError={noop}
+      />,
+      {
+        wrapper: getWrapper(),
+      },
+    );
+
+    expect(screen.getByText('Tenant A')).toBeInTheDocument();
   });
 });

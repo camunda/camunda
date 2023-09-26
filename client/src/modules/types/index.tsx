@@ -63,6 +63,7 @@ type Task = {
   processDefinitionKey: string;
   candidateGroups: string[];
   candidateUsers: string[];
+  tenantId: string | '<default>';
 };
 
 type Form = {
