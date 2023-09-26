@@ -23,6 +23,7 @@ import io.camunda.zeebe.engine.state.immutable.PendingMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.PendingProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.migration.MigrationTaskState.State;
+import io.camunda.zeebe.engine.state.migration.to_8_3.DbDecisionMigrationState;
 import io.camunda.zeebe.engine.state.migration.to_8_3.DbProcessMigrationState;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
@@ -102,6 +103,7 @@ public class DbMigrationState implements MutableMigrationState {
   private final DbString processIdKey;
   private final ColumnFamily<DbString, VersionInfo> processVersionInfoColumnFamily;
   private final DbProcessMigrationState processMigrationState;
+  private final DbDecisionMigrationState decisionMigrationState;
 
   public DbMigrationState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
@@ -227,6 +229,7 @@ public class DbMigrationState implements MutableMigrationState {
             new VersionInfo());
 
     processMigrationState = new DbProcessMigrationState(zeebeDb, transactionContext);
+    decisionMigrationState = new DbDecisionMigrationState(zeebeDb, transactionContext);
   }
 
   @Override
@@ -391,6 +394,11 @@ public class DbMigrationState implements MutableMigrationState {
   @Override
   public void migrateProcessStateForMultiTenancy() {
     processMigrationState.migrateProcessStateForMultiTenancy();
+  }
+
+  @Override
+  public void migrateDecisionStateForMultiTenancy() {
+    decisionMigrationState.migrateDecisionStateForMultiTenancy();
   }
 
   @Override
