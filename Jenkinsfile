@@ -31,6 +31,10 @@ String getCiImageTag() {
   return "ci-${getGitCommitHash()}"
 }
 
+String getPrImageTag() {
+  return "pr-${getGitCommitHash()}"
+}
+
 String getVersion() {
   return readMavenPom(file: 'pom.xml').getVersion()
 }
@@ -100,6 +104,7 @@ pipeline {
       environment {
         IMAGE_TAG = getImageTag()
         CI_IMAGE_TAG = getCiImageTag()
+        PR_IMAGE_TAG = getPrImageTag()
         VERSION = getVersion()
         REVISION = getRevision()
         DATE = java.time.Instant.now().toString()
@@ -126,6 +131,7 @@ pipeline {
                   docker buildx build \
                     -t ${OPERATE_DOCKER_IMAGE()}:${IMAGE_TAG} \
                     -t ${OPERATE_DOCKER_IMAGE()}:${CI_IMAGE_TAG} \
+                    -t ${OPERATE_DOCKER_IMAGE()}:${PR_IMAGE_TAG} \
                     --build-arg VERSION=${VERSION} \
                     --build-arg DATE=${DATE} \
                     --build-arg REVISION=${REVISION} \
@@ -139,6 +145,7 @@ pipeline {
                   docker buildx build \
                     -t ${OPERATE_DOCKER_IMAGE()}:${IMAGE_TAG} \
                     -t ${OPERATE_DOCKER_IMAGE()}:${CI_IMAGE_TAG} \
+                    -t ${OPERATE_DOCKER_IMAGE()}:${PR_IMAGE_TAG} \
                     --build-arg VERSION=${VERSION} \
                     --build-arg DATE=${DATE} \
                     --build-arg REVISION=${REVISION} \
@@ -158,6 +165,7 @@ pipeline {
                 --build-arg DATE=${DATE} \
                 -t ${OPERATE_DOCKER_IMAGE()}:${IMAGE_TAG} \
                 -t ${OPERATE_DOCKER_IMAGE()}:${CI_IMAGE_TAG} \
+                -t ${OPERATE_DOCKER_IMAGE()}:${PR_IMAGE_TAG} \
                 --push
 
               if [ "${env.BRANCH_NAME}" = 'master' ]; then

@@ -58,7 +58,7 @@ jobs:
         --revision ${revision} \
         --upsert" >> $GITHUB_ENV
       env:
-        docker_tag: "ci-${{ github.event.pull_request.head.sha || github.sha }}" # commit id of latest PR event || sha of push event
+        docker_tag: "pr-${{ github.event.pull_request.head.sha || github.sha }}" # commit id of latest PR event || sha of push event
         revision: ${{ env.BRANCH_NAME }}
         app_name: operate-${{ steps.sanitize.outputs.branch_name == 'master' && 'stage' || steps.sanitize.outputs.branch_name }}
       #########################################################################
@@ -71,12 +71,11 @@ jobs:
         app_name: operate-${{ steps.sanitize.outputs.branch_name == 'master' && 'stage' || steps.sanitize.outputs.branch_name }}
         app_url: https://${{ steps.sanitize.outputs.branch_name == 'master' && 'stage' || steps.sanitize.outputs.branch_name }}.operate.camunda.cloud
         argocd_arguments: ${{ env.argocd_arguments }}
+
   clean:
     if: always() && github.event_name == 'pull_request' && needs.deploy-preview.result != 'skipped'
     uses: camunda/operate/.github/workflows/preview-env-clean.yml@master
-    needs:
-    - deploy-preview
+    needs: [deploy-preview]
     secrets: inherit
     with:
       pull-request: ${{ github.event.pull_request.number }}
-      
