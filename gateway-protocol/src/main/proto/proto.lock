@@ -920,6 +920,11 @@
                 "id": 5,
                 "name": "variables",
                 "type": "string"
+              },
+              {
+                "id": 6,
+                "name": "tenantId",
+                "type": "string"
               }
             ]
           },
@@ -930,6 +935,11 @@
                 "id": 1,
                 "name": "key",
                 "type": "int64"
+              },
+              {
+                "id": 2,
+                "name": "tenantId",
+                "type": "string"
               }
             ]
           },

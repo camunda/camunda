@@ -17,6 +17,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRespons
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.JsonUtil;
 import io.camunda.zeebe.test.util.MsgPackUtil;
 import java.util.Collections;
@@ -46,6 +47,7 @@ public final class PublishMessageTest extends GatewayTest {
 
     // then
     assertThat(response).isNotNull();
+    assertThat(response.getTenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
     final BrokerPublishMessageRequest brokerRequest = brokerClient.getSingleBrokerRequest();
     assertThat(brokerRequest.getIntent()).isEqualTo(MessageIntent.PUBLISH);
@@ -59,5 +61,6 @@ public final class PublishMessageTest extends GatewayTest {
         .isEqualTo(request.getMessageId());
     assertThat(brokerRequestValue.getTimeToLive()).isEqualTo(request.getTimeToLive());
     MsgPackUtil.assertEqualityExcluding(brokerRequestValue.getVariablesBuffer(), variables);
+    assertThat(brokerRequestValue.getTenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   }
 }

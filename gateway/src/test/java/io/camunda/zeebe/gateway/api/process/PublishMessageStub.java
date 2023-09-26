@@ -11,9 +11,10 @@ import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient;
 import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient.RequestStub;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerPublishMessageRequest;
 import io.camunda.zeebe.gateway.impl.broker.response.BrokerResponse;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 
 public final class PublishMessageStub
-    implements RequestStub<BrokerPublishMessageRequest, BrokerResponse<Void>> {
+    implements RequestStub<BrokerPublishMessageRequest, BrokerResponse<MessageRecord>> {
 
   @Override
   public void registerWith(final StubbedBrokerClient gateway) {
@@ -21,7 +22,19 @@ public final class PublishMessageStub
   }
 
   @Override
-  public BrokerResponse<Void> handle(final BrokerPublishMessageRequest request) throws Exception {
-    return new BrokerResponse<>(null);
+  public BrokerResponse<MessageRecord> handle(final BrokerPublishMessageRequest request)
+      throws Exception {
+    final var requestRecord = request.getRequestWriter();
+    final var responseRecord =
+        new MessageRecord()
+            .setName(requestRecord.getNameBuffer())
+            .setCorrelationKey(requestRecord.getCorrelationKeyBuffer())
+            .setTimeToLive(requestRecord.getTimeToLive())
+            .setDeadline(requestRecord.getDeadline())
+            .setVariables(requestRecord.getVariablesBuffer())
+            .setMessageId(requestRecord.getMessageIdBuffer())
+            .setTenantId(requestRecord.getTenantId());
+
+    return new BrokerResponse<>(responseRecord, 0, 123L);
   }
 }

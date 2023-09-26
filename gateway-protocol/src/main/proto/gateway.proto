@@ -465,11 +465,15 @@ message PublishMessageRequest {
   // the message variables as a JSON document; to be valid, the root of the document must be an
   // object, e.g. { "a": "foo" }. [ "foo" ] would not be valid.
   string variables = 5;
+  // the tenant id of the message
+  string tenantId = 6;
 }
 
 message PublishMessageResponse {
   // the unique ID of the message that was published
   int64 key = 1;
+  // the tenant id of the message
+  string tenantId = 2;
 }
 
 message ResolveIncidentRequest {

@@ -114,7 +114,8 @@ public final class RequestMapper {
     brokerRequest
         .setMessageId(grpcRequest.getMessageId())
         .setTimeToLive(grpcRequest.getTimeToLive())
-        .setVariables(ensureJsonSet(grpcRequest.getVariables()));
+        .setVariables(ensureJsonSet(grpcRequest.getVariables()))
+        .setTenantId(ensureTenantIdSet("PublishMessage", grpcRequest.getTenantId()));
 
     return brokerRequest;
   }

@@ -12,7 +12,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import org.agrona.DirectBuffer;
 
-public final class BrokerPublishMessageRequest extends BrokerExecuteCommand<Void> {
+public final class BrokerPublishMessageRequest extends BrokerExecuteCommand<MessageRecord> {
 
   private final MessageRecord requestDto = new MessageRecord();
 
@@ -40,13 +40,20 @@ public final class BrokerPublishMessageRequest extends BrokerExecuteCommand<Void
     return this;
   }
 
+  public BrokerPublishMessageRequest setTenantId(final String tenantId) {
+    requestDto.setTenantId(tenantId);
+    return this;
+  }
+
   @Override
   public MessageRecord getRequestWriter() {
     return requestDto;
   }
 
   @Override
-  protected Void toResponseDto(final DirectBuffer buffer) {
-    return null;
+  protected MessageRecord toResponseDto(final DirectBuffer buffer) {
+    final MessageRecord responseDto = new MessageRecord();
+    responseDto.wrap(buffer);
+    return responseDto;
   }
 }
