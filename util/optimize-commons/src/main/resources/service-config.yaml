@@ -730,7 +730,7 @@ externalVariable:
     # A rollover is triggered when the size of the current external variable index matches or exceeds the maxIndexSizeGB threshold.
     maxIndexSizeGB: 50
 
-multiTenancy:
+multitenancy:
   # Currently only available in C8SM. Determines whether multi tenancy is enabled in Optimize.
   # Note that multi tenancy is active by default in Optimize C7 and therefore this flag will have no influence on a C7 system.
-  enabled: ${CAMUNDA_OPTIMIZE_MULTI_TENANCY_ENABLED:false}
+  enabled: ${CAMUNDA_OPTIMIZE_MULTITENANCY_ENABLED:false}

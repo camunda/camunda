@@ -1303,7 +1303,7 @@ public class ConfigurationService {
   public boolean isMultiTenancyEnabled() {
     if (multiTenancyEnabled == null) {
       multiTenancyEnabled =
-        configJsonContext.read(ConfigurationServiceConstants.MULTI_TENANCY_ENABLED, Boolean.class);
+        configJsonContext.read(ConfigurationServiceConstants.MULTITENANCY_ENABLED, Boolean.class);
     }
     return multiTenancyEnabled;
   }
