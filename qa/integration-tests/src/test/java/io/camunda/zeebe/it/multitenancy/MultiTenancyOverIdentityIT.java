@@ -44,6 +44,7 @@ import java.util.function.Supplier;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
@@ -76,6 +77,7 @@ public class MultiTenancyOverIdentityIT {
   private static final String ZEEBE_CLIENT_ID_TENANT_A = "zeebe-tenant-a";
   private static final String ZEEBE_CLIENT_ID_TENANT_B = "zeebe-tenant-b";
   private static final String ZEEBE_CLIENT_ID_TENANT_A_AND_B = "zeebe-tenant-a-and-b";
+  private static final String ZEEBE_CLIENT_ID_WITHOUT_TENANT = "zeebe-without-tenant";
   private static final String ZEEBE_CLIENT_AUDIENCE = "zeebe-api";
   private static final String ZEEBE_CLIENT_SECRET = "zecret";
 
@@ -156,6 +158,12 @@ public class MultiTenancyOverIdentityIT {
           .withEnv("KEYCLOAK_CLIENTS_2_TYPE", "m2m")
           .withEnv("KEYCLOAK_CLIENTS_2_PERMISSIONS_0_RESOURCE_SERVER_ID", ZEEBE_CLIENT_AUDIENCE)
           .withEnv("KEYCLOAK_CLIENTS_2_PERMISSIONS_0_DEFINITION", "write:*")
+          .withEnv("KEYCLOAK_CLIENTS_3_NAME", ZEEBE_CLIENT_ID_WITHOUT_TENANT)
+          .withEnv("KEYCLOAK_CLIENTS_3_ID", ZEEBE_CLIENT_ID_WITHOUT_TENANT)
+          .withEnv("KEYCLOAK_CLIENTS_3_SECRET", ZEEBE_CLIENT_SECRET)
+          .withEnv("KEYCLOAK_CLIENTS_3_TYPE", "m2m")
+          .withEnv("KEYCLOAK_CLIENTS_3_PERMISSIONS_0_RESOURCE_SERVER_ID", ZEEBE_CLIENT_AUDIENCE)
+          .withEnv("KEYCLOAK_CLIENTS_3_PERMISSIONS_0_DEFINITION", "write:*")
           .withEnv("IDENTITY_RETRY_ATTEMPTS", "90")
           .withEnv("IDENTITY_RETRY_DELAY_SECONDS", "1")
           .withEnv("IDENTITY_DATABASE_HOST", DATABASE_HOST)
@@ -237,6 +245,28 @@ public class MultiTenancyOverIdentityIT {
   }
 
   @Test
+  void shouldAuthorizeTopologyRequestWithTenantAccess() {
+    try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A)) {
+      // when
+      final var topology = client.newTopologyRequest().send().join();
+
+      // then
+      assertThat(topology.getBrokers()).hasSize(1);
+    }
+  }
+
+  @Test
+  void shouldAuthorizeTopologyRequestWithoutTenantAccess() {
+    try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_WITHOUT_TENANT)) {
+      // when
+      final var topology = client.newTopologyRequest().send().join();
+
+      // then
+      assertThat(topology.getBrokers()).hasSize(1);
+    }
+  }
+
+  @Test
   void shouldAuthorizeDeployProcess() {
     // given
     try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A)) {
@@ -275,6 +305,22 @@ public class MultiTenancyOverIdentityIT {
           .withMessageContaining(
               "Expected to handle gRPC request DeployResource with tenant identifier 'tenant-b'")
           .withMessageContaining("but tenant is not authorized to perform this request");
+    }
+  }
+
+  @Test
+  @Disabled("Not yet supported: https://github.com/camunda/zeebe/issues/14497")
+  void shouldDenyDeployProcessWhenNoTenantAssociated() {
+    // given
+    try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_WITHOUT_TENANT)) {
+      // when
+      final Future<DeploymentEvent> result =
+          client.newDeployResourceCommand().addProcessModel(process, "process.bpmn").send();
+
+      // then
+      assertThat(result)
+          .describedAs("Expect that process can be deployed for the default tenant")
+          .succeedsWithin(Duration.ofSeconds(10));
     }
   }
 
