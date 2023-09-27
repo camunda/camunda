@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import org.junit.Before;
 import org.junit.Rule;
@@ -69,6 +70,30 @@ public class SfvChecksumTest {
   }
 
   @Test
+  public void shouldThrowExceptionOnWriteWhenFlushFails() throws IOException {
+    // given
+    final String[] givenSfvLines = {"; combinedValue = 12345678", "file1   aabbccdd"};
+    sfvChecksum.updateFromSfvFile(givenSfvLines);
+
+    // when then throw
+    try (final var failingStream = new FailingFlushOutputStream()) {
+      assertThatThrownBy(() -> sfvChecksum.write(failingStream)).isInstanceOf(IOException.class);
+    }
+  }
+
+  @Test
+  public void shouldThrowExceptionOnWriteWhenWriteFails() throws IOException {
+    // given
+    final String[] givenSfvLines = {"; combinedValue = 12345678", "file1   aabbccdd"};
+    sfvChecksum.updateFromSfvFile(givenSfvLines);
+
+    // when then throw
+    try (final var failingStream = new FailingWriteOutputStream()) {
+      assertThatThrownBy(() -> sfvChecksum.write(failingStream)).isInstanceOf(IOException.class);
+    }
+  }
+
+  @Test
   public void shouldWriteSnapshotDirectoryCommentIfPresent() throws IOException {
     // given
     sfvChecksum.setSnapshotDirectoryComment("/foo/bar");
@@ -112,5 +137,25 @@ public class SfvChecksumTest {
     // then
     assertThatThrownBy(() -> sfvChecksum.updateFromFile(folder))
         .isInstanceOf(UnsupportedOperationException.class);
+  }
+
+  private static final class FailingFlushOutputStream extends OutputStream {
+
+    @Override
+    public void write(final int i) throws IOException {
+      // do nothing
+    }
+
+    @Override
+    public void flush() throws IOException {
+      throw new IOException("expected");
+    }
+  }
+
+  private static final class FailingWriteOutputStream extends OutputStream {
+    @Override
+    public void write(final int i) throws IOException {
+      throw new IOException("expected");
+    }
   }
 }
