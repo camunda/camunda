@@ -85,6 +85,10 @@ final class SfvChecksumImpl implements MutableChecksumsSFV {
       writer.printf(FORMAT_FILE_CRC_LINE, entry.getKey(), Long.toHexString(entry.getValue()));
     }
     writer.flush();
+
+    if (writer.checkError()) {
+      throw new IOException("Expected to write the SFV Checksum, but failed during writing.");
+    }
   }
 
   public void setSnapshotDirectoryComment(final String headerComment) {
