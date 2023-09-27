@@ -281,7 +281,58 @@ final class JobBatchCollectorTest {
     assertThat(estimatedLength.ref).isEqualTo(expectedLength);
   }
 
-  private TypedRecord<JobBatchRecord> createRecord() {
+  @Test
+  public void shouldCollectOnlyCustomTenantJobs() {
+    // given
+    final String tenantA = "tenant-a";
+    final String tenantB = "tenant-b";
+    final TypedRecord<JobBatchRecord> record = createRecord(tenantA, tenantB);
+    final long firstScopeKey = state.getKeyGenerator().nextKey();
+    final long secondScopeKey = state.getKeyGenerator().nextKey();
+    createJob(firstScopeKey, tenantA);
+    createJob(secondScopeKey, tenantB);
+
+    // when
+    collector.collectJobs(record);
+
+    // then
+    final JobBatchRecord batchRecord = record.getValue();
+    JobBatchRecordValueAssert.assertThat(batchRecord)
+        .satisfies(
+            batch -> {
+              final List<JobRecordValue> activatedJobs = batch.getJobs();
+              assertThat(activatedJobs).hasSize(2);
+              assertThat(activatedJobs.stream().map(job -> job.getTenantId()).toList())
+                  .containsExactlyInAnyOrder(tenantA, tenantB);
+            });
+  }
+
+  @Test
+  public void shouldCollectOnlyAuthorizedTenantJobs() {
+    // given
+    final String tenantA = "tenant-a";
+    final String tenantB = "tenant-b";
+    final TypedRecord<JobBatchRecord> record = createRecord(tenantA);
+    final long firstScopeKey = state.getKeyGenerator().nextKey();
+    final long secondScopeKey = state.getKeyGenerator().nextKey();
+    createJob(firstScopeKey, tenantA);
+    createJob(secondScopeKey, tenantB);
+
+    // when
+    collector.collectJobs(record);
+
+    // then
+    final JobBatchRecord batchRecord = record.getValue();
+    JobBatchRecordValueAssert.assertThat(batchRecord)
+        .satisfies(
+            batch -> {
+              final List<JobRecordValue> activatedJobs = batch.getJobs();
+              assertThat(activatedJobs).hasSize(1);
+              JobRecordValueAssert.assertThat(activatedJobs.get(0)).hasTenantId(tenantA);
+            });
+  }
+
+  private TypedRecord<JobBatchRecord> createRecord(final String... tenantIds) {
     final RecordMetadata metadata =
         new RecordMetadata()
             .recordType(RecordType.COMMAND)
@@ -293,21 +344,26 @@ final class JobBatchCollectorTest {
             .setMaxJobsToActivate(10)
             .setType(JOB_TYPE)
             .setWorker("test");
-    batchRecord
-        .tenantIds()
-        .add()
-        .wrap(BufferUtil.wrapString(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
+
+    final List<String> tenantIdsList =
+        tenantIds.length > 0 ? List.of(tenantIds) : List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    batchRecord.setTenantIds(tenantIdsList);
 
     return new MockTypedRecord<>(state.getKeyGenerator().nextKey(), metadata, batchRecord);
   }
 
   private Job createJob(final long variableScopeKey) {
+    return createJob(variableScopeKey, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  }
+
+  private Job createJob(final long variableScopeKey, final String tenantId) {
     final var jobRecord =
         new JobRecord()
             .setBpmnProcessId("process")
             .setElementId("element")
             .setElementInstanceKey(variableScopeKey)
-            .setType(JOB_TYPE);
+            .setType(JOB_TYPE)
+            .setTenantId(tenantId);
     final long jobKey = state.getKeyGenerator().nextKey();
 
     state.getJobState().create(jobKey, jobRecord);
