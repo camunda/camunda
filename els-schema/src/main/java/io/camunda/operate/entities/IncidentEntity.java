@@ -204,7 +204,6 @@ public class IncidentEntity extends OperateZeebeEntity<IncidentEntity> {
     return "IncidentEntity{" +
         "key=" + getKey() +
         ", errorType=" + errorType +
-        ", errorMessage='" + errorMessage + '\'' +
         ", errorMessageHash=" + errorMessageHash +
         ", state=" + state +
         ", flowNodeId='" + flowNodeId + '\'' +
