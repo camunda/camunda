@@ -7,9 +7,6 @@
  */
 package io.camunda.zeebe.engine.state.migration.to_8_3.legacy;
 
-import static io.camunda.zeebe.util.EnsureUtil.ensureGreaterThan;
-import static io.camunda.zeebe.util.EnsureUtil.ensureNotNullOrEmpty;
-
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
@@ -19,15 +16,10 @@ import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.metrics.BufferedMessagesMetrics;
-import io.camunda.zeebe.engine.state.immutable.MessageState.ExpiredMessageVisitor;
-import io.camunda.zeebe.engine.state.immutable.MessageState.Index;
-import io.camunda.zeebe.engine.state.immutable.MessageState.MessageVisitor;
 import io.camunda.zeebe.engine.state.message.StoredMessage;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
-import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import org.agrona.DirectBuffer;
-import org.agrona.collections.MutableBoolean;
 
 public final class LegacyMessageState {
 
@@ -195,15 +187,6 @@ public final class LegacyMessageState {
     bufferedMessagesMetrics = new BufferedMessagesMetrics(partitionId);
   }
 
-  public void onRecovered(final ReadonlyStreamProcessorContext context) {
-    if (!messagesDeadlineCountColumnFamily.isEmpty()) {
-      localMessageDeadlineCount =
-          messagesDeadlineCountColumnFamily.get(messagesDeadlineCountKey).getValue();
-    }
-
-    bufferedMessagesMetrics.setBufferedMessagesCounter(localMessageDeadlineCount);
-  }
-
   public void put(final long key, final MessageRecord record) {
     messageKey.wrapLong(key);
     message.setMessageKey(key).setMessage(record);
@@ -226,184 +209,6 @@ public final class LegacyMessageState {
       this.messageId.wrapBuffer(messageId);
       messageIdColumnFamily.upsert(nameCorrelationMessageIdKey, DbNil.INSTANCE);
     }
-  }
-
-  public void putMessageCorrelation(final long messageKey, final DirectBuffer bpmnProcessId) {
-    ensureGreaterThan("message key", messageKey, 0);
-    ensureNotNullOrEmpty("BPMN process id", bpmnProcessId);
-
-    this.messageKey.wrapLong(messageKey);
-    bpmnProcessIdKey.wrapBuffer(bpmnProcessId);
-    correlatedMessageColumnFamily.insert(messageBpmnProcessIdKey, DbNil.INSTANCE);
-  }
-
-  public void removeMessageCorrelation(final long messageKey, final DirectBuffer bpmnProcessId) {
-    ensureGreaterThan("message key", messageKey, 0);
-    ensureNotNullOrEmpty("BPMN process id", bpmnProcessId);
-
-    this.messageKey.wrapLong(messageKey);
-    bpmnProcessIdKey.wrapBuffer(bpmnProcessId);
-
-    correlatedMessageColumnFamily.deleteExisting(messageBpmnProcessIdKey);
-  }
-
-  public void putActiveProcessInstance(
-      final DirectBuffer bpmnProcessId, final DirectBuffer correlationKey) {
-    ensureNotNullOrEmpty("BPMN process id", bpmnProcessId);
-    ensureNotNullOrEmpty("correlation key", correlationKey);
-
-    bpmnProcessIdKey.wrapBuffer(bpmnProcessId);
-    this.correlationKey.wrapBuffer(correlationKey);
-    activeProcessInstancesByCorrelationKeyColumnFamily.insert(
-        bpmnProcessIdCorrelationKey, DbNil.INSTANCE);
-  }
-
-  public void removeActiveProcessInstance(
-      final DirectBuffer bpmnProcessId, final DirectBuffer correlationKey) {
-    ensureNotNullOrEmpty("BPMN process id", bpmnProcessId);
-    ensureNotNullOrEmpty("correlation key", correlationKey);
-
-    bpmnProcessIdKey.wrapBuffer(bpmnProcessId);
-    this.correlationKey.wrapBuffer(correlationKey);
-    activeProcessInstancesByCorrelationKeyColumnFamily.deleteExisting(bpmnProcessIdCorrelationKey);
-  }
-
-  public void putProcessInstanceCorrelationKey(
-      final long processInstanceKey, final DirectBuffer correlationKey) {
-    ensureGreaterThan("process instance key", processInstanceKey, 0);
-    ensureNotNullOrEmpty("correlation key", correlationKey);
-
-    this.processInstanceKey.wrapLong(processInstanceKey);
-    this.correlationKey.wrapBuffer(correlationKey);
-    processInstanceCorrelationKeyColumnFamily.insert(this.processInstanceKey, this.correlationKey);
-  }
-
-  public void removeProcessInstanceCorrelationKey(final long processInstanceKey) {
-    ensureGreaterThan("process instance key", processInstanceKey, 0);
-
-    this.processInstanceKey.wrapLong(processInstanceKey);
-    processInstanceCorrelationKeyColumnFamily.deleteExisting(this.processInstanceKey);
-  }
-
-  public void remove(final long key) {
-    final StoredMessage storedMessage = getMessage(key);
-    if (storedMessage == null) {
-      return;
-    }
-
-    messageKey.wrapLong(storedMessage.getMessageKey());
-    messageColumnFamily.deleteExisting(messageKey);
-
-    messageName.wrapBuffer(storedMessage.getMessage().getNameBuffer());
-    correlationKey.wrapBuffer(storedMessage.getMessage().getCorrelationKeyBuffer());
-
-    nameCorrelationMessageColumnFamily.deleteExisting(nameCorrelationMessageKey);
-
-    final DirectBuffer messageId = storedMessage.getMessage().getMessageIdBuffer();
-    if (messageId.capacity() > 0) {
-      this.messageId.wrapBuffer(messageId);
-      messageIdColumnFamily.deleteExisting(nameCorrelationMessageIdKey);
-    }
-
-    deadline.wrapLong(storedMessage.getMessage().getDeadline());
-    deadlineColumnFamily.deleteExisting(deadlineMessageKey);
-
-    localMessageDeadlineCount -= 1L;
-    messagesDeadlineCount.wrapLong(localMessageDeadlineCount);
-    messagesDeadlineCountColumnFamily.upsert(messagesDeadlineCountKey, messagesDeadlineCount);
-    bufferedMessagesMetrics.setBufferedMessagesCounter(localMessageDeadlineCount);
-
-    correlatedMessageColumnFamily.whileEqualPrefix(
-        messageKey,
-        ((compositeKey, zbNil) -> {
-          correlatedMessageColumnFamily.deleteExisting(compositeKey);
-        }));
-  }
-
-  public boolean existMessageCorrelation(final long messageKey, final DirectBuffer bpmnProcessId) {
-    ensureGreaterThan("message key", messageKey, 0);
-    ensureNotNullOrEmpty("BPMN process id", bpmnProcessId);
-
-    this.messageKey.wrapLong(messageKey);
-    bpmnProcessIdKey.wrapBuffer(bpmnProcessId);
-
-    return correlatedMessageColumnFamily.exists(messageBpmnProcessIdKey);
-  }
-
-  public DirectBuffer getProcessInstanceCorrelationKey(final long processInstanceKey) {
-    ensureGreaterThan("process instance key", processInstanceKey, 0);
-
-    this.processInstanceKey.wrapLong(processInstanceKey);
-    final var correlationKey =
-        processInstanceCorrelationKeyColumnFamily.get(this.processInstanceKey);
-
-    return correlationKey != null ? correlationKey.getBuffer() : null;
-  }
-
-  public StoredMessage getMessage(final long messageKey) {
-    this.messageKey.wrapLong(messageKey);
-    return messageColumnFamily.get(this.messageKey);
-  }
-
-  public boolean visitMessagesWithDeadlineBeforeTimestamp(
-      final long timestamp, final Index startAt, final ExpiredMessageVisitor visitor) {
-    final DbCompositeKey<DbLong, DbForeignKey<DbLong>> startAtKey;
-    if (startAt != null) {
-      deadline.wrapLong(startAt.deadline());
-      messageKey.wrapLong(startAt.key());
-      startAtKey = deadlineMessageKey;
-    } else {
-      startAtKey = null;
-    }
-    final var stoppedByVisitor = new MutableBoolean(false);
-    deadlineColumnFamily.whileTrue(
-        startAtKey,
-        (key, value) -> {
-          boolean shouldContinue = false;
-          final long deadlineEntry = key.first().getValue();
-          if (deadlineEntry <= timestamp) {
-            final long messageKeyEntry = key.second().inner().getValue();
-            shouldContinue = visitor.visit(deadlineEntry, messageKeyEntry);
-            stoppedByVisitor.set(!shouldContinue);
-          }
-          return shouldContinue;
-        });
-
-    return stoppedByVisitor.get();
-  }
-
-  public boolean existActiveProcessInstance(
-      final DirectBuffer bpmnProcessId, final DirectBuffer correlationKey) {
-    ensureNotNullOrEmpty("BPMN process id", bpmnProcessId);
-    ensureNotNullOrEmpty("correlation key", correlationKey);
-
-    bpmnProcessIdKey.wrapBuffer(bpmnProcessId);
-    this.correlationKey.wrapBuffer(correlationKey);
-    return activeProcessInstancesByCorrelationKeyColumnFamily.exists(bpmnProcessIdCorrelationKey);
-  }
-
-  public void visitMessages(
-      final DirectBuffer name, final DirectBuffer correlationKey, final MessageVisitor visitor) {
-
-    messageName.wrapBuffer(name);
-    this.correlationKey.wrapBuffer(correlationKey);
-
-    nameCorrelationMessageColumnFamily.whileEqualPrefix(
-        nameAndCorrelationKey,
-        (compositeKey, nil) -> {
-          final long messageKey = compositeKey.second().inner().getValue();
-          final StoredMessage message = getMessage(messageKey);
-          return visitor.visit(message);
-        });
-  }
-
-  public boolean exist(
-      final DirectBuffer name, final DirectBuffer correlationKey, final DirectBuffer messageId) {
-    messageName.wrapBuffer(name);
-    this.correlationKey.wrapBuffer(correlationKey);
-    this.messageId.wrapBuffer(messageId);
-
-    return messageIdColumnFamily.exists(nameCorrelationMessageIdKey);
   }
 
   public ColumnFamily<
