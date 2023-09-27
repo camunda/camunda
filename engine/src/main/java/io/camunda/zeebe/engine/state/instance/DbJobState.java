@@ -15,12 +15,13 @@ import io.camunda.zeebe.db.impl.DbForeignKey;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
+import io.camunda.zeebe.db.impl.DbTenantAwareKey;
+import io.camunda.zeebe.db.impl.DbTenantAwareKey.PlacementType;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.mutable.MutableJobState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
-import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.EnsureUtil;
 import java.util.List;
 import java.util.function.BiFunction;
@@ -50,10 +51,10 @@ public final class DbJobState implements JobState, MutableJobState {
   private final DbString jobTypeKey;
   private final DbString tenantIdKey;
   private final DbCompositeKey<DbString, DbForeignKey<DbLong>> typeJobKey;
-  private final DbCompositeKey<DbCompositeKey<DbString, DbForeignKey<DbLong>>, DbString>
+  private final DbTenantAwareKey<DbCompositeKey<DbString, DbForeignKey<DbLong>>>
       tenantAwareTypeJobKey;
   private final ColumnFamily<
-          DbCompositeKey<DbCompositeKey<DbString, DbForeignKey<DbLong>>, DbString>, DbNil>
+          DbTenantAwareKey<DbCompositeKey<DbString, DbForeignKey<DbLong>>>, DbNil>
       activatableColumnFamily;
 
   // timeout => key
@@ -84,7 +85,7 @@ public final class DbJobState implements JobState, MutableJobState {
     jobTypeKey = new DbString();
     tenantIdKey = new DbString();
     typeJobKey = new DbCompositeKey<>(jobTypeKey, fkJob);
-    tenantAwareTypeJobKey = new DbCompositeKey<>(typeJobKey, tenantIdKey);
+    tenantAwareTypeJobKey = new DbTenantAwareKey<>(tenantIdKey, typeJobKey, PlacementType.SUFFIX);
     activatableColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.JOB_ACTIVATABLE,
@@ -328,16 +329,8 @@ public final class DbJobState implements JobState, MutableJobState {
     activatableColumnFamily.whileEqualPrefix(
         jobTypeKey,
         ((tenantAwareCompositeKey, zbNil) -> {
-          final DbLong jobKey = tenantAwareCompositeKey.first().second().inner();
-
-          String tenantId = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
-          if (tenantAwareCompositeKey.getLength()
-              > jobTypeKey.getLength()
-                  + jobKey.getLength()
-                  + 4) { // account 4 bytes for an empty string reference (for pre-tenant-aware
-            // data)
-            tenantId = tenantAwareCompositeKey.second().toString();
-          }
+          final DbLong jobKey = tenantAwareCompositeKey.wrappedKey().second().inner();
+          final String tenantId = tenantAwareCompositeKey.tenantKey().toString();
 
           if (tenantIds.contains(tenantId)) {
             return visitJob(jobKey.getValue(), callback::apply);
@@ -409,10 +402,11 @@ public final class DbJobState implements JobState, MutableJobState {
 
   private void makeJobActivatable(final DirectBuffer type, final long key, final String tenantId) {
     EnsureUtil.ensureNotNullOrEmpty("type", type);
+    EnsureUtil.ensureNotNullOrEmpty("tenantId", tenantId);
 
     jobTypeKey.wrapBuffer(type);
     jobKey.wrapLong(key);
-    tenantIdKey.wrapString(TenantOwned.DEFAULT_TENANT_IDENTIFIER.equals(tenantId) ? "" : tenantId);
+    tenantIdKey.wrapString(tenantId);
     // Need to upsert here because jobs can be marked as failed (and thus made activatable)
     // without activating them first
     activatableColumnFamily.upsert(tenantAwareTypeJobKey, DbNil.INSTANCE);
@@ -420,9 +414,10 @@ public final class DbJobState implements JobState, MutableJobState {
 
   private void makeJobNotActivatable(final DirectBuffer type, final String tenantId) {
     EnsureUtil.ensureNotNullOrEmpty("type", type);
+    EnsureUtil.ensureNotNullOrEmpty("tenantid", tenantId);
 
     jobTypeKey.wrapBuffer(type);
-    tenantIdKey.wrapString(TenantOwned.DEFAULT_TENANT_IDENTIFIER.equals(tenantId) ? "" : tenantId);
+    tenantIdKey.wrapString(tenantId);
     activatableColumnFamily.deleteIfExists(tenantAwareTypeJobKey);
   }
 
