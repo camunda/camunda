@@ -48,6 +48,7 @@ public final class LegacyMessageState {
   private final ColumnFamily<
           DbCompositeKey<DbCompositeKey<DbString, DbString>, DbForeignKey<DbLong>>, DbNil>
       nameCorrelationMessageColumnFamily;
+
   /**
    * <pre>deadline | key -> []
    *
@@ -58,6 +59,7 @@ public final class LegacyMessageState {
   private final DbCompositeKey<DbLong, DbForeignKey<DbLong>> deadlineMessageKey;
   private final ColumnFamily<DbCompositeKey<DbLong, DbForeignKey<DbLong>>, DbNil>
       deadlineColumnFamily;
+
   /**
    * <pre>count | key -> value
    *
@@ -67,6 +69,7 @@ public final class LegacyMessageState {
 
   private final DbString messagesDeadlineCountKey;
   private final ColumnFamily<DbString, DbLong> messagesDeadlineCountColumnFamily;
+
   /**
    * <pre>name | correlation key | message id -> []
    *
@@ -78,6 +81,7 @@ public final class LegacyMessageState {
       nameCorrelationMessageIdKey;
   private final ColumnFamily<DbCompositeKey<DbCompositeKey<DbString, DbString>, DbString>, DbNil>
       messageIdColumnFamily;
+
   /**
    * <pre>key | bpmn process id -> []
    *
@@ -88,6 +92,7 @@ public final class LegacyMessageState {
   private final DbString bpmnProcessIdKey;
   private final ColumnFamily<DbCompositeKey<DbForeignKey<DbLong>, DbString>, DbNil>
       correlatedMessageColumnFamily;
+
   /**
    * <pre> bpmn process id | correlation key -> []
    *
@@ -97,6 +102,7 @@ public final class LegacyMessageState {
 
   private final ColumnFamily<DbCompositeKey<DbString, DbString>, DbNil>
       activeProcessInstancesByCorrelationKeyColumnFamily;
+
   /**
    * <pre> process instance key -> correlation key
    *
