@@ -45,6 +45,7 @@ final class JobStreamerImpl implements JobStreamer {
   private final String workerName;
   private final Duration timeout;
   private final List<String> fetchVariables;
+  private final List<String> tenantIds;
   private final Duration requestTimeout;
   private final BackoffSupplier backoffSupplier;
   private final ScheduledExecutorService executor;
@@ -68,6 +69,7 @@ final class JobStreamerImpl implements JobStreamer {
       final String workerName,
       final Duration timeout,
       final List<String> fetchVariables,
+      final List<String> tenantIds,
       final Duration requestTimeout,
       final BackoffSupplier backoffSupplier,
       final ScheduledExecutorService executor) {
@@ -76,6 +78,7 @@ final class JobStreamerImpl implements JobStreamer {
     this.workerName = workerName;
     this.timeout = timeout;
     this.fetchVariables = fetchVariables;
+    this.tenantIds = tenantIds;
     this.requestTimeout = requestTimeout;
     this.backoffSupplier = backoffSupplier;
     this.executor = executor;
@@ -155,6 +158,7 @@ final class JobStreamerImpl implements JobStreamer {
             .jobType(jobType)
             .consumer(jobConsumer)
             .workerName(workerName)
+            .tenantIds(tenantIds)
             .timeout(timeout);
 
     if (fetchVariables != null) {

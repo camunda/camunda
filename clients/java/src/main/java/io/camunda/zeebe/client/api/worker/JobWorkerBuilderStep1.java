@@ -17,6 +17,7 @@ package io.camunda.zeebe.client.api.worker;
 
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.ExperimentalApi;
+import io.camunda.zeebe.client.api.command.CommandWithOneOrMoreTenantsStep;
 import java.time.Duration;
 import java.util.List;
 
@@ -61,7 +62,8 @@ public interface JobWorkerBuilderStep1 {
     JobWorkerBuilderStep3 handler(JobHandler handler);
   }
 
-  interface JobWorkerBuilderStep3 {
+  interface JobWorkerBuilderStep3 extends CommandWithOneOrMoreTenantsStep<JobWorkerBuilderStep3> {
+
     /**
      * Set the time for how long a job is exclusively assigned for this worker.
      *

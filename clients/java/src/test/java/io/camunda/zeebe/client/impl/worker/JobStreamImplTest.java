@@ -17,7 +17,6 @@ package io.camunda.zeebe.client.impl.worker;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.client.api.command.CommandWithTenantStep;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.api.worker.JobClient;
 import io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl;
@@ -107,9 +106,9 @@ final class JobStreamImplTest {
             .setType("type")
             .setWorker("worker")
             .setTimeout(Duration.ofSeconds(10).toMillis())
-            .addTenantIds(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER)
             .addFetchVariable("foo")
             .addFetchVariable("bar")
+            .addTenantIds("test-tenant")
             .build();
 
     // when
@@ -178,6 +177,7 @@ final class JobStreamImplTest {
         "worker",
         Duration.ofSeconds(10),
         Arrays.asList("foo", "bar"),
+        Arrays.asList("test-tenant"),
         Duration.ofHours(8),
         ignored -> 10_000L,
         scheduler);
@@ -224,6 +224,7 @@ final class JobStreamImplTest {
               .setDeadline(System.currentTimeMillis() + request.getTimeout())
               .setWorker(request.getWorker())
               .setVariables(JsonUtil.toJson(variables))
+              .setTenantId("test-tenant")
               .setKey(keyGenerator++)
               .build();
 

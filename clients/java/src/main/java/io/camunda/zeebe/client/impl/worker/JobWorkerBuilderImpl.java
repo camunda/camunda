@@ -52,6 +52,7 @@ public final class JobWorkerBuilderImpl
   private Duration pollInterval;
   private Duration requestTimeout;
   private List<String> fetchVariables;
+  private final List<String> tenantIds;
   private BackoffSupplier backoffSupplier;
   private boolean enableStreaming;
   private Duration streamingTimeout;
@@ -72,6 +73,7 @@ public final class JobWorkerBuilderImpl
     pollInterval = configuration.getDefaultJobPollInterval();
     requestTimeout = configuration.getDefaultRequestTimeout();
     enableStreaming = configuration.getDefaultJobWorkerStreamEnabled();
+    tenantIds = configuration.getDefaultJobWorkerTenantIds();
     backoffSupplier = DEFAULT_BACKOFF_SUPPLIER;
     streamingTimeout = DEFAULT_STREAMING_TIMEOUT;
   }
@@ -170,7 +172,14 @@ public final class JobWorkerBuilderImpl
     final JobRunnableFactory jobRunnableFactory = new JobRunnableFactoryImpl(jobClient, handler);
     final JobPoller jobPoller =
         new JobPollerImpl(
-            jobClient, requestTimeout, jobType, workerName, timeout, fetchVariables, maxJobsActive);
+            jobClient,
+            requestTimeout,
+            jobType,
+            workerName,
+            timeout,
+            fetchVariables,
+            tenantIds,
+            maxJobsActive);
 
     if (enableStreaming) {
       if (streamingTimeout != null) {
@@ -184,6 +193,7 @@ public final class JobWorkerBuilderImpl
               workerName,
               timeout,
               fetchVariables,
+              tenantIds,
               streamingTimeout,
               backoffSupplier,
               executorService);
@@ -203,5 +213,23 @@ public final class JobWorkerBuilderImpl
             metrics);
     closeables.add(jobWorker);
     return jobWorker;
+  }
+
+  @Override
+  public JobWorkerBuilderStep3 tenantId(final String tenantId) {
+    tenantIds.add(tenantId);
+    return this;
+  }
+
+  @Override
+  public JobWorkerBuilderStep3 tenantIds(final List<String> tenantIds) {
+    tenantIds.addAll(tenantIds);
+    return this;
+  }
+
+  @Override
+  public JobWorkerBuilderStep3 tenantIds(final String... tenantIds) {
+    tenantIds(Arrays.asList(tenantIds));
+    return this;
   }
 }

@@ -112,6 +112,7 @@ public final class JobPollerImplTest extends ClientTest {
         "testWorkerName",
         Duration.ofSeconds(10),
         Collections.emptyList(),
+        Collections.singletonList("test-tenant"),
         10);
   }
 
@@ -131,6 +132,7 @@ public final class JobPollerImplTest extends ClientTest {
           .setRetries(34)
           .setDeadline(1231)
           .setVariables("{\"key\": \"val\"}")
+          .setTenantId("test-tenant")
           .build();
     }
   }
