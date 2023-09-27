@@ -3,7 +3,7 @@
  * Licensed under a proprietary license. See the License.txt file for more information.
  * You may not use this file except in compliance with the proprietary license.
  */
-package org.camunda.optimize.upgrade.migrate310to720;
+package org.camunda.optimize.upgrade.migrate310to311;
 
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT_ID;
 
-public class MigrateProcessDefinitionIndexIT extends AbstractUpgrade720IT {
+public class MigrateProcessDefinitionIndexIT extends AbstractUpgrade311IT {
 
   @Test
   public void addTenantIdForProcessDefinitionsOfZeebeEngine_zeebeImportEnabled() {

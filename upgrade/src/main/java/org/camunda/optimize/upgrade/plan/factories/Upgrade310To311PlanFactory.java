@@ -46,12 +46,12 @@ import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 @Slf4j
-public class Upgrade310To720PlanFactory implements UpgradePlanFactory {
+public class Upgrade310To311PlanFactory implements UpgradePlanFactory {
   @Override
   public UpgradePlan createUpgradePlan(final UpgradeExecutionDependencies upgradeExecutionDependencies) {
     UpgradePlanBuilder.AddUpgradeStepBuilder upgradePlanBuilder = UpgradePlanBuilder.createUpgradePlan()
       .fromVersion("3.10")
-      .toVersion("7.20.0")
+      .toVersion("3.11.0")
       .addUpgradeSteps(addDescriptionFieldToReportIndices())
       .addUpgradeStep(addDescriptionFieldToDashboardIndex());
 

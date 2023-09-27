@@ -3,7 +3,7 @@
  * Licensed under a proprietary license. See the License.txt file for more information.
  * You may not use this file except in compliance with the proprietary license.
  */
-package org.camunda.optimize.upgrade.migrate310to720;
+package org.camunda.optimize.upgrade.migrate310to311;
 
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.persistence.incident.IncidentDto;
@@ -16,7 +16,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT_ID;
 
-public class MigrateProcessInstanceIndexIT extends AbstractUpgrade720IT {
+public class MigrateProcessInstanceIndexIT extends AbstractUpgrade311IT {
 
   private final String ALWAYS_COMPLETING_PROCESS = "always-completing-process";
   private final String ONLY_INCIDENT_PROCESS = "onlyincidentsprocess";
