@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-const IS_PROCESS_INSTANCES_ENABLED = process.env.NODE_ENV === 'development';
-const IS_MULTI_TENANCY_ENABLED = process.env.NODE_ENV === 'development';
+const IS_PROCESS_INSTANCES_ENABLED = false;
+const IS_MULTI_TENANCY_ENABLED = false;
 
 export {IS_PROCESS_INSTANCES_ENABLED, IS_MULTI_TENANCY_ENABLED};
