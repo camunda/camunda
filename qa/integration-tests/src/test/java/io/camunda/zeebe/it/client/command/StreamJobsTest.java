@@ -15,6 +15,7 @@ import io.camunda.zeebe.it.clustering.ClusteringRuleExtension;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.qa.util.jobstream.JobStreamServiceAssert;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -73,6 +74,7 @@ final class StreamJobsTest {
             .consumer(jobHandler)
             .workerName("streamer")
             .fetchVariables("foo")
+            .tenantIds(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
             .timeout(Duration.ofSeconds(5))
             .send();
     final var initialTime = System.currentTimeMillis();
@@ -224,6 +226,11 @@ final class StreamJobsTest {
   }
 
   private void deployProcess(final BpmnModelInstance process) {
-    client.newDeployResourceCommand().addProcessModel(process, "sequence.bpmn").send().join();
+    client
+        .newDeployResourceCommand()
+        .addProcessModel(process, "sequence.bpmn")
+        .tenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+        .send()
+        .join();
   }
 }

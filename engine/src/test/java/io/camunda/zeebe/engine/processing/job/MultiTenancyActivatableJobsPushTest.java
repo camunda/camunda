@@ -70,9 +70,8 @@ public class MultiTenancyActivatableJobsPushTest {
     final var jobStreamA =
         JOB_STREAMER.addJobStream(
             jobTypeBuffer, jobActivationProperties.setTenantIds(List.of(tenantIdA)));
-    final var jobStreamB =
-        JOB_STREAMER.addJobStream(
-            jobTypeBuffer, jobActivationProperties.setTenantIds(List.of(tenantIdB)));
+    JOB_STREAMER.addJobStream(
+        jobTypeBuffer, jobActivationProperties.setTenantIds(List.of(tenantIdB)));
 
     final int activationCount = 1;
 
