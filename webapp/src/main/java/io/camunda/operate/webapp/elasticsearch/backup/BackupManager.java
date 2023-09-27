@@ -19,11 +19,15 @@ import io.camunda.operate.schema.backup.Prio4Backup;
 import io.camunda.operate.schema.indices.IndexDescriptor;
 import io.camunda.operate.schema.templates.TemplateDescriptor;
 import io.camunda.operate.util.ThreadUtil;
+import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.backup.BackupService;
 import io.camunda.operate.webapp.backup.Metadata;
-import io.camunda.operate.webapp.management.dto.*;
+import io.camunda.operate.webapp.management.dto.BackupStateDto;
+import io.camunda.operate.webapp.management.dto.GetBackupStateResponseDetailDto;
+import io.camunda.operate.webapp.management.dto.GetBackupStateResponseDto;
+import io.camunda.operate.webapp.management.dto.TakeBackupRequestDto;
+import io.camunda.operate.webapp.management.dto.TakeBackupResponseDto;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
-import io.camunda.operate.webapp.rest.exception.NotFoundException;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.admin.cluster.repositories.get.GetRepositoriesRequest;
@@ -47,7 +51,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 
@@ -56,12 +59,24 @@ import java.net.SocketTimeoutException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Objects;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.Collectors;
 
-import static java.util.stream.Collectors.*;
-import static org.elasticsearch.snapshots.SnapshotState.*;
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.toList;
+import static org.elasticsearch.snapshots.SnapshotState.FAILED;
+import static org.elasticsearch.snapshots.SnapshotState.INCOMPATIBLE;
+import static org.elasticsearch.snapshots.SnapshotState.IN_PROGRESS;
+import static org.elasticsearch.snapshots.SnapshotState.PARTIAL;
+import static org.elasticsearch.snapshots.SnapshotState.SUCCESS;
 
 @Conditional(ElasticsearchCondition.class)
 @Component
@@ -426,7 +441,7 @@ public class BackupManager implements BackupService {
     } catch (Exception e) {
       if (isSnapshotMissingException(e)) {
         // no snapshot with given backupID exists
-        throw new NotFoundException(String.format("No backup with id [%s] found.", backupId), e);
+        throw new ResourceNotFoundException(String.format("No backup with id [%s] found.", backupId));
       }
       if (isRepositoryMissingException(e)) {
         final String reason = String.format(

@@ -8,21 +8,20 @@ package io.camunda.operate.webapp;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.operate.JacksonConfig;
 import io.camunda.operate.exceptions.OperateElasticsearchConnectionException;
 import io.camunda.operate.exceptions.OperateRuntimeException;
-import io.camunda.operate.property.BackupProperties;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.webapp.backup.BackupConfig;
+import io.camunda.operate.util.TestApplication;
+import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.backup.BackupService;
 import io.camunda.operate.webapp.backup.Metadata;
-import io.camunda.operate.webapp.elasticsearch.backup.BackupManager;
 import io.camunda.operate.webapp.management.BackupController;
 import io.camunda.operate.webapp.management.dto.GetBackupStateResponseDetailDto;
 import io.camunda.operate.webapp.management.dto.GetBackupStateResponseDto;
 import io.camunda.operate.webapp.management.dto.TakeBackupRequestDto;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
+import org.apache.http.HttpStatus;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.admin.cluster.snapshots.get.GetSnapshotsResponse;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -40,36 +39,52 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 
 import java.io.IOException;
 import java.time.OffsetDateTime;
-import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static io.camunda.operate.util.CollectionUtil.asMap;
 import static io.camunda.operate.webapp.backup.BackupService.SNAPSHOT_MISSING_EXCEPTION_TYPE;
-import static io.camunda.operate.webapp.management.dto.BackupStateDto.*;
+import static io.camunda.operate.webapp.management.dto.BackupStateDto.COMPLETED;
+import static io.camunda.operate.webapp.management.dto.BackupStateDto.FAILED;
+import static io.camunda.operate.webapp.management.dto.BackupStateDto.INCOMPATIBLE;
+import static io.camunda.operate.webapp.management.dto.BackupStateDto.INCOMPLETE;
+import static io.camunda.operate.webapp.management.dto.BackupStateDto.IN_PROGRESS;
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest(classes = {TestConfig.class, JacksonConfig.class, BackupConfig.class, BackupController.class, BackupManager.class })
-@ActiveProfiles({"test", "backend-test"})
+@SpringBootTest(
+        classes = {TestApplication.class},
+        webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+        properties = {
+                OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
+                OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",
+                "management.endpoints.web.exposure.include = backups",
+                "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER"
+        })
+@ActiveProfiles({"test"})
+@AutoConfigureMockMvc
 public class BackupControllerTest {
-
   @SpyBean
   private BackupService backupService;
 
@@ -88,6 +103,24 @@ public class BackupControllerTest {
 
   @Autowired
   private ObjectMapper objectMapper;
+
+  @Autowired
+  private MockMvc mockMvc;
+
+  @Test
+  public void shouldReturnNotFoundStatusWhenBackupIdNotFound() throws Exception {
+    when(esClient.snapshot()).thenReturn(snapshotClient);
+    when(snapshotClient.get(any(), any())).thenThrow(new ElasticsearchStatusException("type=snapshot_missing_exception", RestStatus.NOT_FOUND));
+
+    MvcResult result = mockMvc.perform(get("/actuator/backups/2")).andReturn();
+
+    assertThat(result.getResponse().getStatus()).isEqualTo(HttpStatus.SC_NOT_FOUND);
+
+    Map<String, String> resultBody = objectMapper.readValue(
+            result.getResponse().getContentAsString(), Map.class);
+
+    assertThat(resultBody.get("message")).isEqualTo("No backup with id [2] found.");
+  }
 
   @Test
   public void shouldFailCreateBackupOnEmptyBackupId() {
@@ -151,7 +184,6 @@ public class BackupControllerTest {
     assertTrue(actualMessage.contains(expectedMessage));
 
 
-    when(operateProperties.getBackup()).thenReturn(new BackupProperties());
     exception = assertThrows(NotFoundException.class, () -> {
       backupController.takeBackup(new TakeBackupRequestDto().setBackupId(backupId));
     });
@@ -173,9 +205,7 @@ public class BackupControllerTest {
 
   @Test
   public void shouldFailCreateBackupOnNonExistingRepository() throws IOException {
-    String repoName = "repoName";
-    String expectedMessage = String.format("No repository with name [%s] could be found.", repoName);
-    when(operateProperties.getBackup()).thenReturn(new BackupProperties().setRepositoryName(repoName));
+    String expectedMessage = String.format("No repository with name [%s] could be found.", operateProperties.getBackup().getRepositoryName());
     ElasticsearchStatusException elsEx = mock(ElasticsearchStatusException.class);
     when(elsEx.getDetailedMessage()).thenReturn("type=repository_missing_exception");
     when(snapshotClient.getRepository(any(), any())).thenThrow(elsEx);
@@ -198,9 +228,7 @@ public class BackupControllerTest {
 
   @Test
   public void shouldFailCreateBackupOnBackupIdNotFound() throws IOException {
-    String repoName = "repoName";
     Long backupId = 2L;
-    when(operateProperties.getBackup()).thenReturn(new BackupProperties().setRepositoryName(repoName));
     SnapshotInfo snapshotInfo = mock(SnapshotInfo.class);
     when(snapshotInfo.snapshotId()).thenReturn(new SnapshotId("snapshotName", "uuid"));
     List<SnapshotInfo> snapshotInfos = asList(new SnapshotInfo[] { snapshotInfo });
@@ -218,9 +246,7 @@ public class BackupControllerTest {
 
   @Test
   public void shouldFailCreateBackupOn1stRequestFailedWithConnectionError() throws IOException {
-    String repoName = "repoName";
     Long backupId = 2L;
-    when(operateProperties.getBackup()).thenReturn(new BackupProperties().setRepositoryName(repoName));
     when(snapshotClient.getRepository(any(), any())).thenThrow(new TransportException("Elastic is not available"));
     when(esClient.snapshot()).thenReturn(snapshotClient);
 
@@ -228,16 +254,15 @@ public class BackupControllerTest {
       backupController.takeBackup(new TakeBackupRequestDto().setBackupId(backupId));
     });
     String expectedMessage = String.format(
-        "Encountered an error connecting to Elasticsearch while retrieving repository with name [%s].", repoName);
+        "Encountered an error connecting to Elasticsearch while retrieving repository with name [%s].",
+            operateProperties.getBackup().getRepositoryName());
     String actualMessage = exception.getMessage();
     assertTrue(actualMessage.contains(expectedMessage));
   }
 
   @Test
   public void shouldFailCreateBackupOn2ndRequestFailedWithConnectionError() throws IOException {
-    String repoName = "repoName";
     Long backupId = 2L;
-    when(operateProperties.getBackup()).thenReturn(new BackupProperties().setRepositoryName(repoName));
     when(snapshotClient.getRepository(any(), any())).thenReturn(null);
     when(snapshotClient.get(any(), any())).thenThrow(new TransportException("Elastic is not available"));
     when(esClient.snapshot()).thenReturn(snapshotClient);
@@ -247,21 +272,19 @@ public class BackupControllerTest {
     });
     String expectedMessage = String.format(
         "Encountered an error connecting to Elasticsearch while searching for duplicate backup. Repository name: [%s].",
-        repoName);
+        operateProperties.getBackup().getRepositoryName());
     String actualMessage = exception.getMessage();
     assertTrue(actualMessage.contains(expectedMessage));
   }
 
   @Test
   public void shouldFailGetStateOnNoBackupFound() throws IOException {
-    String repoName = "repoName";
     Long backupId = 2L;
-    when(operateProperties.getBackup()).thenReturn(new BackupProperties().setRepositoryName(repoName));
     when(snapshotClient.get(any(), any())).thenThrow(
         new ElasticsearchStatusException(SNAPSHOT_MISSING_EXCEPTION_TYPE, RestStatus.NOT_FOUND));
     when(esClient.snapshot()).thenReturn(snapshotClient);
 
-    Exception exception = assertThrows(NotFoundException.class, () -> {
+    Exception exception = assertThrows(ResourceNotFoundException.class, () -> {
       backupController.getBackupState(backupId);
     });
     String expectedMessage = String.format("No backup with id [%s] found.", backupId);
@@ -272,25 +295,22 @@ public class BackupControllerTest {
 
   @Test
   public void shouldFailGetStateOnConnectionError() throws IOException {
-    String repoName = "repoName";
     Long backupId = 2L;
-    when(operateProperties.getBackup()).thenReturn(new BackupProperties().setRepositoryName(repoName));
     when(esClient.snapshot()).thenThrow(new TransportException("Elastic is not available"));
 
     Exception exception = assertThrows(OperateElasticsearchConnectionException.class, () -> {
       backupController.getBackupState(backupId);
     });
     String expectedMessage = String.format(
-        "Encountered an error connecting to Elasticsearch while searching for snapshots. Repository name: [%s].", repoName);
+        "Encountered an error connecting to Elasticsearch while searching for snapshots. Repository name: [%s].",
+            operateProperties.getBackup().getRepositoryName());
     String actualMessage = exception.getMessage();
     assertTrue(actualMessage.contains(expectedMessage));
   }
 
   @Test
   public void shouldReturnCompletedState() throws IOException {
-    String repoName = "repoName";
     Long backupId = 2L;
-    when(operateProperties.getBackup()).thenReturn(new BackupProperties().setRepositoryName(repoName));
     SnapshotInfo snapshotInfo1 = createSnapshotInfoMock("snapshotName1", UUID.randomUUID().toString(), SnapshotState.SUCCESS);
     SnapshotInfo snapshotInfo2 = createSnapshotInfoMock("snapshotName2", UUID.randomUUID().toString(), SnapshotState.SUCCESS);
     SnapshotInfo snapshotInfo3 = createSnapshotInfoMock("snapshotName3", UUID.randomUUID().toString(), SnapshotState.SUCCESS);
@@ -308,9 +328,7 @@ public class BackupControllerTest {
   }
   @Test
   public void shouldReturnFailedState1() throws IOException {
-    String repoName = "repoName";
     Long backupId = 2L;
-    when(operateProperties.getBackup()).thenReturn(new BackupProperties().setRepositoryName(repoName));
     SnapshotInfo snapshotInfo1 = createSnapshotInfoMock("snapshotName1", UUID.randomUUID().toString(), SnapshotState.SUCCESS);
     SnapshotInfo snapshotInfo2 = createSnapshotInfoMock("snapshotName2", UUID.randomUUID().toString(), SnapshotState.SUCCESS);
     SnapshotShardFailure failure1 = new SnapshotShardFailure("someNodeId1",
@@ -338,9 +356,7 @@ public class BackupControllerTest {
 
   @Test
   public void shouldReturnFailedState2() throws IOException {
-    String repoName = "repoName";
     Long backupId = 2L;
-    when(operateProperties.getBackup()).thenReturn(new BackupProperties().setRepositoryName(repoName));
     SnapshotInfo snapshotInfo1 = createSnapshotInfoMock("snapshotName1", UUID.randomUUID().toString(), SnapshotState.SUCCESS);
     SnapshotInfo snapshotInfo2 = createSnapshotInfoMock("snapshotName2", UUID.randomUUID().toString(), SnapshotState.SUCCESS);
     SnapshotInfo snapshotInfo3 = createSnapshotInfoMock("snapshotName3", UUID.randomUUID().toString(), SnapshotState.PARTIAL);
@@ -359,9 +375,7 @@ public class BackupControllerTest {
 
   @Test
   public void shouldReturnFailedState3WhenMoreSnapshotsThanExpected() throws IOException {
-    String repoName = "repoName";
     Long backupId = 2L;
-    when(operateProperties.getBackup()).thenReturn(new BackupProperties().setRepositoryName(repoName));
     SnapshotInfo snapshotInfo1 = createSnapshotInfoMock("snapshotName1", UUID.randomUUID().toString(), SnapshotState.SUCCESS);
     SnapshotInfo snapshotInfo2 = createSnapshotInfoMock("snapshotName2", UUID.randomUUID().toString(), SnapshotState.SUCCESS);
     SnapshotInfo snapshotInfo3 = createSnapshotInfoMock("snapshotName3", UUID.randomUUID().toString(), SnapshotState.SUCCESS);
@@ -381,9 +395,7 @@ public class BackupControllerTest {
 
   @Test
   public void shouldReturnIncompatibleState() throws IOException {
-    String repoName = "repoName";
     Long backupId = 2L;
-    when(operateProperties.getBackup()).thenReturn(new BackupProperties().setRepositoryName(repoName));
     SnapshotInfo snapshotInfo1 = createSnapshotInfoMock("snapshotName1", UUID.randomUUID().toString(), SnapshotState.SUCCESS);
     SnapshotInfo snapshotInfo2 = createSnapshotInfoMock("snapshotName2", UUID.randomUUID().toString(), SnapshotState.SUCCESS);
     SnapshotInfo snapshotInfo3 = createSnapshotInfoMock("snapshotName3", UUID.randomUUID().toString(), SnapshotState.INCOMPATIBLE);
@@ -402,9 +414,7 @@ public class BackupControllerTest {
 
   @Test
   public void shouldReturnIncompleteState() throws IOException {
-    String repoName = "repoName";
     Long backupId = 2L;
-    when(operateProperties.getBackup()).thenReturn(new BackupProperties().setRepositoryName(repoName));
     //we have only 2 out of 3 snapshots
     SnapshotInfo snapshotInfo1 = createSnapshotInfoMock("snapshotName1", UUID.randomUUID().toString(), SnapshotState.SUCCESS);
     SnapshotInfo snapshotInfo2 = createSnapshotInfoMock("snapshotName2", UUID.randomUUID().toString(), SnapshotState.SUCCESS);
@@ -423,9 +433,7 @@ public class BackupControllerTest {
 
   @Test
   public void shouldReturnInProgressState1() throws IOException {
-    String repoName = "repoName";
     Long backupId = 2L;
-    when(operateProperties.getBackup()).thenReturn(new BackupProperties().setRepositoryName(repoName));
     //we have only 2 out of 3 snapshots
     SnapshotInfo snapshotInfo1 = createSnapshotInfoMock("snapshotName1", UUID.randomUUID().toString(), SnapshotState.SUCCESS);
     SnapshotInfo snapshotInfo2 = createSnapshotInfoMock("snapshotName2", UUID.randomUUID().toString(), SnapshotState.SUCCESS);
@@ -445,9 +453,7 @@ public class BackupControllerTest {
 
   @Test
   public void shouldReturnInProgressState2() throws IOException {
-    String repoName = "repoName";
     Long backupId = 2L;
-    when(operateProperties.getBackup()).thenReturn(new BackupProperties().setRepositoryName(repoName));
     //we have only 2 out of 3 snapshots
     SnapshotInfo snapshotInfo1 = createSnapshotInfoMock("snapshotName1", UUID.randomUUID().toString(), SnapshotState.IN_PROGRESS);
     SnapshotInfo snapshotInfo2 = createSnapshotInfoMock("snapshotName2", UUID.randomUUID().toString(), SnapshotState.IN_PROGRESS);
@@ -466,8 +472,6 @@ public class BackupControllerTest {
 
   @Test
   public void shouldFailDeleteBackupOnNonExistingRepository() throws IOException {
-    String repoName = "repoName";
-    when(operateProperties.getBackup()).thenReturn(new BackupProperties().setRepositoryName(repoName));
     ElasticsearchStatusException elsEx = mock(ElasticsearchStatusException.class);
     when(elsEx.getDetailedMessage()).thenReturn("type=repository_missing_exception");
     when(snapshotClient.getRepository(any(), any())).thenThrow(elsEx);
@@ -477,7 +481,7 @@ public class BackupControllerTest {
     });
 
     String expectedMessage = String.format("No repository with name [%s] could be found.",
-        repoName);
+        operateProperties.getBackup().getRepositoryName());
     String actualMessage = exception.getMessage();
     assertTrue(actualMessage.contains(expectedMessage));
     verify(esClient, times(1)).snapshot();
@@ -485,8 +489,6 @@ public class BackupControllerTest {
 
   @Test
   public void shouldFailGetBackupOnNonExistingRepository() throws IOException {
-    String repoName = "repoName";
-    when(operateProperties.getBackup()).thenReturn(new BackupProperties().setRepositoryName(repoName));
     ElasticsearchStatusException elsEx = mock(ElasticsearchStatusException.class);
     when(elsEx.getDetailedMessage()).thenReturn("type=repository_missing_exception");
     when(esClient.snapshot()).thenThrow(elsEx);
@@ -495,7 +497,7 @@ public class BackupControllerTest {
     });
 
     String expectedMessage = String.format("No repository with name [%s] could be found.",
-        repoName);
+        operateProperties.getBackup().getRepositoryName());
     String actualMessage = exception.getMessage();
     assertTrue(actualMessage.contains(expectedMessage));
     verify(esClient, times(1)).snapshot();
@@ -503,8 +505,6 @@ public class BackupControllerTest {
 
   @Test
   public void shouldFailGetBackupsOnNonExistingRepository() throws IOException {
-    String repoName = "repoName";
-    when(operateProperties.getBackup()).thenReturn(new BackupProperties().setRepositoryName(repoName));
     ElasticsearchStatusException elsEx = mock(ElasticsearchStatusException.class);
     when(elsEx.getDetailedMessage()).thenReturn("type=repository_missing_exception");
     when(esClient.snapshot()).thenThrow(elsEx);
@@ -514,7 +514,7 @@ public class BackupControllerTest {
     });
 
     String expectedMessage = String.format("No repository with name [%s] could be found.",
-        repoName);
+        operateProperties.getBackup().getRepositoryName());
     String actualMessage = exception.getMessage();
     assertTrue(actualMessage.contains(expectedMessage));
     verify(esClient, times(1)).snapshot();
@@ -522,9 +522,6 @@ public class BackupControllerTest {
 
   @Test
   public void shouldReturnEmptyBackupsOnNoBackupFound() throws IOException {
-    String repoName = "repoName";
-    String backupId = "backupId";
-    when(operateProperties.getBackup()).thenReturn(new BackupProperties().setRepositoryName(repoName));
     when(snapshotClient.get(any(), any())).thenThrow(
         new ElasticsearchStatusException(SNAPSHOT_MISSING_EXCEPTION_TYPE, RestStatus.NOT_FOUND));
     when(esClient.snapshot()).thenReturn(snapshotClient);
@@ -534,26 +531,23 @@ public class BackupControllerTest {
 
   @Test
   public void shouldFailGetBackupsOnConnectionError() throws IOException {
-    String repoName = "repoName";
-    when(operateProperties.getBackup()).thenReturn(new BackupProperties().setRepositoryName(repoName));
     when(esClient.snapshot()).thenThrow(new TransportException("Elastic is not available"));
 
     Exception exception = assertThrows(OperateElasticsearchConnectionException.class, () -> {
       backupController.getBackups();
     });
     String expectedMessage = String.format(
-        "Encountered an error connecting to Elasticsearch while searching for snapshots. Repository name: [%s].", repoName);
+        "Encountered an error connecting to Elasticsearch while searching for snapshots. Repository name: [%s].",
+            operateProperties.getBackup().getRepositoryName());
     String actualMessage = exception.getMessage();
     assertTrue(actualMessage.contains(expectedMessage));
   }
 
   @Test
   public void shouldReturnThreeBackups() throws IOException {
-    String repoName = "repoName";
     Long backupId1 = 1L;
     Long backupId2 = 2L;
     Long backupId3 = 3L;
-    when(operateProperties.getBackup()).thenReturn(new BackupProperties().setRepositoryName(repoName));
     //COMPLETED
     SnapshotInfo snapshotInfo1_1 = createSnapshotInfoMock(new Metadata().setBackupId(backupId1).setVersion("8.8.8").setPartNo(1).setPartCount(2),
         UUID.randomUUID().toString(), SnapshotState.SUCCESS);
@@ -604,9 +598,7 @@ public class BackupControllerTest {
 
   @Test
   public void shouldReturnVersion8_1Backup() throws IOException {
-    String repoName = "repoName";
     Long backupId1 = 123L;
-    when(operateProperties.getBackup()).thenReturn(new BackupProperties().setRepositoryName(repoName));
     //COMPLETED
     Metadata metadata1 = new Metadata().setBackupId(backupId1).setVersion("8.8.8").setPartNo(1).setPartCount(2);
     SnapshotInfo snapshotInfo1_1 = createSnapshotInfoMock(metadata1, UUID.randomUUID().toString(),
@@ -673,12 +665,5 @@ public class BackupControllerTest {
     when(snapshotInfo.startTime()).thenReturn(OffsetDateTime.now().toInstant().toEpochMilli());
     return snapshotInfo;
   }
-}
-
-@Configuration @ComponentScan(basePackages = { "io.camunda.operate.schema.indices",
-    "io.camunda.operate.schema.templates", "io.camunda.operate.property" })
-@Profile("backend-test")
-class TestConfig {
-
 }
 

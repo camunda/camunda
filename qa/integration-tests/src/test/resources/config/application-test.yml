@@ -1,6 +1,8 @@
 camunda.operate:
   username: demo
   password: demo
+  backup:
+    repositoryName: repoName
   elasticsearch:
     clusterName: docker-cluster
     url: http://localhost:9200
