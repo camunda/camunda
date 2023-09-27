@@ -35,11 +35,7 @@ import java.util.Map;
 
 import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
 import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.and;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.constantScore;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.reverseOrder;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.sortOptions;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.term;
+import static io.camunda.operate.store.opensearch.dsl.QueryDSL.*;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.QueryType.ALL;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.QueryType.ONLY_RUNTIME;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
@@ -112,12 +108,12 @@ public class OpensearchListViewReader implements ListViewReader {
   @Override
   public List<ProcessInstanceForListViewEntity> queryListView(ListViewRequestDto processInstanceRequest, ListViewResponseDto result) {
     final RequestDSL.QueryType queryType = processInstanceRequest.getQuery().isFinished() ? ALL : ONLY_RUNTIME;
-    final Query query = constantScore(
+    final Query query = constantScore(withTenantCheck(
       and(
         term(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION),
         openSearchQueryHelper.createQueryFragment(processInstanceRequest.getQuery())
       )
-    );
+    ));
 
     logger.debug("Process instance search request: \n{}", query.toString());
 
@@ -126,6 +122,8 @@ public class OpensearchListViewReader implements ListViewReader {
     if (processInstanceRequest.getSorting() != null) {
       searchRequestBuilder.sort(getSortOptions(processInstanceRequest));
     }
+
+    searchRequestBuilder.size(processInstanceRequest.getPageSize());
 
     final SearchResponse<ProcessInstanceForListViewEntity> response = richOpenSearchClient.doc().search(searchRequestBuilder, ProcessInstanceForListViewEntity.class);
 

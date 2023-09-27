@@ -26,8 +26,6 @@ public interface ProcessStore {
 
   Map<ProcessKey, List<ProcessEntity>> getProcessesGrouped(String tenantId, @Nullable Set<String> allowedBPMNprocessIds);
 
-  Map<Long, ProcessEntity> getProcessIdsToProcesses();
-
   Map<Long, ProcessEntity> getProcessesIdsToProcessesWithFields(@Nullable Set<String> allowedBPMNIds, int maxSize, String... fields);
 
   /// Process instance methods

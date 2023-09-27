@@ -61,8 +61,7 @@ public class OpensearchDecisionReader implements DecisionReader {
   public String getDiagram(Long decisionDefinitionKey) {
     record decisionRequirementsIdRecord(Long decisionRequirementsKey){}
     var request = searchRequestBuilder(decisionIndex.getAlias())
-        .query(ids(decisionDefinitionKey.toString()));
-    //TODO: use TenantAwareClient for Opensearch
+        .query(withTenantCheck(ids(decisionDefinitionKey.toString())));
     var hits = richOpenSearchClient.doc().search(request, decisionRequirementsIdRecord.class).hits();
     if (hits.total().value() == 0){
       throw new NotFoundException("No decision definition found for id " + decisionDefinitionKey);
@@ -70,9 +69,8 @@ public class OpensearchDecisionReader implements DecisionReader {
     var decisionRequirementsId = hits.hits().get(0).source().decisionRequirementsKey;
 
     var xmlRequest = searchRequestBuilder(decisionRequirementsIndex.getAlias())
-        .query(ids(decisionRequirementsId.toString()))
+        .query(withTenantCheck(ids(decisionRequirementsId.toString())))
         .source(sourceInclude(DecisionRequirementsIndex.XML));
-    //TODO: use TenantAwareClient for Opensearch
     record xmlRecord(String xml){}
     var xmlHits = richOpenSearchClient.doc().search(xmlRequest, xmlRecord.class).hits();
     if (xmlHits.total().value() == 1){
@@ -87,9 +85,8 @@ public class OpensearchDecisionReader implements DecisionReader {
   @Override
   public DecisionDefinitionEntity getDecision(Long decisionDefinitionKey) {
     var request = searchRequestBuilder(decisionIndex.getAlias())
-        .query(
-            term(DecisionIndex.KEY, decisionDefinitionKey));
-    //TODO: use TenantAwareClient for Opensearch
+        .query(withTenantCheck(
+            term(DecisionIndex.KEY, decisionDefinitionKey)));
     var hits = richOpenSearchClient.doc().search(request, DecisionDefinitionEntity.class).hits();
     if( hits.total().value() == 1) {
       return hits.hits().get(0).source();
@@ -109,7 +106,7 @@ public class OpensearchDecisionReader implements DecisionReader {
         DecisionIndex.DECISION_ID, DecisionIndex.TENANT_ID);
 
     var aggregationsRequest = searchRequestBuilder(decisionIndex.getAlias())
-        .query(buildQuery(request.getTenantId()))
+        .query(withTenantCheck(buildQuery(request.getTenantId())))
         .size(0)
         .aggregations(tenantsGroupsAggName, withSubaggregations(
             termAggregation(ProcessIndex.TENANT_ID, TERMS_AGG_SIZE),
@@ -119,7 +116,6 @@ public class OpensearchDecisionReader implements DecisionReader {
             ))
         ));
 
-    //TODO: use TenantAwareClient for Opensearch
     Map<String, List<DecisionDefinitionEntity>> result = new HashMap<>();
     var response = richOpenSearchClient.doc().search(aggregationsRequest, Object.class);
 

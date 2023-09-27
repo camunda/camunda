@@ -132,16 +132,15 @@ public class OpensearchVariableReader implements VariableReader {
       scopeKey = Long.valueOf(request.getScopeId());
     }
     var req = searchRequestBuilder(variableTemplate)
-        .query(constantScore(
+        .query(constantScore(withTenantCheck(
             and(
               term(VariableTemplate.PROCESS_INSTANCE_KEY, processInstanceId),
                 term(VariableTemplate.SCOPE_KEY,scopeKey),
                 (varName!=null ? term(NAME, varName) : null)
             )
-        ))
+        )))
         .source(sourceExclude(FULL_VALUE));
     applySorting(req, request);
-    //TODO: Use tenantAwareClient for Opensearch
     var response = richOpenSearchClient.doc().search(req, VariableEntity.class);
     List<VariableEntity> variableEntities = response.hits().hits().stream()
         .filter(hit -> hit.source() != null)
@@ -204,7 +203,7 @@ public class OpensearchVariableReader implements VariableReader {
   @Override
   public VariableDto getVariable(String id) {
     var searchRequest = searchRequestBuilder(variableTemplate)
-        .query(ids(id));
+        .query(withTenantCheck(ids(id)));
     var hits = richOpenSearchClient.doc().search(searchRequest, VariableEntity.class).hits();
     if( hits.total().value() != 1){
       throw new NotFoundException(String.format("Variable with id %s not found.", id));
@@ -215,14 +214,13 @@ public class OpensearchVariableReader implements VariableReader {
   @Override
   public VariableDto getVariableByName(String processInstanceId, String scopeId, String variableName) {
     var searchRequest = searchRequestBuilder(variableTemplate)
-        .query(constantScore(
+        .query(constantScore(withTenantCheck(
            and(
                term(ProcessInstanceDependant.PROCESS_INSTANCE_KEY, processInstanceId),
                term(VariableTemplate.SCOPE_KEY, scopeId),
                term(VariableTemplate.NAME, variableName)
            )
-        ));
-    // TODO: Use tenantAwareClient for Opensearch
+        )));
     var hits = richOpenSearchClient.doc().search(searchRequest,VariableEntity.class).hits();
     if (hits.total().value() > 0){
       return toVariableDto(hits.hits().get(0).source());

@@ -79,11 +79,11 @@ public class OpensearchDecisionInstanceReader implements DecisionInstanceReader 
   @Override
   public DecisionInstanceDto getDecisionInstance(String decisionInstanceId) {
     var searchRequest = searchRequestBuilder(decisionInstanceTemplate)
-        .query(constantScore(
+        .query(withTenantCheck(constantScore(
             and(
                 ids(decisionInstanceId),
                 term(DecisionInstanceTemplate.ID, decisionInstanceId))
-            ));
+            )));
 
     return DtoCreator.create(
         richOpenSearchClient.doc().searchUnique(searchRequest, DecisionInstanceEntity.class, decisionInstanceId),
@@ -128,16 +128,15 @@ public class OpensearchDecisionInstanceReader implements DecisionInstanceReader 
   }
 
   private Query createRequestQuery(final DecisionInstanceListQueryDto decisionInstanceListQueryDto) {
-    var query = and(
+    var query = withTenantCheck(and(
         createEvaluatedFailedQuery(decisionInstanceListQueryDto),
         createDecisionDefinitionIdsQuery(decisionInstanceListQueryDto),
         createIdsQuery(decisionInstanceListQueryDto),
         createProcessInstanceIdQuery(decisionInstanceListQueryDto),
         createEvaluationDateQuery(decisionInstanceListQueryDto),
         createReadPermissionQuery(),
-        //TODO Elasticsearch changes
         createTenantIdQuery(decisionInstanceListQueryDto)
-    );
+    ));
     return query == null? matchAll(): query;
   }
 
@@ -267,7 +266,7 @@ public class OpensearchDecisionInstanceReader implements DecisionInstanceReader 
     final Long decisionInstanceKey = DecisionInstanceEntity.extractKey(decisionInstanceId);
 
     var searchRequest = searchRequestBuilder(decisionInstanceTemplate)
-        .query(term(DecisionInstanceTemplate.KEY, decisionInstanceKey))
+        .query(withTenantCheck(term(DecisionInstanceTemplate.KEY, decisionInstanceKey)))
         .source(sourceInclude(DECISION_ID, STATE));
 
     List<DRDDataEntryDto> results = new ArrayList<>();

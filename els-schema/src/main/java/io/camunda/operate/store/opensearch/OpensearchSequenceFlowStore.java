@@ -22,9 +22,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.constantScore;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.sortOptions;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.term;
+import static io.camunda.operate.store.opensearch.dsl.QueryDSL.*;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
 
 @Conditional(OpensearchCondition.class)
@@ -44,7 +42,7 @@ public class OpensearchSequenceFlowStore implements SequenceFlowStore {
   public List<SequenceFlowEntity> getSequenceFlowsByProcessInstanceKey(Long processInstanceKey) {
     var query = constantScore(term(SequenceFlowTemplate.PROCESS_INSTANCE_KEY, processInstanceKey));
     var searchRequestBuilder = searchRequestBuilder(sequenceFlowTemplate, RequestDSL.QueryType.ALL)
-      .query(constantScore(term(SequenceFlowTemplate.PROCESS_INSTANCE_KEY, processInstanceKey)))
+      .query(withTenantCheck(constantScore(term(SequenceFlowTemplate.PROCESS_INSTANCE_KEY, processInstanceKey))))
       .sort(sortOptions(SequenceFlowTemplate.ACTIVITY_ID, SortOrder.Asc));
     return richOpenSearchClient.doc().scrollValues(searchRequestBuilder, SequenceFlowEntity.class);
   }

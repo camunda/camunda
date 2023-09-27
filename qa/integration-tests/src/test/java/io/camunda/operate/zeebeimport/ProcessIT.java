@@ -71,20 +71,6 @@ public class ProcessIT extends OperateZeebeIntegrationTest {
   }
 
   @Test
-  public void testTwoProcessesFromOneDeploymentCreated() {
-    //when
-    String bpmnProcessId1 = "demoProcess";
-    String bpmnProcessId2 = "processWithGateway";
-    deployProcess("demoProcess_v_1.bpmn", "processWithGateway.bpmn");
-
-    //then
-    final Map<Long, ProcessEntity> processes = processReader.getProcesses();
-    assertThat(processes).hasSize(2);
-
-    assertThat(processes.values()).extracting("bpmnProcessId").containsExactlyInAnyOrder(bpmnProcessId1, bpmnProcessId2);
-  }
-
-  @Test
   public void testProcessGetDiagram() throws Exception {
     //given
     final Long processDefinitionKey = deployProcess("demoProcess_v_1.bpmn");

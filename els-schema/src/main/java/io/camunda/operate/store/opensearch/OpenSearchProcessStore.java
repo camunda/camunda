@@ -52,14 +52,8 @@ import static io.camunda.operate.store.opensearch.dsl.AggregationDSL.filtersAggr
 import static io.camunda.operate.store.opensearch.dsl.AggregationDSL.termAggregation;
 import static io.camunda.operate.store.opensearch.dsl.AggregationDSL.topHitsAggregation;
 import static io.camunda.operate.store.opensearch.dsl.AggregationDSL.withSubaggregations;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.and;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.ids;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.matchAll;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.not;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.sortOptions;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.sourceInclude;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.stringTerms;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.term;
+import static io.camunda.operate.store.opensearch.dsl.QueryDSL.*;
+import static io.camunda.operate.store.opensearch.dsl.QueryDSL.withTenantCheck;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.QueryType.ALL;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
 import static java.util.function.UnaryOperator.identity;
@@ -83,7 +77,7 @@ public class OpenSearchProcessStore implements ProcessStore {
   public Optional<Long> getDistinctCountFor(String fieldName) {
     final SearchResponse<Void> response;
     var searchRequestBuilder = searchRequestBuilder(processIndex.getAlias())
-      .query(matchAll())
+      .query(withTenantCheck(matchAll()))
       .aggregations(DISTINCT_FIELD_COUNTS, cardinalityAggregation(fieldName, 1_000)._toAggregation())
       .size(0);
 
@@ -99,7 +93,7 @@ public class OpenSearchProcessStore implements ProcessStore {
   @Override
   public ProcessEntity getProcessByKey(Long processDefinitionKey) {
     var searchRequestBuilder = searchRequestBuilder(processIndex.getAlias())
-      .query(term(ProcessIndex.KEY, processDefinitionKey));
+      .query(withTenantCheck(term(ProcessIndex.KEY, processDefinitionKey)));
 
     return richOpenSearchClient.doc().searchUnique(searchRequestBuilder, ProcessEntity.class, String.valueOf(processDefinitionKey));
   }
@@ -107,7 +101,7 @@ public class OpenSearchProcessStore implements ProcessStore {
   @Override
   public String getDiagramByKey(Long processDefinitionKey) {
     var searchRequestBuilder = searchRequestBuilder(processIndex.getAlias())
-      .query(ids(processDefinitionKey.toString()));
+      .query(withTenantCheck(ids(processDefinitionKey.toString())));
 
     return richOpenSearchClient.doc().searchUnique(searchRequestBuilder, ProcessEntity.class, processDefinitionKey.toString()).getBpmnXml();
   }
@@ -130,7 +124,7 @@ public class OpenSearchProcessStore implements ProcessStore {
     final List<String> sourceFields = List.of(ProcessIndex.ID, ProcessIndex.NAME, ProcessIndex.VERSION, ProcessIndex.BPMN_PROCESS_ID, ProcessIndex.TENANT_ID);
     final Query query = allowedBPMNProcessIds == null ? matchAll() : stringTerms(ListViewTemplate.BPMN_PROCESS_ID, allowedBPMNProcessIds);
     var searchRequestBuilder = searchRequestBuilder(processIndex.getAlias())
-      .query(withTenantIdQuery(tenantId, query))
+      .query(withTenantCheck(withTenantIdQuery(tenantId, query)))
       .size(0)
       .aggregations(tenantsGroupsAggName, withSubaggregations(
         termAggregation(ProcessIndex.TENANT_ID, TERMS_AGG_SIZE),
@@ -158,23 +152,11 @@ public class OpenSearchProcessStore implements ProcessStore {
   }
 
   @Override
-  public Map<Long, ProcessEntity> getProcessIdsToProcesses() {
-    var searchRequestBuilder = searchRequestBuilder(processIndex.getAlias());
-
-    return richOpenSearchClient.doc().scrollValues(searchRequestBuilder(processIndex.getAlias()), ProcessEntity.class)
-      .stream()
-      .collect(Collectors.toMap(
-        ProcessEntity::getKey,
-        identity()
-      ));
-  }
-
-  @Override
   public Map<Long, ProcessEntity> getProcessesIdsToProcessesWithFields(Set<String> allowedBPMNIds,
                                                                        int maxSize, String... fields) {
     final Query query = allowedBPMNIds == null ? matchAll() : stringTerms(ListViewTemplate.BPMN_PROCESS_ID, allowedBPMNIds);
     var searchRequestBuilder = searchRequestBuilder(processIndex.getAlias())
-      .query(query)
+      .query(withTenantCheck(query))
       .source(sourceInclude(fields))
       .size(maxSize);
 
@@ -190,11 +172,12 @@ public class OpenSearchProcessStore implements ProcessStore {
   public ProcessInstanceForListViewEntity getProcessInstanceListViewByKey(Long processInstanceKey) {
     var searchRequestBuilder = searchRequestBuilder(listViewTemplate, ALL)
       .query(
-        and(
-          ids(String.valueOf(processInstanceKey)),
-          term(ListViewTemplate.PROCESS_INSTANCE_KEY, processInstanceKey)
-        )
-      );
+          withTenantCheck(
+            and(
+              ids(String.valueOf(processInstanceKey)),
+              term(ListViewTemplate.PROCESS_INSTANCE_KEY, processInstanceKey)
+            )
+      ));
 
     return richOpenSearchClient.doc().searchUnique(searchRequestBuilder, ProcessInstanceForListViewEntity.class, String.valueOf(processInstanceKey));
   }
@@ -208,7 +191,7 @@ public class OpenSearchProcessStore implements ProcessStore {
     final Query runningQuery = term(ListViewTemplate.STATE, ProcessInstanceState.ACTIVE.name());
     final Query query = allowedBPMNIds == null ? matchAll() : stringTerms(ListViewTemplate.BPMN_PROCESS_ID, allowedBPMNIds);
     var searchRequestBuilder = searchRequestBuilder(listViewTemplate, ALL)
-      .query(query)
+      .query(withTenantCheck(query))
       .aggregations("agg", filtersAggregation(Map.of(
         "incidents", incidentsQuery,
         "running", runningQuery
@@ -232,12 +215,12 @@ public class OpenSearchProcessStore implements ProcessStore {
   public String getProcessInstanceTreePathById(String processInstanceId) {
     record Result(String treePath){}
     var searchRequestBuilder = searchRequestBuilder(listViewTemplate)
-      .query(
+      .query(withTenantCheck(
         and(
           term(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION),
           term(KEY, processInstanceId)
         )
-      )
+      ))
       .source(sourceInclude(TREE_PATH));
 
     return richOpenSearchClient.doc().searchUnique(searchRequestBuilder, Result.class, processInstanceId)
@@ -249,12 +232,12 @@ public class OpenSearchProcessStore implements ProcessStore {
     record Result(String id, String processDefinitionKey, String processName, String bpmnProcessId){}
     final List<String> processInstanceIdsWithoutCurrentProcess = processInstanceIds.stream().filter(id -> ! currentProcessInstanceId.equals(id)).toList();
     var searchRequestBuilder = searchRequestBuilder(listViewTemplate)
-      .query(
+      .query(withTenantCheck(
         and(
           term(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION),
           stringTerms(ID, processInstanceIdsWithoutCurrentProcess)
         )
-      )
+      ))
       .source(sourceInclude(ID, PROCESS_KEY, PROCESS_NAME, BPMN_PROCESS_ID));
 
     return richOpenSearchClient.doc().scrollValues(searchRequestBuilder, Result.class)
@@ -287,13 +270,13 @@ public class OpenSearchProcessStore implements ProcessStore {
     // - end level: we remove /PI_key from the end
 
     var searchRequestBuilder = searchRequestBuilder(listViewTemplate)
-      .query(
+      .query(withTenantCheck(
         and(
           term(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION),
           term(TREE_PATH, treePath),
           not(term(KEY, processInstanceKey))
         )
-      )
+      ))
       .source(sourceInclude(TREE_PATH));
     final BulkRequest.Builder bulk = new BulkRequest.Builder();
 

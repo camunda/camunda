@@ -23,13 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.and;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.constantScore;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.exists;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.ids;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.not;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.sourceInclude;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.term;
+import static io.camunda.operate.store.opensearch.dsl.QueryDSL.*;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
 import static io.camunda.operate.util.CollectionUtil.map;
 import static io.camunda.operate.util.CollectionUtil.toSafeListOfStrings;
@@ -52,7 +46,7 @@ public class OpensearchListViewStore implements ListViewStore {
   @Override
   public Map<Long, String> getListViewIndicesForProcessInstances(List<Long> processInstanceIds) throws IOException {
     var searchRequestBuilder = searchRequestBuilder(listViewTemplate, RequestDSL.QueryType.ALL)
-      .query(ids(toSafeListOfStrings(map(processInstanceIds, Object::toString))));
+      .query(withTenantCheck(ids(toSafeListOfStrings(map(processInstanceIds, Object::toString)))));
 
     final Map<Long, String> processInstanceId2IndexName = withIOException( () ->
       richOpenSearchClient.doc().search(searchRequestBuilder, Void.class)
@@ -79,7 +73,7 @@ public class OpensearchListViewStore implements ListViewStore {
       RequestDSL.QueryType.ALL :
       RequestDSL.QueryType.ONLY_RUNTIME;
     var searchRequestBuilder = searchRequestBuilder(listViewTemplate, queryType)
-      .query(term(ListViewTemplate.KEY, processInstanceKey))
+      .query(withTenantCheck(term(ListViewTemplate.KEY, processInstanceKey)))
       .source(sourceInclude(ListViewTemplate.TREE_PATH));
 
     List<Hit<Result>> hits = richOpenSearchClient.doc().search(searchRequestBuilder, Result.class).hits().hits();
@@ -93,14 +87,14 @@ public class OpensearchListViewStore implements ListViewStore {
   @Override
   public List<Long> getProcessInstanceKeysWithEmptyProcessVersionFor(Long processDefinitionKey) {
     var searchRequestBuilder = searchRequestBuilder(listViewTemplate.getAlias())
-      .query(
+      .query(withTenantCheck(
         constantScore(
           and(
             term(ListViewTemplate.PROCESS_KEY, processDefinitionKey),
             not(exists(ListViewTemplate.PROCESS_VERSION))
           )
         )
-      )
+      ))
       .source(s -> s.fetch(false));
 
     return richOpenSearchClient.doc().search(searchRequestBuilder, Void.class)

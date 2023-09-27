@@ -83,7 +83,7 @@ public class OpensearchFlowNodeStatisticsReader implements FlowNodeStatisticsRea
     subAggregations.put(AGG_FINISHED_ACTIVITIES, getFinishedActivitiesAggregation());
 
     return searchRequestBuilder(listViewTemplate, queryType)
-        .query(constantScore(openSearchQueryHelper.createQueryFragment(query, queryType)))
+        .query(withTenantCheck(constantScore(openSearchQueryHelper.createQueryFragment(query, queryType))))
         .size(0)
         .aggregations(AGG_ACTIVITIES,
             withSubaggregations(children(ACTIVITIES_JOIN_RELATION), subAggregations));

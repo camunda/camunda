@@ -89,17 +89,7 @@ import static io.camunda.operate.store.opensearch.dsl.AggregationDSL.filtersAggr
 import static io.camunda.operate.store.opensearch.dsl.AggregationDSL.termAggregation;
 import static io.camunda.operate.store.opensearch.dsl.AggregationDSL.topHitsAggregation;
 import static io.camunda.operate.store.opensearch.dsl.AggregationDSL.withSubaggregations;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.and;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.constantScore;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.exists;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.ids;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.lte;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.not;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.prefix;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.sortOptions;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.sourceInclude;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.stringTerms;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.term;
+import static io.camunda.operate.store.opensearch.dsl.QueryDSL.*;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.QueryType.ONLY_RUNTIME;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
 import static io.camunda.operate.util.ElasticsearchUtil.TERMS_AGG_SIZE;
@@ -200,7 +190,7 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader i
     final int level = parentTreePath.split("/").length;
 
     final Query idsQuery = flowNodeInstanceId != null ? ids(flowNodeInstanceId) : null;
-    final Query query = constantScore(term(PROCESS_INSTANCE_KEY, processInstanceId));
+    final Query query = withTenantCheck(constantScore(term(PROCESS_INSTANCE_KEY, processInstanceId)));
 
     Aggregation runningParentsAgg = and(
       not(exists(END_DATE)),
@@ -261,7 +251,7 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader i
       })
       .toList();
 
-    final boolean runningParent = isrunningParent(response.aggregates());
+    final boolean runningParent = isRunningParent(response.aggregates());
 
     markHasIncident(processInstanceId, children);
     return new FlowNodeInstanceResponseDto(runningParent, FlowNodeInstanceDto.createFrom(children, objectMapper));
@@ -301,7 +291,7 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader i
   private FlowNodeInstanceResponseDto getOnePage(final SearchRequest.Builder searchRequestBuilder, final String processInstanceId)
     throws IOException {
     var response = richOpenSearchClient.doc().search(searchRequestBuilder, FlowNodeInstanceEntity.class);
-    final boolean runningParent = isrunningParent(response.aggregations());;
+    final boolean runningParent = isRunningParent(response.aggregations());;
 
     final List<FlowNodeInstanceEntity> children = response.hits()
       .hits()
@@ -328,7 +318,7 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader i
       ));
 
     var searchRequestBuilder = searchRequestBuilder(flowNodeInstanceTemplate)
-      .query(term(PROCESS_INSTANCE_KEY, processInstanceId))
+      .query(withTenantCheck(term(PROCESS_INSTANCE_KEY, processInstanceId)))
       .size(0)
       .aggregations(NUMBER_OF_INCIDENTS_FOR_TREE_PATH, filtersAggregation(filters)._toAggregation());
 
@@ -357,7 +347,7 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader i
     return flowNodeInstance.getEndDate() == null || !flowNodeInstance.isIncident();
   }
 
-  private boolean isrunningParent(Map<String, Aggregate> aggs) {
+  private boolean isRunningParent(Map<String, Aggregate> aggs) {
     Aggregate filterAggs = aggs.get(AGG_RUNNING_PARENT);
     return filterAggs != null && filterAggs.filter().docCount() > 0;
   }
@@ -400,14 +390,14 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader i
 
     var searchRequestBuilder = searchRequestBuilder(flowNodeInstanceTemplate)
       .query(
-        constantScore(
+        constantScore(withTenantCheck(
           and(
             term(FLOW_NODE_ID, flowNodeId),
             prefix(TREE_PATH, prefixTreePath),
             lte(LEVEL, level)
           )
         )
-      )
+      ))
       .source(s -> s.fetch(false))
       .size(0)
       .aggregations(LEVELS_AGG_NAME, getLevelsAggs());
@@ -422,7 +412,7 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader i
 
   private FlowNodeInstanceEntity getFlowNodeInstanceEntity(final String flowNodeInstanceId) {
     var searchRequestBuilder = searchRequestBuilder(flowNodeInstanceTemplate)
-      .query(constantScore(term(ID, flowNodeInstanceId)));
+      .query(constantScore(withTenantCheck(term(ID, flowNodeInstanceId))));
 
     List<Hit<FlowNodeInstanceEntity>> hits = richOpenSearchClient.doc().search(searchRequestBuilder, FlowNodeInstanceEntity.class).hits().hits();
 
@@ -435,12 +425,12 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader i
 
   private FlowNodeMetadataDto getMetadataByFlowNodeId(final String processInstanceId, final String flowNodeId, final FlowNodeType flowNodeType) {
     var searchRequestBuilder = searchRequestBuilder(flowNodeInstanceTemplate)
-      .query(constantScore(
+      .query(constantScore(withTenantCheck(
         and(
           term(PROCESS_INSTANCE_KEY, processInstanceId),
           term(FLOW_NODE_ID, flowNodeId)
         )
-      ))
+      )))
       .sort(sortOptions(LEVEL, Asc))
       .aggregations(LEVELS_AGG_NAME, getLevelsAggs())
       .size(1);
@@ -488,12 +478,12 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader i
     final String treePath = processInstanceReader.getProcessInstanceTreePath(processInstanceId);
     final String flowNodeInstancesTreePath = new TreePath(treePath).appendFlowNode(flowNodeId).toString();
     var searchRequestBuilder = searchRequestBuilder(incidentTemplate, ONLY_RUNTIME)
-      .query(constantScore(
+      .query(constantScore(withTenantCheck(
         and(
           ACTIVE_INCIDENT_QUERY,
           term(IncidentTemplate.TREE_PATH, flowNodeInstancesTreePath)
         )
-      ));
+      )));
 
     var hitsMeta = richOpenSearchClient.doc().search(searchRequestBuilder, IncidentEntity.class).hits();
 
@@ -527,7 +517,7 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader i
       .appendFlowNodeInstance(flowNodeInstanceId).toString();
 
     var searchRequestBuilder = searchRequestBuilder(incidentTemplate, ONLY_RUNTIME)
-      .query(constantScore(and(ACTIVE_INCIDENT_QUERY, term(IncidentTemplate.TREE_PATH, incidentTreePath))));
+      .query(constantScore(withTenantCheck(and(ACTIVE_INCIDENT_QUERY, term(IncidentTemplate.TREE_PATH, incidentTreePath)))));
 
     var hitsMeta = richOpenSearchClient.doc().search(searchRequestBuilder, IncidentEntity.class).hits();
 
@@ -559,12 +549,12 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader i
 
   private DecisionInstanceReferenceDto findRootCauseDecision(final Long flowNodeInstanceKey) {
     var searchRequestBuilder = searchRequestBuilder(decisionInstanceTemplate)
-      .query(
+      .query(withTenantCheck(
         and(
           term(ELEMENT_INSTANCE_KEY, flowNodeInstanceKey),
           term(DecisionInstanceTemplate.STATE, DecisionInstanceState.FAILED.name())
         )
-      )
+      ))
       .sort(sortOptions(EVALUATION_DATE, Desc))
       .size(1)
       .source(sourceInclude(DECISION_NAME, DECISION_ID));
@@ -632,7 +622,7 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader i
 
     if (flowNodeInstance.getType().equals(FlowNodeType.CALL_ACTIVITY)) {
       var searchRequestBuilder = searchRequestBuilder(listViewTemplate)
-        .query(term(PARENT_FLOW_NODE_INSTANCE_KEY, flowNodeInstance.getId()))
+        .query(withTenantCheck(term(PARENT_FLOW_NODE_INSTANCE_KEY, flowNodeInstance.getId())))
         .source(sourceInclude(ListViewTemplate.PROCESS_NAME, ListViewTemplate.BPMN_PROCESS_ID));
 
       record Result(String processName, String bpmnProcessId){}
@@ -645,7 +635,7 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader i
       }
     } else if (flowNodeInstance.getType().equals(FlowNodeType.BUSINESS_RULE_TASK)) {
       var searchRequestBuilder = searchRequestBuilder(decisionInstanceTemplate)
-        .query(term(ELEMENT_INSTANCE_KEY, flowNodeInstance.getId()))
+        .query(withTenantCheck(term(ELEMENT_INSTANCE_KEY, flowNodeInstance.getId())))
         .source(sourceInclude(ROOT_DECISION_DEFINITION_ID, ROOT_DECISION_NAME, ROOT_DECISION_ID, DECISION_DEFINITION_ID, DECISION_NAME, DECISION_ID))
         .sort(
           sortOptions(EVALUATION_DATE, Desc),
@@ -677,7 +667,7 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader i
 
   private EventEntity getEventEntity(final String flowNodeInstanceId) {
     var searchRequestBuilder = searchRequestBuilder(eventTemplate)
-      .query(constantScore(term(EventTemplate.FLOW_NODE_INSTANCE_KEY, flowNodeInstanceId)))
+      .query(constantScore(withTenantCheck(term(EventTemplate.FLOW_NODE_INSTANCE_KEY, flowNodeInstanceId))))
       .sort(sortOptions(EventTemplate.ID, Asc));
 
     List<EventEntity> eventEntities = richOpenSearchClient.doc().searchValues(searchRequestBuilder, EventEntity.class);
@@ -703,7 +693,7 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader i
     final String activeFlowNodesBucketsAggName = "activeFlowNodesBuckets";
     final String finishedFlowNodesAggName = "finishedFlowNodes";
 
-    final Query query = constantScore(term(PROCESS_INSTANCE_KEY, processInstanceId));
+    final Query query = constantScore(withTenantCheck(term(PROCESS_INSTANCE_KEY, processInstanceId)));
 
     final Aggregation notCompletedFlowNodesAggs = withSubaggregations(
       stringTerms(STATE, List.of(ACTIVE.name(), TERMINATED.name())),
@@ -816,12 +806,12 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader i
   @Override
   public List<Long> getFlowNodeInstanceKeysByIdAndStates(Long processInstanceId, String flowNodeId, List<FlowNodeState> states) {
     var searchRequestBuilder = searchRequestBuilder(flowNodeInstanceTemplate.getAlias())
-      .query(
+      .query(withTenantCheck(
         and(
           term(FLOW_NODE_ID, flowNodeId),
           term(PROCESS_INSTANCE_KEY,processInstanceId),
           stringTerms(STATE, states.stream().map(Enum::name).toList()))
-      )
+      ))
       .source(sourceInclude(ID));
 
     record Result(String id){}
@@ -832,7 +822,7 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader i
   @Override
   public Collection<FlowNodeStatisticsDto> getFlowNodeStatisticsForProcessInstance(Long processInstanceId) {
     var searchRequestBuilder = searchRequestBuilder(flowNodeInstanceTemplate)
-      .query(constantScore(term(FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY, processInstanceId)))
+      .query(constantScore(withTenantCheck(term(FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY, processInstanceId))))
       .aggregations(FLOW_NODE_ID_AGG, withSubaggregations(
         termAggregation(FLOW_NODE_ID, TERMS_AGG_SIZE),
         Map.of(
@@ -872,7 +862,7 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader i
   @Override
   public List<FlowNodeInstanceEntity> getAllFlowNodeInstances(Long processInstanceKey) {
     var searchRequestBuilder = searchRequestBuilder(flowNodeInstanceTemplate)
-      .query(constantScore(term(FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY, processInstanceKey)))
+      .query(constantScore(withTenantCheck(term(FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY, processInstanceKey))))
       .sort(sortOptions(FlowNodeInstanceTemplate.POSITION, Asc));
 
     return richOpenSearchClient.doc().scrollValues(searchRequestBuilder, FlowNodeInstanceEntity.class);

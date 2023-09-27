@@ -27,9 +27,7 @@ import java.util.function.Consumer;
 
 import static io.camunda.operate.schema.templates.ListViewTemplate.ACTIVITIES_JOIN_RELATION;
 import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.and;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.stringTerms;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.term;
+import static io.camunda.operate.store.opensearch.dsl.QueryDSL.*;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
 
 @Conditional(OpensearchCondition.class)
@@ -53,12 +51,12 @@ public class OpensearchFlowNodeStore implements FlowNodeStore {
     record Result(String activityId){}
     final RequestDSL.QueryType queryType = operateProperties.getImporter().isReadArchivedParents() ? RequestDSL.QueryType.ALL : RequestDSL.QueryType.ONLY_RUNTIME;
     var searchRequestBuilder = searchRequestBuilder(listViewTemplate, queryType)
-      .query(
+      .query(withTenantCheck(
         and(
           term(JOIN_RELATION, ACTIVITIES_JOIN_RELATION),
           term(ListViewTemplate.ID, flowNodeInstanceId)
         )
-      );
+      ));
 
     return richOpenSearchClient.doc().searchUnique(searchRequestBuilder, Result.class, flowNodeInstanceId)
       .activityId();
@@ -69,7 +67,7 @@ public class OpensearchFlowNodeStore implements FlowNodeStore {
     record Result(String flowNodeId){}
     final Map<String, String> flowNodeIdsMap = new HashMap<>();
     var searchRequestBuilder = searchRequestBuilder(flowNodeInstanceTemplate, RequestDSL.QueryType.ONLY_RUNTIME)
-        .query(stringTerms(FlowNodeInstanceTemplate.ID, flowNodeInstanceIds));
+        .query(withTenantCheck(stringTerms(FlowNodeInstanceTemplate.ID, flowNodeInstanceIds)));
     final Consumer<List<Hit<Result>>> hitsConsumer = hits -> hits.forEach(h -> flowNodeIdsMap.put(h.id(), h.source().flowNodeId()));
 
     richOpenSearchClient.doc().scrollWith(searchRequestBuilder, Result.class, hitsConsumer);
@@ -88,7 +86,7 @@ public class OpensearchFlowNodeStore implements FlowNodeStore {
       RequestDSL.QueryType.ALL :
       RequestDSL.QueryType.ONLY_RUNTIME;
     var searchRequestBuilder = searchRequestBuilder(flowNodeInstanceTemplate, queryType)
-        .query(term(FlowNodeInstanceTemplate.KEY, parentFlowNodeInstanceKey));
+        .query(withTenantCheck(term(FlowNodeInstanceTemplate.KEY, parentFlowNodeInstanceKey)));
 
     final List<Hit<Result>> hits = richOpenSearchClient.doc().search(searchRequestBuilder, Result.class).hits().hits();
 

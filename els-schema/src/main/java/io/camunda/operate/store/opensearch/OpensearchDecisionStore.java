@@ -22,6 +22,8 @@ import java.io.IOException;
 import java.util.Optional;
 
 import static io.camunda.operate.store.opensearch.dsl.AggregationDSL.cardinalityAggregation;
+import static io.camunda.operate.store.opensearch.dsl.QueryDSL.matchAll;
+import static io.camunda.operate.store.opensearch.dsl.QueryDSL.withTenantCheck;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
 import static io.camunda.operate.util.ExceptionHelper.withIOException;
 
@@ -46,6 +48,7 @@ public class OpensearchDecisionStore implements DecisionStore {
   public Optional<Long> getDistinctCountFor(String fieldName) {
     var indexAlias = decisionIndex.getAlias();
     var searchRequestBuilder = searchRequestBuilder(indexAlias)
+      .query(withTenantCheck(matchAll()))
       .size(0)
       .aggregations(DISTINCT_FIELD_COUNTS, cardinalityAggregation(fieldName, 1_000)._toAggregation());
 

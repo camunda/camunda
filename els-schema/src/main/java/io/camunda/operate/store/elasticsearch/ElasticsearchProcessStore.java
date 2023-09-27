@@ -237,26 +237,6 @@ public class ElasticsearchProcessStore implements ProcessStore {
   }
 
   @Override
-  public Map<Long, ProcessEntity> getProcessIdsToProcesses() {
-    Map<Long, ProcessEntity> map = new HashMap<>();
-
-    final SearchRequest searchRequest = new SearchRequest(processIndex.getAlias())
-        .source(new SearchSourceBuilder());
-
-    try {
-      final List<ProcessEntity> processesList = scroll(searchRequest);
-      for (ProcessEntity processEntity : processesList) {
-        map.put(processEntity.getKey(), processEntity);
-      }
-      return map;
-    } catch (IOException e) {
-      final String message = String.format("Exception occurred, while obtaining processes: %s", e.getMessage());
-      logger.error(message, e);
-      throw new OperateRuntimeException(message, e);
-    }
-  }
-
-  @Override
   public Map<Long, ProcessEntity> getProcessesIdsToProcessesWithFields(@Nullable Set<String> allowedBPMNIds, int maxSize, String... fields) {
     final Map<Long, ProcessEntity> map = new HashMap<>();
 

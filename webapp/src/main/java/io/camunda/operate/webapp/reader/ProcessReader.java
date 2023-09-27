@@ -60,15 +60,6 @@ public class ProcessReader {
   }
 
   /**
-   * Returns map of Process entities by process ids.
-   * @return
-   */
-
-  public Map<Long, ProcessEntity> getProcesses() {
-    return processStore.getProcessIdsToProcesses();
-  }
-
-  /**
    * Returns up to maxSize ProcessEntities only filled with the given field names.
    * @return Map of id -> ProcessEntity
    */

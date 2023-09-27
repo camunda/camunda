@@ -6,6 +6,8 @@
  */
 package io.camunda.operate.store.opensearch.dsl;
 
+import io.camunda.operate.tenant.TenantCheckApplier;
+import io.camunda.operate.tenant.TenantCheckApplierHolder;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.Script;
@@ -30,11 +32,7 @@ import org.opensearch.client.opensearch._types.query_dsl.TermsQueryField;
 import org.opensearch.client.opensearch._types.query_dsl.WildcardQuery;
 import org.opensearch.client.opensearch.core.search.SourceConfig;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -55,6 +53,14 @@ public interface QueryDSL {
 
   static Query and(Query... queries) {
     return BoolQuery.of(q -> q.must(nonNull(queries)))._toQuery();
+  }
+
+  static Query withTenantCheck(Query query) {
+    Optional<TenantCheckApplier<Query>> tenantCheckApplierOpt = TenantCheckApplierHolder.getOpenSearchTenantCheckApplier();
+    if (tenantCheckApplierOpt.isPresent()) {
+      return tenantCheckApplierOpt.get().apply(query);
+    }
+    return query;
   }
 
   static Query constantScore(Query query) {

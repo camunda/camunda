@@ -65,11 +65,7 @@ import java.util.stream.Collectors;
 
 import static io.camunda.operate.entities.OperationType.ADD_VARIABLE;
 import static io.camunda.operate.entities.OperationType.UPDATE_VARIABLE;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.and;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.constantScore;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.matchAll;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.sourceInclude;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.stringTerms;
+import static io.camunda.operate.store.opensearch.dsl.QueryDSL.*;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.QueryType.ALL;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.QueryType.ONLY_RUNTIME;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
@@ -202,7 +198,7 @@ public class OpensearchBatchOperationWriter implements io.camunda.operate.webapp
         IdentityPermission.DELETE_PROCESS_INSTANCE : IdentityPermission.UPDATE_PROCESS_INSTANCE;
       var allowed = permissionsService.getProcessesWithPermission(permission);
       var permissionQuery = allowed.isAll() ? matchAll() : stringTerms(ListViewTemplate.BPMN_PROCESS_ID, allowed.getIds());
-      query = constantScore(and(query, permissionQuery));
+      query = constantScore(withTenantCheck(and(query, permissionQuery)));
     }
     final RequestDSL.QueryType queryType = batchOperationRequest.getOperationType() == OperationType.DELETE_PROCESS_INSTANCE ? ALL : ONLY_RUNTIME;
     var searchRequestBuilder = searchRequestBuilder(listViewTemplate, queryType)

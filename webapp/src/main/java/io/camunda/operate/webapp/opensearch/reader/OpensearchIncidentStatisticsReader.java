@@ -48,10 +48,7 @@ import static io.camunda.operate.store.opensearch.dsl.AggregationDSL.cardinality
 import static io.camunda.operate.store.opensearch.dsl.AggregationDSL.termAggregation;
 import static io.camunda.operate.store.opensearch.dsl.AggregationDSL.topHitsAggregation;
 import static io.camunda.operate.store.opensearch.dsl.AggregationDSL.withSubaggregations;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.and;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.matchAll;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.stringTerms;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.term;
+import static io.camunda.operate.store.opensearch.dsl.QueryDSL.*;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.QueryType.ONLY_RUNTIME;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
 
@@ -88,7 +85,7 @@ public class OpensearchIncidentStatisticsReader implements IncidentStatisticsRea
 
   private List<LongTermsBucket> searchAggBuckets(Query query) {
     var searchRequestBuilder = searchRequestBuilder(processInstanceTemplate, ONLY_RUNTIME)
-      .query(query)
+      .query(withTenantCheck(query))
       .aggregations(PROCESS_KEYS, COUNT_PROCESS_KEYS);
 
     return richOpenSearchClient.doc().searchAggregations(searchRequestBuilder)
@@ -99,7 +96,7 @@ public class OpensearchIncidentStatisticsReader implements IncidentStatisticsRea
   }
 
   private Map<Long, IncidentByProcessStatisticsDto> getIncidentsByProcess() {
-    return searchAggBuckets(INCIDENTS_QUERY)
+    return searchAggBuckets(withTenantCheck(INCIDENTS_QUERY))
       .stream()
       .collect(Collectors.toMap(
         bucket -> Long.valueOf(bucket.key()),
@@ -109,10 +106,10 @@ public class OpensearchIncidentStatisticsReader implements IncidentStatisticsRea
 
   private Map<Long, IncidentByProcessStatisticsDto> updateActiveInstances(Map<Long,IncidentByProcessStatisticsDto> statistics) {
     Map<Long, IncidentByProcessStatisticsDto> results = new HashMap<>(statistics);
-    Query query = and(
+    Query query = withTenantCheck(and(
       term(ListViewTemplate.STATE, ProcessInstanceState.ACTIVE.toString()),
       term(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION)
-    );
+    ));
 
     searchAggBuckets(query).forEach( bucket -> {
       Long processDefinitionKey = Long.valueOf(bucket.key());
@@ -132,7 +129,6 @@ public class OpensearchIncidentStatisticsReader implements IncidentStatisticsRea
   private Set<IncidentsByProcessGroupStatisticsDto> collectStatisticsForProcessGroups(Map<Long, IncidentByProcessStatisticsDto> incidentsByProcessMap) {
     Set<IncidentsByProcessGroupStatisticsDto> result = new TreeSet<>(IncidentsByProcessGroupStatisticsDto.COMPARATOR);
 
-    //TODO check user tenants
     final Map<ProcessStore.ProcessKey, List<ProcessEntity>> processGroups = processReader.getProcessesGrouped(new ProcessRequestDto());
 
     //iterate over process groups (bpmnProcessId)
@@ -190,7 +186,7 @@ public class OpensearchIncidentStatisticsReader implements IncidentStatisticsRea
     var groupByErrorMessageHash = termAggregation(IncidentTemplate.ERROR_MSG_HASH, TERMS_AGG_SIZE);
 
     var searchRequestBuilder = searchRequestBuilder(incidentTemplate, ONLY_RUNTIME)
-      .query(query)
+      .query(withTenantCheck(query))
         .aggregations(GROUP_BY_ERROR_MESSAGE_HASH,
             withSubaggregations(groupByErrorMessageHash, Map.of(
                   ERROR_MESSAGE, errorMessage._toAggregation(),
