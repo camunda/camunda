@@ -156,20 +156,17 @@ public class CCSMSecurityConfigurerAdapter extends AbstractSecurityConfigurerAda
 
   private void redirectToIdentity(final HttpServletRequest request, final HttpServletResponse response,
                                   final AuthenticationException e) throws IOException {
-    final String authorizeUri = ccsmTokenService.buildAuthorizeUri(buildAuthorizeCallbackUri(
-      request,
-      createApiPath(AUTHENTICATION_PATH + CALLBACK)
-    )).toString();
+    final String authorizeUri = ccsmTokenService.buildAuthorizeUri(buildAuthorizeCallbackBaseUri(request)).toString();
     response.sendRedirect(authorizeUri);
   }
 
-  private static String buildAuthorizeCallbackUri(final HttpServletRequest req, String subPath) {
+  private static String buildAuthorizeCallbackBaseUri(final HttpServletRequest req) {
     String redirectUri = req.getScheme() + "://" + req.getServerName();
     if ((req.getScheme().equals("http") && req.getServerPort() != 80) || (
       req.getScheme().equals("https") && req.getServerPort() != 443)) {
       redirectUri += ":" + req.getServerPort();
     }
-    return redirectUri + req.getContextPath() + subPath;
+    return redirectUri + req.getContextPath();
   }
 
 }

@@ -106,23 +106,26 @@ public class CCSMTokenService {
     );
   }
 
-  public Tokens exchangeAuthCode(final AuthCodeDto authCode, final ContainerRequestContext requestContext) {
+  public URI buildAuthorizeUri(final String redirectUri) {
     // If a redirect root URL is explicitly set, we use that. Otherwise, we use the one provided
-    final String redirectUri =
-      getConfiguredRedirectUrl().map(redirectRootUrl -> redirectRootUrl + requestContext.getUriInfo().getRequestUri().getPath())
-        .orElse(requestContext.getUriInfo().getAbsolutePath().toString());
+    final String authorizeUri = getConfiguredRedirectUri().orElse(redirectUri);
+    return authentication().authorizeUriBuilder(appendCallbackSubpath(authorizeUri)).build();
+  }
+
+  public Tokens exchangeAuthCode(final AuthCodeDto authCode, final ContainerRequestContext requestContext) {
+    // If a redirect root URL is explicitly set, we append the callback subpath and use that.
+    // Otherwise, we use the one provided in the request
+    final String redirectUri = getConfiguredRedirectUri()
+      .map(CCSMTokenService::appendCallbackSubpath)
+      .orElse(requestContext.getUriInfo().getAbsolutePath().toString());
     return authentication().exchangeAuthCode(authCode, redirectUri);
   }
 
-  public URI buildAuthorizeUri(final String redirectUri) {
-    // If a redirect root URL is explicitly set, we use that. Otherwise, we use the one provided
-    final String authorizeUri =
-      getConfiguredRedirectUrl().map(redirectRootUrl -> redirectRootUrl + REST_API_PATH + AUTHENTICATION_PATH + CALLBACK)
-        .orElse(redirectUri);
-    return authentication().authorizeUriBuilder(authorizeUri).build();
+  private static String appendCallbackSubpath(final String configuredRedirectUri) {
+    return configuredRedirectUri + REST_API_PATH + AUTHENTICATION_PATH + CALLBACK;
   }
 
-  private Optional<String> getConfiguredRedirectUrl() {
+  private Optional<String> getConfiguredRedirectUri() {
     final String configuredRedirectRootUrl = configurationService.getAuthConfiguration()
       .getCcsmAuthConfiguration()
       .getRedirectRootUrl();
