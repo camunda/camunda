@@ -24,12 +24,10 @@ const FormJSCustomStyling = createGlobalStyle`
       }
     }
 
-    @media (width>= ${breakpoints.lg.width}) {
-      .fjs-layout-column:first-of-type .fjs-form-field {
-        margin-left: 0;
-      }
-      .fjs-layout-column:last-of-type .fjs-form-field {
-        margin-right: 0;
+    @media (width >= ${breakpoints.lg.width}) {
+      .fjs-form {
+        margin-left: -8px;
+        margin-right: -8px;
       }
     }
   `}
