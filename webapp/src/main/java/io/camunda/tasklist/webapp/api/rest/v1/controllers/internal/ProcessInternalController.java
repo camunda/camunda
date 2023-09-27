@@ -83,7 +83,7 @@ public class ProcessInternalController extends ApiErrorController {
 
   /** Retrieving the start event form id when exists. */
   private String getStartEventFormIdByBpmnProcess(ProcessEntity process) {
-    if (process.isStartedByForm()) {
+    if (process.getFormKey() != null) {
       final String formId = StringUtils.substringAfterLast(process.getFormKey(), ":");
       final var form = formStore.getForm(formId, process.getId());
       return form.getBpmnId();

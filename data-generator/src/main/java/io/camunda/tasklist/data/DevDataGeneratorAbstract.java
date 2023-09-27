@@ -214,6 +214,7 @@ public abstract class DevDataGeneratorAbstract implements DataGenerator {
     ZeebeTestUtil.deployProcess(zeebeClient, "multipleVersions.bpmn");
     ZeebeTestUtil.deployProcess(zeebeClient, "multipleVersions-v2.bpmn");
     ZeebeTestUtil.deployProcess(zeebeClient, "subscribeFormProcess.bpmn");
+    ZeebeTestUtil.deployProcess(zeebeClient, "startedByFormProcessWithoutPublic.bpmn");
     ZeebeTestUtil.deployProcess(zeebeClient, "travelSearchProcess.bpmn");
     ZeebeTestUtil.deployProcess(zeebeClient, "travelSearchProcess_v2.bpmn");
   }

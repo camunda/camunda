@@ -404,4 +404,30 @@ public class ProcessInternalControllerIT extends TasklistZeebeIntegrationTest {
 
     return result;
   }
+
+  @Test
+  public void getProcessWithFormWithoutPublic() {
+    final String bpmnProcessId = "startedByFormWithoutPublic";
+
+    // given
+    final String processId1 =
+        ZeebeTestUtil.deployProcess(zeebeClient, "startedByFormProcessWithoutPublic.bpmn");
+    tasklistTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId1);
+
+    final var result =
+        mockMvcHelper.doRequest(get(TasklistURIs.PROCESSES_URL_V1).param("query", bpmnProcessId));
+
+    assertThat(result)
+        .hasOkHttpStatus()
+        .hasApplicationJsonContentType()
+        .extractingListContent(objectMapper, ProcessResponse.class)
+        .singleElement()
+        .satisfies(
+            process -> {
+              assertThat(process.getId()).isEqualTo(processId1);
+              assertThat(process.getBpmnProcessId()).isEqualTo("startedByFormWithoutPublic");
+              assertThat(process.getStartEventFormId()).isEqualTo("testForm");
+              assertThat(process.getVersion()).isEqualTo(1);
+            });
+  }
 }
