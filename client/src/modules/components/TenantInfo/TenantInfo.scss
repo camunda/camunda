@@ -1,0 +1,40 @@
+.TenantInfo {
+  margin: 0 10px;
+
+  &:last-child {
+    margin-right: 0;
+  }
+
+  &:not(.useCarbonVariant) .tenantName {
+    width: 120px;
+    font-size: 14px;
+    margin: 0;
+    padding: 6px;
+    border-radius: 3px;
+    color: var(--grey-darken-23);
+    background-color: var(--silver-base-97);
+    border: 1px solid var(--silver-base-97);
+  }
+
+  &.useCarbonVariant {
+    background-color: var(--cds-field);
+    color: var(--cds-text-primary, #161616);
+    height: 2rem;
+    max-height: 2rem;
+
+    .tenantName {
+      margin: 0;
+      width: 100%;
+      height: calc(100% + 1px);
+      background-color: var(--cds-field-02, #ffffff);
+      position: relative;
+      display: inline-flex;
+      overflow: hidden;
+      align-items: center;
+      padding: 0 1rem;
+      outline: none;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+}

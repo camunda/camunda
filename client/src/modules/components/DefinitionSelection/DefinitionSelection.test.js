@@ -8,14 +8,17 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {LoadingIndicator, Typeahead} from 'components';
+import {LoadingIndicator, TenantInfo, Typeahead} from 'components';
 import {getCollection} from 'services';
+import {getOptimizeProfile} from 'config';
 
 import {DefinitionSelection} from './DefinitionSelection';
 import VersionPopover from './VersionPopover';
 
 import {loadDefinitions, loadVersions, loadTenants} from './service';
 import MultiDefinitionSelection from './MultiDefinitionSelection';
+
+jest.mock('config', () => ({getOptimizeProfile: jest.fn().mockReturnValue('platform')}));
 
 jest.mock('./service', () => ({
   loadDefinitions: jest.fn().mockReturnValue([
@@ -437,4 +440,30 @@ it('should pass versionTooltip to the version popover', async () => {
   const node = await shallow(<DefinitionSelection {...props} versionTooltip={'test tooltip'} />);
 
   expect(node.find(VersionPopover).prop('tooltip')).toBe('test tooltip');
+});
+
+it('should display the readonly tenantInfo component in self managed mode', async () => {
+  getOptimizeProfile.mockReturnValueOnce('ccsm');
+  loadTenants.mockReturnValueOnce([
+    {
+      tenants: [
+        {
+          id: '<default>',
+          name: 'Default',
+        },
+      ],
+    },
+  ]);
+
+  const definitionConfig = {
+    definitionKey: 'foo',
+    versions: ['2'],
+    tenants: ['<default>'],
+  };
+
+  const node = await shallow(<DefinitionSelection {...props} {...definitionConfig} />);
+
+  await flushPromises();
+
+  expect(node.find(TenantInfo).prop('tenant')).toEqual({id: '<default>', name: 'Default'});
 });

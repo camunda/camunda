@@ -5,13 +5,17 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {runLastEffect} from 'react';
+import React, {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
 
 import {Button} from 'components';
+import {getOptimizeProfile} from 'config';
 
 import DefinitionEditor from './DefinitionEditor';
 import {DefinitionList} from './DefinitionList';
+import {loadTenants} from './service';
+
+jest.mock('config', () => ({getOptimizeProfile: jest.fn().mockReturnValue('platform')}));
 
 jest.mock('./service', () => ({
   loadTenants: jest.fn().mockReturnValue([
@@ -49,11 +53,40 @@ it('should show a list of added definitions', () => {
   expect(node.find(DefinitionEditor).prop('definition')).toEqual(props.definitions[0]);
 });
 
-it('should display names of tenants', () => {
+it('should display names of tenants', async () => {
   const node = shallow(<DefinitionList {...props} />);
-  runLastEffect();
+
+  runAllEffects();
 
   expect(node.find('.info').at(1).text()).toBe('Tenant: Tenant A, Tenant B');
+});
+
+it('should show the only tenant in self managed mode', async () => {
+  loadTenants.mockReturnValueOnce([
+    {
+      key: 'definitionA',
+      versions: ['all'],
+      tenants: [{id: '<defaut>', name: 'Default'}],
+    },
+  ]);
+  getOptimizeProfile.mockReturnValueOnce('ccsm');
+  const node = shallow(
+    <DefinitionList
+      {...props}
+      definitions={[
+        {
+          key: 'definitionA',
+          name: 'Definition A',
+          displayName: 'Definition A',
+          versions: ['all'],
+          tenantIds: ['<defaut>'],
+        },
+      ]}
+    />
+  );
+
+  await runAllEffects();
+  expect(node.find('.info').at(1).text()).toBe('Tenant: Default');
 });
 
 it('should allow copying definitions', () => {
