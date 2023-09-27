@@ -89,7 +89,8 @@ public final class ZeebeClientTest extends ClientTest {
       assertThat(configuration.getDefaultTenantId())
           .isEqualTo(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
       assertThat(configuration.getDefaultJobWorkerStreamEnabled()).isFalse();
-      assertThat(configuration.getDefaultJobWorkerTenantIds()).isEmpty();
+      assertThat(configuration.getDefaultJobWorkerTenantIds())
+          .containsExactly(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
     }
   }
 
@@ -618,7 +619,8 @@ public final class ZeebeClientTest extends ClientTest {
     builder.build();
 
     // then
-    assertThat(builder.getDefaultJobWorkerTenantIds()).isEmpty();
+    assertThat(builder.getDefaultJobWorkerTenantIds())
+        .containsExactly(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
   }
 
   @Test
@@ -640,7 +642,7 @@ public final class ZeebeClientTest extends ClientTest {
     // given
     final List<String> tenantIdList = Arrays.asList("test-tenant-1", "test-tenant-2");
     final Properties properties = new Properties();
-    properties.setProperty(DEFAULT_JOB_WORKER_TENANT_IDS, String.join(", ", tenantIdList));
+    properties.setProperty(DEFAULT_JOB_WORKER_TENANT_IDS, String.join(",", tenantIdList));
     final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
     builder.withProperties(properties);
 
@@ -655,7 +657,7 @@ public final class ZeebeClientTest extends ClientTest {
   public void shouldSetDefaultJobWorkerTenantIdsFromEnvVarWithClientBuilder() {
     // given
     final List<String> tenantIdList = Arrays.asList("test-tenant-1", "test-tenant-2");
-    Environment.system().put(DEFAULT_JOB_WORKER_TENANT_IDS_VAR, String.join(", ", tenantIdList));
+    Environment.system().put(DEFAULT_JOB_WORKER_TENANT_IDS_VAR, String.join(",", tenantIdList));
 
     // when
     final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
@@ -672,7 +674,7 @@ public final class ZeebeClientTest extends ClientTest {
     final Properties properties = new Properties();
     properties.setProperty(DEFAULT_JOB_WORKER_TENANT_IDS, propertyTenantId);
     final List<String> tenantIdList = Arrays.asList("test-tenant-1", "test-tenant-2");
-    Environment.system().put(DEFAULT_JOB_WORKER_TENANT_IDS_VAR, String.join(", ", tenantIdList));
+    Environment.system().put(DEFAULT_JOB_WORKER_TENANT_IDS_VAR, String.join(",", tenantIdList));
     final String setterTenantId = "setter-tenant";
     final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
     builder.defaultJobWorkerTenantIds(Arrays.asList(setterTenantId));
@@ -690,7 +692,7 @@ public final class ZeebeClientTest extends ClientTest {
     final ZeebeClientCloudBuilderImpl builder = new ZeebeClientCloudBuilderImpl();
     final Properties properties = new Properties();
     final List<String> tenantIdList = Arrays.asList("test-tenant-1", "test-tenant-2");
-    properties.setProperty(DEFAULT_JOB_WORKER_TENANT_IDS, String.join(", ", tenantIdList));
+    properties.setProperty(DEFAULT_JOB_WORKER_TENANT_IDS, String.join(",", tenantIdList));
     builder.withProperties(properties);
 
     // when

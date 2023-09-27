@@ -59,7 +59,7 @@ public interface ZeebeClientBuilder {
 
   /**
    * @param tenantIds the tenant identifiers which are used for job-activation commands when no
-   *     tenant identifiers are set. The default value is an empty list.
+   *     tenant identifiers are set. The default value is a list containing the <default> tenant id.
    */
   ZeebeClientBuilder defaultJobWorkerTenantIds(List<String> tenantIds);
 
