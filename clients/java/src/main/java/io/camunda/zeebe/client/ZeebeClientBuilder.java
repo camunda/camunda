@@ -59,7 +59,8 @@ public interface ZeebeClientBuilder {
 
   /**
    * @param tenantIds the tenant identifiers which are used for job-activation commands when no
-   *     tenant identifiers are set. The default value is a list containing the <default> tenant id.
+   *     tenant identifiers are set. The default value contains only {@link
+   *     io.camunda.zeebe.client.api.command.CommandWithTenantStep#DEFAULT_TENANT_IDENTIFIER}.
    */
   ZeebeClientBuilder defaultJobWorkerTenantIds(List<String> tenantIds);
 

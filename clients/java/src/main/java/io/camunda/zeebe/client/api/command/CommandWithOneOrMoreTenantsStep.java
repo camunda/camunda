@@ -45,9 +45,6 @@ public interface CommandWithOneOrMoreTenantsStep<T> extends CommandWithTenantSte
    * <p>This can be useful when requesting jobs for multiple tenants at once. Each of the activated
    * jobs will be owned by the tenant that owns the corresponding process instance.
    *
-   * <p>Each time this method is called, the existing tenant IDs are cleared and only the tenant IDs
-   * passed to this method are added.
-   *
    * @param tenantIds the identifiers of the tenants to specify for this command, e.g. {@code
    *     ["ACME", "OTHER"]}
    * @return the builder for this command with the tenants specified
@@ -58,9 +55,6 @@ public interface CommandWithOneOrMoreTenantsStep<T> extends CommandWithTenantSte
 
   /**
    * Shorthand method for {@link #tenantIds(List)}.
-   *
-   * <p>Each time this method is called, the existing tenant IDs are cleared and only the tenant IDs
-   * passed to this method are added.
    *
    * @param tenantIds the identifiers of the tenants to specify for this command, e.g. {@code
    *     ["ACME", "OTHER"]}

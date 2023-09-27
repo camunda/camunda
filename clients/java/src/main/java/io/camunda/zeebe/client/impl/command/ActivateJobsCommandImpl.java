@@ -50,7 +50,6 @@ public final class ActivateJobsCommandImpl
 
   private final Set<String> defaultTenantIds;
   private final Set<String> customTenantIds;
-  private boolean areCustomTenantIdsSet;
 
   public ActivateJobsCommandImpl(
       final GatewayStub asyncStub,
@@ -66,7 +65,6 @@ public final class ActivateJobsCommandImpl
     workerName(config.getDefaultJobWorkerName());
     defaultTenantIds = new HashSet<>(config.getDefaultJobWorkerTenantIds());
     customTenantIds = new HashSet<>();
-    areCustomTenantIdsSet = false;
   }
 
   @Override
@@ -114,10 +112,10 @@ public final class ActivateJobsCommandImpl
   @Override
   public ZeebeFuture<ActivateJobsResponse> send() {
 
-    if (areCustomTenantIdsSet) {
-      builder.addAllTenantIds(customTenantIds);
-    } else {
+    if (customTenantIds.isEmpty()) {
       builder.addAllTenantIds(defaultTenantIds);
+    } else {
+      builder.addAllTenantIds(customTenantIds);
     }
 
     final ActivateJobsRequest request = builder.build();
@@ -145,14 +143,12 @@ public final class ActivateJobsCommandImpl
 
   @Override
   public ActivateJobsCommandStep3 tenantId(final String tenantId) {
-    areCustomTenantIdsSet = true;
     customTenantIds.add(tenantId);
     return this;
   }
 
   @Override
   public ActivateJobsCommandStep3 tenantIds(final List<String> tenantIds) {
-    areCustomTenantIdsSet = true;
     customTenantIds.clear();
     customTenantIds.addAll(tenantIds);
     return this;

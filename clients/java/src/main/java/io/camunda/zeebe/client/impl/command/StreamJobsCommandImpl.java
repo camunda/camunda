@@ -55,7 +55,6 @@ public final class StreamJobsCommandImpl
 
   private final Set<String> defaultTenantIds;
   private final Set<String> customTenantIds;
-  private boolean areCustomTenantIdsSet;
 
   public StreamJobsCommandImpl(
       final GatewayStub asyncStub,
@@ -72,7 +71,6 @@ public final class StreamJobsCommandImpl
 
     defaultTenantIds = new HashSet<>(config.getDefaultJobWorkerTenantIds());
     customTenantIds = new HashSet<>();
-    areCustomTenantIdsSet = false;
   }
 
   @Override
@@ -84,10 +82,10 @@ public final class StreamJobsCommandImpl
   @Override
   public ZeebeFuture<StreamJobsResponse> send() {
 
-    if (areCustomTenantIdsSet) {
-      builder.addAllTenantIds(customTenantIds);
-    } else {
+    if (customTenantIds.isEmpty()) {
       builder.addAllTenantIds(defaultTenantIds);
+    } else {
+      builder.addAllTenantIds(customTenantIds);
     }
 
     final StreamActivatedJobsRequest request = builder.build();
@@ -151,14 +149,12 @@ public final class StreamJobsCommandImpl
 
   @Override
   public StreamJobsCommandStep3 tenantId(final String tenantId) {
-    areCustomTenantIdsSet = true;
     customTenantIds.add(tenantId);
     return this;
   }
 
   @Override
   public StreamJobsCommandStep3 tenantIds(final List<String> tenantIds) {
-    areCustomTenantIdsSet = true;
     customTenantIds.clear();
     customTenantIds.addAll(tenantIds);
     return this;
