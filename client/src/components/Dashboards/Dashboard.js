@@ -85,6 +85,7 @@ export class Dashboard extends React.Component {
     this.setState({
       loaded: true,
       name: initialData?.name ?? t('dashboard.new'),
+      description: initialData?.description ?? null,
       ...modifierData,
       currentUserRole: 'editor',
       tiles:
@@ -96,6 +97,7 @@ export class Dashboard extends React.Component {
                 ...newReport.new,
                 ...modifierData,
                 name: config.report.name,
+                description: config.report?.description || null,
                 data: {
                   ...newReport.new.data,
                   ...config.report.data,
@@ -112,7 +114,7 @@ export class Dashboard extends React.Component {
             return config;
           }
         }) ?? [],
-      availableFilters: [],
+      availableFilters: initialData?.availableFilters || [],
       isAuthorizedToShare: true,
       refreshRateSeconds: null,
     });
@@ -259,10 +261,10 @@ export class Dashboard extends React.Component {
               tile.id ||
               (tile.report &&
                 new Promise((resolve, reject) => {
-                  const {name, data, reportType, combined} = tile.report;
+                  const {name, description, data, reportType, combined} = tile.report;
                   const endpoint = `report/${reportType}/${combined ? 'combined' : 'single'}`;
                   this.props.mightFail(
-                    createEntity(endpoint, {collectionId, name, data}),
+                    createEntity(endpoint, {collectionId, name, description, data}),
                     resolve,
                     reject
                   );
