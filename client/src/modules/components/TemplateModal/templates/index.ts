@@ -7,3 +7,5 @@
 
 export {productivityDashboardTemplate} from './productivityDashboardTemplate';
 export {instantPreviewDashboardTemplate} from './instantPreviewDashboardTemplate';
+export {efficiencyDashboardTemplate} from './efficiencyDashboardTemplate';
+export {accelerationDashboardTemplate} from './accelerationDashboardTemplate';

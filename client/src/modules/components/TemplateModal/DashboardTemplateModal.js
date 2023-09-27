@@ -11,7 +11,12 @@ import {t} from 'translation';
 import {getOptimizeProfile} from 'config';
 
 import TemplateModal from './TemplateModal';
-import {instantPreviewDashboardTemplate, productivityDashboardTemplate} from './templates';
+import {
+  accelerationDashboardTemplate,
+  efficiencyDashboardTemplate,
+  instantPreviewDashboardTemplate,
+  productivityDashboardTemplate,
+} from './templates';
 
 import processPerformance from './images/processPerformance.png';
 import humanPerformance from './images/humanPerformance.png';
@@ -45,6 +50,8 @@ export default function DashboardTemplateModal({
       templates: [
         instantPreviewDashboardTemplate(),
         productivityDashboardTemplate(),
+        efficiencyDashboardTemplate(),
+        accelerationDashboardTemplate(),
         {
           name: 'processPerformance',
           disableDescription: true,
