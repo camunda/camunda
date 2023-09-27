@@ -643,9 +643,12 @@ public final class RaftRule extends ExternalResource {
   }
 
   public void addCommittedEntryListener(
-      final RaftCommittedEntryListener raftCommittedEntryListener) {
+      final RaftApplicationEntryCommittedPositionListener
+          raftApplicationEntryCommittedPositionListener) {
     servers.forEach(
-        (id, raft) -> raft.getContext().addCommittedEntryListener(raftCommittedEntryListener));
+        (id, raft) ->
+            raft.getContext()
+                .addCommittedEntryListener(raftApplicationEntryCommittedPositionListener));
   }
 
   public void partition(final RaftServer follower) {
@@ -688,12 +691,12 @@ public final class RaftRule extends ExternalResource {
     }
 
     @Override
-    public void onCommit(final IndexedRaftLogEntry indexed) {
-      commitFuture.complete(indexed.index());
+    public void onCommit(final long index) {
+      commitFuture.complete(index);
     }
 
     @Override
-    public void onCommitError(final IndexedRaftLogEntry indexed, final Throwable error) {
+    public void onCommitError(final long index, final Throwable error) {
       commitFuture.completeExceptionally(error);
     }
 

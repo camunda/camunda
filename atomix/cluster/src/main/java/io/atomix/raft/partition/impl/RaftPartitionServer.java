@@ -21,8 +21,8 @@ import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.primitive.partition.Partition;
 import io.atomix.primitive.partition.PartitionMetadata;
+import io.atomix.raft.RaftApplicationEntryCommittedPositionListener;
 import io.atomix.raft.RaftCommitListener;
-import io.atomix.raft.RaftCommittedEntryListener;
 import io.atomix.raft.RaftRoleChangeListener;
 import io.atomix.raft.RaftServer;
 import io.atomix.raft.RaftServer.Role;
@@ -241,16 +241,20 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer>, Health
   }
 
   /**
-   * @see io.atomix.raft.impl.RaftContext#addCommittedEntryListener(RaftCommittedEntryListener)
+   * @see
+   *     io.atomix.raft.impl.RaftContext#addCommittedEntryListener(RaftApplicationEntryCommittedPositionListener)
    */
-  public void addCommittedEntryListener(final RaftCommittedEntryListener commitListener) {
+  public void addCommittedEntryListener(
+      final RaftApplicationEntryCommittedPositionListener commitListener) {
     server.getContext().addCommittedEntryListener(commitListener);
   }
 
   /**
-   * @see io.atomix.raft.impl.RaftContext#removeCommittedEntryListener(RaftCommittedEntryListener)
+   * @see
+   *     io.atomix.raft.impl.RaftContext#removeCommittedEntryListener(RaftApplicationEntryCommittedPositionListener)
    */
-  public void removeCommittedEntryListener(final RaftCommittedEntryListener commitListener) {
+  public void removeCommittedEntryListener(
+      final RaftApplicationEntryCommittedPositionListener commitListener) {
     server.getContext().removeCommittedEntryListener(commitListener);
   }
 
