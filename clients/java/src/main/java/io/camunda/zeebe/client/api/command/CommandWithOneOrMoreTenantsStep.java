@@ -15,7 +15,6 @@
  */
 package io.camunda.zeebe.client.api.command;
 
-import io.camunda.zeebe.client.api.ExperimentalApi;
 import java.util.List;
 
 public interface CommandWithOneOrMoreTenantsStep<T> extends CommandWithTenantStep<T> {
@@ -35,19 +34,10 @@ public interface CommandWithOneOrMoreTenantsStep<T> extends CommandWithTenantSte
    * @since 8.3
    */
   @Override
-  @ExperimentalApi("https://github.com/camunda/zeebe/issues/12653")
   T tenantId(String tenantId);
 
   /**
-   * <strong>Experimental: This method is under development, and as such using it may have no effect
-   * on the command builder when called. While unimplemented, it simply returns the command builder
-   * instance unchanged. This method already exists for software that is building support for
-   * multi-tenancy, and already wants to use this API during its development. As support for
-   * multi-tenancy is added to Zeebe, each of the commands that implement this method may start to
-   * take effect. Until this warning is removed, anything described below may not yet have taken
-   * effect, and the interface and its description are subject to change.</strong>
-   *
-   * <p>Specifies the tenants that may own any entities (e.g. process definition, process instances,
+   * Specifies the tenants that may own any entities (e.g. process definition, process instances,
    * etc.) resulting from this command.
    *
    * <h1>One or more tenants</h1>
@@ -55,25 +45,22 @@ public interface CommandWithOneOrMoreTenantsStep<T> extends CommandWithTenantSte
    * <p>This can be useful when requesting jobs for multiple tenants at once. Each of the activated
    * jobs will be owned by the tenant that owns the corresponding process instance.
    *
+   * <p>Each time this method is called, the existing tenant IDs are cleared and only the tenant IDs
+   * passed to this method are added.
+   *
    * @param tenantIds the identifiers of the tenants to specify for this command, e.g. {@code
    *     ["ACME", "OTHER"]}
    * @return the builder for this command with the tenants specified
    * @see #tenantId(String)
    * @since 8.3
    */
-  @ExperimentalApi("https://github.com/camunda/zeebe/issues/12653")
   T tenantIds(List<String> tenantIds);
 
   /**
-   * <strong>Experimental: This method is under development, and as such using it may have no effect
-   * on the command builder when called. While unimplemented, it simply returns the command builder
-   * instance unchanged. This method already exists for software that is building support for
-   * multi-tenancy, and already wants to use this API during its development. As support for
-   * multi-tenancy is added to Zeebe, each of the commands that implement this method may start to
-   * take effect. Until this warning is removed, anything described below may not yet have taken
-   * effect, and the interface and its description are subject to change.</strong>
+   * Shorthand method for {@link #tenantIds(List)}.
    *
-   * <p>Shorthand method for {@link #tenantIds(List)}.
+   * <p>Each time this method is called, the existing tenant IDs are cleared and only the tenant IDs
+   * passed to this method are added.
    *
    * @param tenantIds the identifiers of the tenants to specify for this command, e.g. {@code
    *     ["ACME", "OTHER"]}
@@ -81,6 +68,5 @@ public interface CommandWithOneOrMoreTenantsStep<T> extends CommandWithTenantSte
    * @see #tenantIds(List)
    * @since 8.3
    */
-  @ExperimentalApi("https://github.com/camunda/zeebe/issues/12653")
   T tenantIds(String... tenantIds);
 }

@@ -264,7 +264,7 @@ public final class StreamJobsTest extends ClientTest {
     final StreamActivatedJobsRequest request = gatewayService.getLastRequest();
 
     // then
-    assertThat(request.getTenantIdsList()).containsExactly("tenant1", "tenant2");
+    assertThat(request.getTenantIdsList()).containsExactlyInAnyOrder("tenant1", "tenant2");
   }
 
   @Test
@@ -282,7 +282,7 @@ public final class StreamJobsTest extends ClientTest {
     final StreamActivatedJobsRequest request = gatewayService.getLastRequest();
 
     // then
-    assertThat(request.getTenantIdsList()).containsExactly("tenant1", "tenant2");
+    assertThat(request.getTenantIdsList()).containsExactlyInAnyOrder("tenant1", "tenant2");
   }
 
   @Test
@@ -294,6 +294,7 @@ public final class StreamJobsTest extends ClientTest {
         .consumer(ignored -> {})
         .tenantId("tenant1")
         .tenantId("tenant2")
+        .tenantId("tenant2")
         .send()
         .join();
 
@@ -301,6 +302,6 @@ public final class StreamJobsTest extends ClientTest {
     final StreamActivatedJobsRequest request = gatewayService.getLastRequest();
 
     // then
-    assertThat(request.getTenantIdsList()).containsExactly("tenant1", "tenant2");
+    assertThat(request.getTenantIdsList()).containsExactlyInAnyOrder("tenant1", "tenant2");
   }
 }

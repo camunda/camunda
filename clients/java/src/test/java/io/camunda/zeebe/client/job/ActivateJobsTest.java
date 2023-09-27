@@ -266,7 +266,7 @@ public final class ActivateJobsTest extends ClientTest {
     final ActivateJobsRequest request = gatewayService.getLastRequest();
 
     // then
-    assertThat(request.getTenantIdsList()).containsExactly("tenant1", "tenant2");
+    assertThat(request.getTenantIdsList()).containsExactlyInAnyOrder("tenant1", "tenant2");
   }
 
   @Test
@@ -284,7 +284,7 @@ public final class ActivateJobsTest extends ClientTest {
     final ActivateJobsRequest request = gatewayService.getLastRequest();
 
     // then
-    assertThat(request.getTenantIdsList()).containsExactly("tenant1", "tenant2");
+    assertThat(request.getTenantIdsList()).containsExactlyInAnyOrder("tenant1", "tenant2");
   }
 
   @Test
@@ -296,6 +296,7 @@ public final class ActivateJobsTest extends ClientTest {
         .maxJobsToActivate(3)
         .tenantId("tenant1")
         .tenantId("tenant2")
+        .tenantId("tenant2")
         .send()
         .join();
 
@@ -303,7 +304,7 @@ public final class ActivateJobsTest extends ClientTest {
     final ActivateJobsRequest request = gatewayService.getLastRequest();
 
     // then
-    assertThat(request.getTenantIdsList()).containsExactly("tenant1", "tenant2");
+    assertThat(request.getTenantIdsList()).containsExactlyInAnyOrder("tenant1", "tenant2");
   }
 
   @Test

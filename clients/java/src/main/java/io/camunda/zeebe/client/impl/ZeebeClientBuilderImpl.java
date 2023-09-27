@@ -57,7 +57,7 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   public static final String DEFAULT_TENANT_ID_VAR = "ZEEBE_DEFAULT_TENANT_ID";
   public static final String DEFAULT_JOB_WORKER_TENANT_IDS_VAR =
       "ZEEBE_DEFAULT_JOB_WORKER_TENANT_IDS";
-  private static final String LIST_SEPARATOR = ", ";
+  private static final String TENANT_ID_LIST_SEPARATOR = ", ";
   private boolean applyEnvironmentVariableOverrides = true;
 
   private final List<ClientInterceptor> interceptors = new ArrayList<>();
@@ -203,7 +203,7 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
     if (properties.containsKey(ClientProperties.DEFAULT_JOB_WORKER_TENANT_IDS)) {
       final String tenantIdsList =
           properties.getProperty(ClientProperties.DEFAULT_JOB_WORKER_TENANT_IDS);
-      final List<String> tenantIds = Arrays.asList(tenantIdsList.split(LIST_SEPARATOR));
+      final List<String> tenantIds = Arrays.asList(tenantIdsList.split(TENANT_ID_LIST_SEPARATOR));
       defaultJobWorkerTenantIds(tenantIds);
     }
 
@@ -445,7 +445,7 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
 
     if (Environment.system().isDefined(DEFAULT_JOB_WORKER_TENANT_IDS_VAR)) {
       final String tenantIdsList = Environment.system().get(DEFAULT_JOB_WORKER_TENANT_IDS_VAR);
-      final List<String> tenantIds = Arrays.asList(tenantIdsList.split(LIST_SEPARATOR));
+      final List<String> tenantIds = Arrays.asList(tenantIdsList.split(TENANT_ID_LIST_SEPARATOR));
       defaultJobWorkerTenantIds(tenantIds);
     }
 

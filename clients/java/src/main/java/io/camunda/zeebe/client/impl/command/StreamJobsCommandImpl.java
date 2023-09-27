@@ -34,8 +34,10 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StreamActivatedJobsRe
 import io.grpc.stub.StreamObserver;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -51,6 +53,10 @@ public final class StreamJobsCommandImpl
   private Consumer<ActivatedJob> consumer;
   private Duration requestTimeout;
 
+  private final Set<String> defaultTenantIds;
+  private final Set<String> customTenantIds;
+  private boolean areCustomTenantIdsSet;
+
   public StreamJobsCommandImpl(
       final GatewayStub asyncStub,
       final JsonMapper jsonMapper,
@@ -63,7 +69,10 @@ public final class StreamJobsCommandImpl
 
     timeout(config.getDefaultJobTimeout());
     workerName(config.getDefaultJobWorkerName());
-    tenantIds(config.getDefaultJobWorkerTenantIds());
+
+    defaultTenantIds = new HashSet<>(config.getDefaultJobWorkerTenantIds());
+    customTenantIds = new HashSet<>();
+    areCustomTenantIdsSet = false;
   }
 
   @Override
@@ -74,6 +83,13 @@ public final class StreamJobsCommandImpl
 
   @Override
   public ZeebeFuture<StreamJobsResponse> send() {
+
+    if (areCustomTenantIdsSet) {
+      builder.addAllTenantIds(customTenantIds);
+    } else {
+      builder.addAllTenantIds(defaultTenantIds);
+    }
+
     final StreamActivatedJobsRequest request = builder.build();
     final RetriableStreamingFutureImpl<StreamJobsResponse, GatewayOuterClass.ActivatedJob> result =
         new RetriableStreamingFutureImpl<>(
@@ -135,13 +151,16 @@ public final class StreamJobsCommandImpl
 
   @Override
   public StreamJobsCommandStep3 tenantId(final String tenantId) {
-    builder.addTenantIds(tenantId);
+    areCustomTenantIdsSet = true;
+    customTenantIds.add(tenantId);
     return this;
   }
 
   @Override
   public StreamJobsCommandStep3 tenantIds(final List<String> tenantIds) {
-    builder.addAllTenantIds(tenantIds);
+    areCustomTenantIdsSet = true;
+    customTenantIds.clear();
+    customTenantIds.addAll(tenantIds);
     return this;
   }
 
