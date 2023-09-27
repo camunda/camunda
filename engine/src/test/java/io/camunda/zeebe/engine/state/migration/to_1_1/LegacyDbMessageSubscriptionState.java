@@ -75,7 +75,7 @@ final class LegacyDbMessageSubscriptionState {
         new DbCompositeKey<>(nameAndCorrelationKey, elementInstanceKey);
     messageNameAndCorrelationKeyColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.MESSAGE_SUBSCRIPTION_BY_NAME_AND_CORRELATION_KEY,
+            ZbColumnFamilies.DEPRECATED_MESSAGE_SUBSCRIPTION_BY_NAME_AND_CORRELATION_KEY,
             transactionContext,
             nameCorrelationAndElementInstanceKey,
             DbNil.INSTANCE);
