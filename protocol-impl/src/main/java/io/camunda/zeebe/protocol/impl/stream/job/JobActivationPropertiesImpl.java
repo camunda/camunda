@@ -31,7 +31,10 @@ public class JobActivationPropertiesImpl extends UnpackedObject implements JobAc
       new ArrayProperty<>("tenantIds", new StringValue(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
 
   public JobActivationPropertiesImpl() {
-    declareProperty(workerProp).declareProperty(timeoutProp).declareProperty(fetchVariablesProp);
+    declareProperty(workerProp)
+        .declareProperty(timeoutProp)
+        .declareProperty(fetchVariablesProp)
+        .declareProperty(tenantIdsProp);
   }
 
   public JobActivationPropertiesImpl setWorker(
