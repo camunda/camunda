@@ -75,6 +75,7 @@ jobs:
           BRANCH_SLUG=$(echo "${{ inputs.branch }}" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g')
           echo "IMAGE_TAG=$(if [ "${{ inputs.branch }}" = "master" ]; then echo $GIT_COMMIT_HASH; else echo "branch-$BRANCH_SLUG "; fi)" >> $GITHUB_ENV
           echo "CI_IMAGE_TAG=ci-$GIT_COMMIT_HASH" >> $GITHUB_ENV
+          echo "PR_IMAGE_TAG=pr-$GIT_COMMIT_HASH" >> $GITHUB_ENV
 
       #########################################################################
       # Setup: import secrets from vault
@@ -130,13 +131,11 @@ jobs:
         run: |
           mvn -B -pl webapp jib:build -Dimage=${{ env.ZEEBE_TASKLIST_DOCKER_IMAGE }}:${{ env.IMAGE_TAG }} -Djib.to.auth.username=${{ steps.secrets.outputs.NEXUS_USR }} -Djib.to.auth.password=${{ steps.secrets.outputs.NEXUS_PSW }}
           mvn -B -pl webapp jib:build -Dimage=${{ env.ZEEBE_TASKLIST_DOCKER_IMAGE }}:${{ env.CI_IMAGE_TAG }} -Djib.to.auth.username=${{ steps.secrets.outputs.NEXUS_USR }} -Djib.to.auth.password=${{ steps.secrets.outputs.NEXUS_PSW }}
-          
+          mvn -B -pl webapp jib:build -Dimage=${{ env.ZEEBE_TASKLIST_DOCKER_IMAGE }}:${{ env.PR_IMAGE_TAG }} -Djib.to.auth.username=${{ steps.secrets.outputs.NEXUS_USR }} -Djib.to.auth.password=${{ steps.secrets.outputs.NEXUS_PSW }}
+
           if [ ${{ env.IS_MASTER_BRANCH }} ]; then
             mvn -B -pl webapp jib:build -Dimage=${{ env.ZEEBE_TASKLIST_DOCKER_IMAGE }}:latest -Djib.to.auth.username=${{ steps.secrets.outputs.NEXUS_USR }} -Djib.to.auth.password=${{ steps.secrets.outputs.NEXUS_PSW }}
           fi
-      
-      
-      
 
       #########################################################################
       # Tests: run tests for all Maven modules
