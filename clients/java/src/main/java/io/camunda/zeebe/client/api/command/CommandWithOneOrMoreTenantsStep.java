@@ -15,7 +15,6 @@
  */
 package io.camunda.zeebe.client.api.command;
 
-import io.camunda.zeebe.client.api.ExperimentalApi;
 import java.util.List;
 
 public interface CommandWithOneOrMoreTenantsStep<T> extends CommandWithTenantStep<T> {
@@ -35,19 +34,10 @@ public interface CommandWithOneOrMoreTenantsStep<T> extends CommandWithTenantSte
    * @since 8.3
    */
   @Override
-  @ExperimentalApi("https://github.com/camunda/zeebe/issues/12653")
   T tenantId(String tenantId);
 
   /**
-   * <strong>Experimental: This method is under development, and as such using it may have no effect
-   * on the command builder when called. While unimplemented, it simply returns the command builder
-   * instance unchanged. This method already exists for software that is building support for
-   * multi-tenancy, and already wants to use this API during its development. As support for
-   * multi-tenancy is added to Zeebe, each of the commands that implement this method may start to
-   * take effect. Until this warning is removed, anything described below may not yet have taken
-   * effect, and the interface and its description are subject to change.</strong>
-   *
-   * <p>Specifies the tenants that may own any entities (e.g. process definition, process instances,
+   * Specifies the tenants that may own any entities (e.g. process definition, process instances,
    * etc.) resulting from this command.
    *
    * <h1>One or more tenants</h1>
@@ -61,19 +51,10 @@ public interface CommandWithOneOrMoreTenantsStep<T> extends CommandWithTenantSte
    * @see #tenantId(String)
    * @since 8.3
    */
-  @ExperimentalApi("https://github.com/camunda/zeebe/issues/12653")
   T tenantIds(List<String> tenantIds);
 
   /**
-   * <strong>Experimental: This method is under development, and as such using it may have no effect
-   * on the command builder when called. While unimplemented, it simply returns the command builder
-   * instance unchanged. This method already exists for software that is building support for
-   * multi-tenancy, and already wants to use this API during its development. As support for
-   * multi-tenancy is added to Zeebe, each of the commands that implement this method may start to
-   * take effect. Until this warning is removed, anything described below may not yet have taken
-   * effect, and the interface and its description are subject to change.</strong>
-   *
-   * <p>Shorthand method for {@link #tenantIds(List)}.
+   * Shorthand method for {@link #tenantIds(List)}.
    *
    * @param tenantIds the identifiers of the tenants to specify for this command, e.g. {@code
    *     ["ACME", "OTHER"]}
@@ -81,6 +62,5 @@ public interface CommandWithOneOrMoreTenantsStep<T> extends CommandWithTenantSte
    * @see #tenantIds(List)
    * @since 8.3
    */
-  @ExperimentalApi("https://github.com/camunda/zeebe/issues/12653")
   T tenantIds(String... tenantIds);
 }

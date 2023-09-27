@@ -16,11 +16,13 @@
 package io.camunda.zeebe.client;
 
 import static io.camunda.zeebe.client.ClientProperties.CLOUD_REGION;
+import static io.camunda.zeebe.client.ClientProperties.DEFAULT_JOB_WORKER_TENANT_IDS;
 import static io.camunda.zeebe.client.ClientProperties.DEFAULT_TENANT_ID;
 import static io.camunda.zeebe.client.ClientProperties.MAX_MESSAGE_SIZE;
 import static io.camunda.zeebe.client.ClientProperties.STREAM_ENABLED;
 import static io.camunda.zeebe.client.ClientProperties.USE_PLAINTEXT_CONNECTION;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.CA_CERTIFICATE_VAR;
+import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.DEFAULT_JOB_WORKER_TENANT_IDS_VAR;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.DEFAULT_TENANT_ID_VAR;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.KEEP_ALIVE_VAR;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.OVERRIDE_AUTHORITY_VAR;
@@ -45,6 +47,8 @@ import io.camunda.zeebe.client.impl.util.EnvironmentRule;
 import io.camunda.zeebe.client.util.ClientTest;
 import java.io.FileNotFoundException;
 import java.time.Duration;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -85,6 +89,8 @@ public final class ZeebeClientTest extends ClientTest {
       assertThat(configuration.getDefaultTenantId())
           .isEqualTo(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
       assertThat(configuration.getDefaultJobWorkerStreamEnabled()).isFalse();
+      assertThat(configuration.getDefaultJobWorkerTenantIds())
+          .containsExactly(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
     }
   }
 
@@ -595,6 +601,122 @@ public final class ZeebeClientTest extends ClientTest {
     // when
     final ZeebeClientCloudBuilderImpl builderWithTenantId =
         (ZeebeClientCloudBuilderImpl) builder.defaultTenantId(tenantId);
+
+    // then
+    // todo(#14106): verify that tenant id is set in the builder
+    assertThat(builderWithTenantId)
+        .describedAs(
+            "This method has no effect on the cloud client builder while under development")
+        .isEqualTo(builder);
+  }
+
+  @Test
+  public void shouldUseDefaultJobWorkerTenantIds() {
+    // given
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getDefaultJobWorkerTenantIds())
+        .containsExactly(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
+  }
+
+  @Test
+  public void shouldSetDefaultJobWorkerTenantIdsFromSetterWithClientBuilder() {
+    // given
+    final String overrideTenant = "override-tenant";
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+    builder.defaultJobWorkerTenantIds(Arrays.asList(overrideTenant));
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getDefaultJobWorkerTenantIds()).containsExactly(overrideTenant);
+  }
+
+  @Test
+  public void shouldSetDefaultJobWorkerTenantIdsFromPropertyWithClientBuilder() {
+    // given
+    final List<String> tenantIdList = Arrays.asList("test-tenant-1", "test-tenant-2");
+    final Properties properties = new Properties();
+    properties.setProperty(DEFAULT_JOB_WORKER_TENANT_IDS, String.join(",", tenantIdList));
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+    builder.withProperties(properties);
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getDefaultJobWorkerTenantIds()).containsExactlyElementsOf(tenantIdList);
+  }
+
+  @Test
+  public void shouldSetDefaultJobWorkerTenantIdsFromEnvVarWithClientBuilder() {
+    // given
+    final List<String> tenantIdList = Arrays.asList("test-tenant-1", "test-tenant-2");
+    Environment.system().put(DEFAULT_JOB_WORKER_TENANT_IDS_VAR, String.join(",", tenantIdList));
+
+    // when
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+    builder.build();
+
+    // then
+    assertThat(builder.getDefaultJobWorkerTenantIds()).containsExactlyElementsOf(tenantIdList);
+  }
+
+  @Test
+  public void shouldSetFinalDefaultJobWorkerTenantIdsFromEnvVarWithClientBuilder() {
+    // given
+    final String propertyTenantId = "test-tenant";
+    final Properties properties = new Properties();
+    properties.setProperty(DEFAULT_JOB_WORKER_TENANT_IDS, propertyTenantId);
+    final List<String> tenantIdList = Arrays.asList("test-tenant-1", "test-tenant-2");
+    Environment.system().put(DEFAULT_JOB_WORKER_TENANT_IDS_VAR, String.join(",", tenantIdList));
+    final String setterTenantId = "setter-tenant";
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+    builder.defaultJobWorkerTenantIds(Arrays.asList(setterTenantId));
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getDefaultJobWorkerTenantIds()).containsExactlyElementsOf(tenantIdList);
+  }
+
+  @Test
+  public void shouldNotSetDefaultJobWorkerTenantIdsFromPropertyWithCloudClientBuilder() {
+    // given
+    final ZeebeClientCloudBuilderImpl builder = new ZeebeClientCloudBuilderImpl();
+    final Properties properties = new Properties();
+    final List<String> tenantIdList = Arrays.asList("test-tenant-1", "test-tenant-2");
+    properties.setProperty(DEFAULT_JOB_WORKER_TENANT_IDS, String.join(",", tenantIdList));
+    builder.withProperties(properties);
+
+    // when
+    final ZeebeClient client =
+        builder
+            .withClusterId("clusterId")
+            .withClientId("clientId")
+            .withClientSecret("clientSecret")
+            .build();
+
+    // then
+    // todo(#14106): verify that tenant ids are set in the request
+    assertThat(client.getConfiguration().getDefaultJobWorkerTenantIds()).isEmpty();
+  }
+
+  @Test
+  public void shouldNotSetDefaultJobWorkerTenantIdsFromSetterWithCloudClientBuilder() {
+    // given
+    final ZeebeClientCloudBuilderImpl builder = new ZeebeClientCloudBuilderImpl();
+    final List<String> tenantIdList = Arrays.asList("test-tenant-1", "test-tenant-2");
+
+    // when
+    final ZeebeClientCloudBuilderImpl builderWithTenantId =
+        (ZeebeClientCloudBuilderImpl) builder.defaultJobWorkerTenantIds(tenantIdList);
 
     // then
     // todo(#14106): verify that tenant id is set in the builder

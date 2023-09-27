@@ -36,6 +36,7 @@ public final class ActivatedJobImpl implements ActivatedJob {
   private final long processDefinitionKey;
   private final String elementId;
   private final long elementInstanceKey;
+  private final String tenantId;
   private final String worker;
   private final int retries;
   private final long deadline;
@@ -64,6 +65,7 @@ public final class ActivatedJobImpl implements ActivatedJob {
     processDefinitionKey = job.getProcessDefinitionKey();
     elementId = job.getElementId();
     elementInstanceKey = job.getElementInstanceKey();
+    tenantId = job.getTenantId();
   }
 
   @Override
@@ -160,8 +162,7 @@ public final class ActivatedJobImpl implements ActivatedJob {
 
   @Override
   public String getTenantId() {
-    // todo(#13560): replace dummy implementation
-    return "";
+    return tenantId;
   }
 
   @Override

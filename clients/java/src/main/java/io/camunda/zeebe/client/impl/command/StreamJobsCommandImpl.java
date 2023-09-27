@@ -34,8 +34,10 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StreamActivatedJobsRe
 import io.grpc.stub.StreamObserver;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -51,6 +53,9 @@ public final class StreamJobsCommandImpl
   private Consumer<ActivatedJob> consumer;
   private Duration requestTimeout;
 
+  private final Set<String> defaultTenantIds;
+  private final Set<String> customTenantIds;
+
   public StreamJobsCommandImpl(
       final GatewayStub asyncStub,
       final JsonMapper jsonMapper,
@@ -61,7 +66,11 @@ public final class StreamJobsCommandImpl
     this.retryPredicate = retryPredicate;
     builder = StreamActivatedJobsRequest.newBuilder();
 
-    timeout(config.getDefaultJobTimeout()).workerName(config.getDefaultJobWorkerName());
+    timeout(config.getDefaultJobTimeout());
+    workerName(config.getDefaultJobWorkerName());
+
+    defaultTenantIds = new HashSet<>(config.getDefaultJobWorkerTenantIds());
+    customTenantIds = new HashSet<>();
   }
 
   @Override
@@ -72,6 +81,13 @@ public final class StreamJobsCommandImpl
 
   @Override
   public ZeebeFuture<StreamJobsResponse> send() {
+
+    if (customTenantIds.isEmpty()) {
+      builder.addAllTenantIds(defaultTenantIds);
+    } else {
+      builder.addAllTenantIds(customTenantIds);
+    }
+
     final StreamActivatedJobsRequest request = builder.build();
     final RetriableStreamingFutureImpl<StreamJobsResponse, GatewayOuterClass.ActivatedJob> result =
         new RetriableStreamingFutureImpl<>(
@@ -133,13 +149,14 @@ public final class StreamJobsCommandImpl
 
   @Override
   public StreamJobsCommandStep3 tenantId(final String tenantId) {
-    // todo(#13560): replace dummy implementation
+    customTenantIds.add(tenantId);
     return this;
   }
 
   @Override
   public StreamJobsCommandStep3 tenantIds(final List<String> tenantIds) {
-    // todo(#13560): replace dummy implementation
+    customTenantIds.clear();
+    customTenantIds.addAll(tenantIds);
     return this;
   }
 

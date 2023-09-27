@@ -33,6 +33,11 @@ public interface ZeebeClientConfiguration {
   String getDefaultTenantId();
 
   /**
+   * @see ZeebeClientBuilder#defaultJobWorkerTenantIds(List)
+   */
+  List<String> getDefaultJobWorkerTenantIds();
+
+  /**
    * @see ZeebeClientBuilder#numJobWorkerExecutionThreads(int)
    */
   int getNumJobWorkerExecutionThreads();

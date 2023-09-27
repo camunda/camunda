@@ -19,7 +19,6 @@ import static io.camunda.zeebe.client.util.JsonUtil.fromJsonAsMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.zeebe.client.api.command.ActivateJobsCommandStep1.ActivateJobsCommandStep3;
 import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.response.ActivateJobsResponse;
 import io.camunda.zeebe.client.impl.ZeebeObjectMapper;
@@ -52,6 +51,7 @@ public final class ActivateJobsTest extends ClientTest {
             .setRetries(34)
             .setDeadline(1231)
             .setVariables("{\"key\": \"val\"}")
+            .setTenantId("test-tenant-1")
             .build();
 
     final ActivatedJob activatedJob2 =
@@ -69,6 +69,7 @@ public final class ActivateJobsTest extends ClientTest {
             .setRetries(334)
             .setDeadline(3131)
             .setVariables("{\"bar\": 3}")
+            .setTenantId("test-tenant-2")
             .build();
 
     gatewayService.onActivateJobsRequest(activatedJob1, activatedJob2);
@@ -81,6 +82,7 @@ public final class ActivateJobsTest extends ClientTest {
             .maxJobsToActivate(3)
             .timeout(Duration.ofMillis(1000))
             .workerName("worker1")
+            .tenantIds("test-tenant-1", "test-tenant-2")
             .send()
             .join();
 
@@ -102,7 +104,7 @@ public final class ActivateJobsTest extends ClientTest {
     assertThat(job.getRetries()).isEqualTo(activatedJob1.getRetries());
     assertThat(job.getDeadline()).isEqualTo(activatedJob1.getDeadline());
     assertThat(job.getVariables()).isEqualTo(activatedJob1.getVariables());
-    assertThat(job.getTenantId()).isEqualTo("");
+    assertThat(job.getTenantId()).isEqualTo(activatedJob1.getTenantId());
 
     job = response.getJobs().get(1);
     assertThat(job.getKey()).isEqualTo(activatedJob2.getKey());
@@ -119,6 +121,7 @@ public final class ActivateJobsTest extends ClientTest {
     assertThat(job.getRetries()).isEqualTo(activatedJob2.getRetries());
     assertThat(job.getDeadline()).isEqualTo(activatedJob2.getDeadline());
     assertThat(job.getVariables()).isEqualTo(activatedJob2.getVariables());
+    assertThat(job.getTenantId()).isEqualTo(activatedJob2.getTenantId());
 
     final ActivateJobsRequest request = gatewayService.getLastRequest();
     assertThat(request.getType()).isEqualTo("foo");
@@ -251,51 +254,57 @@ public final class ActivateJobsTest extends ClientTest {
   @Test
   public void shouldAllowSpecifyingTenantIdsAsList() {
     // given
-    final ActivateJobsCommandStep3 builder =
-        client.newActivateJobsCommand().jobType("foo").maxJobsToActivate(3);
+    client
+        .newActivateJobsCommand()
+        .jobType("foo")
+        .maxJobsToActivate(3)
+        .tenantIds(Arrays.asList("tenant1", "tenant2"))
+        .send()
+        .join();
 
     // when
-    final ActivateJobsCommandStep3 builderWithTenants =
-        builder.tenantIds(Arrays.asList("tenant1", "tenant2"));
+    final ActivateJobsRequest request = gatewayService.getLastRequest();
 
     // then
-    // todo(#13560): verify that tenant ids are set in the request
-    assertThat(builderWithTenants)
-        .describedAs("This method has no effect on the command builder while under development")
-        .isEqualTo(builder);
+    assertThat(request.getTenantIdsList()).containsExactlyInAnyOrder("tenant1", "tenant2");
   }
 
   @Test
   public void shouldAllowSpecifyingTenantIdsAsVarArgs() {
     // given
-    final ActivateJobsCommandStep3 builder =
-        client.newActivateJobsCommand().jobType("foo").maxJobsToActivate(3);
+    client
+        .newActivateJobsCommand()
+        .jobType("foo")
+        .maxJobsToActivate(3)
+        .tenantIds("tenant1", "tenant2")
+        .send()
+        .join();
 
     // when
-    final ActivateJobsCommandStep3 builderWithTenants = builder.tenantIds("tenant1", "tenant2");
+    final ActivateJobsRequest request = gatewayService.getLastRequest();
 
     // then
-    // todo(#13560): verify that tenant ids are set in the request
-    assertThat(builderWithTenants)
-        .describedAs("This method has no effect on the command builder while under development")
-        .isEqualTo(builder);
+    assertThat(request.getTenantIdsList()).containsExactlyInAnyOrder("tenant1", "tenant2");
   }
 
   @Test
   public void shouldAllowSpecifyingTenantIds() {
     // given
-    final ActivateJobsCommandStep3 builder =
-        client.newActivateJobsCommand().jobType("foo").maxJobsToActivate(3);
+    client
+        .newActivateJobsCommand()
+        .jobType("foo")
+        .maxJobsToActivate(3)
+        .tenantId("tenant1")
+        .tenantId("tenant2")
+        .tenantId("tenant2")
+        .send()
+        .join();
 
     // when
-    final ActivateJobsCommandStep3 builderWithTenants =
-        builder.tenantId("tenant1").tenantId("tenant2");
+    final ActivateJobsRequest request = gatewayService.getLastRequest();
 
     // then
-    // todo(#13560): verify that tenant ids are set in the request
-    assertThat(builderWithTenants)
-        .describedAs("This method has no effect on the command builder while under development")
-        .isEqualTo(builder);
+    assertThat(request.getTenantIdsList()).containsExactlyInAnyOrder("tenant1", "tenant2");
   }
 
   @Test

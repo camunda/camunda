@@ -32,7 +32,9 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest.B
 import io.grpc.stub.StreamObserver;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
@@ -46,6 +48,9 @@ public final class ActivateJobsCommandImpl
   private final Builder builder;
   private Duration requestTimeout;
 
+  private final Set<String> defaultTenantIds;
+  private final Set<String> customTenantIds;
+
   public ActivateJobsCommandImpl(
       final GatewayStub asyncStub,
       final ZeebeClientConfiguration config,
@@ -58,6 +63,8 @@ public final class ActivateJobsCommandImpl
     requestTimeout(config.getDefaultRequestTimeout());
     timeout(config.getDefaultJobTimeout());
     workerName(config.getDefaultJobWorkerName());
+    defaultTenantIds = new HashSet<>(config.getDefaultJobWorkerTenantIds());
+    customTenantIds = new HashSet<>();
   }
 
   @Override
@@ -104,6 +111,13 @@ public final class ActivateJobsCommandImpl
 
   @Override
   public ZeebeFuture<ActivateJobsResponse> send() {
+
+    if (customTenantIds.isEmpty()) {
+      builder.addAllTenantIds(defaultTenantIds);
+    } else {
+      builder.addAllTenantIds(customTenantIds);
+    }
+
     final ActivateJobsRequest request = builder.build();
 
     final ActivateJobsResponseImpl response = new ActivateJobsResponseImpl(jsonMapper);
@@ -129,13 +143,14 @@ public final class ActivateJobsCommandImpl
 
   @Override
   public ActivateJobsCommandStep3 tenantId(final String tenantId) {
-    // todo(#13560): replace dummy implementation
+    customTenantIds.add(tenantId);
     return this;
   }
 
   @Override
   public ActivateJobsCommandStep3 tenantIds(final List<String> tenantIds) {
-    // todo(#13560): replace dummy implementation
+    customTenantIds.clear();
+    customTenantIds.addAll(tenantIds);
     return this;
   }
 
