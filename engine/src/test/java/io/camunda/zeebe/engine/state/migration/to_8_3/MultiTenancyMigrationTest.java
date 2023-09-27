@@ -16,20 +16,28 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.state.deployment.DbDecisionState;
 import io.camunda.zeebe.engine.state.deployment.DbProcessState;
+import io.camunda.zeebe.engine.state.deployment.DeployedDrg;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
+import io.camunda.zeebe.engine.state.deployment.PersistedDecision;
 import io.camunda.zeebe.engine.state.deployment.PersistedProcess.PersistedProcessState;
 import io.camunda.zeebe.engine.state.immutable.MigrationState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.engine.state.migration.to_8_3.legacy.LegacyDecisionState;
 import io.camunda.zeebe.engine.state.migration.to_8_3.legacy.LegacyProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -220,5 +228,283 @@ public class MultiTenancyMigrationTest {
         String resourceName,
         String tenantId,
         BpmnModelInstance model) {}
+  }
+
+  @Nested
+  @ExtendWith(ProcessingStateExtension.class)
+  class MigrateDecisionStateForMultiTenancyTest {
+
+    private ZeebeDb<ZbColumnFamilies> zeebeDb;
+    private MutableProcessingState processingState;
+    private TransactionContext transactionContext;
+
+    private LegacyDecisionState legacyState;
+    private DbDecisionState decisionState;
+
+    @BeforeEach
+    void setup() {
+      final var cfg = new EngineConfiguration();
+      legacyState = new LegacyDecisionState(zeebeDb, transactionContext, cfg);
+      decisionState = new DbDecisionState(zeebeDb, transactionContext, cfg);
+    }
+
+    @Test
+    void shouldMigrateDecisionsByKeyColumnFamily() {
+      legacyState.storeDecisionRequirements(
+          new DecisionRequirementsRecord()
+              .setDecisionRequirementsId("drgId")
+              .setDecisionRequirementsName("drgName")
+              .setDecisionRequirementsVersion(1)
+              .setDecisionRequirementsKey(123)
+              .setNamespace("namespace")
+              .setResourceName("resourceName")
+              .setResource(wrapString("resource"))
+              .setChecksum(wrapString("checksum")));
+      legacyState.storeDecisionRecord(
+          new DecisionRecord()
+              .setDecisionRequirementsId("drgId")
+              .setDecisionRequirementsKey(123)
+              .setDecisionId("decisionId")
+              .setDecisionName("decisionName")
+              .setVersion(1)
+              .setDecisionKey(456)
+              .setTenantId(""));
+
+      sut.runMigration(processingState);
+
+      final PersistedDecision persistedDecision =
+          decisionState
+              .findDecisionByTenantAndKey(TenantOwned.DEFAULT_TENANT_IDENTIFIER, 456)
+              .orElseThrow();
+      assertThat(bufferAsString(persistedDecision.getDecisionRequirementsId())).isEqualTo("drgId");
+      assertThat(persistedDecision.getDecisionRequirementsKey()).isEqualTo(123L);
+      assertThat(bufferAsString(persistedDecision.getDecisionId())).isEqualTo("decisionId");
+      assertThat(bufferAsString(persistedDecision.getDecisionName())).isEqualTo("decisionName");
+      assertThat(persistedDecision.getDecisionKey()).isEqualTo(456L);
+      assertThat(persistedDecision.getVersion()).isEqualTo(1);
+      assertThat(persistedDecision.getTenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    }
+
+    @Test
+    void shouldMigrateDecisionRequirementsByKeyColumnFamily() {
+      legacyState.storeDecisionRequirements(
+          new DecisionRequirementsRecord()
+              .setDecisionRequirementsId("drgId")
+              .setDecisionRequirementsName("drgName")
+              .setDecisionRequirementsVersion(1)
+              .setDecisionRequirementsKey(123)
+              .setNamespace("namespace")
+              .setResourceName("resourceName")
+              .setResource(wrapString("resource"))
+              .setChecksum(wrapString("checksum")));
+      legacyState.storeDecisionRecord(
+          new DecisionRecord()
+              .setDecisionRequirementsId("drgId")
+              .setDecisionRequirementsKey(123)
+              .setDecisionId("decisionId")
+              .setDecisionName("decisionName")
+              .setVersion(1)
+              .setDecisionKey(456)
+              .setTenantId(""));
+
+      sut.runMigration(processingState);
+
+      final DeployedDrg deployedDrg =
+          decisionState
+              .findDecisionRequirementsByTenantAndKey(TenantOwned.DEFAULT_TENANT_IDENTIFIER, 123)
+              .orElseThrow();
+      assertThat(bufferAsString(deployedDrg.getDecisionRequirementsId())).isEqualTo("drgId");
+      assertThat(deployedDrg.getDecisionRequirementsKey()).isEqualTo(123L);
+      assertThat(bufferAsString(deployedDrg.getDecisionRequirementsName())).isEqualTo("drgName");
+      assertThat(deployedDrg.getDecisionRequirementsVersion()).isEqualTo(1);
+      assertThat(bufferAsString(deployedDrg.getResourceName())).isEqualTo("resourceName");
+      assertThat(bufferAsString(deployedDrg.getResource())).isEqualTo("resource");
+      assertThat(bufferAsString(deployedDrg.getChecksum())).isEqualTo("checksum");
+      assertThat(deployedDrg.getTenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    }
+
+    @Test
+    void shouldMigrateDecisionKeyByDecisionRequirementsKeyColumnFamily() {
+      legacyState.storeDecisionRequirements(
+          new DecisionRequirementsRecord()
+              .setDecisionRequirementsId("drgId")
+              .setDecisionRequirementsName("drgName")
+              .setDecisionRequirementsVersion(1)
+              .setDecisionRequirementsKey(123)
+              .setNamespace("namespace")
+              .setResourceName("resourceName")
+              .setResource(wrapString("resource"))
+              .setChecksum(wrapString("checksum")));
+      legacyState.storeDecisionRecord(
+          new DecisionRecord()
+              .setDecisionRequirementsId("drgId")
+              .setDecisionRequirementsKey(123)
+              .setDecisionId("decisionId")
+              .setDecisionName("decisionName")
+              .setVersion(1)
+              .setDecisionKey(456)
+              .setTenantId(""));
+
+      sut.runMigration(processingState);
+
+      final List<PersistedDecision> persistedDecisions =
+          decisionState.findDecisionsByTenantAndDecisionRequirementsKey(
+              TenantOwned.DEFAULT_TENANT_IDENTIFIER, 123);
+      assertThat(persistedDecisions).hasSize(1);
+
+      final PersistedDecision persistedDecision = persistedDecisions.get(0);
+      assertThat(bufferAsString(persistedDecision.getDecisionRequirementsId())).isEqualTo("drgId");
+      assertThat(persistedDecision.getDecisionRequirementsKey()).isEqualTo(123L);
+      assertThat(bufferAsString(persistedDecision.getDecisionId())).isEqualTo("decisionId");
+      assertThat(bufferAsString(persistedDecision.getDecisionName())).isEqualTo("decisionName");
+      assertThat(persistedDecision.getDecisionKey()).isEqualTo(456L);
+      assertThat(persistedDecision.getVersion()).isEqualTo(1);
+      assertThat(persistedDecision.getTenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    }
+
+    @Test
+    void shouldMigrateLatestDecisionKeysByDecisionIdColumnFamily() {
+      legacyState.storeDecisionRequirements(
+          new DecisionRequirementsRecord()
+              .setDecisionRequirementsId("drgId")
+              .setDecisionRequirementsName("drgName")
+              .setDecisionRequirementsVersion(1)
+              .setDecisionRequirementsKey(123)
+              .setNamespace("namespace")
+              .setResourceName("resourceName")
+              .setResource(wrapString("resource"))
+              .setChecksum(wrapString("checksum")));
+      legacyState.storeDecisionRecord(
+          new DecisionRecord()
+              .setDecisionRequirementsId("drgId")
+              .setDecisionRequirementsKey(123)
+              .setDecisionId("decisionId")
+              .setDecisionName("decisionName")
+              .setVersion(1)
+              .setDecisionKey(456)
+              .setTenantId(""));
+
+      sut.runMigration(processingState);
+
+      final PersistedDecision persistedDecision =
+          decisionState
+              .findLatestDecisionByIdAndTenant(
+                  wrapString("decisionId"), TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+              .orElseThrow();
+      assertThat(bufferAsString(persistedDecision.getDecisionRequirementsId())).isEqualTo("drgId");
+      assertThat(persistedDecision.getDecisionRequirementsKey()).isEqualTo(123L);
+      assertThat(bufferAsString(persistedDecision.getDecisionId())).isEqualTo("decisionId");
+      assertThat(bufferAsString(persistedDecision.getDecisionName())).isEqualTo("decisionName");
+      assertThat(persistedDecision.getDecisionKey()).isEqualTo(456L);
+      assertThat(persistedDecision.getVersion()).isEqualTo(1);
+      assertThat(persistedDecision.getTenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    }
+
+    @Test
+    void shouldMigrateLatestDecisionRequirementsKeysByIdColumnFamily() {
+      legacyState.storeDecisionRequirements(
+          new DecisionRequirementsRecord()
+              .setDecisionRequirementsId("drgId")
+              .setDecisionRequirementsName("drgName")
+              .setDecisionRequirementsVersion(1)
+              .setDecisionRequirementsKey(123)
+              .setNamespace("namespace")
+              .setResourceName("resourceName")
+              .setResource(wrapString("resource"))
+              .setChecksum(wrapString("checksum")));
+      legacyState.storeDecisionRecord(
+          new DecisionRecord()
+              .setDecisionRequirementsId("drgId")
+              .setDecisionRequirementsKey(123)
+              .setDecisionId("decisionId")
+              .setDecisionName("decisionName")
+              .setVersion(1)
+              .setDecisionKey(456)
+              .setTenantId(""));
+
+      sut.runMigration(processingState);
+
+      final DeployedDrg deployedDrg =
+          decisionState
+              .findLatestDecisionRequirementsByTenantAndId(
+                  TenantOwned.DEFAULT_TENANT_IDENTIFIER, wrapString("drgId"))
+              .orElseThrow();
+      assertThat(bufferAsString(deployedDrg.getDecisionRequirementsId())).isEqualTo("drgId");
+      assertThat(deployedDrg.getDecisionRequirementsKey()).isEqualTo(123L);
+      assertThat(bufferAsString(deployedDrg.getDecisionRequirementsName())).isEqualTo("drgName");
+      assertThat(deployedDrg.getDecisionRequirementsVersion()).isEqualTo(1);
+      assertThat(bufferAsString(deployedDrg.getResourceName())).isEqualTo("resourceName");
+      assertThat(bufferAsString(deployedDrg.getResource())).isEqualTo("resource");
+      assertThat(bufferAsString(deployedDrg.getChecksum())).isEqualTo("checksum");
+      assertThat(deployedDrg.getTenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    }
+
+    @Test
+    void shouldMigrateDecisionKeyByDecisionIdAndVersionColumnFamily() {
+      legacyState.storeDecisionRequirements(
+          new DecisionRequirementsRecord()
+              .setDecisionRequirementsId("drgId")
+              .setDecisionRequirementsName("drgName")
+              .setDecisionRequirementsVersion(1)
+              .setDecisionRequirementsKey(123)
+              .setNamespace("namespace")
+              .setResourceName("resourceName")
+              .setResource(wrapString("resource"))
+              .setChecksum(wrapString("checksum")));
+      legacyState.storeDecisionRecord(
+          new DecisionRecord()
+              .setDecisionRequirementsId("drgId")
+              .setDecisionRequirementsKey(123)
+              .setDecisionId("decisionId")
+              .setDecisionName("decisionName")
+              .setVersion(1)
+              .setDecisionKey(456)
+              .setTenantId(""));
+      final DecisionRequirementsRecord drgV2 =
+          new DecisionRequirementsRecord()
+              .setDecisionRequirementsId("drgId")
+              .setDecisionRequirementsName("drgName")
+              .setDecisionRequirementsVersion(2)
+              .setDecisionRequirementsKey(234)
+              .setNamespace("namespace")
+              .setResourceName("resourceName")
+              .setResource(wrapString("resource2"))
+              .setChecksum(wrapString("checksum2"));
+      legacyState.storeDecisionRequirements(drgV2);
+      final DecisionRecord decisionV2 =
+          new DecisionRecord()
+              .setDecisionRequirementsId("drgId")
+              .setDecisionRequirementsKey(234)
+              .setDecisionId("decisionId")
+              .setDecisionName("decisionName")
+              .setVersion(2)
+              .setDecisionKey(567)
+              .setTenantId("");
+      legacyState.storeDecisionRecord(decisionV2);
+
+      // when
+      sut.runMigration(processingState);
+
+      // then
+
+      // by deleting the second version, we use decisionKeyByDecisionIdAndVersion to find the
+      // new latest drg of the decision. We can then use this to make our assertion below
+      decisionState.deleteDecision(decisionV2.setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
+      decisionState.deleteDecisionRequirements(
+          drgV2.setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
+
+      final PersistedDecision persistedDecision =
+          decisionState
+              .findLatestDecisionByIdAndTenant(
+                  wrapString("decisionId"), TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+              .orElseThrow();
+      assertThat(bufferAsString(persistedDecision.getDecisionRequirementsId())).isEqualTo("drgId");
+      assertThat(persistedDecision.getDecisionRequirementsKey()).isEqualTo(123L);
+      assertThat(bufferAsString(persistedDecision.getDecisionId())).isEqualTo("decisionId");
+      assertThat(bufferAsString(persistedDecision.getDecisionName())).isEqualTo("decisionName");
+      assertThat(persistedDecision.getDecisionKey()).isEqualTo(456L);
+      assertThat(persistedDecision.getVersion()).isEqualTo(1);
+      assertThat(persistedDecision.getTenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    }
   }
 }
