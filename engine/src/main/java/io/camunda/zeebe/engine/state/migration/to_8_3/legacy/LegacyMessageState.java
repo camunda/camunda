@@ -19,15 +19,17 @@ import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.metrics.BufferedMessagesMetrics;
+import io.camunda.zeebe.engine.state.immutable.MessageState.ExpiredMessageVisitor;
+import io.camunda.zeebe.engine.state.immutable.MessageState.Index;
+import io.camunda.zeebe.engine.state.immutable.MessageState.MessageVisitor;
 import io.camunda.zeebe.engine.state.message.StoredMessage;
-import io.camunda.zeebe.engine.state.mutable.MutableMessageState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.MutableBoolean;
 
-public final class LegacyMessageState implements MutableMessageState {
+public final class LegacyMessageState {
 
   private static final String DEADLINE_MESSAGE_COUNT_KEY = "deadline_message_count";
 
@@ -52,9 +54,8 @@ public final class LegacyMessageState implements MutableMessageState {
       nameCorrelationMessageKey;
   private final DbCompositeKey<DbString, DbString> nameAndCorrelationKey;
   private final ColumnFamily<
-      DbCompositeKey<DbCompositeKey<DbString, DbString>, DbForeignKey<DbLong>>, DbNil>
+          DbCompositeKey<DbCompositeKey<DbString, DbString>, DbForeignKey<DbLong>>, DbNil>
       nameCorrelationMessageColumnFamily;
-
   /**
    * <pre>deadline | key -> []
    *
@@ -65,7 +66,6 @@ public final class LegacyMessageState implements MutableMessageState {
   private final DbCompositeKey<DbLong, DbForeignKey<DbLong>> deadlineMessageKey;
   private final ColumnFamily<DbCompositeKey<DbLong, DbForeignKey<DbLong>>, DbNil>
       deadlineColumnFamily;
-
   /**
    * <pre>count | key -> value
    *
@@ -75,7 +75,6 @@ public final class LegacyMessageState implements MutableMessageState {
 
   private final DbString messagesDeadlineCountKey;
   private final ColumnFamily<DbString, DbLong> messagesDeadlineCountColumnFamily;
-
   /**
    * <pre>name | correlation key | message id -> []
    *
@@ -87,7 +86,6 @@ public final class LegacyMessageState implements MutableMessageState {
       nameCorrelationMessageIdKey;
   private final ColumnFamily<DbCompositeKey<DbCompositeKey<DbString, DbString>, DbString>, DbNil>
       messageIdColumnFamily;
-
   /**
    * <pre>key | bpmn process id -> []
    *
@@ -98,7 +96,6 @@ public final class LegacyMessageState implements MutableMessageState {
   private final DbString bpmnProcessIdKey;
   private final ColumnFamily<DbCompositeKey<DbForeignKey<DbLong>, DbString>, DbNil>
       correlatedMessageColumnFamily;
-
   /**
    * <pre> bpmn process id | correlation key -> []
    *
@@ -108,7 +105,6 @@ public final class LegacyMessageState implements MutableMessageState {
 
   private final ColumnFamily<DbCompositeKey<DbString, DbString>, DbNil>
       activeProcessInstancesByCorrelationKeyColumnFamily;
-
   /**
    * <pre> process instance key -> correlation key
    *
@@ -117,9 +113,7 @@ public final class LegacyMessageState implements MutableMessageState {
   private final DbLong processInstanceKey;
 
   private final ColumnFamily<DbLong, DbString> processInstanceCorrelationKeyColumnFamily;
-
   private final BufferedMessagesMetrics bufferedMessagesMetrics;
-
   private Long localMessageDeadlineCount = 0L;
 
   public LegacyMessageState(
@@ -139,7 +133,7 @@ public final class LegacyMessageState implements MutableMessageState {
     nameCorrelationMessageKey = new DbCompositeKey<>(nameAndCorrelationKey, fkMessage);
     nameCorrelationMessageColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.MESSAGES,
+            ZbColumnFamilies.DEPRECATED_MESSAGES,
             transactionContext,
             nameCorrelationMessageKey,
             DbNil.INSTANCE);
@@ -201,7 +195,6 @@ public final class LegacyMessageState implements MutableMessageState {
     bufferedMessagesMetrics = new BufferedMessagesMetrics(partitionId);
   }
 
-  @Override
   public void onRecovered(final ReadonlyStreamProcessorContext context) {
     if (!messagesDeadlineCountColumnFamily.isEmpty()) {
       localMessageDeadlineCount =
@@ -211,7 +204,6 @@ public final class LegacyMessageState implements MutableMessageState {
     bufferedMessagesMetrics.setBufferedMessagesCounter(localMessageDeadlineCount);
   }
 
-  @Override
   public void put(final long key, final MessageRecord record) {
     messageKey.wrapLong(key);
     message.setMessageKey(key).setMessage(record);
@@ -236,7 +228,6 @@ public final class LegacyMessageState implements MutableMessageState {
     }
   }
 
-  @Override
   public void putMessageCorrelation(final long messageKey, final DirectBuffer bpmnProcessId) {
     ensureGreaterThan("message key", messageKey, 0);
     ensureNotNullOrEmpty("BPMN process id", bpmnProcessId);
@@ -246,7 +237,6 @@ public final class LegacyMessageState implements MutableMessageState {
     correlatedMessageColumnFamily.insert(messageBpmnProcessIdKey, DbNil.INSTANCE);
   }
 
-  @Override
   public void removeMessageCorrelation(final long messageKey, final DirectBuffer bpmnProcessId) {
     ensureGreaterThan("message key", messageKey, 0);
     ensureNotNullOrEmpty("BPMN process id", bpmnProcessId);
@@ -257,7 +247,6 @@ public final class LegacyMessageState implements MutableMessageState {
     correlatedMessageColumnFamily.deleteExisting(messageBpmnProcessIdKey);
   }
 
-  @Override
   public void putActiveProcessInstance(
       final DirectBuffer bpmnProcessId, final DirectBuffer correlationKey) {
     ensureNotNullOrEmpty("BPMN process id", bpmnProcessId);
@@ -269,7 +258,6 @@ public final class LegacyMessageState implements MutableMessageState {
         bpmnProcessIdCorrelationKey, DbNil.INSTANCE);
   }
 
-  @Override
   public void removeActiveProcessInstance(
       final DirectBuffer bpmnProcessId, final DirectBuffer correlationKey) {
     ensureNotNullOrEmpty("BPMN process id", bpmnProcessId);
@@ -280,7 +268,6 @@ public final class LegacyMessageState implements MutableMessageState {
     activeProcessInstancesByCorrelationKeyColumnFamily.deleteExisting(bpmnProcessIdCorrelationKey);
   }
 
-  @Override
   public void putProcessInstanceCorrelationKey(
       final long processInstanceKey, final DirectBuffer correlationKey) {
     ensureGreaterThan("process instance key", processInstanceKey, 0);
@@ -291,7 +278,6 @@ public final class LegacyMessageState implements MutableMessageState {
     processInstanceCorrelationKeyColumnFamily.insert(this.processInstanceKey, this.correlationKey);
   }
 
-  @Override
   public void removeProcessInstanceCorrelationKey(final long processInstanceKey) {
     ensureGreaterThan("process instance key", processInstanceKey, 0);
 
@@ -299,7 +285,6 @@ public final class LegacyMessageState implements MutableMessageState {
     processInstanceCorrelationKeyColumnFamily.deleteExisting(this.processInstanceKey);
   }
 
-  @Override
   public void remove(final long key) {
     final StoredMessage storedMessage = getMessage(key);
     if (storedMessage == null) {
@@ -335,7 +320,6 @@ public final class LegacyMessageState implements MutableMessageState {
         }));
   }
 
-  @Override
   public boolean existMessageCorrelation(final long messageKey, final DirectBuffer bpmnProcessId) {
     ensureGreaterThan("message key", messageKey, 0);
     ensureNotNullOrEmpty("BPMN process id", bpmnProcessId);
@@ -346,7 +330,6 @@ public final class LegacyMessageState implements MutableMessageState {
     return correlatedMessageColumnFamily.exists(messageBpmnProcessIdKey);
   }
 
-  @Override
   public DirectBuffer getProcessInstanceCorrelationKey(final long processInstanceKey) {
     ensureGreaterThan("process instance key", processInstanceKey, 0);
 
@@ -357,13 +340,11 @@ public final class LegacyMessageState implements MutableMessageState {
     return correlationKey != null ? correlationKey.getBuffer() : null;
   }
 
-  @Override
   public StoredMessage getMessage(final long messageKey) {
     this.messageKey.wrapLong(messageKey);
     return messageColumnFamily.get(this.messageKey);
   }
 
-  @Override
   public boolean visitMessagesWithDeadlineBeforeTimestamp(
       final long timestamp, final Index startAt, final ExpiredMessageVisitor visitor) {
     final DbCompositeKey<DbLong, DbForeignKey<DbLong>> startAtKey;
@@ -391,7 +372,6 @@ public final class LegacyMessageState implements MutableMessageState {
     return stoppedByVisitor.get();
   }
 
-  @Override
   public boolean existActiveProcessInstance(
       final DirectBuffer bpmnProcessId, final DirectBuffer correlationKey) {
     ensureNotNullOrEmpty("BPMN process id", bpmnProcessId);
@@ -402,7 +382,6 @@ public final class LegacyMessageState implements MutableMessageState {
     return activeProcessInstancesByCorrelationKeyColumnFamily.exists(bpmnProcessIdCorrelationKey);
   }
 
-  @Override
   public void visitMessages(
       final DirectBuffer name, final DirectBuffer correlationKey, final MessageVisitor visitor) {
 
@@ -418,7 +397,6 @@ public final class LegacyMessageState implements MutableMessageState {
         });
   }
 
-  @Override
   public boolean exist(
       final DirectBuffer name, final DirectBuffer correlationKey, final DirectBuffer messageId) {
     messageName.wrapBuffer(name);
@@ -426,5 +404,11 @@ public final class LegacyMessageState implements MutableMessageState {
     this.messageId.wrapBuffer(messageId);
 
     return messageIdColumnFamily.exists(nameCorrelationMessageIdKey);
+  }
+
+  public ColumnFamily<
+          DbCompositeKey<DbCompositeKey<DbString, DbString>, DbForeignKey<DbLong>>, DbNil>
+      getNameCorrelationMessageColumnFamily() {
+    return nameCorrelationMessageColumnFamily;
   }
 }
