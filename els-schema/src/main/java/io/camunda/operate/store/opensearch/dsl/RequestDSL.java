@@ -21,6 +21,12 @@ import org.opensearch.client.opensearch.core.UpdateRequest;
 import org.opensearch.client.opensearch.core.reindex.Destination;
 import org.opensearch.client.opensearch.core.reindex.Source;
 import org.opensearch.client.opensearch.indices.GetIndexRequest;
+import org.opensearch.client.opensearch.snapshot.CreateSnapshotRequest;
+import org.opensearch.client.opensearch.snapshot.DeleteSnapshotRequest;
+import org.opensearch.client.opensearch.snapshot.GetRepositoryRequest;
+import org.opensearch.client.opensearch.snapshot.GetSnapshotRequest;
+
+import java.util.List;
 
 import static io.camunda.operate.store.opensearch.client.sync.OpenSearchDocumentOperations.SCROLL_KEEP_ALIVE_MS;
 
@@ -37,8 +43,16 @@ public interface RequestDSL {
     };
   }
 
+  static CreateSnapshotRequest.Builder createSnapshotRequestBuilder(String repository, String snapshot, List<String> indices) {
+    return new CreateSnapshotRequest.Builder().repository(repository).snapshot(snapshot).indices(indices);
+  }
+
   static DeleteByQueryRequest.Builder deleteByQueryRequestBuilder(String index) {
     return new DeleteByQueryRequest.Builder().index(index);
+  }
+
+  static DeleteSnapshotRequest.Builder deleteSnapshotRequestBuilder(String repositoryName, String snapshotName) {
+    return new DeleteSnapshotRequest.Builder().repository(repositoryName).snapshot(snapshotName);
   }
 
   static <R> IndexRequest.Builder<R> indexRequestBuilder(String index) {
@@ -59,6 +73,10 @@ public interface RequestDSL {
       .dest(Destination.of(b -> b.index(dstIndex)));
   }
 
+  static GetRepositoryRequest.Builder repositoryRequestBuilder(String name) {
+    return new GetRepositoryRequest.Builder().name(name);
+  }
+
   static SearchRequest.Builder searchRequestBuilder(String index) {
     return new SearchRequest.Builder().index(index);
   }
@@ -71,6 +89,10 @@ public interface RequestDSL {
 
   static SearchRequest.Builder searchRequestBuilder(TemplateDescriptor template) {
     return searchRequestBuilder(template, QueryType.ALL);
+  }
+
+  static GetSnapshotRequest.Builder getSnapshotRequestBuilder(String repository, String snapshot) {
+    return new GetSnapshotRequest.Builder().repository(repository).snapshot(snapshot);
   }
 
   static <A, R> UpdateRequest.Builder<R, A> updateRequestBuilder(String index) {

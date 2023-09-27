@@ -15,6 +15,7 @@ import io.camunda.operate.util.TestApplication;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.backup.BackupService;
 import io.camunda.operate.webapp.backup.Metadata;
+import io.camunda.operate.webapp.elasticsearch.backup.ElasticsearchBackupRepository;
 import io.camunda.operate.webapp.management.BackupController;
 import io.camunda.operate.webapp.management.dto.GetBackupStateResponseDetailDto;
 import io.camunda.operate.webapp.management.dto.GetBackupStateResponseDto;
@@ -55,7 +56,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static io.camunda.operate.util.CollectionUtil.asMap;
-import static io.camunda.operate.webapp.backup.BackupService.SNAPSHOT_MISSING_EXCEPTION_TYPE;
+import static io.camunda.operate.webapp.elasticsearch.backup.ElasticsearchBackupRepository.SNAPSHOT_MISSING_EXCEPTION_TYPE;
 import static io.camunda.operate.webapp.management.dto.BackupStateDto.COMPLETED;
 import static io.camunda.operate.webapp.management.dto.BackupStateDto.FAILED;
 import static io.camunda.operate.webapp.management.dto.BackupStateDto.INCOMPATIBLE;

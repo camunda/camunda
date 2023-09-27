@@ -9,6 +9,7 @@ package io.camunda.operate.store.opensearch.client.sync;
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.store.opensearch.client.async.OpenSearchAsyncDocumentOperations;
 import io.camunda.operate.store.opensearch.client.async.OpenSearchAsyncIndexOperations;
+import io.camunda.operate.store.opensearch.client.async.OpenSearchAsyncSnapshotOperations;
 import io.camunda.operate.store.opensearch.client.async.OpenSearchAsyncTaskOperations;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
@@ -34,17 +35,20 @@ public class RichOpenSearchClient {
   final OpenSearchDocumentOperations openSearchDocumentOperations;
   final OpenSearchIndexOperations openSearchIndexOperations;
   final OpenSearchPipelineOperations openSearchPipelineOperations;
+  final OpenSearchSnapshotOperations openSearchSnapshotOperations;
   final OpenSearchTaskOperations openSearchTaskOperations;
   final OpenSearchTemplateOperations openSearchTemplateOperations;
 
   public class Async {
     final OpenSearchAsyncDocumentOperations openSearchAsyncDocumentOperations;
     final OpenSearchAsyncIndexOperations openSearchAsyncIndexOperations;
+    final OpenSearchAsyncSnapshotOperations openSearchAsyncSnapshotOperations;
     final OpenSearchAsyncTaskOperations openSearchAsyncTaskOperations;
 
     public Async(OpenSearchAsyncClient openSearchAsyncClient) {
       this.openSearchAsyncDocumentOperations = new OpenSearchAsyncDocumentOperations(LOGGER, openSearchAsyncClient);
       this.openSearchAsyncIndexOperations = new OpenSearchAsyncIndexOperations(LOGGER, openSearchAsyncClient);
+      this.openSearchAsyncSnapshotOperations = new OpenSearchAsyncSnapshotOperations(LOGGER, openSearchAsyncClient);
       this.openSearchAsyncTaskOperations = new OpenSearchAsyncTaskOperations(LOGGER, openSearchAsyncClient);
     }
 
@@ -56,6 +60,9 @@ public class RichOpenSearchClient {
       return openSearchAsyncIndexOperations;
     }
 
+    public OpenSearchAsyncSnapshotOperations snapshot() {
+      return openSearchAsyncSnapshotOperations;
+    }
     public OpenSearchAsyncTaskOperations task() {
       return openSearchAsyncTaskOperations;
     }
@@ -70,6 +77,7 @@ public class RichOpenSearchClient {
     openSearchDocumentOperations = new OpenSearchDocumentOperations(LOGGER, openSearchClient);
     openSearchIndexOperations = new OpenSearchIndexOperations(LOGGER, openSearchClient);
     openSearchPipelineOperations = new OpenSearchPipelineOperations(LOGGER, openSearchClient);
+    openSearchSnapshotOperations = new OpenSearchSnapshotOperations(LOGGER, openSearchClient);
     openSearchTaskOperations = new OpenSearchTaskOperations(LOGGER, openSearchClient);
     openSearchTemplateOperations = new OpenSearchTemplateOperations(LOGGER, openSearchClient);
   }
@@ -96,6 +104,10 @@ public class RichOpenSearchClient {
 
   public OpenSearchPipelineOperations pipeline() {
     return openSearchPipelineOperations;
+  }
+
+  public OpenSearchSnapshotOperations snapshot() {
+    return openSearchSnapshotOperations;
   }
 
   public OpenSearchTaskOperations task() {
