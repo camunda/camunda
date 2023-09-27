@@ -107,6 +107,7 @@ const ProcessInstanceHeader: React.FC = observer(() => {
         },
         {title: id, content: id},
         {
+          hideOverflowingContent: false,
           content: (
             <Link
               to={Locations.processes({
@@ -153,6 +154,7 @@ const ProcessInstanceHeader: React.FC = observer(() => {
         },
         {
           title: parentInstanceId ?? 'None',
+          hideOverflowingContent: false,
           content: (
             <>
               {parentInstanceId !== null ? (
@@ -176,6 +178,7 @@ const ProcessInstanceHeader: React.FC = observer(() => {
           ),
         },
         {
+          hideOverflowingContent: false,
           content: (
             <>
               {processInstanceDetailsDiagramStore.hasCalledProcessInstances ? (

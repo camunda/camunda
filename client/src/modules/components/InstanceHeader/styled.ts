@@ -29,11 +29,22 @@ const Th = styled.th`
   ${styles.label01};
 `;
 
-const Td = styled.td`
-  text-overflow: ellipsis;
-  overflow: hidden;
-  white-space: nowrap;
-  ${styles.label02};
+type TDProps = {
+  $hideOverflowingContent?: boolean;
+};
+
+const Td = styled.td<TDProps>`
+  ${({$hideOverflowingContent = true}) => {
+    return css`
+      ${styles.label02};
+      ${$hideOverflowingContent &&
+      css`
+        text-overflow: ellipsis;
+        overflow: hidden;
+        white-space: nowrap;
+      `}
+    `;
+  }}
 `;
 
 type ContainerProps = {

@@ -87,6 +87,7 @@ const Header: React.FC = observer(() => {
             content: decisionInstanceId,
           },
           {
+            hideOverflowingContent: false,
             content: (
               <Link
                 to={Locations.decisions({
@@ -127,6 +128,7 @@ const Header: React.FC = observer(() => {
           },
           {
             title: decisionInstance.processInstanceId ?? 'None',
+            hideOverflowingContent: false,
             content: (
               <>
                 {decisionInstance.processInstanceId ? (
