@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.incident;
 
-import io.camunda.zeebe.auth.impl.Authorization;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -27,7 +26,6 @@ import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
-import java.util.List;
 
 public final class ResolveIncidentProcessor implements TypedRecordProcessor<IncidentRecord> {
 
@@ -67,10 +65,7 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
   public void processRecord(final TypedRecord<IncidentRecord> command) {
     final long key = command.getKey();
 
-    final List<String> authorizedTenants =
-        (List<String>) command.getAuthorizations().get(Authorization.AUTHORIZED_TENANTS);
-    final var incident = incidentState.getIncidentRecord(key, authorizedTenants);
-
+    final var incident = incidentState.getIncidentRecord(key, command.getAuthorizations());
     if (incident == null) {
       final var errorMessage = String.format(NO_INCIDENT_FOUND_MSG, key);
       rejectResolveCommand(command, errorMessage, RejectionType.NOT_FOUND);
