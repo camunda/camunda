@@ -70,8 +70,9 @@ public class MultiTenancyActivatableJobsPushTest {
     final var jobStreamA =
         JOB_STREAMER.addJobStream(
             jobTypeBuffer, jobActivationProperties.setTenantIds(List.of(tenantIdA)));
-    JOB_STREAMER.addJobStream(
-        jobTypeBuffer, jobActivationProperties.setTenantIds(List.of(tenantIdB)));
+    final var jobStreamB =
+        JOB_STREAMER.addJobStream(
+            jobTypeBuffer, jobActivationProperties.setTenantIds(List.of(tenantIdB)));
 
     final int activationCount = 1;
 
@@ -93,6 +94,7 @@ public class MultiTenancyActivatableJobsPushTest {
 
     // assert job stream
     assertActivatedJob(jobStreamA, jobKey, worker, variables, activationCount, tenantIdA);
+    assertNoActivatedJobs(jobStreamB);
   }
 
   private Long createJob(
@@ -134,5 +136,9 @@ public class MultiTenancyActivatableJobsPushTest {
               assertThat(jobRecord.getVariables()).isEqualTo(variables);
               assertThat(jobRecord.getTenantId()).isEqualTo(tenantId);
             });
+  }
+
+  private void assertNoActivatedJobs(final RecordingJobStream jobStream) {
+    assertThat(jobStream.getActivatedJobs()).isEmpty();
   }
 }
