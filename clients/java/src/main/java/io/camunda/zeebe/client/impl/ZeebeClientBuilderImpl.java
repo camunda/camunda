@@ -57,6 +57,7 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   public static final String DEFAULT_TENANT_ID_VAR = "ZEEBE_DEFAULT_TENANT_ID";
   public static final String DEFAULT_JOB_WORKER_TENANT_IDS_VAR =
       "ZEEBE_DEFAULT_JOB_WORKER_TENANT_IDS";
+  public static final String DEFAULT_JOB_WORKER_NAME = "default";
   private static final String TENANT_ID_LIST_SEPARATOR = ",";
   private boolean applyEnvironmentVariableOverrides = true;
 
@@ -67,7 +68,7 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
       Collections.singletonList(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
   private int jobWorkerMaxJobsActive = 32;
   private int numJobWorkerExecutionThreads = 1;
-  private String defaultJobWorkerName = "default";
+  private String defaultJobWorkerName = DEFAULT_JOB_WORKER_NAME;
   private Duration defaultJobTimeout = Duration.ofMinutes(5);
   private Duration defaultJobPollInterval = Duration.ofMillis(100);
   private Duration defaultMessageTimeToLive = Duration.ofHours(1);
