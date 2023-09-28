@@ -26,7 +26,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 @ZeebeIntegration
 class GatewayGrpcHealthIT {
 
-  // can never be ready nor await the complete topology without a gateway
+  // can never be ready nor await the complete topology without a broker
   @TestZeebe(awaitReady = false, awaitCompleteTopology = false)
   private final TestStandaloneGateway gateway = new TestStandaloneGateway();
 
