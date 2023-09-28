@@ -16,7 +16,7 @@ import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.rest.AuthenticationRestService;
 import io.camunda.operate.webapp.rest.dto.UserDto;
 import io.camunda.operate.webapp.security.AuthenticationTestable;
-import io.camunda.operate.webapp.security.ElasticsearchSessionRepository;
+import io.camunda.operate.webapp.security.SessionService;
 import io.camunda.operate.webapp.security.SameSiteCookieTomcatContextCustomizer;
 import io.camunda.operate.webapp.security.oauth2.CCSaaSJwtAuthenticationTokenValidator;
 import io.camunda.operate.webapp.security.oauth2.Jwt2AuthenticationTokenConverter;
@@ -54,7 +54,7 @@ import static org.assertj.core.api.Assertions.assertThat;
         LDAPUserService.class,
         RetryElasticsearchClient.class,
         ElasticsearchTaskStore.class,
-        ElasticsearchSessionRepository.class,
+        SessionService.class,
         OperateWebSessionIndex.class,
         OperateProfileService.class,
         ElasticsearchConnector.class

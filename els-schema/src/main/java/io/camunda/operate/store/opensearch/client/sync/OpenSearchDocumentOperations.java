@@ -33,12 +33,15 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.ids;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.term;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.clearScrollRequest;
+import static io.camunda.operate.store.opensearch.dsl.RequestDSL.deleteByQueryRequestBuilder;
+import static io.camunda.operate.store.opensearch.dsl.RequestDSL.deleteRequestBuilder;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.getRequest;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.scrollRequest;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.time;
@@ -228,19 +231,11 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
       null);
   }
 
-  public Map<String, Object> getDocumentWithGivenRetries(String index, String id) {
-    return executeWithGivenRetries(
-      10,
-      format("Get document from %s with id %s", index, id),
-      () -> {
-        final GetResponse response = openSearchClient.get(getRequest(index, id), Void.class);
-        if (response.found()) {
-          return response.fields();
-        } else {
-          return null;
-        }
-      },
-      null);
+  public <R> Optional<R> getWithRetries(String index, String id, Class<R> entitiyClass) {
+    return executeWithRetries(() -> {
+      final GetResponse<R> response = openSearchClient.get(getRequest(index, id), entitiyClass);
+      return response.found() ? Optional.ofNullable(response.source()) : Optional.empty();
+    });
   }
 
   public DeleteResponse delete(String index, String id) {
@@ -262,39 +257,24 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
   public boolean deleteWithRetries(String index, Query query) {
     return executeWithRetries(
       () -> {
-        final DeleteByQueryRequest request =
-          new DeleteByQueryRequest.Builder().index(List.of(index)).query(query).build();
+        final DeleteByQueryRequest request = deleteByQueryRequestBuilder(index).query(query).build();
         final DeleteByQueryResponse response = openSearchClient.deleteByQuery(request);
         return response.failures().isEmpty() && response.deleted() > 0;
       });
   }
 
   public boolean deleteWithRetries(String index, String id) {
-    return executeWithRetries(
-      () -> {
-        final DeleteResponse response =
-          openSearchClient.delete(new DeleteRequest.Builder().index(index).id(id).build());
-        return response.result() == Result.Deleted;
-      });
+    return executeWithRetries(() -> openSearchClient.delete(deleteRequestBuilder(index, id).build()).result() == Result.Deleted);
   }
 
   public <A> IndexResponse index(IndexRequest.Builder<A> requestBuilder) {
     return safe(() -> openSearchClient.index(requestBuilder.build()), e -> defaultPersistErrorMessage(getIndex(requestBuilder)));
   }
 
-  public boolean createOrUpdateWithRetries(String name, String id, Map<?, ?> source) {
+  public <A> boolean indexWithRetries(IndexRequest.Builder<A> requestBuilder) {
     return executeWithRetries(
       () -> {
-        final IndexResponse response = openSearchClient.index(i -> i.index(name).id(id).document(source));
-        return List.of(Result.Created, Result.Updated).contains(response.result());
-      });
-  }
-
-  public boolean createOrUpdateWithRetries(String name, String id, String source) {
-    return executeWithRetries(
-      () -> {
-        final IndexResponse response =
-          openSearchClient.index(i -> i.index(name).id(id).document(source));
+        final IndexResponse response = openSearchClient.index(requestBuilder.build());
         return List.of(Result.Created, Result.Updated).contains(response.result());
       });
   }

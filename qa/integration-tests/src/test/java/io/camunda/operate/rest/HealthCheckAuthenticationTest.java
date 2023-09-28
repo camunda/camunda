@@ -16,7 +16,7 @@ import io.camunda.operate.store.TaskStore;
 import io.camunda.operate.store.elasticsearch.ElasticsearchTaskStore;
 import io.camunda.operate.store.elasticsearch.RetryElasticsearchClient;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
-import io.camunda.operate.webapp.security.ElasticsearchSessionRepository;
+import io.camunda.operate.webapp.security.SessionService;
 import io.camunda.operate.webapp.security.WebSecurityConfig;
 import io.camunda.operate.webapp.security.oauth2.CCSaaSJwtAuthenticationTokenValidator;
 import io.camunda.operate.webapp.security.oauth2.Jwt2AuthenticationTokenConverter;
@@ -55,7 +55,7 @@ import static org.mockito.BDDMockito.given;
       CCSaaSJwtAuthenticationTokenValidator.class,
       WebSecurityConfig.class,
       ElasticsearchTaskStore.class,
-      ElasticsearchSessionRepository.class,
+      SessionService.class,
       RetryElasticsearchClient.class,
       OperateWebSessionIndex.class,
       OperateProfileService.class,

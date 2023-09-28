@@ -35,9 +35,10 @@ import io.camunda.operate.management.IndicesCheck;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.indices.OperateWebSessionIndex;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
+import io.camunda.operate.webapp.elasticsearch.ElasticsearchSessionRepository;
 import io.camunda.operate.webapp.rest.AuthenticationRestService;
 import io.camunda.operate.webapp.security.AuthenticationTestable;
-import io.camunda.operate.webapp.security.ElasticsearchSessionRepository;
+import io.camunda.operate.webapp.security.SessionService;
 import io.camunda.operate.webapp.security.SessionRepositoryConfig;
 import io.camunda.operate.webapp.security.oauth2.CCSaaSJwtAuthenticationTokenValidator;
 import io.camunda.operate.webapp.security.oauth2.Jwt2AuthenticationTokenConverter;
@@ -97,13 +98,14 @@ import org.springframework.web.client.RestTemplate;
         RolePermissionService.class,
         OperateURIs.class,
         OperateProperties.class,
-        ElasticsearchSessionRepository.class,
+        SessionService.class,
         SessionRepositoryConfig.class,
         OperateWebSessionIndex.class,
         RetryElasticsearchClient.class,
         ElasticsearchTaskStore.class,
         OperateProfileService.class,
-        ElasticsearchConnector.class
+        ElasticsearchConnector.class,
+        ElasticsearchSessionRepository.class
     },
     properties = {
         "server.servlet.context-path=" + AuthenticationWithPersistentSessionsIT.CONTEXT_PATH,

@@ -12,6 +12,7 @@ import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.cluster.PutComponentTemplateRequest;
 import org.opensearch.client.opensearch.core.ClearScrollRequest;
 import org.opensearch.client.opensearch.core.DeleteByQueryRequest;
+import org.opensearch.client.opensearch.core.DeleteRequest;
 import org.opensearch.client.opensearch.core.GetRequest;
 import org.opensearch.client.opensearch.core.IndexRequest;
 import org.opensearch.client.opensearch.core.ReindexRequest;
@@ -45,6 +46,10 @@ public interface RequestDSL {
 
   static CreateSnapshotRequest.Builder createSnapshotRequestBuilder(String repository, String snapshot, List<String> indices) {
     return new CreateSnapshotRequest.Builder().repository(repository).snapshot(snapshot).indices(indices);
+  }
+
+  static DeleteRequest.Builder deleteRequestBuilder(String index, String id) {
+    return new DeleteRequest.Builder().index(index).id(id);
   }
 
   static DeleteByQueryRequest.Builder deleteByQueryRequestBuilder(String index) {

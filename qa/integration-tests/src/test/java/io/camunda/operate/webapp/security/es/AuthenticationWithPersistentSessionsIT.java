@@ -22,10 +22,11 @@ import io.camunda.operate.store.elasticsearch.RetryElasticsearchClient;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.indices.OperateWebSessionIndex;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
+import io.camunda.operate.webapp.elasticsearch.ElasticsearchSessionRepository;
 import io.camunda.operate.webapp.rest.AuthenticationRestService;
 import io.camunda.operate.webapp.rest.dto.UserDto;
 import io.camunda.operate.webapp.security.AuthenticationTestable;
-import io.camunda.operate.webapp.security.ElasticsearchSessionRepository;
+import io.camunda.operate.webapp.security.SessionService;
 import io.camunda.operate.webapp.security.SessionRepositoryConfig;
 import io.camunda.operate.webapp.security.SameSiteCookieTomcatContextCustomizer;
 import io.camunda.operate.webapp.security.auth.AuthUserService;
@@ -80,10 +81,11 @@ import org.springframework.test.context.junit4.SpringRunner;
       RetryElasticsearchClient.class,
       ElasticsearchTaskStore.class,
       SessionRepositoryConfig.class,
-      ElasticsearchSessionRepository.class,
+      SessionService.class,
       OperateWebSessionIndex.class,
       OperateProfileService.class,
-      ElasticsearchConnector.class
+      ElasticsearchConnector.class,
+      ElasticsearchSessionRepository.class
   },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
     properties = {

@@ -18,7 +18,7 @@ import java.util.Set;
 
 import static org.springframework.security.web.context.HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY;
 
-class OperateSession implements Session {
+public class OperateSession implements Session {
 
     private final MapSession delegate;
 
