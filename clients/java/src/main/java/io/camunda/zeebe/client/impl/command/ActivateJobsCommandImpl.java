@@ -24,7 +24,6 @@ import io.camunda.zeebe.client.api.command.ActivateJobsCommandStep1.ActivateJobs
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.client.api.response.ActivateJobsResponse;
 import io.camunda.zeebe.client.impl.RetriableStreamingFutureImpl;
-import io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl;
 import io.camunda.zeebe.client.impl.response.ActivateJobsResponseImpl;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
@@ -88,12 +87,9 @@ public final class ActivateJobsCommandImpl
 
   @Override
   public ActivateJobsCommandStep3 workerName(final String workerName) {
-    if (workerName == null) {
-      builder.setWorker(ZeebeClientBuilderImpl.DEFAULT_JOB_WORKER_NAME);
-      return this;
+    if (workerName != null) {
+      builder.setWorker(workerName);
     }
-
-    builder.setWorker(workerName);
     return this;
   }
 

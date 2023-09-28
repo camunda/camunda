@@ -317,7 +317,9 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
 
   @Override
   public ZeebeClientBuilder defaultJobWorkerName(final String workerName) {
-    defaultJobWorkerName = workerName;
+    if (workerName != null) {
+      defaultJobWorkerName = workerName;
+    }
     return this;
   }
 
