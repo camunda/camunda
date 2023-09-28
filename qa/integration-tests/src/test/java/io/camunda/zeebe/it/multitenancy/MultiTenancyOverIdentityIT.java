@@ -10,6 +10,9 @@ package io.camunda.zeebe.it.multitenancy;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.api.response.ActivateJobsResponse;
+import io.camunda.zeebe.client.api.response.ActivatedJob;
+import io.camunda.zeebe.client.api.response.CompleteJobResponse;
 import io.camunda.zeebe.client.api.response.DeploymentEvent;
 import io.camunda.zeebe.client.api.response.Process;
 import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
@@ -619,6 +622,166 @@ public class MultiTenancyOverIdentityIT {
           .withMessageContaining(
               "Expected to handle gRPC request PublishMessage with tenant identifier 'tenant-b'")
           .withMessageContaining("but tenant is not authorized to perform this request");
+    }
+  }
+
+  @Test
+  void shouldActivateJobForTenant() {
+    // given
+    try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A)) {
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(process, "process.bpmn")
+          .tenantId("tenant-a")
+          .send()
+          .join();
+      client
+          .newCreateInstanceCommand()
+          .bpmnProcessId(processId)
+          .latestVersion()
+          .tenantId("tenant-a")
+          .send()
+          .join();
+
+      // when
+      final Future<ActivateJobsResponse> result =
+          client
+              .newActivateJobsCommand()
+              .jobType("type")
+              .maxJobsToActivate(1)
+              .tenantId("tenant-a")
+              .send();
+
+      // then
+      assertThat(result)
+          .describedAs(
+              "Expect that job can be activated as the client has access process of tenant-a")
+          .succeedsWithin(Duration.ofSeconds(10));
+    }
+  }
+
+  @Test
+  void shouldDenyActivateJobWhenUnauthorized() {
+    // given
+    try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A)) {
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(process, "process.bpmn")
+          .tenantId("tenant-a")
+          .send()
+          .join();
+      client
+          .newCreateInstanceCommand()
+          .bpmnProcessId(processId)
+          .latestVersion()
+          .tenantId("tenant-a")
+          .send()
+          .join();
+    }
+
+    // when
+    try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_B)) {
+      final Future<ActivateJobsResponse> result =
+          client
+              .newActivateJobsCommand()
+              .jobType("type")
+              .maxJobsToActivate(1)
+              .tenantId("tenant-a")
+              .send();
+
+      // then
+      assertThat(result)
+          .failsWithin(Duration.ofSeconds(10))
+          .withThrowableThat()
+          .withMessageContaining("PERMISSION_DENIED")
+          .withMessageContaining(
+              "Expected to handle gRPC request ActivateJobs with tenant identifier 'tenant-a'")
+          .withMessageContaining("but tenant is not authorized to perform this request");
+    }
+  }
+
+  @Test
+  void shouldCompleteJobForTenant() {
+    // given
+    try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A)) {
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(process, "process.bpmn")
+          .tenantId("tenant-a")
+          .send()
+          .join();
+      client
+          .newCreateInstanceCommand()
+          .bpmnProcessId(processId)
+          .latestVersion()
+          .tenantId("tenant-a")
+          .send()
+          .join();
+
+      final var activatedJob =
+          client
+              .newActivateJobsCommand()
+              .jobType("type")
+              .maxJobsToActivate(1)
+              .tenantId("tenant-a")
+              .send()
+              .join()
+              .getJobs()
+              .get(0);
+
+      // when
+      final Future<CompleteJobResponse> result = client.newCompleteCommand(activatedJob).send();
+
+      // then
+      assertThat(result)
+          .describedAs(
+              "Expect that job can be competed as the client has access process of tenant-a")
+          .succeedsWithin(Duration.ofSeconds(10));
+    }
+  }
+
+  @Test
+  void shouldDenyCompleteJobWhenUnauthorized() {
+    // given
+    final ActivatedJob activatedJob;
+    try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A)) {
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(process, "process.bpmn")
+          .tenantId("tenant-a")
+          .send()
+          .join();
+      client
+          .newCreateInstanceCommand()
+          .bpmnProcessId(processId)
+          .latestVersion()
+          .tenantId("tenant-a")
+          .send()
+          .join();
+      activatedJob =
+          client
+              .newActivateJobsCommand()
+              .jobType("type")
+              .maxJobsToActivate(1)
+              .tenantId("tenant-a")
+              .send()
+              .join()
+              .getJobs()
+              .get(0);
+    }
+
+    // when
+    try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_B)) {
+      final Future<CompleteJobResponse> result = client.newCompleteCommand(activatedJob).send();
+
+      // then
+      assertThat(result)
+          .failsWithin(Duration.ofSeconds(10))
+          .withThrowableThat()
+          .withMessageContaining("NOT_FOUND")
+          .withMessageContaining(
+              "Command 'COMPLETE' rejected with code 'NOT_FOUND': Expected to update retries for job with key '%d', but no such job was found"
+                  .formatted(activatedJob.getKey()));
     }
   }
 
