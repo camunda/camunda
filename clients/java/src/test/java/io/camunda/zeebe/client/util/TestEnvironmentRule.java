@@ -40,6 +40,7 @@ public final class TestEnvironmentRule extends ExternalResource {
   private RecordingGatewayService gatewayService;
   private ZeebeClientImpl client;
   private GatewayStub gatewayStub;
+  private final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
 
   public TestEnvironmentRule() {
     this(b -> {});
@@ -61,7 +62,6 @@ public final class TestEnvironmentRule extends ExternalResource {
     serverRule.getServiceRegistry().addService(gatewayService);
 
     final ManagedChannel channel = serverRule.getChannel();
-    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
     clientConfigurator.accept(builder);
     gatewayStub = spy(ZeebeClientImpl.buildGatewayStub(channel, builder));
     client = new ZeebeClientImpl(builder, channel, gatewayStub);
@@ -77,6 +77,10 @@ public final class TestEnvironmentRule extends ExternalResource {
 
   public ZeebeClient getClient() {
     return client;
+  }
+
+  public ZeebeClientBuilderImpl getClientBuilder() {
+    return builder;
   }
 
   public RecordingGatewayService getGatewayService() {
