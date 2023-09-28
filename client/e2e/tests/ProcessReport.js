@@ -632,7 +632,7 @@ test('progress bar and reset to default', async (t) => {
   await t.click(e.configurationButton);
 
   await t.click(e.goalSwitch);
-  await t.typeText(e.goalTargetInput, '200', {replace: true});
+  await t.typeText(e.goalTargetInput, '400', {replace: true});
 
   await t.click(e.configurationButton);
 
@@ -647,7 +647,7 @@ test('progress bar and reset to default', async (t) => {
     .maximizeWindow();
 
   await t.click(e.configurationButton);
-  await t.typeText(e.goalTargetInput, '50', {replace: true});
+  await t.typeText(e.goalTargetInput, '300', {replace: true});
   await t.click(e.configurationButton);
 
   await t

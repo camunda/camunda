@@ -252,12 +252,15 @@ test('external datasources', async (t) => {
 
   await t.click(Common.addButton);
 
-  await t.takeElementScreenshot(e.reportModal, 'img/dashboard-addAReportModal.png');
+  await t.takeElementScreenshot(Common.modalContainer, 'img/dashboard-addAReportModal.png');
 
   await t.click(e.externalSourceLink);
   await t.typeText(e.externalSourceInput, 'http://example.com/');
 
-  await t.takeElementScreenshot(e.reportModal, 'img/dashboard-addAReportModal-externalReport.png');
+  await t.takeElementScreenshot(
+    Common.modalContainer,
+    'img/dashboard-addAReportModal-externalReport.png'
+  );
 
   await t.click(e.addTileButton);
 
@@ -293,7 +296,10 @@ test('text report', async (t) => {
   await t.typeText(e.textReportAltInput, 'This is a camunda logo');
   await t.click(e.textReportInsertAddButton);
 
-  await t.takeElementScreenshot(e.reportModal, 'img/dashboard-addAReportModal-textReport.png');
+  await t.takeElementScreenshot(
+    Common.modalContainer,
+    'img/dashboard-addAReportModal-textReport.png'
+  );
 
   await t.click(e.addTileButton);
   await t.click('.DashboardRenderer');

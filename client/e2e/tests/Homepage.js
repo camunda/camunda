@@ -208,7 +208,7 @@ test('complex Homepage actions', async (t) => {
   await t.click(e.copyTargetsInput);
   await t.click(e.copyTarget('Sales'));
 
-  await t.takeElementScreenshot(e.copyModal, 'img/copy.png');
+  await t.takeElementScreenshot(Common.modalContainer, 'img/copy.png');
 
   await t.click(Common.confirmButton);
 

@@ -117,7 +117,7 @@ test('user permissions', async (t) => {
   await t.typeText(Common.usersTypeahead, 'peter', {replace: true});
   await t.click(Common.carbonOption('peter')).pressKey('tab');
   await t.click(e.roleOption('Editor'));
-  await t.takeElementScreenshot(e.addUserModal, 'img/addUser.png');
+  await t.takeElementScreenshot(Common.modalContainer, 'img/addUser.png');
   await t.click(Common.modalConfirmButton);
 
   await t
@@ -187,7 +187,6 @@ test('add, edit and delete sources', async (t) => {
 
   // add source by definition
   await t.click(e.addButton);
-  await t.takeElementScreenshot(e.addSourceModal, 'img/sourceByDefinition.png');
   const definitionName = 'Hiring Demo 5 Tenants';
   await t.typeText(e.searchField, definitionName, {replace: true});
   await t.click(e.selectAllCheckbox);
@@ -204,7 +203,7 @@ test('add, edit and delete sources', async (t) => {
   await t.click(Common.typeaheadOption(tenantName));
   await t.click(e.itemCheckbox(3));
   await t.click(e.itemCheckbox(4));
-  await t.takeElementScreenshot(e.addSourceModal, 'img/sourceByTenant.png');
+  await t.takeElementScreenshot(Common.modalContainer, 'img/sourceByTenant.png');
   await t.click(Common.modalConfirmButton);
   await t.expect(e.processItem.visible).ok();
   await t.expect(e.decisionItem.visible).ok();
