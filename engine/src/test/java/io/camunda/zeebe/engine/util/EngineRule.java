@@ -301,7 +301,7 @@ public final class EngineRule extends ExternalResource {
   }
 
   public Record<JobRecordValue> createJob(final String type, final String processId) {
-    return createJob(type, processId, Collections.EMPTY_MAP);
+    return createJob(type, processId, Collections.emptyMap());
   }
 
   public Record<JobRecordValue> createJob(

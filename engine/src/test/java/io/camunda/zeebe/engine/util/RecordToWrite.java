@@ -91,10 +91,7 @@ public final class RecordToWrite implements LogAppendEntry {
   }
 
   public RecordToWrite job(final JobIntent intent, final JobRecordValue value) {
-    recordMetadata
-        .valueType(ValueType.JOB)
-        .intent(intent)
-        .authorization(AuthorizationUtil.getAuthInfo(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
+    recordMetadata.valueType(ValueType.JOB).intent(intent);
     unifiedRecordValue = (JobRecord) value;
     return this;
   }

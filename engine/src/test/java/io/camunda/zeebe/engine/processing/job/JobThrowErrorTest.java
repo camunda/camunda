@@ -447,7 +447,7 @@ public final class JobThrowErrorTest {
   public void shouldThrowErrorForCustomTenant() {
     // given
     final String tenantId = "acme";
-    final var job = ENGINE.createJob(jobType, PROCESS_ID, Collections.EMPTY_MAP, tenantId);
+    final var job = ENGINE.createJob(jobType, PROCESS_ID, Collections.emptyMap(), tenantId);
 
     // when
     final Record<JobRecordValue> result =
@@ -470,7 +470,7 @@ public final class JobThrowErrorTest {
     // given
     final String tenantId = "acme";
     final String falseTenantId = "foo";
-    final var job = ENGINE.createJob(jobType, PROCESS_ID, Collections.EMPTY_MAP, tenantId);
+    final var job = ENGINE.createJob(jobType, PROCESS_ID, Collections.emptyMap(), tenantId);
     ENGINE.jobs().withType(jobType).withTenantId(tenantId).activate();
 
     // when

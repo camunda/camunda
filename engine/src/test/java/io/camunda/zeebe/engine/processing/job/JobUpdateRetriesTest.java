@@ -164,10 +164,9 @@ public final class JobUpdateRetriesTest {
   public void shouldUpdateRetriesForCustomTenant() {
     // given
     final String tenantId = "acme";
-    ENGINE.createJob(jobType, PROCESS_ID, Collections.EMPTY_MAP, tenantId);
+    ENGINE.createJob(jobType, PROCESS_ID, Collections.emptyMap(), tenantId);
     final Record<JobBatchRecordValue> batchRecord =
         ENGINE.jobs().withType(jobType).withTenantId(tenantId).activate();
-    final JobRecordValue job = batchRecord.getValue().getJobs().get(0);
     final long jobKey = batchRecord.getValue().getJobKeys().get(0);
 
     // when
@@ -188,7 +187,7 @@ public final class JobUpdateRetriesTest {
     // given
     final String tenantId = "acme";
     final String falseTenantId = "foo";
-    ENGINE.createJob(jobType, PROCESS_ID, Collections.EMPTY_MAP, tenantId);
+    ENGINE.createJob(jobType, PROCESS_ID, Collections.emptyMap(), tenantId);
     final Record<JobBatchRecordValue> batchRecord =
         ENGINE.jobs().withType(jobType).withTenantId(tenantId).activate();
     final long jobKey = batchRecord.getValue().getJobKeys().get(0);

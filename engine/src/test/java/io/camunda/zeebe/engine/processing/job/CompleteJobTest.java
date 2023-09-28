@@ -210,7 +210,7 @@ public final class CompleteJobTest {
   public void shouldCompleteJobForCustomTenant() {
     // given
     final String tenantId = "acme";
-    ENGINE.createJob(jobType, PROCESS_ID, Collections.EMPTY_MAP, tenantId);
+    ENGINE.createJob(jobType, PROCESS_ID, Collections.emptyMap(), tenantId);
     final Record<JobBatchRecordValue> batchRecord =
         ENGINE.jobs().withType(jobType).withTenantId(tenantId).activate();
 
@@ -237,7 +237,7 @@ public final class CompleteJobTest {
     // given
     final String tenantId = "acme";
     final String falseTenantId = "foo";
-    ENGINE.createJob(jobType, PROCESS_ID, Collections.EMPTY_MAP, tenantId);
+    ENGINE.createJob(jobType, PROCESS_ID, Collections.emptyMap(), tenantId);
     final Record<JobBatchRecordValue> batchRecord =
         ENGINE.jobs().withType(jobType).withTenantId(tenantId).activate();
 
