@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.state.immutable;
 
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import java.util.List;
+import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import org.agrona.DirectBuffer;
@@ -29,6 +30,8 @@ public interface JobState {
       BiFunction<Long, JobRecord, Boolean> callback);
 
   JobRecord getJob(long key);
+
+  JobRecord getJob(final long key, final Map<String, Object> authorizations);
 
   long findBackedOffJobs(final long timestamp, final BiPredicate<Long, JobRecord> callback);
 

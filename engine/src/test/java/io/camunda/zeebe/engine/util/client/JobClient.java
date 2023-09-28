@@ -14,9 +14,11 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.MsgPackUtil;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import org.agrona.DirectBuffer;
@@ -39,6 +41,7 @@ public final class JobClient {
   private final CommandWriter writer;
   private long processInstanceKey;
   private long jobKey = DEFAULT_KEY;
+  private List<String> authorizedTenantIds = List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
   private Function<Long, Record<JobRecordValue>> expectation = SUCCESS_SUPPLIER;
 
@@ -102,6 +105,11 @@ public final class JobClient {
     return this;
   }
 
+  public JobClient withAuthorizedTenantIds(final String... tenantIds) {
+    authorizedTenantIds = List.of(tenantIds);
+    return this;
+  }
+
   public JobClient expectRejection() {
     expectation = REJECTION_SUPPLIER;
     return this;
@@ -124,13 +132,17 @@ public final class JobClient {
 
   public Record<JobRecordValue> complete() {
     final long jobKey = findJobKey();
-    final long position = writer.writeCommand(jobKey, JobIntent.COMPLETE, jobRecord);
+    final long position =
+        writer.writeCommand(
+            jobKey, JobIntent.COMPLETE, jobRecord, authorizedTenantIds.toArray(new String[0]));
     return expectation.apply(position);
   }
 
   public Record<JobRecordValue> fail() {
     final long jobKey = findJobKey();
-    final long position = writer.writeCommand(jobKey, JobIntent.FAIL, jobRecord);
+    final long position =
+        writer.writeCommand(
+            jobKey, JobIntent.FAIL, jobRecord, authorizedTenantIds.toArray(new String[0]));
 
     return expectation.apply(position);
   }
@@ -144,13 +156,20 @@ public final class JobClient {
 
   public Record<JobRecordValue> updateRetries() {
     final long jobKey = findJobKey();
-    final long position = writer.writeCommand(jobKey, JobIntent.UPDATE_RETRIES, jobRecord);
+    final long position =
+        writer.writeCommand(
+            jobKey,
+            JobIntent.UPDATE_RETRIES,
+            jobRecord,
+            authorizedTenantIds.toArray(new String[0]));
     return expectation.apply(position);
   }
 
   public Record<JobRecordValue> throwError() {
     final long jobKey = findJobKey();
-    final long position = writer.writeCommand(jobKey, JobIntent.THROW_ERROR, jobRecord);
+    final long position =
+        writer.writeCommand(
+            jobKey, JobIntent.THROW_ERROR, jobRecord, authorizedTenantIds.toArray(new String[0]));
 
     return expectation.apply(position);
   }

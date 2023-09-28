@@ -26,6 +26,7 @@ import io.camunda.zeebe.engine.state.immutable.JobState.State;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
@@ -36,6 +37,8 @@ import org.agrona.DirectBuffer;
 
 public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
 
+  public static final String NO_JOB_FOUND_MESSAGE =
+      "Expected to cancel job with key '%d', but no such job was found";
   private static final DirectBuffer DEFAULT_ERROR_MESSAGE = wrapString("No more retries left.");
   private final IncidentRecord incidentEvent = new IncidentRecord();
 
@@ -94,7 +97,14 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
     final var retries = failJobCommandRecord.getRetries();
     final var retryBackOff = failJobCommandRecord.getRetryBackoff();
 
-    final JobRecord failedJob = jobState.getJob(jobKey);
+    final JobRecord failedJob = jobState.getJob(jobKey, record.getAuthorizations());
+    if (failedJob == null) {
+      final String errorMessage = String.format(NO_JOB_FOUND_MESSAGE, jobKey);
+      rejectionWriter.appendRejection(record, RejectionType.NOT_FOUND, errorMessage);
+      responseWriter.writeRejectionOnCommand(record, RejectionType.NOT_FOUND, errorMessage);
+      return;
+    }
+
     failedJob.setRetries(retries);
     failedJob.setErrorMessage(
         limitString(failJobCommandRecord.getErrorMessage(), DEFAULT_MAX_ERROR_MESSAGE_SIZE));

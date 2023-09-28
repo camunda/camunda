@@ -32,6 +32,7 @@ import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.junit.Before;
@@ -358,5 +359,55 @@ public final class FailJobTest {
     final String expectedErrorMessage = "*".repeat(DEFAULT_MAX_ERROR_MESSAGE_SIZE);
     assertThat(failedRecord.getValue().getErrorMessage()).isEqualTo(expectedErrorMessage);
     assertThat(incident.getValue().getErrorMessage()).isEqualTo(expectedErrorMessage);
+  }
+
+  @Test
+  public void shouldFailForCustomTenant() {
+    // given
+    final String tenantId = "acme";
+    ENGINE.createJob(jobType, PROCESS_ID, Collections.emptyMap(), tenantId);
+    final Record<JobBatchRecordValue> batchRecord =
+        ENGINE.jobs().withType(jobType).withTenantId(tenantId).activate();
+    final JobRecordValue job = batchRecord.getValue().getJobs().get(0);
+    final long jobKey = batchRecord.getValue().getJobKeys().get(0);
+    final int retries = 23;
+
+    // when
+    final Record<JobRecordValue> failRecord =
+        ENGINE
+            .job()
+            .withKey(jobKey)
+            .ofInstance(job.getProcessInstanceKey())
+            .withRetries(retries)
+            .withAuthorizedTenantIds(tenantId)
+            .fail();
+
+    // then
+    Assertions.assertThat(failRecord).hasRecordType(RecordType.EVENT).hasIntent(FAILED);
+    Assertions.assertThat(failRecord.getValue()).hasTenantId(tenantId);
+  }
+
+  @Test
+  public void shouldRejectFailIfTenantIsUnauthorized() {
+    // given
+    final String tenantId = "acme";
+    final String falseTenantId = "foo";
+    ENGINE.createJob(jobType, PROCESS_ID, Collections.emptyMap(), tenantId);
+    final Record<JobBatchRecordValue> batchRecord =
+        ENGINE.jobs().withType(jobType).withTenantId(tenantId).activate();
+    final long jobKey = batchRecord.getValue().getJobKeys().get(0);
+
+    // when
+    final Record<JobRecordValue> jobRecord =
+        ENGINE
+            .job()
+            .withKey(jobKey)
+            .withRetries(3)
+            .withAuthorizedTenantIds(falseTenantId)
+            .expectRejection()
+            .fail();
+
+    // then
+    Assertions.assertThat(jobRecord).hasRejectionType(RejectionType.NOT_FOUND);
   }
 }

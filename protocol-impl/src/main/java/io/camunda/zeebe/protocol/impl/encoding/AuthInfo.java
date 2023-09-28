@@ -11,7 +11,9 @@ import io.camunda.zeebe.auth.impl.Authorization;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.List;
 import java.util.Map;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -78,7 +80,8 @@ public class AuthInfo extends UnpackedObject {
             .decode();
       }
       default -> {
-        return Map.of();
+        return Map.of(
+            Authorization.AUTHORIZED_TENANTS, List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
       }
     }
   }

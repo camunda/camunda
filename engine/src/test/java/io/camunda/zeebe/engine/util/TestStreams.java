@@ -350,6 +350,11 @@ public final class TestStreams {
       return this;
     }
 
+    public FluentLogWriter authorizations(final String... tenantIds) {
+      metadata.authorization(AuthorizationUtil.getAuthInfo(tenantIds));
+      return this;
+    }
+
     public FluentLogWriter sourceRecordPosition(final long sourceRecordPosition) {
       this.sourceRecordPosition = sourceRecordPosition;
       return this;

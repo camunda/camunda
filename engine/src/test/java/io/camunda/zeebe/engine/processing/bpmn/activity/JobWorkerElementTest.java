@@ -264,7 +264,12 @@ public final class JobWorkerElementTest {
     final long processInstanceKey =
         ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withTenantId(tenantId).create();
 
-    ENGINE.job().ofInstance(processInstanceKey).withType("test").complete();
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType("test")
+        .withAuthorizedTenantIds(tenantId)
+        .complete();
 
     // then
     assertThat(
