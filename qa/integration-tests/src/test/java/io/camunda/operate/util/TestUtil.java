@@ -162,10 +162,14 @@ public abstract class TestUtil {
   }
 
   public static FlowNodeInstanceForListViewEntity createFlowNodeInstance(Long processInstanceKey, FlowNodeState state) {
-    return createFlowNodeInstance(processInstanceKey, state, "start", null);
+    return createFlowNodeInstance(processInstanceKey, state, "start", null, null);
   }
 
   public static FlowNodeInstanceForListViewEntity createFlowNodeInstance(Long processInstanceKey, FlowNodeState state, String activityId, FlowNodeType activityType) {
+    return createFlowNodeInstance(processInstanceKey, state, activityId, activityType, null);
+  }
+
+  public static FlowNodeInstanceForListViewEntity createFlowNodeInstance(Long processInstanceKey, FlowNodeState state, String activityId, FlowNodeType activityType, Boolean retriesLeft) {
     FlowNodeInstanceForListViewEntity activityInstanceEntity = new FlowNodeInstanceForListViewEntity();
     activityInstanceEntity.setProcessInstanceKey(processInstanceKey);
     Long activityInstanceId = random.nextLong();
@@ -175,11 +179,14 @@ public abstract class TestUtil {
     activityInstanceEntity.setActivityState(state);
     activityInstanceEntity.getJoinRelation().setParent(processInstanceKey);
     activityInstanceEntity.setPartitionId(1);
+    if (retriesLeft != null) {
+      activityInstanceEntity.setJobFailedWithRetriesLeft(retriesLeft);
+    }
     return activityInstanceEntity;
   }
 
   public static FlowNodeInstanceForListViewEntity createFlowNodeInstance(Long processInstanceKey, FlowNodeState state, String activityId) {
-    return createFlowNodeInstance(processInstanceKey, state, activityId, FlowNodeType.SERVICE_TASK);
+    return createFlowNodeInstance(processInstanceKey, state, activityId, FlowNodeType.SERVICE_TASK, null);
   }
 
   public static ProcessInstanceForListViewEntity createProcessInstanceEntity(ProcessInstanceState state, Long processDefinitionKey, String bpmnProcessId) {

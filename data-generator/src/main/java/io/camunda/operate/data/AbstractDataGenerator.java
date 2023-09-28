@@ -6,10 +6,15 @@
  */
 package io.camunda.operate.data;
 
+import io.camunda.operate.data.usertest.UserTestDataGenerator;
 import io.camunda.operate.store.ZeebeStore;
+import io.camunda.zeebe.client.api.worker.JobWorker;
 import jakarta.annotation.PreDestroy;
+
+import java.time.Duration;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 import io.camunda.operate.property.OperateProperties;
@@ -91,4 +96,37 @@ public abstract class AbstractDataGenerator implements DataGenerator {
     return true;
   }
 
+  protected JobWorker progressSimpleTask(String taskType) {
+    return client.newWorker()
+        .jobType(taskType)
+        .handler((jobClient, job) ->
+        {
+          final int scenarioCount = ThreadLocalRandom.current().nextInt(3);
+          switch (scenarioCount) {
+          case 0:
+            //timeout
+            break;
+          case 1:
+            //successfully complete task
+            jobClient.newCompleteCommand(job.getKey()).send().join();
+            break;
+          case 2:
+            //fail task -> create incident
+            jobClient.newFailCommand(job.getKey()).retries(0).send().join();
+            break;
+          }
+        })
+        .name("operate")
+        .timeout(Duration.ofSeconds(UserTestDataGenerator.JOB_WORKER_TIMEOUT))
+        .open();
+  }
+
+  protected JobWorker progressSimpleTask(String taskType, int retriesLeft) {
+    return client.newWorker()
+      .jobType(taskType)
+      .handler((jobClient, job) -> jobClient.newFailCommand(job.getKey()).retries(retriesLeft).send().join())
+      .name("operate")
+      .timeout(Duration.ofSeconds(UserTestDataGenerator.JOB_WORKER_TIMEOUT))
+      .open();
+  }
 }

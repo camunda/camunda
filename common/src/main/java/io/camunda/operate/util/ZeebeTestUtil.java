@@ -148,6 +148,17 @@ public abstract class ZeebeTestUtil {
     })).get(0);
   }
 
+  public static Long failTaskWithRetriesLeft(ZeebeClient client, String jobType, String workerName, int numberOfRetriesLeft, String errorMessage) {
+    return handleTasks(client, jobType, workerName, 1, ((jobClient, job) -> {
+      FailJobCommandStep2 failCommand = jobClient.newFailCommand(job.getKey())
+          .retries(numberOfRetriesLeft);
+      if (errorMessage != null) {
+        failCommand.errorMessage(errorMessage);
+      }
+      failCommand.send().join();
+    })).get(0);
+  }
+
   public static Long throwErrorInTask(ZeebeClient client, String jobType, String workerName, int numberOfFailures, String errorCode,String errorMessage) {
     return handleTasks(client, jobType, workerName, numberOfFailures, ((jobClient, job) -> {
       jobClient.newThrowErrorCommand(job.getKey()).errorCode(errorCode).errorMessage(errorMessage).send().join();

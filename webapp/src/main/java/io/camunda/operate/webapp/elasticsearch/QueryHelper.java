@@ -35,19 +35,7 @@ import org.springframework.util.StringUtils;
 
 import java.time.format.DateTimeFormatter;
 
-import static io.camunda.operate.schema.templates.ListViewTemplate.ACTIVITIES_JOIN_RELATION;
-import static io.camunda.operate.schema.templates.ListViewTemplate.ACTIVITY_ID;
-import static io.camunda.operate.schema.templates.ListViewTemplate.ACTIVITY_STATE;
-import static io.camunda.operate.schema.templates.ListViewTemplate.ACTIVITY_TYPE;
-import static io.camunda.operate.schema.templates.ListViewTemplate.END_DATE;
-import static io.camunda.operate.schema.templates.ListViewTemplate.ERROR_MSG;
-import static io.camunda.operate.schema.templates.ListViewTemplate.INCIDENT;
-import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
-import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
-import static io.camunda.operate.schema.templates.ListViewTemplate.STATE;
-import static io.camunda.operate.schema.templates.ListViewTemplate.VARIABLES_JOIN_RELATION;
-import static io.camunda.operate.schema.templates.ListViewTemplate.VAR_NAME;
-import static io.camunda.operate.schema.templates.ListViewTemplate.VAR_VALUE;
+import static io.camunda.operate.schema.templates.ListViewTemplate.*;
 import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ALL;
 import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ONLY_RUNTIME;
 import static io.camunda.operate.util.ElasticsearchUtil.createMatchNoneQuery;
@@ -101,13 +89,10 @@ public class QueryHelper {
   }
 
   public QueryBuilder createQueryFragment(ListViewQueryDto query) {
-    return createQueryFragment(query, ALL);
-  }
-
-  public QueryBuilder createQueryFragment(ListViewQueryDto query, ElasticsearchUtil.QueryType queryType) {
     return joinWithAnd(
-        createRunningFinishedQuery(query, queryType),
-        createActivityIdQuery(query, queryType),
+        createRunningFinishedQuery(query),
+        createRetriesLeftQuery(query),
+        createActivityIdQuery(query),
         createIdsQuery(query),
         createErrorMessageQuery(query),
         createStartDateQuery(query),
@@ -259,7 +244,7 @@ public class QueryHelper {
     return null;
   }
 
-  private QueryBuilder createRunningFinishedQuery(ListViewQueryDto query, ElasticsearchUtil.QueryType queryType) {
+  private QueryBuilder createRunningFinishedQuery(ListViewQueryDto query) {
 
     boolean active = query.isActive();
     boolean incidents = query.isIncidents();
@@ -324,7 +309,15 @@ public class QueryHelper {
 
   }
 
-  private QueryBuilder createActivityIdQuery(ListViewQueryDto query, ElasticsearchUtil.QueryType queryType) {
+  private QueryBuilder createRetriesLeftQuery(ListViewQueryDto query) {
+    if (query.isRetriesLeft()) {
+      QueryBuilder retriesLeftQuery = termQuery(JOB_FAILED_WITH_RETRIES_LEFT, true);
+      return hasChildQuery(ACTIVITIES_JOIN_RELATION, retriesLeftQuery, None);
+    }
+    return null;
+  }
+
+  private QueryBuilder createActivityIdQuery(ListViewQueryDto query) {
     if (StringUtils.isEmpty(query.getActivityId())) {
       return null;
     }

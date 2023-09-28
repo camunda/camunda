@@ -6,6 +6,7 @@
  */
 package io.camunda.operate.zeebeimport.v8_2.processors;
 
+import static io.camunda.operate.util.LambdaExceptionUtil.rethrowConsumer;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATING;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_COMPLETED;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_TERMINATED;
@@ -36,11 +37,10 @@ import io.camunda.operate.util.TreePath;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
-import io.camunda.zeebe.protocol.record.value.BpmnElementType;
-import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
-import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
-import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
+import io.camunda.zeebe.protocol.record.value.*;
+
 import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -49,6 +49,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,12 +64,17 @@ public class ListViewZeebeRecordProcessor {
 
   private static final Set<String> PI_AND_AI_START_STATES = new HashSet<>();
   private static final Set<String> PI_AND_AI_FINISH_STATES = new HashSet<>();
+
+  private final static Set<String> FAILED_JOB_EVENTS = new HashSet<>();
   protected static final int EMPTY_PARENT_PROCESS_INSTANCE_ID = -1;
 
   static {
     PI_AND_AI_START_STATES.add(ELEMENT_ACTIVATING.name());
     PI_AND_AI_FINISH_STATES.add(ELEMENT_COMPLETED.name());
     PI_AND_AI_FINISH_STATES.add(ELEMENT_TERMINATED.name());
+
+    FAILED_JOB_EVENTS.add(JobIntent.FAIL.name());
+    FAILED_JOB_EVENTS.add(JobIntent.FAILED.name());
   }
 
   @Autowired
@@ -240,6 +246,22 @@ public class ListViewZeebeRecordProcessor {
     }
   }
 
+  public void processJobRecords(Map<Long, List<Record<JobRecordValue>>> records,
+      BatchRequest batchRequest) throws PersistenceException {
+    for (List<Record<JobRecordValue>> jobRecords : records.values()) {
+      processLastRecord(jobRecords, rethrowConsumer(record -> {
+        updateFlowNodeInstanceFromJob(record, batchRequest);
+      }));
+    }
+  }
+
+  private void processLastRecord(final List<Record<JobRecordValue>> records,
+      final Consumer<Record<JobRecordValue>> recordProcessor) {
+    if (!records.isEmpty()) {
+      recordProcessor.accept(records.get(records.size() - 1));
+    }
+  }
+
   private boolean shouldProcessProcessInstanceRecord(final Record<ProcessInstanceRecordValue> record) {
     final var intent = record.getIntent().name();
     return PI_AND_AI_START_STATES.contains(intent) || PI_AND_AI_FINISH_STATES.contains(intent);
@@ -358,6 +380,36 @@ public class ListViewZeebeRecordProcessor {
       getCallActivityIdCache().put(flowNodeInstanceId, callActivityId);
     }
     return callActivityId;
+  }
+
+  private void updateFlowNodeInstanceFromJob(Record<JobRecordValue> record, BatchRequest batchRequest)
+      throws PersistenceException {
+    FlowNodeInstanceForListViewEntity entity = new FlowNodeInstanceForListViewEntity();
+
+    final var recordValue = record.getValue();
+    final var intentStr = record.getIntent().name();
+
+    entity.setKey(record.getValue().getElementInstanceKey());
+    entity.setId(ConversionUtils.toStringOrNull(record.getValue().getElementInstanceKey()));
+    entity.setPartitionId(record.getPartitionId());
+    entity.setActivityId(recordValue.getElementId());
+    entity.setProcessInstanceKey(recordValue.getProcessInstanceKey());
+    entity.getJoinRelation().setParent(recordValue.getProcessInstanceKey());
+
+    if (FAILED_JOB_EVENTS.contains(intentStr) && recordValue.getRetries() > 0) {
+      entity.setJobFailedWithRetriesLeft(true);
+    } else {
+      entity.setJobFailedWithRetriesLeft(false);
+    }
+
+    logger.debug("Update job state for flow node instance: id {} JobFailedWithRetriesLeft {}", entity.getId(), entity.isJobFailedWithRetriesLeft());
+    Map<String, Object> updateFields = new HashMap<>();
+    updateFields.put(ListViewTemplate.ID, entity.getId());
+    updateFields.put(ListViewTemplate.JOB_FAILED_WITH_RETRIES_LEFT, entity.isJobFailedWithRetriesLeft());
+
+    batchRequest.upsertWithRouting(listViewTemplate.getFullQualifiedName(), entity.getId(), entity, updateFields,
+        String.valueOf(recordValue.getProcessInstanceKey()));
+
   }
 
   private void updateFlowNodeInstance(Record<ProcessInstanceRecordValue> record, Map<Long, FlowNodeInstanceForListViewEntity> entities) {

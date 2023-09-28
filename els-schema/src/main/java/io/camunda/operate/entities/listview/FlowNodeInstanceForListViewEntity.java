@@ -27,6 +27,7 @@ public class FlowNodeInstanceForListViewEntity extends OperateZeebeEntity<FlowNo
   private List<Long> incidentKeys = new ArrayList<>();
   private String errorMessage;
   private boolean incident;
+  private boolean jobFailedWithRetriesLeft = false;
 
   @Deprecated
   @JsonIgnore
@@ -135,7 +136,17 @@ public class FlowNodeInstanceForListViewEntity extends OperateZeebeEntity<FlowNo
     this.endTime = endTime;
   }
 
-  @Override public boolean equals(Object o) {
+  public boolean isJobFailedWithRetriesLeft() {
+    return jobFailedWithRetriesLeft;
+  }
+
+  public FlowNodeInstanceForListViewEntity setJobFailedWithRetriesLeft(boolean jobFailedWithRetriesLeft) {
+    this.jobFailedWithRetriesLeft = jobFailedWithRetriesLeft;
+    return this;
+  }
+
+  @Override
+  public boolean equals(Object o) {
     if (this == o)
       return true;
     if (o == null || getClass() != o.getClass())

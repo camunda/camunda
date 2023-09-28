@@ -131,6 +131,10 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
   protected Predicate<Object[]> incidentIsActiveCheck;
 
   @Autowired
+  @Qualifier("jobWithRetriesCheck")
+  protected Predicate<Object[]> jobWithRetriesCheck;
+
+  @Autowired
   @Qualifier("incidentsInAnyInstanceAreActiveCheck")
   protected Predicate<Object[]> incidentsInAnyInstanceAreActiveCheck;
 
@@ -237,9 +241,21 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
     return workerName;
   }
 
+  public Long failTaskWithNoRetriesLeft(String taskName, long processInstanceKey, int numberOfFailure, String errorMessage) {
+    Long jobKey = ZeebeTestUtil.failTask(getClient(), taskName, getWorkerName(), numberOfFailure, errorMessage);
+    searchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, processInstanceKey);
+    return jobKey;
+  }
+
   public Long failTaskWithNoRetriesLeft(String taskName, long processInstanceKey, String errorMessage) {
     Long jobKey = ZeebeTestUtil.failTask(getClient(), taskName, getWorkerName(), 3, errorMessage);
     searchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, processInstanceKey);
+    return jobKey;
+  }
+
+  public Long failTaskWithRetriesLeft(String taskName, long processInstanceKey, String errorMessage) {
+    Long jobKey = ZeebeTestUtil.failTaskWithRetriesLeft(getClient(), taskName, getWorkerName(), 1, errorMessage);
+    searchTestRule.processAllRecordsAndWait(jobWithRetriesCheck, processInstanceKey, jobKey, 1);
     return jobKey;
   }
 

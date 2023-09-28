@@ -261,7 +261,7 @@ test.describe('processes page', () => {
       await expect(page).toHaveScreenshot();
     });
 
-    test(`optional filters visible - ${theme}`, async ({
+    test(`optional filters visible (part 1) - ${theme}`, async ({
       page,
       commonPage,
       processesPage,
@@ -302,8 +302,48 @@ test.describe('processes page', () => {
       await processesPage.displayOptionalFilter('Operation Id');
       await processesPage.operationIdFilter.type('aaa');
       await expect(page.getByText('Id has to be a UUID')).toBeVisible();
+      await expect(page).toHaveScreenshot();
+    });
+
+    test(`optional filters visible (part 2) - ${theme}`, async ({
+      page,
+      commonPage,
+      processesPage,
+    }) => {
+      await commonPage.changeTheme(theme);
+      await page.addInitScript(() => {
+        window.localStorage.setItem(
+          'panelStates',
+          JSON.stringify({
+            isOperationsCollapsed: false,
+          }),
+        );
+      }, theme);
+
+      await page.route(
+        /^.*\/api.*$/i,
+        mockResponses({
+          groupedProcesses: mockGroupedProcesses,
+          batchOperations: mockBatchOperations,
+          processInstances: mockProcessInstances,
+          statistics: mockStatistics,
+          processXml: mockProcessXml,
+        }),
+      );
+
+      await processesPage.navigateToProcesses({
+        searchParams: {
+          active: 'true',
+          incidents: 'true',
+        },
+        options: {
+          waitUntil: 'networkidle',
+        },
+      });
+
       await processesPage.displayOptionalFilter('Parent Process Instance Key');
       await processesPage.displayOptionalFilter('Process Instance Key(s)');
+      await processesPage.displayOptionalFilter('Failed job but retries left');
       await processesPage.displayOptionalFilter('End Date Range');
 
       await expect(page).toHaveScreenshot();

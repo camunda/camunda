@@ -188,6 +188,7 @@ public class ElasticsearchBulkProcessor extends AbstractImportBatchProcessor {
     // per activity
     Map<Long, List<Record<JobRecordValue>>> groupedJobRecordsPerActivityInst = zeebeRecords.stream().map(obj -> (Record<JobRecordValue>)obj)
         .collect(Collectors.groupingBy(obj -> obj.getValue().getElementInstanceKey()));
+    listViewZeebeRecordProcessor.processJobRecords(groupedJobRecordsPerActivityInst, batchRequest);
     eventZeebeRecordProcessor.processJobRecords(groupedJobRecordsPerActivityInst, batchRequest);
   }
 

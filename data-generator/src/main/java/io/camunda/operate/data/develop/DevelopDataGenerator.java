@@ -21,8 +21,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.BiFunction;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,7 +49,6 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
   @Autowired
   private BiFunction<String, Integer, StatefulRestTemplate> statefulRestTemplateFactory;
   private StatefulRestTemplate restTemplate;
-  private Random random = new Random();
 
   @PostConstruct
   private void initRestTemplate() {
@@ -58,33 +57,33 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
 
   @Override
   public void createSpecialDataV1() {
-    int orderId = random.nextInt(10);
+    int orderId = ThreadLocalRandom.current().current().nextInt(10);
     long instanceKey = ZeebeTestUtil
       .startProcessInstance(client, "interruptingBoundaryEvent", "{\"orderId\": \"" + orderId + "\"\n}");
     doNotTouchProcessInstanceKeys.add(instanceKey);
     sendMessages("interruptTask1", "{\"messageVar\": \"someValue\"\n}", 1, String.valueOf(orderId));
 
-    orderId = random.nextInt(10);
+    orderId = ThreadLocalRandom.current().current().nextInt(10);
     instanceKey = ZeebeTestUtil
       .startProcessInstance(client, "interruptingBoundaryEvent", "{\"orderId\": \"" + orderId + "\"\n}");
     doNotTouchProcessInstanceKeys.add(instanceKey);
     sendMessages("interruptTask1", "{\"messageVar\": \"someValue\"\n}", 1, String.valueOf(orderId));
     completeTask(instanceKey, "task2", null);
 
-    orderId = random.nextInt(10);
+    orderId = ThreadLocalRandom.current().current().nextInt(10);
     instanceKey = ZeebeTestUtil
       .startProcessInstance(client, "nonInterruptingBoundaryEvent", "{\"orderId\": \"" + orderId + "\"\n}");
     doNotTouchProcessInstanceKeys.add(instanceKey);
     sendMessages("messageTask1", "{\"messageVar\": \"someValue\"\n}", 1, String.valueOf(orderId));
 
-    orderId = random.nextInt(10);
+    orderId = ThreadLocalRandom.current().current().nextInt(10);
     instanceKey = ZeebeTestUtil
       .startProcessInstance(client, "nonInterruptingBoundaryEvent", "{\"orderId\": \"" + orderId + "\"\n}");
     doNotTouchProcessInstanceKeys.add(instanceKey);
     sendMessages("messageTask1", "{\"messageVar\": \"someValue\"\n}", 1, String.valueOf(orderId));
     failTask(instanceKey, "task1", "error");
 
-    orderId = random.nextInt(10);
+    orderId = ThreadLocalRandom.current().current().nextInt(10);
     instanceKey = ZeebeTestUtil
       .startProcessInstance(client, "nonInterruptingBoundaryEvent", "{\"orderId\": \"" + orderId + "\"\n}");
     doNotTouchProcessInstanceKeys.add(instanceKey);
@@ -98,19 +97,9 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
 
     super.progressProcessInstances();
 
-    //demo process
-    jobWorkers.add(progressTaskA());
-    jobWorkers.add(progressSimpleTask("taskB"));
-    jobWorkers.add(progressSimpleTask("taskC"));
-    jobWorkers.add(progressSimpleTask("taskD"));
-    jobWorkers.add(progressSimpleTask("taskE"));
-    jobWorkers.add(progressSimpleTask("taskF"));
-    jobWorkers.add(progressSimpleTask("taskG"));
-    jobWorkers.add(progressSimpleTask("taskH"));
-
     //complex process
     jobWorkers.add(progressSimpleTask("upperTask"));
-    jobWorkers.add(progressSimpleTask("lowerTask"));
+    jobWorkers.add(progressSimpleTask("lowerTask", 1));
     jobWorkers.add(progressSimpleTask("subprocessTask"));
 
     //eventBasedGatewayProcess
@@ -156,9 +145,9 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
   @Override
   protected void createOperations() {
     restTemplate.loginWhenNeeded(OPERATE_USER, OPERATE_PASSWORD);
-    final int operationsCount = random.nextInt(20) + 90;
+    final int operationsCount = ThreadLocalRandom.current().nextInt(20) + 90;
     for (int i=0; i<operationsCount; i++) {
-      final int no = random.nextInt(operationsCount);
+      final int no = ThreadLocalRandom.current().nextInt(operationsCount);
       final Long processInstanceKey = processInstanceKeys.get(no);
       final OperationType type = getType(i);
       Map<String, Object> request = getCreateBatchOperationRequestBody(processInstanceKey, type);
@@ -198,7 +187,7 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
     }
   }
   private void sendMessages(String messageName, String payload, int count) {
-    sendMessages(messageName, payload, count, String.valueOf(random.nextInt(7)));
+    sendMessages(messageName, payload, count, String.valueOf(ThreadLocalRandom.current().nextInt(7)));
   }
 
   @Override
@@ -207,7 +196,7 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
       .newWorker()
       .jobType("checkPayment")
       .handler((jobClient, job) -> {
-        final int scenario = random.nextInt(6);
+        final int scenario = ThreadLocalRandom.current().nextInt(6);
         switch (scenario){
         case 0:
           //fail
@@ -230,37 +219,12 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
       .open();
   }
 
-  private JobWorker progressSimpleTask(String taskType) {
-    return client.newWorker()
-      .jobType(taskType)
-      .handler((jobClient, job) ->
-      {
-        final int scenarioCount = random.nextInt(3);
-        switch (scenarioCount) {
-        case 0:
-          //timeout
-          break;
-        case 1:
-          //successfully complete task
-          jobClient.newCompleteCommand(job.getKey()).send().join();
-          break;
-        case 2:
-          //fail task -> create incident
-          jobClient.newFailCommand(job.getKey()).retries(0).send().join();
-          break;
-        }
-      })
-      .name("operate")
-      .timeout(Duration.ofSeconds(JOB_WORKER_TIMEOUT))
-      .open();
-  }
-
   private JobWorker progressPlaceOrderTask() {
     return client.newWorker()
       .jobType("placeOrder")
       .handler((jobClient, job) ->
       {
-        final int shipping = random.nextInt(5) - 1;
+        final int shipping = ThreadLocalRandom.current().nextInt(5) - 1;
         jobClient.newCompleteCommand(job.getKey()).variables("{\"shipping\":" + shipping + "}").send().join();
       })
       .name("operate")
@@ -272,7 +236,7 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
     return client.newWorker()
       .jobType("taskA")
       .handler((jobClient, job) -> {
-        final int scenarioCount = random.nextInt(2);
+        final int scenarioCount = ThreadLocalRandom.current().nextInt(2);
         switch (scenarioCount) {
         case 0:
           //successfully complete task
@@ -312,7 +276,7 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
             jobClient.newCompleteCommand(job.getKey()).send().join();
             countBeforeIncident[0]++;
           } else {
-            if (random.nextBoolean()) {
+            if (ThreadLocalRandom.current().nextBoolean()) {
               //fail task -> create incident
               jobClient.newFailCommand(job.getKey()).retries(0).send().join();
             } else {
@@ -346,7 +310,7 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
         .jobType("retryTask")
         .handler((jobClient, job) ->
         {
-          final int scenarioCount = random.nextInt(4);
+          final int scenarioCount = ThreadLocalRandom.current().nextInt(4);
           switch (scenarioCount) {
           case 0:
           case 1:
@@ -416,19 +380,19 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
     if (version == 1) {
       createBigProcess(40, 1000);
     }
-    final int instancesCount = random.nextInt(15) + 15;
+    final int instancesCount = ThreadLocalRandom.current().nextInt(15) + 15;
     for (int i = 0; i < instancesCount; i++) {
 
       if (version == 1) {
         //eventBasedGatewayProcess v.1
-        sendMessages("newClientMessage", "{\"clientId\": \"" + random.nextInt(10) + "\"\n}", 1);
+        sendMessages("newClientMessage", "{\"clientId\": \"" + ThreadLocalRandom.current().nextInt(10) + "\"\n}", 1);
 
         //call activity process
         //these instances will have incident on call activity
-        processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, "call-activity-process", "{\"var\": " + random.nextInt(10) + "}"));
+        processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, "call-activity-process", "{\"var\": " + ThreadLocalRandom.current().nextInt(10) + "}"));
 
         //eventSubprocess
-        processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, "eventSubprocessProcess", "{\"clientId\": \"" + random.nextInt(10) + "\"}"));
+        processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, "eventSubprocessProcess", "{\"clientId\": \"" + ThreadLocalRandom.current().nextInt(10) + "\"}"));
 
         // errorProcess
         processInstanceKeys.add(ZeebeTestUtil
@@ -443,7 +407,7 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
         processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, "linkEventProcess", null));
         processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, "escalationEvents", null));
         processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, "inclusiveGatewayProcess",
-            "{\"saladOrdered\": "+ random.nextBoolean()+ ", \"pastaOrdered\": "+ random.nextBoolean()+ "}"));
+            "{\"saladOrdered\": "+ ThreadLocalRandom.current().nextBoolean()+ ", \"pastaOrdered\": "+ ThreadLocalRandom.current().nextBoolean()+ "}"));
       }
 
       if (version == 2) {
@@ -451,7 +415,7 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
         processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, "nonInterruptingBoundaryEvent", null));
         //call activity process
         //these instances must be fine
-        processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, "call-activity-process", "{\"var\": " + random.nextInt(10) + "}"));
+        processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, "call-activity-process", "{\"var\": " + ThreadLocalRandom.current().nextInt(10) + "}"));
         processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, "escalationEvents", null));
       }
       if (version < 2) {
@@ -459,15 +423,15 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
       }
 
       if (version < 3) {
-        processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, "complexProcess", "{\"clientId\": \"" + random.nextInt(10) + "\"}"));
+        processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, "complexProcess", "{\"clientId\": \"" + ThreadLocalRandom.current().nextInt(10) + "\"}"));
       }
 
       if (version == 3) {
-        processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, "complexProcess", "{\"goUp\": " + random.nextInt(5) + "}"));
+        processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, "complexProcess", "{\"goUp\": " + ThreadLocalRandom.current().nextInt(5) + "}"));
         //call activity process
         //these instances will call second version of called process
         processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, "call-activity-process",
-            "{\"orders\": [" + random.nextInt(10) + ", " + random.nextInt(10) + "]}"));
+            "{\"orders\": [" + ThreadLocalRandom.current().nextInt(10) + ", " + ThreadLocalRandom.current().nextInt(10) + "]}"));
       }
 
     }
@@ -520,7 +484,7 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
   }
 
   private void startSignalEventsProcess(int count) {
-    ZeebeTestUtil.sendSignal(client, "startSignal1", "{\"signalNumber\": " + random.nextInt(100) + "}", count);
+    ZeebeTestUtil.sendSignal(client, "startSignal1", "{\"signalNumber\": " + ThreadLocalRandom.current().nextInt(100) + "}", count);
   }
 
   public void setClient(ZeebeClient client) {

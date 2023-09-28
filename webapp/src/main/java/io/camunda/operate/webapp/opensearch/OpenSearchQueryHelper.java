@@ -31,19 +31,7 @@ import org.springframework.util.StringUtils;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 
-import static io.camunda.operate.schema.templates.ListViewTemplate.ACTIVITIES_JOIN_RELATION;
-import static io.camunda.operate.schema.templates.ListViewTemplate.ACTIVITY_ID;
-import static io.camunda.operate.schema.templates.ListViewTemplate.ACTIVITY_STATE;
-import static io.camunda.operate.schema.templates.ListViewTemplate.ACTIVITY_TYPE;
-import static io.camunda.operate.schema.templates.ListViewTemplate.END_DATE;
-import static io.camunda.operate.schema.templates.ListViewTemplate.ERROR_MSG;
-import static io.camunda.operate.schema.templates.ListViewTemplate.INCIDENT;
-import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
-import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
-import static io.camunda.operate.schema.templates.ListViewTemplate.STATE;
-import static io.camunda.operate.schema.templates.ListViewTemplate.VARIABLES_JOIN_RELATION;
-import static io.camunda.operate.schema.templates.ListViewTemplate.VAR_NAME;
-import static io.camunda.operate.schema.templates.ListViewTemplate.VAR_VALUE;
+import static io.camunda.operate.schema.templates.ListViewTemplate.*;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.and;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.constantScore;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.exists;
@@ -87,6 +75,7 @@ public class OpenSearchQueryHelper {
   public Query createQueryFragment(ListViewQueryDto query, RequestDSL.QueryType queryType) {
     return and(
       runningFinishedQuery(query, queryType),
+      createRetriesLeftQuery(query),
       activityIdQuery(query, queryType),
       idsQuery(query),
       errorMessageQuery(query),
@@ -163,6 +152,14 @@ public class OpenSearchQueryHelper {
     }
 
     return processInstanceQuery;
+  }
+
+  private Query createRetriesLeftQuery(ListViewQueryDto query) {
+    if (query.isRetriesLeft()) {
+      Query retriesLeftQuery = term(JOB_FAILED_WITH_RETRIES_LEFT, true);
+      return QueryDSL.hasChildQuery(ACTIVITIES_JOIN_RELATION, retriesLeftQuery);
+    }
+    return null;
   }
 
   private Query activityIdQuery(String activityId, FlowNodeState state) {

@@ -19,6 +19,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import io.camunda.operate.data.AbstractDataGenerator;
 import io.camunda.operate.data.util.NameGenerator;
@@ -38,8 +39,6 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
 
   public static final int JOB_WORKER_TIMEOUT = 5;
 
-  protected Random random = new Random();
-
   protected List<Long> processInstanceKeys = new ArrayList<>();
   protected List<Long> doNotTouchProcessInstanceKeys = new ArrayList<>();
 
@@ -57,8 +56,8 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
 
     createInputOutputMappingInstances();
     createProcessWithoutInstances();
-    createProcessWithInstancesThatHasOnlyIncidents(5 + random.nextInt(17), 5 + random.nextInt(17));
-    createProcessWithInstancesWithoutIncidents(5 + random.nextInt(23), 5 + random.nextInt(23));
+    createProcessWithInstancesThatHasOnlyIncidents(5 + ThreadLocalRandom.current().nextInt(17), 5 + ThreadLocalRandom.current().nextInt(17));
+    createProcessWithInstancesWithoutIncidents(5 + ThreadLocalRandom.current().nextInt(23), 5 + ThreadLocalRandom.current().nextInt(23));
 
     createAndStartProcessWithLargeVariableValue();
     createAndStartProcessWithLotOfVariables();
@@ -294,21 +293,21 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
     jobWorkers.add(progressCheckSchufaTask());
     jobWorkers.add(progressSimpleTask("sendTheLoanDecision"));
 
-    jobWorkers.add(progressSimpleTask("requestPayment"));
-    jobWorkers.add(progressOrderProcessCheckPayment());
-    jobWorkers.add(progressOrderProcessShipArticles());
+    jobWorkers.add(progressSimpleTask("requestPayment", 1));
+//    jobWorkers.add(progressOrderProcessCheckPayment());
+//    jobWorkers.add(progressOrderProcessShipArticles());
 
     jobWorkers.add(progressOrderProcessCheckItems());
 
     jobWorkers.add(progressSimpleTask("requestWarehouse"));
 
-    jobWorkers.add(progressSimpleTask("registerPassenger"));
-    jobWorkers.add(progressFlightRegistrationRegisterCabinBag());
-    jobWorkers.add(progressSimpleTask("registerLuggage"));
-    jobWorkers.add(progressSimpleTask("printOutBoardingPass"));
-    jobWorkers.add(progressSimpleTask("registerLuggage"));
-    jobWorkers.add(progressFlightRegistrationDetermineWeight());
-    jobWorkers.add(progressSimpleTask("processPayment"));
+    jobWorkers.add(progressSimpleTask("registerPassenger", 1));
+//    jobWorkers.add(progressFlightRegistrationRegisterCabinBag());
+//    jobWorkers.add(progressSimpleTask("registerLuggage"));
+//    jobWorkers.add(progressSimpleTask("printOutBoardingPass"));
+//    jobWorkers.add(progressSimpleTask("registerLuggage"));
+//    jobWorkers.add(progressFlightRegistrationDetermineWeight());
+//    jobWorkers.add(progressSimpleTask("processPayment"));
 
     jobWorkers.add(progressAlwaysFailingTask());
 
@@ -357,9 +356,8 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
   }
 
   private List<JobWorker> progressMultiInstanceTasks() {
-    Random random = new Random();
     JobHandler handler = (c, j) -> {
-      if (random.nextBoolean()) {
+      if (ThreadLocalRandom.current().nextBoolean()) {
         c.newCompleteCommand(j.getKey()).send().join();
       }
       else {
@@ -388,7 +386,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
     final Iterator<Long> iterator = processInstanceKeys.iterator();
     while (iterator.hasNext()) {
       long processInstanceKey = iterator.next();
-      if (random.nextInt(15) == 1) {
+      if (ThreadLocalRandom.current().nextInt(15) == 1) {
         try {
           client.newCancelInstanceCommand(processInstanceKey).send().join();
         } catch (ClientException ex) {
@@ -410,7 +408,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
       .handler((jobClient, job) -> {
         if (!canProgress(job.getProcessInstanceKey()))
           return;
-        final int scenario = random.nextInt(5);
+        final int scenario = ThreadLocalRandom.current().nextInt(5);
         switch (scenario){
         case 0:
           //fail
@@ -436,7 +434,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
       .handler((jobClient, job) -> {
         if (!canProgress(job.getProcessInstanceKey()))
           return;
-        final int scenario = random.nextInt(4);
+        final int scenario = ThreadLocalRandom.current().nextInt(4);
         switch (scenario) {
         case 0:
         case 1:
@@ -459,7 +457,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
       .handler((jobClient, job) -> {
         if (!canProgress(job.getProcessInstanceKey()))
           return;
-        final int scenario = random.nextInt(2);
+        final int scenario = ThreadLocalRandom.current().nextInt(2);
         switch (scenario) {
         case 0:
           jobClient.newCompleteCommand(job.getKey()).variables("{\"orderStatus\":\"SHIPPED\"}").send().join();
@@ -480,7 +478,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
       .handler((jobClient, job) -> {
         if (!canProgress(job.getProcessInstanceKey()))
           return;
-        final int scenario = random.nextInt(4);
+        final int scenario = ThreadLocalRandom.current().nextInt(4);
         switch (scenario) {
         case 0:
         case 1:
@@ -503,34 +501,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
       .handler((jobClient, job) -> {
         if (!canProgress(job.getProcessInstanceKey()))
           return;
-        jobClient.newCompleteCommand(job.getKey()).variables("{\"luggageWeight\":" + (random.nextInt(10) + 20) + "}").send().join();
-      })
-      .name("operate")
-      .timeout(Duration.ofSeconds(JOB_WORKER_TIMEOUT))
-      .open();
-  }
-
-  private JobWorker progressSimpleTask(String taskType) {
-    return client.newWorker()
-      .jobType(taskType)
-      .handler((jobClient, job) ->
-      {
-        if (!canProgress(job.getProcessInstanceKey()))
-          return;
-        final int scenarioCount = random.nextInt(3);
-        switch (scenarioCount) {
-        case 0:
-          //leave the task active -> timeout
-          break;
-        case 1:
-          //successfully complete task
-          jobClient.newCompleteCommand(job.getKey()).send().join();
-          break;
-        case 2:
-          //fail task -> create incident
-          jobClient.newFailCommand(job.getKey()).retries(0).send().join();
-          break;
-        }
+        jobClient.newCompleteCommand(job.getKey()).variables("{\"luggageWeight\":" + (ThreadLocalRandom.current().nextInt(10) + 20) + "}").send().join();
       })
       .name("operate")
       .timeout(Duration.ofSeconds(JOB_WORKER_TIMEOUT))
@@ -543,18 +514,18 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
       .handler((jobClient, job) -> {
         if (!canProgress(job.getProcessInstanceKey()))
           return;
-        final int scenarioCount = random.nextInt(3);
+        final int scenarioCount = ThreadLocalRandom.current().nextInt(3);
         switch (scenarioCount) {
         case 0:
           //successfully complete task
-          jobClient.newCompleteCommand(job.getKey()).variables("{\"loanRequestOK\": " + random.nextBoolean() + "}").send().join();
+          jobClient.newCompleteCommand(job.getKey()).variables("{\"loanRequestOK\": " + ThreadLocalRandom.current().nextBoolean() + "}").send().join();
           break;
         case 1:
           //leave the task A active
           break;
         case 2:
           //fail task -> create incident
-          jobClient.newFailCommand(job.getKey()).retries(0).errorMessage("Loan request does not contain all the required data").send().join();
+          jobClient.newFailCommand(job.getKey()).retries(1).errorMessage("Loan request does not contain all the required data").send().join();
           break;
         }
       })
@@ -569,11 +540,11 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
       .handler((jobClient, job) -> {
         if (!canProgress(job.getProcessInstanceKey()))
           return;
-        final int scenarioCount = random.nextInt(3);
+        final int scenarioCount = ThreadLocalRandom.current().nextInt(3);
         switch (scenarioCount) {
         case 0:
           //successfully complete task
-          jobClient.newCompleteCommand(job.getKey()).variables("{\"schufaOK\": " + random.nextBoolean() + "}").send().join();
+          jobClient.newCompleteCommand(job.getKey()).variables("{\"schufaOK\": " + ThreadLocalRandom.current().nextBoolean() + "}").send().join();
           break;
         case 1:
           //leave the task A active
@@ -650,7 +621,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
   }
 
   protected void startProcessInstances(int version) {
-    final int instancesCount = random.nextInt(15) + 15;
+    final int instancesCount = ThreadLocalRandom.current().nextInt(15) + 15;
     for (int i = 0; i < instancesCount; i++) {
       processInstanceKeys.add(startDMNInvoice());
       if (version < 2) {
@@ -676,14 +647,14 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
       "{\n"
         + "  \"firstName\": \"" + NameGenerator.getRandomFirstName() + "\",\n"
         + "  \"lastName\": \"" + NameGenerator.getRandomLastName() + "\",\n"
-        + "  \"passNo\": \"PS" + (random.nextInt(1000000) + (random.nextInt(9) + 1) * 1000000)  + "\",\n"
-        + "  \"ticketNo\": \"" + random.nextInt(1000) + "\"\n"
+        + "  \"passNo\": \"PS" + (ThreadLocalRandom.current().nextInt(1000000) + (ThreadLocalRandom.current().nextInt(9) + 1) * 1000000)  + "\",\n"
+        + "  \"ticketNo\": \"" + ThreadLocalRandom.current().nextInt(1000) + "\"\n"
         + "}");
   }
 
   private long startOrderProcess() {
-    float price1 = Math.round(random.nextFloat() * 100000) / 100;
-    float price2 = Math.round(random.nextFloat() * 10000) / 100;
+    float price1 = Math.round(ThreadLocalRandom.current().nextFloat() * 100000) / 100;
+    float price2 = Math.round(ThreadLocalRandom.current().nextFloat() * 10000) / 100;
     return ZeebeTestUtil.startProcessInstance(client, "orderProcess", "{\n"
       + "  \"clientNo\": \"CNT-1211132-02\",\n"
       + "  \"orderNo\": \"CMD0001-01\",\n"
@@ -710,11 +681,11 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
   private long startLoanProcess() {
     return ZeebeTestUtil.startProcessInstance(client, "loanProcess",
       "{\"requestId\": \"RDG123000001\",\n"
-        + "  \"amount\": " + (random.nextInt(10000) + 20000) + ",\n"
+        + "  \"amount\": " + (ThreadLocalRandom.current().nextInt(10000) + 20000) + ",\n"
         + "  \"applier\": {\n"
         + "    \"firstname\": \"Max\",\n"
         + "    \"lastname\": \"Muster\",\n"
-        + "    \"age\": "+ (random.nextInt(30) + 18) +"\n"
+        + "    \"age\": "+ (ThreadLocalRandom.current().nextInt(30) + 18) +"\n"
         + "  },\n"
         + "  \"newClient\": false,\n"
         + "  \"previousRequestIds\": [\"RDG122000001\", \"RDG122000501\", \"RDG122000057\"],\n"
@@ -734,10 +705,10 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
 
   private long startDMNInvoice() {
     final String[] invoiceCategories = new String[]{"Misc", "Travel Expenses", "Software License Costs"};
-    if (random.nextInt(3) > 0) {
+    if (ThreadLocalRandom.current().nextInt(3) > 0) {
       return ZeebeTestUtil.startProcessInstance(client, "invoice",
-          "{\"amount\": " + (random.nextInt(1200)) + ",\n"
-              + "  \"invoiceCategory\": \"" + invoiceCategories[random.nextInt(3)] + "\"\n"
+          "{\"amount\": " + (ThreadLocalRandom.current().nextInt(1200)) + ",\n"
+              + "  \"invoiceCategory\": \"" + invoiceCategories[ThreadLocalRandom.current().nextInt(3)] + "\"\n"
               + "}");
     } else {
       return ZeebeTestUtil.startProcessInstance(client, "invoice", null);

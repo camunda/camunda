@@ -22,6 +22,8 @@ public class ListViewQueryDto {
   private boolean completed;
   private boolean canceled;
 
+  private boolean retriesLeft;
+
   @Schema(description = "Array of process instance ids", nullable = true)
   private List<String> ids;
 
@@ -112,6 +114,15 @@ public class ListViewQueryDto {
 
   public ListViewQueryDto setCanceled(boolean canceled) {
     this.canceled = canceled;
+    return this;
+  }
+
+  public boolean isRetriesLeft() {
+    return retriesLeft;
+  }
+
+  public ListViewQueryDto setRetriesLeft(boolean retriesLeft) {
+    this.retriesLeft = retriesLeft;
     return this;
   }
 

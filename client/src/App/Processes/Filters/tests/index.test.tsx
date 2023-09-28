@@ -28,10 +28,6 @@ import {removeOptionalFilter} from 'modules/testUtils/removeOptionalFilter';
 
 jest.unmock('modules/utils/date/formatDate');
 
-jest.mock('modules/feature-flags', () => ({
-  IS_RETRIES_LEFT_FILTER_ENABLED: true,
-}));
-
 describe('Filters', () => {
   beforeEach(async () => {
     mockFetchGroupedProcesses().withSuccess(

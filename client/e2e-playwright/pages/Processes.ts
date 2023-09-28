@@ -16,7 +16,8 @@ type OptionalFilter =
   | 'Operation Id'
   | 'Error Message'
   | 'Start Date Range'
-  | 'End Date Range';
+  | 'End Date Range'
+  | 'Failed job but retries left';
 
 export class Processes {
   private page: Page;

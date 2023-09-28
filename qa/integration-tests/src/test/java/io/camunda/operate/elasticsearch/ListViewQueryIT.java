@@ -95,6 +95,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     testQueryFinishedAndRunning();
     testQueryFinishedCompleted();
     testQueryFinishedCanceled();
+    testQueryRetriesLeft();
     testQueryRunningWithIncidents();
     testQueryRunningWithoutIncidents();
     testParamsAreEmptyStringsInsteadOfNull();
@@ -1151,6 +1152,21 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     assertThat(response.getProcessInstances().get(0).getState()).isEqualTo(ProcessInstanceStateDto.COMPLETED);
   }
 
+  private void testQueryRetriesLeft() throws Exception {
+    ListViewRequestDto processInstanceQueryDto = createGetAllProcessInstancesRequest(q -> {
+      q.setRetriesLeft(true);
+    });
+
+    MvcResult mvcResult = postRequest(query(), processInstanceQueryDto);
+
+    ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() { });
+
+    assertThat(response.getTotalCount()).isEqualTo(2);
+    assertThat(response.getProcessInstances().size()).isEqualTo(2);
+    assertThat(response.getProcessInstances()).extracting(ListViewProcessInstanceDto::getId)
+        .containsExactlyInAnyOrder(runningInstance.getId(), instanceWithoutIncident.getId());
+  }
+
   private void testQueryFinishedCanceled() throws Exception {
     ListViewRequestDto processInstanceQueryDto = createProcessInstanceRequest(q -> {
       q.setFinished(true)
@@ -1372,7 +1388,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
             + "/FI_anotherFlowNode/FNI_45345/PI_9898", tenant1);
     runningInstance.setBatchOperationIds(Arrays.asList("a", batchOperationId));
     final FlowNodeInstanceForListViewEntity activityInstance1 = TestUtil
-        .createFlowNodeInstance(runningInstance.getProcessInstanceKey(), FlowNodeState.ACTIVE);
+        .createFlowNodeInstance(runningInstance.getProcessInstanceKey(), FlowNodeState.ACTIVE, "start", null, true);
     vars.add(createVariableForListView(runningInstance.getProcessInstanceKey(), runningInstance.getProcessInstanceKey(), "var1", "X"));
     vars.add(createVariableForListView(runningInstance.getProcessInstanceKey(), runningInstance.getProcessInstanceKey(), "var2", "Y"));
 
@@ -1392,7 +1408,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     canceledInstance.setTenantId(tenant1);
     canceledInstance.setBatchOperationIds(Arrays.asList("c", "d"));
     final FlowNodeInstanceForListViewEntity activityInstance3 = TestUtil
-        .createFlowNodeInstance(canceledInstance.getProcessInstanceKey(), FlowNodeState.COMPLETED);
+        .createFlowNodeInstance(canceledInstance.getProcessInstanceKey(), FlowNodeState.COMPLETED, "start", null, false);
     final FlowNodeInstanceForListViewEntity activityInstance4 = TestUtil
         .createFlowNodeInstance(canceledInstance.getProcessInstanceKey(), FlowNodeState.TERMINATED);
     vars.add(createVariableForListView(canceledInstance.getProcessInstanceKey(), Long.valueOf(activityInstance3.getId()), "var1", "X"));
@@ -1410,7 +1426,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     instanceWithoutIncident.setTenantId(tenant1);
     instanceWithoutIncident.setParentProcessInstanceKey(parentInstanceKey2);
     final FlowNodeInstanceForListViewEntity activityInstance6 = TestUtil
-        .createFlowNodeInstance(instanceWithoutIncident.getProcessInstanceKey(), FlowNodeState.COMPLETED);
+        .createFlowNodeInstance(instanceWithoutIncident.getProcessInstanceKey(), FlowNodeState.COMPLETED, "start", null, true);
 
     //persist instances
     searchTestRule.persistNew(runningInstance, completedInstance, instanceWithIncident, instanceWithoutIncident, canceledInstance,

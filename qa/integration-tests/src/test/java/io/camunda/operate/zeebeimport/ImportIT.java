@@ -664,6 +664,48 @@ public class ImportIT extends OperateZeebeIntegrationTest {
   }
 
   @Test
+  public void testJobFailedWithRetriesLeft() {
+    String activityId = "taskA";
+    final String errorMessage = "Error occurred when working on the job";
+    String processId = "demoProcess";
+    String processId2 = "simpleProcess";
+    deployProcess("demoProcess_v_1.bpmn");
+    deployProcess(
+        Bpmn.createExecutableProcess(processId2).startEvent().serviceTask("task1").zeebeJobType("task1").endEvent().done(),
+        processId2 + ".bpmn");
+    final long processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+    final long processInstanceKey2 = ZeebeTestUtil.startProcessInstance(zeebeClient, processId2, null);
+    searchTestRule.processAllRecordsAndWait(processInstanceIsCreatedCheck, processInstanceKey);
+    searchTestRule.processAllRecordsAndWait(processInstanceIsCreatedCheck, processInstanceKey2);
+
+    //fail task with retries left
+    failTaskWithRetriesLeft(activityId, processInstanceKey, errorMessage);
+
+    //when search by retriesLeft = true
+    ListViewResponseDto response = listViewReader.queryProcessInstances(
+        createGetAllProcessInstancesRequest(q -> q.setRetriesLeft(true)));
+    //then
+    assertThat(response.getProcessInstances().size()).isEqualTo(1);
+    assertThat(response.getProcessInstances().get(0).getId()).isEqualTo(String.valueOf(processInstanceKey));
+
+    //fail task with no retries -> incident
+    failTaskWithNoRetriesLeft(activityId, processInstanceKey, 1, errorMessage);
+    //when search by retriesLeft = true
+    response = listViewReader.queryProcessInstances(
+        createGetAllProcessInstancesRequest(q -> q.setRetriesLeft(true)));
+    //then
+    assertThat(response.getProcessInstances().size()).isEqualTo(0);
+
+    //when search by retriesLeft = false
+    response = listViewReader.queryProcessInstances(
+        createGetAllProcessInstancesRequest(q -> q.setRetriesLeft(false)));
+    //then
+    assertThat(response.getProcessInstances().size()).isEqualTo(2);
+    assertThat(response.getProcessInstances()).extracting(ListViewProcessInstanceDto::getId)
+        .contains(String.valueOf(processInstanceKey));
+  }
+
+  @Test
   public void testProcessInstanceCalledFromCallActivityById() throws Exception {
     //having process with call activity
     final String parentProcessId = "parentProcess";

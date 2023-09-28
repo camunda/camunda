@@ -110,8 +110,10 @@ public class ElasticsearchFlowNodeStatisticsReader implements FlowNodeStatistics
       throw new OperateRuntimeException(message, e);
     }
   }
+
+
   private SearchRequest createQuery(ListViewQueryDto query, ElasticsearchUtil.QueryType queryType) {
-    final QueryBuilder q = constantScoreQuery(queryHelper.createQueryFragment(query, queryType));
+    final QueryBuilder q = constantScoreQuery(queryHelper.createQueryFragment(query));
 
     ChildrenAggregationBuilder agg =
         children(AGG_ACTIVITIES, ACTIVITIES_JOIN_RELATION);

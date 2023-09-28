@@ -38,7 +38,6 @@ import {
   FieldContainer,
 } from 'modules/components/FiltersPanel/styled';
 import {Variable} from './VariableField';
-import {IS_RETRIES_LEFT_FILTER_ENABLED} from 'modules/feature-flags';
 
 type OptionalFilter =
   | 'variable'
@@ -172,16 +171,10 @@ const OptionalFiltersFormGroup: React.FC<Props> = observer(
       <Stack gap={8}>
         <OptionalFiltersMenu<OptionalFilter>
           visibleFilters={visibleFilters}
-          optionalFilters={optionalFilters
-            // TODO: Remove this filter when removing feature flag
-            .filter(
-              (filterName) =>
-                IS_RETRIES_LEFT_FILTER_ENABLED || filterName !== 'retriesLeft',
-            )
-            .map((id) => ({
-              id,
-              label: OPTIONAL_FILTER_FIELDS[id].label,
-            }))}
+          optionalFilters={optionalFilters.map((id) => ({
+            id,
+            label: OPTIONAL_FILTER_FIELDS[id].label,
+          }))}
           onFilterSelect={(filter) => {
             onVisibleFilterChange(
               Array.from(new Set([...visibleFilters, ...[filter]])),
@@ -202,13 +195,6 @@ const OptionalFiltersFormGroup: React.FC<Props> = observer(
           {visibleFilters.map((filter) => (
             <FieldContainer key={filter}>
               {(() => {
-                if (
-                  !IS_RETRIES_LEFT_FILTER_ENABLED &&
-                  filter === 'retriesLeft'
-                ) {
-                  return;
-                }
-
                 switch (filter) {
                   case 'variable':
                     return <Variable />;
