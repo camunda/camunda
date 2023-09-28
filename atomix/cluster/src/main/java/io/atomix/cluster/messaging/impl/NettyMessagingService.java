@@ -45,11 +45,14 @@ import io.netty.channel.ServerChannel;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.WriteBufferWaterMark;
 import io.netty.channel.epoll.Epoll;
+import io.netty.channel.epoll.EpollDatagramChannel;
 import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.epoll.EpollServerSocketChannel;
 import io.netty.channel.epoll.EpollSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.compression.SnappyFrameDecoder;
@@ -112,6 +115,8 @@ public final class NettyMessagingService implements ManagedMessagingService {
   private EventLoopGroup clientGroup;
   private Class<? extends ServerChannel> serverChannelClass;
   private Class<? extends Channel> clientChannelClass;
+  private Class<? extends DatagramChannel> clientDataGramChannelClass;
+
   private Channel serverChannel;
 
   // a single thread executor which silently rejects tasks being submitted when it's shutdown
@@ -493,6 +498,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
         new EpollEventLoopGroup(0, namedThreads("netty-messaging-event-epoll-server-%d", log));
     serverChannelClass = EpollServerSocketChannel.class;
     clientChannelClass = EpollSocketChannel.class;
+    clientDataGramChannelClass = EpollDatagramChannel.class;
   }
 
   private void initNioTransport() {
@@ -502,6 +508,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
         new NioEventLoopGroup(0, namedThreads("netty-messaging-event-nio-server-%d", log));
     serverChannelClass = NioServerSocketChannel.class;
     clientChannelClass = NioSocketChannel.class;
+    clientDataGramChannelClass = NioDatagramChannel.class;
   }
 
   /**
@@ -700,15 +707,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
    */
   private CompletableFuture<Channel> bootstrapClient(final Address address) {
     final CompletableFuture<Channel> future = new OrderedFuture<>();
-    final InetSocketAddress resolvedAddress = address.socketAddress();
-    if (resolvedAddress == null) {
-      future.completeExceptionally(
-          new ConnectException(
-              "Failed to bootstrap client (address "
-                  + address.toString()
-                  + " cannot be resolved)"));
-      return future;
-    }
+    final InetSocketAddress socketAddress = address.socketAddress();
 
     final Bootstrap bootstrap = new Bootstrap();
     bootstrap.option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT);
@@ -721,30 +720,14 @@ public final class NettyMessagingService implements ManagedMessagingService {
     bootstrap.option(ChannelOption.TCP_NODELAY, true);
     bootstrap.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 1000);
     bootstrap.group(clientGroup);
-    // TODO: Make this faster:
-    // http://normanmaurer.me/presentations/2014-facebook-eng-netty/slides.html#37.0
     bootstrap.channel(clientChannelClass);
-    bootstrap.remoteAddress(resolvedAddress);
-    bootstrap.handler(new BasicClientChannelInitializer(future));
-
-    final Duration DEFAULT_CACHE_MAX_TIME_TO_LIVE = Duration.ofSeconds(Integer.MAX_VALUE);
-    final Duration DEFAULT_CACHE_MIN_TIME_TO_LIVE = Duration.ofSeconds(0);
-    final Duration DEFAULT_CACHE_NEGATIVE_TIME_TO_LIVE = Duration.ofSeconds(0);
-    final boolean DEFAULT_COMPLETE_ONCE_PREFERRED_RESOLVED = true;
-    final int DEFAULT_MAX_PAYLOAD_SIZE = 4096;
-    final int DEFAULT_MAX_QUERIES_PER_RESOLVE = 16;
-    final int DEFAULT_NDOTS = -1;
-    final Duration DEFAULT_QUERY_TIMEOUT = Duration.ofSeconds(5);
     bootstrap.resolver(
         new DnsAddressResolverGroup(
-            new DnsNameResolverBuilder()
-            //                .maxPayloadSize(DEFAULT_MAX_PAYLOAD_SIZE)
-            //                .maxQueriesPerResolve(DEFAULT_MAX_QUERIES_PER_RESOLVE)
-            //                .ndots(DEFAULT_NDOTS)
-            //
-            // .completeOncePreferredResolved(DEFAULT_COMPLETE_ONCE_PREFERRED_RESOLVED)
-            //                .queryTimeoutMillis(DEFAULT_QUERY_TIMEOUT.toMillis())
-            ));
+            new DnsNameResolverBuilder(clientGroup.next())
+                .channelType(clientDataGramChannelClass)));
+    bootstrap.remoteAddress(socketAddress);
+    bootstrap.handler(new BasicClientChannelInitializer(future));
+
     final Channel channel =
         bootstrap
             .connect()
