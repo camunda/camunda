@@ -72,8 +72,9 @@ const ActiveCount = styled.div<ActiveCountProps>`
       margin-left: auto;
       width: 139px;
       text-align: right;
+
       color: ${$hasActiveInstances
-        ? 'var(--cds-support-success)'
+        ? 'var(--cds-tag-color-green)'
         : 'var(--cds-text-primary)'};
     `;
   }}

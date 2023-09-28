@@ -51,7 +51,6 @@ type Props = {
   checkIsIndeterminate?: () => boolean; //must be a function because it depends on a store update: https://mobx.js.org/react-optimizations.html#function-props-
   onSort?: React.ComponentProps<typeof ColumnHeader>['onSort'];
   columnsWithNoContentPadding?: string[];
-  useZebraStyles?: boolean;
 } & Pick<
   React.ComponentProps<typeof InfiniteScroller>,
   'onVerticalScrollStartReach' | 'onVerticalScrollEndReach'
@@ -71,7 +70,6 @@ const SortableTable: React.FC<Props> = ({
   onVerticalScrollStartReach,
   onVerticalScrollEndReach,
   columnsWithNoContentPadding,
-  useZebraStyles,
 }) => {
   let scrollableContentRef = useRef<HTMLDivElement | null>(null);
 
@@ -106,7 +104,6 @@ const SortableTable: React.FC<Props> = ({
   return (
     <Container ref={scrollableContentRef} $isScrollable={state === 'content'}>
       <DataTable
-        useZebraStyles={useZebraStyles}
         rows={rows}
         headers={headerColumns}
         size="sm"

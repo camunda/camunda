@@ -5,6 +5,11 @@
  * except in compliance with the proprietary license.
  */
 
+import {Route} from '@playwright/test';
+import {IncidentByErrorDto} from 'modules/api/incidents/fetchIncidentsByError';
+import {ProcessInstanceByNameDto} from 'modules/api/incidents/fetchProcessInstancesByName';
+import {CoreStatisticsDto} from 'modules/api/processInstances/fetchProcessCoreStatistics';
+
 const mockStatistics = {
   running: 891,
   active: 277,
@@ -1387,4 +1392,74 @@ const mockIncidentsByProcess = [
   },
 ];
 
-export {mockStatistics, mockIncidentsByError, mockIncidentsByProcess};
+function mockResponses({
+  statistics,
+  incidentsByError,
+  incidentsByProcess,
+}: {
+  statistics?: CoreStatisticsDto;
+  incidentsByError?: IncidentByErrorDto[];
+  incidentsByProcess?: ProcessInstanceByNameDto[];
+}) {
+  return (route: Route) => {
+    if (route.request().url().includes('/api/authentications/user')) {
+      return route.fulfill({
+        status: 200,
+        body: JSON.stringify({
+          userId: 'demo',
+          displayName: 'demo',
+          canLogout: true,
+          permissions: ['read', 'write'],
+          roles: null,
+          salesPlanType: null,
+          c8Links: {},
+          username: 'demo',
+        }),
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
+    }
+
+    if (
+      route.request().url().includes('/api/process-instances/core-statistics')
+    ) {
+      return route.fulfill({
+        status: statistics === undefined ? 400 : 200,
+        body: JSON.stringify(statistics),
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
+    }
+
+    if (route.request().url().includes('/api/incidents/byError')) {
+      return route.fulfill({
+        status: incidentsByError === undefined ? 400 : 200,
+        body: JSON.stringify(incidentsByError),
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
+    }
+
+    if (route.request().url().includes('/api/incidents/byProcess')) {
+      return route.fulfill({
+        status: incidentsByProcess === undefined ? 400 : 200,
+        body: JSON.stringify(incidentsByProcess),
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
+    }
+
+    route.continue();
+  };
+}
+
+export {
+  mockStatistics,
+  mockIncidentsByError,
+  mockIncidentsByProcess,
+  mockResponses,
+};

@@ -19,7 +19,7 @@ import {
   mockFailedDecisionInstance,
   mockFailedDrdData,
   mockFailedXml,
-} from './decisionInstance.mocks';
+} from '../mocks/decisionInstance.mocks';
 import {DrdDataDto} from 'modules/api/decisionInstances/fetchDrdData';
 
 function mockResponses({

@@ -14,7 +14,7 @@ const Layout: React.FC = observer(() => {
   return (
     <>
       <AppHeader />
-      <PageContent>
+      <PageContent id="main-content">
         <Outlet />
       </PageContent>
     </>

@@ -87,7 +87,6 @@ const InstancesTable: React.FC = observer(() => {
       />
       <SortableTable
         state={getTableState()}
-        useZebraStyles
         columnsWithNoContentPadding={['operations']}
         selectionType={
           authenticationStore.hasPermission(['write']) ? 'checkbox' : 'none'

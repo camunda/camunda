@@ -5,91 +5,15 @@
  * except in compliance with the proprietary license.
  */
 
-import {expect, Route} from '@playwright/test';
+import {expect} from '@playwright/test';
 import {test} from '../test-fixtures';
-import {DecisionInstancesDto} from 'modules/api/decisionInstances/fetchDecisionInstances';
 import {
   mockDecisionInstances,
   mockGroupedDecisions,
   mockBatchOperations,
   mockDecisionXml,
-} from './decisions.mocks';
-import {DecisionDto} from 'modules/api/decisions/fetchGroupedDecisions';
-
-function mockResponses({
-  batchOperations,
-  groupedDecisions,
-  decisionInstances,
-  decisionXml,
-}: {
-  batchOperations?: OperationEntity[];
-  groupedDecisions?: DecisionDto[];
-  decisionInstances?: DecisionInstancesDto;
-  decisionXml?: string;
-}) {
-  return (route: Route) => {
-    if (route.request().url().includes('/api/authentications/user')) {
-      return route.fulfill({
-        status: 200,
-        body: JSON.stringify({
-          userId: 'demo',
-          displayName: 'demo',
-          canLogout: true,
-          permissions: ['read', 'write'],
-          roles: null,
-          salesPlanType: null,
-          c8Links: {},
-          username: 'demo',
-        }),
-        headers: {
-          'content-type': 'application/json',
-        },
-      });
-    }
-
-    if (route.request().url().includes('/api/batch-operations')) {
-      return route.fulfill({
-        status: batchOperations === undefined ? 400 : 200,
-        body: JSON.stringify(batchOperations),
-        headers: {
-          'content-type': 'application/json',
-        },
-      });
-    }
-
-    if (route.request().url().includes('/api/decisions/grouped')) {
-      return route.fulfill({
-        status: groupedDecisions === undefined ? 400 : 200,
-        body: JSON.stringify(groupedDecisions),
-        headers: {
-          'content-type': 'application/json',
-        },
-      });
-    }
-
-    if (route.request().url().includes('/api/decision-instances')) {
-      return route.fulfill({
-        status: decisionInstances === undefined ? 400 : 200,
-        body: JSON.stringify(decisionInstances),
-        headers: {
-          'content-type': 'application/json',
-        },
-      });
-    }
-
-    if (route.request().url().includes('xml')) {
-      return route.fulfill({
-        status: decisionXml === undefined ? 400 : 200,
-        body: JSON.stringify(decisionXml),
-        headers: {
-          'content-type': 'application/json',
-        },
-      });
-    }
-
-    route.continue();
-  };
-}
+  mockResponses,
+} from '../mocks/decisions.mocks';
 
 test.describe('decisions page', () => {
   for (const theme of ['light', 'dark']) {

@@ -12,7 +12,7 @@ import {
   instanceWithIncident,
   mockResponses,
   runningInstance,
-} from './processInstance.mocks';
+} from '../mocks/processInstance.mocks';
 
 test.describe('process instance page', () => {
   for (const theme of ['light', 'dark']) {

@@ -16,6 +16,7 @@ import {ProcessInstance} from './pages/ProcessInstance';
 import {Decisions} from './pages/Decisions';
 
 type Fixture = {
+  makeAxeBuilder: () => AxeBuilder;
   resetData: () => Promise<void>;
   commonPage: Common;
   loginPage: Login;

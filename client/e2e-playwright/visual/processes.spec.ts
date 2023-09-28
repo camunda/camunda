@@ -5,105 +5,16 @@
  * except in compliance with the proprietary license.
  */
 
-import {expect, Route} from '@playwright/test';
+import {expect} from '@playwright/test';
 import {test} from '../test-fixtures';
-import {ProcessDto} from 'modules/api/processes/fetchGroupedProcesses';
-import {ProcessInstancesDto} from 'modules/api/processInstances/fetchProcessInstances';
-import {ProcessInstancesStatisticsDto} from 'modules/api/processInstances/fetchProcessInstancesStatistics';
 import {
   mockBatchOperations,
   mockGroupedProcesses,
   mockProcessInstances,
   mockProcessXml,
   mockStatistics,
-} from './processes.mocks';
-
-function mockResponses({
-  batchOperations,
-  groupedProcesses,
-  statistics,
-  processInstances,
-  processXml,
-}: {
-  batchOperations?: OperationEntity[];
-  groupedProcesses?: ProcessDto[];
-  statistics?: ProcessInstancesStatisticsDto[];
-  processInstances?: ProcessInstancesDto;
-  processXml?: string;
-}) {
-  return (route: Route) => {
-    if (route.request().url().includes('/api/authentications/user')) {
-      return route.fulfill({
-        status: 200,
-        body: JSON.stringify({
-          userId: 'demo',
-          displayName: 'demo',
-          canLogout: true,
-          permissions: ['read', 'write'],
-          roles: null,
-          salesPlanType: null,
-          c8Links: {},
-          username: 'demo',
-        }),
-        headers: {
-          'content-type': 'application/json',
-        },
-      });
-    }
-
-    if (route.request().url().includes('/api/batch-operations')) {
-      return route.fulfill({
-        status: batchOperations === undefined ? 400 : 200,
-        body: JSON.stringify(batchOperations),
-        headers: {
-          'content-type': 'application/json',
-        },
-      });
-    }
-
-    if (route.request().url().includes('/api/processes/grouped')) {
-      return route.fulfill({
-        status: groupedProcesses === undefined ? 400 : 200,
-        body: JSON.stringify(groupedProcesses),
-        headers: {
-          'content-type': 'application/json',
-        },
-      });
-    }
-
-    if (route.request().url().includes('/api/process-instances/statistics')) {
-      return route.fulfill({
-        status: statistics === undefined ? 400 : 200,
-        body: JSON.stringify(statistics),
-        headers: {
-          'content-type': 'application/json',
-        },
-      });
-    }
-
-    if (route.request().url().includes('/api/process-instances')) {
-      return route.fulfill({
-        status: processInstances === undefined ? 400 : 200,
-        body: JSON.stringify(processInstances),
-        headers: {
-          'content-type': 'application/json',
-        },
-      });
-    }
-
-    if (route.request().url().includes('xml')) {
-      return route.fulfill({
-        status: processXml === undefined ? 400 : 200,
-        body: JSON.stringify(processXml),
-        headers: {
-          'content-type': 'application/json',
-        },
-      });
-    }
-
-    route.continue();
-  };
-}
+  mockResponses,
+} from '../mocks/processes.mocks';
 
 test.describe('processes page', () => {
   for (const theme of ['light', 'dark']) {
