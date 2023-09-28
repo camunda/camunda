@@ -20,7 +20,7 @@ spec:
           image: gcr.io/zeebe-io/worker:SNAPSHOT
           imagePullPolicy: Always
           env:
-            - name: JAVA_OPTIONS
+            - name: JDK_JAVA_OPTIONS
               value: >-
                 -Dzeebe.client.requestTimeout=62000
                 -Dapp.tls=true
