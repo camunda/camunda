@@ -14,7 +14,7 @@ import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
-import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
+import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
 import io.camunda.zeebe.journal.JournalMetaStore.InMemory;
 import io.camunda.zeebe.journal.JournalReader;
 import io.camunda.zeebe.journal.file.SegmentedJournal;
@@ -25,9 +25,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import org.slf4j.Logger;
@@ -39,23 +37,16 @@ public class PartitionRestoreService {
   final BackupStore backupStore;
   final int partitionId;
 
-  // All members of the cluster. A backup could have been taken by any broker. So we have to iterate
-  // over all of them to find a valid backup for this partition with the given id.
-  final Set<Integer> brokerIds;
   final Path rootDirectory;
   private final RaftPartition partition;
   private final int localBrokerId;
 
   public PartitionRestoreService(
-      final BackupStore backupStore,
-      final RaftPartition partition,
-      final Set<Integer> brokerIds,
-      final int localNodeId) {
+      final BackupStore backupStore, final RaftPartition partition, final int localNodeId) {
     this.backupStore = backupStore;
     partitionId = partition.id().id();
     rootDirectory = partition.dataDirectory().toPath();
     this.partition = partition;
-    this.brokerIds = brokerIds;
     localBrokerId = localNodeId;
   }
 
@@ -217,32 +208,16 @@ public class PartitionRestoreService {
 
   private CompletionStage<BackupIdentifier> findValidBackup(final long checkpointId) {
     LOG.info("Searching for a completed backup with id {}", checkpointId);
-    final var futures =
-        brokerIds.stream()
-            .map(brokerId -> new BackupIdentifierImpl(brokerId, partitionId, checkpointId))
-            .map(backupStore::getStatus)
-            .toList();
-
-    return CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new))
+    return backupStore
+        .list(
+            new BackupIdentifierWildcardImpl(
+                Optional.empty(), Optional.of(partitionId), Optional.of(checkpointId)))
         .thenApply(
-            ignore -> {
-              final var backupStatuses = futures.stream().map(CompletableFuture::join).toList();
-              return findCompletedBackup(backupStatuses)
-                  .orElseThrow(
-                      () -> {
-                        LOG.error(
-                            "Could not find a valid backup with id {}. Found {}",
-                            checkpointId,
-                            backupStatuses);
-                        return new BackupNotFoundException(checkpointId);
-                      });
-            });
-  }
-
-  private Optional<BackupIdentifier> findCompletedBackup(final List<BackupStatus> backupStatuses) {
-    return backupStatuses.stream()
-        .filter(s -> s.statusCode() == BackupStatusCode.COMPLETED)
-        .findFirst()
-        .map(BackupStatus::id);
+            statuses ->
+                statuses.stream()
+                    .filter(status -> status.statusCode() == BackupStatusCode.COMPLETED)
+                    .map(BackupStatus::id)
+                    .findAny()
+                    .orElseThrow(() -> new BackupNotFoundException(checkpointId)));
   }
 }
