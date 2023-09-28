@@ -37,6 +37,7 @@ import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.camunda.zeebe.stream.api.CommandResponseWriter;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -305,6 +306,14 @@ public final class EngineRule extends ExternalResource {
 
   public Record<JobRecordValue> createJob(
       final String type, final String processId, final Map<String, Object> variables) {
+    return createJob(type, processId, variables, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  }
+
+  public Record<JobRecordValue> createJob(
+      final String type,
+      final String processId,
+      final Map<String, Object> variables,
+      final String tenantId) {
     deployment()
         .withXmlResource(
             processId + ".bpmn",
@@ -313,13 +322,19 @@ public final class EngineRule extends ExternalResource {
                 .serviceTask("task", b -> b.zeebeJobType(type).done())
                 .endEvent("end")
                 .done())
+        .withTenantId(tenantId)
         .deploy();
 
     final long instanceKey =
-        processInstance().ofBpmnProcessId(processId).withVariables(variables).create();
+        processInstance()
+            .ofBpmnProcessId(processId)
+            .withVariables(variables)
+            .withTenantId(tenantId)
+            .create();
 
     return jobRecords(JobIntent.CREATED)
         .withType(type)
+        .withTenantId(tenantId)
         .filter(r -> r.getValue().getProcessInstanceKey() == instanceKey)
         .getFirst();
   }
