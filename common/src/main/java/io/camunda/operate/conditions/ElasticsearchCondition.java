@@ -7,10 +7,15 @@
 package io.camunda.operate.conditions;
 
 public class ElasticsearchCondition extends DatabaseCondition{
+  private static final String DATABASE = "elasticsearch";
 
-  public static final DatabaseType DATABASE = DatabaseType.Elasticsearch;
   @Override
-  public DatabaseType getDatabase() {
+  public boolean getDefaultIfEmpty() {
+    return true;
+  }
+
+  @Override
+  public String getDatabase() {
     return DATABASE;
   }
 }

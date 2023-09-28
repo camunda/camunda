@@ -6,8 +6,9 @@
  */
 package io.camunda.operate.conditions;
 
+import static io.camunda.operate.conditions.DatabaseCondition.DATABASE_PROPERTY;
+
 public class DatabaseInfo {
-  static final String DATABASE_PROPERTY = "camunda.operate.database";
   static final DatabaseType DEFAULT_DATABASE = DatabaseType.Elasticsearch;
   static final DatabaseType DATABASE = DatabaseType.byCode(System.getenv(DATABASE_PROPERTY)).orElse(DEFAULT_DATABASE);
 

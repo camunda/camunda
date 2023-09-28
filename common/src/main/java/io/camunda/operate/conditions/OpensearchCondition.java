@@ -8,10 +8,15 @@ package io.camunda.operate.conditions;
 
 public class OpensearchCondition extends DatabaseCondition{
 
-  public static final DatabaseType DATABASE = DatabaseType.Opensearch;
+  private static final String DATABASE = "opensearch";
 
   @Override
-  public DatabaseType getDatabase() {
+  public boolean getDefaultIfEmpty() {
+    return false;
+  }
+
+  @Override
+  public String getDatabase() {
     return DATABASE;
   }
 }

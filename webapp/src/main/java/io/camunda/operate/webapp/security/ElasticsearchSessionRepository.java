@@ -12,6 +12,7 @@ import static io.camunda.operate.schema.indices.OperateWebSessionIndex.ID;
 import static io.camunda.operate.schema.indices.OperateWebSessionIndex.LAST_ACCESSED_TIME;
 import static io.camunda.operate.schema.indices.OperateWebSessionIndex.MAX_INACTIVE_INTERVAL_IN_SECONDS;
 
+import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.store.elasticsearch.RetryElasticsearchClient;
 import io.camunda.operate.schema.indices.OperateWebSessionIndex;
 import java.time.Duration;
@@ -29,6 +30,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.convert.TypeDescriptor;
 import org.springframework.core.convert.support.GenericConversionService;
@@ -45,6 +47,7 @@ import org.springframework.stereotype.Component;
         + " or " +
     "${camunda.operate.persistentSessionsEnabled:false}"
 )
+@Conditional(ElasticsearchCondition.class)
 @Component
 @EnableSpringHttpSession
 public class ElasticsearchSessionRepository implements SessionRepository<OperateSession> {
