@@ -17,6 +17,7 @@ import io.camunda.zeebe.client.api.response.DeploymentEvent;
 import io.camunda.zeebe.client.api.response.Process;
 import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.client.api.response.PublishMessageResponse;
+import io.camunda.zeebe.client.api.response.ResolveIncidentResponse;
 import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder;
 import io.camunda.zeebe.gateway.impl.configuration.AuthenticationCfg.AuthMode;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -741,7 +742,7 @@ public class MultiTenancyOverIdentityIT {
   }
 
   @Test
-  void shouldDenyCompleteJobWhenUnauthorized() {
+  void shouldNotFindJobWhenUnauthorized() {
     // given
     final ActivatedJob activatedJob;
     try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A)) {
@@ -782,6 +783,90 @@ public class MultiTenancyOverIdentityIT {
           .withMessageContaining(
               "Command 'COMPLETE' rejected with code 'NOT_FOUND': Expected to update retries for job with key '%d', but no such job was found"
                   .formatted(activatedJob.getKey()));
+    }
+  }
+
+  @Test
+  void shouldResolveIncidentForTenant() {
+    // given
+    process =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .zeebeOutputExpression("assert(foo, foo != null)", "target")
+            .endEvent()
+            .done();
+    try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A)) {
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(process, "process.bpmn")
+          .tenantId("tenant-a")
+          .send()
+          .join();
+      client
+          .newCreateInstanceCommand()
+          .bpmnProcessId(processId)
+          .latestVersion()
+          .tenantId("tenant-a")
+          .send()
+          .join();
+
+      final var incidentKey =
+          RecordingExporter.incidentRecords().withBpmnProcessId(processId).getFirst().getKey();
+
+      // when
+      final Future<ResolveIncidentResponse> result =
+          client.newResolveIncidentCommand(incidentKey).send();
+
+      // then
+      assertThat(result)
+          .describedAs(
+              "Expect that incident can be resolved as the client has access process of tenant-a")
+          .succeedsWithin(Duration.ofSeconds(10));
+    }
+  }
+
+  @Test
+  void shouldNotFindIncidentForTenantWhenUnauthorized() {
+    // given
+    process =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .zeebeOutputExpression("assert(foo, foo != null)", "target")
+            .endEvent()
+            .done();
+    final long incidentKey;
+    try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A)) {
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(process, "process.bpmn")
+          .tenantId("tenant-a")
+          .send()
+          .join();
+      client
+          .newCreateInstanceCommand()
+          .bpmnProcessId(processId)
+          .latestVersion()
+          .tenantId("tenant-a")
+          .send()
+          .join();
+
+      incidentKey =
+          RecordingExporter.incidentRecords().withBpmnProcessId(processId).getFirst().getKey();
+    }
+
+    try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_B)) {
+      // when
+      final Future<ResolveIncidentResponse> result =
+          client.newResolveIncidentCommand(incidentKey).send();
+
+      // then
+      assertThat(result)
+          .failsWithin(Duration.ofSeconds(10))
+          .withThrowableThat()
+          .withMessageContaining("NOT_FOUND")
+          .withMessageContaining(
+              "Command 'RESOLVE' rejected with code 'NOT_FOUND': Expected to resolve incident with key '%d', but no such incident was found"
+                  .formatted(incidentKey));
     }
   }
 
