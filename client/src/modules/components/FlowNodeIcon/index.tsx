@@ -77,6 +77,12 @@ import {ReactComponent as FlowNodeEscalationStartEvent} from 'modules/components
 import {ReactComponent as FlowNodeLinkEventIntermediateCatch} from 'modules/components/Icon/flow-node-link-event-intermediate-catch.svg';
 import {ReactComponent as FlowNodeLinkEventIntermediateThrow} from 'modules/components/Icon/flow-node-link-event-intermediate-throw.svg';
 import {ReactComponent as FlowNodeEventSignalStart} from 'modules/components/Icon/flow-node-event-signal-start.svg';
+import {ReactComponent as FlowNodeEventSignalEnd} from 'modules/components/Icon/flow-node-event-signal-end.svg';
+import {ReactComponent as FlowNodeEventSignalIntermediateThrow} from 'modules/components/Icon/flow-node-event-signal-intermediate-throw.svg';
+import {ReactComponent as FlowNodeEventSignalIntermediateCatch} from 'modules/components/Icon/flow-node-event-signal-intermediate-catch.svg';
+import {ReactComponent as FlowNodeEventSignalInterruptingBoundary} from 'modules/components/Icon/flow-node-event-signal-interrupting-boundary.svg';
+import {ReactComponent as FlowNodeEventSignalNonInterruptingBoundary} from 'modules/components/Icon/flow-node-event-signal-non-interrupting-boundary.svg';
+import {ReactComponent as FlowNodeEventSignalNonInterruptingStart} from 'modules/components/Icon/flow-node-event-signal-non-interrupting-start.svg';
 
 const getSVGComponent = (
   businessObject: BusinessObject,
@@ -176,8 +182,33 @@ const getSVGComponent = (
               return FlowNodeEscalationBoundaryNonInterruptingEvent;
           }
       }
+
     case 'bpmn:SignalEventDefinition':
-      return FlowNodeEventSignalStart;
+      switch (businessObject.$type) {
+        default:
+        case 'bpmn:StartEvent':
+          switch (isInterruptingEvent(businessObject)) {
+            default:
+            case true:
+              return FlowNodeEventSignalStart;
+            case false:
+              return FlowNodeEventSignalNonInterruptingStart;
+          }
+        case 'bpmn:BoundaryEvent':
+          switch (getBoundaryEventType(businessObject)) {
+            default:
+            case 'interrupting':
+              return FlowNodeEventSignalInterruptingBoundary;
+            case 'non-interrupting':
+              return FlowNodeEventSignalNonInterruptingBoundary;
+          }
+        case 'bpmn:IntermediateThrowEvent':
+          return FlowNodeEventSignalIntermediateThrow;
+        case 'bpmn:IntermediateCatchEvent':
+          return FlowNodeEventSignalIntermediateCatch;
+        case 'bpmn:EndEvent':
+          return FlowNodeEventSignalEnd;
+      }
   }
 
   switch (businessObject.$type) {

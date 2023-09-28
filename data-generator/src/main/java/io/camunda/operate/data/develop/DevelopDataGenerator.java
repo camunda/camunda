@@ -437,7 +437,6 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
     }
     if (version == 1) {
       processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, "timerProcess", null));
-      startSignalEventsProcess(instancesCount);
     }
   }
 
@@ -481,10 +480,6 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
 
     ZeebeTestUtil.deployProcess(client, "develop/calledProcess_v_2.bpmn");
 
-  }
-
-  private void startSignalEventsProcess(int count) {
-    ZeebeTestUtil.sendSignal(client, "startSignal1", "{\"signalNumber\": " + ThreadLocalRandom.current().nextInt(100) + "}", count);
   }
 
   public void setClient(ZeebeClient client) {

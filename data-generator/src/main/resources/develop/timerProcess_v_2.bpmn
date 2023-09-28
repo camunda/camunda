@@ -1,50 +1,142 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_1hjjfka" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Zeebe Modeler" exporterVersion="0.7.0">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_1hjjfka" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.11.0">
   <bpmn:process id="timerProcess" name="Timer process" isExecutable="true">
-    <bpmn:intermediateCatchEvent id="IntermediateCatchEvent_1l4zjh6" name="5 more minutes passed">
-      <bpmn:incoming>SequenceFlow_0prd963</bpmn:incoming>
+    <bpmn:intermediateCatchEvent id="IntermediateCatchEvent_1l4zjh6" name="15 sec">
+      <bpmn:incoming>Flow_07ur96j</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_15toaun</bpmn:outgoing>
       <bpmn:timerEventDefinition>
-        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT5M</bpmn:timeDuration>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT15S</bpmn:timeDuration>
       </bpmn:timerEventDefinition>
     </bpmn:intermediateCatchEvent>
-    <bpmn:sequenceFlow id="SequenceFlow_0prd963" sourceRef="StartEvent_1" targetRef="IntermediateCatchEvent_1l4zjh6" />
-    <bpmn:endEvent id="EndEvent_02qhg5x">
-      <bpmn:incoming>SequenceFlow_15toaun</bpmn:incoming>
-    </bpmn:endEvent>
-    <bpmn:sequenceFlow id="SequenceFlow_15toaun" sourceRef="IntermediateCatchEvent_1l4zjh6" targetRef="EndEvent_02qhg5x" />
+    <bpmn:sequenceFlow id="SequenceFlow_0prd963" sourceRef="StartEvent_1" targetRef="signalIntermediateThrowEvent" />
+    <bpmn:sequenceFlow id="SequenceFlow_15toaun" sourceRef="IntermediateCatchEvent_1l4zjh6" targetRef="signalIntermediateThrowEvent2" />
     <bpmn:startEvent id="StartEvent_1" name="Every 3 minutes">
       <bpmn:outgoing>SequenceFlow_0prd963</bpmn:outgoing>
       <bpmn:timerEventDefinition>
         <bpmn:timeCycle xsi:type="bpmn:tFormalExpression">R/PT3M</bpmn:timeCycle>
       </bpmn:timerEventDefinition>
     </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_07ur96j" sourceRef="signalIntermediateThrowEvent" targetRef="IntermediateCatchEvent_1l4zjh6" />
+    <bpmn:intermediateThrowEvent id="signalIntermediateThrowEvent" name="Signal Intermediate Throw Event">
+      <bpmn:incoming>SequenceFlow_0prd963</bpmn:incoming>
+      <bpmn:outgoing>Flow_07ur96j</bpmn:outgoing>
+      <bpmn:signalEventDefinition id="SignalEventDefinition_07z9eon" signalRef="Signal_0tl5901" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:intermediateCatchEvent id="Event_05tsqpa" name="15 sec">
+      <bpmn:incoming>Flow_10vf9kr</bpmn:incoming>
+      <bpmn:outgoing>Flow_0lbqo2e</bpmn:outgoing>
+      <bpmn:timerEventDefinition id="TimerEventDefinition_0dzjn3e">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT15S</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:sequenceFlow id="Flow_10vf9kr" sourceRef="signalIntermediateThrowEvent2" targetRef="Event_05tsqpa" />
+    <bpmn:intermediateThrowEvent id="signalIntermediateThrowEvent2" name="Signal Intermediate Throw Event 2">
+      <bpmn:incoming>SequenceFlow_15toaun</bpmn:incoming>
+      <bpmn:outgoing>Flow_10vf9kr</bpmn:outgoing>
+      <bpmn:signalEventDefinition id="SignalEventDefinition_1t63hed" signalRef="Signal_3pjs7b4" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:endEvent id="signalEndEvent2" name="Signal End Event 2">
+      <bpmn:incoming>Flow_0qhnwfp</bpmn:incoming>
+      <bpmn:signalEventDefinition id="SignalEventDefinition_0oqi45q" signalRef="Signal_332ip8a" />
+    </bpmn:endEvent>
+    <bpmn:intermediateThrowEvent id="signalIntermediateThrowEvent3" name="Signal Intermediate Throw Event 3">
+      <bpmn:incoming>Flow_0lbqo2e</bpmn:incoming>
+      <bpmn:outgoing>Flow_0gr7lhn</bpmn:outgoing>
+      <bpmn:signalEventDefinition id="SignalEventDefinition_03qjwv2" signalRef="Signal_33rmhs5" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:sequenceFlow id="Flow_0lbqo2e" sourceRef="Event_05tsqpa" targetRef="signalIntermediateThrowEvent3" />
+    <bpmn:intermediateCatchEvent id="Event_0gjvzq6" name="15 sec">
+      <bpmn:incoming>Flow_0gr7lhn</bpmn:incoming>
+      <bpmn:outgoing>Flow_0qhnwfp</bpmn:outgoing>
+      <bpmn:timerEventDefinition id="TimerEventDefinition_16fginq">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT15S</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:sequenceFlow id="Flow_0gr7lhn" sourceRef="signalIntermediateThrowEvent3" targetRef="Event_0gjvzq6" />
+    <bpmn:sequenceFlow id="Flow_0qhnwfp" sourceRef="Event_0gjvzq6" targetRef="signalEndEvent2" />
   </bpmn:process>
+  <bpmn:signal id="Signal_0tl5901" name="startSignal" />
+  <bpmn:signal id="Signal_3pjs7b4" name="mySignal" />
+  <bpmn:signal id="Signal_33rmhs5" name="myOtherSignal1" />
+  <bpmn:signal id="Signal_332ip8a" name="myOtherSignal2" />
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="timerProcess">
-      <bpmndi:BPMNShape id="IntermediateCatchEvent_1l4zjh6_di" bpmnElement="IntermediateCatchEvent_1l4zjh6">
-        <dc:Bounds x="342" y="79" width="36" height="36" />
+      <bpmndi:BPMNShape id="StartEvent_153jjxi_di" bpmnElement="StartEvent_1">
+        <dc:Bounds x="179" y="79" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="323" y="122" width="76" height="27" />
+          <dc:Bounds x="159" y="122" width="80" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1in1trh_di" bpmnElement="signalIntermediateThrowEvent">
+        <dc:Bounds x="272" y="79" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="259" y="122" width="62" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="IntermediateCatchEvent_1l4zjh6_di" bpmnElement="IntermediateCatchEvent_1l4zjh6">
+        <dc:Bounds x="372" y="79" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="376" y="122" width="33" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_160hqc0_di" bpmnElement="signalIntermediateThrowEvent2">
+        <dc:Bounds x="472" y="79" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="455" y="122" width="70" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_1vtlf3x" bpmnElement="Event_05tsqpa">
+        <dc:Bounds x="572" y="79" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="576" y="122" width="33" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0xma4fd_di" bpmnElement="signalIntermediateThrowEvent3">
+        <dc:Bounds x="672" y="79" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="655" y="122" width="70" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_1vwfrwx" bpmnElement="Event_0gjvzq6">
+        <dc:Bounds x="772" y="79" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="776" y="122" width="33" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0q3neng_di" bpmnElement="signalEndEvent2">
+        <dc:Bounds x="872" y="79" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="847" y="122" width="86" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="SequenceFlow_0prd963_di" bpmnElement="SequenceFlow_0prd963">
         <di:waypoint x="215" y="97" />
-        <di:waypoint x="342" y="97" />
+        <di:waypoint x="272" y="97" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="EndEvent_02qhg5x_di" bpmnElement="EndEvent_02qhg5x">
-        <dc:Bounds x="482" y="79" width="36" height="36" />
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="SequenceFlow_15toaun_di" bpmnElement="SequenceFlow_15toaun">
-        <di:waypoint x="378" y="97" />
-        <di:waypoint x="482" y="97" />
+        <di:waypoint x="408" y="97" />
+        <di:waypoint x="472" y="97" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="StartEvent_153jjxi_di" bpmnElement="StartEvent_1">
-        <dc:Bounds x="179" y="79" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="159" y="122" width="79" height="14" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_07ur96j_di" bpmnElement="Flow_07ur96j">
+        <di:waypoint x="308" y="97" />
+        <di:waypoint x="372" y="97" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_10vf9kr_di" bpmnElement="Flow_10vf9kr">
+        <di:waypoint x="508" y="97" />
+        <di:waypoint x="572" y="97" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0lbqo2e_di" bpmnElement="Flow_0lbqo2e">
+        <di:waypoint x="608" y="97" />
+        <di:waypoint x="672" y="97" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0gr7lhn_di" bpmnElement="Flow_0gr7lhn">
+        <di:waypoint x="708" y="97" />
+        <di:waypoint x="772" y="97" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0qhnwfp_di" bpmnElement="Flow_0qhnwfp">
+        <di:waypoint x="808" y="97" />
+        <di:waypoint x="872" y="97" />
+      </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
 </bpmn:definitions>
