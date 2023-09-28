@@ -171,9 +171,6 @@ public final class Address {
    * @return the resolved socket address
    */
   public InetSocketAddress getResolvedSocketAddress() {
-    if (socketAddress.isUnresolved()) {
-      socketAddress = new InetSocketAddress(host, port);
-    }
     return socketAddress;
   }
 
