@@ -194,8 +194,8 @@ it('display the search info correctly', async () => {
   await runAllEffects();
 
   const text = node.find(EntityList).prop('displaySearchInfo')('', 1).props.children;
-  expect(text).toBe('1 process listed');
+  expect(text).toBe('1 process listed.');
 
   const textWithQuery = node.find(EntityList).prop('displaySearchInfo')('def', 1).props.children;
-  expect(textWithQuery).toBe('1 of 1 process listed');
+  expect(textWithQuery).toBe('1 of 1 process listed.');
 });
