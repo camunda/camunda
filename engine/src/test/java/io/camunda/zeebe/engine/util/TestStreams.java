@@ -13,8 +13,6 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import io.camunda.zeebe.auth.api.JwtAuthorizationBuilder;
-import io.camunda.zeebe.auth.impl.Authorization;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.engine.Engine;
@@ -30,8 +28,6 @@ import io.camunda.zeebe.logstreams.util.ListLogStorage;
 import io.camunda.zeebe.logstreams.util.SyncLogStream;
 import io.camunda.zeebe.logstreams.util.SynchronousLogStream;
 import io.camunda.zeebe.protocol.Protocol;
-import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
-import io.camunda.zeebe.protocol.impl.encoding.AuthInfo.AuthDataFormat;
 import io.camunda.zeebe.protocol.impl.record.CopiedRecord;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
@@ -355,16 +351,7 @@ public final class TestStreams {
     }
 
     public FluentLogWriter authorizations(final String... tenantIds) {
-      final String authorizationToken =
-          Authorization.jwtEncoder()
-              .withIssuer(JwtAuthorizationBuilder.DEFAULT_ISSUER)
-              .withAudience(JwtAuthorizationBuilder.DEFAULT_AUDIENCE)
-              .withSubject(JwtAuthorizationBuilder.DEFAULT_SUBJECT)
-              .withClaim(Authorization.AUTHORIZED_TENANTS, List.of(tenantIds))
-              .encode();
-      final var auth = new AuthInfo();
-      auth.setFormatProp(AuthDataFormat.JWT).setAuthData(authorizationToken);
-      metadata.authorization(auth);
+      metadata.authorization(AuthorizationUtil.getAuthInfo(tenantIds));
       return this;
     }
 

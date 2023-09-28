@@ -36,6 +36,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentRecordValue;
 
@@ -55,7 +56,10 @@ public final class RecordToWrite implements LogAppendEntry {
 
   public static RecordToWrite command() {
     final RecordMetadata recordMetadata = new RecordMetadata();
-    return new RecordToWrite(recordMetadata.recordType(RecordType.COMMAND));
+    recordMetadata.recordType(RecordType.COMMAND);
+    recordMetadata.authorization(
+        AuthorizationUtil.getAuthInfo(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
+    return new RecordToWrite(recordMetadata);
   }
 
   public static RecordToWrite event() {
@@ -87,7 +91,10 @@ public final class RecordToWrite implements LogAppendEntry {
   }
 
   public RecordToWrite job(final JobIntent intent, final JobRecordValue value) {
-    recordMetadata.valueType(ValueType.JOB).intent(intent);
+    recordMetadata
+        .valueType(ValueType.JOB)
+        .intent(intent)
+        .authorization(AuthorizationUtil.getAuthInfo(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
     unifiedRecordValue = (JobRecord) value;
     return this;
   }
