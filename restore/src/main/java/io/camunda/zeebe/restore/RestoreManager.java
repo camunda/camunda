@@ -20,7 +20,6 @@ import java.nio.file.Path;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,10 +47,6 @@ public class RestoreManager {
       return CompletableFuture.failedFuture(e);
     }
 
-    final var brokerIds =
-        IntStream.range(0, configuration.getCluster().getClusterSize())
-            .boxed()
-            .collect(Collectors.toSet());
     final var partitionToRestore = collectPartitions();
     final var localBrokerId = configuration.getCluster().getNodeId();
 
@@ -60,7 +55,7 @@ public class RestoreManager {
 
     return CompletableFuture.allOf(
             partitionToRestore.stream()
-                .map(partition -> restorePartition(partition, backupId, brokerIds, localBrokerId))
+                .map(partition -> restorePartition(partition, backupId, localBrokerId))
                 .toArray(CompletableFuture[]::new))
         .exceptionallyComposeAsync(error -> logFailureAndDeleteDataDirectory(dataDirectory, error));
   }
@@ -87,11 +82,8 @@ public class RestoreManager {
   }
 
   private CompletableFuture<Void> restorePartition(
-      final RaftPartition partition,
-      final long backupId,
-      final Set<Integer> brokerIds,
-      final int localBrokerId) {
-    return new PartitionRestoreService(backupStore, partition, brokerIds, localBrokerId)
+      final RaftPartition partition, final long backupId, final int localBrokerId) {
+    return new PartitionRestoreService(backupStore, partition, localBrokerId)
         .restore(backupId)
         .thenAccept(backup -> logSuccessfulRestore(backup, partition.id().id(), backupId));
   }

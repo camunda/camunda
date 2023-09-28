@@ -93,7 +93,7 @@ class PartitionRestoreServiceTest {
     final var raftPartition =
         new RaftPartition(
             PartitionId.from("raft", partitionId), null, dataDirectoryToRestore.toFile());
-    restoreService = new PartitionRestoreService(backupStore, raftPartition, Set.of(1, 2), nodeId);
+    restoreService = new PartitionRestoreService(backupStore, raftPartition, nodeId);
 
     journal =
         SegmentedJournal.builder()
