@@ -26,8 +26,6 @@ import java.util.Set;
 @Component
 public class DeleteDecisionDefinitionHandler extends AbstractOperationHandler implements OperationHandler {
 
-  public static final int STEPS_COUNT = 4;
-
   private static final Logger logger = LoggerFactory.getLogger(DeleteDecisionDefinitionHandler.class);
 
   @Autowired
@@ -51,37 +49,27 @@ public class DeleteDecisionDefinitionHandler extends AbstractOperationHandler im
     long decisionRequirementsKey = decisionDefinition.getDecisionRequirementsKey();
     long deleted;
 
-    // Step 1. Send Zeebe command
+    logger.info(String.format("Operation [%s]: Sending Zeebe delete command for decisionRequirementsKey [%s]...", operation.getId(), decisionRequirementsKey));
     zeebeClient.newDeleteResourceCommand(decisionRequirementsKey).send().join();
     markAsSent(operation);
-    updateFinishedInBatchOperation(operation);
-    logger.info(String.format("Operation %s: Delete command sent to Zeebe for resource key [%s]", operation.getId(), decisionRequirementsKey));
+    logger.info(String.format("Operation [%s]: Delete command sent to Zeebe for decisionRequirementsKey [%s]", operation.getId(), decisionRequirementsKey));
 
-    // Step 2. Delete decision instances
     deleted = decisionWriter.deleteDecisionInstancesFor(decisionRequirementsKey);
     updateInstancesInBatchOperation(operation, deleted);
-    updateFinishedInBatchOperation(operation);
-    logger.info(String.format("Operation %s: Deleted %s decision instances", operation.getId(), deleted));
+    logger.info(String.format("Operation [%s]: Deleted %s decision instances", operation.getId(), deleted));
 
-    // Step 3. Delete decision definitions
     deleted = decisionWriter.deleteDecisionDefinitionsFor(decisionRequirementsKey);
     updateInstancesInBatchOperation(operation, deleted);
-    updateFinishedInBatchOperation(operation);
-    logger.info(String.format("Operation %s: Deleted %s decision definitions", operation.getId(), deleted));
+    logger.info(String.format("Operation [%s]: Deleted %s decision definitions", operation.getId(), deleted));
 
-    // Step 4. Delete decision requirements
     deleted = decisionWriter.deleteDecisionRequirements(decisionRequirementsKey);
     updateInstancesInBatchOperation(operation, deleted);
     completeOperation(operation);
-    logger.info(String.format("Operation %s: Deleted %s decision requirements", operation.getId(), deleted));
+    logger.info(String.format("Operation [%s]: Deleted %s decision requirements", operation.getId(), deleted));
   }
 
   private void completeOperation(final OperationEntity operation) throws PersistenceException {
     operationsManager.completeOperation(operation);
-  }
-
-  private void updateFinishedInBatchOperation(final OperationEntity operation) throws PersistenceException {
-    operationsManager.updateFinishedInBatchOperation(operation.getBatchOperationId());
   }
 
   private void updateInstancesInBatchOperation(final OperationEntity operation, long increment) throws PersistenceException {

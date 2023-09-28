@@ -377,7 +377,7 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
     // Create batch operation
     String batchOperationName = String.format("%s - Version %s", decisionDefinitionEntity.getName(), decisionDefinitionEntity.getVersion());
     final BatchOperationEntity batchOperation = createBatchOperationEntity(operationType, batchOperationName)
-        .setOperationsTotalCount(DeleteDecisionDefinitionHandler.STEPS_COUNT).setInstancesCount(0);
+        .setOperationsTotalCount(1).setInstancesCount(0);
 
     // Create operation
     final OperationEntity operationEntity = new OperationEntity();
