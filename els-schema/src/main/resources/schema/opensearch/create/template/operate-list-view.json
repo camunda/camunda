@@ -122,6 +122,9 @@
 			},
             "tenantId": {
               "type": "keyword"
+            },
+            "jobFailedWithRetriesLeft": {
+              "type": "boolean"
             }
 		}
 	}
