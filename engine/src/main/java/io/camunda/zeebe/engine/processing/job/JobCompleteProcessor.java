@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.job;
 
-import io.camunda.zeebe.auth.impl.Authorization;
 import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
@@ -23,7 +22,6 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
-import java.util.List;
 
 public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
 
@@ -81,9 +79,7 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
 
     final long jobKey = command.getKey();
 
-    final List<String> authorizedTenants =
-        (List<String>) command.getAuthorizations().get(Authorization.AUTHORIZED_TENANTS);
-    final JobRecord job = jobState.getJob(jobKey, authorizedTenants);
+    final JobRecord job = jobState.getJob(jobKey, command.getAuthorizations());
     if (job == null) {
       commandControl.reject(RejectionType.NOT_FOUND, String.format(NO_JOB_FOUND_MESSAGE, jobKey));
       return;

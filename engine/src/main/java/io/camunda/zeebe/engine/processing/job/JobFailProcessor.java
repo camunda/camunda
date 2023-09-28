@@ -11,7 +11,6 @@ import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_MAX_ERROR_MESS
 import static io.camunda.zeebe.util.StringUtil.limitString;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
-import io.camunda.zeebe.auth.impl.Authorization;
 import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
@@ -98,10 +97,7 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
     final var retries = failJobCommandRecord.getRetries();
     final var retryBackOff = failJobCommandRecord.getRetryBackoff();
 
-    final List<String> authorizedTenants =
-        (List<String>) record.getAuthorizations().get(Authorization.AUTHORIZED_TENANTS);
-    final JobRecord failedJob = jobState.getJob(jobKey, authorizedTenants);
-
+    final JobRecord failedJob = jobState.getJob(jobKey, record.getAuthorizations());
     if (failedJob == null) {
       final String errorMessage = String.format(NO_JOB_FOUND_MESSAGE, jobKey);
       rejectionWriter.appendRejection(record, RejectionType.NOT_FOUND, errorMessage);

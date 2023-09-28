@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.state.instance;
 
+import io.camunda.zeebe.auth.impl.Authorization;
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
@@ -24,6 +25,7 @@ import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.util.EnsureUtil;
 import java.util.List;
+import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import org.agrona.DirectBuffer;
@@ -348,9 +350,9 @@ public final class DbJobState implements JobState, MutableJobState {
   }
 
   @Override
-  public JobRecord getJob(final long key, final List<String> authorizedTenantIds) {
+  public JobRecord getJob(final long key, final Map<String, Object> authorizations) {
     final JobRecord jobRecord = getJob(key);
-    if (authorizedTenantIds.contains(jobRecord.getTenantId())) {
+    if (getAuthorizedTenantIds(authorizations).contains(jobRecord.getTenantId())) {
       return jobRecord;
     }
     return null;
@@ -460,5 +462,9 @@ public final class DbJobState implements JobState, MutableJobState {
       backoffKey.wrapLong(backoff);
       backoffColumnFamily.deleteIfExists(backoffJobKey);
     }
+  }
+
+  private List<String> getAuthorizedTenantIds(final Map<String, Object> authorizations) {
+    return (List<String>) authorizations.get(Authorization.AUTHORIZED_TENANTS);
   }
 }
