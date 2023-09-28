@@ -99,6 +99,10 @@ public class ReportRestMapper {
           validLocale,
           reportDefinitionDto.getName()
         )).ifPresent(reportDefinitionDto::setName);
+        Optional.ofNullable(localizationService.getLocalizationForInstantPreviewReportCode(
+          validLocale,
+          reportDefinitionDto.getDescription()
+        )).ifPresent(reportDefinitionDto::setDescription);
       }
     }
   }

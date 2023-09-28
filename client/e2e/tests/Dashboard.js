@@ -556,7 +556,7 @@ test('copy instant preview dashboard', async (t) => {
 
   await t.click(Common.collectionItem);
   await t.expect(Common.dashboardItem.count).eql(1);
-  await t.expect(Common.dashboardItem.textContent).contains('Instant Preview Dashboard');
+  await t.expect(Common.dashboardItem.textContent).contains('Process Dashboard');
 
   // Create another copy to check if only one collection is created
   await t.click(e.dashboardsLink);
@@ -571,7 +571,7 @@ test('copy instant preview dashboard', async (t) => {
   await t.click(Common.collectionItem);
   await t.expect(Common.dashboardItem.count).eql(2);
   await t.expect(Common.dashboardItem.nth(0).textContent).contains('New Name');
-  await t.expect(Common.dashboardItem.nth(1).textContent).contains('Instant Preview Dashboard');
+  await t.expect(Common.dashboardItem.nth(1).textContent).contains('Process Dashboard');
 
   // Create a new collection if the first one was renamed
   await t.click(Collection.collectionContextMenu);

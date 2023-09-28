@@ -14,7 +14,7 @@ import TemplateModal from './TemplateModal';
 import {
   accelerationDashboardTemplate,
   efficiencyDashboardTemplate,
-  instantPreviewDashboardTemplate,
+  processDashboardTemplate,
   productivityDashboardTemplate,
 } from './templates';
 
@@ -48,7 +48,7 @@ export default function DashboardTemplateModal({
     {
       name: 'singleProcessGroup',
       templates: [
-        instantPreviewDashboardTemplate(),
+        processDashboardTemplate(),
         productivityDashboardTemplate(),
         efficiencyDashboardTemplate(),
         accelerationDashboardTemplate(),
