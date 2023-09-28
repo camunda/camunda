@@ -352,7 +352,8 @@ public final class DbJobState implements JobState, MutableJobState {
   @Override
   public JobRecord getJob(final long key, final Map<String, Object> authorizations) {
     final JobRecord jobRecord = getJob(key);
-    if (getAuthorizedTenantIds(authorizations).contains(jobRecord.getTenantId())) {
+    if (jobRecord != null
+        && getAuthorizedTenantIds(authorizations).contains(jobRecord.getTenantId())) {
       return jobRecord;
     }
     return null;
