@@ -54,7 +54,7 @@ public class DecisionRequirementsController extends ErrorController
       @ApiResponse(description = ResourceNotFoundException.TYPE, responseCode = "404", content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
           schema = @Schema(implementation = Error.class)))})
   @Override
-  public DecisionRequirements byKey(Long key) {
+  public DecisionRequirements byKey(@Parameter(description = "Key of decision requirements", required = true) @PathVariable final Long key) {
     return decisionRequirementsDao.byKey(key);
   }
 

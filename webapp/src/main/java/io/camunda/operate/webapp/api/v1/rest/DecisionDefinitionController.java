@@ -17,6 +17,7 @@ import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import io.camunda.operate.webapp.api.v1.exceptions.ValidationException;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -26,6 +27,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -66,7 +68,7 @@ public class DecisionDefinitionController extends ErrorController
       @ApiResponse(description = ClientException.TYPE, responseCode = "400", content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE, schema = @Schema(implementation = Error.class))),
       @ApiResponse(description = ResourceNotFoundException.TYPE, responseCode = "404", content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE, schema = @Schema(implementation = Error.class))) })
   @Override
-  public DecisionDefinition byKey(Long key) {
+  public DecisionDefinition byKey(@Parameter(description = "Key of decision definition", required = true) @PathVariable final Long key) {
     return decisionDefinitionDao.byKey(key);
   }
 

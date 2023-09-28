@@ -16,6 +16,7 @@ import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import io.camunda.operate.webapp.api.v1.exceptions.ValidationException;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -58,7 +59,7 @@ public class DecisionInstanceController extends ErrorController {
       value = BY_ID,
       produces = {MediaType.APPLICATION_JSON_VALUE}
   )
-  public DecisionInstance byId(@PathVariable String id) {
+  public DecisionInstance byId(@Parameter(description = "Id of decision instance", required = true) @PathVariable String id) {
     return decisionInstanceDao.byId(id);
   }
 

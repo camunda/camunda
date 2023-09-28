@@ -154,7 +154,7 @@ public class IncidentController extends ErrorController implements SearchControl
       })
   @Override
   public Incident byKey(
-      @Parameter(description = "Key of process instance", required = true) @PathVariable final Long key) {
+      @Parameter(description = "Key of incident", required = true) @PathVariable final Long key) {
     return incidentDao.byKey(key);
   }
 }
