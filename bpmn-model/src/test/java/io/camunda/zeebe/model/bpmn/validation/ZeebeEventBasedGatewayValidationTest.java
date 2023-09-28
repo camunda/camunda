@@ -102,7 +102,7 @@ public class ZeebeEventBasedGatewayValidationTest extends AbstractZeebeValidatio
         singletonList(
             expect(
                 EventBasedGateway.class,
-                "Event-based gateway must not have an outgoing sequence flow to other elements than message/timer intermediate catch events."))
+                "Event-based gateway must not have an outgoing sequence flow to other elements than message/timer/signal intermediate catch events."))
       },
       {
         Bpmn.createExecutableProcess("process")

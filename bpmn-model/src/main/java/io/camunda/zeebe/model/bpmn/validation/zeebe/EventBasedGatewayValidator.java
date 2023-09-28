@@ -21,6 +21,7 @@ import io.camunda.zeebe.model.bpmn.instance.FlowNode;
 import io.camunda.zeebe.model.bpmn.instance.IntermediateCatchEvent;
 import io.camunda.zeebe.model.bpmn.instance.MessageEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.SequenceFlow;
+import io.camunda.zeebe.model.bpmn.instance.SignalEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.TimerEventDefinition;
 import io.camunda.zeebe.model.bpmn.util.ModelUtil;
 import java.util.Arrays;
@@ -34,10 +35,11 @@ import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 public class EventBasedGatewayValidator implements ModelElementValidator<EventBasedGateway> {
 
   private static final List<Class<? extends EventDefinition>> SUPPORTED_EVENTS =
-      Arrays.asList(TimerEventDefinition.class, MessageEventDefinition.class);
+      Arrays.asList(
+          TimerEventDefinition.class, MessageEventDefinition.class, SignalEventDefinition.class);
 
   private static final String ERROR_UNSUPPORTED_TARGET_NODE =
-      "Event-based gateway must not have an outgoing sequence flow to other elements than message/timer intermediate catch events.";
+      "Event-based gateway must not have an outgoing sequence flow to other elements than message/timer/signal intermediate catch events.";
 
   @Override
   public Class<EventBasedGateway> getElementType() {
@@ -66,6 +68,11 @@ public class EventBasedGatewayValidator implements ModelElementValidator<EventBa
 
     ModelUtil.verifyNoDuplicatedEventDefinition(
         messageEventDefinitions, error -> validationResultCollector.addError(0, error));
+
+    final List<SignalEventDefinition> signalEventDefinitions =
+        getSignalEventDefinitions(outgoingSequenceFlows).collect(Collectors.toList());
+    ModelUtil.verifyNoDuplicatedEventDefinition(
+        signalEventDefinitions, error -> validationResultCollector.addError(0, error));
 
     if (!succeedingNodesOnlyHaveEventBasedGatewayAsIncomingFlows(element)) {
       validationResultCollector.addError(
@@ -106,6 +113,17 @@ public class EventBasedGatewayValidator implements ModelElementValidator<EventBa
         .flatMap(e -> e.getEventDefinitions().stream())
         .filter(e -> e instanceof MessageEventDefinition)
         .map(MessageEventDefinition.class::cast);
+  }
+
+  private Stream<SignalEventDefinition> getSignalEventDefinitions(
+      final Collection<SequenceFlow> outgoingSequenceFlows) {
+    return outgoingSequenceFlows.stream()
+        .map(SequenceFlow::getTarget)
+        .filter(t -> t instanceof IntermediateCatchEvent)
+        .map(IntermediateCatchEvent.class::cast)
+        .flatMap(e -> e.getEventDefinitions().stream())
+        .filter(e -> e instanceof SignalEventDefinition)
+        .map(SignalEventDefinition.class::cast);
   }
 
   private boolean succeedingNodesOnlyHaveEventBasedGatewayAsIncomingFlows(

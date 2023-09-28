@@ -13,12 +13,19 @@ import static org.assertj.core.api.Assertions.tuple;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.client.SignalClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.record.Assertions;
+import io.camunda.zeebe.protocol.record.ExecuteCommandResponseDecoder;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.time.Duration;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -203,5 +210,84 @@ public class SignalCatchEventTest {
                 .withSignalName(SIGNAL_NAME)
                 .exists())
         .isTrue();
+  }
+
+  @Test
+  public void shouldTriggerSignalCatchEventAttachedToEventBasedGateway() {
+    // given
+    final var process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .eventBasedGateway("event_based_gateway")
+            .intermediateCatchEvent(ELEMENT_ID)
+            .signal(SIGNAL_NAME)
+            .endEvent()
+            .moveToLastGateway()
+            .intermediateCatchEvent()
+            .timerWithDuration(Duration.ofMinutes(10))
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    assertThat(
+            RecordingExporter.signalSubscriptionRecords(SignalSubscriptionIntent.CREATED)
+                .withSignalName(SIGNAL_NAME)
+                .exists())
+        .isTrue();
+
+    // when
+    signalClient.broadcast();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple(ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(PROCESS_ID, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(PROCESS_ID, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
+  public void
+      shouldRejectDeploymentSignalCatchEventWithSameSignalNameAttachedToEventBasedGateway() {
+    // given
+    final var process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .eventBasedGateway("event_based_gateway")
+            .intermediateCatchEvent(ELEMENT_ID)
+            .signal(SIGNAL_NAME)
+            .endEvent()
+            .moveToLastGateway()
+            .intermediateCatchEvent()
+            .signal(SIGNAL_NAME)
+            .endEvent()
+            .moveToLastGateway()
+            .intermediateCatchEvent()
+            .timerWithDuration(Duration.ofMinutes(10))
+            .endEvent()
+            .done();
+
+    // when
+    final Record<DeploymentRecordValue> rejectedDeployment =
+        ENGINE.deployment().withXmlResource(process).expectRejection().deploy();
+
+    // then
+    Assertions.assertThat(rejectedDeployment)
+        .hasKey(ExecuteCommandResponseDecoder.keyNullValue())
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasIntent(DeploymentIntent.CREATE)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejectedDeployment.getRejectionReason())
+        .contains("Element: event_based_gateway")
+        .contains(
+            "ERROR: Multiple signal event definitions with the same name 'signal' are not allowed.");
   }
 }
