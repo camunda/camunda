@@ -81,6 +81,11 @@
     </dependency>
 
     <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-auth</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>org.camunda.bpm.model</groupId>
       <artifactId>camunda-xml-model</artifactId>
     </dependency>
