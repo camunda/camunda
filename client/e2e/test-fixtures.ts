@@ -34,6 +34,8 @@ const test = base.extend<PlaywrightFixtures>({
         'best-practice',
         'wcag2a',
         'wcag2aa',
+        'wcag21a',
+        'wcag21aa',
         'cat.semantics',
         'cat.forms',
       ]);
