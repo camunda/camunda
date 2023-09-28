@@ -14,6 +14,7 @@ import io.camunda.zeebe.client.api.response.ActivateJobsResponse;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.api.response.CompleteJobResponse;
 import io.camunda.zeebe.client.api.response.DeploymentEvent;
+import io.camunda.zeebe.client.api.response.ModifyProcessInstanceResponse;
 import io.camunda.zeebe.client.api.response.Process;
 import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.client.api.response.PublishMessageResponse;
@@ -871,6 +872,66 @@ public class MultiTenancyOverIdentityIT {
           .withMessageContaining(
               "Command 'RESOLVE' rejected with code 'NOT_FOUND': Expected to resolve incident with key '%d', but no such incident was found"
                   .formatted(incidentKey));
+    }
+  }
+
+  @Test
+  void shouldAllowModifyProcessInstanceForDefaultTenant() {
+    try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_DEFAULT)) {
+      // given
+      client.newDeployResourceCommand().addProcessModel(process, "process.bpmn").send().join();
+
+      final long processInstanceKey =
+          client
+              .newCreateInstanceCommand()
+              .bpmnProcessId(processId)
+              .latestVersion()
+              .send()
+              .join()
+              .getProcessInstanceKey();
+
+      // when
+      final Future<ModifyProcessInstanceResponse> response =
+          client.newModifyProcessInstanceCommand(processInstanceKey).activateElement("task").send();
+
+      // then
+      assertThat(response).succeedsWithin(Duration.ofSeconds(10));
+    }
+  }
+
+  @Test
+  void shouldRejectModifyProcessInstanceForOtherTenant() {
+    try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A)) {
+      // given
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(process, "process.bpmn")
+          .tenantId("tenant-a")
+          .send()
+          .join();
+
+      final long processInstanceKey =
+          client
+              .newCreateInstanceCommand()
+              .bpmnProcessId(processId)
+              .latestVersion()
+              .tenantId("tenant-a")
+              .send()
+              .join()
+              .getProcessInstanceKey();
+
+      // when
+      final Future<ModifyProcessInstanceResponse> response =
+          client.newModifyProcessInstanceCommand(processInstanceKey).activateElement("task").send();
+
+      // then
+      assertThat(response)
+          .failsWithin(Duration.ofSeconds(10))
+          .withThrowableThat()
+          .withMessageContaining("INVALID_ARGUMENT")
+          .withMessageContaining(
+              "Expected to modify process instance but process instance belongs to tenant 'tenant-a'")
+          .withMessageContaining("while modification is not yet supported with multi-tenancy");
     }
   }
 
