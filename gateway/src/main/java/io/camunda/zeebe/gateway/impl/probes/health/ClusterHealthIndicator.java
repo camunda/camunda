@@ -27,7 +27,6 @@ import org.springframework.boot.actuate.health.HealthIndicator;
 public class ClusterHealthIndicator implements HealthIndicator {
 
   private final Supplier<Optional<BrokerClusterState>> clusterStateSupplier;
-  private boolean processing = false;
 
   public ClusterHealthIndicator(final Supplier<Optional<BrokerClusterState>> clusterStateSupplier) {
     this.clusterStateSupplier = requireNonNull(clusterStateSupplier);
@@ -44,36 +43,48 @@ public class ClusterHealthIndicator implements HealthIndicator {
         return Health.down().build();
       } else {
         if (!optClusterState.get().getPartitions().isEmpty()) {
-          processing = false;
           final List<Integer> partitions = optClusterState.get().getPartitions();
 
           final Map<String, PartitionHealthStatus> partitionDetails =
-              getPartitionsHealthStatus(partitions, optClusterState);
-
-          if (!processing) {
-            return Health.down().withDetails(partitionDetails).build();
-          } else {
-            return Health.up().withDetails(partitionDetails).build();
-          }
+              getPartitionsHealthStatus(partitions, optClusterState.get());
+          return getStatus(partitions.size(), partitionDetails);
+        } else {
+          return Health.down().build();
         }
-        return Health.down().build();
       }
     }
   }
 
   Map<String, PartitionHealthStatus> getPartitionsHealthStatus(
-      final List<Integer> partitions, final Optional<BrokerClusterState> optClusterState) {
+      final List<Integer> partitions, final BrokerClusterState optClusterState) {
     final Map<String, PartitionHealthStatus> partitionDetails = new HashMap<>();
     partitions.forEach(
         partition -> {
-          final int broker = optClusterState.get().getLeaderForPartition(partition);
+          final int broker = optClusterState.getLeaderForPartition(partition);
           final PartitionHealthStatus partitionHealthStatus =
-              optClusterState.get().getPartitionHealth(broker, partition);
+              optClusterState.getPartitionHealth(broker, partition);
           partitionDetails.put(String.format("Partition %d", partition), partitionHealthStatus);
-          if (partitionHealthStatus == PartitionHealthStatus.HEALTHY) {
-            processing = true;
-          }
         });
     return partitionDetails;
+  }
+
+  private Health getStatus(
+      final int partitionCount, final Map<String, PartitionHealthStatus> partitionDetails) {
+    final var unhealthyPartitionsCount =
+        partitionDetails.values().stream()
+            .filter(p -> p == PartitionHealthStatus.UNHEALTHY || p == PartitionHealthStatus.DEAD)
+            .count();
+    final var healthyPartitionsCount =
+        partitionDetails.values().stream().filter(p -> p == PartitionHealthStatus.HEALTHY).count();
+    final var hasOnlyUnhealthyPartitions = unhealthyPartitionsCount == partitionDetails.size();
+    final var hasOnlyHealthyPartitions = healthyPartitionsCount == partitionCount;
+
+    if (hasOnlyUnhealthyPartitions) {
+      return Health.status("UNHEALTHY").withDetails(partitionDetails).build();
+    } else if (hasOnlyHealthyPartitions) {
+      return Health.status("HEALTHY").withDetails(partitionDetails).build();
+    } else {
+      return Health.status("DEGRADED").withDetails(partitionDetails).build();
+    }
   }
 }

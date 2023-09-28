@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.impl.probes.health;
 
+import static io.camunda.zeebe.gateway.impl.broker.cluster.BrokerClusterState.PARTITION_ID_NULL;
 import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -81,7 +82,79 @@ public class ClusterHealthIndicatorTest {
 
     // then
     assertThat(actualHealth).isNotNull();
-    assertThat(actualHealth.getStatus()).isEqualTo(Status.UP);
+    assertThat(actualHealth.getStatus()).isEqualTo(new Status("HEALTHY"));
+  }
+
+  @Test
+  public void shouldReportDegradedIfMissingPartitions() {
+    final BrokerClusterState mockClusterState = mock(BrokerClusterState.class);
+    when(mockClusterState.getBrokers()).thenReturn(List.of(1));
+    when(mockClusterState.getPartitions()).thenReturn(List.of(1, 2, 3));
+    when(mockClusterState.getLeaderForPartition(1)).thenReturn(1);
+    when(mockClusterState.getLeaderForPartition(2)).thenReturn(2);
+    when(mockClusterState.getLeaderForPartition(3)).thenReturn(3);
+    when(mockClusterState.getPartitionHealth(1, 1)).thenReturn(PartitionHealthStatus.HEALTHY);
+    when(mockClusterState.getPartitionHealth(2, 2)).thenReturn(PartitionHealthStatus.HEALTHY);
+    when(mockClusterState.getPartitionHealth(3, 3)).thenReturn(PartitionHealthStatus.DEAD);
+
+    final Supplier<Optional<BrokerClusterState>> stateSupplier =
+        () -> Optional.of(mockClusterState);
+    final var sutHealthIndicator = new ClusterHealthIndicator(stateSupplier);
+
+    // when
+    final var actualHealth = sutHealthIndicator.health();
+
+    // then
+    assertThat(actualHealth).isNotNull();
+    assertThat(actualHealth.getStatus()).isEqualTo(new Status("DEGRADED"));
+  }
+
+  @Test
+  public void shouldReportUnhealthyIfMissingPartitionsAndTheOthersDegraded() {
+    final BrokerClusterState mockClusterState = mock(BrokerClusterState.class);
+    when(mockClusterState.getBrokers()).thenReturn(List.of(1));
+    when(mockClusterState.getPartitions()).thenReturn(List.of(1, 2, 3));
+    when(mockClusterState.getLeaderForPartition(1)).thenReturn(1);
+    when(mockClusterState.getLeaderForPartition(2)).thenReturn(2);
+    when(mockClusterState.getLeaderForPartition(3)).thenReturn(3);
+    when(mockClusterState.getPartitionHealth(1, 1)).thenReturn(PartitionHealthStatus.UNHEALTHY);
+    when(mockClusterState.getPartitionHealth(2, 2)).thenReturn(PartitionHealthStatus.UNHEALTHY);
+    when(mockClusterState.getPartitionHealth(3, 3)).thenReturn(PartitionHealthStatus.DEAD);
+
+    final Supplier<Optional<BrokerClusterState>> stateSupplier =
+        () -> Optional.of(mockClusterState);
+    final var sutHealthIndicator = new ClusterHealthIndicator(stateSupplier);
+
+    // when
+    final var actualHealth = sutHealthIndicator.health();
+
+    // then
+    assertThat(actualHealth).isNotNull();
+    assertThat(actualHealth.getStatus()).isEqualTo(new Status("UNHEALTHY"));
+  }
+
+  @Test
+  public void shouldReportDegradedIfSomePartitionsDontHaveLeader() {
+    final BrokerClusterState mockClusterState = mock(BrokerClusterState.class);
+    when(mockClusterState.getBrokers()).thenReturn(List.of(1));
+    when(mockClusterState.getPartitions()).thenReturn(List.of(1, 2, 3));
+    when(mockClusterState.getLeaderForPartition(1)).thenReturn(1);
+    when(mockClusterState.getLeaderForPartition(2)).thenReturn(2);
+    when(mockClusterState.getLeaderForPartition(3)).thenReturn(PARTITION_ID_NULL);
+    when(mockClusterState.getPartitionHealth(1, 1)).thenReturn(PartitionHealthStatus.HEALTHY);
+    when(mockClusterState.getPartitionHealth(2, 2)).thenReturn(PartitionHealthStatus.HEALTHY);
+    when(mockClusterState.getPartitionHealth(3, 3)).thenReturn(PartitionHealthStatus.UNHEALTHY);
+
+    final Supplier<Optional<BrokerClusterState>> stateSupplier =
+        () -> Optional.of(mockClusterState);
+    final var sutHealthIndicator = new ClusterHealthIndicator(stateSupplier);
+
+    // when
+    final var actualHealth = sutHealthIndicator.health();
+
+    // then
+    assertThat(actualHealth).isNotNull();
+    assertThat(actualHealth.getStatus()).isEqualTo(new Status("DEGRADED"));
   }
 
   @Test

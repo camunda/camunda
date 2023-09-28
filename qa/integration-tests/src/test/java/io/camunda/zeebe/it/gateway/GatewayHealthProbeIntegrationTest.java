@@ -8,6 +8,7 @@
 package io.camunda.zeebe.it.gateway;
 
 import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.equalTo;
 
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneGateway;
@@ -28,6 +29,7 @@ public class GatewayHealthProbeIntegrationTest {
 
   private static final String PATH_LIVENESS_PROBE = "/actuator/health/liveness";
   private static final String PATH_READINESS_PROBE = "/actuator/health/readiness";
+  private static final String PATH_TO_HEALTH_PROBE = "/actuator/health";
 
   @Nested
   final class WithBrokerTest {
@@ -67,6 +69,46 @@ public class GatewayHealthProbeIntegrationTest {
         // it can happen that a single request takes too long and causes awaitility to timeout,
         // in which case we want to try a second time to run the request without timeout
         given().spec(gatewayServerSpec).when().get(PATH_LIVENESS_PROBE).then().statusCode(200);
+      }
+    }
+
+    @Test
+    void shouldReportHealthyUpIfConnectedToBroker() {
+      // given
+      final var gateway = cluster.availableGateway();
+      final var gatewayServerSpec =
+          new RequestSpecBuilder()
+              .setContentType(ContentType.JSON)
+              .setBaseUri("http://" + gateway.monitoringAddress())
+              .addFilter(new ResponseLoggingFilter())
+              .addFilter(new RequestLoggingFilter())
+              .build();
+
+      // when - then
+      // most of the health probes use a delayed health indicator which is scheduled at a fixed
+      // rate of 5 seconds, so it may take up to that and a bit more in the worst case once the
+      // gateway finds the broker
+      try {
+        Awaitility.await("wait until status turns UP")
+            .atMost(Duration.ofSeconds(10))
+            .pollInterval(Duration.ofMillis(100))
+            .untilAsserted(
+                () ->
+                    given()
+                        .spec(gatewayServerSpec)
+                        .when()
+                        .get(PATH_TO_HEALTH_PROBE)
+                        .then()
+                        .body("components.gatewayCluster.status", equalTo("HEALTHY")));
+      } catch (final ConditionTimeoutException e) {
+        // it can happen that a single request takes too long and causes awaitility to timeout,
+        // in which case we want to try a second time to run the request without timeout
+        given()
+            .spec(gatewayServerSpec)
+            .when()
+            .get(PATH_TO_HEALTH_PROBE)
+            .then()
+            .body("components.gatewayCluster.status", equalTo("HEALTHY"));
       }
     }
   }
@@ -122,6 +164,45 @@ public class GatewayHealthProbeIntegrationTest {
         // it can happen that a single request takes too long and causes awaitility to timeout,
         // in which case we want to try a second time to run the request without timeout
         given().spec(gatewayServerSpec).when().get(PATH_READINESS_PROBE).then().statusCode(200);
+      }
+    }
+
+    @Test
+    void shouldReportDownUpIfConnectedToBroker() {
+      // given
+      final var gatewayServerSpec =
+          new RequestSpecBuilder()
+              .setContentType(ContentType.JSON)
+              .setBaseUri("http://" + gateway.monitoringAddress())
+              .addFilter(new ResponseLoggingFilter())
+              .addFilter(new RequestLoggingFilter())
+              .build();
+
+      // when - then
+      // most of the health probes use a delayed health indicator which is scheduled at a fixed
+      // rate of 5 seconds, so it may take up to that and a bit more in the worst case once the
+      // gateway finds the broker
+      try {
+        Awaitility.await("wait until status turns UP")
+            .atMost(Duration.ofSeconds(10))
+            .pollInterval(Duration.ofMillis(100))
+            .untilAsserted(
+                () ->
+                    given()
+                        .spec(gatewayServerSpec)
+                        .when()
+                        .get(PATH_TO_HEALTH_PROBE)
+                        .then()
+                        .body("components.gatewayCluster.status", equalTo("DOWN")));
+      } catch (final ConditionTimeoutException e) {
+        // it can happen that a single request takes too long and causes awaitility to timeout,
+        // in which case we want to try a second time to run the request without timeout
+        given()
+            .spec(gatewayServerSpec)
+            .when()
+            .get(PATH_TO_HEALTH_PROBE)
+            .then()
+            .body("components.gatewayCluster.status", equalTo("DOWN"));
       }
     }
   }
