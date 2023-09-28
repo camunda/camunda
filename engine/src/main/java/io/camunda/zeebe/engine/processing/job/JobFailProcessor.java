@@ -102,6 +102,7 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
       final String errorMessage = String.format(NO_JOB_FOUND_MESSAGE, jobKey);
       rejectionWriter.appendRejection(record, RejectionType.NOT_FOUND, errorMessage);
       responseWriter.writeRejectionOnCommand(record, RejectionType.NOT_FOUND, errorMessage);
+      return;
     }
 
     failedJob.setRetries(retries);
