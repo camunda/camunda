@@ -30,6 +30,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.util.collection.Maps;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -142,6 +143,34 @@ public final class JobFailIncidentTest {
         .hasElementId("failingTask")
         .hasElementInstanceKey(activityEvent.getKey())
         .hasVariableScopeKey(activityEvent.getKey());
+  }
+
+  @Test
+  public void shouldCreateIncidentIfJobHasNoRetriesLeftWithCustomTenant() {
+    // given
+    final String processId = "test-process";
+    final String tenantId = "acme";
+    final Record<JobRecordValue> jobRecord =
+        ENGINE.createJob(JOB_TYPE, processId, Collections.emptyMap(), tenantId);
+    final long piKey = jobRecord.getValue().getProcessInstanceKey();
+
+    // when
+    ENGINE
+        .job()
+        .withType(JOB_TYPE)
+        .withRetries(0)
+        .ofInstance(piKey)
+        .withAuthorizedTenantIds(tenantId)
+        .fail();
+
+    // then
+    final Record<IncidentRecordValue> incidentEvent =
+        RecordingExporter.incidentRecords()
+            .withIntent(IncidentIntent.CREATED)
+            .withProcessInstanceKey(piKey)
+            .getFirst();
+
+    assertThat(incidentEvent.getValue()).hasTenantId(tenantId);
   }
 
   @Test

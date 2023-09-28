@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.entry;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
@@ -20,6 +21,7 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.collection.Maps;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -31,28 +33,26 @@ import org.junit.Test;
 public final class ConditionIncidentTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
-
+  private static final BpmnModelInstance PROCESS = Bpmn.createExecutableProcess("process")
+      .startEvent()
+      .exclusiveGateway("xor")
+      .sequenceFlowId("s1")
+      .conditionExpression("foo < 5")
+      .endEvent()
+      .moveToLastGateway()
+      .sequenceFlowId("s2")
+      .conditionExpression("foo > 10")
+      .endEvent()
+      .done();
   @Rule
   public RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
 
   @BeforeClass
   public static void init() {
-
     ENGINE
         .deployment()
-        .withXmlResource(
-            Bpmn.createExecutableProcess("process")
-                .startEvent()
-                .exclusiveGateway("xor")
-                .sequenceFlowId("s1")
-                .conditionExpression("foo < 5")
-                .endEvent()
-                .moveToLastGateway()
-                .sequenceFlowId("s2")
-                .conditionExpression("foo > 10")
-                .endEvent()
-                .done())
+        .withXmlResource(PROCESS)
         .deploy();
   }
 
@@ -86,7 +86,8 @@ public final class ConditionIncidentTest {
         .hasProcessInstanceKey(failingEvent.getValue().getProcessInstanceKey())
         .hasElementId(failingEvent.getValue().getElementId())
         .hasElementInstanceKey(failingEvent.getKey())
-        .hasVariableScopeKey(failingEvent.getKey());
+        .hasVariableScopeKey(failingEvent.getKey())
+        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   }
 
   @Test
@@ -119,7 +120,33 @@ public final class ConditionIncidentTest {
         .hasProcessInstanceKey(failingEvent.getValue().getProcessInstanceKey())
         .hasElementId(failingEvent.getValue().getElementId())
         .hasElementInstanceKey(failingEvent.getKey())
-        .hasVariableScopeKey(failingEvent.getKey());
+        .hasVariableScopeKey(failingEvent.getKey())
+        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  }
+
+  @Test
+  public void shouldCreateIncidentOnConditionCatchEventWithCustomTenant() {
+    // given
+    final String tenantId = "acme";
+    ENGINE
+        .deployment()
+        .withXmlResource(PROCESS)
+        .withTenantId(tenantId)
+        .deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId("process").withVariable("foo", "bar").withTenantId(tenantId).create();
+
+    // then
+    final Record<IncidentRecordValue> incidentEvent =
+        RecordingExporter.incidentRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withIntent(IncidentIntent.CREATED)
+            .getFirst();
+
+    Assertions.assertThat(incidentEvent.getValue())
+        .hasTenantId(tenantId);
   }
 
   @Test
