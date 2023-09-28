@@ -70,11 +70,11 @@ jobs:
           - branch: 'main'
             generation_template: 'Zeebe SNAPSHOT'
           - branch: ${{ format('stable/{0}', needs.get-versions.outputs.latest-major-minor-version) }}
-            generation_template: ${{ format('Camunda Platform {0}', needs.get-versions.outputs.latest-major-minor-patch-version) }}
+            generation_template: ${{ format('Camunda {0}', needs.get-versions.outputs.latest-major-minor-patch-version) }}
           - branch: ${{ format('stable/{0}', needs.get-versions.outputs.previous-latest-major-minor-version) }}
-            generation_template: ${{ format('Camunda Platform {0}', needs.get-versions.outputs.previous-latest-major-minor-patch-version) }}
+            generation_template: ${{ format('Camunda {0}', needs.get-versions.outputs.previous-latest-major-minor-patch-version) }}
           - branch: ${{ format('stable/{0}', needs.get-versions.outputs.previous-previous-latest-major-minor-version) }}
-            generation_template: ${{ format('Camunda Platform {0}', needs.get-versions.outputs.previous-previous-latest-major-minor-patch-version) }}
+            generation_template: ${{ format('Camunda {0}', needs.get-versions.outputs.previous-previous-latest-major-minor-patch-version) }}
     name: Weekly E2E
     uses: ./.github/workflows/e2e-testbench.yaml
     with:
