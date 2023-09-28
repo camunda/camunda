@@ -17,7 +17,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import io.camunda.operate.entities.ErrorType;
 import io.camunda.operate.entities.FlowNodeType;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.util.*;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentDto;
@@ -29,7 +28,6 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.util.List;
 import java.util.Optional;
 
-import org.elasticsearch.client.RestHighLevelClient;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;

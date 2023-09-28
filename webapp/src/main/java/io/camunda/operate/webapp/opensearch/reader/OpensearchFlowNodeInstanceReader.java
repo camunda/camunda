@@ -450,7 +450,7 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader i
     var levelsAgg = response.aggregations().get(LEVELS_AGG_NAME).lterms();
 
     if (levelsAgg != null && levelsAgg.buckets() != null && !levelsAgg.buckets().array().isEmpty()) {
-      var bucketCurrentLevel = levelsAgg.buckets().array().get(flowNodeInstance.getLevel()-1);
+      var bucketCurrentLevel = getBucketFromLevel(levelsAgg.buckets(), flowNodeInstance.getLevel());
       if (bucketCurrentLevel.docCount() == 1) {
         result.setInstanceMetadata(buildInstanceMetadata(flowNodeInstance));
         result.setFlowNodeInstanceId(flowNodeInstance.getId());
@@ -470,7 +470,11 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader i
       }
     }
 
-      return result;
+    return result;
+  }
+
+  private LongTermsBucket getBucketFromLevel(Buckets<LongTermsBucket> buckets, final int level) {
+    return buckets.array().stream().filter(b -> Integer.valueOf(b.key()).intValue() == level).findFirst().get();
   }
 
   private void searchForIncidentsByFlowNodeIdAndType(FlowNodeMetadataDto flowNodeMetadata, final String processInstanceId,
@@ -582,7 +586,7 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader i
     final List<FlowNodeInstanceBreadcrumbEntryDto> breadcrumb = new ArrayList<>();
     final FlowNodeType firstBucketFlowNodeType = getFirstBucketFlowNodeType(buckets);
     if ((firstBucketFlowNodeType != null && firstBucketFlowNodeType.equals(FlowNodeType.MULTI_INSTANCE_BODY))
-      || buckets.array().get(currentInstanceLevel-1).docCount() > 1) {
+      || getBucketFromLevel(buckets, currentInstanceLevel).docCount() > 1) {
       for (LongTermsBucket levelBucket : buckets.array()) {
         final TopHitsAggregate levelTopHits = levelBucket.aggregations().get(LEVELS_TOP_HITS_AGG_NAME).topHits();
         record Result(Integer level, String flowNodeId, String type){}

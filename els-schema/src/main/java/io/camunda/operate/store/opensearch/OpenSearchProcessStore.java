@@ -278,9 +278,14 @@ public class OpenSearchProcessStore implements ProcessStore {
         )
       ))
       .source(sourceInclude(TREE_PATH));
-    final BulkRequest.Builder bulk = new BulkRequest.Builder();
 
-    richOpenSearchClient.doc().scrollValues(searchRequestBuilder, Result.class).forEach(r ->
+    var results = richOpenSearchClient.doc().scrollValues(searchRequestBuilder, Result.class);
+    if(results.isEmpty()){
+      logger.debug("No results in deleteProcessInstanceFromTreePath for process instance key {}", processInstanceKey);
+      return;
+    }
+    var bulk = new BulkRequest.Builder();
+    results .forEach(r ->
       bulk.operations(op ->
         op.update(upd -> {
           String newTreePath = new TreePath(r.treePath()).removeProcessInstance(processInstanceKey).toString();
@@ -292,7 +297,6 @@ public class OpenSearchProcessStore implements ProcessStore {
         })
       )
     );
-
     richOpenSearchClient.batch().bulk(bulk);
   }
 }

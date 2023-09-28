@@ -20,9 +20,9 @@ import io.camunda.operate.webapp.reader.OperationReader;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
-import org.opensearch.client.opensearch._types.SortOptions;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
+import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -94,14 +94,29 @@ public class OpensearchListViewReader implements ListViewReader {
     return null;
   }
 
-  private SortOptions getSortOptions(ListViewRequestDto request) {
+  private void applySorting(SearchRequest.Builder searchRequest, ListViewRequestDto request){
     final String sortBy = getSortBy(request);
     final boolean directSorting = request.getSearchAfter() != null || request.getSearchBefore() == null;
-    final SortOrder directOrder = "asc".equals(request.getSorting().getSortOrder()) ? SortOrder.Asc : SortOrder.Desc;
+    if (request.getSorting() != null) {
+      final SortOrder directOrder = "asc".equals(request.getSorting().getSortOrder()) ? SortOrder.Asc : SortOrder.Desc;
+      if (directSorting) {
+        searchRequest.sort(sortOptions(sortBy, directOrder, "_last"));
+      } else {
+        searchRequest.sort(sortOptions(sortBy, reverseOrder(directOrder), "_first"));
+      }
+    }
+
+    Object[] querySearchAfter;
     if (directSorting) {
-      return sortOptions(sortBy, directOrder, "_last");
+      searchRequest.sort(sortOptions(ListViewTemplate.KEY, SortOrder.Asc));
+      querySearchAfter = request.getSearchAfter(objectMapper);
     } else {
-      return sortOptions(sortBy, reverseOrder(directOrder), "_first");
+      searchRequest.sort(sortOptions(ListViewTemplate.KEY, SortOrder.Desc));
+      querySearchAfter = request.getSearchBefore(objectMapper);
+    }
+    searchRequest.size(request.getPageSize());
+    if(querySearchAfter != null) {
+      searchRequest.searchAfter(CollectionUtil.toSafeListOfStrings(querySearchAfter));
     }
   }
 
@@ -119,9 +134,7 @@ public class OpensearchListViewReader implements ListViewReader {
 
     var searchRequestBuilder = searchRequestBuilder(listViewTemplate, queryType).query(query);
 
-    if (processInstanceRequest.getSorting() != null) {
-      searchRequestBuilder.sort(getSortOptions(processInstanceRequest));
-    }
+    applySorting(searchRequestBuilder, processInstanceRequest);
 
     searchRequestBuilder.size(processInstanceRequest.getPageSize());
 

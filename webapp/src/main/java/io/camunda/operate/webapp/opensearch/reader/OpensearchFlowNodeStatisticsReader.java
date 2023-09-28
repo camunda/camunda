@@ -33,6 +33,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 
@@ -57,6 +58,9 @@ public class OpensearchFlowNodeStatisticsReader implements FlowNodeStatisticsRea
 
   @Override
   public Collection<FlowNodeStatisticsDto> getFlowNodeStatistics(ListViewQueryDto query) {
+    return List.of();
+    //TODO: Use a different approach - Opensearch Java client doesn't support parent aggregations
+    /*
     SearchRequest.Builder searchRequest;
 
     if( !query.isFinished()) {
@@ -67,6 +71,8 @@ public class OpensearchFlowNodeStatisticsReader implements FlowNodeStatisticsRea
 
     Map<String, FlowNodeStatisticsDto> statisticsMap = runQueryAndCollectStats(searchRequest);
     return statisticsMap.values();
+
+     */
   }
 
   private SearchRequest.Builder createQuery(ListViewQueryDto query, RequestDSL.QueryType queryType){
