@@ -16,9 +16,10 @@ import {pages} from 'modules/routing';
 import {logger} from 'modules/utils/logger';
 import {tracking} from 'modules/tracking';
 import {useStartProcess} from 'modules/mutations/useStartProcess';
-import {Process} from 'modules/types';
+import {Process, Task} from 'modules/types';
 import {FormModal} from './FormModal';
 import {getProcessDisplayName} from 'modules/utils/getProcessDisplayName';
+import {IS_MULTI_TENANCY_ENABLED} from 'modules/featureFlags';
 
 type LoadingStatus = InlineLoadingStatus | 'active-tasks';
 
@@ -56,12 +57,14 @@ type Props = {
   isFirst: boolean;
   isStartButtonDisabled: boolean;
   'data-testid'?: string;
+  tenantId?: Task['tenantId'];
 };
 
 const ProcessTile: React.FC<Props> = ({
   process,
   isFirst,
   isStartButtonDisabled,
+  tenantId,
   ...props
 }) => {
   const {mutateAsync: startProcess, data} = useStartProcess();
@@ -70,6 +73,8 @@ const ProcessTile: React.FC<Props> = ({
   const displayName = getProcessDisplayName(process);
   const navigate = useNavigate();
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
+  const isMultiTenancyEnabled =
+    IS_MULTI_TENANCY_ENABLED && window.clientConfig?.isMultiTenancyEnabled;
 
   useEffect(() => {
     function handleMutationSuccess() {
@@ -175,7 +180,10 @@ const ProcessTile: React.FC<Props> = ({
                   eventName: 'process-start-clicked',
                 });
                 try {
-                  await startProcess({bpmnProcessId});
+                  await startProcess({
+                    bpmnProcessId,
+                    tenantId,
+                  });
                 } catch (error) {
                   logger.error(error);
                   setStatus('error');
@@ -190,12 +198,21 @@ const ProcessTile: React.FC<Props> = ({
               eventName: 'process-start-failed',
             });
             setStatus('inactive');
-            notificationsStore.displayNotification({
-              isDismissable: false,
-              kind: 'error',
-              title: 'Process start failed',
-              subtitle: displayName,
-            });
+            if (isMultiTenancyEnabled && tenantId === undefined) {
+              notificationsStore.displayNotification({
+                isDismissable: false,
+                kind: 'error',
+                title: 'Process start failed. Please select a tenant.',
+                subtitle: displayName,
+              });
+            } else {
+              notificationsStore.displayNotification({
+                isDismissable: false,
+                kind: 'error',
+                title: 'Process start failed',
+                subtitle: displayName,
+              });
+            }
           }}
           inlineLoadingProps={{
             description: getAsyncButtonDescription(status),
@@ -220,9 +237,15 @@ const ProcessTile: React.FC<Props> = ({
             setIsFormModalOpen(false);
           }}
           onSubmit={async (variables) => {
-            await startProcess({bpmnProcessId, variables});
+            await startProcess({
+              bpmnProcessId,
+              variables,
+              tenantId,
+            });
             setIsFormModalOpen(false);
           }}
+          isMultiTenancyEnabled={isMultiTenancyEnabled}
+          tenantId={tenantId}
         />
       )}
     </Container>

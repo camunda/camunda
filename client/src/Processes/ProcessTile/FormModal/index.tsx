@@ -25,9 +25,18 @@ type Props = {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (variables: Variable[]) => Promise<void>;
+  isMultiTenancyEnabled: boolean;
+  tenantId?: string;
 };
 
-const FormModal: React.FC<Props> = ({isOpen, onClose, process, onSubmit}) => {
+const FormModal: React.FC<Props> = ({
+  isOpen,
+  onClose,
+  process,
+  onSubmit,
+  isMultiTenancyEnabled,
+  tenantId,
+}) => {
   const formManagerRef = useRef<FormManager | null>(null);
   const processDisplayName = getProcessDisplayName(process);
   const {data, fetchStatus, status} = useForm(
@@ -45,6 +54,8 @@ const FormModal: React.FC<Props> = ({isOpen, onClose, process, onSubmit}) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasSubmissionFailed, setHasSubmissionFailed] = useState(false);
   const {schema} = data ?? {};
+  const prioritizeTenantValidation =
+    isMultiTenancyEnabled && tenantId === undefined;
 
   return createPortal(
     <>
@@ -123,16 +134,49 @@ const FormModal: React.FC<Props> = ({isOpen, onClose, process, onSubmit}) => {
                     setIsSubmitting(false);
                   }}
                 />
-                {hasSubmissionFailed ? (
-                  <InlineNotification
-                    kind="error"
-                    role="alert"
-                    hideCloseButton
-                    lowContrast
-                    title="Something went wrong"
-                    subtitle="Form could not be submitted. Please try again later."
-                  />
-                ) : null}
+                {match({
+                  hasSubmissionFailed,
+                  prioritizeTenantValidation,
+                })
+                  .with(
+                    {
+                      hasSubmissionFailed: true,
+                      prioritizeTenantValidation: true,
+                    },
+                    () => (
+                      <InlineNotification
+                        kind="error"
+                        role="alert"
+                        hideCloseButton
+                        lowContrast
+                        title="Something went wrong"
+                        subtitle="You must first select a tenant to start a process."
+                      />
+                    ),
+                  )
+                  .with(
+                    {
+                      hasSubmissionFailed: true,
+                      prioritizeTenantValidation: false,
+                    },
+                    () => (
+                      <InlineNotification
+                        kind="error"
+                        role="alert"
+                        hideCloseButton
+                        lowContrast
+                        title="Something went wrong"
+                        subtitle="Form could not be submitted. Please try again later."
+                      />
+                    ),
+                  )
+                  .with(
+                    {
+                      hasSubmissionFailed: false,
+                    },
+                    () => null,
+                  )
+                  .exhaustive()}
               </FormContainer>
             ),
           )

@@ -223,6 +223,7 @@ const Processes: React.FC = observer(() => {
                       !hasPermission
                     }
                     data-testid="process-tile"
+                    tenantId={getParam('tenantId', searchParams)}
                   />
                 ))}
           </ProcessesContainer>

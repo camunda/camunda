@@ -8,19 +8,22 @@
 import {useMutation} from '@tanstack/react-query';
 import {api} from 'modules/api';
 import {request, RequestError} from 'modules/request';
-import {Process, ProcessInstance, Variable} from 'modules/types';
+import {Process, ProcessInstance, Task, Variable} from 'modules/types';
 
 function useStartProcess() {
   return useMutation<
     ProcessInstance,
     RequestError | Error,
-    Pick<Process, 'bpmnProcessId'> & {variables?: Variable[]}
+    Pick<Process, 'bpmnProcessId'> & {variables?: Variable[]} & {
+      tenantId?: Task['tenantId'];
+    }
   >({
-    mutationFn: async ({bpmnProcessId, variables = []}) => {
+    mutationFn: async ({bpmnProcessId, variables = [], tenantId}) => {
       const {response, error} = await request(
         api.startProcess({
           bpmnProcessId,
           variables,
+          tenantId,
         }),
       );
 

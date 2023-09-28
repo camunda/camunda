@@ -33,21 +33,32 @@ const api = {
         'Content-Type': 'application/json',
       },
     }),
-  startProcess: (payload: {bpmnProcessId: string; variables: Variable[]}) => {
-    const {bpmnProcessId, variables} = payload;
-    return new Request(
-      mergePathname(BASENAME, `/v1/internal/processes/${bpmnProcessId}/start`),
-      {
-        ...BASE_REQUEST_OPTIONS,
-        method: 'PATCH',
-        body: JSON.stringify({variables}),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      },
+  startProcess: (payload: {
+    bpmnProcessId: string;
+    variables: Variable[];
+    tenantId?: Task['tenantId'];
+  }) => {
+    const {bpmnProcessId, variables, tenantId} = payload;
+    const url = new URL(window.location.origin);
+    url.pathname = mergePathname(
+      BASENAME,
+      `/v1/internal/processes/${bpmnProcessId}/start`,
     );
+
+    if (tenantId !== undefined) {
+      url.searchParams.set('tenantId', tenantId);
+    }
+
+    return new Request(url, {
+      ...BASE_REQUEST_OPTIONS,
+      method: 'PATCH',
+      body: JSON.stringify({variables}),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
   },
-  getProcesses: (params: {query?: string; tenantId?: string}) => {
+  getProcesses: (params: {query?: string; tenantId?: Task['tenantId']}) => {
     const url = new URL(window.location.origin);
     url.pathname = mergePathname(BASENAME, '/v1/internal/processes');
 

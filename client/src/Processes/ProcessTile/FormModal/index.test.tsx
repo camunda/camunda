@@ -48,6 +48,7 @@ describe('<FormModal />', () => {
         isOpen
         onClose={() => Promise.resolve()}
         onSubmit={mockOnSubmit}
+        isMultiTenancyEnabled={false}
       />,
       {
         wrapper: Wrapper,
@@ -98,6 +99,7 @@ describe('<FormModal />', () => {
         isOpen
         onClose={mockOnClose}
         onSubmit={() => Promise.resolve()}
+        isMultiTenancyEnabled={false}
       />,
       {
         wrapper: Wrapper,
@@ -136,6 +138,7 @@ describe('<FormModal />', () => {
         isOpen
         onClose={() => Promise.resolve()}
         onSubmit={() => Promise.resolve()}
+        isMultiTenancyEnabled={false}
       />,
       {
         wrapper: Wrapper,
@@ -167,6 +170,7 @@ describe('<FormModal />', () => {
         isOpen
         onClose={() => Promise.resolve()}
         onSubmit={() => Promise.resolve()}
+        isMultiTenancyEnabled={false}
       />,
       {
         wrapper: Wrapper,
@@ -202,6 +206,7 @@ describe('<FormModal />', () => {
         isOpen
         onClose={() => Promise.resolve()}
         onSubmit={mockOnSubmit}
+        isMultiTenancyEnabled={false}
       />,
       {
         wrapper: Wrapper,
@@ -234,5 +239,96 @@ describe('<FormModal />', () => {
         'Form could not be submitted. Please try again later.',
       ),
     ).toBeInTheDocument();
+  });
+
+  it('should handle missing tenant', async () => {
+    nodeMockServer.use(
+      rest.get('/v1/forms/:formId', (_, res, ctx) => {
+        return res(ctx.json(formMocks.form));
+      }),
+    );
+
+    const mockFailOnSubmit = jest.fn(() => {
+      throw new Error('Mock error');
+    });
+    const mockSuccessOnSubmit = jest.fn();
+
+    const {user, rerender} = render(
+      <FormModal
+        process={createMockProcess('process-0')}
+        isOpen
+        onClose={() => Promise.resolve()}
+        onSubmit={mockFailOnSubmit}
+        isMultiTenancyEnabled
+        tenantId={undefined}
+      />,
+      {
+        wrapper: Wrapper,
+      },
+    );
+
+    await waitForElementToBeRemoved(screen.getByTestId('form-skeleton'));
+
+    await user.type(
+      screen.getByRole('textbox', {name: /my variable \*/i}),
+      'var1',
+    );
+    await user.type(
+      screen.getByRole('textbox', {
+        name: /is cool\?/i,
+      }),
+      'Yes',
+    );
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: /start process/i,
+      }),
+    );
+
+    expect(
+      within(screen.getByRole('alert')).getByText('Something went wrong'),
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByRole('alert')).getByText(
+        'You must first select a tenant to start a process.',
+      ),
+    ).toBeInTheDocument();
+
+    rerender(
+      <FormModal
+        process={createMockProcess('process-0')}
+        isOpen
+        onClose={() => Promise.resolve()}
+        onSubmit={mockSuccessOnSubmit}
+        isMultiTenancyEnabled
+        tenantId="tenantA"
+      />,
+    );
+
+    await user.type(
+      screen.getByRole('textbox', {name: /my variable \*/i}),
+      'var1',
+    );
+    await user.type(
+      screen.getByRole('textbox', {
+        name: /is cool\?/i,
+      }),
+      'Yes',
+    );
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: /start process/i,
+      }),
+    );
+
+    expect(
+      screen.getByRole('button', {
+        name: /start process/i,
+      }),
+    ).toBeDisabled();
+    expect(screen.getByTestId('loading-spinner')).toBeInTheDocument();
+    expect(mockSuccessOnSubmit).toHaveBeenCalled();
+
+    await waitForElementToBeRemoved(screen.getByTestId('loading-spinner'));
   });
 });
