@@ -30,5 +30,6 @@ public class MultiTenancyMigration implements MigrationTask {
     final var migrationState = processingState.getMigrationState();
     migrationState.migrateProcessStateForMultiTenancy();
     migrationState.migrateDecisionStateForMultiTenancy();
+    migrationState.migrateMessageStateForMultiTenancy();
   }
 }

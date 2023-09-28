@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.state.migration.to_8_3;
 
+import static io.camunda.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -25,7 +26,10 @@ import io.camunda.zeebe.engine.state.deployment.PersistedDecision;
 import io.camunda.zeebe.engine.state.deployment.PersistedProcess.PersistedProcessState;
 import io.camunda.zeebe.engine.state.immutable.MigrationState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.engine.state.message.DbMessageState;
+import io.camunda.zeebe.engine.state.message.StoredMessage;
 import io.camunda.zeebe.engine.state.migration.to_8_3.legacy.LegacyDecisionState;
+import io.camunda.zeebe.engine.state.migration.to_8_3.legacy.LegacyMessageState;
 import io.camunda.zeebe.engine.state.migration.to_8_3.legacy.LegacyProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
@@ -35,9 +39,11 @@ import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -505,6 +511,73 @@ public class MultiTenancyMigrationTest {
       assertThat(persistedDecision.getDecisionKey()).isEqualTo(456L);
       assertThat(persistedDecision.getVersion()).isEqualTo(1);
       assertThat(persistedDecision.getTenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    }
+  }
+
+  @Nested
+  @ExtendWith(ProcessingStateExtension.class)
+  class MigrateMessageStateForMultiTenancyTest {
+
+    private ZeebeDb<ZbColumnFamilies> zeebeDb;
+    private MutableProcessingState processingState;
+    private TransactionContext transactionContext;
+
+    private LegacyMessageState legacyState;
+    private DbMessageState messageState;
+
+    @BeforeEach
+    void setup() {
+      legacyState = new LegacyMessageState(zeebeDb, transactionContext, 1);
+      messageState = new DbMessageState(zeebeDb, transactionContext, 1);
+    }
+
+    @Test
+    void shouldMigrateMessagesColumnFamily() {
+      // given
+      final var messageRecord =
+          new MessageRecord()
+              .setName("messageName")
+              .setCorrelationKey("correlationKey")
+              .setTimeToLive(1000L)
+              .setDeadline(2000L)
+              .setVariables(asMsgPack("foo", "bar"))
+              .setMessageId("messageId");
+      legacyState.put(123, messageRecord);
+
+      // when
+      sut.runMigration(processingState);
+
+      // then
+      final AtomicReference<StoredMessage> message = new AtomicReference<>();
+      messageState.visitMessages(
+          TenantOwned.DEFAULT_TENANT_IDENTIFIER,
+          messageRecord.getNameBuffer(),
+          messageRecord.getCorrelationKeyBuffer(),
+          storedMessage -> {
+            message.set(storedMessage);
+            return false;
+          });
+
+      final var actualMessage = message.get();
+      assertThat(actualMessage).isNotNull();
+      assertThat(actualMessage.getMessageKey()).isEqualTo(123L);
+      assertThat(actualMessage.getMessage())
+          .extracting(
+              MessageRecord::getName,
+              MessageRecord::getCorrelationKey,
+              MessageRecord::getTimeToLive,
+              MessageRecord::getDeadline,
+              MessageRecord::getVariables,
+              MessageRecord::getMessageId,
+              MessageRecord::getTenantId)
+          .containsExactly(
+              messageRecord.getName(),
+              messageRecord.getCorrelationKey(),
+              messageRecord.getTimeToLive(),
+              messageRecord.getDeadline(),
+              messageRecord.getVariables(),
+              messageRecord.getMessageId(),
+              TenantOwned.DEFAULT_TENANT_IDENTIFIER);
     }
   }
 }

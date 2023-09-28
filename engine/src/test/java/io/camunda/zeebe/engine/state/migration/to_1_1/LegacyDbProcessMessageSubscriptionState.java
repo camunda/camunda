@@ -47,7 +47,7 @@ public final class LegacyDbProcessMessageSubscriptionState {
 
     subscriptionColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.PROCESS_SUBSCRIPTION_BY_KEY,
+            ZbColumnFamilies.DEPRECATED_PROCESS_SUBSCRIPTION_BY_KEY,
             transactionContext,
             elementKeyAndMessageName,
             processMessageSubscription);
