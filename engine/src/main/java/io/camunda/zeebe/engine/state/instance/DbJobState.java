@@ -15,12 +15,15 @@ import io.camunda.zeebe.db.impl.DbForeignKey;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
+import io.camunda.zeebe.db.impl.DbTenantAwareKey;
+import io.camunda.zeebe.db.impl.DbTenantAwareKey.PlacementType;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.mutable.MutableJobState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.util.EnsureUtil;
+import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import org.agrona.DirectBuffer;
@@ -44,10 +47,14 @@ public final class DbJobState implements JobState, MutableJobState {
   private final JobStateValue jobState = new JobStateValue();
   private final ColumnFamily<DbForeignKey<DbLong>, JobStateValue> statesJobColumnFamily;
 
-  // type => [key]
+  // [[type, key], tenant_id] => nil
   private final DbString jobTypeKey;
+  private final DbString tenantIdKey;
   private final DbCompositeKey<DbString, DbForeignKey<DbLong>> typeJobKey;
-  private final ColumnFamily<DbCompositeKey<DbString, DbForeignKey<DbLong>>, DbNil>
+  private final DbTenantAwareKey<DbCompositeKey<DbString, DbForeignKey<DbLong>>>
+      tenantAwareTypeJobKey;
+  private final ColumnFamily<
+          DbTenantAwareKey<DbCompositeKey<DbString, DbForeignKey<DbLong>>>, DbNil>
       activatableColumnFamily;
 
   // timeout => key
@@ -76,10 +83,15 @@ public final class DbJobState implements JobState, MutableJobState {
             ZbColumnFamilies.JOB_STATES, transactionContext, fkJob, jobState);
 
     jobTypeKey = new DbString();
+    tenantIdKey = new DbString();
     typeJobKey = new DbCompositeKey<>(jobTypeKey, fkJob);
+    tenantAwareTypeJobKey = new DbTenantAwareKey<>(tenantIdKey, typeJobKey, PlacementType.SUFFIX);
     activatableColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.JOB_ACTIVATABLE, transactionContext, typeJobKey, DbNil.INSTANCE);
+            ZbColumnFamilies.JOB_ACTIVATABLE,
+            transactionContext,
+            tenantAwareTypeJobKey,
+            DbNil.INSTANCE);
 
     deadlineKey = new DbLong();
     deadlineJobKey = new DbCompositeKey<>(deadlineKey, fkJob);
@@ -103,6 +115,7 @@ public final class DbJobState implements JobState, MutableJobState {
   @Override
   public void activate(final long key, final JobRecord record) {
     final DirectBuffer type = record.getTypeBuffer();
+    final String tenantId = record.getTenantId();
     final long deadline = record.getDeadline();
 
     validateParameters(type);
@@ -112,7 +125,7 @@ public final class DbJobState implements JobState, MutableJobState {
 
     updateJobState(State.ACTIVATED);
 
-    makeJobNotActivatable(type);
+    makeJobNotActivatable(type, tenantId);
 
     addJobDeadline(key, deadline);
   }
@@ -147,25 +160,26 @@ public final class DbJobState implements JobState, MutableJobState {
   @Override
   public void disable(final long key, final JobRecord record) {
     updateJob(key, record, State.FAILED);
-    makeJobNotActivatable(record.getTypeBuffer());
+    makeJobNotActivatable(record.getTypeBuffer(), record.getTenantId());
   }
 
   @Override
   public void throwError(final long key, final JobRecord updatedValue) {
     updateJob(key, updatedValue, State.ERROR_THROWN);
-    makeJobNotActivatable(updatedValue.getTypeBuffer());
+    makeJobNotActivatable(updatedValue.getTypeBuffer(), updatedValue.getTenantId());
   }
 
   @Override
   public void delete(final long key, final JobRecord record) {
     final DirectBuffer type = record.getTypeBuffer();
+    final String tenantId = record.getTenantId();
 
     jobKey.wrapLong(key);
     jobsColumnFamily.deleteExisting(jobKey);
 
     statesJobColumnFamily.deleteExisting(fkJob);
 
-    makeJobNotActivatable(type);
+    makeJobNotActivatable(type, tenantId);
 
     removeJobDeadline(key, record.getDeadline());
     removeJobBackoff(key, record.getRecurringTime());
@@ -182,7 +196,7 @@ public final class DbJobState implements JobState, MutableJobState {
       }
     } else {
       updateJob(key, updatedValue, State.FAILED);
-      makeJobNotActivatable(updatedValue.getTypeBuffer());
+      makeJobNotActivatable(updatedValue.getTypeBuffer(), updatedValue.getTenantId());
     }
   }
 
@@ -237,7 +251,7 @@ public final class DbJobState implements JobState, MutableJobState {
   private void createJob(final long key, final JobRecord record, final DirectBuffer type) {
     createJobRecord(key, record);
     initializeJobState();
-    makeJobActivatable(type, key);
+    makeJobActivatable(type, key, record.getTenantId());
   }
 
   private void updateJob(final long key, final JobRecord updatedValue, final State newState) {
@@ -250,7 +264,7 @@ public final class DbJobState implements JobState, MutableJobState {
     updateJobState(newState);
 
     if (newState == State.ACTIVATABLE) {
-      makeJobActivatable(type, key);
+      makeJobActivatable(type, key, updatedValue.getTenantId());
     }
 
     if (newState != State.ACTIVATED) {
@@ -307,14 +321,22 @@ public final class DbJobState implements JobState, MutableJobState {
 
   @Override
   public void forEachActivatableJobs(
-      final DirectBuffer type, final BiFunction<Long, JobRecord, Boolean> callback) {
+      final DirectBuffer type,
+      final List<String> tenantIds,
+      final BiFunction<Long, JobRecord, Boolean> callback) {
     jobTypeKey.wrapBuffer(type);
 
     activatableColumnFamily.whileEqualPrefix(
         jobTypeKey,
-        ((compositeKey, zbNil) -> {
-          final long jobKey = compositeKey.second().inner().getValue();
-          return visitJob(jobKey, callback::apply);
+        ((tenantAwareCompositeKey, zbNil) -> {
+          final DbLong jobKey = tenantAwareCompositeKey.wrappedKey().second().inner();
+          final String tenantId = tenantAwareCompositeKey.tenantKey().toString();
+
+          if (tenantIds.contains(tenantId)) {
+            return visitJob(jobKey.getValue(), callback::apply);
+          }
+          // we want to continue with the iteration
+          return true;
         }));
   }
 
@@ -378,22 +400,25 @@ public final class DbJobState implements JobState, MutableJobState {
     statesJobColumnFamily.update(fkJob, jobState);
   }
 
-  private void makeJobActivatable(final DirectBuffer type, final long key) {
+  private void makeJobActivatable(final DirectBuffer type, final long key, final String tenantId) {
     EnsureUtil.ensureNotNullOrEmpty("type", type);
+    EnsureUtil.ensureNotNullOrEmpty("tenantId", tenantId);
 
     jobTypeKey.wrapBuffer(type);
-
     jobKey.wrapLong(key);
+    tenantIdKey.wrapString(tenantId);
     // Need to upsert here because jobs can be marked as failed (and thus made activatable)
     // without activating them first
-    activatableColumnFamily.upsert(typeJobKey, DbNil.INSTANCE);
+    activatableColumnFamily.upsert(tenantAwareTypeJobKey, DbNil.INSTANCE);
   }
 
-  private void makeJobNotActivatable(final DirectBuffer type) {
+  private void makeJobNotActivatable(final DirectBuffer type, final String tenantId) {
     EnsureUtil.ensureNotNullOrEmpty("type", type);
+    EnsureUtil.ensureNotNullOrEmpty("tenantid", tenantId);
 
     jobTypeKey.wrapBuffer(type);
-    activatableColumnFamily.deleteIfExists(typeJobKey);
+    tenantIdKey.wrapString(tenantId);
+    activatableColumnFamily.deleteIfExists(tenantAwareTypeJobKey);
   }
 
   private void addJobDeadline(final long job, final long deadline) {
