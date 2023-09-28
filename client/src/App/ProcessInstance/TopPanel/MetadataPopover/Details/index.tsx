@@ -64,6 +64,11 @@ const Details: React.FC<Props> = ({metaData, flowNodeId}) => {
             ? {
                 href: window.clientConfig!.tasklistUrl,
                 label: 'Open Tasklist',
+                onClick: () => {
+                  tracking.track({
+                    eventName: 'open-tasklist-link-clicked',
+                  });
+                },
               }
             : undefined
         }

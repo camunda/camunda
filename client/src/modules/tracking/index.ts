@@ -251,6 +251,9 @@ type Events =
       eventName: 'definition-deletion-confirmation';
       resource: 'process' | 'decision';
       version: string;
+    }
+  | {
+      eventName: 'open-tasklist-link-clicked';
     };
 
 const STAGE_ENV = getStage(window.location.host);

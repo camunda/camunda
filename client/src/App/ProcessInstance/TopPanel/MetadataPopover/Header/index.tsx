@@ -11,7 +11,7 @@ import {Header as BaseHeader, Title, Stack} from './styled';
 type Props = {
   variant?: 'default' | 'error';
   title: string;
-  link?: {href: string; label: string};
+  link?: {href: string; label: string; onClick: () => void};
   button?: {
     onClick: () => void;
     label: string;
@@ -31,7 +31,7 @@ const Header: React.FC<Props> = ({
       {(button !== undefined || link !== undefined) && (
         <Stack orientation="horizontal" gap={3}>
           {link && (
-            <Link href={link.href} target="_blank">
+            <Link href={link.href} target="_blank" onClick={link.onClick}>
               {link.label}
             </Link>
           )}
