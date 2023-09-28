@@ -6,6 +6,7 @@
  */
 
 import {test as base} from '@playwright/test';
+import AxeBuilder from '@axe-core/playwright';
 import {Common} from './pages/Common';
 import {Login} from './pages/Login';
 import {Processes} from './pages/Processes';
@@ -35,6 +36,7 @@ const authFile = 'playwright/.auth/user.json';
 
 const test = base.extend<
   {
+    makeAxeBuilder: () => AxeBuilder;
     processesPage: Processes;
     dashboardPage: Dashboard;
     processInstancePage: ProcessInstance;
@@ -75,6 +77,10 @@ const test = base.extend<
     },
     {scope: 'worker'},
   ],
+  makeAxeBuilder: async ({page}, use) => {
+    const makeAxeBuilder = () => new AxeBuilder({page});
+    await use(makeAxeBuilder);
+  },
   processesPage: async ({page}, use) => {
     await use(new Processes(page));
   },

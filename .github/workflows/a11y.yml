@@ -1,4 +1,4 @@
-name: Visual regression tests
+name: a11y tests
 on: push
 
 jobs:
@@ -21,13 +21,13 @@ jobs:
         run: yarn
       - name: Build frontend
         working-directory: ./client
-        run: yarn build:visual-regression
+        run: yarn build
       - name: Start server
         working-directory: ./client
         run: yarn start:visual-regression &
-      - name: Run Playwright tests
+      - name: Run A11y tests
         working-directory: ./client
-        run: yarn playwright e2e-playwright/visual
+        run: yarn playwright e2e-playwright/a11y
       - uses: actions/upload-artifact@v3
         if: always()
         with:
