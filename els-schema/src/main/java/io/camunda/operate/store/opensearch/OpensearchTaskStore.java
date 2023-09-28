@@ -9,7 +9,6 @@ package io.camunda.operate.store.opensearch;
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.store.TaskStore;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
-import org.opensearch.client.opensearch.tasks.TaskExecutingNode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -19,19 +18,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
-import static io.camunda.operate.store.elasticsearch.ElasticsearchTaskStore.SYSTEM_TASKS_INDEX;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.term;
-import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
-import static io.camunda.operate.util.ExceptionHelper.withIOException;
-
 @Component
 @Conditional(OpensearchCondition.class)
 public class OpensearchTaskStore implements TaskStore {
-  int MAX_TASKS_ENTRIES = 2_000;
 
   String DESCRIPTION_PREFIX_FROM_INDEX = "reindex from [";
   String DESCRIPTION_PREFIX_TO_INDEX = "to [";
-  String TASK_ACTION = "task.action";
   String TASK_ACTION_INDICES_REINDEX = "indices:data/write/reindex";
 
   @Autowired
@@ -39,22 +31,17 @@ public class OpensearchTaskStore implements TaskStore {
 
   @Override
   public List<String> getRunningReindexTasksIdsFor(String fromIndex, String toIndex) throws IOException {
-    if(! withIOException(() -> richOpenSearchClient.index().indexExists(SYSTEM_TASKS_INDEX)) || fromIndex == null || toIndex == null) {
+    if(fromIndex == null || toIndex == null) {
       return List.of();
     }
 
+    var id2taskInfo = richOpenSearchClient.task().tasksWithActions(List.of(TASK_ACTION_INDICES_REINDEX));
     Function<String, Boolean> descriptionContainsReindexFromTo = desc -> desc != null &&
       desc.contains(DESCRIPTION_PREFIX_FROM_INDEX + fromIndex) &&
       desc.contains(DESCRIPTION_PREFIX_TO_INDEX + toIndex);
 
-    var searchRequestBuilder = searchRequestBuilder(SYSTEM_TASKS_INDEX)
-      .query(term(TASK_ACTION, TASK_ACTION_INDICES_REINDEX))
-      .size(MAX_TASKS_ENTRIES);
-
-    return withIOException(() -> richOpenSearchClient.doc().searchValues(searchRequestBuilder, TaskExecutingNode.class))
-      .stream()
-      .flatMap(taskNode -> taskNode.tasks().entrySet().stream())
-      .filter( idState -> descriptionContainsReindexFromTo.apply(idState.getValue().description()))
+    return id2taskInfo.entrySet().stream()
+      .filter( id2TaskInfo -> descriptionContainsReindexFromTo.apply(id2TaskInfo.getValue().description()))
       .map(Map.Entry::getKey)
       .toList();
   }

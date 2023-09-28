@@ -13,10 +13,13 @@ import net.jodah.failsafe.function.CheckedSupplier;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch.tasks.GetTasksResponse;
+import org.opensearch.client.opensearch.tasks.Info;
 import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Predicate;
 
 import static io.camunda.operate.util.ExceptionHelper.withIOException;
@@ -87,6 +90,10 @@ public abstract class OpenSearchRetryOperation extends OpenSearchSyncOperation {
 
   protected GetTasksResponse task(String id) throws IOException {
     return openSearchClient.tasks().get(t -> t.taskId(id));
+  }
+
+  protected Map<String, Info> tasksWithActions(List<String> actions) throws IOException {
+    return openSearchClient.tasks().list(l -> l.actions(actions)).tasks();
   }
 
   protected GetTasksResponse waitTaskCompletion(String taskId) {
