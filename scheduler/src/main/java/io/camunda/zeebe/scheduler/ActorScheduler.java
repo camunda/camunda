@@ -103,10 +103,23 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
 
   public static class ActorSchedulerBuilder {
 
-    public static final long DEFAULT_MAX_SPINS = 100;
-    public static final long DEFAULT_MAX_YIELDS = 100;
-    public static final long DEFAULT_MIN_PARK_PERIOD_NS = 1;
-    public static final long DEFAULT_MAX_PARK_PERIOD_NS = 1_000_000;
+    /**
+     * @see BackoffIdleStrategy#DEFAULT_MAX_SPINS
+     */
+    public static final long DEFAULT_MAX_SPINS = 10;
+
+    /**
+     * @see BackoffIdleStrategy#DEFAULT_MAX_YIELDS
+     */
+    public static final long DEFAULT_MAX_YIELDS = 5;
+
+    /**
+     * @see BackoffIdleStrategy#DEFAULT_MIN_PARK_PERIOD_NS
+     */
+    public static final long DEFAULT_MIN_PARK_PERIOD_NS = 1000;
+
+    /** 20 ms instead of {@link BackoffIdleStrategy#DEFAULT_MAX_PARK_PERIOD_NS}. */
+    public static final long DEFAULT_MAX_PARK_PERIOD_NS = 20_000_000;
 
     private String schedulerName = "";
     private ActorClock actorClock;
