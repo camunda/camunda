@@ -224,6 +224,19 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     replicationMetrics.setAppendIndex(raftLog.getLastIndex());
     lastHeartbeat = System.currentTimeMillis();
 
+    if (!raftLog.isEmpty() && term == 0) {
+      // This will only happen when metastore is empty because the node has just restored from a
+      // backup. Backup only contains the logs. Other case, where this can happen is when the meta
+      // file was manually deleted to recover from an unexpected bug.
+      // In both cases, we should not restart the term from 0 because the assumption in raft is that
+      // the term always increase. After restore, it is safe to restart the term at the last log's
+      // term. During the first election, the term will be incremented by 1.
+      // In the second case, it is possible that the actual term is higher. But it is still safe to
+      // set it to last log's term because the actual term will be set when this node gets the first
+      // message from other healthy replicas.
+      setTerm(raftLog.getLastEntry().term());
+    }
+
     // Register protocol listeners.
     registerHandlers(protocol);
     started = true;
