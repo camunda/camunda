@@ -43,7 +43,7 @@ import org.camunda.optimize.service.es.schema.index.events.EventIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.EsHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.service.util.configuration.elasticsearch.ElasticsearchConnectionNodeConfiguration;
+import org.camunda.optimize.service.util.configuration.elasticsearch.DatabaseConnectionNodeConfiguration;
 import org.camunda.optimize.service.util.mapper.CustomOffsetDateTimeDeserializer;
 import org.camunda.optimize.service.util.mapper.CustomOffsetDateTimeSerializer;
 import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
@@ -209,7 +209,7 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
       prefixAwareRestHighLevelClient = CLIENT_CACHE.get(MOCKSERVER_CLIENT_KEY);
     } else {
       final ConfigurationService configurationService = createConfigurationService();
-      final ElasticsearchConnectionNodeConfiguration esConfig =
+      final DatabaseConnectionNodeConfiguration esConfig =
         configurationService.getFirstElasticsearchConnectionNode();
       esConfig.setHost(MockServerUtil.MOCKSERVER_HOST);
       esConfig.setHttpPort(mockServerClient.getLocalPort());
@@ -755,7 +755,7 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
 
   private static ClientAndServer initMockServer() {
     log.debug("Setting up ES MockServer on port {}", IntegrationTestConfigurationUtil.getElasticsearchMockServerPort());
-    final ElasticsearchConnectionNodeConfiguration esConfig =
+    final DatabaseConnectionNodeConfiguration esConfig =
       IntegrationTestConfigurationUtil.createItConfigurationService().getFirstElasticsearchConnectionNode();
     return MockServerUtil.createProxyMockServer(
       esConfig.getHost(),
@@ -765,7 +765,7 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
   }
 
   private void createClientAndAddToCache(String clientKey, ConfigurationService configurationService) {
-    final ElasticsearchConnectionNodeConfiguration esConfig =
+    final DatabaseConnectionNodeConfiguration esConfig =
       configurationService.getFirstElasticsearchConnectionNode();
     log.info("Creating ES Client with host {} and port {}", esConfig.getHost(), esConfig.getHttpPort());
     prefixAwareRestHighLevelClient = new OptimizeElasticsearchClient(

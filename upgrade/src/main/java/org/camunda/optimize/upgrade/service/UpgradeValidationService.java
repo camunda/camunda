@@ -16,7 +16,7 @@ import java.io.InputStream;
 import java.util.Objects;
 
 import static org.camunda.optimize.service.metadata.Version.getMajorAndMinor;
-import static org.camunda.optimize.service.util.ESVersionChecker.checkESVersionSupport;
+import static org.camunda.optimize.service.util.DatabaseVersionChecker.checkESVersionSupport;
 
 @AllArgsConstructor
 @Slf4j

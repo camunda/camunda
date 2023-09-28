@@ -25,7 +25,7 @@ import static jakarta.ws.rs.HttpMethod.GET;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockserver.model.HttpRequest.request;
 
-public class ElasticsearchCustomHeaderSupplierPluginIT extends AbstractPlatformIT {
+public class DatabaseCustomHeaderSupplierPluginIT extends AbstractPlatformIT {
 
   private ConfigurationService configurationService;
 

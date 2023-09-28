@@ -12,10 +12,10 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 @Component
-public class ElasticsearchCustomHeaderProvider extends PluginProvider<DatabaseCustomHeaderSupplier> {
-
-  public ElasticsearchCustomHeaderProvider(final ConfigurationService configurationService,
-                                           final PluginJarFileLoader pluginJarLoader) {
+public class OpensearchCustomHeaderProvider extends PluginProvider<DatabaseCustomHeaderSupplier> {
+// TODO needs overhauling with OPT-7229
+  public OpensearchCustomHeaderProvider(final ConfigurationService configurationService,
+                                        final PluginJarFileLoader pluginJarLoader) {
     super(configurationService, pluginJarLoader);
   }
 
@@ -26,7 +26,7 @@ public class ElasticsearchCustomHeaderProvider extends PluginProvider<DatabaseCu
 
   @Override
   protected List<String> getBasePackages() {
-    return configurationService.getElasticsearchCustomHeaderPluginBasePackages();
+    return configurationService.getElasticsearchCustomHeaderPluginBasePackages(); // TODO
   }
 
 }

@@ -15,7 +15,6 @@ import org.camunda.optimize.dto.optimize.query.status.EngineStatusDto;
 import org.camunda.optimize.dto.optimize.query.status.StatusResponseDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
-import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.importing.ImportSchedulerManagerService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -36,13 +35,14 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 @Component
 @Slf4j
-public class StatusCheckingService {
+public abstract class StatusCheckingService {
 
-  private final OptimizeElasticsearchClient esClient;
-  private final ConfigurationService configurationService;
-  private final EngineContextFactory engineContextFactory;
-  private final ImportSchedulerManagerService importSchedulerManagerService;
-  private final OptimizeIndexNameService optimizeIndexNameService;
+  protected final ConfigurationService configurationService;
+  protected final EngineContextFactory engineContextFactory;
+  protected final ImportSchedulerManagerService importSchedulerManagerService;
+  protected final OptimizeIndexNameService optimizeIndexNameService;
+
+  public abstract boolean isConnectedToDatabase();
 
   private final LoadingCache<EngineContext, Boolean> engineConnectionCache = CacheBuilder.newBuilder()
     .expireAfterWrite(1, TimeUnit.MINUTES)
@@ -61,20 +61,6 @@ public class StatusCheckingService {
     return getStatusResponse(false);
   }
 
-  public boolean isConnectedToElasticSearch() {
-    boolean isConnected = false;
-    try {
-      ClusterHealthRequest request = new ClusterHealthRequest(optimizeIndexNameService.getIndexPrefix() + "*");
-      final ClusterHealthResponse healthResponse = esClient.getClusterHealth(request);
-
-      isConnected = healthResponse.status().getStatus() == Response.Status.OK.getStatusCode()
-        && healthResponse.getStatus() != ClusterHealthStatus.RED;
-    } catch (Exception ignored) {
-      // do nothing
-    }
-    return isConnected;
-  }
-
   public boolean isConnectedToAtLeastOnePlatformEngineOrCloud() {
     final Collection<EngineContext> configuredEngines = engineContextFactory.getConfiguredEngines();
     // if there is no engine configured == cloud
@@ -87,7 +73,7 @@ public class StatusCheckingService {
 
   private StatusResponseDto getStatusResponse(final boolean skipCache) {
     StatusResponseDto statusWithProgress = new StatusResponseDto();
-    statusWithProgress.setConnectedToElasticsearch(isConnectedToElasticSearch());
+    statusWithProgress.setConnectedToElasticsearch(isConnectedToDatabase());
     Map<String, Boolean> importStatusMap = importSchedulerManagerService.getImportStatusMap();
     Map<String, EngineStatusDto> engineConnections = new HashMap<>();
     for (EngineContext e : engineContextFactory.getConfiguredEngines()) {

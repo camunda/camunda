@@ -7,9 +7,9 @@ package org.camunda.optimize.testplugin.elasticsearch.authorization.fixed;
 
 
 import org.camunda.optimize.plugin.elasticsearch.CustomHeader;
-import org.camunda.optimize.plugin.elasticsearch.ElasticsearchCustomHeaderSupplier;
+import org.camunda.optimize.plugin.elasticsearch.DatabaseCustomHeaderSupplier;
 
-public class FixedElasticsearchCustomHeaderSupplierPlugin implements ElasticsearchCustomHeaderSupplier {
+public class FixedDatabaseCustomHeaderSupplierPlugin implements DatabaseCustomHeaderSupplier {
 
   /**
    * Returns the same header every time the plugin is called

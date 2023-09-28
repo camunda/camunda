@@ -80,6 +80,9 @@ public class ConfigurationServiceConstants {
   public static final String ELASTICSEARCH_SECURITY_SSL_CERTIFICATE = "$.es.security.ssl.certificate";
   public static final String ELASTICSEARCH_SECURITY_SSL_CERTIFICATE_AUTHORITIES = "$.es.security.ssl.certificate_authorities";
 
+  public static final String OPENSEARCH_CONNECTION_NODES = "$.opensearch.connection.nodes";
+
+
   public static final String IMPORT_INDEX_AUTO_STORAGE_INTERVAL = "$.import.importIndexStorageIntervalInSec";
 
   public static final String ENGINE_CONNECT_TIMEOUT = "$.engine-commons.connection.timeout";

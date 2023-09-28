@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.es.schema;
 
 import org.camunda.optimize.plugin.elasticsearch.CustomHeader;
-import org.camunda.optimize.plugin.elasticsearch.ElasticsearchCustomHeaderSupplier;
+import org.camunda.optimize.plugin.elasticsearch.DatabaseCustomHeaderSupplier;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.client.HttpAsyncResponseConsumerFactory;
 import org.elasticsearch.client.RequestOptions;
@@ -26,7 +26,7 @@ public class RequestOptionsProvider {
     this(Collections.emptyList(), null);
   }
 
-  public RequestOptionsProvider(final List<ElasticsearchCustomHeaderSupplier> customHeaderPlugins,
+  public RequestOptionsProvider(final List<DatabaseCustomHeaderSupplier> customHeaderPlugins,
                                 final ConfigurationService configurationService) {
     this.customHeaderSuppliers = customHeaderPlugins
       .stream()

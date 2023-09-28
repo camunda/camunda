@@ -7,9 +7,9 @@ package org.camunda.optimize.testplugin.elasticsearch.custom;
 
 
 import org.camunda.optimize.plugin.elasticsearch.CustomHeader;
-import org.camunda.optimize.plugin.elasticsearch.ElasticsearchCustomHeaderSupplier;
+import org.camunda.optimize.plugin.elasticsearch.DatabaseCustomHeaderSupplier;
 
-public class CustomElasticsearchCustomHeaderSupplierPlugin implements ElasticsearchCustomHeaderSupplier {
+public class CustomDatabaseCustomHeaderSupplierPlugin implements DatabaseCustomHeaderSupplier {
 
   @Override
   public CustomHeader getElasticsearchCustomHeader() {

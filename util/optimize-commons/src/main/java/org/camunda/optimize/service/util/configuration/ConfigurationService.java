@@ -19,7 +19,7 @@ import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.util.configuration.analytics.AnalyticsConfiguration;
 import org.camunda.optimize.service.util.configuration.archive.DataArchiveConfiguration;
 import org.camunda.optimize.service.util.configuration.cleanup.CleanupConfiguration;
-import org.camunda.optimize.service.util.configuration.elasticsearch.ElasticsearchConnectionNodeConfiguration;
+import org.camunda.optimize.service.util.configuration.elasticsearch.DatabaseConnectionNodeConfiguration;
 import org.camunda.optimize.service.util.configuration.engine.EngineAuthenticationConfiguration;
 import org.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
 import org.camunda.optimize.service.util.configuration.engine.EventIngestionConfiguration;
@@ -88,8 +88,12 @@ public class ConfigurationService {
   private Long initialBackoff;
   private Long maximumBackoff;
 
+  // opensearch connection
+  private List<DatabaseConnectionNodeConfiguration> opensearchConnectionNodes;
+
   // elasticsearch connection
-  private List<ElasticsearchConnectionNodeConfiguration> elasticsearchConnectionNodes;
+  private List<DatabaseConnectionNodeConfiguration> elasticsearchConnectionNodes;
+
   private Integer esScrollTimeoutInSeconds;
   private Integer elasticsearchConnectionTimeout;
   private Integer elasticsearchResponseConsumerBufferLimitInMb;
@@ -304,10 +308,10 @@ public class ConfigurationService {
     return getSecurityConfiguration().getAuth();
   }
 
-  public List<ElasticsearchConnectionNodeConfiguration> getElasticsearchConnectionNodes() {
+  public List<DatabaseConnectionNodeConfiguration> getElasticsearchConnectionNodes() {
     if (elasticsearchConnectionNodes == null) {
       // @formatter:off
-      TypeRef<List<ElasticsearchConnectionNodeConfiguration>> typeRef =
+      TypeRef<List<DatabaseConnectionNodeConfiguration>> typeRef =
         new TypeRef<>() {};
       // @formatter:on
       elasticsearchConnectionNodes = configJsonContext.read(
@@ -317,9 +321,27 @@ public class ConfigurationService {
     return elasticsearchConnectionNodes;
   }
 
+  public List<DatabaseConnectionNodeConfiguration> getOpensearchConnectionNodes() {
+    if (opensearchConnectionNodes == null) {
+      // @formatter:off
+      TypeRef<List<DatabaseConnectionNodeConfiguration>> typeRef =
+        new TypeRef<>() {};
+      // @formatter:on
+      opensearchConnectionNodes = configJsonContext.read(
+        ConfigurationServiceConstants.OPENSEARCH_CONNECTION_NODES, typeRef
+      );
+    }
+    return opensearchConnectionNodes;
+  }
+
   @JsonIgnore
-  public ElasticsearchConnectionNodeConfiguration getFirstElasticsearchConnectionNode() {
+  public DatabaseConnectionNodeConfiguration getFirstElasticsearchConnectionNode() {
     return getElasticsearchConnectionNodes().get(0);
+  }
+
+  @JsonIgnore
+  public DatabaseConnectionNodeConfiguration getFirstOpensearchConnectionNode() {
+    return getOpensearchConnectionNodes().get(0);
   }
 
   public List<String> getDecisionOutputImportPluginBasePackages() {

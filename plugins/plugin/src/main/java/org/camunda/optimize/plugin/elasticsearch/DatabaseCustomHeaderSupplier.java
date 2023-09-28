@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.plugin.elasticsearch;
 
-public interface ElasticsearchCustomHeaderSupplier {
+public interface DatabaseCustomHeaderSupplier {
 
   /**
    * Fetches any additional headers to be used in requests to Elasticsearch

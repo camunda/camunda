@@ -6,22 +6,25 @@
 package org.camunda.optimize.service.es.writer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.ws.rs.NotFoundException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareRestDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareRestDto;
+import org.camunda.optimize.service.db.writer.SharingWriter;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.IdGenerator;
+import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.elasticsearch.action.DocWriteResponse;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.xcontent.XContentType;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import jakarta.ws.rs.NotFoundException;
 import java.io.IOException;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_SHARE_INDEX_NAME;
@@ -31,12 +34,13 @@ import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDI
 @AllArgsConstructor
 @Component
 @Slf4j
-public class SharingWriter {
+@Conditional(ElasticSearchCondition.class)
+public class SharingWriterES implements SharingWriter {
 
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
 
-  public ReportShareRestDto saveReportShare(ReportShareRestDto createSharingDto) {
+  public ReportShareRestDto saveReportShare(final ReportShareRestDto createSharingDto) {
     log.debug("Writing new report share to Elasticsearch");
     String id = IdGenerator.getNextId();
     createSharingDto.setId(id);
@@ -64,7 +68,7 @@ public class SharingWriter {
     return createSharingDto;
   }
 
-  public DashboardShareRestDto saveDashboardShare(DashboardShareRestDto createSharingDto) {
+  public DashboardShareRestDto saveDashboardShare(final DashboardShareRestDto createSharingDto) {
     log.debug("Writing new dashboard share to Elasticsearch");
     String id = IdGenerator.getNextId();
     createSharingDto.setId(id);
@@ -96,7 +100,7 @@ public class SharingWriter {
     return createSharingDto;
   }
 
-  public void updateDashboardShare(DashboardShareRestDto updatedShare) {
+  public void updateDashboardShare(final DashboardShareRestDto updatedShare) {
     String id = updatedShare.getId();
     try {
       IndexRequest request = new IndexRequest(DASHBOARD_SHARE_INDEX_NAME)
@@ -125,7 +129,7 @@ public class SharingWriter {
     log.debug("dashboard share with id [{}] for resource [{}] has been updated", id, updatedShare.getDashboardId());
   }
 
-  public void deleteReportShare(String shareId) {
+  public void deleteReportShare(final String shareId) {
     log.debug("Deleting report share with id [{}]", shareId);
     DeleteRequest request =
       new DeleteRequest(REPORT_SHARE_INDEX_NAME)
@@ -151,7 +155,7 @@ public class SharingWriter {
     }
   }
 
-  public void deleteDashboardShare(String shareId) {
+  public void deleteDashboardShare(final String shareId) {
     log.debug("Deleting dashboard share with id [{}]", shareId);
     DeleteRequest request = new DeleteRequest(DASHBOARD_SHARE_INDEX_NAME)
       .id(shareId)

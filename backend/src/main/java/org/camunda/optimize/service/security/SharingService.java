@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.security;
 
+import jakarta.ws.rs.ForbiddenException;
+import jakarta.ws.rs.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
@@ -22,10 +24,10 @@ import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponse
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
 import org.camunda.optimize.service.dashboard.DashboardService;
+import org.camunda.optimize.service.db.writer.SharingWriter;
 import org.camunda.optimize.service.es.reader.SharingReader;
 import org.camunda.optimize.service.es.report.PlainReportEvaluationHandler;
 import org.camunda.optimize.service.es.report.ReportEvaluationInfo;
-import org.camunda.optimize.service.es.writer.SharingWriter;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.exceptions.evaluation.ReportEvaluationException;
@@ -35,8 +37,6 @@ import org.camunda.optimize.service.report.ReportService;
 import org.camunda.optimize.service.util.ValidationHelper;
 import org.springframework.stereotype.Component;
 
-import jakarta.ws.rs.ForbiddenException;
-import jakarta.ws.rs.NotFoundException;
 import java.time.ZoneId;
 import java.util.Collections;
 import java.util.HashSet;

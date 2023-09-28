@@ -21,29 +21,47 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.metadata.Version.getMajorVersionFrom;
 import static org.camunda.optimize.service.metadata.Version.getMinorVersionFrom;
 import static org.camunda.optimize.service.metadata.Version.getPatchVersionFrom;
-import static org.camunda.optimize.service.util.ESVersionChecker.getLatestSupportedESVersion;
+import static org.camunda.optimize.service.util.DatabaseVersionChecker.getLatestSupportedESVersion;
+import static org.camunda.optimize.service.util.DatabaseVersionChecker.getLatestSupportedOSVersion;
+import static org.camunda.optimize.service.util.DatabaseVersionChecker.getSupportedVersionsES;
+import static org.camunda.optimize.service.util.DatabaseVersionChecker.getSupportedVersionsOS;
 
-public class ESVersionCheckerTest {
-  public static final List<String> SUPPORTED_VERSIONS = ESVersionChecker.getSupportedVersions();
+public class DatabaseVersionCheckerTest {
+  public static final List<String> SUPPORTED_VERSIONS_ES = DatabaseVersionChecker.getSupportedVersionsES();
+  public static final List<String> SUPPORTED_VERSIONS_OS = DatabaseVersionChecker.getSupportedVersionsOS();
 
   @AfterEach
   public void resetSupportedVersions() {
-    ESVersionChecker.setSupportedVersions(SUPPORTED_VERSIONS);
+    DatabaseVersionChecker.setSupportedVersionsES(SUPPORTED_VERSIONS_ES);
+    DatabaseVersionChecker.setSupportedVersionsOS(SUPPORTED_VERSIONS_OS);
   }
 
   @ParameterizedTest
-  @MethodSource("validVersions")
+  @MethodSource("validESVersions")
   public void testValidESVersions(final String version) {
-    final boolean isSupported = ESVersionChecker.isCurrentVersionSupported(version);
+    final boolean isSupported = DatabaseVersionChecker.isCurrentElasticsearchVersionSupported(version);
 
     assertThat(isSupported).isTrue();
   }
 
   @ParameterizedTest
-  @MethodSource("invalidVersions")
-  public void testInvalidESVersions(final String version) {
-    final boolean isSupported = ESVersionChecker.isCurrentVersionSupported(version);
+  @MethodSource("validOSVersions")
+  public void testValidOSVersions(final String version) {
+    final boolean isSupported = DatabaseVersionChecker.isCurrentOpensearchVersionSupported(version);
+    assertThat(isSupported).isTrue();
+  }
 
+  @ParameterizedTest
+  @MethodSource("invalidESVersions")
+  public void testInvalidESVersions(final String version) {
+    final boolean isSupported = DatabaseVersionChecker.isCurrentElasticsearchVersionSupported(version);
+    assertThat(isSupported).isFalse();
+  }
+
+  @ParameterizedTest
+  @MethodSource("invalidOSVersions")
+  public void testInvalidOSVersions(final String version) {
+    final boolean isSupported = DatabaseVersionChecker.isCurrentOpensearchVersionSupported(version);
     assertThat(isSupported).isFalse();
   }
 
@@ -53,7 +71,16 @@ public class ESVersionCheckerTest {
     String version = constructWarningVersionHigherMinor(getLatestSupportedESVersion());
 
     // then
-    assertThat(ESVersionChecker.doesVersionNeedWarning(version)).isTrue();
+    assertThat(DatabaseVersionChecker.doesVersionNeedWarning(version, getLatestSupportedESVersion())).isTrue();
+  }
+
+  @Test
+  public void testWarningOSVersions() {
+    // given
+    String version = constructWarningVersionHigherMinor(getLatestSupportedOSVersion());
+
+    // then
+    assertThat(DatabaseVersionChecker.doesVersionNeedWarning(version, getLatestSupportedOSVersion())).isTrue();
   }
 
   @Test
@@ -62,21 +89,29 @@ public class ESVersionCheckerTest {
     final String expectedLatestVersion = "7.11.5";
 
     List<String> versionsToTest = Arrays.asList("0.0.1", "7.2.0", expectedLatestVersion, "7.11.4", "7.10.6");
-    ESVersionChecker.setSupportedVersions(versionsToTest);
+    DatabaseVersionChecker.setSupportedVersionsOS(versionsToTest);
+    DatabaseVersionChecker.setSupportedVersionsES(versionsToTest);
 
-    // when
-    final String latestSupportedVersion = getLatestSupportedESVersion();
-
-    assertThat(latestSupportedVersion).isEqualTo(expectedLatestVersion);
+    // then
+    assertThat(getLatestSupportedOSVersion()).isEqualTo(expectedLatestVersion);
+    assertThat(getLatestSupportedESVersion()).isEqualTo(expectedLatestVersion);
   }
 
-  private static Stream<String> validVersions() {
+  private static Stream<String> validVersions(List<String> supportedVersions) {
     List<String> validVersionsToTest = new ArrayList<>();
-    for (String supportedVersion : SUPPORTED_VERSIONS) {
+    for (String supportedVersion : supportedVersions) {
       validVersionsToTest.add(supportedVersion);
       validVersionsToTest.add(constructValidVersionHigherPatch(supportedVersion));
     }
     return validVersionsToTest.stream();
+  }
+
+  private static Stream<String> validESVersions() {
+    return validVersions(getSupportedVersionsES());
+  }
+
+  private static Stream<String> validOSVersions() {
+    return validVersions(getSupportedVersionsOS());
   }
 
   private static String constructValidVersionHigherPatch(String supportedVersion) {
@@ -114,14 +149,22 @@ public class ESVersionCheckerTest {
     return buildVersionFromParts(major, minor, decrementVersionPart(patch));
   }
 
-  private static Stream<String> invalidVersions() {
+  private static Stream<String> invalidESVersions() {
+    return invalidVersions(getSupportedVersionsES(), getLatestSupportedESVersion());
+  }
+
+  private static Stream<String> invalidOSVersions() {
+    return invalidVersions(getSupportedVersionsOS(), getLatestSupportedOSVersion());
+  }
+
+  private static Stream<String> invalidVersions(List<String> supportedVersions, String latestSupportedVersion) {
     List<String> invalidVersions = new ArrayList<>();
 
-    if (findPatchedVersionIfPresent().isPresent()) {
-      invalidVersions.add(constructInvalidVersionLowerPatch(findPatchedVersionIfPresent().get()));
+    if (findPatchedVersionIfPresent(supportedVersions).isPresent()) {
+      invalidVersions.add(constructInvalidVersionLowerPatch(findPatchedVersionIfPresent(supportedVersions).get()));
     }
-    invalidVersions.add(constructInvalidVersionHigherMajor(getLatestSupportedESVersion()));
-    invalidVersions.add(constructInvalidVersionLowerMajor(getLeastSupportedESVersion()));
+    invalidVersions.add(constructInvalidVersionHigherMajor(latestSupportedVersion));
+    invalidVersions.add(constructInvalidVersionLowerMajor(getLeastSupportedVersion(supportedVersions)));
 
     return invalidVersions.stream();
   }
@@ -138,12 +181,12 @@ public class ESVersionCheckerTest {
     return String.valueOf(Long.parseLong(versionPart) + 1);
   }
 
-  private static Optional<String> findPatchedVersionIfPresent() {
-    return SUPPORTED_VERSIONS.stream().filter(v -> Integer.parseInt(getPatchVersionFrom(v)) > 0).findFirst();
+  private static Optional<String> findPatchedVersionIfPresent(List<String> supportedVersions) {
+      return supportedVersions.stream().filter(v -> Integer.parseInt(getPatchVersionFrom(v)) > 0).findFirst();
   }
 
-  private static String getLeastSupportedESVersion() {
-    return SUPPORTED_VERSIONS.stream().min(Comparator.naturalOrder()).get();
+  private static String getLeastSupportedVersion(List<String> supportedVersions) {
+    return supportedVersions.stream().min(Comparator.naturalOrder()).get();
   }
 
 }

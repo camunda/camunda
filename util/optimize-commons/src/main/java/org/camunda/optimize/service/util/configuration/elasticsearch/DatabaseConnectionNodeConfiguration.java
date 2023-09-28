@@ -8,7 +8,7 @@ package org.camunda.optimize.service.util.configuration.elasticsearch;
 import lombok.Data;
 
 @Data
-public class ElasticsearchConnectionNodeConfiguration {
+public class DatabaseConnectionNodeConfiguration {
 
   private String host;
   private Integer httpPort;

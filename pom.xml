@@ -41,6 +41,8 @@
     <jackson.version>2.15.2</jackson.version>
     <jsonpath.version>2.8.0</jsonpath.version>
     <elasticsearch.version>7.17.13</elasticsearch.version>
+    <opensearch.version>2.5.0</opensearch.version>
+    <apache.http5.version>5.2.1</apache.http5.version>
     <!-- The default es 8 version we are going to be testing with-->
     <elasticsearch8.test.version>8.7.0</elasticsearch8.test.version>
     <!--The least supported elasticsearch version we should test against-->

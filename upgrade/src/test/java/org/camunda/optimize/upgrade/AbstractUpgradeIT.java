@@ -22,7 +22,7 @@ import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.es.schema.index.MetadataIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.service.util.configuration.elasticsearch.ElasticsearchConnectionNodeConfiguration;
+import org.camunda.optimize.service.util.configuration.elasticsearch.DatabaseConnectionNodeConfiguration;
 import org.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
 import org.camunda.optimize.test.it.extension.MockServerUtil;
 import org.camunda.optimize.upgrade.es.index.UpdateLogEntryIndex;
@@ -69,7 +69,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import static java.util.stream.Collectors.toList;
 import static jakarta.ws.rs.HttpMethod.DELETE;
 import static jakarta.ws.rs.HttpMethod.POST;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder.createDefaultConfiguration;
@@ -107,7 +106,7 @@ public abstract class AbstractUpgradeIT {
   @BeforeEach
   protected void setUp() throws Exception {
     this.configurationService = createDefaultConfiguration();
-    final ElasticsearchConnectionNodeConfiguration elasticConfig =
+    final DatabaseConnectionNodeConfiguration elasticConfig =
       this.configurationService.getFirstElasticsearchConnectionNode();
 
     this.esMockServer = createElasticMock(elasticConfig);
@@ -256,7 +255,7 @@ public abstract class AbstractUpgradeIT {
     return request().withPath("/" + versionedIndexName).withMethod(DELETE);
   }
 
-  private ClientAndServer createElasticMock(final ElasticsearchConnectionNodeConfiguration elasticConfig) {
+  private ClientAndServer createElasticMock(final DatabaseConnectionNodeConfiguration elasticConfig) {
     return MockServerUtil.createProxyMockServer(
       elasticConfig.getHost(),
       elasticConfig.getHttpPort(),

@@ -133,6 +133,26 @@
       <artifactId>semver4j</artifactId>
       <version>3.1.0</version>
     </dependency>
+
+    <!-- Opensearch  -->
+    <dependency>
+      <groupId>org.apache.httpcomponents.core5</groupId>
+      <artifactId>httpcore5</artifactId>
+      <version>${apache.http5.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.httpcomponents.core5</groupId>
+      <artifactId>httpcore5-h2</artifactId>
+      <version>${apache.http5.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.opensearch.client</groupId>
+      <artifactId>opensearch-java</artifactId>
+      <version>${opensearch.version}</version>
+    </dependency>
+
   </dependencies>
 
   <build>

@@ -336,6 +336,16 @@ import:
     # Please refer to the technical guide on how to configure the heap size.
     maxEntryLimit: 100000
 
+# everything that is related with configuring OpenSearch or creating
+# a connection to it.
+opensearch:
+  connection:
+    nodes:
+      # the address/hostname under which the OpenSearch node is available.
+      - host: '${CAMUNDA_OPTIMIZE_OPENSEARCH_HOST:localhost}'
+        # A port number used by OpenSearch to accept HTTP connections.
+        httpPort: ${CAMUNDA_OPTIMIZE_OPENSEARCH_HTTP_PORT:9205}
+
 # everything that is related with configuring Elasticsearch or creating
 # a connection to it.
 es:

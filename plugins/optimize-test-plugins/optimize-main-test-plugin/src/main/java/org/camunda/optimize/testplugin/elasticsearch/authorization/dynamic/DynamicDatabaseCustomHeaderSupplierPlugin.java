@@ -7,9 +7,9 @@ package org.camunda.optimize.testplugin.elasticsearch.authorization.dynamic;
 
 
 import org.camunda.optimize.plugin.elasticsearch.CustomHeader;
-import org.camunda.optimize.plugin.elasticsearch.ElasticsearchCustomHeaderSupplier;
+import org.camunda.optimize.plugin.elasticsearch.DatabaseCustomHeaderSupplier;
 
-public class DynamicElasticsearchCustomHeaderSupplierPlugin implements ElasticsearchCustomHeaderSupplier {
+public class DynamicDatabaseCustomHeaderSupplierPlugin implements DatabaseCustomHeaderSupplier {
 
   private final Object lock = new Object();
   private int counter = 0;
