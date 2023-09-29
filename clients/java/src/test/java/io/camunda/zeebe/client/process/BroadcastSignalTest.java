@@ -157,14 +157,10 @@ public final class BroadcastSignalTest extends ClientTest {
     // given
     final BroadcastSignalCommandStep2 builder = client.newBroadcastSignalCommand().signalName("");
 
-    // when
-    final BroadcastSignalCommandStep2 builderWithTenant = builder.tenantId("custom tenant");
-
-    // then
-    // todo(#13558): verify that tenant id is set in the request
-    assertThat(builderWithTenant)
-        .describedAs("This method has no effect on the command builder while under development")
-        .isEqualTo(builder);
+    // when/then
+    assertThatThrownBy(() -> builder.tenantId("custom tenant"))
+        .describedAs("tenantId not supported on broadcast signal yet")
+        .isInstanceOf(UnsupportedOperationException.class);
   }
 
   public static class Variables {

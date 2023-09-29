@@ -88,8 +88,7 @@ public final class BroadcastSignalCommandImpl
 
   @Override
   public BroadcastSignalCommandStep2 tenantId(final String tenantId) {
-    // todo(#13558): replace dummy implementation
-    return this;
+    throw new UnsupportedOperationException("Signals are not yet supported with multi-tenancy");
   }
 
   private void send(
