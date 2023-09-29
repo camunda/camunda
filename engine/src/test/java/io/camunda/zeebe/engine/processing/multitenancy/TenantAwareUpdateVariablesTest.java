@@ -12,24 +12,23 @@ import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.RejectionType;
-import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
-import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.Map;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
 
-public class TenantAwareModifyProcessInstanceTest {
+public class TenantAwareUpdateVariablesTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
   @Rule public final TestWatcher watcher = new RecordingExporterTestWatcher();
 
   @Test
-  public void shouldModifyInstanceForDefaultTenant() {
+  public void shouldUpdateVariablesForDefaultTenant() {
     // given
     ENGINE
         .deployment()
@@ -49,31 +48,23 @@ public class TenantAwareModifyProcessInstanceTest {
             .withTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
             .create();
 
-    final var task =
-        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .withElementId("task")
-            .getFirst();
-
     // when
-    final var modified =
+    final var updated =
         ENGINE
-            .processInstance()
-            .withInstanceKey(processInstanceKey)
+            .variables()
+            .ofScope(processInstanceKey)
             .forAuthorizedTenants(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
-            .modification()
-            .activateElement("task")
-            .terminateElement(task.getKey())
-            .modify();
+            .withDocument(Map.of("foo", "bar"))
+            .update();
 
     // then
-    assertThat(modified)
-        .describedAs("Expect that modification was successful")
-        .hasIntent(ProcessInstanceModificationIntent.MODIFIED);
+    assertThat(updated)
+        .describedAs("Expect that update was successful")
+        .hasIntent(VariableDocumentIntent.UPDATED);
   }
 
   @Test
-  public void shouldRejectModifyInstanceForUnauthorizedTenant() {
+  public void shouldRejectUpdateVariablesForUnauthorizedTenant() {
     // given
     ENGINE
         .deployment()
@@ -89,34 +80,26 @@ public class TenantAwareModifyProcessInstanceTest {
     final long processInstanceKey =
         ENGINE.processInstance().ofBpmnProcessId("process").withTenantId("custom-tenant").create();
 
-    final var task =
-        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .withElementId("task")
-            .getFirst();
-
     // when
     final var rejection =
         ENGINE
-            .processInstance()
-            .withInstanceKey(processInstanceKey)
+            .variables()
+            .ofScope(processInstanceKey)
             .forAuthorizedTenants("another-tenant")
-            .modification()
-            .activateElement("task")
-            .terminateElement(task.getKey())
+            .withDocument(Map.of("foo", "bar"))
             .expectRejection()
-            .modify();
+            .update();
 
     // then
     assertThat(rejection)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "Expected to modify process instance but no process instance found with key '%s'"
+            "Expected to update variables for element with key '%s', but no such element was found"
                 .formatted(processInstanceKey));
   }
 
   @Test
-  public void shouldModifyInstanceForSpecificTenant() {
+  public void shouldUpdateVariablesForSpecificTenant() {
     // given
     ENGINE
         .deployment()
@@ -132,26 +115,18 @@ public class TenantAwareModifyProcessInstanceTest {
     final long processInstanceKey =
         ENGINE.processInstance().ofBpmnProcessId("process").withTenantId("custom-tenant").create();
 
-    final var task =
-        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .withElementId("task")
-            .getFirst();
-
     // when
-    final var modified =
+    final var updated =
         ENGINE
-            .processInstance()
-            .withInstanceKey(processInstanceKey)
+            .variables()
+            .ofScope(processInstanceKey)
             .forAuthorizedTenants("custom-tenant")
-            .modification()
-            .activateElement("task")
-            .terminateElement(task.getKey())
-            .modify();
+            .withDocument(Map.of("foo", "bar"))
+            .update();
 
     // then
-    assertThat(modified)
-        .describedAs("Expect that modification was successful")
-        .hasIntent(ProcessInstanceModificationIntent.MODIFIED);
+    assertThat(updated)
+        .describedAs("Expect that update was successful")
+        .hasIntent(VariableDocumentIntent.UPDATED);
   }
 }

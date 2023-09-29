@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.processinstance;
 
 import static java.util.function.Predicate.not;
 
+import io.camunda.zeebe.auth.impl.TenantAuthorizationCheckerImpl;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
@@ -42,7 +43,6 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationActivateInstructionValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationTerminateInstructionValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationVariableInstructionValue;
-import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.records.ExceededBatchRecordSizeException;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
@@ -183,12 +183,11 @@ public final class ProcessInstanceModificationProcessor
       return;
     }
 
-    final String tenantId = processInstance.getValue().getTenantId();
-    if (!Objects.equals(tenantId, TenantOwned.DEFAULT_TENANT_IDENTIFIER)) {
-      final String reason =
-          String.format(ERROR_MESSAGE_PROCESS_INSTANCE_BELONGS_TO_SPECIFIC_TENANT, tenantId);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_ARGUMENT, reason);
-      rejectionWriter.appendRejection(command, RejectionType.INVALID_ARGUMENT, reason);
+    if (!TenantAuthorizationCheckerImpl.fromAuthorizationMap(command.getAuthorizations())
+        .isAuthorized(processInstance.getValue().getTenantId())) {
+      final String reason = String.format(ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND, eventKey);
+      responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, reason);
+      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, reason);
       return;
     }
 

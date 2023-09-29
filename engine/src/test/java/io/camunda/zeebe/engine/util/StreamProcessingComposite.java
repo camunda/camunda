@@ -140,12 +140,18 @@ public class StreamProcessingComposite implements CommandWriter {
 
   @Override
   public long writeCommand(final Intent intent, final UnifiedRecordValue value) {
+    return writeCommand(intent, value, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  }
+
+  @Override
+  public long writeCommand(
+      final Intent intent, final UnifiedRecordValue value, final String... authorizedTenants) {
     final var writer =
         streams
             .newRecord(getLogName(partitionId))
             .recordType(RecordType.COMMAND)
             .intent(intent)
-            .authorizations(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+            .authorizations(authorizedTenants)
             .event(value);
     return writeActor.submit(writer::write).join();
   }

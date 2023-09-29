@@ -14,6 +14,9 @@ public interface CommandWriter {
 
   long writeCommand(final Intent intent, final UnifiedRecordValue recordValue);
 
+  long writeCommand(
+      final Intent intent, final UnifiedRecordValue recordValue, String... authorizedTenants);
+
   long writeCommand(long key, Intent intent, UnifiedRecordValue recordValue);
 
   long writeCommand(

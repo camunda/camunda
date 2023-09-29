@@ -27,6 +27,7 @@ import io.camunda.zeebe.protocol.record.value.ErrorRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.MsgPackUtil;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.ArrayList;
@@ -213,12 +214,14 @@ public final class ProcessInstanceClient {
     private final CommandWriter writer;
     private final long processInstanceKey;
 
+    private String[] authorizedTenants;
     private int partition = DEFAULT_PARTITION;
     private Function<Long, Record<ProcessInstanceRecordValue>> expectation = SUCCESS_EXPECTATION;
 
     public ExistingInstanceClient(final CommandWriter writer, final long processInstanceKey) {
       this.writer = writer;
       this.processInstanceKey = processInstanceKey;
+      authorizedTenants = new String[] {TenantOwned.DEFAULT_TENANT_IDENTIFIER};
     }
 
     public ExistingInstanceClient onPartition(final int partition) {
@@ -254,11 +257,17 @@ public final class ProcessInstanceClient {
           partition,
           processInstanceKey,
           ProcessInstanceIntent.CANCEL,
-          new ProcessInstanceRecord().setProcessInstanceKey(processInstanceKey));
+          new ProcessInstanceRecord().setProcessInstanceKey(processInstanceKey),
+          authorizedTenants);
+    }
+
+    public ExistingInstanceClient forAuthorizedTenants(final String... authorizedTenants) {
+      this.authorizedTenants = authorizedTenants;
+      return this;
     }
 
     public ProcessInstanceModificationClient modification() {
-      return new ProcessInstanceModificationClient(writer, processInstanceKey);
+      return new ProcessInstanceModificationClient(writer, processInstanceKey, authorizedTenants);
     }
   }
 
@@ -289,11 +298,15 @@ public final class ProcessInstanceClient {
     private final long processInstanceKey;
     private final ProcessInstanceModificationRecord record;
     private final List<ProcessInstanceModificationActivateInstruction> activateInstructions;
+    private String[] authorizedTenants;
 
     public ProcessInstanceModificationClient(
-        final CommandWriter writer, final long processInstanceKey) {
+        final CommandWriter writer,
+        final long processInstanceKey,
+        final String[] authorizedTenants) {
       this.writer = writer;
       this.processInstanceKey = processInstanceKey;
+      this.authorizedTenants = authorizedTenants;
       record = new ProcessInstanceModificationRecord();
       activateInstructions = new ArrayList<>();
     }
@@ -302,11 +315,13 @@ public final class ProcessInstanceClient {
         final CommandWriter writer,
         final long processInstanceKey,
         final ProcessInstanceModificationRecord record,
-        final List<ProcessInstanceModificationActivateInstruction> activateInstructions) {
+        final List<ProcessInstanceModificationActivateInstruction> activateInstructions,
+        final String[] authorizedTenants) {
       this.writer = writer;
       this.processInstanceKey = processInstanceKey;
       this.record = record;
       this.activateInstructions = activateInstructions;
+      this.authorizedTenants = authorizedTenants;
     }
 
     /**
@@ -336,13 +351,24 @@ public final class ProcessInstanceClient {
               .setAncestorScopeKey(ancestorScopeKey);
       activateInstructions.add(activateInstruction);
       return new ActivationInstructionBuilder(
-          writer, processInstanceKey, record, activateInstructions, activateInstruction);
+          writer,
+          processInstanceKey,
+          record,
+          activateInstructions,
+          activateInstruction,
+          authorizedTenants);
     }
 
     public ProcessInstanceModificationClient terminateElement(final long elementInstanceKey) {
       record.addTerminateInstruction(
           new ProcessInstanceModificationTerminateInstruction()
               .setElementInstanceKey(elementInstanceKey));
+      return this;
+    }
+
+    public ProcessInstanceModificationClient forAuthorizedTenants(
+        final String... authorizedTenants) {
+      this.authorizedTenants = authorizedTenants;
       return this;
     }
 
@@ -356,7 +382,11 @@ public final class ProcessInstanceClient {
       activateInstructions.forEach(record::addActivateInstruction);
 
       final var position =
-          writer.writeCommand(processInstanceKey, ProcessInstanceModificationIntent.MODIFY, record);
+          writer.writeCommand(
+              processInstanceKey,
+              ProcessInstanceModificationIntent.MODIFY,
+              record,
+              authorizedTenants);
 
       if (expectation == REJECTION_EXPECTATION) {
         return expectation.apply(processInstanceKey);
@@ -374,8 +404,9 @@ public final class ProcessInstanceClient {
           final long processInstanceKey,
           final ProcessInstanceModificationRecord record,
           final List<ProcessInstanceModificationActivateInstruction> activateInstructions,
-          final ProcessInstanceModificationActivateInstruction activateInstruction) {
-        super(environmentRule, processInstanceKey, record, activateInstructions);
+          final ProcessInstanceModificationActivateInstruction activateInstruction,
+          final String[] authorizedTenants) {
+        super(environmentRule, processInstanceKey, record, activateInstructions, authorizedTenants);
         this.activateInstruction = activateInstruction;
       }
 

@@ -900,7 +900,7 @@ public class MultiTenancyOverIdentityIT {
   }
 
   @Test
-  void shouldRejectModifyProcessInstanceForOtherTenant() {
+  void shouldAllowModifyProcessInstanceForOtherTenant() {
     try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A)) {
       // given
       client
@@ -925,13 +925,45 @@ public class MultiTenancyOverIdentityIT {
           client.newModifyProcessInstanceCommand(processInstanceKey).activateElement("task").send();
 
       // then
+      assertThat(response).succeedsWithin(Duration.ofSeconds(10));
+    }
+  }
+
+  @Test
+  void shouldRejectModifyProcessInstanceForUnauthorizedTenant() {
+    final long processInstanceKey;
+    try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A)) {
+      // given
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(process, "process.bpmn")
+          .tenantId("tenant-a")
+          .send()
+          .join();
+
+      processInstanceKey =
+          client
+              .newCreateInstanceCommand()
+              .bpmnProcessId(processId)
+              .latestVersion()
+              .tenantId("tenant-a")
+              .send()
+              .join()
+              .getProcessInstanceKey();
+    }
+
+    // when
+    try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_B)) {
+      final Future<ModifyProcessInstanceResponse> response =
+          client.newModifyProcessInstanceCommand(processInstanceKey).activateElement("task").send();
+
+      // then
       assertThat(response)
           .failsWithin(Duration.ofSeconds(10))
           .withThrowableThat()
-          .withMessageContaining("INVALID_ARGUMENT")
+          .withMessageContaining("NOT_FOUND")
           .withMessageContaining(
-              "Expected to modify process instance but process instance belongs to tenant 'tenant-a'")
-          .withMessageContaining("while modification is not yet supported with multi-tenancy");
+              "Expected to modify process instance but no process instance found with key");
     }
   }
 

@@ -13,23 +13,21 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
-import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
 
-public class TenantAwareModifyProcessInstanceTest {
+public class TenantAwareCancelProcessInstanceTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
   @Rule public final TestWatcher watcher = new RecordingExporterTestWatcher();
 
   @Test
-  public void shouldModifyInstanceForDefaultTenant() {
+  public void shouldCancelInstanceForDefaultTenant() {
     // given
     ENGINE
         .deployment()
@@ -49,31 +47,22 @@ public class TenantAwareModifyProcessInstanceTest {
             .withTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
             .create();
 
-    final var task =
-        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .withElementId("task")
-            .getFirst();
-
     // when
-    final var modified =
+    final var cancelled =
         ENGINE
             .processInstance()
             .withInstanceKey(processInstanceKey)
             .forAuthorizedTenants(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
-            .modification()
-            .activateElement("task")
-            .terminateElement(task.getKey())
-            .modify();
+            .cancel();
 
     // then
-    assertThat(modified)
-        .describedAs("Expect that modification was successful")
-        .hasIntent(ProcessInstanceModificationIntent.MODIFIED);
+    assertThat(cancelled)
+        .describedAs("Expect that cancellation was successful")
+        .hasIntent(ProcessInstanceIntent.ELEMENT_TERMINATED);
   }
 
   @Test
-  public void shouldRejectModifyInstanceForUnauthorizedTenant() {
+  public void shouldRejectCancelInstanceForUnauthorizedTenant() {
     // given
     ENGINE
         .deployment()
@@ -88,12 +77,6 @@ public class TenantAwareModifyProcessInstanceTest {
 
     final long processInstanceKey =
         ENGINE.processInstance().ofBpmnProcessId("process").withTenantId("custom-tenant").create();
-
-    final var task =
-        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .withElementId("task")
-            .getFirst();
 
     // when
     final var rejection =
@@ -101,22 +84,19 @@ public class TenantAwareModifyProcessInstanceTest {
             .processInstance()
             .withInstanceKey(processInstanceKey)
             .forAuthorizedTenants("another-tenant")
-            .modification()
-            .activateElement("task")
-            .terminateElement(task.getKey())
             .expectRejection()
-            .modify();
+            .cancel();
 
     // then
     assertThat(rejection)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "Expected to modify process instance but no process instance found with key '%s'"
+            "Expected to cancel a process instance with key '%s', but no such process was found"
                 .formatted(processInstanceKey));
   }
 
   @Test
-  public void shouldModifyInstanceForSpecificTenant() {
+  public void shouldCancelInstanceForSpecificTenant() {
     // given
     ENGINE
         .deployment()
@@ -132,26 +112,17 @@ public class TenantAwareModifyProcessInstanceTest {
     final long processInstanceKey =
         ENGINE.processInstance().ofBpmnProcessId("process").withTenantId("custom-tenant").create();
 
-    final var task =
-        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .withElementId("task")
-            .getFirst();
-
     // when
-    final var modified =
+    final var cancelled =
         ENGINE
             .processInstance()
             .withInstanceKey(processInstanceKey)
             .forAuthorizedTenants("custom-tenant")
-            .modification()
-            .activateElement("task")
-            .terminateElement(task.getKey())
-            .modify();
+            .cancel();
 
     // then
-    assertThat(modified)
-        .describedAs("Expect that modification was successful")
-        .hasIntent(ProcessInstanceModificationIntent.MODIFIED);
+    assertThat(cancelled)
+        .describedAs("Expect that cancellation was successful")
+        .hasIntent(ProcessInstanceIntent.ELEMENT_TERMINATED);
   }
 }
