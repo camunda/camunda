@@ -67,12 +67,13 @@ public class DbFormState implements MutableFormState {
 
   @Override
   public void storeFormRecord(final FormRecord record) {
+    tenantIdKey.wrapString(record.getTenantId());
     dbFormKey.wrapLong(record.getFormKey());
     dbFormId.wrapString(record.getFormId());
     formVersion.wrapLong(record.getVersion());
     dbPersistedForm.wrap(record);
-    formsByKey.upsert(dbFormKey, dbPersistedForm);
-    formByIdAndVersionColumnFamily.upsert(idAndVersionKey, dbPersistedForm);
+    formsByKey.upsert(tenantAwareFormKey, dbPersistedForm);
+    formByIdAndVersionColumnFamily.upsert(tenantAwareIdAndVersionKey, dbPersistedForm);
 
     updateLatestVersion(record);
   }
@@ -80,22 +81,24 @@ public class DbFormState implements MutableFormState {
   @Override
   public Optional<PersistedForm> findLatestFormById(
       final DirectBuffer formId, final String tenantId) {
+    tenantIdKey.wrapString(tenantId);
     dbFormId.wrapBuffer(formId);
     final long latestVersion = versionManager.getLatestResourceVersion(formId, tenantId);
     formVersion.wrapLong(latestVersion);
-    return Optional.ofNullable(formByIdAndVersionColumnFamily.get(idAndVersionKey));
+    return Optional.ofNullable(formByIdAndVersionColumnFamily.get(tenantAwareIdAndVersionKey));
   }
 
   @Override
   public Optional<PersistedForm> findFormByKey(final long formKey, final String tenantId) {
+    tenantIdKey.wrapString(tenantId);
     dbFormKey.wrapLong(formKey);
-    return Optional.ofNullable(formsByKey.get(dbFormKey)).map(PersistedForm::copy);
+    return Optional.ofNullable(formsByKey.get(tenantAwareFormKey)).map(PersistedForm::copy);
   }
 
   private void updateLatestVersion(final FormRecord formRecord) {
     final var formId = formRecord.getFormId();
-    dbFormId.wrapString(formId);
     final var version = formRecord.getVersion();
-    versionManager.addResourceVersion(formId, version, formRecord.getTenantId());
+    final var tenantId = formRecord.getTenantId();
+    versionManager.addResourceVersion(formId, version, tenantId);
   }
 }
