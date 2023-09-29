@@ -93,6 +93,7 @@ public class TenantAwareProcessInstanceVariableTest {
         .variables()
         .ofScope(processInstanceKey)
         .withDocument(Maps.of(entry("x", 2)))
+        .forAuthorizedTenants(TENANT_ID)
         .update();
 
     // then
