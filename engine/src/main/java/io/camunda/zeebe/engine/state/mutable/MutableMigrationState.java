@@ -41,6 +41,8 @@ public interface MutableMigrationState extends MigrationState {
 
   void migrateMessageStartEventSubscriptionForMultiTenancy();
 
+  void migrateMessageEventSubscriptionForMultiTenancy();
+
   /**
    * Changes the state of a migration to FINISHED to indicate it has been executed.
    *
