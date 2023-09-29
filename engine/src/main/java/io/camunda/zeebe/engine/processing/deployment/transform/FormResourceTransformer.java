@@ -62,7 +62,8 @@ public final class FormResourceTransformer implements DeploymentResourceTransfor
                     .map(
                         noDuplicates -> {
                           final FormMetadataRecord formRecord = deployment.formMetadata().add();
-                          appendMetadataToFormRecord(formRecord, formId, resource);
+                          appendMetadataToFormRecord(
+                              formRecord, formId, resource, deployment.getTenantId());
                           writeFormRecord(formRecord, resource);
 
                           return null;
@@ -105,7 +106,10 @@ public final class FormResourceTransformer implements DeploymentResourceTransfor
   }
 
   private void appendMetadataToFormRecord(
-      final FormMetadataRecord formRecord, final String formId, final DeploymentResource resource) {
+      final FormMetadataRecord formRecord,
+      final String formId,
+      final DeploymentResource resource,
+      final String tenantId) {
     final LongSupplier newFormKey = keyGenerator::nextKey;
     final DirectBuffer checksum = checksumGenerator.apply(resource);
 
@@ -114,7 +118,7 @@ public final class FormResourceTransformer implements DeploymentResourceTransfor
     formRecord.setResourceName(resource.getResourceName());
 
     formState
-        .findLatestFormById(wrapString(formRecord.getFormId()), formRecord.getTenantId())
+        .findLatestFormById(wrapString(formRecord.getFormId()), tenantId)
         .ifPresentOrElse(
             latestForm -> {
               final int latestVersion = latestForm.getVersion();
