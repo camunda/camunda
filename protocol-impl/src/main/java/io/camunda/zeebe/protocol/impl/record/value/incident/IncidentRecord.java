@@ -12,7 +12,6 @@ import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
-import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -59,20 +58,6 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
     jobKeyProp.setValue(record.getJobKey());
     variableScopeKeyProp.setValue(record.getVariableScopeKey());
     tenantIdProp.setValue(record.getTenantId());
-  }
-
-  public IncidentRecord initFromProcessInstanceFailure(
-      final long key, final ProcessInstanceRecord processInstanceEvent) {
-
-    setElementInstanceKey(key);
-    setBpmnProcessId(processInstanceEvent.getBpmnProcessIdBuffer());
-    setProcessDefinitionKey(processInstanceEvent.getProcessDefinitionKey());
-    setProcessInstanceKey(processInstanceEvent.getProcessInstanceKey());
-    setTenantId(processInstanceEvent.getTenantId());
-    setElementId(processInstanceEvent.getElementIdBuffer());
-    setVariableScopeKey(key);
-
-    return this;
   }
 
   @JsonIgnore
