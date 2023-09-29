@@ -14,11 +14,9 @@ import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
-import io.camunda.zeebe.engine.state.immutable.MessageStartEventSubscriptionState.MessageStartEventSubscriptionVisitor;
 import io.camunda.zeebe.engine.state.message.MessageStartEventSubscription;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
-import org.agrona.DirectBuffer;
 
 public final class LegacyMessageStartEventSubscriptionState {
 
@@ -67,48 +65,5 @@ public final class LegacyMessageStartEventSubscriptionState {
         messageNameAndProcessDefinitionKey, messageStartEventSubscription);
     subscriptionsOfProcessDefinitionKeyColumnFamily.upsert(
         processDefinitionKeyAndMessageName, DbNil.INSTANCE);
-  }
-
-  public void remove(final long processDefinitionKey, final DirectBuffer messageName) {
-    this.processDefinitionKey.wrapLong(processDefinitionKey);
-    this.messageName.wrapBuffer(messageName);
-
-    subscriptionsColumnFamily.deleteExisting(messageNameAndProcessDefinitionKey);
-    subscriptionsOfProcessDefinitionKeyColumnFamily.deleteExisting(
-        processDefinitionKeyAndMessageName);
-  }
-
-  public boolean exists(final MessageStartEventSubscriptionRecord subscription) {
-    messageName.wrapBuffer(subscription.getMessageNameBuffer());
-    processDefinitionKey.wrapLong(subscription.getProcessDefinitionKey());
-
-    return subscriptionsColumnFamily.exists(messageNameAndProcessDefinitionKey);
-  }
-
-  public void visitSubscriptionsByProcessDefinition(
-      final long processDefinitionKey, final MessageStartEventSubscriptionVisitor visitor) {
-    this.processDefinitionKey.wrapLong(processDefinitionKey);
-
-    subscriptionsOfProcessDefinitionKeyColumnFamily.whileEqualPrefix(
-        this.processDefinitionKey,
-        (key, value) -> {
-          final var subscription =
-              subscriptionsColumnFamily.get(messageNameAndProcessDefinitionKey);
-
-          if (subscription != null) {
-            visitor.visit(subscription);
-          }
-        });
-  }
-
-  public void visitSubscriptionsByMessageName(
-      final DirectBuffer messageName, final MessageStartEventSubscriptionVisitor visitor) {
-
-    this.messageName.wrapBuffer(messageName);
-    subscriptionsColumnFamily.whileEqualPrefix(
-        this.messageName,
-        (key, value) -> {
-          visitor.visit(value);
-        });
   }
 }
