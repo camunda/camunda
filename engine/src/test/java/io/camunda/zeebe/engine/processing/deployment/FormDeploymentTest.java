@@ -35,6 +35,8 @@ public class FormDeploymentTest {
   private static final String TEST_FORM_2 = "/form/test-form-2.form";
   private static final String TEST_FORM_WITHOUT_ID = "/form/test-form_without_id.form";
   private static final String TEST_FORM_WITH_BLANK_ID = "/form/test-form_with_blank_id.form";
+  private static final String TEST_FORM_1_ID = "Form_0w7r08e";
+  private static final String TEST_FORM_2_ID = "Form_6s1b76p";
 
   @Rule public final EngineRule engine = EngineRule.singlePartition();
 
@@ -107,7 +109,7 @@ public class FormDeploymentTest {
 
     final Form formRecord = record.getValue();
     Assertions.assertThat(formRecord)
-        .hasFormId("Form_0w7r08e")
+        .hasFormId(TEST_FORM_1_ID)
         .hasResourceName(TEST_FORM_1)
         .hasVersion(1);
 
@@ -187,7 +189,7 @@ public class FormDeploymentTest {
         .hasSize(2)
         .extracting(Record::getValue)
         .extracting(FormMetadataValue::getFormId, FormMetadataValue::getVersion)
-        .contains(tuple("Form_0w7r08e", 1), tuple("Form_0w7r08e", 2));
+        .contains(tuple(TEST_FORM_1_ID, 1), tuple(TEST_FORM_1_ID, 2));
   }
 
   @Test
@@ -213,7 +215,7 @@ public class FormDeploymentTest {
         .hasSize(2)
         .extracting(Record::getValue)
         .extracting(FormMetadataValue::getFormId, FormMetadataValue::getVersion)
-        .contains(tuple("Form_0w7r08e", 1), tuple("Form_6s1b76p", 1));
+        .contains(tuple(TEST_FORM_1_ID, 1), tuple(TEST_FORM_2_ID, 1));
   }
 
   @Test
@@ -235,14 +237,14 @@ public class FormDeploymentTest {
     assertThat(deploymentEvent.getValue().getFormMetadata()).hasSize(2);
 
     final var formMetadata1 = deploymentEvent.getValue().getFormMetadata().get(0);
-    Assertions.assertThat(formMetadata1).hasFormId("Form_0w7r08e");
+    Assertions.assertThat(formMetadata1).hasFormId(TEST_FORM_1_ID);
     assertThat(formMetadata1.getFormKey()).isPositive();
     assertThat(formMetadata1.getChecksum())
         .describedAs("Expect the MD5 checksum of the Form resource")
         .isEqualTo(getChecksum(TEST_FORM_1));
 
     final var formMetadata2 = deploymentEvent.getValue().getFormMetadata().get(1);
-    Assertions.assertThat(formMetadata2).hasFormId("Form_6s1b76p");
+    Assertions.assertThat(formMetadata2).hasFormId(TEST_FORM_2_ID);
     assertThat(formMetadata2.getFormKey()).isPositive();
     assertThat(formMetadata2.getChecksum())
         .describedAs("Expect the MD5 checksum of the DMN resource")
@@ -271,7 +273,94 @@ public class FormDeploymentTest {
             String.format(
                 "Expected the form ids to be unique within a deployment"
                     + " but found a duplicated id '%s' in the resources '%s' and '%s'.",
-                "Form_0w7r08e", TEST_FORM_1, TEST_FORM_1_V2));
+                TEST_FORM_1_ID, TEST_FORM_1, TEST_FORM_1_V2));
+  }
+
+  @Test
+  public void shouldCreateFormForTenant() {
+    // given
+    final String tenant = "tenant";
+
+    // when
+    final var deployment =
+        engine.deployment().withXmlClasspathResource(TEST_FORM_1).withTenantId(tenant).deploy();
+
+    // then
+    assertThat(deployment.getValue().getTenantId()).isEqualTo(tenant);
+    assertThat(
+            RecordingExporter.formRecords()
+                .withIntent(FormIntent.CREATED)
+                .withFormId(TEST_FORM_1_ID)
+                .limit(1))
+        .extracting(Record::getValue)
+        .extracting(
+            FormMetadataValue::getFormId,
+            FormMetadataValue::getVersion,
+            FormMetadataValue::getTenantId)
+        .describedAs("Form is created for correct tenant")
+        .containsExactly(tuple(TEST_FORM_1_ID, 1, tenant));
+  }
+
+  @Test
+  public void shouldCreateFormsForTenant() {
+    // given
+    final String tenant = "tenant";
+
+    // when
+    final var deployment =
+        engine
+            .deployment()
+            .withXmlClasspathResource(TEST_FORM_1)
+            .withXmlClasspathResource(TEST_FORM_2)
+            .withTenantId(tenant)
+            .deploy();
+
+    // then
+    assertThat(deployment.getValue().getTenantId()).isEqualTo(tenant);
+    assertThat(RecordingExporter.formRecords().withIntent(FormIntent.CREATED).limit(2))
+        .extracting(Record::getValue)
+        .extracting(
+            FormMetadataValue::getFormId,
+            FormMetadataValue::getVersion,
+            FormMetadataValue::getTenantId)
+        .describedAs("Forms are created for correct tenant")
+        .containsExactly(tuple(TEST_FORM_1_ID, 1, tenant), tuple(TEST_FORM_2_ID, 1, tenant));
+  }
+
+  @Test
+  public void shouldCreateFormsForTenants() {
+    // given
+    final String tenant1 = "tenant1";
+    final String tenant2 = "tenant2";
+
+    // when
+    final var deployment1 =
+        engine.deployment().withXmlClasspathResource(TEST_FORM_1).withTenantId(tenant1).deploy();
+    final var deployment2 =
+        engine.deployment().withXmlClasspathResource(TEST_FORM_1).withTenantId(tenant2).deploy();
+
+    // then
+    assertThat(deployment1.getKey())
+        .describedAs("Does two different deployments")
+        .isNotEqualTo(deployment2.getKey());
+    assertThat(deployment1.getValue().getFormMetadata().get(0).getFormKey())
+        .describedAs("Created 2 different forms")
+        .isNotEqualTo(deployment2.getValue().getFormMetadata().get(0));
+    assertThat(deployment1.getValue().getTenantId()).isEqualTo(tenant1);
+    assertThat(deployment2.getValue().getTenantId()).isEqualTo(tenant2);
+
+    assertThat(
+            RecordingExporter.formRecords()
+                .withIntent(FormIntent.CREATED)
+                .withFormId(TEST_FORM_1_ID)
+                .limit(2))
+        .extracting(Record::getValue)
+        .extracting(
+            FormMetadataValue::getFormId,
+            FormMetadataValue::getVersion,
+            FormMetadataValue::getTenantId)
+        .describedAs("Forms are created for correct tenants")
+        .containsExactly(tuple(TEST_FORM_1_ID, 1, tenant1), tuple(TEST_FORM_1_ID, 1, tenant2));
   }
 
   private byte[] readResource(final String resourceName) {
