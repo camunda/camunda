@@ -22,14 +22,12 @@ public final class LegacyMessageStartEventSubscriptionState {
 
   private final DbString messageName;
   private final DbLong processDefinitionKey;
-
   // (messageName, processDefinitionKey => MessageSubscription)
   private final DbCompositeKey<DbString, DbLong> messageNameAndProcessDefinitionKey;
   private final ColumnFamily<DbCompositeKey<DbString, DbLong>, MessageStartEventSubscription>
       subscriptionsColumnFamily;
   private final MessageStartEventSubscription messageStartEventSubscription =
       new MessageStartEventSubscription();
-
   // (processDefinitionKey, messageName) => \0  : to find existing subscriptions of a process
   private final DbCompositeKey<DbLong, DbString> processDefinitionKeyAndMessageName;
   private final ColumnFamily<DbCompositeKey<DbLong, DbString>, DbNil>
@@ -65,5 +63,15 @@ public final class LegacyMessageStartEventSubscriptionState {
         messageNameAndProcessDefinitionKey, messageStartEventSubscription);
     subscriptionsOfProcessDefinitionKeyColumnFamily.upsert(
         processDefinitionKeyAndMessageName, DbNil.INSTANCE);
+  }
+
+  public ColumnFamily<DbCompositeKey<DbString, DbLong>, MessageStartEventSubscription>
+      getSubscriptionsColumnFamily() {
+    return subscriptionsColumnFamily;
+  }
+
+  public ColumnFamily<DbCompositeKey<DbLong, DbString>, DbNil>
+      getSubscriptionsOfProcessDefinitionKeyColumnFamily() {
+    return subscriptionsOfProcessDefinitionKeyColumnFamily;
   }
 }
