@@ -303,6 +303,7 @@ export class DashboardEdit extends React.Component {
               setAvailableFilters={(availableFilters) => this.setState({availableFilters})}
             />
             <AutoRefreshSelect
+              size="md"
               refreshRateMs={refreshRateSeconds * 1000}
               onChange={(refreshRateMs) =>
                 this.setState({refreshRateSeconds: refreshRateMs / 1000 || null})

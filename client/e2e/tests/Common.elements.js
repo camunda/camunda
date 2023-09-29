@@ -54,7 +54,7 @@ export const templateModalProcessField = Selector('.Modal .DefinitionSelection i
 export const firstOption = Selector('.TemplateModal .cds--list-box__menu-item');
 export const modalContainer = Selector('div:not([aria-hidden="true"]) > .cds--modal-container');
 export const controlPanel = Selector('.ReportControlPanel');
-export const nameEditField = Selector('.EntityNameForm .name-input');
+export const nameEditField = Selector('.EntityNameForm .name-input input');
 export const typeahead = Selector('.Typeahead');
 export const typeaheadOption = (text) => typeahead.find('.DropdownOption').withText(text);
 export const notification = Selector('.Notification');

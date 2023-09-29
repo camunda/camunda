@@ -17,7 +17,7 @@ import AutoRefreshIcon from './AutoRefreshIcon';
 
 import './AutoRefreshSelect.scss';
 
-export default function AutoRefreshSelect({refreshRateMs, onRefresh, onChange}) {
+export default function AutoRefreshSelect({refreshRateMs, onRefresh, onChange, size}) {
   const [autoRefreshHandle, setAutoRefreshHandle] = useState(() =>
     refreshRateMs && onRefresh ? setInterval(onRefresh, refreshRateMs) : null
   );
@@ -73,8 +73,12 @@ export default function AutoRefreshSelect({refreshRateMs, onRefresh, onChange}) 
   ];
 
   return (
-    <Tooltip label={t('dashboard.autoRefresh')} className="cds--icon-tooltip" leaveDelayMs={50}>
-      <div className="AutoRefreshSelect">
+    <Tooltip
+      label={t('dashboard.autoRefresh')}
+      className="AutoRefreshSelect cds--icon-tooltip"
+      leaveDelayMs={50}
+    >
+      <div className="">
         <Button
           className={classnames('cds--menu-button__trigger', {
             'cds--menu-button__trigger--open': open,
@@ -88,6 +92,7 @@ export default function AutoRefreshSelect({refreshRateMs, onRefresh, onChange}) 
           onClick={handleClick}
           onMouseDown={handleMousedown}
           aria-controls={open ? 'autoRefreshSelect' : undefined}
+          size={size}
         >
           {onRefresh ? <AutoRefreshIcon interval={refreshRateMs} /> : <UpdateNow />}
         </Button>
@@ -101,6 +106,7 @@ export default function AutoRefreshSelect({refreshRateMs, onRefresh, onChange}) 
           onOpen={handleOpen}
           x={x}
           y={y}
+          size={size}
         >
           {menuItems.map(({value, label}) => {
             const currentValue = !refreshRateMs ? 'off' : (refreshRateMs / (60 * 1000)).toString();

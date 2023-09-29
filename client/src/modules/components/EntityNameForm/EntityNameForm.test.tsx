@@ -7,13 +7,18 @@
 
 import {shallow} from 'enzyme';
 
-import {Input} from 'components';
+import {TextInput} from '@carbon/react';
 
-import {EntityNameForm} from './EntityNameForm';
+import EntityNameForm from './EntityNameForm';
+
+jest.mock('hooks', () => ({
+  useErrorHandling: jest.fn().mockReturnValue({
+    mightFail: (promise: Promise<any>, cb: ((response: any) => any) | undefined) => cb?.(promise),
+  }),
+}));
 
 const props = {
   entity: 'Report',
-  mightFail: (promise: Promise<any>, cb: ((response: any) => any) | undefined) => cb?.(promise),
   name: 'Name',
   isNew: false,
   onSave: jest.fn(),
@@ -24,7 +29,7 @@ const props = {
 it('should provide name edit input', () => {
   const node = shallow(<EntityNameForm {...props} />);
 
-  expect(node.find(Input)).toExist();
+  expect(node.find(TextInput)).toExist();
 });
 
 it('should provide a link to view mode', () => {
@@ -55,7 +60,7 @@ it('should call change function on input change', () => {
 
   const evt = {target: {value: 'asdf'}};
 
-  node.find(Input).simulate('change', evt);
+  node.find(TextInput).simulate('change', evt);
 
   expect(spy).toHaveBeenCalledWith(evt);
 });
