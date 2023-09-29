@@ -12,73 +12,70 @@ import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.RejectionType;
-import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.camunda.zeebe.protocol.record.intent.SignalIntent;
+import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.time.Duration;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
 
-public class TenantAwareSignalEventTest {
+public class TenantAwareTimerEventTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
   @Rule public final TestWatcher testWatcher = new RecordingExporterTestWatcher();
   private String processId;
-  private String signalName;
 
   @Before
   public void setup() {
     processId = Strings.newRandomValidBpmnId();
-    signalName = "signal-%s".formatted(processId);
   }
 
   @Test
-  public void shouldBroadcastSignalForDefaultTenant() {
-    // given
-    ENGINE
-        .deployment()
-        .withXmlResource(
-            Bpmn.createExecutableProcess(processId)
-                .startEvent("signal-start")
-                .signal(signalName)
-                .endEvent()
-                .done())
-        .withTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
-        .deploy();
-
+  public void shouldCreateTimerForDefaultTenant() {
     // when
-    final var broadcasted = ENGINE.signal().withSignalName(signalName).broadcast();
+    final var deployed =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent("timer-start")
+                    .timerWithDuration(Duration.ofMinutes(10))
+                    .endEvent()
+                    .done())
+            .withTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+            .deploy();
 
     // then
-    assertThat(broadcasted)
-        .describedAs("Expect that signal was broadcasted successful")
-        .hasIntent(SignalIntent.BROADCASTED);
+    assertThat(deployed)
+        .describedAs("Expect that process with timer was deployed successful")
+        .hasIntent(DeploymentIntent.CREATED);
 
     assertThat(
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-                .withBpmnProcessId(processId)
-                .withElementId("signal-start")
+            RecordingExporter.timerRecords(TimerIntent.CREATED)
+                .withProcessDefinitionKey(
+                    deployed.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey())
                 .getFirst())
-        .describedAs("Expect that process instance was created")
+        .describedAs("Expect that timer was created")
         .isNotNull();
   }
 
   @Test
-  public void shouldRejectDeployProcessWithSignalForSpecificTenant() {
+  public void shouldRejectDeployProcessWithTimerForSpecificTenant() {
     // when
     final var rejection =
         ENGINE
             .deployment()
             .withXmlResource(
                 Bpmn.createExecutableProcess(processId)
-                    .startEvent("signal-start")
-                    .signal(signalName)
+                    .startEvent("timer-start")
+                    .timerWithDuration(Duration.ofMinutes(10))
                     .endEvent()
                     .done())
             .withTenantId("custom-tenant")
@@ -94,14 +91,14 @@ public class TenantAwareSignalEventTest {
             `process.xml`: - Process: %s
                 - ERROR: Processes belonging to custom tenants are not allowed to contain elements \
             unsupported with multi-tenancy. Only the default tenant '<default>' supports these \
-            elements currently: ['signal-start' of type 'SIGNAL' 'START_EVENT']. \
+            elements currently: ['timer-start' of type 'TIMER' 'START_EVENT']. \
             See https://github.com/camunda/zeebe/issues/12653 for more details.
             """
                 .formatted(processId));
   }
 
   @Test
-  public void shouldRejectDeployProcessWithSignalCatchEventForSpecificTenant() {
+  public void shouldRejectDeployProcessWithTimerCatchEventForSpecificTenant() {
     // when
     final var rejection =
         ENGINE
@@ -109,8 +106,8 @@ public class TenantAwareSignalEventTest {
             .withXmlResource(
                 Bpmn.createExecutableProcess(processId)
                     .startEvent()
-                    .intermediateCatchEvent("signal-catch")
-                    .signal(signalName)
+                    .intermediateCatchEvent("timer-catch")
+                    .timerWithDuration(Duration.ofMinutes(10))
                     .endEvent()
                     .done())
             .withTenantId("custom-tenant")
@@ -126,7 +123,7 @@ public class TenantAwareSignalEventTest {
             `process.xml`: - Process: %s
                 - ERROR: Processes belonging to custom tenants are not allowed to contain elements \
             unsupported with multi-tenancy. Only the default tenant '<default>' supports these \
-            elements currently: ['signal-catch' of type 'SIGNAL' 'INTERMEDIATE_CATCH_EVENT']. \
+            elements currently: ['timer-catch' of type 'TIMER' 'INTERMEDIATE_CATCH_EVENT']. \
             See https://github.com/camunda/zeebe/issues/12653 for more details.
             """
                 .formatted(processId));
@@ -134,7 +131,7 @@ public class TenantAwareSignalEventTest {
 
   @Test
   public void
-      shouldRejectDeployProcessWithSignalCatchEventAttachedToEventBasedGatewayForSpecificTenant() {
+      shouldRejectDeployProcessWithTimerCatchEventAttachedToEventBasedGatewayForSpecificTenant() {
     // when
     final var rejection =
         ENGINE
@@ -143,8 +140,8 @@ public class TenantAwareSignalEventTest {
                 Bpmn.createExecutableProcess(processId)
                     .startEvent()
                     .eventBasedGateway()
-                    .intermediateCatchEvent("signal-catch-attached")
-                    .signal(signalName)
+                    .intermediateCatchEvent("timer-catch-attached")
+                    .timerWithDuration(Duration.ofMinutes(10))
                     .endEvent()
                     .moveToLastGateway()
                     .intermediateCatchEvent()
@@ -164,14 +161,14 @@ public class TenantAwareSignalEventTest {
             `process.xml`: - Process: %s
                 - ERROR: Processes belonging to custom tenants are not allowed to contain elements \
             unsupported with multi-tenancy. Only the default tenant '<default>' supports these \
-            elements currently: ['signal-catch-attached' of type 'SIGNAL' 'INTERMEDIATE_CATCH_EVENT']. \
+            elements currently: ['timer-catch-attached' of type 'TIMER' 'INTERMEDIATE_CATCH_EVENT']. \
             See https://github.com/camunda/zeebe/issues/12653 for more details.
             """
                 .formatted(processId));
   }
 
   @Test
-  public void shouldRejectDeployProcessWithSignalEventSubProcessEventForSpecificTenant() {
+  public void shouldRejectDeployProcessWithTimerEventSubProcessEventForSpecificTenant() {
     // when
     final var rejection =
         ENGINE
@@ -179,9 +176,11 @@ public class TenantAwareSignalEventTest {
             .withXmlResource(
                 Bpmn.createExecutableProcess(processId)
                     .eventSubProcess(
-                        "signal-sub",
+                        "timer-sub",
                         sub ->
-                            sub.startEvent("signal-start-event-sub").signal(signalName).endEvent())
+                            sub.startEvent("timer-start-event-sub")
+                                .timerWithDuration(Duration.ofMinutes(10))
+                                .endEvent())
                     .startEvent()
                     .endEvent()
                     .done())
@@ -198,14 +197,14 @@ public class TenantAwareSignalEventTest {
             `process.xml`: - Process: %s
                 - ERROR: Processes belonging to custom tenants are not allowed to contain elements \
             unsupported with multi-tenancy. Only the default tenant '<default>' supports these \
-            elements currently: ['signal-start-event-sub' of type 'SIGNAL' 'START_EVENT']. \
+            elements currently: ['timer-start-event-sub' of type 'TIMER' 'START_EVENT']. \
             See https://github.com/camunda/zeebe/issues/12653 for more details.
             """
                 .formatted(processId));
   }
 
   @Test
-  public void shouldRejectDeployProcessWithSignalBoundaryEventForSpecificTenant() {
+  public void shouldRejectDeployProcessWithTimerBoundaryEventForSpecificTenant() {
     // when
     final var rejection =
         ENGINE
@@ -214,8 +213,8 @@ public class TenantAwareSignalEventTest {
                 Bpmn.createExecutableProcess(processId)
                     .startEvent()
                     .manualTask()
-                    .boundaryEvent("signal-boundary")
-                    .signal(signalName)
+                    .boundaryEvent("timer-boundary")
+                    .timerWithDuration(Duration.ofMinutes(10))
                     .endEvent()
                     .done())
             .withTenantId("custom-tenant")
@@ -231,70 +230,7 @@ public class TenantAwareSignalEventTest {
             `process.xml`: - Process: %s
                 - ERROR: Processes belonging to custom tenants are not allowed to contain elements \
             unsupported with multi-tenancy. Only the default tenant '<default>' supports these \
-            elements currently: ['signal-boundary' of type 'SIGNAL' 'BOUNDARY_EVENT']. \
-            See https://github.com/camunda/zeebe/issues/12653 for more details.
-            """
-                .formatted(processId));
-  }
-
-  @Test
-  public void shouldRejectDeployProcessWithSignalThrowEventForSpecificTenant() {
-    // when
-    final var rejection =
-        ENGINE
-            .deployment()
-            .withXmlResource(
-                Bpmn.createExecutableProcess(processId)
-                    .startEvent()
-                    .intermediateThrowEvent("signal-throw")
-                    .signal(signalName)
-                    .endEvent()
-                    .done())
-            .withTenantId("custom-tenant")
-            .expectRejection()
-            .deploy();
-
-    // then
-    assertThat(rejection)
-        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
-        .hasRejectionReason(
-            """
-            Expected to deploy new resources, but encountered the following errors:
-            `process.xml`: - Process: %s
-                - ERROR: Processes belonging to custom tenants are not allowed to contain elements \
-            unsupported with multi-tenancy. Only the default tenant '<default>' supports these \
-            elements currently: ['signal-throw' of type 'SIGNAL' 'INTERMEDIATE_THROW_EVENT']. \
-            See https://github.com/camunda/zeebe/issues/12653 for more details.
-            """
-                .formatted(processId));
-  }
-
-  @Test
-  public void shouldRejectDeployProcessWithSignalEndEventForSpecificTenant() {
-    // when
-    final var rejection =
-        ENGINE
-            .deployment()
-            .withXmlResource(
-                Bpmn.createExecutableProcess(processId)
-                    .startEvent()
-                    .endEvent("signal-end")
-                    .signal(signalName)
-                    .done())
-            .withTenantId("custom-tenant")
-            .expectRejection()
-            .deploy();
-
-    // then
-    assertThat(rejection)
-        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
-        .hasRejectionReason(
-            """
-            Expected to deploy new resources, but encountered the following errors:
-            `process.xml`: - Process: %s
-                - ERROR: Processes belonging to custom tenants are not allowed to contain elements \
-            unsupported with multi-tenancy. Only the default tenant '<default>' supports these \
-            elements currently: ['signal-end' of type 'SIGNAL' 'END_EVENT']. \
+            elements currently: ['timer-boundary' of type 'TIMER' 'BOUNDARY_EVENT']. \
             See https://github.com/camunda/zeebe/issues/12653 for more details.
             """
                 .formatted(processId));

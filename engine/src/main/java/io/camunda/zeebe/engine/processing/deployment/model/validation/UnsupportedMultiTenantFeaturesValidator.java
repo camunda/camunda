@@ -31,7 +31,7 @@ public final class UnsupportedMultiTenantFeaturesValidator {
   private static final EnumSet<BpmnElementType> REJECTED_ELEMENT_TYPES =
       EnumSet.noneOf(BpmnElementType.class);
   private static final EnumSet<BpmnEventType> UNSUPPORTED_EVENT_TYPES =
-      EnumSet.of(BpmnEventType.SIGNAL);
+      EnumSet.of(BpmnEventType.SIGNAL, BpmnEventType.TIMER);
 
   /**
    * Validates a list of processes for containing unsupported elements when used with multi-tenancy.
