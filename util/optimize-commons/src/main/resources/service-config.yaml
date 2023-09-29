@@ -719,7 +719,7 @@ caches:
   cloudTenantAuthorizations:
     maxSize: ${CAMUNDA_OPTIMIZE_CACHES_CLOUD_TENANT_AUTHORIZATIONS_MAX_SIZE:10000}
     # the time (in millis) the tenant authorizations will be cached
-    defaultTtlMillis: ${CAMUNDA_OPTIMIZE_CACHES_CLOUD_TENANT_AUTHORIZATIONS_MIN_FETCH_INTERVAL_SECONDS:600000}
+    defaultTtlMillis: ${CAMUNDA_OPTIMIZE_CACHES_CLOUD_TENANT_AUTHORIZATIONS_MIN_FETCH_INTERVAL_SECONDS:300000}
 
 externalVariable:
   import:
