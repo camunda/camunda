@@ -11,6 +11,7 @@ import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
 import io.camunda.zeebe.test.util.MsgPackUtil;
@@ -42,6 +43,7 @@ public final class VariableClient {
 
   private LongFunction<Record<VariableDocumentRecordValue>> expectation =
       SUCCESSFUL_EXPECTATION_SUPPLIER;
+  private String[] authorizedTenants = new String[] {TenantOwned.DEFAULT_TENANT_IDENTIFIER};
 
   public VariableClient(final CommandWriter writer) {
     this.writer = writer;
@@ -73,6 +75,11 @@ public final class VariableClient {
     return this;
   }
 
+  public VariableClient forAuthorizedTenants(final String... authorizedTenants) {
+    this.authorizedTenants = authorizedTenants;
+    return this;
+  }
+
   public VariableClient expectRejection() {
     expectation = REJECTION_EXPECTATION_SUPPLIER;
     return this;
@@ -80,7 +87,8 @@ public final class VariableClient {
 
   public Record<VariableDocumentRecordValue> update() {
     final long position =
-        writer.writeCommand(VariableDocumentIntent.UPDATE, variableDocumentRecord);
+        writer.writeCommand(
+            VariableDocumentIntent.UPDATE, variableDocumentRecord, authorizedTenants);
     return expectation.apply(position);
   }
 }
