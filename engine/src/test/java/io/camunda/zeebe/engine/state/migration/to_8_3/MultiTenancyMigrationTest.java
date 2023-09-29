@@ -27,8 +27,8 @@ import io.camunda.zeebe.engine.state.deployment.PersistedDecision;
 import io.camunda.zeebe.engine.state.deployment.PersistedProcess.PersistedProcessState;
 import io.camunda.zeebe.engine.state.immutable.MigrationState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
-import io.camunda.zeebe.engine.state.message.DbMessageStartEventSubscriptionState;
 import io.camunda.zeebe.engine.state.instance.DbJobState;
+import io.camunda.zeebe.engine.state.message.DbMessageStartEventSubscriptionState;
 import io.camunda.zeebe.engine.state.message.DbMessageState;
 import io.camunda.zeebe.engine.state.message.DbMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.message.DbProcessMessageSubscriptionState;
@@ -36,8 +36,8 @@ import io.camunda.zeebe.engine.state.message.MessageStartEventSubscription;
 import io.camunda.zeebe.engine.state.message.MessageSubscription;
 import io.camunda.zeebe.engine.state.message.StoredMessage;
 import io.camunda.zeebe.engine.state.migration.to_8_3.legacy.LegacyDecisionState;
-import io.camunda.zeebe.engine.state.migration.to_8_3.legacy.LegacyMessageStartEventSubscriptionState;
 import io.camunda.zeebe.engine.state.migration.to_8_3.legacy.LegacyJobState;
+import io.camunda.zeebe.engine.state.migration.to_8_3.legacy.LegacyMessageStartEventSubscriptionState;
 import io.camunda.zeebe.engine.state.migration.to_8_3.legacy.LegacyMessageState;
 import io.camunda.zeebe.engine.state.migration.to_8_3.legacy.LegacyMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.migration.to_8_3.legacy.LegacyProcessMessageSubscriptionState;
@@ -867,7 +867,7 @@ public class MultiTenancyMigrationTest {
 
     @BeforeEach
     void setup() {
-      legacyState = new LegacyJobState(zeebeDb, transactionContext, 1);
+      legacyState = new LegacyJobState(zeebeDb, transactionContext);
       jobState = new DbJobState(zeebeDb, transactionContext);
     }
 
@@ -907,7 +907,7 @@ public class MultiTenancyMigrationTest {
               .setElementId(elementId)
               .setElementInstanceKey(elementInstanceKey)
               .setCustomHeaders(wrapArray(MsgPackConverter.convertToMsgPack(customHeaders)));
-      legacyState.create(1l, jobRecord);
+      legacyState.create(jobKey, jobRecord);
 
       // when
       sut.runMigration(processingState);

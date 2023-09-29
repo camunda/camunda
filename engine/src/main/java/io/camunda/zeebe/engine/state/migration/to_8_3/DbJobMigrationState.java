@@ -28,10 +28,7 @@ public class DbJobMigrationState {
 
   public DbJobMigrationState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
-    // Hardcoded partition id as this is only relevant for metrics. It doesn't have any impact on
-    // the migration.
-    final int partitionId = -1;
-    from = new LegacyJobState(zeebeDb, transactionContext, partitionId);
+    from = new LegacyJobState(zeebeDb, transactionContext);
     to = new DbJobState(zeebeDb, transactionContext);
   }
 
