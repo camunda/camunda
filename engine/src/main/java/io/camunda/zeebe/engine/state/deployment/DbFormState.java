@@ -13,6 +13,8 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbString;
+import io.camunda.zeebe.db.impl.DbTenantAwareKey;
+import io.camunda.zeebe.db.impl.DbTenantAwareKey.PlacementType;
 import io.camunda.zeebe.engine.state.mutable.MutableFormState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.FormRecord;
@@ -23,32 +25,39 @@ public class DbFormState implements MutableFormState {
 
   private static final int DEFAULT_VERSION_VALUE = 0;
 
+  private final DbString tenantIdKey;
   private final DbLong dbFormKey;
+  private final DbTenantAwareKey<DbLong> tenantAwareFormKey;
   private final PersistedForm dbPersistedForm;
-  private final ColumnFamily<DbLong, PersistedForm> formsByKey;
+  private final ColumnFamily<DbTenantAwareKey<DbLong>, PersistedForm> formsByKey;
   private final DbString dbFormId;
   private final VersionManager versionManager;
   private final DbLong formVersion;
   private final DbCompositeKey<DbString, DbLong> idAndVersionKey;
-  private final ColumnFamily<DbCompositeKey<DbString, DbLong>, PersistedForm>
+  private final DbTenantAwareKey<DbCompositeKey<DbString, DbLong>> tenantAwareIdAndVersionKey;
+  private final ColumnFamily<DbTenantAwareKey<DbCompositeKey<DbString, DbLong>>, PersistedForm>
       formByIdAndVersionColumnFamily;
 
   public DbFormState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
+    tenantIdKey = new DbString();
     dbFormKey = new DbLong();
+    tenantAwareFormKey = new DbTenantAwareKey<>(tenantIdKey, dbFormKey, PlacementType.PREFIX);
     dbPersistedForm = new PersistedForm();
     formsByKey =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.FORMS, transactionContext, dbFormKey, dbPersistedForm);
+            ZbColumnFamilies.FORMS, transactionContext, tenantAwareFormKey, dbPersistedForm);
 
     dbFormId = new DbString();
     formVersion = new DbLong();
     idAndVersionKey = new DbCompositeKey<>(dbFormId, formVersion);
+    tenantAwareIdAndVersionKey =
+        new DbTenantAwareKey<>(tenantIdKey, idAndVersionKey, PlacementType.PREFIX);
     formByIdAndVersionColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.FORM_BY_ID_AND_VERSION,
             transactionContext,
-            idAndVersionKey,
+            tenantAwareIdAndVersionKey,
             dbPersistedForm);
 
     versionManager =
