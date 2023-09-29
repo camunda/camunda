@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.BpmnFactory;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.BpmnTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.validation.StraightThroughProcessingLoopValidator;
+import io.camunda.zeebe.engine.processing.deployment.model.validation.UnsupportedMultiTenantFeaturesValidator;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
@@ -76,6 +77,10 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
                 final var executableProcesses = bpmnTransformer.transformDefinitions(definition);
 
                 return checkForDuplicateBpmnId(definition, resource, deployment)
+                    .flatMap(
+                        ok ->
+                            UnsupportedMultiTenantFeaturesValidator.validate(
+                                resource, executableProcesses, deployment.getTenantId()))
                     .flatMap(
                         ok -> {
                           if (enableStraightThroughProcessingLoopDetector) {
