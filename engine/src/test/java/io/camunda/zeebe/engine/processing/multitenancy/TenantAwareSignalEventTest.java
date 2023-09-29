@@ -18,7 +18,6 @@ import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
-import java.time.Duration;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -149,7 +148,7 @@ public class TenantAwareSignalEventTest {
                     .endEvent()
                     .moveToLastGateway()
                     .intermediateCatchEvent()
-                    .timerWithDuration(Duration.ofMinutes(10))
+                    .message(m -> m.name("message").zeebeCorrelationKeyExpression("key"))
                     .endEvent()
                     .done())
             .withTenantId("custom-tenant")
