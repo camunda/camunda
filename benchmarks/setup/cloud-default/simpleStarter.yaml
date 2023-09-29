@@ -19,7 +19,7 @@ spec:
         image: gcr.io/zeebe-io/starter:SNAPSHOT
         imagePullPolicy: Always
         env:
-          - name: JAVA_OPTIONS
+          - name: JDK_JAVA_OPTIONS
             value: >-
               -Dapp.tls=true
               -Dapp.starter.rate=300
