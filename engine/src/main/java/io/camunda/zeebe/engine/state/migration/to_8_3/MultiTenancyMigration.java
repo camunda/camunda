@@ -34,5 +34,6 @@ public class MultiTenancyMigration implements MigrationTask {
     migrationState.migrateMessageStartEventSubscriptionForMultiTenancy();
     migrationState.migrateMessageEventSubscriptionForMultiTenancy();
     migrationState.migrateProcessMessageSubscriptionForMultiTenancy();
+    migrationState.migrateJobStateForMultiTenancy();
   }
 }
