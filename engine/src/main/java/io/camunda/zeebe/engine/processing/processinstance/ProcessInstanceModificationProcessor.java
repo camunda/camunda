@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.processinstance;
 
 import static java.util.function.Predicate.not;
 
+import io.camunda.zeebe.auth.impl.TenantAuthorizationCheckerImpl;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
@@ -60,6 +61,11 @@ public final class ProcessInstanceModificationProcessor
 
   private static final String ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND =
       "Expected to modify process instance but no process instance found with key '%d'";
+  private static final String ERROR_MESSAGE_PROCESS_INSTANCE_BELONGS_TO_SPECIFIC_TENANT =
+      "Expected to modify process instance but process instance belongs to tenant '%s'"
+          + " while modification is not yet supported with multi-tenancy."
+          + " Only process instances belonging to the default tenant '<default>' can be modified."
+          + " See https://github.com/camunda/zeebe/issues/13288 for more details.";
   private static final String ERROR_MESSAGE_ACTIVATE_ELEMENT_NOT_FOUND =
       "Expected to modify instance of process '%s' but it contains one or more activate instructions"
           + " with an element that could not be found: '%s'";
@@ -171,6 +177,14 @@ public final class ProcessInstanceModificationProcessor
         elementInstanceState.getInstance(value.getProcessInstanceKey());
 
     if (processInstance == null) {
+      final String reason = String.format(ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND, eventKey);
+      responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, reason);
+      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, reason);
+      return;
+    }
+
+    if (!TenantAuthorizationCheckerImpl.fromAuthorizationMap(command.getAuthorizations())
+        .isAuthorized(processInstance.getValue().getTenantId())) {
       final String reason = String.format(ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND, eventKey);
       responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, reason);
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, reason);

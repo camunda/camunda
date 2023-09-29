@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.variable;
 
+import io.camunda.zeebe.auth.impl.TenantAuthorizationCheckerImpl;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
@@ -22,6 +23,9 @@ import org.agrona.DirectBuffer;
 
 public final class UpdateVariableDocumentProcessor
     implements TypedRecordProcessor<VariableDocumentRecord> {
+
+  private static final String ERROR_MESSAGE_SCOPE_NOT_FOUND =
+      "Expected to update variables for element with key '%d', but no such element was found";
 
   private final ElementInstanceState elementInstanceState;
   private final KeyGenerator keyGenerator;
@@ -45,10 +49,15 @@ public final class UpdateVariableDocumentProcessor
 
     final ElementInstance scope = elementInstanceState.getInstance(value.getScopeKey());
     if (scope == null || scope.isTerminating() || scope.isInFinalState()) {
-      final String reason =
-          String.format(
-              "Expected to update variables for element with key '%d', but no such element was found",
-              value.getScopeKey());
+      final String reason = String.format(ERROR_MESSAGE_SCOPE_NOT_FOUND, value.getScopeKey());
+      writers.rejection().appendRejection(record, RejectionType.NOT_FOUND, reason);
+      writers.response().writeRejectionOnCommand(record, RejectionType.NOT_FOUND, reason);
+      return;
+    }
+
+    if (!TenantAuthorizationCheckerImpl.fromAuthorizationMap(record.getAuthorizations())
+        .isAuthorized(scope.getValue().getTenantId())) {
+      final String reason = String.format(ERROR_MESSAGE_SCOPE_NOT_FOUND, value.getScopeKey());
       writers.rejection().appendRejection(record, RejectionType.NOT_FOUND, reason);
       writers.response().writeRejectionOnCommand(record, RejectionType.NOT_FOUND, reason);
       return;

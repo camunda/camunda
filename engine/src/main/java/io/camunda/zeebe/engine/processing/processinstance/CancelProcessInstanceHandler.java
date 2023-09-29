@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.processinstance;
 
+import io.camunda.zeebe.auth.impl.TenantAuthorizationCheckerImpl;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -56,6 +57,13 @@ public final class CancelProcessInstanceHandler implements ProcessInstanceComman
         || !elementInstance.canTerminate()
         || elementInstance.getParentKey() > 0) {
 
+      commandContext.reject(
+          RejectionType.NOT_FOUND, String.format(PROCESS_NOT_FOUND_MESSAGE, command.getKey()));
+      return false;
+    }
+
+    if (!TenantAuthorizationCheckerImpl.fromAuthorizationMap(command.getAuthorizations())
+        .isAuthorized(elementInstance.getValue().getTenantId())) {
       commandContext.reject(
           RejectionType.NOT_FOUND, String.format(PROCESS_NOT_FOUND_MESSAGE, command.getKey()));
       return false;
