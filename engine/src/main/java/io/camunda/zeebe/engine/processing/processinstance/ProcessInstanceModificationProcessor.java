@@ -42,7 +42,6 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationActivateInstructionValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationTerminateInstructionValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationVariableInstructionValue;
-import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.records.ExceededBatchRecordSizeException;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
@@ -61,11 +60,6 @@ public final class ProcessInstanceModificationProcessor
 
   private static final String ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND =
       "Expected to modify process instance but no process instance found with key '%d'";
-  private static final String ERROR_MESSAGE_PROCESS_INSTANCE_BELONGS_TO_SPECIFIC_TENANT =
-      "Expected to modify process instance but process instance belongs to tenant '%s'"
-          + " while modification is not yet supported with multi-tenancy."
-          + " Only process instances belonging to the default tenant '<default>' can be modified."
-          + " See https://github.com/camunda/zeebe/issues/13288 for more details.";
   private static final String ERROR_MESSAGE_ACTIVATE_ELEMENT_NOT_FOUND =
       "Expected to modify instance of process '%s' but it contains one or more activate instructions"
           + " with an element that could not be found: '%s'";
@@ -180,15 +174,6 @@ public final class ProcessInstanceModificationProcessor
       final String reason = String.format(ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND, eventKey);
       responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, reason);
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, reason);
-      return;
-    }
-
-    final String tenantId = processInstance.getValue().getTenantId();
-    if (!Objects.equals(tenantId, TenantOwned.DEFAULT_TENANT_IDENTIFIER)) {
-      final String reason =
-          String.format(ERROR_MESSAGE_PROCESS_INSTANCE_BELONGS_TO_SPECIFIC_TENANT, tenantId);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_ARGUMENT, reason);
-      rejectionWriter.appendRejection(command, RejectionType.INVALID_ARGUMENT, reason);
       return;
     }
 
