@@ -503,8 +503,10 @@ export function efficiencyDashboardTemplate() {
         dimensions: {width: 5, height: 4},
         type: 'optimize_report',
         report: {
-          name: t('dashboard.templates.efficiency_unwantedOutcomeLastWeek'),
-          description: t('dashboard.templates.efficiency_unwantedOutcomeLastWeek-description'),
+          name: t('dashboard.templates.efficiency_typesOfUnwantedOutcomeLastWeek'),
+          description: t(
+            'dashboard.templates.efficiency_typesOfUnwantedOutcomeLastWeek-description'
+          ),
           data: {
             configuration: {
               sorting: {by: 'value', order: 'desc'},
