@@ -23,6 +23,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import com.google.common.util.concurrent.MoreExecutors;
@@ -152,7 +153,12 @@ public class NettyMessagingServiceTest {
     final String subject = nextSubject();
     final CompletableFuture<Void> response =
         netty1.sendAsync(unresolvable, subject, "hello world".getBytes());
-    assertTrue(response.isCompletedExceptionally());
+
+    assertThrows(
+        CompletionException.class,
+        () -> {
+          netty1.sendAsync(unresolvable, subject, "hello world".getBytes()).join();
+        });
   }
 
   @Test
@@ -200,7 +206,7 @@ public class NettyMessagingServiceTest {
     assertTrue(Arrays.equals("hello there".getBytes(), response.join()));
     assertTrue(handlerInvoked.get());
     assertTrue(Arrays.equals(request.get(), "hello world".getBytes()));
-    assertEquals(address1.address(), sender.get().address());
+    assertEquals(address1.tryResolveAddress(), sender.get().tryResolveAddress());
   }
 
   @Test
@@ -313,7 +319,7 @@ public class NettyMessagingServiceTest {
     assertTrue(Arrays.equals("hello there".getBytes(), response.join()));
     assertTrue(handlerInvoked.get());
     assertTrue(Arrays.equals(request.get(), "hello world".getBytes()));
-    assertEquals(address1.address(), sender.get().address());
+    assertEquals(address1.tryResolveAddress(), sender.get().tryResolveAddress());
   }
 
   @Test
