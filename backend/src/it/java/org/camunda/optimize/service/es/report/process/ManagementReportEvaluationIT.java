@@ -459,7 +459,7 @@ public class ManagementReportEvaluationIT extends AbstractProcessDefinitionIT {
           ),
           new ReportNameAndDescription(
             "In den letzten 6 Monaten gestartete Prozesse",
-            "Dieser Bericht gibt Aufschluss über die Verbreitung der Prozess Orchestrierung."
+            "Dieser Bericht gibt Aufschluss über Status der Einfürhung von Prozess Orchestrierung."
           ),
           new ReportNameAndDescription(
             "In den letzten 6 Monaten beendete Prozesse",
