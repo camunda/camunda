@@ -33,27 +33,26 @@ import org.junit.Test;
 public final class ConditionIncidentTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
-  private static final BpmnModelInstance PROCESS = Bpmn.createExecutableProcess("process")
-      .startEvent()
-      .exclusiveGateway("xor")
-      .sequenceFlowId("s1")
-      .conditionExpression("foo < 5")
-      .endEvent()
-      .moveToLastGateway()
-      .sequenceFlowId("s2")
-      .conditionExpression("foo > 10")
-      .endEvent()
-      .done();
+  private static final BpmnModelInstance PROCESS =
+      Bpmn.createExecutableProcess("process")
+          .startEvent()
+          .exclusiveGateway("xor")
+          .sequenceFlowId("s1")
+          .conditionExpression("foo < 5")
+          .endEvent()
+          .moveToLastGateway()
+          .sequenceFlowId("s2")
+          .conditionExpression("foo > 10")
+          .endEvent()
+          .done();
+
   @Rule
   public RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
 
   @BeforeClass
   public static void init() {
-    ENGINE
-        .deployment()
-        .withXmlResource(PROCESS)
-        .deploy();
+    ENGINE.deployment().withXmlResource(PROCESS).deploy();
   }
 
   @Test
@@ -128,15 +127,16 @@ public final class ConditionIncidentTest {
   public void shouldCreateIncidentOnConditionCatchEventWithCustomTenant() {
     // given
     final String tenantId = "acme";
-    ENGINE
-        .deployment()
-        .withXmlResource(PROCESS)
-        .withTenantId(tenantId)
-        .deploy();
+    ENGINE.deployment().withXmlResource(PROCESS).withTenantId(tenantId).deploy();
 
     // when
     final long processInstanceKey =
-        ENGINE.processInstance().ofBpmnProcessId("process").withVariable("foo", "bar").withTenantId(tenantId).create();
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId("process")
+            .withVariable("foo", "bar")
+            .withTenantId(tenantId)
+            .create();
 
     // then
     final Record<IncidentRecordValue> incidentEvent =
@@ -145,8 +145,7 @@ public final class ConditionIncidentTest {
             .withIntent(IncidentIntent.CREATED)
             .getFirst();
 
-    Assertions.assertThat(incidentEvent.getValue())
-        .hasTenantId(tenantId);
+    Assertions.assertThat(incidentEvent.getValue()).hasTenantId(tenantId);
   }
 
   @Test
