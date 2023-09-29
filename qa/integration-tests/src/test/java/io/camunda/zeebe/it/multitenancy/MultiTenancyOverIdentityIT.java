@@ -14,6 +14,7 @@ import io.camunda.zeebe.client.api.response.ActivateJobsResponse;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.api.response.CompleteJobResponse;
 import io.camunda.zeebe.client.api.response.DeploymentEvent;
+import io.camunda.zeebe.client.api.response.ModifyProcessInstanceResponse;
 import io.camunda.zeebe.client.api.response.Process;
 import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.client.api.response.PublishMessageResponse;
@@ -23,6 +24,7 @@ import io.camunda.zeebe.gateway.impl.configuration.AuthenticationCfg.AuthMode;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.Assertions;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.qa.util.cluster.TestHealthProbe;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.test.util.Strings;
@@ -68,6 +70,8 @@ public class MultiTenancyOverIdentityIT {
 
   @TempDir private static Path credentialsCacheDir;
 
+  private static final String DEFAULT_TENANT = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
+
   private static final String DATABASE_HOST = "postgres";
   private static final int DATABASE_PORT = 5432;
   private static final String DATABASE_USER = "postgres";
@@ -77,10 +81,10 @@ public class MultiTenancyOverIdentityIT {
   private static final String KEYCLOAK_USER = "admin";
   private static final String KEYCLOAK_PASSWORD = "admin";
   private static final String KEYCLOAK_PATH_CAMUNDA_REALM = "/realms/camunda-platform";
-
-  private static final String ZEEBE_CLIENT_ID_TENANT_A = "zeebe-tenant-a";
-  private static final String ZEEBE_CLIENT_ID_TENANT_B = "zeebe-tenant-b";
-  private static final String ZEEBE_CLIENT_ID_TENANT_A_AND_B = "zeebe-tenant-a-and-b";
+  private static final String ZEEBE_CLIENT_ID_TENANT_A = "zeebe-tenant-a-and-default";
+  private static final String ZEEBE_CLIENT_ID_TENANT_B = "zeebe-tenant-b-and-default";
+  private static final String ZEEBE_CLIENT_ID_TENANT_A_AND_B = "zeebe-tenant-a-and-b-and-default";
+  private static final String ZEEBE_CLIENT_ID_TENANT_DEFAULT = ZEEBE_CLIENT_ID_TENANT_A;
   private static final String ZEEBE_CLIENT_ID_WITHOUT_TENANT = "zeebe-without-tenant";
   private static final String ZEEBE_CLIENT_AUDIENCE = "zeebe-api";
   private static final String ZEEBE_CLIENT_SECRET = "zecret";
@@ -231,9 +235,10 @@ public class MultiTenancyOverIdentityIT {
 
     awaitCamundaRealmAvailabilityOnKeycloak();
 
-    associateTenantsWithClient(List.of("tenant-a"), ZEEBE_CLIENT_ID_TENANT_A);
-    associateTenantsWithClient(List.of("tenant-b"), ZEEBE_CLIENT_ID_TENANT_B);
-    associateTenantsWithClient(List.of("tenant-a", "tenant-b"), ZEEBE_CLIENT_ID_TENANT_A_AND_B);
+    associateTenantsWithClient(List.of(DEFAULT_TENANT, "tenant-a"), ZEEBE_CLIENT_ID_TENANT_A);
+    associateTenantsWithClient(List.of(DEFAULT_TENANT, "tenant-b"), ZEEBE_CLIENT_ID_TENANT_B);
+    associateTenantsWithClient(
+        List.of(DEFAULT_TENANT, "tenant-a", "tenant-b"), ZEEBE_CLIENT_ID_TENANT_A_AND_B);
   }
 
   @BeforeEach
@@ -867,6 +872,66 @@ public class MultiTenancyOverIdentityIT {
           .withMessageContaining(
               "Command 'RESOLVE' rejected with code 'NOT_FOUND': Expected to resolve incident with key '%d', but no such incident was found"
                   .formatted(incidentKey));
+    }
+  }
+
+  @Test
+  void shouldAllowModifyProcessInstanceForDefaultTenant() {
+    try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_DEFAULT)) {
+      // given
+      client.newDeployResourceCommand().addProcessModel(process, "process.bpmn").send().join();
+
+      final long processInstanceKey =
+          client
+              .newCreateInstanceCommand()
+              .bpmnProcessId(processId)
+              .latestVersion()
+              .send()
+              .join()
+              .getProcessInstanceKey();
+
+      // when
+      final Future<ModifyProcessInstanceResponse> response =
+          client.newModifyProcessInstanceCommand(processInstanceKey).activateElement("task").send();
+
+      // then
+      assertThat(response).succeedsWithin(Duration.ofSeconds(10));
+    }
+  }
+
+  @Test
+  void shouldRejectModifyProcessInstanceForOtherTenant() {
+    try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A)) {
+      // given
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(process, "process.bpmn")
+          .tenantId("tenant-a")
+          .send()
+          .join();
+
+      final long processInstanceKey =
+          client
+              .newCreateInstanceCommand()
+              .bpmnProcessId(processId)
+              .latestVersion()
+              .tenantId("tenant-a")
+              .send()
+              .join()
+              .getProcessInstanceKey();
+
+      // when
+      final Future<ModifyProcessInstanceResponse> response =
+          client.newModifyProcessInstanceCommand(processInstanceKey).activateElement("task").send();
+
+      // then
+      assertThat(response)
+          .failsWithin(Duration.ofSeconds(10))
+          .withThrowableThat()
+          .withMessageContaining("INVALID_ARGUMENT")
+          .withMessageContaining(
+              "Expected to modify process instance but process instance belongs to tenant 'tenant-a'")
+          .withMessageContaining("while modification is not yet supported with multi-tenancy");
     }
   }
 
