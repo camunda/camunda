@@ -18,6 +18,7 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
@@ -347,6 +348,61 @@ public final class JobFailIncidentTest {
             tuple(RecordType.EVENT, ValueType.JOB, JobIntent.FAILED),
             tuple(RecordType.COMMAND, ValueType.JOB, JobIntent.UPDATE_RETRIES),
             tuple(RecordType.EVENT, ValueType.JOB, JobIntent.RETRIES_UPDATED));
+  }
+
+  @Test
+  public void shouldResolveIncidentWithCustomTenant() {
+    // given
+    final String processId = "test-process";
+    final String tenantId = "acme";
+    final Record<JobRecordValue> jobRecord =
+        ENGINE.createJob(JOB_TYPE, processId, Collections.emptyMap(), tenantId);
+    final long piKey = jobRecord.getValue().getProcessInstanceKey();
+    ENGINE
+        .job()
+        .withType(JOB_TYPE)
+        .withRetries(0)
+        .ofInstance(piKey)
+        .withAuthorizedTenantIds(tenantId)
+        .fail();
+
+    // when
+    final Record<IncidentRecordValue> resolvedIncident =
+        ENGINE.incident().ofInstance(piKey).withAuthorizedTenantIds(tenantId).resolve();
+
+    // then
+    assertThat(resolvedIncident.getValue()).hasTenantId(tenantId);
+    assertThat(resolvedIncident).hasIntent(IncidentIntent.RESOLVED);
+  }
+
+  @Test
+  public void shouldRejectResolvingIncidentWithUnauthorizedTenant() {
+    // given
+    final String processId = "test-process";
+    final String tenantId = "acme";
+    final String unauthorizedTenantId = "foo";
+    final Record<JobRecordValue> jobRecord =
+        ENGINE.createJob(JOB_TYPE, processId, Collections.emptyMap(), tenantId);
+    final long piKey = jobRecord.getValue().getProcessInstanceKey();
+    ENGINE
+        .job()
+        .withType(JOB_TYPE)
+        .withRetries(0)
+        .ofInstance(piKey)
+        .withAuthorizedTenantIds(tenantId)
+        .fail();
+
+    // when
+    final Record<IncidentRecordValue> resolvedIncident =
+        ENGINE
+            .incident()
+            .ofInstance(piKey)
+            .withAuthorizedTenantIds(unauthorizedTenantId)
+            .expectRejection()
+            .resolve();
+
+    // then
+    assertThat(resolvedIncident).hasRejectionType(RejectionType.NOT_FOUND);
   }
 
   @Test
