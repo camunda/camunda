@@ -8,13 +8,14 @@
 package io.camunda.zeebe.engine.processing.multitenancy;
 
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -48,9 +49,22 @@ public class TenantAwareModifyProcessInstanceTest {
             .withTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
             .create();
 
+    final var task =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("task")
+            .getFirst();
+
     // when
     final var modified =
-        ENGINE.processInstance().withInstanceKey(processInstanceKey).modification().modify();
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .forAuthorizedTenants(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+            .modification()
+            .activateElement("task")
+            .terminateElement(task.getKey())
+            .modify();
 
     // then
     assertThat(modified)
@@ -59,7 +73,7 @@ public class TenantAwareModifyProcessInstanceTest {
   }
 
   @Test
-  public void shouldRejectModifyInstanceForSpecificTenant() {
+  public void shouldRejectModifyInstanceForUnauthorizedTenant() {
     // given
     ENGINE
         .deployment()
@@ -75,23 +89,69 @@ public class TenantAwareModifyProcessInstanceTest {
     final long processInstanceKey =
         ENGINE.processInstance().ofBpmnProcessId("process").withTenantId("custom-tenant").create();
 
+    final var task =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("task")
+            .getFirst();
+
     // when
     final var rejection =
         ENGINE
             .processInstance()
             .withInstanceKey(processInstanceKey)
+            .forAuthorizedTenants("another-tenant")
             .modification()
+            .activateElement("task")
+            .terminateElement(task.getKey())
             .expectRejection()
             .modify();
 
     // then
     assertThat(rejection)
-        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            """
-            Expected to modify process instance but process instance belongs to tenant \
-            'custom-tenant' while modification is not yet supported with multi-tenancy. \
-            Only process instances belonging to the default tenant '<default>' can be modified. \
-            See https://github.com/camunda/zeebe/issues/13288 for more details.""");
+            "Expected to modify process instance but no process instance found with key '%s'"
+                .formatted(processInstanceKey));
+  }
+
+  @Test
+  public void shouldModifyInstanceForSpecificTenant() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("process")
+                .startEvent()
+                .serviceTask("task", t -> t.zeebeJobType("test"))
+                .endEvent()
+                .done())
+        .withTenantId("custom-tenant")
+        .deploy();
+
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId("process").withTenantId("custom-tenant").create();
+
+    final var task =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("task")
+            .getFirst();
+
+    // when
+    final var modified =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .forAuthorizedTenants("custom-tenant")
+            .modification()
+            .activateElement("task")
+            .terminateElement(task.getKey())
+            .modify();
+
+    // then
+    assertThat(modified)
+        .describedAs("Expect that modification was successful")
+        .hasIntent(ProcessInstanceModificationIntent.MODIFIED);
   }
 }
