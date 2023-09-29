@@ -6,46 +6,37 @@
  */
 
 import {useEffect, useState} from 'react';
-import {RouteComponentProps, withRouter} from 'react-router-dom';
-import {Button} from '@carbon/react';
+import {useLocation} from 'react-router-dom';
+import {Button, ComboBox, Form, TextInput, TextInputSkeleton} from '@carbon/react';
 import {SerializedEditorState} from 'lexical';
 
-import {
-  Modal,
-  Input,
-  Typeahead,
-  LoadingIndicator,
-  Labeled,
-  Form,
-  Tabs,
-  Icon,
-  TextEditor,
-} from 'components';
+import {Modal, Tabs, TextEditor} from 'components';
 import {getCollection, isTextTileValid, loadReports} from 'services';
 import {t} from 'translation';
 import {DashboardTile, GenericReport} from 'types';
 
-interface CreateTileModalProps extends RouteComponentProps {
+interface CreateTileModalProps {
   close: () => void;
   confirm: (tileConfig: Partial<DashboardTile>) => void;
 }
 
 type TabOpen = 'optimize_report' | 'external_url' | 'text';
 
-export function CreateTileModal({close, confirm, location}: CreateTileModalProps) {
+export default function CreateTileModal({close, confirm}: CreateTileModalProps) {
   const [availableReports, setAvailableReports] = useState<GenericReport[] | null>(null);
   const [selectedReportId, setSelectedReportId] = useState<string>('');
   const [externalUrl, setExternalUrl] = useState<string>('');
   const [tabOpen, setTabOpen] = useState<TabOpen>('optimize_report');
   const [text, setText] = useState<SerializedEditorState>();
+  const {pathname} = useLocation();
 
   useEffect(() => {
     (async () => {
-      const collection = getCollection(location.pathname);
+      const collection = getCollection(pathname);
       const availableReports = await loadReports(collection);
       setAvailableReports(availableReports);
     })();
-  }, [location.pathname]);
+  }, [pathname]);
 
   const addTile = () => {
     confirm(getTileConfig(tabOpen, externalUrl, text, selectedReportId));
@@ -82,9 +73,14 @@ export function CreateTileModal({close, confirm, location}: CreateTileModalProps
     return isInvalidMap[tabOpen];
   };
 
+  type ReportListItem = {id: string; name: string};
+  const reportsListItems: ReportListItem[] = [
+    {id: 'newReport', name: `+ ${t('dashboard.addButton.newReport')}`},
+    ...(availableReports || []),
+  ];
   const isInvalid = isCurrentTabInvalid(tabOpen, externalUrl, selectedReportId);
   const loading = availableReports === null;
-  const selectedReport = (!loading && availableReports.find(({id}) => selectedReportId === id)) || {
+  const selectedReport = (!loading && reportsListItems.find(({id}) => selectedReportId === id)) || {
     id: undefined,
   };
 
@@ -95,53 +91,35 @@ export function CreateTileModal({close, confirm, location}: CreateTileModalProps
         <Form>
           <Tabs<TabOpen> value={tabOpen} onChange={setTabOpen}>
             <Tabs.Tab value="optimize_report" title={t('dashboard.addButton.optimizeReport')}>
-              <Form.Group>
-                {!loading && (
-                  <Labeled label={t('dashboard.addButton.addReportLabel')}>
-                    <Typeahead
-                      initialValue={selectedReport.id}
-                      placeholder={t('dashboard.addButton.selectReportPlaceholder')}
-                      onChange={setSelectedReportId}
-                      noValuesMessage={t('dashboard.addButton.noReports')}
-                    >
-                      <Typeahead.Option
-                        key="newReport"
-                        value="newReport"
-                        label={`+ ${t('dashboard.addButton.newReport')}`}
-                      >
-                        <Icon type="plus" />
-                        <b>{t('dashboard.addButton.newReport')}</b>
-                      </Typeahead.Option>
-                      {availableReports.map(({id, name}) => (
-                        <Typeahead.Option key={id} value={id}>
-                          {name}
-                        </Typeahead.Option>
-                      ))}
-                    </Typeahead>
-                  </Labeled>
-                )}
-                {loading && <LoadingIndicator />}
-              </Form.Group>
+              {loading ? (
+                <TextInputSkeleton />
+              ) : (
+                <ComboBox
+                  id="addReportSelector"
+                  titleText={t('dashboard.addButton.addReportLabel')}
+                  selectedItem={selectedReport}
+                  items={reportsListItems}
+                  placeholder={t('dashboard.addButton.selectReportPlaceholder').toString()}
+                  onChange={({selectedItem}) => setSelectedReportId(selectedItem?.id || '')}
+                  itemToString={(item) => (item as ReportListItem).name}
+                />
+              )}
             </Tabs.Tab>
             <Tabs.Tab value="external_url" title={t('dashboard.addButton.externalWebsite')}>
-              <Form.Group>
-                <Labeled label={t('dashboard.addButton.externalWebsite')}>
-                  <Input
-                    name="externalInput"
-                    className="externalInput"
-                    placeholder="https://www.example.com/widget/embed.html"
-                    value={externalUrl}
-                    onChange={({target: {value}}) => setExternalUrl(value)}
-                  />
-                </Labeled>
-              </Form.Group>
+              <TextInput
+                id="externalInput"
+                name="externalInput"
+                labelText={t('dashboard.addButton.externalWebsite')}
+                className="externalInput"
+                placeholder="https://www.example.com/widget/embed.html"
+                value={externalUrl}
+                onChange={({target: {value}}) => setExternalUrl(value)}
+              />
             </Tabs.Tab>
             <Tabs.Tab value="text" title={t('dashboard.addButton.text')}>
-              <Form.Group className="Labeled">
-                <span className="label before">{t('dashboard.addButton.text')}</span>
-                <TextEditor initialValue={text} onChange={setText} />
-                <TextEditor.CharCount editorState={text} />
-              </Form.Group>
+              <span className="cds--label">{t('dashboard.addButton.text')}</span>
+              <TextEditor initialValue={text} onChange={setText} />
+              <TextEditor.CharCount editorState={text} />
             </Tabs.Tab>
           </Tabs>
         </Form>
@@ -157,5 +135,3 @@ export function CreateTileModal({close, confirm, location}: CreateTileModalProps
     </Modal>
   );
 }
-
-export default withRouter(CreateTileModal);

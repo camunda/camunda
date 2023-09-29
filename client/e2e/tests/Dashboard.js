@@ -453,8 +453,8 @@ test('add a report from the dashboard', async (t) => {
 
   await t
     .click(Common.addButton)
-    .click(e.reportModalOptionsButton)
-    .click(e.reportModalDropdownOption.withText('New Report from a template'))
+    .click(e.createTileModalReportOptions)
+    .click(Common.carbonOption('New Report from a template'))
     .click(e.addTileButton);
 
   await t
@@ -466,8 +466,8 @@ test('add a report from the dashboard', async (t) => {
 
   await t
     .click(Common.addButton)
-    .click(e.reportModalOptionsButton)
-    .click(e.reportModalDropdownOption.withText('New Report from a template'))
+    .click(e.createTileModalReportOptions)
+    .click(Common.carbonOption('New Report from a template'))
     .click(e.addTileButton);
 
   await t.click(Common.templateModalProcessField);

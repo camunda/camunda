@@ -7,12 +7,18 @@
 
 import {runAllEffects} from '__mocks__/react';
 import {shallow} from 'enzyme';
-import {RouteComponentProps} from 'react-router';
+import {useLocation} from 'react-router-dom';
+import {ComboBox} from '@carbon/react';
 
-import {Tabs, Typeahead} from 'components';
+import {Tabs} from 'components';
 import {loadReports} from 'services';
 
-import {CreateTileModal} from './CreateTileModal';
+import CreateTileModal from './CreateTileModal';
+
+jest.mock('react-router-dom', () => ({
+  ...jest.requireActual('react-router-dom'),
+  useLocation: jest.fn().mockReturnValue({pathname: '/dashboard/1'}),
+}));
 
 jest.mock('services', () => {
   const rest = jest.requireActual('services');
@@ -23,7 +29,6 @@ jest.mock('services', () => {
 });
 
 const props = {
-  ...({location: {pathname: '/dashboard/1'}} as RouteComponentProps),
   close: jest.fn(),
   confirm: jest.fn(),
 };
@@ -37,18 +42,18 @@ it('should load the available reports', () => {
 });
 
 it('should load only reports in the same collection', () => {
-  const locationProps = {
-    location: {pathname: '/collection/123/dashboard/1'},
-  } as RouteComponentProps;
-  shallow(<CreateTileModal {...props} {...locationProps} />);
+  (useLocation as jest.Mock).mockReturnValueOnce({
+    pathname: '/collection/123/dashboard/1',
+  });
+  shallow(<CreateTileModal {...props} />);
 
   runAllEffects();
 
   expect(loadReports).toHaveBeenCalledWith('123');
 });
 
-it('should render a Typeahead element with the available reports as options', async () => {
-  (loadReports as jest.Mock).mockReturnValueOnce([
+it('should render a Combobox element with the available reports as options', async () => {
+  const reports = [
     {
       id: 'a',
       name: 'Report A',
@@ -57,13 +62,17 @@ it('should render a Typeahead element with the available reports as options', as
       id: 'b',
       name: 'Report B',
     },
-  ]);
+  ];
+  (loadReports as jest.Mock).mockReturnValueOnce(reports);
   const node = shallow(<CreateTileModal {...props} />);
 
   runAllEffects();
   await flushPromises();
 
-  expect(node.find('Typeahead')).toMatchSnapshot();
+  expect(node.find(ComboBox).prop('items')).toEqual([
+    {id: 'newReport', name: '+ New Report from a template'},
+    ...reports,
+  ]);
 });
 
 it('should call the callback when adding a report', async () => {
@@ -83,7 +92,7 @@ it('should call the callback when adding a report', async () => {
   runAllEffects();
   await flushPromises();
 
-  node.find(Typeahead).prop('onChange')('a');
+  node.find(ComboBox).prop('onChange')({selectedItem: {id: 'a'}});
 
   node.find('Button').at(1).simulate('click');
 
@@ -93,10 +102,10 @@ it('should call the callback when adding a report', async () => {
   });
 });
 
-it('should show a loading message while loading available reports', () => {
+it('should show a loading skeleton while loading available reports', () => {
   const node = shallow(<CreateTileModal {...props} />);
 
-  expect(node.find('LoadingIndicator')).toExist();
+  expect(node.find('TextInputSkeleton')).toExist();
 });
 
 it('should contain an External Website field', () => {
