@@ -87,7 +87,9 @@ public final class ActivateJobsCommandImpl
 
   @Override
   public ActivateJobsCommandStep3 workerName(final String workerName) {
-    builder.setWorker(workerName);
+    if (workerName != null) {
+      builder.setWorker(workerName);
+    }
     return this;
   }
 
