@@ -116,6 +116,7 @@ public final class FormResourceTransformer implements DeploymentResourceTransfor
     formRecord.setFormId(formId);
     formRecord.setChecksum(checksum);
     formRecord.setResourceName(resource.getResourceName());
+    formRecord.setTenantId(tenantId);
 
     formState
         .findLatestFormById(wrapString(formRecord.getFormId()), tenantId)
