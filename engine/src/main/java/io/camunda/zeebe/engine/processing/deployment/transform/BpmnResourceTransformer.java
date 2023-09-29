@@ -77,7 +77,7 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
 
                 return checkForDuplicateBpmnId(definition, resource, deployment)
                     .flatMap(
-                        unused -> {
+                        ok -> {
                           if (enableStraightThroughProcessingLoopDetector) {
                             return StraightThroughProcessingLoopValidator.validate(
                                 resource, executableProcesses);
