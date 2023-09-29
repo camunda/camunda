@@ -14,13 +14,13 @@ import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
-import io.camunda.zeebe.engine.state.mutable.MutableMessageStartEventSubscriptionState;
+import io.camunda.zeebe.engine.state.immutable.MessageStartEventSubscriptionState.MessageStartEventSubscriptionVisitor;
+import io.camunda.zeebe.engine.state.message.MessageStartEventSubscription;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
 import org.agrona.DirectBuffer;
 
-public final class LegacyMessageStartEventSubscriptionState
-    implements MutableMessageStartEventSubscriptionState {
+public final class LegacyMessageStartEventSubscriptionState {
 
   private final DbString messageName;
   private final DbLong processDefinitionKey;
@@ -37,14 +37,14 @@ public final class LegacyMessageStartEventSubscriptionState
   private final ColumnFamily<DbCompositeKey<DbLong, DbString>, DbNil>
       subscriptionsOfProcessDefinitionKeyColumnFamily;
 
-  public DbMessageStartEventSubscriptionState(
+  public LegacyMessageStartEventSubscriptionState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     messageName = new DbString();
     processDefinitionKey = new DbLong();
     messageNameAndProcessDefinitionKey = new DbCompositeKey<>(messageName, processDefinitionKey);
     subscriptionsColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.MESSAGE_START_EVENT_SUBSCRIPTION_BY_NAME_AND_KEY,
+            ZbColumnFamilies.DEPRECATED_MESSAGE_START_EVENT_SUBSCRIPTION_BY_NAME_AND_KEY,
             transactionContext,
             messageNameAndProcessDefinitionKey,
             messageStartEventSubscription);
@@ -52,13 +52,12 @@ public final class LegacyMessageStartEventSubscriptionState
     processDefinitionKeyAndMessageName = new DbCompositeKey<>(processDefinitionKey, messageName);
     subscriptionsOfProcessDefinitionKeyColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.MESSAGE_START_EVENT_SUBSCRIPTION_BY_KEY_AND_NAME,
+            ZbColumnFamilies.DEPRECATED_MESSAGE_START_EVENT_SUBSCRIPTION_BY_KEY_AND_NAME,
             transactionContext,
             processDefinitionKeyAndMessageName,
             DbNil.INSTANCE);
   }
 
-  @Override
   public void put(final long key, final MessageStartEventSubscriptionRecord subscription) {
     messageStartEventSubscription.setKey(key).setRecord(subscription);
 
@@ -70,7 +69,6 @@ public final class LegacyMessageStartEventSubscriptionState
         processDefinitionKeyAndMessageName, DbNil.INSTANCE);
   }
 
-  @Override
   public void remove(final long processDefinitionKey, final DirectBuffer messageName) {
     this.processDefinitionKey.wrapLong(processDefinitionKey);
     this.messageName.wrapBuffer(messageName);
@@ -80,7 +78,6 @@ public final class LegacyMessageStartEventSubscriptionState
         processDefinitionKeyAndMessageName);
   }
 
-  @Override
   public boolean exists(final MessageStartEventSubscriptionRecord subscription) {
     messageName.wrapBuffer(subscription.getMessageNameBuffer());
     processDefinitionKey.wrapLong(subscription.getProcessDefinitionKey());
@@ -88,7 +85,6 @@ public final class LegacyMessageStartEventSubscriptionState
     return subscriptionsColumnFamily.exists(messageNameAndProcessDefinitionKey);
   }
 
-  @Override
   public void visitSubscriptionsByProcessDefinition(
       final long processDefinitionKey, final MessageStartEventSubscriptionVisitor visitor) {
     this.processDefinitionKey.wrapLong(processDefinitionKey);
@@ -105,7 +101,6 @@ public final class LegacyMessageStartEventSubscriptionState
         });
   }
 
-  @Override
   public void visitSubscriptionsByMessageName(
       final DirectBuffer messageName, final MessageStartEventSubscriptionVisitor visitor) {
 
