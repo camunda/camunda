@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.state.migration.to_8_3;
 
 import static io.camunda.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
+import static io.camunda.zeebe.util.buffer.BufferUtil.wrapArray;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -27,6 +28,7 @@ import io.camunda.zeebe.engine.state.deployment.PersistedProcess.PersistedProces
 import io.camunda.zeebe.engine.state.immutable.MigrationState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.message.DbMessageStartEventSubscriptionState;
+import io.camunda.zeebe.engine.state.instance.DbJobState;
 import io.camunda.zeebe.engine.state.message.DbMessageState;
 import io.camunda.zeebe.engine.state.message.DbMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.message.DbProcessMessageSubscriptionState;
@@ -35,6 +37,7 @@ import io.camunda.zeebe.engine.state.message.MessageSubscription;
 import io.camunda.zeebe.engine.state.message.StoredMessage;
 import io.camunda.zeebe.engine.state.migration.to_8_3.legacy.LegacyDecisionState;
 import io.camunda.zeebe.engine.state.migration.to_8_3.legacy.LegacyMessageStartEventSubscriptionState;
+import io.camunda.zeebe.engine.state.migration.to_8_3.legacy.LegacyJobState;
 import io.camunda.zeebe.engine.state.migration.to_8_3.legacy.LegacyMessageState;
 import io.camunda.zeebe.engine.state.migration.to_8_3.legacy.LegacyMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.migration.to_8_3.legacy.LegacyProcessMessageSubscriptionState;
@@ -44,16 +47,22 @@ import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
+import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
+import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -842,6 +851,95 @@ public class MultiTenancyMigrationTest {
               record.getVariables(),
               record.getElementId(),
               TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    }
+  }
+
+  @Nested
+  @ExtendWith(ProcessingStateExtension.class)
+  class MigrateJobStateForMultiTenancyTest {
+
+    private ZeebeDb<ZbColumnFamilies> zeebeDb;
+    private MutableProcessingState processingState;
+    private TransactionContext transactionContext;
+
+    private LegacyJobState legacyState;
+    private DbJobState jobState;
+
+    @BeforeEach
+    void setup() {
+      legacyState = new LegacyJobState(zeebeDb, transactionContext, 1);
+      jobState = new DbJobState(zeebeDb, transactionContext);
+    }
+
+    @Test
+    void shouldMigrateActivatableJobsColumnFamily() {
+      // given
+      final long jobKey = 1l;
+      final String jobWorker = "jobWorker";
+      final String jobType = "jobType";
+      final int retries = 5;
+      final long deadline = 111l;
+      final long recurringTime = 222l;
+      final long retryBackoff = 333l;
+      final String errorMessage = "jobErrorMessage";
+      final String errorCode = "jobErrorCode";
+      final String processId = "jobProcess";
+      final long processDefinitionKey = 444l;
+      final long processInstanceKey = 555l;
+      final int version = 3;
+      final String elementId = "jobElement";
+      final long elementInstanceKey = 666l;
+      final Map<String, String> customHeaders = Collections.singletonMap("workerVersion", "42");
+      final var jobRecord =
+          new JobRecord()
+              .setWorker(jobWorker)
+              .setType(jobType)
+              .setRetries(retries)
+              .setDeadline(deadline)
+              .setRecurringTime(recurringTime)
+              .setRetryBackoff(retryBackoff)
+              .setErrorMessage(errorMessage)
+              .setErrorCode(wrapString(errorCode))
+              .setBpmnProcessId(processId)
+              .setProcessDefinitionKey(processDefinitionKey)
+              .setProcessInstanceKey(processInstanceKey)
+              .setProcessDefinitionVersion(version)
+              .setElementId(elementId)
+              .setElementInstanceKey(elementInstanceKey)
+              .setCustomHeaders(wrapArray(MsgPackConverter.convertToMsgPack(customHeaders)));
+      legacyState.create(1l, jobRecord);
+
+      // when
+      sut.runMigration(processingState);
+
+      // then
+      final List<JobRecord> actualJobs = new ArrayList<>();
+      jobState.forEachActivatableJobs(
+          wrapString(jobType),
+          List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER),
+          (key, job) -> {
+            assertThat(key).isEqualTo(1l);
+            Assertions.assertThat(job)
+                .hasWorker(jobWorker)
+                .hasType(jobType)
+                .hasRetries(retries)
+                .hasDeadline(deadline)
+                .hasRecurringTime(recurringTime)
+                .hasRetryBackoff(retryBackoff)
+                .hasErrorCode(errorCode)
+                .hasErrorMessage(errorMessage)
+                .hasBpmnProcessId(processId)
+                .hasElementId(elementId)
+                .hasElementInstanceKey(elementInstanceKey)
+                .hasProcessDefinitionKey(processDefinitionKey)
+                .hasProcessInstanceKey(processInstanceKey)
+                .hasProcessDefinitionVersion(version)
+                .hasCustomHeaders(customHeaders)
+                .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+            actualJobs.add(job);
+            return true;
+          });
+      assertThat(actualJobs).hasSize(1);
     }
   }
 }
