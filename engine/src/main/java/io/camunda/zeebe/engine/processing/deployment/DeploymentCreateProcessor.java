@@ -273,6 +273,7 @@ public final class DeploymentCreateProcessor
             NO_ELEMENT_INSTANCE,
             processMetadata.getKey(),
             startEvent.getId(),
+            processMetadata.getTenantId(),
             timerOrError.get());
       }
     }
@@ -290,7 +291,8 @@ public final class DeploymentCreateProcessor
             .getProcessByKeyAndTenant(timer.getProcessDefinitionKey(), timer.getTenantId())
             .getBpmnProcessId();
 
-    if (timerBpmnId.equals(processMetadata.getBpmnProcessIdBuffer())) {
+    if (timerBpmnId.equals(processMetadata.getBpmnProcessIdBuffer())
+        && timer.getTenantId().equals(processMetadata.getTenantId())) {
       catchEventBehavior.unsubscribeFromTimerEvent(timer);
     }
   }

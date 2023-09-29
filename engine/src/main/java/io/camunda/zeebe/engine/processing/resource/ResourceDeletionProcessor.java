@@ -260,6 +260,7 @@ public class ResourceDeletionProcessor
                     NO_ELEMENT_INSTANCE,
                     deployedProcess.getKey(),
                     timerStartEvent.getId(),
+                    deployedProcess.getTenantId(),
                     failureOrTimer.get());
               });
     }

@@ -295,6 +295,7 @@ public final class CatchEventBehavior {
                   context.getProcessInstanceKey(),
                   context.getProcessDefinitionKey(),
                   event.getId(),
+                  context.getTenantId(),
                   timer);
             });
   }
@@ -304,6 +305,7 @@ public final class CatchEventBehavior {
       final long processInstanceKey,
       final long processDefinitionKey,
       final DirectBuffer handlerNodeId,
+      final String tenantId,
       final Timer timer) {
     final long dueDate = timer.getDueDate(ActorClock.currentTimeMillis());
     timerRecord.reset();
@@ -313,7 +315,8 @@ public final class CatchEventBehavior {
         .setElementInstanceKey(elementInstanceKey)
         .setProcessInstanceKey(processInstanceKey)
         .setTargetElementId(handlerNodeId)
-        .setProcessDefinitionKey(processDefinitionKey);
+        .setProcessDefinitionKey(processDefinitionKey)
+        .setTenantId(tenantId);
 
     sideEffectWriter.appendSideEffect(
         () -> {
@@ -382,7 +385,8 @@ public final class CatchEventBehavior {
         .setDueDate(timer.getDueDate())
         .setRepetitions(timer.getRepetitions())
         .setTargetElementId(timer.getHandlerNodeId())
-        .setProcessDefinitionKey(timer.getProcessDefinitionKey());
+        .setProcessDefinitionKey(timer.getProcessDefinitionKey())
+        .setTenantId(timer.getTenantId());
 
     stateWriter.appendFollowUpEvent(timer.getKey(), TimerIntent.CANCELED, timerRecord);
   }

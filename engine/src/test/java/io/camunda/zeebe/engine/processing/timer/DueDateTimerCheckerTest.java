@@ -23,6 +23,7 @@ import io.camunda.zeebe.engine.state.immutable.TimerInstanceState;
 import io.camunda.zeebe.engine.state.immutable.TimerInstanceState.TimerVisitor;
 import io.camunda.zeebe.engine.state.instance.TimerInstance;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
 import java.time.Duration;
@@ -52,6 +53,7 @@ class DueDateTimerCheckerTest {
       final var mockTimer = mock(TimerInstance.class, Mockito.RETURNS_DEEP_STUBS);
       final var timerKey = 42L;
       when(mockTimer.getKey()).thenReturn(timerKey);
+      when(mockTimer.getTenantId()).thenReturn(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
       final var testActorClock = new TestActorClock();
 
@@ -93,6 +95,7 @@ class DueDateTimerCheckerTest {
       final var mockTimer = mock(TimerInstance.class, Mockito.RETURNS_DEEP_STUBS);
       final var timerKey = 42L;
       when(mockTimer.getKey()).thenReturn(timerKey);
+      when(mockTimer.getTenantId()).thenReturn(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
       final var testActorClock = new TestActorClock();
 
