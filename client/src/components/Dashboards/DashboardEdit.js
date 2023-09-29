@@ -248,7 +248,7 @@ export class DashboardEdit extends React.Component {
     });
   };
 
-  editTile = (tile) => {
+  editOptimizeReportTile = (tile) => {
     const {history, location} = this.props;
     if (isDirty()) {
       showPrompt(
@@ -330,7 +330,7 @@ export class DashboardEdit extends React.Component {
             addons={[
               <DragOverlay key="DragOverlay" />,
               <DeleteButton key="DeleteButton" deleteTile={this.deleteTile} />,
-              <EditButton key="EditButton" onClick={this.editTile} />,
+              <EditButton key="EditButton" onClick={this.editOptimizeReportTile} />,
             ]}
             onLayoutChange={this.updateLayout}
             onTileUpdate={this.updateTile}

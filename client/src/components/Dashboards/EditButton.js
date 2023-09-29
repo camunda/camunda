@@ -6,15 +6,25 @@
  */
 
 import React from 'react';
+import {Button} from '@carbon/react';
+import {Edit} from '@carbon/icons-react';
 
-import {Button, Icon} from 'components';
-
+import {t} from 'translation';
 import './EditButton.scss';
 
 export default function EditButton({tile, onClick}) {
   return (
-    <Button className="EditButton" onClick={() => onClick(tile)}>
-      <Icon type="edit-small" />
-    </Button>
+    <div className="editButton">
+      <Button
+        size="sm"
+        kind="ghost"
+        hasIconOnly
+        iconDescription={t('common.edit')}
+        renderIcon={Edit}
+        tooltipPosition="bottom"
+        className="EditButton"
+        onClick={() => onClick(tile)}
+      />
+    </div>
   );
 }

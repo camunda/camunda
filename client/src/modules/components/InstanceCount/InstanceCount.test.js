@@ -11,8 +11,9 @@ import {shallow} from 'enzyme';
 import update from 'immutability-helper';
 
 import {loadVariables, loadInputVariables, loadOutputVariables} from 'services';
+import {useErrorHandling} from 'hooks';
 
-import {InstanceCount} from './InstanceCount';
+import InstanceCount from './InstanceCount';
 
 jest.mock('services', () => {
   return {
@@ -26,6 +27,12 @@ jest.mock('services', () => {
     loadVariables: jest.fn().mockReturnValue([{name: 'variable1', type: 'String'}]),
   };
 });
+
+jest.mock('hooks', () => ({
+  useErrorHandling: jest.fn(() => ({
+    mightFail: jest.fn((data, cb) => cb(data)),
+  })),
+}));
 
 beforeEach(() => {
   loadInputVariables.mockClear();
@@ -51,7 +58,6 @@ const props = {
     },
     reportType: 'process',
   },
-  mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
 };
 
 it('should should show the instance count', () => {
@@ -164,16 +170,11 @@ it('should not load variables if definition is incomplete', async () => {
 });
 
 it('should load variable names for decision reports', async () => {
+  useErrorHandling.mockReturnValueOnce({mightFail: async (data, cb) => cb(await data)});
   const decisionReport = update(props.report, {
     reportType: {$set: 'decision'},
   });
-  const node = shallow(
-    <InstanceCount
-      {...props}
-      report={decisionReport}
-      mightFail={async (data, cb) => cb(await data)}
-    />
-  );
+  const node = shallow(<InstanceCount {...props} report={decisionReport} />);
 
   node.find('span').first().simulate('click');
 
@@ -192,11 +193,10 @@ it('should load variable names for decision reports', async () => {
   expect(node.find('FilterList').prop('variables')).toMatchSnapshot();
 });
 
-it('should substitute the popover title with an icon if requested', () => {
-  const node = shallow(<InstanceCount {...props} useIcon="someIcon" />);
+it('should use a custom trigger if passed', () => {
+  const node = shallow(<InstanceCount {...props} trigger={<button />} />);
 
-  expect(node.find('.instanceCountPopover').prop('title')).toBe(false);
-  expect(node.find('.instanceCountPopover').prop('icon')).toBe('someIcon');
+  expect(node.find('.instanceCountPopover').prop('trigger')).toEqual(<button />);
 });
 
 it('should show instance count and filter list headings if showHeader prop is added', () => {

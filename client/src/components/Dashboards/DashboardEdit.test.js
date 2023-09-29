@@ -233,7 +233,7 @@ it('should delete tile', () => {
 
   const deleteButton = shallow(node.find('DashboardRenderer').prop('addons')[1]);
   deleteButton.setProps({tile: textTile});
-  deleteButton.simulate('click', textTile);
+  deleteButton.find('Button').simulate('click', textTile);
 
   expect(node.state('tiles')).toEqual([]);
   expect(track).toHaveBeenCalledWith('deleteTextTile', {entityId: ''});

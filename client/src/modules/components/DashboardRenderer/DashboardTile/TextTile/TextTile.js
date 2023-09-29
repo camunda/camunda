@@ -7,8 +7,11 @@
 
 import React, {useState} from 'react';
 import update from 'immutability-helper';
+import {Button} from '@carbon/react';
+import {Edit} from '@carbon/icons-react';
 
-import {Button, Icon, TextEditor} from 'components';
+import {TextEditor} from 'components';
+import {t} from 'translation';
 
 import TextTileEditModal from './TextTileEditModal';
 
@@ -40,9 +43,19 @@ export default function TextTile({tile, children = () => {}, onTileUpdate}) {
         <TextEditor key={reloadState} initialValue={tile.configuration.text} />
         {children({loadTileData: reloadTile})}
         {children && (
-          <Button className="EditButton EditTextTile" onClick={handleEdit}>
-            <Icon type="edit-small" />
-          </Button>
+          <div className="editButton editTextTile">
+            <Button
+              key="editTextTile"
+              kind="ghost"
+              size="sm"
+              hasIconOnly
+              iconDescription={t('common.edit')}
+              renderIcon={Edit}
+              tooltipPosition="bottom"
+              className="EditTextTile"
+              onClick={handleEdit}
+            />
+          </div>
         )}
       </div>
       {isModalOpen && (

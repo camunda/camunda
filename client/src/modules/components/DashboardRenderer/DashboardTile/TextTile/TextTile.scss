@@ -13,15 +13,15 @@
     }
   }
 
-  .EditButton:not(.EditTextTile) {
+  .editButton:not(.editTextTile) {
     display: none;
   }
 
-  .DeleteButton {
+  .deleteButton {
     right: 10px;
   }
 
-  .EditButton {
+  .editTextTile {
     right: 39px;
   }
 }
