@@ -25,6 +25,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
 import java.util.Collections;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -233,6 +234,7 @@ public final class TimerIncidentTest {
   }
 
   @Test
+  @Ignore("https://github.com/camunda/zeebe/issues/13337")
   public void shouldCreateIncidentForCustomTenant() {
     // when
     final String tenantId = "acme";
