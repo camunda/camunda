@@ -25,6 +25,7 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.collection.Maps;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -148,6 +149,39 @@ public final class ErrorEventIncidentTest {
             .getFirst();
 
     Assertions.assertThat(incidentEvent.getValue())
+        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+        .hasErrorType(ErrorType.UNHANDLED_ERROR_EVENT)
+        .hasErrorMessage(
+            "Expected to throw an error event with the code 'other-error', but it was not caught. Available error events are [error]");
+  }
+
+  @Test
+  public void shouldCreateIncidentWithCustomTenant() {
+    // given
+    final String tenantId = "acme";
+    ENGINE.deployment().withXmlResource(BOUNDARY_EVENT_PROCESS).withTenantId(tenantId).deploy();
+
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withTenantId(tenantId).create();
+
+    // when
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(JOB_TYPE)
+        .withErrorCode("other-error")
+        .withAuthorizedTenantIds(tenantId)
+        .throwError();
+
+    // then
+    final Record<IncidentRecordValue> incidentEvent =
+        RecordingExporter.incidentRecords()
+            .withIntent(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(incidentEvent.getValue())
+        .hasTenantId(tenantId)
         .hasErrorType(ErrorType.UNHANDLED_ERROR_EVENT)
         .hasErrorMessage(
             "Expected to throw an error event with the code 'other-error', but it was not caught. Available error events are [error]");

@@ -25,6 +25,7 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.collection.Maps;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -100,7 +101,8 @@ public final class MappingIncidentTest {
         .hasProcessInstanceKey(processInstanceKey)
         .hasElementId("failingTask")
         .hasElementInstanceKey(failureCommand.getKey())
-        .hasVariableScopeKey(failureCommand.getKey());
+        .hasVariableScopeKey(failureCommand.getKey())
+        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
     assertThat(incidentEventValue.getErrorMessage())
         .contains("Assertion failure on evaluate the expression");
@@ -152,7 +154,8 @@ public final class MappingIncidentTest {
         .hasProcessInstanceKey(processInstanceKey)
         .hasElementId("service")
         .hasElementInstanceKey(failureEvent.getKey())
-        .hasVariableScopeKey(failureEvent.getKey());
+        .hasVariableScopeKey(failureEvent.getKey())
+        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
     assertThat(incidentEvent.getValue().getErrorMessage())
         .contains("Assertion failure on evaluate the expression");
@@ -213,7 +216,8 @@ public final class MappingIncidentTest {
         .hasProcessInstanceKey(processInstanceKey)
         .hasElementId("failingTask")
         .hasElementInstanceKey(failureEvent.getKey())
-        .hasVariableScopeKey(failureEvent.getKey());
+        .hasVariableScopeKey(failureEvent.getKey())
+        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
     assertThat(incidentEvent.getValue().getErrorMessage())
         .contains("Assertion failure on evaluate the expression");
@@ -276,7 +280,8 @@ public final class MappingIncidentTest {
         .hasProcessInstanceKey(processInstanceKey)
         .hasElementId("failingTask")
         .hasElementInstanceKey(failureEvent.getKey())
-        .hasVariableScopeKey(failureEvent.getKey());
+        .hasVariableScopeKey(failureEvent.getKey())
+        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
     assertThat(incidentResolvedEvent.getValue().getErrorMessage())
         .contains("Assertion failure on evaluate the expression");

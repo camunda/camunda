@@ -24,6 +24,7 @@ import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -142,7 +143,8 @@ public class EventSubProcessIncidentTest {
         .hasProcessInstanceKey(processInstanceKey)
         .hasElementId("event_sub_proc")
         .hasElementInstanceKey(failureEvent.getKey())
-        .hasVariableScopeKey(failureEvent.getKey());
+        .hasVariableScopeKey(failureEvent.getKey())
+        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
     assertThat(incidentEventValue.getErrorMessage())
         .contains("Assertion failure on evaluate the expression");

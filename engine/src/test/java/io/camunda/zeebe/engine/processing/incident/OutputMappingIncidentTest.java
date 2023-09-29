@@ -23,6 +23,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.collection.Maps;
 import io.camunda.zeebe.test.util.record.ProcessInstances;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -166,6 +167,7 @@ public class OutputMappingIncidentTest {
         .hasProcessInstanceKey(processInstanceKey)
         .hasElementId(elementId)
         .hasElementInstanceKey(failureCommand.getKey())
+        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
         .hasVariableScopeKey(failureCommand.getKey());
 
     assertThat(incidentEvent.getValue().getErrorMessage())

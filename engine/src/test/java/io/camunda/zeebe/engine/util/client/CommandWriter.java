@@ -33,4 +33,11 @@ public interface CommandWriter {
 
   long writeCommandOnPartition(
       int partitionId, long key, Intent intent, UnifiedRecordValue recordValue);
+
+  long writeCommandOnPartition(
+      int partitionId,
+      long key,
+      Intent intent,
+      UnifiedRecordValue recordValue,
+      final String... authorizedTenants);
 }

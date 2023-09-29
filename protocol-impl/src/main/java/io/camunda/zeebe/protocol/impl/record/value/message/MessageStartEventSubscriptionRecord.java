@@ -53,6 +53,10 @@ public final class MessageStartEventSubscriptionRecord extends UnifiedRecordValu
     bpmnProcessIdProp.setValue(record.getBpmnProcessIdBuffer());
     messageNameProp.setValue(record.getMessageNameBuffer());
     startEventIdProp.setValue(record.getStartEventIdBuffer());
+    processInstanceKeyProp.setValue(record.getProcessInstanceKey());
+    messageKeyProp.setValue(record.getMessageKey());
+    correlationKeyProp.setValue(record.getCorrelationKeyBuffer());
+    variablesProp.setValue(record.getVariablesBuffer());
     tenantIdProp.setValue(record.getTenantId());
   }
 

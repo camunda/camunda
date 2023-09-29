@@ -162,6 +162,7 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
         .setProcessInstanceKey(job.getProcessInstanceKey())
         .setElementId(job.getElementIdBuffer())
         .setElementInstanceKey(job.getElementInstanceKey())
+        .setTenantId(job.getTenantId())
         .setJobKey(key)
         .setVariableScopeKey(job.getElementInstanceKey());
 

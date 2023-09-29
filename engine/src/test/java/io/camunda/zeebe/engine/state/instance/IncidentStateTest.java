@@ -212,5 +212,6 @@ public final class IncidentStateTest {
     assertThat(expectedRecord.getErrorMessageBuffer())
         .isEqualTo(storedRecord.getErrorMessageBuffer());
     assertThat(expectedRecord.getErrorType()).isEqualTo(storedRecord.getErrorType());
+    assertThat(expectedRecord.getTenantId()).isEqualTo(storedRecord.getTenantId());
   }
 }

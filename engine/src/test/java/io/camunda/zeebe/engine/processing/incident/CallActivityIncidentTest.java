@@ -7,12 +7,12 @@
  */
 package io.camunda.zeebe.engine.processing.incident;
 
+import static io.camunda.zeebe.engine.processing.incident.IncidentHelper.assertIncidentCreated;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
-import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -76,9 +76,7 @@ public final class CallActivityIncidentTest {
     final Record<ProcessInstanceRecordValue> elementInstance =
         getCallActivityInstance(processInstanceKey);
 
-    Assertions.assertThat(incident.getValue())
-        .hasElementInstanceKey(elementInstance.getKey())
-        .hasElementId(elementInstance.getValue().getElementId())
+    assertIncidentCreated(incident, elementInstance)
         .hasErrorType(ErrorType.CALLED_ELEMENT_ERROR)
         .hasErrorMessage(
             "Expected process with BPMN process id '"
@@ -108,9 +106,7 @@ public final class CallActivityIncidentTest {
     final Record<ProcessInstanceRecordValue> elementInstance =
         getCallActivityInstance(processInstanceKey);
 
-    Assertions.assertThat(incident.getValue())
-        .hasElementInstanceKey(elementInstance.getKey())
-        .hasElementId(elementInstance.getValue().getElementId())
+    assertIncidentCreated(incident, elementInstance)
         .hasErrorType(ErrorType.CALLED_ELEMENT_ERROR)
         .hasErrorMessage(
             "Expected process with BPMN process id '"
@@ -135,9 +131,7 @@ public final class CallActivityIncidentTest {
     final Record<ProcessInstanceRecordValue> elementInstance =
         getCallActivityInstance(processInstanceKey);
 
-    Assertions.assertThat(incident.getValue())
-        .hasElementInstanceKey(elementInstance.getKey())
-        .hasElementId(elementInstance.getValue().getElementId())
+    assertIncidentCreated(incident, elementInstance)
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
             "Expected result of the expression 'wfChild' to be 'STRING', but was 'NULL'.");
@@ -164,14 +158,37 @@ public final class CallActivityIncidentTest {
     final Record<ProcessInstanceRecordValue> elementInstance =
         getCallActivityInstance(processInstanceKey);
 
-    Assertions.assertThat(incident.getValue())
-        .hasElementInstanceKey(elementInstance.getKey())
-        .hasElementId(elementInstance.getValue().getElementId())
+    assertIncidentCreated(incident, elementInstance)
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
             "Expected result of the expression '"
                 + PROCESS_ID_VARIABLE
                 + "' to be 'STRING', but was 'NUMBER'.");
+  }
+
+  @Test
+  public void shouldCreateIncidentOnCallActivityForCustomTenant() {
+    // given
+    final String tenantId = "acme";
+    ENGINE
+        .deployment()
+        .withXmlResource(PROCESS_PARENT_PROCESS_ID_EXPRESSION_SUPPLIER.apply(parentProcessId))
+        .withTenantId(tenantId)
+        .deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(parentProcessId).withTenantId(tenantId).create();
+
+    // then
+    final Record<IncidentRecordValue> incident = getIncident(processInstanceKey);
+    final Record<ProcessInstanceRecordValue> elementInstance =
+        getCallActivityInstance(processInstanceKey);
+
+    assertIncidentCreated(incident, elementInstance, tenantId)
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasErrorMessage(
+            "Expected result of the expression 'wfChild' to be 'STRING', but was 'NULL'.");
   }
 
   @Test

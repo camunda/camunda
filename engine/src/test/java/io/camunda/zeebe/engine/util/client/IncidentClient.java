@@ -12,7 +12,10 @@ import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import java.util.List;
+import java.util.function.Function;
 
 public final class IncidentClient {
 
@@ -29,11 +32,27 @@ public final class IncidentClient {
   public static class ResolveIncidentClient {
     private static final long DEFAULT_KEY = -1L;
 
+    private static final Function<Long, Record<IncidentRecordValue>> SUCCESS_SUPPLIER =
+        (position) ->
+            RecordingExporter.incidentRecords()
+                .withSourceRecordPosition(position)
+                .withIntent(IncidentIntent.RESOLVED)
+                .getFirst();
+
+    private static final Function<Long, Record<IncidentRecordValue>> REJECTION_SUPPLIER =
+        (position) ->
+            RecordingExporter.incidentRecords()
+                .onlyCommandRejections()
+                .withSourceRecordPosition(position)
+                .getFirst();
+
     private final CommandWriter writer;
     private final long processInstanceKey;
     private final IncidentRecord incidentRecord;
 
     private long incidentKey = DEFAULT_KEY;
+    private List<String> authorizedTenantIds = List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    private Function<Long, Record<IncidentRecordValue>> expectation = SUCCESS_SUPPLIER;
 
     public ResolveIncidentClient(final CommandWriter writer, final long processInstanceKey) {
       this.writer = writer;
@@ -43,6 +62,16 @@ public final class IncidentClient {
 
     public ResolveIncidentClient withKey(final long incidentKey) {
       this.incidentKey = incidentKey;
+      return this;
+    }
+
+    public ResolveIncidentClient withAuthorizedTenantIds(final String... tenantIds) {
+      authorizedTenantIds = List.of(tenantIds);
+      return this;
+    }
+
+    public ResolveIncidentClient expectRejection() {
+      expectation = REJECTION_SUPPLIER;
       return this;
     }
 
@@ -60,14 +89,10 @@ public final class IncidentClient {
               Protocol.decodePartitionId(incidentKey),
               incidentKey,
               IncidentIntent.RESOLVE,
-              incidentRecord);
+              incidentRecord,
+              authorizedTenantIds.toArray(new String[0]));
 
-      return RecordingExporter.incidentRecords()
-          .withProcessInstanceKey(processInstanceKey)
-          .withRecordKey(incidentKey)
-          .withSourceRecordPosition(position)
-          .withIntent(IncidentIntent.RESOLVED)
-          .getFirst();
+      return expectation.apply(position);
     }
   }
 }

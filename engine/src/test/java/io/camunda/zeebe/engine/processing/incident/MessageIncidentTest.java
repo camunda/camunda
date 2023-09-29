@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.collection.Maps;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -205,7 +206,8 @@ public final class MessageIncidentTest {
         .hasElementId("catch")
         .hasElementInstanceKey(failureEvent.getKey())
         .hasJobKey(-1L)
-        .hasVariableScopeKey(failureEvent.getKey());
+        .hasVariableScopeKey(failureEvent.getKey())
+        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   }
 
   @Test
@@ -235,7 +237,30 @@ public final class MessageIncidentTest {
         .hasElementId("catch")
         .hasElementInstanceKey(failureEvent.getKey())
         .hasJobKey(-1L)
-        .hasVariableScopeKey(failureEvent.getKey());
+        .hasVariableScopeKey(failureEvent.getKey())
+        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  }
+
+  @Test
+  public void shouldCreateIncidentOnMessageCatchEventWithCustomTenant() {
+    // when
+    final String tenantId = "acme";
+    ENGINE.deployment().withXmlResource(PROCESS).withTenantId(tenantId).deploy();
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable("orderId", true)
+            .withTenantId(tenantId)
+            .create();
+
+    // then
+    final Record<IncidentRecordValue> incidentRecord =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(incidentRecord.getValue()).hasTenantId(tenantId);
   }
 
   @Test

@@ -26,9 +26,12 @@ import io.camunda.zeebe.engine.state.deployment.PersistedDecision;
 import io.camunda.zeebe.engine.state.deployment.PersistedProcess.PersistedProcessState;
 import io.camunda.zeebe.engine.state.immutable.MigrationState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.engine.state.message.DbMessageStartEventSubscriptionState;
 import io.camunda.zeebe.engine.state.message.DbMessageState;
+import io.camunda.zeebe.engine.state.message.MessageStartEventSubscription;
 import io.camunda.zeebe.engine.state.message.StoredMessage;
 import io.camunda.zeebe.engine.state.migration.to_8_3.legacy.LegacyDecisionState;
+import io.camunda.zeebe.engine.state.migration.to_8_3.legacy.LegacyMessageStartEventSubscriptionState;
 import io.camunda.zeebe.engine.state.migration.to_8_3.legacy.LegacyMessageState;
 import io.camunda.zeebe.engine.state.migration.to_8_3.legacy.LegacyProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
@@ -40,6 +43,7 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
@@ -577,6 +581,112 @@ public class MultiTenancyMigrationTest {
               messageRecord.getDeadline(),
               messageRecord.getVariables(),
               messageRecord.getMessageId(),
+              TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    }
+  }
+
+  @Nested
+  @ExtendWith(ProcessingStateExtension.class)
+  class MigrateMessageStartEventSubscriptionStateForMultiTenancyTest {
+
+    private ZeebeDb<ZbColumnFamilies> zeebeDb;
+    private MutableProcessingState processingState;
+    private TransactionContext transactionContext;
+
+    private LegacyMessageStartEventSubscriptionState legacyState;
+    private DbMessageStartEventSubscriptionState state;
+
+    @BeforeEach
+    void setup() {
+      legacyState = new LegacyMessageStartEventSubscriptionState(zeebeDb, transactionContext);
+      state = new DbMessageStartEventSubscriptionState(zeebeDb, transactionContext);
+    }
+
+    @Test
+    void shouldMigrateMessageStartEventSubscriptionByNameAndKeyColumnFamily() {
+      // given
+      final int processDefinitionKey = 123;
+      final MessageStartEventSubscriptionRecord record =
+          putMessageStartSubscriptionRecord(processDefinitionKey);
+
+      // when
+      sut.runMigration(processingState);
+
+      // then
+      final AtomicReference<MessageStartEventSubscription> subscriptionRef =
+          new AtomicReference<>();
+      state.visitSubscriptionsByMessageName(
+          TenantOwned.DEFAULT_TENANT_IDENTIFIER,
+          record.getMessageNameBuffer(),
+          subscriptionRef::set);
+
+      final var subscription = subscriptionRef.get();
+      assertThat(subscription).isNotNull();
+      assertThat(subscription.getKey()).isEqualTo(processDefinitionKey);
+      assertMessageStartSubscription(record, subscription);
+    }
+
+    @Test
+    void shouldMigrateMessageStartEventSubscriptionByKeyAndNameColumnFamily() {
+      // given
+      final int processDefinitionKey = 123;
+      final MessageStartEventSubscriptionRecord record =
+          putMessageStartSubscriptionRecord(processDefinitionKey);
+
+      // when
+      sut.runMigration(processingState);
+
+      // then
+      final AtomicReference<MessageStartEventSubscription> subscriptionRef =
+          new AtomicReference<>();
+      state.visitSubscriptionsByProcessDefinition(
+          record.getProcessDefinitionKey(), subscriptionRef::set);
+
+      final var subscription = subscriptionRef.get();
+      assertThat(subscription).isNotNull();
+      assertThat(subscription.getKey()).isEqualTo(processDefinitionKey);
+      assertMessageStartSubscription(record, subscription);
+    }
+
+    private MessageStartEventSubscriptionRecord putMessageStartSubscriptionRecord(
+        final int processDefinitionKey) {
+      final var record =
+          new MessageStartEventSubscriptionRecord()
+              .setProcessDefinitionKey(processDefinitionKey)
+              .setBpmnProcessId(wrapString("processId"))
+              .setMessageName(wrapString("messageName"))
+              .setStartEventId(wrapString("startEventId"))
+              .setProcessInstanceKey(456)
+              .setMessageKey(789)
+              .setCorrelationKey(wrapString("correlationKey"))
+              .setVariables(asMsgPack("foo", "bar"));
+      legacyState.put(processDefinitionKey, record);
+      return record;
+    }
+
+    private void assertMessageStartSubscription(
+        final MessageStartEventSubscriptionRecord record,
+        final MessageStartEventSubscription subscription) {
+      assertThat(subscription.getRecord())
+          .extracting(
+              MessageStartEventSubscriptionRecord::getProcessDefinitionKey,
+              MessageStartEventSubscriptionRecord::getBpmnProcessId,
+              MessageStartEventSubscriptionRecord::getMessageName,
+              MessageStartEventSubscriptionRecord::getStartEventId,
+              MessageStartEventSubscriptionRecord::getProcessInstanceKey,
+              MessageStartEventSubscriptionRecord::getMessageKey,
+              MessageStartEventSubscriptionRecord::getCorrelationKey,
+              MessageStartEventSubscriptionRecord::getVariables,
+              MessageStartEventSubscriptionRecord::getTenantId)
+          .containsExactly(
+              record.getProcessDefinitionKey(),
+              record.getBpmnProcessId(),
+              record.getMessageName(),
+              record.getStartEventId(),
+              record.getProcessInstanceKey(),
+              record.getMessageKey(),
+              record.getCorrelationKey(),
+              record.getVariables(),
               TenantOwned.DEFAULT_TENANT_IDENTIFIER);
     }
   }

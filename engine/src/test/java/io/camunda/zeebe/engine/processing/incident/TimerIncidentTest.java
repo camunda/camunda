@@ -7,12 +7,12 @@
  */
 package io.camunda.zeebe.engine.processing.incident;
 
+import static io.camunda.zeebe.engine.processing.incident.IncidentHelper.assertIncidentCreated;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
-import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -109,9 +109,7 @@ public final class TimerIncidentTest {
             .withElementId(ELEMENT_ID)
             .getFirst();
 
-    Assertions.assertThat(incident.getValue())
-        .hasElementInstanceKey(elementInstance.getKey())
-        .hasElementId(elementInstance.getValue().getElementId())
+    assertIncidentCreated(incident, elementInstance)
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
             "Expected result of the expression '"
@@ -141,9 +139,7 @@ public final class TimerIncidentTest {
             .withElementId(ELEMENT_ID)
             .getFirst();
 
-    Assertions.assertThat(incident.getValue())
-        .hasElementInstanceKey(elementInstance.getKey())
-        .hasElementId(elementInstance.getValue().getElementId())
+    assertIncidentCreated(incident, elementInstance)
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
             "Invalid date-time format 'not_a_duration_expression' for expression '"
@@ -168,9 +164,7 @@ public final class TimerIncidentTest {
             .withElementId(ELEMENT_ID)
             .getFirst();
 
-    Assertions.assertThat(incident.getValue())
-        .hasElementInstanceKey(elementInstance.getKey())
-        .hasElementId(elementInstance.getValue().getElementId())
+    assertIncidentCreated(incident, elementInstance)
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
             "Expected result of the expression '"
@@ -200,9 +194,7 @@ public final class TimerIncidentTest {
             .withElementId(ELEMENT_ID)
             .getFirst();
 
-    Assertions.assertThat(incident.getValue())
-        .hasElementInstanceKey(elementInstance.getKey())
-        .hasElementId(elementInstance.getValue().getElementId())
+    assertIncidentCreated(incident, elementInstance)
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
             "Invalid duration format 'not_a_duration_expression' for expression '"
@@ -232,14 +224,43 @@ public final class TimerIncidentTest {
             .withElementId(ELEMENT_ID)
             .getFirst();
 
-    Assertions.assertThat(incident.getValue())
-        .hasElementInstanceKey(elementInstance.getKey())
-        .hasElementId(elementInstance.getValue().getElementId())
+    assertIncidentCreated(incident, elementInstance)
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
             "Expected result of the expression '"
                 + CYCLE_EXPRESSION
                 + "' to be 'STRING', but was 'NULL'.");
+  }
+
+  @Test
+  public void shouldCreateIncidentForCustomTenant() {
+    // when
+    final String tenantId = "acme";
+    ENGINE
+        .deployment()
+        .withXmlResource(createProcessWithCycle(CYCLE_EXPRESSION))
+        .withTenantId(tenantId)
+        .deploy();
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable(DURATION_VARIABLE, "not_a_duration_expression")
+            .withTenantId(tenantId)
+            .create();
+
+    // then
+    final Record<IncidentRecordValue> incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    final Record<ProcessInstanceRecordValue> elementInstance =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withElementId(ELEMENT_ID)
+            .getFirst();
+
+    assertIncidentCreated(incident, elementInstance, tenantId);
   }
 
   @Test
