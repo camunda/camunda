@@ -85,7 +85,8 @@ public class DbFormState implements MutableFormState {
     dbFormId.wrapBuffer(formId);
     final long latestVersion = versionManager.getLatestResourceVersion(formId, tenantId);
     formVersion.wrapLong(latestVersion);
-    return Optional.ofNullable(formByIdAndVersionColumnFamily.get(tenantAwareIdAndVersionKey));
+    return Optional.ofNullable(formByIdAndVersionColumnFamily.get(tenantAwareIdAndVersionKey))
+        .map(PersistedForm::copy);
   }
 
   @Override
