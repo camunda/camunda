@@ -41,7 +41,6 @@ import io.netty.channel.socket.DatagramPacket;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.util.concurrent.Future;
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -95,21 +94,18 @@ public class NettyUnicastService implements ManagedUnicastService {
       LOGGER.debug("Failed sending unicast message, unicast service was not started.");
       return;
     }
-
-    final InetAddress resolvedAddress = address.address();
+    final InetAddress resolvedAddress = address.tryResolveAddress();
     if (resolvedAddress == null) {
       LOGGER.debug(
           "Failed sending unicast message (destination address {} cannot be resolved)", address);
       return;
     }
-
-    final Message message = new Message(this.advertisedAddress, subject, payload);
+    final Message message = new Message(advertisedAddress, subject, payload);
     final byte[] bytes = SERIALIZER.encode(message);
     final ByteBuf buf = channel.alloc().buffer(Integer.BYTES + Integer.BYTES + bytes.length);
     buf.writeInt(preamble);
     buf.writeInt(bytes.length).writeBytes(bytes);
-    channel.writeAndFlush(
-        new DatagramPacket(buf, new InetSocketAddress(resolvedAddress, address.port())));
+    channel.writeAndFlush(new DatagramPacket(buf, address.getResolvedSocketAddress()));
   }
 
   @Override

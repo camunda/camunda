@@ -17,7 +17,6 @@
 package io.atomix.utils.net;
 
 import com.google.common.net.HostAndPort;
-import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
@@ -28,7 +27,6 @@ public final class Address {
   private static final int DEFAULT_PORT = 5679;
   private final String host;
   private final int port;
-  private transient volatile Type type;
   private volatile InetSocketAddress socketAddress;
 
   public Address(final String host, final int port) {
@@ -39,7 +37,6 @@ public final class Address {
     this.host = host;
     this.port = port;
     if (address != null) {
-      type = address instanceof Inet6Address ? Type.IPV6 : Type.IPV4;
       socketAddress = new InetSocketAddress(address, port);
     } else {
       socketAddress = InetSocketAddress.createUnresolved(host, port);
@@ -125,23 +122,23 @@ public final class Address {
   }
 
   /**
-   * Returns the IP address.
+   * Tries to resolve and returns the IP address.
    *
    * @return the IP address
    */
-  public InetAddress address() {
-    return address(false);
+  public InetAddress tryResolveAddress() {
+    return tryResolveAddress(false);
   }
 
   /**
-   * Returns the IP address.
+   * Tries to resolve and returns the IP address.
    *
    * @param resolve whether to force resolve the hostname
    * @return the IP address
    */
-  public InetAddress address(final boolean resolve) {
+  public InetAddress tryResolveAddress(final boolean resolve) {
     if (resolve || socketAddress.isUnresolved()) {
-      // the constructor will by default attempt to resolve the host, and will fallback to the an
+      // the constructor will by default attempt to resolve the host, and will fall back to the
       // unresolved address if it couldn't
       socketAddress = new InetSocketAddress(host, port);
       return socketAddress.getAddress();
@@ -150,24 +147,31 @@ public final class Address {
     return socketAddress.getAddress();
   }
 
+  /**
+   * Returns the IP address or null if it is unresolved.
+   *
+   * @return the IP address
+   */
+  public InetAddress getAddress() {
+    return socketAddress.getAddress();
+  }
+
+  /**
+   * Returns the socket address.
+   *
+   * @return the socket address
+   */
   public InetSocketAddress socketAddress() {
     return socketAddress;
   }
 
   /**
-   * Returns the address type.
+   * Returns the resolved socket address.
    *
-   * @return the address type
+   * @return the resolved socket address
    */
-  public Type type() {
-    if (type == null) {
-      synchronized (this) {
-        if (type == null) {
-          type = address() instanceof Inet6Address ? Type.IPV6 : Type.IPV4;
-        }
-      }
-    }
-    return type;
+  public InetSocketAddress getResolvedSocketAddress() {
+    return socketAddress;
   }
 
   @Override

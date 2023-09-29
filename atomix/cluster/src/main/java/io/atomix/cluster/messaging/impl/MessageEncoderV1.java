@@ -28,7 +28,7 @@ class MessageEncoderV1 extends AbstractMessageEncoder {
 
   @Override
   protected void encodeAddress(final ProtocolMessage message, final ByteBuf buffer) {
-    final InetAddress senderIp = address.address();
+    final InetAddress senderIp = address.tryResolveAddress();
     final byte[] senderIpBytes = senderIp.getAddress();
     buffer.writeByte(senderIpBytes.length);
     buffer.writeBytes(senderIpBytes);

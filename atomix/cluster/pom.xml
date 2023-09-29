@@ -241,6 +241,10 @@
       <artifactId>bcprov-jdk15on</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>io.netty</groupId>
+      <artifactId>netty-resolver-dns</artifactId>
+    </dependency>
   </dependencies>
 
   <build>
