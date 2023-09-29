@@ -138,6 +138,10 @@ const InstancesTable: React.FC = observer(() => {
           processInstancesStore.fetchNextInstances();
         }}
         rows={processInstances.map((instance) => {
+          const tenantName =
+            authenticationStore.tenantsById?.[instance.tenantId] ??
+            instance.tenantId;
+
           return {
             id: instance.id,
             processName: (
@@ -167,7 +171,7 @@ const InstancesTable: React.FC = observer(() => {
               </Link>
             ),
             processVersion: instance.processVersion,
-            tenant: isTenantColumnVisible ? instance.tenantId : undefined,
+            tenant: isTenantColumnVisible ? tenantName : undefined,
             startDate: formatDate(instance.startDate),
             endDate: formatDate(instance.endDate),
             parentInstanceId: (
