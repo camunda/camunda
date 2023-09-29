@@ -6,9 +6,5 @@
  */
 
 const IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED = false;
-const IS_PROCESS_DEFINITION_DELETION_ENABLED = false; // enable only after https://github.com/camunda/operate/issues/4170
 
-export {
-  IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED,
-  IS_PROCESS_DEFINITION_DELETION_ENABLED,
-};
+export {IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED};

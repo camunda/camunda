@@ -8,16 +8,21 @@ package io.camunda.operate.store;
 
 import io.camunda.operate.entities.ProcessEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
+import io.camunda.operate.entities.listview.ProcessInstanceState;
 import org.springframework.lang.Nullable;
 
 import java.io.IOException;
 import java.util.*;
+
+import static io.camunda.operate.util.ElasticsearchUtil.QueryType;
 
 public interface ProcessStore {
 
 
   // General methods -> TODO: refactor to upper interface?
   Optional<Long> getDistinctCountFor(final String fieldName);
+
+  void refreshIndices(String... indices);
 
   // ProcessStore
   ProcessEntity getProcessByKey(final Long processDefinitionKey);
@@ -27,6 +32,8 @@ public interface ProcessStore {
   Map<ProcessKey, List<ProcessEntity>> getProcessesGrouped(String tenantId, @Nullable Set<String> allowedBPMNprocessIds);
 
   Map<Long, ProcessEntity> getProcessesIdsToProcessesWithFields(@Nullable Set<String> allowedBPMNIds, int maxSize, String... fields);
+
+  long deleteProcessDefinitionsByKeys(Long... processDefinitionKeys);
 
   /// Process instance methods
   ProcessInstanceForListViewEntity getProcessInstanceListViewByKey(Long processInstanceKey);
@@ -40,6 +47,14 @@ public interface ProcessStore {
   long deleteDocument(final String indexName, final String idField, String id) throws IOException;
 
   void deleteProcessInstanceFromTreePath(String processInstanceKey);
+
+  List<ProcessInstanceForListViewEntity> getProcessInstancesByProcessAndStates(long processDefinitionKey, Set<ProcessInstanceState> states, int size,
+                                                                               String[] includeFields, String[] excludeFields, QueryType queryType);
+
+  List<ProcessInstanceForListViewEntity> getProcessInstancesByParentKeys(Set<Long> parentProcessInstanceKeys, int size, String[] includeFields,
+                                                                         String[] excludeFields, QueryType queryType);
+
+  long deleteProcessInstancesAndDependants(Set<Long> processInstanceKeys);
 
   class ProcessKey {
     private String bpmnProcessId;

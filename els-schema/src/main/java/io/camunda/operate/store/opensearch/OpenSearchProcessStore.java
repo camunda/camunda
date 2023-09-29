@@ -14,6 +14,7 @@ import io.camunda.operate.schema.indices.ProcessIndex;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.store.ProcessStore;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
+import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.util.TreePath;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.aggregations.FiltersBucket;
@@ -298,5 +299,30 @@ public class OpenSearchProcessStore implements ProcessStore {
       )
     );
     richOpenSearchClient.batch().bulk(bulk);
+  }
+
+  @Override
+  public List<ProcessInstanceForListViewEntity> getProcessInstancesByProcessAndStates(long processDefinitionKey, Set<ProcessInstanceState> states, int size, String[] includeFields, String[] excludeFields, ElasticsearchUtil.QueryType queryType) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public List<ProcessInstanceForListViewEntity> getProcessInstancesByParentKeys(Set<Long> parentProcessInstanceKeys, int size, String[] includeFields, String[] excludeFields, ElasticsearchUtil.QueryType queryType) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public long deleteProcessDefinitionsByKeys(Long... processDefinitionKeys) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public long deleteProcessInstancesAndDependants(Set<Long> processInstanceKeys) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public void refreshIndices(String... indices) {
+    throw new UnsupportedOperationException();
   }
 }

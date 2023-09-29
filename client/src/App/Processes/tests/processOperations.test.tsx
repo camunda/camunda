@@ -20,10 +20,6 @@ import {mockFetchBatchOperations} from 'modules/mocks/api/fetchBatchOperations';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstancesStatistics';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
 
-jest.mock('modules/feature-flags', () => ({
-  IS_PROCESS_DEFINITION_DELETION_ENABLED: true,
-}));
-
 describe('<Processes /> - operations', () => {
   beforeEach(() => {
     mockFetchProcessInstances().withSuccess({

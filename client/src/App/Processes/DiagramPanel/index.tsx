@@ -13,7 +13,6 @@ import {
   getProcessInstanceFilters,
 } from 'modules/utils/filter';
 import {COLLAPSABLE_PANEL_MIN_WIDTH} from 'modules/constants';
-import {IS_PROCESS_DEFINITION_DELETION_ENABLED} from 'modules/feature-flags';
 import {Restricted} from 'modules/components/Restricted';
 import {processesStore} from 'modules/stores/processes';
 import {ProcessOperations} from '../ProcessOperations';
@@ -125,26 +124,24 @@ const DiagramPanel: React.FC = observer(() => {
               content={bpmnProcessId}
             />
           )}
-          {isVersionSelected &&
-            processId !== undefined &&
-            IS_PROCESS_DEFINITION_DELETION_ENABLED && (
-              <Restricted
-                scopes={['write']}
-                resourceBasedRestrictions={{
-                  scopes: ['DELETE'],
-                  permissions: processesStore.getPermissions(
-                    bpmnProcessId,
-                    tenant,
-                  ),
-                }}
-              >
-                <ProcessOperations
-                  processDefinitionId={processId}
-                  processName={processName}
-                  processVersion={version}
-                />
-              </Restricted>
-            )}
+          {isVersionSelected && processId !== undefined && (
+            <Restricted
+              scopes={['write']}
+              resourceBasedRestrictions={{
+                scopes: ['DELETE'],
+                permissions: processesStore.getPermissions(
+                  bpmnProcessId,
+                  tenant,
+                ),
+              }}
+            >
+              <ProcessOperations
+                processDefinitionId={processId}
+                processName={processName}
+                processVersion={version}
+              />
+            </Restricted>
+          )}
         </>
       </PanelHeader>
       <DiagramShell

@@ -11,6 +11,7 @@ import java.util.UUID;
 public class OperationExecutorProperties {
 
   public static final int BATCH_SIZE_DEFAULT = 500;
+  public static final int DELETION_BATCH_SIZE_DEFAULT = 5000;
 
   public static final String WORKER_ID_DEFAULT = UUID.randomUUID().toString();
 
@@ -25,6 +26,8 @@ public class OperationExecutorProperties {
    * as one process instance can have more than one scheduled operations.
    */
   private int batchSize = BATCH_SIZE_DEFAULT;
+
+  private int deletionBatchSize = DELETION_BATCH_SIZE_DEFAULT;
 
   private String workerId = WORKER_ID_DEFAULT;
 
@@ -45,6 +48,14 @@ public class OperationExecutorProperties {
 
   public void setBatchSize(int batchSize) {
     this.batchSize = batchSize;
+  }
+
+  public int getDeletionBatchSize() {
+    return deletionBatchSize;
+  }
+
+  public void setDeletionBatchSize(int deletionBatchSize) {
+    this.deletionBatchSize = deletionBatchSize;
   }
 
   public String getWorkerId() {

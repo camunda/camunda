@@ -47,6 +47,7 @@ import io.camunda.operate.webapp.security.UserService;
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.identity.PermissionsService;
 import io.camunda.operate.webapp.zeebe.operation.DeleteDecisionDefinitionHandler;
+import io.camunda.operate.webapp.zeebe.operation.DeleteProcessDefinitionHandler;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.QueryBuilders;

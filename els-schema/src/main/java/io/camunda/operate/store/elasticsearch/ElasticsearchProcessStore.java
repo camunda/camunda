@@ -15,17 +15,23 @@ import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.indices.ProcessIndex;
 import io.camunda.operate.schema.templates.ListViewTemplate;
+import io.camunda.operate.schema.templates.OperationTemplate;
+import io.camunda.operate.schema.templates.ProcessInstanceDependant;
+import io.camunda.operate.schema.templates.TemplateDescriptor;
 import io.camunda.operate.store.NotFoundException;
 import io.camunda.operate.store.ProcessStore;
 import io.camunda.operate.tenant.TenantAwareElasticsearchClient;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.util.TreePath;
+import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.core.CountRequest;
+import org.elasticsearch.client.core.CountResponse;
 import org.elasticsearch.index.query.*;
 import org.elasticsearch.index.reindex.BulkByScrollResponse;
 import org.elasticsearch.index.reindex.DeleteByQueryRequest;
@@ -50,6 +56,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static io.camunda.operate.schema.indices.ProcessIndex.BPMN_XML;
 import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.TREE_PATH;
@@ -84,6 +91,9 @@ public class ElasticsearchProcessStore implements ProcessStore {
 
   @Autowired
   private ListViewTemplate listViewTemplate;
+
+  @Autowired
+  private List<ProcessInstanceDependant> processInstanceDependantTemplates;
 
   @Autowired
   private ObjectMapper objectMapper;
@@ -429,6 +439,112 @@ public class ElasticsearchProcessStore implements ProcessStore {
               e.getMessage()));
     }
 
+  }
+
+  @Override
+  public List<ProcessInstanceForListViewEntity> getProcessInstancesByProcessAndStates(
+      long processDefinitionKey, Set<ProcessInstanceState> states, int size, String[] includeFields, String[] excludeFields, QueryType queryType) {
+
+    if (states == null || states.isEmpty()) {
+      throw new OperateRuntimeException("Parameter 'states' is needed to search by states.");
+    }
+
+    QueryBuilder query = joinWithAnd(
+        QueryBuilders.termQuery(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION),
+        QueryBuilders.termQuery(PROCESS_KEY, processDefinitionKey),
+        QueryBuilders.termsQuery(STATE, states.stream().map(Enum::name).collect(Collectors.toList())));
+    SearchSourceBuilder source = new SearchSourceBuilder().size(size).query(query)
+        .fetchSource(includeFields, excludeFields);
+    SearchRequest searchRequest = createSearchRequest(listViewTemplate, queryType).source(source);
+
+    try {
+      SearchResponse response = tenantAwareClient.search(searchRequest);
+      return ElasticsearchUtil.mapSearchHits(response.getHits().getHits(), objectMapper, ProcessInstanceForListViewEntity.class);
+    } catch (IOException ex) {
+      throw new OperateRuntimeException(String.format("Failed to search process instances by processDefinitionKey [%s] and states [%s]", processDefinitionKey, states), ex);
+    }
+  }
+
+  @Override
+  public List<ProcessInstanceForListViewEntity> getProcessInstancesByParentKeys(Set<Long> parentProcessInstanceKeys, int size,
+                                                                                String[] includeFields, String[] excludeFields, QueryType queryType) {
+
+    if (parentProcessInstanceKeys == null || parentProcessInstanceKeys.isEmpty()) {
+      throw new OperateRuntimeException("Parameter 'parentProcessInstanceKeys' is needed to search by parents.");
+    }
+
+    QueryBuilder query = joinWithAnd(
+        QueryBuilders.termQuery(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION),
+        QueryBuilders.termsQuery(PARENT_PROCESS_INSTANCE_KEY, parentProcessInstanceKeys));
+    SearchSourceBuilder source = new SearchSourceBuilder().size(size).query(query)
+        .fetchSource(includeFields, excludeFields);
+    SearchRequest searchRequest = createSearchRequest(listViewTemplate, queryType).source(source);
+
+    try {
+      return tenantAwareClient.search(searchRequest,
+          () -> ElasticsearchUtil.scroll(searchRequest, ProcessInstanceForListViewEntity.class, objectMapper,
+              esClient));
+    } catch (IOException ex) {
+      throw new OperateRuntimeException("Failed to search process instances by parentProcessInstanceKeys", ex);
+    }
+  }
+
+  @Override
+  public long deleteProcessInstancesAndDependants(Set<Long> processInstanceKeys) {
+    if (processInstanceKeys == null || processInstanceKeys.isEmpty()) {
+      return 0;
+    }
+
+    long count = 0;
+    List<ProcessInstanceDependant> processInstanceDependantsWithoutOperation =
+        processInstanceDependantTemplates.stream()
+            .filter(template -> !(template instanceof OperationTemplate))
+            .toList();
+    try {
+      for (ProcessInstanceDependant template : processInstanceDependantsWithoutOperation) {
+        String indexName = ((TemplateDescriptor) template).getAlias();
+        final DeleteByQueryRequest query = new DeleteByQueryRequest(indexName)
+            .setQuery(QueryBuilders.termsQuery(ProcessInstanceDependant.PROCESS_INSTANCE_KEY, processInstanceKeys));
+        BulkByScrollResponse response = esClient.deleteByQuery(query, RequestOptions.DEFAULT);
+        count += response.getDeleted();
+      }
+
+      final DeleteByQueryRequest query = new DeleteByQueryRequest(listViewTemplate.getAlias())
+          .setQuery(QueryBuilders.termsQuery(ListViewTemplate.PROCESS_INSTANCE_KEY, processInstanceKeys));
+      BulkByScrollResponse response = esClient.deleteByQuery(query, RequestOptions.DEFAULT);
+      count += response.getDeleted();
+    } catch (IOException ex) {
+      throw new OperateRuntimeException("Failed to delete process instances and dependants by keys", ex);
+    }
+
+    return count;
+  }
+
+  @Override
+  public long deleteProcessDefinitionsByKeys(Long... processDefinitionKeys) {
+    if (processDefinitionKeys == null || processDefinitionKeys.length == 0) {
+      return 0;
+    }
+    final DeleteByQueryRequest query = new DeleteByQueryRequest(processIndex.getAlias())
+        .setQuery(QueryBuilders.termsQuery(ProcessIndex.KEY, processDefinitionKeys));
+    try {
+      BulkByScrollResponse response = esClient.deleteByQuery(query, RequestOptions.DEFAULT);
+      return response.getDeleted();
+    } catch (IOException ex) {
+      throw new OperateRuntimeException("Failed to delete process definitions by keys", ex);
+    }
+  }
+
+  @Override
+  public void refreshIndices(String... indices) {
+    if (indices == null || indices.length == 0) {
+      throw new OperateRuntimeException("Refresh indices needs at least one index to refresh.");
+    }
+    try {
+      esClient.indices().refresh(new RefreshRequest(indices), RequestOptions.DEFAULT);
+    } catch (IOException ex) {
+      throw new OperateRuntimeException("Failed to refresh indices " + Arrays.asList(indices), ex);
+    }
   }
 
   private ProcessEntity fromSearchHit(String processString) {
