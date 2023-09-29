@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.response.ActivateJobsResponse;
+import io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl;
 import io.camunda.zeebe.client.impl.ZeebeObjectMapper;
 import io.camunda.zeebe.client.impl.response.ActivatedJobImpl;
 import io.camunda.zeebe.client.util.ClientTest;
@@ -372,6 +373,59 @@ public final class ActivateJobsTest extends ClientTest {
 
     final io.camunda.zeebe.client.api.response.ActivatedJob job1 = response.getJobs().get(0);
     assertThat(job1.getVariable("key")).isNull();
+  }
+
+  @Test
+  public void shouldSetDefaultWorkerNameWhenNullPropertyIsConfigured() {
+    // given
+    rule.getClientBuilder().defaultJobWorkerName(null);
+
+    // when
+    client.newActivateJobsCommand().jobType("foo").maxJobsToActivate(1).send().join();
+
+    // then
+    final ActivateJobsRequest request = gatewayService.getLastRequest();
+    assertThat(request.getWorker()).isEqualTo(ZeebeClientBuilderImpl.DEFAULT_JOB_WORKER_NAME);
+  }
+
+  @Test
+  public void shouldSetProvidedWorkerNameWhenNullPropertyIsConfigured() {
+    final String workerName = "workerName";
+    // given
+    rule.getClientBuilder().defaultJobWorkerName(null);
+
+    // when
+    client
+        .newActivateJobsCommand()
+        .jobType("foo")
+        .maxJobsToActivate(1)
+        .workerName(workerName)
+        .send()
+        .join();
+
+    // then
+    final ActivateJobsRequest request = gatewayService.getLastRequest();
+    assertThat(request.getWorker()).isEqualTo(workerName);
+  }
+
+  @Test
+  public void shouldSetProvidedDefaultWorkerNameWhenNullPropertyIsProvidedInBuilder() {
+    final String workerName = "workerName";
+    // given
+    rule.getClientBuilder().defaultJobWorkerName(workerName);
+
+    // when
+    client
+        .newActivateJobsCommand()
+        .jobType("foo")
+        .maxJobsToActivate(1)
+        .workerName(null)
+        .send()
+        .join();
+
+    // then
+    final ActivateJobsRequest request = gatewayService.getLastRequest();
+    assertThat(request.getWorker()).isEqualTo(workerName);
   }
 
   private static final class VariablesPojo {
