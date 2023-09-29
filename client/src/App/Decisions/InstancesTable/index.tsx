@@ -20,7 +20,6 @@ import {tracking} from 'modules/tracking';
 import {Link} from 'modules/components/Link';
 import {useFilters} from 'modules/hooks/useFilters';
 import {getDecisionInstanceFilters} from 'modules/utils/filter';
-import {authenticationStore} from 'modules/stores/authentication';
 
 const ROW_HEIGHT = 34;
 
@@ -136,9 +135,6 @@ const InstancesTable: React.FC = observer(() => {
             evaluationDate,
             processInstanceId,
           }) => {
-            const tenantName =
-              authenticationStore.tenantsById?.[tenantId] ?? tenantId;
-
             return {
               id,
               decisionName: (
@@ -167,7 +163,7 @@ const InstancesTable: React.FC = observer(() => {
                 </Link>
               ),
               decisionVersion,
-              tenant: isTenantColumnVisible ? tenantName : undefined,
+              tenant: isTenantColumnVisible ? tenantId : undefined,
               evaluationDate: formatDate(evaluationDate),
               processInstanceId: (
                 <>
