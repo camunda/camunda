@@ -13,8 +13,6 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbString;
-import io.camunda.zeebe.db.impl.DbTenantAwareKey;
-import io.camunda.zeebe.db.impl.DbTenantAwareKey.PlacementType;
 import io.camunda.zeebe.engine.state.message.ProcessMessageSubscription;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
@@ -22,26 +20,19 @@ import org.agrona.DirectBuffer;
 
 public final class LegacyProcessMessageSubscriptionState {
 
-  // (elementInstanceKey, tenant aware messageName) => ProcessMessageSubscription
+  // (elementInstanceKey, messageName) => ProcessMessageSubscription
   private final DbLong elementInstanceKey;
-
-  private final DbString tenantIdKey;
   private final DbString messageName;
-  private final DbTenantAwareKey<DbString> tenantAwareMessageName;
-  private final DbCompositeKey<DbLong, DbTenantAwareKey<DbString>> elementKeyAndMessageName;
+  private final DbCompositeKey<DbLong, DbString> elementKeyAndMessageName;
   private final ProcessMessageSubscription processMessageSubscription;
-
-  private final ColumnFamily<
-          DbCompositeKey<DbLong, DbTenantAwareKey<DbString>>, ProcessMessageSubscription>
+  private final ColumnFamily<DbCompositeKey<DbLong, DbString>, ProcessMessageSubscription>
       subscriptionColumnFamily;
 
   public LegacyProcessMessageSubscriptionState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     elementInstanceKey = new DbLong();
-    tenantIdKey = new DbString();
     messageName = new DbString();
-    tenantAwareMessageName = new DbTenantAwareKey<>(tenantIdKey, messageName, PlacementType.PREFIX);
-    elementKeyAndMessageName = new DbCompositeKey<>(elementInstanceKey, tenantAwareMessageName);
+    elementKeyAndMessageName = new DbCompositeKey<>(elementInstanceKey, messageName);
     processMessageSubscription = new ProcessMessageSubscription();
 
     subscriptionColumnFamily =
@@ -53,8 +44,7 @@ public final class LegacyProcessMessageSubscriptionState {
   }
 
   public void put(final long key, final ProcessMessageSubscriptionRecord record) {
-    wrapSubscriptionKeys(
-        record.getElementInstanceKey(), record.getMessageNameBuffer(), record.getTenantId());
+    wrapSubscriptionKeys(record.getElementInstanceKey(), record.getMessageNameBuffer());
 
     processMessageSubscription.reset();
     processMessageSubscription.setKey(key).setRecord(record);
@@ -62,15 +52,12 @@ public final class LegacyProcessMessageSubscriptionState {
     subscriptionColumnFamily.insert(elementKeyAndMessageName, processMessageSubscription);
   }
 
-  private void wrapSubscriptionKeys(
-      final long elementInstanceKey, final DirectBuffer messageName, final String tenantId) {
+  private void wrapSubscriptionKeys(final long elementInstanceKey, final DirectBuffer messageName) {
     this.elementInstanceKey.wrapLong(elementInstanceKey);
     this.messageName.wrapBuffer(messageName);
-    tenantIdKey.wrapString(tenantId);
   }
 
-  public ColumnFamily<
-          DbCompositeKey<DbLong, DbTenantAwareKey<DbString>>, ProcessMessageSubscription>
+  public ColumnFamily<DbCompositeKey<DbLong, DbString>, ProcessMessageSubscription>
       getSubscriptionColumnFamily() {
     return subscriptionColumnFamily;
   }
