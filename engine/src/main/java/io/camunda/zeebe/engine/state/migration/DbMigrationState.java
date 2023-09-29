@@ -27,6 +27,7 @@ import io.camunda.zeebe.engine.state.migration.to_8_3.DbDecisionMigrationState;
 import io.camunda.zeebe.engine.state.migration.to_8_3.DbMessageMigrationState;
 import io.camunda.zeebe.engine.state.migration.to_8_3.DbMessageStartEventSubscriptionMigrationState;
 import io.camunda.zeebe.engine.state.migration.to_8_3.DbMessageSubscriptionMigrationState;
+import io.camunda.zeebe.engine.state.migration.to_8_3.DbProcessMessageSubscriptionMigrationState;
 import io.camunda.zeebe.engine.state.migration.to_8_3.DbProcessMigrationState;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
@@ -112,6 +113,7 @@ public class DbMigrationState implements MutableMigrationState {
   private final DbMessageStartEventSubscriptionMigrationState
       messageStartEventSubscriptionMigrationState;
   private final DbMessageSubscriptionMigrationState messageSubscriptionMigrationState;
+  private final DbProcessMessageSubscriptionMigrationState processMessageSubscriptionMigrationState;
 
   public DbMigrationState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
@@ -243,6 +245,8 @@ public class DbMigrationState implements MutableMigrationState {
         new DbMessageStartEventSubscriptionMigrationState(zeebeDb, transactionContext);
     messageSubscriptionMigrationState =
         new DbMessageSubscriptionMigrationState(zeebeDb, transactionContext);
+    processMessageSubscriptionMigrationState =
+        new DbProcessMessageSubscriptionMigrationState(zeebeDb, transactionContext);
   }
 
   @Override
@@ -432,6 +436,11 @@ public class DbMigrationState implements MutableMigrationState {
   @Override
   public void migrateMessageEventSubscriptionForMultiTenancy() {
     messageSubscriptionMigrationState.migrateMessageSubscriptionForMultiTenancy();
+  }
+
+  @Override
+  public void migrateProcessMessageSubscriptionForMultiTenancy() {
+    processMessageSubscriptionMigrationState.migrateProcessMessageSubscriptionForMultiTenancy();
   }
 
   @Override

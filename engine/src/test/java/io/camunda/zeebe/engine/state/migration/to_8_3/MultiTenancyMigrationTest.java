@@ -29,6 +29,7 @@ import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.message.DbMessageStartEventSubscriptionState;
 import io.camunda.zeebe.engine.state.message.DbMessageState;
 import io.camunda.zeebe.engine.state.message.DbMessageSubscriptionState;
+import io.camunda.zeebe.engine.state.message.DbProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.message.MessageStartEventSubscription;
 import io.camunda.zeebe.engine.state.message.MessageSubscription;
 import io.camunda.zeebe.engine.state.message.StoredMessage;
@@ -36,6 +37,7 @@ import io.camunda.zeebe.engine.state.migration.to_8_3.legacy.LegacyDecisionState
 import io.camunda.zeebe.engine.state.migration.to_8_3.legacy.LegacyMessageStartEventSubscriptionState;
 import io.camunda.zeebe.engine.state.migration.to_8_3.legacy.LegacyMessageState;
 import io.camunda.zeebe.engine.state.migration.to_8_3.legacy.LegacyMessageSubscriptionState;
+import io.camunda.zeebe.engine.state.migration.to_8_3.legacy.LegacyProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.migration.to_8_3.legacy.LegacyProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
@@ -48,6 +50,7 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
@@ -765,6 +768,79 @@ public class MultiTenancyMigrationTest {
               record.getCorrelationKey(),
               record.isInterrupting(),
               record.getVariables(),
+              TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    }
+  }
+
+  @Nested
+  @ExtendWith(ProcessingStateExtension.class)
+  class MigrateProcessMessageSubscriptionStateForMultiTenancyTest {
+
+    private ZeebeDb<ZbColumnFamilies> zeebeDb;
+    private MutableProcessingState processingState;
+    private TransactionContext transactionContext;
+    private LegacyProcessMessageSubscriptionState legacyState;
+    private DbProcessMessageSubscriptionState state;
+
+    @BeforeEach
+    void setup() {
+      legacyState = new LegacyProcessMessageSubscriptionState(zeebeDb, transactionContext);
+      state = new DbProcessMessageSubscriptionState(zeebeDb, transactionContext, null);
+    }
+
+    @Test
+    void shouldMigrateProcessSubscriptionByKeyColumnFamily() {
+      // given
+      final var record =
+          new ProcessMessageSubscriptionRecord()
+              .setSubscriptionPartitionId(8)
+              .setProcessInstanceKey(123)
+              .setElementInstanceKey(456)
+              .setBpmnProcessId(wrapString("processId"))
+              .setMessageKey(789)
+              .setMessageName(wrapString("messageName"))
+              .setCorrelationKey(wrapString("correlationKey"))
+              .setInterrupting(false)
+              .setVariables(asMsgPack("foo", "bar"))
+              .setElementId(wrapString("elementId"));
+      final int key = 111;
+      legacyState.put(key, record);
+
+      // when
+      sut.runMigration(processingState);
+
+      // then
+      final var subscription =
+          state.getSubscription(
+              record.getElementInstanceKey(),
+              record.getMessageNameBuffer(),
+              TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+      assertThat(subscription).isNotNull();
+      assertThat(subscription.getKey()).isEqualTo(key);
+      assertThat(subscription.getRecord())
+          .extracting(
+              ProcessMessageSubscriptionRecord::getSubscriptionPartitionId,
+              ProcessMessageSubscriptionRecord::getProcessInstanceKey,
+              ProcessMessageSubscriptionRecord::getElementInstanceKey,
+              ProcessMessageSubscriptionRecord::getBpmnProcessId,
+              ProcessMessageSubscriptionRecord::getMessageKey,
+              ProcessMessageSubscriptionRecord::getMessageName,
+              ProcessMessageSubscriptionRecord::getCorrelationKey,
+              ProcessMessageSubscriptionRecord::isInterrupting,
+              ProcessMessageSubscriptionRecord::getVariables,
+              ProcessMessageSubscriptionRecord::getElementId,
+              ProcessMessageSubscriptionRecord::getTenantId)
+          .containsExactly(
+              record.getSubscriptionPartitionId(),
+              record.getProcessInstanceKey(),
+              record.getElementInstanceKey(),
+              record.getBpmnProcessId(),
+              record.getMessageKey(),
+              record.getMessageName(),
+              record.getCorrelationKey(),
+              record.isInterrupting(),
+              record.getVariables(),
+              record.getElementId(),
               TenantOwned.DEFAULT_TENANT_IDENTIFIER);
     }
   }
