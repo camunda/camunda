@@ -15,6 +15,7 @@ import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Cookie;
 import jakarta.ws.rs.core.Response;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.dto.optimize.query.security.CredentialsRequestDto;
 import org.camunda.optimize.service.security.AuthCookieService;
 import org.camunda.optimize.service.security.CCSMTokenService;
@@ -89,15 +90,24 @@ public class CCSMAuthenticationService extends AbstractAuthenticationService {
   }
 
   private String buildRootRedirect(final ContainerRequestContext requestContext) {
-    final URI baseUri = requestContext.getUriInfo().getBaseUri();
-    String redirectUri = baseUri.getScheme() + "://" + baseUri.getHost();
-    if (
-      // value is -1 if no port is set, in that case no need to add it
-      baseUri.getPort() != -1
-    ) {
-      redirectUri += ":" + baseUri.getPort();
+    final String configuredRedirectRootUrl = configurationService.getAuthConfiguration()
+      .getCcsmAuthConfiguration()
+      .getRedirectRootUrl();
+    String redirectUri;
+    if (!StringUtils.isEmpty(configuredRedirectRootUrl)) {
+      redirectUri = configuredRedirectRootUrl;
+    } else {
+      final URI baseUri = requestContext.getUriInfo().getBaseUri();
+      redirectUri = baseUri.getScheme() + "://" + baseUri.getHost();
+      if (
+        // value is -1 if no port is set, in that case no need to add it
+        baseUri.getPort() != -1
+      ) {
+        redirectUri += ":" + baseUri.getPort();
+      }
+      redirectUri += configurationService.getContextPath().orElse("");
     }
-    redirectUri += configurationService.getContextPath().orElse("");
+    log.trace("Using root redirect Url: {}", redirectUri);
     return redirectUri;
   }
 
