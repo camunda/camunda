@@ -874,21 +874,21 @@ public class MultiTenancyMigrationTest {
     @Test
     void shouldMigrateActivatableJobsColumnFamily() {
       // given
-      final long jobKey = 1l;
+      final long jobKey = 1L;
       final String jobWorker = "jobWorker";
       final String jobType = "jobType";
       final int retries = 5;
-      final long deadline = 111l;
-      final long recurringTime = 222l;
-      final long retryBackoff = 333l;
+      final long deadline = 111L;
+      final long recurringTime = 222L;
+      final long retryBackoff = 333L;
       final String errorMessage = "jobErrorMessage";
       final String errorCode = "jobErrorCode";
       final String processId = "jobProcess";
-      final long processDefinitionKey = 444l;
-      final long processInstanceKey = 555l;
+      final long processDefinitionKey = 444L;
+      final long processInstanceKey = 555L;
       final int version = 3;
       final String elementId = "jobElement";
-      final long elementInstanceKey = 666l;
+      final long elementInstanceKey = 666L;
       final Map<String, String> customHeaders = Collections.singletonMap("workerVersion", "42");
       final var jobRecord =
           new JobRecord()
@@ -918,7 +918,7 @@ public class MultiTenancyMigrationTest {
           wrapString(jobType),
           List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER),
           (key, job) -> {
-            assertThat(key).isEqualTo(1l);
+            assertThat(key).isEqualTo(jobKey);
             Assertions.assertThat(job)
                 .hasWorker(jobWorker)
                 .hasType(jobType)
