@@ -64,5 +64,4 @@ public class TenantAwareTimerEventTest {
         .describedAs("Expect that timer was created")
         .isNotNull();
   }
-
 }

@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -182,7 +183,8 @@ public final class TimerCatchEventTest {
 
     Assertions.assertThat(createdEvent.getValue())
         .hasElementInstanceKey(activatedEvent.getKey())
-        .hasProcessInstanceKey(processInstanceKey);
+        .hasProcessInstanceKey(processInstanceKey)
+        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
     assertThat(createdEvent.getValue().getDueDate())
         .isBetween(
@@ -219,7 +221,8 @@ public final class TimerCatchEventTest {
 
     Assertions.assertThat(createdEvent.getValue())
         .hasElementInstanceKey(activatedEvent.getKey())
-        .hasProcessInstanceKey(processInstanceKey);
+        .hasProcessInstanceKey(processInstanceKey)
+        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
     assertThat(createdEvent.getValue().getDueDate())
         .isBetween(
@@ -249,6 +252,8 @@ public final class TimerCatchEventTest {
 
     assertThat(triggeredEvent.getKey()).isEqualTo(createdEvent.getKey());
     assertThat(triggeredEvent.getValue()).isEqualTo(createdEvent.getValue());
+    Assertions.assertThat(triggeredEvent.getValue())
+        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
     // Normally we don't guarantee that a timer gets triggered within a certain time-span. The only
     // guarantee we have is that the timer gets triggered after a specific point in time.
     // Because this is an isolated scenario we can test for this with relative accuracy so we do
@@ -311,6 +316,8 @@ public final class TimerCatchEventTest {
 
     assertThat(triggeredEvent.getKey()).isEqualTo(createdEvent.getKey());
     assertThat(triggeredEvent.getValue()).isEqualTo(createdEvent.getValue());
+    Assertions.assertThat(triggeredEvent.getValue())
+        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
     // Normally we don't guarantee that a timer gets triggered within a certain time-span. The only
     // guarantee we have is that the timer gets triggered after a specific point in time.
     // Because this is an isolated scenario we can test for this with relative accuracy so we do
@@ -482,6 +489,8 @@ public final class TimerCatchEventTest {
 
     assertThat(canceledEvent.getKey()).isEqualTo(createdEvent.getKey());
     assertThat(canceledEvent.getValue()).isEqualTo(createdEvent.getValue());
+    Assertions.assertThat(canceledEvent.getValue())
+        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   }
 
   @Test
@@ -504,7 +513,8 @@ public final class TimerCatchEventTest {
 
     Assertions.assertThat(timerRecord.getValue())
         .hasElementInstanceKey(activityRecord.getKey())
-        .hasTargetElementId("timer");
+        .hasTargetElementId("timer")
+        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
     assertThat(timerRecord.getValue().getDueDate())
         .isBetween(
@@ -535,7 +545,8 @@ public final class TimerCatchEventTest {
 
     Assertions.assertThat(timerRecord.getValue())
         .hasElementInstanceKey(activityRecord.getKey())
-        .hasTargetElementId("timer");
+        .hasTargetElementId("timer")
+        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
     final long expected =
         ZonedDateTime.of(LocalDate.of(2178, 11, 25), LocalTime.of(0, 0, 0), ZoneId.of("UTC"))
@@ -566,6 +577,8 @@ public final class TimerCatchEventTest {
 
     assertThat(timerTriggered.getKey()).isEqualTo(timerCreated.getKey());
     assertThat(timerTriggered.getValue()).isEqualTo(timerCreated.getValue());
+    Assertions.assertThat(timerTriggered.getValue())
+        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
     assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETING)
@@ -597,6 +610,8 @@ public final class TimerCatchEventTest {
 
     assertThat(timerTriggered.getKey()).isEqualTo(timerCreated.getKey());
     assertThat(timerTriggered.getValue()).isEqualTo(timerCreated.getValue());
+    Assertions.assertThat(timerTriggered.getValue())
+        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
     assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETING)
@@ -630,7 +645,8 @@ public final class TimerCatchEventTest {
     assertThat(timerRescheduled.getKey()).isGreaterThan(timerCreated.getKey());
     Assertions.assertThat(timerRescheduled.getValue())
         .hasTargetElementId(timerCreated.getValue().getTargetElementId())
-        .hasElementInstanceKey(timerCreated.getValue().getElementInstanceKey());
+        .hasElementInstanceKey(timerCreated.getValue().getElementInstanceKey())
+        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
     assertThat(timerRescheduled.getValue().getDueDate())
         .isGreaterThanOrEqualTo(
