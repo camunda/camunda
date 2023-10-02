@@ -1,4 +1,0 @@
-{"index":{"_index":"optimize-event-process-definition_v5","_id":"eventProcessKey1-null"}}
-{"id": "eventProcessKey1-null", "key": "eventProcessKey1", "version": "1", "versionTag": null, "name": "eventProcess-eventProcessKey1", "dataSource": {"type": "events", "name": null}, "tenantId": null, "deleted": false, "bpmn20Xml": "eventProcessKey11", "flowNodeData": [ ], "userTaskNames": { }, "onboarded": true}
-{"index":{"_index":"optimize-event-process-definition_v5","_id":"eventProcessKey2-null"}}
-{"id": "eventProcessKey2-null", "key": "eventProcessKey2", "version": "1", "versionTag": null, "name": "eventProcess-eventProcessKey2", "dataSource": {"type": "events", "name": null}, "tenantId": "someTenantId", "deleted": false, "bpmn20Xml": "eventProcessKey22", "flowNodeData": [ ], "userTaskNames": { }, "onboarded": true}
