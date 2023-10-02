@@ -572,6 +572,9 @@
         "inputVariable": "InputVar",
         "outputVariable": "OutputVar",
         "objectVariable": "Object Variable",
+        "openIncidents": "Open Incidents",
+        "incidents": "Incidents",
+        "userTasks": "User Tasks",
         "flowNodeDuration": "Dur",
         "count": "Count"
       },
