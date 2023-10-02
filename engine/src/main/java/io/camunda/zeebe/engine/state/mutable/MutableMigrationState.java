@@ -46,11 +46,4 @@ public interface MutableMigrationState extends MigrationState {
   void migrateProcessMessageSubscriptionForMultiTenancy();
 
   void migrateJobStateForMultiTenancy();
-
-  /**
-   * Changes the state of a migration to FINISHED to indicate it has been executed.
-   *
-   * @param identifier the identifier of the migration
-   */
-  void markMigrationFinished(final String identifier);
 }
