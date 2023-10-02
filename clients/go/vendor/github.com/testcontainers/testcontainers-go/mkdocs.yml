@@ -4,6 +4,7 @@ site_url: https://golang.testcontainers.org
 plugins:
     - search
     - codeinclude
+    - include-markdown
     - markdownextradata
 theme:
     name: material
@@ -66,6 +67,7 @@ nav:
         - modules/clickhouse.md
         - modules/couchbase.md
         - modules/elasticsearch.md
+        - modules/gcloud.md
         - modules/k3s.md
         - modules/kafka.md
         - modules/localstack.md
@@ -76,19 +78,15 @@ nav:
         - modules/neo4j.md
         - modules/postgres.md
         - modules/pulsar.md
+        - modules/rabbitmq.md
         - modules/redis.md
         - modules/redpanda.md
         - modules/vault.md
     - Examples:
         - examples/index.md
-        - examples/bigtable.md
         - examples/cockroachdb.md
         - examples/consul.md
-        - examples/datastore.md
-        - examples/firestore.md
         - examples/nginx.md
-        - examples/pubsub.md
-        - examples/spanner.md
         - examples/toxiproxy.md
     - System Requirements:
         - system_requirements/index.md
@@ -111,4 +109,4 @@ nav:
     - Getting help: getting_help.md
 edit_uri: edit/main/docs/
 extra:
-    latest_version: v0.24.1
+    latest_version: v0.25.0

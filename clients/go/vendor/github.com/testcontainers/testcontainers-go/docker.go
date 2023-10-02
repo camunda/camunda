@@ -877,18 +877,13 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		opt(&reaperOpts)
 	}
 
-	sessionID := testcontainerssession.SessionID()
-	if reaperInstance != nil {
-		sessionID = reaperInstance.SessionID
-	}
-
 	tcConfig := p.Config().Config
 
 	var termSignal chan bool
 	// the reaper does not need to start a reaper for itself
 	isReaperContainer := strings.EqualFold(req.Image, reaperImage(reaperOpts.ImageName))
 	if !tcConfig.RyukDisabled && !isReaperContainer {
-		r, err := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, p.host), sessionID, p, req.ReaperOptions...)
+		r, err := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, p.host), testcontainerssession.SessionID(), p, req.ReaperOptions...)
 		if err != nil {
 			return nil, fmt.Errorf("%w: creating reaper failed", err)
 		}
@@ -972,7 +967,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 
 	if !isReaperContainer {
 		// add the labels that the reaper will use to terminate the container to the request
-		for k, v := range testcontainersdocker.DefaultLabels(sessionID) {
+		for k, v := range testcontainersdocker.DefaultLabels(testcontainerssession.SessionID()) {
 			req.Labels[k] = v
 		}
 	}
@@ -1077,7 +1072,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		WaitingFor:        req.WaitingFor,
 		Image:             tag,
 		imageWasBuilt:     req.ShouldBuildImage(),
-		sessionID:         sessionID,
+		sessionID:         testcontainerssession.SessionID(),
 		provider:          p,
 		terminationSignal: termSignal,
 		stopProducer:      nil,
@@ -1125,9 +1120,6 @@ func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req Contain
 	}
 
 	sessionID := testcontainerssession.SessionID()
-	if reaperInstance != nil {
-		sessionID = reaperInstance.SessionID
-	}
 
 	tcConfig := p.Config().Config
 
@@ -1298,9 +1290,6 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 	}
 
 	sessionID := testcontainerssession.SessionID()
-	if reaperInstance != nil {
-		sessionID = reaperInstance.SessionID
-	}
 
 	var termSignal chan bool
 	if !tcConfig.RyukDisabled {
@@ -1406,17 +1395,12 @@ func (p *DockerProvider) getDefaultNetwork(ctx context.Context, cli client.APICl
 		}
 	}
 
-	sessionID := testcontainerssession.SessionID()
-	if reaperInstance != nil {
-		sessionID = reaperInstance.SessionID
-	}
-
 	// Create a bridge network for the container communications
 	if !reaperNetworkExists {
 		_, err = cli.NetworkCreate(ctx, reaperNetwork, types.NetworkCreate{
 			Driver:     Bridge,
 			Attachable: true,
-			Labels:     testcontainersdocker.DefaultLabels(sessionID),
+			Labels:     testcontainersdocker.DefaultLabels(testcontainerssession.SessionID()),
 		})
 
 		if err != nil {
@@ -1447,12 +1431,7 @@ func containerFromDockerResponse(ctx context.Context, response types.Container) 
 	}
 	container.provider = provider
 
-	sessionID := testcontainerssession.SessionID()
-	if reaperInstance != nil {
-		sessionID = reaperInstance.SessionID
-	}
-
-	container.sessionID = sessionID
+	container.sessionID = testcontainerssession.SessionID()
 	container.consumers = []LogConsumer{}
 	container.stopProducer = nil
 	container.isRunning = response.State == "running"
@@ -1467,4 +1446,54 @@ func containerFromDockerResponse(ctx context.Context, response types.Container) 
 	}
 
 	return &container, nil
+}
+
+// ListImages list images from the provider. If an image has multiple Tags, each tag is reported
+// individually with the same ID and same labels
+func (p *DockerProvider) ListImages(ctx context.Context) ([]ImageInfo, error) {
+	images := []ImageInfo{}
+
+	imageList, err := p.client.ImageList(ctx, types.ImageListOptions{})
+	if err != nil {
+		return images, fmt.Errorf("listing images %w", err)
+	}
+
+	for _, img := range imageList {
+		for _, tag := range img.RepoTags {
+			images = append(images, ImageInfo{ID: img.ID, Name: tag})
+		}
+	}
+
+	return images, nil
+}
+
+// SaveImages exports a list of images as an uncompressed tar
+func (p *DockerProvider) SaveImages(ctx context.Context, output string, images ...string) error {
+	outputFile, err := os.Create(output)
+	if err != nil {
+		return fmt.Errorf("opening output file %w", err)
+	}
+	defer func() {
+		_ = outputFile.Close()
+	}()
+
+	imageReader, err := p.client.ImageSave(ctx, images)
+	if err != nil {
+		return fmt.Errorf("saving images %w", err)
+	}
+	defer func() {
+		_ = imageReader.Close()
+	}()
+
+	_, err = io.Copy(outputFile, imageReader)
+	if err != nil {
+		return fmt.Errorf("writing images to output %w", err)
+	}
+
+	return nil
+}
+
+// PullImage pulls image from registry
+func (p *DockerProvider) PullImage(ctx context.Context, image string) error {
+	return p.attemptToPullImage(ctx, image, types.ImagePullOptions{})
 }
