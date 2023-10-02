@@ -21,7 +21,7 @@ import org.springframework.context.annotation.Configuration;
 @AutoConfigureBefore(HealthContributorAutoConfiguration.class)
 public class ClusterHealthIndicatorAutoConfiguration {
 
-  @Bean
+  @Bean(name = "clusterHealth")
   @ConditionalOnMissingBean(name = "gatewayClusterHealthIndicator")
   public ClusterHealthIndicator gatewayClusterHealthIndicator(
       final SpringGatewayBridge gatewayBridge) {

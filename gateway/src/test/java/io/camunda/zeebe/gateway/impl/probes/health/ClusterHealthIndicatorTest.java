@@ -82,7 +82,7 @@ public class ClusterHealthIndicatorTest {
 
     // then
     assertThat(actualHealth).isNotNull();
-    assertThat(actualHealth.getStatus()).isEqualTo(new Status("HEALTHY"));
+    assertThat(actualHealth.getStatus()).isEqualTo(Status.UP);
   }
 
   @Test
@@ -130,7 +130,7 @@ public class ClusterHealthIndicatorTest {
 
     // then
     assertThat(actualHealth).isNotNull();
-    assertThat(actualHealth.getStatus()).isEqualTo(new Status("UNHEALTHY"));
+    assertThat(actualHealth.getStatus()).isEqualTo(Status.DOWN);
   }
 
   @Test

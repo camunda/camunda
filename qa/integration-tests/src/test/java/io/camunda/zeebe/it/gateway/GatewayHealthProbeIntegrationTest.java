@@ -73,7 +73,7 @@ public class GatewayHealthProbeIntegrationTest {
     }
 
     @Test
-    void shouldReportHealthyUpIfConnectedToBroker() {
+    void shouldReportHealthUpIfConnectedToBroker() {
       // given
       final var gateway = cluster.availableGateway();
       final var gatewayServerSpec =
@@ -99,7 +99,7 @@ public class GatewayHealthProbeIntegrationTest {
                         .when()
                         .get(PATH_TO_HEALTH_PROBE)
                         .then()
-                        .body("components.gatewayCluster.status", equalTo("HEALTHY")));
+                        .body("components.clusterHealth.status", equalTo("UP")));
       } catch (final ConditionTimeoutException e) {
         // it can happen that a single request takes too long and causes awaitility to timeout,
         // in which case we want to try a second time to run the request without timeout
@@ -108,7 +108,7 @@ public class GatewayHealthProbeIntegrationTest {
             .when()
             .get(PATH_TO_HEALTH_PROBE)
             .then()
-            .body("components.gatewayCluster.status", equalTo("HEALTHY"));
+            .body("components.clusterHealth.status", equalTo("UP"));
       }
     }
   }
@@ -168,7 +168,7 @@ public class GatewayHealthProbeIntegrationTest {
     }
 
     @Test
-    void shouldReportDownUpIfConnectedToBroker() {
+    void shouldReportDownIfNotConnectedToBroker() {
       // given
       final var gatewayServerSpec =
           new RequestSpecBuilder()
@@ -183,7 +183,7 @@ public class GatewayHealthProbeIntegrationTest {
       // rate of 5 seconds, so it may take up to that and a bit more in the worst case once the
       // gateway finds the broker
       try {
-        Awaitility.await("wait until status turns UP")
+        Awaitility.await("wait until status turns DOWN")
             .atMost(Duration.ofSeconds(10))
             .pollInterval(Duration.ofMillis(100))
             .untilAsserted(
@@ -193,7 +193,7 @@ public class GatewayHealthProbeIntegrationTest {
                         .when()
                         .get(PATH_TO_HEALTH_PROBE)
                         .then()
-                        .body("components.gatewayCluster.status", equalTo("DOWN")));
+                        .body("components.clusterHealth.status", equalTo("DOWN")));
       } catch (final ConditionTimeoutException e) {
         // it can happen that a single request takes too long and causes awaitility to timeout,
         // in which case we want to try a second time to run the request without timeout
@@ -202,7 +202,7 @@ public class GatewayHealthProbeIntegrationTest {
             .when()
             .get(PATH_TO_HEALTH_PROBE)
             .then()
-            .body("components.gatewayCluster.status", equalTo("DOWN"));
+            .body("components.clusterHealth.status", equalTo("DOWN"));
       }
     }
   }

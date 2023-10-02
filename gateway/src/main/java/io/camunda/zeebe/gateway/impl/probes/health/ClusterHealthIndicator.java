@@ -80,9 +80,9 @@ public class ClusterHealthIndicator implements HealthIndicator {
     final var hasOnlyHealthyPartitions = healthyPartitionsCount == partitionCount;
 
     if (hasOnlyUnhealthyPartitions) {
-      return Health.status("UNHEALTHY").withDetails(partitionDetails).build();
+      return Health.down().withDetails(partitionDetails).build();
     } else if (hasOnlyHealthyPartitions) {
-      return Health.status("HEALTHY").withDetails(partitionDetails).build();
+      return Health.up().withDetails(partitionDetails).build();
     } else {
       return Health.status("DEGRADED").withDetails(partitionDetails).build();
     }
