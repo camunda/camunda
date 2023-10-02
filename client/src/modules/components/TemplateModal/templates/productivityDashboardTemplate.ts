@@ -8,6 +8,7 @@
 import {t} from 'translation';
 
 import productivity from '../images/productivity.png';
+import {getExternalResourcePath} from './service';
 
 export function productivityDashboardTemplate() {
   return {
@@ -26,8 +27,8 @@ export function productivityDashboardTemplate() {
                 {
                   children: [
                     {
-                      altText: '/external/static/templates/pro_input_rate.png',
-                      src: '/external/static/templates/pro_input_rate.png',
+                      altText: getExternalResourcePath('pro_input_rate.png', 'templates'),
+                      src: getExternalResourcePath('pro_input_rate.png', 'templates'),
                       width: 0,
                       caption: {
                         editorState: {
@@ -100,8 +101,8 @@ export function productivityDashboardTemplate() {
                 {
                   children: [
                     {
-                      altText: '/external/static/templates/Target.png',
-                      src: '/external/static/templates/Target.png',
+                      altText: getExternalResourcePath('Target.png', 'templates'),
+                      src: getExternalResourcePath('Target.png', 'templates'),
                       width: 0,
                       caption: {
                         editorState: {
@@ -166,8 +167,8 @@ export function productivityDashboardTemplate() {
                 {
                   children: [
                     {
-                      altText: '/external/static/templates/customize.png',
-                      src: '/external/static/templates/customize.png',
+                      altText: getExternalResourcePath('customize.png', 'templates'),
+                      src: getExternalResourcePath('customize.png', 'templates'),
                       width: 0,
                       caption: {
                         editorState: {
@@ -341,8 +342,8 @@ export function productivityDashboardTemplate() {
                 {
                   children: [
                     {
-                      altText: '/external/static/templates/pro_completion.png',
-                      src: '/external/static/templates/pro_completion.png',
+                      altText: getExternalResourcePath('pro_completion.png', 'templates'),
+                      src: getExternalResourcePath('pro_completion.png', 'templates'),
                       width: 0,
                       caption: {
                         editorState: {
@@ -389,8 +390,8 @@ export function productivityDashboardTemplate() {
                 {
                   children: [
                     {
-                      altText: '/external/static/templates/pro_work_in_progress.png',
-                      src: '/external/static/templates/pro_work_in_progress.png',
+                      altText: getExternalResourcePath('pro_work_in_progress.png', 'templates'),
+                      src: getExternalResourcePath('pro_work_in_progress.png', 'templates'),
                       width: 0,
                       caption: {
                         editorState: {
@@ -504,8 +505,8 @@ export function productivityDashboardTemplate() {
                 {
                   children: [
                     {
-                      altText: '/external/static/templates/Target.png',
-                      src: '/external/static/templates/Target.png',
+                      altText: getExternalResourcePath('Target.png', 'templates'),
+                      src: getExternalResourcePath('Target.png', 'templates'),
                       width: 0,
                       caption: {
                         editorState: {
@@ -570,8 +571,8 @@ export function productivityDashboardTemplate() {
                 {
                   children: [
                     {
-                      altText: '/external/static/templates/customize.png',
-                      src: '/external/static/templates/customize.png',
+                      altText: getExternalResourcePath('customize.png', 'templates'),
+                      src: getExternalResourcePath('customize.png', 'templates'),
                       width: 0,
                       caption: {
                         editorState: {
@@ -794,8 +795,8 @@ export function productivityDashboardTemplate() {
                 {
                   children: [
                     {
-                      altText: '/external/static/templates/Target.png',
-                      src: '/external/static/templates/Target.png',
+                      altText: getExternalResourcePath('Target.png', 'templates'),
+                      src: getExternalResourcePath('Target.png', 'templates'),
                       width: 0,
                       caption: {
                         editorState: {
@@ -860,8 +861,8 @@ export function productivityDashboardTemplate() {
                 {
                   children: [
                     {
-                      altText: '/external/static/templates/customize.png',
-                      src: '/external/static/templates/customize.png',
+                      altText: getExternalResourcePath('customize.png', 'templates'),
+                      src: getExternalResourcePath('customize.png', 'templates'),
                       width: 0,
                       caption: {
                         editorState: {

@@ -9,6 +9,8 @@ import {t} from 'translation';
 
 import efficiency from '../images/efficiency.png';
 
+import {getExternalResourcePath} from './service';
+
 export function efficiencyDashboardTemplate() {
   return {
     name: 'efficiency',
@@ -26,8 +28,8 @@ export function efficiencyDashboardTemplate() {
                 {
                   children: [
                     {
-                      altText: '/external/static/templates/eff_outcome.png',
-                      src: '/external/static/templates/eff_outcome.png',
+                      altText: getExternalResourcePath('eff_outcome.png', 'templates'),
+                      src: getExternalResourcePath('eff_outcome.png', 'templates'),
                       width: 0,
                       caption: {
                         editorState: {
@@ -74,8 +76,8 @@ export function efficiencyDashboardTemplate() {
                 {
                   children: [
                     {
-                      altText: '/external/static/templates/eff_capability.png',
-                      src: '/external/static/templates/eff_capability.png',
+                      altText: getExternalResourcePath('eff_capability.png', 'templates'),
+                      src: getExternalResourcePath('eff_capability.png', 'templates'),
                       width: 0,
                       caption: {
                         editorState: {
@@ -122,8 +124,8 @@ export function efficiencyDashboardTemplate() {
                 {
                   children: [
                     {
-                      altText: '/external/static/templates/eff_error_rate.png',
-                      src: '/external/static/templates/eff_error_rate.png',
+                      altText: getExternalResourcePath('eff_error_rate.png', 'templates'),
+                      src: getExternalResourcePath('eff_error_rate.png', 'templates'),
                       width: 0,
                       caption: {
                         editorState: {
@@ -236,8 +238,8 @@ export function efficiencyDashboardTemplate() {
                 {
                   children: [
                     {
-                      altText: '/external/static/templates/Target.png',
-                      src: '/external/static/templates/Target.png',
+                      altText: getExternalResourcePath('Target.png', 'templates'),
+                      src: getExternalResourcePath('Target.png', 'templates'),
                       width: 0,
                       caption: {
                         editorState: {
@@ -338,8 +340,8 @@ export function efficiencyDashboardTemplate() {
                 {
                   children: [
                     {
-                      altText: '/external/static/templates/Target.png',
-                      src: '/external/static/templates/Target.png',
+                      altText: getExternalResourcePath('Target.png', 'templates'),
+                      src: getExternalResourcePath('Target.png', 'templates'),
                       width: 0,
                       caption: {
                         editorState: {
@@ -404,8 +406,8 @@ export function efficiencyDashboardTemplate() {
                 {
                   children: [
                     {
-                      altText: '/external/static/templates/customize.png',
-                      src: '/external/static/templates/customize.png',
+                      altText: getExternalResourcePath('customize.png', 'templates'),
+                      src: getExternalResourcePath('customize.png', 'templates'),
                       width: 0,
                       caption: {
                         editorState: {
@@ -736,8 +738,8 @@ export function efficiencyDashboardTemplate() {
                   children: [
                     {type: 'linebreak', version: 1},
                     {
-                      altText: '/external/static/templates/Target.png',
-                      src: '/external/static/templates/Target.png',
+                      altText: getExternalResourcePath('Target.png', 'templates'),
+                      src: getExternalResourcePath('Target.png', 'templates'),
                       width: 0,
                       caption: {
                         editorState: {
@@ -802,8 +804,8 @@ export function efficiencyDashboardTemplate() {
                 {
                   children: [
                     {
-                      altText: '/external/static/templates/customize.png',
-                      src: '/external/static/templates/customize.png',
+                      altText: getExternalResourcePath('customize.png', 'templates'),
+                      src: getExternalResourcePath('customize.png', 'templates'),
                       width: 0,
                       caption: {
                         editorState: {

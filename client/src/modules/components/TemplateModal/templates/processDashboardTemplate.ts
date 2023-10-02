@@ -9,6 +9,8 @@ import {t} from 'translation';
 
 import processDashboard from '../images/processDashboard.png';
 
+import {getExternalResourcePath} from './service';
+
 export function processDashboardTemplate() {
   return {
     name: 'processDashboard',
@@ -26,9 +28,14 @@ export function processDashboardTemplate() {
                 {
                   children: [
                     {
-                      altText:
-                        '/external/static/instant_preview_dashboards/prod_business_reporting.png',
-                      src: '/external/static/instant_preview_dashboards/prod_business_reporting.png',
+                      altText: getExternalResourcePath(
+                        'prod_business_reporting.png',
+                        'instant_preview_dashboards'
+                      ),
+                      src: getExternalResourcePath(
+                        'prod_business_reporting.png',
+                        'instant_preview_dashboards'
+                      ),
                       width: 0,
                       caption: {
                         editorState: {
@@ -223,9 +230,14 @@ export function processDashboardTemplate() {
                 {
                   children: [
                     {
-                      altText:
-                        '/external/static/instant_preview_dashboards/prod_business_operations.png',
-                      src: '/external/static/instant_preview_dashboards/prod_business_operations.png',
+                      altText: getExternalResourcePath(
+                        'prod_business_operations.png',
+                        'instant_preview_dashboards'
+                      ),
+                      src: getExternalResourcePath(
+                        'prod_business_operations.png',
+                        'instant_preview_dashboards'
+                      ),
                       width: 0,
                       caption: {
                         editorState: {
@@ -272,9 +284,14 @@ export function processDashboardTemplate() {
                 {
                   children: [
                     {
-                      altText:
-                        '/external/static/instant_preview_dashboards/prod_process_improvement.png',
-                      src: '/external/static/instant_preview_dashboards/prod_process_improvement.png',
+                      altText: getExternalResourcePath(
+                        'prod_process_improvement.png',
+                        'instant_preview_dashboards'
+                      ),
+                      src: getExternalResourcePath(
+                        'prod_process_improvement.png',
+                        'instant_preview_dashboards'
+                      ),
                       width: 0,
                       caption: {
                         editorState: {

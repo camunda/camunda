@@ -9,6 +9,8 @@ import {t} from 'translation';
 
 import acceleration from '../images/acceleration.png';
 
+import {getExternalResourcePath} from './service';
+
 export function accelerationDashboardTemplate() {
   return {
     name: 'acceleration',
@@ -26,8 +28,8 @@ export function accelerationDashboardTemplate() {
                 {
                   children: [
                     {
-                      altText: '/external/static/templates/acc_cycle_time.png',
-                      src: '/external/static/templates/acc_cycle_time.png',
+                      altText: getExternalResourcePath('acc_cycle_time.png', 'templates'),
+                      src: getExternalResourcePath('acc_cycle_time.png', 'templates'),
                       width: 0,
                       caption: {
                         editorState: {
@@ -74,8 +76,8 @@ export function accelerationDashboardTemplate() {
                 {
                   children: [
                     {
-                      altText: '/external/static/templates/acc_task_duration.png',
-                      src: '/external/static/templates/acc_task_duration.png',
+                      altText: getExternalResourcePath('acc_task_duration.png', 'templates'),
+                      src: getExternalResourcePath('acc_task_duration.png', 'templates'),
                       width: 0,
                       caption: {
                         editorState: {
@@ -185,8 +187,8 @@ export function accelerationDashboardTemplate() {
                 {
                   children: [
                     {
-                      altText: '/external/static/templates/Target.png',
-                      src: '/external/static/templates/Target.png',
+                      altText: getExternalResourcePath('Target.png', 'templates'),
+                      src: getExternalResourcePath('Target.png', 'templates'),
                       width: 0,
                       caption: {
                         editorState: {
@@ -251,8 +253,8 @@ export function accelerationDashboardTemplate() {
                 {
                   children: [
                     {
-                      altText: '/external/static/templates/customize.png',
-                      src: '/external/static/templates/customize.png',
+                      altText: getExternalResourcePath('customize.png', 'templates'),
+                      src: getExternalResourcePath('customize.png', 'templates'),
                       width: 0,
                       caption: {
                         editorState: {
@@ -442,8 +444,8 @@ export function accelerationDashboardTemplate() {
                   children: [
                     {type: 'linebreak', version: 1},
                     {
-                      altText: '/external/static/templates/Target.png',
-                      src: '/external/static/templates/Target.png',
+                      altText: getExternalResourcePath('Target.png', 'templates'),
+                      src: getExternalResourcePath('Target.png', 'templates'),
                       width: 0,
                       caption: {
                         editorState: {
@@ -714,8 +716,8 @@ export function accelerationDashboardTemplate() {
                 {
                   children: [
                     {
-                      altText: '/external/static/templates/customize.png',
-                      src: '/external/static/templates/customize.png',
+                      altText: getExternalResourcePath('customize.png', 'templates'),
+                      src: getExternalResourcePath('customize.png', 'templates'),
                       width: 0,
                       caption: {
                         editorState: {
