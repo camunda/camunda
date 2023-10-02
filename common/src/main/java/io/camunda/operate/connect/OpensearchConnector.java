@@ -6,6 +6,7 @@
  */
 package io.camunda.operate.connect;
 
+import com.amazonaws.regions.DefaultAwsRegionProviderChain;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.operate.conditions.OpensearchCondition;
@@ -51,6 +52,8 @@ import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch.cluster.HealthRequest;
 import org.opensearch.client.opensearch.cluster.HealthResponse;
 import org.opensearch.client.transport.OpenSearchTransport;
+import org.opensearch.client.transport.aws.AwsSdk2Transport;
+import org.opensearch.client.transport.aws.AwsSdk2TransportOptions;
 import org.opensearch.client.transport.httpclient5.ApacheHttpClient5TransportBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,6 +62,12 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.util.StringUtils;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
+import software.amazon.awssdk.http.SdkHttpClient;
+import software.amazon.awssdk.http.apache.ApacheHttpClient;
+import software.amazon.awssdk.regions.Region;
+
 
 @Configuration
 @Conditional(OpensearchCondition.class)
@@ -112,6 +121,9 @@ public class OpensearchConnector {
   public OpenSearchAsyncClient createAsyncOsClient(OpensearchProperties osConfig) {
     LOGGER.debug("Creating Async OpenSearch connection...");
     LOGGER.debug("Creating OpenSearch connection...");
+    if( isAws()){
+      return getAwsAsyncClient(osConfig);
+    }
     final HttpHost host = getHttpHost(osConfig);
     final ApacheHttpClient5TransportBuilder builder =
         ApacheHttpClient5TransportBuilder.builder(host);
@@ -158,8 +170,23 @@ public class OpensearchConnector {
     return openSearchAsyncClient;
   }
 
+  private boolean isAws(){
+    AwsCredentialsProvider credentialsProvider = DefaultCredentialsProvider.create();
+    try {
+      credentialsProvider.resolveCredentials();
+      LOGGER.info("AWS Credentials can be resolved. Use AWS Opensearch");
+      return true;
+    } catch(Exception e){
+      LOGGER.warn("AWS not configured due to: {} ", e.getMessage());
+      return false;
+    }
+  }
+
   public OpenSearchClient createOsClient(OpensearchProperties osConfig) {
     LOGGER.debug("Creating OpenSearch connection...");
+    if(isAws()){
+      return getAwsClient(osConfig);
+    }
     final HttpHost host = getHttpHost(osConfig);
     final ApacheHttpClient5TransportBuilder builder =
         ApacheHttpClient5TransportBuilder.builder(host);
@@ -194,6 +221,32 @@ public class OpensearchConnector {
       LOGGER.debug("Elasticsearch connection was successfully created.");
     }
     return openSearchClient;
+  }
+
+  private OpenSearchClient getAwsClient(OpensearchProperties osConfig) {
+    final String region = new DefaultAwsRegionProviderChain().getRegion();
+    SdkHttpClient httpClient = ApacheHttpClient.builder().build();
+    AwsSdk2Transport transport = new AwsSdk2Transport(
+        httpClient,
+        osConfig.getHost(),
+        Region.of(region),
+        AwsSdk2TransportOptions.builder()
+            .setMapper(new JacksonJsonpMapper(objectMapper))
+            .build());
+    return new OpenSearchClient(transport);
+  }
+
+  private OpenSearchAsyncClient getAwsAsyncClient(OpensearchProperties osConfig) {
+    final String region = new DefaultAwsRegionProviderChain().getRegion();
+    SdkHttpClient httpClient = ApacheHttpClient.builder().build();
+    AwsSdk2Transport transport = new AwsSdk2Transport(
+        httpClient,
+        osConfig.getHost(),
+        Region.of(region),
+        AwsSdk2TransportOptions.builder()
+            .setMapper(new JacksonJsonpMapper(objectMapper))
+            .build());
+    return new OpenSearchAsyncClient(transport);
   }
 
   private HttpHost getHttpHost(OpensearchProperties osConfig) {
@@ -373,4 +426,5 @@ public class OpensearchConnector {
         .onRetriesExceeded(
             e -> LOGGER.error("Retries {} exceeded for {}", e.getAttemptCount(), logMessage));
   }
+
 }

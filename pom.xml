@@ -317,6 +317,26 @@
         <version>${version.commons.codec}</version>
       </dependency>
 
+        <!-- Start AWS -->
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>auth</artifactId>
+            <version>2.20.10</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-sts</artifactId>
+            <version>1.12.415</version>
+        </dependency>
+
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>sts</artifactId>
+            <version>2.20.8</version>
+        </dependency>
+
+        <!-- End AWS -->
     </dependencies>
   </dependencyManagement>
 
