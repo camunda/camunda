@@ -137,6 +137,9 @@ public enum ZbColumnFamilies {
 
   PROCESS_INSTANCE_KEY_BY_DEFINITION_KEY,
 
+  // This was introduces in 8.3 and backported to earlier versions. As this turns out to not be safe
+  // to do we have removed the usage of this CF. We must keep it to remain backwards compatible.
+  @Deprecated
   MIGRATIONS_STATE,
 
   PROCESS_VERSION,
