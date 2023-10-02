@@ -8,13 +8,8 @@ package io.camunda.operate.elasticsearch;
 
 import static io.camunda.operate.data.util.DecisionDataUtil.*;
 import static io.camunda.operate.qa.util.RestAPITestUtil.*;
-import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllProcessInstancesRequest;
 import static io.camunda.operate.webapp.rest.DecisionInstanceRestService.DECISION_INSTANCE_URL;
-import static io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListRequestDto.SORT_BY_DECISION_NAME;
-import static io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListRequestDto.SORT_BY_DECISION_VERSION;
-import static io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListRequestDto.SORT_BY_EVALUATION_DATE;
-import static io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListRequestDto.SORT_BY_ID;
-import static io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListRequestDto.SORT_BY_PROCESS_INSTANCE_ID;
+import static io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListRequestDto.*;
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
@@ -40,9 +35,6 @@ import java.util.Comparator;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
-import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
-import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.identity.PermissionsService;
 import org.jetbrains.annotations.NotNull;
@@ -384,7 +376,7 @@ public class DecisionListQueryIT extends OperateIntegrationTest {
         Comparator.comparing((DecisionInstanceForListDto o) -> o.getTenantId().toLowerCase())
             .thenComparingLong(o -> getId(o));
     final SortingDto sorting = new SortingDto();
-    sorting.setSortBy(ListViewTemplate.TENANT_ID);
+    sorting.setSortBy(SORT_BY_TENANT_ID);
     sorting.setSortOrder(SortingDto.SORT_ORDER_ASC_VALUE);
 
     testSorting(sorting, comparator, "tenantId asc");
@@ -399,7 +391,7 @@ public class DecisionListQueryIT extends OperateIntegrationTest {
       return x;
     };
     final SortingDto sorting = new SortingDto();
-    sorting.setSortBy(ListViewTemplate.TENANT_ID);
+    sorting.setSortBy(SORT_BY_TENANT_ID);
     sorting.setSortOrder(SortingDto.SORT_ORDER_DESC_VALUE);
 
     testSorting(sorting, comparator, "tenantId desc");

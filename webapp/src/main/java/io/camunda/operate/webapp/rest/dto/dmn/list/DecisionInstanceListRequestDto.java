@@ -20,7 +20,7 @@ public class DecisionInstanceListRequestDto extends PaginatedQuery<DecisionInsta
   public static final String SORT_BY_DECISION_VERSION = "decisionVersion";
   public static final String SORT_BY_EVALUATION_DATE = "evaluationDate";
   public static final String SORT_BY_PROCESS_INSTANCE_ID = "processInstanceId";
-  public static final String SORT_BY_TENANT_ID = "tenantId";
+  public static final String SORT_BY_TENANT_ID = "tenant";
 
   public static final Set<String> VALID_SORT_BY_VALUES;
   static {

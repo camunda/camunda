@@ -111,7 +111,6 @@ public class OpensearchDecisionInstanceReader implements DecisionInstanceReader 
 
     logger.debug("Search request will search in: \n{}", decisionInstanceTemplate.getFullQualifiedName());
 
-    //TODO: Use tenantAwareClient for Opensearch
     var response = richOpenSearchClient.doc().search(searchRequest, DecisionInstanceEntity.class);
     result.setTotalCount(response.hits().total().value());
 
@@ -252,6 +251,8 @@ public class OpensearchDecisionInstanceReader implements DecisionInstanceReader 
       if (sortBy.equals(DecisionInstanceTemplate.ID)) {
         //we sort by id as numbers, not as strings
         sortBy = KEY;
+      } else if (sortBy.equals(DecisionInstanceListRequestDto.SORT_BY_TENANT_ID)) {
+        sortBy = TENANT_ID;
       } else if (sortBy.equals(SORT_BY_PROCESS_INSTANCE_ID)) {
         sortBy = PROCESS_INSTANCE_KEY;
       }

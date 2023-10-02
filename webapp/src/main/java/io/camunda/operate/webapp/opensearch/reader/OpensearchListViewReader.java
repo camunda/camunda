@@ -85,7 +85,9 @@ public class OpensearchListViewReader implements ListViewReader {
       String sortBy = request.getSorting().getSortBy();
       if (sortBy.equals(ListViewRequestDto.SORT_BY_PARENT_INSTANCE_ID)) {
         sortBy = ListViewTemplate.PARENT_PROCESS_INSTANCE_KEY;
-      } else if (sortBy.equals(ListViewTemplate.ID)) {
+      } else if (sortBy.equals(ListViewRequestDto.SORT_BY_TENANT_ID)) {
+        sortBy = ListViewTemplate.TENANT_ID;
+      } if (sortBy.equals(ListViewTemplate.ID)) {
         //we sort by id as numbers, not as strings
         sortBy = ListViewTemplate.KEY;
       }

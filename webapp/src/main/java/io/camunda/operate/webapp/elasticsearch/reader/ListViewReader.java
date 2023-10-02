@@ -10,13 +10,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import java.io.IOException;
 import java.time.format.DateTimeFormatter;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import io.camunda.operate.entities.FlowNodeState;
-import io.camunda.operate.entities.FlowNodeType;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.entities.OperationEntity;
@@ -31,12 +28,8 @@ import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import io.camunda.operate.webapp.security.identity.PermissionsService;
-import org.apache.commons.lang3.ArrayUtils;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
-import org.elasticsearch.index.query.ExistsQueryBuilder;
-import org.elasticsearch.index.query.Operator;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortBuilder;
@@ -47,12 +40,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
-
-import java.io.IOException;
-import java.time.format.DateTimeFormatter;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
 
 @Conditional(ElasticsearchCondition.class)
 @Component
@@ -186,7 +173,9 @@ public class ListViewReader implements io.camunda.operate.webapp.reader.ListView
       String sortBy = request.getSorting().getSortBy();
       if (sortBy.equals(ListViewRequestDto.SORT_BY_PARENT_INSTANCE_ID)) {
         sortBy = ListViewTemplate.PARENT_PROCESS_INSTANCE_KEY;
-      } else if (sortBy.equals(ListViewTemplate.ID)) {
+      } else if (sortBy.equals(ListViewRequestDto.SORT_BY_TENANT_ID)) {
+        sortBy = ListViewTemplate.TENANT_ID;
+      } if (sortBy.equals(ListViewTemplate.ID)) {
         //we sort by id as numbers, not as strings
         sortBy = ListViewTemplate.KEY;
       }

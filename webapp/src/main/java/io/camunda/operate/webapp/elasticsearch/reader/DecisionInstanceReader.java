@@ -8,6 +8,7 @@ package io.camunda.operate.webapp.elasticsearch.reader;
 
 import static io.camunda.operate.entities.dmn.DecisionInstanceState.EVALUATED;
 import static io.camunda.operate.entities.dmn.DecisionInstanceState.FAILED;
+import static io.camunda.operate.schema.indices.IndexDescriptor.TENANT_ID;
 import static io.camunda.operate.schema.templates.DecisionInstanceTemplate.DECISION_DEFINITION_ID;
 import static io.camunda.operate.schema.templates.DecisionInstanceTemplate.DECISION_ID;
 import static io.camunda.operate.schema.templates.DecisionInstanceTemplate.EVALUATED_INPUTS;
@@ -38,7 +39,6 @@ import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.indices.DecisionIndex;
 import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
-import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.webapp.rest.dto.DtoCreator;
@@ -48,7 +48,6 @@ import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceForListDto;
 import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListQueryDto;
 import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListRequestDto;
 import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListResponseDto;
-import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
 import java.io.IOException;
 import java.time.format.DateTimeFormatter;
@@ -215,9 +214,11 @@ public class DecisionInstanceReader extends AbstractReader implements io.camunda
   private String getSortBy(final DecisionInstanceListRequestDto request) {
     if (request.getSorting() != null) {
       String sortBy = request.getSorting().getSortBy();
-      if (sortBy.equals(DecisionInstanceTemplate.ID)) {
+      if (sortBy.equals(DecisionInstanceListRequestDto.SORT_BY_ID)) {
         //we sort by id as numbers, not as strings
         sortBy = KEY;
+      } else if (sortBy.equals(DecisionInstanceListRequestDto.SORT_BY_TENANT_ID)) {
+        sortBy = TENANT_ID;
       } else if (sortBy.equals(SORT_BY_PROCESS_INSTANCE_ID)) {
         sortBy = PROCESS_INSTANCE_KEY;
       }

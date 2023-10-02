@@ -895,7 +895,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
   private void testSortingByStartDateAsc() throws Exception {
     final Comparator<ListViewProcessInstanceDto> comparator = Comparator.comparing(ListViewProcessInstanceDto::getStartDate);
     final SortingDto sorting = new SortingDto();
-    sorting.setSortBy(ListViewTemplate.START_DATE);
+    sorting.setSortBy(ListViewRequestDto.SORT_BY_START_DATE);
     sorting.setSortOrder(SortingDto.SORT_ORDER_ASC_VALUE);
 
     testSorting(sorting, comparator, "startDate asc");
@@ -904,7 +904,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
   private void testSortingByStartDateDesc() throws Exception {
     final Comparator<ListViewProcessInstanceDto> comparator = (o1, o2) -> o2.getStartDate().compareTo(o1.getStartDate());
     final SortingDto sorting = new SortingDto();
-    sorting.setSortBy(ListViewTemplate.START_DATE);
+    sorting.setSortBy(ListViewRequestDto.SORT_BY_START_DATE);
     sorting.setSortOrder(SortingDto.SORT_ORDER_DESC_VALUE);
 
     testSorting(sorting, comparator, "startDate desc");
@@ -918,7 +918,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
   private void testSortingByIdAsc() throws Exception {
     final Comparator<ListViewProcessInstanceDto> comparator = Comparator.comparing(o -> Long.valueOf(o.getId()));
     final SortingDto sorting = new SortingDto();
-    sorting.setSortBy(ListViewTemplate.ID);
+    sorting.setSortBy(ListViewRequestDto.SORT_BY_ID);
     sorting.setSortOrder(SortingDto.SORT_ORDER_ASC_VALUE);
 
     testSorting(sorting, comparator, "id asc");
@@ -927,7 +927,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
   private void testSortingByIdDesc() throws Exception {
     final Comparator<ListViewProcessInstanceDto> comparator = (o1, o2) -> Long.valueOf(o2.getId()).compareTo(Long.valueOf(o1.getId()));
     final SortingDto sorting = new SortingDto();
-    sorting.setSortBy(ListViewTemplate.ID);
+    sorting.setSortBy(ListViewRequestDto.SORT_BY_ID);
     sorting.setSortOrder(SortingDto.SORT_ORDER_DESC_VALUE);
 
     testSorting(sorting, comparator, "id desc");
@@ -938,10 +938,10 @@ public class ListViewQueryIT extends OperateIntegrationTest {
         Comparator.comparing((ListViewProcessInstanceDto o) -> o.getTenantId().toLowerCase())
             .thenComparingLong(o -> Long.valueOf(o.getId()));
     final SortingDto sorting = new SortingDto();
-    sorting.setSortBy(ListViewTemplate.TENANT_ID);
+    sorting.setSortBy(ListViewRequestDto.SORT_BY_TENANT_ID);
     sorting.setSortOrder(SortingDto.SORT_ORDER_ASC_VALUE);
 
-    testSorting(sorting, comparator, "tenantId asc");
+    testSorting(sorting, comparator, "tenant asc");
   }
 
   private void testSortingByTenantIdDesc() throws Exception {
@@ -953,10 +953,10 @@ public class ListViewQueryIT extends OperateIntegrationTest {
       return x;
     };
     final SortingDto sorting = new SortingDto();
-    sorting.setSortBy(ListViewTemplate.TENANT_ID);
+    sorting.setSortBy(ListViewRequestDto.SORT_BY_TENANT_ID);
     sorting.setSortOrder(SortingDto.SORT_ORDER_DESC_VALUE);
 
-    testSorting(sorting, comparator, "tenantId desc");
+    testSorting(sorting, comparator, "tenant desc");
   }
 
   private void testSortingByProcessNameAsc() throws Exception {
@@ -964,7 +964,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
         Comparator.comparing((ListViewProcessInstanceDto o) -> o.getProcessName().toLowerCase())
           .thenComparingLong(o -> Long.valueOf(o.getId()));
     final SortingDto sorting = new SortingDto();
-    sorting.setSortBy(ListViewTemplate.PROCESS_NAME);
+    sorting.setSortBy(ListViewRequestDto.SORT_BY_PROCESS_NAME);
     sorting.setSortOrder(SortingDto.SORT_ORDER_ASC_VALUE);
 
     testSorting(sorting, comparator, "processName acs");
@@ -979,7 +979,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
       return x;
     };
     final SortingDto sorting = new SortingDto();
-    sorting.setSortBy(ListViewTemplate.PROCESS_NAME);
+    sorting.setSortBy(ListViewRequestDto.SORT_BY_PROCESS_NAME);
     sorting.setSortOrder(SortingDto.SORT_ORDER_DESC_VALUE);
 
     testSorting(sorting, comparator, "processName desc");
@@ -988,7 +988,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
   private void testSortingByProcessVersionAsc() throws Exception {
     final Comparator<ListViewProcessInstanceDto> comparator = Comparator.comparing(ListViewProcessInstanceDto::getProcessVersion);
     final SortingDto sorting = new SortingDto();
-    sorting.setSortBy(ListViewTemplate.PROCESS_VERSION);
+    sorting.setSortBy(ListViewRequestDto.SORT_BY_WORFLOW_VERSION);
     sorting.setSortOrder(SortingDto.SORT_ORDER_ASC_VALUE);
 
     testSorting(sorting, comparator, "processVersion asc");
@@ -997,7 +997,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
   private void testSortingByProcessVersionDesc() throws Exception {
     final Comparator<ListViewProcessInstanceDto> comparator = (o1, o2) -> o2.getProcessVersion().compareTo(o1.getProcessVersion());
     final SortingDto sorting = new SortingDto();
-    sorting.setSortBy(ListViewTemplate.PROCESS_VERSION);
+    sorting.setSortBy(ListViewRequestDto.SORT_BY_WORFLOW_VERSION);
     sorting.setSortOrder(SortingDto.SORT_ORDER_DESC_VALUE);
 
     testSorting(sorting, comparator, "processVersion desc");
@@ -1017,7 +1017,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
       }
     };
     final SortingDto sorting = new SortingDto();
-    sorting.setSortBy(ListViewTemplate.END_DATE);
+    sorting.setSortBy(ListViewRequestDto.SORT_BY_END_DATE);
     sorting.setSortOrder(SortingDto.SORT_ORDER_ASC_VALUE);
 
     testSorting(sorting, comparator, "endDate asc");
@@ -1037,7 +1037,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
       }
     };
     final SortingDto sorting = new SortingDto();
-    sorting.setSortBy(ListViewTemplate.END_DATE);
+    sorting.setSortBy(ListViewRequestDto.SORT_BY_END_DATE);
     sorting.setSortOrder(SortingDto.SORT_ORDER_DESC_VALUE);
 
     testSorting(sorting, comparator, "endDate desc");
