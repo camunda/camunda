@@ -170,11 +170,11 @@ it('should show templates with subTitles', () => {
       templateGroups={[
         {
           name: 'singleProcessGroup',
-          templates: [{name: 'processPerformance', disableDescription: true, hasSubtitle: true}],
+          templates: [{name: 'portfolioPerformance', disableDescription: true, hasSubtitle: true}],
         },
         {
           name: 'multiProcessGroup',
-          templates: [{name: 'humanPerformance', disableDescription: true, hasSubtitle: true}],
+          templates: [{name: 'operationsMonitoring', disableDescription: true, hasSubtitle: true}],
         },
       ]}
     />

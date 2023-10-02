@@ -36,7 +36,7 @@ test('create a dashboard and reports from a template', async (t) => {
 
   await t.click(Common.templateModalProcessField);
   await t.click(Common.carbonOption('Invoice Receipt with alternative correlation variable'));
-  await t.click(e.templateOption('Process performance overview'));
+  await t.click(e.templateOption('Improve Productivity'));
 
   await t.takeScreenshot('img/dashboardTemplate.png', {fullPage: true});
   await t.resizeWindow(1200, 600);
@@ -78,9 +78,11 @@ test('create a dashboard and reports from a template', async (t) => {
 
   await u.save(t);
 
-  await t.expect(e.dashboardName.textContent).eql('Process performance overview');
-  await t.expect(e.reportTile.nth(0).textContent).contains('Throughput (30-day rolling)');
-  await t.expect(e.reportTile.nth(2).textContent).contains('99th Percentile Duration');
+  await t.expect(e.dashboardName.textContent).eql('Improve Productivity');
+  await t
+    .expect(e.reportTile.nth(0).textContent)
+    .contains('Max number of processes in progress per day');
+  await t.expect(e.reportTile.nth(2).textContent).contains('Finished in the last 2 weeks');
 
   await t.click(e.autoRefreshButton);
 
@@ -147,7 +149,7 @@ test('sharing', async (t) => {
   await t.click(Common.createNewMenu);
   await t.click(Common.option('Dashboard'));
 
-  await t.click(e.templateOption('Process performance overview'));
+  await t.click(e.templateOption('Improve Productivity'));
 
   await t.click(Common.templateModalProcessField);
   await t.click(Common.carbonOption('Invoice Receipt with alternative correlation variable'));
@@ -167,7 +169,9 @@ test('sharing', async (t) => {
   await t.navigateTo(shareUrl);
 
   await t.expect(e.reportTile.nth(0).visible).ok();
-  await t.expect(e.reportTile.nth(0).textContent).contains('Throughput (30-day rolling)');
+  await t
+    .expect(e.reportTile.nth(0).textContent)
+    .contains('Max number of processes in progress per day');
 });
 
 test('sharing header parameters', async (t) => {
