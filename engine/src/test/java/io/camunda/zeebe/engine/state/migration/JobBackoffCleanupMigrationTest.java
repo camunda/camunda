@@ -17,6 +17,7 @@ import io.camunda.zeebe.db.impl.DbForeignKey;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.engine.state.instance.JobRecordValue;
+import io.camunda.zeebe.engine.state.migration.to_8_3.MultiTenancyMigration;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
@@ -28,7 +29,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith(ProcessingStateExtension.class)
 public class JobBackoffCleanupMigrationTest {
 
-  final JobBackoffCleanupMigration jobBackoffCleanupMigration = new JobBackoffCleanupMigration();
+  final MultiTenancyMigration jobBackoffCleanupMigration = new MultiTenancyMigration();
 
   private ZeebeDb<ZbColumnFamilies> zeebeDb;
   private MutableProcessingState processingState;

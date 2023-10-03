@@ -51,5 +51,11 @@ public class MultiTenancyMigration implements MigrationTask {
     migrationState.migrateMessageEventSubscriptionForMultiTenancy();
     migrationState.migrateProcessMessageSubscriptionForMultiTenancy();
     migrationState.migrateJobStateForMultiTenancy();
+
+    // These migrations are not related to MT! However, they perform a migration within a
+    // ColumnFamily. Because of this there is no easy way to detect if they should run, or not. By
+    // making them part of this MigrationTask we can use the 'needToRun' of this task.
+    processingState.getJobState().cleanupTimeoutsWithoutJobs();
+    processingState.getJobState().cleanupBackoffsWithoutJobs();
   }
 }

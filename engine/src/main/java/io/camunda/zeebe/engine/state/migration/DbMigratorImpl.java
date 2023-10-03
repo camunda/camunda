@@ -35,8 +35,6 @@ public class DbMigratorImpl implements DbMigrator {
           new DecisionRequirementsMigration(),
           new ProcessInstanceByProcessDefinitionMigration(),
           new ProcessDefinitionVersionMigration(),
-          new JobTimeoutCleanupMigration(),
-          new JobBackoffCleanupMigration(),
           new MultiTenancyMigration());
   // Be mindful of https://github.com/camunda/zeebe/issues/7248. In particular, that issue
   // should be solved first, before adding any migration that can take a long time
