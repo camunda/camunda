@@ -116,12 +116,6 @@ public class DbMigratorImpl implements DbMigrator {
 
   private boolean handleMigrationTask(
       final MigrationTask migrationTask, final int index, final int total) {
-    // The migration is already finished. We don't need to run it again.
-    if (processingState.getMigrationState().isMigrationFinished(migrationTask.getIdentifier())) {
-      logMigrationTaskAlreadyExecuted(migrationTask, index, total);
-      return false;
-    }
-
     if (migrationTask.needsToRun(processingState)) {
       try {
         currentMigration = migrationTask;
@@ -136,18 +130,6 @@ public class DbMigratorImpl implements DbMigrator {
       processingState.getMigrationState().markMigrationFinished(migrationTask.getIdentifier());
       return false;
     }
-  }
-
-  private void logMigrationTaskAlreadyExecuted(
-      final MigrationTask migrationTask, final int index, final int total) {
-    LOGGER.info(
-        "Migration was executed before "
-            + migrationTask.getIdentifier()
-            + " migration ("
-            + index
-            + "/"
-            + total
-            + ").  It does not need to run again.");
   }
 
   private void logMigrationSkipped(
