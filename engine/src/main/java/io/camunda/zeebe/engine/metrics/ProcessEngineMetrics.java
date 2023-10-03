@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.metrics;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.prometheus.client.Counter;
 
 public final class ProcessEngineMetrics {
@@ -37,6 +38,7 @@ public final class ProcessEngineMetrics {
           .help("Number of evaluated DMN elements including required decisions")
           .labelNames(ORGANIZATION_ID_LABEL, ACTION_LABEL, PARTITION_LABEL)
           .register();
+  private static final String EVENT_TYPE = "eventType";
   private static final String TYPE_LABEL = "type";
   static final Counter EXECUTED_INSTANCES =
       Counter.build()
@@ -57,7 +59,7 @@ public final class ProcessEngineMetrics {
           .namespace(NAMESPACE)
           .name("element_instance_events_total")
           .help("Number of process element instance events")
-          .labelNames(ACTION_LABEL, TYPE_LABEL, PARTITION_LABEL)
+          .labelNames(ACTION_LABEL, TYPE_LABEL, PARTITION_LABEL, EVENT_TYPE)
           .register();
   private static final String CREATION_MODE_LABEL = "creation_mode";
   static final Counter CREATED_PROCESS_INSTANCES =
@@ -82,8 +84,9 @@ public final class ProcessEngineMetrics {
     CREATED_PROCESS_INSTANCES.labels(partitionIdLabel, creationMode.toString()).inc();
   }
 
-  private void elementInstanceEvent(final String action, final BpmnElementType elementType) {
-    ELEMENT_INSTANCE_EVENTS.labels(action, elementType.name(), partitionIdLabel).inc();
+  private void elementInstanceEvent(
+      final String action, final BpmnElementType elementType, final String eventType) {
+    ELEMENT_INSTANCE_EVENTS.labels(action, elementType.name(), partitionIdLabel, eventType).inc();
   }
 
   private void increaseRootProcessInstance(final String action) {
@@ -92,27 +95,33 @@ public final class ProcessEngineMetrics {
         .inc();
   }
 
-  public void elementInstanceActivated(final BpmnElementContext context) {
+  public void elementInstanceActivated(
+      final BpmnElementContext context, final BpmnEventType eventType) {
     final var elementType = context.getBpmnElementType();
-    elementInstanceEvent(ACTION_ACTIVATED, elementType);
+    final String eventTypeName = extractEventTypeName(eventType);
+    elementInstanceEvent(ACTION_ACTIVATED, elementType, eventTypeName);
 
     if (isRootProcessInstance(elementType, context.getParentProcessInstanceKey())) {
       increaseRootProcessInstance(ACTION_ACTIVATED);
     }
   }
 
-  public void elementInstanceCompleted(final BpmnElementContext context) {
+  public void elementInstanceCompleted(
+      final BpmnElementContext context, final BpmnEventType eventType) {
     final var elementType = context.getBpmnElementType();
-    elementInstanceEvent(ACTION_COMPLETED, elementType);
+    final String eventTypeName = extractEventTypeName(eventType);
+    elementInstanceEvent(ACTION_COMPLETED, elementType, eventTypeName);
 
     if (isRootProcessInstance(elementType, context.getParentProcessInstanceKey())) {
       increaseRootProcessInstance(ACTION_COMPLETED);
     }
   }
 
-  public void elementInstanceTerminated(final BpmnElementContext context) {
+  public void elementInstanceTerminated(
+      final BpmnElementContext context, final BpmnEventType eventType) {
     final var elementType = context.getBpmnElementType();
-    elementInstanceEvent(ACTION_TERMINATED, elementType);
+    final String eventTypeName = extractEventTypeName(eventType);
+    elementInstanceEvent(ACTION_TERMINATED, elementType, eventTypeName);
 
     if (isRootProcessInstance(elementType, context.getParentProcessInstanceKey())) {
       increaseRootProcessInstance(ACTION_TERMINATED);
@@ -138,6 +147,10 @@ public final class ProcessEngineMetrics {
 
   private void increaseEvaluatedDmnElements(final String action, final int amount) {
     EVALUATED_DMN_ELEMENTS.labels(ORGANIZATION_ID, action, partitionIdLabel).inc(amount);
+  }
+
+  private String extractEventTypeName(final BpmnEventType eventType) {
+    return eventType != null ? eventType.name() : BpmnEventType.UNSPECIFIED.name();
   }
 
   private enum CreationMode {

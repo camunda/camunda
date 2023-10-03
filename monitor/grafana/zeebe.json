@@ -946,10 +946,10 @@
               "datasource": {
                 "uid": "$DS_PROMETHEUS"
               },
-              "expr": "sum(rate(zeebe_element_instance_events_total{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval])) by (type, action)",
+              "expr": "sum(rate(zeebe_element_instance_events_total{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval])) by (type, action, eventType)",
               "format": "time_series",
               "intervalFactor": 1,
-              "legendFormat": "{{type}} {{action}}",
+              "legendFormat": "{{type}} {{action}} {{eventType}}",
               "refId": "A"
             }
           ],

@@ -27,6 +27,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import java.util.Arrays;
@@ -101,10 +102,11 @@ public final class BpmnStateTransitionBehavior {
   /**
    * @return context with updated intent
    */
-  public BpmnElementContext transitionToActivated(final BpmnElementContext context) {
+  public BpmnElementContext transitionToActivated(
+      final BpmnElementContext context, final BpmnEventType eventType) {
     final BpmnElementContext transitionedContext =
         transitionTo(context, ProcessInstanceIntent.ELEMENT_ACTIVATED);
-    metrics.elementInstanceActivated(context);
+    metrics.elementInstanceActivated(context, eventType);
     return transitionedContext;
   }
 
@@ -178,7 +180,7 @@ public final class BpmnStateTransitionBehavior {
     }
 
     final var completed = transitionTo(context, ProcessInstanceIntent.ELEMENT_COMPLETED);
-    metrics.elementInstanceCompleted(context);
+    metrics.elementInstanceCompleted(context, element.getEventType());
 
     if (endOfExecutionPath) {
       // afterExecutionPathCompleted is not allowed to fail (incident would be unresolvable)
@@ -205,9 +207,10 @@ public final class BpmnStateTransitionBehavior {
   /**
    * @return context with updated intent
    */
-  public BpmnElementContext transitionToTerminated(final BpmnElementContext context) {
+  public BpmnElementContext transitionToTerminated(
+      final BpmnElementContext context, final BpmnEventType eventType) {
     final var transitionedContext = transitionTo(context, ProcessInstanceIntent.ELEMENT_TERMINATED);
-    metrics.elementInstanceTerminated(context);
+    metrics.elementInstanceTerminated(context, eventType);
     return transitionedContext;
   }
 

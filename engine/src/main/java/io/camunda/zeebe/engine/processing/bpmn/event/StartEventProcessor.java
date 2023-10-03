@@ -44,7 +44,8 @@ public class StartEventProcessor implements BpmnElementProcessor<ExecutableStart
 
   @Override
   public void onActivate(final ExecutableStartEvent element, final BpmnElementContext context) {
-    final var activated = stateTransitionBehavior.transitionToActivated(context);
+    final var activated =
+        stateTransitionBehavior.transitionToActivated(context, element.getEventType());
     stateTransitionBehavior.completeElement(activated);
   }
 
@@ -67,7 +68,8 @@ public class StartEventProcessor implements BpmnElementProcessor<ExecutableStart
 
   @Override
   public void onTerminate(final ExecutableStartEvent element, final BpmnElementContext context) {
-    final var terminated = stateTransitionBehavior.transitionToTerminated(context);
+    final var terminated =
+        stateTransitionBehavior.transitionToTerminated(context, element.getEventType());
 
     incidentBehavior.resolveIncidents(terminated);
     stateTransitionBehavior.onElementTerminated(element, terminated);

@@ -80,7 +80,8 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
     // common behavior for all end events
     incidentBehavior.resolveIncidents(terminating);
 
-    final var terminated = stateTransitionBehavior.transitionToTerminated(terminating);
+    final var terminated =
+        stateTransitionBehavior.transitionToTerminated(terminating, element.getEventType());
     stateTransitionBehavior.onElementTerminated(element, terminated);
   }
 
@@ -115,7 +116,8 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
 
     @Override
     public void onActivate(final ExecutableEndEvent element, final BpmnElementContext activating) {
-      final var activated = stateTransitionBehavior.transitionToActivated(activating);
+      final var activated =
+          stateTransitionBehavior.transitionToActivated(activating, element.getEventType());
       final var completing = stateTransitionBehavior.transitionToCompleting(activated);
       onComplete(element, completing);
     }
@@ -149,7 +151,7 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
           .flatMap(errorCode -> eventPublicationBehavior.findErrorCatchEvent(errorCode, activating))
           .ifRightOrLeft(
               catchEvent -> {
-                stateTransitionBehavior.transitionToActivated(activating);
+                stateTransitionBehavior.transitionToActivated(activating, element.getEventType());
                 eventPublicationBehavior.throwErrorEvent(catchEvent);
               },
               failure -> incidentBehavior.createIncident(failure, activating));
@@ -184,7 +186,7 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
           .ifRightOrLeft(
               jobProperties -> {
                 jobBehavior.createNewJob(activating, element, jobProperties);
-                stateTransitionBehavior.transitionToActivated(activating);
+                stateTransitionBehavior.transitionToActivated(activating, element.getEventType());
               },
               failure -> incidentBehavior.createIncident(failure, activating));
     }
@@ -216,7 +218,8 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
 
     @Override
     public void onActivate(final ExecutableEndEvent element, final BpmnElementContext activating) {
-      final var activated = stateTransitionBehavior.transitionToActivated(activating);
+      final var activated =
+          stateTransitionBehavior.transitionToActivated(activating, element.getEventType());
       final var completing = stateTransitionBehavior.transitionToCompleting(activated);
       stateTransitionBehavior
           .transitionToCompleted(element, completing)
@@ -241,7 +244,9 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
       evaluateEscalationCode(element, activating)
           .ifRightOrLeft(
               escalationCode -> {
-                final var activated = stateTransitionBehavior.transitionToActivated(activating);
+                final var activated =
+                    stateTransitionBehavior.transitionToActivated(
+                        activating, element.getEventType());
                 final boolean canBeCompleted =
                     eventPublicationBehavior.throwEscalationEvent(
                         element.getId(), escalationCode, activated);
@@ -290,7 +295,9 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
           .flatMap(ok -> signalBehavior.broadcastNewSignal(activating, element.getSignal()))
           .ifRightOrLeft(
               ok -> {
-                final var activated = stateTransitionBehavior.transitionToActivated(activating);
+                final var activated =
+                    stateTransitionBehavior.transitionToActivated(
+                        activating, element.getEventType());
                 stateTransitionBehavior.completeElement(activated);
               },
               failure -> incidentBehavior.createIncident(failure, activating));

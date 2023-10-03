@@ -67,7 +67,8 @@ public final class CallActivityProcessor
         .flatMap(p -> eventSubscriptionBehavior.subscribeToEvents(element, context).map(ok -> p))
         .ifRightOrLeft(
             process -> {
-              final var activated = stateTransitionBehavior.transitionToActivated(context);
+              final var activated =
+                  stateTransitionBehavior.transitionToActivated(context, element.getEventType());
 
               final var childProcessInstanceKey =
                   stateTransitionBehavior.createChildProcessInstance(process, context);
@@ -158,7 +159,8 @@ public final class CallActivityProcessor
         .filter(eventTrigger -> !flowScopeInstance.isInterrupted())
         .ifPresentOrElse(
             eventTrigger -> {
-              final var terminated = stateTransitionBehavior.transitionToTerminated(context);
+              final var terminated =
+                  stateTransitionBehavior.transitionToTerminated(context, element.getEventType());
               eventSubscriptionBehavior.activateTriggeredEvent(
                   context.getElementInstanceKey(),
                   terminated.getFlowScopeKey(),
@@ -166,7 +168,8 @@ public final class CallActivityProcessor
                   terminated);
             },
             () -> {
-              final var terminated = stateTransitionBehavior.transitionToTerminated(context);
+              final var terminated =
+                  stateTransitionBehavior.transitionToTerminated(context, element.getEventType());
               stateTransitionBehavior.onElementTerminated(element, terminated);
             });
   }

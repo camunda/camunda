@@ -256,7 +256,8 @@ public final class MultiInstanceBodyProcessor
       final ExecutableMultiInstanceBody element,
       final BpmnElementContext context,
       final List<DirectBuffer> inputCollection) {
-    final BpmnElementContext activated = stateTransitionBehavior.transitionToActivated(context);
+    final BpmnElementContext activated =
+        stateTransitionBehavior.transitionToActivated(context, element.getEventType());
     final var loopCharacteristics = element.getLoopCharacteristics();
     loopCharacteristics
         .getOutputCollection()
@@ -292,7 +293,8 @@ public final class MultiInstanceBodyProcessor
         .ifPresentOrElse(
             eventTrigger -> {
               final var terminated =
-                  stateTransitionBehavior.transitionToTerminated(flowScopeContext);
+                  stateTransitionBehavior.transitionToTerminated(
+                      flowScopeContext, element.getEventType());
               eventSubscriptionBehavior.activateTriggeredEvent(
                   flowScopeContext.getElementInstanceKey(),
                   terminated.getFlowScopeKey(),
@@ -302,7 +304,8 @@ public final class MultiInstanceBodyProcessor
             },
             () -> {
               final var terminated =
-                  stateTransitionBehavior.transitionToTerminated(flowScopeContext);
+                  stateTransitionBehavior.transitionToTerminated(
+                      flowScopeContext, element.getEventType());
               stateTransitionBehavior.onElementTerminated(element, terminated);
             });
   }

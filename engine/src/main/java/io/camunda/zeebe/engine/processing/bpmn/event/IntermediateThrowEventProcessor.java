@@ -79,7 +79,8 @@ public class IntermediateThrowEventProcessor
     eventBehaviorOf(element).onTerminate(element, terminating);
 
     // common behavior for all intermediate throw events
-    final var terminated = stateTransitionBehavior.transitionToTerminated(terminating);
+    final var terminated =
+        stateTransitionBehavior.transitionToTerminated(terminating, element.getEventType());
     incidentBehavior.resolveIncidents(terminated);
     stateTransitionBehavior.onElementTerminated(element, terminated);
   }
@@ -119,7 +120,8 @@ public class IntermediateThrowEventProcessor
     @Override
     public void onActivate(
         final ExecutableIntermediateThrowEvent element, final BpmnElementContext activating) {
-      final var activated = stateTransitionBehavior.transitionToActivated(activating);
+      final var activated =
+          stateTransitionBehavior.transitionToActivated(activating, element.getEventType());
       stateTransitionBehavior.completeElement(activated);
     }
 
@@ -153,7 +155,7 @@ public class IntermediateThrowEventProcessor
             .ifRightOrLeft(
                 jobProperties -> {
                   jobBehavior.createNewJob(activating, element, jobProperties);
-                  stateTransitionBehavior.transitionToActivated(activating);
+                  stateTransitionBehavior.transitionToActivated(activating, element.getEventType());
                 },
                 failure -> incidentBehavior.createIncident(failure, activating));
       }
@@ -188,7 +190,8 @@ public class IntermediateThrowEventProcessor
     @Override
     public void onActivate(
         final ExecutableIntermediateThrowEvent element, final BpmnElementContext activating) {
-      final var activated = stateTransitionBehavior.transitionToActivated(activating);
+      final var activated =
+          stateTransitionBehavior.transitionToActivated(activating, element.getEventType());
       stateTransitionBehavior.completeElement(activated);
     }
 
@@ -220,7 +223,9 @@ public class IntermediateThrowEventProcessor
       evaluateEscalationCode(element, activating)
           .ifRightOrLeft(
               escalationCode -> {
-                final var activated = stateTransitionBehavior.transitionToActivated(activating);
+                final var activated =
+                    stateTransitionBehavior.transitionToActivated(
+                        activating, element.getEventType());
                 final boolean canBeCompleted =
                     eventPublicationBehavior.throwEscalationEvent(
                         element.getId(), escalationCode, activated);
@@ -272,7 +277,9 @@ public class IntermediateThrowEventProcessor
           .flatMap(ok -> signalBehavior.broadcastNewSignal(activating, element.getSignal()))
           .ifRightOrLeft(
               ok -> {
-                final var activated = stateTransitionBehavior.transitionToActivated(activating);
+                final var activated =
+                    stateTransitionBehavior.transitionToActivated(
+                        activating, element.getEventType());
                 stateTransitionBehavior.completeElement(activated);
               },
               failure -> incidentBehavior.createIncident(failure, activating));

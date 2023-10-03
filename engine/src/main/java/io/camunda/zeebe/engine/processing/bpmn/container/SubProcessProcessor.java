@@ -54,7 +54,8 @@ public final class SubProcessProcessor
         .applyInputMappings(activating, element)
         .ifRightOrLeft(
             ok -> {
-              final var activated = stateTransitionBehavior.transitionToActivated(activating);
+              final var activated =
+                  stateTransitionBehavior.transitionToActivated(activating, element.getEventType());
               final ExecutableStartEvent startEvent = element.getNoneStartEvent();
               if (startEvent == null) {
                 throw new BpmnProcessingException(activated, NO_NONE_START_EVENT_ERROR_MSG);
@@ -135,7 +136,8 @@ public final class SubProcessProcessor
           .ifPresentOrElse(
               eventTrigger -> {
                 final var terminated =
-                    stateTransitionBehavior.transitionToTerminated(subProcessContext);
+                    stateTransitionBehavior.transitionToTerminated(
+                        subProcessContext, element.getEventType());
                 eventSubscriptionBehavior.activateTriggeredEvent(
                     subProcessContext.getElementInstanceKey(),
                     subProcessContext.getFlowScopeKey(),
@@ -146,7 +148,8 @@ public final class SubProcessProcessor
                 if (subProcessInstance.isTerminating()) {
                   // the subprocess was terminated by its flow scope
                   final var terminated =
-                      stateTransitionBehavior.transitionToTerminated(subProcessContext);
+                      stateTransitionBehavior.transitionToTerminated(
+                          subProcessContext, element.getEventType());
                   stateTransitionBehavior.onElementTerminated(element, terminated);
 
                 } else if (interruptedByTerminateEndEvent) {

@@ -51,7 +51,8 @@ public final class ExclusiveGatewayProcessor
     findSequenceFlowToTake(element, activating)
         .ifRightOrLeft(
             optFlow -> {
-              final var activated = stateTransitionBehavior.transitionToActivated(activating);
+              final var activated =
+                  stateTransitionBehavior.transitionToActivated(activating, element.getEventType());
               final var completing = stateTransitionBehavior.transitionToCompleting(activated);
               stateTransitionBehavior
                   .transitionToCompleted(element, completing)
@@ -77,7 +78,8 @@ public final class ExclusiveGatewayProcessor
   public void onTerminate(
       final ExecutableExclusiveGateway element, final BpmnElementContext context) {
     incidentBehavior.resolveIncidents(context);
-    final var terminated = stateTransitionBehavior.transitionToTerminated(context);
+    final var terminated =
+        stateTransitionBehavior.transitionToTerminated(context, element.getEventType());
     stateTransitionBehavior.onElementTerminated(element, terminated);
   }
 

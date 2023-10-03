@@ -46,7 +46,7 @@ public final class ReceiveTaskProcessor implements BpmnElementProcessor<Executab
         .applyInputMappings(context, element)
         .flatMap(ok -> eventSubscriptionBehavior.subscribeToEvents(element, context))
         .ifRightOrLeft(
-            ok -> stateTransitionBehavior.transitionToActivated(context),
+            ok -> stateTransitionBehavior.transitionToActivated(context, element.getEventType()),
             failure -> incidentBehavior.createIncident(failure, context));
   }
 
@@ -78,7 +78,8 @@ public final class ReceiveTaskProcessor implements BpmnElementProcessor<Executab
         .filter(eventTrigger -> !flowScopeInstance.isInterrupted())
         .ifPresentOrElse(
             eventTrigger -> {
-              final var terminated = stateTransitionBehavior.transitionToTerminated(context);
+              final var terminated =
+                  stateTransitionBehavior.transitionToTerminated(context, element.getEventType());
               eventSubscriptionBehavior.activateTriggeredEvent(
                   context.getElementInstanceKey(),
                   terminated.getFlowScopeKey(),
@@ -86,7 +87,8 @@ public final class ReceiveTaskProcessor implements BpmnElementProcessor<Executab
                   terminated);
             },
             () -> {
-              final var terminated = stateTransitionBehavior.transitionToTerminated(context);
+              final var terminated =
+                  stateTransitionBehavior.transitionToTerminated(context, element.getEventType());
               stateTransitionBehavior.onElementTerminated(element, terminated);
             });
   }
