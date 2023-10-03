@@ -42,4 +42,8 @@ public class DecisionRecordStream
   public DecisionRecordStream withVersion(final int version) {
     return valueFilter(v -> v.getVersion() == version);
   }
+
+  public DecisionRecordStream withTenantId(final String tenantId) {
+    return valueFilter(v -> v.getTenantId().equals(tenantId));
+  }
 }
