@@ -51,7 +51,6 @@ import java.util.function.Supplier;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
@@ -317,22 +316,6 @@ public class MultiTenancyOverIdentityIT {
           .withMessageContaining(
               "Expected to handle gRPC request DeployResource with tenant identifier 'tenant-b'")
           .withMessageContaining("but tenant is not authorized to perform this request");
-    }
-  }
-
-  @Test
-  @Disabled("Not yet supported: https://github.com/camunda/zeebe/issues/14497")
-  void shouldDenyDeployProcessWhenNoTenantAssociated() {
-    // given
-    try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_WITHOUT_TENANT)) {
-      // when
-      final Future<DeploymentEvent> result =
-          client.newDeployResourceCommand().addProcessModel(process, "process.bpmn").send();
-
-      // then
-      assertThat(result)
-          .describedAs("Expect that process can be deployed for the default tenant")
-          .succeedsWithin(Duration.ofSeconds(10));
     }
   }
 
