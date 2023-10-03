@@ -131,7 +131,7 @@ public class MultiTenancyOverIdentityIT {
   private static final GenericContainer<?> IDENTITY =
       new GenericContainer<>(
               DockerImageName.parse("camunda/identity")
-                  .withTag(System.getProperty("identity.docker.image.version", "SNAPSHOT")))
+                  .withTag(System.getProperty("identity.docker.image.version", "8.3.0-alpha6")))
           .withImagePullPolicy(
               System.getProperty("identity.docker.image.version", "SNAPSHOT").equals("SNAPSHOT")
                   ? PullPolicy.alwaysPull()
