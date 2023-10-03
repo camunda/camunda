@@ -14,6 +14,7 @@ import io.camunda.zeebe.client.api.response.ActivateJobsResponse;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.api.response.CompleteJobResponse;
 import io.camunda.zeebe.client.api.response.DeploymentEvent;
+import io.camunda.zeebe.client.api.response.EvaluateDecisionResponse;
 import io.camunda.zeebe.client.api.response.ModifyProcessInstanceResponse;
 import io.camunda.zeebe.client.api.response.Process;
 import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
@@ -966,6 +967,82 @@ public class MultiTenancyOverIdentityIT {
           .withMessageContaining("NOT_FOUND")
           .withMessageContaining(
               "Expected to modify process instance but no process instance found with key");
+    }
+  }
+
+  @Test
+  void shouldAllowEvaluateDecisionForDefaultTenant() {
+    try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_DEFAULT)) {
+      // given
+      client
+          .newDeployResourceCommand()
+          .addResourceFromClasspath("dmn/decision-table.dmn")
+          .send()
+          .join();
+
+      // when
+      final Future<EvaluateDecisionResponse> response =
+          client
+              .newEvaluateDecisionCommand()
+              .decisionId("jedi_or_sith")
+              .variable("lightsaberColor", "blue")
+              .send();
+      // then
+      assertThat(response).succeedsWithin(Duration.ofSeconds(10));
+    }
+  }
+
+  @Test
+  void shouldAllowEvaluateDecisionForCustomTenant() {
+    try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_DEFAULT)) {
+      // given
+      client
+          .newDeployResourceCommand()
+          .addResourceFromClasspath("dmn/decision-table.dmn")
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+
+      // when
+      final Future<EvaluateDecisionResponse> response =
+          client
+              .newEvaluateDecisionCommand()
+              .decisionId("jedi_or_sith")
+              .variable("lightsaberColor", "blue")
+              .tenantId(TENANT_A)
+              .send();
+      // then
+      assertThat(response).succeedsWithin(Duration.ofSeconds(10));
+    }
+  }
+
+  @Test
+  void shouldDenyEvaluateDecisionForCustomTenant() {
+    try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_DEFAULT)) {
+      // given
+      client
+          .newDeployResourceCommand()
+          .addResourceFromClasspath("dmn/decision-table.dmn")
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+
+      // when
+      final Future<EvaluateDecisionResponse> response =
+          client
+              .newEvaluateDecisionCommand()
+              .decisionId("jedi_or_sith")
+              .variable("lightsaberColor", "blue")
+              .tenantId(TENANT_B)
+              .send();
+      // then
+      assertThat(response)
+          .failsWithin(Duration.ofSeconds(10))
+          .withThrowableThat()
+          .withMessageContaining("PERMISSION_DENIED")
+          .withMessageContaining(
+              "Expected to handle gRPC request EvaluateDecision with tenant identifier 'tenant-b'")
+          .withMessageContaining("but tenant is not authorized to perform this request");
     }
   }
 
