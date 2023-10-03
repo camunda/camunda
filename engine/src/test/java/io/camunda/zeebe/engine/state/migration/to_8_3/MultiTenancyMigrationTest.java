@@ -12,7 +12,6 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapArray;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -30,7 +29,6 @@ import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.deployment.PersistedDecision;
 import io.camunda.zeebe.engine.state.deployment.PersistedProcess.PersistedProcessState;
 import io.camunda.zeebe.engine.state.deployment.VersionInfo;
-import io.camunda.zeebe.engine.state.immutable.MigrationState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.instance.DbJobState;
 import io.camunda.zeebe.engine.state.message.DbMessageStartEventSubscriptionState;
@@ -83,18 +81,53 @@ public class MultiTenancyMigrationTest {
   class MockBasedTests {
 
     @Test
-    void migrationNeededWhenMigrationNotFinished() {
+    void noMigrationNeededWhenNoProcessesOrDrgsExist() {
       // given
       final var mockProcessingState = mock(ProcessingState.class);
-      final var migrationState = mock(MigrationState.class);
-      when(mockProcessingState.getMigrationState()).thenReturn(migrationState);
-      when(migrationState.isMigrationFinished(anyString())).thenReturn(false);
+      when(mockProcessingState.isEmpty(ZbColumnFamilies.DEPRECATED_PROCESS_CACHE)).thenReturn(true);
+      when(mockProcessingState.isEmpty(ZbColumnFamilies.DEPRECATED_DMN_DECISION_REQUIREMENTS))
+          .thenReturn(true);
 
-      // when
-      final var actual = sut.needsToRun(mockProcessingState);
+      // when then
+      assertThat(sut.needsToRun(mockProcessingState)).isFalse();
+    }
 
-      // then
-      assertThat(actual).isTrue();
+    @Test
+    void migrationNeededWhenProcessesExist() {
+      // given
+      final var mockProcessingState = mock(ProcessingState.class);
+      when(mockProcessingState.isEmpty(ZbColumnFamilies.DEPRECATED_PROCESS_CACHE))
+          .thenReturn(false);
+      when(mockProcessingState.isEmpty(ZbColumnFamilies.DEPRECATED_DMN_DECISION_REQUIREMENTS))
+          .thenReturn(true);
+
+      // when then
+      assertThat(sut.needsToRun(mockProcessingState)).isTrue();
+    }
+
+    @Test
+    void migrationNeededWhenDRGsExist() {
+      // given
+      final var mockProcessingState = mock(ProcessingState.class);
+      when(mockProcessingState.isEmpty(ZbColumnFamilies.DEPRECATED_PROCESS_CACHE)).thenReturn(true);
+      when(mockProcessingState.isEmpty(ZbColumnFamilies.DEPRECATED_DMN_DECISION_REQUIREMENTS))
+          .thenReturn(false);
+
+      // when then
+      assertThat(sut.needsToRun(mockProcessingState)).isTrue();
+    }
+
+    @Test
+    void migrationNeededWhenProcessesAndDRGsExist() {
+      // given
+      final var mockProcessingState = mock(ProcessingState.class);
+      when(mockProcessingState.isEmpty(ZbColumnFamilies.DEPRECATED_PROCESS_CACHE))
+          .thenReturn(false);
+      when(mockProcessingState.isEmpty(ZbColumnFamilies.DEPRECATED_DMN_DECISION_REQUIREMENTS))
+          .thenReturn(false);
+
+      // when then
+      assertThat(sut.needsToRun(mockProcessingState)).isTrue();
     }
   }
 
