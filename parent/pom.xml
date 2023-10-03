@@ -126,7 +126,7 @@
     <version.jackson-databind-nullable>0.2.6</version.jackson-databind-nullable>
     <version.jackson-annotations>2.15.2</version.jackson-annotations>
     <version.swagger-annotations>2.2.16</version.swagger-annotations>
-    <version.checker-qual>3.38.0</version.checker-qual>
+    <version.checker-qual>3.39.0</version.checker-qual>
     <version.java-jwt>4.4.0</version.java-jwt>
     <version.reactive-streams>1.0.4</version.reactive-streams>
     <version.postgresql>42.6.0</version.postgresql>
@@ -158,7 +158,7 @@
     <plugin.version.versions>2.16.1</plugin.version.versions>
 
     <!-- when updating this version, also change it in .idea/externalDependencies.xml -->
-    <plugin.version.google-java-format>1.17.0</plugin.version.google-java-format>
+    <plugin.version.google-java-format>1.18.0</plugin.version.google-java-format>
 
     <!-- maven extensions -->
     <extension.version.os-maven-plugin>1.7.1</extension.version.os-maven-plugin>
