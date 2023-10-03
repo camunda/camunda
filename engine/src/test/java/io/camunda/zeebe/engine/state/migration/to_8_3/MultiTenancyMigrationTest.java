@@ -16,8 +16,12 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.db.impl.DbString;
+import io.camunda.zeebe.db.impl.DbTenantAwareKey;
+import io.camunda.zeebe.db.impl.DbTenantAwareKey.PlacementType;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.state.deployment.DbDecisionState;
 import io.camunda.zeebe.engine.state.deployment.DbProcessState;
@@ -25,6 +29,7 @@ import io.camunda.zeebe.engine.state.deployment.DeployedDrg;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.deployment.PersistedDecision;
 import io.camunda.zeebe.engine.state.deployment.PersistedProcess.PersistedProcessState;
+import io.camunda.zeebe.engine.state.deployment.VersionInfo;
 import io.camunda.zeebe.engine.state.immutable.MigrationState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.instance.DbJobState;
@@ -42,6 +47,7 @@ import io.camunda.zeebe.engine.state.migration.to_8_3.legacy.LegacyMessageState;
 import io.camunda.zeebe.engine.state.migration.to_8_3.legacy.LegacyMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.migration.to_8_3.legacy.LegacyProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.migration.to_8_3.legacy.LegacyProcessState;
+import io.camunda.zeebe.engine.state.migration.to_8_3.legacy.LegacyProcessState.LegacyProcessVersionManager;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -183,8 +189,6 @@ public class MultiTenancyMigrationTest {
               .setResourceName("resourceName")
               .setResource(wrapString(Bpmn.convertToString(model)))
               .setChecksum(wrapString("checksum")));
-      // the version manager must be migrated first to ensure that the known versions are set
-      new ProcessDefinitionVersionMigration().runMigration(processingState);
 
       // when
       sut.runMigration(processingState);
@@ -940,6 +944,67 @@ public class MultiTenancyMigrationTest {
             return true;
           });
       assertThat(actualJobs).hasSize(1);
+    }
+  }
+
+  @Nested
+  @ExtendWith(ProcessingStateExtension.class)
+  class ProcessVersionMigrationTest {
+
+    private ZeebeDb<ZbColumnFamilies> zeebeDb;
+    private MutableProcessingState processingState;
+    private TransactionContext transactionContext;
+    private LegacyProcessVersionManager legacyState;
+    private DbString processIdKey;
+    private ColumnFamily<DbTenantAwareKey<DbString>, VersionInfo> processVersionColumnFamily;
+    private DbTenantAwareKey<DbString> tenantAwareProcessId;
+
+    @BeforeEach
+    void setup() {
+      legacyState =
+          new LegacyProcessState.LegacyProcessVersionManager(1, zeebeDb, transactionContext);
+      processIdKey = new DbString();
+      final var tenantKey = new DbString();
+      tenantKey.wrapString(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+      tenantAwareProcessId = new DbTenantAwareKey<>(tenantKey, processIdKey, PlacementType.PREFIX);
+      processVersionColumnFamily =
+          zeebeDb.createColumnFamily(
+              ZbColumnFamilies.PROCESS_VERSION,
+              transactionContext,
+              tenantAwareProcessId,
+              new VersionInfo());
+    }
+
+    @Test
+    void shouldMigrateProcessVersion() {
+      // given
+      final String processId = "processId";
+      legacyState.insertProcessVersion(processId, 5);
+
+      // when
+      sut.runMigration(processingState);
+
+      // then
+      processIdKey.wrapString(processId);
+      final var versionInfo = processVersionColumnFamily.get(tenantAwareProcessId);
+      assertThat(versionInfo.getHighestVersion()).isEqualTo(5);
+      assertThat(versionInfo.getKnownVersions()).containsExactly(1L, 2L, 3L, 4L, 5L);
+    }
+
+    @Test
+    void shouldNotSetKnownVersionsIfHighestVersionIsZero() {
+      // given
+      final String processId = "processId";
+      legacyState.insertProcessVersion(processId, 0);
+
+      // when
+      sut.runMigration(processingState);
+
+      // then
+      processIdKey.wrapString(processId);
+      final var versionInfo = processVersionColumnFamily.get(tenantAwareProcessId);
+      assertThat(versionInfo.getHighestVersion()).isEqualTo(0);
+      assertThat(versionInfo.getKnownVersions()).isEmpty();
     }
   }
 }
