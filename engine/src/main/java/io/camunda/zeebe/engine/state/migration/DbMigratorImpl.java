@@ -140,7 +140,7 @@ public class DbMigratorImpl implements DbMigrator {
 
   private void logMigrationTaskAlreadyExecuted(
       final MigrationTask migrationTask, final int index, final int total) {
-    LOGGER.debug(
+    LOGGER.info(
         "Migration was executed before "
             + migrationTask.getIdentifier()
             + " migration ("
@@ -152,7 +152,7 @@ public class DbMigratorImpl implements DbMigrator {
 
   private void logMigrationSkipped(
       final MigrationTask migrationTask, final int index, final int total) {
-    LOGGER.debug(
+    LOGGER.info(
         "Skipping "
             + migrationTask.getIdentifier()
             + " migration ("
@@ -163,14 +163,14 @@ public class DbMigratorImpl implements DbMigrator {
   }
 
   private void runMigration(final MigrationTask migrationTask, final int index, final int total) {
-    LOGGER.debug(
+    LOGGER.info(
         "Starting " + migrationTask.getIdentifier() + " migration (" + index + "/" + total + ")");
     final var startTime = System.currentTimeMillis();
     migrationTask.runMigration(processingState);
     final var duration = System.currentTimeMillis() - startTime;
 
     LOGGER.debug(migrationTask.getIdentifier() + " migration completed in " + duration + " ms.");
-    LOGGER.debug(
+    LOGGER.info(
         "Finished " + migrationTask.getIdentifier() + " migration (" + index + "/" + total + ")");
   }
 }
