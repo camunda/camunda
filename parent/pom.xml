@@ -126,7 +126,7 @@
     <version.jackson-databind-nullable>0.2.6</version.jackson-databind-nullable>
     <version.jackson-annotations>2.15.2</version.jackson-annotations>
     <version.swagger-annotations>2.2.16</version.swagger-annotations>
-    <version.checker-qual>3.38.0</version.checker-qual>
+    <version.checker-qual>3.39.0</version.checker-qual>
     <version.java-jwt>4.4.0</version.java-jwt>
     <version.reactive-streams>1.0.4</version.reactive-streams>
     <version.postgresql>42.6.0</version.postgresql>
