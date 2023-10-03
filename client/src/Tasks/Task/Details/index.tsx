@@ -28,7 +28,6 @@ import {ContainedList, ContainedListItem, Tag} from '@carbon/react';
 import {Task, CurrentUser} from 'modules/types';
 import {useUnassignTask} from 'modules/mutations/useUnassignTask';
 import {useAssignTask} from 'modules/mutations/useAssignTask';
-import {IS_MULTI_TENANCY_ENABLED} from 'modules/featureFlags';
 
 type AssignmentStatus =
   | 'off'
@@ -71,9 +70,10 @@ const Details: React.FC<Props> = ({
     candidateGroups,
     tenantId,
   } = task;
-  const taskTenant = IS_MULTI_TENANCY_ENABLED
-    ? user.tenants.find((tenant) => tenant.id === tenantId)
-    : undefined;
+  const taskTenant =
+    user.tenants.length > 1
+      ? user.tenants.find((tenant) => tenant.id === tenantId)
+      : undefined;
   const candidates = [...(candidateUsers ?? []), ...(candidateGroups ?? [])];
   const isAssigned = assignee !== null;
   const isAssignedToMe = assignee === user.userId;

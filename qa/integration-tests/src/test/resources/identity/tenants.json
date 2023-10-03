@@ -1,0 +1,18 @@
+[
+  {
+    "tenantId": "tenant-b",
+    "name": "Tenant B"
+  },
+  {
+    "tenantId": "tenant-c",
+    "name": "Tenant C"
+  },
+  {
+    "tenantId": "<default>",
+    "name": "Default"
+  },
+  {
+    "tenantId": "tenant-a",
+    "name": "Tenant A"
+  }
+]

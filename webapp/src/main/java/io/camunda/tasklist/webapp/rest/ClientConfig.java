@@ -18,6 +18,7 @@ import org.springframework.stereotype.Component;
 public class ClientConfig {
 
   public boolean isEnterprise;
+  public boolean isMultiTenancyEnabled;
   public boolean canLogout;
   public boolean isLoginDelegated;
   public String contextPath;
@@ -47,6 +48,7 @@ public class ClientConfig {
   @PostConstruct
   public void init() {
     isEnterprise = tasklistProperties.isEnterprise();
+    isMultiTenancyEnabled = tasklistProperties.getMultiTenancy().isEnabled();
     contextPath = context.getContextPath();
     canLogout = profileService.currentProfileCanLogout();
     isLoginDelegated = profileService.isLoginDelegated();

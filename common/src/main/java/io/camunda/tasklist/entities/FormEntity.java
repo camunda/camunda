@@ -6,9 +6,11 @@
  */
 package io.camunda.tasklist.entities;
 
+import static io.camunda.zeebe.client.api.command.CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER;
+
 import java.util.Objects;
 
-public class FormEntity extends TasklistEntity<FormEntity> {
+public class FormEntity extends TenantAwareTasklistEntity<FormEntity> {
 
   private String bpmnId;
   private String processDefinitionId;
@@ -17,7 +19,12 @@ public class FormEntity extends TasklistEntity<FormEntity> {
   public FormEntity() {}
 
   public FormEntity(String processDefinitionId, String bpmnId, String schema) {
+    this(processDefinitionId, bpmnId, schema, DEFAULT_TENANT_IDENTIFIER);
+  }
+
+  public FormEntity(String processDefinitionId, String bpmnId, String schema, String tenantId) {
     setId(createId(processDefinitionId, bpmnId));
+    this.setTenantId(tenantId);
     this.bpmnId = bpmnId;
     this.processDefinitionId = processDefinitionId;
     this.schema = schema;

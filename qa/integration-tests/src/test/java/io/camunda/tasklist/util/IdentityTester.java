@@ -38,7 +38,8 @@ public abstract class IdentityTester extends TasklistZeebeIntegrationTest {
     testContainerUtil.startIdentity(
         testContext,
         ContainerVersionsUtil.readProperty(
-            ContainerVersionsUtil.IDENTITY_CURRENTVERSION_DOCKER_PROPERTY_NAME));
+            ContainerVersionsUtil.IDENTITY_CURRENTVERSION_DOCKER_PROPERTY_NAME),
+        false);
   }
 
   protected String generateCamundaIdentityToken() throws JsonProcessingException {

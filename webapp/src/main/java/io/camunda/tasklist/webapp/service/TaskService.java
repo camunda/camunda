@@ -19,7 +19,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.Metrics;
 import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
-import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.store.TaskMetricsStore;
 import io.camunda.tasklist.store.TaskStore;
 import io.camunda.tasklist.webapp.es.TaskValidator;
@@ -58,7 +57,6 @@ public class TaskService {
   @Autowired private TaskMetricsStore taskMetricsStore;
   @Autowired private AssigneeMigrator assigneeMigrator;
   @Autowired private TaskValidator taskValidator;
-  @Autowired private TasklistProperties tasklistProperties;
 
   public List<TaskDTO> getTasks(TaskQueryDTO query) {
     if (countNonNullObjects(

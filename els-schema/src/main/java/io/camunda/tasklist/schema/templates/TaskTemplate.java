@@ -15,6 +15,7 @@ public class TaskTemplate extends AbstractTemplateDescriptor
     implements ProcessInstanceDependant, Prio2Backup {
 
   public static final String INDEX_NAME = "task";
+  public static final String INDEX_VERSION = "8.3.0";
 
   public static final String ID = "id";
   public static final String KEY = "key";
@@ -30,6 +31,7 @@ public class TaskTemplate extends AbstractTemplateDescriptor
   public static final String PROCESS_DEFINITION_ID = "processDefinitionId";
   public static final String DUE_DATE = "dueDate";
   public static final String FOLLOW_UP_DATE = "followUpDate";
+  public static final String TENANT_ID = "tenantId";
 
   @Override
   public String getIndexName() {
@@ -38,7 +40,7 @@ public class TaskTemplate extends AbstractTemplateDescriptor
 
   @Override
   public String getVersion() {
-    return "8.2.3";
+    return INDEX_VERSION;
   }
 
   @Override

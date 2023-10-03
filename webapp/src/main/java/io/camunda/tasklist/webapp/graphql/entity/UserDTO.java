@@ -7,6 +7,7 @@
 package io.camunda.tasklist.webapp.graphql.entity;
 
 import io.camunda.tasklist.webapp.security.Permission;
+import io.camunda.tasklist.webapp.security.tenant.TasklistTenant;
 import java.util.List;
 import java.util.Objects;
 import org.springframework.util.StringUtils;
@@ -23,6 +24,7 @@ public class UserDTO {
   private String salesPlanType;
 
   private List<C8AppLink> c8Links = List.of();
+  private List<TasklistTenant> tenants = List.of();
 
   public String getUserId() {
     return userId;
@@ -88,6 +90,17 @@ public class UserDTO {
   public UserDTO setC8Links(final List<C8AppLink> c8Links) {
     if (c8Links != null) {
       this.c8Links = c8Links;
+    }
+    return this;
+  }
+
+  public List<TasklistTenant> getTenants() {
+    return tenants;
+  }
+
+  public UserDTO setTenants(List<TasklistTenant> tenants) {
+    if (tenants != null) {
+      this.tenants = tenants;
     }
     return this;
   }

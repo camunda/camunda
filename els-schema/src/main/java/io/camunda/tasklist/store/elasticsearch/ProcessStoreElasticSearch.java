@@ -15,11 +15,13 @@ import io.camunda.tasklist.property.IdentityProperties;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.indices.ProcessIndex;
 import io.camunda.tasklist.store.ProcessStore;
+import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
 import io.camunda.tasklist.util.ElasticsearchUtil;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -47,6 +49,8 @@ public class ProcessStoreElasticSearch implements ProcessStore {
   @Autowired private ObjectMapper objectMapper;
 
   @Autowired private TasklistProperties tasklistProperties;
+
+  @Autowired private TenantAwareElasticsearchClient tenantAwareClient;
 
   public ProcessEntity getProcessByProcessDefinitionKey(String processDefinitionKey) {
     final QueryBuilder qb = QueryBuilders.termQuery(ProcessIndex.KEY, processDefinitionKey);
@@ -76,8 +80,19 @@ public class ProcessStoreElasticSearch implements ProcessStore {
 
   /** Gets the process by id. */
   public ProcessEntity getProcessByBpmnProcessId(String bpmnProcessId) {
-    final QueryBuilder qb =
-        QueryBuilders.termQuery(ProcessIndex.PROCESS_DEFINITION_ID, bpmnProcessId);
+    return getProcessByBpmnProcessId(bpmnProcessId, null);
+  }
+
+  public ProcessEntity getProcessByBpmnProcessId(String bpmnProcessId, final String tenantId) {
+    final QueryBuilder qb;
+    if (tasklistProperties.getMultiTenancy().isEnabled() && StringUtils.isNotBlank(tenantId)) {
+      qb =
+          ElasticsearchUtil.joinWithAnd(
+              QueryBuilders.termQuery(ProcessIndex.PROCESS_DEFINITION_ID, bpmnProcessId),
+              QueryBuilders.termQuery(ProcessIndex.TENANT_ID, tenantId));
+    } else {
+      qb = QueryBuilders.termQuery(ProcessIndex.PROCESS_DEFINITION_ID, bpmnProcessId);
+    }
 
     final SearchRequest searchRequest =
         new SearchRequest(processIndex.getAlias())
@@ -133,7 +148,8 @@ public class ProcessStoreElasticSearch implements ProcessStore {
     return ElasticsearchUtil.fromSearchHit(processString, objectMapper, ProcessEntity.class);
   }
 
-  public List<ProcessEntity> getProcesses(final List<String> processDefinitions) {
+  public List<ProcessEntity> getProcesses(
+      final List<String> processDefinitions, final String tenantId) {
     final QueryBuilder qb;
 
     if (tasklistProperties.getIdentity().isResourcePermissionsEnabled()) {
@@ -164,10 +180,10 @@ public class ProcessStoreElasticSearch implements ProcessStore {
               .mustNot(QueryBuilders.termQuery(ProcessIndex.PROCESS_DEFINITION_ID, ""));
     }
 
-    final SearchRequest searchRequest = getSearchRequestUniqueByProcessDefinitionId(qb);
+    final SearchRequest searchRequest = getSearchRequestUniqueByProcessDefinitionId(qb, tenantId);
     final SearchResponse response;
     try {
-      response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      response = tenantAwareClient.search(searchRequest);
       return mapResponse(response);
     } catch (IOException e) {
       final String message =
@@ -176,10 +192,11 @@ public class ProcessStoreElasticSearch implements ProcessStore {
     }
   }
 
-  public List<ProcessEntity> getProcesses(String search, final List<String> processDefinitions) {
+  public List<ProcessEntity> getProcesses(
+      String search, final List<String> processDefinitions, final String tenantId) {
 
     if (search == null || search.isBlank()) {
-      return getProcesses(processDefinitions);
+      return getProcesses(processDefinitions, tenantId);
     }
 
     final QueryBuilder qb;
@@ -238,10 +255,10 @@ public class ProcessStoreElasticSearch implements ProcessStore {
               .minimumShouldMatch(1);
     }
 
-    final SearchRequest searchRequest = getSearchRequestUniqueByProcessDefinitionId(qb);
+    final SearchRequest searchRequest = getSearchRequestUniqueByProcessDefinitionId(qb, tenantId);
 
     try {
-      final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      final SearchResponse response = tenantAwareClient.search(searchRequest);
 
       return mapResponse(response);
 
@@ -252,11 +269,21 @@ public class ProcessStoreElasticSearch implements ProcessStore {
     }
   }
 
-  private SearchRequest getSearchRequestUniqueByProcessDefinitionId(QueryBuilder qb) {
+  private SearchRequest getSearchRequestUniqueByProcessDefinitionId(
+      QueryBuilder qb, final String tenantId) {
+    final QueryBuilder qbTenantCheck;
+    if (tasklistProperties.getMultiTenancy().isEnabled() && StringUtils.isNotBlank(tenantId)) {
+      qbTenantCheck =
+          ElasticsearchUtil.joinWithAnd(
+              QueryBuilders.termQuery(ProcessIndex.TENANT_ID, tenantId), qb);
+    } else {
+      qbTenantCheck = qb;
+    }
+
     return new SearchRequest(processIndex.getAlias())
         .source(
             new SearchSourceBuilder()
-                .query(qb)
+                .query(qbTenantCheck)
                 .collapse(new CollapseBuilder(ProcessIndex.PROCESS_DEFINITION_ID))
                 .sort(SortBuilders.fieldSort(ProcessIndex.VERSION).order(SortOrder.DESC))
                 .size(ElasticsearchUtil.QUERY_MAX_SIZE));
@@ -288,9 +315,9 @@ public class ProcessStoreElasticSearch implements ProcessStore {
 
     final SearchResponse response;
     try {
-      response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      response = tenantAwareClient.search(searchRequest);
       return mapResponse(response).stream()
-          .filter(p -> p.isStartedByForm())
+          .filter(ProcessEntity::isStartedByForm)
           .collect(Collectors.toList());
     } catch (IOException e) {
       final String message =

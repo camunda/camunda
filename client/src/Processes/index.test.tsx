@@ -232,21 +232,17 @@ describe('Processes', () => {
       wrapper: Wrapper,
     });
 
-    expect(screen.getByRole('combobox', {name: 'Tenant'})).toBeDisabled();
-
-    await waitForElementToBeRemoved(() =>
-      screen.getAllByTestId('process-skeleton'),
-    );
-
-    expect(screen.getByRole('combobox', {name: 'Tenant'})).toBeEnabled();
+    expect(
+      await screen.findByRole('combobox', {name: 'Tenant'}),
+    ).toBeInTheDocument();
 
     expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
     fireEvent.click(screen.getByRole('combobox', {name: 'Tenant'}));
-    fireEvent.click(screen.getByRole('option', {name: 'Tenant A'}));
+    fireEvent.click(screen.getByRole('option', {name: 'Tenant B - tenantB'}));
 
     expect(screen.getByTestId('search').textContent).toContain(
-      'tenantId=tenantA',
+      'tenantId=tenantB',
     );
   });
 
@@ -279,8 +275,36 @@ describe('Processes', () => {
     );
     expect(
       within(screen.getByRole('combobox', {name: 'Tenant'})).getByText(
-        'Tenant A',
+        'Tenant A - tenantA',
       ),
     ).toBeInTheDocument();
+  });
+
+  it('should not render dropdown with single tenant', async () => {
+    window.localStorage.setItem('hasConsentedToStartProcess', 'true');
+    window.clientConfig = {
+      ...DEFAULT_MOCK_CLIENT_CONFIG,
+      isMultiTenancyEnabled: true,
+    };
+    nodeMockServer.use(
+      rest.get('/v1/internal/processes', (_, res, ctx) => {
+        return res(ctx.json([]));
+      }),
+      rest.get('/v1/internal/users/current', (_, res, ctx) => {
+        return res.once(ctx.json(userMocks.currentUser));
+      }),
+    );
+
+    render(<Processes />, {
+      wrapper: Wrapper,
+    });
+
+    await waitForElementToBeRemoved(() =>
+      screen.getAllByTestId('process-skeleton'),
+    );
+
+    expect(
+      screen.queryByRole('combobox', {name: 'Tenant'}),
+    ).not.toBeInTheDocument();
   });
 });

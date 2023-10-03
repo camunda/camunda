@@ -6,6 +6,8 @@
  */
 package io.camunda.tasklist.webapp.graphql.mutation;
 
+import static io.camunda.zeebe.client.api.command.CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER;
+
 import graphql.kickstart.tools.GraphQLMutationResolver;
 import io.camunda.tasklist.webapp.graphql.entity.ProcessInstanceDTO;
 import io.camunda.tasklist.webapp.service.ProcessService;
@@ -19,6 +21,6 @@ public class ProcessMutationResolver implements GraphQLMutationResolver {
 
   @PreAuthorize("hasPermission('write')")
   public ProcessInstanceDTO startProcess(final String processDefinitionId) {
-    return processService.startProcessInstance(processDefinitionId);
+    return processService.startProcessInstance(processDefinitionId, DEFAULT_TENANT_IDENTIFIER);
   }
 }

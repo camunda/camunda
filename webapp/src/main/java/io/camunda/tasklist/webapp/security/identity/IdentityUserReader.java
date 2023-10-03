@@ -14,6 +14,7 @@ import io.camunda.identity.sdk.authentication.AccessToken;
 import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
 import io.camunda.tasklist.webapp.security.Permission;
 import io.camunda.tasklist.webapp.security.UserReader;
+import io.camunda.tasklist.webapp.security.oauth.IdentityTenantAwareJwtAuthenticationToken;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -21,7 +22,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -32,29 +32,32 @@ public class IdentityUserReader implements UserReader {
 
   @Override
   public Optional<UserDTO> getCurrentUserBy(final Authentication authentication) {
-    if (authentication instanceof IdentityAuthentication) {
-      final IdentityAuthentication identityAuthentication = (IdentityAuthentication) authentication;
+    if (authentication instanceof IdentityAuthentication identityAuthentication) {
       return Optional.of(
           new UserDTO()
               // For testing assignee migration locally use 'identityAuthentication.getId()'
               .setUserId(/*identityAuthentication.getId()*/ identityAuthentication.getName())
               .setDisplayName(identityAuthentication.getName())
-              .setPermissions(identityAuthentication.getPermissions()));
-    } else if (authentication instanceof JwtAuthenticationToken) {
+              .setPermissions(identityAuthentication.getPermissions())
+              .setTenants(identityAuthentication.getTenants()));
+    } else if (authentication
+        instanceof IdentityTenantAwareJwtAuthenticationToken identityTenantAwareToken) {
       final AccessToken accessToken =
           identity
               .authentication()
-              .verifyToken(((Jwt) authentication.getPrincipal()).getTokenValue());
+              .verifyToken(((Jwt) identityTenantAwareToken.getPrincipal()).getTokenValue());
       final List<Permission> permissions =
           accessToken.getPermissions().stream()
               .map(PermissionConverter.getInstance()::convert)
               .collect(Collectors.toList());
+
       return Optional.of(
           new UserDTO()
-              .setUserId(authentication.getName())
-              .setDisplayName(authentication.getName())
+              .setUserId(identityTenantAwareToken.getName())
+              .setDisplayName(identityTenantAwareToken.getName())
               .setApiUser(true)
-              .setPermissions(permissions));
+              .setPermissions(permissions)
+              .setTenants(identityTenantAwareToken.getTenants()));
     } else {
       return Optional.empty();
     }

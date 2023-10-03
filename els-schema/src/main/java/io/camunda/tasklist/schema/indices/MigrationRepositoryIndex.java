@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 public class MigrationRepositoryIndex extends AbstractIndexDescriptor implements Prio4Backup {
 
   public static final String INDEX_NAME = "migration-steps-repository";
+  public static final String INDEX_VERSION = "1.1.0";
 
   @Override
   public String getIndexName() {
@@ -21,6 +22,6 @@ public class MigrationRepositoryIndex extends AbstractIndexDescriptor implements
 
   @Override
   public String getVersion() {
-    return "1.1.0";
+    return INDEX_VERSION;
   }
 }

@@ -7,7 +7,7 @@
 package io.camunda.tasklist.entities;
 
 public abstract class TasklistZeebeEntity<T extends TasklistZeebeEntity<T>>
-    extends TasklistEntity<T> {
+    extends TenantAwareTasklistEntity<T> {
 
   private long key;
 

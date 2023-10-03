@@ -20,16 +20,18 @@ import io.camunda.tasklist.webapp.api.rest.v1.entities.ProcessResponse;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.StartProcessRequest;
 import io.camunda.tasklist.webapp.graphql.entity.ProcessInstanceDTO;
 import io.camunda.tasklist.webapp.rest.exception.Error;
+import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService;
+import io.camunda.tasklist.webapp.security.tenant.TenantService;
 import io.camunda.tasklist.webapp.service.ProcessService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
@@ -37,14 +39,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "Process", description = "API to manage processes.")
 @RestController
@@ -57,6 +52,7 @@ public class ProcessInternalController extends ApiErrorController {
   @Autowired private ProcessInstanceStore processInstanceStore;
   @Autowired private TasklistProperties tasklistProperties;
   @Autowired private IdentityAuthorizationService identityAuthorizationService;
+  @Autowired private TenantService tenantService;
 
   @Operation(
       summary = "Returns the list of processes by search query",
@@ -69,12 +65,15 @@ public class ProcessInternalController extends ApiErrorController {
       })
   @GetMapping
   public ResponseEntity<List<ProcessResponse>> searchProcesses(
-      @RequestParam(defaultValue = StringUtils.EMPTY) String query) {
+      @RequestParam(defaultValue = StringUtils.EMPTY) String query,
+      @RequestParam(required = false) String tenantId) {
 
     final var processes =
         processStore
             .getProcesses(
-                query, identityAuthorizationService.getProcessDefinitionsFromAuthorization())
+                query,
+                identityAuthorizationService.getProcessDefinitionsFromAuthorization(),
+                tenantId)
             .stream()
             .map(pe -> ProcessResponse.fromProcessEntity(pe, getStartEventFormIdByBpmnProcess(pe)))
             .collect(Collectors.toList());
@@ -112,10 +111,12 @@ public class ProcessInternalController extends ApiErrorController {
   @PatchMapping("{bpmnProcessId}/start")
   public ResponseEntity<ProcessInstanceDTO> startProcessInstance(
       @PathVariable String bpmnProcessId,
+      @RequestParam(required = false) String tenantId,
       @RequestBody(required = false) StartProcessRequest startProcessRequest) {
     final var variables =
         requireNonNullElse(startProcessRequest, new StartProcessRequest()).getVariables();
-    final var processInstance = processService.startProcessInstance(bpmnProcessId, variables);
+    final var processInstance =
+        processService.startProcessInstance(bpmnProcessId, variables, tenantId);
     return ResponseEntity.ok(processInstance);
   }
 
@@ -147,19 +148,17 @@ public class ProcessInternalController extends ApiErrorController {
   @PreAuthorize("hasPermission('write')")
   @DeleteMapping("{processInstanceId}")
   public ResponseEntity<?> deleteProcessInstance(@PathVariable String processInstanceId) {
-    switch (processInstanceStore.deleteProcessInstance(processInstanceId)) {
-      case DELETED:
-        return ResponseEntity.noContent().build();
-      case NOT_FOUND:
-        throw new NotFoundApiException(
-            String.format(
-                "The process with processInstanceId: '%s' is not found", processInstanceId));
-      default:
-        throw new TasklistRuntimeException(
-            String.format(
-                "The deletion of process with processInstanceId: '%s' could not be deleted",
-                processInstanceId));
-    }
+
+    return switch (processInstanceStore.deleteProcessInstance(processInstanceId)) {
+      case DELETED -> ResponseEntity.noContent().build();
+      case NOT_FOUND -> throw new NotFoundApiException(
+          String.format(
+              "The process with processInstanceId: '%s' is not found", processInstanceId));
+      default -> throw new TasklistRuntimeException(
+          String.format(
+              "The deletion of process with processInstanceId: '%s' could not be deleted",
+              processInstanceId));
+    };
   }
 
   @Operation(
@@ -182,7 +181,7 @@ public class ProcessInternalController extends ApiErrorController {
               .map(ProcessPublicEndpointsResponse::fromProcessEntity)
               .collect(Collectors.toList());
     } else {
-      publicEndpoints = new ArrayList<ProcessPublicEndpointsResponse>();
+      publicEndpoints = Collections.emptyList();
     }
 
     return ResponseEntity.ok(publicEndpoints);
@@ -207,8 +206,13 @@ public class ProcessInternalController extends ApiErrorController {
       })
   @GetMapping("{bpmnProcessId}/publicEndpoint")
   public ResponseEntity<ProcessPublicEndpointsResponse> getPublicEndpoint(
-      @PathVariable String bpmnProcessId) {
-    final var process = processStore.getProcessByBpmnProcessId(bpmnProcessId);
+      @PathVariable String bpmnProcessId, @RequestParam(required = false) final String tenantId) {
+
+    if (!tenantService.isTenantValid(tenantId)) {
+      throw new InvalidRequestException("Invalid Tenant");
+    }
+
+    final var process = processStore.getProcessByBpmnProcessId(bpmnProcessId, tenantId);
     if (!process.isStartedByForm()) {
       throw new NotFoundApiException(
           String.format("The public endpoint for bpmnProcessId: '%s' is not found", bpmnProcessId));

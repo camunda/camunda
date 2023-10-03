@@ -58,6 +58,9 @@
     "dueDate": {
       "format": "date_time || epoch_millis",
       "type": "date"
+    },
+    "tenantId": {
+      "type": "keyword"
     }
   }
 }

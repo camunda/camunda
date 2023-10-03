@@ -9,19 +9,13 @@ package io.camunda.tasklist.entities;
 import java.time.OffsetDateTime;
 import java.util.Objects;
 
-public class MetricEntity extends TasklistEntity {
+public class MetricEntity extends TenantAwareTasklistEntity<MetricEntity> {
   private String event;
   private String value;
   private OffsetDateTime eventTime;
 
   public MetricEntity() {
     super();
-  }
-
-  public MetricEntity(String event, String value, OffsetDateTime eventTime) {
-    this.event = event;
-    this.value = value;
-    this.eventTime = eventTime;
   }
 
   public String getEvent() {

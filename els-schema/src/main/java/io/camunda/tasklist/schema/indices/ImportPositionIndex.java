@@ -13,6 +13,8 @@ import org.springframework.stereotype.Component;
 public class ImportPositionIndex extends AbstractIndexDescriptor implements Prio1Backup {
 
   public static final String INDEX_NAME = "import-position";
+  public static final String INDEX_VERSION = "8.2.0";
+
   public static final String ALIAS_NAME = "aliasName";
   public static final String ID = "id";
   public static final String POSITION = "position";
@@ -26,6 +28,6 @@ public class ImportPositionIndex extends AbstractIndexDescriptor implements Prio
 
   @Override
   public String getVersion() {
-    return "8.2.0";
+    return INDEX_VERSION;
   }
 }

@@ -16,6 +16,7 @@ public class ProcessPublicEndpointsResponse {
   private String bpmnProcessId;
   private String processDefinitionKey;
   private String endpoint;
+  private String tenantId;
 
   public String getBpmnProcessId() {
     return bpmnProcessId;
@@ -59,7 +60,17 @@ public class ProcessPublicEndpointsResponse {
         .setProcessDefinitionKey(process.getId())
         .setEndpoint(
             String.format(
-                TasklistURIs.START_PUBLIC_PROCESS.concat("%s"), process.getBpmnProcessId()));
+                TasklistURIs.START_PUBLIC_PROCESS.concat("%s"), process.getBpmnProcessId()))
+        .setTenantId(process.getTenantId());
+  }
+
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  public ProcessPublicEndpointsResponse setTenantId(String tenantId) {
+    this.tenantId = tenantId;
+    return this;
   }
 
   @Override
@@ -73,11 +84,30 @@ public class ProcessPublicEndpointsResponse {
     final ProcessPublicEndpointsResponse that = (ProcessPublicEndpointsResponse) o;
     return Objects.equals(bpmnProcessId, that.bpmnProcessId)
         && Objects.equals(processDefinitionKey, that.processDefinitionKey)
-        && Objects.equals(endpoint, that.endpoint);
+        && Objects.equals(endpoint, that.endpoint)
+        && Objects.equals(tenantId, that.tenantId);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(bpmnProcessId, processDefinitionKey, endpoint);
+    return Objects.hash(bpmnProcessId, processDefinitionKey, endpoint, tenantId);
+  }
+
+  @Override
+  public String toString() {
+    return "ProcessPublicEndpointsResponse{"
+        + "bpmnProcessId='"
+        + bpmnProcessId
+        + '\''
+        + ", processDefinitionKey='"
+        + processDefinitionKey
+        + '\''
+        + ", endpoint='"
+        + endpoint
+        + '\''
+        + ", tenantId='"
+        + tenantId
+        + '\''
+        + '}';
   }
 }

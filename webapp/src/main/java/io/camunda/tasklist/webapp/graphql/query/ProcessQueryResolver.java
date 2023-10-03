@@ -6,6 +6,8 @@
  */
 package io.camunda.tasklist.webapp.graphql.query;
 
+import static io.camunda.zeebe.client.api.command.CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER;
+
 import graphql.kickstart.tools.GraphQLQueryResolver;
 import io.camunda.tasklist.store.ProcessStore;
 import io.camunda.tasklist.webapp.graphql.entity.ProcessDTO;
@@ -24,7 +26,10 @@ public class ProcessQueryResolver implements GraphQLQueryResolver {
 
   public List<ProcessDTO> getProcesses(String search) {
     return processStore
-        .getProcesses(search, identityAuthorizationService.getProcessDefinitionsFromAuthorization())
+        .getProcesses(
+            search,
+            identityAuthorizationService.getProcessDefinitionsFromAuthorization(),
+            DEFAULT_TENANT_IDENTIFIER)
         .stream()
         .map(ProcessDTO::createFrom)
         .collect(Collectors.toList());

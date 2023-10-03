@@ -20,6 +20,7 @@ public class VariableIndex extends AbstractIndexDescriptor
     implements ProcessInstanceDependant, Prio3Backup {
 
   public static final String INDEX_NAME = "variable";
+  public static final String INDEX_VERSION = "8.3.0";
 
   public static final String ID = "id";
   public static final String KEY = "key";
@@ -28,6 +29,7 @@ public class VariableIndex extends AbstractIndexDescriptor
   public static final String VALUE = "value";
   public static final String FULL_VALUE = "fullValue";
   public static final String IS_PREVIEW = "isPreview";
+  public static final String TENANT_ID = "tenantId";
 
   @Override
   public String getIndexName() {
@@ -65,6 +67,6 @@ public class VariableIndex extends AbstractIndexDescriptor
 
   @Override
   public String getVersion() {
-    return "1.1.0";
+    return INDEX_VERSION;
   }
 }

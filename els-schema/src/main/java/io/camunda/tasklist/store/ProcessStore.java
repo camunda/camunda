@@ -14,11 +14,14 @@ public interface ProcessStore {
 
   ProcessEntity getProcessByBpmnProcessId(String bpmnProcessId);
 
+  ProcessEntity getProcessByBpmnProcessId(final String bpmnProcessId, final String tenantId);
+
   ProcessEntity getProcess(String processId);
 
-  List<ProcessEntity> getProcesses(final List<String> processDefinitions);
+  List<ProcessEntity> getProcesses(final List<String> processDefinitions, final String tenantId);
 
-  List<ProcessEntity> getProcesses(String search, final List<String> processDefinitions);
+  List<ProcessEntity> getProcesses(
+      String search, final List<String> processDefinitions, final String tenantId);
 
   List<ProcessEntity> getProcessesStartedByForm();
 }

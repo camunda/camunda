@@ -10,7 +10,12 @@ import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toList;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.tasklist.entities.*;
+import io.camunda.tasklist.entities.DraftTaskVariableEntity;
+import io.camunda.tasklist.entities.FlowNodeInstanceEntity;
+import io.camunda.tasklist.entities.TaskEntity;
+import io.camunda.tasklist.entities.TaskState;
+import io.camunda.tasklist.entities.TaskVariableEntity;
+import io.camunda.tasklist.entities.VariableEntity;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.store.DraftVariableStore;
@@ -28,8 +33,15 @@ import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import org.apache.commons.collections4.CollectionUtils;
@@ -53,58 +65,62 @@ public class VariableService {
   @Autowired private ObjectMapper objectMapper;
 
   public void persistDraftTaskVariables(String taskId, List<VariableInputDTO> draftTaskVariables) {
-    final TaskEntity task = taskStore.getTask(taskId);
-    taskValidator.validateCanPersistDraftTaskVariables(task);
-    validateVariableInputs(draftTaskVariables);
+    try {
+      final TaskEntity task = taskStore.getTask(taskId);
+      taskValidator.validateCanPersistDraftTaskVariables(task);
+      validateVariableInputs(draftTaskVariables);
 
-    // drop all current draft variables
-    final long deletedDraftVariablesCount = draftVariableStore.deleteAllByTaskId(taskId);
-    LOGGER.debug(
-        "'{}' draft task variables associated with task id '{}' were deleted",
-        deletedDraftVariablesCount,
-        task);
+      // drop all current draft variables
+      final long deletedDraftVariablesCount = draftVariableStore.deleteAllByTaskId(taskId);
+      LOGGER.debug(
+          "'{}' draft task variables associated with task id '{}' were deleted",
+          deletedDraftVariablesCount,
+          task);
 
-    if (CollectionUtils.isEmpty(draftTaskVariables)) {
-      return;
-    }
+      if (CollectionUtils.isEmpty(draftTaskVariables)) {
+        return;
+      }
 
-    final Map<String, VariableEntity> currentOriginalVariables = new HashMap<>();
-    getRuntimeVariablesByRequest(GetVariablesRequest.createFrom(task))
-        .forEach(originalVar -> currentOriginalVariables.put(originalVar.getName(), originalVar));
+      final Map<String, VariableEntity> currentOriginalVariables = new HashMap<>();
+      getRuntimeVariablesByRequest(GetVariablesRequest.createFrom(task))
+          .forEach(originalVar -> currentOriginalVariables.put(originalVar.getName(), originalVar));
 
-    final int variableSizeThreshold = tasklistProperties.getImporter().getVariableSizeThreshold();
+      final int variableSizeThreshold = tasklistProperties.getImporter().getVariableSizeThreshold();
 
-    final Map<String, DraftTaskVariableEntity> toPersist = new HashMap<>();
-    draftTaskVariables.forEach(
-        draftVariable -> {
-          if (currentOriginalVariables.containsKey(draftVariable.getName())) {
-            final VariableEntity variableEntity =
-                currentOriginalVariables.get(draftVariable.getName());
-            // Persist new draft variables based on the input if value `name` is the same as
-            // original and `value` property is different
-            if (!variableEntity.getFullValue().equals(draftVariable.getValue())) {
+      final Map<String, DraftTaskVariableEntity> toPersist = new HashMap<>();
+      draftTaskVariables.forEach(
+          draftVariable -> {
+            if (currentOriginalVariables.containsKey(draftVariable.getName())) {
+              final VariableEntity variableEntity =
+                  currentOriginalVariables.get(draftVariable.getName());
+              // Persist new draft variables based on the input if value `name` is the same as
+              // original and `value` property is different
+              if (!variableEntity.getFullValue().equals(draftVariable.getValue())) {
+                toPersist.put(
+                    draftVariable.getName(),
+                    DraftTaskVariableEntity.createFrom(
+                        // draft variable will have the same Id as original variable
+                        variableEntity.getId(),
+                        task,
+                        draftVariable.getName(),
+                        draftVariable.getValue(),
+                        variableSizeThreshold));
+              }
+            } else {
               toPersist.put(
                   draftVariable.getName(),
                   DraftTaskVariableEntity.createFrom(
-                      // draft variable will have the same Id as original variable
-                      variableEntity.getId(),
-                      task.getId(),
+                      task,
                       draftVariable.getName(),
                       draftVariable.getValue(),
                       variableSizeThreshold));
             }
-          } else {
-            toPersist.put(
-                draftVariable.getName(),
-                DraftTaskVariableEntity.createFrom(
-                    task.getId(),
-                    draftVariable.getName(),
-                    draftVariable.getValue(),
-                    variableSizeThreshold));
-          }
-        });
+          });
 
-    draftVariableStore.createOrUpdate(toPersist.values());
+      draftVariableStore.createOrUpdate(toPersist.values());
+    } catch (NotFoundException e) {
+      throw new NotFoundApiException("Task not found", e);
+    }
   }
 
   private void validateVariableInputs(Collection<VariableInputDTO> variable) {
@@ -149,6 +165,7 @@ public class VariableService {
       finalVariablesMap.put(
           var.getName(),
           TaskVariableEntity.createFrom(
+              task.getTenantId(),
               taskId,
               var.getName(),
               var.getValue(),

@@ -30,6 +30,9 @@
 			},
 			"isPreview": {
 				"type": "boolean"
+			},
+			"tenantId": {
+				"type": "keyword"
 			}
 		}
 	}

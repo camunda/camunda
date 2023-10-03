@@ -23,6 +23,7 @@ public class TaskQuery {
   private String processInstanceId;
   private int pageSize;
   private TaskByVariables[] taskVariables;
+  private String[] tenantIds;
   private String[] searchAfter;
   private String[] searchAfterOrEqual;
   private String[] searchBefore;
@@ -112,6 +113,15 @@ public class TaskQuery {
     return this;
   }
 
+  public String[] getTenantIds() {
+    return tenantIds;
+  }
+
+  public TaskQuery setTenantIds(String[] tenantIds) {
+    this.tenantIds = tenantIds;
+    return this;
+  }
+
   public int getPageSize() {
     return pageSize;
   }
@@ -196,6 +206,7 @@ public class TaskQuery {
         .setSearchBeforeOrEqual(this.searchBeforeOrEqual)
         .setState(this.state)
         .setTaskVariables(this.taskVariables)
+        .setTenantIds(this.tenantIds)
         .setCandidateGroup(this.candidateGroup);
   }
 
@@ -218,6 +229,7 @@ public class TaskQuery {
         && Objects.equals(processDefinitionId, taskQuery.processDefinitionId)
         && Objects.equals(processInstanceId, taskQuery.processInstanceId)
         && Arrays.equals(taskVariables, taskQuery.taskVariables)
+        && Arrays.equals(tenantIds, taskQuery.tenantIds)
         && Arrays.equals(searchAfter, taskQuery.searchAfter)
         && Arrays.equals(searchAfterOrEqual, taskQuery.searchAfterOrEqual)
         && Arrays.equals(searchBefore, taskQuery.searchBefore)
@@ -242,6 +254,8 @@ public class TaskQuery {
             pageSize,
             followUpDate,
             dueDate);
+    result = 31 * result + Arrays.hashCode(tenantIds);
+    result = 31 * result + Arrays.hashCode(taskVariables);
     result = 31 * result + Arrays.hashCode(searchAfter);
     result = 31 * result + Arrays.hashCode(searchAfterOrEqual);
     result = 31 * result + Arrays.hashCode(searchBefore);
@@ -263,6 +277,7 @@ public class TaskQuery {
         .add("processInstanceId='" + processInstanceId + "'")
         .add("pageSize=" + pageSize)
         .add("taskVariables=" + Arrays.toString(taskVariables))
+        .add("tenantIds=" + Arrays.toString(tenantIds))
         .add("searchAfter=" + Arrays.toString(searchAfter))
         .add("searchAfterOrEqual=" + Arrays.toString(searchAfterOrEqual))
         .add("searchBefore=" + Arrays.toString(searchBefore))

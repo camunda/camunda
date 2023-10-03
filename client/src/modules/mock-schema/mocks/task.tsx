@@ -7,6 +7,7 @@
 
 import {Task} from 'modules/types';
 import {currentUser} from 'modules/mock-schema/mocks/current-user';
+import {DEFAULT_TENANT_ID} from 'modules/constants/multiTenancy';
 
 function* getUniqueId(): Generator<number> {
   let id = 0;
@@ -36,7 +37,7 @@ const unassignedTask = (
   dueDate: null,
   candidateGroups: ['accounting candidate'],
   candidateUsers: ['jane candidate'],
-  tenantId: '<default>',
+  tenantId: DEFAULT_TENANT_ID,
 });
 
 const unassignedTaskWithForm = (
@@ -59,7 +60,7 @@ const unassignedTaskWithForm = (
   dueDate: null,
   candidateGroups: [],
   candidateUsers: [],
-  tenantId: '<default>',
+  tenantId: DEFAULT_TENANT_ID,
 });
 
 const completedTask = (
@@ -82,7 +83,7 @@ const completedTask = (
   dueDate: null,
   candidateGroups: [],
   candidateUsers: [],
-  tenantId: '<default>',
+  tenantId: DEFAULT_TENANT_ID,
 });
 
 const completedTaskWithForm = (
@@ -105,7 +106,7 @@ const completedTaskWithForm = (
   dueDate: null,
   candidateGroups: [],
   candidateUsers: [],
-  tenantId: '<default>',
+  tenantId: DEFAULT_TENANT_ID,
 });
 
 const assignedTask = (
@@ -128,7 +129,7 @@ const assignedTask = (
   dueDate: null,
   candidateGroups: [],
   candidateUsers: [],
-  tenantId: '<default>',
+  tenantId: DEFAULT_TENANT_ID,
 });
 
 const assignedTaskWithForm = (
@@ -151,7 +152,7 @@ const assignedTaskWithForm = (
   dueDate: null,
   candidateGroups: [],
   candidateUsers: [],
-  tenantId: '<default>',
+  tenantId: DEFAULT_TENANT_ID,
 });
 
 export {

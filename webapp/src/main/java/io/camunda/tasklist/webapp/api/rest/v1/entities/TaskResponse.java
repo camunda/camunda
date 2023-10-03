@@ -24,6 +24,7 @@ public class TaskResponse {
   private String formKey;
   private String processDefinitionKey;
   private String processInstanceKey;
+  private String tenantId;
   private OffsetDateTime dueDate;
   private OffsetDateTime followUpDate;
   private String[] candidateGroups;
@@ -128,6 +129,15 @@ public class TaskResponse {
     return this;
   }
 
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  public TaskResponse setTenantId(String tenantId) {
+    this.tenantId = tenantId;
+    return this;
+  }
+
   public OffsetDateTime getDueDate() {
     return dueDate;
   }
@@ -184,6 +194,7 @@ public class TaskResponse {
         && Objects.equals(formKey, that.formKey)
         && Objects.equals(processDefinitionKey, that.processDefinitionKey)
         && Objects.equals(processInstanceKey, that.processInstanceKey)
+        && Objects.equals(tenantId, that.tenantId)
         && Objects.equals(dueDate, that.dueDate)
         && Objects.equals(followUpDate, that.followUpDate)
         && Arrays.equals(candidateGroups, that.candidateGroups)
@@ -205,6 +216,7 @@ public class TaskResponse {
             formKey,
             processDefinitionKey,
             processInstanceKey,
+            tenantId,
             dueDate,
             followUpDate);
     result = 31 * result + Arrays.hashCode(candidateGroups);
@@ -226,6 +238,7 @@ public class TaskResponse {
         .add("formKey='" + formKey + "'")
         .add("processDefinitionKey='" + processDefinitionKey + "'")
         .add("processInstanceKey='" + processInstanceKey + "'")
+        .add("tenantId='" + tenantId + "'")
         .add("dueDate='" + dueDate + "'")
         .add("followUpDate='" + followUpDate + "'")
         .add("candidateGroups=" + Arrays.toString(candidateGroups))

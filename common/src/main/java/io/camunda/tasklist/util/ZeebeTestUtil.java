@@ -7,12 +7,13 @@
 package io.camunda.tasklist.util;
 
 import static io.camunda.tasklist.util.ThreadUtil.sleepFor;
+import static io.camunda.zeebe.client.api.command.CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER;
 
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
-import io.camunda.zeebe.client.api.command.DeployProcessCommandStep1;
+import io.camunda.zeebe.client.api.command.DeployResourceCommandStep1;
 import io.camunda.zeebe.client.api.command.FailJobCommandStep1.FailJobCommandStep2;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.api.response.DeploymentEvent;
@@ -40,16 +41,29 @@ public abstract class ZeebeTestUtil {
    * @return process id
    */
   public static String deployProcess(ZeebeClient client, String... classpathResources) {
+    return deployProcess(DEFAULT_TENANT_IDENTIFIER, client, classpathResources);
+  }
+
+  /**
+   * Deploys the process synchronously.
+   *
+   * @param tenantId id of the tenant
+   * @param client client
+   * @param classpathResources classpath resources
+   * @return process id
+   */
+  public static String deployProcess(
+      String tenantId, ZeebeClient client, String... classpathResources) {
     if (classpathResources.length == 0) {
       return null;
     }
-    DeployProcessCommandStep1 deployProcessCommandStep1 = client.newDeployCommand();
+    DeployResourceCommandStep1 deployProcessCommandStep1 = client.newDeployResourceCommand();
     for (String classpathResource : classpathResources) {
       deployProcessCommandStep1 =
-          deployProcessCommandStep1.addResourceFromClasspath(classpathResource);
+          deployProcessCommandStep1.addResourceFromClasspath(classpathResource).tenantId(tenantId);
     }
     final DeploymentEvent deploymentEvent =
-        ((DeployProcessCommandStep1.DeployProcessCommandBuilderStep2) deployProcessCommandStep1)
+        ((DeployResourceCommandStep1.DeployResourceCommandStep2) deployProcessCommandStep1)
             .send()
             .join();
     LOGGER.debug("Deployment of resource [{}] was performed", (Object[]) classpathResources);
@@ -70,12 +84,31 @@ public abstract class ZeebeTestUtil {
    */
   public static String deployProcess(
       ZeebeClient client, BpmnModelInstance processModel, String resourceName) {
-    final DeployProcessCommandStep1 deployProcessCommandStep1 =
-        client.newDeployCommand().addProcessModel(processModel, resourceName);
-    final DeploymentEvent deploymentEvent =
-        ((DeployProcessCommandStep1.DeployProcessCommandBuilderStep2) deployProcessCommandStep1)
-            .send()
-            .join();
+    return deployProcess(DEFAULT_TENANT_IDENTIFIER, client, processModel, resourceName);
+  }
+
+  public static String deployProcess(
+      ZeebeClient client, BpmnModelInstance processModel, String resourceName, String tenantId) {
+    return deployProcess(tenantId, client, processModel, resourceName);
+  }
+
+  /**
+   * Deploys the process synchronously.
+   *
+   * @param tenantId id of the tenant
+   * @param client client
+   * @param processModel processModel
+   * @param resourceName resourceName
+   * @return process id
+   */
+  public static String deployProcess(
+      String tenantId, ZeebeClient client, BpmnModelInstance processModel, String resourceName) {
+    final DeployResourceCommandStep1.DeployResourceCommandStep2 deployProcessCommandStep1 =
+        client
+            .newDeployResourceCommand()
+            .addProcessModel(processModel, resourceName)
+            .tenantId(tenantId);
+    final DeploymentEvent deploymentEvent = deployProcessCommandStep1.send().join();
     LOGGER.debug("Deployment of resource [{}] was performed", resourceName);
     return String.valueOf(deploymentEvent.getProcesses().get(0).getProcessDefinitionKey());
   }
@@ -88,13 +121,29 @@ public abstract class ZeebeTestUtil {
    */
   public static String startProcessInstance(
       ZeebeClient client, String bpmnProcessId, String payload) {
+    return startProcessInstance(DEFAULT_TENANT_IDENTIFIER, client, bpmnProcessId, payload);
+  }
+
+  /**
+   * @param tenantId id of the tenant
+   * @param client client
+   * @param bpmnProcessId bpmnProcessId
+   * @param payload payload
+   * @return process instance id
+   */
+  public static String startProcessInstance(
+      String tenantId, ZeebeClient client, String bpmnProcessId, String payload) {
     final CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3
         createProcessInstanceCommandStep3 =
-            client.newCreateInstanceCommand().bpmnProcessId(bpmnProcessId).latestVersion();
+            client
+                .newCreateInstanceCommand()
+                .bpmnProcessId(bpmnProcessId)
+                .latestVersion()
+                .tenantId(tenantId);
     if (payload != null) {
       createProcessInstanceCommandStep3.variables(payload);
     }
-    ProcessInstanceEvent processInstanceEvent = null;
+    ProcessInstanceEvent processInstanceEvent;
     try {
       processInstanceEvent = createProcessInstanceCommandStep3.send().join();
       LOGGER.debug("Process instance created for process [{}]", bpmnProcessId);

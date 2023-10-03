@@ -30,6 +30,7 @@ public class TaskSearchView {
   private String[] candidateGroups;
   private String[] candidateUsers;
   private String formKey;
+  private String tenantId;
   private OffsetDateTime followUpDate;
   private OffsetDateTime dueDate;
   private boolean first = false;
@@ -152,6 +153,15 @@ public class TaskSearchView {
     return this;
   }
 
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  public TaskSearchView setTenantId(String tenantId) {
+    this.tenantId = tenantId;
+    return this;
+  }
+
   public OffsetDateTime getFollowUpDate() {
     return followUpDate;
   }
@@ -214,6 +224,7 @@ public class TaskSearchView {
         && Arrays.equals(candidateGroups, that.candidateGroups)
         && Arrays.equals(candidateUsers, that.candidateUsers)
         && Objects.equals(formKey, that.formKey)
+        && Objects.equals(tenantId, that.tenantId)
         && Objects.equals(followUpDate, that.followUpDate)
         && Objects.equals(dueDate, that.dueDate)
         && Arrays.equals(sortValues, that.sortValues);
@@ -235,6 +246,7 @@ public class TaskSearchView {
             state,
             assignee,
             formKey,
+            tenantId,
             followUpDate,
             dueDate,
             first);
@@ -260,6 +272,7 @@ public class TaskSearchView {
         .add("candidateGroups=" + Arrays.toString(candidateGroups))
         .add("candidateUsers=" + Arrays.toString(candidateUsers))
         .add("formKey='" + formKey + "'")
+        .add("tenantId='" + tenantId + "'")
         .add("followUpDate=" + followUpDate)
         .add("dueDate=" + dueDate)
         .add("first=" + first)
@@ -281,6 +294,7 @@ public class TaskSearchView {
             .setFlowNodeBpmnId(taskEntity.getFlowNodeBpmnId())
             .setFlowNodeInstanceId(taskEntity.getFlowNodeInstanceId())
             .setFormKey(taskEntity.getFormKey())
+            .setTenantId(taskEntity.getTenantId())
             .setFollowUpDate(taskEntity.getFollowUpDate())
             .setDueDate(taskEntity.getDueDate())
             .setCandidateGroups(taskEntity.getCandidateGroups())

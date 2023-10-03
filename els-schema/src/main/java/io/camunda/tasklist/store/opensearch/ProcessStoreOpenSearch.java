@@ -13,20 +13,19 @@ import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.IdentityProperties;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.indices.ProcessIndex;
-import io.camunda.tasklist.store.FormStore;
 import io.camunda.tasklist.store.ProcessStore;
+import io.camunda.tasklist.tenant.TenantAwareOpenSearchClient;
+import io.camunda.tasklist.util.OpenSearchUtil;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.StringUtils;
 import org.opensearch.client.opensearch.OpenSearchClient;
-import org.opensearch.client.opensearch._types.FieldSort;
-import org.opensearch.client.opensearch._types.FieldValue;
-import org.opensearch.client.opensearch._types.OpenSearchException;
-import org.opensearch.client.opensearch._types.SortOptions;
-import org.opensearch.client.opensearch._types.SortOrder;
+import org.opensearch.client.opensearch._types.*;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
+import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.search.FieldCollapse;
 import org.opensearch.client.opensearch.core.search.Hit;
@@ -44,9 +43,9 @@ public class ProcessStoreOpenSearch implements ProcessStore {
 
   @Autowired private OpenSearchClient openSearchClient;
 
-  @Autowired private TasklistProperties tasklistProperties;
+  @Autowired private TenantAwareOpenSearchClient tenantAwareClient;
 
-  @Autowired private FormStore formStore;
+  @Autowired private TasklistProperties tasklistProperties;
 
   @Override
   public ProcessEntity getProcessByProcessDefinitionKey(String processDefinitionKey) {
@@ -84,6 +83,12 @@ public class ProcessStoreOpenSearch implements ProcessStore {
 
   @Override
   public ProcessEntity getProcessByBpmnProcessId(String bpmnProcessId) {
+    return getProcessByBpmnProcessId(bpmnProcessId, null);
+  }
+
+  @Override
+  public ProcessEntity getProcessByBpmnProcessId(
+      final String bpmnProcessId, final String tenantId) {
     final FieldCollapse keyCollapse =
         new FieldCollapse.Builder().field(ProcessIndex.PROCESS_DEFINITION_ID).build();
     final SortOptions sortOptions =
@@ -91,18 +96,32 @@ public class ProcessStoreOpenSearch implements ProcessStore {
             .field(FieldSort.of(f -> f.field(ProcessIndex.VERSION).order(SortOrder.Desc)))
             .build();
 
+    final Query qb;
+    final Query functionQuery =
+        new Query.Builder()
+            .term(
+                term ->
+                    term.field(ProcessIndex.PROCESS_DEFINITION_ID)
+                        .value(FieldValue.of(bpmnProcessId)))
+            .build();
+    if (tasklistProperties.getMultiTenancy().isEnabled() && StringUtils.isNotBlank(tenantId)) {
+      qb =
+          OpenSearchUtil.joinWithAnd(
+              new Query.Builder()
+                  .term(term -> term.field(ProcessIndex.TENANT_ID).value(FieldValue.of(tenantId)))
+                  .build(),
+              functionQuery);
+    } else {
+      qb = functionQuery;
+    }
+
     final SearchResponse<ProcessEntity> response;
     try {
       response =
           openSearchClient.search(
               s ->
                   s.index(List.of(processIndex.getAlias()))
-                      .query(
-                          q ->
-                              q.term(
-                                  t ->
-                                      t.field(ProcessIndex.PROCESS_DEFINITION_ID)
-                                          .value(FieldValue.of(bpmnProcessId))))
+                      .query(qb)
                       .collapse(keyCollapse)
                       .sort(sortOptions)
                       .size(1),
@@ -151,7 +170,8 @@ public class ProcessStoreOpenSearch implements ProcessStore {
   }
 
   @Override
-  public List<ProcessEntity> getProcesses(final List<String> processDefinitions) {
+  public List<ProcessEntity> getProcesses(
+      final List<String> processDefinitions, final String tenantId) {
     final FieldCollapse keyCollapse =
         new FieldCollapse.Builder().field(ProcessIndex.PROCESS_DEFINITION_ID).build();
     final SortOptions sortOptions =
@@ -164,7 +184,7 @@ public class ProcessStoreOpenSearch implements ProcessStore {
     if (tasklistProperties.isSelfManaged()) {
 
       if (processDefinitions.size() == 0) {
-        return new ArrayList<ProcessEntity>();
+        return new ArrayList<>();
       }
 
       if (processDefinitions.contains(IdentityProperties.ALL_RESOURCES)) {
@@ -218,14 +238,11 @@ public class ProcessStoreOpenSearch implements ProcessStore {
     }
 
     try {
+      final SearchRequest.Builder searchRequest =
+          getSearchRequestUniqueByProcessDefinitionId(q, tenantId);
+
       final SearchResponse<ProcessEntity> response =
-          openSearchClient.search(
-              s ->
-                  s.index(List.of(processIndex.getAlias()))
-                      .query(q)
-                      .collapse(keyCollapse)
-                      .sort(sortOptions),
-              ProcessEntity.class);
+          tenantAwareClient.search(searchRequest, ProcessEntity.class);
 
       return response.hits().hits().stream().map(Hit::source).collect(Collectors.toList());
 
@@ -237,22 +254,17 @@ public class ProcessStoreOpenSearch implements ProcessStore {
   }
 
   @Override
-  public List<ProcessEntity> getProcesses(String search, final List<String> processDefinitions) {
-    final FieldCollapse keyCollapse =
-        new FieldCollapse.Builder().field(ProcessIndex.PROCESS_DEFINITION_ID).build();
-    final SortOptions sortOptions =
-        new SortOptions.Builder()
-            .field(FieldSort.of(f -> f.field(ProcessIndex.VERSION).order(SortOrder.Desc)))
-            .build();
+  public List<ProcessEntity> getProcesses(
+      String search, final List<String> processDefinitions, final String tenantId) {
 
     if (search == null || search.isBlank()) {
-      return getProcesses(processDefinitions);
+      return getProcesses(processDefinitions, tenantId);
     }
 
     final Query query;
     final String regexSearch = String.format(".*%s.*", search);
 
-    if (tasklistProperties.isSelfManaged()) {
+    if (tasklistProperties.getIdentity().isResourcePermissionsEnabled()) {
       if (processDefinitions.size() == 0) {
         return new ArrayList<ProcessEntity>();
       }
@@ -338,14 +350,12 @@ public class ProcessStoreOpenSearch implements ProcessStore {
     }
 
     try {
+
+      final SearchRequest.Builder searchRequest =
+          getSearchRequestUniqueByProcessDefinitionId(query, tenantId);
+
       final SearchResponse<ProcessEntity> response =
-          openSearchClient.search(
-              s ->
-                  s.index(List.of(processIndex.getAlias()))
-                      .query(query)
-                      .collapse(keyCollapse)
-                      .sort(sortOptions),
-              ProcessEntity.class);
+          tenantAwareClient.search(searchRequest, ProcessEntity.class);
 
       return response.hits().hits().stream().map(h -> h.source()).collect(Collectors.toList());
 
@@ -354,6 +364,33 @@ public class ProcessStoreOpenSearch implements ProcessStore {
           String.format("Exception occurred, while obtaining the process: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
     }
+  }
+
+  private SearchRequest.Builder getSearchRequestUniqueByProcessDefinitionId(
+      Query query, final String tenantId) {
+    final FieldCollapse keyCollapse =
+        new FieldCollapse.Builder().field(ProcessIndex.PROCESS_DEFINITION_ID).build();
+    final SortOptions sortOptions =
+        new SortOptions.Builder()
+            .field(FieldSort.of(f -> f.field(ProcessIndex.VERSION).order(SortOrder.Desc)))
+            .build();
+
+    final Query qbTenantCheck;
+    if (tasklistProperties.getMultiTenancy().isEnabled() && StringUtils.isNotBlank(tenantId)) {
+      final Query tenantQuery =
+          new Query.Builder()
+              .term(term -> term.field(ProcessIndex.TENANT_ID).value(FieldValue.of(tenantId)))
+              .build();
+      qbTenantCheck = OpenSearchUtil.joinWithAnd(tenantQuery, query);
+    } else {
+      qbTenantCheck = query;
+    }
+
+    return new SearchRequest.Builder()
+        .index(List.of(processIndex.getAlias()))
+        .query(qbTenantCheck)
+        .collapse(keyCollapse)
+        .sort(sortOptions);
   }
 
   @Override
@@ -368,31 +405,23 @@ public class ProcessStoreOpenSearch implements ProcessStore {
     final SearchResponse<ProcessEntity> response;
 
     try {
-      response =
-          openSearchClient.search(
-              s ->
-                  s.index(processIndex.getAlias())
-                      .query(
-                          q ->
-                              q.bool(
-                                  b ->
-                                      b.must(
-                                              m ->
-                                                  m.exists(
-                                                      e ->
-                                                          e.field(
-                                                              ProcessIndex.PROCESS_DEFINITION_ID)))
-                                          .mustNot(
-                                              mn ->
-                                                  mn.term(
-                                                      t ->
-                                                          t.field(
-                                                                  ProcessIndex
-                                                                      .PROCESS_DEFINITION_ID)
-                                                              .value(FieldValue.of(""))))))
-                      .collapse(keyCollapse)
-                      .sort(sortOptions),
-              ProcessEntity.class);
+      final SearchRequest.Builder searchRequest = new SearchRequest.Builder();
+      searchRequest
+          .index(processIndex.getAlias())
+          .query(
+              q ->
+                  q.bool(
+                      b ->
+                          b.must(m -> m.exists(e -> e.field(ProcessIndex.PROCESS_DEFINITION_ID)))
+                              .mustNot(
+                                  mn ->
+                                      mn.term(
+                                          t ->
+                                              t.field(ProcessIndex.PROCESS_DEFINITION_ID)
+                                                  .value(FieldValue.of(""))))))
+          .collapse(keyCollapse)
+          .sort(sortOptions);
+      response = tenantAwareClient.search(searchRequest, ProcessEntity.class);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }

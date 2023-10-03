@@ -1,0 +1,8 @@
+{
+  "description": "Set default tenantId for 'task-variable' index",
+  "@type": "processorStep",
+  "indexName": "task-variable",
+  "version": "8.3.0",
+  "order": 9,
+  "content": "{\"set\": {\"field\": \"tenantId\", \"value\": \"<default>\"}}"
+}

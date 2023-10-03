@@ -18,6 +18,7 @@ import java.text.ParseException;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.StringJoiner;
 
 public final class TaskDTO {
 
@@ -38,15 +39,11 @@ public final class TaskDTO {
   private String[] candidateGroups;
   private String[] candidateUsers;
   private TaskState taskState;
-
   private String[] sortValues;
-
   private boolean isFirst = false;
-
   private String formKey;
-
+  private String tenantId;
   private OffsetDateTime dueDate;
-
   private OffsetDateTime followUpDate;
 
   public String getId() {
@@ -188,6 +185,15 @@ public final class TaskDTO {
     return this;
   }
 
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  public TaskDTO setTenantId(String tenantId) {
+    this.tenantId = tenantId;
+    return this;
+  }
+
   public OffsetDateTime getDueDate() {
     return dueDate;
   }
@@ -226,6 +232,7 @@ public final class TaskDTO {
             .setFlowNodeBpmnId(taskEntity.getFlowNodeBpmnId())
             .setFlowNodeInstanceId(taskEntity.getFlowNodeInstanceId())
             .setFormKey(taskEntity.getFormKey())
+            .setTenantId(taskEntity.getTenantId())
             .setFollowUpDate(taskEntity.getFollowUpDate())
             .setDueDate(taskEntity.getDueDate())
             .setCandidateGroups(taskEntity.getCandidateGroups())
@@ -250,6 +257,7 @@ public final class TaskDTO {
         .setFlowNodeBpmnId(taskSearchView.getFlowNodeBpmnId())
         .setFlowNodeInstanceId(taskSearchView.getFlowNodeInstanceId())
         .setFormKey(taskSearchView.getFormKey())
+        .setTenantId(taskSearchView.getTenantId())
         .setFollowUpDate(taskSearchView.getFollowUpDate())
         .setDueDate(taskSearchView.getDueDate())
         .setCandidateGroups(taskSearchView.getCandidateGroups())
@@ -276,6 +284,7 @@ public final class TaskDTO {
               .setFlowNodeBpmnId(taskDTO.getFlowNodeBpmnId())
               .setFlowNodeInstanceId(taskDTO.getFlowNodeInstanceId())
               .setFormKey(taskDTO.getFormKey())
+              .setTenantId(taskDTO.getTenantId())
               .setFollowUpDate(taskDTO.getFollowUpDate())
               .setDueDate(taskDTO.getDueDate())
               .setCandidateGroups(taskDTO.getCandidateGroups())
@@ -317,6 +326,7 @@ public final class TaskDTO {
         && taskState == taskDTO.taskState
         && Arrays.equals(sortValues, taskDTO.sortValues)
         && Objects.equals(formKey, taskDTO.formKey)
+        && Objects.equals(tenantId, taskDTO.tenantId)
         && Objects.equals(dueDate, taskDTO.dueDate)
         && Objects.equals(followUpDate, taskDTO.followUpDate);
   }
@@ -337,6 +347,7 @@ public final class TaskDTO {
             taskState,
             isFirst,
             formKey,
+            tenantId,
             dueDate,
             followUpDate);
     result = 31 * result + Arrays.hashCode(candidateGroups);
@@ -347,53 +358,25 @@ public final class TaskDTO {
 
   @Override
   public String toString() {
-    return "TaskDTO{"
-        + "id='"
-        + id
-        + '\''
-        + ", processInstanceId='"
-        + processInstanceId
-        + '\''
-        + ", flowNodeBpmnId='"
-        + flowNodeBpmnId
-        + '\''
-        + ", flowNodeInstanceId='"
-        + flowNodeInstanceId
-        + '\''
-        + ", processId='"
-        + processDefinitionId
-        + '\''
-        + ", bpmnProcessId='"
-        + bpmnProcessId
-        + '\''
-        + ", creationTime='"
-        + creationTime
-        + '\''
-        + ", completionTime='"
-        + completionTime
-        + '\''
-        + ", assignee='"
-        + assignee
-        + '\''
-        + ", taskState="
-        + taskState
-        + ", sortValues="
-        + Arrays.toString(sortValues)
-        + ", candidateGroups="
-        + Arrays.toString(candidateGroups)
-        + ", candidateGroups="
-        + Arrays.toString(candidateUsers)
-        + ", isFirst="
-        + isFirst
-        + ", formId='"
-        + formKey
-        + '\''
-        + ", followUpDate='"
-        + followUpDate
-        + '\''
-        + ", dueDate='"
-        + dueDate
-        + '\''
-        + '}';
+    return new StringJoiner(", ", TaskDTO.class.getSimpleName() + "[", "]")
+        .add("id='" + id + "'")
+        .add("processInstanceId='" + processInstanceId + "'")
+        .add("flowNodeBpmnId='" + flowNodeBpmnId + "'")
+        .add("flowNodeInstanceId='" + flowNodeInstanceId + "'")
+        .add("processDefinitionId='" + processDefinitionId + "'")
+        .add("bpmnProcessId='" + bpmnProcessId + "'")
+        .add("creationTime='" + creationTime + "'")
+        .add("completionTime='" + completionTime + "'")
+        .add("assignee='" + assignee + "'")
+        .add("candidateGroups=" + Arrays.toString(candidateGroups))
+        .add("candidateUsers=" + Arrays.toString(candidateUsers))
+        .add("taskState=" + taskState)
+        .add("sortValues=" + Arrays.toString(sortValues))
+        .add("isFirst=" + isFirst)
+        .add("formKey='" + formKey + "'")
+        .add("tenantId='" + tenantId + "'")
+        .add("dueDate=" + dueDate)
+        .add("followUpDate=" + followUpDate)
+        .toString();
   }
 }

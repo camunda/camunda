@@ -17,8 +17,10 @@ import io.camunda.tasklist.webapp.api.rest.v1.entities.FormResponse;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.StartProcessRequest;
 import io.camunda.tasklist.webapp.graphql.entity.ProcessInstanceDTO;
 import io.camunda.tasklist.webapp.rest.exception.Error;
+import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
+import io.camunda.tasklist.webapp.security.tenant.TenantService;
 import io.camunda.tasklist.webapp.service.ProcessService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -30,12 +32,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "External Process", description = "API to manage processes by external consumers.")
 @RestController
@@ -52,6 +49,8 @@ public class ProcessExternalController extends ApiErrorController {
   @Autowired private ProcessService processService;
 
   @Autowired private FormStore formStore;
+
+  @Autowired private TenantService tenantService;
 
   @Operation(
       summary = "Get Form by Process BPMN id.",
@@ -90,9 +89,17 @@ public class ProcessExternalController extends ApiErrorController {
   @PatchMapping("{bpmnProcessId}/start")
   public ResponseEntity<ProcessInstanceDTO> startProcess(
       @PathVariable String bpmnProcessId,
+      @RequestParam(required = false) String tenantId,
       @RequestBody(required = false) StartProcessRequest startProcessRequest) {
 
-    final ProcessEntity process = processStore.getProcessByBpmnProcessId(bpmnProcessId);
+    if (tenantService.isMultiTenancyEnabled()) {
+      if (StringUtils.isBlank(tenantId)
+          || !tenantService.getAuthenticatedTenants().contains(tenantId)) {
+        throw new InvalidRequestException("Invalid Tenant");
+      }
+    }
+
+    final ProcessEntity process = processStore.getProcessByBpmnProcessId(bpmnProcessId, tenantId);
     if (!process.isStartedByForm()) {
       throw new NotFoundApiException(
           String.format("The process with processDefinitionKey: '%s' is not found", bpmnProcessId));
@@ -100,7 +107,7 @@ public class ProcessExternalController extends ApiErrorController {
       final var variables =
           requireNonNullElse(startProcessRequest, new StartProcessRequest()).getVariables();
       final ProcessInstanceDTO processInstanceDTO =
-          processService.startProcessInstance(bpmnProcessId, variables);
+          processService.startProcessInstance(bpmnProcessId, variables, tenantId);
       return ResponseEntity.ok(processInstanceDTO);
     }
   }

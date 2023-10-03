@@ -15,7 +15,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.entities.MetricEntity;
 import io.camunda.tasklist.entities.TaskEntity;
-import io.camunda.tasklist.entities.TasklistEntity;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.schema.indices.MetricIndex;
 import io.camunda.tasklist.store.TaskMetricsStore;
@@ -67,7 +66,7 @@ public class TaskMetricsStoreElasticSearch implements TaskMetricsStore {
     }
   }
 
-  private boolean insert(TasklistEntity entity) {
+  private boolean insert(MetricEntity entity) {
     try {
       final IndexRequest request =
           new IndexRequest(index.getFullQualifiedName())
@@ -127,6 +126,7 @@ public class TaskMetricsStoreElasticSearch implements TaskMetricsStore {
     return new MetricEntity()
         .setEvent(EVENT_TASK_COMPLETED_BY_ASSIGNEE)
         .setValue(task.getAssignee())
-        .setEventTime(task.getCompletionTime());
+        .setEventTime(task.getCompletionTime())
+        .setTenantId(task.getTenantId());
   }
 }

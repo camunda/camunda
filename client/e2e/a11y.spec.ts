@@ -9,6 +9,11 @@ import {expect} from '@playwright/test';
 import {test} from './test-fixtures';
 import schema from './resources/bigForm.json';
 
+const MOCK_TENANT = {
+  id: 'tenantA',
+  name: 'Tenant A',
+};
+
 const MOCK_TASK = {
   id: 'task123',
   formKey: 'camunda-forms:bpmn:userTaskForm_1',
@@ -25,6 +30,7 @@ const MOCK_TASK = {
   followUpDate: null,
   candidateGroups: null,
   candidateUsers: null,
+  tenantId: MOCK_TENANT.id,
 };
 
 test.describe('a11y', () => {
@@ -90,6 +96,7 @@ test.describe('a11y', () => {
             salesPlanType: null,
             roles: null,
             c8Links: [],
+            tenants: [MOCK_TENANT],
           }),
           headers: {
             'content-type': 'application/json',

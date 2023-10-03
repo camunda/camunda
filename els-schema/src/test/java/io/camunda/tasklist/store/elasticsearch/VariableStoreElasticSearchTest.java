@@ -80,7 +80,8 @@ class VariableStoreElasticSearchTest {
     verify(esClient, never()).scroll(any(SearchScrollRequest.class), any(RequestOptions.class));
 
     final SearchRequest capturedSearchRequest = searchRequestCaptor.getValue();
-    final String expectedAlias = "tasklist-flownode-instance-1.0.0_alias";
+    final String expectedAlias =
+        String.format("tasklist-flownode-instance-%s_alias", FlowNodeInstanceIndex.INDEX_VERSION);
     assertThat(capturedSearchRequest.indices()).containsExactly(expectedAlias);
     assertThat(capturedSearchRequest.source().size()).isEqualTo(200);
     assertThat(result).isEmpty();

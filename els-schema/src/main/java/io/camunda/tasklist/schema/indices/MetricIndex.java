@@ -13,13 +13,21 @@ import org.springframework.stereotype.Component;
 public class MetricIndex extends AbstractIndexDescriptor implements Prio4Backup {
 
   public static final String INDEX_NAME = "metric";
+  public static final String INDEX_VERSION = "8.3.0";
+
   public static final String ID = "id";
   public static final String EVENT = "event";
   public static final String VALUE = "value";
   public static final String EVENT_TIME = "eventTime";
+  public static final String TENANT_ID = "tenantId";
 
   @Override
   public String getIndexName() {
     return INDEX_NAME;
+  }
+
+  @Override
+  public String getVersion() {
+    return INDEX_VERSION;
   }
 }

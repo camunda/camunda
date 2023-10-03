@@ -15,7 +15,6 @@ import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -30,9 +29,9 @@ public class IdentityJwt2AuthenticationTokenConverter
     // this will validate audience
     try {
       identity.authentication().verifyToken(jwt.getTokenValue());
+      return new IdentityTenantAwareJwtAuthenticationToken(jwt, null, jwt.getSubject());
     } catch (Exception e) {
       throw new InsufficientAuthenticationException(e.getMessage());
     }
-    return new JwtAuthenticationToken(jwt, null, jwt.getSubject());
   }
 }

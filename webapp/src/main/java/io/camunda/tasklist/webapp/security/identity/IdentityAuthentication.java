@@ -11,29 +11,35 @@ import io.camunda.identity.sdk.Identity;
 import io.camunda.identity.sdk.authentication.AccessToken;
 import io.camunda.identity.sdk.authentication.Tokens;
 import io.camunda.identity.sdk.authentication.UserDetails;
+import io.camunda.identity.sdk.impl.rest.exception.RestException;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.SpringContextHolder;
 import io.camunda.tasklist.webapp.security.OldUsernameAware;
 import io.camunda.tasklist.webapp.security.Permission;
+import io.camunda.tasklist.webapp.security.tenant.TasklistTenant;
+import io.camunda.tasklist.webapp.security.tenant.TenantAwareAuthentication;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.apache.commons.collections4.CollectionUtils;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
 
 public class IdentityAuthentication extends AbstractAuthenticationToken
-    implements OldUsernameAware {
+    implements OldUsernameAware, TenantAwareAuthentication {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(IdentityAuthentication.class);
-
   private Tokens tokens;
   private String id;
   private String name;
   private List<String> permissions;
   private String subject;
   private Date expires;
+  private volatile List<TasklistTenant> tenants = Collections.emptyList();
   private IdentityAuthorization authorization;
 
   public IdentityAuthentication() {
@@ -48,6 +54,42 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
   @Override
   public Object getPrincipal() {
     return subject;
+  }
+
+  @Override
+  public List<TasklistTenant> getTenants() {
+    if (CollectionUtils.isEmpty(tenants)) {
+      synchronized (this) {
+        if (CollectionUtils.isEmpty(tenants)) {
+          retrieveTenants();
+        }
+      }
+    }
+    return tenants;
+  }
+
+  private void retrieveTenants() {
+    if (getTasklistProperties().getMultiTenancy().isEnabled()) {
+      try {
+        final var accessToken = tokens.getAccessToken();
+        final var identityTenants = getIdentity().tenants().forToken(accessToken);
+
+        if (CollectionUtils.isNotEmpty(identityTenants)) {
+          tenants =
+              identityTenants.stream()
+                  .map((t) -> new TasklistTenant(t.getTenantId(), t.getName()))
+                  .sorted(TENANT_NAMES_COMPARATOR)
+                  .toList();
+        } else {
+          tenants = List.of();
+        }
+      } catch (RestException ex) {
+        LOGGER.warn("Unable to retrieve tenants from Identity. Error: " + ex.getMessage(), ex);
+        tenants = List.of();
+      }
+    } else {
+      tenants = List.of();
+    }
   }
 
   public Tokens getTokens() {
@@ -117,7 +159,7 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
     }
 
     try {
-      final TasklistProperties props = SpringContextHolder.getBean(TasklistProperties.class);
+      final TasklistProperties props = getTasklistProperties();
       if (props.getIdentity().isResourcePermissionsEnabled()) {
         authorization =
             new IdentityAuthorization(
@@ -136,6 +178,11 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
     } else {
       setAuthenticated(false);
     }
+  }
+
+  @NotNull
+  private static TasklistProperties getTasklistProperties() {
+    return SpringContextHolder.getBean(TasklistProperties.class);
   }
 
   private String retrieveName(final UserDetails userDetails) {

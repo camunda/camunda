@@ -8,7 +8,6 @@ package io.camunda.tasklist.store.opensearch;
 
 import static io.camunda.tasklist.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.CommonUtils;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.entities.DraftTaskVariableEntity;
@@ -16,15 +15,22 @@ import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.schema.templates.DraftTaskVariableTemplate;
 import io.camunda.tasklist.store.DraftVariableStore;
+import io.camunda.tasklist.tenant.TenantAwareOpenSearchClient;
 import io.camunda.tasklist.util.OpenSearchUtil;
 import java.io.IOException;
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
-import org.opensearch.client.opensearch.core.*;
+import org.opensearch.client.opensearch.core.BulkRequest;
+import org.opensearch.client.opensearch.core.DeleteByQueryRequest;
+import org.opensearch.client.opensearch.core.DeleteByQueryResponse;
+import org.opensearch.client.opensearch.core.SearchRequest;
+import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.bulk.BulkOperation;
 import org.opensearch.client.opensearch.core.bulk.UpdateOperation;
 import org.opensearch.client.opensearch.core.search.Hit;
@@ -46,15 +52,14 @@ public class DraftVariablesStoreOpenSearch implements DraftVariableStore {
   @Qualifier("openSearchClient")
   private OpenSearchClient osClient;
 
+  @Autowired private TenantAwareOpenSearchClient tenantAwareClient;
   @Autowired private DraftTaskVariableTemplate draftTaskVariableTemplate;
-  @Autowired private ObjectMapper objectMapper;
 
   public void createOrUpdate(Collection<DraftTaskVariableEntity> draftVariables) {
     final BulkRequest.Builder bulkRequest = new BulkRequest.Builder();
-    final List<BulkOperation> operations = new ArrayList<BulkOperation>();
-    for (DraftTaskVariableEntity variableEntity : draftVariables) {
-      operations.add(createUpsertRequest(variableEntity));
-    }
+    final List<BulkOperation> operations =
+        draftVariables.stream().map(this::createUpsertRequest).toList();
+
     bulkRequest.operations(operations);
     bulkRequest.refresh(Refresh.WaitFor);
     try {
@@ -161,7 +166,7 @@ public class DraftVariablesStoreOpenSearch implements DraftVariableStore {
                       term.field(DraftTaskVariableTemplate.ID).value(FieldValue.of(variableId))));
 
       final SearchResponse<DraftTaskVariableEntity> searchResponse =
-          osClient.search(searchRequest.build(), DraftTaskVariableEntity.class);
+          tenantAwareClient.search(searchRequest, DraftTaskVariableEntity.class);
 
       final List<Hit<DraftTaskVariableEntity>> hits = searchResponse.hits().hits();
       if (hits.size() == 0) {

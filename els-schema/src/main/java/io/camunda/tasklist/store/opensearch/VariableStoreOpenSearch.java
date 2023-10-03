@@ -6,11 +6,15 @@
  */
 package io.camunda.tasklist.store.opensearch;
 
-import static io.camunda.tasklist.schema.indices.VariableIndex.*;
+import static io.camunda.tasklist.schema.indices.VariableIndex.ID;
+import static io.camunda.tasklist.schema.indices.VariableIndex.NAME;
+import static io.camunda.tasklist.schema.indices.VariableIndex.SCOPE_FLOW_NODE_ID;
 import static io.camunda.tasklist.util.CollectionUtil.isNotEmpty;
 import static io.camunda.tasklist.util.OpenSearchUtil.SCROLL_KEEP_ALIVE_MS;
 import static io.camunda.tasklist.util.OpenSearchUtil.createSearchRequest;
-import static java.util.stream.Collectors.*;
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.mapping;
+import static java.util.stream.Collectors.toList;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.CommonUtils;
@@ -26,9 +30,18 @@ import io.camunda.tasklist.schema.indices.FlowNodeInstanceIndex;
 import io.camunda.tasklist.schema.indices.VariableIndex;
 import io.camunda.tasklist.schema.templates.TaskVariableTemplate;
 import io.camunda.tasklist.store.VariableStore;
+import io.camunda.tasklist.tenant.TenantAwareOpenSearchClient;
 import io.camunda.tasklist.util.OpenSearchUtil;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.opensearch.client.opensearch.OpenSearchClient;
@@ -38,11 +51,7 @@ import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.Time;
 import org.opensearch.client.opensearch._types.query_dsl.ConstantScoreQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
-import org.opensearch.client.opensearch.core.BulkRequest;
-import org.opensearch.client.opensearch.core.ClearScrollRequest;
-import org.opensearch.client.opensearch.core.ScrollRequest;
-import org.opensearch.client.opensearch.core.SearchRequest;
-import org.opensearch.client.opensearch.core.SearchResponse;
+import org.opensearch.client.opensearch.core.*;
 import org.opensearch.client.opensearch.core.bulk.BulkOperation;
 import org.opensearch.client.opensearch.core.bulk.UpdateOperation;
 import org.slf4j.Logger;
@@ -61,6 +70,7 @@ public class VariableStoreOpenSearch implements VariableStore {
   @Qualifier("openSearchClient")
   private OpenSearchClient osClient;
 
+  @Autowired private TenantAwareOpenSearchClient tenantAwareClient;
   @Autowired private FlowNodeInstanceIndex flowNodeInstanceIndex;
   @Autowired private VariableIndex variableIndex;
   @Autowired private TaskVariableTemplate taskVariableTemplate;
@@ -238,7 +248,7 @@ public class VariableStoreOpenSearch implements VariableStore {
 
     try {
       final SearchResponse<VariableEntity> response =
-          osClient.search(request.build(), VariableEntity.class);
+          tenantAwareClient.search(request, VariableEntity.class);
       if (response.hits().total().value() == 1L) {
         return response.hits().hits().get(0).source();
       } else if (response.hits().total().value() > 1L) {
@@ -261,7 +271,7 @@ public class VariableStoreOpenSearch implements VariableStore {
     applyFetchSourceForTaskVariableTemplate(request, fieldNames);
     try {
       final SearchResponse<TaskVariableEntity> response =
-          osClient.search(request.build(), TaskVariableEntity.class);
+          tenantAwareClient.search(request, TaskVariableEntity.class);
       if (response.hits().total().value() == 1L) {
         return response.hits().hits().get(0).source();
       } else if (response.hits().total().value() > 1L) {

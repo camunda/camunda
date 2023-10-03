@@ -28,17 +28,32 @@ import io.camunda.tasklist.schema.templates.TaskVariableTemplate;
 import io.camunda.tasklist.store.TaskStore;
 import io.camunda.tasklist.store.VariableStore;
 import io.camunda.tasklist.store.util.TaskVariableSearchUtil;
+import io.camunda.tasklist.tenant.TenantAwareOpenSearchClient;
 import io.camunda.tasklist.util.OpenSearchUtil;
 import io.camunda.tasklist.views.TaskSearchView;
 import java.io.IOException;
 import java.time.OffsetDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch.OpenSearchClient;
-import org.opensearch.client.opensearch._types.*;
+import org.opensearch.client.opensearch._types.FieldSort;
+import org.opensearch.client.opensearch._types.FieldValue;
+import org.opensearch.client.opensearch._types.Refresh;
+import org.opensearch.client.opensearch._types.Script;
+import org.opensearch.client.opensearch._types.ScriptSortType;
+import org.opensearch.client.opensearch._types.SortOptions;
+import org.opensearch.client.opensearch._types.SortOrder;
+import org.opensearch.client.opensearch._types.Time;
 import org.opensearch.client.opensearch._types.query_dsl.MatchAllQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.ClearScrollRequest;
@@ -68,6 +83,8 @@ public class TaskStoreOpenSearch implements TaskStore {
   @Qualifier("openSearchClient")
   private OpenSearchClient osClient;
 
+  @Autowired private TenantAwareOpenSearchClient tenantAwareClient;
+
   @Autowired private TaskTemplate taskTemplate;
 
   @Autowired private ObjectMapper objectMapper;
@@ -92,7 +109,8 @@ public class TaskStoreOpenSearch implements TaskStore {
     final SearchRequest.Builder request =
         OpenSearchUtil.createSearchRequest(taskTemplate).query(q -> q.ids(ids -> ids.values(id)));
 
-    final SearchResponse<TaskEntity> response = osClient.search(request.build(), TaskEntity.class);
+    final SearchResponse<TaskEntity> response = tenantAwareClient.search(request, TaskEntity.class);
+
     if (response.hits().total().value() == 1L) {
       return response.hits().hits().get(0).source();
     } else if (response.hits().total().value() > 1L) {
@@ -217,11 +235,12 @@ public class TaskStoreOpenSearch implements TaskStore {
     sourceBuilder.query(esQuery.build());
     applySorting(sourceBuilder, query);
 
-    final SearchRequest searchRequest = sourceBuilder.build();
-
     try {
       final SearchResponse<TaskSearchView> response =
-          osClient.search(searchRequest, TaskSearchView.class);
+          query.getTenantIds() == null
+              ? tenantAwareClient.search(sourceBuilder, TaskSearchView.class)
+              : tenantAwareClient.searchByTenantIds(
+                  sourceBuilder, TaskSearchView.class, Set.of(query.getTenantIds()));
 
       final List<TaskSearchView> tasks =
           response.hits().hits().stream()

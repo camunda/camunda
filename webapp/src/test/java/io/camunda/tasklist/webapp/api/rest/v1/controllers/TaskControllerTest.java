@@ -8,26 +8,16 @@ package io.camunda.tasklist.webapp.api.rest.v1.controllers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.tuple;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.camunda.tasklist.entities.TaskState;
+import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.webapp.CommonUtils;
-import io.camunda.tasklist.webapp.api.rest.v1.entities.SaveVariablesRequest;
-import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskAssignRequest;
-import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskCompleteRequest;
-import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskResponse;
-import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchRequest;
-import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchResponse;
-import io.camunda.tasklist.webapp.api.rest.v1.entities.VariableSearchResponse;
-import io.camunda.tasklist.webapp.api.rest.v1.entities.VariablesSearchRequest;
+import io.camunda.tasklist.webapp.api.rest.v1.entities.*;
 import io.camunda.tasklist.webapp.graphql.entity.TaskDTO;
 import io.camunda.tasklist.webapp.graphql.entity.TaskQueryDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
@@ -443,5 +433,85 @@ class TaskControllerTest {
 
     // Then
     assertThat(result).isEmpty();
+  }
+
+  @Test
+  void getTaskByIdWhenTaskNotFoundOrTenantWithoutAccess() throws Exception {
+    // Given
+    final var taskId = "2222222";
+    when(taskService.getTask(taskId)).thenThrow(NotFoundException.class);
+
+    // When
+    mockMvc
+        .perform(get(TasklistURIs.TASKS_URL_V1.concat("/{taskId}"), taskId))
+        .andExpect(status().isNotFound());
+  }
+
+  @Test
+  void variablesSearchWhenTaskIdDoesntExistOrTenantWithoutAccess() throws Exception {
+    final var taskId = "2222222";
+    mockMvc
+        .perform(post(TasklistURIs.TASKS_URL_V1.concat("{taskId}/variables/search"), taskId))
+        .andExpect(status().isNotFound());
+  }
+
+  @Test
+  void saveDraftTaskVariablesWhenTaskIdDoesntExistOrTenantWithoutAccess() throws Exception {
+    final var taskId = "2222222";
+    mockMvc
+        .perform(post(TasklistURIs.TASKS_URL_V1.concat("{taskId}/variables"), taskId))
+        .andExpect(status().isNotFound());
+  }
+
+  void assignTaskWithoutTenantAccess() throws Exception {
+    // Given
+    final var taskId = "3333333";
+    final var assignRequest =
+        new TaskAssignRequest().setAssignee("demo1").setAllowOverrideAssignment(true);
+
+    when(taskService.assignTask(
+            taskId, assignRequest.getAssignee(), assignRequest.isAllowOverrideAssignment()))
+        .thenThrow(NotFoundException.class);
+    // When
+    mockMvc
+        .perform(
+            patch(TasklistURIs.TASKS_URL_V1.concat("/{taskId}/assign"), taskId)
+                .characterEncoding(StandardCharsets.UTF_8.name())
+                .content(CommonUtils.OBJECT_MAPPER.writeValueAsString(assignRequest))
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON))
+        .andDo(print())
+        .andExpect(status().isNotFound());
+  }
+
+  @Test
+  void unassignTaskWithoutTenantAccess() throws Exception {
+    // Given
+    final var taskId = "3333333";
+    when(taskService.unassignTask(taskId)).thenThrow(NotFoundException.class);
+    // When
+    mockMvc
+        .perform(patch(TasklistURIs.TASKS_URL_V1.concat("/{taskId}/unassign"), taskId))
+        .andDo(print())
+        .andExpect(status().isNotFound());
+  }
+
+  @Test
+  void completeTaskWithoutTenantAccess() throws Exception {
+    final var taskId = "55555555";
+    final var variables = List.of(new VariableInputDTO().setName("var_a").setValue("val_a"));
+    final var completeRequest = new TaskCompleteRequest().setVariables(variables);
+    when(taskService.completeTask(taskId, variables, true)).thenThrow(NotFoundException.class);
+
+    // When
+    final var responseAsString =
+        mockMvc
+            .perform(
+                patch(TasklistURIs.TASKS_URL_V1.concat("/{taskId}/complete"), taskId)
+                    .characterEncoding(StandardCharsets.UTF_8.name())
+                    .content(CommonUtils.OBJECT_MAPPER.writeValueAsString(completeRequest))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isNotFound());
   }
 }

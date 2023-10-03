@@ -19,6 +19,7 @@ public class TasklistWebSessionIndex extends AbstractIndexDescriptor implements 
   public static final String ATTRIBUTES = "attributes";
 
   public static final String INDEX_NAME = "web-session";
+  public static final String INDEX_VERSION = "1.1.0";
 
   @Override
   public String getIndexName() {
@@ -27,6 +28,6 @@ public class TasklistWebSessionIndex extends AbstractIndexDescriptor implements 
 
   @Override
   public String getVersion() {
-    return "1.1.0";
+    return INDEX_VERSION;
   }
 }

@@ -69,20 +69,24 @@ public class DraftTaskVariableEntity extends TasklistZeebeEntity<DraftTaskVariab
   }
 
   public static DraftTaskVariableEntity createFrom(
-      String taskId, String name, String value, int variableSizeThreshold) {
+      TaskEntity taskEntity, String name, String value, int variableSizeThreshold) {
     return completeVariableSetup(
-        new DraftTaskVariableEntity().setId(getIdBy(taskId, name)),
-        taskId,
+        new DraftTaskVariableEntity().setId(getIdBy(taskEntity.getId(), name)),
+        taskEntity,
         name,
         value,
         variableSizeThreshold);
   }
 
   public static DraftTaskVariableEntity createFrom(
-      String draftVariableId, String taskId, String name, String value, int variableSizeThreshold) {
+      String draftVariableId,
+      TaskEntity taskEntity,
+      String name,
+      String value,
+      int variableSizeThreshold) {
     return completeVariableSetup(
         new DraftTaskVariableEntity().setId(draftVariableId),
-        taskId,
+        taskEntity,
         name,
         value,
         variableSizeThreshold);
@@ -90,12 +94,12 @@ public class DraftTaskVariableEntity extends TasklistZeebeEntity<DraftTaskVariab
 
   private static DraftTaskVariableEntity completeVariableSetup(
       DraftTaskVariableEntity entity,
-      String taskId,
+      TaskEntity taskEntity,
       String name,
       String value,
       int variableSizeThreshold) {
 
-    entity.setTaskId(taskId).setName(name);
+    entity.setTaskId(taskEntity.getId()).setName(name).setTenantId(taskEntity.getTenantId());
     if (value.length() > variableSizeThreshold) {
       // store preview
       entity.setValue(value.substring(0, variableSizeThreshold));

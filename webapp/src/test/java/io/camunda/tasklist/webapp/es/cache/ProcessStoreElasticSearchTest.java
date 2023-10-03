@@ -6,6 +6,8 @@
  */
 package io.camunda.tasklist.webapp.es.cache;
 
+import static io.camunda.zeebe.client.api.command.CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -21,9 +23,11 @@ import io.camunda.tasklist.entities.ProcessEntity;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.IdentityProperties;
+import io.camunda.tasklist.property.MultiTenancyProperties;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.indices.ProcessIndex;
 import io.camunda.tasklist.store.elasticsearch.ProcessStoreElasticSearch;
+import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
 import io.camunda.tasklist.util.ElasticsearchUtil;
 import io.camunda.tasklist.util.SpringContextHolder;
 import io.camunda.tasklist.webapp.security.identity.IdentityAuthentication;
@@ -54,9 +58,10 @@ import org.springframework.security.core.context.SecurityContextHolder;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
-class ProcessStoreTest {
+class ProcessStoreElasticSearchTest {
   @Mock private RestHighLevelClient esClient;
   @Mock private ProcessIndex processIndex; // Add the mock for ProcessIndex
+  @Mock private TenantAwareElasticsearchClient tenantAwareClient;
   @InjectMocks private ProcessStoreElasticSearch processStore;
   @InjectMocks private IdentityAuthorizationService identityService;
   @Mock private ObjectMapper objectMapper;
@@ -66,6 +71,7 @@ class ProcessStoreTest {
   @BeforeEach
   public void setup() {
     MockitoAnnotations.initMocks(this);
+    when(tasklistProperties.getMultiTenancy()).thenReturn(new MultiTenancyProperties());
   }
 
   // ** Test Get Process by BPMN Process Id ** //
@@ -156,23 +162,30 @@ class ProcessStoreTest {
 
   // ** Test get processes && And get processes with search condition ** //
   @Test
-  public void shouldNotReturnProcessesWhenResourceAuthIsEnabledButNoAuthorization() {
+  public void shouldNotReturnProcessesWhenResourceAuthIsEnabledButNoAuthorization()
+      throws IOException {
     // when
     when(tasklistProperties.getIdentity()).thenReturn(mock(IdentityProperties.class));
     when(tasklistProperties.getIdentity().isResourcePermissionsEnabled()).thenReturn(true);
     when(tasklistProperties.getIdentity().getBaseUrl()).thenReturn("baseUrl");
     mockAuthenticationOverIdentity(false);
-
+    when(processIndex.getAlias()).thenReturn("index_alias");
+    final SearchResponse searchResponse = mock(SearchResponse.class);
+    when(tenantAwareClient.search(any(SearchRequest.class))).thenReturn(searchResponse);
+    final SearchHits searchHits = mock(SearchHits.class);
+    when(searchResponse.getHits()).thenReturn(searchHits);
+    when(searchHits.getHits()).thenReturn(new SearchHit[] {});
     final List<String> authorizations = identityService.getProcessDefinitionsFromAuthorization();
 
     // given
-    final List<ProcessEntity> processes = processStore.getProcesses(authorizations);
+    final List<ProcessEntity> processes =
+        processStore.getProcesses(authorizations, DEFAULT_TENANT_IDENTIFIER);
     final List<ProcessEntity> processesWithCondition =
-        processStore.getProcesses("*", authorizations);
+        processStore.getProcesses("*", authorizations, DEFAULT_TENANT_IDENTIFIER);
 
     // then
-    assertTrue(processes.isEmpty());
-    assertTrue(processesWithCondition.isEmpty());
+    assertThat(processes).isEmpty();
+    assertThat(processesWithCondition).isEmpty();
   }
 
   @Test
@@ -183,9 +196,10 @@ class ProcessStoreTest {
     final List<String> authorizations = identityService.getProcessDefinitionsFromAuthorization();
 
     // given
-    final List<ProcessEntity> processes = processStore.getProcesses(authorizations);
+    final List<ProcessEntity> processes =
+        processStore.getProcesses(authorizations, DEFAULT_TENANT_IDENTIFIER);
     final List<ProcessEntity> processesWithCondition =
-        processStore.getProcesses("*", authorizations);
+        processStore.getProcesses("*", authorizations, DEFAULT_TENANT_IDENTIFIER);
 
     // then
     assertNotNull(processes);
@@ -202,9 +216,10 @@ class ProcessStoreTest {
     final List<String> authorizations = identityService.getProcessDefinitionsFromAuthorization();
 
     // given
-    final List<ProcessEntity> processes = processStore.getProcesses(authorizations);
+    final List<ProcessEntity> processes =
+        processStore.getProcesses(authorizations, DEFAULT_TENANT_IDENTIFIER);
     final List<ProcessEntity> processesWithCondition =
-        processStore.getProcesses("*", authorizations);
+        processStore.getProcesses("*", authorizations, DEFAULT_TENANT_IDENTIFIER);
 
     // then
     assertNotNull(processes);
@@ -265,6 +280,7 @@ class ProcessStoreTest {
         .thenReturn(processEntityMock);
     when(esClient.search(any(SearchRequest.class), any(RequestOptions.class)))
         .thenReturn(searchResponse);
+    when(tenantAwareClient.search(any(SearchRequest.class))).thenReturn(searchResponse);
     when(processIndex.getAlias()).thenReturn("index_alias");
   }
 
@@ -278,6 +294,7 @@ class ProcessStoreTest {
     when(searchHits.getHits()).thenReturn(new SearchHit[] {mock(SearchHit.class)});
     when(esClient.search(any(SearchRequest.class), any(RequestOptions.class)))
         .thenReturn(searchResponse);
+    when(tenantAwareClient.search(any(SearchRequest.class))).thenReturn(searchResponse);
     when(processIndex.getAlias()).thenReturn("index_alias");
   }
 }

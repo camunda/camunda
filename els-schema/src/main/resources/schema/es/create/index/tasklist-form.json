@@ -14,6 +14,9 @@
       "schema": {
         "type": "text",
         "index": false
+      },
+      "tenantId": {
+        "type": "keyword"
       }
     }
   }

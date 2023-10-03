@@ -6,11 +6,24 @@
  */
 package io.camunda.tasklist.store.elasticsearch;
 
-import static io.camunda.tasklist.schema.indices.VariableIndex.*;
+import static io.camunda.tasklist.schema.indices.VariableIndex.ID;
+import static io.camunda.tasklist.schema.indices.VariableIndex.NAME;
+import static io.camunda.tasklist.schema.indices.VariableIndex.PROCESS_INSTANCE_ID;
+import static io.camunda.tasklist.schema.indices.VariableIndex.SCOPE_FLOW_NODE_ID;
+import static io.camunda.tasklist.schema.indices.VariableIndex.VALUE;
 import static io.camunda.tasklist.util.CollectionUtil.isNotEmpty;
-import static io.camunda.tasklist.util.ElasticsearchUtil.*;
-import static java.util.stream.Collectors.*;
-import static org.elasticsearch.index.query.QueryBuilders.*;
+import static io.camunda.tasklist.util.ElasticsearchUtil.SCROLL_KEEP_ALIVE_MS;
+import static io.camunda.tasklist.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
+import static io.camunda.tasklist.util.ElasticsearchUtil.createSearchRequest;
+import static io.camunda.tasklist.util.ElasticsearchUtil.fromSearchHit;
+import static io.camunda.tasklist.util.ElasticsearchUtil.joinWithAnd;
+import static io.camunda.tasklist.util.ElasticsearchUtil.scroll;
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.mapping;
+import static java.util.stream.Collectors.toList;
+import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
+import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
@@ -25,9 +38,18 @@ import io.camunda.tasklist.schema.indices.FlowNodeInstanceIndex;
 import io.camunda.tasklist.schema.indices.VariableIndex;
 import io.camunda.tasklist.schema.templates.TaskVariableTemplate;
 import io.camunda.tasklist.store.VariableStore;
+import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
 import io.camunda.tasklist.util.ElasticsearchUtil;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -58,6 +80,7 @@ public class VariableStoreElasticSearch implements VariableStore {
   private static final Logger LOGGER = LoggerFactory.getLogger(VariableStoreElasticSearch.class);
 
   @Autowired private RestHighLevelClient esClient;
+  @Autowired private TenantAwareElasticsearchClient tenantAwareClient;
   @Autowired private FlowNodeInstanceIndex flowNodeInstanceIndex;
   @Autowired private VariableIndex variableIndex;
   @Autowired private TaskVariableTemplate taskVariableTemplate;
@@ -198,7 +221,7 @@ public class VariableStoreElasticSearch implements VariableStore {
     final SearchRequest request =
         new SearchRequest(variableIndex.getAlias()).source(searchSourceBuilder);
     try {
-      final SearchResponse response = esClient.search(request, RequestOptions.DEFAULT);
+      final SearchResponse response = tenantAwareClient.search(request);
       if (response.getHits().getTotalHits().value == 1) {
         return fromSearchHit(
             response.getHits().getHits()[0].getSourceAsString(),
@@ -224,7 +247,7 @@ public class VariableStoreElasticSearch implements VariableStore {
     final SearchRequest request =
         createSearchRequest(taskVariableTemplate).source(searchSourceBuilder);
     try {
-      final SearchResponse response = esClient.search(request, RequestOptions.DEFAULT);
+      final SearchResponse response = tenantAwareClient.search(request);
       if (response.getHits().getTotalHits().value == 1) {
         return fromSearchHit(
             response.getHits().getHits()[0].getSourceAsString(),

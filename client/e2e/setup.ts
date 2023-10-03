@@ -14,7 +14,18 @@ test.beforeEach(async ({context}) => {
       headers: {
         'Content-Type': 'text/javascript;charset=UTF-8',
       },
-      body: 'window.clientConfig = {"isEnterprise":false,"canLogout":true,"isLoginDelegated":false,"contextPath":"","organizationId":null,"clusterId":null,"stage":null,"mixpanelToken":null,"mixpanelAPIHost":null};',
+      body: `window.clientConfig = {
+        "isEnterprise":false,
+        "canLogout":true,
+        "isLoginDelegated":false,
+        "contextPath":"",
+        "organizationId":null,
+        "clusterId":null,
+        "stage":null,
+        "mixpanelToken":null,
+        "mixpanelAPIHost":null,
+        "isMultiTenancyEnabled": false
+      };`,
     }),
   );
 });

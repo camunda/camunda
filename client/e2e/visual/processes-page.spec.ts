@@ -7,6 +7,17 @@
 
 import {test, expect, Route, Request} from '@playwright/test';
 
+const MOCK_TENANTS = [
+  {
+    id: 'tenantA',
+    name: 'Tenant A',
+  },
+  {
+    id: 'tenantB',
+    name: 'Tenant B',
+  },
+];
+
 function mockResponses(
   processes: Array<unknown> = [],
 ): (router: Route, request: Request) => Promise<unknown> | unknown {
@@ -28,6 +39,7 @@ function mockResponses(
           salesPlanType: null,
           roles: null,
           c8Links: [],
+          tenants: MOCK_TENANTS,
         }),
         headers: {
           'content-type': 'application/json',
@@ -94,6 +106,57 @@ test.describe('processes page', () => {
     await page.addInitScript(() => {
       window.localStorage.setItem('hasConsentedToStartProcess', 'true');
     });
+    await page.route(
+      /^.*\/v1.*$/i,
+      mockResponses([
+        {
+          id: '2251799813685285',
+          name: 'multipleVersions',
+          bpmnProcessId: 'multipleVersions',
+          version: 1,
+          startEventFormId: null,
+        },
+        {
+          id: '2251799813685271',
+          name: 'Order process',
+          bpmnProcessId: 'orderProcess',
+          version: 1,
+          startEventFormId: null,
+        },
+      ]),
+    );
+
+    await page.goto('/processes', {
+      waitUntil: 'networkidle',
+    });
+
+    await expect(page).toHaveScreenshot();
+  });
+
+  test('should show a tenant dropdown', async ({page}) => {
+    await page.addInitScript(() => {
+      window.localStorage.setItem('hasConsentedToStartProcess', 'true');
+    });
+    await page.route('**/client-config.js', (route) =>
+      route.fulfill({
+        status: 200,
+        headers: {
+          'Content-Type': 'text/javascript;charset=UTF-8',
+        },
+        body: `window.clientConfig = {
+        "isEnterprise":false,
+        "canLogout":true,
+        "isLoginDelegated":false,
+        "contextPath":"",
+        "organizationId":null,
+        "clusterId":null,
+        "stage":null,
+        "mixpanelToken":null,
+        "mixpanelAPIHost":null,
+        "isMultiTenancyEnabled": true
+      };`,
+      }),
+    );
     await page.route(
       /^.*\/v1.*$/i,
       mockResponses([

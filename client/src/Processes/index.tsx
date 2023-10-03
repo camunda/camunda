@@ -32,10 +32,7 @@ import {tracking} from 'modules/tracking';
 import {useProcesses} from 'modules/queries/useProcesses';
 import {usePermissions} from 'modules/hooks/usePermissions';
 import {History} from './History';
-import {
-  IS_MULTI_TENANCY_ENABLED,
-  IS_PROCESS_INSTANCES_ENABLED,
-} from 'modules/featureFlags';
+import {IS_PROCESS_INSTANCES_ENABLED} from 'modules/featureFlags';
 import {useCurrentUser} from 'modules/queries/useCurrentUser';
 import {CurrentUser} from 'modules/types';
 import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
@@ -48,12 +45,17 @@ const Processes: React.FC = observer(() => {
   const {instance} = newProcessInstance;
   const {hasPermission} = usePermissions(['write']);
   const {data: currentUser} = useCurrentUser();
+  const hasMultipleTenants = (currentUser?.tenants.length ?? 0) > 1;
+  const defaultTenant = currentUser?.tenants[0];
   const location = useLocation();
   const navigate = useNavigate();
   const searchParams = new URLSearchParams(location.search);
+  const selectedTenantId = hasMultipleTenants
+    ? getParam('tenantId', searchParams) ?? defaultTenant?.id
+    : defaultTenant?.id;
   const {data, error, isInitialLoading} = useProcesses({
     query: getParam('search', searchParams),
-    tenantId: getParam('tenantId', searchParams),
+    tenantId: selectedTenantId,
   });
   function navigateSearchParams(params: {
     name: 'search' | 'tenantId';
@@ -74,7 +76,9 @@ const Processes: React.FC = observer(() => {
     });
   }
   const debouncedNavigate = useRef(debounce(navigateSearchParams, 500)).current;
-  const initialTenantId = useRef(getStateLocally('tenantId')).current;
+  const initialTenantId = useRef(
+    defaultTenant?.id ?? getStateLocally('tenantId'),
+  ).current;
   const [searchValue, setSearchValue] = useState(
     getParam('search', searchParams) ?? '',
   );
@@ -137,22 +141,27 @@ const Processes: React.FC = observer(() => {
     >
       <NewProcessInstanceTasksPolling />
       <Stack as={Content} gap={6}>
-        {IS_MULTI_TENANCY_ENABLED &&
-        window.clientConfig?.isMultiTenancyEnabled ? (
+        {window.clientConfig?.isMultiTenancyEnabled &&
+        currentUser !== undefined &&
+        hasMultipleTenants ? (
           <MultiTenancyContainer>
             <Dropdown<CurrentUser['tenants'][0]>
               key={`tenant-dropdown-${currentUser?.tenants.length ?? 0}`}
               id="tenantId"
               items={currentUser?.tenants ?? []}
-              itemToString={(item) => (item ? item.name : '')}
+              itemToString={(item) => (item ? `${item.name} - ${item.id}` : '')}
               label="Tenant"
               titleText="Tenant"
-              initialSelectedItem={currentUser?.tenants.find(({id}) =>
-                [
-                  getParam('tenantId', searchParams),
-                  getStateLocally('tenantId'),
-                ].includes(id),
-              )}
+              initialSelectedItem={
+                currentUser?.tenants.find(({id}) =>
+                  [
+                    getParam('tenantId', searchParams),
+                    getStateLocally('tenantId'),
+                  ]
+                    .filter((tenantId) => tenantId !== undefined)
+                    .includes(id),
+                ) ?? defaultTenant
+              }
               onChange={(event) => {
                 const id = event.selectedItem?.id;
 
@@ -167,7 +176,6 @@ const Processes: React.FC = observer(() => {
                 });
                 storeStateLocally('tenantId', id);
               }}
-              disabled={isInitialLoading || currentUser === undefined}
             />
             <Search {...processSearchProps} />
           </MultiTenancyContainer>
@@ -223,7 +231,7 @@ const Processes: React.FC = observer(() => {
                       !hasPermission
                     }
                     data-testid="process-tile"
-                    tenantId={getParam('tenantId', searchParams)}
+                    tenantId={selectedTenantId}
                   />
                 ))}
           </ProcessesContainer>

@@ -6,11 +6,16 @@
  */
 package io.camunda.tasklist.webapp.service;
 
+import static io.camunda.zeebe.client.api.command.CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.tuple;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.entities.DraftTaskVariableEntity;
@@ -42,7 +47,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.mockito.*;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -74,7 +83,10 @@ class VariableServiceTest {
                 .setName("varF")
                 .setValue("\"valueF_value_that_exceeds_variableSizeThreshold_limit\""));
     final TaskEntity task =
-        new TaskEntity().setId(taskId).setFlowNodeInstanceId(flowNodeInstanceId);
+        new TaskEntity()
+            .setId(taskId)
+            .setFlowNodeInstanceId(flowNodeInstanceId)
+            .setTenantId("tenant_a");
     when(taskStore.getTask(taskId)).thenReturn(task);
     final ImportProperties importProperties = mock(ImportProperties.class);
     when(tasklistProperties.getImporter()).thenReturn(importProperties);
@@ -97,23 +109,30 @@ class VariableServiceTest {
     final Collection<DraftTaskVariableEntity> variablesToPersist =
         draftTaskVariableCaptor.getValue();
     assertThat(variablesToPersist)
-        .extracting("id", "name", "value", "isPreview", "fullValue")
+        .extracting("id", "name", "value", "isPreview", "fullValue", "tenantId")
         .containsExactlyInAnyOrder(
-            tuple("taskId_123-varB", "varB", "\"valueB\"", false, "\"valueB\""),
+            tuple("taskId_123-varB", "varB", "\"valueB\"", false, "\"valueB\"", "tenant_a"),
             tuple(
                 "flowNodeInstanceId_456-varC",
                 "varC",
                 "\"updateValueC\"",
                 false,
-                "\"updateValueC\""),
+                "\"updateValueC\"",
+                "tenant_a"),
             tuple(
-                "taskId_123-varE", "varE", "\"valueE_duplicate2\"", false, "\"valueE_duplicate2\""),
+                "taskId_123-varE",
+                "varE",
+                "\"valueE_duplicate2\"",
+                false,
+                "\"valueE_duplicate2\"",
+                "tenant_a"),
             tuple(
                 "taskId_123-varF",
                 "varF",
                 "\"valueF_value_that_exceeds_var",
                 true,
-                "\"valueF_value_that_exceeds_variableSizeThreshold_limit\""));
+                "\"valueF_value_that_exceeds_variableSizeThreshold_limit\"",
+                "tenant_a"));
   }
 
   private void mockReturnOriginalVariables(List<VariableEntity> originalVariables) {
@@ -231,7 +250,12 @@ class VariableServiceTest {
 
     // then
     assertThat(result)
-        .isEqualTo(new VariableResponse().setId(variableId).setName("varA").setValue("123"));
+        .isEqualTo(
+            new VariableResponse()
+                .setId(variableId)
+                .setName("varA")
+                .setValue("123")
+                .setTenantId(DEFAULT_TENANT_IDENTIFIER));
     verify(draftVariableStore).getById(variableId);
     verify(variableStore, never()).getTaskVariable(any(), any());
   }
@@ -261,7 +285,8 @@ class VariableServiceTest {
                 .setId(variableId)
                 .setName("varB")
                 .setValue("123")
-                .setDraft(new VariableResponse.DraftVariableValue().setValue("557")));
+                .setDraft(new VariableResponse.DraftVariableValue().setValue("557"))
+                .setTenantId(DEFAULT_TENANT_IDENTIFIER));
     verify(draftVariableStore).getById(variableId);
     verify(variableStore, never()).getTaskVariable(any(), any());
   }
@@ -294,7 +319,8 @@ class VariableServiceTest {
                 .setValue(null)
                 .setDraft(
                     new VariableResponse.DraftVariableValue()
-                        .setValue("\"previewValue+fullValue\"")));
+                        .setValue("\"previewValue+fullValue\""))
+                .setTenantId(DEFAULT_TENANT_IDENTIFIER));
     verify(draftVariableStore).getById(variableId);
     verify(variableStore, never()).getTaskVariable(any(), any());
   }
@@ -325,7 +351,8 @@ class VariableServiceTest {
             new VariableResponse()
                 .setId(variableId)
                 .setName("arrayVar")
-                .setValue("[\"val1\", \"val2\", \"val3\"]"));
+                .setValue("[\"val1\", \"val2\", \"val3\"]")
+                .setTenantId(DEFAULT_TENANT_IDENTIFIER));
   }
 
   @Test
@@ -345,12 +372,22 @@ class VariableServiceTest {
   }
 
   @Test
+  void getVariableResponseWhenTaskNotFoundOrTenantWithoutAccess() {
+    when(taskStore.getTask("123")).thenThrow(NotFoundException.class);
+    assertThatThrownBy(() -> instance.getVariableSearchResponses("123", null))
+        .isInstanceOf(NotFoundException.class);
+  }
+
+  @Test
   void persistTaskVariablesWithoutDraftVariables() {
     // given
     final String taskId = "taskId_557";
     final String flowNodeInstanceId = "flowNodeInstanceId_456";
     final TaskEntity task =
-        new TaskEntity().setId(taskId).setFlowNodeInstanceId(flowNodeInstanceId);
+        new TaskEntity()
+            .setId(taskId)
+            .setFlowNodeInstanceId(flowNodeInstanceId)
+            .setTenantId("tenant_b");
     when(taskStore.getTask(taskId)).thenReturn(task);
     final ImportProperties importProperties = mock(ImportProperties.class);
     when(tasklistProperties.getImporter()).thenReturn(importProperties);
@@ -360,9 +397,9 @@ class VariableServiceTest {
     mockReturnOriginalVariables(
         List.of(
             createVariableEntity(
-                flowNodeInstanceId, "varA", "\"originalA\"", variableSizeThreshold),
+                flowNodeInstanceId, "varA", "\"originalA\"", variableSizeThreshold, "tenant_b"),
             createVariableEntity(
-                flowNodeInstanceId, "varB", "\"originalB\"", variableSizeThreshold)));
+                flowNodeInstanceId, "varB", "\"originalB\"", variableSizeThreshold, "tenant_b")));
 
     // when
     instance.persistTaskVariables(
@@ -377,11 +414,11 @@ class VariableServiceTest {
     verify(variableStore).persistTaskVariables(taskVariableCaptor.capture());
     final var variablesToPersist = taskVariableCaptor.getValue();
     assertThat(variablesToPersist)
-        .extracting("name", "value", "fullValue")
+        .extracting("name", "value", "fullValue", "tenantId")
         .containsExactlyInAnyOrder(
-            tuple("varA", "\"originalA\"", "\"originalA\""),
-            tuple("varB", "\"changedB\"", "\"changedB\""),
-            tuple("varC", "\"changedC\"", "\"changedC\""));
+            tuple("varA", "\"originalA\"", "\"originalA\"", "tenant_b"),
+            tuple("varB", "\"changedB\"", "\"changedB\"", "tenant_b"),
+            tuple("varC", "\"changedC\"", "\"changedC\"", "tenant_b"));
   }
 
   @Test
@@ -390,7 +427,10 @@ class VariableServiceTest {
     final String taskId = "taskId_557";
     final String flowNodeInstanceId = "flowNodeInstanceId_456";
     final TaskEntity task =
-        new TaskEntity().setId(taskId).setFlowNodeInstanceId(flowNodeInstanceId);
+        new TaskEntity()
+            .setId(taskId)
+            .setFlowNodeInstanceId(flowNodeInstanceId)
+            .setTenantId("tenant_c");
     when(taskStore.getTask(taskId)).thenReturn(task);
     final ImportProperties importProperties = mock(ImportProperties.class);
     when(tasklistProperties.getImporter()).thenReturn(importProperties);
@@ -400,9 +440,9 @@ class VariableServiceTest {
     mockReturnOriginalVariables(
         List.of(
             createVariableEntity(
-                flowNodeInstanceId, "varA", "\"originalA\"", variableSizeThreshold),
+                flowNodeInstanceId, "varA", "\"originalA\"", variableSizeThreshold, "tenant_c"),
             createVariableEntity(
-                flowNodeInstanceId, "varB", "\"originalB\"", variableSizeThreshold)));
+                flowNodeInstanceId, "varB", "\"originalB\"", variableSizeThreshold, "tenant_c")));
 
     when(draftVariableStore.getVariablesByTaskIdAndVariableNames(taskId, Collections.emptyList()))
         .thenReturn(
@@ -410,15 +450,18 @@ class VariableServiceTest {
                 new DraftTaskVariableEntity()
                     .setName("varB")
                     .setValue("\"draftB\"")
-                    .setFullValue("\"draftB\""),
+                    .setFullValue("\"draftB\"")
+                    .setTenantId("tenant_c"),
                 new DraftTaskVariableEntity()
                     .setName("varC")
                     .setValue("\"draftC\"")
-                    .setFullValue("\"draftC\""),
+                    .setFullValue("\"draftC\"")
+                    .setTenantId("tenant_c"),
                 new DraftTaskVariableEntity()
                     .setName("varD")
                     .setValue("\"draftD\"")
-                    .setFullValue("\"draftD\"")));
+                    .setFullValue("\"draftD\"")
+                    .setTenantId("tenant_c")));
 
     // when
     instance.persistTaskVariables(
@@ -434,18 +477,32 @@ class VariableServiceTest {
     verify(variableStore).persistTaskVariables(taskVariableCaptor.capture());
     final var variablesToPersist = taskVariableCaptor.getValue();
     assertThat(variablesToPersist)
-        .extracting("name", "value", "fullValue")
+        .extracting("name", "value", "fullValue", "tenantId")
         .containsExactlyInAnyOrder(
-            tuple("varA", "\"originalA\"", "\"originalA\""),
-            tuple("varB", "\"draftB\"", "\"draftB\""),
-            tuple("varC", "\"draftC\"", "\"draftC\""),
+            tuple("varA", "\"originalA\"", "\"originalA\"", "tenant_c"),
+            tuple("varB", "\"draftB\"", "\"draftB\"", "tenant_c"),
+            tuple("varC", "\"draftC\"", "\"draftC\"", "tenant_c"),
             tuple(
-                "varD", "\"changedD_longValueThatExceedL", "\"changedD_longValueThatExceedLimit\""),
-            tuple("varE", "\"changedE\"", "\"changedE\""));
+                "varD",
+                "\"changedD_longValueThatExceedL",
+                "\"changedD_longValueThatExceedLimit\"",
+                "tenant_c"),
+            tuple("varE", "\"changedE\"", "\"changedE\"", "tenant_c"));
+  }
+
+  @Test
+  void persistDraftVariablesWhenTaskDoesnExistOrWithoutTenantAccess() {
+    when(taskStore.getTask("123")).thenThrow(NotFoundException.class);
+    assertThatThrownBy(() -> instance.persistDraftTaskVariables("123", null))
+        .isInstanceOf(NotFoundApiException.class);
   }
 
   private static VariableEntity createVariableEntity(
-      String flowNodeInstanceId, String name, String value, int variableSizeThreshold) {
+      String flowNodeInstanceId,
+      String name,
+      String value,
+      int variableSizeThreshold,
+      String tenantId) {
     final VariableEntity entity =
         new VariableEntity()
             .setId(VariableEntity.getIdBy(flowNodeInstanceId, name))
@@ -460,6 +517,13 @@ class VariableServiceTest {
       entity.setValue(value);
     }
     entity.setFullValue(value);
+    entity.setTenantId(tenantId);
     return entity;
+  }
+
+  private static VariableEntity createVariableEntity(
+      String flowNodeInstanceId, String name, String value, int variableSizeThreshold) {
+    return createVariableEntity(
+        flowNodeInstanceId, name, value, variableSizeThreshold, DEFAULT_TENANT_IDENTIFIER);
   }
 }

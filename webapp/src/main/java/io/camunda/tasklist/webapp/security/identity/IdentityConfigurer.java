@@ -10,6 +10,7 @@ import io.camunda.identity.sdk.Identity;
 import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.webapp.security.TasklistProfileService;
+import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -27,11 +28,11 @@ public class IdentityConfigurer {
 
   @Bean
   public Identity getIdentity() {
-    final String activeProfile = environment.getActiveProfiles()[0];
+    final Set<String> activeProfiles = Set.of(environment.getActiveProfiles());
 
     final IdentityConfiguration ic;
 
-    if (activeProfile.equals(TasklistProfileService.IDENTITY_AUTH_PROFILE)) {
+    if (activeProfiles.contains(TasklistProfileService.IDENTITY_AUTH_PROFILE)) {
       ic =
           new IdentityConfiguration(
               tasklistProperties.getIdentity().getBaseUrl(),

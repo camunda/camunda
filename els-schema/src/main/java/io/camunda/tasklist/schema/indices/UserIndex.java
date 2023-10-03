@@ -19,6 +19,7 @@ public class UserIndex extends AbstractIndexDescriptor implements Prio4Backup {
 
   public static final String ROLES = "roles";
   private static final String INDEX_NAME = "user";
+  private static final String INDEX_VERSION = "1.4.0";
 
   @Override
   public String getIndexName() {
@@ -27,6 +28,6 @@ public class UserIndex extends AbstractIndexDescriptor implements Prio4Backup {
 
   @Override
   public String getVersion() {
-    return "1.4.0";
+    return INDEX_VERSION;
   }
 }

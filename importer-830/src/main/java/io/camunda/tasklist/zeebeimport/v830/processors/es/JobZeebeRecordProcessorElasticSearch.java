@@ -10,14 +10,15 @@ import static io.camunda.tasklist.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
 import static io.camunda.tasklist.zeebeimport.v830.record.Intent.CANCELED;
 import static io.camunda.tasklist.zeebeimport.v830.record.Intent.COMPLETED;
 import static io.camunda.tasklist.zeebeimport.v830.record.Intent.CREATED;
-import static io.camunda.zeebe.protocol.Protocol.*;
+import static io.camunda.zeebe.protocol.Protocol.USER_TASK_ASSIGNEE_HEADER_NAME;
+import static io.camunda.zeebe.protocol.Protocol.USER_TASK_CANDIDATE_GROUPS_HEADER_NAME;
+import static io.camunda.zeebe.protocol.Protocol.USER_TASK_CANDIDATE_USERS_HEADER_NAME;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.entities.TaskState;
 import io.camunda.tasklist.exceptions.PersistenceException;
-import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.templates.TaskTemplate;
 import io.camunda.tasklist.util.DateUtil;
 import io.camunda.tasklist.zeebeimport.v830.record.Intent;
@@ -47,10 +48,9 @@ public class JobZeebeRecordProcessorElasticSearch {
 
   @Autowired private TaskTemplate taskTemplate;
 
-  @Autowired private TasklistProperties tasklistProperties;
-
-  public void processJobRecord(Record record, BulkRequest bulkRequest) throws PersistenceException {
-    final JobRecordValueImpl recordValue = (JobRecordValueImpl) record.getValue();
+  public void processJobRecord(Record<JobRecordValueImpl> record, BulkRequest bulkRequest)
+      throws PersistenceException {
+    final JobRecordValueImpl recordValue = record.getValue();
 
     if (recordValue.getType().equals(Protocol.USER_TASK_JOB_TYPE)) {
       if (record.getIntent() != null
@@ -61,7 +61,8 @@ public class JobZeebeRecordProcessorElasticSearch {
     // else skip task
   }
 
-  private UpdateRequest persistTask(Record record, JobRecordValueImpl recordValue)
+  private UpdateRequest persistTask(
+      Record<JobRecordValueImpl> record, JobRecordValueImpl recordValue)
       throws PersistenceException {
     final String processDefinitionId = String.valueOf(recordValue.getProcessDefinitionKey());
     final TaskEntity entity =
@@ -73,7 +74,8 @@ public class JobZeebeRecordProcessorElasticSearch {
             .setFlowNodeInstanceId(String.valueOf(recordValue.getElementInstanceKey()))
             .setProcessInstanceId(String.valueOf(recordValue.getProcessInstanceKey()))
             .setBpmnProcessId(recordValue.getBpmnProcessId())
-            .setProcessDefinitionId(processDefinitionId);
+            .setProcessDefinitionId(processDefinitionId)
+            .setTenantId(recordValue.getTenantId());
 
     final String dueDate =
         recordValue.getCustomHeaders().get(Protocol.USER_TASK_DUE_DATE_HEADER_NAME);

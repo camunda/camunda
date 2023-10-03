@@ -93,7 +93,10 @@ public class TasklistZeebeRuleElasticSearch extends TasklistZeebeRule {
         .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_PREFIX", prefix)
         .withEnv(
             "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME",
-            "io.camunda.zeebe.exporter.ElasticsearchExporter");
+            "io.camunda.zeebe.exporter.ElasticsearchExporter")
+        .withEnv(
+            "ZEEBE_BROKER_GATEWAY_MULTITENANCY_ENABLED",
+            String.valueOf(tasklistProperties.getMultiTenancy().isEnabled()));
     zeebeContainer.start();
 
     client =

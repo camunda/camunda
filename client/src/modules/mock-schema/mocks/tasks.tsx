@@ -7,6 +7,7 @@
 
 import {Task} from 'modules/types';
 import {currentUser} from './current-user';
+import {DEFAULT_TENANT_ID} from 'modules/constants/multiTenancy';
 
 const tasks: Task[] = [
   {
@@ -27,7 +28,7 @@ const tasks: Task[] = [
     dueDate: null,
     candidateGroups: [],
     candidateUsers: [],
-    tenantId: '<default>',
+    tenantId: DEFAULT_TENANT_ID,
   },
   {
     id: '1',
@@ -47,7 +48,7 @@ const tasks: Task[] = [
     dueDate: null,
     candidateGroups: [],
     candidateUsers: [],
-    tenantId: '<default>',
+    tenantId: DEFAULT_TENANT_ID,
   },
   {
     id: '2',
@@ -67,7 +68,7 @@ const tasks: Task[] = [
     dueDate: null,
     candidateGroups: [],
     candidateUsers: [],
-    tenantId: '<default>',
+    tenantId: DEFAULT_TENANT_ID,
   },
 ];
 
@@ -106,7 +107,7 @@ const generateTask = (id: string, name?: string): Task => {
     formKey: null,
     candidateGroups: [],
     candidateUsers: [],
-    tenantId: '<default>',
+    tenantId: DEFAULT_TENANT_ID,
   };
 };
 

@@ -15,9 +15,15 @@ import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.schema.templates.DraftTaskVariableTemplate;
 import io.camunda.tasklist.store.DraftVariableStore;
+import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
 import io.camunda.tasklist.util.ElasticsearchUtil;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -47,6 +53,7 @@ public class DraftVariablesStoreElasticSearch implements DraftVariableStore {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(DraftVariablesStoreElasticSearch.class);
 
+  @Autowired private TenantAwareElasticsearchClient tenantAwareClient;
   @Autowired private RestHighLevelClient esClient;
   @Autowired private DraftTaskVariableTemplate draftTaskVariableTemplate;
   @Autowired private ObjectMapper objectMapper;
@@ -158,7 +165,7 @@ public class DraftVariablesStoreElasticSearch implements DraftVariableStore {
       sourceBuilder.query(QueryBuilders.termQuery(DraftTaskVariableTemplate.ID, variableId));
       searchRequest.source(sourceBuilder);
 
-      final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      final SearchResponse searchResponse = tenantAwareClient.search(searchRequest);
 
       final SearchHits hits = searchResponse.getHits();
       if (hits.getTotalHits().value == 0) {

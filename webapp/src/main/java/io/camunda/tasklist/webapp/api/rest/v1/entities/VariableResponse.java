@@ -20,6 +20,8 @@ public class VariableResponse {
 
   private DraftVariableValue draft;
 
+  private String tenantId;
+
   public String getId() {
     return id;
   }
@@ -62,13 +64,38 @@ public class VariableResponse {
     return this;
   }
 
-  @Override
-  public String toString() {
-    return new StringJoiner(", ", VariableResponse.class.getSimpleName() + "[", "]")
-        .add("id='" + id + "'")
-        .add("name='" + name + "'")
-        .add("value='" + value + "'")
-        .toString();
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  public VariableResponse setTenantId(String tenantId) {
+    this.tenantId = tenantId;
+    return this;
+  }
+
+  public static VariableResponse createFrom(VariableEntity variableEntity) {
+    return new VariableResponse()
+        .setId(variableEntity.getId())
+        .setName(variableEntity.getName())
+        .setValue(variableEntity.getFullValue())
+        .setTenantId(variableEntity.getTenantId());
+  }
+
+  public static VariableResponse createFrom(DraftTaskVariableEntity draftTaskVariable) {
+    return new VariableResponse()
+        .setId(draftTaskVariable.getId())
+        .setName(draftTaskVariable.getName())
+        .setTenantId(draftTaskVariable.getTenantId())
+        .setDraft(
+            new VariableResponse.DraftVariableValue().setValue(draftTaskVariable.getFullValue()));
+  }
+
+  public static VariableResponse createFrom(TaskVariableEntity variableEntity) {
+    return new VariableResponse()
+        .setId(variableEntity.getId())
+        .setName(variableEntity.getName())
+        .setValue(variableEntity.getFullValue())
+        .setTenantId(variableEntity.getTenantId());
   }
 
   @Override
@@ -83,34 +110,33 @@ public class VariableResponse {
     return Objects.equals(id, that.id)
         && Objects.equals(name, that.name)
         && Objects.equals(value, that.value)
-        && Objects.equals(draft, that.draft);
+        && Objects.equals(draft, that.draft)
+        && Objects.equals(tenantId, that.tenantId);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, name, value, draft);
+    return Objects.hash(id, name, value, draft, tenantId);
   }
 
-  public static VariableResponse createFrom(VariableEntity variableEntity) {
-    return new VariableResponse()
-        .setId(variableEntity.getId())
-        .setName(variableEntity.getName())
-        .setValue(variableEntity.getFullValue());
-  }
-
-  public static VariableResponse createFrom(DraftTaskVariableEntity draftTaskVariable) {
-    return new VariableResponse()
-        .setId(draftTaskVariable.getId())
-        .setName(draftTaskVariable.getName())
-        .setDraft(
-            new VariableResponse.DraftVariableValue().setValue(draftTaskVariable.getFullValue()));
-  }
-
-  public static VariableResponse createFrom(TaskVariableEntity variableEntity) {
-    return new VariableResponse()
-        .setId(variableEntity.getId())
-        .setName(variableEntity.getName())
-        .setValue(variableEntity.getFullValue());
+  @Override
+  public String toString() {
+    return "VariableResponse{"
+        + "id='"
+        + id
+        + '\''
+        + ", name='"
+        + name
+        + '\''
+        + ", value='"
+        + value
+        + '\''
+        + ", draft="
+        + draft
+        + ", tenantId='"
+        + tenantId
+        + '\''
+        + '}';
   }
 
   public static class DraftVariableValue {

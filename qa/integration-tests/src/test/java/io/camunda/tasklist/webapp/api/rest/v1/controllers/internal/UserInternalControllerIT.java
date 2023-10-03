@@ -37,12 +37,13 @@ public class UserInternalControllerIT extends TasklistZeebeIntegrationTest {
 
   @Test
   public void getCurrentUser() {
-    // give
+    // given
     final var user =
         new UserDTO()
             .setUserId("ivan4000")
             .setDisplayName("ivan4000")
-            .setPermissions(List.of(Permission.READ));
+            .setPermissions(List.of(Permission.READ))
+            .setTenants(List.of());
     setCurrentUser(user);
 
     // when

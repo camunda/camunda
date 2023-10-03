@@ -6,6 +6,7 @@
  */
 package io.camunda.tasklist.webapp.service;
 
+import static io.camunda.zeebe.client.api.command.CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
@@ -125,7 +126,11 @@ class TaskServiceTest {
     // Given
     final String taskId = "123";
     final var providedTask = new TaskEntity().setId(taskId).setState(TaskState.CREATED);
-    final var expectedTask = new TaskDTO().setId(taskId).setTaskState(TaskState.CREATED);
+    final var expectedTask =
+        new TaskDTO()
+            .setId(taskId)
+            .setTaskState(TaskState.CREATED)
+            .setTenantId(DEFAULT_TENANT_IDENTIFIER);
     when(taskStore.getTask(taskId)).thenReturn(providedTask);
 
     // When

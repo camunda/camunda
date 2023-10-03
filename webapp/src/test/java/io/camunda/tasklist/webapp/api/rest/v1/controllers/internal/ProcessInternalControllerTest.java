@@ -6,6 +6,7 @@
  */
 package io.camunda.tasklist.webapp.api.rest.v1.controllers.internal;
 
+import static io.camunda.zeebe.client.api.command.CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -29,8 +30,10 @@ import io.camunda.tasklist.webapp.api.rest.v1.entities.StartProcessRequest;
 import io.camunda.tasklist.webapp.graphql.entity.ProcessInstanceDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
 import io.camunda.tasklist.webapp.rest.exception.Error;
+import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService;
+import io.camunda.tasklist.webapp.security.tenant.TenantService;
 import io.camunda.tasklist.webapp.service.ProcessService;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -59,6 +62,8 @@ class ProcessInternalControllerTest {
   @Mock private ProcessInstanceStore processInstanceStore;
   @Mock private TasklistProperties tasklistProperties;
   @Mock private IdentityAuthorizationService identityAuthorizationService;
+  @Mock private TenantService tenantService;
+
   @InjectMocks private ProcessInternalController instance;
 
   private MockMvc mockMvc;
@@ -87,14 +92,15 @@ class ProcessInternalControllerTest {
             .setName("Register car for rent")
             .setBpmnProcessId("registerCarForRent")
             .setVersion(1)
-            .setStartEventFormId("task");
+            .setStartEventFormId("task")
+            .setTenantId(DEFAULT_TENANT_IDENTIFIER);
     when(identityAuthorizationService.getProcessDefinitionsFromAuthorization())
         .thenReturn(new ArrayList<>());
     when(processStore.getProcesses(
-            query, identityAuthorizationService.getProcessDefinitionsFromAuthorization()))
+            query, identityAuthorizationService.getProcessDefinitionsFromAuthorization(), null))
         .thenReturn(List.of(providedProcessEntity));
     when(formStore.getForm("userTaskForm_111", "2251799813685257"))
-        .thenReturn(new FormEntity().setId("task"));
+        .thenReturn(new FormEntity().setId("task").setBpmnId("task"));
 
     // when
     final var responseAsString =
@@ -126,7 +132,7 @@ class ProcessInternalControllerTest {
 
     final StartProcessRequest startProcessRequest =
         new StartProcessRequest().setVariables(variables);
-    when(processService.startProcessInstance(processDefinitionKey, variables))
+    when(processService.startProcessInstance(processDefinitionKey, variables, null))
         .thenReturn(processInstanceDTO);
 
     // when
@@ -151,6 +157,35 @@ class ProcessInternalControllerTest {
 
     // then
     assertThat(result).isEqualTo(processInstanceDTO);
+  }
+
+  @Test
+  void startProcessInstanceInvalidTenantId() throws Exception {
+    final var processDefinitionKey = "key1";
+    final List<VariableInputDTO> variables = new ArrayList<VariableInputDTO>();
+    variables.add(new VariableInputDTO().setName("testVar").setValue("testValue"));
+    variables.add(new VariableInputDTO().setName("testVar2").setValue("testValue2"));
+    final var processInstanceDTO = new ProcessInstanceDTO().setId(124L);
+    final var tenantId = "TenantA";
+
+    final StartProcessRequest startProcessRequest =
+        new StartProcessRequest().setVariables(variables);
+    when(processService.startProcessInstance(processDefinitionKey, variables, tenantId))
+        .thenThrow(new InvalidRequestException("Invalid tenant"));
+    final var responseAsString =
+        mockMvc
+            .perform(
+                patch(
+                        TasklistURIs.PROCESSES_URL_V1.concat(
+                            "/{processDefinitionKey}/start?tenantId={tenantId}"),
+                        processDefinitionKey,
+                        tenantId)
+                    .content(CommonUtils.OBJECT_MAPPER.writeValueAsString(startProcessRequest))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .accept(MediaType.APPLICATION_JSON)
+                    .characterEncoding(StandardCharsets.UTF_8.name()))
+            .andDo(print())
+            .andExpect(status().is4xxClientError());
   }
 
   @Test
@@ -233,7 +268,8 @@ class ProcessInternalControllerTest {
         new ProcessPublicEndpointsResponse()
             .setEndpoint(TasklistURIs.START_PUBLIC_PROCESS.concat("publicProcess"))
             .setBpmnProcessId("publicProcess")
-            .setProcessDefinitionKey("1");
+            .setProcessDefinitionKey("1")
+            .setTenantId(DEFAULT_TENANT_IDENTIFIER);
 
     final var expectedFeatureFlag = new FeatureFlagProperties().setProcessPublicEndpoints(true);
 
@@ -278,9 +314,12 @@ class ProcessInternalControllerTest {
         new ProcessPublicEndpointsResponse()
             .setEndpoint(TasklistURIs.START_PUBLIC_PROCESS.concat("publicProcess"))
             .setBpmnProcessId("publicProcess")
-            .setProcessDefinitionKey("1");
+            .setProcessDefinitionKey("1")
+            .setTenantId(DEFAULT_TENANT_IDENTIFIER);
 
-    when(processStore.getProcessByBpmnProcessId(processDefinitionKey)).thenReturn(processEntity);
+    when(tenantService.isTenantValid(null)).thenReturn(true);
+    when(processStore.getProcessByBpmnProcessId(processDefinitionKey, null))
+        .thenReturn(processEntity);
 
     // when
     final var responseAsString =
@@ -302,5 +341,35 @@ class ProcessInternalControllerTest {
 
     // then
     assertThat(result).isEqualTo(expectedEndpointsResponse);
+  }
+
+  @Test
+  void getPublicEndpointsByBpmnProcessIdWhenTenantIdIsInvalid() throws Exception {
+    // given
+    final String processDefinitionKey = "publicProcess";
+
+    when(tenantService.isTenantValid("tenant_a")).thenReturn(false);
+
+    // when
+    final var responseAsString =
+        mockMvc
+            .perform(
+                get(
+                        TasklistURIs.PROCESSES_URL_V1.concat(
+                            "/{processDefinitionKey}/publicEndpoint"),
+                        processDefinitionKey)
+                    .queryParam("tenantId", "tenant_a"))
+            .andDo(print())
+            .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+            .andExpect(status().isBadRequest())
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+
+    final var result = CommonUtils.OBJECT_MAPPER.readValue(responseAsString, Error.class);
+
+    // then
+    assertThat(result.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
+    assertThat(result.getMessage()).isEqualTo("Invalid Tenant");
   }
 }

@@ -18,7 +18,6 @@ import io.camunda.tasklist.zeebeimport.util.XMLUtil;
 import io.camunda.tasklist.zeebeimport.v830.record.value.deployment.DeployedProcessImpl;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
-import io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -27,8 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.xcontent.XContentType;
@@ -57,22 +54,26 @@ public class ProcessZeebeRecordProcessorElasticSearch {
 
   @Autowired private XMLUtil xmlUtil;
 
-  public void processDeploymentRecord(Record record, BulkRequest bulkRequest)
+  public void processDeploymentRecord(Record<DeployedProcessImpl> record, BulkRequest bulkRequest)
       throws PersistenceException {
     final String intentStr = record.getIntent().name();
 
     if (STATES.contains(intentStr)) {
-      final DeployedProcessImpl recordValue = (DeployedProcessImpl) record.getValue();
+      final DeployedProcessImpl recordValue = record.getValue();
 
       final Map<String, String> userTaskForms = new HashMap<>();
-      persistProcess(
-          recordValue, bulkRequest, (formKey, schema) -> userTaskForms.put(formKey, schema));
+      persistProcess(recordValue, bulkRequest, userTaskForms::put);
 
       final List<PersistenceException> exceptions = new ArrayList<>();
       userTaskForms.forEach(
           (formKey, schema) -> {
             try {
-              persistForm(recordValue.getProcessDefinitionKey(), formKey, schema, bulkRequest);
+              persistForm(
+                  recordValue.getProcessDefinitionKey(),
+                  formKey,
+                  schema,
+                  bulkRequest,
+                  recordValue.getTenantId());
             } catch (PersistenceException e) {
               exceptions.add(e);
             }
@@ -111,30 +112,30 @@ public class ProcessZeebeRecordProcessorElasticSearch {
     processEntity.setKey(process.getProcessDefinitionKey());
     processEntity.setBpmnProcessId(process.getBpmnProcessId());
     processEntity.setVersion(process.getVersion());
+    processEntity.setTenantId(process.getTenantId());
 
     final byte[] byteArray = process.getResource();
 
     xmlUtil.extractDiagramData(
         byteArray,
-        name -> processEntity.setName(name),
+        processEntity::setName,
         flowNode -> processEntity.getFlowNodes().add(flowNode),
         userTaskFormCollector,
-        formKey -> processEntity.setFormKey(formKey),
-        startedByForm -> processEntity.setStartedByForm(startedByForm));
+        processEntity::setFormKey,
+        processEntity::setStartedByForm);
 
     return processEntity;
   }
 
-  private Map<String, DeploymentResource> resourceToMap(List<DeploymentResource> resources) {
-    return resources.stream()
-        .collect(Collectors.toMap(DeploymentResource::getResourceName, Function.identity()));
-  }
-
   private void persistForm(
-      long processDefinitionKey, String formKey, String schema, BulkRequest bulkRequest)
+      long processDefinitionKey,
+      String formKey,
+      String schema,
+      BulkRequest bulkRequest,
+      String tenantId)
       throws PersistenceException {
     final FormEntity formEntity =
-        new FormEntity(String.valueOf(processDefinitionKey), formKey, schema);
+        new FormEntity(String.valueOf(processDefinitionKey), formKey, schema, tenantId);
     LOGGER.debug("Form: key {}", formKey);
     try {
       bulkRequest.add(

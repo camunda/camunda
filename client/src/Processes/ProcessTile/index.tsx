@@ -19,7 +19,6 @@ import {useStartProcess} from 'modules/mutations/useStartProcess';
 import {Process, Task} from 'modules/types';
 import {FormModal} from './FormModal';
 import {getProcessDisplayName} from 'modules/utils/getProcessDisplayName';
-import {IS_MULTI_TENANCY_ENABLED} from 'modules/featureFlags';
 
 type LoadingStatus = InlineLoadingStatus | 'active-tasks';
 
@@ -51,6 +50,9 @@ function getAsyncButtonDescription(status: LoadingStatus) {
   return '';
 }
 
+const isMultiTenancyEnabled =
+  window.clientConfig?.isMultiTenancyEnabled ?? false;
+
 type Props = {
   process: Process;
   className?: string;
@@ -73,8 +75,6 @@ const ProcessTile: React.FC<Props> = ({
   const displayName = getProcessDisplayName(process);
   const navigate = useNavigate();
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
-  const isMultiTenancyEnabled =
-    IS_MULTI_TENANCY_ENABLED && window.clientConfig?.isMultiTenancyEnabled;
 
   useEffect(() => {
     function handleMutationSuccess() {

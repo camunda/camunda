@@ -9,8 +9,11 @@ package io.camunda.tasklist.store.elasticsearch;
 import static org.assertj.core.api.Assertions.as;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.InstanceOfAssertFactories.STRING;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -19,15 +22,17 @@ import io.camunda.tasklist.entities.TaskState;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.queries.TaskQuery;
 import io.camunda.tasklist.schema.templates.TaskTemplate;
+import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
 import io.camunda.tasklist.views.TaskSearchView;
+import java.io.IOException;
 import java.util.List;
+import java.util.Set;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -44,7 +49,7 @@ class TaskStoreElasticSearchTest {
 
   @Captor private ArgumentCaptor<SearchRequest> searchRequestCaptor;
 
-  @Mock private RestHighLevelClient esClient;
+  @Mock private TenantAwareElasticsearchClient tenantAwareClient;
 
   @Spy private TaskTemplate taskTemplate = new TaskTemplate();
 
@@ -70,8 +75,7 @@ class TaskStoreElasticSearchTest {
     final TaskQuery taskQuery = new TaskQuery().setPageSize(50).setState(taskState);
 
     final SearchResponse mockedResponse = mock();
-    when(esClient.search(searchRequestCaptor.capture(), eq(RequestOptions.DEFAULT)))
-        .thenReturn(mockedResponse);
+    when(tenantAwareClient.search(searchRequestCaptor.capture())).thenReturn(mockedResponse);
 
     final SearchHits mockedHints = mock();
     when(mockedResponse.getHits()).thenReturn(mockedHints);
@@ -92,6 +96,35 @@ class TaskStoreElasticSearchTest {
               assertThat(index).startsWith(expectedIndexPrefix);
               assertThat(index).endsWith(expectedIndexSuffix);
             });
+    assertThat(result).hasSize(1);
+    verify(tenantAwareClient).search(any());
+  }
+
+  @Test
+  void queryTasksWithProvidedTenantIds() throws IOException {
+    final TaskQuery taskQuery =
+        new TaskQuery()
+            .setTenantIds(new String[] {"tenant_a", "tenant_b"})
+            .setPageSize(50)
+            .setState(TaskState.CREATED);
+
+    final SearchResponse mockedResponse = mock();
+    when(tenantAwareClient.searchByTenantIds(any(), eq(Set.of("tenant_a", "tenant_b"))))
+        .thenReturn(mockedResponse);
+
+    final SearchHits mockedHints = mock();
+    when(mockedResponse.getHits()).thenReturn(mockedHints);
+
+    final SearchHit mockedHit = mock();
+    when(mockedHints.getHits()).thenReturn(new SearchHit[] {mockedHit});
+
+    when(mockedHit.getSourceAsString()).thenReturn(getTaskExampleAsString(TaskState.CREATED));
+
+    // When
+    final List<TaskSearchView> result = instance.getTasks(taskQuery);
+
+    // Then
+    verify(tenantAwareClient, never()).search(any());
     assertThat(result).hasSize(1);
   }
 

@@ -17,6 +17,9 @@
 			},
 			"state": {
 				"type": "keyword"
+			},
+			"tenantId": {
+				"type": "keyword"
 			}
 		}
 	}

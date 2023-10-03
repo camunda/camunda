@@ -29,6 +29,7 @@ public class TaskSearchRequest {
   private DateFilter followUpDate;
   private DateFilter dueDate;
   private TaskByVariables[] taskVariables;
+  private String[] tenantIds;
   private TaskOrderBy[] sort;
   private String[] searchAfter;
   private String[] searchAfterOrEqual;
@@ -152,6 +153,15 @@ public class TaskSearchRequest {
     return this;
   }
 
+  public String[] getTenantIds() {
+    return tenantIds;
+  }
+
+  public TaskSearchRequest setTenantIds(String[] tenantIds) {
+    this.tenantIds = tenantIds;
+    return this;
+  }
+
   public String[] getSearchAfter() {
     return searchAfter;
   }
@@ -209,6 +219,7 @@ public class TaskSearchRequest {
         && Objects.equals(followUpDate, that.followUpDate)
         && Objects.equals(dueDate, that.dueDate)
         && Arrays.equals(taskVariables, that.taskVariables)
+        && Arrays.equals(tenantIds, that.tenantIds)
         && Arrays.equals(sort, that.sort)
         && Arrays.equals(searchAfter, that.searchAfter)
         && Arrays.equals(searchAfterOrEqual, that.searchAfterOrEqual)
@@ -231,6 +242,8 @@ public class TaskSearchRequest {
             pageSize,
             followUpDate,
             dueDate);
+    result = 31 * result + Arrays.hashCode(tenantIds);
+    result = 31 * result + Arrays.hashCode(taskVariables);
     result = 31 * result + Arrays.hashCode(sort);
     result = 31 * result + Arrays.hashCode(searchAfter);
     result = 31 * result + Arrays.hashCode(searchAfterOrEqual);
@@ -254,6 +267,7 @@ public class TaskSearchRequest {
         .add("followUpDate=" + followUpDate)
         .add("dueDate=" + dueDate)
         .add("taskVariables=" + Arrays.toString(taskVariables))
+        .add("tenantIds=" + Arrays.toString(tenantIds))
         .add("sort=" + Arrays.toString(sort))
         .add("searchAfter=" + Arrays.toString(searchAfter))
         .add("searchAfterOrEqual=" + Arrays.toString(searchAfterOrEqual))

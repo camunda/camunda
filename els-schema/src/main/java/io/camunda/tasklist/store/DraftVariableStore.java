@@ -15,10 +15,10 @@ public interface DraftVariableStore {
 
   void createOrUpdate(Collection<DraftTaskVariableEntity> draftVariables);
 
-  public long deleteAllByTaskId(String taskId);
+  long deleteAllByTaskId(String taskId);
 
-  public List<DraftTaskVariableEntity> getVariablesByTaskIdAndVariableNames(
+  List<DraftTaskVariableEntity> getVariablesByTaskIdAndVariableNames(
       String taskId, List<String> variableNames);
 
-  public Optional<DraftTaskVariableEntity> getById(String variableId);
+  Optional<DraftTaskVariableEntity> getById(String variableId);
 }

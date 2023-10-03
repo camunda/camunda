@@ -89,7 +89,7 @@ public class TestContainerUtil {
   private GenericContainer keycloakContainer;
   private PostgreSQLContainer postgreSQLContainer;
 
-  public void startIdentity(TestContext testContext, String version) {
+  public void startIdentity(TestContext testContext, String version, boolean multiTenancyEnabled) {
     startKeyCloak(testContext);
     startPostgres(testContext);
 
@@ -126,6 +126,7 @@ public class TestContainerUtil {
     identityContainer.withEnv("KEYCLOAK_USERS_0_ROLES_2", KEYCLOAK_USERS_0_ROLES_2);
     identityContainer.withEnv("RESOURCE_PERMISSIONS_ENABLED", "true");
     identityContainer.withEnv("IDENTITY_CLIENT_SECRET", IDENTITY_CLIENT_SECRET);
+    identityContainer.withEnv("MULTITENANCY_ENABLED", String.valueOf(multiTenancyEnabled));
 
     identityContainer.start();
 

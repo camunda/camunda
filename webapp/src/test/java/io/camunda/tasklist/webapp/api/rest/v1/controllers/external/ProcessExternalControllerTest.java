@@ -25,14 +25,17 @@ import io.camunda.tasklist.webapp.api.rest.v1.entities.StartProcessRequest;
 import io.camunda.tasklist.webapp.graphql.entity.ProcessInstanceDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
 import io.camunda.tasklist.webapp.rest.exception.Error;
+import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
+import io.camunda.tasklist.webapp.security.tenant.TenantService;
 import io.camunda.tasklist.webapp.service.ProcessService;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.RandomUtils;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -56,6 +59,8 @@ public class ProcessExternalControllerTest {
   @Mock private ProcessService processService;
 
   @Mock private FormStore formStore;
+
+  @Mock private TenantService tenantService;
 
   @InjectMocks private ProcessExternalController instance;
 
@@ -130,10 +135,7 @@ public class ProcessExternalControllerTest {
                 TasklistURIs.EXTERNAL_PROCESS_URL_V1.concat("/{bpmnProcessId}/form"),
                 bpmnProcessId))
         .andDo(print())
-        .andExpect(status().is4xxClientError())
-        .andReturn()
-        .getResponse()
-        .getContentAsString();
+        .andExpect(status().is4xxClientError());
   }
 
   @Test
@@ -212,15 +214,15 @@ public class ProcessExternalControllerTest {
         new StartProcessRequest().setVariables(variables);
 
     if (isProcessThatDoesNotExist) {
-      when(processStore.getProcessByBpmnProcessId(bpmnProcessId))
+      when(processStore.getProcessByBpmnProcessId(bpmnProcessId, null))
           .thenThrow(new NotFoundApiException("Could not find process with id."));
     } else {
-      when(processStore.getProcessByBpmnProcessId(processEntity.getBpmnProcessId()))
+      when(processStore.getProcessByBpmnProcessId(processEntity.getBpmnProcessId(), null))
           .thenReturn(processEntity);
     }
 
     if (providedProcessInstanceDTO != null) {
-      when(processService.startProcessInstance(bpmnProcessId, variables))
+      when(processService.startProcessInstance(bpmnProcessId, variables, null))
           .thenReturn(providedProcessInstanceDTO);
     }
 
@@ -251,5 +253,22 @@ public class ProcessExternalControllerTest {
       final var result = CommonUtils.OBJECT_MAPPER.readValue(responseAsString, Error.class);
       assertThat(result.getStatus()).isEqualTo(expectedHttpStatus.value());
     }
+  }
+
+  @Test
+  void startProcessWithInvalidTenant() {
+    final String bpmnProcessId = "bpmnProcessId";
+    final String tenantId = "TenantA";
+    final List<String> tenantIds = new ArrayList<String>();
+    tenantIds.add("TenantB");
+    tenantIds.add("TenantC");
+    final TenantService.AuthenticatedTenants authenticatedTenants =
+        TenantService.AuthenticatedTenants.assignedTenants(tenantIds);
+
+    when(tenantService.isMultiTenancyEnabled()).thenReturn(true);
+    when(tenantService.getAuthenticatedTenants()).thenReturn(authenticatedTenants);
+
+    Assertions.assertThatThrownBy(() -> instance.startProcess(bpmnProcessId, tenantId, null))
+        .isInstanceOf(InvalidRequestException.class);
   }
 }

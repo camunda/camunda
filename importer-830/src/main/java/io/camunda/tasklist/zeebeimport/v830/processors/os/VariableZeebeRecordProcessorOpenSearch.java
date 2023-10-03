@@ -17,7 +17,9 @@ import io.camunda.tasklist.util.OpenSearchUtil;
 import io.camunda.tasklist.zeebeimport.v830.record.Intent;
 import io.camunda.tasklist.zeebeimport.v830.record.value.VariableRecordValueImpl;
 import io.camunda.zeebe.protocol.record.Record;
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import org.opensearch.client.opensearch.core.bulk.BulkOperation;
 import org.opensearch.client.opensearch.core.bulk.UpdateOperation;
 import org.slf4j.Logger;
@@ -46,24 +48,27 @@ public class VariableZeebeRecordProcessorOpenSearch {
 
   @Autowired private TasklistProperties tasklistProperties;
 
-  public void processVariableRecord(Record record, List<BulkOperation> operations)
+  public void processVariableRecord(
+      Record<VariableRecordValueImpl> record, List<BulkOperation> operations)
       throws PersistenceException {
-    final VariableRecordValueImpl recordValue = (VariableRecordValueImpl) record.getValue();
+    final VariableRecordValueImpl recordValue = record.getValue();
 
     operations.add(persistVariable(record, recordValue));
   }
 
-  private BulkOperation persistVariable(Record record, VariableRecordValueImpl recordValue)
-      throws PersistenceException {
+  private BulkOperation persistVariable(
+      Record<VariableRecordValueImpl> record, VariableRecordValueImpl recordValue) {
 
-    final VariableEntity entity = new VariableEntity();
-    entity.setId(
-        VariableEntity.getIdBy(String.valueOf(recordValue.getScopeKey()), recordValue.getName()));
-    entity.setKey(record.getKey());
-    entity.setPartitionId(record.getPartitionId());
-    entity.setScopeFlowNodeId(String.valueOf(recordValue.getScopeKey()));
-    entity.setProcessInstanceId(String.valueOf(recordValue.getProcessInstanceKey()));
-    entity.setName(recordValue.getName());
+    final VariableEntity entity =
+        new VariableEntity()
+            .setId(
+                VariableEntity.getIdBy(
+                    String.valueOf(recordValue.getScopeKey()), recordValue.getName()))
+            .setKey(record.getKey())
+            .setPartitionId(record.getPartitionId())
+            .setScopeFlowNodeId(String.valueOf(recordValue.getScopeKey()))
+            .setProcessInstanceId(String.valueOf(recordValue.getProcessInstanceKey()))
+            .setName(recordValue.getName());
     if (recordValue.getValue().length()
         > tasklistProperties.getImporter().getVariableSizeThreshold()) {
       // store preview
@@ -76,16 +81,12 @@ public class VariableZeebeRecordProcessorOpenSearch {
       entity.setValue(recordValue.getValue());
     }
     entity.setFullValue(recordValue.getValue());
+    entity.setTenantId(recordValue.getTenantId());
     return getVariableQuery(entity);
   }
 
-  private BulkOperation getVariableQuery(VariableEntity entity) throws PersistenceException {
+  private BulkOperation getVariableQuery(VariableEntity entity) {
     LOGGER.debug("Variable instance for list view: id {}", entity.getId());
-    final Map<String, Object> updateFields = new HashMap<>();
-    updateFields.put(VariableIndex.VALUE, entity.getValue());
-    updateFields.put(VariableIndex.FULL_VALUE, entity.getFullValue());
-    updateFields.put(VariableIndex.IS_PREVIEW, entity.getIsPreview());
-
     return new BulkOperation.Builder()
         .update(
             UpdateOperation.of(

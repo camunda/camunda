@@ -45,6 +45,9 @@
       },
       "version": {
         "type": "integer"
+      },
+      "tenantId": {
+        "type": "keyword"
       }
     }
   }

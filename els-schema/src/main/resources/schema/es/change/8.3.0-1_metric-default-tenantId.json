@@ -1,0 +1,8 @@
+{
+  "description": "Set default tenantId for 'metric' index",
+  "@type": "processorStep",
+  "indexName": "metric",
+  "version": "8.3.0",
+  "order": 1,
+  "content": "{\"set\": {\"field\": \"tenantId\", \"value\": \"<default>\"}}"
+}

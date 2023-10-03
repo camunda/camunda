@@ -37,6 +37,7 @@ public class TaskMapper {
         .setFormKey(taskDTO.getFormKey())
         .setProcessDefinitionKey(taskDTO.getProcessDefinitionId())
         .setProcessInstanceKey(taskDTO.getProcessInstanceId())
+        .setTenantId(taskDTO.getTenantId())
         .setDueDate(taskDTO.getDueDate())
         .setFollowUpDate(taskDTO.getFollowUpDate())
         .setCandidateGroups(taskDTO.getCandidateGroups())
@@ -59,7 +60,8 @@ public class TaskMapper {
         .setDueDate(taskDTO.getDueDate())
         .setFollowUpDate(taskDTO.getFollowUpDate())
         .setCandidateGroups(taskDTO.getCandidateGroups())
-        .setCandidateUsers(taskDTO.getCandidateUsers());
+        .setCandidateUsers(taskDTO.getCandidateUsers())
+        .setTenantId(taskDTO.getTenantId());
   }
 
   public TaskQueryDTO toTaskQuery(TaskSearchRequest searchRequest) {
@@ -76,6 +78,7 @@ public class TaskMapper {
         .setDueDate(searchRequest.getDueDate())
         .setFollowUpDate(searchRequest.getFollowUpDate())
         .setTaskVariables(searchRequest.getTaskVariables())
+        .setTenantIds(searchRequest.getTenantIds())
         .setSort(searchRequest.getSort())
         .setSearchAfter(searchRequest.getSearchAfter())
         .setSearchAfterOrEqual(searchRequest.getSearchAfterOrEqual())

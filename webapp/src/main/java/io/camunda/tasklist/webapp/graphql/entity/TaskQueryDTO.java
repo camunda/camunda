@@ -27,6 +27,7 @@ public class TaskQueryDTO {
   private String processDefinitionId;
   private String processInstanceId;
   private TaskByVariables[] taskVariables;
+  private String[] tenantIds;
   private int pageSize = DEFAULT_PAGE_SIZE;
   private String[] searchAfter;
   private String[] searchAfterOrEqual;
@@ -69,6 +70,15 @@ public class TaskQueryDTO {
 
   public TaskQueryDTO setTaskVariables(TaskByVariables[] taskVariables) {
     this.taskVariables = taskVariables;
+    return this;
+  }
+
+  public String[] getTenantIds() {
+    return tenantIds;
+  }
+
+  public TaskQueryDTO setTenantIds(String[] tenantIds) {
+    this.tenantIds = tenantIds;
     return this;
   }
 
@@ -209,6 +219,7 @@ public class TaskQueryDTO {
         && Objects.equals(followUpDate, that.followUpDate)
         && Objects.equals(dueDate, that.dueDate)
         && Arrays.equals(taskVariables, that.taskVariables)
+        && Arrays.equals(tenantIds, that.tenantIds)
         && Arrays.equals(sort, that.sort)
         && Arrays.equals(searchAfter, that.searchAfter)
         && Arrays.equals(searchAfterOrEqual, that.searchAfterOrEqual)
@@ -230,6 +241,8 @@ public class TaskQueryDTO {
             pageSize,
             followUpDate,
             dueDate);
+    result = 31 * result + Arrays.hashCode(tenantIds);
+    result = 31 * result + Arrays.hashCode(taskVariables);
     result = 31 * result + Arrays.hashCode(sort);
     result = 31 * result + Arrays.hashCode(searchAfter);
     result = 31 * result + Arrays.hashCode(searchAfterOrEqual);
@@ -250,6 +263,7 @@ public class TaskQueryDTO {
         .setProcessInstanceId(this.processInstanceId)
         .setPageSize(this.pageSize)
         .setTaskVariables(this.taskVariables)
+        .setTenantIds(this.tenantIds)
         .setSearchAfter(this.searchAfter)
         .setSearchAfterOrEqual(this.searchAfterOrEqual)
         .setSearchBefore(this.searchBefore)

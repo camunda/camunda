@@ -6,6 +6,8 @@
  */
 package io.camunda.tasklist.entities;
 
+import java.util.Objects;
+
 public class ProcessFlowNodeEntity {
 
   private String id;
@@ -37,13 +39,6 @@ public class ProcessFlowNodeEntity {
   }
 
   @Override
-  public int hashCode() {
-    int result = id != null ? id.hashCode() : 0;
-    result = 31 * result + (name != null ? name.hashCode() : 0);
-    return result;
-  }
-
-  @Override
   public boolean equals(Object o) {
     if (this == o) {
       return true;
@@ -51,12 +46,12 @@ public class ProcessFlowNodeEntity {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-
     final ProcessFlowNodeEntity that = (ProcessFlowNodeEntity) o;
+    return Objects.equals(id, that.id) && Objects.equals(name, that.name);
+  }
 
-    if (id != null ? !id.equals(that.id) : that.id != null) {
-      return false;
-    }
-    return name != null ? name.equals(that.name) : that.name == null;
+  @Override
+  public int hashCode() {
+    return Objects.hash(id, name);
   }
 }

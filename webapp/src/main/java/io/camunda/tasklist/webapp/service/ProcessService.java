@@ -6,13 +6,13 @@
  */
 package io.camunda.tasklist.webapp.service;
 
-import static java.util.Objects.requireNonNullElse;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.webapp.graphql.entity.ProcessInstanceDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
+import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
+import io.camunda.tasklist.webapp.security.tenant.TenantService;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.command.ClientStatusException;
@@ -20,10 +20,10 @@ import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
 import io.grpc.Status;
 import java.io.IOException;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import org.apache.commons.collections4.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,12 +37,24 @@ public class ProcessService {
 
   @Autowired private ObjectMapper objectMapper;
 
-  public ProcessInstanceDTO startProcessInstance(final String processDefinitionKey) {
-    return startProcessInstance(processDefinitionKey, null);
+  @Autowired private TenantService tenantService;
+
+  public ProcessInstanceDTO startProcessInstance(
+      final String processDefinitionKey, final String tenantId) {
+    return startProcessInstance(processDefinitionKey, null, tenantId);
   }
 
   public ProcessInstanceDTO startProcessInstance(
-      final String processDefinitionKey, final List<VariableInputDTO> variables) {
+      final String processDefinitionKey,
+      final List<VariableInputDTO> variables,
+      final String tenantId) {
+
+    final boolean isMultiTenancyEnabled = tenantService.isMultiTenancyEnabled();
+
+    if (isMultiTenancyEnabled && !tenantService.getAuthenticatedTenants().contains(tenantId)) {
+      throw new InvalidRequestException("Invalid tenant.");
+    }
+
     final CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3
         createProcessInstanceCommandStep3 =
             zeebeClient
@@ -50,16 +62,14 @@ public class ProcessService {
                 .bpmnProcessId(processDefinitionKey)
                 .latestVersion();
 
-    if (variables != null && variables.size() > 0) {
+    if (isMultiTenancyEnabled) {
+      createProcessInstanceCommandStep3.tenantId(tenantId);
+    }
 
-      final Map<String, Object> variablesMap = new HashMap<>();
-
-      requireNonNullElse(variables, Collections.<VariableInputDTO>emptyList())
-          .forEach(
-              variable -> {
-                variablesMap.put(variable.getName(), this.extractTypedValue(variable));
-              });
-
+    if (CollectionUtils.isNotEmpty(variables)) {
+      final Map<String, Object> variablesMap =
+          variables.stream()
+              .collect(Collectors.toMap(VariableInputDTO::getName, this::extractTypedValue));
       createProcessInstanceCommandStep3.variables(variablesMap);
     }
 

@@ -9,7 +9,6 @@ package io.camunda.tasklist.webapp.api.rest.v1.entities;
 import io.camunda.tasklist.entities.ProcessEntity;
 import java.util.Arrays;
 import java.util.Objects;
-import java.util.StringJoiner;
 
 public class ProcessResponse {
   private String id;
@@ -18,6 +17,7 @@ public class ProcessResponse {
   private String[] sortValues;
   private Integer version;
   private String startEventFormId = null;
+  private String tenantId;
 
   public String getId() {
     return id;
@@ -73,6 +73,15 @@ public class ProcessResponse {
     return this;
   }
 
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  public ProcessResponse setTenantId(String tenantId) {
+    this.tenantId = tenantId;
+    return this;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -86,26 +95,41 @@ public class ProcessResponse {
         && Objects.equals(name, that.name)
         && Objects.equals(bpmnProcessId, that.bpmnProcessId)
         && Arrays.equals(sortValues, that.sortValues)
-        && Objects.equals(version, that.version);
+        && Objects.equals(version, that.version)
+        && Objects.equals(startEventFormId, that.startEventFormId)
+        && Objects.equals(tenantId, that.tenantId);
   }
 
   @Override
   public int hashCode() {
-    int result = Objects.hash(id, name, bpmnProcessId, version);
+    int result = Objects.hash(id, name, bpmnProcessId, version, startEventFormId, tenantId);
     result = 31 * result + Arrays.hashCode(sortValues);
     return result;
   }
 
   @Override
   public String toString() {
-    return new StringJoiner(", ", ProcessResponse.class.getSimpleName() + "[", "]")
-        .add("id='" + id + "'")
-        .add("name='" + name + "'")
-        .add("bpmnProcessId='" + bpmnProcessId + "'")
-        .add("sortValues=" + Arrays.toString(sortValues))
-        .add("version=" + version)
-        .add("startEventFormId=" + startEventFormId)
-        .toString();
+    return "ProcessResponse{"
+        + "id='"
+        + id
+        + '\''
+        + ", name='"
+        + name
+        + '\''
+        + ", bpmnProcessId='"
+        + bpmnProcessId
+        + '\''
+        + ", sortValues="
+        + Arrays.toString(sortValues)
+        + ", version="
+        + version
+        + ", startEventFormId='"
+        + startEventFormId
+        + '\''
+        + ", tenantId='"
+        + tenantId
+        + '\''
+        + '}';
   }
 
   public static ProcessResponse fromProcessEntity(ProcessEntity process, String startEventFormId) {
@@ -114,6 +138,7 @@ public class ProcessResponse {
         .setName(process.getName())
         .setBpmnProcessId(process.getBpmnProcessId())
         .setVersion(process.getVersion())
-        .setStartEventFormId(startEventFormId);
+        .setStartEventFormId(startEventFormId)
+        .setTenantId(process.getTenantId());
   }
 }

@@ -6,8 +6,13 @@
  */
 package io.camunda.tasklist.webapp.security.identity;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.auth0.jwt.interfaces.DecodedJWT;
 import io.camunda.identity.sdk.Identity;
@@ -16,7 +21,10 @@ import io.camunda.identity.sdk.authentication.UserDetails;
 import io.camunda.tasklist.util.SpringContextHolder;
 import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
 import io.camunda.tasklist.webapp.security.Permission;
-import java.util.*;
+import io.camunda.tasklist.webapp.security.oauth.IdentityTenantAwareJwtAuthenticationToken;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -29,7 +37,6 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -69,8 +76,10 @@ class IdentityUserReaderTest {
   public void shouldReturnTheUserIdAndPermissionsByJwtAuthenticationToken() {
     // given
     final Jwt jwt = mock(Jwt.class);
-    when(jwt.getTokenValue()).thenReturn("jwtToken");
-    final JwtAuthenticationToken jwtAuthenticationToken = new JwtAuthenticationToken(jwt);
+    final var jwtAuthenticationToken = mock(IdentityTenantAwareJwtAuthenticationToken.class);
+    when(jwtAuthenticationToken.getName()).thenReturn("demo");
+    when(jwtAuthenticationToken.getTenants()).thenReturn(Collections.emptyList());
+    when(jwtAuthenticationToken.getPrincipal()).thenReturn(jwt);
 
     when(identity.authentication())
         .thenReturn(mock(io.camunda.identity.sdk.authentication.Authentication.class));
@@ -80,11 +89,19 @@ class IdentityUserReaderTest {
     when(accessToken.getUserDetails()).thenReturn(mock(UserDetails.class));
 
     // when
-    final Optional<UserDTO> currentUser =
-        identityUserReader.getCurrentUserBy(jwtAuthenticationToken);
+    final Optional<UserDTO> result = identityUserReader.getCurrentUserBy(jwtAuthenticationToken);
 
     // then
-    assertTrue(currentUser.isPresent());
+    assertThat(result)
+        .isPresent()
+        .contains(
+            new UserDTO()
+                .setUserId("demo")
+                .setDisplayName("demo")
+                .setApiUser(true)
+                .setPermissions(Collections.emptyList())
+                .setC8Links(Collections.emptyList())
+                .setTenants(Collections.emptyList()));
   }
 
   @Test

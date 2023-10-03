@@ -14,11 +14,13 @@ public class FlowNodeInstanceIndex extends AbstractIndexDescriptor
     implements ProcessInstanceDependant, Prio3Backup {
 
   public static final String INDEX_NAME = "flownode-instance";
+  public static final String INDEX_VERSION = "8.3.0";
 
   public static final String ID = "id";
   public static final String KEY = "key";
   public static final String POSITION = "position";
   public static final String PARENT_FLOW_NODE_ID = "parentFlowNodeId";
+  public static final String TENANT_ID = "tenantId";
 
   @Override
   public String getIndexName() {
@@ -28,5 +30,10 @@ public class FlowNodeInstanceIndex extends AbstractIndexDescriptor
   @Override
   public String getAllIndicesPattern() {
     return getFullQualifiedName();
+  }
+
+  @Override
+  public String getVersion() {
+    return INDEX_VERSION;
   }
 }

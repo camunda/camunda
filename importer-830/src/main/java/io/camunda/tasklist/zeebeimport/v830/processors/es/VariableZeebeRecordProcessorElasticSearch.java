@@ -48,24 +48,27 @@ public class VariableZeebeRecordProcessorElasticSearch {
 
   @Autowired private TasklistProperties tasklistProperties;
 
-  public void processVariableRecord(Record record, BulkRequest bulkRequest)
+  public void processVariableRecord(Record<VariableRecordValueImpl> record, BulkRequest bulkRequest)
       throws PersistenceException {
-    final VariableRecordValueImpl recordValue = (VariableRecordValueImpl) record.getValue();
+    final VariableRecordValueImpl recordValue = record.getValue();
 
     // update variable
     bulkRequest.add(persistVariable(record, recordValue));
   }
 
-  private UpdateRequest persistVariable(Record record, VariableRecordValueImpl recordValue)
+  private UpdateRequest persistVariable(
+      Record<VariableRecordValueImpl> record, VariableRecordValueImpl recordValue)
       throws PersistenceException {
-    final VariableEntity entity = new VariableEntity();
-    entity.setId(
-        VariableEntity.getIdBy(String.valueOf(recordValue.getScopeKey()), recordValue.getName()));
-    entity.setKey(record.getKey());
-    entity.setPartitionId(record.getPartitionId());
-    entity.setScopeFlowNodeId(String.valueOf(recordValue.getScopeKey()));
-    entity.setProcessInstanceId(String.valueOf(recordValue.getProcessInstanceKey()));
-    entity.setName(recordValue.getName());
+    final VariableEntity entity =
+        new VariableEntity()
+            .setId(
+                VariableEntity.getIdBy(
+                    String.valueOf(recordValue.getScopeKey()), recordValue.getName()))
+            .setKey(record.getKey())
+            .setPartitionId(record.getPartitionId())
+            .setScopeFlowNodeId(String.valueOf(recordValue.getScopeKey()))
+            .setProcessInstanceId(String.valueOf(recordValue.getProcessInstanceKey()))
+            .setName(recordValue.getName());
     if (recordValue.getValue().length()
         > tasklistProperties.getImporter().getVariableSizeThreshold()) {
       // store preview
@@ -78,6 +81,7 @@ public class VariableZeebeRecordProcessorElasticSearch {
       entity.setValue(recordValue.getValue());
     }
     entity.setFullValue(recordValue.getValue());
+    entity.setTenantId(recordValue.getTenantId());
     return getVariableQuery(entity);
   }
 

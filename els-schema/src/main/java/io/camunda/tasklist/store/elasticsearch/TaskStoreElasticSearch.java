@@ -9,7 +9,10 @@ package io.camunda.tasklist.store.elasticsearch;
 import static io.camunda.tasklist.schema.indices.ProcessInstanceDependant.PROCESS_INSTANCE_ID;
 import static io.camunda.tasklist.util.CollectionUtil.asMap;
 import static io.camunda.tasklist.util.CollectionUtil.getOrDefaultFromMap;
-import static io.camunda.tasklist.util.ElasticsearchUtil.*;
+import static io.camunda.tasklist.util.ElasticsearchUtil.SCROLL_KEEP_ALIVE_MS;
+import static io.camunda.tasklist.util.ElasticsearchUtil.fromSearchHit;
+import static io.camunda.tasklist.util.ElasticsearchUtil.joinWithAnd;
+import static io.camunda.tasklist.util.ElasticsearchUtil.mapSearchHits;
 import static java.util.stream.Collectors.toList;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.WAIT_UNTIL;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
@@ -36,11 +39,19 @@ import io.camunda.tasklist.schema.templates.TaskVariableTemplate;
 import io.camunda.tasklist.store.TaskStore;
 import io.camunda.tasklist.store.VariableStore;
 import io.camunda.tasklist.store.util.TaskVariableSearchUtil;
+import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
 import io.camunda.tasklist.util.ElasticsearchUtil;
 import io.camunda.tasklist.views.TaskSearchView;
 import java.io.IOException;
 import java.time.OffsetDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -80,6 +91,8 @@ public class TaskStoreElasticSearch implements TaskStore {
           TaskState.CANCELED, TaskTemplate.COMPLETION_TIME);
 
   @Autowired private RestHighLevelClient esClient;
+
+  @Autowired private TenantAwareElasticsearchClient tenantAwareClient;
 
   @Autowired private TaskVariableSearchUtil taskVariableSearchUtil;
 
@@ -138,7 +151,7 @@ public class TaskStoreElasticSearch implements TaskStore {
         ElasticsearchUtil.createSearchRequest(taskTemplate)
             .source(new SearchSourceBuilder().query(constantScoreQuery(query)));
 
-    final SearchResponse response = esClient.search(request, RequestOptions.DEFAULT);
+    final SearchResponse response = tenantAwareClient.search(request);
     if (response.getHits().getTotalHits().value == 1) {
       return response.getHits().getHits()[0];
     } else if (response.getHits().getTotalHits().value > 1) {
@@ -272,7 +285,10 @@ public class TaskStoreElasticSearch implements TaskStore {
                 taskTemplate, getQueryTypeByTaskState(query.getState()))
             .source(sourceBuilder);
     try {
-      final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      final SearchResponse response =
+          query.getTenantIds() == null
+              ? tenantAwareClient.search(searchRequest)
+              : tenantAwareClient.searchByTenantIds(searchRequest, Set.of(query.getTenantIds()));
       final List<TaskSearchView> tasks = mapTasksFromEntity(response);
 
       if (tasks.size() > 0) {

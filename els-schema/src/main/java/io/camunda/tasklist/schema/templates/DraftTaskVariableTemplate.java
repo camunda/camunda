@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 public class DraftTaskVariableTemplate extends AbstractTemplateDescriptor implements Prio3Backup {
 
   public static final String INDEX_NAME = "draft-task-variable";
+  public static final String INDEX_VERSION = "8.3.0";
 
   public static final String ID = "id";
   public static final String KEY = "key";
@@ -21,6 +22,7 @@ public class DraftTaskVariableTemplate extends AbstractTemplateDescriptor implem
   public static final String VALUE = "value";
   public static final String FULL_VALUE = "fullValue";
   public static final String IS_PREVIEW = "isPreview";
+  public static final String TENANT_ID = "tenantId";
 
   @Override
   public String getIndexName() {
@@ -29,6 +31,6 @@ public class DraftTaskVariableTemplate extends AbstractTemplateDescriptor implem
 
   @Override
   public String getVersion() {
-    return "8.3.0";
+    return INDEX_VERSION;
   }
 }

@@ -67,11 +67,11 @@ public class ProcessInstanceZeebeRecordProcessorElasticSearch {
 
   @Autowired private ProcessInstanceIndex processInstanceIndex;
 
-  public void processProcessInstanceRecord(Record record, BulkRequest bulkRequest)
+  public void processProcessInstanceRecord(
+      Record<ProcessInstanceRecordValueImpl> record, BulkRequest bulkRequest)
       throws PersistenceException {
 
-    final ProcessInstanceRecordValueImpl recordValue =
-        (ProcessInstanceRecordValueImpl) record.getValue();
+    final ProcessInstanceRecordValueImpl recordValue = record.getValue();
     if (isVariableScopeType(recordValue) && FLOW_NODE_STATES.contains(record.getIntent().name())) {
       final FlowNodeInstanceEntity flowNodeInstance = createFlowNodeInstance(record);
       bulkRequest.add(getFlowNodeInstanceQuery(flowNodeInstance));
@@ -84,7 +84,8 @@ public class ProcessInstanceZeebeRecordProcessorElasticSearch {
     }
   }
 
-  private ProcessInstanceEntity createProcessInstance(final Record record) {
+  private ProcessInstanceEntity createProcessInstance(
+      final Record<ProcessInstanceRecordValueImpl> record) {
     final ProcessInstanceEntity entity = new ProcessInstanceEntity();
     entity.setId(ConversionUtils.toStringOrNull(record.getKey()));
     entity.setKey(record.getKey());
@@ -95,25 +96,26 @@ public class ProcessInstanceZeebeRecordProcessorElasticSearch {
       entity.setState(ProcessInstanceState.CANCELED);
     }
     entity.setEndDate(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
+    entity.setTenantId(record.getValue().getTenantId());
     return entity;
   }
 
-  private FlowNodeInstanceEntity createFlowNodeInstance(Record record) {
-    final ProcessInstanceRecordValueImpl recordValue =
-        (ProcessInstanceRecordValueImpl) record.getValue();
-    final FlowNodeInstanceEntity entity = new FlowNodeInstanceEntity();
-    entity.setId(ConversionUtils.toStringOrNull(record.getKey()));
-    entity.setKey(record.getKey());
-    entity.setPartitionId(record.getPartitionId());
-    entity.setProcessInstanceId(String.valueOf(recordValue.getProcessInstanceKey()));
-    entity.setParentFlowNodeId(String.valueOf(recordValue.getFlowScopeKey()));
-    entity.setType(
-        FlowNodeType.fromZeebeBpmnElementType(
-            recordValue.getBpmnElementType() == null
-                ? null
-                : recordValue.getBpmnElementType().name()));
-    entity.setPosition(record.getPosition());
-    return entity;
+  private FlowNodeInstanceEntity createFlowNodeInstance(
+      Record<ProcessInstanceRecordValueImpl> record) {
+    final ProcessInstanceRecordValueImpl recordValue = record.getValue();
+    return new FlowNodeInstanceEntity()
+        .setId(ConversionUtils.toStringOrNull(record.getKey()))
+        .setKey(record.getKey())
+        .setPartitionId(record.getPartitionId())
+        .setProcessInstanceId(String.valueOf(recordValue.getProcessInstanceKey()))
+        .setParentFlowNodeId(String.valueOf(recordValue.getFlowScopeKey()))
+        .setType(
+            FlowNodeType.fromZeebeBpmnElementType(
+                recordValue.getBpmnElementType() == null
+                    ? null
+                    : recordValue.getBpmnElementType().name()))
+        .setPosition(record.getPosition())
+        .setTenantId(recordValue.getTenantId());
   }
 
   private IndexRequest getFlowNodeInstanceQuery(FlowNodeInstanceEntity entity)

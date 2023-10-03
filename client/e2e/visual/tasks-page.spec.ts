@@ -8,6 +8,17 @@
 import {test, expect, Route, Request} from '@playwright/test';
 import schema from '../resources/bigForm.json';
 
+const MOCK_TENANTS = [
+  {
+    id: 'tenantA',
+    name: 'Tenant A',
+  },
+  {
+    id: 'tenantB',
+    name: 'Tenant B',
+  },
+];
+
 const NON_FORM_TASK = {
   id: '2251799813687061',
   formKey: null,
@@ -26,6 +37,7 @@ const NON_FORM_TASK = {
   dueDate: null,
   sortValues: ['1684881752515', '4503599627371089'],
   isFirst: true,
+  tenantId: null,
 };
 
 const NON_FORM_TASK_EMPTY_VARIABLES = [];
@@ -56,6 +68,7 @@ const FORM_TASK = {
   followUpDate: null,
   candidateGroups: null,
   candidateUsers: null,
+  tenantId: null,
 };
 
 function mockResponses(
@@ -122,6 +135,7 @@ function mockResponses(
           salesPlanType: null,
           roles: null,
           c8Links: [],
+          tenants: MOCK_TENANTS,
         }),
         headers: {
           'content-type': 'application/json',
@@ -776,6 +790,44 @@ test.describe('tasks page', () => {
     });
 
     await expect(page.getByText('I am a textfield*')).toBeVisible();
+
+    await expect(page).toHaveScreenshot();
+  });
+
+  test('tenant on task detail', async ({page}) => {
+    const NON_FORM_TASK_WITH_TENANT = {
+      ...NON_FORM_TASK,
+      tenantId: MOCK_TENANTS[0].id,
+    };
+
+    await page.route('**/client-config.js', (route) =>
+      route.fulfill({
+        status: 200,
+        headers: {
+          'Content-Type': 'text/javascript;charset=UTF-8',
+        },
+        body: `window.clientConfig = {
+        "isEnterprise":false,
+        "canLogout":true,
+        "isLoginDelegated":false,
+        "contextPath":"",
+        "organizationId":null,
+        "clusterId":null,
+        "stage":null,
+        "mixpanelToken":null,
+        "mixpanelAPIHost":null,
+        "isMultiTenancyEnabled": true
+      };`,
+      }),
+    );
+    await page.route(
+      /^.*\/v1.*$/i,
+      mockResponses([NON_FORM_TASK_WITH_TENANT], NON_FORM_TASK_WITH_TENANT),
+    );
+
+    await page.goto(`/${NON_FORM_TASK_WITH_TENANT.id}`, {
+      waitUntil: 'networkidle',
+    });
 
     await expect(page).toHaveScreenshot();
   });

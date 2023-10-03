@@ -88,6 +88,7 @@ test.describe('form-js integration', () => {
             salesPlanType: null,
             roles: null,
             c8Links: [],
+            tenants: [],
           }),
           headers: {
             'content-type': 'application/json',

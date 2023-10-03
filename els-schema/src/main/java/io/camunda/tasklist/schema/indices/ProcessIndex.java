@@ -13,6 +13,8 @@ import org.springframework.stereotype.Component;
 public class ProcessIndex extends AbstractIndexDescriptor implements Prio4Backup {
 
   public static final String INDEX_NAME = "process";
+  public static final String INDEX_VERSION = "8.3.0";
+
   public static final String ID = "id";
   public static final String KEY = "key";
   public static final String NAME = "name";
@@ -25,6 +27,7 @@ public class ProcessIndex extends AbstractIndexDescriptor implements Prio4Backup
   public static final String FLOWNODE_NAME = "name";
   public static final String IS_STARTED_BY_FORM = "startedByForm";
   public static final String FORM_KEY = "formKey";
+  public static final String TENANT_ID = "tenantId";
 
   @Override
   public String getIndexName() {
@@ -33,6 +36,6 @@ public class ProcessIndex extends AbstractIndexDescriptor implements Prio4Backup
 
   @Override
   public String getVersion() {
-    return "8.3.0";
+    return INDEX_VERSION;
   }
 }

@@ -69,7 +69,7 @@ public class TaskVariableEntity extends TasklistZeebeEntity<TaskVariableEntity> 
   }
 
   public static TaskVariableEntity createFrom(
-      String taskId, String name, String value, int variableSizeThreshold) {
+      String tenantId, String taskId, String name, String value, int variableSizeThreshold) {
     final TaskVariableEntity entity =
         new TaskVariableEntity().setId(getIdBy(taskId, name)).setTaskId(taskId).setName(name);
     if (value.length() > variableSizeThreshold) {
@@ -80,6 +80,7 @@ public class TaskVariableEntity extends TasklistZeebeEntity<TaskVariableEntity> 
       entity.setValue(value);
     }
     entity.setFullValue(value);
+    entity.setTenantId(tenantId);
     return entity;
   }
 
@@ -90,7 +91,8 @@ public class TaskVariableEntity extends TasklistZeebeEntity<TaskVariableEntity> 
         .setName(variableEntity.getName())
         .setValue(variableEntity.getValue())
         .setIsPreview(variableEntity.getIsPreview())
-        .setFullValue(variableEntity.getFullValue());
+        .setFullValue(variableEntity.getFullValue())
+        .setTenantId(variableEntity.getTenantId());
   }
 
   public static TaskVariableEntity createFrom(
@@ -101,7 +103,8 @@ public class TaskVariableEntity extends TasklistZeebeEntity<TaskVariableEntity> 
         .setName(draftTaskVariableEntity.getName())
         .setValue(draftTaskVariableEntity.getValue())
         .setIsPreview(draftTaskVariableEntity.getIsPreview())
-        .setFullValue(draftTaskVariableEntity.getFullValue());
+        .setFullValue(draftTaskVariableEntity.getFullValue())
+        .setTenantId(draftTaskVariableEntity.getTenantId());
   }
 
   @Override

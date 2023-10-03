@@ -31,18 +31,7 @@ import org.opensearch.client.opensearch._types.Time;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch._types.query_dsl.QueryVariant;
-import org.opensearch.client.opensearch.core.BulkRequest;
-import org.opensearch.client.opensearch.core.BulkResponse;
-import org.opensearch.client.opensearch.core.ClearScrollRequest;
-import org.opensearch.client.opensearch.core.DeleteByQueryRequest;
-import org.opensearch.client.opensearch.core.DeleteByQueryResponse;
-import org.opensearch.client.opensearch.core.ReindexRequest;
-import org.opensearch.client.opensearch.core.ReindexResponse;
-import org.opensearch.client.opensearch.core.ScrollRequest;
-import org.opensearch.client.opensearch.core.ScrollResponse;
-import org.opensearch.client.opensearch.core.SearchRequest;
-import org.opensearch.client.opensearch.core.SearchResponse;
-import org.opensearch.client.opensearch.core.UpdateRequest;
+import org.opensearch.client.opensearch.core.*;
 import org.opensearch.client.opensearch.core.bulk.BulkResponseItem;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.core.search.HitsMetadata;
@@ -127,6 +116,32 @@ public abstract class OpenSearchUtil {
         boolQ.must(q);
       } else {
         throw new TasklistRuntimeException("Queries should be of type [Query] or [QueryVariant]");
+      }
+    }
+    return new Query.Builder().bool(boolQ.build()).build();
+  }
+
+  public static Query createMatchNoneQuery() {
+    final BoolQuery boolQuery =
+        new BoolQuery.Builder()
+            .must(must -> must.matchNone(none -> none.queryName("matchNone")))
+            .build();
+    return boolQuery._toQuery();
+  }
+
+  public static Query joinWithAnd(Query... queries) {
+    final List<Query> notNullQueries = throwAwayNullElements(queries);
+    if (notNullQueries.size() == 0) {
+      return new Query.Builder().build();
+    }
+    final BoolQuery.Builder boolQ = boolQuery();
+    for (Query queryBuilder : notNullQueries) {
+      final var query = queryBuilder;
+
+      if (query instanceof QueryVariant qv) {
+        boolQ.must(qv._toQuery());
+      } else {
+        boolQ.must(query);
       }
     }
     return new Query.Builder().bool(boolQ.build()).build();

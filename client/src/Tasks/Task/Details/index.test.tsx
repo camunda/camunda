@@ -333,4 +333,38 @@ describe('<Details />', () => {
 
     expect(screen.getByText('Tenant A')).toBeInTheDocument();
   });
+
+  it('should hide tenant name if user only has access to one tenant', () => {
+    window.clientConfig = {
+      ...DEFAULT_MOCK_CLIENT_CONFIG,
+      isMultiTenancyEnabled: true,
+    };
+
+    const currentUserWithSingleTenant = {
+      ...userMocks.currentUserWithTenants,
+      tenants: [userMocks.currentUserWithTenants.tenants[0]],
+    };
+
+    nodeMockServer.use(
+      rest.get('/v1/internal/users/current', (_, res, ctx) => {
+        return res(ctx.json(currentUserWithSingleTenant));
+      }),
+    );
+
+    render(
+      <Details
+        task={{
+          ...taskMocks.unassignedTask(),
+          tenantId: 'tenantA',
+        }}
+        user={currentUserWithSingleTenant}
+        onAssignmentError={noop}
+      />,
+      {
+        wrapper: getWrapper(),
+      },
+    );
+
+    expect(screen.queryByText('Tenant A')).not.toBeInTheDocument();
+  });
 });

@@ -6,8 +6,12 @@
  */
 package io.camunda.tasklist.zeebeimport.v830.processors.os;
 
-import static io.camunda.tasklist.zeebeimport.v830.record.Intent.*;
-import static io.camunda.zeebe.protocol.Protocol.*;
+import static io.camunda.tasklist.zeebeimport.v830.record.Intent.CANCELED;
+import static io.camunda.tasklist.zeebeimport.v830.record.Intent.COMPLETED;
+import static io.camunda.tasklist.zeebeimport.v830.record.Intent.CREATED;
+import static io.camunda.zeebe.protocol.Protocol.USER_TASK_ASSIGNEE_HEADER_NAME;
+import static io.camunda.zeebe.protocol.Protocol.USER_TASK_CANDIDATE_GROUPS_HEADER_NAME;
+import static io.camunda.zeebe.protocol.Protocol.USER_TASK_CANDIDATE_USERS_HEADER_NAME;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -15,8 +19,6 @@ import io.camunda.tasklist.CommonUtils;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.entities.TaskState;
-import io.camunda.tasklist.exceptions.PersistenceException;
-import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.templates.TaskTemplate;
 import io.camunda.tasklist.util.DateUtil;
 import io.camunda.tasklist.util.OpenSearchUtil;
@@ -27,9 +29,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import jakarta.json.JsonObjectBuilder;
 import java.time.Instant;
 import java.time.OffsetDateTime;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import org.opensearch.client.opensearch.core.bulk.BulkOperation;
 import org.opensearch.client.opensearch.core.bulk.UpdateOperation;
 import org.slf4j.Logger;
@@ -49,12 +49,8 @@ public class JobZeebeRecordProcessorOpenSearch {
 
   @Autowired private TaskTemplate taskTemplate;
 
-  @Autowired private TasklistProperties tasklistProperties;
-
-  public void processJobRecord(Record record, List<BulkOperation> operations)
-      throws PersistenceException {
-    final JobRecordValueImpl recordValue = (JobRecordValueImpl) record.getValue();
-
+  public void processJobRecord(Record<JobRecordValueImpl> record, List<BulkOperation> operations) {
+    final JobRecordValueImpl recordValue = record.getValue();
     if (recordValue.getType().equals(Protocol.USER_TASK_JOB_TYPE)) {
       if (record.getIntent() != null
           && !record.getIntent().name().equals(Intent.TIMED_OUT.name())) {
@@ -64,8 +60,8 @@ public class JobZeebeRecordProcessorOpenSearch {
     // else skip task
   }
 
-  private BulkOperation persistTask(Record record, JobRecordValueImpl recordValue)
-      throws PersistenceException {
+  private BulkOperation persistTask(
+      Record<JobRecordValueImpl> record, JobRecordValueImpl recordValue) {
     final String processDefinitionId = String.valueOf(recordValue.getProcessDefinitionKey());
     final TaskEntity entity =
         new TaskEntity()
@@ -76,7 +72,8 @@ public class JobZeebeRecordProcessorOpenSearch {
             .setFlowNodeInstanceId(String.valueOf(recordValue.getElementInstanceKey()))
             .setProcessInstanceId(String.valueOf(recordValue.getProcessInstanceKey()))
             .setBpmnProcessId(recordValue.getBpmnProcessId())
-            .setProcessDefinitionId(processDefinitionId);
+            .setProcessDefinitionId(processDefinitionId)
+            .setTenantId(recordValue.getTenantId());
 
     final String dueDate =
         recordValue.getCustomHeaders().get(Protocol.USER_TASK_DUE_DATE_HEADER_NAME);
@@ -155,12 +152,8 @@ public class JobZeebeRecordProcessorOpenSearch {
     return getTaskQuery(entity);
   }
 
-  private BulkOperation getTaskQuery(TaskEntity entity) throws PersistenceException {
+  private BulkOperation getTaskQuery(TaskEntity entity) {
     LOGGER.debug("Task instance: id {}", entity.getId());
-    final Map<String, Object> updateFields = new HashMap<>();
-    updateFields.put(TaskTemplate.STATE, entity.getState());
-    updateFields.put(TaskTemplate.COMPLETION_TIME, entity.getCompletionTime());
-
     final JsonObjectBuilder jsonEntityBuilder = CommonUtils.getJsonObjectBuilderForEntity(entity);
     if (entity.getCreationTime() == null) {
       jsonEntityBuilder.remove(TaskTemplate.CREATION_TIME);
