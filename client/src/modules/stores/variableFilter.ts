@@ -15,10 +15,12 @@ type Variable = {
 
 type State = {
   variable?: Variable;
+  isInMultipleMode: boolean;
 };
 
 const DEFAULT_STATE: State = {
   variable: undefined,
+  isInMultipleMode: false,
 };
 
 class VariableFilter {
@@ -37,6 +39,10 @@ class VariableFilter {
     if (!isEqual(this.state.variable, variable)) {
       this.state.variable = variable;
     }
+  };
+
+  setIsInMultipleMode = (isInMultipleMode: boolean) => {
+    this.state.isInMultipleMode = isInMultipleMode;
   };
 }
 

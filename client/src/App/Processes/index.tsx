@@ -24,6 +24,7 @@ import {PAGE_TITLE} from 'modules/constants';
 import {notificationsStore} from 'modules/stores/notifications';
 import {variableFilterStore} from 'modules/stores/variableFilter';
 import {reaction} from 'mobx';
+import {tracking} from 'modules/tracking';
 
 type LocationType = Omit<Location, 'state'> & {
   state: {refreshContent?: boolean};
@@ -85,6 +86,11 @@ const Processes: React.FC = observer(() => {
       () => variableFilterStore.state.variable,
       () => {
         if (processesStatus === 'fetched') {
+          tracking.track({
+            eventName: 'process-instances-filtered',
+            filterName: 'variable',
+            multipleValues: variableFilterStore.state.isInMultipleMode,
+          });
           processInstancesStore.fetchProcessInstancesFromFilters();
         }
       },

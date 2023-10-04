@@ -243,6 +243,11 @@ type Events =
       filterName: string;
     }
   | {
+      eventName: 'process-instances-filtered';
+      filterName: 'variable';
+      multipleValues: boolean;
+    }
+  | {
       eventName: 'definition-deletion-button';
       resource: 'process' | 'decision';
       version: string;

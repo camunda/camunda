@@ -31,13 +31,17 @@ import {variableFilterStore} from 'modules/stores/variableFilter';
 
 const Variable: React.FC = observer(() => {
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [isInMultipleMode, setIsInMultipleMode] = useState(false);
   const formState = useFormState();
   const form = useForm();
 
   useEffect(() => {
     return variableFilterStore.reset;
   }, []);
+
+  const {
+    state: {isInMultipleMode},
+    setIsInMultipleMode,
+  } = variableFilterStore;
 
   return (
     <>
