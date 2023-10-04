@@ -136,6 +136,8 @@ public class ListViewZeebeRecordProcessor {
     entity.setPartitionId(record.getPartitionId());
     entity.setActivityId(recordValue.getElementId());
     entity.setProcessInstanceKey(recordValue.getProcessInstanceKey());
+    entity.setTenantId(tenantOrDefault(recordValue.getTenantId()));
+
     if (intentStr.equals(IncidentIntent.CREATED.name())) {
       entity.setErrorMessage(StringUtils.trimWhitespace(recordValue.getErrorMessage()));
     } else if (intentStr.equals(IncidentIntent.RESOLVED.name())) {
@@ -397,6 +399,7 @@ public class ListViewZeebeRecordProcessor {
     entity.setPartitionId(record.getPartitionId());
     entity.setActivityId(recordValue.getElementId());
     entity.setProcessInstanceKey(recordValue.getProcessInstanceKey());
+    entity.setTenantId(tenantOrDefault(recordValue.getTenantId()));
     entity.getJoinRelation().setParent(recordValue.getProcessInstanceKey());
 
     if (FAILED_JOB_EVENTS.contains(intentStr) && recordValue.getRetries() > 0) {
@@ -429,6 +432,7 @@ public class ListViewZeebeRecordProcessor {
     entity.setPartitionId(record.getPartitionId());
     entity.setActivityId(recordValue.getElementId());
     entity.setProcessInstanceKey(recordValue.getProcessInstanceKey());
+    entity.setTenantId(tenantOrDefault(recordValue.getTenantId()));
 
     if (PI_AND_AI_FINISH_STATES.contains(intentStr)) {
       entity.setEndTime(record.getTimestamp());
@@ -465,6 +469,7 @@ public class ListViewZeebeRecordProcessor {
     entity.setProcessInstanceKey(recordValue.getProcessInstanceKey());
     entity.setVarName(recordValue.getName());
     entity.setVarValue(recordValue.getValue());
+    entity.setTenantId(tenantOrDefault(recordValue.getTenantId()));
 
     //set parent
     Long processInstanceKey = recordValue.getProcessInstanceKey();

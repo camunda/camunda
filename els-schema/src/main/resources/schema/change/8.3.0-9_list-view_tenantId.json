@@ -4,5 +4,5 @@
   "indexName": "list-view",
   "version": "8.3.0",
   "order": 9,
-  "content": "{\"script\": {\"lang\": \"painless\",\"source\": \"if (ctx.joinRelation.name.equals('processInstance')) { ctx.tenantId = '<default>'; }\"}}"
+  "content": "{\"script\": {\"lang\": \"painless\",\"source\": \"ctx.tenantId = '<default>';\"}}"
 }

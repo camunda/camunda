@@ -9,6 +9,8 @@ package io.camunda.operate.entities.listview;
 import io.camunda.operate.entities.OperateZeebeEntity;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 
+import java.util.Objects;
+
 public class VariableForListViewEntity extends OperateZeebeEntity {
 
   private Long processInstanceKey;
@@ -16,12 +18,14 @@ public class VariableForListViewEntity extends OperateZeebeEntity {
   private String varName;
   private String varValue;
 
+  private String tenantId;
+
   private ListViewJoinRelation joinRelation = new ListViewJoinRelation(ListViewTemplate.VARIABLES_JOIN_RELATION);
 
   public Long getProcessInstanceKey() {
     return processInstanceKey;
   }
-  
+
   public static String getIdBy(long scopeKey, String name) {
     return String.format("%d-%s", scopeKey, name);
   }
@@ -54,6 +58,15 @@ public class VariableForListViewEntity extends OperateZeebeEntity {
     this.varValue = varValue;
   }
 
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  public VariableForListViewEntity setTenantId(String tenantId) {
+    this.tenantId = tenantId;
+    return this;
+  }
+
   public ListViewJoinRelation getJoinRelation() {
     return joinRelation;
   }
@@ -70,28 +83,14 @@ public class VariableForListViewEntity extends OperateZeebeEntity {
       return false;
     if (!super.equals(o))
       return false;
-
     VariableForListViewEntity that = (VariableForListViewEntity) o;
-
-    if (processInstanceKey != null ? !processInstanceKey.equals(that.processInstanceKey) : that.processInstanceKey != null)
-      return false;
-    if (scopeKey != null ? !scopeKey.equals(that.scopeKey) : that.scopeKey != null)
-      return false;
-    if (varName != null ? !varName.equals(that.varName) : that.varName != null)
-      return false;
-    if (varValue != null ? !varValue.equals(that.varValue) : that.varValue != null)
-      return false;
-    return joinRelation != null ? joinRelation.equals(that.joinRelation) : that.joinRelation == null;
+    return Objects.equals(processInstanceKey, that.processInstanceKey) && Objects.equals(scopeKey,
+        that.scopeKey) && Objects.equals(varName, that.varName) && Objects.equals(varValue,
+        that.varValue) && Objects.equals(tenantId, that.tenantId) && Objects.equals(joinRelation, that.joinRelation);
   }
 
   @Override
   public int hashCode() {
-    int result = super.hashCode();
-    result = 31 * result + (processInstanceKey != null ? processInstanceKey.hashCode() : 0);
-    result = 31 * result + (scopeKey != null ? scopeKey.hashCode() : 0);
-    result = 31 * result + (varName != null ? varName.hashCode() : 0);
-    result = 31 * result + (varValue != null ? varValue.hashCode() : 0);
-    result = 31 * result + (joinRelation != null ? joinRelation.hashCode() : 0);
-    return result;
+    return Objects.hash(super.hashCode(), processInstanceKey, scopeKey, varName, varValue, tenantId, joinRelation);
   }
 }

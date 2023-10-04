@@ -29,6 +29,8 @@ public class FlowNodeInstanceForListViewEntity extends OperateZeebeEntity<FlowNo
   private boolean incident;
   private boolean jobFailedWithRetriesLeft = false;
 
+  private String tenantId;
+
   @Deprecated
   @JsonIgnore
   private boolean pendingIncident;
@@ -100,6 +102,15 @@ public class FlowNodeInstanceForListViewEntity extends OperateZeebeEntity<FlowNo
 
   public FlowNodeInstanceForListViewEntity setIncident(final boolean incident) {
     this.incident = incident;
+    return this;
+  }
+
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  public FlowNodeInstanceForListViewEntity setTenantId(String tenantId) {
+    this.tenantId = tenantId;
     return this;
   }
 
