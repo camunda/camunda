@@ -40,7 +40,7 @@ jobs:
       # Configure the registry where we can push the GH IMAGE
       - name: Configure Google tools
         id: auth
-        uses: camunda-cloud/action-setup-gcloud@v2
+        uses: camunda-cloud/action-setup-gcloud@9f58c1c41af48d1a9fd6bbb994f1dc7e42cdbf30 # v3
         with:
           account-alias: registry
 
