@@ -10,7 +10,6 @@ package io.camunda.zeebe.engine.state.migration.to_8_3;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.migration.MigrationTask;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
-import io.camunda.zeebe.protocol.ZbColumnFamilies;
 
 /**
  * This migration is used to initially fill the PROCESS_INSTANCE_KEY_BY_DEFINITION_KEY ColumnFamily.
@@ -26,8 +25,9 @@ public class ProcessInstanceByProcessDefinitionMigration implements MigrationTas
 
   @Override
   public boolean needsToRun(final ProcessingState processingState) {
-    return processingState.isEmpty(ZbColumnFamilies.PROCESS_INSTANCE_KEY_BY_DEFINITION_KEY)
-        && !processingState.isEmpty(ZbColumnFamilies.ELEMENT_INSTANCE_KEY);
+    return processingState
+        .getMigrationState()
+        .shouldRunElementInstancePopulateProcessInstanceByDefinitionKey();
   }
 
   @Override

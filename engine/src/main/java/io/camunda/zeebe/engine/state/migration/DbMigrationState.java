@@ -12,6 +12,7 @@ import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbForeignKey;
+import io.camunda.zeebe.db.impl.DbForeignKey.MatchType;
 import io.camunda.zeebe.db.impl.DbInt;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
@@ -42,6 +43,8 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
 public class DbMigrationState implements MutableMigrationState {
+
+  private static final long NO_PARENT_KEY = -1L;
 
   // ZbColumnFamilies.MESSAGE_SUBSCRIPTION_BY_SENT_TIME
   // (sentTime, elementInstanceKey, messageName) => \0
@@ -95,9 +98,14 @@ public class DbMigrationState implements MutableMigrationState {
   private final ColumnFamily<DbLong, ElementInstance> elementInstanceColumnFamily;
   private final DbLong processDefinitionKey;
   private final DbCompositeKey<DbLong, DbLong> processInstanceKeyByProcessDefinitionKey;
-
   private final ColumnFamily<DbCompositeKey<DbLong, DbLong>, DbNil>
       processInstanceKeyByProcessDefinitionKeyColumnFamily;
+
+  // ZbColumnFamilies.ELEMENT_INSTANCE_PARENT_CHILD
+  private final DbForeignKey<DbLong> parentKey;
+  private final DbCompositeKey<DbForeignKey<DbLong>, DbForeignKey<DbLong>> parentChildKey;
+  private final ColumnFamily<DbCompositeKey<DbForeignKey<DbLong>, DbForeignKey<DbLong>>, DbNil>
+      parentChildColumnFamily;
 
   private final DbString processIdKey;
   private final ColumnFamily<DbString, VersionInfo> processVersionInfoColumnFamily;
@@ -215,6 +223,23 @@ public class DbMigrationState implements MutableMigrationState {
             ZbColumnFamilies.PROCESS_INSTANCE_KEY_BY_DEFINITION_KEY,
             transactionContext,
             processInstanceKeyByProcessDefinitionKey,
+            DbNil.INSTANCE);
+
+    parentKey =
+        new DbForeignKey<>(
+            new DbLong(),
+            ZbColumnFamilies.ELEMENT_INSTANCE_KEY,
+            MatchType.Full,
+            (k) -> k.getValue() == -1);
+    parentChildKey =
+        new DbCompositeKey<>(
+            parentKey,
+            new DbForeignKey<>(elementInstanceKey, ZbColumnFamilies.ELEMENT_INSTANCE_KEY));
+    parentChildColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.ELEMENT_INSTANCE_PARENT_CHILD,
+            transactionContext,
+            parentChildKey,
             DbNil.INSTANCE);
 
     processIdKey = new DbString();
@@ -374,15 +399,16 @@ public class DbMigrationState implements MutableMigrationState {
 
   @Override
   public void migrateElementInstancePopulateProcessInstanceByDefinitionKey() {
-    elementInstanceColumnFamily.forEach(
-        (key, record) -> {
-          final var recordValue = record.getValue();
-          if (recordValue.getBpmnElementType() == BpmnElementType.PROCESS) {
-            elementInstanceKey.wrapLong(key.getValue());
-            processDefinitionKey.wrapLong(recordValue.getProcessDefinitionKey());
-            processInstanceKeyByProcessDefinitionKeyColumnFamily.upsert(
-                processInstanceKeyByProcessDefinitionKey, DbNil.INSTANCE);
-          }
+    parentKey.inner().wrapLong(NO_PARENT_KEY);
+    parentChildColumnFamily.whileEqualPrefix(
+        parentKey,
+        (key, nil) -> {
+          elementInstanceKey.wrapLong(key.second().inner().getValue());
+          final ElementInstance processInstance =
+              elementInstanceColumnFamily.get(elementInstanceKey);
+          processDefinitionKey.wrapLong(processInstance.getValue().getProcessDefinitionKey());
+          processInstanceKeyByProcessDefinitionKeyColumnFamily.upsert(
+              processInstanceKeyByProcessDefinitionKey, DbNil.INSTANCE);
         });
   }
 
@@ -434,5 +460,13 @@ public class DbMigrationState implements MutableMigrationState {
   @Override
   public void migrateJobStateForMultiTenancy() {
     jobMigrationState.migrateJobStateForMultiTenancy();
+  }
+
+  @Override
+  public boolean shouldRunElementInstancePopulateProcessInstanceByDefinitionKey() {
+    parentKey.inner().wrapLong(NO_PARENT_KEY);
+    return processInstanceKeyByProcessDefinitionKeyColumnFamily.isEmpty()
+        || processInstanceKeyByProcessDefinitionKeyColumnFamily.count()
+            != parentChildColumnFamily.countEqualPrefix(parentKey);
   }
 }

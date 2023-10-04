@@ -7,4 +7,7 @@
  */
 package io.camunda.zeebe.engine.state.immutable;
 
-public interface MigrationState {}
+public interface MigrationState {
+
+  boolean shouldRunElementInstancePopulateProcessInstanceByDefinitionKey();
+}
