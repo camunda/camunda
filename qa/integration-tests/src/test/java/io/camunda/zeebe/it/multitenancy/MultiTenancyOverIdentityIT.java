@@ -14,6 +14,7 @@ import io.camunda.zeebe.client.api.response.ActivateJobsResponse;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.api.response.CompleteJobResponse;
 import io.camunda.zeebe.client.api.response.DeploymentEvent;
+import io.camunda.zeebe.client.api.response.EvaluateDecisionResponse;
 import io.camunda.zeebe.client.api.response.ModifyProcessInstanceResponse;
 import io.camunda.zeebe.client.api.response.Process;
 import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
@@ -50,7 +51,6 @@ import java.util.function.Supplier;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
@@ -130,7 +130,7 @@ public class MultiTenancyOverIdentityIT {
   private static final GenericContainer<?> IDENTITY =
       new GenericContainer<>(
               DockerImageName.parse("camunda/identity")
-                  .withTag(System.getProperty("identity.docker.image.version", "SNAPSHOT")))
+                  .withTag(System.getProperty("identity.docker.image.version", "8.3.0-alpha6")))
           .withImagePullPolicy(
               System.getProperty("identity.docker.image.version", "SNAPSHOT").equals("SNAPSHOT")
                   ? PullPolicy.alwaysPull()
@@ -190,6 +190,8 @@ public class MultiTenancyOverIdentityIT {
           .withNetworkAliases("identity");
 
   @AutoCloseResource private static final TestStandaloneBroker ZEEBE = new TestStandaloneBroker();
+  private static final String TENANT_A = "tenant-a";
+  private static final String TENANT_B = "tenant-b";
 
   @SuppressWarnings("unused")
   @RegisterExtension
@@ -235,10 +237,10 @@ public class MultiTenancyOverIdentityIT {
 
     awaitCamundaRealmAvailabilityOnKeycloak();
 
-    associateTenantsWithClient(List.of(DEFAULT_TENANT, "tenant-a"), ZEEBE_CLIENT_ID_TENANT_A);
-    associateTenantsWithClient(List.of(DEFAULT_TENANT, "tenant-b"), ZEEBE_CLIENT_ID_TENANT_B);
+    associateTenantsWithClient(List.of(DEFAULT_TENANT, TENANT_A), ZEEBE_CLIENT_ID_TENANT_A);
+    associateTenantsWithClient(List.of(DEFAULT_TENANT, TENANT_B), ZEEBE_CLIENT_ID_TENANT_B);
     associateTenantsWithClient(
-        List.of(DEFAULT_TENANT, "tenant-a", "tenant-b"), ZEEBE_CLIENT_ID_TENANT_A_AND_B);
+        List.of(DEFAULT_TENANT, TENANT_A, TENANT_B), ZEEBE_CLIENT_ID_TENANT_A_AND_B);
   }
 
   @BeforeEach
@@ -284,7 +286,7 @@ public class MultiTenancyOverIdentityIT {
           client
               .newDeployResourceCommand()
               .addProcessModel(process, "process.bpmn")
-              .tenantId("tenant-a")
+              .tenantId(TENANT_A)
               .send();
 
       // then
@@ -303,7 +305,7 @@ public class MultiTenancyOverIdentityIT {
           client
               .newDeployResourceCommand()
               .addProcessModel(process, "process.bpmn")
-              .tenantId("tenant-b")
+              .tenantId(TENANT_B)
               .send();
 
       // then
@@ -318,29 +320,13 @@ public class MultiTenancyOverIdentityIT {
   }
 
   @Test
-  @Disabled("Not yet supported: https://github.com/camunda/zeebe/issues/14497")
-  void shouldDenyDeployProcessWhenNoTenantAssociated() {
-    // given
-    try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_WITHOUT_TENANT)) {
-      // when
-      final Future<DeploymentEvent> result =
-          client.newDeployResourceCommand().addProcessModel(process, "process.bpmn").send();
-
-      // then
-      assertThat(result)
-          .describedAs("Expect that process can be deployed for the default tenant")
-          .succeedsWithin(Duration.ofSeconds(10));
-    }
-  }
-
-  @Test
   void shouldIncrementProcessVersionPerTenant() {
     // given
     try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A)) {
       client
           .newDeployResourceCommand()
           .addProcessModel(process, "process.bpmn")
-          .tenantId("tenant-a")
+          .tenantId(TENANT_A)
           .send()
           .join();
     }
@@ -348,7 +334,7 @@ public class MultiTenancyOverIdentityIT {
       client
           .newDeployResourceCommand()
           .addProcessModel(process, "process.bpmn")
-          .tenantId("tenant-b")
+          .tenantId(TENANT_B)
           .send()
           .join();
     }
@@ -360,7 +346,7 @@ public class MultiTenancyOverIdentityIT {
           client
               .newDeployResourceCommand()
               .addProcessModel(processV2, "process.bpmn")
-              .tenantId("tenant-b")
+              .tenantId(TENANT_B)
               .send();
 
       // then
@@ -369,7 +355,7 @@ public class MultiTenancyOverIdentityIT {
           .describedAs("Process version is incremented for tenant-b but not for tenant-a")
           .extracting(deploymentEvent -> deploymentEvent.getProcesses().get(0))
           .extracting(Process::getVersion, Process::getTenantId)
-          .containsExactly(2, "tenant-b");
+          .containsExactly(2, TENANT_B);
     }
   }
 
@@ -382,7 +368,7 @@ public class MultiTenancyOverIdentityIT {
           client
               .newDeployResourceCommand()
               .addProcessModel(process, "process.bpmn")
-              .tenantId("tenant-a")
+              .tenantId(TENANT_A)
               .send()
               .join()
               .getProcesses()
@@ -396,7 +382,7 @@ public class MultiTenancyOverIdentityIT {
           client
               .newCreateInstanceCommand()
               .processDefinitionKey(processDefinitionKey)
-              .tenantId("tenant-a")
+              .tenantId(TENANT_A)
               .send();
 
       // then
@@ -414,7 +400,7 @@ public class MultiTenancyOverIdentityIT {
       client
           .newDeployResourceCommand()
           .addProcessModel(process, "process.bpmn")
-          .tenantId("tenant-a")
+          .tenantId(TENANT_A)
           .send()
           .join();
     }
@@ -426,7 +412,7 @@ public class MultiTenancyOverIdentityIT {
               .newCreateInstanceCommand()
               .bpmnProcessId(processId)
               .latestVersion()
-              .tenantId("tenant-b")
+              .tenantId(TENANT_B)
               .send();
 
       // then
@@ -449,7 +435,7 @@ public class MultiTenancyOverIdentityIT {
           client
               .newDeployResourceCommand()
               .addProcessModel(process, "process.bpmn")
-              .tenantId("tenant-a")
+              .tenantId(TENANT_A)
               .send()
               .join()
               .getProcesses()
@@ -465,7 +451,7 @@ public class MultiTenancyOverIdentityIT {
           client
               .newCreateInstanceCommand()
               .processDefinitionKey(processDefinitionKey)
-              .tenantId("tenant-b")
+              .tenantId(TENANT_B)
               .send();
 
       // then
@@ -486,7 +472,7 @@ public class MultiTenancyOverIdentityIT {
       client
           .newDeployResourceCommand()
           .addProcessModel(process, "process.bpmn")
-          .tenantId("tenant-a")
+          .tenantId(TENANT_A)
           .send()
           .join();
     }
@@ -501,7 +487,7 @@ public class MultiTenancyOverIdentityIT {
                   .endEvent()
                   .done(),
               "parent.bpmn")
-          .tenantId("tenant-b")
+          .tenantId(TENANT_B)
           .send()
           .join();
     }
@@ -512,7 +498,7 @@ public class MultiTenancyOverIdentityIT {
           .newCreateInstanceCommand()
           .bpmnProcessId("parent")
           .latestVersion()
-          .tenantId("tenant-b")
+          .tenantId(TENANT_B)
           .send();
 
       // then
@@ -536,7 +522,7 @@ public class MultiTenancyOverIdentityIT {
           client
               .newDeployResourceCommand()
               .addProcessModel(process, "process.bpmn")
-              .tenantId("tenant-a")
+              .tenantId(TENANT_A)
               .send()
               .join()
               .getProcesses()
@@ -552,7 +538,7 @@ public class MultiTenancyOverIdentityIT {
           client
               .newCreateInstanceCommand()
               .processDefinitionKey(processDefinitionKey)
-              .tenantId("tenant-b")
+              .tenantId(TENANT_B)
               .send();
 
       // then
@@ -576,7 +562,7 @@ public class MultiTenancyOverIdentityIT {
       client
           .newDeployResourceCommand()
           .addProcessModel(process, "process.bpmn")
-          .tenantId("tenant-a")
+          .tenantId(TENANT_A)
           .send()
           .join();
 
@@ -586,7 +572,7 @@ public class MultiTenancyOverIdentityIT {
               .newPublishMessageCommand()
               .messageName(messageName)
               .correlationKey("")
-              .tenantId("tenant-a")
+              .tenantId(TENANT_A)
               .send();
 
       // then
@@ -607,7 +593,7 @@ public class MultiTenancyOverIdentityIT {
       client
           .newDeployResourceCommand()
           .addProcessModel(process, "process.bpmn")
-          .tenantId("tenant-a")
+          .tenantId(TENANT_A)
           .send()
           .join();
 
@@ -617,7 +603,7 @@ public class MultiTenancyOverIdentityIT {
               .newPublishMessageCommand()
               .messageName(messageName)
               .correlationKey("")
-              .tenantId("tenant-b")
+              .tenantId(TENANT_B)
               .send();
 
       // then
@@ -638,14 +624,14 @@ public class MultiTenancyOverIdentityIT {
       client
           .newDeployResourceCommand()
           .addProcessModel(process, "process.bpmn")
-          .tenantId("tenant-a")
+          .tenantId(TENANT_A)
           .send()
           .join();
       client
           .newCreateInstanceCommand()
           .bpmnProcessId(processId)
           .latestVersion()
-          .tenantId("tenant-a")
+          .tenantId(TENANT_A)
           .send()
           .join();
 
@@ -655,7 +641,7 @@ public class MultiTenancyOverIdentityIT {
               .newActivateJobsCommand()
               .jobType("type")
               .maxJobsToActivate(1)
-              .tenantId("tenant-a")
+              .tenantId(TENANT_A)
               .send();
 
       // then
@@ -673,14 +659,14 @@ public class MultiTenancyOverIdentityIT {
       client
           .newDeployResourceCommand()
           .addProcessModel(process, "process.bpmn")
-          .tenantId("tenant-a")
+          .tenantId(TENANT_A)
           .send()
           .join();
       client
           .newCreateInstanceCommand()
           .bpmnProcessId(processId)
           .latestVersion()
-          .tenantId("tenant-a")
+          .tenantId(TENANT_A)
           .send()
           .join();
     }
@@ -692,7 +678,7 @@ public class MultiTenancyOverIdentityIT {
               .newActivateJobsCommand()
               .jobType("type")
               .maxJobsToActivate(1)
-              .tenantId("tenant-a")
+              .tenantId(TENANT_A)
               .send();
 
       // then
@@ -713,14 +699,14 @@ public class MultiTenancyOverIdentityIT {
       client
           .newDeployResourceCommand()
           .addProcessModel(process, "process.bpmn")
-          .tenantId("tenant-a")
+          .tenantId(TENANT_A)
           .send()
           .join();
       client
           .newCreateInstanceCommand()
           .bpmnProcessId(processId)
           .latestVersion()
-          .tenantId("tenant-a")
+          .tenantId(TENANT_A)
           .send()
           .join();
 
@@ -729,7 +715,7 @@ public class MultiTenancyOverIdentityIT {
               .newActivateJobsCommand()
               .jobType("type")
               .maxJobsToActivate(1)
-              .tenantId("tenant-a")
+              .tenantId(TENANT_A)
               .send()
               .join()
               .getJobs()
@@ -754,14 +740,14 @@ public class MultiTenancyOverIdentityIT {
       client
           .newDeployResourceCommand()
           .addProcessModel(process, "process.bpmn")
-          .tenantId("tenant-a")
+          .tenantId(TENANT_A)
           .send()
           .join();
       client
           .newCreateInstanceCommand()
           .bpmnProcessId(processId)
           .latestVersion()
-          .tenantId("tenant-a")
+          .tenantId(TENANT_A)
           .send()
           .join();
       activatedJob =
@@ -769,7 +755,7 @@ public class MultiTenancyOverIdentityIT {
               .newActivateJobsCommand()
               .jobType("type")
               .maxJobsToActivate(1)
-              .tenantId("tenant-a")
+              .tenantId(TENANT_A)
               .send()
               .join()
               .getJobs()
@@ -804,14 +790,14 @@ public class MultiTenancyOverIdentityIT {
       client
           .newDeployResourceCommand()
           .addProcessModel(process, "process.bpmn")
-          .tenantId("tenant-a")
+          .tenantId(TENANT_A)
           .send()
           .join();
       client
           .newCreateInstanceCommand()
           .bpmnProcessId(processId)
           .latestVersion()
-          .tenantId("tenant-a")
+          .tenantId(TENANT_A)
           .send()
           .join();
 
@@ -844,14 +830,14 @@ public class MultiTenancyOverIdentityIT {
       client
           .newDeployResourceCommand()
           .addProcessModel(process, "process.bpmn")
-          .tenantId("tenant-a")
+          .tenantId(TENANT_A)
           .send()
           .join();
       client
           .newCreateInstanceCommand()
           .bpmnProcessId(processId)
           .latestVersion()
-          .tenantId("tenant-a")
+          .tenantId(TENANT_A)
           .send()
           .join();
 
@@ -906,7 +892,7 @@ public class MultiTenancyOverIdentityIT {
       client
           .newDeployResourceCommand()
           .addProcessModel(process, "process.bpmn")
-          .tenantId("tenant-a")
+          .tenantId(TENANT_A)
           .send()
           .join();
 
@@ -915,7 +901,7 @@ public class MultiTenancyOverIdentityIT {
               .newCreateInstanceCommand()
               .bpmnProcessId(processId)
               .latestVersion()
-              .tenantId("tenant-a")
+              .tenantId(TENANT_A)
               .send()
               .join()
               .getProcessInstanceKey();
@@ -937,7 +923,7 @@ public class MultiTenancyOverIdentityIT {
       client
           .newDeployResourceCommand()
           .addProcessModel(process, "process.bpmn")
-          .tenantId("tenant-a")
+          .tenantId(TENANT_A)
           .send()
           .join();
 
@@ -946,7 +932,7 @@ public class MultiTenancyOverIdentityIT {
               .newCreateInstanceCommand()
               .bpmnProcessId(processId)
               .latestVersion()
-              .tenantId("tenant-a")
+              .tenantId(TENANT_A)
               .send()
               .join()
               .getProcessInstanceKey();
@@ -964,6 +950,82 @@ public class MultiTenancyOverIdentityIT {
           .withMessageContaining("NOT_FOUND")
           .withMessageContaining(
               "Expected to modify process instance but no process instance found with key");
+    }
+  }
+
+  @Test
+  void shouldAllowEvaluateDecisionForDefaultTenant() {
+    try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_DEFAULT)) {
+      // given
+      client
+          .newDeployResourceCommand()
+          .addResourceFromClasspath("dmn/decision-table.dmn")
+          .send()
+          .join();
+
+      // when
+      final Future<EvaluateDecisionResponse> response =
+          client
+              .newEvaluateDecisionCommand()
+              .decisionId("jedi_or_sith")
+              .variable("lightsaberColor", "blue")
+              .send();
+      // then
+      assertThat(response).succeedsWithin(Duration.ofSeconds(10));
+    }
+  }
+
+  @Test
+  void shouldAllowEvaluateDecisionForCustomTenant() {
+    try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_DEFAULT)) {
+      // given
+      client
+          .newDeployResourceCommand()
+          .addResourceFromClasspath("dmn/decision-table.dmn")
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+
+      // when
+      final Future<EvaluateDecisionResponse> response =
+          client
+              .newEvaluateDecisionCommand()
+              .decisionId("jedi_or_sith")
+              .variable("lightsaberColor", "blue")
+              .tenantId(TENANT_A)
+              .send();
+      // then
+      assertThat(response).succeedsWithin(Duration.ofSeconds(10));
+    }
+  }
+
+  @Test
+  void shouldDenyEvaluateDecisionForCustomTenant() {
+    try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_DEFAULT)) {
+      // given
+      client
+          .newDeployResourceCommand()
+          .addResourceFromClasspath("dmn/decision-table.dmn")
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+
+      // when
+      final Future<EvaluateDecisionResponse> response =
+          client
+              .newEvaluateDecisionCommand()
+              .decisionId("jedi_or_sith")
+              .variable("lightsaberColor", "blue")
+              .tenantId(TENANT_B)
+              .send();
+      // then
+      assertThat(response)
+          .failsWithin(Duration.ofSeconds(10))
+          .withThrowableThat()
+          .withMessageContaining("PERMISSION_DENIED")
+          .withMessageContaining(
+              "Expected to handle gRPC request EvaluateDecision with tenant identifier 'tenant-b'")
+          .withMessageContaining("but tenant is not authorized to perform this request");
     }
   }
 
