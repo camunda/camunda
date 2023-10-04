@@ -550,6 +550,69 @@ public final class DbCompositeKeyColumnFamilyTest {
     assertThat(secondKeyParts).isEmpty();
   }
 
+  @Test
+  public void shouldCount() {
+    // given
+    upsertKeyValuePair("foo", 12, "baring");
+    upsertKeyValuePair("foobar", 53, "expected value");
+    upsertKeyValuePair("foo", 13, "different value");
+    upsertKeyValuePair("foo", 213, "oh wow");
+    upsertKeyValuePair("foo", 53, "expected value");
+    upsertKeyValuePair("this is the one", 255, "as you know");
+    upsertKeyValuePair("hello", 34, "world");
+    upsertKeyValuePair("another", 923113, "string");
+    upsertKeyValuePair("might", 37426, "be good");
+
+    // when
+    final long count = columnFamily.count();
+
+    // then
+    assertThat(count).describedAs("Counts all entries").isEqualTo(9);
+  }
+
+  @Test
+  public void shouldCountEqualPrefix() {
+    // given
+    upsertKeyValuePair("foo", 12, "baring");
+    upsertKeyValuePair("foobar", 53, "expected value");
+    upsertKeyValuePair("foo", 13, "different value");
+    upsertKeyValuePair("foo", 213, "oh wow");
+    upsertKeyValuePair("foo", 53, "expected value");
+    upsertKeyValuePair("this is the one", 255, "as you know");
+    upsertKeyValuePair("hello", 34, "world");
+    upsertKeyValuePair("another", 923113, "string");
+    upsertKeyValuePair("might", 37426, "be good");
+
+    // when
+    firstKey.wrapString("foo");
+    final long count = columnFamily.countEqualPrefix(firstKey);
+
+    // then
+    assertThat(count).describedAs("Only counts entries matching 'foo'").isEqualTo(4);
+  }
+
+  @Test
+  public void shouldCountWhileEqualPrefixToDelete() {
+    // given
+    upsertKeyValuePair("foo", 12, "baring");
+    upsertKeyValuePair("foo", 13, "different value");
+    upsertKeyValuePair("foo", 14, "different value");
+    upsertKeyValuePair("hello", 34, "world");
+    upsertKeyValuePair("another", 923113, "string");
+    upsertKeyValuePair("might", 37426, "be good");
+
+    firstKey.wrapString("foo");
+    secondKey.wrapLong(14L);
+    columnFamily.deleteExisting(compositeKey);
+
+    // when
+    firstKey.wrapString("foo");
+    final long count = columnFamily.countEqualPrefix(firstKey);
+
+    // then
+    assertThat(count).describedAs("Only counts entries matching 'foo'").isEqualTo(2);
+  }
+
   private void upsertKeyValuePair(final String firstKey, final long secondKey, final String value) {
     this.firstKey.wrapString(firstKey);
     this.secondKey.wrapLong(secondKey);

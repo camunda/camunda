@@ -19,6 +19,7 @@ import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDbInconsistentException;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
@@ -260,6 +261,16 @@ class TransactionalColumnFamily<
     return isEmpty.get();
   }
 
+  @Override
+  public long count() {
+    return countEachInPrefix(new DbNullKey());
+  }
+
+  @Override
+  public long countEqualPrefix(final DbKey prefix) {
+    return countEachInPrefix(prefix);
+  }
+
   private void assertForeignKeysExist(final ZeebeTransaction transaction, final Object... keys)
       throws Exception {
     if (!consistencyChecksSettings.enableForeignKeyChecks()) {
@@ -377,6 +388,52 @@ class TransactionalColumnFamily<
             }
           }
         });
+  }
+
+  /**
+   * This is the preferred method to implement methods that count entries in a column family.
+   *
+   * <p>It iterates over each entry without deserializing the value. If you need a value consider
+   * using {@link #forEachInPrefix}.
+   *
+   * @param prefix of all keys that are iterated over.
+   * @return count of the number of entries in the column family with the given prefix starting from
+   *     the given startAt.
+   */
+  private long countEachInPrefix(final DbKey prefix) {
+    final var seekTarget = Objects.requireNonNull(prefix);
+
+    final var count = new AtomicLong(0);
+
+    /*
+     * NOTE: it doesn't seem possible in Java RocksDB to set a flexible prefix extractor on
+     * iterators at the moment, so using prefixes seem to be mostly related to skipping files that
+     * do not contain keys with the given prefix (which is useful anyway), but it will still iterate
+     * over all keys contained in those files, so we still need to make sure the key actually
+     * matches the prefix.
+     *
+     * <p>While iterating over subsequent keys we have to validate it.
+     */
+    columnFamilyContext.withPrefixKey(
+        prefix,
+        (prefixKey, prefixLength) -> {
+          try (final RocksIterator iterator =
+              newIterator(context, transactionDb.getPrefixReadOptions())) {
+
+            for (iterator.seek(columnFamilyContext.keyWithColumnFamily(seekTarget));
+                iterator.isValid();
+                iterator.next()) {
+              final byte[] keyBytes = iterator.key();
+              if (!startsWith(prefixKey, 0, prefixLength, keyBytes, 0, keyBytes.length)) {
+                break;
+              }
+
+              count.getAndIncrement();
+            }
+          }
+        });
+
+    return count.get();
   }
 
   private boolean visit(
