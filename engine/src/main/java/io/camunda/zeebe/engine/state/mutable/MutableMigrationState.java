@@ -31,8 +31,6 @@ public interface MutableMigrationState extends MigrationState {
 
   void migrateElementInstancePopulateProcessInstanceByDefinitionKey();
 
-  void migrateProcessDefinitionVersions();
-
   void migrateProcessStateForMultiTenancy();
 
   void migrateDecisionStateForMultiTenancy();

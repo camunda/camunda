@@ -413,20 +413,6 @@ public class DbMigrationState implements MutableMigrationState {
   }
 
   @Override
-  public void migrateProcessDefinitionVersions() {
-    processVersionInfoColumnFamily.forEach(
-        (key, value) -> {
-          final long highestVersion = value.getHighestVersion();
-          for (long version = 1; version <= highestVersion; version++) {
-            if (!value.getKnownVersions().contains(version)) {
-              value.addKnownVersion(version);
-            }
-          }
-          processVersionInfoColumnFamily.update(key, value);
-        });
-  }
-
-  @Override
   public void migrateProcessStateForMultiTenancy() {
     processMigrationState.migrateProcessStateForMultiTenancy();
   }
