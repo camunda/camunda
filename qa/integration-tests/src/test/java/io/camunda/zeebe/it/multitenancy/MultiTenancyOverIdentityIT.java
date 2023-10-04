@@ -136,7 +136,7 @@ public class MultiTenancyOverIdentityIT {
                   ? PullPolicy.alwaysPull()
                   : PullPolicy.defaultPolicy())
           .dependsOn(POSTGRES, KEYCLOAK)
-          .withEnv("MULTI_TENANCY_ENABLED", "true")
+          .withEnv("MULTITENANCY_ENABLED", "true")
           .withEnv("RESOURCE_AUTHORIZATIONS_ENABLED", "true")
           .withEnv("IDENTITY_LOG_LEVEL", "TRACE")
           .withEnv("logging_level_org_springframework_security", "DEBUG")
