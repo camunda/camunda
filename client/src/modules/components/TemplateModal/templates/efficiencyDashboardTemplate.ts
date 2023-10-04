@@ -11,7 +11,7 @@ import efficiency from '../images/efficiency.png';
 
 import {getExternalResourcePath} from './service';
 
-export function efficiencyDashboardTemplate() {
+export function efficiencyDashboardTemplate(docsLink: string) {
   return {
     name: 'efficiency',
     disabled: (definitions: unknown[]) => definitions.length > 1,
@@ -470,7 +470,9 @@ export function efficiencyDashboardTemplate() {
                       rel: 'noopener norefereer',
                       type: 'link',
                       version: 1,
-                      url: 'https://docs.camunda.io/optimize/components/userguide/process-analysis/flow-node-filters/#flow-node-selection',
+                      url:
+                        docsLink +
+                        'components/userguide/process-analysis/flow-node-filters/#flow-node-selection',
                       direction: 'ltr',
                       target: '_blank',
                     },
@@ -869,7 +871,9 @@ export function efficiencyDashboardTemplate() {
                       rel: 'noopener norefereer',
                       type: 'link',
                       version: 1,
-                      url: 'https://docs.camunda.io/optimize/components/userguide/process-analysis/flow-node-filters/#flow-node-selection',
+                      url:
+                        docsLink +
+                        'components/userguide/process-analysis/flow-node-filters/#flow-node-selection',
                       direction: 'ltr',
                       target: '_blank',
                     },

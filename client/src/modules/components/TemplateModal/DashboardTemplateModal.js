@@ -9,6 +9,7 @@ import React, {useState, useEffect} from 'react';
 
 import {t} from 'translation';
 import {getOptimizeProfile} from 'config';
+import {useDocs} from 'hooks';
 
 import TemplateModal from './TemplateModal';
 import {
@@ -32,6 +33,7 @@ export default function DashboardTemplateModal({
 }) {
   const [optimizeProfile, setOptimizeProfile] = useState();
   const [optimizeProfileLoaded, setOptimizeProfileLoaded] = useState(false);
+  const {docsLink} = useDocs();
 
   useEffect(() => {
     (async () => {
@@ -48,10 +50,10 @@ export default function DashboardTemplateModal({
     {
       name: 'singleProcessGroup',
       templates: [
-        processDashboardTemplate(),
-        productivityDashboardTemplate(),
-        efficiencyDashboardTemplate(),
-        accelerationDashboardTemplate(),
+        processDashboardTemplate(docsLink),
+        productivityDashboardTemplate(docsLink),
+        efficiencyDashboardTemplate(docsLink),
+        accelerationDashboardTemplate(docsLink),
         {
           name: 'processPerformance',
           disableDescription: true,

@@ -55,11 +55,11 @@ exports[`should contain a change warning and not contain event scope selection 1
   >
     Changing the process definition may add or remove events. Existing event mappings may be removed.
      
-    <Component
+    <DocsLink
       location="components/userguide/additional-features/event-based-processes/#camunda-events"
     >
       Learn more
-    </Component>
+    </DocsLink>
   </MessageBox>
 </Form>
 `;

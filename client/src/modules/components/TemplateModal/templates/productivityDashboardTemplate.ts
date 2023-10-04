@@ -10,7 +10,7 @@ import {t} from 'translation';
 import productivity from '../images/productivity.png';
 import {getExternalResourcePath} from './service';
 
-export function productivityDashboardTemplate() {
+export function productivityDashboardTemplate(docsLink: string) {
   return {
     name: 'productivity',
     disabled: (definitions: unknown[]) => definitions.length > 1,
@@ -232,7 +232,9 @@ export function productivityDashboardTemplate() {
                       rel: 'noopener norefereer',
                       type: 'link',
                       version: 1,
-                      url: 'https://docs.camunda.io/optimize/components/userguide/process-analysis/report-analysis/configure-reports/#chart-goal-line',
+                      url:
+                        docsLink +
+                        'components/userguide/process-analysis/report-analysis/configure-reports/#chart-goal-line',
                       direction: 'ltr',
                       target: '_blank',
                     },
@@ -280,7 +282,9 @@ export function productivityDashboardTemplate() {
                       rel: 'noopener norefereer',
                       type: 'link',
                       version: 1,
-                      url: 'https://docs.camunda.io/optimize/components/userguide/process-dashboards/#set-time-and-quality-kpis',
+                      url:
+                        docsLink +
+                        'components/userguide/process-dashboards/#set-time-and-quality-kpis',
                       direction: 'ltr',
                       target: '_blank',
                     },
@@ -310,7 +314,9 @@ export function productivityDashboardTemplate() {
                       rel: 'noopener norefereer',
                       type: 'link',
                       version: 1,
-                      url: 'https://docs.camunda.io/optimize/components/userguide/process-dashboards/#configuring-process-owner-and-digests',
+                      url:
+                        docsLink +
+                        'components/userguide/process-dashboards/#configuring-process-owner-and-digests',
                       direction: 'ltr',
                       target: '_blank',
                     },
@@ -635,7 +641,9 @@ export function productivityDashboardTemplate() {
                       rel: 'noopener norefereer',
                       type: 'link',
                       version: 1,
-                      url: 'https://docs.camunda.io/optimize/components/userguide/process-analysis/report-analysis/configure-reports/#chart-goal-line',
+                      url:
+                        docsLink +
+                        'components/userguide/process-analysis/report-analysis/configure-reports/#chart-goal-line',
                       direction: 'ltr',
                       target: '_blank',
                     },
@@ -674,7 +682,9 @@ export function productivityDashboardTemplate() {
                       rel: 'noopener norefereer',
                       type: 'link',
                       version: 1,
-                      url: 'https://docs.camunda.io/optimize/components/userguide/process-dashboards/#set-time-and-quality-kpis',
+                      url:
+                        docsLink +
+                        'components/userguide/process-dashboards/#set-time-and-quality-kpis',
                       direction: 'ltr',
                       target: '_blank',
                     },
@@ -704,7 +714,9 @@ export function productivityDashboardTemplate() {
                       rel: 'noopener norefereer',
                       type: 'link',
                       version: 1,
-                      url: 'https://docs.camunda.io/optimize/components/userguide/process-dashboards/#configuring-process-owner-and-digests',
+                      url:
+                        docsLink +
+                        'components/userguide/process-dashboards/#configuring-process-owner-and-digests',
                       direction: 'ltr',
                       target: '_blank',
                     },
@@ -925,7 +937,9 @@ export function productivityDashboardTemplate() {
                       rel: 'noopener norefereer',
                       type: 'link',
                       version: 1,
-                      url: 'https://docs.camunda.io/optimize/components/userguide/process-analysis/report-analysis/configure-reports/#chart-goal-line',
+                      url:
+                        docsLink +
+                        'components/userguide/process-analysis/report-analysis/configure-reports/#chart-goal-line',
                       direction: 'ltr',
                       target: '_blank',
                     },
@@ -964,7 +978,9 @@ export function productivityDashboardTemplate() {
                       rel: 'noopener norefereer',
                       type: 'link',
                       version: 1,
-                      url: 'https://docs.camunda.io/optimize/components/userguide/process-dashboards/#set-time-and-quality-kpis',
+                      url:
+                        docsLink +
+                        'components/userguide/process-dashboards/#set-time-and-quality-kpis',
                       direction: 'ltr',
                       target: '_blank',
                     },
@@ -994,7 +1010,9 @@ export function productivityDashboardTemplate() {
                       rel: 'noopener norefereer',
                       type: 'link',
                       version: 1,
-                      url: 'https://docs.camunda.io/optimize/components/userguide/process-dashboards/#configuring-process-owner-and-digests',
+                      url:
+                        docsLink +
+                        'components/userguide/process-dashboards/#configuring-process-owner-and-digests',
                       direction: 'ltr',
                       target: '_blank',
                     },

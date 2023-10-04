@@ -11,7 +11,7 @@ import processDashboard from '../images/processDashboard.png';
 
 import {getExternalResourcePath} from './service';
 
-export function processDashboardTemplate() {
+export function processDashboardTemplate(docsLink: string) {
   return {
     name: 'processDashboard',
     disabled: (definitions: unknown[]) => definitions.length > 1,
@@ -436,7 +436,9 @@ export function processDashboardTemplate() {
                       rel: 'noopener norefereer',
                       type: 'link',
                       version: 1,
-                      url: 'https://docs.camunda.io/optimize/components/userguide/process-dashboards/#configuring-process-owner-and-digests',
+                      url:
+                        docsLink +
+                        'components/userguide/process-dashboards/#configuring-process-owner-and-digests',
                       direction: 'ltr',
                       target: '_blank',
                     },
@@ -528,7 +530,7 @@ export function processDashboardTemplate() {
                       rel: 'noopener norefereer',
                       type: 'link',
                       version: 1,
-                      url: 'https://docs.camunda.io/optimize/components/userguide/process-analysis/outlier-analysis/',
+                      url: docsLink + 'components/userguide/process-analysis/outlier-analysis/',
                       direction: 'ltr',
                       target: '_blank',
                     },
@@ -620,7 +622,9 @@ export function processDashboardTemplate() {
                       rel: 'noopener norefereer',
                       type: 'link',
                       version: 1,
-                      url: 'https://docs.camunda.io/optimize/components/userguide/creating-reports/#creating-a-single-report',
+                      url:
+                        docsLink +
+                        'components/userguide/creating-reports/#creating-a-single-report',
                       direction: 'ltr',
                       target: '_blank',
                     },

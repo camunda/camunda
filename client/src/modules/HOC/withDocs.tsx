@@ -5,17 +5,33 @@
  * except in compliance with the proprietary license.
  */
 
-import {createContext, ComponentType, useContext, ReactNode} from 'react';
+import {createContext, ComponentType, useContext, ReactNode, useEffect, useState} from 'react';
+
+import {getOptimizeVersion} from 'config';
 
 export interface WithDocsProps {
   docsLink: string;
 }
 
-const DocsContext = createContext<WithDocsProps | undefined>(undefined);
+const OPTIMIZE_DOCS_URL = 'https://docs.camunda.io/optimize/';
+
+export const DocsContext = createContext<WithDocsProps>({docsLink: OPTIMIZE_DOCS_URL});
 
 export function DocsProvider({children}: {children: ReactNode}): JSX.Element {
+  const [optimizeVersion, setOptimizeVersion] = useState('');
+
+  useEffect(() => {
+    (async () => {
+      const version = (await getOptimizeVersion()).split('.');
+      version.length = 2;
+      setOptimizeVersion(version.join('.'));
+    })();
+  }, []);
+
+  const optimizeVersionWithSlash = optimizeVersion ? optimizeVersion + '/' : '';
+
   return (
-    <DocsContext.Provider value={{docsLink: `https://docs.camunda.io/optimize/`}}>
+    <DocsContext.Provider value={{docsLink: OPTIMIZE_DOCS_URL + optimizeVersionWithSlash}}>
       {children}
     </DocsContext.Provider>
   );

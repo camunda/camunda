@@ -11,7 +11,7 @@ import acceleration from '../images/acceleration.png';
 
 import {getExternalResourcePath} from './service';
 
-export function accelerationDashboardTemplate() {
+export function accelerationDashboardTemplate(docsLink: string) {
   return {
     name: 'acceleration',
     disabled: (definitions: unknown[]) => definitions.length > 1,
@@ -318,7 +318,9 @@ export function accelerationDashboardTemplate() {
                       rel: 'noopener norefereer',
                       type: 'link',
                       version: 1,
-                      url: 'https://docs.camunda.io/optimize/components/userguide/process-analysis/report-analysis/configure-reports/#chart-goal-line',
+                      url:
+                        docsLink +
+                        'components/userguide/process-analysis/report-analysis/configure-reports/#chart-goal-line',
                       direction: 'ltr',
                       target: '_blank',
                     },
@@ -384,7 +386,9 @@ export function accelerationDashboardTemplate() {
                       rel: 'noopener norefereer',
                       type: 'link',
                       version: 1,
-                      url: 'https://docs.camunda.io/optimize/components/userguide/process-analysis/flow-node-filters/#flow-node-selection',
+                      url:
+                        docsLink +
+                        'components/userguide/process-analysis/flow-node-filters/#flow-node-selection',
                       direction: 'ltr',
                       target: '_blank',
                     },
@@ -780,7 +784,9 @@ export function accelerationDashboardTemplate() {
                       rel: 'noopener norefereer',
                       type: 'link',
                       version: 1,
-                      url: 'https://docs.camunda.io/optimize/components/userguide/process-analysis/report-analysis/compare-target-values/',
+                      url:
+                        docsLink +
+                        'components/userguide/process-analysis/report-analysis/compare-target-values/',
                       direction: 'ltr',
                       target: '_blank',
                     },
