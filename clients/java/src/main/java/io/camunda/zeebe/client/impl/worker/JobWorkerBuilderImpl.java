@@ -31,6 +31,7 @@ import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilder
 import io.camunda.zeebe.client.api.worker.JobWorkerMetrics;
 import java.io.Closeable;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
@@ -52,7 +53,8 @@ public final class JobWorkerBuilderImpl
   private Duration pollInterval;
   private Duration requestTimeout;
   private List<String> fetchVariables;
-  private final List<String> tenantIds;
+  private final List<String> defaultTenantIds;
+  private final List<String> customTenantIds;
   private BackoffSupplier backoffSupplier;
   private boolean enableStreaming;
   private Duration streamingTimeout;
@@ -73,7 +75,8 @@ public final class JobWorkerBuilderImpl
     pollInterval = configuration.getDefaultJobPollInterval();
     requestTimeout = configuration.getDefaultRequestTimeout();
     enableStreaming = configuration.getDefaultJobWorkerStreamEnabled();
-    tenantIds = configuration.getDefaultJobWorkerTenantIds();
+    defaultTenantIds = configuration.getDefaultJobWorkerTenantIds();
+    customTenantIds = new ArrayList<>();
     backoffSupplier = DEFAULT_BACKOFF_SUPPLIER;
     streamingTimeout = DEFAULT_STREAMING_TIMEOUT;
   }
@@ -178,7 +181,7 @@ public final class JobWorkerBuilderImpl
             workerName,
             timeout,
             fetchVariables,
-            tenantIds,
+            getTenantIds(),
             maxJobsActive);
 
     if (enableStreaming) {
@@ -193,7 +196,7 @@ public final class JobWorkerBuilderImpl
               workerName,
               timeout,
               fetchVariables,
-              tenantIds,
+              getTenantIds(),
               streamingTimeout,
               backoffSupplier,
               executorService);
@@ -217,13 +220,13 @@ public final class JobWorkerBuilderImpl
 
   @Override
   public JobWorkerBuilderStep3 tenantId(final String tenantId) {
-    tenantIds.add(tenantId);
+    customTenantIds.add(tenantId);
     return this;
   }
 
   @Override
   public JobWorkerBuilderStep3 tenantIds(final List<String> tenantIds) {
-    tenantIds.addAll(tenantIds);
+    customTenantIds.addAll(tenantIds);
     return this;
   }
 
@@ -231,5 +234,9 @@ public final class JobWorkerBuilderImpl
   public JobWorkerBuilderStep3 tenantIds(final String... tenantIds) {
     tenantIds(Arrays.asList(tenantIds));
     return this;
+  }
+
+  private List<String> getTenantIds() {
+    return customTenantIds.isEmpty() ? defaultTenantIds : customTenantIds;
   }
 }
