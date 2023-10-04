@@ -69,7 +69,7 @@ services:
 
   zeebe-opensearch:
     container_name: zeebe-opensearch
-    image: camunda/zeebe:8.3.0-alpha4
+    image: camunda/zeebe:8.3.0-alpha6
     environment:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
       - ZEEBE_HOST=${ZEEBE_HOST:-}

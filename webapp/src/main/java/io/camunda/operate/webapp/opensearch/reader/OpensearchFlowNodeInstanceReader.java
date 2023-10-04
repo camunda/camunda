@@ -674,7 +674,7 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader i
       .query(constantScore(withTenantCheck(term(EventTemplate.FLOW_NODE_INSTANCE_KEY, flowNodeInstanceId))))
       .sort(sortOptions(EventTemplate.ID, Asc));
 
-    List<EventEntity> eventEntities = richOpenSearchClient.doc().searchValues(searchRequestBuilder, EventEntity.class);
+    List<EventEntity> eventEntities = richOpenSearchClient.doc().searchValues(searchRequestBuilder, EventEntity.class, true);
 
     if (eventEntities.isEmpty()) {
       throw new NotFoundException(String.format("Could not find flow node instance event with id '%s'.", flowNodeInstanceId));

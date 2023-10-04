@@ -12,13 +12,13 @@ import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.it.ArchiverITRepository;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import org.opensearch.client.opensearch._types.OpenSearchException;
-import org.opensearch.client.opensearch.core.search.Hit;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 
@@ -44,7 +44,7 @@ public class OpensearchArchiverITRepository implements ArchiverITRepository {
       .query(constantScore(ids(toSafeArrayOfStrings(ids))))
       .size(100);
 
-    return richOpenSearchClient.doc().searchValues(searchRequestBuilder, BatchOperationEntity.class);
+    return richOpenSearchClient.doc().searchValues(searchRequestBuilder, BatchOperationEntity.class, true);
   }
 
   @Override
@@ -60,7 +60,7 @@ public class OpensearchArchiverITRepository implements ArchiverITRepository {
       )
       .size(100);
 
-    return richOpenSearchClient.doc().searchValues(searchRequestBuilder, ProcessInstanceForListViewEntity.class);
+    return richOpenSearchClient.doc().searchValues(searchRequestBuilder, ProcessInstanceForListViewEntity.class, true);
   }
 
   @Override
@@ -70,12 +70,9 @@ public class OpensearchArchiverITRepository implements ArchiverITRepository {
         .query(stringTerms(idFieldName, Arrays.asList(toSafeArrayOfStrings(ids))))
         .size(100);
 
-      List<Long> indexIds = richOpenSearchClient.doc().search(searchRequestBuilder, Object.class)
-        .hits()
-        .hits()
+      List<Long> indexIds = richOpenSearchClient.doc().scrollValues(searchRequestBuilder, HashMap.class)
         .stream()
-        .map(Hit::id)
-        .map(Long::valueOf)
+        .map(map -> (Long) map.get(idFieldName))
         .toList();
 
       return Optional.of(indexIds);

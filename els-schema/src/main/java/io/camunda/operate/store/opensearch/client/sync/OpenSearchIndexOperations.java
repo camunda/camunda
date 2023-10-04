@@ -238,7 +238,8 @@ public class OpenSearchIndexOperations extends OpenSearchRetryOperation {
     }
   }
 
-  public GetIndexResponse get(GetIndexRequest.Builder requestBuilder) throws IOException {
-    return openSearchClient.indices().get(requestBuilder.build());
+  public GetIndexResponse get(GetIndexRequest.Builder requestBuilder) {
+    GetIndexRequest request = requestBuilder.build();
+    return safe(() -> openSearchClient.indices().get(request), e -> "Failed to get index " + request.index());
   }
 }

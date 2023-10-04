@@ -195,6 +195,7 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
   public void refreshOperateSearchIndices() {
     try {
       richOpenSearchClient.index().refresh(operateProperties.getOpensearch().getIndexPrefix() + "*");
+      Thread.sleep(3000); // TODO: Find a way to wait for refresh completion
     } catch (Exception t) {
       logger.error("Could not refresh Operate Opensearch indices", t);
     }

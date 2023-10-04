@@ -190,7 +190,7 @@ public class OpensearchBatchOperationWriter implements io.camunda.operate.webapp
     }
   }
 
-  private int addOperations(CreateBatchOperationRequestDto batchOperationRequest, BatchOperationEntity batchOperation) {
+  private int addOperations(CreateBatchOperationRequestDto batchOperationRequest, BatchOperationEntity batchOperation) throws IOException {
     final int batchSize = operateProperties.getElasticsearch().getBatchSize();
     Query query = openSearchQueryHelper.createProcessInstancesQuery(batchOperationRequest.getQuery());
     if(permissionsService != null) {
@@ -218,7 +218,7 @@ public class OpensearchBatchOperationWriter implements io.camunda.operate.webapp
       batchOperation.setInstancesCount((int) hitsMeta.total().value());
     };
 
-    richOpenSearchClient.doc().scrollWith(searchRequestBuilder, ProcessInstanceSource.class, hitsConsumer, hitsMetadataConsumer);
+    richOpenSearchClient.doc().unsafeScrollWith(searchRequestBuilder, hitsConsumer, hitsMetadataConsumer, ProcessInstanceSource.class, false);
 
     return operationsCount.get();
   }

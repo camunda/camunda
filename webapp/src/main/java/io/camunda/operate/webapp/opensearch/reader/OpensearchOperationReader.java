@@ -124,7 +124,7 @@ public class OpensearchOperationReader extends OpensearchAbstractReader implemen
         sortOptions(ID, Asc)
       );
 
-    richOpenSearchClient.doc().scrollValues(searchRequestBuilder, OperationEntity.class)
+    richOpenSearchClient.doc().scrollValues(searchRequestBuilder, OperationEntity.class, true)
       .forEach( operationEntity -> CollectionUtil.addToMap(result, operationEntity.getProcessInstanceKey(), operationEntity));
 
     return result;
@@ -198,7 +198,7 @@ public class OpensearchOperationReader extends OpensearchAbstractReader implemen
       term(BatchOperationTemplate.USERNAME, userService.getCurrentUser().getUsername())
     );
 
-    var searchRequestBuilder = searchRequestBuilder(operationTemplate, ALL)
+    var searchRequestBuilder = searchRequestBuilder(batchOperationTemplate, ALL)
       .query(query)
       .size(pageSize);
 

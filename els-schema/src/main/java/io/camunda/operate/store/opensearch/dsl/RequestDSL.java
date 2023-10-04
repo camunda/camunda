@@ -21,7 +21,9 @@ import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.UpdateRequest;
 import org.opensearch.client.opensearch.core.reindex.Destination;
 import org.opensearch.client.opensearch.core.reindex.Source;
+import org.opensearch.client.opensearch.indices.CreateIndexRequest;
 import org.opensearch.client.opensearch.indices.GetIndexRequest;
+import org.opensearch.client.opensearch.indices.IndexState;
 import org.opensearch.client.opensearch.snapshot.CreateSnapshotRequest;
 import org.opensearch.client.opensearch.snapshot.DeleteSnapshotRequest;
 import org.opensearch.client.opensearch.snapshot.GetRepositoryRequest;
@@ -42,6 +44,18 @@ public interface RequestDSL {
       case ONLY_RUNTIME -> template.getFullQualifiedName();
       case ALL -> template.getAlias();
     };
+  }
+
+  static CreateIndexRequest.Builder createIndexRequestBuilder(String index, IndexState patternIndex) {
+    return new CreateIndexRequest.Builder()
+      .index(index)
+      .aliases(patternIndex.aliases())
+      .mappings(patternIndex.mappings())
+      .settings(s -> s.index(i -> i
+        .numberOfReplicas(patternIndex.settings().index().numberOfReplicas())
+        .numberOfShards(patternIndex.settings().index().numberOfShards())
+        .analysis(patternIndex.settings().index().analysis())
+      ));
   }
 
   static CreateSnapshotRequest.Builder createSnapshotRequestBuilder(String repository, String snapshot, List<String> indices) {

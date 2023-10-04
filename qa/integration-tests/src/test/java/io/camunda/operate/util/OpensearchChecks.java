@@ -963,4 +963,20 @@ public class OpensearchChecks {
     };
   }
 
+  @Bean(name = "jobWithRetriesCheck")
+  public Predicate<Object[]> getJobWithRetriesCheck() {
+    return objects -> {
+      assertThat(objects).hasSize(3);
+      assertThat(objects[0]).isInstanceOf(Long.class);
+      assertThat(objects[1]).isInstanceOf(Long.class);
+      assertThat(objects[2]).isInstanceOf(Integer.class);
+      Long processInstanceKey = (Long) objects[0];
+      Long jobKey = (Long) objects[1];
+      Integer numberOfRetriesLeft = (Integer) objects[2];
+      List<EventEntity> events = getAllEvents(processInstanceKey);
+      return events.stream().filter(
+        e -> e.getMetadata() != null && e.getMetadata().getJobKey() != null && e.getMetadata().getJobKey()
+          .equals(jobKey) && e.getMetadata().getJobRetries().equals(numberOfRetriesLeft)).count() > 0;
+    };
+  }
 }

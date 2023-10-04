@@ -7,6 +7,7 @@
 package io.camunda.operate.store.opensearch.client.sync;
 
 import io.camunda.operate.exceptions.OperateRuntimeException;
+import io.camunda.operate.store.opensearch.client.OpenSearchFailedShardsException;
 import net.jodah.failsafe.Failsafe;
 import net.jodah.failsafe.RetryPolicy;
 import net.jodah.failsafe.function.CheckedSupplier;
@@ -56,7 +57,7 @@ public abstract class OpenSearchRetryOperation extends OpenSearchSyncOperation {
     try {
       final RetryPolicy<T> retryPolicy =
         new RetryPolicy<T>()
-          .handle(IOException.class, OpenSearchException.class)
+          .handle(IOException.class, OpenSearchException.class, OpenSearchFailedShardsException.class)
           .withDelay(Duration.ofSeconds(delayIntervalInSeconds))
           .withMaxAttempts(retries)
           .onRetry(
@@ -80,7 +81,7 @@ public abstract class OpenSearchRetryOperation extends OpenSearchSyncOperation {
         "Couldn't execute operation "
           + operationName
           + " on opensearch for "
-          + numberOfRetries
+          + retries
           + " attempts with "
           + delayIntervalInSeconds
           + " seconds waiting.",
