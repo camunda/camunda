@@ -86,7 +86,7 @@ jobs:
           secrets: ${{ toJSON(secrets) }}
 
       - name: Login to Harbor docker registery
-        uses: docker/login-action@v2
+        uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3
         with:
           username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
           password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
