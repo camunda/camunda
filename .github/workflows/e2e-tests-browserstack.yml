@@ -40,7 +40,7 @@ jobs:
             secret/data/products/optimize/ci/camunda-optimize SLACK_BOT_URL;
 
       - name: Login to Harbor docker registery
-        uses: docker/login-action@v2
+        uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3
         with:
           registry: registry.camunda.cloud
           username: ${{ steps.secrets.outputs.CAMUNDA_CONTAINER_REGISTRY_USER }}
