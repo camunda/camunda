@@ -8,8 +8,7 @@ package io.camunda.tasklist.store.elasticsearch;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.refEq;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -19,11 +18,14 @@ import io.camunda.tasklist.entities.FormEntity;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.schema.indices.FormIndex;
+import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
 import java.io.IOException;
+import org.apache.lucene.search.TotalHits;
 import org.elasticsearch.action.get.GetRequest;
-import org.elasticsearch.action.get.GetResponse;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.SearchHits;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -37,7 +39,7 @@ class FormStoreElasticSearchTest {
 
   private static final String FORM_INDEX_NAME = "tasklist-form-x.0.0";
   @Mock private FormIndex formIndex = new FormIndex();
-  @Mock private RestHighLevelClient esClient;
+  @Mock private TenantAwareElasticsearchClient tenantAwareClient;
   @Spy private ObjectMapper objectMapper = CommonUtils.OBJECT_MAPPER;
   @InjectMocks private FormStoreElasticSearch instance;
 
@@ -49,22 +51,24 @@ class FormStoreElasticSearchTest {
   @Test
   void getFormWhenFormNotFound() throws IOException {
     // given
-    final var getForRequest = new GetRequest(FORM_INDEX_NAME).id("processDefId1_id1");
-    final var response = mock(GetResponse.class);
-    when(response.isExists()).thenReturn(false);
-    when(esClient.get(refEq(getForRequest), eq(RequestOptions.DEFAULT))).thenReturn(response);
+    when(formIndex.getIndexName()).thenReturn(FormIndex.INDEX_NAME);
+    final var response = mock(SearchResponse.class);
+    when(tenantAwareClient.search(any(SearchRequest.class))).thenReturn(response);
+    final var hits = mock(SearchHits.class);
+    when(response.getHits()).thenReturn(hits);
+    when(hits.getTotalHits()).thenReturn(new TotalHits(0L, TotalHits.Relation.EQUAL_TO));
 
     // when - then
     assertThatThrownBy(() -> instance.getForm("id1", "processDefId1"))
         .isInstanceOf(NotFoundException.class)
-        .hasMessage("No task form found with id id1");
+        .hasMessage("form with id processDefId1_id1 was not found");
   }
 
   @Test
   void getFormWhenIOExceptionOccurred() throws IOException {
     // given
     final var getForRequest = new GetRequest(FORM_INDEX_NAME).id("processDefId2_id2");
-    when(esClient.get(refEq(getForRequest), eq(RequestOptions.DEFAULT)))
+    when(tenantAwareClient.search(any(SearchRequest.class)))
         .thenThrow(new IOException("some error"));
 
     // when - then
@@ -83,12 +87,16 @@ class FormStoreElasticSearchTest {
             .setProcessDefinitionId("processDefId3")
             .setBpmnId("bpmnId3")
             .setSchema("");
-    final var getForRequest = new GetRequest(FORM_INDEX_NAME).id("processDefId3_id3");
-    final var response = mock(GetResponse.class);
-    when(response.isExists()).thenReturn(true);
+
     final var responseAsstring = objectMapper.writeValueAsString(providedFormEntity);
-    when(response.getSourceAsString()).thenReturn(responseAsstring);
-    when(esClient.get(refEq(getForRequest), eq(RequestOptions.DEFAULT))).thenReturn(response);
+    final var response = mock(SearchResponse.class);
+    when(tenantAwareClient.search(any(SearchRequest.class))).thenReturn(response);
+    final var hits = mock(SearchHits.class);
+    when(response.getHits()).thenReturn(hits);
+    when(hits.getTotalHits()).thenReturn(new TotalHits(1L, TotalHits.Relation.EQUAL_TO));
+    final var hit = mock(SearchHit.class);
+    when(hits.getHits()).thenReturn(new SearchHit[] {hit});
+    when(hit.getSourceAsString()).thenReturn(responseAsstring);
 
     // when
     final var result = instance.getForm("id3", "processDefId3");

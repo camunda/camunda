@@ -17,44 +17,50 @@ import io.camunda.tasklist.entities.FormEntity;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.schema.indices.FormIndex;
+import io.camunda.tasklist.tenant.TenantAwareOpenSearchClient;
 import java.io.IOException;
-import java.util.function.Function;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.opensearch.client.opensearch.OpenSearchClient;
-import org.opensearch.client.opensearch.core.GetRequest;
-import org.opensearch.client.opensearch.core.GetResponse;
-import org.opensearch.client.util.ObjectBuilder;
+import org.opensearch.client.opensearch.core.SearchRequest;
+import org.opensearch.client.opensearch.core.SearchResponse;
+import org.opensearch.client.opensearch.core.search.Hit;
+import org.opensearch.client.opensearch.core.search.HitsMetadata;
+import org.opensearch.client.opensearch.core.search.TotalHits;
 
 @ExtendWith(MockitoExtension.class)
 class FormStoreOpenSearchTest {
   @Mock private FormIndex formIndex = new FormIndex();
 
-  @Mock private OpenSearchClient osClient;
+  @Mock private TenantAwareOpenSearchClient tenantAwareClient;
 
   @InjectMocks private FormStoreOpenSearch instance;
 
   @Test
   void getFormWhenFormNotFound() throws IOException {
-    final GetResponse<FormEntity> formEntityResponse = mock(GetResponse.class);
-    when(formEntityResponse.found()).thenReturn(false);
-    when(osClient.get(
-            (Function<GetRequest.Builder, ObjectBuilder<GetRequest>>) any(), eq(FormEntity.class)))
-        .thenReturn(formEntityResponse);
+    when(formIndex.getIndexName()).thenReturn(FormIndex.INDEX_NAME);
+
+    final var formSearchResponse = mock(SearchResponse.class);
+    when(tenantAwareClient.search(any(SearchRequest.Builder.class), eq(FormEntity.class)))
+        .thenReturn(formSearchResponse);
+    final var hitsMetadata = mock(HitsMetadata.class);
+    when(formSearchResponse.hits()).thenReturn(hitsMetadata);
+    final var totalHits = mock(TotalHits.class);
+    when(hitsMetadata.total()).thenReturn(totalHits);
+    when(totalHits.value()).thenReturn(0L);
 
     // when - then
     assertThatThrownBy(() -> instance.getForm("id1", "processDefId1"))
         .isInstanceOf(NotFoundException.class)
-        .hasMessage("No task form found with id id1");
+        .hasMessage("form with id processDefId1_id1 was not found");
   }
 
   @Test
   void getFormWhenIOExceptionOccurred() throws IOException {
-    when(osClient.get(
-            (Function<GetRequest.Builder, ObjectBuilder<GetRequest>>) any(), eq(FormEntity.class)))
+    when(tenantAwareClient.search(any(SearchRequest.Builder.class), eq(FormEntity.class)))
         .thenThrow(new IOException("some IO exception"));
 
     // when - then
@@ -66,18 +72,23 @@ class FormStoreOpenSearchTest {
 
   @Test
   void getForm() throws IOException {
-    final GetResponse<FormEntity> formEntityResponse = mock(GetResponse.class);
     final var providedFormEntity =
         new FormEntity()
             .setId("id1")
             .setProcessDefinitionId("processDefId1")
             .setBpmnId("bpmnId1")
             .setSchema("");
-    when(formEntityResponse.found()).thenReturn(true);
-    when(formEntityResponse.source()).thenReturn(providedFormEntity);
-    when(osClient.get(
-            (Function<GetRequest.Builder, ObjectBuilder<GetRequest>>) any(), eq(FormEntity.class)))
-        .thenReturn(formEntityResponse);
+    final var formSearchResponse = mock(SearchResponse.class);
+    when(tenantAwareClient.search(any(SearchRequest.Builder.class), eq(FormEntity.class)))
+        .thenReturn(formSearchResponse);
+    final var hitsMetadata = mock(HitsMetadata.class);
+    when(formSearchResponse.hits()).thenReturn(hitsMetadata);
+    final var totalHits = mock(TotalHits.class);
+    when(hitsMetadata.total()).thenReturn(totalHits);
+    when(totalHits.value()).thenReturn(1L);
+    final var hit = mock(Hit.class);
+    when(hitsMetadata.hits()).thenReturn(List.of(hit));
+    when(hit.source()).thenReturn(providedFormEntity);
 
     // when
     final var result = instance.getForm("id1", "processDefId1");

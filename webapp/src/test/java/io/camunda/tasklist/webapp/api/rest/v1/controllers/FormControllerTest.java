@@ -6,6 +6,7 @@
  */
 package io.camunda.tasklist.webapp.api.rest.v1.controllers;
 
+import static io.camunda.zeebe.client.api.command.CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -58,7 +59,8 @@ class FormControllerTest {
         new FormResponse()
             .setId(formId)
             .setProcessDefinitionKey(processDefinitionKey)
-            .setSchema("{}");
+            .setSchema("{}")
+            .setTenantId(DEFAULT_TENANT_IDENTIFIER);
     when(formStore.getForm(formId, processDefinitionKey)).thenReturn(formEntity);
 
     // When

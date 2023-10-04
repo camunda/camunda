@@ -7,6 +7,7 @@
 package io.camunda.tasklist.webapp.api.rest.v1.controllers;
 
 import static io.camunda.tasklist.util.assertions.CustomAssertions.assertThat;
+import static io.camunda.zeebe.protocol.record.value.TenantOwned.DEFAULT_TENANT_IDENTIFIER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
@@ -70,6 +71,7 @@ public class FormControllerIT extends TasklistZeebeIntegrationTest {
               assertThat(form.getProcessDefinitionKey())
                   .isEqualTo(tester.getProcessDefinitionKey());
               assertThat(form.getSchema()).isNotBlank();
+              assertThat(form.getTenantId()).isEqualTo(DEFAULT_TENANT_IDENTIFIER);
             });
   }
 
@@ -77,12 +79,13 @@ public class FormControllerIT extends TasklistZeebeIntegrationTest {
   public void getFormWhenFormIsNotFoundThen404ErrorExpected() {
     // given
     final var formId = "unknown:Form_404";
+    final var processDefinitionKey = "test";
 
     // when
     final var errorResult =
         mockMvcHelper.doRequest(
             get(TasklistURIs.FORMS_URL_V1.concat("/{formId}"), formId)
-                .param("processDefinitionKey", "test"));
+                .param("processDefinitionKey", processDefinitionKey));
 
     // then
     assertThat(errorResult)
@@ -91,6 +94,6 @@ public class FormControllerIT extends TasklistZeebeIntegrationTest {
         .extractingErrorContent(objectMapper)
         .hasStatus(HttpStatus.NOT_FOUND)
         .hasInstanceId()
-        .hasMessage("No task form found with id %s", formId);
+        .hasMessage("form with id %s_%s was not found", processDefinitionKey, formId);
   }
 }

@@ -214,7 +214,7 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
         .extractingErrorContent(objectMapper)
         .hasInstanceId()
         .hasStatus(HttpStatus.NOT_FOUND)
-        .hasMessage("Task with id %s was not found", randomTaskId);
+        .hasMessage("task with id %s was not found", randomTaskId);
   }
 
   @Test
@@ -336,7 +336,7 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
         .extractingErrorContent(objectMapper)
         .hasStatus(HttpStatus.NOT_FOUND)
         .hasInstanceId()
-        .hasMessage("Task with id %s was not found", randomTaskId);
+        .hasMessage("task with id %s was not found", randomTaskId);
   }
 
   @Test
@@ -467,7 +467,7 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
         .extractingErrorContent(objectMapper)
         .hasStatus(HttpStatus.NOT_FOUND)
         .hasInstanceId()
-        .hasMessage("Task with id %s was not found", randomTaskId);
+        .hasMessage("task with id %s was not found", randomTaskId);
   }
 
   @Test
@@ -1150,7 +1150,7 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
         .extractingErrorContent(objectMapper)
         .hasStatus(HttpStatus.NOT_FOUND)
         .hasInstanceId()
-        .hasMessage("Task with id %s was not found", randomTaskId);
+        .hasMessage("task with id %s was not found", randomTaskId);
   }
 
   private TasklistTester createTask(

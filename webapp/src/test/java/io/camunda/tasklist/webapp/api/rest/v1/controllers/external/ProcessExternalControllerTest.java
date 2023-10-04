@@ -6,6 +6,7 @@
  */
 package io.camunda.tasklist.webapp.api.rest.v1.controllers.external;
 
+import static io.camunda.zeebe.client.api.command.CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -86,7 +87,8 @@ public class ProcessExternalControllerTest {
             .setProcessDefinitionKey("hello")
             .setSchema("formSchema")
             .setProcessDefinitionKey("2251799813686367")
-            .setTitle("Process Name");
+            .setTitle("Process Name")
+            .setTenantId(DEFAULT_TENANT_IDENTIFIER);
 
     final var formEntity =
         new FormEntity()

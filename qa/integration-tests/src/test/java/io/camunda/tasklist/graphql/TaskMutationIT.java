@@ -249,7 +249,7 @@ public class TaskMutationIT extends TasklistZeebeIntegrationTest {
     assertNull(response.get("$.data"));
     assertEquals("1", response.get("$.errors.length()"));
     assertEquals(
-        String.format("Task with id %s was not found", taskId),
+        String.format("task with id %s was not found", taskId),
         response.get("$.errors[0].message"));
   }
 

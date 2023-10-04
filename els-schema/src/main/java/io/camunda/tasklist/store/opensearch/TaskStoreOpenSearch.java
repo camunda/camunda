@@ -9,7 +9,9 @@ package io.camunda.tasklist.store.opensearch;
 import static io.camunda.tasklist.schema.indices.ProcessInstanceDependant.PROCESS_INSTANCE_ID;
 import static io.camunda.tasklist.util.CollectionUtil.asMap;
 import static io.camunda.tasklist.util.CollectionUtil.getOrDefaultFromMap;
+import static io.camunda.tasklist.util.OpenSearchUtil.QueryType.ALL;
 import static io.camunda.tasklist.util.OpenSearchUtil.SCROLL_KEEP_ALIVE_MS;
+import static io.camunda.tasklist.util.OpenSearchUtil.getRawResponseWithTenantCheck;
 import static java.util.stream.Collectors.toList;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -98,25 +100,10 @@ public class TaskStoreOpenSearch implements TaskStore {
   @Override
   public TaskEntity getTask(final String id) {
     try {
-      return getTaskById(id);
+      return getRawResponseWithTenantCheck(
+          id, taskTemplate, ALL, tenantAwareClient, TaskEntity.class);
     } catch (IOException e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
-    }
-  }
-
-  private TaskEntity getTaskById(final String id) throws IOException {
-
-    final SearchRequest.Builder request =
-        OpenSearchUtil.createSearchRequest(taskTemplate).query(q -> q.ids(ids -> ids.values(id)));
-
-    final SearchResponse<TaskEntity> response = tenantAwareClient.search(request, TaskEntity.class);
-
-    if (response.hits().total().value() == 1L) {
-      return response.hits().hits().get(0).source();
-    } else if (response.hits().total().value() > 1L) {
-      throw new NotFoundException(String.format("Unique task with id %s was not found", id));
-    } else {
-      throw new NotFoundException(String.format("Task with id %s was not found", id));
     }
   }
 
@@ -659,19 +646,18 @@ public class TaskStoreOpenSearch implements TaskStore {
   public List<TaskEntity> getTasksById(List<String> ids) {
     try {
       final List<Hit<TaskEntity>> response = getTasksRawResponse(ids);
-      return response.stream().map(m -> m.source()).collect(Collectors.toList());
+      return response.stream().map(Hit::source).collect(Collectors.toList());
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
   }
 
   private List<Hit<TaskEntity>> getTasksRawResponse(final List<String> ids) throws IOException {
-    final SearchRequest request =
+    final SearchRequest.Builder request =
         OpenSearchUtil.createSearchRequest(taskTemplate)
-            .source(s -> s.filter(f -> f.includes(ids)))
-            .build();
+            .source(s -> s.filter(f -> f.includes(ids)));
 
-    final SearchResponse response = osClient.search(request, TaskEntity.class);
+    final SearchResponse<TaskEntity> response = tenantAwareClient.search(request, TaskEntity.class);
     if (response.hits().total().value() > 0L) {
       return response.hits().hits();
     } else {

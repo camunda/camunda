@@ -17,6 +17,7 @@ public class FormResponse {
   private String processDefinitionKey;
   private String title;
   private String schema;
+  private String tenantId;
 
   public String getId() {
     return id;
@@ -55,6 +56,15 @@ public class FormResponse {
     return this;
   }
 
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  public FormResponse setTenantId(String tenantId) {
+    this.tenantId = tenantId;
+    return this;
+  }
+
   @Override
   public String toString() {
     return new StringJoiner(", ", FormResponse.class.getSimpleName() + "[", "]")
@@ -62,6 +72,7 @@ public class FormResponse {
         .add("processDefinitionKey='" + processDefinitionKey + "'")
         .add("title='" + title + "'")
         .add("schema='" + schema + "'")
+        .add("tenantId='" + tenantId + "'")
         .toString();
   }
 
@@ -77,19 +88,21 @@ public class FormResponse {
     return Objects.equals(id, that.id)
         && Objects.equals(processDefinitionKey, that.processDefinitionKey)
         && Objects.equals(title, that.title)
-        && Objects.equals(schema, that.schema);
+        && Objects.equals(schema, that.schema)
+        && Objects.equals(tenantId, that.tenantId);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, processDefinitionKey, title, schema);
+    return Objects.hash(id, processDefinitionKey, title, schema, tenantId);
   }
 
   public static FormResponse fromFormEntity(FormEntity form) {
     return new FormResponse()
         .setId(form.getBpmnId())
         .setProcessDefinitionKey(form.getProcessDefinitionId())
-        .setSchema(form.getSchema());
+        .setSchema(form.getSchema())
+        .setTenantId(form.getTenantId());
   }
 
   public static FormResponse fromFormEntity(FormEntity form, ProcessEntity processEntity) {
@@ -100,6 +113,7 @@ public class FormResponse {
             processEntity.getName() != null
                 ? processEntity.getName()
                 : processEntity.getBpmnProcessId())
-        .setSchema(form.getSchema());
+        .setSchema(form.getSchema())
+        .setTenantId(form.getTenantId());
   }
 }

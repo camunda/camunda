@@ -6,14 +6,16 @@
  */
 package io.camunda.tasklist.store.opensearch;
 
+import static io.camunda.tasklist.util.OpenSearchUtil.QueryType.ONLY_RUNTIME;
+import static io.camunda.tasklist.util.OpenSearchUtil.getRawResponseWithTenantCheck;
+
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.entities.FormEntity;
-import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.schema.indices.FormIndex;
 import io.camunda.tasklist.store.FormStore;
+import io.camunda.tasklist.tenant.TenantAwareOpenSearchClient;
 import java.io.IOException;
-import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
@@ -25,21 +27,13 @@ public class FormStoreOpenSearch implements FormStore {
 
   @Autowired private FormIndex formIndex;
 
-  @Autowired private OpenSearchClient openSearchClient;
+  @Autowired private TenantAwareOpenSearchClient tenantAwareClient;
 
   public FormEntity getForm(final String id, final String processDefinitionId) {
     try {
       final String formId = String.format("%s_%s", processDefinitionId, id);
-
-      final var formEntityResponse =
-          openSearchClient.get(
-              b -> b.index(formIndex.getFullQualifiedName()).id(formId), FormEntity.class);
-
-      if (formEntityResponse.found()) {
-        return formEntityResponse.source();
-      } else {
-        throw new NotFoundException("No task form found with id " + id);
-      }
+      return getRawResponseWithTenantCheck(
+          formId, formIndex, ONLY_RUNTIME, tenantAwareClient, FormEntity.class);
     } catch (IOException | OpenSearchException e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
     }

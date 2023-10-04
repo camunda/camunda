@@ -169,7 +169,8 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
         .setAssignee(this.getAssignee())
         .setCandidateGroups(this.getCandidateGroups())
         .setCandidateUsers(this.getCandidateUsers())
-        .setFormKey(this.getFormKey());
+        .setFormKey(this.getFormKey())
+        .setTenantId(this.getTenantId());
   }
 
   @Override

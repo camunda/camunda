@@ -11,7 +11,6 @@ import io.camunda.tasklist.schema.Versionable;
 public interface IndexDescriptor extends Versionable {
 
   String TENANT_ID = "tenantId";
-  String DEFAULT_TENANT_ID = "<default>";
 
   String getIndexName();
 

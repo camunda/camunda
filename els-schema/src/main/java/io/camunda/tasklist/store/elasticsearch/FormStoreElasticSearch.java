@@ -6,20 +6,18 @@
  */
 package io.camunda.tasklist.store.elasticsearch;
 
+import static io.camunda.tasklist.util.ElasticsearchUtil.QueryType.ONLY_RUNTIME;
 import static io.camunda.tasklist.util.ElasticsearchUtil.fromSearchHit;
+import static io.camunda.tasklist.util.ElasticsearchUtil.getRawResponseWithTenantCheck;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.entities.FormEntity;
-import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.schema.indices.FormIndex;
 import io.camunda.tasklist.store.FormStore;
+import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
 import java.io.IOException;
-import org.elasticsearch.action.get.GetRequest;
-import org.elasticsearch.action.get.GetResponse;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -30,22 +28,16 @@ public class FormStoreElasticSearch implements FormStore {
 
   @Autowired private FormIndex formIndex;
 
-  @Autowired private RestHighLevelClient esClient;
+  @Autowired private TenantAwareElasticsearchClient tenantAwareClient;
 
   @Autowired private ObjectMapper objectMapper;
 
   public FormEntity getForm(final String id, final String processDefinitionId) {
     try {
       final String formId = String.format("%s_%s", processDefinitionId, id);
-
-      final GetRequest getRequest = new GetRequest(formIndex.getFullQualifiedName()).id(formId);
-
-      final GetResponse response = esClient.get(getRequest, RequestOptions.DEFAULT);
-      if (response.isExists()) {
-        return fromSearchHit(response.getSourceAsString(), objectMapper, FormEntity.class);
-      } else {
-        throw new NotFoundException("No task form found with id " + id);
-      }
+      final var formSearchHit =
+          getRawResponseWithTenantCheck(formId, formIndex, ONLY_RUNTIME, tenantAwareClient);
+      return fromSearchHit(formSearchHit.getSourceAsString(), objectMapper, FormEntity.class);
     } catch (IOException e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
     }

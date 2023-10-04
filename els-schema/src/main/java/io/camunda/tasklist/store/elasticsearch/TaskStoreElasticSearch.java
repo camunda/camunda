@@ -9,8 +9,10 @@ package io.camunda.tasklist.store.elasticsearch;
 import static io.camunda.tasklist.schema.indices.ProcessInstanceDependant.PROCESS_INSTANCE_ID;
 import static io.camunda.tasklist.util.CollectionUtil.asMap;
 import static io.camunda.tasklist.util.CollectionUtil.getOrDefaultFromMap;
+import static io.camunda.tasklist.util.ElasticsearchUtil.QueryType.ALL;
 import static io.camunda.tasklist.util.ElasticsearchUtil.SCROLL_KEEP_ALIVE_MS;
 import static io.camunda.tasklist.util.ElasticsearchUtil.fromSearchHit;
+import static io.camunda.tasklist.util.ElasticsearchUtil.getRawResponseWithTenantCheck;
 import static io.camunda.tasklist.util.ElasticsearchUtil.joinWithAnd;
 import static io.camunda.tasklist.util.ElasticsearchUtil.mapSearchHits;
 import static java.util.stream.Collectors.toList;
@@ -106,13 +108,9 @@ public class TaskStoreElasticSearch implements TaskStore {
 
   @Override
   public TaskEntity getTask(final String id) {
-    return getTask(id, null);
-  }
-
-  private TaskEntity getTask(final String id, List<String> fieldNames) {
     try {
-      // TODO #104 define list of fields and specify sourceFields to fetch
-      final SearchHit response = getTaskRawResponse(id);
+      final SearchHit response =
+          getRawResponseWithTenantCheck(id, taskTemplate, ALL, tenantAwareClient);
       return fromSearchHit(response.getSourceAsString(), objectMapper, TaskEntity.class);
     } catch (IOException e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
@@ -136,28 +134,11 @@ public class TaskStoreElasticSearch implements TaskStore {
         ElasticsearchUtil.createSearchRequest(taskTemplate)
             .source(new SearchSourceBuilder().query(constantScoreQuery(query)));
 
-    final SearchResponse response = esClient.search(request, RequestOptions.DEFAULT);
+    final SearchResponse response = tenantAwareClient.search(request);
     if (response.getHits().getTotalHits().value > 0) {
       return response.getHits().getHits();
     } else {
-      throw new NotFoundException(String.format("No tasks were found for ids %s", ids.toString()));
-    }
-  }
-
-  private SearchHit getTaskRawResponse(final String id) throws IOException {
-    final QueryBuilder query = idsQuery().addIds(id);
-
-    final SearchRequest request =
-        ElasticsearchUtil.createSearchRequest(taskTemplate)
-            .source(new SearchSourceBuilder().query(constantScoreQuery(query)));
-
-    final SearchResponse response = tenantAwareClient.search(request);
-    if (response.getHits().getTotalHits().value == 1) {
-      return response.getHits().getHits()[0];
-    } else if (response.getHits().getTotalHits().value > 1) {
-      throw new NotFoundException(String.format("Unique task with id %s was not found", id));
-    } else {
-      throw new NotFoundException(String.format("Task with id %s was not found", id));
+      throw new NotFoundException(String.format("No tasks were found for ids %s", ids));
     }
   }
 
@@ -528,7 +509,8 @@ public class TaskStoreElasticSearch implements TaskStore {
   public TaskEntity persistTaskCompletion(final TaskEntity taskBefore) {
     final SearchHit taskBeforeSearchHit;
     try {
-      taskBeforeSearchHit = this.getTaskRawResponse(taskBefore.getId());
+      taskBeforeSearchHit =
+          getRawResponseWithTenantCheck(taskBefore.getId(), taskTemplate, ALL, tenantAwareClient);
     } catch (IOException e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
     }
@@ -577,7 +559,8 @@ public class TaskStoreElasticSearch implements TaskStore {
 
   private void updateTask(final String taskId, final Map<String, Object> updateFields) {
     try {
-      final SearchHit searchHit = getTaskRawResponse(taskId);
+      final SearchHit searchHit =
+          getRawResponseWithTenantCheck(taskId, taskTemplate, ALL, tenantAwareClient);
       // update task with optimistic locking
       // format date fields properly
       final Map<String, Object> jsonMap =

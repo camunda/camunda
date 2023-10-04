@@ -9,13 +9,18 @@ package io.camunda.tasklist.util;
 import static io.camunda.tasklist.util.CollectionUtil.map;
 import static io.camunda.tasklist.util.CollectionUtil.throwAwayNullElements;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
+import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
 
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.entities.TasklistEntity;
+import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
+import io.camunda.tasklist.schema.indices.IndexDescriptor;
 import io.camunda.tasklist.schema.templates.TemplateDescriptor;
+import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -51,6 +56,7 @@ import org.elasticsearch.index.reindex.ReindexRequest;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.Aggregations;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,6 +75,30 @@ public abstract class ElasticsearchUtil {
 
   public static SearchRequest createSearchRequest(TemplateDescriptor template) {
     return createSearchRequest(template, QueryType.ALL);
+  }
+
+  public static SearchHit getRawResponseWithTenantCheck(
+      final String id,
+      IndexDescriptor descriptor,
+      QueryType queryType,
+      TenantAwareElasticsearchClient tenantAwareClient)
+      throws IOException {
+    final QueryBuilder query = idsQuery().addIds(id);
+
+    final SearchRequest request =
+        ElasticsearchUtil.createSearchRequest(descriptor, queryType)
+            .source(new SearchSourceBuilder().query(constantScoreQuery(query)));
+
+    final SearchResponse response = tenantAwareClient.search(request);
+    if (response.getHits().getTotalHits().value == 1) {
+      return response.getHits().getHits()[0];
+    } else if (response.getHits().getTotalHits().value > 1) {
+      throw new NotFoundException(
+          String.format("Unique %s with id %s was not found", descriptor.getIndexName(), id));
+    } else {
+      throw new NotFoundException(
+          String.format("%s with id %s was not found", descriptor.getIndexName(), id));
+    }
   }
 
   public static CompletableFuture<BulkByScrollResponse> reindexAsync(
@@ -121,18 +151,17 @@ public abstract class ElasticsearchUtil {
 
   /* CREATE QUERIES */
 
-  public static SearchRequest createSearchRequest(
-      TemplateDescriptor template, QueryType queryType) {
-    return new SearchRequest(whereToSearch(template, queryType));
+  public static SearchRequest createSearchRequest(IndexDescriptor descriptor, QueryType queryType) {
+    return new SearchRequest(whereToSearch(descriptor, queryType));
   }
 
-  public static String whereToSearch(TemplateDescriptor template, QueryType queryType) {
+  public static String whereToSearch(IndexDescriptor descriptor, QueryType queryType) {
     switch (queryType) {
       case ONLY_RUNTIME:
-        return template.getFullQualifiedName();
+        return descriptor.getFullQualifiedName();
       case ALL:
       default:
-        return template.getAlias();
+        return descriptor.getAlias();
     }
   }
 

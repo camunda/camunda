@@ -13,6 +13,7 @@
 name: Release dry-run scheduled
 
 on:
+  workflow_dispatch:
   schedule:
     # Runs at 03:00 on every day-of-week from Monday through Friday. See: https://crontab.guru/#0_3_*_*_1-5
     - cron: '0 3 * * 1-5'

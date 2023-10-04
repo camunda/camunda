@@ -51,10 +51,14 @@ public class FormIT extends TasklistZeebeIntegrationTest {
     createData();
 
     // when
-    final GraphQLResponse formResponse = tester.getForm("wrongId");
+    final var bpmnFormId = "wrongId";
+    final GraphQLResponse formResponse = tester.getForm(bpmnFormId);
 
     // then
-    assertEquals("No task form found with id wrongId", formResponse.get("$.errors[0].message"));
+    final var expectedErrorMessage =
+        String.format(
+            "form with id %s_%s was not found", tester.getProcessDefinitionKey(), bpmnFormId);
+    assertEquals(expectedErrorMessage, formResponse.get("$.errors[0].message"));
   }
 
   private void createData() {

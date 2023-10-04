@@ -843,7 +843,7 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
     // then
     assertNull(taskResponse.get("$.data"));
     assertEquals("1", taskResponse.get("$.errors.length()"));
-    assertEquals("Task with id wrongTaskId was not found", taskResponse.get("$.errors[0].message"));
+    assertEquals("task with id wrongTaskId was not found", taskResponse.get("$.errors[0].message"));
   }
 
   @Test
@@ -859,7 +859,7 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
   }
 
   @Test
-  public void shouldNotReturnTasksWithCandidateUser() throws IOException {
+  public void shouldNotReturnTasksWithCandidateUser() {
     final String candidateUsers = "random1,random2";
     final List<TaskDTO> tasks = startProcessWithCandidateUserAndSearchBy(candidateUsers, "random3");
     assertEquals(0, tasks.size());
