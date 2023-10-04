@@ -8,16 +8,15 @@
 package io.camunda.zeebe.engine.state.migration.to_8_3;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
+import io.camunda.zeebe.db.impl.DbForeignKey;
+import io.camunda.zeebe.db.impl.DbForeignKey.MatchType;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
-import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
@@ -40,6 +39,11 @@ class ProcessInstanceByProcessDefinitionMigrationTest {
     private final ElementInstance elementInstance;
     private final ColumnFamily<DbLong, ElementInstance> elementInstanceColumnFamily;
 
+    private final ColumnFamily<DbCompositeKey<DbForeignKey<DbLong>, DbForeignKey<DbLong>>, DbNil>
+        parentChildColumnFamily;
+    private final DbCompositeKey<DbForeignKey<DbLong>, DbForeignKey<DbLong>> parentChildKey;
+    private final DbForeignKey<DbLong> parentKey;
+
     public LegacyElementInstanceState(
         final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
       elementInstanceKey = new DbLong();
@@ -50,74 +54,30 @@ class ProcessInstanceByProcessDefinitionMigrationTest {
               transactionContext,
               elementInstanceKey,
               elementInstance);
+
+      parentKey =
+          new DbForeignKey<>(
+              new DbLong(),
+              ZbColumnFamilies.ELEMENT_INSTANCE_KEY,
+              MatchType.Full,
+              (k) -> k.getValue() == -1);
+      parentChildKey =
+          new DbCompositeKey<>(
+              parentKey,
+              new DbForeignKey<>(elementInstanceKey, ZbColumnFamilies.ELEMENT_INSTANCE_KEY));
+      parentChildColumnFamily =
+          zeebeDb.createColumnFamily(
+              ZbColumnFamilies.ELEMENT_INSTANCE_PARENT_CHILD,
+              transactionContext,
+              parentChildKey,
+              DbNil.INSTANCE);
     }
 
     public void insertElementInstance(final long key, final ElementInstance elementInstance) {
       elementInstanceKey.wrapLong(key);
       elementInstanceColumnFamily.insert(elementInstanceKey, elementInstance);
-    }
-  }
-
-  @Nested
-  class MockBasedTests {
-    @Test
-    void noMigrationNeededWhenElementInstanceColumnFamilyIsEmptyAndPIByDefinitionIsEmpty() {
-      // given
-      final var mockProcessingState = mock(ProcessingState.class);
-      when(mockProcessingState.isEmpty(ZbColumnFamilies.ELEMENT_INSTANCE_KEY)).thenReturn(true);
-      when(mockProcessingState.isEmpty(ZbColumnFamilies.PROCESS_INSTANCE_KEY_BY_DEFINITION_KEY))
-          .thenReturn(true);
-
-      // when
-      final var actual = sut.needsToRun(mockProcessingState);
-
-      // then
-      assertThat(actual).isFalse();
-    }
-
-    @Test
-    void noMigrationNeededWhenElementInstanceColumnFamilyIsNotEmptyAndPIByDefinitionIsNotEmpty() {
-      // given
-      final var mockProcessingState = mock(ProcessingState.class);
-      when(mockProcessingState.isEmpty(ZbColumnFamilies.ELEMENT_INSTANCE_KEY)).thenReturn(false);
-      when(mockProcessingState.isEmpty(ZbColumnFamilies.PROCESS_INSTANCE_KEY_BY_DEFINITION_KEY))
-          .thenReturn(false);
-
-      // when
-      final var actual = sut.needsToRun(mockProcessingState);
-
-      // then
-      assertThat(actual).isFalse();
-    }
-
-    @Test
-    void noMigrationNeededWhenElementInstanceColumnFamilyIsEmptyAndPIByDefinitionIsNotEmpty() {
-      // given
-      final var mockProcessingState = mock(ProcessingState.class);
-      when(mockProcessingState.isEmpty(ZbColumnFamilies.ELEMENT_INSTANCE_KEY)).thenReturn(true);
-      when(mockProcessingState.isEmpty(ZbColumnFamilies.PROCESS_INSTANCE_KEY_BY_DEFINITION_KEY))
-          .thenReturn(false);
-
-      // when
-      final var actual = sut.needsToRun(mockProcessingState);
-
-      // then
-      assertThat(actual).isFalse();
-    }
-
-    @Test
-    void migrationNeededWhenElementInstanceColumnFamilyIsNotEmptyAndPIByDefinitionIsEmpty() {
-      // given
-      final var mockProcessingState = mock(ProcessingState.class);
-      when(mockProcessingState.isEmpty(ZbColumnFamilies.ELEMENT_INSTANCE_KEY)).thenReturn(false);
-      when(mockProcessingState.isEmpty(ZbColumnFamilies.PROCESS_INSTANCE_KEY_BY_DEFINITION_KEY))
-          .thenReturn(true);
-
-      // when
-      final var actual = sut.needsToRun(mockProcessingState);
-
-      // then
-      assertThat(actual).isTrue();
+      parentKey.inner().wrapLong(elementInstance.getParentKey());
+      parentChildColumnFamily.insert(parentChildKey, DbNil.INSTANCE);
     }
   }
 
@@ -166,7 +126,8 @@ class ProcessInstanceByProcessDefinitionMigrationTest {
       final long processInstanceKey = 100L;
       final long processDefinitionKey = 101L;
       legacyState.insertElementInstance(
-          processInstanceKey, createElementInstance(processDefinitionKey, BpmnElementType.PROCESS));
+          processInstanceKey,
+          createElementInstance(processInstanceKey, processDefinitionKey, BpmnElementType.PROCESS));
 
       // when
       sut.runMigration(processingState);
@@ -184,10 +145,15 @@ class ProcessInstanceByProcessDefinitionMigrationTest {
     void shouldNotMigrateElementInstancesOfTypeOtherThanProcess() {
       // given
       final long elementInstanceKey = 100L;
-      final long processDefinitionKey = 101L;
+      final long processInstanceKey = 101L;
+      final long processDefinitionKey = 102L;
+      legacyState.insertElementInstance(
+          processInstanceKey,
+          createElementInstance(processInstanceKey, processDefinitionKey, BpmnElementType.PROCESS));
       legacyState.insertElementInstance(
           elementInstanceKey,
-          createElementInstance(processDefinitionKey, BpmnElementType.START_EVENT));
+          createElementInstance(
+              elementInstanceKey, processDefinitionKey, BpmnElementType.START_EVENT));
 
       // when
       sut.runMigration(processingState);
@@ -201,15 +167,80 @@ class ProcessInstanceByProcessDefinitionMigrationTest {
           .isFalse();
     }
 
+    @Test
+    void migrationNeededWhenPIByDefinitionIsEmpty() {
+      // given
+
+      // when
+      final var actual = sut.needsToRun(processingState);
+
+      // then
+      assertThat(actual).isTrue();
+    }
+
+    @Test
+    void noMigrationNeededWhenPIByDefinitionIsNotEmptyAndCountIsEqual() {
+      // given
+      final long processInstanceKey = 100L;
+      final long processDefinitionKey = 101L;
+
+      elementInstanceKey.wrapLong(processInstanceKey);
+      this.processDefinitionKey.wrapLong(processDefinitionKey);
+      processInstanceKeyByProcessDefinitionKeyColumnFamily.insert(
+          processInstanceKeyByProcessDefinitionKey, DbNil.INSTANCE);
+
+      // to make the count equal, we need an entry in both column families
+      legacyState.insertElementInstance(
+          processInstanceKey,
+          createElementInstance(processInstanceKey, processDefinitionKey, BpmnElementType.PROCESS));
+
+      // when
+      final var actual = sut.needsToRun(processingState);
+
+      // then
+      assertThat(actual).isFalse();
+    }
+
+    @Test
+    void migrationNeededWhenPIByDefinitionIsNotEmptyAndCountIsNotEqual() {
+      // given
+      final long processInstanceKey = 100L;
+      final long processDefinitionKey = 101L;
+
+      elementInstanceKey.wrapLong(processInstanceKey);
+      this.processDefinitionKey.wrapLong(processDefinitionKey);
+      processInstanceKeyByProcessDefinitionKeyColumnFamily.insert(
+          processInstanceKeyByProcessDefinitionKey, DbNil.INSTANCE);
+
+      // to make the count unequal, we need two entries in the old column family
+      legacyState.insertElementInstance(
+          processInstanceKey,
+          createElementInstance(processInstanceKey, processDefinitionKey, BpmnElementType.PROCESS));
+      legacyState.insertElementInstance(
+          102L, createElementInstance(102L, processDefinitionKey, BpmnElementType.PROCESS));
+
+      // when
+      final var actual = sut.needsToRun(processingState);
+
+      // then
+      assertThat(actual).isTrue();
+    }
+
     private ElementInstance createElementInstance(
-        final long processDefinitionKey, final BpmnElementType elementType) {
-      final var elementInstance = new ElementInstance();
-      elementInstance.setValue(
+        final long elementInstanceKey,
+        final long processDefinitionKey,
+        final BpmnElementType elementType) {
+      final ElementInstance parent =
+          elementType == BpmnElementType.PROCESS
+              ? null
+              : createElementInstance(
+                  elementInstanceKey + 1, processDefinitionKey, BpmnElementType.PROCESS);
+      final var value =
           new ProcessInstanceRecord()
               .setProcessDefinitionKey(processDefinitionKey)
-              .setBpmnElementType(elementType));
-      elementInstance.setState(ProcessInstanceIntent.ELEMENT_ACTIVATED);
-      return elementInstance;
+              .setBpmnElementType(elementType);
+      return new ElementInstance(
+          elementInstanceKey, parent, ProcessInstanceIntent.ELEMENT_ACTIVATED, value);
     }
   }
 }
