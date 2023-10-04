@@ -8,10 +8,6 @@
 package io.camunda.zeebe.engine.state.immutable;
 
 public interface MigrationState {
-  /**
-   * Checks if a migration is in state FINISHED.
-   *
-   * @param identifier the identifier of the migration
-   */
-  boolean isMigrationFinished(final String identifier);
+
+  boolean shouldRunElementInstancePopulateProcessInstanceByDefinitionKey();
 }

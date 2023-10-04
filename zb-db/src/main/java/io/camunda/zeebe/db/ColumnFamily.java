@@ -164,4 +164,21 @@ public interface ColumnFamily<KeyType extends DbKey, ValueType extends DbValue> 
    * @return <code>true</code> if the column family has no entry
    */
   boolean isEmpty();
+
+  /**
+   * Count the number of entries in the column family by iterating over all its entries. This is an
+   * expensive operation and should be used with care.
+   *
+   * @return the number of entries in the column family
+   */
+  long count();
+
+  /**
+   * Count the number of entries in the column family which have the same common prefix by iterating
+   * over all its entries. This is an expensive operation and should be used with care.
+   *
+   * @param prefix the prefix which should have the keys in common
+   * @return the number of entries in the column family which have the same common prefix
+   */
+  long countEqualPrefix(DbKey prefix);
 }

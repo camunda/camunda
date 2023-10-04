@@ -422,5 +422,12 @@ public final class LegacyProcessState {
     public void clear() {
       versionCache.clear();
     }
+
+    public void insertProcessVersion(final String processId, final int version) {
+      processIdKey.wrapString(processId);
+      final var value = new NextValue();
+      value.set(version);
+      nextValueColumnFamily.insert(processIdKey, value);
+    }
   }
 }

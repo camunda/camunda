@@ -12,6 +12,7 @@ import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbForeignKey;
+import io.camunda.zeebe.db.impl.DbForeignKey.MatchType;
 import io.camunda.zeebe.db.impl.DbInt;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
@@ -22,7 +23,6 @@ import io.camunda.zeebe.engine.state.deployment.VersionInfo;
 import io.camunda.zeebe.engine.state.immutable.PendingMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.PendingProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
-import io.camunda.zeebe.engine.state.migration.MigrationTaskState.State;
 import io.camunda.zeebe.engine.state.migration.to_8_3.DbDecisionMigrationState;
 import io.camunda.zeebe.engine.state.migration.to_8_3.DbJobMigrationState;
 import io.camunda.zeebe.engine.state.migration.to_8_3.DbMessageMigrationState;
@@ -44,11 +44,7 @@ import org.agrona.DirectBuffer;
 
 public class DbMigrationState implements MutableMigrationState {
 
-  private static final State MIGRATION_TASK_FINISHED_STATE = State.FINISHED;
-  // Meta ColumnFamily to keep track if migration have run
-  private final DbString migrationIdentifier;
-  private final MigrationTaskState migrationTaskState;
-  private final ColumnFamily<DbString, MigrationTaskState> migrationStateColumnFamily;
+  private static final long NO_PARENT_KEY = -1L;
 
   // ZbColumnFamilies.MESSAGE_SUBSCRIPTION_BY_SENT_TIME
   // (sentTime, elementInstanceKey, messageName) => \0
@@ -102,9 +98,14 @@ public class DbMigrationState implements MutableMigrationState {
   private final ColumnFamily<DbLong, ElementInstance> elementInstanceColumnFamily;
   private final DbLong processDefinitionKey;
   private final DbCompositeKey<DbLong, DbLong> processInstanceKeyByProcessDefinitionKey;
-
   private final ColumnFamily<DbCompositeKey<DbLong, DbLong>, DbNil>
       processInstanceKeyByProcessDefinitionKeyColumnFamily;
+
+  // ZbColumnFamilies.ELEMENT_INSTANCE_PARENT_CHILD
+  private final DbForeignKey<DbLong> parentKey;
+  private final DbCompositeKey<DbForeignKey<DbLong>, DbForeignKey<DbLong>> parentChildKey;
+  private final ColumnFamily<DbCompositeKey<DbForeignKey<DbLong>, DbForeignKey<DbLong>>, DbNil>
+      parentChildColumnFamily;
 
   private final DbString processIdKey;
   private final ColumnFamily<DbString, VersionInfo> processVersionInfoColumnFamily;
@@ -119,14 +120,6 @@ public class DbMigrationState implements MutableMigrationState {
 
   public DbMigrationState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
-    migrationIdentifier = new DbString();
-    migrationTaskState = new MigrationTaskState();
-    migrationStateColumnFamily =
-        zeebeDb.createColumnFamily(
-            ZbColumnFamilies.MIGRATIONS_STATE,
-            transactionContext,
-            migrationIdentifier,
-            migrationTaskState);
 
     messageSubscriptionElementInstanceKey = new DbLong();
     messageSubscriptionMessageName = new DbString();
@@ -230,6 +223,23 @@ public class DbMigrationState implements MutableMigrationState {
             ZbColumnFamilies.PROCESS_INSTANCE_KEY_BY_DEFINITION_KEY,
             transactionContext,
             processInstanceKeyByProcessDefinitionKey,
+            DbNil.INSTANCE);
+
+    parentKey =
+        new DbForeignKey<>(
+            new DbLong(),
+            ZbColumnFamilies.ELEMENT_INSTANCE_KEY,
+            MatchType.Full,
+            (k) -> k.getValue() == -1);
+    parentChildKey =
+        new DbCompositeKey<>(
+            parentKey,
+            new DbForeignKey<>(elementInstanceKey, ZbColumnFamilies.ELEMENT_INSTANCE_KEY));
+    parentChildColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.ELEMENT_INSTANCE_PARENT_CHILD,
+            transactionContext,
+            parentChildKey,
             DbNil.INSTANCE);
 
     processIdKey = new DbString();
@@ -389,29 +399,16 @@ public class DbMigrationState implements MutableMigrationState {
 
   @Override
   public void migrateElementInstancePopulateProcessInstanceByDefinitionKey() {
-    elementInstanceColumnFamily.forEach(
-        (key, record) -> {
-          final var recordValue = record.getValue();
-          if (recordValue.getBpmnElementType() == BpmnElementType.PROCESS) {
-            elementInstanceKey.wrapLong(key.getValue());
-            processDefinitionKey.wrapLong(recordValue.getProcessDefinitionKey());
-            processInstanceKeyByProcessDefinitionKeyColumnFamily.upsert(
-                processInstanceKeyByProcessDefinitionKey, DbNil.INSTANCE);
-          }
-        });
-  }
-
-  @Override
-  public void migrateProcessDefinitionVersions() {
-    processVersionInfoColumnFamily.forEach(
-        (key, value) -> {
-          final long highestVersion = value.getHighestVersion();
-          for (long version = 1; version <= highestVersion; version++) {
-            if (!value.getKnownVersions().contains(version)) {
-              value.addKnownVersion(version);
-            }
-          }
-          processVersionInfoColumnFamily.update(key, value);
+    parentKey.inner().wrapLong(NO_PARENT_KEY);
+    parentChildColumnFamily.whileEqualPrefix(
+        parentKey,
+        (key, nil) -> {
+          elementInstanceKey.wrapLong(key.second().inner().getValue());
+          final ElementInstance processInstance =
+              elementInstanceColumnFamily.get(elementInstanceKey);
+          processDefinitionKey.wrapLong(processInstance.getValue().getProcessDefinitionKey());
+          processInstanceKeyByProcessDefinitionKeyColumnFamily.upsert(
+              processInstanceKeyByProcessDefinitionKey, DbNil.INSTANCE);
         });
   }
 
@@ -452,16 +449,10 @@ public class DbMigrationState implements MutableMigrationState {
   }
 
   @Override
-  public void markMigrationFinished(final String identifier) {
-    migrationIdentifier.wrapString(identifier);
-    migrationStateColumnFamily.insert(
-        migrationIdentifier, new MigrationTaskState().setState(MIGRATION_TASK_FINISHED_STATE));
-  }
-
-  @Override
-  public boolean isMigrationFinished(final String identifier) {
-    migrationIdentifier.wrapString(identifier);
-    final MigrationTaskState migrationState = migrationStateColumnFamily.get(migrationIdentifier);
-    return migrationState != null && migrationState.getState() == MIGRATION_TASK_FINISHED_STATE;
+  public boolean shouldRunElementInstancePopulateProcessInstanceByDefinitionKey() {
+    parentKey.inner().wrapLong(NO_PARENT_KEY);
+    return processInstanceKeyByProcessDefinitionKeyColumnFamily.isEmpty()
+        || processInstanceKeyByProcessDefinitionKeyColumnFamily.count()
+            != parentChildColumnFamily.countEqualPrefix(parentKey);
   }
 }

@@ -10,7 +10,6 @@ package io.camunda.zeebe.engine.state.migration;
 import io.camunda.zeebe.engine.state.migration.to_8_2.DecisionMigration;
 import io.camunda.zeebe.engine.state.migration.to_8_2.DecisionRequirementsMigration;
 import io.camunda.zeebe.engine.state.migration.to_8_3.MultiTenancyMigration;
-import io.camunda.zeebe.engine.state.migration.to_8_3.ProcessDefinitionVersionMigration;
 import io.camunda.zeebe.engine.state.migration.to_8_3.ProcessInstanceByProcessDefinitionMigration;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import java.util.ArrayList;
@@ -34,7 +33,6 @@ public class DbMigratorImpl implements DbMigrator {
           new DecisionMigration(),
           new DecisionRequirementsMigration(),
           new ProcessInstanceByProcessDefinitionMigration(),
-          new ProcessDefinitionVersionMigration(),
           new JobTimeoutCleanupMigration(),
           new JobBackoffCleanupMigration(),
           new MultiTenancyMigration());
@@ -116,43 +114,23 @@ public class DbMigratorImpl implements DbMigrator {
 
   private boolean handleMigrationTask(
       final MigrationTask migrationTask, final int index, final int total) {
-    // The migration is already finished. We don't need to run it again.
-    if (processingState.getMigrationState().isMigrationFinished(migrationTask.getIdentifier())) {
-      logMigrationTaskAlreadyExecuted(migrationTask, index, total);
-      return false;
-    }
-
-    if (!migrationTask.needsToRun(processingState)) {
+    if (migrationTask.needsToRun(processingState)) {
+      try {
+        currentMigration = migrationTask;
+        runMigration(migrationTask, index, total);
+      } finally {
+        currentMigration = null;
+      }
+      return true;
+    } else {
       logMigrationSkipped(migrationTask, index, total);
-      processingState.getMigrationState().markMigrationFinished(migrationTask.getIdentifier());
       return false;
     }
-
-    try {
-      currentMigration = migrationTask;
-      runMigration(migrationTask, index, total);
-      processingState.getMigrationState().markMigrationFinished(migrationTask.getIdentifier());
-    } finally {
-      currentMigration = null;
-    }
-    return true;
-  }
-
-  private void logMigrationTaskAlreadyExecuted(
-      final MigrationTask migrationTask, final int index, final int total) {
-    LOGGER.debug(
-        "Migration was executed before "
-            + migrationTask.getIdentifier()
-            + " migration ("
-            + index
-            + "/"
-            + total
-            + ").  It does not need to run again.");
   }
 
   private void logMigrationSkipped(
       final MigrationTask migrationTask, final int index, final int total) {
-    LOGGER.debug(
+    LOGGER.info(
         "Skipping "
             + migrationTask.getIdentifier()
             + " migration ("
@@ -163,14 +141,14 @@ public class DbMigratorImpl implements DbMigrator {
   }
 
   private void runMigration(final MigrationTask migrationTask, final int index, final int total) {
-    LOGGER.debug(
+    LOGGER.info(
         "Starting " + migrationTask.getIdentifier() + " migration (" + index + "/" + total + ")");
     final var startTime = System.currentTimeMillis();
     migrationTask.runMigration(processingState);
     final var duration = System.currentTimeMillis() - startTime;
 
     LOGGER.debug(migrationTask.getIdentifier() + " migration completed in " + duration + " ms.");
-    LOGGER.debug(
+    LOGGER.info(
         "Finished " + migrationTask.getIdentifier() + " migration (" + index + "/" + total + ")");
   }
 }
