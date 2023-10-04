@@ -1055,36 +1055,6 @@ public class MultiTenancyOverIdentityIT {
             });
   }
 
-  private static void awaitServiceAccountExistsForClient(final String clientId) {
-    Awaitility.await()
-        .atMost(Duration.ofSeconds(120))
-        .pollInterval(Duration.ofSeconds(1))
-        .ignoreExceptions()
-        .untilAsserted(
-            () -> {
-              try (final PostgresHelper postgres = new PostgresHelper()) {
-                // Retrieve service account associated to Zeebe Client registered in Identity
-                try (final var resultSet =
-                    postgres.executeQuery(
-                        """
-                        SELECT id \
-                        FROM user_entity \
-                        WHERE service_account_client_link IN (\
-                          SELECT id \
-                          FROM client \
-                          WHERE client_id = '%s'\
-                        )"""
-                            .formatted(clientId))) {
-                  assertThat(resultSet.next())
-                      .describedAs(
-                          "Expected to find service account associated to Zeebe Client registered in Identity. "
-                              + "This can happen when Identity has not yet completed its initialization.")
-                      .isTrue();
-                }
-              }
-            });
-  }
-
   /**
    * Creates a new Zeebe Client with the given client ID such that Identity can provide the
    * associated tenant IDs. The credentials are cached separately for each test case.
@@ -1120,31 +1090,7 @@ public class MultiTenancyOverIdentityIT {
   private static void associateTenantsWithClient(
       final List<String> tenantIds, final String clientId) throws Exception {
 
-    awaitServiceAccountExistsForClient(clientId);
-
     try (final PostgresHelper postgres = new PostgresHelper()) {
-      final String serviceAccountId;
-      // Retrieve service account associated to Zeebe Client registered in Identity
-      try (final var resultSet =
-          postgres.executeQuery(
-              """
-              SELECT id \
-              FROM user_entity \
-              WHERE service_account_client_link IN (\
-                SELECT id \
-                FROM client \
-                WHERE client_id = '%s'\
-              )"""
-                  .formatted(clientId))) {
-        if (!resultSet.next()) {
-          throw new IllegalStateException(
-              """
-              Expected to find service account associated to Zeebe Client registered in Identity.
-              This was supposed to have been checked before querying the database.""");
-        }
-        serviceAccountId = resultSet.getString(1);
-      }
-
       final String accessRuleId;
       // Create access rule for service account
       try (final var resultSet =
@@ -1155,7 +1101,7 @@ public class MultiTenancyOverIdentityIT {
               VALUES ('%s', 'APPLICATION', false) \
               ON CONFLICT DO NOTHING \
               RETURNING id"""
-                  .formatted(serviceAccountId))) {
+                  .formatted(clientId))) {
         if (!resultSet.next()) {
           throw new IllegalStateException(
               "Expected to find access rule associated to service account.");
