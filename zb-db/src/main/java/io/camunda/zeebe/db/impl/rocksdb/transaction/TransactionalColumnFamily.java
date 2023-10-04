@@ -277,7 +277,7 @@ class TransactionalColumnFamily<
       return;
     }
     for (final var key : keys) {
-      if (key instanceof ContainsForeignKeys containsForeignKey) {
+      if (key instanceof final ContainsForeignKeys containsForeignKey) {
         foreignKeyChecker.assertExists(transaction, containsForeignKey);
       }
     }
