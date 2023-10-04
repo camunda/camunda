@@ -481,7 +481,8 @@
         "avg": "Average duration: ",
         "min": "Minimum duration: ",
         "median": "Median duration: ",
-        "max": "Max duration: "
+        "max": "Max duration: ",
+        "percentile": "P{value} duration: "
       },
       "exceededInstances": "Exceeded-instances-{name}",
       "noValueAvailable": "No actual value available.<br/>Cannot compare target and actual value."

@@ -481,7 +481,8 @@
         "avg": "Durchschnittliche Dauer: ",
         "min": "Mindestdauer: ",
         "median": "Mediane Dauer: ",
-        "max": "Maximale Dauer: "
+        "max": "Maximale Dauer: ",
+        "percentile": "P{value} Dauer: "
       },
       "exceededInstances": "Uberschrittene-Instanzen-{name}",
       "noValueAvailable": "Kein aktueller Wert verfügbar.<br/>Soll- und Istwert können nicht verglichen werden."
