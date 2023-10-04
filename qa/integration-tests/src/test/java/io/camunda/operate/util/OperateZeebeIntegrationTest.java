@@ -260,13 +260,13 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
   }
 
   protected Long deployProcess(String... classpathResources) {
-    final Long processDefinitionKey = ZeebeTestUtil.deployProcess(getClient(), classpathResources);
+    final Long processDefinitionKey = ZeebeTestUtil.deployProcess(getClient(), null, classpathResources);
     searchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processDefinitionKey);
     return processDefinitionKey;
   }
 
   protected Long deployProcess(BpmnModelInstance process, String resourceName) {
-    final Long processId = ZeebeTestUtil.deployProcess(getClient(), process, resourceName);
+    final Long processId = ZeebeTestUtil.deployProcess(getClient(), null, process, resourceName);
     searchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId);
     return processId;
   }

@@ -6,6 +6,7 @@
  */
 package io.camunda.operate.data.usertest;
 
+import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
 import static io.camunda.operate.util.ThreadUtil.sleepFor;
 
 import io.camunda.zeebe.client.api.command.ClientException;
@@ -38,6 +39,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
   private static final Logger logger = LoggerFactory.getLogger(UserTestDataGenerator.class);
 
   public static final int JOB_WORKER_TIMEOUT = 5;
+  private static final String TENANT_B = "tenantB";
 
   protected List<Long> processInstanceKeys = new ArrayList<>();
   protected List<Long> doNotTouchProcessInstanceKeys = new ArrayList<>();
@@ -88,16 +90,16 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
 
   private void createInputOutputMappingInstances() {
     logger.debug("Create input/output mapping process instances");
-    ZeebeTestUtil.deployProcess(client, "develop/always-completing-process.bpmn");
-    ZeebeTestUtil.deployProcess(client, "develop/input-output-mappings-process.bpmn");
-    ZeebeTestUtil.startProcessInstance(client, "Process_b1711b2e-ec8e-4dad-908c-8c12e028f32f", null);
+    ZeebeTestUtil.deployProcess(client, getTenant(TENANT_B), "develop/always-completing-process.bpmn");
+    ZeebeTestUtil.deployProcess(client, getTenant(TENANT_B), "develop/input-output-mappings-process.bpmn");
+    ZeebeTestUtil.startProcessInstance(client, getTenant(TENANT_B), "Process_b1711b2e-ec8e-4dad-908c-8c12e028f32f", null);
   }
 
   private void createAndStartProcessWithLargeVariableValue() {
     logger.debug("Deploy and start process with large variable value >32kb");
-    ZeebeTestUtil.deployProcess(client, "usertest/single-task.bpmn");
+    ZeebeTestUtil.deployProcess(client, getTenant(TENANT_B), "usertest/single-task.bpmn");
     String jsonString = payloadUtil.readStringFromClasspath("/usertest/large-payload.json");
-    ZeebeTestUtil.startProcessInstance(client, "bigVarProcess", jsonString);
+    ZeebeTestUtil.startProcessInstance(client, getTenant(TENANT_B), "bigVarProcess", jsonString);
   }
 
   private void createAndStartProcessWithLotOfVariables() {
@@ -116,7 +118,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
       }
     }
     vars.append("}");
-    ZeebeTestUtil.startProcessInstance(client, "bigVarProcess", vars.toString());
+    ZeebeTestUtil.startProcessInstance(client, getTenant(TENANT_B), "bigVarProcess", vars.toString());
   }
 
   public void createSpecialDataV1() {
@@ -565,20 +567,20 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
   }
 
   protected void createProcessWithoutInstances() {
-    Long processDefinitionKeyVersion1 = ZeebeTestUtil.deployProcess(client, "usertest/withoutInstancesProcess_v_1.bpmn");
-    Long processDefinitionKeyVersion2 = ZeebeTestUtil.deployProcess(client, "usertest/withoutInstancesProcess_v_2.bpmn");
+    Long processDefinitionKeyVersion1 = ZeebeTestUtil.deployProcess(client, getTenant(TENANT_B), "usertest/withoutInstancesProcess_v_1.bpmn");
+    Long processDefinitionKeyVersion2 = ZeebeTestUtil.deployProcess(client, getTenant(TENANT_B),"usertest/withoutInstancesProcess_v_2.bpmn");
     logger.info("Created process 'withoutInstancesProcess' version 1: {} and version 2: {}", processDefinitionKeyVersion1, processDefinitionKeyVersion2);
   }
 
   protected void createProcessWithInstancesThatHasOnlyIncidents(int forVersion1,int forVersion2) {
-    ZeebeTestUtil.deployProcess(client, "usertest/onlyIncidentsProcess_v_1.bpmn");
+    ZeebeTestUtil.deployProcess(client, getTenant(TENANT_B), "usertest/onlyIncidentsProcess_v_1.bpmn");
     for (int i = 0; i < forVersion1; i++) {
-      Long processInstanceKey = ZeebeTestUtil.startProcessInstance(client, "onlyIncidentsProcess", null);
+      Long processInstanceKey = ZeebeTestUtil.startProcessInstance(client, getTenant(TENANT_B), "onlyIncidentsProcess", null);
       failTask(processInstanceKey, "alwaysFails", "No memory left.");
     }
-    ZeebeTestUtil.deployProcess(client, "usertest/onlyIncidentsProcess_v_2.bpmn");
+    ZeebeTestUtil.deployProcess(client, getTenant(TENANT_B), "usertest/onlyIncidentsProcess_v_2.bpmn");
     for (int i = 0; i < forVersion2; i++) {
-      Long processInstanceKey = ZeebeTestUtil.startProcessInstance(client, "onlyIncidentsProcess", null);
+      Long processInstanceKey = ZeebeTestUtil.startProcessInstance(client, getTenant(TENANT_B), "onlyIncidentsProcess", null);
       failTask(processInstanceKey, "alwaysFails", "No space left on device.");
       failTask(processInstanceKey, "alwaysFails2", "No space left on device.");
     }
@@ -586,13 +588,13 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
   }
 
   protected void createProcessWithInstancesWithoutIncidents(int forVersion1,int forVersion2) {
-    ZeebeTestUtil.deployProcess(client, "usertest/withoutIncidentsProcess_v_1.bpmn");
+    ZeebeTestUtil.deployProcess(client, getTenant(TENANT_B), "usertest/withoutIncidentsProcess_v_1.bpmn");
     for (int i = 0; i < forVersion1; i++) {
-      ZeebeTestUtil.startProcessInstance(client, "withoutIncidentsProcess", null);
+      ZeebeTestUtil.startProcessInstance(client, getTenant(TENANT_B), "withoutIncidentsProcess", null);
     }
-    ZeebeTestUtil.deployProcess(client, "usertest/withoutIncidentsProcess_v_2.bpmn");
+    ZeebeTestUtil.deployProcess(client, getTenant(TENANT_B), "usertest/withoutIncidentsProcess_v_2.bpmn");
     for (int i = 0; i < forVersion2; i++) {
-      Long processInstanceKey = ZeebeTestUtil.startProcessInstance(client, "withoutIncidentsProcess", null);
+      Long processInstanceKey = ZeebeTestUtil.startProcessInstance(client, getTenant(TENANT_B), "withoutIncidentsProcess", null);
       completeTask(processInstanceKey, "neverFails", null);
     }
     logger.info("Created process 'withoutIncidentsProcess' with {} instances for version 1 and {} instances for version 2", forVersion1, forVersion2);
@@ -600,23 +602,23 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
 
   protected void deployVersion1() {
     //deploy processes v.1
-    ZeebeTestUtil.deployProcess(client, "usertest/orderProcess_v_1.bpmn");
+    ZeebeTestUtil.deployProcess(client, getTenant(DEFAULT_TENANT_ID), "usertest/orderProcess_v_1.bpmn");
 
-    ZeebeTestUtil.deployProcess(client, "usertest/loanProcess_v_1.bpmn");
+    ZeebeTestUtil.deployProcess(client, getTenant(DEFAULT_TENANT_ID),"usertest/loanProcess_v_1.bpmn");
 
-    ZeebeTestUtil.deployProcess(client, "usertest/registerPassenger_v_1.bpmn");
+    ZeebeTestUtil.deployProcess(client, getTenant(DEFAULT_TENANT_ID),"usertest/registerPassenger_v_1.bpmn");
 
-    ZeebeTestUtil.deployProcess(client, "usertest/multiInstance_v_1.bpmn");
+    ZeebeTestUtil.deployProcess(client, getTenant(TENANT_B), "usertest/multiInstance_v_1.bpmn");
 
-    ZeebeTestUtil.deployProcess(client, "usertest/manual-task.bpmn");
+    ZeebeTestUtil.deployProcess(client, getTenant(TENANT_B), "usertest/manual-task.bpmn");
 
-    ZeebeTestUtil.deployProcess(client, "usertest/intermediate-message-throw-event.bpmn");
+    ZeebeTestUtil.deployProcess(client, getTenant(TENANT_B), "usertest/intermediate-message-throw-event.bpmn");
 
-    ZeebeTestUtil.deployProcess(client, "usertest/intermediate-none-event.bpmn");
+    ZeebeTestUtil.deployProcess(client, getTenant(TENANT_B), "usertest/intermediate-none-event.bpmn");
 
-    ZeebeTestUtil.deployProcess(client, "usertest/message-end-event.bpmn");
+    ZeebeTestUtil.deployProcess(client, getTenant(TENANT_B), "usertest/message-end-event.bpmn");
 
-    ZeebeTestUtil.deployProcess(client, "usertest/invoice.bpmn");
+    ZeebeTestUtil.deployProcess(client, getTenant(TENANT_B), "usertest/invoice.bpmn");
 
   }
 
@@ -637,13 +639,10 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
         processInstanceKeys.add(startMultiInstanceProcess());
       }
     }
-    if (version == 1) {
-      ZeebeTestUtil.startProcessInstance(client, "undefined-task-process", null);
-    }
   }
 
   private long startFlightRegistrationProcess() {
-    return ZeebeTestUtil.startProcessInstance(client, "flightRegistration",
+    return ZeebeTestUtil.startProcessInstance(client, getTenant(DEFAULT_TENANT_ID), "flightRegistration",
       "{\n"
         + "  \"firstName\": \"" + NameGenerator.getRandomFirstName() + "\",\n"
         + "  \"lastName\": \"" + NameGenerator.getRandomLastName() + "\",\n"
@@ -655,7 +654,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
   private long startOrderProcess() {
     float price1 = Math.round(ThreadLocalRandom.current().nextFloat() * 100000) / 100;
     float price2 = Math.round(ThreadLocalRandom.current().nextFloat() * 10000) / 100;
-    return ZeebeTestUtil.startProcessInstance(client, "orderProcess", "{\n"
+    return ZeebeTestUtil.startProcessInstance(client, DEFAULT_TENANT_ID, "orderProcess", "{\n"
       + "  \"clientNo\": \"CNT-1211132-02\",\n"
       + "  \"orderNo\": \"CMD0001-01\",\n"
       + "  \"items\": [\n"
@@ -679,7 +678,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
   }
 
   private long startLoanProcess() {
-    return ZeebeTestUtil.startProcessInstance(client, "loanProcess",
+    return ZeebeTestUtil.startProcessInstance(client, getTenant(DEFAULT_TENANT_ID), "loanProcess",
       "{\"requestId\": \"RDG123000001\",\n"
         + "  \"amount\": " + (ThreadLocalRandom.current().nextInt(10000) + 20000) + ",\n"
         + "  \"applier\": {\n"
@@ -706,49 +705,49 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
   private long startDMNInvoice() {
     final String[] invoiceCategories = new String[]{"Misc", "Travel Expenses", "Software License Costs"};
     if (ThreadLocalRandom.current().nextInt(3) > 0) {
-      return ZeebeTestUtil.startProcessInstance(client, "invoice",
+      return ZeebeTestUtil.startProcessInstance(client, getTenant(TENANT_B), "invoice",
           "{\"amount\": " + (ThreadLocalRandom.current().nextInt(1200)) + ",\n"
               + "  \"invoiceCategory\": \"" + invoiceCategories[ThreadLocalRandom.current().nextInt(3)] + "\"\n"
               + "}");
     } else {
-      return ZeebeTestUtil.startProcessInstance(client, "invoice", null);
+      return ZeebeTestUtil.startProcessInstance(client, getTenant(TENANT_B), "invoice", null);
     }
   }
 
   private long startManualProcess() {
-    return ZeebeTestUtil.startProcessInstance(client, "manual-task-process", null);
+    return ZeebeTestUtil.startProcessInstance(client, getTenant(TENANT_B), "manual-task-process", null);
   }
 
   private Long startIntermediateNoneEventProcess() {
-    return ZeebeTestUtil.startProcessInstance(client, "intermediate-none-event-process", null);
+    return ZeebeTestUtil.startProcessInstance(client, getTenant(TENANT_B), "intermediate-none-event-process", null);
   }
 
   private Long startIntermediateMessageThrowEventProcess() {
-    return ZeebeTestUtil.startProcessInstance(client, "intermediate-message-throw-event-process", null);
+    return ZeebeTestUtil.startProcessInstance(client, getTenant(TENANT_B), "intermediate-message-throw-event-process", null);
   }
 
   private Long startMessageEndEventProcess() {
-    return ZeebeTestUtil.startProcessInstance(client, "message-end-event-process", null);
+    return ZeebeTestUtil.startProcessInstance(client, getTenant(TENANT_B), "message-end-event-process", null);
   }
 
   private long startMultiInstanceProcess() {
-    return ZeebeTestUtil.startProcessInstance(client, "multiInstanceProcess", "{\"items\": [1, 2, 3]}");
+    return ZeebeTestUtil.startProcessInstance(client, getTenant(TENANT_B), "multiInstanceProcess", "{\"items\": [1, 2, 3]}");
   }
 
   protected void deployVersion2() {
     //deploy processes v.2
-    ZeebeTestUtil.deployProcess(client, "usertest/orderProcess_v_2.bpmn");
+    ZeebeTestUtil.deployProcess(client, getTenant(DEFAULT_TENANT_ID), "usertest/orderProcess_v_2.bpmn");
 
-    ZeebeTestUtil.deployProcess(client, "usertest/registerPassenger_v_2.bpmn");
+    ZeebeTestUtil.deployProcess(client, getTenant(DEFAULT_TENANT_ID), "usertest/registerPassenger_v_2.bpmn");
 
-    ZeebeTestUtil.deployProcess(client, "usertest/multiInstance_v_2.bpmn");
+    ZeebeTestUtil.deployProcess(client, getTenant(TENANT_B), "usertest/multiInstance_v_2.bpmn");
 
-    ZeebeTestUtil.deployDecision(client, "usertest/invoiceBusinessDecisions_v_1.dmn");
+    ZeebeTestUtil.deployDecision(client, getTenant(TENANT_B), "usertest/invoiceBusinessDecisions_v_1.dmn");
   }
 
   protected void deployVersion3() {
 
-    ZeebeTestUtil.deployDecision(client, "usertest/invoiceBusinessDecisions_v_2.dmn");
+    ZeebeTestUtil.deployDecision(client, getTenant(TENANT_B), "usertest/invoiceBusinessDecisions_v_2.dmn");
 
   }
 

@@ -43,6 +43,7 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
   private static final int OPERATE_PORT = 8080;
   private static final String OPERATE_USER = "demo";
   private static final String OPERATE_PASSWORD = "demo";
+  private static final String TENANT_A = "tenantA";
 
   private List<Long> processInstanceKeys = new ArrayList<>();
 
@@ -59,33 +60,33 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
   public void createSpecialDataV1() {
     int orderId = ThreadLocalRandom.current().current().nextInt(10);
     long instanceKey = ZeebeTestUtil
-      .startProcessInstance(client, "interruptingBoundaryEvent", "{\"orderId\": \"" + orderId + "\"\n}");
+      .startProcessInstance(client, getTenant(TENANT_A),  "interruptingBoundaryEvent", "{\"orderId\": \"" + orderId + "\"\n}");
     doNotTouchProcessInstanceKeys.add(instanceKey);
     sendMessages("interruptTask1", "{\"messageVar\": \"someValue\"\n}", 1, String.valueOf(orderId));
 
     orderId = ThreadLocalRandom.current().current().nextInt(10);
     instanceKey = ZeebeTestUtil
-      .startProcessInstance(client, "interruptingBoundaryEvent", "{\"orderId\": \"" + orderId + "\"\n}");
+      .startProcessInstance(client, getTenant(TENANT_A), "interruptingBoundaryEvent", "{\"orderId\": \"" + orderId + "\"\n}");
     doNotTouchProcessInstanceKeys.add(instanceKey);
     sendMessages("interruptTask1", "{\"messageVar\": \"someValue\"\n}", 1, String.valueOf(orderId));
     completeTask(instanceKey, "task2", null);
 
     orderId = ThreadLocalRandom.current().current().nextInt(10);
     instanceKey = ZeebeTestUtil
-      .startProcessInstance(client, "nonInterruptingBoundaryEvent", "{\"orderId\": \"" + orderId + "\"\n}");
+      .startProcessInstance(client, getTenant(TENANT_A), "nonInterruptingBoundaryEvent", "{\"orderId\": \"" + orderId + "\"\n}");
     doNotTouchProcessInstanceKeys.add(instanceKey);
     sendMessages("messageTask1", "{\"messageVar\": \"someValue\"\n}", 1, String.valueOf(orderId));
 
     orderId = ThreadLocalRandom.current().current().nextInt(10);
     instanceKey = ZeebeTestUtil
-      .startProcessInstance(client, "nonInterruptingBoundaryEvent", "{\"orderId\": \"" + orderId + "\"\n}");
+      .startProcessInstance(client, getTenant(TENANT_A), "nonInterruptingBoundaryEvent", "{\"orderId\": \"" + orderId + "\"\n}");
     doNotTouchProcessInstanceKeys.add(instanceKey);
     sendMessages("messageTask1", "{\"messageVar\": \"someValue\"\n}", 1, String.valueOf(orderId));
     failTask(instanceKey, "task1", "error");
 
     orderId = ThreadLocalRandom.current().current().nextInt(10);
     instanceKey = ZeebeTestUtil
-      .startProcessInstance(client, "nonInterruptingBoundaryEvent", "{\"orderId\": \"" + orderId + "\"\n}");
+      .startProcessInstance(client, getTenant(TENANT_A), "nonInterruptingBoundaryEvent", "{\"orderId\": \"" + orderId + "\"\n}");
     doNotTouchProcessInstanceKeys.add(instanceKey);
     sendMessages("messageTask1", "{\"messageVar\": \"someValue\"\n}", 1, String.valueOf(orderId));
     completeTask(instanceKey, "task1", null);
@@ -337,41 +338,42 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
     super.deployVersion1();
 
     //deploy processes v.1
-    ZeebeTestUtil.deployProcess(client, "develop/complexProcess_v_1.bpmn");
+    ZeebeTestUtil.deployProcess(client, getTenant(TENANT_A), "develop/complexProcess_v_1.bpmn");
 
-    ZeebeTestUtil.deployProcess(client, "develop/eventBasedGatewayProcess_v_1.bpmn");
+    ZeebeTestUtil.deployProcess(client, getTenant(TENANT_A), "develop/eventBasedGatewayProcess_v_1.bpmn");
 
-    ZeebeTestUtil.deployProcess(client, "develop/subProcess.bpmn");
+    ZeebeTestUtil.deployProcess(client, getTenant(TENANT_A), "develop/subProcess.bpmn");
 
-    ZeebeTestUtil.deployProcess(client, "develop/interruptingBoundaryEvent_v_1.bpmn");
+    ZeebeTestUtil.deployProcess(client, getTenant(TENANT_A), "develop/interruptingBoundaryEvent_v_1.bpmn");
 
-    ZeebeTestUtil.deployProcess(client, "develop/nonInterruptingBoundaryEvent_v_1.bpmn");
+    ZeebeTestUtil.deployProcess(client, getTenant(TENANT_A), "develop/nonInterruptingBoundaryEvent_v_1.bpmn");
 
-    ZeebeTestUtil.deployProcess(client, "develop/timerProcess_v_1.bpmn");
+    ZeebeTestUtil.deployProcess(client, getTenant(TENANT_A), "develop/timerProcess_v_1.bpmn");
 
-    ZeebeTestUtil.deployProcess(client, "develop/callActivityProcess.bpmn");
+    ZeebeTestUtil.deployProcess(client, getTenant(TENANT_A), "develop/callActivityProcess.bpmn");
 
-    ZeebeTestUtil.deployProcess(client, "develop/eventSubProcess_v_1.bpmn");
+    ZeebeTestUtil.deployProcess(client, getTenant(TENANT_A), "develop/eventSubProcess_v_1.bpmn");
 
-    ZeebeTestUtil.deployProcess(client, "develop/bigProcess.bpmn");
+    ZeebeTestUtil.deployProcess(client, getTenant(TENANT_A), "develop/bigProcess.bpmn");
 
-    ZeebeTestUtil.deployProcess(client, "develop/errorProcess.bpmn");
+    ZeebeTestUtil.deployProcess(client, getTenant(TENANT_A), "develop/errorProcess.bpmn");
 
-    ZeebeTestUtil.deployProcess(client, "develop/error-end-event.bpmn");
+    ZeebeTestUtil.deployProcess(client, getTenant(TENANT_A), "develop/error-end-event.bpmn");
 
-    ZeebeTestUtil.deployProcess(client, "develop/terminateEndEvent.bpmn");
+    ZeebeTestUtil.deployProcess(client, getTenant(TENANT_A), "develop/terminateEndEvent.bpmn");
 
-    ZeebeTestUtil.deployProcess(client, "develop/undefined-task.bpmn");
+    ZeebeTestUtil.deployProcess(client, getTenant(TENANT_A), "develop/undefined-task.bpmn");
 
-    ZeebeTestUtil.deployProcess(client, "develop/dataStore.bpmn");
+    ZeebeTestUtil.deployProcess(client, getTenant(TENANT_A), "develop/dataStore.bpmn");
 
-    ZeebeTestUtil.deployProcess(client, "develop/linkEvents.bpmn");
+    ZeebeTestUtil.deployProcess(client, getTenant(TENANT_A), "develop/linkEvents.bpmn");
 
-    ZeebeTestUtil.deployProcess(client, "develop/escalationEvents_v_1.bpmn");
+    ZeebeTestUtil.deployProcess(client, getTenant(TENANT_A), "develop/escalationEvents_v_1.bpmn");
 
-    ZeebeTestUtil.deployProcess(client, "develop/signalEvent.bpmn");
+    ZeebeTestUtil.deployProcess(client, getTenant(TENANT_A), "develop/signalEvent.bpmn");
 
-    ZeebeTestUtil.deployProcess(client, "develop/inclusiveGateway.bpmn");
+    // reverted in Zeebe https://github.com/camunda/zeebe/issues/13640
+    // ZeebeTestUtil.deployProcess(client, getTenant(TENANT_A), "develop/inclusiveGateway.bpmn");
   }
 
   @Override
@@ -389,54 +391,56 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
 
         //call activity process
         //these instances will have incident on call activity
-        processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, "call-activity-process", "{\"var\": " + ThreadLocalRandom.current().nextInt(10) + "}"));
+        processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, getTenant(TENANT_A), "call-activity-process", "{\"var\": " + ThreadLocalRandom.current().nextInt(10) + "}"));
 
         //eventSubprocess
-        processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, "eventSubprocessProcess", "{\"clientId\": \"" + ThreadLocalRandom.current().nextInt(10) + "\"}"));
+        processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, getTenant(TENANT_A), "eventSubprocessProcess", "{\"clientId\": \"" + ThreadLocalRandom.current().nextInt(10) + "\"}"));
 
         // errorProcess
         processInstanceKeys.add(ZeebeTestUtil
-            .startProcessInstance(client, "errorProcess", "{\"errorCode\": \"boundary\"}"));
+            .startProcessInstance(client, getTenant(TENANT_A), "errorProcess", "{\"errorCode\": \"boundary\"}"));
         processInstanceKeys.add(ZeebeTestUtil
-            .startProcessInstance(client, "errorProcess", "{\"errorCode\": \"subProcess\"}"));
+            .startProcessInstance(client, getTenant(TENANT_A), "errorProcess", "{\"errorCode\": \"subProcess\"}"));
         processInstanceKeys.add(ZeebeTestUtil
-            .startProcessInstance(client, "errorProcess", "{\"errorCode\": \"unknown\"}"));
-        processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, "error-end-process", null));
-        processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, "terminateEndEvent", null));
-        processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, "dataStoreProcess", null));
-        processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, "linkEventProcess", null));
-        processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, "escalationEvents", null));
-        processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, "inclusiveGatewayProcess",
-            "{\"saladOrdered\": "+ ThreadLocalRandom.current().nextBoolean()+ ", \"pastaOrdered\": "+ ThreadLocalRandom.current().nextBoolean()+ "}"));
+            .startProcessInstance(client, getTenant(TENANT_A), "errorProcess", "{\"errorCode\": \"unknown\"}"));
+        processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, getTenant(TENANT_A), "error-end-process", null));
+        processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, getTenant(TENANT_A), "terminateEndEvent", null));
+        processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, getTenant(TENANT_A), "dataStoreProcess", null));
+        processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, getTenant(TENANT_A), "linkEventProcess", null));
+        processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, getTenant(TENANT_A), "escalationEvents", null));
+        processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, getTenant(TENANT_A), "undefined-task-process", null));
+        // reverted in Zeebe https://github.com/camunda/zeebe/issues/13640
+//        processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, getTenant(TENANT_A), "inclusiveGatewayProcess",
+//            "{\"saladOrdered\": "+ ThreadLocalRandom.current().nextBoolean()+ ", \"pastaOrdered\": "+ ThreadLocalRandom.current().nextBoolean()+ "}"));
       }
 
       if (version == 2) {
-        processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, "interruptingBoundaryEvent", null));
-        processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, "nonInterruptingBoundaryEvent", null));
+        processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, getTenant(TENANT_A), "interruptingBoundaryEvent", null));
+        processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, getTenant(TENANT_A), "nonInterruptingBoundaryEvent", null));
         //call activity process
         //these instances must be fine
-        processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, "call-activity-process", "{\"var\": " + ThreadLocalRandom.current().nextInt(10) + "}"));
-        processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, "escalationEvents", null));
+        processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, getTenant(TENANT_A), "call-activity-process", "{\"var\": " + ThreadLocalRandom.current().nextInt(10) + "}"));
+        processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, getTenant(TENANT_A), "escalationEvents", null));
       }
       if (version < 2) {
-        processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, "prWithSubprocess", null));
+        processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, getTenant(TENANT_A), "prWithSubprocess", null));
       }
 
       if (version < 3) {
-        processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, "complexProcess", "{\"clientId\": \"" + ThreadLocalRandom.current().nextInt(10) + "\"}"));
+        processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, getTenant(TENANT_A), "complexProcess", "{\"clientId\": \"" + ThreadLocalRandom.current().nextInt(10) + "\"}"));
       }
 
       if (version == 3) {
-        processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, "complexProcess", "{\"goUp\": " + ThreadLocalRandom.current().nextInt(5) + "}"));
+        processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, getTenant(TENANT_A), "complexProcess", "{\"goUp\": " + ThreadLocalRandom.current().nextInt(5) + "}"));
         //call activity process
         //these instances will call second version of called process
-        processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, "call-activity-process",
+        processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, getTenant(TENANT_A), "call-activity-process",
             "{\"orders\": [" + ThreadLocalRandom.current().nextInt(10) + ", " + ThreadLocalRandom.current().nextInt(10) + "]}"));
       }
 
     }
     if (version == 1) {
-      processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, "timerProcess", null));
+      processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, getTenant(TENANT_A), "timerProcess", null));
     }
   }
 
@@ -449,26 +453,26 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
       arrayNode.add(j);
     }
     String jsonString = object.toString();
-    ZeebeTestUtil.startProcessInstance(client, "bigProcess", jsonString);
+    ZeebeTestUtil.startProcessInstance(client, getTenant(TENANT_A), "bigProcess", jsonString);
   }
 
   @Override
   protected void deployVersion2() {
     super.deployVersion2();
 //    deploy processes v.2
-    ZeebeTestUtil.deployProcess(client, "develop/timerProcess_v_2.bpmn");
+    ZeebeTestUtil.deployProcess(client, getTenant(TENANT_A), "develop/timerProcess_v_2.bpmn");
 
-    ZeebeTestUtil.deployProcess(client, "develop/complexProcess_v_2.bpmn");
+    ZeebeTestUtil.deployProcess(client, getTenant(TENANT_A), "develop/complexProcess_v_2.bpmn");
 
-    ZeebeTestUtil.deployProcess(client, "develop/eventBasedGatewayProcess_v_2.bpmn");
+    ZeebeTestUtil.deployProcess(client, getTenant(TENANT_A), "develop/eventBasedGatewayProcess_v_2.bpmn");
 
-    ZeebeTestUtil.deployProcess(client, "develop/interruptingBoundaryEvent_v_2.bpmn");
+    ZeebeTestUtil.deployProcess(client, getTenant(TENANT_A), "develop/interruptingBoundaryEvent_v_2.bpmn");
 
-    ZeebeTestUtil.deployProcess(client, "develop/nonInterruptingBoundaryEvent_v_2.bpmn");
+    ZeebeTestUtil.deployProcess(client, getTenant(TENANT_A), "develop/nonInterruptingBoundaryEvent_v_2.bpmn");
 
-    ZeebeTestUtil.deployProcess(client, "develop/calledProcess.bpmn");
+    ZeebeTestUtil.deployProcess(client, getTenant(TENANT_A), "develop/calledProcess.bpmn");
 
-    ZeebeTestUtil.deployProcess(client, "develop/escalationEvents_v_2.bpmn");
+    ZeebeTestUtil.deployProcess(client, getTenant(TENANT_A), "develop/escalationEvents_v_2.bpmn");
 
   }
 
@@ -476,9 +480,9 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
   protected void deployVersion3() {
     super.deployVersion3();
     //deploy processes v.3
-    ZeebeTestUtil.deployProcess(client, "develop/complexProcess_v_3.bpmn");
+    ZeebeTestUtil.deployProcess(client, getTenant(TENANT_A), "develop/complexProcess_v_3.bpmn");
 
-    ZeebeTestUtil.deployProcess(client, "develop/calledProcess_v_2.bpmn");
+    ZeebeTestUtil.deployProcess(client, getTenant(TENANT_A), "develop/calledProcess_v_2.bpmn");
 
   }
 

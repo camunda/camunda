@@ -236,25 +236,25 @@ public class OperateTester {
         .serviceTask(activityId).zeebeJobType(activityId)
         .endEvent()
         .done();
-    processDefinitionKey = ZeebeTestUtil.deployProcess(zeebeClient, process,processId+".bpmn");
+    processDefinitionKey = ZeebeTestUtil.deployProcess(zeebeClient, null, process, processId+".bpmn");
     return this;
   }
 
   public OperateTester deployProcess(String... classpathResources) {
     Validate.notNull(zeebeClient, "ZeebeClient should be set.");
     logger.debug("Deploy process(es) {}", List.of(classpathResources));
-    processDefinitionKey = ZeebeTestUtil.deployProcess(zeebeClient, classpathResources);
+    processDefinitionKey = ZeebeTestUtil.deployProcess(zeebeClient, null, classpathResources);
     return this;
   }
 
   public OperateTester deployDecision(String... classpathResources) {
     Validate.notNull(zeebeClient, "ZeebeClient should be set.");
-    ZeebeTestUtil.deployDecision(zeebeClient, classpathResources);
+    ZeebeTestUtil.deployDecision(zeebeClient, null, classpathResources);
     return this;
   }
 
   public OperateTester deployProcess(BpmnModelInstance processModel, String resourceName) {
-    processDefinitionKey = ZeebeTestUtil.deployProcess(zeebeClient, processModel, resourceName);
+    processDefinitionKey = ZeebeTestUtil.deployProcess(zeebeClient, null, processModel, resourceName);
     return this;
   }
 

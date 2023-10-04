@@ -22,6 +22,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import io.camunda.zeebe.client.ZeebeClient;
+
+import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
 import static io.camunda.operate.util.ThreadUtil.sleepFor;
 
 public abstract class AbstractDataGenerator implements DataGenerator {
@@ -37,7 +39,7 @@ public abstract class AbstractDataGenerator implements DataGenerator {
   private ZeebeStore zeebeStore;
 
   @Autowired
-  private OperateProperties operateProperties;
+  protected OperateProperties operateProperties;
 
   protected boolean manuallyCalled = false;
 
@@ -128,5 +130,11 @@ public abstract class AbstractDataGenerator implements DataGenerator {
       .name("operate")
       .timeout(Duration.ofSeconds(UserTestDataGenerator.JOB_WORKER_TIMEOUT))
       .open();
+  }
+  protected String getTenant(String tenantId) {
+    if (operateProperties.getMultiTenancy().isEnabled()) {
+      return tenantId;
+    }
+    return DEFAULT_TENANT_ID;
   }
 }

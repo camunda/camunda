@@ -17,7 +17,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.List;
-import java.util.Map;
 
 import io.camunda.operate.entities.ProcessEntity;
 import io.camunda.operate.schema.indices.ProcessIndex;
@@ -153,7 +152,7 @@ public class ProcessIT extends OperateZeebeIntegrationTest {
     }
     final BpmnModelInstance demoProcess =
       executableProcess.startEvent().endEvent().done();
-    return ZeebeTestUtil.deployProcess(zeebeClient, demoProcess, "resource.bpmn");
+    return ZeebeTestUtil.deployProcess(zeebeClient, null, demoProcess, "resource.bpmn");
   }
 
 }

@@ -38,8 +38,8 @@ public class ProcessCacheIT extends OperateZeebeIntegrationTest {
 
   @Test
   public void testProcessVersionAndNameReturnedAndReused() {
-    Long processDefinitionKey1 = ZeebeTestUtil.deployProcess(zeebeClient, "demoProcess_v_1.bpmn");
-    Long processDefinitionKey2 = ZeebeTestUtil.deployProcess(zeebeClient, "processWithGateway.bpmn");
+    Long processDefinitionKey1 = ZeebeTestUtil.deployProcess(zeebeClient, null, "demoProcess_v_1.bpmn");
+    Long processDefinitionKey2 = ZeebeTestUtil.deployProcess(zeebeClient, null, "processWithGateway.bpmn");
 
     searchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processDefinitionKey1);
     searchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processDefinitionKey2);
@@ -56,8 +56,8 @@ public class ProcessCacheIT extends OperateZeebeIntegrationTest {
 
   @Test
   public void testProcessFlowNodeNameReturnedAndReused() {
-    Long processDefinitionKey1 = ZeebeTestUtil.deployProcess(zeebeClient, "demoProcess_v_1.bpmn");
-    Long processDefinitionKey2 = ZeebeTestUtil.deployProcess(zeebeClient, "processWithGateway.bpmn");
+    Long processDefinitionKey1 = ZeebeTestUtil.deployProcess(zeebeClient, null, "demoProcess_v_1.bpmn");
+    Long processDefinitionKey2 = ZeebeTestUtil.deployProcess(zeebeClient, null, "processWithGateway.bpmn");
 
     searchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processDefinitionKey1);
     searchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processDefinitionKey2);

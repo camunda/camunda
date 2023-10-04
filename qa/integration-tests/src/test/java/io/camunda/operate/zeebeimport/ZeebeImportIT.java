@@ -95,7 +95,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
   public void testProcessNameAndVersionAreLoaded() {
     // having
     String processId = "demoProcess";
-    final Long processDefinitionKey = ZeebeTestUtil.deployProcess(zeebeClient, "demoProcess_v_1.bpmn");
+    final Long processDefinitionKey = ZeebeTestUtil.deployProcess(zeebeClient, null, "demoProcess_v_1.bpmn");
     final long processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
 
     //when
