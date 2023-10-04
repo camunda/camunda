@@ -36,7 +36,7 @@ jobs:
         secrets: ${{ toJSON(secrets) }}
     - name: Import secrets
       id: secrets
-      uses: hashicorp/vault-action@cb841f2c86fb6d07cff94fda240828c1abc5ba43
+      uses: hashicorp/vault-action@86c7f837eb43794c7dc56f74d9cffac710679b28
       with:
         url: ${{ secrets.VAULT_ADDR }}
         method: approle
