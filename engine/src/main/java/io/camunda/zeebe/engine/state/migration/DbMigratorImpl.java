@@ -7,9 +7,16 @@
  */
 package io.camunda.zeebe.engine.state.migration;
 
+import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.engine.state.migration.to_8_2.DecisionMigration;
 import io.camunda.zeebe.engine.state.migration.to_8_2.DecisionRequirementsMigration;
-import io.camunda.zeebe.engine.state.migration.to_8_3.MultiTenancyMigration;
+import io.camunda.zeebe.engine.state.migration.to_8_3.MultiTenancyDecisionStateMigration;
+import io.camunda.zeebe.engine.state.migration.to_8_3.MultiTenancyJobStateMigration;
+import io.camunda.zeebe.engine.state.migration.to_8_3.MultiTenancyMessageStartEventSubscriptionStateMigration;
+import io.camunda.zeebe.engine.state.migration.to_8_3.MultiTenancyMessageStateMigration;
+import io.camunda.zeebe.engine.state.migration.to_8_3.MultiTenancyMessageSubscriptionStateMigration;
+import io.camunda.zeebe.engine.state.migration.to_8_3.MultiTenancyProcessMessageSubscriptionStateMigration;
+import io.camunda.zeebe.engine.state.migration.to_8_3.MultiTenancyProcessStateMigration;
 import io.camunda.zeebe.engine.state.migration.to_8_3.ProcessInstanceByProcessDefinitionMigration;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import java.util.ArrayList;
@@ -35,31 +42,40 @@ public class DbMigratorImpl implements DbMigrator {
           new ProcessInstanceByProcessDefinitionMigration(),
           new JobTimeoutCleanupMigration(),
           new JobBackoffCleanupMigration(),
-          new MultiTenancyMigration());
+          new MultiTenancyProcessStateMigration(),
+          new MultiTenancyDecisionStateMigration(),
+          new MultiTenancyMessageStateMigration(),
+          new MultiTenancyMessageStartEventSubscriptionStateMigration(),
+          new MultiTenancyMessageSubscriptionStateMigration(),
+          new MultiTenancyProcessMessageSubscriptionStateMigration(),
+          new MultiTenancyJobStateMigration());
   // Be mindful of https://github.com/camunda/zeebe/issues/7248. In particular, that issue
   // should be solved first, before adding any migration that can take a long time
 
   private final MutableProcessingState processingState;
+  private final TransactionContext zeebeDbContext;
   private final Supplier<List<MigrationTask>> migrationSupplier;
   private boolean abortRequested = false;
 
   private MigrationTask currentMigration;
 
-  public DbMigratorImpl(final MutableProcessingState processingState) {
-    this(processingState, () -> MIGRATION_TASKS);
+  public DbMigratorImpl(
+      final MutableProcessingState processingState, final TransactionContext zeebeDbContext) {
+    this(processingState, zeebeDbContext, () -> MIGRATION_TASKS);
   }
 
-  DbMigratorImpl(
+  public DbMigratorImpl(
       final MutableProcessingState processingState,
+      final TransactionContext zeebeDbContext,
       final Supplier<List<MigrationTask>> migrationSupplier) {
 
     this.processingState = processingState;
+    this.zeebeDbContext = zeebeDbContext;
     this.migrationSupplier = migrationSupplier;
   }
 
   @Override
   public void runMigrations() {
-
     final var migrationTasks = migrationSupplier.get();
     logPreview(migrationTasks);
 
@@ -68,10 +84,14 @@ public class DbMigratorImpl implements DbMigrator {
       // one based index looks nicer in logs
 
       final var migration = migrationTasks.get(index - 1);
-      final var executed = handleMigrationTask(migration, index, migrationTasks.size());
-      if (executed) {
-        executedMigrations.add(migration);
-      }
+      final int finalIndex = index;
+      zeebeDbContext.runInTransaction(
+          () -> {
+            final var executed = handleMigrationTask(migration, finalIndex, migrationTasks.size());
+            if (executed) {
+              executedMigrations.add(migration);
+            }
+          });
     }
     if (!abortRequested) {
       logSummary(executedMigrations);

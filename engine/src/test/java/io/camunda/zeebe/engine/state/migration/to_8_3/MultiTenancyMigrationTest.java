@@ -12,8 +12,6 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapArray;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
@@ -29,7 +27,6 @@ import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.deployment.PersistedDecision;
 import io.camunda.zeebe.engine.state.deployment.PersistedProcess.PersistedProcessState;
 import io.camunda.zeebe.engine.state.deployment.VersionInfo;
-import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.instance.DbJobState;
 import io.camunda.zeebe.engine.state.message.DbMessageStartEventSubscriptionState;
 import io.camunda.zeebe.engine.state.message.DbMessageState;
@@ -75,65 +72,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 public class MultiTenancyMigrationTest {
 
-  final MultiTenancyMigration sut = new MultiTenancyMigration();
-
-  @Nested
-  class MockBasedTests {
-
-    @Test
-    void noMigrationNeededWhenNoProcessesOrDrgsExist() {
-      // given
-      final var mockProcessingState = mock(ProcessingState.class);
-      when(mockProcessingState.isEmpty(ZbColumnFamilies.DEPRECATED_PROCESS_CACHE)).thenReturn(true);
-      when(mockProcessingState.isEmpty(ZbColumnFamilies.DEPRECATED_DMN_DECISION_REQUIREMENTS))
-          .thenReturn(true);
-
-      // when then
-      assertThat(sut.needsToRun(mockProcessingState)).isFalse();
-    }
-
-    @Test
-    void migrationNeededWhenProcessesExist() {
-      // given
-      final var mockProcessingState = mock(ProcessingState.class);
-      when(mockProcessingState.isEmpty(ZbColumnFamilies.DEPRECATED_PROCESS_CACHE))
-          .thenReturn(false);
-      when(mockProcessingState.isEmpty(ZbColumnFamilies.DEPRECATED_DMN_DECISION_REQUIREMENTS))
-          .thenReturn(true);
-
-      // when then
-      assertThat(sut.needsToRun(mockProcessingState)).isTrue();
-    }
-
-    @Test
-    void migrationNeededWhenDRGsExist() {
-      // given
-      final var mockProcessingState = mock(ProcessingState.class);
-      when(mockProcessingState.isEmpty(ZbColumnFamilies.DEPRECATED_PROCESS_CACHE)).thenReturn(true);
-      when(mockProcessingState.isEmpty(ZbColumnFamilies.DEPRECATED_DMN_DECISION_REQUIREMENTS))
-          .thenReturn(false);
-
-      // when then
-      assertThat(sut.needsToRun(mockProcessingState)).isTrue();
-    }
-
-    @Test
-    void migrationNeededWhenProcessesAndDRGsExist() {
-      // given
-      final var mockProcessingState = mock(ProcessingState.class);
-      when(mockProcessingState.isEmpty(ZbColumnFamilies.DEPRECATED_PROCESS_CACHE))
-          .thenReturn(false);
-      when(mockProcessingState.isEmpty(ZbColumnFamilies.DEPRECATED_DMN_DECISION_REQUIREMENTS))
-          .thenReturn(false);
-
-      // when then
-      assertThat(sut.needsToRun(mockProcessingState)).isTrue();
-    }
-  }
-
   @Nested
   @ExtendWith(ProcessingStateExtension.class)
   class MigrateProcessStateForMultiTenancyTest {
+
+    final MultiTenancyProcessStateMigration sut = new MultiTenancyProcessStateMigration();
 
     private ZeebeDb<ZbColumnFamilies> zeebeDb;
     private MutableProcessingState processingState;
@@ -296,6 +239,8 @@ public class MultiTenancyMigrationTest {
   @Nested
   @ExtendWith(ProcessingStateExtension.class)
   class MigrateDecisionStateForMultiTenancyTest {
+
+    final MultiTenancyDecisionStateMigration sut = new MultiTenancyDecisionStateMigration();
 
     private ZeebeDb<ZbColumnFamilies> zeebeDb;
     private MutableProcessingState processingState;
@@ -575,6 +520,8 @@ public class MultiTenancyMigrationTest {
   @ExtendWith(ProcessingStateExtension.class)
   class MigrateMessageStateForMultiTenancyTest {
 
+    final MultiTenancyMessageStateMigration sut = new MultiTenancyMessageStateMigration();
+
     private ZeebeDb<ZbColumnFamilies> zeebeDb;
     private MutableProcessingState processingState;
     private TransactionContext transactionContext;
@@ -641,6 +588,9 @@ public class MultiTenancyMigrationTest {
   @Nested
   @ExtendWith(ProcessingStateExtension.class)
   class MigrateMessageStartEventSubscriptionStateForMultiTenancyTest {
+
+    final MultiTenancyMessageStartEventSubscriptionStateMigration sut =
+        new MultiTenancyMessageStartEventSubscriptionStateMigration();
 
     private ZeebeDb<ZbColumnFamilies> zeebeDb;
     private MutableProcessingState processingState;
@@ -748,6 +698,9 @@ public class MultiTenancyMigrationTest {
   @ExtendWith(ProcessingStateExtension.class)
   class MigrateMessageSubscriptionStateForMultiTenancyTest {
 
+    final MultiTenancyMessageSubscriptionStateMigration sut =
+        new MultiTenancyMessageSubscriptionStateMigration();
+
     private ZeebeDb<ZbColumnFamilies> zeebeDb;
     private MutableProcessingState processingState;
     private TransactionContext transactionContext;
@@ -822,6 +775,9 @@ public class MultiTenancyMigrationTest {
   @ExtendWith(ProcessingStateExtension.class)
   class MigrateProcessMessageSubscriptionStateForMultiTenancyTest {
 
+    final MultiTenancyProcessMessageSubscriptionStateMigration sut =
+        new MultiTenancyProcessMessageSubscriptionStateMigration();
+
     private ZeebeDb<ZbColumnFamilies> zeebeDb;
     private MutableProcessingState processingState;
     private TransactionContext transactionContext;
@@ -894,6 +850,8 @@ public class MultiTenancyMigrationTest {
   @Nested
   @ExtendWith(ProcessingStateExtension.class)
   class MigrateJobStateForMultiTenancyTest {
+
+    final MultiTenancyJobStateMigration sut = new MultiTenancyJobStateMigration();
 
     private ZeebeDb<ZbColumnFamilies> zeebeDb;
     private MutableProcessingState processingState;
@@ -983,6 +941,7 @@ public class MultiTenancyMigrationTest {
   @Nested
   @ExtendWith(ProcessingStateExtension.class)
   class ProcessVersionMigrationTest {
+    final MultiTenancyProcessStateMigration sut = new MultiTenancyProcessStateMigration();
 
     private ZeebeDb<ZbColumnFamilies> zeebeDb;
     private MutableProcessingState processingState;
