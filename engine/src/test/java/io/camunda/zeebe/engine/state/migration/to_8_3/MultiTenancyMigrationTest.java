@@ -75,8 +75,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 public class MultiTenancyMigrationTest {
 
-  final MultiTenancyMigration sut = new MultiTenancyMigration();
-
   @Nested
   class MockBasedTests {
 
