@@ -92,7 +92,7 @@
 
           <plugin>
             <groupId>org.codehaus.cargo</groupId>
-            <artifactId>cargo-maven2-plugin</artifactId>
+            <artifactId>cargo-maven3-plugin</artifactId>
             <executions>
               <execution>
                 <id>start-container</id>
@@ -107,7 +107,7 @@
               <!-- Container configuration -->
               <container>
                 <type>remote</type>
-                <containerId>tomcat8x</containerId>
+                <containerId>tomcat9x</containerId>
               </container>
               <configuration>
                 <type>runtime</type>
