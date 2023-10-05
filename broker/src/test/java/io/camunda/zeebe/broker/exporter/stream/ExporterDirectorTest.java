@@ -55,7 +55,9 @@ public final class ExporterDirectorTest {
   private static final String EXPORTER_ID_1 = "exporter-1";
   private static final String EXPORTER_ID_2 = "exporter-2";
 
-  private static final VerificationWithTimeout TIMEOUT = timeout(5_000);
+  private static final int TIMEOUT_MILLIS = 5_000;
+  private static final VerificationWithTimeout TIMEOUT = timeout(TIMEOUT_MILLIS);
+
   @Rule public final ExporterRule rule = ExporterRule.activeExporter();
   private final List<ControlledTestExporter> exporters = new ArrayList<>();
   private final List<ExporterDescriptor> exporterDescriptors = new ArrayList<>();
@@ -213,11 +215,14 @@ public final class ExporterDirectorTest {
   }
 
   @Test
-  public void shouldConfigureAllExportersProperlyOnStart() {
+  public void shouldConfigureAllExportersProperlyOnStart() throws InterruptedException {
     // when
+    final CountDownLatch latch = new CountDownLatch(exporters.size());
+    exporters.forEach(exporter -> exporter.onOpen(c -> latch.countDown()));
     startExporterDirector(exporterDescriptors);
 
     // then
+    assertThat(latch.await(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)).isTrue();
     verify(exporters.get(0), TIMEOUT).open(any());
     verify(exporters.get(1), TIMEOUT).open(any());
 
