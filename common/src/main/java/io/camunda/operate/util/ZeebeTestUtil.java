@@ -39,23 +39,34 @@ public abstract class ZeebeTestUtil {
    * @return process id
    */
   public static Long deployProcess(ZeebeClient client, String tenantId, String... classpathResources) {
-    if (classpathResources.length == 0) {
-      return null;
+    return deployProcess(false, client, tenantId, classpathResources);
+  }
+
+  public static Long deployProcess(boolean ignoreException, ZeebeClient client, String tenantId, String... classpathResources) {
+    try {
+      if (classpathResources.length == 0) {
+        return null;
+      }
+      DeployResourceCommandStep1 deployProcessCommandStep1 = client.newDeployResourceCommand();
+      for (String classpathResource : classpathResources) {
+        deployProcessCommandStep1 = deployProcessCommandStep1.addResourceFromClasspath(classpathResource);
+      }
+      if (tenantId != null) {
+        deployProcessCommandStep1 = ((DeployResourceCommandStep1.DeployResourceCommandStep2) deployProcessCommandStep1).tenantId(
+            tenantId);
+      }
+      final DeploymentEvent deploymentEvent = ((DeployResourceCommandStep1.DeployResourceCommandStep2) deployProcessCommandStep1).send()
+          .join();
+      logger.debug("Deployment of resource [{}] was performed", (Object[]) classpathResources);
+      return deploymentEvent.getProcesses().get(classpathResources.length - 1).getProcessDefinitionKey();
+    } catch (Exception e) {
+      if (ignoreException) {
+        logger.warn("Deployment failed: " + e.getMessage());
+        return null;
+      } else {
+        throw e;
+      }
     }
-    DeployResourceCommandStep1 deployProcessCommandStep1 = client.newDeployResourceCommand();
-    for (String classpathResource: classpathResources) {
-      deployProcessCommandStep1 = deployProcessCommandStep1.addResourceFromClasspath(classpathResource);
-    }
-    if (tenantId != null) {
-      deployProcessCommandStep1 = ((DeployResourceCommandStep1.DeployResourceCommandStep2) deployProcessCommandStep1).tenantId(
-          tenantId);
-    }
-    final DeploymentEvent deploymentEvent =
-      ((DeployResourceCommandStep1.DeployResourceCommandStep2)deployProcessCommandStep1)
-        .send()
-        .join();
-    logger.debug("Deployment of resource [{}] was performed", (Object[])classpathResources);
-    return deploymentEvent.getProcesses().get(classpathResources.length - 1).getProcessDefinitionKey();
   }
 
   public static void deployDecision(ZeebeClient client, String tenantId, String... classpathResources) {
@@ -110,34 +121,54 @@ public abstract class ZeebeTestUtil {
    * @return process instance id
    */
   public static long startProcessInstance(ZeebeClient client, String tenantId, String bpmnProcessId, String payload) {
-    final CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3 createProcessInstanceCommandStep3 = client
-      .newCreateInstanceCommand().bpmnProcessId(bpmnProcessId).latestVersion();
-    if (tenantId != null) {
-      createProcessInstanceCommandStep3.tenantId(tenantId);
-    }
-    if (payload != null) {
-      createProcessInstanceCommandStep3.variables(payload);
-    }
-    ProcessInstanceEvent processInstanceEvent = null;
+    return startProcessInstance(false, client, tenantId, bpmnProcessId, payload);
+  }
+
+  public static long startProcessInstance(boolean ignoreException, ZeebeClient client, String tenantId, String bpmnProcessId, String payload) {
     try {
-      processInstanceEvent =
-        createProcessInstanceCommandStep3
-        .send().join();
-      logger.debug("Process instance created for process [{}]", bpmnProcessId);
-    } catch (ClientException ex) {
-      //retry once
-      sleepFor(300L);
-      processInstanceEvent =
-        createProcessInstanceCommandStep3
-          .send().join();
-      logger.debug("Process instance created for process [{}]", bpmnProcessId);
+      final CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3 createProcessInstanceCommandStep3 = client.newCreateInstanceCommand()
+          .bpmnProcessId(bpmnProcessId).latestVersion();
+      if (tenantId != null) {
+        createProcessInstanceCommandStep3.tenantId(tenantId);
+      }
+      if (payload != null) {
+        createProcessInstanceCommandStep3.variables(payload);
+      }
+      ProcessInstanceEvent processInstanceEvent = null;
+      try {
+        processInstanceEvent = createProcessInstanceCommandStep3.send().join();
+        logger.debug("Process instance created for process [{}]", bpmnProcessId);
+      } catch (ClientException ex) {
+        //retry once
+        sleepFor(300L);
+        processInstanceEvent = createProcessInstanceCommandStep3.send().join();
+        logger.debug("Process instance created for process [{}]", bpmnProcessId);
+      }
+      return processInstanceEvent.getProcessInstanceKey();
+    } catch (Exception e) {
+      if (ignoreException) {
+        logger.warn("Instance creation failed: " + e.getMessage());
+        return 0L;
+      } else {
+        throw e;
+      }
     }
-    return processInstanceEvent.getProcessInstanceKey();
+  }
+
+  public static void cancelProcessInstance(boolean ignoreException, ZeebeClient client, long processInstanceKey) {
+    try {
+      client.newCancelInstanceCommand(processInstanceKey).send().join();
+    } catch (Exception e) {
+      if (!ignoreException) {
+        throw e;
+      } else {
+        logger.warn("Cancellation failed: " + e.getMessage());
+      }
+    }
   }
 
   public static void cancelProcessInstance(ZeebeClient client, long processInstanceKey) {
-    client.newCancelInstanceCommand(processInstanceKey).send().join();
-
+    cancelProcessInstance(false, client, processInstanceKey);
   }
 
   public static void completeTask(ZeebeClient client, String jobType, String workerName, String payload) {
