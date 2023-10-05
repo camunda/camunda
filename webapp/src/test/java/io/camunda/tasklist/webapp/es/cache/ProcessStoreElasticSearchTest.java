@@ -35,14 +35,17 @@ import io.camunda.tasklist.webapp.security.identity.IdentityAuthorization;
 import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import org.apache.lucene.search.TotalHits;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
+import org.elasticsearch.search.aggregations.Aggregations;
+import org.elasticsearch.search.aggregations.bucket.terms.ParsedStringTerms;
+import org.elasticsearch.search.aggregations.bucket.terms.Terms;
+import org.elasticsearch.search.aggregations.metrics.TopHits;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -59,8 +62,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 class ProcessStoreElasticSearchTest {
-  @Mock private RestHighLevelClient esClient;
-  @Mock private ProcessIndex processIndex; // Add the mock for ProcessIndex
+  @Mock private ProcessIndex processIndex;
   @Mock private TenantAwareElasticsearchClient tenantAwareClient;
   @InjectMocks private ProcessStoreElasticSearch processStore;
   @InjectMocks private IdentityAuthorizationService identityService;
@@ -103,8 +105,7 @@ class ProcessStoreElasticSearchTest {
   public void shouldReturnIOExceptionForGetProcessByBpmnId() throws IOException {
     // given
     final IOException mockedException = new IOException("IO Exception during search");
-    when(esClient.search(any(SearchRequest.class), any(RequestOptions.class)))
-        .thenThrow(mockedException);
+    when(tenantAwareClient.search(any(SearchRequest.class))).thenThrow(mockedException);
     when(processIndex.getAlias()).thenReturn("alias");
 
     // when
@@ -151,7 +152,7 @@ class ProcessStoreElasticSearchTest {
     final String errorMessage = "IOException error message";
     final IOException exception = new IOException(errorMessage);
 
-    when(esClient.search(any(SearchRequest.class), any(RequestOptions.class))).thenThrow(exception);
+    when(tenantAwareClient.search(any(SearchRequest.class))).thenThrow(exception);
     when(processIndex.getAlias()).thenReturn("index_alias");
 
     // given and then
@@ -172,9 +173,11 @@ class ProcessStoreElasticSearchTest {
     when(processIndex.getAlias()).thenReturn("index_alias");
     final SearchResponse searchResponse = mock(SearchResponse.class);
     when(tenantAwareClient.search(any(SearchRequest.class))).thenReturn(searchResponse);
-    final SearchHits searchHits = mock(SearchHits.class);
-    when(searchResponse.getHits()).thenReturn(searchHits);
-    when(searchHits.getHits()).thenReturn(new SearchHit[] {});
+    final var aggregations = mock(Aggregations.class);
+    when(searchResponse.getAggregations()).thenReturn(aggregations);
+    final var definitionIdTerms = mock(Terms.class);
+    when(aggregations.get("group_by_definition_id")).thenReturn(definitionIdTerms);
+    when(definitionIdTerms.getBuckets()).thenReturn(Collections.emptyList());
     final List<String> authorizations = identityService.getProcessDefinitionsFromAuthorization();
 
     // given
@@ -192,7 +195,7 @@ class ProcessStoreElasticSearchTest {
   public void shouldReturnProcessesWhenResourceAuthIsEnabledWithAuthorization() throws Exception {
     // when
     mockAuthenticationOverIdentity(true);
-    mockElasticSearchSuccess();
+    mockElasticSearchSuccessWithAggregatedResponse();
     final List<String> authorizations = identityService.getProcessDefinitionsFromAuthorization();
 
     // given
@@ -211,7 +214,7 @@ class ProcessStoreElasticSearchTest {
     // when
     when(tasklistProperties.getIdentity()).thenReturn(mock(IdentityProperties.class));
     when(tasklistProperties.getIdentity().isResourcePermissionsEnabled()).thenReturn(false);
-    mockElasticSearchSuccess();
+    mockElasticSearchSuccessWithAggregatedResponse();
 
     final List<String> authorizations = identityService.getProcessDefinitionsFromAuthorization();
 
@@ -278,10 +281,38 @@ class ProcessStoreElasticSearchTest {
     when(processEntityMock.getId()).thenReturn("1");
     when(ElasticsearchUtil.fromSearchHit(jsonString, objectMapper, ProcessEntity.class))
         .thenReturn(processEntityMock);
-    when(esClient.search(any(SearchRequest.class), any(RequestOptions.class)))
-        .thenReturn(searchResponse);
     when(tenantAwareClient.search(any(SearchRequest.class))).thenReturn(searchResponse);
     when(processIndex.getAlias()).thenReturn("index_alias");
+  }
+
+  private void mockElasticSearchSuccessWithAggregatedResponse() throws IOException {
+    final var mockedSearchResponse = mock(SearchResponse.class);
+    when(tenantAwareClient.search(any(SearchRequest.class))).thenReturn(mockedSearchResponse);
+    when(processIndex.getAlias()).thenReturn("index_alias");
+
+    final var aggregations = mock(Aggregations.class);
+    when(mockedSearchResponse.getAggregations()).thenReturn(aggregations);
+    final var definitionIdTerms = mock(Terms.class);
+    when(aggregations.get("group_by_definition_id")).thenReturn(definitionIdTerms);
+    final var definitionIdBucket = mock(ParsedStringTerms.ParsedBucket.class);
+    when((List<ParsedStringTerms.ParsedBucket>) definitionIdTerms.getBuckets())
+        .thenReturn(List.of(definitionIdBucket));
+    final var definitionIdBucketAggregations = mock(Aggregations.class);
+    when(definitionIdBucket.getAggregations()).thenReturn(definitionIdBucketAggregations);
+    final var tenantIdTerms = mock(Terms.class);
+    when(definitionIdBucketAggregations.get("group_by_tenant_id")).thenReturn(tenantIdTerms);
+    final var tenantIdBucket = mock(ParsedStringTerms.ParsedBucket.class);
+    when((List<ParsedStringTerms.ParsedBucket>) tenantIdTerms.getBuckets())
+        .thenReturn(List.of(tenantIdBucket));
+    final var tenantIdBucketAggregations = mock(Aggregations.class);
+    final var topHits = mock(TopHits.class);
+    when(tenantIdBucket.getAggregations()).thenReturn(tenantIdBucketAggregations);
+    when(tenantIdBucketAggregations.get("top_hit_doc")).thenReturn(topHits);
+    final var searchHits = mock(SearchHits.class);
+    when(topHits.getHits()).thenReturn(searchHits);
+    final var searchHit = mock(SearchHit.class);
+    when(searchHits.getHits()).thenReturn(new SearchHit[] {searchHit});
+    when(searchHit.getSourceAsString()).thenReturn("");
   }
 
   private void mockElasticSearchNotFound() throws IOException {
@@ -292,8 +323,6 @@ class ProcessStoreElasticSearchTest {
     when(searchResponse.getHits()).thenReturn(searchHits);
     when(searchHits.getTotalHits()).thenReturn(totalHits);
     when(searchHits.getHits()).thenReturn(new SearchHit[] {mock(SearchHit.class)});
-    when(esClient.search(any(SearchRequest.class), any(RequestOptions.class)))
-        .thenReturn(searchResponse);
     when(tenantAwareClient.search(any(SearchRequest.class))).thenReturn(searchResponse);
     when(processIndex.getAlias()).thenReturn("index_alias");
   }

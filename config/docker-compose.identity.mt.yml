@@ -171,7 +171,7 @@ services:
       - CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS=zeebe:26500
       - CAMUNDA_TASKLIST_ELASTICSEARCH_URL=http://elasticsearch:9200
       - CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL=http://elasticsearch:9200
-      - SPRING_PROFILES_ACTIVE=dev,dev-data,identity-auth
+      - SPRING_PROFILES_ACTIVE=identity-auth,dev,dev-data
       - CAMUNDA_TASKLIST_IDENTITY_ISSUERURL=http://localhost:18080/auth/realms/camunda-platform
       - CAMUNDA_TASKLIST_IDENTITY_ISSUERBACKENDURL=http://keycloak:8080/auth/realms/camunda-platform
       - CAMUNDA_TASKLIST_IDENTITY_BASEURL=http://identity:8084
