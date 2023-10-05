@@ -15,8 +15,10 @@
  */
 package io.camunda.zeebe.client.impl.worker;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.atLeast;
@@ -25,19 +27,28 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
+import io.camunda.zeebe.client.api.ZeebeFuture;
+import io.camunda.zeebe.client.api.command.ActivateJobsCommandStep1.ActivateJobsCommandStep3;
 import io.camunda.zeebe.client.api.command.StreamJobsCommandStep1.StreamJobsCommandStep3;
+import io.camunda.zeebe.client.api.response.ActivateJobsResponse;
 import io.camunda.zeebe.client.api.worker.JobClient;
 import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep3;
+import io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl;
 import java.io.Closeable;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import org.awaitility.Awaitility;
+import org.awaitility.core.ThrowingRunnable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Answers;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
 @SuppressWarnings("resource")
@@ -46,15 +57,16 @@ class JobWorkerBuilderImplTest {
   private JobWorkerBuilderImpl jobWorkerBuilder;
   private JobClient jobClient;
   private List<Closeable> closeables;
+  private ZeebeClientConfiguration zeebeClientConfig;
 
   @BeforeEach
   void setUp() {
-    final ZeebeClientConfiguration zeebeClientConfiguration = mock();
+    zeebeClientConfig = new ZeebeClientBuilderImpl();
     jobClient = mock(JobClient.class, Answers.RETURNS_DEEP_STUBS);
-    final ScheduledExecutorService executorService = mock();
+    final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
     closeables = new ArrayList<>();
     jobWorkerBuilder =
-        new JobWorkerBuilderImpl(zeebeClientConfiguration, jobClient, executorService, closeables);
+        new JobWorkerBuilderImpl(zeebeClientConfig, jobClient, executorService, closeables);
   }
 
   @AfterEach
@@ -174,5 +186,132 @@ class JobWorkerBuilderImplTest {
 
     // then
     verify(lastStep, atLeast(1)).requestTimeout(Duration.ofHours(8));
+  }
+
+  @Test
+  void shouldForwardDefaultTenantIdOnPoll() {
+    // given
+    final ActivateJobsCommandStep3 lastStep = Mockito.mock(Answers.RETURNS_SELF);
+    Mockito.when(
+            jobClient.newActivateJobsCommand().jobType(anyString()).maxJobsToActivate(anyInt()))
+        .thenReturn(lastStep);
+    @SuppressWarnings("unchecked")
+    final ArgumentCaptor<List<String>> tenantIdCaptor = ArgumentCaptor.forClass(List.class);
+    Mockito.when(lastStep.tenantIds(tenantIdCaptor.capture())).thenReturn(lastStep);
+    Mockito.when(lastStep.requestTimeout(any())).thenReturn(lastStep);
+    final ZeebeFuture<ActivateJobsResponse> zeebeFuture = Mockito.mock();
+    Mockito.when(lastStep.send()).thenReturn(zeebeFuture);
+    Mockito.when(zeebeFuture.exceptionally(any())).thenReturn(Mockito.mock());
+
+    // when
+    jobWorkerBuilder
+        .jobType("some-type")
+        .handler(mock())
+        .timeout(Duration.ofSeconds(5))
+        .name("worker")
+        .maxJobsActive(30)
+        .open();
+
+    // then
+    await(
+        () ->
+            assertThat(tenantIdCaptor.getValue())
+                .containsOnly(zeebeClientConfig.getDefaultTenantId()));
+  }
+
+  @Test
+  void shouldForwardCustomTenantIdsOnPoll() {
+    // given
+    final ActivateJobsCommandStep3 lastStep = Mockito.mock(Answers.RETURNS_SELF);
+    Mockito.when(
+            jobClient.newActivateJobsCommand().jobType(anyString()).maxJobsToActivate(anyInt()))
+        .thenReturn(lastStep);
+    @SuppressWarnings("unchecked")
+    final ArgumentCaptor<List<String>> tenantIdCaptor = ArgumentCaptor.forClass(List.class);
+    Mockito.when(lastStep.tenantIds(tenantIdCaptor.capture())).thenReturn(lastStep);
+    Mockito.when(lastStep.requestTimeout(any())).thenReturn(lastStep);
+    final ZeebeFuture<ActivateJobsResponse> zeebeFuture = Mockito.mock();
+    Mockito.when(lastStep.send()).thenReturn(zeebeFuture);
+    Mockito.when(zeebeFuture.exceptionally(any())).thenReturn(Mockito.mock());
+
+    // when
+    jobWorkerBuilder
+        .jobType("some-type")
+        .handler(mock())
+        .timeout(Duration.ofSeconds(5))
+        .name("worker")
+        .maxJobsActive(30)
+        .tenantIds("1", "2")
+        .tenantId("3")
+        .tenantIds(Collections.singletonList("4"))
+        .open();
+
+    // then
+    await(
+        () -> assertThat(tenantIdCaptor.getValue()).containsExactlyInAnyOrder("1", "2", "3", "4"));
+  }
+
+  @Test
+  void shouldForwardDefaultTenantIdOnStream() {
+    // given
+    final StreamJobsCommandStep3 lastStep = Mockito.mock(Answers.RETURNS_SELF);
+    Mockito.when(jobClient.newStreamJobsCommand().jobType(anyString()).consumer(any()))
+        .thenReturn(lastStep);
+    @SuppressWarnings("unchecked")
+    final ArgumentCaptor<List<String>> tenantIdCaptor = ArgumentCaptor.forClass(List.class);
+    Mockito.when(lastStep.tenantIds(tenantIdCaptor.capture())).thenReturn(lastStep);
+    Mockito.when(lastStep.send()).thenReturn(Mockito.mock());
+
+    // when
+    jobWorkerBuilder
+        .jobType("type")
+        .handler((c, j) -> {})
+        .timeout(1)
+        .name("test")
+        .maxJobsActive(30)
+        .streamEnabled(true)
+        .open();
+
+    // then
+    await(
+        () ->
+            assertThat(tenantIdCaptor.getValue())
+                .containsOnly(zeebeClientConfig.getDefaultTenantId()));
+  }
+
+  @Test
+  void shouldForwardCustomTenantIdsOnStream() {
+    // given
+    final StreamJobsCommandStep3 lastStep = Mockito.mock(Answers.RETURNS_SELF);
+    Mockito.when(jobClient.newStreamJobsCommand().jobType(anyString()).consumer(any()))
+        .thenReturn(lastStep);
+    @SuppressWarnings("unchecked")
+    final ArgumentCaptor<List<String>> tenantIdCaptor = ArgumentCaptor.forClass(List.class);
+    Mockito.when(lastStep.tenantIds(tenantIdCaptor.capture())).thenReturn(lastStep);
+    Mockito.when(lastStep.send()).thenReturn(Mockito.mock());
+
+    // when
+    jobWorkerBuilder
+        .jobType("type")
+        .handler((c, j) -> {})
+        .timeout(1)
+        .name("test")
+        .maxJobsActive(30)
+        .streamEnabled(true)
+        .tenantIds("1", "2")
+        .tenantId("3")
+        .tenantIds(Collections.singletonList("4"))
+        .open();
+
+    // then
+    await(
+        () -> assertThat(tenantIdCaptor.getValue()).containsExactlyInAnyOrder("1", "2", "3", "4"));
+  }
+
+  private void await(final ThrowingRunnable throwingRunnable) {
+    Awaitility.await()
+        .ignoreExceptions()
+        .atMost(Duration.ofSeconds(1))
+        .untilAsserted(throwingRunnable);
   }
 }
