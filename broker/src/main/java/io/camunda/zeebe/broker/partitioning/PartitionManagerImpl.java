@@ -32,6 +32,7 @@ import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.ActorFutureCollector;
+import io.camunda.zeebe.scheduler.startup.StartupProcessShutdownException;
 import io.camunda.zeebe.topology.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.health.HealthStatus;
@@ -182,7 +183,14 @@ public final class PartitionManagerImpl implements PartitionManager, PartitionCh
       final int partitionId, final Throwable error, final ActorFuture<Void> future) {
 
     if (error != null) {
-      LOGGER.error("Failed to start partition {}", partitionId, error);
+      // If Partition start was not complete due to a shutdown being called
+      // during the startup process, then this shouldn't be logged as an error
+      if (error instanceof StartupProcessShutdownException) {
+        LOGGER.warn("Aborting startup of partition {}", partitionId, error);
+      } else {
+        LOGGER.error("Failed to start partition {}", partitionId, error);
+      }
+
       topologyManager.onHealthChanged(partitionId, HealthStatus.DEAD);
       future.completeExceptionally(error);
       return;
