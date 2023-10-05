@@ -158,8 +158,10 @@ public class IncidentIT extends OperateZeebeIntegrationTest {
     assertThat(incidentResponse.getIncidents()).hasSize(4);
     assertThat(incidentResponse.getIncidents()).isSortedAccordingTo(IncidentDto.INCIDENT_DEFAULT_COMPARATOR);
     assertIncident(incidentResponse, errorMsg, activityId, JOB_NO_RETRIES);
-    assertIncident(incidentResponse, "failed to evaluate expression '{taskOrderId:orderId}': no variable found for name 'orderId'", "upperTask", ErrorType.IO_MAPPING_ERROR);
-    assertIncident(incidentResponse, "failed to evaluate expression 'clientId': no variable found for name 'clientId'", "messageCatchEvent", ErrorType.EXTRACT_VALUE_ERROR);
+    assertIncident(incidentResponse,
+        "Assertion failure on evaluate the expression '{taskOrderId:assert(orderId, orderId!=null, \"no variable found for name 'orderId'\")}': no variable found for name 'orderId'",
+        "upperTask", ErrorType.IO_MAPPING_ERROR);
+    assertIncident(incidentResponse, "Failed to extract the correlation key for 'clientId': The value must be either a string or a number, but was NULL.", "messageCatchEvent", ErrorType.EXTRACT_VALUE_ERROR);
     assertIncident(incidentResponse, "Expected at least one condition to evaluate to true, or to have a default flow", "exclusiveGateway", ErrorType.CONDITION_ERROR);
 
     assertThat(incidentResponse.getFlowNodes()).hasSize(4);

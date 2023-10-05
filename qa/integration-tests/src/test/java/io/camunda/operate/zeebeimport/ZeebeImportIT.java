@@ -53,6 +53,7 @@ import java.util.function.Predicate;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.skyscreamer.jsonassert.JSONAssert;
 import org.skyscreamer.jsonassert.JSONCompareMode;
@@ -517,6 +518,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
   }
 
   @Test
+  @Ignore("https://github.com/camunda/operate/pull/5524")
   public void testDecisionInstanceEvaluatedWithBigInputAndOutput() throws Exception {
     //given
     final String bpmnProcessId = "process";

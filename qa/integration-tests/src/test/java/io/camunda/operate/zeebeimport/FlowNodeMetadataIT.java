@@ -665,7 +665,7 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
     BpmnModelInstance process = Bpmn.createExecutableProcess(processId)
         .startEvent("start")
         .serviceTask("task1").zeebeJobType("task1")
-        .zeebeInput("=var", "varIn")
+        .zeebeInput("=assert(var, var!=null)", "varIn")
         .endEvent()
         .done();
 

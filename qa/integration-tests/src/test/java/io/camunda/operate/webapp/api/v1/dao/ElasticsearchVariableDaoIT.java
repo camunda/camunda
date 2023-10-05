@@ -38,7 +38,7 @@ public class ElasticsearchVariableDaoIT extends OperateZeebeIntegrationTest {
   @Before
   public void setUp(){
     tester
-        .deployProcess("demoProcess_v_1.bpmn")
+        .deployProcess("manual-task.bpmn")
         .waitUntil().processIsDeployed()
         .then()
         .deployProcess("single-task.bpmn")
@@ -50,7 +50,7 @@ public class ElasticsearchVariableDaoIT extends OperateZeebeIntegrationTest {
       final String payload = objectMapper.writeValueAsString(variables);
       tester
           .startProcessInstance(bpmnProcessId, payload)
-          .waitUntil().processInstanceIsStarted();
+          .waitUntil().processInstanceExists();
       for(String name: variables.keySet()){
         tester.variableExists(name);
       }
@@ -76,7 +76,7 @@ public class ElasticsearchVariableDaoIT extends OperateZeebeIntegrationTest {
   public void shouldReturnVariables() throws Exception {
     given(() ->
         processInstanceKey = createVariablesAndGetProcessInstanceKey(
-            "demoProcess", Map.of("customerId", "23", "orderId", "5"))
+            "manual-task-process", Map.of("customerId", "23", "orderId", "5"))
     );
     when(() ->
         variableResults = dao.search(new Query<Variable>().setSort(Sort.listOf("name")))
@@ -102,7 +102,7 @@ public class ElasticsearchVariableDaoIT extends OperateZeebeIntegrationTest {
   public void shouldReturnByKey() throws Exception {
     given(() -> {
       processInstanceKey = createVariablesAndGetProcessInstanceKey(
-          "demoProcess", Map.of("customerId", "23", "orderId", "5"));
+          "manual-task-process", Map.of("customerId", "23", "orderId", "5"));
       variableResults = dao.search(new Query<Variable>().setSort(Sort.listOf("name")));
       key = variableResults.getItems().get(0).getKey();
     });
@@ -119,7 +119,7 @@ public class ElasticsearchVariableDaoIT extends OperateZeebeIntegrationTest {
   public void shouldFilterVariables() throws Exception {
     given(() -> {
       createVariablesAndGetProcessInstanceKey(
-          "demoProcess", Map.of("customerId", "23","orderId","5"));
+          "manual-task-process", Map.of("customerId", "23","orderId","5"));
       processInstanceKey = createVariablesAndGetProcessInstanceKey(
           "process", Map.of("movie", "From dusk till dawn"));
     });
@@ -147,7 +147,7 @@ public class ElasticsearchVariableDaoIT extends OperateZeebeIntegrationTest {
   public void shouldSortVariables() throws Exception {
     given(() -> {
       createVariablesAndGetProcessInstanceKey(
-          "demoProcess", Map.of("number", 5));
+          "manual-task-process", Map.of("number", 5));
       createVariablesAndGetProcessInstanceKey(
           "process", Map.of("ordered", true));
     });
@@ -167,7 +167,7 @@ public class ElasticsearchVariableDaoIT extends OperateZeebeIntegrationTest {
     given(() -> {
       for (int i = 0; i < 7; i++) {
         createVariablesAndGetProcessInstanceKey(
-            "demoProcess", Map.of("counter", "Counted: " + i));
+            "manual-task-process", Map.of("counter", "Counted: " + i));
       }
     });
     when(() ->
