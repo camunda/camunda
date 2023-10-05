@@ -135,6 +135,8 @@ public class MultiTenancyMigrationTest {
   @ExtendWith(ProcessingStateExtension.class)
   class MigrateProcessStateForMultiTenancyTest {
 
+    final MultiTenancyProcessStateMigration sut = new MultiTenancyProcessStateMigration();
+
     private ZeebeDb<ZbColumnFamilies> zeebeDb;
     private MutableProcessingState processingState;
     private TransactionContext transactionContext;
@@ -983,6 +985,7 @@ public class MultiTenancyMigrationTest {
   @Nested
   @ExtendWith(ProcessingStateExtension.class)
   class ProcessVersionMigrationTest {
+    final MultiTenancyProcessStateMigration sut = new MultiTenancyProcessStateMigration();
 
     private ZeebeDb<ZbColumnFamilies> zeebeDb;
     private MutableProcessingState processingState;
