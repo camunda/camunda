@@ -1,6 +1,6 @@
 {
 	"name": "@camunda/camunda-optimize-composite-components",
-	"version": "0.0.12",
+	"version": "0.0.13-rc4",
 	"description": "Camunda Optimize Composite Components",
 	"main": "./lib/esm/index.js",
 	"types": "./lib/esm/index.d.ts",
@@ -20,7 +20,7 @@
 		"@babel/preset-react": "^7.22.5",
 		"@babel/preset-typescript": "^7.22.5",
 		"@carbon/icons-react": "^11.22.1",
-		"@carbon/react": "^1.31.3",
+		"@carbon/react": "^1.39.0",
 		"@storybook/addon-essentials": "^7.3.2",
 		"@storybook/addon-interactions": "^7.3.2",
 		"@storybook/addon-links": "^7.3.2",
