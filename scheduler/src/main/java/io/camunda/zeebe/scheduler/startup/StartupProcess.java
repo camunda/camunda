@@ -151,7 +151,8 @@ public final class StartupProcess<CONTEXT> {
     } else if (shutdownFuture != null) {
       logger.info("Aborting startup process because shutdown was called");
       startupFuture.completeExceptionally(
-          new StartupProcessException("Aborting startup process because shutdown was called"));
+          new StartupProcessShutdownException(
+              "Aborting startup process because shutdown was called"));
     } else {
       final var stepToStart = stepsToStart.poll();
       startedSteps.push(stepToStart);
