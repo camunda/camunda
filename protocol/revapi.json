@@ -121,6 +121,11 @@
           "justification": "This method provided an input argument of the wrong type. The version property is unlikely to surpass MAX_INT. Furthermore, in many cases the JVM automatically converts long to int."
         },
         {
+          "justification": "Ignore changes to the project version, as it changes on every release",
+          "code": "java.field.constantValueChanged",
+          "fieldName": "SEMANTIC_VERSION"
+        },
+        {
           "ignore": true,
           "code": "java.field.constantValueChanged",
           "old": "field io.camunda.zeebe.protocol.management.BackupListResponseEncoder.BackupsEncoder.HEADER_SIZE",
