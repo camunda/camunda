@@ -757,6 +757,9 @@ public class MultiTenancyMigrationTest {
   @ExtendWith(ProcessingStateExtension.class)
   class MigrateMessageSubscriptionStateForMultiTenancyTest {
 
+    final MultiTenancyMessageSubscriptionStateMigration sut =
+        new MultiTenancyMessageSubscriptionStateMigration();
+
     private ZeebeDb<ZbColumnFamilies> zeebeDb;
     private MutableProcessingState processingState;
     private TransactionContext transactionContext;
