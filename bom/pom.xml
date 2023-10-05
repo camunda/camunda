@@ -8,7 +8,7 @@
     <artifactId>camunda-release-parent</artifactId>
     <version>3.9.1</version>
     <!-- do not remove empty tag - http://jira.codehaus.org/browse/MNG-4687 -->
-    <relativePath />
+    <relativePath></relativePath>
   </parent>
 
   <groupId>io.camunda</groupId>
@@ -140,7 +140,7 @@
           <configuration>
             <pom>
               <!-- https://github.com/diffplug/spotless/blob/main/plugin-maven/README.md#sortpom -->
-              <sortPom />
+              <sortPom></sortPom>
             </pom>
           </configuration>
         </plugin>
