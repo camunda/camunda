@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.state.migration;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.engine.state.migration.to_8_2.DecisionMigration;
 import io.camunda.zeebe.engine.state.migration.to_8_2.DecisionRequirementsMigration;
+import io.camunda.zeebe.engine.state.migration.to_8_3.MultiTenancyDecisionStateMigration;
 import io.camunda.zeebe.engine.state.migration.to_8_3.MultiTenancyMigration;
 import io.camunda.zeebe.engine.state.migration.to_8_3.MultiTenancyProcessStateMigration;
 import io.camunda.zeebe.engine.state.migration.to_8_3.ProcessInstanceByProcessDefinitionMigration;
@@ -37,8 +38,9 @@ public class DbMigratorImpl implements DbMigrator {
           new ProcessInstanceByProcessDefinitionMigration(),
           new JobTimeoutCleanupMigration(),
           new JobBackoffCleanupMigration(),
-          new MultiTenancyMigration(),
-          new MultiTenancyProcessStateMigration());
+          new MultiTenancyProcessStateMigration(),
+          new MultiTenancyDecisionStateMigration(),
+          new MultiTenancyMigration());
   // Be mindful of https://github.com/camunda/zeebe/issues/7248. In particular, that issue
   // should be solved first, before adding any migration that can take a long time
 
