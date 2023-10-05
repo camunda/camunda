@@ -7,20 +7,34 @@
  */
 package io.camunda.zeebe.engine.state.migration;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.zeebe.db.TransactionContext;
+import io.camunda.zeebe.db.TransactionOperation;
+import io.camunda.zeebe.db.ZeebeDbTransaction;
 import io.camunda.zeebe.engine.state.mutable.MutableMigrationState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import java.util.Collections;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 public class DbMigratorImplTest {
+
+  private TransactionContext transactionContext;
+  private ZeebeDbTransaction transaction;
+
+  @BeforeEach
+  void setup() {
+    transaction = mock(ZeebeDbTransaction.class);
+    transactionContext = new RunInTransactionContext(transaction);
+  }
 
   @Test
   void shouldRunMigrationThatNeedsToBeRun() {
@@ -32,7 +46,10 @@ public class DbMigratorImplTest {
     when(mockMigration.needsToRun(mockProcessingState)).thenReturn(true);
 
     final var sut =
-        new DbMigratorImpl(mockProcessingState, () -> Collections.singletonList(mockMigration));
+        new DbMigratorImpl(
+            mockProcessingState,
+            transactionContext,
+            () -> Collections.singletonList(mockMigration));
 
     // when
     sut.runMigrations();
@@ -51,7 +68,10 @@ public class DbMigratorImplTest {
     when(mockMigration.needsToRun(mockProcessingState)).thenReturn(false);
 
     final var sut =
-        new DbMigratorImpl(mockProcessingState, () -> Collections.singletonList(mockMigration));
+        new DbMigratorImpl(
+            mockProcessingState,
+            transactionContext,
+            () -> Collections.singletonList(mockMigration));
 
     // when
     sut.runMigrations();
@@ -72,7 +92,8 @@ public class DbMigratorImplTest {
     when(mockMigration2.needsToRun(mockProcessingState)).thenReturn(true);
 
     final var sut =
-        new DbMigratorImpl(mockProcessingState, () -> List.of(mockMigration1, mockMigration2));
+        new DbMigratorImpl(
+            mockProcessingState, transactionContext, () -> List.of(mockMigration1, mockMigration2));
 
     // when
     sut.runMigrations();
@@ -92,15 +113,18 @@ public class DbMigratorImplTest {
     when(mockMigration.needsToRun(mockProcessingState)).thenReturn(false);
 
     final var sut =
-        new DbMigratorImpl(mockProcessingState, () -> Collections.singletonList(mockMigration));
+        new DbMigratorImpl(
+            mockProcessingState,
+            transactionContext,
+            () -> Collections.singletonList(mockMigration));
 
     // when
     sut.abort();
     sut.runMigrations();
 
     // then
-    verify(mockMigration, never()).needsToRun(Mockito.any());
-    verify(mockMigration, never()).runMigration(Mockito.any());
+    verify(mockMigration, never()).needsToRun(any());
+    verify(mockMigration, never()).runMigration(any());
   }
 
   @Test
@@ -115,7 +139,8 @@ public class DbMigratorImplTest {
     when(mockMigration2.needsToRun(mockProcessingState)).thenReturn(true);
 
     final var sut =
-        new DbMigratorImpl(mockProcessingState, () -> List.of(mockMigration1, mockMigration2));
+        new DbMigratorImpl(
+            mockProcessingState, transactionContext, () -> List.of(mockMigration1, mockMigration2));
 
     doAnswer(
             (invocationOnMock) -> {
@@ -132,5 +157,28 @@ public class DbMigratorImplTest {
     // then
     verify(mockMigration1).runMigration(mockProcessingState);
     verify(mockMigration2, never()).runMigration(mockProcessingState);
+  }
+
+  private static final class RunInTransactionContext implements TransactionContext {
+
+    private final ZeebeDbTransaction transaction;
+
+    private RunInTransactionContext(final ZeebeDbTransaction transaction) {
+      this.transaction = transaction;
+    }
+
+    @Override
+    public void runInTransaction(final TransactionOperation operations) {
+      try {
+        operations.run();
+      } catch (final Exception e) {
+        throw new RuntimeException(e);
+      }
+    }
+
+    @Override
+    public ZeebeDbTransaction getCurrentTransaction() {
+      return transaction;
+    }
   }
 }
