@@ -223,7 +223,7 @@ const Processes: React.FC = observer(() => {
               : processes.map((process, idx) => (
                   <ProcessTile
                     process={process}
-                    key={process.bpmnProcessId}
+                    key={process.id}
                     isFirst={idx === 0}
                     isStartButtonDisabled={
                       (instance !== null &&
