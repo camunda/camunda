@@ -910,6 +910,8 @@ public class MultiTenancyMigrationTest {
   @ExtendWith(ProcessingStateExtension.class)
   class MigrateJobStateForMultiTenancyTest {
 
+    final MultiTenancyJobStateMigration sut = new MultiTenancyJobStateMigration();
+
     private ZeebeDb<ZbColumnFamilies> zeebeDb;
     private MutableProcessingState processingState;
     private TransactionContext transactionContext;
