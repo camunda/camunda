@@ -54,6 +54,7 @@ public class UIConfigurationService {
     uiConfigurationDto.setSharingEnabled(settingService.getSettings().getSharingEnabled().orElse(false));
     uiConfigurationDto.setTenantsAvailable(tenantService.isMultiTenantEnvironment());
     uiConfigurationDto.setOptimizeVersion(versionService.getRawVersion());
+    uiConfigurationDto.setOptimizeDocsVersion(versionService.getDocsVersion());
     final String optimizeProfile = determineOptimizeProfile();
     uiConfigurationDto.setEnterpriseMode(isEnterpriseMode(optimizeProfile));
     uiConfigurationDto.setOptimizeProfile(optimizeProfile);

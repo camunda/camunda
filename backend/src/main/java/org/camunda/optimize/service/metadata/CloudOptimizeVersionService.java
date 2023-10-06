@@ -16,7 +16,7 @@ public class CloudOptimizeVersionService extends OptimizeVersionService {
   private static final String C8_VERSION = "8.3.0";
 
   public CloudOptimizeVersionService() {
-    super(Version.RAW_VERSION.endsWith("-SNAPSHOT") ? C8_VERSION + "-SNAPSHOT" : C8_VERSION, C8_VERSION);
+    super(Version.RAW_VERSION.endsWith("-SNAPSHOT") ? C8_VERSION + "-SNAPSHOT" : C8_VERSION, C8_VERSION, Version.VERSION);
   }
 
 }
