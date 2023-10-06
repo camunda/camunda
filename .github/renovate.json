@@ -10,9 +10,29 @@
   ],
   "dependencyDashboard": true,
   "enabledManagers": [
-    "dockerfile"
+    "maven", "dockerfile"
   ],
   "packageRules": [
+    {
+      "matchManagers": [
+        "maven"
+      ],
+      "packagePatterns": ["*"],
+      "enabled": false
+    },
+    {
+      "matchPackagePrefixes": ["org.springframework.boot"],
+      "enabled": true
+    },
+    {
+      "matchBaseBranches": ["/^stable\\/8\\..*/"],
+      "matchPackagePrefixes": ["org.springframework.boot"],
+      "matchUpdateTypes": [
+        "minor",
+        "major"
+      ],
+      "enabled": false
+    },
     {
       "matchManagers": [
         "dockerfile"
