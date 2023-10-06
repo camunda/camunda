@@ -196,8 +196,23 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
   }
 
   @Override
+  public long writeCommand(
+      final Intent intent, final UnifiedRecordValue value, final String... authorizedTenants) {
+    return streamProcessingComposite.writeCommand(intent, value, authorizedTenants);
+  }
+
+  @Override
   public long writeCommand(final long key, final Intent intent, final UnifiedRecordValue value) {
     return streamProcessingComposite.writeCommand(key, intent, value);
+  }
+
+  @Override
+  public long writeCommand(
+      final long key,
+      final Intent intent,
+      final UnifiedRecordValue recordValue,
+      final String... authorizedTenants) {
+    return streamProcessingComposite.writeCommand(key, intent, recordValue, authorizedTenants);
   }
 
   @Override
@@ -219,6 +234,17 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
   public long writeCommandOnPartition(
       final int partition, final long key, final Intent intent, final UnifiedRecordValue value) {
     return streamProcessingComposite.writeCommandOnPartition(partition, key, intent, value);
+  }
+
+  @Override
+  public long writeCommandOnPartition(
+      final int partition,
+      final long key,
+      final Intent intent,
+      final UnifiedRecordValue value,
+      final String... authorizedTenants) {
+    return streamProcessingComposite.writeCommandOnPartition(
+        partition, key, intent, value, authorizedTenants);
   }
 
   public void snapshot() {

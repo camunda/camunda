@@ -36,7 +36,7 @@ public final class JobUpdateRetriesProcessor implements CommandProcessor<JobReco
     final int retries = command.getValue().getRetries();
 
     if (retries > 0) {
-      final JobRecord job = jobState.getJob(key);
+      final JobRecord job = jobState.getJob(key, command.getAuthorizations());
 
       if (job != null) {
         // update retries for response sent to client

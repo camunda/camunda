@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValueAssert;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.collection.Maps;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -51,6 +52,12 @@ public class UserTaskIncidentTest {
 
   private IncidentRecordValueAssert assertIncidentCreated(
       final long processInstanceKey, final long elementInstanceKey) {
+    return assertIncidentCreated(
+        processInstanceKey, elementInstanceKey, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  }
+
+  private IncidentRecordValueAssert assertIncidentCreated(
+      final long processInstanceKey, final long elementInstanceKey, final String tenantId) {
     final var incidentRecord =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
@@ -59,7 +66,8 @@ public class UserTaskIncidentTest {
         .hasElementId(TASK_ELEMENT_ID)
         .hasElementInstanceKey(elementInstanceKey)
         .hasJobKey(-1L)
-        .hasVariableScopeKey(elementInstanceKey);
+        .hasVariableScopeKey(elementInstanceKey)
+        .hasTenantId(tenantId);
   }
 
   // --------------------------------------------------------------------------
@@ -642,6 +650,32 @@ public class UserTaskIncidentTest {
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
             "Expected result of the expression '[1,2,3]' to be one of '[DATE_TIME, STRING]', but was 'ARRAY'");
+  }
+
+  @Test
+  public void shouldCreateIncidentOnUserTaskForCustomTenant() {
+    // given
+    final String tenantId = "acme";
+    ENGINE
+        .deployment()
+        .withXmlResource(processWithUserTask(u -> u.zeebeFollowUpDateExpression("[1,2,3]")))
+        .withTenantId(tenantId)
+        .deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withTenantId(tenantId).create();
+
+    final var userTaskActivating =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId(TASK_ELEMENT_ID)
+            .withElementType(BpmnElementType.USER_TASK)
+            .withTenantId(tenantId)
+            .getFirst();
+
+    // then
+    assertIncidentCreated(processInstanceKey, userTaskActivating.getKey(), tenantId);
   }
 
   @Test

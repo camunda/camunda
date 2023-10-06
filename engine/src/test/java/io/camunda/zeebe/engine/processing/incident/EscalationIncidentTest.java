@@ -210,6 +210,32 @@ public class EscalationIncidentTest {
   }
 
   @Test
+  public void shouldCreateIncidentOnEscalationCodeWithCustomTenant() {
+    // given
+    final String tenantId = "acme";
+    final var process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .endEvent(THROW_ELEMENT_ID, i -> i.escalationExpression("escalationCodeLookup"))
+            .done();
+    ENGINE.deployment().withXmlResource(process).withTenantId(tenantId).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withTenantId(tenantId).create();
+
+    // then
+    final Record<IncidentRecordValue> incidentEvent =
+        RecordingExporter.incidentRecords()
+            .withIntent(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withTenantId(tenantId)
+            .getFirst();
+
+    Assertions.assertThat(incidentEvent.getValue()).hasTenantId(tenantId);
+  }
+
+  @Test
   public void shouldResolveIncidentIfEscalationCodeOfEndEventCouldNotBeEvaluated() {
     // given
     final var process =

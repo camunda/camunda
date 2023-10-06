@@ -7,21 +7,34 @@
  */
 package io.camunda.zeebe.engine.state.migration;
 
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.zeebe.db.TransactionContext;
+import io.camunda.zeebe.db.TransactionOperation;
+import io.camunda.zeebe.db.ZeebeDbTransaction;
 import io.camunda.zeebe.engine.state.mutable.MutableMigrationState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import java.util.Collections;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 public class DbMigratorImplTest {
+
+  private TransactionContext transactionContext;
+  private ZeebeDbTransaction transaction;
+
+  @BeforeEach
+  void setup() {
+    transaction = mock(ZeebeDbTransaction.class);
+    transactionContext = new RunInTransactionContext(transaction);
+  }
 
   @Test
   void shouldRunMigrationThatNeedsToBeRun() {
@@ -33,7 +46,10 @@ public class DbMigratorImplTest {
     when(mockMigration.needsToRun(mockProcessingState)).thenReturn(true);
 
     final var sut =
-        new DbMigratorImpl(mockProcessingState, () -> Collections.singletonList(mockMigration));
+        new DbMigratorImpl(
+            mockProcessingState,
+            transactionContext,
+            () -> Collections.singletonList(mockMigration));
 
     // when
     sut.runMigrations();
@@ -52,7 +68,10 @@ public class DbMigratorImplTest {
     when(mockMigration.needsToRun(mockProcessingState)).thenReturn(false);
 
     final var sut =
-        new DbMigratorImpl(mockProcessingState, () -> Collections.singletonList(mockMigration));
+        new DbMigratorImpl(
+            mockProcessingState,
+            transactionContext,
+            () -> Collections.singletonList(mockMigration));
 
     // when
     sut.runMigrations();
@@ -73,7 +92,8 @@ public class DbMigratorImplTest {
     when(mockMigration2.needsToRun(mockProcessingState)).thenReturn(true);
 
     final var sut =
-        new DbMigratorImpl(mockProcessingState, () -> List.of(mockMigration1, mockMigration2));
+        new DbMigratorImpl(
+            mockProcessingState, transactionContext, () -> List.of(mockMigration1, mockMigration2));
 
     // when
     sut.runMigrations();
@@ -93,15 +113,18 @@ public class DbMigratorImplTest {
     when(mockMigration.needsToRun(mockProcessingState)).thenReturn(false);
 
     final var sut =
-        new DbMigratorImpl(mockProcessingState, () -> Collections.singletonList(mockMigration));
+        new DbMigratorImpl(
+            mockProcessingState,
+            transactionContext,
+            () -> Collections.singletonList(mockMigration));
 
     // when
     sut.abort();
     sut.runMigrations();
 
     // then
-    verify(mockMigration, never()).needsToRun(Mockito.any());
-    verify(mockMigration, never()).runMigration(Mockito.any());
+    verify(mockMigration, never()).needsToRun(any());
+    verify(mockMigration, never()).runMigration(any());
   }
 
   @Test
@@ -116,7 +139,8 @@ public class DbMigratorImplTest {
     when(mockMigration2.needsToRun(mockProcessingState)).thenReturn(true);
 
     final var sut =
-        new DbMigratorImpl(mockProcessingState, () -> List.of(mockMigration1, mockMigration2));
+        new DbMigratorImpl(
+            mockProcessingState, transactionContext, () -> List.of(mockMigration1, mockMigration2));
 
     doAnswer(
             (invocationOnMock) -> {
@@ -135,62 +159,26 @@ public class DbMigratorImplTest {
     verify(mockMigration2, never()).runMigration(mockProcessingState);
   }
 
-  @Test
-  void shouldMarkMigrationAsFinishedAfterRunning() {
-    // given
-    final var mockProcessingState = mock(MutableProcessingState.class);
-    final var mockMigrationState = mock(MutableMigrationState.class);
-    when(mockProcessingState.getMigrationState()).thenReturn(mockMigrationState);
-    final var mockMigration = mock(MigrationTask.class);
-    when(mockMigration.needsToRun(mockProcessingState)).thenReturn(true);
+  private static final class RunInTransactionContext implements TransactionContext {
 
-    final var sut =
-        new DbMigratorImpl(mockProcessingState, () -> Collections.singletonList(mockMigration));
+    private final ZeebeDbTransaction transaction;
 
-    // when
-    sut.runMigrations();
+    private RunInTransactionContext(final ZeebeDbTransaction transaction) {
+      this.transaction = transaction;
+    }
 
-    // then
-    verify(mockMigrationState).markMigrationFinished(mockMigration.getIdentifier());
-  }
+    @Override
+    public void runInTransaction(final TransactionOperation operations) {
+      try {
+        operations.run();
+      } catch (final Exception e) {
+        throw new RuntimeException(e);
+      }
+    }
 
-  @Test
-  void shouldMarkMigrationAsFinishedAfterSkipping() {
-    // given
-    final var mockProcessingState = mock(MutableProcessingState.class);
-    final var mockMigrationState = mock(MutableMigrationState.class);
-    when(mockProcessingState.getMigrationState()).thenReturn(mockMigrationState);
-    final var mockMigration = mock(MigrationTask.class);
-    when(mockMigration.needsToRun(mockProcessingState)).thenReturn(false);
-
-    final var sut =
-        new DbMigratorImpl(mockProcessingState, () -> Collections.singletonList(mockMigration));
-
-    // when
-    sut.runMigrations();
-
-    // then
-    verify(mockMigrationState).markMigrationFinished(mockMigration.getIdentifier());
-  }
-
-  @Test
-  void shouldNotDoAnythingWhenMigrationIsInStateFinished() {
-    // given
-    final var mockProcessingState = mock(MutableProcessingState.class);
-    final var mockMigrationState = mock(MutableMigrationState.class);
-    when(mockProcessingState.getMigrationState()).thenReturn(mockMigrationState);
-    when(mockMigrationState.isMigrationFinished(anyString())).thenReturn(true);
-    final var mockMigration = mock(MigrationTask.class);
-    when(mockMigration.getIdentifier()).thenReturn("identifier");
-
-    final var sut =
-        new DbMigratorImpl(mockProcessingState, () -> Collections.singletonList(mockMigration));
-
-    // when
-    sut.runMigrations();
-
-    // then
-    verify(mockMigration, never()).runMigration(mockProcessingState);
-    verify(mockMigrationState, never()).markMigrationFinished(mockMigration.getIdentifier());
+    @Override
+    public ZeebeDbTransaction getCurrentTransaction() {
+      return transaction;
+    }
   }
 }

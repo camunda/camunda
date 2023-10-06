@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.incident;
 
+import static io.camunda.zeebe.engine.processing.incident.IncidentHelper.assertIncidentCreated;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.Assertions.tuple;
@@ -101,9 +102,7 @@ public final class MultiInstanceIncidentTest {
             .withElementId(ELEMENT_ID)
             .getFirst();
 
-    Assertions.assertThat(incident.getValue())
-        .hasElementInstanceKey(elementInstance.getKey())
-        .hasElementId(elementInstance.getValue().getElementId())
+    assertIncidentCreated(incident, elementInstance)
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
             "Expected result of the expression 'items' to be 'ARRAY', but was 'NULL'.");
@@ -131,9 +130,7 @@ public final class MultiInstanceIncidentTest {
             .withElementId(ELEMENT_ID)
             .getFirst();
 
-    Assertions.assertThat(incident.getValue())
-        .hasElementInstanceKey(elementInstance.getKey())
-        .hasElementId(elementInstance.getValue().getElementId())
+    assertIncidentCreated(incident, elementInstance)
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
             "Expected result of the expression '"
@@ -166,9 +163,7 @@ public final class MultiInstanceIncidentTest {
             .withElementId(ELEMENT_ID)
             .getFirst();
 
-    Assertions.assertThat(incident.getValue())
-        .hasElementInstanceKey(elementInstance.getKey())
-        .hasElementId(elementInstance.getValue().getElementId())
+    assertIncidentCreated(incident, elementInstance)
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
             """

@@ -31,16 +31,17 @@ public interface MutableMigrationState extends MigrationState {
 
   void migrateElementInstancePopulateProcessInstanceByDefinitionKey();
 
-  void migrateProcessDefinitionVersions();
-
   void migrateProcessStateForMultiTenancy();
 
   void migrateDecisionStateForMultiTenancy();
 
-  /**
-   * Changes the state of a migration to FINISHED to indicate it has been executed.
-   *
-   * @param identifier the identifier of the migration
-   */
-  void markMigrationFinished(final String identifier);
+  void migrateMessageStateForMultiTenancy();
+
+  void migrateMessageStartEventSubscriptionForMultiTenancy();
+
+  void migrateMessageEventSubscriptionForMultiTenancy();
+
+  void migrateProcessMessageSubscriptionForMultiTenancy();
+
+  void migrateJobStateForMultiTenancy();
 }

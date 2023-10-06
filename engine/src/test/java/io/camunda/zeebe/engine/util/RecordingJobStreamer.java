@@ -22,7 +22,7 @@ import org.agrona.DirectBuffer;
 public class RecordingJobStreamer implements JobStreamer {
 
   private final ConcurrentMap<String, AtomicInteger> jobNotifications = new ConcurrentHashMap<>();
-  private final ConcurrentMap<DirectBuffer, RecordingJobStream> jobStreams =
+  private final ConcurrentMap<DirectBuffer, List<RecordingJobStream>> jobStreams =
       new ConcurrentHashMap<>();
 
   @Override
@@ -33,15 +33,20 @@ public class RecordingJobStreamer implements JobStreamer {
 
   @Override
   public Optional<JobStream> streamFor(
-      final DirectBuffer jobType, final Predicate<JobActivationProperties> ignored) {
-    // TODO: filter by activation properties using the predicate :)
-    return Optional.ofNullable(jobStreams.get(jobType));
+      final DirectBuffer jobType, final Predicate<JobActivationProperties> predicate) {
+    return Optional.ofNullable(
+        jobStreams.getOrDefault(jobType, new ArrayList<>()).stream()
+            .filter(jobStream -> predicate.test(jobStream.getProperties()))
+            .findAny()
+            .get());
   }
 
   public RecordingJobStream addJobStream(
       final DirectBuffer jobType, final JobActivationProperties jobActivationProperties) {
     final var jobStream = new RecordingJobStream(jobActivationProperties);
-    jobStreams.put(jobType, jobStream);
+    final var streamsList = jobStreams.getOrDefault(jobType, new ArrayList<>());
+    streamsList.add(jobStream);
+    jobStreams.put(jobType, streamsList);
     return jobStream;
   }
 

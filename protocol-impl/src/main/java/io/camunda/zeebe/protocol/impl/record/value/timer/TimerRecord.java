@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.timer;
 
+import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
@@ -25,6 +27,8 @@ public final class TimerRecord extends UnifiedRecordValue implements TimerRecord
   private final StringProperty targetElementId = new StringProperty("targetElementId");
   private final IntegerProperty repetitionsProp = new IntegerProperty("repetitions");
   private final LongProperty processDefinitionKeyProp = new LongProperty("processDefinitionKey");
+  private final StringProperty tenantIdProp =
+      new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
   public TimerRecord() {
     declareProperty(elementInstanceKeyProp)
@@ -32,7 +36,8 @@ public final class TimerRecord extends UnifiedRecordValue implements TimerRecord
         .declareProperty(dueDateProp)
         .declareProperty(targetElementId)
         .declareProperty(repetitionsProp)
-        .declareProperty(processDefinitionKeyProp);
+        .declareProperty(processDefinitionKeyProp)
+        .declareProperty(tenantIdProp);
   }
 
   @JsonIgnore
@@ -102,7 +107,11 @@ public final class TimerRecord extends UnifiedRecordValue implements TimerRecord
 
   @Override
   public String getTenantId() {
-    // todo(#13337): replace dummy implementation
-    return TenantOwned.DEFAULT_TENANT_IDENTIFIER;
+    return bufferAsString(tenantIdProp.getValue());
+  }
+
+  public TimerRecord setTenantId(final String tenantId) {
+    tenantIdProp.setValue(tenantId);
+    return this;
   }
 }

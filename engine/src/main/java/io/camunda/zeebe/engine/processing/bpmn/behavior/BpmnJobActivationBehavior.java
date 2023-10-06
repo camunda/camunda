@@ -63,8 +63,11 @@ public class BpmnJobActivationBehavior {
     wrappedJobRecord.wrapWithoutVariables(jobRecord);
 
     final String jobType = wrappedJobRecord.getType();
+    final String tenantId = wrappedJobRecord.getTenantId();
     final Optional<JobStream> optionalJobStream =
-        jobStreamer.streamFor(wrappedJobRecord.getTypeBuffer());
+        jobStreamer.streamFor(
+            wrappedJobRecord.getTypeBuffer(),
+            jobActivationProperties -> jobActivationProperties.getTenantIds().contains(tenantId));
 
     if (optionalJobStream.isPresent()) {
       final JobStream jobStream = optionalJobStream.get();

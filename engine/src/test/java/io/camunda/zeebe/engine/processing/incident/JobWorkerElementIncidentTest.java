@@ -24,6 +24,7 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.collection.Maps;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -97,6 +98,7 @@ public class JobWorkerElementIncidentTest {
         .hasErrorMessage("Expected result of the expression 'x' to be 'STRING', but was 'NULL'.")
         .hasElementId(TASK_ELEMENT_ID)
         .hasElementInstanceKey(recordThatLeadsToIncident.getKey())
+        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
         .hasJobKey(-1L)
         .hasVariableScopeKey(recordThatLeadsToIncident.getKey());
   }
@@ -127,6 +129,7 @@ public class JobWorkerElementIncidentTest {
             "Expected result of the expression 'false' to be 'STRING', but was 'BOOLEAN'.")
         .hasElementId(TASK_ELEMENT_ID)
         .hasElementInstanceKey(recordThatLeadsToIncident.getKey())
+        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
         .hasJobKey(-1L)
         .hasVariableScopeKey(recordThatLeadsToIncident.getKey());
   }
@@ -199,6 +202,7 @@ public class JobWorkerElementIncidentTest {
         .hasErrorMessage("Expected result of the expression 'x' to be 'NUMBER', but was 'NULL'.")
         .hasElementId(TASK_ELEMENT_ID)
         .hasElementInstanceKey(recordThatLeadsToIncident.getKey())
+        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
         .hasJobKey(-1L)
         .hasVariableScopeKey(recordThatLeadsToIncident.getKey());
   }
@@ -232,6 +236,7 @@ public class JobWorkerElementIncidentTest {
             "Expected result of the expression 'false' to be 'NUMBER', but was 'BOOLEAN'.")
         .hasElementId(TASK_ELEMENT_ID)
         .hasElementInstanceKey(recordThatLeadsToIncident.getKey())
+        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
         .hasJobKey(-1L)
         .hasVariableScopeKey(recordThatLeadsToIncident.getKey());
   }

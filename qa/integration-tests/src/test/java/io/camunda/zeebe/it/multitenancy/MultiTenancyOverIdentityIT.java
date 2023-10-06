@@ -10,15 +10,22 @@ package io.camunda.zeebe.it.multitenancy;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.api.response.ActivateJobsResponse;
+import io.camunda.zeebe.client.api.response.ActivatedJob;
+import io.camunda.zeebe.client.api.response.CompleteJobResponse;
 import io.camunda.zeebe.client.api.response.DeploymentEvent;
+import io.camunda.zeebe.client.api.response.EvaluateDecisionResponse;
+import io.camunda.zeebe.client.api.response.ModifyProcessInstanceResponse;
 import io.camunda.zeebe.client.api.response.Process;
 import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.client.api.response.PublishMessageResponse;
+import io.camunda.zeebe.client.api.response.ResolveIncidentResponse;
 import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder;
 import io.camunda.zeebe.gateway.impl.configuration.AuthenticationCfg.AuthMode;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.Assertions;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.qa.util.cluster.TestHealthProbe;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.test.util.Strings;
@@ -63,6 +70,8 @@ public class MultiTenancyOverIdentityIT {
 
   @TempDir private static Path credentialsCacheDir;
 
+  private static final String DEFAULT_TENANT = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
+
   private static final String DATABASE_HOST = "postgres";
   private static final int DATABASE_PORT = 5432;
   private static final String DATABASE_USER = "postgres";
@@ -72,10 +81,11 @@ public class MultiTenancyOverIdentityIT {
   private static final String KEYCLOAK_USER = "admin";
   private static final String KEYCLOAK_PASSWORD = "admin";
   private static final String KEYCLOAK_PATH_CAMUNDA_REALM = "/realms/camunda-platform";
-
-  private static final String ZEEBE_CLIENT_ID_TENANT_A = "zeebe-tenant-a";
-  private static final String ZEEBE_CLIENT_ID_TENANT_B = "zeebe-tenant-b";
-  private static final String ZEEBE_CLIENT_ID_TENANT_A_AND_B = "zeebe-tenant-a-and-b";
+  private static final String ZEEBE_CLIENT_ID_TENANT_A = "zeebe-tenant-a-and-default";
+  private static final String ZEEBE_CLIENT_ID_TENANT_B = "zeebe-tenant-b-and-default";
+  private static final String ZEEBE_CLIENT_ID_TENANT_A_AND_B = "zeebe-tenant-a-and-b-and-default";
+  private static final String ZEEBE_CLIENT_ID_TENANT_DEFAULT = ZEEBE_CLIENT_ID_TENANT_A;
+  private static final String ZEEBE_CLIENT_ID_WITHOUT_TENANT = "zeebe-without-tenant";
   private static final String ZEEBE_CLIENT_AUDIENCE = "zeebe-api";
   private static final String ZEEBE_CLIENT_SECRET = "zecret";
 
@@ -120,13 +130,13 @@ public class MultiTenancyOverIdentityIT {
   private static final GenericContainer<?> IDENTITY =
       new GenericContainer<>(
               DockerImageName.parse("camunda/identity")
-                  .withTag(System.getProperty("identity.docker.image.version", "SNAPSHOT")))
+                  .withTag(System.getProperty("identity.docker.image.version", "8.3.0")))
           .withImagePullPolicy(
-              System.getProperty("identity.docker.image.version", "SNAPSHOT").equals("SNAPSHOT")
+              System.getProperty("identity.docker.image.version", "8.3.0").equals("8.3.0")
                   ? PullPolicy.alwaysPull()
                   : PullPolicy.defaultPolicy())
           .dependsOn(POSTGRES, KEYCLOAK)
-          .withEnv("MULTI_TENANCY_ENABLED", "true")
+          .withEnv("MULTITENANCY_ENABLED", "true")
           .withEnv("RESOURCE_AUTHORIZATIONS_ENABLED", "true")
           .withEnv("IDENTITY_LOG_LEVEL", "TRACE")
           .withEnv("logging_level_org_springframework_security", "DEBUG")
@@ -156,6 +166,12 @@ public class MultiTenancyOverIdentityIT {
           .withEnv("KEYCLOAK_CLIENTS_2_TYPE", "m2m")
           .withEnv("KEYCLOAK_CLIENTS_2_PERMISSIONS_0_RESOURCE_SERVER_ID", ZEEBE_CLIENT_AUDIENCE)
           .withEnv("KEYCLOAK_CLIENTS_2_PERMISSIONS_0_DEFINITION", "write:*")
+          .withEnv("KEYCLOAK_CLIENTS_3_NAME", ZEEBE_CLIENT_ID_WITHOUT_TENANT)
+          .withEnv("KEYCLOAK_CLIENTS_3_ID", ZEEBE_CLIENT_ID_WITHOUT_TENANT)
+          .withEnv("KEYCLOAK_CLIENTS_3_SECRET", ZEEBE_CLIENT_SECRET)
+          .withEnv("KEYCLOAK_CLIENTS_3_TYPE", "m2m")
+          .withEnv("KEYCLOAK_CLIENTS_3_PERMISSIONS_0_RESOURCE_SERVER_ID", ZEEBE_CLIENT_AUDIENCE)
+          .withEnv("KEYCLOAK_CLIENTS_3_PERMISSIONS_0_DEFINITION", "write:*")
           .withEnv("IDENTITY_RETRY_ATTEMPTS", "90")
           .withEnv("IDENTITY_RETRY_DELAY_SECONDS", "1")
           .withEnv("IDENTITY_DATABASE_HOST", DATABASE_HOST)
@@ -174,6 +190,8 @@ public class MultiTenancyOverIdentityIT {
           .withNetworkAliases("identity");
 
   @AutoCloseResource private static final TestStandaloneBroker ZEEBE = new TestStandaloneBroker();
+  private static final String TENANT_A = "tenant-a";
+  private static final String TENANT_B = "tenant-b";
 
   @SuppressWarnings("unused")
   @RegisterExtension
@@ -219,9 +237,10 @@ public class MultiTenancyOverIdentityIT {
 
     awaitCamundaRealmAvailabilityOnKeycloak();
 
-    associateTenantsWithClient(List.of("tenant-a"), ZEEBE_CLIENT_ID_TENANT_A);
-    associateTenantsWithClient(List.of("tenant-b"), ZEEBE_CLIENT_ID_TENANT_B);
-    associateTenantsWithClient(List.of("tenant-a", "tenant-b"), ZEEBE_CLIENT_ID_TENANT_A_AND_B);
+    associateTenantsWithClient(List.of(DEFAULT_TENANT, TENANT_A), ZEEBE_CLIENT_ID_TENANT_A);
+    associateTenantsWithClient(List.of(DEFAULT_TENANT, TENANT_B), ZEEBE_CLIENT_ID_TENANT_B);
+    associateTenantsWithClient(
+        List.of(DEFAULT_TENANT, TENANT_A, TENANT_B), ZEEBE_CLIENT_ID_TENANT_A_AND_B);
   }
 
   @BeforeEach
@@ -237,6 +256,28 @@ public class MultiTenancyOverIdentityIT {
   }
 
   @Test
+  void shouldAuthorizeTopologyRequestWithTenantAccess() {
+    try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A)) {
+      // when
+      final var topology = client.newTopologyRequest().send().join();
+
+      // then
+      assertThat(topology.getBrokers()).hasSize(1);
+    }
+  }
+
+  @Test
+  void shouldAuthorizeTopologyRequestWithoutTenantAccess() {
+    try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_WITHOUT_TENANT)) {
+      // when
+      final var topology = client.newTopologyRequest().send().join();
+
+      // then
+      assertThat(topology.getBrokers()).hasSize(1);
+    }
+  }
+
+  @Test
   void shouldAuthorizeDeployProcess() {
     // given
     try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A)) {
@@ -245,7 +286,7 @@ public class MultiTenancyOverIdentityIT {
           client
               .newDeployResourceCommand()
               .addProcessModel(process, "process.bpmn")
-              .tenantId("tenant-a")
+              .tenantId(TENANT_A)
               .send();
 
       // then
@@ -264,7 +305,7 @@ public class MultiTenancyOverIdentityIT {
           client
               .newDeployResourceCommand()
               .addProcessModel(process, "process.bpmn")
-              .tenantId("tenant-b")
+              .tenantId(TENANT_B)
               .send();
 
       // then
@@ -285,7 +326,7 @@ public class MultiTenancyOverIdentityIT {
       client
           .newDeployResourceCommand()
           .addProcessModel(process, "process.bpmn")
-          .tenantId("tenant-a")
+          .tenantId(TENANT_A)
           .send()
           .join();
     }
@@ -293,7 +334,7 @@ public class MultiTenancyOverIdentityIT {
       client
           .newDeployResourceCommand()
           .addProcessModel(process, "process.bpmn")
-          .tenantId("tenant-b")
+          .tenantId(TENANT_B)
           .send()
           .join();
     }
@@ -305,7 +346,7 @@ public class MultiTenancyOverIdentityIT {
           client
               .newDeployResourceCommand()
               .addProcessModel(processV2, "process.bpmn")
-              .tenantId("tenant-b")
+              .tenantId(TENANT_B)
               .send();
 
       // then
@@ -314,7 +355,7 @@ public class MultiTenancyOverIdentityIT {
           .describedAs("Process version is incremented for tenant-b but not for tenant-a")
           .extracting(deploymentEvent -> deploymentEvent.getProcesses().get(0))
           .extracting(Process::getVersion, Process::getTenantId)
-          .containsExactly(2, "tenant-b");
+          .containsExactly(2, TENANT_B);
     }
   }
 
@@ -327,7 +368,7 @@ public class MultiTenancyOverIdentityIT {
           client
               .newDeployResourceCommand()
               .addProcessModel(process, "process.bpmn")
-              .tenantId("tenant-a")
+              .tenantId(TENANT_A)
               .send()
               .join()
               .getProcesses()
@@ -341,7 +382,7 @@ public class MultiTenancyOverIdentityIT {
           client
               .newCreateInstanceCommand()
               .processDefinitionKey(processDefinitionKey)
-              .tenantId("tenant-a")
+              .tenantId(TENANT_A)
               .send();
 
       // then
@@ -359,7 +400,7 @@ public class MultiTenancyOverIdentityIT {
       client
           .newDeployResourceCommand()
           .addProcessModel(process, "process.bpmn")
-          .tenantId("tenant-a")
+          .tenantId(TENANT_A)
           .send()
           .join();
     }
@@ -371,7 +412,7 @@ public class MultiTenancyOverIdentityIT {
               .newCreateInstanceCommand()
               .bpmnProcessId(processId)
               .latestVersion()
-              .tenantId("tenant-b")
+              .tenantId(TENANT_B)
               .send();
 
       // then
@@ -394,7 +435,7 @@ public class MultiTenancyOverIdentityIT {
           client
               .newDeployResourceCommand()
               .addProcessModel(process, "process.bpmn")
-              .tenantId("tenant-a")
+              .tenantId(TENANT_A)
               .send()
               .join()
               .getProcesses()
@@ -410,7 +451,7 @@ public class MultiTenancyOverIdentityIT {
           client
               .newCreateInstanceCommand()
               .processDefinitionKey(processDefinitionKey)
-              .tenantId("tenant-b")
+              .tenantId(TENANT_B)
               .send();
 
       // then
@@ -431,7 +472,7 @@ public class MultiTenancyOverIdentityIT {
       client
           .newDeployResourceCommand()
           .addProcessModel(process, "process.bpmn")
-          .tenantId("tenant-a")
+          .tenantId(TENANT_A)
           .send()
           .join();
     }
@@ -446,7 +487,7 @@ public class MultiTenancyOverIdentityIT {
                   .endEvent()
                   .done(),
               "parent.bpmn")
-          .tenantId("tenant-b")
+          .tenantId(TENANT_B)
           .send()
           .join();
     }
@@ -457,7 +498,7 @@ public class MultiTenancyOverIdentityIT {
           .newCreateInstanceCommand()
           .bpmnProcessId("parent")
           .latestVersion()
-          .tenantId("tenant-b")
+          .tenantId(TENANT_B)
           .send();
 
       // then
@@ -481,7 +522,7 @@ public class MultiTenancyOverIdentityIT {
           client
               .newDeployResourceCommand()
               .addProcessModel(process, "process.bpmn")
-              .tenantId("tenant-a")
+              .tenantId(TENANT_A)
               .send()
               .join()
               .getProcesses()
@@ -497,7 +538,7 @@ public class MultiTenancyOverIdentityIT {
           client
               .newCreateInstanceCommand()
               .processDefinitionKey(processDefinitionKey)
-              .tenantId("tenant-b")
+              .tenantId(TENANT_B)
               .send();
 
       // then
@@ -521,7 +562,7 @@ public class MultiTenancyOverIdentityIT {
       client
           .newDeployResourceCommand()
           .addProcessModel(process, "process.bpmn")
-          .tenantId("tenant-a")
+          .tenantId(TENANT_A)
           .send()
           .join();
 
@@ -531,7 +572,7 @@ public class MultiTenancyOverIdentityIT {
               .newPublishMessageCommand()
               .messageName(messageName)
               .correlationKey("")
-              .tenantId("tenant-a")
+              .tenantId(TENANT_A)
               .send();
 
       // then
@@ -552,7 +593,7 @@ public class MultiTenancyOverIdentityIT {
       client
           .newDeployResourceCommand()
           .addProcessModel(process, "process.bpmn")
-          .tenantId("tenant-a")
+          .tenantId(TENANT_A)
           .send()
           .join();
 
@@ -562,7 +603,7 @@ public class MultiTenancyOverIdentityIT {
               .newPublishMessageCommand()
               .messageName(messageName)
               .correlationKey("")
-              .tenantId("tenant-b")
+              .tenantId(TENANT_B)
               .send();
 
       // then
@@ -572,6 +613,418 @@ public class MultiTenancyOverIdentityIT {
           .withMessageContaining("PERMISSION_DENIED")
           .withMessageContaining(
               "Expected to handle gRPC request PublishMessage with tenant identifier 'tenant-b'")
+          .withMessageContaining("but tenant is not authorized to perform this request");
+    }
+  }
+
+  @Test
+  void shouldActivateJobForTenant() {
+    // given
+    try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A)) {
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(process, "process.bpmn")
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+      client
+          .newCreateInstanceCommand()
+          .bpmnProcessId(processId)
+          .latestVersion()
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+
+      // when
+      final Future<ActivateJobsResponse> result =
+          client
+              .newActivateJobsCommand()
+              .jobType("type")
+              .maxJobsToActivate(1)
+              .tenantId(TENANT_A)
+              .send();
+
+      // then
+      assertThat(result)
+          .describedAs(
+              "Expect that job can be activated as the client has access process of tenant-a")
+          .succeedsWithin(Duration.ofSeconds(10));
+    }
+  }
+
+  @Test
+  void shouldDenyActivateJobWhenUnauthorized() {
+    // given
+    try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A)) {
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(process, "process.bpmn")
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+      client
+          .newCreateInstanceCommand()
+          .bpmnProcessId(processId)
+          .latestVersion()
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+    }
+
+    // when
+    try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_B)) {
+      final Future<ActivateJobsResponse> result =
+          client
+              .newActivateJobsCommand()
+              .jobType("type")
+              .maxJobsToActivate(1)
+              .tenantId(TENANT_A)
+              .send();
+
+      // then
+      assertThat(result)
+          .failsWithin(Duration.ofSeconds(10))
+          .withThrowableThat()
+          .withMessageContaining("PERMISSION_DENIED")
+          .withMessageContaining(
+              "Expected to handle gRPC request ActivateJobs with tenant identifier 'tenant-a'")
+          .withMessageContaining("but tenant is not authorized to perform this request");
+    }
+  }
+
+  @Test
+  void shouldCompleteJobForTenant() {
+    // given
+    try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A)) {
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(process, "process.bpmn")
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+      client
+          .newCreateInstanceCommand()
+          .bpmnProcessId(processId)
+          .latestVersion()
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+
+      final var activatedJob =
+          client
+              .newActivateJobsCommand()
+              .jobType("type")
+              .maxJobsToActivate(1)
+              .tenantId(TENANT_A)
+              .send()
+              .join()
+              .getJobs()
+              .get(0);
+
+      // when
+      final Future<CompleteJobResponse> result = client.newCompleteCommand(activatedJob).send();
+
+      // then
+      assertThat(result)
+          .describedAs(
+              "Expect that job can be competed as the client has access process of tenant-a")
+          .succeedsWithin(Duration.ofSeconds(10));
+    }
+  }
+
+  @Test
+  void shouldNotFindJobWhenUnauthorized() {
+    // given
+    final ActivatedJob activatedJob;
+    try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A)) {
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(process, "process.bpmn")
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+      client
+          .newCreateInstanceCommand()
+          .bpmnProcessId(processId)
+          .latestVersion()
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+      activatedJob =
+          client
+              .newActivateJobsCommand()
+              .jobType("type")
+              .maxJobsToActivate(1)
+              .tenantId(TENANT_A)
+              .send()
+              .join()
+              .getJobs()
+              .get(0);
+    }
+
+    // when
+    try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_B)) {
+      final Future<CompleteJobResponse> result = client.newCompleteCommand(activatedJob).send();
+
+      // then
+      assertThat(result)
+          .failsWithin(Duration.ofSeconds(10))
+          .withThrowableThat()
+          .withMessageContaining("NOT_FOUND")
+          .withMessageContaining(
+              "Command 'COMPLETE' rejected with code 'NOT_FOUND': Expected to update retries for job with key '%d', but no such job was found"
+                  .formatted(activatedJob.getKey()));
+    }
+  }
+
+  @Test
+  void shouldResolveIncidentForTenant() {
+    // given
+    process =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .zeebeOutputExpression("assert(foo, foo != null)", "target")
+            .endEvent()
+            .done();
+    try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A)) {
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(process, "process.bpmn")
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+      client
+          .newCreateInstanceCommand()
+          .bpmnProcessId(processId)
+          .latestVersion()
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+
+      final var incidentKey =
+          RecordingExporter.incidentRecords().withBpmnProcessId(processId).getFirst().getKey();
+
+      // when
+      final Future<ResolveIncidentResponse> result =
+          client.newResolveIncidentCommand(incidentKey).send();
+
+      // then
+      assertThat(result)
+          .describedAs(
+              "Expect that incident can be resolved as the client has access process of tenant-a")
+          .succeedsWithin(Duration.ofSeconds(10));
+    }
+  }
+
+  @Test
+  void shouldNotFindIncidentForTenantWhenUnauthorized() {
+    // given
+    process =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .zeebeOutputExpression("assert(foo, foo != null)", "target")
+            .endEvent()
+            .done();
+    final long incidentKey;
+    try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A)) {
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(process, "process.bpmn")
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+      client
+          .newCreateInstanceCommand()
+          .bpmnProcessId(processId)
+          .latestVersion()
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+
+      incidentKey =
+          RecordingExporter.incidentRecords().withBpmnProcessId(processId).getFirst().getKey();
+    }
+
+    try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_B)) {
+      // when
+      final Future<ResolveIncidentResponse> result =
+          client.newResolveIncidentCommand(incidentKey).send();
+
+      // then
+      assertThat(result)
+          .failsWithin(Duration.ofSeconds(10))
+          .withThrowableThat()
+          .withMessageContaining("NOT_FOUND")
+          .withMessageContaining(
+              "Command 'RESOLVE' rejected with code 'NOT_FOUND': Expected to resolve incident with key '%d', but no such incident was found"
+                  .formatted(incidentKey));
+    }
+  }
+
+  @Test
+  void shouldAllowModifyProcessInstanceForDefaultTenant() {
+    try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_DEFAULT)) {
+      // given
+      client.newDeployResourceCommand().addProcessModel(process, "process.bpmn").send().join();
+
+      final long processInstanceKey =
+          client
+              .newCreateInstanceCommand()
+              .bpmnProcessId(processId)
+              .latestVersion()
+              .send()
+              .join()
+              .getProcessInstanceKey();
+
+      // when
+      final Future<ModifyProcessInstanceResponse> response =
+          client.newModifyProcessInstanceCommand(processInstanceKey).activateElement("task").send();
+
+      // then
+      assertThat(response).succeedsWithin(Duration.ofSeconds(10));
+    }
+  }
+
+  @Test
+  void shouldAllowModifyProcessInstanceForOtherTenant() {
+    try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A)) {
+      // given
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(process, "process.bpmn")
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+
+      final long processInstanceKey =
+          client
+              .newCreateInstanceCommand()
+              .bpmnProcessId(processId)
+              .latestVersion()
+              .tenantId(TENANT_A)
+              .send()
+              .join()
+              .getProcessInstanceKey();
+
+      // when
+      final Future<ModifyProcessInstanceResponse> response =
+          client.newModifyProcessInstanceCommand(processInstanceKey).activateElement("task").send();
+
+      // then
+      assertThat(response).succeedsWithin(Duration.ofSeconds(10));
+    }
+  }
+
+  @Test
+  void shouldRejectModifyProcessInstanceForUnauthorizedTenant() {
+    final long processInstanceKey;
+    try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A)) {
+      // given
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(process, "process.bpmn")
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+
+      processInstanceKey =
+          client
+              .newCreateInstanceCommand()
+              .bpmnProcessId(processId)
+              .latestVersion()
+              .tenantId(TENANT_A)
+              .send()
+              .join()
+              .getProcessInstanceKey();
+    }
+
+    // when
+    try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_B)) {
+      final Future<ModifyProcessInstanceResponse> response =
+          client.newModifyProcessInstanceCommand(processInstanceKey).activateElement("task").send();
+
+      // then
+      assertThat(response)
+          .failsWithin(Duration.ofSeconds(10))
+          .withThrowableThat()
+          .withMessageContaining("NOT_FOUND")
+          .withMessageContaining(
+              "Expected to modify process instance but no process instance found with key");
+    }
+  }
+
+  @Test
+  void shouldAllowEvaluateDecisionForDefaultTenant() {
+    try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_DEFAULT)) {
+      // given
+      client
+          .newDeployResourceCommand()
+          .addResourceFromClasspath("dmn/decision-table.dmn")
+          .send()
+          .join();
+
+      // when
+      final Future<EvaluateDecisionResponse> response =
+          client
+              .newEvaluateDecisionCommand()
+              .decisionId("jedi_or_sith")
+              .variable("lightsaberColor", "blue")
+              .send();
+      // then
+      assertThat(response).succeedsWithin(Duration.ofSeconds(10));
+    }
+  }
+
+  @Test
+  void shouldAllowEvaluateDecisionForCustomTenant() {
+    try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_DEFAULT)) {
+      // given
+      client
+          .newDeployResourceCommand()
+          .addResourceFromClasspath("dmn/decision-table.dmn")
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+
+      // when
+      final Future<EvaluateDecisionResponse> response =
+          client
+              .newEvaluateDecisionCommand()
+              .decisionId("jedi_or_sith")
+              .variable("lightsaberColor", "blue")
+              .tenantId(TENANT_A)
+              .send();
+      // then
+      assertThat(response).succeedsWithin(Duration.ofSeconds(10));
+    }
+  }
+
+  @Test
+  void shouldDenyEvaluateDecisionForCustomTenant() {
+    try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_DEFAULT)) {
+      // given
+      client
+          .newDeployResourceCommand()
+          .addResourceFromClasspath("dmn/decision-table.dmn")
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+
+      // when
+      final Future<EvaluateDecisionResponse> response =
+          client
+              .newEvaluateDecisionCommand()
+              .decisionId("jedi_or_sith")
+              .variable("lightsaberColor", "blue")
+              .tenantId(TENANT_B)
+              .send();
+      // then
+      assertThat(response)
+          .failsWithin(Duration.ofSeconds(10))
+          .withThrowableThat()
+          .withMessageContaining("PERMISSION_DENIED")
+          .withMessageContaining(
+              "Expected to handle gRPC request EvaluateDecision with tenant identifier 'tenant-b'")
           .withMessageContaining("but tenant is not authorized to perform this request");
     }
   }
@@ -599,36 +1052,6 @@ public class MultiTenancyOverIdentityIT {
               final HttpResponse<String> response =
                   httpClient.send(request, BodyHandlers.ofString());
               assertThat(response.statusCode()).isEqualTo(200);
-            });
-  }
-
-  private static void awaitServiceAccountExistsForClient(final String clientId) {
-    Awaitility.await()
-        .atMost(Duration.ofSeconds(120))
-        .pollInterval(Duration.ofSeconds(1))
-        .ignoreExceptions()
-        .untilAsserted(
-            () -> {
-              try (final PostgresHelper postgres = new PostgresHelper()) {
-                // Retrieve service account associated to Zeebe Client registered in Identity
-                try (final var resultSet =
-                    postgres.executeQuery(
-                        """
-                        SELECT id \
-                        FROM user_entity \
-                        WHERE service_account_client_link IN (\
-                          SELECT id \
-                          FROM client \
-                          WHERE client_id = '%s'\
-                        )"""
-                            .formatted(clientId))) {
-                  assertThat(resultSet.next())
-                      .describedAs(
-                          "Expected to find service account associated to Zeebe Client registered in Identity. "
-                              + "This can happen when Identity has not yet completed its initialization.")
-                      .isTrue();
-                }
-              }
             });
   }
 
@@ -667,31 +1090,7 @@ public class MultiTenancyOverIdentityIT {
   private static void associateTenantsWithClient(
       final List<String> tenantIds, final String clientId) throws Exception {
 
-    awaitServiceAccountExistsForClient(clientId);
-
     try (final PostgresHelper postgres = new PostgresHelper()) {
-      final String serviceAccountId;
-      // Retrieve service account associated to Zeebe Client registered in Identity
-      try (final var resultSet =
-          postgres.executeQuery(
-              """
-              SELECT id \
-              FROM user_entity \
-              WHERE service_account_client_link IN (\
-                SELECT id \
-                FROM client \
-                WHERE client_id = '%s'\
-              )"""
-                  .formatted(clientId))) {
-        if (!resultSet.next()) {
-          throw new IllegalStateException(
-              """
-              Expected to find service account associated to Zeebe Client registered in Identity.
-              This was supposed to have been checked before querying the database.""");
-        }
-        serviceAccountId = resultSet.getString(1);
-      }
-
       final String accessRuleId;
       // Create access rule for service account
       try (final var resultSet =
@@ -702,7 +1101,7 @@ public class MultiTenancyOverIdentityIT {
               VALUES ('%s', 'APPLICATION', false) \
               ON CONFLICT DO NOTHING \
               RETURNING id"""
-                  .formatted(serviceAccountId))) {
+                  .formatted(clientId))) {
         if (!resultSet.next()) {
           throw new IllegalStateException(
               "Expected to find access rule associated to service account.");

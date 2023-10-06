@@ -44,6 +44,9 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
    */
   public static final String NO_CATCH_EVENT_FOUND = "NO_CATCH_EVENT_FOUND";
 
+  public static final String NO_JOB_FOUND_MESSAGE =
+      "Expected to cancel job with key '%d', but no such job was found";
+
   private final IncidentRecord incidentEvent = new IncidentRecord();
   private Either<Failure, CatchEventTuple> foundCatchEvent;
 
@@ -103,7 +106,12 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
       final TypedRecord<JobRecord> command, final CommandControl<JobRecord> commandControl) {
     final long jobKey = command.getKey();
 
-    final JobRecord job = jobState.getJob(jobKey);
+    final JobRecord job = jobState.getJob(jobKey, command.getAuthorizations());
+    if (job == null) {
+      commandControl.reject(RejectionType.NOT_FOUND, String.format(NO_JOB_FOUND_MESSAGE, jobKey));
+      return;
+    }
+
     job.setErrorCode(command.getValue().getErrorCodeBuffer());
     job.setErrorMessage(
         limitString(command.getValue().getErrorMessage(), DEFAULT_MAX_ERROR_MESSAGE_SIZE));
@@ -154,6 +162,7 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
         .setProcessInstanceKey(job.getProcessInstanceKey())
         .setElementId(job.getElementIdBuffer())
         .setElementInstanceKey(job.getElementInstanceKey())
+        .setTenantId(job.getTenantId())
         .setJobKey(key)
         .setVariableScopeKey(job.getElementInstanceKey());
 

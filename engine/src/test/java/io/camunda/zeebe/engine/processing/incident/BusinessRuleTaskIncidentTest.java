@@ -17,11 +17,13 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.BusinessRuleTaskBuilder;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValueAssert;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.collection.Maps;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -54,6 +56,12 @@ public class BusinessRuleTaskIncidentTest {
 
   private IncidentRecordValueAssert assertIncidentCreated(
       final long processInstanceKey, final long elementInstanceKey) {
+    return assertIncidentCreated(
+        processInstanceKey, elementInstanceKey, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  }
+
+  private IncidentRecordValueAssert assertIncidentCreated(
+      final long processInstanceKey, final long elementInstanceKey, final String tenantId) {
     final var incidentRecord =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
@@ -61,6 +69,7 @@ public class BusinessRuleTaskIncidentTest {
     return Assertions.assertThat(incidentRecord.getValue())
         .hasElementId(TASK_ELEMENT_ID)
         .hasElementInstanceKey(elementInstanceKey)
+        .hasTenantId(tenantId)
         .hasJobKey(-1L)
         .hasVariableScopeKey(elementInstanceKey);
   }
@@ -360,5 +369,79 @@ public class BusinessRuleTaskIncidentTest {
                 .exists())
         .describedAs("business rule task is successfully completed")
         .isTrue();
+  }
+
+  @Test
+  public void shouldCreateIncidentOnBusinessRuleTaskForCustomTenant() {
+    // given
+    final String tenantId = "acme";
+    engine
+        .deployment()
+        .withXmlResource(
+            processWithBusinessRuleTask(
+                b ->
+                    b.zeebeCalledDecisionId("unknown_decision_id")
+                        .zeebeResultVariable(RESULT_VARIABLE)))
+        .withTenantId(tenantId)
+        .deploy();
+
+    // when
+    final long processInstanceKey =
+        engine.processInstance().ofBpmnProcessId(PROCESS_ID).withTenantId(tenantId).create();
+
+    final var taskActivating =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId(TASK_ELEMENT_ID)
+            .withElementType(BpmnElementType.BUSINESS_RULE_TASK)
+            .withTenantId(tenantId)
+            .getFirst();
+
+    // then
+    assertIncidentCreated(processInstanceKey, taskActivating.getKey(), tenantId);
+  }
+
+  @Test
+  public void shouldCreateIncidentOnBusinessRuleTaskForDifferentTenant() {
+    // given
+    final String tenantId = "acme";
+    final String otherTenantId = "emca";
+    engine
+        .deployment()
+        .withXmlResource(
+            processWithBusinessRuleTask(
+                b -> b.zeebeCalledDecisionId(DECISION_ID).zeebeResultVariable(RESULT_VARIABLE)))
+        .withTenantId(tenantId)
+        .deploy();
+    engine
+        .deployment()
+        .withXmlClasspathResource(DMN_RESOURCE)
+        .withXmlResource(
+            processWithBusinessRuleTask(
+                b -> b.zeebeCalledDecisionId(DECISION_ID).zeebeResultVariable(RESULT_VARIABLE)))
+        .withTenantId(otherTenantId)
+        .deploy();
+
+    // when
+    final long processInstanceKey =
+        engine.processInstance().ofBpmnProcessId(PROCESS_ID).withTenantId(tenantId).create();
+
+    final var taskActivating =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId(TASK_ELEMENT_ID)
+            .withElementType(BpmnElementType.BUSINESS_RULE_TASK)
+            .withTenantId(tenantId)
+            .getFirst();
+
+    // then
+    assertThat(
+            RecordingExporter.decisionRecords()
+                .withIntent(DecisionIntent.CREATED)
+                .withDecisionId(DECISION_ID)
+                .withTenantId(otherTenantId)
+                .exists())
+        .isTrue();
+    assertIncidentCreated(processInstanceKey, taskActivating.getKey(), tenantId);
   }
 }

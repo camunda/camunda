@@ -88,8 +88,9 @@ public final class BroadcastSignalCommandImpl
 
   @Override
   public BroadcastSignalCommandStep2 tenantId(final String tenantId) {
-    // todo(#13558): replace dummy implementation
-    return this;
+    throw new UnsupportedOperationException(
+        " Signals are not yet supported with multi-tenancy. "
+            + "See https://github.com/camunda/zeebe/issues/13336 for more details.");
   }
 
   private void send(

@@ -18,6 +18,7 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
@@ -30,6 +31,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.util.collection.Maps;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -142,6 +144,34 @@ public final class JobFailIncidentTest {
         .hasElementId("failingTask")
         .hasElementInstanceKey(activityEvent.getKey())
         .hasVariableScopeKey(activityEvent.getKey());
+  }
+
+  @Test
+  public void shouldCreateIncidentIfJobHasNoRetriesLeftWithCustomTenant() {
+    // given
+    final String processId = "test-process";
+    final String tenantId = "acme";
+    final Record<JobRecordValue> jobRecord =
+        ENGINE.createJob(JOB_TYPE, processId, Collections.emptyMap(), tenantId);
+    final long piKey = jobRecord.getValue().getProcessInstanceKey();
+
+    // when
+    ENGINE
+        .job()
+        .withType(JOB_TYPE)
+        .withRetries(0)
+        .ofInstance(piKey)
+        .withAuthorizedTenantIds(tenantId)
+        .fail();
+
+    // then
+    final Record<IncidentRecordValue> incidentEvent =
+        RecordingExporter.incidentRecords()
+            .withIntent(IncidentIntent.CREATED)
+            .withProcessInstanceKey(piKey)
+            .getFirst();
+
+    assertThat(incidentEvent.getValue()).hasTenantId(tenantId);
   }
 
   @Test
@@ -318,6 +348,61 @@ public final class JobFailIncidentTest {
             tuple(RecordType.EVENT, ValueType.JOB, JobIntent.FAILED),
             tuple(RecordType.COMMAND, ValueType.JOB, JobIntent.UPDATE_RETRIES),
             tuple(RecordType.EVENT, ValueType.JOB, JobIntent.RETRIES_UPDATED));
+  }
+
+  @Test
+  public void shouldResolveIncidentWithCustomTenant() {
+    // given
+    final String processId = "test-process";
+    final String tenantId = "acme";
+    final Record<JobRecordValue> jobRecord =
+        ENGINE.createJob(JOB_TYPE, processId, Collections.emptyMap(), tenantId);
+    final long piKey = jobRecord.getValue().getProcessInstanceKey();
+    ENGINE
+        .job()
+        .withType(JOB_TYPE)
+        .withRetries(0)
+        .ofInstance(piKey)
+        .withAuthorizedTenantIds(tenantId)
+        .fail();
+
+    // when
+    final Record<IncidentRecordValue> resolvedIncident =
+        ENGINE.incident().ofInstance(piKey).withAuthorizedTenantIds(tenantId).resolve();
+
+    // then
+    assertThat(resolvedIncident.getValue()).hasTenantId(tenantId);
+    assertThat(resolvedIncident).hasIntent(IncidentIntent.RESOLVED);
+  }
+
+  @Test
+  public void shouldRejectResolvingIncidentWithUnauthorizedTenant() {
+    // given
+    final String processId = "test-process";
+    final String tenantId = "acme";
+    final String unauthorizedTenantId = "foo";
+    final Record<JobRecordValue> jobRecord =
+        ENGINE.createJob(JOB_TYPE, processId, Collections.emptyMap(), tenantId);
+    final long piKey = jobRecord.getValue().getProcessInstanceKey();
+    ENGINE
+        .job()
+        .withType(JOB_TYPE)
+        .withRetries(0)
+        .ofInstance(piKey)
+        .withAuthorizedTenantIds(tenantId)
+        .fail();
+
+    // when
+    final Record<IncidentRecordValue> resolvedIncident =
+        ENGINE
+            .incident()
+            .ofInstance(piKey)
+            .withAuthorizedTenantIds(unauthorizedTenantId)
+            .expectRejection()
+            .resolve();
+
+    // then
+    assertThat(resolvedIncident).hasRejectionType(RejectionType.NOT_FOUND);
   }
 
   @Test

@@ -47,4 +47,8 @@ public final class IncidentRecordStream
   public IncidentRecordStream withJobKey(final long jobKey) {
     return valueFilter(v -> v.getJobKey() == jobKey);
   }
+
+  public IncidentRecordStream withTenantId(final String tenantId) {
+    return valueFilter(v -> v.getTenantId().equals(tenantId));
+  }
 }

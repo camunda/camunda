@@ -14,7 +14,16 @@ public interface CommandWriter {
 
   long writeCommand(final Intent intent, final UnifiedRecordValue recordValue);
 
+  long writeCommand(
+      final Intent intent, final UnifiedRecordValue recordValue, String... authorizedTenants);
+
   long writeCommand(long key, Intent intent, UnifiedRecordValue recordValue);
+
+  long writeCommand(
+      final long key,
+      final Intent intent,
+      final UnifiedRecordValue recordValue,
+      final String... authorizedTenants);
 
   long writeCommand(
       final int requestStreamId,
@@ -27,4 +36,11 @@ public interface CommandWriter {
 
   long writeCommandOnPartition(
       int partitionId, long key, Intent intent, UnifiedRecordValue recordValue);
+
+  long writeCommandOnPartition(
+      int partitionId,
+      long key,
+      Intent intent,
+      UnifiedRecordValue recordValue,
+      final String... authorizedTenants);
 }

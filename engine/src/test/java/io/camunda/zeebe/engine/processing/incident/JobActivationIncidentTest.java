@@ -15,6 +15,7 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -102,7 +103,8 @@ public final class JobActivationIncidentTest {
         .hasBpmnProcessId(processId)
         .hasProcessDefinitionKey(processDefinitionKey)
         .hasProcessInstanceKey(processInstanceKey)
-        .hasElementId("task");
+        .hasElementId("task")
+        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   }
 
   @Test

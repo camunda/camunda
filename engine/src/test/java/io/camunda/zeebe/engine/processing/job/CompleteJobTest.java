@@ -20,8 +20,10 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.Collections;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -65,7 +67,8 @@ public final class CompleteJobTest {
         .hasWorker(batchRecord.getValue().getWorker())
         .hasType(job.getType())
         .hasRetries(job.getRetries())
-        .hasDeadline(job.getDeadline());
+        .hasDeadline(job.getDeadline())
+        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   }
 
   @Test
@@ -201,5 +204,53 @@ public final class CompleteJobTest {
 
     // then
     Assertions.assertThat(jobRecord).hasRejectionType(RejectionType.INVALID_STATE);
+  }
+
+  @Test
+  public void shouldCompleteJobForCustomTenant() {
+    // given
+    final String tenantId = "acme";
+    ENGINE.createJob(jobType, PROCESS_ID, Collections.emptyMap(), tenantId);
+    final Record<JobBatchRecordValue> batchRecord =
+        ENGINE.jobs().withType(jobType).withTenantId(tenantId).activate();
+
+    // when
+    final Record<JobRecordValue> jobCompletedRecord =
+        ENGINE
+            .job()
+            .withKey(batchRecord.getValue().getJobKeys().get(0))
+            .withAuthorizedTenantIds(tenantId)
+            .complete();
+
+    // then
+    final JobRecordValue recordValue = jobCompletedRecord.getValue();
+
+    Assertions.assertThat(jobCompletedRecord)
+        .hasRecordType(RecordType.EVENT)
+        .hasIntent(JobIntent.COMPLETED);
+
+    Assertions.assertThat(recordValue).hasTenantId(tenantId);
+  }
+
+  @Test
+  public void shouldRejectCompletionIfTenantIsUnauthorized() {
+    // given
+    final String tenantId = "acme";
+    final String falseTenantId = "foo";
+    ENGINE.createJob(jobType, PROCESS_ID, Collections.emptyMap(), tenantId);
+    final Record<JobBatchRecordValue> batchRecord =
+        ENGINE.jobs().withType(jobType).withTenantId(tenantId).activate();
+
+    // when
+    final Record<JobRecordValue> jobRecord =
+        ENGINE
+            .job()
+            .withKey(batchRecord.getValue().getJobKeys().get(0))
+            .withAuthorizedTenantIds(falseTenantId)
+            .expectRejection()
+            .complete();
+
+    // then
+    Assertions.assertThat(jobRecord).hasRejectionType(RejectionType.NOT_FOUND);
   }
 }

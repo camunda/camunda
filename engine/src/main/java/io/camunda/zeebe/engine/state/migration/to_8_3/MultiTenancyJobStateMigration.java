@@ -7,18 +7,12 @@
  */
 package io.camunda.zeebe.engine.state.migration.to_8_3;
 
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.migration.MigrationTask;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.protocol.ZbColumnFamilies;
 
-/**
- * This migration is used to extend the data we have on process definition versions. We used to keep
- * track of only a single version. This version was the highest known version of the process
- * definition.
- *
- * <p>For resource deletion we need to know all the versions that are available in the state. This
- * migration will make sure we store a list of all known versions.
- */
-public class ProcessDefinitionVersionMigration implements MigrationTask {
+public final class MultiTenancyJobStateMigration implements MigrationTask {
 
   @Override
   public String getIdentifier() {
@@ -26,7 +20,17 @@ public class ProcessDefinitionVersionMigration implements MigrationTask {
   }
 
   @Override
+  public boolean needsToRun(final ProcessingState processingState) {
+    return hasActivatableJobsInDeprecatedCFs(processingState);
+  }
+
+  @Override
   public void runMigration(final MutableProcessingState processingState) {
-    processingState.getMigrationState().migrateProcessDefinitionVersions();
+    final var migrationState = processingState.getMigrationState();
+    migrationState.migrateJobStateForMultiTenancy();
+  }
+
+  private static boolean hasActivatableJobsInDeprecatedCFs(final ProcessingState processingState) {
+    return !processingState.isEmpty(ZbColumnFamilies.DEPRECATED_JOB_ACTIVATABLE);
   }
 }

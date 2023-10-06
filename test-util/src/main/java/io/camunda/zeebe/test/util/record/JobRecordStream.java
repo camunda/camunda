@@ -38,4 +38,8 @@ public final class JobRecordStream
   public JobRecordStream withElementId(final String elementId) {
     return valueFilter(v -> v.getElementId().equals(elementId));
   }
+
+  public JobRecordStream withTenantId(final String tenantId) {
+    return valueFilter(v -> v.getTenantId().equals(tenantId));
+  }
 }

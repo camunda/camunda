@@ -25,6 +25,7 @@ import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import java.util.Collections;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.junit.Before;
@@ -440,5 +441,48 @@ public final class JobThrowErrorTest {
             + expectedJobMessage
             + "', but it was not caught. No error events are available in the scope.";
     assertThat(incident.getValue().getErrorMessage()).isEqualTo(expectedIncidentMessage);
+  }
+
+  @Test
+  public void shouldThrowErrorForCustomTenant() {
+    // given
+    final String tenantId = "acme";
+    final var job = ENGINE.createJob(jobType, PROCESS_ID, Collections.emptyMap(), tenantId);
+
+    // when
+    final Record<JobRecordValue> result =
+        ENGINE
+            .job()
+            .withKey(job.getKey())
+            .withErrorCode("error")
+            .withErrorMessage("error-message")
+            .withAuthorizedTenantIds(tenantId)
+            .throwError();
+
+    // then
+    Assertions.assertThat(result).hasRecordType(RecordType.EVENT).hasIntent(ERROR_THROWN);
+    Assertions.assertThat(result.getValue()).hasErrorCode("error").hasErrorMessage("error-message");
+    Assertions.assertThat(result.getValue()).hasTenantId(tenantId);
+  }
+
+  @Test
+  public void shouldRejectIfTenantIsUnauthorized() {
+    // given
+    final String tenantId = "acme";
+    final String falseTenantId = "foo";
+    final var job = ENGINE.createJob(jobType, PROCESS_ID, Collections.emptyMap(), tenantId);
+    ENGINE.jobs().withType(jobType).withTenantId(tenantId).activate();
+
+    // when
+    final Record<JobRecordValue> result =
+        ENGINE
+            .job()
+            .withKey(job.getKey())
+            .withErrorCode("error")
+            .withAuthorizedTenantIds(falseTenantId)
+            .throwError();
+
+    // then
+    Assertions.assertThat(result).hasRejectionType(RejectionType.NOT_FOUND);
   }
 }

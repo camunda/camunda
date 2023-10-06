@@ -7,18 +7,12 @@
  */
 package io.camunda.zeebe.engine.state.migration.to_8_3;
 
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.migration.MigrationTask;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.protocol.ZbColumnFamilies;
 
-/**
- * This migration is used to extend the data with tenant information. Before this migration, no
- * tenant information was stored in the state. Therefore, we're considering all existing data to be
- * part of the default tenant.
- *
- * <p>This migration will set the tenant id of all existing data to the default tenant id. Both in
- * values and in keys. When the key has changed, the data is moved to a new column family.
- */
-public class MultiTenancyMigration implements MigrationTask {
+public final class MultiTenancyProcessMessageSubscriptionStateMigration implements MigrationTask {
 
   @Override
   public String getIdentifier() {
@@ -26,9 +20,18 @@ public class MultiTenancyMigration implements MigrationTask {
   }
 
   @Override
+  public boolean needsToRun(final ProcessingState processingState) {
+    return hasOpenProcessMessageSubscriptionsInDeprecatedCFs(processingState);
+  }
+
+  @Override
   public void runMigration(final MutableProcessingState processingState) {
     final var migrationState = processingState.getMigrationState();
-    migrationState.migrateProcessStateForMultiTenancy();
-    migrationState.migrateDecisionStateForMultiTenancy();
+    migrationState.migrateProcessMessageSubscriptionForMultiTenancy();
+  }
+
+  private static boolean hasOpenProcessMessageSubscriptionsInDeprecatedCFs(
+      final ProcessingState processingState) {
+    return !processingState.isEmpty(ZbColumnFamilies.DEPRECATED_PROCESS_SUBSCRIPTION_BY_KEY);
   }
 }

@@ -68,7 +68,7 @@ public final class DbProcessMigrationState {
   private final VersionInfo versionInfo;
 
   /** [process id] => version info */
-  private final ColumnFamily<DbString, VersionInfo> deprecatedNextValueColumnFamily;
+  private final ColumnFamily<DbString, VersionInfo> deprecatedProcessVersionColumnFamily;
 
   private final DbString idKey;
   private final DbTenantAwareKey<DbString> tenantAwareIdKey;
@@ -144,7 +144,7 @@ public final class DbProcessMigrationState {
 
     processIdKey = new DbString();
     versionInfo = new VersionInfo();
-    deprecatedNextValueColumnFamily =
+    deprecatedProcessVersionColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.DEPRECATED_PROCESS_VERSION,
             transactionContext,
@@ -185,11 +185,19 @@ public final class DbProcessMigrationState {
           deprecatedDigestByIdColumnFamily.deleteExisting(key);
         });
 
-    deprecatedNextValueColumnFamily.forEach(
+    deprecatedProcessVersionColumnFamily.forEach(
         (key, value) -> {
           idKey.wrapBuffer(key.getBuffer());
+
+          final long highestVersion = value.getHighestVersion();
+          for (long version = 1; version <= highestVersion; version++) {
+            if (!value.getKnownVersions().contains(version)) {
+              value.addKnownVersion(version);
+            }
+          }
+
           versionInfoColumnFamily.insert(tenantAwareIdKey, value);
-          deprecatedNextValueColumnFamily.deleteExisting(key);
+          deprecatedProcessVersionColumnFamily.deleteExisting(key);
         });
   }
 }

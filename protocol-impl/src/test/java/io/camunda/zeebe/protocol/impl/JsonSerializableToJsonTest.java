@@ -256,7 +256,11 @@ final class JsonSerializableToJsonTest {
           "rejectionType": "NULL_VAL",
           "rejectionReason": "",
           "brokerVersion": "0.0.0",
-          "authorizations": {},
+          "authorizations": {
+            "authorized_tenants":[
+              "<default>"
+            ]
+          },
           "recordVersion": 1,
           "value": {
               "resources": [],

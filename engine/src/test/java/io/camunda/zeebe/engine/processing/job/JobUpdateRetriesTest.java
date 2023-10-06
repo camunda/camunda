@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.Collections;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -157,5 +158,51 @@ public final class JobUpdateRetriesTest {
 
     // then
     Assertions.assertThat(jobRecord).hasRejectionType(RejectionType.INVALID_ARGUMENT);
+  }
+
+  @Test
+  public void shouldUpdateRetriesForCustomTenant() {
+    // given
+    final String tenantId = "acme";
+    ENGINE.createJob(jobType, PROCESS_ID, Collections.emptyMap(), tenantId);
+    final Record<JobBatchRecordValue> batchRecord =
+        ENGINE.jobs().withType(jobType).withTenantId(tenantId).activate();
+    final long jobKey = batchRecord.getValue().getJobKeys().get(0);
+
+    // when
+    final Record<JobRecordValue> updatedRecord =
+        ENGINE
+            .job()
+            .withKey(jobKey)
+            .withRetries(NEW_RETRIES)
+            .withAuthorizedTenantIds(tenantId)
+            .updateRetries();
+
+    // then
+    Assertions.assertThat(updatedRecord.getValue()).hasTenantId(tenantId);
+  }
+
+  @Test
+  public void shouldRejectUpdateRetriesIfTenantIsUnauthorized() {
+    // given
+    final String tenantId = "acme";
+    final String falseTenantId = "foo";
+    ENGINE.createJob(jobType, PROCESS_ID, Collections.emptyMap(), tenantId);
+    final Record<JobBatchRecordValue> batchRecord =
+        ENGINE.jobs().withType(jobType).withTenantId(tenantId).activate();
+    final long jobKey = batchRecord.getValue().getJobKeys().get(0);
+
+    // when
+    final Record<JobRecordValue> jobRecord =
+        ENGINE
+            .job()
+            .withKey(jobKey)
+            .withRetries(NEW_RETRIES)
+            .withAuthorizedTenantIds(falseTenantId)
+            .expectRejection()
+            .updateRetries();
+
+    // then
+    Assertions.assertThat(jobRecord).hasRejectionType(RejectionType.NOT_FOUND);
   }
 }

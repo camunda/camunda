@@ -59,11 +59,13 @@ public enum ZbColumnFamilies {
   JOBS,
   JOB_STATES,
   JOB_DEADLINES,
-  JOB_ACTIVATABLE,
+  @Deprecated
+  DEPRECATED_JOB_ACTIVATABLE,
 
   // message
   MESSAGE_KEY,
-  MESSAGES,
+  @Deprecated
+  DEPRECATED_MESSAGES,
   MESSAGE_DEADLINES,
   MESSAGE_IDS,
   MESSAGE_CORRELATED,
@@ -75,14 +77,18 @@ public enum ZbColumnFamilies {
   @Deprecated // only used for migration logic
   MESSAGE_SUBSCRIPTION_BY_SENT_TIME,
   // migration end
-  MESSAGE_SUBSCRIPTION_BY_NAME_AND_CORRELATION_KEY,
+  @Deprecated
+  DEPRECATED_MESSAGE_SUBSCRIPTION_BY_NAME_AND_CORRELATION_KEY,
 
   // message start event subscription
-  MESSAGE_START_EVENT_SUBSCRIPTION_BY_NAME_AND_KEY,
-  MESSAGE_START_EVENT_SUBSCRIPTION_BY_KEY_AND_NAME,
+  @Deprecated
+  DEPRECATED_MESSAGE_START_EVENT_SUBSCRIPTION_BY_NAME_AND_KEY,
+  @Deprecated
+  DEPRECATED_MESSAGE_START_EVENT_SUBSCRIPTION_BY_KEY_AND_NAME,
 
   // process message subscription
-  PROCESS_SUBSCRIPTION_BY_KEY,
+  @Deprecated
+  DEPRECATED_PROCESS_SUBSCRIPTION_BY_KEY,
   // migration start
   @Deprecated // only used for migration logic
   PROCESS_SUBSCRIPTION_BY_SENT_TIME,
@@ -131,6 +137,9 @@ public enum ZbColumnFamilies {
 
   PROCESS_INSTANCE_KEY_BY_DEFINITION_KEY,
 
+  // This was introduces in 8.3 and backported to earlier versions. As this turns out to not be safe
+  // to do we have removed the usage of this CF. We must keep it to remain backwards compatible.
+  @Deprecated
   MIGRATIONS_STATE,
 
   PROCESS_VERSION,
@@ -148,5 +157,13 @@ public enum ZbColumnFamilies {
 
   FORMS,
   FORM_VERSION,
-  FORM_BY_ID_AND_VERSION
+  FORM_BY_ID_AND_VERSION,
+
+  MESSAGES,
+  MESSAGE_START_EVENT_SUBSCRIPTION_BY_NAME_AND_KEY,
+  MESSAGE_START_EVENT_SUBSCRIPTION_BY_KEY_AND_NAME,
+  MESSAGE_SUBSCRIPTION_BY_NAME_AND_CORRELATION_KEY,
+  PROCESS_SUBSCRIPTION_BY_KEY,
+
+  JOB_ACTIVATABLE
 }

@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Arrays;
@@ -292,6 +293,7 @@ public final class EventSubscriptionIncidentTest {
         .hasProcessInstanceKey(processInstanceKey)
         .hasElementId(failureEvent.getValue().getElementId())
         .hasElementInstanceKey(failureEvent.getKey())
+        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
         .hasJobKey(-1L);
   }
 
@@ -327,6 +329,7 @@ public final class EventSubscriptionIncidentTest {
         .hasProcessInstanceKey(processInstanceKey)
         .hasElementId(failureEvent.getValue().getElementId())
         .hasElementInstanceKey(failureEvent.getKey())
+        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
         .hasJobKey(-1L);
   }
 

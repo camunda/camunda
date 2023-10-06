@@ -18,6 +18,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateRule;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.BufferAssert;
 import io.camunda.zeebe.test.util.MsgPackUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -59,7 +60,7 @@ public final class JobStateTest {
     assertThat(jobState.exists(key)).isTrue();
     assertJobState(key, State.ACTIVATABLE);
     assertJobRecordIsEqualTo(jobState.getJob(key), jobRecord);
-    assertListedAsActivatable(key, jobRecord.getTypeBuffer());
+    assertListedAsActivatable(key, jobRecord.getTypeBuffer(), jobRecord.getTenantId());
     refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
     refuteListedAsBackOff(key, jobRecord.getRecurringTime() + 1);
   }
@@ -81,6 +82,35 @@ public final class JobStateTest {
     refuteListedAsActivatable(key, jobRecord.getTypeBuffer());
     assertListedAsTimedOut(key, jobRecord.getDeadline() + 1);
     refuteListedAsBackOff(key, jobRecord.getRecurringTime() + 1 + 1);
+  }
+
+  @Test
+  public void shouldGetJobForDefaultTenant() {
+    // given
+    final long key = 1L;
+    final JobRecord jobRecord = newJobRecord();
+    jobState.create(key, jobRecord);
+
+    // when
+    final JobRecord jobRecord1 = jobState.getJob(key);
+
+    // then
+    assertThat(jobRecord1).isEqualTo(jobRecord);
+  }
+
+  @Test
+  public void shouldGetJobForCustomTenant() {
+    // given
+    final long key = 1L;
+    final String testTenant = "test-tenant";
+    final JobRecord jobRecord = newJobRecord(testTenant);
+    jobState.create(key, jobRecord);
+
+    // when
+    final JobRecord jobRecord1 = jobState.getJob(key);
+
+    // then
+    assertThat(jobRecord1).isEqualTo(jobRecord);
   }
 
   @Test
@@ -117,7 +147,7 @@ public final class JobStateTest {
     assertThat(jobState.exists(key)).isTrue();
     assertJobState(key, State.ACTIVATABLE);
     assertJobRecordIsEqualTo(jobState.getJob(key), jobRecord);
-    assertListedAsActivatable(key, jobRecord.getTypeBuffer());
+    assertListedAsActivatable(key, jobRecord.getTypeBuffer(), jobRecord.getTenantId());
     refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
     refuteListedAsBackOff(key, jobRecord.getRecurringTime() + 1 + 1);
   }
@@ -338,7 +368,7 @@ public final class JobStateTest {
     assertThat(jobState.exists(key)).isTrue();
     assertJobState(key, State.ACTIVATABLE);
     assertJobRecordIsEqualTo(jobState.getJob(key), jobRecord);
-    assertListedAsActivatable(key, jobRecord.getTypeBuffer());
+    assertListedAsActivatable(key, jobRecord.getTypeBuffer(), jobRecord.getTenantId());
     refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
     refuteListedAsBackOff(key, jobRecord.getRecurringTime() + 1 + 1);
   }
@@ -470,7 +500,7 @@ public final class JobStateTest {
     assertThat(jobState.exists(key)).isTrue();
     assertJobState(key, State.ACTIVATABLE);
     assertJobRecordIsEqualTo(jobState.getJob(key), jobRecord);
-    assertListedAsActivatable(key, jobRecord.getTypeBuffer());
+    assertListedAsActivatable(key, jobRecord.getTypeBuffer(), jobRecord.getTenantId());
     refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
     refuteListedAsBackOff(key, jobRecord.getRecurringTime() + 1 + 1);
   }
@@ -576,7 +606,7 @@ public final class JobStateTest {
     jobState.create(4294967296L, newJobRecord().setType("test-other"));
 
     // when
-    final List<Long> jobKeys = getActivatableKeys(type);
+    final List<Long> jobKeys = getActivatableKeys(type, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
     // then
     assertThat(jobKeys).hasSize(2);
@@ -587,11 +617,12 @@ public final class JobStateTest {
   public void shouldNotDoAnythingIfNoActivatableJobs() {
     // given
     final DirectBuffer type = wrapString("test");
+    final String tenantId = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
     createAndActivateJobRecord(1, newJobRecord().setType(type));
     jobState.create(256L, newJobRecord().setType("other"));
 
     // when
-    final List<Long> jobKeys = getActivatableKeys(type);
+    final List<Long> jobKeys = getActivatableKeys(type, tenantId);
 
     // then
     assertThat(jobKeys).isEmpty();
@@ -717,11 +748,13 @@ public final class JobStateTest {
   }
 
   private JobRecord newJobRecord() {
+    return newJobRecord(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  }
+
+  private JobRecord newJobRecord(final String tenantId) {
     final JobRecord jobRecord = new JobRecord();
 
-    jobRecord.setRetries(2);
-    jobRecord.setDeadline(256L);
-    jobRecord.setType("test");
+    jobRecord.setRetries(2).setDeadline(256L).setType("test").setTenantId(tenantId);
 
     return jobRecord;
   }
@@ -743,13 +776,19 @@ public final class JobStateTest {
     assertThat(jobRecord.getVariablesBuffer()).isEqualTo(expected.getVariablesBuffer());
   }
 
-  private void assertListedAsActivatable(final long key, final DirectBuffer type) {
-    final List<Long> activatableKeys = getActivatableKeys(type);
+  private void assertListedAsActivatable(
+      final long key, final DirectBuffer type, final String tenantId) {
+    final List<Long> activatableKeys = getActivatableKeys(type, tenantId);
     assertThat(activatableKeys).contains(key);
   }
 
   private void refuteListedAsActivatable(final long key, final DirectBuffer type) {
-    final List<Long> activatableKeys = getActivatableKeys(type);
+    refuteListedAsActivatable(key, type, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  }
+
+  private void refuteListedAsActivatable(
+      final long key, final DirectBuffer type, final String tenantId) {
+    final List<Long> activatableKeys = getActivatableKeys(type, tenantId);
     assertThat(activatableKeys).doesNotContain(key);
   }
 
@@ -773,10 +812,10 @@ public final class JobStateTest {
     assertThat(backedOffKeys).doesNotContain(key);
   }
 
-  private List<Long> getActivatableKeys(final DirectBuffer type) {
+  private List<Long> getActivatableKeys(final DirectBuffer type, final String... tenantIds) {
     final List<Long> activatableKeys = new ArrayList<>();
 
-    jobState.forEachActivatableJobs(type, (k, e) -> activatableKeys.add(k));
+    jobState.forEachActivatableJobs(type, List.of(tenantIds), (k, e) -> activatableKeys.add(k));
     return activatableKeys;
   }
 
