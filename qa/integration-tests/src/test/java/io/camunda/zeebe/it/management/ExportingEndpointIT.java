@@ -79,7 +79,7 @@ final class ExportingEndpointIT {
     final var actuator = getActuator();
     actuator.pause();
 
-    startProcess();
+    client.newPublishMessageCommand().messageName("Test").correlationKey("1").messageId("1").send();
 
     final var recordsBeforePause =
         Awaitility.await()
@@ -89,7 +89,6 @@ final class ExportingEndpointIT {
 
     // when
     getActuator().resume();
-    startProcess();
 
     // then
     RecordingExporter.records().limit(recordsBeforePause + 1).await();
