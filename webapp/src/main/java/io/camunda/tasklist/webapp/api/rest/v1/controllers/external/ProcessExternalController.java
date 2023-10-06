@@ -23,6 +23,7 @@ import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.tasklist.webapp.security.tenant.TenantService;
 import io.camunda.tasklist.webapp.service.ProcessService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -32,7 +33,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 @Tag(name = "External Process", description = "API to manage processes by external consumers.")
 @RestController
@@ -86,10 +93,38 @@ public class ProcessExternalController extends ApiErrorController {
     }
   }
 
+  @Operation(
+      summary = "Start process by bpmnProcessId and tenantId when multi-tenancy is active",
+      description = "Start process by `bpmnProcessId` and `tenantId` when multi-tenancy is active.",
+      responses = {
+        @ApiResponse(
+            description = "On success returned",
+            responseCode = "200",
+            useReturnTypeSchema = true),
+        @ApiResponse(
+            description =
+                "An error is returned when invalid or missing `tenantId` provided when multi-tenancy is active.",
+            responseCode = "400",
+            content =
+                @Content(
+                    mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = Error.class))),
+        @ApiResponse(
+            description = "An error is returned when the process is not found by `bpmnProcessId`.",
+            responseCode = "404",
+            content =
+                @Content(
+                    mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = Error.class)))
+      })
   @PatchMapping("{bpmnProcessId}/start")
   public ResponseEntity<ProcessInstanceDTO> startProcess(
       @PathVariable String bpmnProcessId,
-      @RequestParam(required = false) String tenantId,
+      @Parameter(
+              description =
+                  "Required for multi-tenancy setups to ensure the process starts for the intended tenant. In environments without multi-tenancy, this parameter is not considered.")
+          @RequestParam(required = false)
+          String tenantId,
       @RequestBody(required = false) StartProcessRequest startProcessRequest) {
 
     if (tenantService.isMultiTenancyEnabled()) {

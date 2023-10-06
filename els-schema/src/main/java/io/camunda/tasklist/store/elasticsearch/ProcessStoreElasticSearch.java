@@ -186,7 +186,7 @@ public class ProcessStoreElasticSearch implements ProcessStore {
   public List<ProcessEntity> getProcesses(
       String search, final List<String> processDefinitions, final String tenantId) {
 
-    if (search == null || search.isBlank()) {
+    if (StringUtils.isBlank(search)) {
       return getProcesses(processDefinitions, tenantId);
     }
 

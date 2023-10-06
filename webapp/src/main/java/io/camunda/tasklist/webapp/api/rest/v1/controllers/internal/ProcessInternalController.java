@@ -27,6 +27,7 @@ import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService
 import io.camunda.tasklist.webapp.security.tenant.TenantService;
 import io.camunda.tasklist.webapp.service.ProcessService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -39,7 +40,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 @Tag(name = "Process", description = "API to manage processes.")
 @RestController
@@ -65,8 +73,19 @@ public class ProcessInternalController extends ApiErrorController {
       })
   @GetMapping
   public ResponseEntity<List<ProcessResponse>> searchProcesses(
-      @RequestParam(defaultValue = StringUtils.EMPTY) String query,
-      @RequestParam(required = false) String tenantId) {
+      @Parameter(
+              description =
+                  "Used to search processes by processId, process name, and process definition id fields.")
+          @RequestParam(defaultValue = StringUtils.EMPTY)
+          String query,
+      @Parameter(
+              description =
+                  "Identifies the tenant.</br>"
+                      + "If multi-tenancy is enabled and `tenantId` is not provided, processes for all tenants available for the current user will be returned.</br>"
+                      + "If `tenantId` is provided, only processes for that tenant will be returned, or an empty list if the user does not have access to the provided tenant.</br>"
+                      + "If multi-tenancy is disabled, this parameter will be ignored.")
+          @RequestParam(required = false)
+          String tenantId) {
 
     final var processes =
         processStore
@@ -91,8 +110,8 @@ public class ProcessInternalController extends ApiErrorController {
   }
 
   @Operation(
-      summary = "Start process by processDefinitionKey.",
-      description = "Start process by `processDefinitionKey`.",
+      summary = "Start process by bpmnProcessId and tenantId when multi-tenancy is active",
+      description = "Start process by `bpmnProcessId` and `tenantId` when multi-tenancy is active.",
       responses = {
         @ApiResponse(
             description = "On success returned",
@@ -100,7 +119,14 @@ public class ProcessInternalController extends ApiErrorController {
             useReturnTypeSchema = true),
         @ApiResponse(
             description =
-                "An error is returned when the process is not found by `processDefinitionKey`.",
+                "An error is returned when invalid or missing `tenantId` provided when multi-tenancy is active.",
+            responseCode = "400",
+            content =
+                @Content(
+                    mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = Error.class))),
+        @ApiResponse(
+            description = "An error is returned when the process is not found by `bpmnProcessId`.",
             responseCode = "404",
             content =
                 @Content(
@@ -111,7 +137,11 @@ public class ProcessInternalController extends ApiErrorController {
   @PatchMapping("{bpmnProcessId}/start")
   public ResponseEntity<ProcessInstanceDTO> startProcessInstance(
       @PathVariable String bpmnProcessId,
-      @RequestParam(required = false) String tenantId,
+      @Parameter(
+              description =
+                  "Required for multi-tenancy setups to ensure the process starts for the intended tenant. In environments without multi-tenancy, this parameter is not considered.")
+          @RequestParam(required = false)
+          String tenantId,
       @RequestBody(required = false) StartProcessRequest startProcessRequest) {
     final var variables =
         requireNonNullElse(startProcessRequest, new StartProcessRequest()).getVariables();
@@ -188,13 +218,22 @@ public class ProcessInternalController extends ApiErrorController {
   }
 
   @Operation(
-      summary = "Return the public endpoint to start the process by a form.",
-      description = "Return the public endpoint to start the process by a form.",
+      summary = "Fetch public endpoint to initiate process via a form.",
+      description =
+          "Provides a public endpoint for starting a process using a form, based on the given `processDefinitionKey`. Ensure the correct `tenantId` is provided in multi-tenancy setups.",
       responses = {
         @ApiResponse(
             description = "On success returned",
             responseCode = "200",
             useReturnTypeSchema = true),
+        @ApiResponse(
+            description =
+                "An error is returned when invalid or missing `tenantId` provided when multi-tenancy is active.",
+            responseCode = "400",
+            content =
+                @Content(
+                    mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = Error.class))),
         @ApiResponse(
             description =
                 "An error is returned when the public endpoint is not found by `processDefinitionKey`.",
@@ -206,7 +245,12 @@ public class ProcessInternalController extends ApiErrorController {
       })
   @GetMapping("{bpmnProcessId}/publicEndpoint")
   public ResponseEntity<ProcessPublicEndpointsResponse> getPublicEndpoint(
-      @PathVariable String bpmnProcessId, @RequestParam(required = false) final String tenantId) {
+      @PathVariable String bpmnProcessId,
+      @Parameter(
+              description =
+                  "If using multi-tenancy, this parameter ensures the system fetches the public endpoint for the correct tenant. In environments without multi-tenancy, this parameter is not considered.")
+          @RequestParam(required = false)
+          final String tenantId) {
 
     if (!tenantService.isTenantValid(tenantId)) {
       throw new InvalidRequestException("Invalid Tenant");
