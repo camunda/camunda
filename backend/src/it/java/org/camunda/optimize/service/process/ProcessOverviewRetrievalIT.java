@@ -5,7 +5,10 @@
  */
 package org.camunda.optimize.service.process;
 
+import jakarta.ws.rs.core.Response;
 import org.assertj.core.groups.Tuple;
+import org.camunda.bpm.model.bpmn.Bpmn;
+import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
@@ -21,12 +24,12 @@ import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.rest.sorting.ProcessOverviewSorter;
 import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex;
 import org.camunda.optimize.service.util.IdGenerator;
+import org.camunda.optimize.util.BpmnModels;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import jakarta.ws.rs.core.Response;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -287,6 +290,41 @@ public class ProcessOverviewRetrievalIT extends AbstractPlatformIT {
           new ProcessDigestResponseDto(false)
         )
       );
+  }
+
+  @Test
+  public void getProcessOverviewWhenProcessHasChangedName() {
+    // given
+    final String originalName = "originalName";
+    engineIntegrationExtension.deployAndStartProcess(
+      createSimpleProcessWithKeyAndName(FIRST_PROCESS_DEFINITION_KEY, originalName));
+    importAllEngineEntitiesFromScratch();
+
+    // then
+    assertThat(processOverviewClient.getProcessOverviews()).hasSize(1)
+      .extracting(ProcessOverviewResponseDto::getProcessDefinitionKey, ProcessOverviewResponseDto::getProcessDefinitionName)
+      .containsExactly(Tuple.tuple(FIRST_PROCESS_DEFINITION_KEY, originalName));
+
+    // when
+    final String updatedName = "updatedName";
+    engineIntegrationExtension.deployAndStartProcess(
+      createSimpleProcessWithKeyAndName(FIRST_PROCESS_DEFINITION_KEY, updatedName));
+    importAllEngineEntitiesFromLastIndex();
+    // We have to invalidate the cache to make sure that the first definition is not the one returned on fetching overviews
+    embeddedOptimizeExtension.reloadConfiguration();
+
+    // then
+    assertThat(processOverviewClient.getProcessOverviews()).hasSize(1)
+      .extracting(ProcessOverviewResponseDto::getProcessDefinitionKey, ProcessOverviewResponseDto::getProcessDefinitionName)
+      .containsExactly(Tuple.tuple(FIRST_PROCESS_DEFINITION_KEY, updatedName));
+  }
+
+  private BpmnModelInstance createSimpleProcessWithKeyAndName(final String key, final String name) {
+    return Bpmn.createExecutableProcess(key)
+      .name(name)
+      .startEvent(BpmnModels.START_EVENT_ID)
+      .endEvent(BpmnModels.END_EVENT_ID_1)
+      .done();
   }
 
   private ProcessDefinitionOptimizeDto createProcessDefinition(String definitionKey, String name) {

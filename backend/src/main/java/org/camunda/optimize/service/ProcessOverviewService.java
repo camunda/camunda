@@ -10,6 +10,8 @@ import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.NotFoundException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantIdsDto;
@@ -26,6 +28,7 @@ import org.camunda.optimize.service.security.util.definition.DataSourceDefinitio
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -63,11 +66,17 @@ public class ProcessOverviewService {
           def.getKey(),
           def.getTenantIds()
         ))
-      .peek(def -> {
-        if (def.getName() == null || def.getName().isEmpty()) {
-          def.setName(def.getKey());
-        }
-      })
+      .peek(def -> definitionService.getCachedTenantToLatestDefinitionMap(
+          PROCESS,
+          def.getKey()
+        ).values().stream().max(Comparator.comparing(DefinitionOptimizeResponseDto::getVersion))
+        .ifPresent(latestVersionOfDef -> {
+          if (!StringUtils.isEmpty(latestVersionOfDef.getName())) {
+            def.setName(latestVersionOfDef.getName());
+          } else {
+            def.setName(def.getKey());
+          }
+        }))
       .collect(toMap(DefinitionWithTenantIdsDto::getKey, DefinitionWithTenantIdsDto::getName));
 
     final Map<String, ProcessOverviewDto> processOverviewByKey =
