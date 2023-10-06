@@ -97,6 +97,16 @@ public class DbFormState implements MutableFormState {
     dbFormId.wrapBuffer(formId);
     final long latestVersion = versionManager.getLatestResourceVersion(formId, tenantId);
     formVersion.wrapLong(latestVersion);
+    final PersistedForm persistedForm =
+        formByIdAndVersionColumnFamily.get(tenantAwareIdAndVersionKey);
+    if (persistedForm == null) {
+      return Optional.empty();
+    }
+
+    final Object2ObjectHashMap<DirectBuffer, PersistedForm> formIdMap =
+        formByTenantAndIdCache.computeIfAbsent(
+            persistedForm.getTenantId(), id -> new Object2ObjectHashMap<>());
+    formIdMap.put(persistedForm.getFormId(), persistedForm);
     return Optional.ofNullable(formByIdAndVersionColumnFamily.get(tenantAwareIdAndVersionKey))
         .map(PersistedForm::copy);
   }
@@ -125,6 +135,6 @@ public class DbFormState implements MutableFormState {
     final Object2ObjectHashMap<DirectBuffer, PersistedForm> formIdMap =
         formByTenantAndIdCache.computeIfAbsent(
             dbPersistedForm.getTenantId(), id -> new Object2ObjectHashMap<>());
-    formIdMap.put(dbPersistedForm.getFormId(), dbPersistedForm);
+    formIdMap.put(dbPersistedForm.getFormId(), dbPersistedForm.copy());
   }
 }
