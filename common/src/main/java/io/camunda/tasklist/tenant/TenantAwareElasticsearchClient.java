@@ -28,7 +28,8 @@ public class TenantAwareElasticsearchClient {
   @Qualifier("esClient")
   private RestHighLevelClient defaultClient;
 
-  @Autowired private TenantCheckApplier<SearchRequest> tenantCheckApplier;
+  @Autowired(required = false)
+  private TenantCheckApplier<SearchRequest> tenantCheckApplier;
 
   public SearchResponse search(SearchRequest searchRequest) throws IOException {
     return search(searchRequest, () -> defaultClient.search(searchRequest, RequestOptions.DEFAULT));
