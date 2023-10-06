@@ -246,10 +246,6 @@ public class ManagementDashboardIT extends AbstractPlatformIT {
             ))
             .groupBy(new NoneGroupByDto())
             .visualization(ProcessVisualization.NUMBER)
-            .filter(ProcessFilterBuilder.filter()
-                      .runningInstancesOnly().add()
-                      .noIncidents().add()
-                      .buildList())
             .managementReport(true)
             .build()),
         new PositionDto(0, 0),

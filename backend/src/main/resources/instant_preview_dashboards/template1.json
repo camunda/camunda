@@ -259,12 +259,6 @@
           "data": null,
           "filterLevel": "instance",
           "appliedTo": ["all"]
-        },
-        {
-          "type": "doesNotIncludeIncident",
-          "data": null,
-          "filterLevel": "instance",
-          "appliedTo": ["all"]
         }
       ],
       "view": {
@@ -850,7 +844,7 @@
       ],
       "filter": [
         {
-          "type": "runningFlowNodesOnly",
+          "type": "includesOpenIncident",
           "data": null,
           "filterLevel": "view",
           "appliedTo": ["all"]

@@ -89,12 +89,6 @@ export function processDashboardTemplate(docsLink: string) {
                 filterLevel: 'instance',
                 appliedTo: ['all'],
               },
-              {
-                type: 'doesNotIncludeIncident',
-                data: null,
-                filterLevel: 'instance',
-                appliedTo: ['all'],
-              },
             ],
             view: {
               entity: 'processInstance',
@@ -147,8 +141,7 @@ export function processDashboardTemplate(docsLink: string) {
             },
             filter: [
               {
-                type: 'runningFlowNodesOnly',
-                data: null,
+                type: 'includesOpenIncident',
                 filterLevel: 'view',
                 appliedTo: ['all'],
               },
