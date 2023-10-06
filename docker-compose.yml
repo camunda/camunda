@@ -63,7 +63,7 @@ services:
 
   zeebe:
     container_name: zeebe
-    image: camunda/zeebe:8.3.0-rc1
+    image: camunda/zeebe:8.3.0
     environment:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
       - ZEEBE_BROKER_NETWORK_HOST=zeebe
@@ -81,10 +81,9 @@ services:
       - zeebe_network
     restart: always
 
-
   zeebe-opensearch:
     container_name: zeebe
-    image: camunda/zeebe:8.3.0-rc1
+    image: camunda/zeebe:8.3.0
     environment:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
       - ZEEBE_BROKER_NETWORK_HOST=zeebe
@@ -128,7 +127,7 @@ services:
 
   tasklist:
     container_name: tasklist
-    image: camunda/tasklist:8.3.0-alpha6
+    image: camunda/tasklist:8.3.0
     ports:
       - 8080:8080
     environment:
@@ -151,7 +150,7 @@ services:
 
   operate:
     container_name: tasklist-operate
-    image: camunda/operate:8.3.0-alpha6
+    image: camunda/operate:8.3.0
     ports:
       - 8088:8080
     environment:
@@ -167,7 +166,7 @@ services:
 
   zeebe-e2e:
     container_name: zeebe-e2e
-    image: camunda/zeebe:8.3.0-rc1
+    image: camunda/zeebe:8.3.0
     environment:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
       - ZEEBE_BROKER_NETWORK_HOST=zeebe-e2e
@@ -186,7 +185,7 @@ services:
 
   tasklist-e2e:
     container_name: tasklist-e2e
-    image: camunda/tasklist:8.3.0-alpha6
+    image: camunda/tasklist:8.3.0
     ports:
       - 8081:8080
     environment:
@@ -210,7 +209,7 @@ services:
 
   tasklist-sso:
     container_name: tasklist
-    image: camunda/tasklist:8.3.0-alpha6
+    image: camunda/tasklist:8.3.0
     ports:
       - 8080:8080
     environment:
