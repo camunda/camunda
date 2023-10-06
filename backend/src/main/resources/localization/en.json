@@ -1702,7 +1702,7 @@
     "IP_DashboardName": "Instant Preview Dashboard",
     "IP_KpiDashboardName": "KPI Dashboard",
     "processDashboard": "Instant Process Dashboard",
-    "processDashboard-description": "This dashboard provides a competitive overview of metrics and use cases that can be covered with Optimize. It is available for any process as soon as a process is deployed.",
+    "processDashboard-description": "This dashboard provides a competitive overview of metrics and use cases that can be covered with Optimize.",
     "processDashboard_text1_line1": "Report business metrics",
     "processDashboard_text1_line2": "Aggregate and group the process execution data into days, weeks, and months to monitor and report business metrics and key performance indicators (KPI).",
     "processDashboard_text1_line3": "Subscribe to an email digest to obtain a weekly summary of your process metrics and KPIs",
