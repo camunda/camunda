@@ -7,7 +7,7 @@
 
 import {createContext, ComponentType, useContext, ReactNode, useEffect, useState} from 'react';
 
-import {getOptimizeVersion} from 'config';
+import {getDocsVersion} from 'config';
 
 export interface WithDocsProps {
   docsLink: string;
@@ -22,9 +22,9 @@ export function DocsProvider({children}: {children: ReactNode}): JSX.Element {
 
   useEffect(() => {
     (async () => {
-      const version = (await getOptimizeVersion()).split('.');
+      const version = (await getDocsVersion()).split('.');
       version.length = 2;
-      setOptimizeVersion(version.join('.'));
+      setOptimizeVersion(version.join('.') + '.0');
     })();
   }, []);
 

@@ -44,6 +44,7 @@ type Config = {
   settingsManuallyConfirmed: boolean;
   tenantsAvailable: boolean;
   optimizeVersion: string;
+  optimizeDocsVersion: string;
   optimizeProfile: 'platform' | 'cloud' | 'ccsm';
   enterpriseMode: boolean;
   webappsEndpoints: WebappEndpoints;
@@ -95,6 +96,7 @@ export const areSettingsManuallyConfirmed = createAccessorFunction<boolean>(
 );
 export const areTenantsAvailable = createAccessorFunction<boolean>('tenantsAvailable');
 export const getOptimizeVersion = createAccessorFunction<string>('optimizeVersion');
+export const getDocsVersion = createAccessorFunction<string>('optimizeDocsVersion');
 export const getWebappEndpoints = createAccessorFunction<WebappEndpoints>('webappsEndpoints');
 export const getWebappLinks = createAccessorFunction<WebappLinks>('webappsLinks');
 export const getWebhooks = createAccessorFunction<string[]>('webhooks');
