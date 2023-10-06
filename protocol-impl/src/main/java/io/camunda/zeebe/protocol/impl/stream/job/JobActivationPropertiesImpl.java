@@ -73,7 +73,7 @@ public class JobActivationPropertiesImpl extends UnpackedObject implements JobAc
   @Override
   public List<String> getTenantIds() {
     return StreamSupport.stream(tenantIdsProp.spliterator(), false)
-        .map(StringValue::getValue)
+        .map(val -> new UnsafeBuffer(val.getValue()))
         .map(BufferUtil::bufferAsString)
         .collect(Collectors.toList());
   }
