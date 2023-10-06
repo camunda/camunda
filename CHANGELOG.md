@@ -1,3 +1,82 @@
+# v8.3.0
+## 🚀 New Features
+* **MT**: update Swagger descriptions ([#3592](https://github.com/camunda/tasklist/issues/3592))
+* **MT**: add tenant check for `getFormById` endpoint ([#3571](https://github.com/camunda/tasklist/issues/3571))
+* **MT**: MT implementation ([#3530](https://github.com/camunda/tasklist/issues/3530))
+* Send tenant id when starting a process ([#3558](https://github.com/camunda/tasklist/issues/3558))
+* Add tenant to task details ([#3496](https://github.com/camunda/tasklist/issues/3496))
+* Add multi-tenancy dropdown in processes page ([#3493](https://github.com/camunda/tasklist/issues/3493))
+* Implement process instance history ([#3518](https://github.com/camunda/tasklist/issues/3518))
+* **CI**: enable OpenSearch tests for `ci-scheduled` pipeline ([#3492](https://github.com/camunda/tasklist/issues/3492))
+* enabling OpenSearch Tests ([#3327](https://github.com/camunda/tasklist/issues/3327))
+
+## 💊 Bugfixes
+* Use process id as key instead of bpmnProcessId
+* **MT**: resolve issues discovered during testing of 3513 and 3412 tasks ([#3581](https://github.com/camunda/tasklist/issues/3581))
+* start process by form when public toggle is off ([#3504](https://github.com/camunda/tasklist/issues/3504))
+* Update IdentityAuthorizationService.java ([#3550](https://github.com/camunda/tasklist/issues/3550))
+* Use variable preview value on completed and unassigned tasks ([#3525](https://github.com/camunda/tasklist/issues/3525))
+
+## 🧹 Chore
+* Bump deps to 8.3.0
+* **CI**: recover Jenkisfile ([#3535](https://github.com/camunda/tasklist/issues/3535))
+* **deps**: update all non-major dependencies ([#3582](https://github.com/camunda/tasklist/issues/3582))
+* **deps**: update stefanzweifel/git-auto-commit-action digest to 1094465 ([#3577](https://github.com/camunda/tasklist/issues/3577))
+* **deps**: update dependency @types/react-dom to v18.2.9 ([#3578](https://github.com/camunda/tasklist/issues/3578))
+* **deps**: update infra-preview-environments-ingress docker tag to v1.2.0 ([#3569](https://github.com/camunda/tasklist/issues/3569))
+* **deps**: update dependency @types/node to v20.8.2 ([#3572](https://github.com/camunda/tasklist/issues/3572))
+* **deps**: update dependency zod to v3.22.3 [security] ([#3573](https://github.com/camunda/tasklist/issues/3573))
+* **deps**: update all non-major dependencies ([#3565](https://github.com/camunda/tasklist/issues/3565))
+* **deps**: update dependency @carbon/elements to v11.31.0 ([#3566](https://github.com/camunda/tasklist/issues/3566))
+* **deps**: update dependency @types/node to v20.8.0 ([#3539](https://github.com/camunda/tasklist/issues/3539))
+* **deps**: update dependency @carbon/react to v1.39.0 ([#3567](https://github.com/camunda/tasklist/issues/3567))
+* Update Browserlist DB
+* **deps**: update dependency node to v20.8.0 ([#3563](https://github.com/camunda/tasklist/issues/3563))
+* removing the word platform from license ([#3557](https://github.com/camunda/tasklist/issues/3557))
+* **e2e**: add `wcag21a` and `wcag21aa` rules ([#3554](https://github.com/camunda/tasklist/issues/3554))
+* **deps**: update dependency @types/node to v20.7.1 ([#3553](https://github.com/camunda/tasklist/issues/3553))
+* **deps**: update all non-major dependencies ([#3494](https://github.com/camunda/tasklist/issues/3494))
+* **deps**: update hashicorp/vault-action digest to 86c7f83 ([#3548](https://github.com/camunda/tasklist/issues/3548))
+* Don't patch requests when feature flags are disabled
+* **ci**: tag preview-env Docker image with different prefix for easier cleanup ([#3542](https://github.com/camunda/tasklist/issues/3542))
+* Fix type check
+* **deps**: update dependency sass to v1.68.0 ([#3509](https://github.com/camunda/tasklist/issues/3509))
+* **deps**: update dependency node to v20.7.0 ([#3495](https://github.com/camunda/tasklist/issues/3495))
+* **deps**: update actions/checkout digest to 8ade135 ([#3527](https://github.com/camunda/tasklist/issues/3527))
+* Bump form-js to 1.3.0 ([#3536](https://github.com/camunda/tasklist/issues/3536))
+* Update Browserlist DB
+* **harbor-registry**: Move tasklist Docker images into an isolated … ([#3506](https://github.com/camunda/tasklist/issues/3506))
+* **deps**: update dependency @testing-library/user-event to v14.5.1 ([#3482](https://github.com/camunda/tasklist/issues/3482))
+* **deps**: update dependency @carbon/elements to v11.30.0 ([#3486](https://github.com/camunda/tasklist/issues/3486))
+* **deps**: update enricomi/publish-unit-test-result-action action to v2.10.0 ([#3523](https://github.com/camunda/tasklist/issues/3523))
+* **deps**: update dependency @carbon/react to v1.38.0 ([#3487](https://github.com/camunda/tasklist/issues/3487))
+* **deps**: update tibdex/github-app-token action to v2.1.0 ([#3499](https://github.com/camunda/tasklist/issues/3499))
+* adding tasklist opensearch to docker compose ([#3488](https://github.com/camunda/tasklist/issues/3488))
+* **deps**: update all non-major dependencies ([#3483](https://github.com/camunda/tasklist/issues/3483))
+* **deps**: update hashicorp/vault-action digest to a5f6c67 ([#3485](https://github.com/camunda/tasklist/issues/3485))
+* **deps**: update actions/add-to-project digest to d8e41a4 ([#3480](https://github.com/camunda/tasklist/issues/3480))
+* Update Browserlist DB
+* Update to Node v20 ([#3477](https://github.com/camunda/tasklist/issues/3477))
+* Create basic setup for process instances history ([#3387](https://github.com/camunda/tasklist/issues/3387))
+* Fix tests
+* **deps**: update dependency sass to v1.67.0 ([#3475](https://github.com/camunda/tasklist/issues/3475))
+* **deps**: update mcr.microsoft.com/playwright docker tag to v1.38.0 ([#3476](https://github.com/camunda/tasklist/issues/3476))
+* **deps**: update dependency msw to v1.3.1 ([#3473](https://github.com/camunda/tasklist/issues/3473))
+* **deps**: update dependency react-router-dom to v6.16.0 ([#3472](https://github.com/camunda/tasklist/issues/3472))
+* **deps**: update dependency styled-components to v6.0.8 ([#3470](https://github.com/camunda/tasklist/issues/3470))
+* **deps**: update dependency styled-components to v6 ([#3419](https://github.com/camunda/tasklist/issues/3419))
+* **deps**: update dependency @testing-library/jest-dom to v6 ([#3356](https://github.com/camunda/tasklist/issues/3356))
+* **deps**: update dependency monaco-editor to v0.43.0 ([#3450](https://github.com/camunda/tasklist/issues/3450))
+* **deps**: update dependency axe-core to v4.8.1 ([#3418](https://github.com/camunda/tasklist/issues/3418))
+* **deps**: update all non-major dependencies ([#3466](https://github.com/camunda/tasklist/issues/3466))
+* **deps**: update all non-major dependencies ([#3440](https://github.com/camunda/tasklist/issues/3440))
+* **deps**: update tanstack-query monorepo to v4.35.0 ([#3421](https://github.com/camunda/tasklist/issues/3421))
+* **deps**: update tibdex/github-app-token action to v2 ([#3442](https://github.com/camunda/tasklist/issues/3442))
+* Update sync-issues.yml ([#3433](https://github.com/camunda/tasklist/issues/3433))
+* **deps**: update stefanzweifel/git-auto-commit-action digest to 3d1b5e0 ([#3449](https://github.com/camunda/tasklist/issues/3449))
+* Update Browserlist DB
+* update CHANGELOG.md
+* update CHANGELOG.md
 # v8.3.0-alpha6
 ## 🧹 Chore
 * Bump Identity and Zeebe to 8.3.0-alpha6 ([#3432](https://github.com/camunda/tasklist/issues/3432))
