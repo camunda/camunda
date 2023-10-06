@@ -13,7 +13,6 @@ import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.msgpack.value.ValueArray;
-import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Collection;
 import java.util.List;
@@ -28,7 +27,7 @@ public class JobActivationPropertiesImpl extends UnpackedObject implements JobAc
   private final ArrayProperty<StringValue> fetchVariablesProp =
       new ArrayProperty<>("variables", new StringValue());
   private final ArrayProperty<StringValue> tenantIdsProp =
-      new ArrayProperty<>("tenantIds", new StringValue(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
+      new ArrayProperty<>("tenantIds", new StringValue());
 
   public JobActivationPropertiesImpl() {
     declareProperty(workerProp)
