@@ -14,13 +14,16 @@ import io.camunda.zeebe.client.CredentialsProvider;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
 import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder;
-import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
+import io.camunda.zeebe.gateway.impl.configuration.AuthenticationCfg.AuthMode;
+import io.camunda.zeebe.qa.util.cluster.TestHealthProbe;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.testcontainers.ContainerLogsDumper;
 import io.grpc.Metadata;
 import io.grpc.Metadata.Key;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
-import io.zeebe.containers.ZeebeContainer;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -43,6 +46,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
 @Testcontainers
+@ZeebeIntegration
 public class GatewayAuthenticationIdentityIT {
 
   public static final String KEYCLOAK_USER = "admin";
@@ -56,6 +60,7 @@ public class GatewayAuthenticationIdentityIT {
   private static final String ZEEBE_CLIENT_SECRET = "zecret";
   private static final Network NETWORK = Network.newNetwork();
 
+  @SuppressWarnings("resource")
   @Container
   private static final GenericContainer<?> KEYCLOAK =
       new GenericContainer<>("bitnami/keycloak:22.0.1")
@@ -73,6 +78,7 @@ public class GatewayAuthenticationIdentityIT {
                   .allowInsecure()
                   .forStatusCode(200));
 
+  @SuppressWarnings("resource")
   @Container
   private static final GenericContainer<?> IDENTITY =
       new GenericContainer<>(
@@ -108,29 +114,28 @@ public class GatewayAuthenticationIdentityIT {
                   .forStatusCode(200))
           .withNetworkAliases("identity");
 
-  @Container
-  private static final ZeebeContainer ZEEBE =
-      new ZeebeContainer(ZeebeTestContainerDefaults.defaultTestImage())
-          .withNetwork(NETWORK)
-          .dependsOn(KEYCLOAK, IDENTITY)
-          .withoutTopologyCheck()
-          .withEnv("ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_MODE", "identity")
-          .withEnv(
-              "ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_ISSUERBACKENDURL",
-              "http://keycloak:8080" + KEYCLOAK_PATH_CAMUNDA_REALM)
-          .withEnv(
-              "ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_AUDIENCE",
-              ZEEBE_CLIENT_AUDIENCE);
+  @TestZeebe(autoStart = false) // must configure in BeforeAll once containers have been started
+  private static final TestStandaloneBroker ZEEBE = new TestStandaloneBroker();
 
   @SuppressWarnings("unused")
   @RegisterExtension
   final ContainerLogsDumper logsWatcher =
-      new ContainerLogsDumper(
-          () -> Map.of("keycloak", KEYCLOAK, "identity", IDENTITY, "zeebe", ZEEBE));
+      new ContainerLogsDumper(() -> Map.of("keycloak", KEYCLOAK, "identity", IDENTITY));
 
   @BeforeAll
   static void beforeAll() {
     awaitCamundaRealmAvailabilityOnKeycloak();
+
+    ZEEBE
+        .withBrokerConfig(
+            cfg -> {
+              final var auth = cfg.getGateway().getSecurity().getAuthentication();
+              auth.setMode(AuthMode.IDENTITY);
+              auth.getIdentity().setIssuerBackendUrl(getKeycloakRealmAddress());
+              auth.getIdentity().setAudience(ZEEBE_CLIENT_AUDIENCE);
+            })
+        .start()
+        .await(TestHealthProbe.READY);
   }
 
   @Test
@@ -232,12 +237,16 @@ public class GatewayAuthenticationIdentityIT {
   }
 
   private static String getKeycloakRealmAddress() {
-    return "http://localhost:" + KEYCLOAK.getFirstMappedPort() + KEYCLOAK_PATH_CAMUNDA_REALM;
+    return "http://"
+        + KEYCLOAK.getHost()
+        + ":"
+        + KEYCLOAK.getFirstMappedPort()
+        + KEYCLOAK_PATH_CAMUNDA_REALM;
   }
 
   private ZeebeClientBuilder createZeebeClientBuilder() {
     return ZeebeClient.newClientBuilder()
-        .gatewayAddress(ZEEBE.getExternalGatewayAddress())
+        .gatewayAddress(ZEEBE.gatewayAddress())
         .defaultRequestTimeout(Duration.ofMinutes(1))
         .usePlaintext();
   }

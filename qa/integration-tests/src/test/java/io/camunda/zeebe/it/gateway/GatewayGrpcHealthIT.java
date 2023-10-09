@@ -10,7 +10,9 @@ package io.camunda.zeebe.it.gateway;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc;
-import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneGateway;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.grpc.ManagedChannel;
 import io.grpc.health.v1.HealthCheckRequest;
 import io.grpc.health.v1.HealthCheckResponse;
@@ -18,28 +20,22 @@ import io.grpc.health.v1.HealthCheckResponse.ServingStatus;
 import io.grpc.health.v1.HealthGrpc;
 import io.grpc.netty.NettyChannelBuilder;
 import io.grpc.protobuf.services.HealthStatusManager;
-import io.zeebe.containers.ZeebeGatewayContainer;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
-@Testcontainers
+@ZeebeIntegration
 class GatewayGrpcHealthIT {
 
-  @Container
-  private final ZeebeGatewayContainer zeebeGatewayContainer =
-      new ZeebeGatewayContainer(ZeebeTestContainerDefaults.defaultTestImage())
-          .withoutTopologyCheck();
+  // can never be ready nor await the complete topology without a broker
+  @TestZeebe(awaitReady = false, awaitCompleteTopology = false)
+  private final TestStandaloneGateway gateway = new TestStandaloneGateway();
 
   @ParameterizedTest
   @ValueSource(strings = {GatewayGrpc.SERVICE_NAME, HealthStatusManager.SERVICE_NAME_ALL_SERVICES})
   void shouldReturnServingStatusWhenGatewayIsStarted(final String serviceName) {
     // given
     final ManagedChannel channel =
-        NettyChannelBuilder.forTarget(zeebeGatewayContainer.getExternalGatewayAddress())
-            .usePlaintext()
-            .build();
+        NettyChannelBuilder.forTarget(gateway.gatewayAddress()).usePlaintext().build();
     final HealthCheckResponse response;
 
     // when
