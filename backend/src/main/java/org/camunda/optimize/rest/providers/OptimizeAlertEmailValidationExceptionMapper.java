@@ -16,8 +16,7 @@ import jakarta.ws.rs.ext.Provider;
 
 @Provider
 @Slf4j
-public class OptimizeAlertEmailValidationExceptionMapper
-  implements ExceptionMapper<OptimizeAlertEmailValidationException> {
+public class OptimizeAlertEmailValidationExceptionMapper implements ExceptionMapper<OptimizeAlertEmailValidationException> {
 
   @Override
   public Response toResponse(final OptimizeAlertEmailValidationException optimizeAlertEmailValidationException) {
