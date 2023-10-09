@@ -38,8 +38,7 @@ public class DbFormState implements MutableFormState {
   private final DbTenantAwareKey<DbCompositeKey<DbString, DbLong>> tenantAwareIdAndVersionKey;
   private final ColumnFamily<DbTenantAwareKey<DbCompositeKey<DbString, DbLong>>, PersistedForm>
       formByIdAndVersionColumnFamily;
-  private final Object2ObjectHashMap<String, Object2ObjectHashMap<DirectBuffer, PersistedForm>>
-      formByTenantAndIdCache;
+  private final Object2ObjectHashMap<TenantIdAndFormId, PersistedForm> formByTenantAndIdCache;
 
   public DbFormState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
@@ -89,7 +88,7 @@ public class DbFormState implements MutableFormState {
       final DirectBuffer formId, final String tenantId) {
     tenantIdKey.wrapString(tenantId);
     final PersistedForm cachedForm =
-        formByTenantAndIdCache.getOrDefault(tenantId, new Object2ObjectHashMap<>()).get(formId);
+        formByTenantAndIdCache.get(new TenantIdAndFormId(tenantId, formId));
     if (cachedForm != null) {
       return Optional.of(cachedForm);
     }
@@ -103,12 +102,8 @@ public class DbFormState implements MutableFormState {
       return Optional.empty();
     }
 
-    final Object2ObjectHashMap<DirectBuffer, PersistedForm> formIdMap =
-        formByTenantAndIdCache.computeIfAbsent(
-            persistedForm.getTenantId(), id -> new Object2ObjectHashMap<>());
-    formIdMap.put(persistedForm.getFormId(), persistedForm);
-    return Optional.ofNullable(formByIdAndVersionColumnFamily.get(tenantAwareIdAndVersionKey))
-        .map(PersistedForm::copy);
+    formByTenantAndIdCache.put(new TenantIdAndFormId(tenantId, formId), persistedForm);
+    return Optional.of(persistedForm).map(PersistedForm::copy);
   }
 
   @Override
@@ -132,9 +127,10 @@ public class DbFormState implements MutableFormState {
   }
 
   private void updateLatestFormCache() {
-    final Object2ObjectHashMap<DirectBuffer, PersistedForm> formIdMap =
-        formByTenantAndIdCache.computeIfAbsent(
-            dbPersistedForm.getTenantId(), id -> new Object2ObjectHashMap<>());
-    formIdMap.put(dbPersistedForm.getFormId(), dbPersistedForm.copy());
+    formByTenantAndIdCache.put(
+        new TenantIdAndFormId(dbPersistedForm.getTenantId(), dbPersistedForm.getFormId()),
+        dbPersistedForm.copy());
   }
+
+  private record TenantIdAndFormId(String tenantId, DirectBuffer formId) {}
 }
