@@ -1,0 +1,22 @@
+syntax = 'proto3';
+package topology_requests;
+
+import "topology.proto";
+
+option java_package = "io.camunda.zeebe.topology.protocol";
+
+message AddMemberRequest {
+  repeated string memberIds = 1;
+}
+
+message TopologyChangeStatus {
+  int64 changeId = 1;
+  ChangeStatus status = 2;
+}
+
+enum ChangeStatus {
+  STATUS_UNKNOWN = 0;
+  IN_PROGRESS = 1;
+  COMPLETED = 2;
+  FAILED = 3;
+}

@@ -10,7 +10,12 @@ package io.camunda.zeebe.topology.serializer;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Timestamp;
 import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.topology.api.TopologyManagementRequests.AddMembersRequest;
+import io.camunda.zeebe.topology.api.TopologyManagementResponses.StatusCode;
+import io.camunda.zeebe.topology.api.TopologyManagementResponses.TopologyChangeStatus;
 import io.camunda.zeebe.topology.gossip.ClusterTopologyGossipState;
+import io.camunda.zeebe.topology.protocol.Requests;
+import io.camunda.zeebe.topology.protocol.Requests.ChangeStatus;
 import io.camunda.zeebe.topology.protocol.Topology;
 import io.camunda.zeebe.topology.protocol.Topology.MemberState;
 import io.camunda.zeebe.topology.state.ClusterChangePlan;
@@ -26,7 +31,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
-public class ProtoBufSerializer implements ClusterTopologySerializer {
+public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRequestsSerializer {
 
   @Override
   public byte[] encode(final ClusterTopologyGossipState gossipState) {
@@ -256,5 +261,66 @@ public class ProtoBufSerializer implements ClusterTopologySerializer {
       // rolling update.
       throw new IllegalStateException("Unknown operation: " + topologyChangeOperation);
     }
+  }
+
+  @Override
+  public byte[] encode(final AddMembersRequest addMembersRequest) {
+    return Requests.AddMemberRequest.newBuilder()
+        .addAllMemberIds(addMembersRequest.members().stream().map(MemberId::id).toList())
+        .build()
+        .toByteArray();
+  }
+
+  @Override
+  public AddMembersRequest decodeAddMembersRequest(final byte[] encodedState) {
+    try {
+      final var addMemberRequest = Requests.AddMemberRequest.parseFrom(encodedState);
+      return new AddMembersRequest(
+          addMemberRequest.getMemberIdsList().stream()
+              .map(MemberId::from)
+              .collect(Collectors.toSet()));
+    } catch (final InvalidProtocolBufferException e) {
+      throw new DecodingFailed(e);
+    }
+  }
+
+  @Override
+  public byte[] encode(final TopologyChangeStatus topologyChangeStatus) {
+    return Requests.TopologyChangeStatus.newBuilder()
+        .setChangeId(topologyChangeStatus.changeId())
+        .setStatus(fromTopologyChangeStatus(topologyChangeStatus.status()))
+        .build()
+        .toByteArray();
+  }
+
+  @Override
+  public TopologyChangeStatus decodeTopologyChangeStatus(final byte[] encodedTopologyChangeStatus) {
+    try {
+      final var topologyChangeStatus =
+          Requests.TopologyChangeStatus.parseFrom(encodedTopologyChangeStatus);
+      return new TopologyChangeStatus(
+          topologyChangeStatus.getChangeId(),
+          toTopologyChangeStatus(topologyChangeStatus.getStatus()));
+    } catch (final InvalidProtocolBufferException e) {
+      throw new DecodingFailed(e);
+    }
+  }
+
+  private StatusCode toTopologyChangeStatus(final ChangeStatus status) {
+    return switch (status) {
+      case IN_PROGRESS -> StatusCode.IN_PROGRESS;
+      case COMPLETED -> StatusCode.COMPLETED;
+      case FAILED -> StatusCode.FAILED;
+      case UNRECOGNIZED, STATUS_UNKNOWN -> throw new IllegalStateException(
+          "Unknown status: " + status);
+    };
+  }
+
+  private ChangeStatus fromTopologyChangeStatus(final StatusCode status) {
+    return switch (status) {
+      case IN_PROGRESS -> ChangeStatus.IN_PROGRESS;
+      case COMPLETED -> ChangeStatus.COMPLETED;
+      case FAILED -> ChangeStatus.FAILED;
+    };
   }
 }
