@@ -3,6 +3,10 @@
 @use '@carbon/styles/scss/spacing';
 @import 'shared-styles/shared-styles.scss';
 
+.dark .Popover {
+  @include theme.theme(themes.$g100);
+}
+
 .Popover {
   display: block;
   @include theme.theme(themes.$g10);
@@ -39,9 +43,16 @@
       }
     }
 
+    .ButtonTrigger {
+      min-width: 100%;
+    }
+
     .ButtonTrigger.active {
       box-shadow: 0 2px 6px var(--cds-shadow, rgba(0, 0, 0, 0.3));
-      background-color: var(--cds-layer);
+
+      &:not(.cds--btn--tertiary) {
+        background-color: var(--cds-layer);
+      }
     }
   }
 }

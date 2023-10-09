@@ -7,8 +7,9 @@
 
 import React from 'react';
 import classnames from 'classnames';
+import {Button, Form, FormGroup, Stack, Toggle} from '@carbon/react';
 
-import {Popover, Form, Switch, Button} from 'components';
+import {Popover} from 'components';
 import {incompatibleFilters} from 'services';
 import {t} from 'translation';
 
@@ -52,34 +53,41 @@ export default function InstanceStateFilter({filter = [], setFilter, children}) 
       </div>
       <Popover
         isTabTip
-        title={
-          <>
+        trigger={
+          <Popover.Button size="sm" kind="tertiary">
             <span className={classnames('indicator', {active})} />
             {stateFilter.map(({type}) => t('dashboard.filter.types.' + type)).join(', ') ||
               t('common.off')}
-          </>
+          </Popover.Button>
         }
       >
-        <Form compact>
-          <fieldset>
-            {types.map((type) => (
-              <Switch
-                key={type}
-                label={t('dashboard.filter.types.' + type)}
-                checked={hasFilter(type)}
-                disabled={!isAllowed(type)}
-                onChange={({target}) => {
-                  if (target.checked) {
-                    addFilter(type);
-                  } else {
-                    removeFilter(type);
-                  }
-                }}
-              />
-            ))}
-          </fieldset>
+        <Form>
+          <FormGroup legendText={t('dashboard.filter.types.state')}>
+            <Stack gap={4}>
+              {types.map((type) => (
+                <Toggle
+                  key={type}
+                  id={type}
+                  size="sm"
+                  labelA={t('dashboard.filter.types.' + type)}
+                  labelB={t('dashboard.filter.types.' + type)}
+                  toggled={hasFilter(type)}
+                  disabled={!isAllowed(type)}
+                  onToggle={(checked) => {
+                    if (checked) {
+                      addFilter(type);
+                    } else {
+                      removeFilter(type);
+                    }
+                  }}
+                />
+              ))}
+            </Stack>
+          </FormGroup>
           <hr />
           <Button
+            size="sm"
+            kind="ghost"
             className="reset-button"
             disabled={!active}
             onClick={() => setFilter(filter.filter(({type}) => !types.includes(type)))}

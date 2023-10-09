@@ -32,11 +32,6 @@
       }
     }
   }
-
-  .reset-button {
-    border: none;
-    background: none;
-  }
 }
 
 .FiltersView {
@@ -86,13 +81,6 @@
     padding-left: 12px;
   }
 
-  .reset-button {
-    margin: 0 10px 5px;
-    font-size: 14px;
-    border: none;
-    background: none;
-  }
-
   .indicator {
     vertical-align: middle;
     color: var(--silver-darken-80);
@@ -103,24 +91,7 @@
 
   hr {
     border: none;
-    border-bottom: 1px solid var(--silver-darken-87);
-    margin: 5px 0;
-  }
-
-  .Popover {
-    .popoverContent {
-      padding: 0;
-    }
-
-    .Form {
-      > fieldset {
-        padding: 5px 20px 0 20px;
-
-        .Switch {
-          margin-top: 6px;
-          padding-bottom: 6px;
-        }
-      }
-    }
+    border-bottom: 1px solid var(--cds-border-subtle);
+    margin: 8px 0;
   }
 }

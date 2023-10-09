@@ -220,7 +220,7 @@ test('sharing with filters', async (t) => {
   await u.save(t);
 
   await t.click(e.instanceStateFilter);
-  await t.click(e.switchElement('Suspended'));
+  await t.click(e.toggleElement('Suspended'));
 
   await t.expect(Common.shareButton.hasAttribute('disabled')).notOk();
 
@@ -359,7 +359,7 @@ test('filters', async (t) => {
   });
 
   await t.click(e.instanceStateFilter);
-  await t.click(e.switchElement('Running'));
+  await t.click(e.toggleElement('Running'));
 
   await u.save(t);
 
@@ -389,8 +389,8 @@ test('filters', async (t) => {
 
   await t.click(Common.editButton);
   await t.click(e.instanceStateFilter);
-  await t.click(e.switchElement('Running'));
-  await t.click(e.switchElement('Suspended'));
+  await t.click(e.toggleElement('Running'));
+  await t.click(e.toggleElement('Suspended'));
 
   await u.save(t);
 

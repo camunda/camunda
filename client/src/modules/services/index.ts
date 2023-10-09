@@ -27,3 +27,4 @@ export {addSources, getCollection} from './collectionService';
 export {default as getScreenBounds} from './getScreenBounds';
 export {default as ignoreFragments} from './ignoreFragments';
 export {default as isReactElement} from './isReactElement';
+export {incompatibleFilters} from './incompatibleFilters';

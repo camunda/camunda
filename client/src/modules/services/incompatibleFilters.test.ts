@@ -9,51 +9,31 @@ import {incompatibleFilters} from './incompatibleFilters';
 
 it('should return true if filters contains completedInstancesOnly and runningInstancesOnly together', () => {
   expect(
-    incompatibleFilters(
-      [
-        {type: 'completedInstancesOnly', data: null},
-        {type: 'runningInstancesOnly', data: null},
-      ],
-      {}
-    )
+    incompatibleFilters([{type: 'completedInstancesOnly'}, {type: 'runningInstancesOnly'}], {})
   ).toBe(true);
 });
 
 it('should return true if filters contains endDate and runningInstancesOnly together', () => {
-  expect(
-    incompatibleFilters(
-      [
-        {type: 'instanceEndDate', data: null},
-        {type: 'runningInstancesOnly', data: null},
-      ],
-      {}
-    )
-  ).toBe(true);
+  expect(incompatibleFilters([{type: 'instanceEndDate'}, {type: 'runningInstancesOnly'}], {})).toBe(
+    true
+  );
 });
 
 it('should return false if filters contains only completedInstancesOnly', () => {
-  expect(incompatibleFilters([{type: 'completedInstancesOnly', data: null}], {})).toBe(false);
+  expect(incompatibleFilters([{type: 'completedInstancesOnly'}], {})).toBe(false);
 });
 
 it('should only be compatible if flow node status filters filters are in flow node view', () => {
   expect(
-    incompatibleFilters(
-      [
-        {type: 'completedFlowNodesOnly', data: null},
-        {type: 'runningFlowNodesOnly', data: null},
-      ],
-      {entity: 'instance'}
-    )
+    incompatibleFilters([{type: 'completedFlowNodesOnly'}, {type: 'runningFlowNodesOnly'}], {
+      entity: 'instance',
+    })
   ).toBe(false);
 
   expect(
-    incompatibleFilters(
-      [
-        {type: 'completedFlowNodesOnly', data: null},
-        {type: 'runningFlowNodesOnly', data: null},
-      ],
-      {entity: 'flowNode'}
-    )
+    incompatibleFilters([{type: 'completedFlowNodesOnly'}, {type: 'runningFlowNodesOnly'}], {
+      entity: 'flowNode',
+    })
   ).toBe(true);
 });
 
@@ -61,8 +41,8 @@ it('should return true if filters contains open and resolved incidents on the vi
   expect(
     incompatibleFilters(
       [
-        {type: 'includesOpenIncident', data: null, filterLevel: 'view'},
-        {type: 'includesResolvedIncident', data: null, filterLevel: 'view'},
+        {type: 'includesOpenIncident', filterLevel: 'view'},
+        {type: 'includesResolvedIncident', filterLevel: 'view'},
       ],
       {entity: 'incident'}
     )
@@ -71,9 +51,6 @@ it('should return true if filters contains open and resolved incidents on the vi
 
 it('should return true if filters contains without incidents and open/resolved incidents on any level', () => {
   expect(
-    incompatibleFilters([
-      {type: 'doesNotIncludeIncident', data: null},
-      {type: 'includesResolvedIncident', data: null},
-    ])
+    incompatibleFilters([{type: 'doesNotIncludeIncident'}, {type: 'includesResolvedIncident'}])
   ).toBe(true);
 });

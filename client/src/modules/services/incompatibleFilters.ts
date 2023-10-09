@@ -5,8 +5,11 @@
  * except in compliance with the proprietary license.
  */
 
-export function incompatibleFilters(filterData, view) {
-  const bothExist = (arr, checkLevel) =>
+export function incompatibleFilters(
+  filterData: {type: string; filterLevel?: string}[],
+  view?: {entity?: string}
+) {
+  const bothExist = (arr: string[], checkLevel?: string) =>
     arr.every((val) =>
       filterData.some(({type, filterLevel}) => type === val && sameLevel(checkLevel, filterLevel))
     );
@@ -32,7 +35,7 @@ export function incompatibleFilters(filterData, view) {
   );
 }
 
-function sameLevel(checkLevel, filterLevel) {
+function sameLevel(checkLevel?: string, filterLevel?: string) {
   if (checkLevel) {
     return checkLevel === filterLevel;
   }
