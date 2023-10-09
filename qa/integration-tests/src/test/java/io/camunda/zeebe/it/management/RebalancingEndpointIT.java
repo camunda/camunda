@@ -16,6 +16,7 @@ import io.camunda.zeebe.qa.util.cluster.TestGateway;
 import io.camunda.zeebe.qa.util.cluster.TestHealthProbe;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.zeebe.test.util.asserts.TopologyAssert;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import java.time.Duration;
@@ -85,7 +86,14 @@ final class RebalancingEndpointIT {
     Awaitility.await("All brokers are leader for exactly one partition")
         .timeout(Duration.ofSeconds(30))
         .during(Duration.ofSeconds(10))
-        .until(this::hasGoodLeaderDistribution);
+        .untilAsserted(
+            () -> {
+              final var topology = client.newTopologyRequest().send().join();
+              TopologyAssert.assertThat(topology)
+                  .hasLeaderForPartition(1, 0)
+                  .hasLeaderForPartition(2, 1)
+                  .hasLeaderForPartition(3, 2);
+            });
   }
 
   private boolean hasBadLeaderDistribution() {
