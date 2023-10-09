@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.state.message;
 
+import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.state.immutable.MessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.MessageSubscriptionState.MessageSubscriptionVisitor;
 import io.camunda.zeebe.engine.state.message.TransientSubscriptionCommandState.CommandEntry;
@@ -14,9 +15,11 @@ import io.camunda.zeebe.engine.state.mutable.MutablePendingMessageSubscriptionSt
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import org.slf4j.Logger;
 
 final class PendingMessageSubscriptionState implements MutablePendingMessageSubscriptionState {
 
+  private static final Logger LOG = Loggers.STREAM_PROCESSING;
   private final TransientSubscriptionCommandState transientState =
       new TransientSubscriptionCommandState();
 
@@ -36,7 +39,16 @@ final class PendingMessageSubscriptionState implements MutablePendingMessageSubs
               commandEntry.getElementInstanceKey(),
               BufferUtil.wrapString(commandEntry.getMessageName()));
 
-      visitor.visit(subscription);
+      if (subscription == null) {
+        // This case can occur while a scheduled job is running asynchronously
+        // and the stream processor removes one of the returned subscriptions from the state.
+        LOG.warn(
+            "Expected to find a subscription with key {} and message name {}, but none found. The state is inconsistent.",
+            commandEntry.getElementInstanceKey(),
+            commandEntry.getMessageName());
+      } else {
+        visitor.visit(subscription);
+      }
     }
   }
 
