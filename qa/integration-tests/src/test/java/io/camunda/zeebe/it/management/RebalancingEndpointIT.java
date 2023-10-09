@@ -72,6 +72,14 @@ final class RebalancingEndpointIT {
       final var stoppedBroker = cluster.brokers().get(brokerId).stop();
       waitForBadLeaderDistribution();
       stoppedBroker.start().await(TestHealthProbe.READY);
+
+      // wait until the node has rejoined the cluster before triggering rebalancing, otherwise it
+      // might not be ready to be elected as it may not have caught up
+      stoppedBroker.awaitCompleteTopology(
+          cluster.brokers().size(),
+          cluster.partitionsCount(),
+          cluster.replicationFactor(),
+          Duration.ofMinutes(1));
     }
   }
 
