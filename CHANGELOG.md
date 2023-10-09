@@ -1,3 +1,10 @@
+# v8.3.0
+## 💊 Bugfixes
+* Importer not working on SaaS due do missing bean dependency ([#3594](https://github.com/camunda/tasklist/issues/3594))
+
+## 🧹 Chore
+* Update Browserlist DB
+* update CHANGELOG.md
 # v8.3.0-alpha6
 ## 🧹 Chore
 * Bump Identity and Zeebe to 8.3.0-alpha6 ([#3432](https://github.com/camunda/tasklist/issues/3432))
