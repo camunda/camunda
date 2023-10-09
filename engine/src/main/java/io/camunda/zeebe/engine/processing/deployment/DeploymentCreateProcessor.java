@@ -26,6 +26,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejection
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.DecisionState;
+import io.camunda.zeebe.engine.state.immutable.FormState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.TimerInstanceState;
@@ -63,6 +64,7 @@ public final class DeploymentCreateProcessor
   private final DeploymentTransformer deploymentTransformer;
   private final ProcessState processState;
   private final DecisionState decisionState;
+  private final FormState formState;
   private final TimerInstanceState timerInstanceState;
   private final CatchEventBehavior catchEventBehavior;
   private final KeyGenerator keyGenerator;
@@ -82,6 +84,7 @@ public final class DeploymentCreateProcessor
       final CommandDistributionBehavior distributionBehavior) {
     processState = processingState.getProcessState();
     decisionState = processingState.getDecisionState();
+    formState = processingState.getFormState();
     timerInstanceState = processingState.getTimerState();
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
@@ -120,6 +123,9 @@ public final class DeploymentCreateProcessor
     }
     if (command.getValue().hasDmnResources()) {
       decisionState.clearCache();
+    }
+    if (command.getValue().hasForms()) {
+      formState.clearCache();
     }
 
     if (error instanceof final ResourceTransformationFailedException exception) {

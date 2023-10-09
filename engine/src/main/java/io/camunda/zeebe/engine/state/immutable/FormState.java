@@ -31,4 +31,6 @@ public interface FormState {
    * @return the form, or {@link Optional#empty()} if no form is deployed with the given key
    */
   Optional<PersistedForm> findFormByKey(long formKey, final String tenantId);
+
+  void clearCache();
 }

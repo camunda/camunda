@@ -171,4 +171,10 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
         .map(io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource::getResourceName)
         .anyMatch(x -> x.endsWith(".dmn"));
   }
+
+  public boolean hasForms() {
+    return getResources().stream()
+        .map(io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource::getResourceName)
+        .anyMatch(x -> x.endsWith(".form"));
+  }
 }
