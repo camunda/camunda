@@ -25,6 +25,11 @@ message TopologyChangeStatus {
   ChangeStatus status = 2;
 }
 
+message ReassignAllPartitionsRequest {
+  // The ids of the brokers to which all partitions should be re-distributed
+  repeated string memberIds = 1;
+}
+
 enum ChangeStatus {
   STATUS_UNKNOWN = 0;
   IN_PROGRESS = 1;

@@ -19,4 +19,6 @@ public sealed interface TopologyManagementRequest {
 
   record LeavePartitionRequest(MemberId memberId, int partitionId)
       implements TopologyManagementRequest {}
+
+  record ReassignPartitionsRequest(Set<MemberId> members) implements TopologyManagementRequest {}
 }

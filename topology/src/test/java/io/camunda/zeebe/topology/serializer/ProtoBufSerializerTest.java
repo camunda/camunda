@@ -13,6 +13,7 @@ import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.AddMembersRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.LeavePartitionRequest;
+import io.camunda.zeebe.topology.api.TopologyManagementRequest.ReassignPartitionsRequest;
 import io.camunda.zeebe.topology.gossip.ClusterTopologyGossipState;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.MemberState;
@@ -78,6 +79,21 @@ final class ProtoBufSerializerTest {
     // then
     final var decodedRequest = protoBufSerializer.decodeAddMembersRequest(encodedRequest);
     assertThat(decodedRequest).isEqualTo(addMembersRequest);
+  }
+
+  @Test
+  void shouldEncodeAndDecodeReassignAllPartitionsRequest() {
+    // given
+    final var reassignPartitionsRequest =
+        new ReassignPartitionsRequest(Set.of(MemberId.from("1"), MemberId.from("2")));
+
+    // when
+    final var encodedRequest =
+        protoBufSerializer.encodeReassignPartitionsRequest(reassignPartitionsRequest);
+
+    // then
+    final var decodedRequest = protoBufSerializer.decodeReassignPartitionsRequest(encodedRequest);
+    assertThat(decodedRequest).isEqualTo(reassignPartitionsRequest);
   }
 
   @Test
