@@ -143,8 +143,7 @@ final class RaftClusterContextTest {
     final var context = new RaftClusterContext(localMember.memberId(), raft);
 
     // when -- reconfigure with a new configuration only contains the local member
-    final var newLocalMember =
-        new DefaultRaftMember(new MemberId("1"), Type.PASSIVE, Instant.now());
+    final var newLocalMember = new DefaultRaftMember(new MemberId("1"), Type.ACTIVE, Instant.now());
     final var newRemoteMembers =
         List.<RaftMember>of(
             new DefaultRaftMember(new MemberId("2"), Type.PASSIVE, Instant.now()),
@@ -152,16 +151,14 @@ final class RaftClusterContextTest {
     final var newMembers =
         Stream.concat(Stream.of(newLocalMember), newRemoteMembers.stream()).toList();
 
-    context.configure(
-        new Configuration(2, 1, Instant.now().toEpochMilli(), newMembers, oldMembers));
+    context.configure(new Configuration(2, 1, Instant.now().toEpochMilli(), newMembers, List.of()));
 
     // then -- new configuration is used
     assertThat(context.getLocalMember().memberId()).isEqualTo(MemberId.from("1"));
-    assertThat(context.getLocalMember().getType()).isEqualTo(Type.PASSIVE);
-    assertThat(context.isSingleMemberCluster()).isFalse();
-    assertThat(context.inJointConsensus()).isTrue();
+    assertThat(context.getLocalMember().getType()).isEqualTo(Type.ACTIVE);
+    assertThat(context.isSingleMemberCluster()).isTrue();
     assertThat(context.getMembers()).containsExactlyInAnyOrderElementsOf(newMembers);
-    assertThat(newMembers)
+    assertThat(newRemoteMembers)
         .allMatch(member -> context.isMember(member.memberId()))
         .allSatisfy(
             member ->
@@ -409,6 +406,44 @@ final class RaftClusterContextTest {
     // then -- member 3 is no longer a voting member
     assertThat(context.getVotingMembers())
         .containsExactly(new DefaultRaftMember(new MemberId("2"), Type.ACTIVE, Instant.now()));
+  }
+
+  @Test
+  void shouldKeepMembersWithHighestType() {
+    // given - three active members
+    final var localMember = new DefaultRaftMember(new MemberId("1"), Type.ACTIVE, Instant.now());
+
+    final var initialConfiguration =
+        new Configuration(
+            1,
+            1,
+            Instant.now().toEpochMilli(),
+            List.of(
+                localMember,
+                new DefaultRaftMember(new MemberId("2"), Type.ACTIVE, Instant.now()),
+                new DefaultRaftMember(new MemberId("3"), Type.ACTIVE, Instant.now())));
+    final var raft = raftWithStoredConfiguration(initialConfiguration);
+    final var context = new RaftClusterContext(localMember.memberId(), raft);
+
+    // when -- enter joint consensus with member 3 being passive
+    final var newConfiguration =
+        new Configuration(
+            2,
+            1,
+            Instant.now().toEpochMilli(),
+            List.of(
+                localMember,
+                new DefaultRaftMember(new MemberId("2"), Type.ACTIVE, Instant.now()),
+                new DefaultRaftMember(new MemberId("3"), Type.PASSIVE, Instant.now())),
+            List.of());
+    context.configure(newConfiguration);
+
+    // then -- all members are still active
+    assertThat(context.getConfiguration().allMembers())
+        .containsExactlyInAnyOrder(
+            localMember,
+            new DefaultRaftMember(new MemberId("2"), Type.ACTIVE, Instant.now()),
+            new DefaultRaftMember(new MemberId("3"), Type.ACTIVE, Instant.now()));
   }
 
   private RaftContext raftWithStoredConfiguration(final Configuration configuration) {
