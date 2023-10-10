@@ -76,9 +76,12 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.mockito.Mockito;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Raft test. */
 public class RaftTest extends ConcurrentTestCase {
+  private static final Logger LOGGER = LoggerFactory.getLogger(RaftTest.class);
 
   @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
   private volatile int nextId;
@@ -220,21 +223,31 @@ public class RaftTest extends ConcurrentTestCase {
   public void testDemoteLeader() throws Throwable {
     final List<RaftServer> servers = createServers(3);
 
-    final RaftServer leader =
-        servers.stream().filter(RaftServer::isLeader).findFirst().orElseThrow();
+    final var leader = servers.stream().filter(RaftServer::isLeader).findFirst().orElseThrow();
+    final var leaderId = leader.cluster().getLocalMember().memberId();
 
-    final RaftServer follower =
-        servers.stream().filter(RaftServer::isFollower).findFirst().orElseThrow();
+    final var follower = servers.stream().filter(RaftServer::isFollower).findFirst().orElseThrow();
+    final var followerId = follower.cluster().getLocalMember().memberId();
 
     follower
         .cluster()
-        .getMember(leader.cluster().getLocalMember().memberId())
+        .getMember(leaderId)
         .addTypeChangeListener(
             t -> {
               threadAssertEquals(t, RaftMember.Type.PASSIVE);
               resume();
+              LOGGER.debug("Leader {} changed to passive on {}", leaderId, followerId);
             });
-    leader.cluster().getLocalMember().demote(RaftMember.Type.PASSIVE).thenRun(this::resume);
+    leader
+        .cluster()
+        .getLocalMember()
+        .demote(RaftMember.Type.PASSIVE)
+        .whenComplete(
+            (ignored, error) -> {
+              threadAssertNull(error);
+              resume();
+              LOGGER.debug("Leader {} demoted to passive", leaderId);
+            });
     await(15000, 2);
   }
 
