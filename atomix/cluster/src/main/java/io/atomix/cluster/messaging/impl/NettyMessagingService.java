@@ -248,8 +248,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
             () -> {
               responseFuture.completeExceptionally(
                   new TimeoutException(
-                      String.format(
-                          "Request %s to %s timed out in %s", message, address, timeout)));
+                      String.format("Request %s to %s timed out in %s", type, address, timeout)));
               openFutures.remove(responseFuture);
             },
             timeout.toNanos(),
