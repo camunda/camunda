@@ -10,7 +10,8 @@ package io.camunda.zeebe.topology.api;
 public enum TopologyRequestTopics {
   ADD_MEMBER("topology-member-add"),
   JOIN_PARTITION("topology-partition-join"),
-  LEAVE_PARTITION("topology-partition-leave");
+  LEAVE_PARTITION("topology-partition-leave"),
+  REASSIGN_PARTITIONS("topology-partition-reassign");
   private final String topic;
 
   TopologyRequestTopics(final String topic) {

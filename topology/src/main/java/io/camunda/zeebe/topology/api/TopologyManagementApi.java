@@ -11,6 +11,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.AddMembersRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.LeavePartitionRequest;
+import io.camunda.zeebe.topology.api.TopologyManagementRequest.ReassignPartitionsRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementResponse.TopologyChangeStatus;
 
 /** Defines the API for the topology management requests. */
@@ -21,4 +22,7 @@ public interface TopologyManagementApi {
   ActorFuture<TopologyChangeStatus> joinPartition(JoinPartitionRequest joinPartitionRequest);
 
   ActorFuture<TopologyChangeStatus> leavePartition(LeavePartitionRequest leavePartitionRequest);
+
+  ActorFuture<TopologyChangeStatus> reassignPartitions(
+      ReassignPartitionsRequest reassignPartitionsRequest);
 }

@@ -9,9 +9,11 @@ package io.camunda.zeebe.topology.api;
 
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.AddMembersRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.LeavePartitionRequest;
+import io.camunda.zeebe.topology.api.TopologyManagementRequest.ReassignPartitionsRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementResponse.StatusCode;
 import io.camunda.zeebe.topology.api.TopologyManagementResponse.TopologyChangeStatus;
 import io.camunda.zeebe.topology.changes.TopologyChangeCoordinator;
@@ -63,6 +65,14 @@ final class TopologyManagementRequestsHandler implements TopologyManagementApi {
         List.of(
             new PartitionLeaveOperation(
                 leavePartitionRequest.memberId(), leavePartitionRequest.partitionId())));
+  }
+
+  @Override
+  public ActorFuture<TopologyChangeStatus> reassignPartitions(
+      final ReassignPartitionsRequest reassignPartitionsRequest) {
+    return CompletableActorFuture.completedExceptionally(
+        new UnsupportedOperationException(
+            "Reassign partitions is not yet supported by the topology management"));
   }
 
   private ActorFuture<TopologyChangeStatus> applyOperations(
