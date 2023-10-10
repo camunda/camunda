@@ -24,8 +24,13 @@ import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.BinaryOperator;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Represents a persisted server configuration.
@@ -72,11 +77,20 @@ public record Configuration(
     return !oldMembers.isEmpty();
   }
 
+  /**
+   * @return a set of all members in the configuration. During joint consensus where a member can be
+   *     in both the old and new configuration, the member with the higher {@link RaftMember.Type
+   *     type} is used.
+   */
   public Set<RaftMember> allMembers() {
-    final var all = new HashSet<RaftMember>(oldMembers.size() + newMembers.size());
-    all.addAll(newMembers);
-    all.addAll(oldMembers);
-    return all;
+    return new HashSet<>(
+        Stream.concat(newMembers.stream(), oldMembers.stream())
+            .collect(
+                Collectors.toMap(
+                    RaftMember::memberId,
+                    Function.identity(),
+                    BinaryOperator.maxBy(Comparator.comparing(RaftMember::getType))))
+            .values());
   }
 
   private static Collection<RaftMember> copyMembers(final Collection<RaftMember> members) {
