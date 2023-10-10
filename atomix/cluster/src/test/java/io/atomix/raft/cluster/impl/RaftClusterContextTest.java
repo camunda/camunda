@@ -376,6 +376,41 @@ final class RaftClusterContextTest {
     assertThat(context.getQuorumFor(RaftMemberContext::getMatchIndex)).hasValue(5L);
   }
 
+  @Test
+  void demotedMemberIsNotVoting() {
+    // given
+    final var localMember = new DefaultRaftMember(new MemberId("1"), Type.ACTIVE, Instant.now());
+
+    final var initialConfiguration =
+        new Configuration(
+            1,
+            1,
+            Instant.now().toEpochMilli(),
+            List.of(
+                localMember,
+                new DefaultRaftMember(new MemberId("2"), Type.ACTIVE, Instant.now()),
+                new DefaultRaftMember(new MemberId("3"), Type.ACTIVE, Instant.now())));
+    final var raft = raftWithStoredConfiguration(initialConfiguration);
+    final var context = new RaftClusterContext(localMember.memberId(), raft);
+
+    // when -- demote member 3 to passive
+    final var newConfiguration =
+        new Configuration(
+            2,
+            1,
+            Instant.now().toEpochMilli(),
+            List.of(
+                localMember,
+                new DefaultRaftMember(new MemberId("2"), Type.ACTIVE, Instant.now()),
+                new DefaultRaftMember(new MemberId("3"), Type.PASSIVE, Instant.now())),
+            List.of());
+    context.configure(newConfiguration);
+
+    // then -- member 3 is no longer a voting member
+    assertThat(context.getVotingMembers())
+        .containsExactly(new DefaultRaftMember(new MemberId("2"), Type.ACTIVE, Instant.now()));
+  }
+
   private RaftContext raftWithStoredConfiguration(final Configuration configuration) {
     final var raft = mock(RaftContext.class, withSettings().stubOnly());
     final var metaStore = mock(MetaStore.class, withSettings().stubOnly());
