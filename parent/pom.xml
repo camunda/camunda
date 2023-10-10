@@ -40,7 +40,7 @@
     <version.awaitility>4.2.0</version.awaitility>
     <version.bouncycastle>1.70</version.bouncycastle>
     <version.camunda>7.19.0</version.camunda>
-    <version.checkstyle>10.12.3</version.checkstyle>
+    <version.checkstyle>10.12.4</version.checkstyle>
     <version.commons-lang>3.13.0</version.commons-lang>
     <version.commons-logging>1.2</version.commons-logging>
     <version.commons-math>3.6.1</version.commons-math>
@@ -78,7 +78,7 @@
     <version.protobuf>3.24.4</version.protobuf>
     <version.protobuf-common>2.25.1</version.protobuf-common>
     <version.micrometer>1.11.4</version.micrometer>
-    <version.rocksdbjni>8.5.3</version.rocksdbjni>
+    <version.rocksdbjni>8.5.4</version.rocksdbjni>
     <version.sbe>1.29.0</version.sbe>
     <version.scala>2.13.12</version.scala>
     <version.slf4j>2.0.9</version.slf4j>
