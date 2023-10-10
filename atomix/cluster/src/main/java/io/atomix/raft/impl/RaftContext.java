@@ -190,10 +190,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     }
 
     threadContext =
-        createThreadContext(
-            "raft-server-%s-%s".formatted(localMemberId.id(), name),
-            partitionId,
-            threadContextFactory);
+        createThreadContext("raft-server", partitionId, threadContextFactory, localMemberId.id());
 
     // Open the metadata store.
     meta = storage.openMetaStore();
@@ -208,9 +205,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
             meta,
             () ->
                 createThreadContext(
-                    "raft-log-%s-%s".formatted(localMemberId.id(), name),
-                    partitionId,
-                    threadContextFactory));
+                    "raft-log", partitionId, threadContextFactory, localMemberId.id()));
 
     // Open the snapshot store.
     persistedSnapshotStore = storage.getPersistedSnapshotStore();
@@ -267,11 +262,19 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   private ThreadContext createThreadContext(
       final String name,
       final int partitionId,
-      final RaftThreadContextFactory threadContextFactory) {
+      final RaftThreadContextFactory threadContextFactory,
+      final String localMemberId) {
     final var context =
-        threadContextFactory.createContext(namedThreads(name, log), this::onUncaughtException);
+        threadContextFactory.createContext(
+            namedThreads("%s-%s-%d".formatted(name, localMemberId, partitionId), log),
+            this::onUncaughtException);
     // in order to set the partition id once in the raft thread
-    context.execute(() -> MDC.put("partitionId", String.valueOf(partitionId)));
+    context.execute(
+        () -> {
+          MDC.put("partitionId", String.valueOf(partitionId));
+          MDC.put("actor-name", name + "-" + partitionId);
+          MDC.put("actor-scheduler", "Broker-" + localMemberId);
+        });
     return context;
   }
 

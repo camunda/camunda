@@ -16,11 +16,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.assertj.core.api.AbstractObjectAssert;
-import org.assertj.core.api.Assertions;
+import org.assertj.core.condition.VerboseCondition;
 
 /** Convenience class to assert certain properties of a Zeebe cluster {@link Topology}. */
 @SuppressWarnings("UnusedReturnValue")
@@ -247,16 +248,15 @@ public final class TopologyAssert extends AbstractObjectAssert<TopologyAssert, T
 
     final Map<Integer, List<PartitionBroker>> partitionMap = buildPartitionsMap();
 
-    Assertions.assertThat(partitionMap).containsKey(partitionId);
+    has(hasPartitionId(partitionId, partitionMap));
+
     final var partitionBrokers = partitionMap.get(partitionId);
     final var leader =
         partitionBrokers.stream()
             .filter(p -> p.partitionInfo.isLeader())
             .map(p -> p.brokerInfo.getNodeId())
             .findFirst();
-    Assertions.assertThat(leader).hasValue(expectedLeaderId);
-
-    return myself;
+    return has(hasLeaderForPartition(partitionId, expectedLeaderId, leader));
   }
 
   /**
@@ -321,6 +321,25 @@ public final class TopologyAssert extends AbstractObjectAssert<TopologyAssert, T
 
     newListAssertInstance(brokers).as(info.description()).anySatisfy(condition);
     return myself;
+  }
+
+  @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+  private VerboseCondition<Topology> hasLeaderForPartition(
+      final int partitionId, final int expectedLeaderId, final Optional<Integer> leader) {
+    return VerboseCondition.verboseCondition(
+        topology -> leader.isPresent() && leader.get() == expectedLeaderId,
+        "a topology where the leader of partition '%d' is '%d'"
+            .formatted(partitionId, expectedLeaderId),
+        topology ->
+            " but the actual leader is '%s'".formatted(leader.map(String::valueOf).orElse("null")));
+  }
+
+  private VerboseCondition<Topology> hasPartitionId(
+      final int partitionId, final Map<Integer, List<PartitionBroker>> partitionMap) {
+    return VerboseCondition.verboseCondition(
+        topology -> partitionMap.containsKey(partitionId),
+        "a topology with a partition with ID '%d'".formatted(partitionId),
+        topology -> " but there is no partition info for this ID");
   }
 
   private Map<Integer, List<PartitionBroker>> buildPartitionsMap() {

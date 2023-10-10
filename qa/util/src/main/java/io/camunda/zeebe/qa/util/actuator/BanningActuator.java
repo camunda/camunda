@@ -15,12 +15,18 @@ import feign.Retryer;
 import feign.Target.HardCodedTarget;
 import feign.jackson.JacksonDecoder;
 import feign.jackson.JacksonEncoder;
+import io.camunda.zeebe.qa.util.cluster.TestApplication;
 import io.zeebe.containers.ZeebeNode;
 
 public interface BanningActuator {
   static BanningActuator of(final ZeebeNode<?> node) {
     final var endpoint =
         String.format("http://%s/actuator/banning", node.getExternalMonitoringAddress());
+    return of(endpoint);
+  }
+
+  static BanningActuator of(final TestApplication<?> node) {
+    final var endpoint = String.format("http://%s/actuator/banning", node.monitoringAddress());
     return of(endpoint);
   }
 

@@ -16,6 +16,7 @@ import feign.Retryer;
 import feign.Target.HardCodedTarget;
 import feign.jackson.JacksonDecoder;
 import feign.jackson.JacksonEncoder;
+import io.camunda.zeebe.qa.util.cluster.TestApplication;
 import io.camunda.zeebe.shared.management.JobStreamEndpoint.ClientJobStream;
 import io.camunda.zeebe.shared.management.JobStreamEndpoint.JobStreams;
 import io.camunda.zeebe.shared.management.JobStreamEndpoint.RemoteJobStream;
@@ -39,6 +40,17 @@ public interface JobStreamActuator {
   static JobStreamActuator of(final ZeebeNode<?> node) {
     final var endpoint =
         String.format("http://%s/actuator/jobstreams", node.getExternalMonitoringAddress());
+    return of(endpoint);
+  }
+
+  /**
+   * Returns a {@link JobStreamActuator} instance using the given node as upstream.
+   *
+   * @param node the node to connect to
+   * @return a new instance of {@link JobStreamActuator}
+   */
+  static JobStreamActuator of(final TestApplication<?> node) {
+    final var endpoint = String.format("http://%s/actuator/jobstreams", node.monitoringAddress());
     return of(endpoint);
   }
 
