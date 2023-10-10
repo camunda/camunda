@@ -27,148 +27,148 @@ jobs:
     uses: ./.github/workflows/unit-tests.yml
     secrets: inherit
 
-#  migration:
-#    name: Migration
-#    runs-on: gcp-core-8-default
-#    timeout-minutes: 30
-#    steps:
-#    - uses: actions/checkout@v3
-#    - name: Setup Maven
-#      uses: ./.github/actions/setup-maven
-#      with:
-#        secrets: ${{ toJSON(secrets) }}
-#    - name: Login to Harbor registry
-#      uses: ./.github/actions/login-registry
-#      with:
-#        secrets: ${{ toJSON(secrets) }}
-#    - name: "Read Java / Version Info"
-#      id: "pom-info"
-#      uses: YunaBraska/java-info-action@main
-#    - name: Start Cambpm
-#      uses: ./.github/actions/compose
-#      with:
-#        compose_file: ${{ github.workspace }}/.github/actions/compose/docker-compose.cambpm.yml
-#        project_name: cambpm
-#      env:
-#        CAMBPM_VERSION: ${{ steps.pom-info.outputs.x_camunda_engine_version }}
-#        CAMBPM_JVM_MEMORY: 1
-#    - name: Start Elastic - Old
-#      uses: ./.github/actions/compose
-#      with:
-#        compose_file: ${{ github.workspace }}/.github/actions/compose/docker-compose.elasticsearch.yml
-#        project_name: elasticsearch-old
-#      env:
-#        ELASTIC_VERSION: ${{ steps.pom-info.outputs.x_previous_optimize_elasticsearch_version }}
-#        ELASTIC_JVM_MEMORY: 1
-#        ELASTIC_HTTP_PORT: ${{ steps.pom-info.outputs.x_old_elasticsearch_port }}
-#    - name: Start Elastic - New
-#      uses: ./.github/actions/compose
-#      with:
-#        compose_file: ${{ github.workspace }}/.github/actions/compose/docker-compose.elasticsearch.yml
-#        project_name: elasticsearch-new
-#      env:
-#        ELASTIC_VERSION: ${{ steps.pom-info.outputs.x_elasticsearch_test_version }}
-#        ELASTIC_JVM_MEMORY: 1
-#        ELASTIC_HTTP_PORT: ${{ steps.pom-info.outputs.x_new_elasticsearch_port }}
-#    - name: Install
-#      uses: ./.github/actions/run-maven
-#      with:
-#        parameters: install -Pengine-latest -Dskip.fe.build -Dskip.docker -DskipTests
-#    - name: Verify upgrade
-#      uses: ./.github/actions/run-maven
-#      with:
-#        parameters: verify -Dskip.docker -pl upgrade
-#    - name: Verify util/optimize-reimport-preparation
-#      uses: ./.github/actions/run-maven
-#      with:
-#        parameters: verify -Dskip.docker -pl util/optimize-reimport-preparation -Pengine-latest,it
-#    - name: Verify qa/upgrade-tests
-#      uses: ./.github/actions/run-maven
-#      with:
-#        parameters: verify -Dskip.docker -pl qa/upgrade-tests -Pupgrade-es-schema-tests
-#    - name: Upload Test Results
-#      if: always()
-#      uses: actions/upload-artifact@v3
-#      with:
-#        name: migration-junit
-#        path: |
-#          **/failsafe-reports/**/*.xml
-#          **/*.log
-#          **/*.json
-#        retention-days: 7
-#        if-no-files-found: ignore
-#    - name: Docker log dump
-#      uses: ./.github/actions/docker-logs
-#      if: always()
-#      with:
-#        archive_name: migration-docker
+  migration:
+    name: Migration
+    runs-on: gcp-core-8-default
+    timeout-minutes: 30
+    steps:
+    - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4
+    - name: Setup Maven
+      uses: ./.github/actions/setup-maven
+      with:
+        secrets: ${{ toJSON(secrets) }}
+    - name: Login to Harbor registry
+      uses: ./.github/actions/login-registry
+      with:
+        secrets: ${{ toJSON(secrets) }}
+    - name: "Read Java / Version Info"
+      id: "pom-info"
+      uses: YunaBraska/java-info-action@main
+    - name: Start Cambpm
+      uses: ./.github/actions/compose
+      with:
+        compose_file: ${{ github.workspace }}/.github/actions/compose/docker-compose.cambpm.yml
+        project_name: cambpm
+      env:
+        CAMBPM_VERSION: ${{ steps.pom-info.outputs.x_camunda_engine_version }}
+        CAMBPM_JVM_MEMORY: 1
+    - name: Start Elastic - Old
+      uses: ./.github/actions/compose
+      with:
+        compose_file: ${{ github.workspace }}/.github/actions/compose/docker-compose.elasticsearch.yml
+        project_name: elasticsearch-old
+      env:
+        ELASTIC_VERSION: ${{ steps.pom-info.outputs.x_previous_optimize_elasticsearch_version }}
+        ELASTIC_JVM_MEMORY: 1
+        ELASTIC_HTTP_PORT: ${{ steps.pom-info.outputs.x_old_elasticsearch_port }}
+    - name: Start Elastic - New
+      uses: ./.github/actions/compose
+      with:
+        compose_file: ${{ github.workspace }}/.github/actions/compose/docker-compose.elasticsearch.yml
+        project_name: elasticsearch-new
+      env:
+        ELASTIC_VERSION: ${{ steps.pom-info.outputs.x_elasticsearch_test_version }}
+        ELASTIC_JVM_MEMORY: 1
+        ELASTIC_HTTP_PORT: ${{ steps.pom-info.outputs.x_new_elasticsearch_port }}
+    - name: Install
+      uses: ./.github/actions/run-maven
+      with:
+        parameters: install -Pengine-latest -Dskip.fe.build -Dskip.docker -DskipTests
+    - name: Verify upgrade
+      uses: ./.github/actions/run-maven
+      with:
+        parameters: verify -Dskip.docker -pl upgrade
+    - name: Verify util/optimize-reimport-preparation
+      uses: ./.github/actions/run-maven
+      with:
+        parameters: verify -Dskip.docker -pl util/optimize-reimport-preparation -Pengine-latest,it
+    - name: Verify qa/upgrade-tests
+      uses: ./.github/actions/run-maven
+      with:
+        parameters: verify -Dskip.docker -pl qa/upgrade-tests -Pupgrade-es-schema-tests
+    - name: Upload Test Results
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: migration-junit
+        path: |
+          **/failsafe-reports/**/*.xml
+          **/*.log
+          **/*.json
+        retention-days: 7
+        if-no-files-found: ignore
+    - name: Docker log dump
+      uses: ./.github/actions/docker-logs
+      if: always()
+      with:
+        archive_name: migration-docker
 
-#  data-upgrade-test:
-#    name: Data Upgrade Test
-#    runs-on: gcp-core-8-default
-#    timeout-minutes: 30
-#    steps:
-#    - uses: actions/checkout@v3
-#    - name: Setup Maven
-#      uses: ./.github/actions/setup-maven
-#      with:
-#        secrets: ${{ toJSON(secrets) }}
-#    - name: Login to Harbor registry
-#      uses: ./.github/actions/login-registry
-#      with:
-#        secrets: ${{ toJSON(secrets) }}
-#    - name: "Read Java / Version Info"
-#      id: "pom-info"
-#      uses: YunaBraska/java-info-action@main
-#    - name: Start Cambpm # Cambpm even needed?
-#      uses: ./.github/actions/compose
-#      with:
-#        compose_file: ${{ github.workspace }}/.github/actions/compose/docker-compose.cambpm.yml
-#        project_name: cambpm
-#      env:
-#        CAMBPM_VERSION: ${{ steps.pom-info.outputs.x_camunda_engine_version }}
-#        CAMBPM_JVM_MEMORY: 1
-#    - name: Start Elastic - Old
-#      uses: ./.github/actions/compose
-#      with:
-#        compose_file: ${{ github.workspace }}/.github/actions/compose/docker-compose.elasticsearch.yml
-#        project_name: elasticsearch-old
-#      env:
-#        ELASTIC_VERSION: ${{ steps.pom-info.outputs.x_previous_optimize_elasticsearch_version }}
-#        ELASTIC_JVM_MEMORY: 1
-#        ELASTIC_HTTP_PORT: ${{ steps.pom-info.outputs.x_old_elasticsearch_port }}
-#    - name: Start Elastic - New
-#      uses: ./.github/actions/compose
-#      with:
-#        compose_file: ${{ github.workspace }}/.github/actions/compose/docker-compose.elasticsearch.yml
-#        project_name: elasticsearch-new
-#      env:
-#        ELASTIC_VERSION: ${{ steps.pom-info.outputs.x_elasticsearch_test_version }}
-#        ELASTIC_JVM_MEMORY: 1
-#        ELASTIC_HTTP_PORT: ${{ steps.pom-info.outputs.x_new_elasticsearch_port }}
-#    - name: Install
-#      uses: ./.github/actions/run-maven
-#      with:
-#        parameters: install -Pengine-latest -Dskip.fe.build -Dskip.docker -DskipTests
-#    - name: Verify qa/upgrade-tests
-#      uses: ./.github/actions/run-maven
-#      with:
-#        parameters: verify -Dskip.docker -Dskip.fe.build -f qa/upgrade-tests -Pupgrade-optimize-data
-#    - name: Upload Test Results
-#      if: always()
-#      uses: actions/upload-artifact@v3
-#      with:
-#        name: data-upgrade-test-junit
-#        path: |
-#          **/failsafe-reports/**/*.xml
-#          **/*.log
-#        retention-days: 7
-#        if-no-files-found: ignore
-#    - name: Docker log dump
-#      uses: ./.github/actions/docker-logs
-#      if: always()
-#      with:
-#        archive_name: data-upgrade-test-docker
+  data-upgrade-test:
+    name: Data Upgrade Test
+    runs-on: gcp-core-8-default
+    timeout-minutes: 30
+    steps:
+    - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4
+    - name: Setup Maven
+      uses: ./.github/actions/setup-maven
+      with:
+        secrets: ${{ toJSON(secrets) }}
+    - name: Login to Harbor registry
+      uses: ./.github/actions/login-registry
+      with:
+        secrets: ${{ toJSON(secrets) }}
+    - name: "Read Java / Version Info"
+      id: "pom-info"
+      uses: YunaBraska/java-info-action@main
+    - name: Start Cambpm # Cambpm even needed?
+      uses: ./.github/actions/compose
+      with:
+        compose_file: ${{ github.workspace }}/.github/actions/compose/docker-compose.cambpm.yml
+        project_name: cambpm
+      env:
+        CAMBPM_VERSION: ${{ steps.pom-info.outputs.x_camunda_engine_version }}
+        CAMBPM_JVM_MEMORY: 1
+    - name: Start Elastic - Old
+      uses: ./.github/actions/compose
+      with:
+        compose_file: ${{ github.workspace }}/.github/actions/compose/docker-compose.elasticsearch.yml
+        project_name: elasticsearch-old
+      env:
+        ELASTIC_VERSION: ${{ steps.pom-info.outputs.x_previous_optimize_elasticsearch_version }}
+        ELASTIC_JVM_MEMORY: 1
+        ELASTIC_HTTP_PORT: ${{ steps.pom-info.outputs.x_old_elasticsearch_port }}
+    - name: Start Elastic - New
+      uses: ./.github/actions/compose
+      with:
+        compose_file: ${{ github.workspace }}/.github/actions/compose/docker-compose.elasticsearch.yml
+        project_name: elasticsearch-new
+      env:
+        ELASTIC_VERSION: ${{ steps.pom-info.outputs.x_elasticsearch_test_version }}
+        ELASTIC_JVM_MEMORY: 1
+        ELASTIC_HTTP_PORT: ${{ steps.pom-info.outputs.x_new_elasticsearch_port }}
+    - name: Install
+      uses: ./.github/actions/run-maven
+      with:
+        parameters: install -Pengine-latest -Dskip.fe.build -Dskip.docker -DskipTests
+    - name: Verify qa/upgrade-tests
+      uses: ./.github/actions/run-maven
+      with:
+        parameters: verify -Dskip.docker -Dskip.fe.build -f qa/upgrade-tests -Pupgrade-optimize-data
+    - name: Upload Test Results
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: data-upgrade-test-junit
+        path: |
+          **/failsafe-reports/**/*.xml
+          **/*.log
+        retention-days: 7
+        if-no-files-found: ignore
+    - name: Docker log dump
+      uses: ./.github/actions/docker-logs
+      if: always()
+      with:
+        archive_name: data-upgrade-test-docker
 
   integration-tests:
     name: Integration Tests
@@ -261,16 +261,14 @@ jobs:
   deploy-artifacts:
     if: github.event_name == 'push' && (github.ref_name == 'master' || startsWith(github.ref_name, 'maintenance/'))
     name: Deploy Artifacts
-    needs: [unit-tests, integration-tests]
-    #needs: [unit-tests, migration, data-upgrade-test, integration-tests]
+    needs: [unit-tests, migration, data-upgrade-test, integration-tests]
     uses: ./.github/workflows/deploy-artifacts.yml
     secrets: inherit
 
   publish-test-results:
     name: "Publish Test Results"
     runs-on: ubuntu-latest
-    needs: [unit-tests, integration-tests]
-    #needs: [unit-tests, migration, data-upgrade-test, integration-tests]
+    needs: [unit-tests, migration, data-upgrade-test, integration-tests]
     if: always()
     steps:
     - name: Download Artifacts
