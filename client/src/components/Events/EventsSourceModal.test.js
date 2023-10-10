@@ -165,10 +165,10 @@ it('should show an error when adding already existing source', async () => {
   const node = await shallow(<EventsSourceModal {...props} existingSources={[testSource]} />);
 
   node.find(DefinitionSelection).prop('onChange')({
-    key: testSource.processDefinitionKey,
-    name: testSource.processDefinitionName,
-    versions: testSource.versions,
-    tenantIds: testSource.tenants,
+    key: testSource.configuration.processDefinitionKey,
+    name: testSource.configuration.processDefinitionName,
+    versions: testSource.configuration.versions,
+    tenantIds: testSource.configuration.tenants,
   });
 
   expect(node.find({error: true})).toExist();

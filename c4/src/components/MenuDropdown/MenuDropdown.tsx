@@ -20,9 +20,7 @@ import { Menu, usePrefix } from "@carbon/react"
 import ListBox from "@carbon/react/lib/components/ListBox"
 import { useMergedRefs } from "@carbon/react/lib/internal/useMergedRefs"
 
-import useAttachedMenu from "./useAttachedMenu"
-
-import { useId } from "../../hooks"
+import { useId, useAttachedMenu } from "../../hooks"
 
 import "./MenuDropdown.scss"
 

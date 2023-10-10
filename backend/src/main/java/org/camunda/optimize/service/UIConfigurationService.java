@@ -16,11 +16,14 @@ import org.camunda.optimize.dto.optimize.query.ui_configuration.WebappsEndpointD
 import org.camunda.optimize.rest.cloud.CloudSaasMetaInfoService;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.metadata.OptimizeVersionService;
+import org.camunda.optimize.service.tenant.TenantService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants;
 import org.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -51,6 +54,7 @@ public class UIConfigurationService {
     uiConfigurationDto.setSharingEnabled(settingService.getSettings().getSharingEnabled().orElse(false));
     uiConfigurationDto.setTenantsAvailable(tenantService.isMultiTenantEnvironment());
     uiConfigurationDto.setOptimizeVersion(versionService.getRawVersion());
+    uiConfigurationDto.setOptimizeDocsVersion(versionService.getDocsVersion());
     final String optimizeProfile = determineOptimizeProfile();
     uiConfigurationDto.setEnterpriseMode(isEnterpriseMode(optimizeProfile));
     uiConfigurationDto.setOptimizeProfile(optimizeProfile);
@@ -96,17 +100,19 @@ public class UIConfigurationService {
   }
 
   private String determineOptimizeProfile() {
-    final String[] activeProfiles = environment.getActiveProfiles();
-    if (activeProfiles.length == 0) {
+    // Although this looks non-sensical it is necessary because Arrays.asList(...) creates an immutable list
+    final List<String> activeProfiles = new ArrayList<>(Arrays.asList(environment.getActiveProfiles()));
+    activeProfiles.removeAll(ConfigurationServiceConstants.optimizeDatabaseProfiles);
+    if (activeProfiles.isEmpty()) {
       return PLATFORM_PROFILE;
     }
-    if (activeProfiles.length > 1) {
+    if (activeProfiles.size() > 1) {
       throw new OptimizeConfigurationException("Cannot configure more than one profile for Optimize");
     }
-    if (!Arrays.asList(CLOUD_PROFILE, CCSM_PROFILE, PLATFORM_PROFILE).contains(activeProfiles[0])) {
+    if (!Arrays.asList(CLOUD_PROFILE, CCSM_PROFILE, PLATFORM_PROFILE).contains(activeProfiles.get(0))) {
       throw new OptimizeConfigurationException("Invalid profile configured");
     }
-    return activeProfiles[0];
+    return activeProfiles.get(0);
   }
 
   private Map<String, WebappsEndpointDto> getCamundaWebappsEndpoints() {

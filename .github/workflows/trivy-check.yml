@@ -26,13 +26,12 @@ jobs:
             "master",
             "maintenance/3.10",
             "maintenance/3.9",
-            "maintenance/3.8",
             "maintenance/3.7",
           ]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4
         with:
           ref: ${{ matrix.branch }}
 
@@ -46,7 +45,7 @@ jobs:
           secrets: ${{ toJSON(secrets) }}
 
       - name: Checkout code 2 # we do it cause setup maven step does the checkout to current branch
-        uses: actions/checkout@v3
+        uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4
         with:
           ref: ${{ matrix.branch}}
 
@@ -71,7 +70,7 @@ jobs:
 
       - name: Import secrets
         id: secrets
-        uses: hashicorp/vault-action@cb841f2c86fb6d07cff94fda240828c1abc5ba43
+        uses: hashicorp/vault-action@86c7f837eb43794c7dc56f74d9cffac710679b28
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -87,7 +86,7 @@ jobs:
           secrets: ${{ toJSON(secrets) }}
 
       - name: Login to Harbor docker registery
-        uses: docker/login-action@v2
+        uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3
         with:
           username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
           password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
@@ -161,11 +160,11 @@ jobs:
       - trivy-check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4
 
       - name: Import secrets
         id: secrets
-        uses: hashicorp/vault-action@cb841f2c86fb6d07cff94fda240828c1abc5ba43
+        uses: hashicorp/vault-action@86c7f837eb43794c7dc56f74d9cffac710679b28
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle

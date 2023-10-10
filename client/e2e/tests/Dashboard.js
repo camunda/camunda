@@ -17,7 +17,13 @@ import * as Alert from './Alerts.elements.js';
 import * as Report from './ProcessReport.elements.js';
 import * as Collection from './Collection.elements.js';
 
-fixture('Dashboard').page(config.endpoint).beforeEach(u.login).afterEach(cleanEntities);
+fixture('Dashboard')
+  .page(config.endpoint)
+  .beforeEach(async (t) => {
+    await u.login(t);
+    await t.navigateTo(config.collectionsEndpoint);
+  })
+  .afterEach(cleanEntities);
 
 test('create a dashboard and reports from a template', async (t) => {
   await t.click(Common.createNewMenu).click(Common.option('Collection'));
@@ -246,12 +252,15 @@ test('external datasources', async (t) => {
 
   await t.click(Common.addButton);
 
-  await t.takeElementScreenshot(e.reportModal, 'img/dashboard-addAReportModal.png');
+  await t.takeElementScreenshot(Common.modalContainer, 'img/dashboard-addAReportModal.png');
 
   await t.click(e.externalSourceLink);
   await t.typeText(e.externalSourceInput, 'http://example.com/');
 
-  await t.takeElementScreenshot(e.reportModal, 'img/dashboard-addAReportModal-externalReport.png');
+  await t.takeElementScreenshot(
+    Common.modalContainer,
+    'img/dashboard-addAReportModal-externalReport.png'
+  );
 
   await t.click(e.addTileButton);
 
@@ -287,7 +296,10 @@ test('text report', async (t) => {
   await t.typeText(e.textReportAltInput, 'This is a camunda logo');
   await t.click(e.textReportInsertAddButton);
 
-  await t.takeElementScreenshot(e.reportModal, 'img/dashboard-addAReportModal-textReport.png');
+  await t.takeElementScreenshot(
+    Common.modalContainer,
+    'img/dashboard-addAReportModal-textReport.png'
+  );
 
   await t.click(e.addTileButton);
   await t.click('.DashboardRenderer');
@@ -544,7 +556,7 @@ test('copy instant preview dashboard', async (t) => {
 
   await t.click(Common.collectionItem);
   await t.expect(Common.dashboardItem.count).eql(1);
-  await t.expect(Common.dashboardItem.textContent).contains('Instant Preview Dashboard');
+  await t.expect(Common.dashboardItem.textContent).contains('Process Dashboard');
 
   // Create another copy to check if only one collection is created
   await t.click(e.dashboardsLink);
@@ -559,7 +571,7 @@ test('copy instant preview dashboard', async (t) => {
   await t.click(Common.collectionItem);
   await t.expect(Common.dashboardItem.count).eql(2);
   await t.expect(Common.dashboardItem.nth(0).textContent).contains('New Name');
-  await t.expect(Common.dashboardItem.nth(1).textContent).contains('Instant Preview Dashboard');
+  await t.expect(Common.dashboardItem.nth(1).textContent).contains('Process Dashboard');
 
   // Create a new collection if the first one was renamed
   await t.click(Collection.collectionContextMenu);

@@ -98,21 +98,19 @@ export function Header({user, mightFail, docsLink, noActions}) {
   }
 
   return (
-    <C3UserConfigurationProvider
-      {...getNavigationConfiguration(
-        isCloud,
-        organizationId,
-        userToken,
-        getUserToken,
-        notificationsUrl
-      )}
+    <NavbarWrapper
+      isCloud={isCloud}
+      notificationsUrl={notificationsUrl}
+      userToken={userToken}
+      getNewUserToken={getUserToken}
+      activeOrganizationId={organizationId}
     >
       <C3Navigation {...props} />
       <WhatsNewModal open={whatsNewOpen} onClose={() => setWhatsNewOpen(false)} />
       {telemetrySettingsOpen && (
         <TelemetrySettings onClose={() => setTelemetrySettingsOpen(false)} />
       )}
-    </C3UserConfigurationProvider>
+    </NavbarWrapper>
   );
 }
 
@@ -166,8 +164,8 @@ function createNavBarProps(showEventBased, enterpriseMode) {
       routeProps: {
         as: NavItem,
         name: t('navigation.dashboards'),
-        linksTo: '/processes',
-        active: ['/processes/', '/processes/*'],
+        linksTo: '/',
+        active: ['/', '/processes/', '/processes/*'],
         breadcrumbsEntities: [{entity: 'report'}],
       },
     },
@@ -177,8 +175,8 @@ function createNavBarProps(showEventBased, enterpriseMode) {
       routeProps: {
         as: NavItem,
         name: t('navigation.collections'),
-        linksTo: '/',
-        active: ['/', '/report/*', '/dashboard/*', '/collection/*'],
+        linksTo: '/collections',
+        active: ['/collections/', '/report/*', '/dashboard/*', '/collection/*'],
         breadcrumbsEntities: [{entity: 'collection'}, {entity: 'dashboard'}, {entity: 'report'}],
       },
     },
@@ -293,21 +291,19 @@ function createInfoSideBarProps(setWhatsNewOpen, docsLink, enterpriseMode) {
   };
 }
 
-function getNavigationConfiguration(
-  isCloud,
-  activeOrganizationId,
-  userToken,
-  getNewUserToken,
-  notificationsUrl
-) {
-  return isCloud && userToken && notificationsUrl
-    ? {
-        endpoints: {notifications: notificationsUrl},
-        userToken,
-        getNewUserToken,
-        activeOrganizationId,
-      }
-    : {};
-}
-
 export default withUser(withDocs(withErrorHandling(Header)));
+
+function NavbarWrapper({isCloud, userToken, notificationsUrl, organizationId, children}) {
+  return isCloud && userToken && notificationsUrl ? (
+    <C3UserConfigurationProvider
+      endpoints={{notifications: notificationsUrl}}
+      userToken={userToken}
+      getNewUserToken={getUserToken}
+      activeOrganizationId={organizationId}
+    >
+      {children}
+    </C3UserConfigurationProvider>
+  ) : (
+    <>{children}</>
+  );
+}

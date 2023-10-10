@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.rest;
 
+import jakarta.ws.rs.core.Response;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.camunda.optimize.AbstractPlatformIT;
@@ -25,7 +26,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.targe
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.SingleReportTargetValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateUnit;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.instance.RollingDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
@@ -34,10 +34,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisu
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.ProcessDistributedByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
-import org.camunda.optimize.dto.optimize.query.report.single.process.group.FlowNodesGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.NoneGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.StartDateGroupByDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.group.UserTasksGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.DateGroupByValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
@@ -48,7 +46,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import jakarta.ws.rs.core.Response;
 import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.List;
@@ -58,11 +55,14 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.ComparisonOperator.GREATER_THAN;
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.ComparisonOperator.LESS_THAN;
+import static org.camunda.optimize.service.dashboard.ManagementDashboardService.CURRENTLY_IN_PROGRESS_DESCRIPTION_LOCALIZATION_CODE;
+import static org.camunda.optimize.service.dashboard.ManagementDashboardService.CURRENTLY_IN_PROGRESS_NAME_LOCALIZATION_CODE;
+import static org.camunda.optimize.service.dashboard.ManagementDashboardService.ENDED_IN_LAST_SIX_MONTHS_DESCRIPTION_LOCALIZATION_CODE;
+import static org.camunda.optimize.service.dashboard.ManagementDashboardService.ENDED_IN_LAST_SIX_MONTHS_NAME_LOCALIZATION_CODE;
 import static org.camunda.optimize.service.dashboard.ManagementDashboardService.MANAGEMENT_DASHBOARD_ID;
 import static org.camunda.optimize.service.dashboard.ManagementDashboardService.MANAGEMENT_DASHBOARD_LOCALIZATION_CODE;
-import static org.camunda.optimize.service.dashboard.ManagementDashboardService.PROCESS_INSTANCE_USAGE_REPORT_LOCALIZATION_CODE;
+import static org.camunda.optimize.service.dashboard.ManagementDashboardService.STARTED_IN_LAST_SIX_MONTHS_DESCRIPTION_LOCALIZATION_CODE;
+import static org.camunda.optimize.service.dashboard.ManagementDashboardService.STARTED_IN_LAST_SIX_MONTHS_NAME_LOCALIZATION_CODE;
 import static org.camunda.optimize.service.entities.dashboard.DashboardDefinitionImportIT.getExternalResourceUrls;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
@@ -72,7 +72,7 @@ public class ManagementDashboardIT extends AbstractPlatformIT {
 
   private static final Map<String, ExpectedReportConfigurationAndLocation> expectedReportsAndLocationsByName =
     createExpectedReportsAndLocationsByName();
-  private static final String ADOPTION_DASHBOARD = "Adoption Dashboard";
+  private static final String ADOPTION_DASHBOARD = "Adoption";
 
   @Test
   public void getManagementDashboard() {
@@ -149,7 +149,7 @@ public class ManagementDashboardIT extends AbstractPlatformIT {
       )
     ));
     assertThat(managementDashboard.getTiles())
-      .hasSize(6)
+      .hasSize(3)
       .containsExactlyInAnyOrderElementsOf(
         expectedReportsAndLocationsByName.keySet()
           .stream()
@@ -232,19 +232,11 @@ public class ManagementDashboardIT extends AbstractPlatformIT {
     );
   }
 
-  private static SingleReportTargetValueDto createTargetValueConfig(final String targetValue) {
-    final SingleReportTargetValueDto targetConfig = new SingleReportTargetValueDto();
-    targetConfig.setActive(true);
-    final CountProgressDto countProgressConfig = new CountProgressDto();
-    countProgressConfig.setTarget(targetValue);
-    targetConfig.setCountProgress(countProgressConfig);
-    return targetConfig;
-  }
-
   private static Map<String, ExpectedReportConfigurationAndLocation> createExpectedReportsAndLocationsByName() {
     return Stream.of(
       new ExpectedReportConfigurationAndLocation(
-        PROCESS_INSTANCE_USAGE_REPORT_LOCALIZATION_CODE,
+        CURRENTLY_IN_PROGRESS_NAME_LOCALIZATION_CODE,
+        CURRENTLY_IN_PROGRESS_DESCRIPTION_LOCALIZATION_CODE,
         new SingleProcessReportDefinitionRequestDto(
           ProcessReportDataDto.builder()
             .definitions(Collections.emptyList())
@@ -252,97 +244,52 @@ public class ManagementDashboardIT extends AbstractPlatformIT {
               ProcessViewEntity.PROCESS_INSTANCE,
               ViewProperty.FREQUENCY
             ))
-            .groupBy(new StartDateGroupByDto(new DateGroupByValueDto(AggregateByDateUnit.MONTH)))
-            .visualization(ProcessVisualization.BAR)
+            .groupBy(new NoneGroupByDto())
+            .visualization(ProcessVisualization.NUMBER)
             .managementReport(true)
             .build()),
         new PositionDto(0, 0),
-        new DimensionDto(3, 4)
+        new DimensionDto(4, 2)
       ),
       new ExpectedReportConfigurationAndLocation(
-        ManagementDashboardService.INCIDENT_FREE_RATE_REPORT_LOCALIZATION_CODE,
+        STARTED_IN_LAST_SIX_MONTHS_NAME_LOCALIZATION_CODE,
+        STARTED_IN_LAST_SIX_MONTHS_DESCRIPTION_LOCALIZATION_CODE,
         new SingleProcessReportDefinitionRequestDto(
           ProcessReportDataDto.builder()
             .definitions(Collections.emptyList())
-            .view(new ProcessViewDto(ProcessViewEntity.PROCESS_INSTANCE, ViewProperty.PERCENTAGE))
-            .groupBy(new NoneGroupByDto())
-            .visualization(ProcessVisualization.NUMBER)
-            .filter(ProcessFilterBuilder.filter().noIncidents().add().buildList())
-            .configuration(SingleReportConfigurationDto.builder().targetValue(createTargetValueConfig("99.5")).build())
-            .managementReport(true)
-            .build()),
-        new PositionDto(3, 0),
-        new DimensionDto(3, 2)
-      ),
-      new ExpectedReportConfigurationAndLocation(
-        ManagementDashboardService.AUTOMATION_RATE_REPORT_LOCALIZATION_CODE,
-        new SingleProcessReportDefinitionRequestDto(
-          ProcessReportDataDto.builder()
-            .definitions(Collections.emptyList())
-            .view(new ProcessViewDto(ProcessViewEntity.PROCESS_INSTANCE, ViewProperty.PERCENTAGE))
-            .groupBy(new NoneGroupByDto())
-            .visualization(ProcessVisualization.NUMBER)
-            .filter(ProcessFilterBuilder.filter()
-                      .duration()
-                      .operator(LESS_THAN)
-                      .unit(DurationUnit.HOURS)
-                      .value(1L)
-                      .add()
-                      .buildList())
-            .configuration(SingleReportConfigurationDto.builder().targetValue(createTargetValueConfig("70")).build())
-            .managementReport(true)
-            .build()),
-        new PositionDto(3, 2),
-        new DimensionDto(3, 2)
-      ),
-      new ExpectedReportConfigurationAndLocation(
-        ManagementDashboardService.LONG_RUNNING_INSTANCES_REPORT_LOCALIZATION_CODE,
-        new SingleProcessReportDefinitionRequestDto(
-          ProcessReportDataDto.builder()
-            .definitions(Collections.emptyList())
-            .view(new ProcessViewDto(ProcessViewEntity.PROCESS_INSTANCE, List.of(ViewProperty.FREQUENCY, ViewProperty.DURATION)))
-            .groupBy(new NoneGroupByDto())
+            .view(new ProcessViewDto(ProcessViewEntity.PROCESS_INSTANCE, ViewProperty.FREQUENCY))
+            .groupBy(new StartDateGroupByDto(new DateGroupByValueDto(AggregateByDateUnit.MONTH)))
             .distributedBy(new ProcessDistributedByDto())
-            .visualization(ProcessVisualization.PIE)
+            .visualization(ProcessVisualization.BAR)
             .filter(ProcessFilterBuilder.filter()
-                      .duration()
-                      .operator(GREATER_THAN)
-                      .unit(DurationUnit.DAYS)
-                      .value(7L)
+                      .rollingInstanceStartDate()
+                      .start(6L, DateUnit.MONTHS)
                       .add()
-                      .runningInstancesOnly()
+                      .buildList())
+            .configuration(SingleReportConfigurationDto.builder().stackedBar(true).build())
+            .managementReport(true)
+            .build()),
+        new PositionDto(4, 0),
+        new DimensionDto(14, 4)
+      ),
+      new ExpectedReportConfigurationAndLocation(
+        ENDED_IN_LAST_SIX_MONTHS_NAME_LOCALIZATION_CODE,
+        ENDED_IN_LAST_SIX_MONTHS_DESCRIPTION_LOCALIZATION_CODE,
+        new SingleProcessReportDefinitionRequestDto(
+          ProcessReportDataDto.builder()
+            .definitions(Collections.emptyList())
+            .view(new ProcessViewDto(ProcessViewEntity.PROCESS_INSTANCE, ViewProperty.FREQUENCY))
+            .groupBy(new NoneGroupByDto())
+            .visualization(ProcessVisualization.NUMBER)
+            .filter(ProcessFilterBuilder.filter()
+                      .rollingInstanceEndDate()
+                      .start(6L, DateUnit.MONTHS)
                       .add()
                       .buildList())
             .managementReport(true)
             .build()),
-        new PositionDto(6, 0),
-        new DimensionDto(4, 4)
-      ),
-      new ExpectedReportConfigurationAndLocation(
-        ManagementDashboardService.AUTOMATION_CANDIDATES_REPORT_LOCALIZATION_CODE,
-        new SingleProcessReportDefinitionRequestDto(
-          ProcessReportDataDto.builder()
-            .definitions(Collections.emptyList())
-            .view(new ProcessViewDto(ProcessViewEntity.USER_TASK, List.of(ViewProperty.FREQUENCY, ViewProperty.DURATION)))
-            .groupBy(new UserTasksGroupByDto())
-            .visualization(ProcessVisualization.PIE)
-            .managementReport(true)
-            .build()),
-        new PositionDto(10, 0),
-        new DimensionDto(4, 4)
-      ),
-      new ExpectedReportConfigurationAndLocation(
-        ManagementDashboardService.ACTIVE_BOTTLENECKS_REPORT_LOCALIZATION_CODE,
-        new SingleProcessReportDefinitionRequestDto(
-          ProcessReportDataDto.builder()
-            .definitions(Collections.emptyList())
-            .view(new ProcessViewDto(ProcessViewEntity.FLOW_NODE, List.of(ViewProperty.FREQUENCY, ViewProperty.DURATION)))
-            .groupBy(new FlowNodesGroupByDto())
-            .visualization(ProcessVisualization.PIE)
-            .managementReport(true)
-            .build()),
-        new PositionDto(14, 0),
-        new DimensionDto(4, 4)
+        new PositionDto(0, 2),
+        new DimensionDto(4, 2)
       )
     ).collect(Collectors.toMap(ExpectedReportConfigurationAndLocation::getReportName, Function.identity()));
   }
@@ -351,6 +298,7 @@ public class ManagementDashboardIT extends AbstractPlatformIT {
   @AllArgsConstructor
   private static class ExpectedReportConfigurationAndLocation {
     private String reportName;
+    private String reportDescription;
     private SingleProcessReportDefinitionRequestDto reportDefinitionRequestDto;
     private PositionDto positionDto;
     private DimensionDto dimensionDto;

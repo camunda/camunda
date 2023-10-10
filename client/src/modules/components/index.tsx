@@ -45,6 +45,7 @@ export {DurationChart} from './DurationChart';
 export {ColorPicker} from './ColorPicker';
 export {Badge} from './Badge';
 export {Popover} from './Popover';
+export {TenantInfo} from './TenantInfo';
 
 export type {InputProps} from './Input';
 export type {LabeledProps} from './Labeled';

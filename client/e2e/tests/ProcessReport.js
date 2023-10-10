@@ -13,7 +13,13 @@ import {addAnnotation, clearAllAnnotations} from '../browserMagic';
 import * as e from './ProcessReport.elements.js';
 import * as Common from './Common.elements.js';
 
-fixture('Process Report').page(config.endpoint).beforeEach(u.login).afterEach(cleanEntities);
+fixture('Process Report')
+  .page(config.endpoint)
+  .beforeEach(async (t) => {
+    await u.login(t);
+    await t.navigateTo(config.collectionsEndpoint);
+  })
+  .afterEach(cleanEntities);
 
 test('create a report from a template', async (t) => {
   await t.resizeWindow(1300, 750);
@@ -626,7 +632,7 @@ test('progress bar and reset to default', async (t) => {
   await t.click(e.configurationButton);
 
   await t.click(e.goalSwitch);
-  await t.typeText(e.goalTargetInput, '200', {replace: true});
+  await t.typeText(e.goalTargetInput, '400', {replace: true});
 
   await t.click(e.configurationButton);
 
@@ -641,7 +647,7 @@ test('progress bar and reset to default', async (t) => {
     .maximizeWindow();
 
   await t.click(e.configurationButton);
-  await t.typeText(e.goalTargetInput, '50', {replace: true});
+  await t.typeText(e.goalTargetInput, '300', {replace: true});
   await t.click(e.configurationButton);
 
   await t

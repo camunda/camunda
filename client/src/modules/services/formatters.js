@@ -10,7 +10,8 @@ import {parseISO, isValid} from 'date-fns';
 import {format} from 'dates';
 import {t} from 'translation';
 
-export {createDurationFormattingOptions, formatFileName} from './formatters.tsx';
+import {formatTenantName} from './formatters.tsx';
+export {createDurationFormattingOptions, formatFileName, formatTenantName} from './formatters.tsx';
 
 const scaleUnits = [
   {exponent: 18, label: 'quintillion'},
@@ -189,7 +190,11 @@ export function formatVersions(versions) {
   return t('common.none');
 }
 
-export function formatTenants(tenantIds, tenantInfo) {
+export function formatTenants(tenantIds, tenantInfo, showOnlyTenant) {
+  if (showOnlyTenant) {
+    return formatTenantName(tenantInfo[0]);
+  }
+
   if (tenantIds.length === 0) {
     return t('common.none');
   }
@@ -207,18 +212,6 @@ export function formatTenants(tenantIds, tenantInfo) {
   }
 
   return '';
-}
-
-export function formatTenantName({id, name}) {
-  if (!id) {
-    return t('common.definitionSelection.tenant.notDefined');
-  }
-
-  if (id === '__unauthorizedTenantId__') {
-    return t('home.sources.unauthorizedTenant');
-  }
-
-  return name || id;
 }
 
 export function formatLabel(label, numbersOnly) {

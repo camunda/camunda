@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 import {withRouter} from 'react-router-dom';
 import classnames from 'classnames';
 import useDeepCompareEffect from 'use-deep-compare-effect';
@@ -16,6 +16,7 @@ import {withDocs, withErrorHandling} from 'HOC';
 import {getCollection, formatters} from 'services';
 import {t} from 'translation';
 import {showError} from 'notifications';
+import {getOptimizeProfile, areTenantsAvailable} from 'config';
 
 import {loadTenants} from './service';
 import DefinitionEditor from './DefinitionEditor';
@@ -36,6 +37,8 @@ export function DefinitionList({
 }) {
   const [openPopover, setOpenPopover] = useState();
   const [tenantInfo, setTenantInfo] = useState();
+  const [optimizeProfile, setOptimizeProfile] = useState();
+  const [tenantsAvailable, setTenantsAvailable] = useState(false);
 
   const collection = getCollection(location.pathname);
   const definitionKeysAndVersions = definitions.map(({key, versions}) => ({key, versions}));
@@ -44,6 +47,13 @@ export function DefinitionList({
   useDeepCompareEffect(() => {
     mightFail(loadTenants(type, definitionKeysAndVersions, collection), setTenantInfo, showError);
   }, [definitionKeysAndVersions, collection, mightFail, type]);
+
+  useEffect(() => {
+    (async () => {
+      setOptimizeProfile(await getOptimizeProfile());
+      setTenantsAvailable(await areTenantsAvailable());
+    })();
+  }, []);
 
   function getTenantInfoForDefinition(definition) {
     return tenantInfo?.find(
@@ -60,15 +70,19 @@ export function DefinitionList({
       {definitions.map((definition, idx) => {
         const tenantInfo = getTenantInfoForDefinition(definition);
 
+        const showOnlyTenant =
+          tenantsAvailable && tenantInfo?.length === 1 && optimizeProfile === 'ccsm';
+
         return (
           <li key={idx + definition.key} className={classnames({active: openPopover === idx})}>
             <h4>{definition.displayName || definition.name || definition.key}</h4>
             <div className="info">
               {t('common.definitionSelection.version.label')}: {formatVersions(definition.versions)}
             </div>
-            {tenantInfo?.length > 1 && (
+            {(tenantInfo?.length > 1 || showOnlyTenant) && (
               <div className="info">
-                {t('common.tenant.label')}: {formatTenants(definition.tenantIds, tenantInfo)}
+                {t('common.tenant.label')}:{' '}
+                {formatTenants(definition.tenantIds, tenantInfo, showOnlyTenant)}
               </div>
             )}
             <div className="actions">

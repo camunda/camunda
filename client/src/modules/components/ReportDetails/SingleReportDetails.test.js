@@ -5,17 +5,20 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {runLastEffect} from 'react';
+import React, {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
 import update from 'immutability-helper';
 
 import {Button} from 'components';
+import {getOptimizeProfile} from 'config';
 
 import RawDataModal from './RawDataModal';
 import DiagramModal from './DiagramModal';
 import {loadTenants} from './service';
 
 import {SingleReportDetails} from './SingleReportDetails';
+
+jest.mock('config', () => ({getOptimizeProfile: jest.fn().mockReturnValue('platform')}));
 
 jest.mock('./service', () => ({
   loadTenants: jest.fn().mockReturnValue([
@@ -62,7 +65,7 @@ beforeEach(() => {
 
 it('should show relevant information', () => {
   const node = shallow(<SingleReportDetails {...props} />);
-  runLastEffect();
+  runAllEffects();
 
   expect(node).toIncludeText('aName');
   expect(node).toIncludeText('2, 1');
@@ -73,27 +76,44 @@ it('should show relevant information', () => {
 
 it('should show the report name if it has showReportName prop', () => {
   const node = shallow(<SingleReportDetails {...props} showReportName />);
-  runLastEffect();
+  runAllEffects();
 
   expect(node).toIncludeText('Report Name');
 });
 
-it('should not show tenant section if there is only one tenant', () => {
+it('should not show tenant section if there is only one tenant in C7', () => {
   const oneTenant = update(props.report, {data: {tenantIds: {$set: ['sales']}}});
   loadTenants.mockReturnValueOnce([{id: 'sales', name: 'Sales'}]);
 
   const node = shallow(<SingleReportDetails {...props} report={oneTenant} />);
-  runLastEffect();
+  runAllEffects();
 
   expect(node).not.toIncludeText('Sales');
   expect(node).not.toIncludeText('Tenant');
+});
+
+it('should show the only tenant in self managed', async () => {
+  const oneTenant = update(props.report, {data: {tenantIds: {$set: ['sales']}}});
+  loadTenants.mockReturnValueOnce([
+    {
+      key: 'aKey',
+      versions: ['2', '1'],
+      tenants: [{id: 'sales', name: 'Sales'}],
+    },
+  ]);
+  getOptimizeProfile.mockReturnValueOnce('ccsm');
+  const node = shallow(<SingleReportDetails {...props} report={oneTenant} />);
+
+  await runAllEffects();
+
+  expect(node.find('.info').at(1).text()).toBe('Tenant: Sales');
 });
 
 it('should not show tenant section and process model/raw data buttons on share pages', () => {
   const node = shallow(
     <SingleReportDetails {...props} location={{pathname: '/share/report/abc'}} />
   );
-  runLastEffect();
+  runAllEffects();
 
   expect(loadTenants).not.toHaveBeenCalled();
   expect(node).not.toIncludeText('Sales');
@@ -110,7 +130,7 @@ it('should have special handling for variable views', () => {
   });
 
   const node = shallow(<SingleReportDetails {...props} report={variableReport} />);
-  runLastEffect();
+  runAllEffects();
 
   expect(node).toIncludeText('Variable x');
   expect(node.find('h4.nowrap')).toExist();
@@ -118,7 +138,7 @@ it('should have special handling for variable views', () => {
 
 it('should open raw data modal when button is clicked', () => {
   const node = shallow(<SingleReportDetails {...props} />);
-  runLastEffect();
+  runAllEffects();
 
   node.find('.rawDataButton').simulate('click');
 
@@ -127,7 +147,7 @@ it('should open raw data modal when button is clicked', () => {
 
 it('should open diagram modal when button is clicked', () => {
   const node = shallow(<SingleReportDetails {...props} />);
-  runLastEffect();
+  runAllEffects();
 
   node.find('.definition').find(Button).simulate('click');
 

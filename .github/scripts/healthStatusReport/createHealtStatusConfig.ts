@@ -61,7 +61,7 @@ type SnykProjectsResponse = {
 };
 
 async function createHealtStatusConfig() {
-  const ciBranches = await getCiBranches();
+  const ciBranches = (await getCiBranches()).filter(branch=>!branch.includes('3.8'));
   const snykProjects = await fetchSnykProjects();
 
   const config: Partial<Config> = {

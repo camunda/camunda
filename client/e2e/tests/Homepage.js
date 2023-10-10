@@ -19,7 +19,13 @@ import {
 import * as e from './Homepage.elements.js';
 import * as Common from './Common.elements.js';
 
-fixture('Homepage').page(config.endpoint).beforeEach(login).afterEach(cleanEntities);
+fixture('Homepage')
+  .page(config.endpoint)
+  .beforeEach(async (t) => {
+    await login(t);
+    await t.navigateTo(config.collectionsEndpoint);
+  })
+  .afterEach(cleanEntities);
 
 test('navigate to report view and edit pages', async (t) => {
   await createNewReport(t);
@@ -202,7 +208,7 @@ test('complex Homepage actions', async (t) => {
   await t.click(e.copyTargetsInput);
   await t.click(e.copyTarget('Sales'));
 
-  await t.takeElementScreenshot(e.copyModal, 'img/copy.png');
+  await t.takeElementScreenshot(Common.modalContainer, 'img/copy.png');
 
   await t.click(Common.confirmButton);
 

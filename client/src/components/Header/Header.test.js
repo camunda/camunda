@@ -178,8 +178,9 @@ it('should display the notifications component in cloud mode', async () => {
   await runLastEffect();
   await node.update();
 
-  expect(node.find('C3UserConfigurationProvider').props()).toEqual({
-    endpoints: {notifications: 'notificationsUrl'},
+  expect(node.find('NavbarWrapper').props()).toEqual({
+    isCloud: true,
+    notificationsUrl: 'notificationsUrl',
     activeOrganizationId: 'orgId',
     userToken: 'userToken',
     getNewUserToken: expect.any(Function),

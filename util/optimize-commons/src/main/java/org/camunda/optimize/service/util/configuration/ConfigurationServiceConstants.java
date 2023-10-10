@@ -8,6 +8,8 @@ package org.camunda.optimize.service.util.configuration;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ConfigurationServiceConstants {
   public static final String SECURITY = "$.security";
@@ -78,6 +80,9 @@ public class ConfigurationServiceConstants {
   public static final String ELASTICSEARCH_SECURITY_SSL_CERTIFICATE = "$.es.security.ssl.certificate";
   public static final String ELASTICSEARCH_SECURITY_SSL_CERTIFICATE_AUTHORITIES = "$.es.security.ssl.certificate_authorities";
 
+  public static final String OPENSEARCH_CONNECTION_NODES = "$.opensearch.connection.nodes";
+
+
   public static final String IMPORT_INDEX_AUTO_STORAGE_INTERVAL = "$.import.importIndexStorageIntervalInSec";
 
   public static final String ENGINE_CONNECT_TIMEOUT = "$.engine-commons.connection.timeout";
@@ -97,6 +102,7 @@ public class ConfigurationServiceConstants {
   public static final String CONTAINER_CONTEXT_PATH = "$.container.contextPath";
   public static final String CONTAINER_KEYSTORE_PASSWORD = "$.container.keystore.password";
   public static final String CONTAINER_KEYSTORE_LOCATION = "$.container.keystore.location";
+  public static final String CONTAINER_ENABLE_SNI_CHECK = "$.container.enableSniCheck";
   public static final String CONTAINER_HTTPS_PORT = "$.container.ports.https";
   public static final String CONTAINER_HTTP_PORT = "$.container.ports.http";
 
@@ -146,6 +152,12 @@ public class ConfigurationServiceConstants {
   public static final String CLOUD_PROFILE = "cloud";
   public static final String CCSM_PROFILE = "ccsm";
   public static final String PLATFORM_PROFILE = "platform";
+  public static final List<String> optimizeModeProfiles = List.of(CLOUD_PROFILE, CCSM_PROFILE, PLATFORM_PROFILE);
+
+  public static final String ELASTICSEARCH_PROFILE = "elasticsearch";
+  public static final String OPENSEARCH_PROFILE = "opensearch";
+  public static final List<String> optimizeDatabaseProfiles = List.of(ELASTICSEARCH_PROFILE, OPENSEARCH_PROFILE);
+  public static final String MULTITENANCY_ENABLED = "$.multitenancy.enabled";
   //@formatter:on
 
 }

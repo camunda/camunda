@@ -14,7 +14,6 @@ import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
-import org.camunda.optimize.service.TenantService;
 import org.camunda.optimize.service.es.reader.DefinitionReader;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.security.AbstractCachingAuthorizationService;
@@ -22,6 +21,7 @@ import org.camunda.optimize.service.security.ApplicationAuthorizationService;
 import org.camunda.optimize.service.security.EngineAuthorizations;
 import org.camunda.optimize.service.security.ResolvedResourceTypeAuthorizations;
 import org.camunda.optimize.service.security.util.tenant.DataSourceTenantAuthorizationService;
+import org.camunda.optimize.service.tenant.CamundaPlatformTenantService;
 import org.camunda.optimize.service.util.configuration.CacheConfiguration;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.CamundaPlatformCondition;
@@ -41,8 +41,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.groupingBy;
-import static java.util.stream.Collectors.toList;
-import static org.camunda.optimize.service.TenantService.TENANT_NOT_DEFINED;
+import static org.camunda.optimize.service.tenant.CamundaPlatformTenantService.TENANT_NOT_DEFINED;
 import static org.camunda.optimize.service.util.importing.EngineConstants.ALL_PERMISSION;
 import static org.camunda.optimize.service.util.importing.EngineConstants.READ_HISTORY_PERMISSION;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_DECISION_DEFINITION;
@@ -58,7 +57,7 @@ public class EngineDefinitionAuthorizationService
 
   private final ApplicationAuthorizationService applicationAuthorizationService;
   private final DataSourceTenantAuthorizationService tenantAuthorizationService;
-  private final TenantService tenantService;
+  private final CamundaPlatformTenantService tenantService;
   private final LoadingCache<DefinitionTypeAndKey, Set<String>> definitionEnginesReadCache;
 
   public EngineDefinitionAuthorizationService(final ApplicationAuthorizationService applicationAuthorizationService,
@@ -66,7 +65,7 @@ public class EngineDefinitionAuthorizationService
                                               final EngineContextFactory engineContextFactory,
                                               final ConfigurationService configurationService,
                                               final DefinitionReader definitionReader,
-                                              final TenantService tenantService) {
+                                              final CamundaPlatformTenantService tenantService) {
     super(engineContextFactory, configurationService);
     this.applicationAuthorizationService = applicationAuthorizationService;
     this.tenantAuthorizationService = tenantAuthorizationService;
@@ -98,7 +97,6 @@ public class EngineDefinitionAuthorizationService
     return result;
   }
 
-
   @Override
   protected Map<String, EngineAuthorizations> fetchAuthorizationsForGroupId(final String groupId) {
     final List<String> authorizedEngines = applicationAuthorizationService.getAuthorizedEnginesForGroup(groupId);
@@ -118,21 +116,6 @@ public class EngineDefinitionAuthorizationService
   public void reloadConfiguration(final ApplicationContext context) {
     super.reloadConfiguration(context);
     definitionEnginesReadCache.invalidateAll();
-  }
-
-  public boolean isAuthorizedToSeeDefinition(final String identityId,
-                                             final IdentityType identityType,
-                                             final String definitionKey,
-                                             final DefinitionType definitionType,
-                                             final List<String> tenantIds) {
-    return isAuthorizedToSeeDefinition(
-      identityId,
-      identityType,
-      definitionKey,
-      definitionType,
-      tenantIds,
-      getDefinitionEngines(definitionKey, definitionType)
-    );
   }
 
   public boolean isAuthorizedToSeeDefinition(final String identityId,
@@ -214,6 +197,21 @@ public class EngineDefinitionAuthorizationService
       }
     }
     return new ArrayList<>(authorizedTenants);
+  }
+
+  private boolean isAuthorizedToSeeDefinition(final String identityId,
+                                              final IdentityType identityType,
+                                              final String definitionKey,
+                                              final DefinitionType definitionType,
+                                              final List<String> tenantIds) {
+    return isAuthorizedToSeeDefinition(
+      identityId,
+      identityType,
+      definitionKey,
+      definitionType,
+      tenantIds,
+      getDefinitionEngines(definitionKey, definitionType)
+    );
   }
 
   private boolean isAuthorizedToSeeDefinition(final String identityId,

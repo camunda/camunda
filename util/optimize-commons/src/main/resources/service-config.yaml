@@ -119,6 +119,8 @@ container:
   keystore:
     location: ${CAMUNDA_OPTIMIZE_CONTAINER_KEYSTORE_LOCATION:keystore.jks}
     password: ${CAMUNDA_OPTIMIZE_CONTAINER_KEYSTORE_PASSWORD:optimize}
+  # Determines whether SNI checking should be enabled
+  enableSniCheck: ${CAMUNDA_OPTIMIZE_CONTAINER_ENABLE_SNI_CHECK:true}
   # configuration of status reporting web socket
   status:
     # max number of threads\sessions that will be kept to report status
@@ -294,7 +296,7 @@ import:
         # When increasing the limit, keep in mind to account for that by increasing the JVM heap memory as well.
         # Please refer to the technical guide on how to configure the heap size.
         maxEntryLimit: 100000
-  # Controls whether customer onboarding data should be loaded to optimize (only for C8)
+  # Controls whether Camunda Customer Onboarding Demo data should be loaded to optimize (only for C8)
   customer-onboarding: ${CAMUNDA_OPTIMIZE_IMPORT_CUSTOMER_ONBOARDING:false}
   # Some data can no longer be imported to a given document if its number of nested documents has reached the configured
   # limit. Enable this setting to skip this data during import if the nested document limit has been reached.
@@ -333,6 +335,16 @@ import:
     # When increasing the limit, keep in mind to account for that by increasing the JVM heap memory as well.
     # Please refer to the technical guide on how to configure the heap size.
     maxEntryLimit: 100000
+
+# everything that is related with configuring OpenSearch or creating
+# a connection to it.
+opensearch:
+  connection:
+    nodes:
+      # the address/hostname under which the OpenSearch node is available.
+      - host: '${CAMUNDA_OPTIMIZE_OPENSEARCH_HOST:localhost}'
+        # A port number used by OpenSearch to accept HTTP connections.
+        httpPort: ${CAMUNDA_OPTIMIZE_OPENSEARCH_HTTP_PORT:9205}
 
 # everything that is related with configuring Elasticsearch or creating
 # a connection to it.
@@ -703,6 +715,11 @@ caches:
     maxSize: ${CAMUNDA_OPTIMIZE_CLOUD_USER_CACHE_MAX_SIZE:10000}
     # the minimum interval (in seconds) between each request to repopulate the cache.
     minFetchIntervalSeconds: ${CAMUNDA_OPTIMIZE_CLOUD_USER_CACHE_MIN_FETCH_INTERVAL_SECONDS:600}
+  # This cache is used to hold user tenant authorizations in CCSM
+  cloudTenantAuthorizations:
+    maxSize: ${CAMUNDA_OPTIMIZE_CACHES_CLOUD_TENANT_AUTHORIZATIONS_MAX_SIZE:10000}
+    # the time (in millis) the tenant authorizations will be cached
+    defaultTtlMillis: ${CAMUNDA_OPTIMIZE_CACHES_CLOUD_TENANT_AUTHORIZATIONS_MIN_FETCH_INTERVAL_SECONDS:300000}
 
 externalVariable:
   import:
@@ -722,3 +739,8 @@ externalVariable:
     scheduleIntervalInMinutes: 10
     # A rollover is triggered when the size of the current external variable index matches or exceeds the maxIndexSizeGB threshold.
     maxIndexSizeGB: 50
+
+multitenancy:
+  # Currently only available in C8SM. Determines whether multi tenancy is enabled in Optimize.
+  # Note that multi tenancy is active by default in Optimize C7 and therefore this flag will have no influence on a C7 system.
+  enabled: ${CAMUNDA_OPTIMIZE_MULTITENANCY_ENABLED:false}

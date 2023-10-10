@@ -54,11 +54,19 @@ public class DashboardRestMapper {
           validLocale,
           dashboardDefinition.getName()
         )).ifPresent(dashboardDefinition::setName);
+        Optional.ofNullable(localizationService.getLocalizationForManagementDashboardCode(
+          validLocale,
+          dashboardDefinition.getDescription()
+        )).ifPresent(dashboardDefinition::setDescription);
       } else {
         Optional.ofNullable(localizationService.getLocalizationForInstantPreviewDashboardCode(
           validLocale,
           dashboardDefinition.getName()
         )).ifPresent(dashboardDefinition::setName);
+        Optional.ofNullable(localizationService.getLocalizationForInstantPreviewDashboardCode(
+          validLocale,
+          dashboardDefinition.getDescription()
+        )).ifPresent(dashboardDefinition::setDescription);
         localizeTextsFromTextTiles(dashboardDefinition, validLocale);
       }
     }

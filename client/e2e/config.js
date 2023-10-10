@@ -9,6 +9,7 @@ const users = require('../demo-data/users.json');
 
 export default {
   endpoint: 'http://localhost:3000',
+  collectionsEndpoint: 'http://localhost:3000/#/collections',
   elasticSearchEndpoint: 'http://localhost:9200',
   users: {
     Chrome: [

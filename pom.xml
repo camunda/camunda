@@ -4,7 +4,7 @@
 
   <groupId>org.camunda.optimize</groupId>
   <artifactId>parent</artifactId>
-  <version>3.11.0</version>
+  <version>3.12.0</version>
   <packaging>pom</packaging>
   <name>Camunda Optimize</name>
 
@@ -23,24 +23,27 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <project.previousVersion>3.10.4</project.previousVersion>
+    <project.previousVersion>3.11.0</project.previousVersion>
 
     <camunda.engine.version>7.18.0</camunda.engine.version>
-    <camunda.maven.artifacts.version>7.18.10-ee</camunda.maven.artifacts.version>
+    <camunda.maven.artifacts.version>7.18.11-ee</camunda.maven.artifacts.version>
 
     <!-- We use this version to compile but run IT against containers with zeebe.docker.version -->
-    <zeebe.version>8.3.0-alpha6</zeebe.version>
-    <identity.version>8.3.0-alpha6</identity.version>
+    <zeebe.version>8.3.0</zeebe.version>
+    <identity.version>8.3.0</identity.version>
     <!-- We use this for the Zeebe test container version only -->
     <zeebe.docker.version>${zeebe.version}</zeebe.docker.version>
 
     <surefire-plugin.version>3.1.2</surefire-plugin.version>
     <!-- maven plugins -->
-    <plugin.version.sonar>3.9.1.2184</plugin.version.sonar>
+    <plugin.version.sonar>3.10.0.2594</plugin.version.sonar>
 
     <jackson.version>2.15.2</jackson.version>
     <jsonpath.version>2.8.0</jsonpath.version>
-    <elasticsearch.version>7.17.12</elasticsearch.version>
+    <elasticsearch.version>7.17.13</elasticsearch.version>
+    <opensearch.version>2.5.0</opensearch.version>
+    <apache.http5-client.version>5.2.1</apache.http5-client.version>
+    <apache.http5-core.version>5.2.3</apache.http5-core.version>
     <!-- The default es 8 version we are going to be testing with-->
     <elasticsearch8.test.version>8.7.0</elasticsearch8.test.version>
     <!--The least supported elasticsearch version we should test against-->
@@ -50,22 +53,22 @@
     <!-- https://www.elastic.co/guide/en/elasticsearch/client/java-api/6.5/_using_another_logger.html -->
     <elasticsearch.log4j.version>2.20.0</elasticsearch.log4j.version>
     <guava.version>32.1.2-jre</guava.version>
-    <spring.boot.version>3.0.10</spring.boot.version>
-    <spring.version>6.0.11</spring.version>
-    <mockito.version>5.4.0</mockito.version>
+    <spring.boot.version>3.0.11</spring.boot.version>
+    <spring.version>6.0.12</spring.version>
+    <mockito.version>5.5.0</mockito.version>
     <mockito-inline.version>5.2.0</mockito-inline.version>
     <httpclient.version>4.5.14</httpclient.version>
-    <junit.jupiter.version>5.9.3</junit.jupiter.version>
-    <junit.platform.version>1.9.3</junit.platform.version>
+    <junit.jupiter.version>5.10.0</junit.jupiter.version>
+    <junit.platform.version>1.10.0</junit.platform.version>
     <mockserver.version>5.15.0</mockserver.version>
     <quartz.version>2.3.2</quartz.version>
     <assertj.version>3.24.2</assertj.version>
     <postgres.version>42.6.0</postgres.version>
     <jakarta.rs-api.version>3.1.0</jakarta.rs-api.version>
 
-    <lombok.version>1.18.28</lombok.version>
+    <lombok.version>1.18.30</lombok.version>
     <logback.version>1.4.11</logback.version>
-    <slf4j.version>2.0.7</slf4j.version>
+    <slf4j.version>2.0.9</slf4j.version>
 
     <version.node>v16.16.0</version.node>
     <version.yarn>v1.22.18</version.yarn>
@@ -81,7 +84,7 @@
     <sonar.junit.reportPaths>
       ${project.build.directory}/surefire-reports/,${project.build.directory}/failsafe-reports/,${project.build.directory}/failsafe-reports/1/,${project.build.directory}/failsafe-reports/2/,${project.build.directory}/failsafe-reports/3/,${project.build.directory}/failsafe-reports/4/
     </sonar.junit.reportPaths>
-    <h2.version>2.2.220</h2.version>
+    <h2.version>2.2.224</h2.version>
 
     <maven.compiler.target>17</maven.compiler.target>
     <maven.compiler.source>17</maven.compiler.source>
@@ -326,7 +329,7 @@
     <dependency>
       <groupId>io.github.netmikey.logunit</groupId>
       <artifactId>logunit-logback</artifactId>
-      <version>1.1.3</version>
+      <version>2.0.0</version>
       <exclusions>
         <exclusion>
           <groupId>ch.qos.logback</groupId>
@@ -356,7 +359,7 @@
     <dependency>
       <groupId>io.netty</groupId>
       <artifactId>netty-codec-http</artifactId>
-      <version>4.1.97.Final</version>
+      <version>4.1.99.Final</version>
     </dependency>
   </dependencies>
 
@@ -423,7 +426,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-shade-plugin</artifactId>
-          <version>3.5.0</version>
+          <version>3.5.1</version>
           <configuration>
             <createDependencyReducedPom>false</createDependencyReducedPom>
           </configuration>
@@ -440,8 +443,8 @@
         </plugin>
         <plugin>
           <groupId>org.codehaus.cargo</groupId>
-          <artifactId>cargo-maven2-plugin</artifactId>
-          <version>1.9.0</version>
+          <artifactId>cargo-maven3-plugin</artifactId>
+          <version>1.9.4</version>
         </plugin>
         <plugin>
           <groupId>org.sonatype.plugins</groupId>
@@ -462,12 +465,12 @@
         <plugin>
           <groupId>com.github.eirslett</groupId>
           <artifactId>frontend-maven-plugin</artifactId>
-          <version>1.13.4</version>
+          <version>1.14.0</version>
         </plugin>
         <plugin>
           <groupId>com.mycila</groupId>
           <artifactId>license-maven-plugin</artifactId>
-          <version>4.2</version>
+          <version>4.3</version>
         </plugin>
         <!-- sonar relevant stuff -->
         <plugin>

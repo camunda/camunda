@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.camunda.optimize</groupId>
     <artifactId>util</artifactId>
-    <version>3.11.0</version>
+    <version>3.12.0</version>
   </parent>
 
   <artifactId>optimize-commons</artifactId>
@@ -40,6 +40,12 @@
       <groupId>org.elasticsearch.client</groupId>
       <artifactId>elasticsearch-rest-high-level-client</artifactId>
       <version>${elasticsearch.version}</version>
+      <exclusions>
+        <exclusion>
+          <artifactId>commons-codec</artifactId>
+          <groupId>commons-codec</groupId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <!-- Jackson/JSON -->
@@ -133,6 +139,26 @@
       <artifactId>semver4j</artifactId>
       <version>3.1.0</version>
     </dependency>
+
+    <!-- Opensearch  -->
+    <dependency>
+      <groupId>org.apache.httpcomponents.core5</groupId>
+      <artifactId>httpcore5</artifactId>
+      <version>${apache.http5-core.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.httpcomponents.core5</groupId>
+      <artifactId>httpcore5-h2</artifactId>
+      <version>${apache.http5-core.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.opensearch.client</groupId>
+      <artifactId>opensearch-java</artifactId>
+      <version>${opensearch.version}</version>
+    </dependency>
+
   </dependencies>
 
   <build>

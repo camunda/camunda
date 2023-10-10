@@ -28,23 +28,25 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServlet;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.web.embedded.jetty.JettyServletWebServerFactory;
+import org.springframework.boot.web.embedded.jetty.JettyServerCustomizer;
+import org.springframework.boot.web.server.WebServerFactoryCustomizer;
 import org.springframework.boot.web.servlet.ServletContextInitializer;
 import org.springframework.boot.web.servlet.ServletRegistrationBean;
-import org.springframework.boot.web.servlet.server.ServletWebServerFactory;
+import org.springframework.boot.web.servlet.server.ConfigurableServletWebServerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.core.env.Environment;
 
 import java.net.InetAddress;
 import java.net.URL;
 import java.net.UnknownHostException;
+import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.Optional;
 
 import static org.camunda.optimize.jetty.OptimizeResourceConstants.STATUS_WEBSOCKET_PATH;
 import static org.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants.CONTEXT_PATH;
-import static org.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants.INTEGRATION_TESTS;
 import static org.eclipse.jetty.servlet.ServletContextHandler.getServletContextHandler;
 
 @Configuration
@@ -61,19 +63,37 @@ public class JettyConfig {
   private Environment environment;
 
   @Bean
-  public ServletWebServerFactory servletContainer() {
-    JettyServletWebServerFactory jetty = getContextPath()
-      .map(contextPath -> new JettyServletWebServerFactory(contextPath, getPort(EnvironmentPropertiesConstants.HTTP_PORT_KEY)))
-      .orElseGet(() -> new JettyServletWebServerFactory(getPort(EnvironmentPropertiesConstants.HTTP_PORT_KEY)));
-    String host = configurationService.getContainerHost();
+  public JettyServerCustomizer httpsJettyServerCustomizer() {
+    return server ->
+      server.addConnector(initHttpsConnector(configurationService, configurationService.getContainerHost(), server));
+  }
 
-    try {
-      jetty.setAddress(InetAddress.getByName(host));
-    } catch (UnknownHostException ex) {
-      throw new OptimizeConfigurationException("Invalid container host specified");
-    }
-    jetty.addServerCustomizers(server -> server.addConnector(initHttpsConnector(configurationService, host, server)));
-    return jetty;
+  // We use the @Order annotation to make sure that this is modified after the http connector
+  @Bean
+  @Order
+  public JettyServerCustomizer httpConfigurationCustomizer() {
+    return server ->
+      Arrays.stream(server.getConnectors())
+        .flatMap(connector -> connector.getConnectionFactories().stream())
+        .filter(
+          connectionFactory ->
+            HttpConnectionFactory.class.isAssignableFrom(connectionFactory.getClass()))
+        .map(HttpConnectionFactory.class::cast)
+        .forEach(httpConnectionFactory -> applyHeaderSizeConfiguration(httpConnectionFactory.getHttpConfiguration()));
+  }
+
+  @Bean
+  public WebServerFactoryCustomizer<ConfigurableServletWebServerFactory> optimizeWebServerFactoryCustomizer() {
+    return factory -> {
+      getContextPath().ifPresent(factory::setContextPath);
+      String host = configurationService.getContainerHost();
+      try {
+        factory.setAddress(InetAddress.getByName(host));
+      } catch (UnknownHostException ex) {
+        throw new OptimizeConfigurationException("Invalid container host specified");
+      }
+      factory.setPort(getPort(EnvironmentPropertiesConstants.HTTP_PORT_KEY));
+    };
   }
 
   @Bean
@@ -98,26 +118,26 @@ public class JettyConfig {
   private void setUpRequestLogging(Server server) {
     final LoggingConfigurationReader loggingConfigurationReader = new LoggingConfigurationReader();
     loggingConfigurationReader.defineLogbackLoggingConfiguration();
-
-    server.setRequestLog(new CustomRequestLog(
-      new Slf4jRequestLogWriter(), CustomRequestLog.EXTENDED_NCSA_FORMAT
-    ));
+    server.setRequestLog(new CustomRequestLog(new Slf4jRequestLogWriter(), CustomRequestLog.EXTENDED_NCSA_FORMAT));
   }
 
-  private ServerConnector initHttpsConnector(ConfigurationService configurationService, String host, Server server) {
+  private ServerConnector initHttpsConnector(
+    ConfigurationService configurationService, String host, Server server) {
     HttpConfiguration https = new HttpConfiguration();
     https.setSendServerVersion(false);
-    final SecureRequestCustomizer customizer = new SecureRequestCustomizer(
-      // We disable SNI checks for integration tests
-      !Boolean.parseBoolean(environment.getProperty(INTEGRATION_TESTS)),
-      configurationService.getSecurityConfiguration().getResponseHeaders().getHttpStrictTransportSecurityMaxAge(),
-      getResponseHeadersConfiguration(configurationService).getHttpStrictTransportSecurityIncludeSubdomains()
-    );
+    final SecureRequestCustomizer customizer =
+      new SecureRequestCustomizer(
+        configurationService.getContainerEnableSniCheck(),
+        configurationService
+          .getSecurityConfiguration()
+          .getResponseHeaders()
+          .getHttpStrictTransportSecurityMaxAge(),
+        getResponseHeadersConfiguration(configurationService).getHttpStrictTransportSecurityIncludeSubdomains()
+      );
 
     https.addCustomizer(customizer);
     https.setSecureScheme("https");
-    https.setRequestHeaderSize(configurationService.getMaxRequestHeaderSizeInBytes());
-    https.setResponseHeaderSize(configurationService.getMaxResponseHeaderSizeInBytes());
+    applyHeaderSizeConfiguration(https);
     SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
     sslContextFactory.setKeyStorePath(configurationService.getContainerKeystoreLocation());
     sslContextFactory.setKeyStorePassword(configurationService.getContainerKeystorePassword());
@@ -126,12 +146,8 @@ public class JettyConfig {
     // see https://github.com/eclipse/jetty.project/issues/3049
     sslContextFactory.setEndpointIdentificationAlgorithm("HTTPS");
 
-    ServerConnector sslConnector = new ServerConnector(
-      server,
-      new SslConnectionFactory(sslContextFactory, PROTOCOL),
-      new HttpConnectionFactory(https)
-    );
-
+    ServerConnector sslConnector =
+      new ServerConnector(server, new SslConnectionFactory(sslContextFactory, PROTOCOL), new HttpConnectionFactory(https));
     sslConnector.setPort(getPort(EnvironmentPropertiesConstants.HTTPS_PORT_KEY));
     sslConnector.setHost(host);
     return sslConnector;
@@ -140,19 +156,26 @@ public class JettyConfig {
   public int getPort(String portType) {
     String portProperty = environment.getProperty(portType);
     if (portProperty == null) {
-      return portType.equals(EnvironmentPropertiesConstants.HTTPS_PORT_KEY) ? configurationService.getContainerHttpsPort() :
-        configurationService.getContainerHttpPort().orElse(8090);
+      return portType.equals(EnvironmentPropertiesConstants.HTTPS_PORT_KEY)
+        ? configurationService.getContainerHttpsPort()
+        : configurationService.getContainerHttpPort().orElse(8090);
     }
     return Integer.parseInt(portProperty);
   }
 
   public Optional<String> getContextPath() {
-    // If the property is set by env var (the case when starting a new Optimize in ITs), this takes precedence over config
+    // If the property is set by env var (the case when starting a new Optimize in ITs), this takes
+    // precedence over config
     Optional<String> contextPath = Optional.ofNullable(environment.getProperty(CONTEXT_PATH));
     if (contextPath.isEmpty()) {
       return configurationService.getContextPath();
     }
     return contextPath;
+  }
+
+  private void applyHeaderSizeConfiguration(HttpConfiguration configuration) {
+    configuration.setRequestHeaderSize(configurationService.getMaxRequestHeaderSizeInBytes());
+    configuration.setResponseHeaderSize(configurationService.getMaxResponseHeaderSizeInBytes());
   }
 
   private void addStaticResources(ServletContextHandler servletContextHandler) {

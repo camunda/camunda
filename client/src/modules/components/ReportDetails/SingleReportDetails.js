@@ -15,6 +15,7 @@ import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
 import {formatters, reportConfig} from 'services';
 import {t} from 'translation';
+import {getOptimizeProfile} from 'config';
 
 import RawDataModal from './RawDataModal';
 import DiagramModal from './DiagramModal';
@@ -57,6 +58,7 @@ export function SingleReportDetails({report, showReportName, mightFail, location
   const [tenants, setTenants] = useState();
   const [showRawData, setShowRawData] = useState();
   const [showDiagram, setShowDiagram] = useState();
+  const [optimizeProfile, setOptimizeProfile] = useState();
 
   const reportName = report.name;
   const definitions = report.data.definitions;
@@ -71,6 +73,12 @@ export function SingleReportDetails({report, showReportName, mightFail, location
     }
   }, [definitions, isShared, type, mightFail]);
 
+  useEffect(() => {
+    (async () => {
+      setOptimizeProfile(await getOptimizeProfile());
+    })();
+  }, []);
+
   const closePopover = () => document.body.click();
 
   function getTenantInfoForDefinition(definition) {
@@ -83,11 +91,12 @@ export function SingleReportDetails({report, showReportName, mightFail, location
     <>
       <div className="SingleReportDetails">
         {showReportName && <h2>{reportName}</h2>}
-        {definitions.length && (
+        {definitions.length > 0 && (
           <div>
             <h3>{t('report.definition.' + type + (definitions.length > 1 ? '-plural' : ''))}</h3>
             {definitions.map((definition, idx) => {
               const tenantInfo = getTenantInfoForDefinition(definition);
+              const showOnlyTenant = tenantInfo?.length === 1 && optimizeProfile === 'ccsm';
 
               return (
                 <div key={idx + definition.key} className="definition">
@@ -96,9 +105,10 @@ export function SingleReportDetails({report, showReportName, mightFail, location
                     {t('common.definitionSelection.version.label')}:{' '}
                     {formatVersions(definition.versions)}
                   </div>
-                  {tenantInfo?.length > 1 && (
+                  {(tenantInfo?.length > 1 || showOnlyTenant) && (
                     <div className="info">
-                      {t('common.tenant.label')}: {formatTenants(definition.tenantIds, tenantInfo)}
+                      {t('common.tenant.label')}:{' '}
+                      {formatTenants(definition.tenantIds, tenantInfo, showOnlyTenant)}
                     </div>
                   )}
                   {!isShared && (

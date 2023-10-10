@@ -232,6 +232,18 @@ it('should hide bottom raw data panel for processes page reports', async () => {
   expect(node.find('.bottomPanel')).not.toExist();
 });
 
+it('should hide bottom raw data panel for empty reports', async () => {
+  const node = await shallow(
+    <ReportView
+      report={{...report, result: undefined, data: {...report.data, visualization: 'number'}}}
+    />
+  );
+
+  await node.update();
+
+  expect(node.find('.bottomPanel')).not.toExist();
+});
+
 it('should hide expandButton & report renderer when expanding bottom panel', async () => {
   const node = await shallow(
     <ReportView report={{...report, data: {...report.data, visualization: 'number'}}} />

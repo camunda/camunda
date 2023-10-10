@@ -13,7 +13,13 @@ import * as Report from './ProcessReport.elements.js';
 import * as Combined from './CombinedReport.elements.js';
 import * as Common from './Common.elements.js';
 
-fixture('Combined Report').page(config.endpoint).beforeEach(u.login).afterEach(cleanEntities);
+fixture('Combined Report')
+  .page(config.endpoint)
+  .beforeEach(async (t) => {
+    await u.login(t);
+    await t.navigateTo(config.collectionsEndpoint);
+  })
+  .afterEach(cleanEntities);
 
 async function createReport(
   t,

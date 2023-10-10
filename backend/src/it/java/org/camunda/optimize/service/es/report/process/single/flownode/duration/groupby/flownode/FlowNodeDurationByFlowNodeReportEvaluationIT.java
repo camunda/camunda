@@ -28,7 +28,6 @@ import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEval
 import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.dto.optimize.rest.report.measure.MeasureResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.service.TenantService;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
 import org.camunda.optimize.service.es.report.util.MapResultAsserter;
 import org.camunda.optimize.service.es.report.util.MapResultUtil;
@@ -42,6 +41,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import jakarta.ws.rs.core.Response;
+
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
@@ -64,6 +64,7 @@ import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.S
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
+import static org.camunda.optimize.service.tenant.CamundaPlatformTenantService.TENANT_NOT_DEFINED;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurations;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.getSupportedAggregationTypes;
@@ -494,7 +495,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
   public void orderOfTenantSelectionDoesNotAffectResult() {
     // given
     final String definitionKey = "aKey";
-    final String noneTenantId = TenantService.TENANT_NOT_DEFINED.getId();
+    final String noneTenantId = TENANT_NOT_DEFINED.getId();
     final String otherTenantId = "tenant1";
 
     engineIntegrationExtension.createTenant(otherTenantId);
@@ -522,7 +523,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     // given
     final String definitionKey = "aKey";
     final String tenantId1 = "tenantId1";
-    final String noneTenantId = TenantService.TENANT_NOT_DEFINED.getId();
+    final String noneTenantId = TENANT_NOT_DEFINED.getId();
     engineIntegrationExtension.createTenant(tenantId1);
 
     final BpmnModelInstance modelInstance = getSimpleBpmnDiagram(definitionKey);

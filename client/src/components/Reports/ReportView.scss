@@ -32,12 +32,12 @@
     height: 348px;
     transition: height 0.25s;
 
-    &.collapsed {
+    &.minimized {
       height: 48px;
       overflow: hidden;
     }
 
-    &.expanded {
+    &.maximized {
       height: 100%;
       overflow: hidden;
     }

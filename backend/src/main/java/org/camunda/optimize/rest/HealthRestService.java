@@ -26,7 +26,7 @@ public class HealthRestService {
 
   @GET
   public Response getImportStatus() {
-    if (statusCheckingService.isConnectedToElasticSearch()
+    if (statusCheckingService.isConnectedToDatabase()
       && statusCheckingService.isConnectedToAtLeastOnePlatformEngineOrCloud()) {
       return Response.ok().build();
     }

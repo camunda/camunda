@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import jakarta.ws.rs.core.MediaType;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
@@ -25,7 +26,6 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.importing.engine.service.ObjectVariableService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
-import jakarta.ws.rs.core.MediaType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -34,7 +34,6 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static java.util.stream.Collectors.toList;
 import static org.camunda.optimize.dto.optimize.ReportConstants.BOOLEAN_TYPE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.DOUBLE_TYPE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.OBJECT_TYPE;
@@ -89,7 +88,8 @@ public class ZeebeVariableImportService extends ZeebeProcessInstanceSubEntityImp
     final ProcessInstanceDto instanceToAdd = createSkeletonProcessInstance(
       getBpmnProcessId(firstRecordValue),
       firstRecordValue.getProcessInstanceKey(),
-      firstRecordValue.getProcessDefinitionKey()
+      firstRecordValue.getProcessDefinitionKey(),
+      firstRecordValue.getTenantId()
     );
     return updateProcessVariables(instanceToAdd, recordsForInstance);
   }
@@ -156,6 +156,7 @@ public class ZeebeVariableImportService extends ZeebeProcessInstanceSubEntityImp
       processVariableDto.setVersion(variableRecordDto.getPosition());
       processVariableDto.setType(type);
       processVariableDto.setValue(zeebeVariableDataDto.getValue());
+      processVariableDto.setTenantId(zeebeVariableDataDto.getTenantId());
       if (type.equals(STRING_TYPE)) {
         processVariableDto.setValue(stripExtraDoubleQuotationsIfExist(zeebeVariableDataDto.getValue()));
       } else if (OBJECT_TYPE.equalsIgnoreCase(type)) {

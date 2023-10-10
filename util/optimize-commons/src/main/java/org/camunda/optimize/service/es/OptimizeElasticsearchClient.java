@@ -19,6 +19,7 @@ import org.camunda.optimize.service.es.schema.RequestOptionsProvider;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.ActionListener;
@@ -86,6 +87,7 @@ import org.elasticsearch.index.reindex.ReindexRequest;
 import org.elasticsearch.index.reindex.UpdateByQueryRequest;
 import org.elasticsearch.rest.RestStatus;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.Conditional;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -105,6 +107,7 @@ import java.util.Set;
  * as well as the {@link OptimizeIndexNameService}.
  */
 @Slf4j
+@Conditional(ElasticSearchCondition.class)
 public class OptimizeElasticsearchClient implements ConfigurationReloadable {
   private static final int DEFAULT_SNAPSHOT_IN_PROGRESS_RETRY_DELAY = 30;
 

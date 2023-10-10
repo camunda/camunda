@@ -7,7 +7,7 @@
 
 import React, {useCallback, useEffect, useState} from 'react';
 
-import {DocsLink, EntityList, PageTitle, Tooltip} from 'components';
+import {EntityList, PageTitle, Tooltip} from 'components';
 import {t} from 'translation';
 import {withErrorHandling, withUser} from 'HOC';
 import {addNotification, showError} from 'notifications';
@@ -79,19 +79,14 @@ export function Processes({mightFail, user}) {
           <div className="info">
             <span>
               {t('processes.analysing', {count: processes.length, label: processesLabel})}
-            </span>{' '}
-            <DocsLink location="components/userguide/process-dashboards">
-              {t('events.sources.learnMore')}
-            </DocsLink>
+            </span>
           </div>
         )}
       </h1>
       {dashboard && (
         <DashboardView
           tiles={dashboard.tiles}
-          availableFilters={dashboard.availableFilters}
           customizeReportLink={(id) => `/processes/report/${id}/`}
-          simplifiedDateFilter
         />
       )}
       <EntityList

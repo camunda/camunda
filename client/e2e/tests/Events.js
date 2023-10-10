@@ -12,7 +12,13 @@ import * as u from '../utils';
 import * as e from './Events.elements.js';
 import * as Common from './Common.elements';
 
-fixture('Events Processes').page(config.endpoint).beforeEach(u.login).after(cleanEventProcesses);
+fixture('Events Processes')
+  .page(config.endpoint)
+  .beforeEach(async (t) => {
+    await u.login(t);
+    await t.navigateTo(config.collectionsEndpoint);
+  })
+  .afterEach(cleanEventProcesses);
 
 test('create a process from scratch', async (t) => {
   await t.click(e.navItem);
@@ -111,6 +117,7 @@ test('add sources, map and publish a process', async (t) => {
     Common.modalContainer.nth(1),
     'additional-features/img/usersModal.png'
   );
+  await t.pressKey('Esc');
 
   await t.click(Common.modalConfirmButton);
   await t.click(Common.modalConfirmButton);

@@ -14,7 +14,7 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-# set permissions to allow Dependabot to publish test results
+# set permissions to allow to publish test results
 permissions:
   contents: read
   issues: read
@@ -32,7 +32,7 @@ jobs:
     runs-on: gcp-core-8-default
     timeout-minutes: 30
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4
     - name: Setup Maven
       uses: ./.github/actions/setup-maven
       with:
@@ -108,7 +108,7 @@ jobs:
     runs-on: gcp-core-8-default
     timeout-minutes: 30
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4
     - name: Setup Maven
       uses: ./.github/actions/setup-maven
       with:
@@ -198,7 +198,7 @@ jobs:
           profiles: 'it,engine-latest'
           requiresCambpm: true
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4
     - name: Setup Maven
       uses: ./.github/actions/setup-maven
       with:

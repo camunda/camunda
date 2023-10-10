@@ -7,6 +7,7 @@
 
 import {Selector} from 'testcafe';
 
+export const navItem = Selector('.NavItem a').withText('Collections');
 export const collectionTitle = Selector('.Collection .header .text');
 export const collectionBreadcrumb = Selector('.cds--header__menu-bar .breadcrumb');
 export const collectionContextMenu = Selector('.Collection > .header .Dropdown button');
@@ -39,7 +40,6 @@ export const roleOption = (text) =>
   Selector('.Modal.is-visible .LabeledInput .label.after').withText(text);
 export const userList = Selector('.UserList');
 export const addUserModal = Selector('.AddUserModal');
-export const addSourceModal = Selector('.SourcesModal');
 export const logoutButton = Selector('header button').withText('Logout');
 export const usernameDropdown = Selector('header button').withAttribute('aria-label', 'Open User');
 export const searchField = Selector('.cds--search-input');

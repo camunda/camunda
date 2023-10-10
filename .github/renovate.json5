@@ -50,7 +50,6 @@
     "master",
     "maintenance/3.10",
     "maintenance/3.9",
-    "maintenance/3.8",
     "maintenance/3.7",
   ],
   // This ignores are the ones comming by default from config:base with exception to **/test/**

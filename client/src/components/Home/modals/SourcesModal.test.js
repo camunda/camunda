@@ -8,7 +8,7 @@
 import React, {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
 
-import {areTenantsAvailable} from 'config';
+import {areTenantsAvailable, getOptimizeProfile} from 'config';
 
 import {getDefinitionsWithTenants, getTenantsWithDefinitions} from './service';
 import {SourcesModal} from './SourcesModal';
@@ -23,6 +23,7 @@ jest.mock('./service', () => ({
 
 jest.mock('config', () => ({
   areTenantsAvailable: jest.fn().mockReturnValue(true),
+  getOptimizeProfile: jest.fn().mockReturnValue('platform'),
 }));
 
 const props = {
@@ -161,9 +162,8 @@ it('should only select the tenant used in filtering', async () => {
 
   await runAllEffects();
 
-  const dataTable = node.find('Table').dive().find('DataTable').dive();
-
-  dataTable.find('Typeahead').simulate('change', 'engineering');
+  const toolbar = shallow(node.find('Table').prop('toolbar'));
+  toolbar.find('Typeahead').simulate('change', 'engineering');
 
   node
     .find('Table')
@@ -175,4 +175,47 @@ it('should only select the tenant used in filtering', async () => {
   expect(spy).toHaveBeenCalledWith([
     {definitionKey: 'def1', definitionType: 'process', tenants: ['engineering']},
   ]);
+});
+
+it('should change the selected tenants based on the popover in C7', async () => {
+  const spy = jest.fn();
+  const node = shallow(<SourcesModal {...props} onConfirm={spy} preSelectAll />);
+
+  await runAllEffects();
+  await node.update();
+
+  const tenantPopover = node.find('Table').prop('body')[0][3];
+
+  tenantPopover.props.onChange([{id: 'test'}]);
+
+  node.find('.confirm').simulate('click');
+
+  expect(spy).toHaveBeenCalledWith([
+    {
+      definitionKey: 'def1',
+      definitionType: 'process',
+      tenants: [{id: 'test'}],
+    },
+    {
+      definitionKey: 'def2',
+      definitionType: 'process',
+      tenants: [null],
+    },
+  ]);
+});
+
+it('should display the only tenant value as text in self managed mode', async () => {
+  getOptimizeProfile.mockReturnValueOnce('ccsm');
+  getTenantsWithDefinitions.mockReturnValueOnce([{id: 'engineering'}]);
+  getDefinitionsWithTenants.mockReturnValueOnce([
+    {key: 'testDef', name: null, type: 'process', tenants: [{id: '<default>', name: 'Default'}]},
+  ]);
+
+  const spy = jest.fn();
+  const node = shallow(<SourcesModal {...props} onConfirm={spy} preSelectAll />);
+
+  await runAllEffects();
+  await node.update();
+
+  expect(node.find('Table').prop('body')[0][3]).toBe('Default');
 });

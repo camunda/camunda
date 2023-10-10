@@ -5,11 +5,11 @@
   <parent>
     <groupId>org.camunda.optimize</groupId>
     <artifactId>util</artifactId>
-    <version>3.11.0</version>
+    <version>3.12.0</version>
   </parent>
 
   <artifactId>optimize-reimport-preparation</artifactId>
-  <version>3.11.0</version>
+  <version>3.12.0</version>
 
   <properties>
     <skipTests>false</skipTests>
@@ -37,7 +37,7 @@
     <dependency>
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>
-      <version>2.13.0</version>
+      <version>2.14.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -155,7 +155,7 @@
           </plugin>
           <plugin>
             <groupId>org.codehaus.cargo</groupId>
-            <artifactId>cargo-maven2-plugin</artifactId>
+            <artifactId>cargo-maven3-plugin</artifactId>
             <executions>
               <execution>
                 <id>start-container</id>
@@ -170,7 +170,7 @@
               <!-- Container configuration -->
               <container>
                 <type>remote</type>
-                <containerId>tomcat8x</containerId>
+                <containerId>tomcat9x</containerId>
               </container>
               <configuration>
                 <type>runtime</type>

@@ -105,7 +105,7 @@ public class ZeebeProcessDefinitionImportService implements ImportService<ZeebeP
               .orElse(recordData.getBpmnProcessId()))
       .bpmn20Xml(bpmn)
       .dataSource(new ZeebeDataSourceDto(configurationService.getConfiguredZeebe().getName(), partitionId))
-      .tenantId(null)
+      .tenantId(recordData.getTenantId())
       .deleted(false)
       .flowNodeData(BpmnModelUtil.extractFlowNodeData(bpmn))
       .userTaskNames(BpmnModelUtil.extractUserTaskNames(bpmn))

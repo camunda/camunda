@@ -16,10 +16,7 @@ import org.camunda.optimize.dto.optimize.query.dashboard.tile.DimensionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.tile.PositionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.CountProgressDto;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.SingleReportTargetValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateUnit;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.instance.RollingDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
@@ -27,10 +24,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
 import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.ProcessDistributedByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
-import org.camunda.optimize.dto.optimize.query.report.single.process.group.FlowNodesGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.NoneGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.StartDateGroupByDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.group.UserTasksGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.DateGroupByValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
@@ -44,22 +39,20 @@ import org.springframework.stereotype.Component;
 import java.util.Collections;
 import java.util.List;
 
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.ComparisonOperator.GREATER_THAN;
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.ComparisonOperator.LESS_THAN;
-
 @Slf4j
 @AllArgsConstructor
 @Component
 public class ManagementDashboardService {
 
   public static final String MANAGEMENT_DASHBOARD_LOCALIZATION_CODE = "dashboardName";
-  public static final String PROCESS_INSTANCE_USAGE_REPORT_LOCALIZATION_CODE = "processInstanceUsage";
-  public static final String INCIDENT_FREE_RATE_REPORT_LOCALIZATION_CODE = "incidentFreeRate";
-  public static final String AUTOMATION_RATE_REPORT_LOCALIZATION_CODE = "automationRate";
-  public static final String LONG_RUNNING_INSTANCES_REPORT_LOCALIZATION_CODE = "longRunningInstances";
-  public static final String AUTOMATION_CANDIDATES_REPORT_LOCALIZATION_CODE = "automationCandidates";
-  public static final String ACTIVE_BOTTLENECKS_REPORT_LOCALIZATION_CODE = "activeBottlenecks";
   public static final String MANAGEMENT_DASHBOARD_ID = "management-dashboard";
+  public static final String CURRENTLY_IN_PROGRESS_NAME_LOCALIZATION_CODE = "instancesCurrentlyInProgressName";
+  public static final String CURRENTLY_IN_PROGRESS_DESCRIPTION_LOCALIZATION_CODE = "instancesCurrentlyInProgressDescription";
+  public static final String STARTED_IN_LAST_SIX_MONTHS_NAME_LOCALIZATION_CODE = "instancesStartedInLastSixMonthsName";
+  public static final String STARTED_IN_LAST_SIX_MONTHS_DESCRIPTION_LOCALIZATION_CODE =
+    "instancesStartedInLastSixMonthsDescription";
+  public static final String ENDED_IN_LAST_SIX_MONTHS_NAME_LOCALIZATION_CODE = "instancesEndedInLastSixMonthsName";
+  public static final String ENDED_IN_LAST_SIX_MONTHS_DESCRIPTION_LOCALIZATION_CODE = "instancesEndedInLastSixMonthsDescription";
 
   private final DashboardWriter dashboardWriter;
   private final ReportWriter reportWriter;
@@ -77,120 +70,74 @@ public class ManagementDashboardService {
       log.info("Creating Management Reports and Management Dashboard");
       createManagementDashboardForReports(
         List.of(
-          createProcessInstanceByStartMonthReport(new PositionDto(0, 0), new DimensionDto(3, 4)),
-          createOverallIncidentFreeRateReport(new PositionDto(3, 0), new DimensionDto(3, 2)),
-          createAutomationRateReport(new PositionDto(3, 2), new DimensionDto(3, 2)),
-          createLongRunningInstancesReport(new PositionDto(6, 0), new DimensionDto(4, 4)),
-          createAutomationCandidatesReport(new PositionDto(10, 0), new DimensionDto(4, 4)),
-          createActiveBottlenecksReport(new PositionDto(14, 0), new DimensionDto(4, 4))
+          createProcessesCurrentlyInProgressReport(new PositionDto(0, 0), new DimensionDto(4, 2)),
+          createProcessesStartedInLastSixMonthsReport(new PositionDto(4, 0), new DimensionDto(14, 4)),
+          createProcessesEndedInLastSixMonthsReport(new PositionDto(0, 2), new DimensionDto(4, 2))
         )
       );
     }
   }
 
-  private DashboardReportTileDto createProcessInstanceByStartMonthReport(final PositionDto positionDto,
-                                                                         final DimensionDto dimensionDto) {
-    final ProcessReportDataDto processInstanceGroupedByMonth = ProcessReportDataDto.builder()
+  private DashboardReportTileDto createProcessesCurrentlyInProgressReport(final PositionDto positionDto,
+                                                                          final DimensionDto dimensionDto) {
+    final ProcessReportDataDto processInstancesCurrentlyInProgressReport = ProcessReportDataDto.builder()
+      .definitions(Collections.emptyList())
+      .view(new ProcessViewDto(ProcessViewEntity.PROCESS_INSTANCE, ViewProperty.FREQUENCY))
+      .groupBy(new NoneGroupByDto())
+      .visualization(ProcessVisualization.NUMBER)
+      .managementReport(true)
+      .build();
+    final String reportId = createReportAndGetId(
+      processInstancesCurrentlyInProgressReport,
+      CURRENTLY_IN_PROGRESS_NAME_LOCALIZATION_CODE,
+      CURRENTLY_IN_PROGRESS_DESCRIPTION_LOCALIZATION_CODE
+    );
+    return buildDashboardReportTileDto(positionDto, dimensionDto, reportId);
+  }
+
+  private DashboardReportTileDto createProcessesStartedInLastSixMonthsReport(final PositionDto positionDto,
+                                                                             final DimensionDto dimensionDto) {
+    final ProcessReportDataDto processInstancesStartedInLastSixMonthsReport = ProcessReportDataDto.builder()
       .definitions(Collections.emptyList())
       .view(new ProcessViewDto(ProcessViewEntity.PROCESS_INSTANCE, ViewProperty.FREQUENCY))
       .groupBy(new StartDateGroupByDto(new DateGroupByValueDto(AggregateByDateUnit.MONTH)))
-      .visualization(ProcessVisualization.BAR)
-      .managementReport(true)
-      .build();
-    final String reportId = createReportAndGetId(processInstanceGroupedByMonth, PROCESS_INSTANCE_USAGE_REPORT_LOCALIZATION_CODE);
-    return buildDashboardReportTileDto(positionDto, dimensionDto, reportId);
-  }
-
-  private DashboardReportTileDto createOverallIncidentFreeRateReport(final PositionDto positionDto,
-                                                                     final DimensionDto dimensionDto) {
-    final SingleReportTargetValueDto targetConfig = new SingleReportTargetValueDto();
-    targetConfig.setActive(true);
-    final CountProgressDto countProgressConfig = new CountProgressDto();
-    countProgressConfig.setTarget("99.5");
-    targetConfig.setCountProgress(countProgressConfig);
-    final ProcessReportDataDto overAllIncidentFreeRate = ProcessReportDataDto.builder()
-      .definitions(Collections.emptyList())
-      .view(new ProcessViewDto(ProcessViewEntity.PROCESS_INSTANCE, ViewProperty.PERCENTAGE))
-      .groupBy(new NoneGroupByDto())
-      .visualization(ProcessVisualization.NUMBER)
-      .filter(ProcessFilterBuilder.filter().noIncidents().add().buildList())
-      .configuration(SingleReportConfigurationDto.builder().targetValue(targetConfig).build())
-      .managementReport(true)
-      .build();
-    final String reportId = createReportAndGetId(overAllIncidentFreeRate, INCIDENT_FREE_RATE_REPORT_LOCALIZATION_CODE);
-    return buildDashboardReportTileDto(positionDto, dimensionDto, reportId);
-  }
-
-  private DashboardReportTileDto createAutomationRateReport(final PositionDto positionDto, final DimensionDto dimensionDto) {
-    final SingleReportTargetValueDto targetConfig = new SingleReportTargetValueDto();
-    targetConfig.setActive(true);
-    final CountProgressDto countProgressConfig = new CountProgressDto();
-    countProgressConfig.setTarget("70");
-    targetConfig.setCountProgress(countProgressConfig);
-    final ProcessReportDataDto automationRate = ProcessReportDataDto.builder()
-      .definitions(Collections.emptyList())
-      .view(new ProcessViewDto(ProcessViewEntity.PROCESS_INSTANCE, ViewProperty.PERCENTAGE))
-      .groupBy(new NoneGroupByDto())
-      .visualization(ProcessVisualization.NUMBER)
-      .filter(ProcessFilterBuilder.filter()
-                .duration()
-                .operator(LESS_THAN)
-                .unit(DurationUnit.HOURS)
-                .value(1L)
-                .add()
-                .buildList())
-      .configuration(SingleReportConfigurationDto.builder().targetValue(targetConfig).build())
-      .managementReport(true)
-      .build();
-    final String reportId = createReportAndGetId(automationRate, AUTOMATION_RATE_REPORT_LOCALIZATION_CODE);
-    return buildDashboardReportTileDto(positionDto, dimensionDto, reportId);
-  }
-
-  private DashboardReportTileDto createLongRunningInstancesReport(final PositionDto positionDto,
-                                                                  final DimensionDto dimensionDto) {
-    final ProcessReportDataDto longRunningInstances = ProcessReportDataDto.builder()
-      .definitions(Collections.emptyList())
-      .view(new ProcessViewDto(ProcessViewEntity.PROCESS_INSTANCE, List.of(ViewProperty.FREQUENCY, ViewProperty.DURATION)))
-      .groupBy(new NoneGroupByDto())
       .distributedBy(new ProcessDistributedByDto())
-      .visualization(ProcessVisualization.PIE)
+      .visualization(ProcessVisualization.BAR)
       .filter(ProcessFilterBuilder.filter()
-                .duration()
-                .operator(GREATER_THAN)
-                .unit(DurationUnit.DAYS)
-                .value(7L)
+                .rollingInstanceStartDate()
+                .start(6L, DateUnit.MONTHS)
                 .add()
-                .runningInstancesOnly()
+                .buildList())
+      .configuration(SingleReportConfigurationDto.builder().stackedBar(true).build())
+      .managementReport(true)
+      .build();
+    final String reportId = createReportAndGetId(
+      processInstancesStartedInLastSixMonthsReport,
+      STARTED_IN_LAST_SIX_MONTHS_NAME_LOCALIZATION_CODE,
+      STARTED_IN_LAST_SIX_MONTHS_DESCRIPTION_LOCALIZATION_CODE
+    );
+    return buildDashboardReportTileDto(positionDto, dimensionDto, reportId);
+  }
+
+  private DashboardReportTileDto createProcessesEndedInLastSixMonthsReport(final PositionDto positionDto,
+                                                                           final DimensionDto dimensionDto) {
+    final ProcessReportDataDto processInstancesEndedInLastSixMonthsReport = ProcessReportDataDto.builder()
+      .definitions(Collections.emptyList())
+      .view(new ProcessViewDto(ProcessViewEntity.PROCESS_INSTANCE, ViewProperty.FREQUENCY))
+      .groupBy(new NoneGroupByDto())
+      .visualization(ProcessVisualization.NUMBER)
+      .filter(ProcessFilterBuilder.filter()
+                .rollingInstanceEndDate()
+                .start(6L, DateUnit.MONTHS)
                 .add()
                 .buildList())
       .managementReport(true)
       .build();
-    final String reportId = createReportAndGetId(longRunningInstances, LONG_RUNNING_INSTANCES_REPORT_LOCALIZATION_CODE);
-    return buildDashboardReportTileDto(positionDto, dimensionDto, reportId);
-  }
-
-  private DashboardReportTileDto createAutomationCandidatesReport(final PositionDto positionDto,
-                                                                  final DimensionDto dimensionDto) {
-    final ProcessReportDataDto automationCandidates = ProcessReportDataDto.builder()
-      .definitions(Collections.emptyList())
-      .view(new ProcessViewDto(ProcessViewEntity.USER_TASK, List.of(ViewProperty.FREQUENCY, ViewProperty.DURATION)))
-      .groupBy(new UserTasksGroupByDto())
-      .visualization(ProcessVisualization.PIE)
-      .managementReport(true)
-      .build();
-    final String reportId = createReportAndGetId(automationCandidates, AUTOMATION_CANDIDATES_REPORT_LOCALIZATION_CODE);
-    return buildDashboardReportTileDto(positionDto, dimensionDto, reportId);
-  }
-
-  private DashboardReportTileDto createActiveBottlenecksReport(final PositionDto positionDto, final DimensionDto dimensionDto) {
-    final ProcessReportDataDto activeBottlenecks = ProcessReportDataDto.builder()
-      .definitions(Collections.emptyList())
-      .view(new ProcessViewDto(ProcessViewEntity.FLOW_NODE, List.of(ViewProperty.FREQUENCY, ViewProperty.DURATION)))
-      .groupBy(new FlowNodesGroupByDto())
-      .visualization(ProcessVisualization.PIE)
-      .managementReport(true)
-      .build();
-    final String reportId = createReportAndGetId(activeBottlenecks, ACTIVE_BOTTLENECKS_REPORT_LOCALIZATION_CODE);
+    final String reportId = createReportAndGetId(
+      processInstancesEndedInLastSixMonthsReport,
+      ENDED_IN_LAST_SIX_MONTHS_NAME_LOCALIZATION_CODE,
+      ENDED_IN_LAST_SIX_MONTHS_DESCRIPTION_LOCALIZATION_CODE
+    );
     return buildDashboardReportTileDto(positionDto, dimensionDto, reportId);
   }
 
@@ -219,9 +166,11 @@ public class ManagementDashboardService {
     dashboardWriter.saveDashboard(dashboardDefinition);
   }
 
-  private String createReportAndGetId(final ProcessReportDataDto processReportDataDto, final String localisationCodeForName) {
+  private String createReportAndGetId(final ProcessReportDataDto processReportDataDto,
+                                      final String localisationCodeForName,
+                                      final String localisationCodeForDescription) {
     return reportWriter.createNewSingleProcessReport(
-      null, processReportDataDto, localisationCodeForName, null, null
+      null, processReportDataDto, localisationCodeForName, localisationCodeForDescription, null
     ).getId();
   }
 

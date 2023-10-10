@@ -1,6 +1,14 @@
 name: e2e tests
 
-on: [push]
+on:
+  push:
+  workflow_dispatch: 
+
+# Will limit the workflow to 1 concurrent run per ref (branch / PR)
+# If a new commits occurs, the current run will be canceled
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read  # for git clone
@@ -13,7 +21,7 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4
 
     - name: Import secrets
       id: secrets
@@ -34,7 +42,7 @@ jobs:
           secret/data/products/optimize/ci/camunda-optimize CI_SERVICE_ACCOUNT | GCP_CREDENTIALS;
 
     - name: Login to Harbor docker registery
-      uses: docker/login-action@v2
+      uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3
       with:
         registry: registry.camunda.cloud
         username: ${{ steps.secrets.outputs.CAMUNDA_CONTAINER_REGISTRY_USER }}

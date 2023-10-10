@@ -36,7 +36,7 @@ public class ElasticMetadataVersionIT extends AbstractPlatformIT {
 
     // then schemaversion matches expected version and installationID is present
     final Optional<MetadataDto> metadataDto = getMetadataDto();
-    final String expectedVersion = embeddedOptimizeExtension.getBean(OptimizeVersionService.class).getVersion();
+    final String expectedVersion = embeddedOptimizeExtension.getBean(PlatformOptimizeVersionService.class).getVersion();
 
     assertThat(metadataDto)
       .isPresent().get()

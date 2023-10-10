@@ -38,7 +38,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisu
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto;
 import org.camunda.optimize.dto.optimize.rest.EventProcessMappingCreateRequestDto;
-import org.camunda.optimize.service.TenantService;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -64,6 +63,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+
+import static org.camunda.optimize.service.tenant.CamundaPlatformTenantService.TENANT_NOT_DEFINED;
 
 @Slf4j
 public class Generator {
@@ -299,7 +300,7 @@ public class Generator {
           .processDefinitionKey(definitionEngineDto.getKey())
           .versions(Collections.singletonList(definitionEngineDto.getVersionAsString()))
           .tenants(Collections.singletonList(
-            definitionEngineDto.getTenantId().orElse(TenantService.TENANT_NOT_DEFINED.getId())
+            definitionEngineDto.getTenantId().orElse(TENANT_NOT_DEFINED.getId())
           ))
           .tracedByBusinessKey(true)
           .traceVariable(null)

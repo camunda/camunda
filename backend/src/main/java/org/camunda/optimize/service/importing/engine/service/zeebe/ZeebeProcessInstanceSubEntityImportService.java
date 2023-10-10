@@ -62,11 +62,13 @@ public abstract class ZeebeProcessInstanceSubEntityImportService<T> implements I
 
   protected ProcessInstanceDto createSkeletonProcessInstance(final String processDefinitionKey,
                                                              final Long processInstanceId,
-                                                             final Long processDefinitionId) {
+                                                             final Long processDefinitionId,
+                                                             final String tenantId) {
     final ProcessInstanceDto processInstanceDto = new ProcessInstanceDto();
     processInstanceDto.setProcessDefinitionKey(processDefinitionKey);
     processInstanceDto.setProcessInstanceId(String.valueOf(processInstanceId));
     processInstanceDto.setProcessDefinitionId(String.valueOf(processDefinitionId));
+    processInstanceDto.setTenantId(tenantId);
     processInstanceDto.setDataSource(new ZeebeDataSourceDto(
       configurationService.getConfiguredZeebe().getName(),
       partitionId

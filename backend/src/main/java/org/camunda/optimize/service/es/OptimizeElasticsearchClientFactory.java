@@ -14,17 +14,20 @@ import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.es.schema.RequestOptionsProvider;
 import org.camunda.optimize.service.util.BackoffCalculator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.springframework.context.annotation.Conditional;
 
 import java.io.IOException;
 
-import static org.camunda.optimize.service.util.ESVersionChecker.checkESVersionSupport;
+import static org.camunda.optimize.service.util.DatabaseVersionChecker.checkESVersionSupport;
 
 @Slf4j
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
+@Conditional(ElasticSearchCondition.class)
 public class OptimizeElasticsearchClientFactory {
 
   public static OptimizeElasticsearchClient create(final ConfigurationService configurationService,

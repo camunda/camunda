@@ -20,13 +20,13 @@ import org.camunda.optimize.dto.optimize.rest.definition.DefinitionWithTenantsRe
 import org.camunda.optimize.dto.optimize.rest.definition.MultiDefinitionTenantsRequestDto;
 import org.camunda.optimize.dto.optimize.rest.definition.MultiDefinitionTenantsRequestDto.DefinitionDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
-import org.camunda.optimize.service.TenantService;
 import org.camunda.optimize.util.SuppressionConstants;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
 import jakarta.ws.rs.core.Response;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -35,7 +35,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.ReportConstants.LATEST_VERSION;
-import static org.camunda.optimize.service.TenantService.TENANT_NOT_DEFINED;
+import static org.camunda.optimize.service.tenant.CamundaPlatformTenantService.TENANT_NOT_DEFINED;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
@@ -43,7 +43,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_INDE
 
 public class DefinitionRestServiceWithCollectionScopeIT extends AbstractPlatformIT {
 
-  private static final String TENANT_NOT_DEFINED_ID = TenantService.TENANT_NOT_DEFINED.getId();
+  private static final String TENANT_NOT_DEFINED_ID = TENANT_NOT_DEFINED.getId();
   private static final String TENANT_ID_1 = "tenant1";
   private static final String TENANT_ID_2 = "tenant2";
   private static final String TENANT_ID_3 = "tenant3";

@@ -14,7 +14,7 @@ runs:
   steps:
   - name: Import secrets
     id: secrets
-    uses: hashicorp/vault-action@cb841f2c86fb6d07cff94fda240828c1abc5ba43
+    uses: hashicorp/vault-action@86c7f837eb43794c7dc56f74d9cffac710679b28
     with:
       url: ${{ fromJSON(inputs.secrets).VAULT_ADDR }}
       method: approle
@@ -24,7 +24,7 @@ runs:
         secret/data/products/optimize/ci/optimize NEXUS_USERNAME;
         secret/data/products/optimize/ci/optimize NEXUS_PASSWORD;
   - name: Login to Harbor docker registery
-    uses: docker/login-action@v2
+    uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3
     with:
       registry: ${{ inputs.env }}registry.camunda.cloud
       username: ${{ steps.secrets.outputs.NEXUS_USERNAME }}

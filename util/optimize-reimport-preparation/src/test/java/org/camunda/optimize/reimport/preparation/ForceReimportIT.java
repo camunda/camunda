@@ -23,7 +23,6 @@ import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRest
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessState;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponseDto;
-import org.camunda.optimize.service.TenantService;
 import org.camunda.optimize.service.importing.eventprocess.AbstractEventProcessIT;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -39,6 +38,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.service.tenant.CamundaPlatformTenantService.TENANT_NOT_DEFINED;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.BUSINESS_KEY_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
@@ -243,7 +243,7 @@ public class ForceReimportIT extends AbstractEventProcessIT {
 
   private String createAndStoreNumberReport(String collectionId, ProcessDefinitionEngineDto processDefinition) {
     return reportClient.createAndStoreProcessReport(
-      collectionId, processDefinition.getKey(), Collections.singletonList(TenantService.TENANT_NOT_DEFINED.getId())
+      collectionId, processDefinition.getKey(), Collections.singletonList(TENANT_NOT_DEFINED.getId())
     );
   }
 

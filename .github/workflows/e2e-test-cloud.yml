@@ -8,7 +8,7 @@ jobs:
     timeout-minutes: 60
     services:
       elasticsearch:
-        image: docker.elastic.co/elasticsearch/elasticsearch:7.17.12
+        image: docker.elastic.co/elasticsearch/elasticsearch:7.17.13@sha256:67b2d720621da7092ef18fe5ccca2eeb7b863b55d4bcee30108224520aebd92c
         env:
           discovery.type: single-node
           ES_JAVA_OPTS: -Xms1024m -Xmx1024m
@@ -18,11 +18,11 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4
 
     - name: Import secrets
       id: secrets
-      uses: hashicorp/vault-action@cb841f2c86fb6d07cff94fda240828c1abc5ba43
+      uses: hashicorp/vault-action@86c7f837eb43794c7dc56f74d9cffac710679b28
       with:
         url: ${{ secrets.VAULT_ADDR }}
         method: approle

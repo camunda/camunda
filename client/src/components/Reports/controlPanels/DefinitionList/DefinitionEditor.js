@@ -15,11 +15,13 @@ import {
   BPMNDiagram,
   VersionPopover,
   TenantPopover,
+  TenantInfo,
 } from 'components';
 import {withErrorHandling} from 'HOC';
 import {loadProcessDefinitionXml} from 'services';
 import {t} from 'translation';
 import {showError} from 'notifications';
+import {getOptimizeProfile} from 'config';
 
 import {loadTenants, loadVersions} from './service';
 import RenameVariablesModal from './RenameVariablesModal';
@@ -44,10 +46,17 @@ export function DefinitionEditor({mightFail, collection, type, definition, tenan
   const [displayName, setDisplayName] = useState(definition.displayName);
   const [diagramModalOpen, setDiagramModalOpen] = useState(false);
   const [variableModalOpen, setVariableModalOpen] = useState(false);
+  const [optimizeProfile, setOptimizeProfile] = useState();
 
   useEffect(() => {
     mightFail(loadVersions(type, collection, key), setAvailableVersions, showError);
   }, [mightFail, collection, key, type]);
+
+  useEffect(() => {
+    (async () => {
+      setOptimizeProfile(await getOptimizeProfile());
+    })();
+  }, []);
 
   useEffect(() => {
     setLoadingXml(true);
@@ -65,6 +74,8 @@ export function DefinitionEditor({mightFail, collection, type, definition, tenan
     evt.stopPropagation();
     setDiagramModalOpen(false);
   };
+
+  const showOnlyTenant = availableTenants?.length === 1 && optimizeProfile === 'ccsm';
 
   return (
     <>
@@ -127,6 +138,7 @@ export function DefinitionEditor({mightFail, collection, type, definition, tenan
               />
             </div>
           )}
+          {showOnlyTenant && <TenantInfo tenant={availableTenants[0]} />}
           <div className="displayName">
             <Labeled label={t('report.displayName')} />
             <Input

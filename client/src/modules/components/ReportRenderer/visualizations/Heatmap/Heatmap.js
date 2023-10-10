@@ -79,18 +79,19 @@ export function Heatmap({report, context, user}) {
 
           if (typeof real === 'number') {
             const relation = (real / target) * 100;
-            const type = result.measures[selectedMeasure].aggregationType?.type;
-
-            tooltipHTML = (
-              <>
-                {targetDuration}
-                {t(`report.heatTarget.duration.${type}`)}
-                {t('report.heatTarget.actualDuration', {
-                  duration: formatters.duration(real, precision, alwaysShow),
-                  percentage: relation < 1 ? '< 1' : Math.round(relation),
-                })}
-              </>
-            );
+            const {type, value} = result.measures[selectedMeasure].aggregationType || {};
+            if (type) {
+              tooltipHTML = (
+                <>
+                  {targetDuration}
+                  {t(`report.heatTarget.duration.${type}`, {value})}
+                  {t('report.heatTarget.actualDuration', {
+                    duration: formatters.duration(real, precision, alwaysShow),
+                    percentage: relation < 1 ? '< 1' : Math.round(relation),
+                  })}
+                </>
+              );
+            }
           } else {
             tooltipHTML = (
               <>

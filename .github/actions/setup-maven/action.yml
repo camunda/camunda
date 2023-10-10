@@ -22,7 +22,7 @@ runs:
   steps:
   - name: Import secrets
     id: secrets
-    uses: hashicorp/vault-action@cb841f2c86fb6d07cff94fda240828c1abc5ba43
+    uses: hashicorp/vault-action@86c7f837eb43794c7dc56f74d9cffac710679b28
     with:
       url: ${{ fromJSON(inputs.secrets).VAULT_ADDR }}
       method: approle
@@ -32,7 +32,7 @@ runs:
         secret/data/products/optimize/ci/optimize NEXUS_USERNAME;
         secret/data/products/optimize/ci/optimize NEXUS_PASSWORD;
   - name: Setup Maven Action
-    uses: s4u/setup-maven-action@v1.8.0
+    uses: s4u/setup-maven-action@57ca7f1a813fd21035f9399bc015664601217110 # v1.10.0
     with:
       java-version: ${{ inputs.java-version }}
       java-distribution: ${{ inputs.distribution }}

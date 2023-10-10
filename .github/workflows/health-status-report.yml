@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4
 
       - name: Import secrets
         id: secrets
@@ -42,7 +42,7 @@ jobs:
           SNYK_TOKEN: ${{ steps.secrets.outputs.SNYK_TOKEN }}
 
       - name: Get health status report
-        uses: misiekhardcore/infra-report-action@v1.1.0
+        uses: misiekhardcore/infra-report-action@2fd767efd51156126fba0e40c421d73922b701f4 # v1.2.0
         id: get-report
         with:
           config_file_path: ${{ github.workspace }}/.github/scripts/healthStatusReport/config.json

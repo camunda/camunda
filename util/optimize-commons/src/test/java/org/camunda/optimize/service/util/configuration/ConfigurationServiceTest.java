@@ -10,7 +10,7 @@ import com.jayway.jsonpath.spi.mapper.MappingException;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.util.CronNormalizerUtil;
 import org.camunda.optimize.service.util.configuration.cleanup.CleanupMode;
-import org.camunda.optimize.service.util.configuration.elasticsearch.ElasticsearchConnectionNodeConfiguration;
+import org.camunda.optimize.service.util.configuration.elasticsearch.DatabaseConnectionNodeConfiguration;
 import org.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
 import org.camunda.optimize.service.util.configuration.extension.EnvironmentVariablesExtension;
 import org.camunda.optimize.service.util.configuration.extension.SystemPropertiesExtension;
@@ -524,13 +524,13 @@ public class ConfigurationServiceTest {
     assertThat(
       underTest.getElasticsearchConnectionNodes()
         .stream()
-        .map(ElasticsearchConnectionNodeConfiguration::getHost)
+        .map(DatabaseConnectionNodeConfiguration::getHost)
         .collect(toList()))
       .contains(DEFAULT_FIRST_ES_HOST, DEFAULT_SECOND_ES_HOST);
     assertThat(
       underTest.getElasticsearchConnectionNodes()
         .stream()
-        .map(ElasticsearchConnectionNodeConfiguration::getHttpPort)
+        .map(DatabaseConnectionNodeConfiguration::getHttpPort)
         .collect(toList()))
       .contains(DEFAULT_FIRST_ES_PORT, DEFAULT_SECOND_ES_PORT);
     assertThat(underTest.getVariableImportPluginBasePackages()).contains("1", DEFAULT_PACKAGE_2, DEFAULT_PACKAGE_3);
@@ -575,13 +575,13 @@ public class ConfigurationServiceTest {
     assertThat(
       underTest.getElasticsearchConnectionNodes()
         .stream()
-        .map(ElasticsearchConnectionNodeConfiguration::getHost)
+        .map(DatabaseConnectionNodeConfiguration::getHost)
         .collect(toList()))
       .contains(CUSTOM_FIRST_ES_HOST, CUSTOM_SECOND_ES_HOST);
     assertThat(
       underTest.getElasticsearchConnectionNodes()
         .stream()
-        .map(ElasticsearchConnectionNodeConfiguration::getHttpPort)
+        .map(DatabaseConnectionNodeConfiguration::getHttpPort)
         .collect(toList()))
       .contains(CUSTOM_FIRST_ES_PORT, CUSTOM_SECOND_ES_PORT);
     assertThat(

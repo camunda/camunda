@@ -8,13 +8,16 @@
 import {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
 
-import {Input, BPMNDiagram, Button} from 'components';
+import {Input, BPMNDiagram, Button, TenantInfo} from 'components';
 import {loadProcessDefinitionXml} from 'services';
+import {getOptimizeProfile} from 'config';
 
 import RenameVariablesModal from './RenameVariablesModal';
 import DiagramModal from './DiagramModal';
 import {DefinitionEditor} from './DefinitionEditor';
 import {loadVersions} from './service';
+
+jest.mock('config', () => ({getOptimizeProfile: jest.fn().mockReturnValue('platform')}));
 
 jest.mock('services', () => {
   return {
@@ -66,6 +69,16 @@ it('should show available tenants for the given definition and versions', () => 
   const node = shallow(<DefinitionEditor {...props} />);
 
   expect(node.find('TenantPopover').prop('tenants')).toEqual(props.tenantInfo);
+});
+
+it('should show the readonly TenantInfo in self managed mode', async () => {
+  getOptimizeProfile.mockReturnValueOnce('ccsm');
+  const tenant = {id: '<default>', name: 'Default'};
+  const node = shallow(<DefinitionEditor {...props} tenantInfo={[tenant]} />);
+
+  await runAllEffects();
+
+  expect(node.find(TenantInfo).prop('tenant')).toBe(tenant);
 });
 
 it('should allow users to set a display name', () => {

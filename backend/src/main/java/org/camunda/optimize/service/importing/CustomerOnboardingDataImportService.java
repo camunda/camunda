@@ -120,12 +120,12 @@ public class CustomerOnboardingDataImportService {
           loadProcessInstancesToElasticSearch(processInstanceDtos, batchSize);
         } else {
           log.error(
-            "Could not load customer onboarding process instances to input stream. Please validate the process instance json " +
+            "Could not load Camunda Customer Onboarding Demo process instances to input stream. Please validate the process instance json " +
               "file.");
         }
       }
     } catch (IOException e) {
-      log.error("Could not parse customer onboarding process instances file.", e);
+      log.error("Could not parse Camunda Customer Onboarding Demo process instances file.", e);
     }
   }
 

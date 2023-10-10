@@ -9,12 +9,21 @@ import React from 'react';
 import classnames from 'classnames';
 import {withRouter} from 'react-router-dom';
 
-import {Message, BPMNDiagram, LoadingIndicator, Popover, Typeahead, Labeled} from 'components';
+import {
+  Message,
+  BPMNDiagram,
+  LoadingIndicator,
+  Popover,
+  Typeahead,
+  Labeled,
+  TenantInfo,
+} from 'components';
 import {withErrorHandling} from 'HOC';
 import {getCollection} from 'services';
 import {t} from 'translation';
 import {showError} from 'notifications';
 import debouncePromise from 'debouncePromise';
+import {getOptimizeProfile} from 'config';
 
 import MultiDefinitionSelection from './MultiDefinitionSelection';
 import TenantPopover from './TenantPopover';
@@ -45,10 +54,11 @@ export class DefinitionSelection extends React.Component {
       isLoadingTenants: false,
       selection: defaultSelection(props),
       selectedSpecificVersions: this.isSpecificVersion(props.versions) ? props.versions : [],
+      optimizeProfile: null,
     };
   }
 
-  componentDidMount = () => {
+  componentDidMount = async () => {
     const {definitionKey, versions} = this.props;
 
     this.loadDefinitions().then((availableDefinitions) => this.setState({availableDefinitions}));
@@ -63,6 +73,10 @@ export class DefinitionSelection extends React.Component {
         this.setState({availableTenants})
       );
     }
+
+    this.setState({
+      optimizeProfile: await getOptimizeProfile(),
+    });
   };
 
   loadDefinitions = () => {
@@ -206,6 +220,14 @@ export class DefinitionSelection extends React.Component {
     this.props.onChange(this.props.selectedDefinitions ? [newSelection] : newSelection);
 
   hasDefinition = () => this.state.selection.key;
+
+  isOnlyTenant = () => {
+    const tenants = this.getAvailableTenants();
+    const {optimizeProfile} = this.state;
+
+    return tenants?.length === 1 && optimizeProfile === 'ccsm';
+  };
+
   hasTenants = () => {
     const {key, versions} = this.state.selection;
     if (key && versions) {
@@ -356,16 +378,23 @@ export class DefinitionSelection extends React.Component {
                   useCarbonTrigger={selectedDefinitions}
                 />
               </div>
-              <div className="tenant entry">
-                <TenantPopover
-                  tenants={this.getAvailableTenants()}
-                  selected={this.getSelectedTenants()}
-                  onChange={this.changeTenants}
-                  loading={isLoadingTenants}
-                  label={t('common.tenant.label')}
-                  useCarbonTrigger={selectedDefinitions}
+              {this.isOnlyTenant() ? (
+                <TenantInfo
+                  tenant={this.getAvailableTenants()[0]}
+                  useCarbonVariant={selectedDefinitions}
                 />
-              </div>
+              ) : (
+                <div className="tenant entry">
+                  <TenantPopover
+                    tenants={this.getAvailableTenants()}
+                    selected={this.getSelectedTenants()}
+                    onChange={this.changeTenants}
+                    loading={isLoadingTenants}
+                    label={t('common.tenant.label')}
+                    useCarbonTrigger={selectedDefinitions}
+                  />
+                </div>
+              )}
             </div>
             <div className="info">
               {displayVersionWarning &&

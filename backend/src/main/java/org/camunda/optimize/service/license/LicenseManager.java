@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.license;
 
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.licensecheck.InvalidLicenseException;
@@ -12,20 +13,9 @@ import org.camunda.bpm.licensecheck.LicenseKey;
 import org.camunda.bpm.licensecheck.LicenseKeyImpl;
 import org.camunda.bpm.licensecheck.LicenseType;
 import org.camunda.optimize.dto.optimize.query.LicenseInformationResponseDto;
-import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.exceptions.license.OptimizeInvalidLicenseException;
 import org.camunda.optimize.service.exceptions.license.OptimizeNoLicenseStoredException;
-import org.camunda.optimize.service.metadata.Version;
-import org.elasticsearch.action.get.GetRequest;
-import org.elasticsearch.action.get.GetResponse;
-import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.action.index.IndexResponse;
-import org.elasticsearch.action.support.replication.ReplicationResponse;
-import org.elasticsearch.xcontent.XContentBuilder;
-import org.springframework.stereotype.Component;
 
-import jakarta.annotation.PostConstruct;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -35,23 +25,18 @@ import java.time.ZoneId;
 import java.util.Collections;
 import java.util.Map;
 
-import static org.camunda.optimize.service.es.schema.index.LicenseIndex.LICENSE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LICENSE_INDEX_NAME;
-import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
-import static org.elasticsearch.xcontent.XContentFactory.jsonBuilder;
-
 @RequiredArgsConstructor
-@Component
 @Slf4j
-public class LicenseManager {
+public abstract class LicenseManager {
 
   private static final String OPTIMIZE_LICENSE_FILE = "OptimizeLicense.txt";
-  private final String licenseDocumentId = "license";
+  protected final String licenseDocumentId = "license";
 
-  private final OptimizeElasticsearchClient esClient;
-
-  private String optimizeLicense;
+  protected String optimizeLicense;
   private final Map<String, String> requiredUnifiedKeyMap = Collections.singletonMap("optimize", "true");
+
+  public abstract void storeLicense(String licenseAsString);
+  protected abstract String retrieveStoredOptimizeLicense();
 
   @PostConstruct
   public void init() {
@@ -101,45 +86,6 @@ public class LicenseManager {
     this.optimizeLicense = optimizeLicense;
   }
 
-  public void storeLicense(String licenseAsString) {
-    XContentBuilder builder;
-    try {
-      builder = jsonBuilder()
-        .startObject()
-        .field(LICENSE, licenseAsString)
-        .endObject();
-    } catch (IOException exception) {
-      throw new OptimizeInvalidLicenseException("Could not parse given license. Please check the encoding!");
-    }
-
-    IndexRequest request = new IndexRequest(LICENSE_INDEX_NAME)
-      .id(licenseDocumentId)
-      .source(builder)
-      .setRefreshPolicy(IMMEDIATE);
-
-    IndexResponse indexResponse;
-    try {
-      indexResponse = esClient.index(request);
-    } catch (IOException e) {
-      String reason = "Could not store license in Elasticsearch. Maybe Optimize is not connected to Elasticsearch?";
-      log.error(reason, e);
-      throw new OptimizeRuntimeException(reason, e);
-    }
-    boolean licenseWasStored = indexResponse.getShardInfo().getFailed() == 0;
-    if (licenseWasStored) {
-      optimizeLicense = licenseAsString;
-    } else {
-      StringBuilder reason = new StringBuilder();
-      for (ReplicationResponse.ShardInfo.Failure failure :
-        indexResponse.getShardInfo().getFailures()) {
-        reason.append(failure.reason()).append("\n");
-      }
-      String errorMessage = String.format("Could not store license to Elasticsearch. Reason: %s", reason.toString());
-      log.error(errorMessage);
-      throw new OptimizeRuntimeException(errorMessage);
-    }
-  }
-
   private String readFileToString() throws IOException {
     InputStream inputStream = this.getClass()
       .getClassLoader()
@@ -155,26 +101,6 @@ public class LicenseManager {
       result.write(buffer, 0, length);
     }
     return result.toString(StandardCharsets.UTF_8.name());
-  }
-
-  private String retrieveStoredOptimizeLicense() {
-    log.debug("Retrieving stored optimize license!");
-    GetRequest getRequest = new GetRequest(LICENSE_INDEX_NAME).id(licenseDocumentId);
-
-    GetResponse getResponse;
-    try {
-      getResponse = esClient.get(getRequest);
-    } catch (IOException e) {
-      String reason = "Could not retrieve license from Elasticsearch.";
-      log.error(reason, e);
-      throw new OptimizeRuntimeException(reason, e);
-    }
-
-    String licenseAsString = null;
-    if (getResponse.isExists()) {
-      licenseAsString = getResponse.getSource().get(LICENSE).toString();
-    }
-    return licenseAsString;
   }
 
   private void validateLicenseExists() {

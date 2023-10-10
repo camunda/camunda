@@ -170,7 +170,7 @@ public class OnboardingDataGenerator {
   }
 
   private ProcessInstanceDto readProcessInstanceJson(final OnboardingDataGeneratorParameters onboardingDataGeneratorParameter) {
-    ProcessInstanceDto processInstanceDto = null;
+    ProcessInstanceDto processInstanceDto;
     try {
       ClassLoader classLoader = OnboardingDataGeneratorMain.class.getClassLoader();
       URL resource = classLoader.getResource(onboardingDataGeneratorParameter.getFilePath());

@@ -31,3 +31,5 @@ qa/engine-rest-custom/overlays
 !.idea/copyright/*
 
 m2-repository/
+/.run
+/.run/*

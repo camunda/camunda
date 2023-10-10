@@ -37,7 +37,7 @@ jobs:
     # Setup: import secrets from vault
     - name: Import secrets
       id: secrets
-      uses: hashicorp/vault-action@cb841f2c86fb6d07cff94fda240828c1abc5ba43
+      uses: hashicorp/vault-action@86c7f837eb43794c7dc56f74d9cffac710679b28
       with:
         url: ${{ secrets.VAULT_ADDR }}
         method: approle
@@ -49,7 +49,7 @@ jobs:
     # Setup: checkout code. This is required because we are using
     # composite actions and deployment manifests.
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4
     #########################################################################
     # Determine the argocd arguments that need to be passed to the create app command
     - name: Determine Argocd arguments

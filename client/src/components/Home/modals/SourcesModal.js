@@ -21,7 +21,7 @@ import {formatters} from 'services';
 import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
-import {areTenantsAvailable} from 'config';
+import {areTenantsAvailable, getOptimizeProfile} from 'config';
 
 import {getDefinitionsWithTenants, getTenantsWithDefinitions} from './service';
 
@@ -35,6 +35,7 @@ export function SourcesModal({onClose, onConfirm, mightFail, confirmText, preSel
   const [selected, setSelected] = useState([]);
   const [selectedTenant, setSelectedTenant] = useState();
   const [query, setQuery] = useState('');
+  const [optimizeProfile, setOptimizeProfile] = useState();
 
   useEffect(() => {
     mightFail(
@@ -54,6 +55,7 @@ export function SourcesModal({onClose, onConfirm, mightFail, confirmText, preSel
       const tenantAvailable = await areTenantsAvailable();
       if (tenantAvailable) {
         mightFail(getTenantsWithDefinitions(), setTenants, showError);
+        setOptimizeProfile(await getOptimizeProfile());
       }
     })();
   }, [mightFail]);
@@ -200,28 +202,32 @@ export function SourcesModal({onClose, onConfirm, mightFail, confirmText, preSel
             ];
 
             if (tenants.length !== 0) {
-              body.push(
-                // clicking inside the popover
-                <TenantPopover
-                  tenants={def.tenants}
-                  selected={selectedDefinition?.tenants || ['']}
-                  disabled={!selectedDefinition}
-                  onChange={(newTenants) => {
-                    setSelected(
-                      selected.map((selectedDefinition) => {
-                        if (def.key === selectedDefinition.definitionKey) {
-                          return {
-                            ...selectedDefinition,
-                            tenants: newTenants.length === 0 ? [def.tenants[0].id] : newTenants,
-                          };
-                        }
-                        return selectedDefinition;
-                      })
-                    );
-                  }}
-                  floating
-                />
-              );
+              if (optimizeProfile === 'ccsm' && tenants.length === 1) {
+                body.push(formatTenantName(def.tenants[0]));
+              } else {
+                body.push(
+                  // clicking inside the popover
+                  <TenantPopover
+                    tenants={def.tenants}
+                    selected={selectedDefinition?.tenants || ['']}
+                    disabled={!selectedDefinition}
+                    onChange={(newTenants) => {
+                      setSelected(
+                        selected.map((selectedDefinition) => {
+                          if (def.key === selectedDefinition.definitionKey) {
+                            return {
+                              ...selectedDefinition,
+                              tenants: newTenants.length === 0 ? [def.tenants[0].id] : newTenants,
+                            };
+                          }
+                          return selectedDefinition;
+                        })
+                      );
+                    }}
+                    floating
+                  />
+                );
+              }
             }
 
             return body;

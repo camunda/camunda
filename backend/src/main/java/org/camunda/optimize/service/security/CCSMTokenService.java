@@ -12,9 +12,14 @@ import io.camunda.identity.sdk.authentication.Authentication;
 import io.camunda.identity.sdk.authentication.Tokens;
 import io.camunda.identity.sdk.authentication.UserDetails;
 import io.camunda.identity.sdk.authentication.dto.AuthCodeDto;
+import jakarta.servlet.http.Cookie;
+import jakarta.ws.rs.NotAuthorizedException;
+import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.core.NewCookie;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.CCSMCondition;
@@ -22,13 +27,13 @@ import org.camunda.optimize.service.util.configuration.security.CCSMAuthConfigur
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
-import jakarta.servlet.http.Cookie;
-import jakarta.ws.rs.NotAuthorizedException;
-import jakarta.ws.rs.core.NewCookie;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import static org.camunda.optimize.jetty.OptimizeResourceConstants.REST_API_PATH;
 import static org.camunda.optimize.rest.AuthenticationRestService.AUTHENTICATION_PATH;
@@ -36,6 +41,7 @@ import static org.camunda.optimize.rest.AuthenticationRestService.CALLBACK;
 import static org.camunda.optimize.rest.constants.RestConstants.AUTH_COOKIE_TOKEN_VALUE_PREFIX;
 import static org.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_AUTHORIZATION;
 import static org.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_REFRESH_TOKEN;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ZEEBE_DATA_SOURCE;
 
 @AllArgsConstructor
 @Component
@@ -100,16 +106,30 @@ public class CCSMTokenService {
     );
   }
 
-  public Tokens exchangeAuthCode(final AuthCodeDto authCode, final String redirectUri) {
+  public URI buildAuthorizeUri(final String redirectUri) {
+    // If a redirect root URL is explicitly set, we use that. Otherwise, we use the one provided
+    final String authorizeUri = getConfiguredRedirectUri().orElse(redirectUri);
+    return authentication().authorizeUriBuilder(appendCallbackSubpath(authorizeUri)).build();
+  }
+
+  public Tokens exchangeAuthCode(final AuthCodeDto authCode, final ContainerRequestContext requestContext) {
+    // If a redirect root URL is explicitly set, we append the callback subpath and use that.
+    // Otherwise, we use the one provided in the request
+    final String redirectUri = getConfiguredRedirectUri()
+      .map(CCSMTokenService::appendCallbackSubpath)
+      .orElse(requestContext.getUriInfo().getAbsolutePath().toString());
     return authentication().exchangeAuthCode(authCode, redirectUri);
   }
 
-  public URI buildAuthorizeUri(final String redirectUri) {
-    // If a redirect root URL is explicitly set, we use that. Otherwise, we use the one provided
-    final String redirectRootUrl = configurationService.getAuthConfiguration().getCcsmAuthConfiguration().getRedirectRootUrl();
-    return authentication().authorizeUriBuilder(
-        StringUtils.isEmpty(redirectRootUrl) ? redirectUri : redirectRootUrl + REST_API_PATH + AUTHENTICATION_PATH + CALLBACK)
-      .build();
+  private static String appendCallbackSubpath(final String configuredRedirectUri) {
+    return configuredRedirectUri + REST_API_PATH + AUTHENTICATION_PATH + CALLBACK;
+  }
+
+  private Optional<String> getConfiguredRedirectUri() {
+    final String configuredRedirectRootUrl = configurationService.getAuthConfiguration()
+      .getCcsmAuthConfiguration()
+      .getRedirectRootUrl();
+    return StringUtils.isEmpty(configuredRedirectRootUrl) ? Optional.empty() : Optional.of(configuredRedirectRootUrl);
   }
 
   public AccessToken verifyToken(final String accessToken) {
@@ -140,6 +160,32 @@ public class CCSMTokenService {
       userDetails.getEmail().orElse(userId),
       Collections.emptyList()
     );
+  }
+
+  public Optional<String> getCurrentUserIdFromAuthToken() {
+    // The userID is the subject of the current JWT token
+    return getCurrentUserAuthToken().map(token -> authentication().decodeJWT(token).getSubject());
+  }
+
+  public Optional<String> getCurrentUserAuthToken() {
+    return Optional.ofNullable(RequestContextHolder.getRequestAttributes())
+      .filter(ServletRequestAttributes.class::isInstance)
+      .map(ServletRequestAttributes.class::cast)
+      .map(ServletRequestAttributes::getRequest)
+      .flatMap(AuthCookieService::getAuthCookieToken);
+  }
+
+  public List<TenantDto> getAuthorizedTenantsFromToken(final String accessToken) {
+    try {
+      return identity().tenants()
+        .forToken(accessToken)
+        .stream()
+        .map(tenant -> new TenantDto(tenant.getTenantId(), tenant.getName(), ZEEBE_DATA_SOURCE))
+        .toList();
+    } catch (Exception e) {
+      log.error("Could not retrieve authorized tenants from identity.", e);
+      return Collections.emptyList();
+    }
   }
 
   private String extractTokenFromAuthorizationValue(final String cookieValue) {

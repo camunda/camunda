@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT_ID;
 
 public class MigrateProcessInstanceIndexIT extends AbstractUpgrade311IT {
 
@@ -22,52 +23,36 @@ public class MigrateProcessInstanceIndexIT extends AbstractUpgrade311IT {
   private final String REVIEW_INVOICE_PROCESS = "reviewinvoice";
 
   @Test
-  public void addTenantIdForProcessInstanceOfZeebeEngine() {
+  public void addTenantIdForProcessInstanceOfZeebeEngine_zeebeImportEnabled() {
     // given
+    configurationService.getConfiguredZeebe().setEnabled(true);
     executeBulk("steps/3.10/instances/310-process-instance-index-zeebe-data.json");
 
     // when
     performUpgrade();
 
     // then
-    List<ProcessInstanceDto> alwaysCompletingProcessInstances = getAllDocumentsOfIndexAs(new ProcessInstanceIndex(
-      ALWAYS_COMPLETING_PROCESS).getIndexName(), ProcessInstanceDto.class);
-    assertThat(alwaysCompletingProcessInstances)
-      .extracting(ProcessInstanceDto::getTenantId)
-      .hasSize(4)
-      .containsOnly("<default>");
-    assertThat(alwaysCompletingProcessInstances)
-      .flatExtracting(ProcessInstanceDto::getIncidents)
-      .extracting(IncidentDto::getTenantId)
-      .hasSize(4)
-      .containsOnly("<default>");
-    assertThat(alwaysCompletingProcessInstances)
-      .flatExtracting(ProcessInstanceDto::getFlowNodeInstances)
-      .extracting(FlowNodeInstanceDto::getTenantId)
-      .hasSize(4)
-      .containsOnly("<default>");
+    assertC8TenantIdMigration();
+  }
 
-    List<ProcessInstanceDto> onlyIncidentsProcessInstances = getAllDocumentsOfIndexAs(new ProcessInstanceIndex(
-      ONLY_INCIDENT_PROCESS).getIndexName(), ProcessInstanceDto.class);
-    assertThat(onlyIncidentsProcessInstances)
-      .extracting(ProcessInstanceDto::getTenantId)
-      .hasSize(4)
-      .containsOnly("<default>");
-    assertThat(onlyIncidentsProcessInstances)
-      .flatExtracting(ProcessInstanceDto::getIncidents)
-      .extracting(IncidentDto::getTenantId)
-      .hasSize(4)
-      .containsOnly("<default>");
-    assertThat(onlyIncidentsProcessInstances)
-      .flatExtracting(ProcessInstanceDto::getFlowNodeInstances)
-      .extracting(FlowNodeInstanceDto::getTenantId)
-      .hasSize(8)
-      .containsOnly("<default>");
+  @Test
+  public void addTenantIdForProcessInstanceOfZeebeEngine_zeebeImportDisabledButZeebeImportDataPresent() {
+    // given
+    configurationService.getConfiguredZeebe().setEnabled(false);
+    executeBulk("steps/3.10/import/310-position-based-import-index-data.json");
+    executeBulk("steps/3.10/instances/310-process-instance-index-zeebe-data.json");
+
+    // when
+    performUpgrade();
+
+    // then
+    assertC8TenantIdMigration();
   }
 
   @Test
   public void doNotAddTenantIdForProcessInstanceCambpmEngine() {
     // given
+    configurationService.getConfiguredZeebe().setEnabled(false);
     executeBulk("steps/3.10/instances/310-process-instance-index-cambpm-data.json");
 
     // when
@@ -94,4 +79,39 @@ public class MigrateProcessInstanceIndexIT extends AbstractUpgrade311IT {
       .containsExactlyInAnyOrder(null, null, "someTenant", "someTenant");
   }
 
+  private void assertC8TenantIdMigration() {
+    List<ProcessInstanceDto> alwaysCompletingProcessInstances = getAllDocumentsOfIndexAs(new ProcessInstanceIndex(
+      ALWAYS_COMPLETING_PROCESS).getIndexName(), ProcessInstanceDto.class);
+    assertThat(alwaysCompletingProcessInstances)
+      .extracting(ProcessInstanceDto::getTenantId)
+      .hasSize(4)
+      .containsOnly(ZEEBE_DEFAULT_TENANT_ID);
+    assertThat(alwaysCompletingProcessInstances)
+      .flatExtracting(ProcessInstanceDto::getIncidents)
+      .extracting(IncidentDto::getTenantId)
+      .hasSize(4)
+      .containsOnly(ZEEBE_DEFAULT_TENANT_ID);
+    assertThat(alwaysCompletingProcessInstances)
+      .flatExtracting(ProcessInstanceDto::getFlowNodeInstances)
+      .extracting(FlowNodeInstanceDto::getTenantId)
+      .hasSize(4)
+      .containsOnly(ZEEBE_DEFAULT_TENANT_ID);
+
+    List<ProcessInstanceDto> onlyIncidentsProcessInstances = getAllDocumentsOfIndexAs(new ProcessInstanceIndex(
+      ONLY_INCIDENT_PROCESS).getIndexName(), ProcessInstanceDto.class);
+    assertThat(onlyIncidentsProcessInstances)
+      .extracting(ProcessInstanceDto::getTenantId)
+      .hasSize(4)
+      .containsOnly(ZEEBE_DEFAULT_TENANT_ID);
+    assertThat(onlyIncidentsProcessInstances)
+      .flatExtracting(ProcessInstanceDto::getIncidents)
+      .extracting(IncidentDto::getTenantId)
+      .hasSize(4)
+      .containsOnly(ZEEBE_DEFAULT_TENANT_ID);
+    assertThat(onlyIncidentsProcessInstances)
+      .flatExtracting(ProcessInstanceDto::getFlowNodeInstances)
+      .extracting(FlowNodeInstanceDto::getTenantId)
+      .hasSize(8)
+      .containsOnly(ZEEBE_DEFAULT_TENANT_ID);
+  }
 }

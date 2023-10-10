@@ -130,7 +130,10 @@
 
           .entry {
             width: 108px;
-            margin-right: 10px;
+
+            &:not(:first-child) {
+              margin-left: 10px;
+            }
           }
 
           .displayName {

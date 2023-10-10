@@ -90,11 +90,19 @@ public class ReportRestMapper {
           validLocale,
           reportDefinitionDto.getName()
         )).ifPresent(reportDefinitionDto::setName);
+        Optional.ofNullable(localizationService.getLocalizationForManagementReportCode(
+          validLocale,
+          reportDefinitionDto.getDescription()
+        )).ifPresent(reportDefinitionDto::setDescription);
       } else {
         Optional.ofNullable(localizationService.getLocalizationForInstantPreviewReportCode(
           validLocale,
           reportDefinitionDto.getName()
         )).ifPresent(reportDefinitionDto::setName);
+        Optional.ofNullable(localizationService.getLocalizationForInstantPreviewReportCode(
+          validLocale,
+          reportDefinitionDto.getDescription()
+        )).ifPresent(reportDefinitionDto::setDescription);
       }
     }
   }

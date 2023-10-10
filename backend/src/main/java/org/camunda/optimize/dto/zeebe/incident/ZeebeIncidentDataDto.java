@@ -9,9 +9,14 @@ import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.experimental.FieldNameConstants;
+import org.apache.commons.lang3.StringUtils;
+
+import static org.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT_ID;
 
 @EqualsAndHashCode
 @Data
+@FieldNameConstants
 public class ZeebeIncidentDataDto implements IncidentRecordValue {
 
   private String errorMessage;
@@ -28,5 +33,9 @@ public class ZeebeIncidentDataDto implements IncidentRecordValue {
   @Override
   public String toJson() {
     throw new UnsupportedOperationException("Operation not supported");
+  }
+
+  public String getTenantId(){
+    return StringUtils.isEmpty(tenantId) ? ZEEBE_DEFAULT_TENANT_ID : tenantId;
   }
 }

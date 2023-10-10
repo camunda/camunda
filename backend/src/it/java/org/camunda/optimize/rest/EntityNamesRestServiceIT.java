@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.rest;
 
+import jakarta.ws.rs.core.Response;
 import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.query.dashboard.InstantDashboardDataDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityNameRequestDto;
@@ -21,13 +22,12 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import jakarta.ws.rs.core.Response;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.service.dashboard.ManagementDashboardService.PROCESS_INSTANCE_USAGE_REPORT_LOCALIZATION_CODE;
+import static org.camunda.optimize.service.dashboard.ManagementDashboardService.CURRENTLY_IN_PROGRESS_NAME_LOCALIZATION_CODE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
@@ -225,19 +225,19 @@ public class EntityNamesRestServiceIT extends AbstractEntitiesRestServiceIT {
     return Stream.of(
       Arguments.of(
         "en",
-        "Process Instance Usage"
+        "Currently in progress"
       ),
       Arguments.of(
         "de",
-        "Anzahl der ausgeführten Prozessinstanzen"
+        "Aktuell laufende Prozesse"
       )
     );
   }
 
   private static Stream<Arguments> templatesAndExpectedLocalizedNames() {
     return Stream.of(
-      Arguments.of("template1.json", "en", "Instant Preview Dashboard"),
-      Arguments.of("template1.json", "de", "Instant Preview Dashboard"),
+      Arguments.of("template1.json", "en", "Instant Process Dashboard"),
+      Arguments.of("template1.json", "de", "Instant Process Übersicht"),
       Arguments.of("template2.json", "en", "KPI Dashboard"),
       Arguments.of("template2.json", "de", "KPI Dashboard")
     );
@@ -249,7 +249,7 @@ public class EntityNamesRestServiceIT extends AbstractEntitiesRestServiceIT {
         SingleProcessReportDefinitionRequestDto.class
       )
       .stream()
-      .filter(report -> report.getName().equals(PROCESS_INSTANCE_USAGE_REPORT_LOCALIZATION_CODE))
+      .filter(report -> report.getName().equals(CURRENTLY_IN_PROGRESS_NAME_LOCALIZATION_CODE))
       .findFirst()
       .map(SingleProcessReportDefinitionRequestDto::getId)
       .orElseThrow(() -> new OptimizeIntegrationTestException("Cannot find any management reports"));

@@ -28,6 +28,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT_ID;
 import static org.camunda.optimize.util.ZeebeBpmnModels.END_EVENT;
 import static org.camunda.optimize.util.ZeebeBpmnModels.START_EVENT;
 import static org.camunda.optimize.util.ZeebeBpmnModels.USER_TASK;
@@ -64,7 +65,7 @@ public class ZeebeProcessDefinitionImportIT extends AbstractCCSMIT {
         assertThat(importedDef.getName()).isEqualTo(processName);
         assertThat(importedDef.getDataSource().getType()).isEqualTo(DataImportSourceType.ZEEBE);
         assertThat(importedDef.getDataSource().getName()).isEqualTo(getConfiguredZeebeName());
-        assertThat(importedDef.getTenantId()).isNull();
+        assertThat(importedDef.getTenantId()).isEqualTo(ZEEBE_DEFAULT_TENANT_ID);
         assertThat(importedDef.isDeleted()).isFalse();
         assertThat(importedDef.getUserTaskNames()).containsEntry(USER_TASK, USER_TASK);
         assertThat(importedDef.getFlowNodeData()).containsExactlyInAnyOrder(
@@ -100,7 +101,7 @@ public class ZeebeProcessDefinitionImportIT extends AbstractCCSMIT {
         assertThat(importedDef.getName()).isEqualTo(deployedProcess.getBpmnProcessId());
         assertThat(importedDef.getDataSource().getType()).isEqualTo(DataImportSourceType.ZEEBE);
         assertThat(importedDef.getDataSource().getName()).isEqualTo(getConfiguredZeebeName());
-        assertThat(importedDef.getTenantId()).isNull();
+        assertThat(importedDef.getTenantId()).isEqualTo(ZEEBE_DEFAULT_TENANT_ID);
         assertThat(importedDef.isDeleted()).isFalse();
         assertThat(importedDef.getUserTaskNames()).isEmpty();
         assertThat(importedDef.getFlowNodeData()).containsExactlyInAnyOrder(
@@ -233,6 +234,24 @@ public class ZeebeProcessDefinitionImportIT extends AbstractCCSMIT {
         ));
   }
 
+  // Test backwards compatibility for default tenantID applied when importing records pre multi tenancy introduction
+  @DisabledIf("isZeebeVersionWithMultiTenancy")
+  @Test
+  public void importZeebeProcess_defaultTenantIdForRecordsWithoutTenantId() {
+    // given a process deployed before zeebe implemented multi tenancy
+    deployProcessAndStartInstance(createSimpleServiceTaskProcess("someProcess"));
+    waitUntilDefinitionWithIdExported("someProcess");
+
+    // when
+    importAllZeebeEntitiesFromScratch();
+
+    // then
+    assertThat(elasticSearchIntegrationTestExtension.getAllProcessDefinitions())
+      .extracting(ProcessDefinitionOptimizeDto::getTenantId)
+      .singleElement()
+      .isEqualTo(ZEEBE_DEFAULT_TENANT_ID);
+  }
+
   private Process deployProcessAndStartInstance(final BpmnModelInstance simpleProcess) {
     final Process deployedProcess = zeebeExtension.deployProcess(simpleProcess);
     zeebeExtension.startProcessInstanceForProcess(deployedProcess.getBpmnProcessId());
@@ -240,14 +259,12 @@ public class ZeebeProcessDefinitionImportIT extends AbstractCCSMIT {
   }
 
   private void waitUntilDefinitionWithIdExported(final String processDefinitionId) {
-    waitUntilMinimumDataExportedCount(
-      1,
+    waitUntilRecordMatchingQueryExported(
       ElasticsearchConstants.ZEEBE_PROCESS_DEFINITION_INDEX_NAME,
       boolQuery()
         .must(termQuery(ZeebeProcessDefinitionRecordDto.Fields.intent, ProcessIntent.CREATED.name()))
         .must(termQuery(
-          ZeebeProcessDefinitionRecordDto.Fields.value + "." +
-            ZeebeProcessInstanceDataDto.Fields.bpmnProcessId,
+          ZeebeProcessDefinitionRecordDto.Fields.value + "." + ZeebeProcessInstanceDataDto.Fields.bpmnProcessId,
           processDefinitionId
         ))
     );

@@ -88,7 +88,8 @@ public class ZeebeProcessInstanceImportService
     final ProcessInstanceDto instanceToAdd = createSkeletonProcessInstance(
       firstRecordValue.getBpmnProcessId(),
       firstRecordValue.getProcessInstanceKey(),
-      firstRecordValue.getProcessDefinitionKey()
+      firstRecordValue.getProcessDefinitionKey(),
+      firstRecordValue.getTenantId()
     );
     instanceToAdd.setProcessDefinitionVersion(String.valueOf(firstRecordValue.getVersion()));
     instanceToAdd.setIncidents(Collections.emptyList());
@@ -130,18 +131,18 @@ public class ZeebeProcessInstanceImportService
     recordsForInstance.stream()
       .filter(zeebeRecord -> !BpmnElementType.PROCESS.equals(zeebeRecord.getValue().getBpmnElementType()))
       .filter(zeebeRecord -> zeebeRecord.getValue().getBpmnElementType().getElementTypeName().isPresent())
-      .forEach(processFlowNodeInstance -> {
-        final long recordKey = processFlowNodeInstance.getKey();
+      .forEach(zeebeFlowNodeInstanceRecord -> {
+        final long recordKey = zeebeFlowNodeInstanceRecord.getKey();
         FlowNodeInstanceDto flowNodeForKey = flowNodeInstancesByRecordKey.getOrDefault(
-          recordKey, createSkeletonFlowNodeInstance(processFlowNodeInstance));
-        final ProcessInstanceIntent instanceIntent = processFlowNodeInstance.getIntent();
+          recordKey, createSkeletonFlowNodeInstance(zeebeFlowNodeInstanceRecord));
+        final ProcessInstanceIntent instanceIntent = zeebeFlowNodeInstanceRecord.getIntent();
         if (instanceIntent == ELEMENT_COMPLETED) {
-          flowNodeForKey.setEndDate(dateForTimestamp(processFlowNodeInstance));
+          flowNodeForKey.setEndDate(dateForTimestamp(zeebeFlowNodeInstanceRecord));
         } else if (instanceIntent == ELEMENT_TERMINATED) {
           flowNodeForKey.setCanceled(true);
-          flowNodeForKey.setEndDate(dateForTimestamp(processFlowNodeInstance));
+          flowNodeForKey.setEndDate(dateForTimestamp(zeebeFlowNodeInstanceRecord));
         } else if (instanceIntent == ELEMENT_ACTIVATING) {
-          flowNodeForKey.setStartDate(dateForTimestamp(processFlowNodeInstance));
+          flowNodeForKey.setStartDate(dateForTimestamp(zeebeFlowNodeInstanceRecord));
         }
         updateDurationIfMissing(flowNodeForKey);
         flowNodeInstancesByRecordKey.put(recordKey, flowNodeForKey);
@@ -154,7 +155,7 @@ public class ZeebeProcessInstanceImportService
     return new FlowNodeInstanceDto(
       String.valueOf(zeebeInstanceRecord.getBpmnProcessId()),
       String.valueOf(zeebeInstanceRecord.getVersion()),
-      null,
+      zeebeInstanceRecord.getTenantId(),
       String.valueOf(zeebeInstanceRecord.getProcessInstanceKey()),
       zeebeInstanceRecord.getElementId(),
       zeebeInstanceRecord.getBpmnElementType()

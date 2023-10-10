@@ -8,12 +8,11 @@ package org.camunda.optimize.service.uiconfiguration;
 import org.camunda.optimize.dto.optimize.query.ui_configuration.UIConfigurationResponseDto;
 import org.camunda.optimize.rest.cloud.CloudSaasMetaInfoService;
 import org.camunda.optimize.service.SettingsService;
-import org.camunda.optimize.service.TenantService;
 import org.camunda.optimize.service.UIConfigurationService;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
-import org.camunda.optimize.service.metadata.OptimizeVersionService;
+import org.camunda.optimize.service.metadata.PlatformOptimizeVersionService;
+import org.camunda.optimize.service.tenant.TenantService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.service.util.configuration.ui.UIConfiguration;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -42,7 +41,7 @@ public class UIConfigurationServiceTest {
   @Mock(answer = Answers.RETURNS_DEEP_STUBS)
   private ConfigurationService configurationService;
   @Mock
-  private OptimizeVersionService versionService;
+  private PlatformOptimizeVersionService versionService;
   @Mock
   private TenantService tenantService;
   @Mock(answer = Answers.RETURNS_DEEP_STUBS)

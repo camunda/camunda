@@ -18,6 +18,7 @@ import {
 } from 'components';
 import {withErrorHandling} from 'HOC';
 import deepEqual from 'fast-deep-equal';
+import {track} from 'tracking';
 
 import {themed} from 'theme';
 
@@ -114,9 +115,11 @@ export class OptimizeReportTile extends React.Component {
         onClick: (evt) => {
           if (
             !evt.target.closest('.DropdownOption') &&
+            !evt.target.closest('a') &&
             !evt.target.closest('button') &&
             !(evt.target.closest('.visualization') && canOnlyClickTitle)
           ) {
+            track('drillDownToReport');
             this.props.history.push(tileLink);
           }
         },
@@ -130,6 +133,9 @@ export class OptimizeReportTile extends React.Component {
             <EntityName
               linkTo={!disableNameLink && tileLink}
               details={<ReportDetails report={data} />}
+              onClick={() => {
+                track('drillDownToReport');
+              }}
             >
               {data.name}
             </EntityName>

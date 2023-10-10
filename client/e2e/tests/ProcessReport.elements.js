@@ -36,7 +36,7 @@ export const goalSwitch = Selector('.configurationPopover fieldset')
 export const goalTargetInput = Selector('.configurationPopover fieldset')
   .withText('Set Target')
   .find('.LabeledInput')
-  .nth(1)
+  .nth(0)
   .find('input');
 export const dropdownOption = (text) =>
   Selector('.Dropdown.is-open .DropdownOption').withText(text);

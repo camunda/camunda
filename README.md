@@ -15,8 +15,6 @@ business processes.
 
 [![Main Pipeline - 3.9](https://github.com/camunda/camunda-optimize/actions/workflows/ci.yml/badge.svg?branch=maintenance%2F3.9)](https://github.com/camunda/camunda-optimize/actions/workflows/ci.yml?query=branch%3Amaintenance%2F3.9)
 
-[![Main Pipeline - 3.8](https://github.com/camunda/camunda-optimize/actions/workflows/ci.yml/badge.svg?branch=maintenance%2F3.8)](https://github.com/camunda/camunda-optimize/actions/workflows/ci.yml?query=branch%3Amaintenance%2F3.8)
-
 [![Main Pipeline - 3.7](https://github.com/camunda/camunda-optimize/actions/workflows/ci.yml/badge.svg?branch=maintenance%2F3.7)](https://github.com/camunda/camunda-optimize/actions/workflows/ci.yml?query=branch%3Amaintenance%2F3.7))
 
 [![Connect to secured Elasticsearch](https://github.com/camunda/camunda-optimize/actions/workflows/connect-to-secured-es.yml/badge.svg)](https://github.com/camunda/camunda-optimize/actions/workflows/connect-to-secured-es.yml)
@@ -41,7 +39,7 @@ business processes.
 
 ## Building Optimize
 
-Apache Maven 3 and Java JDK 8 are prerequisites for building Camunda
+Apache Maven 3 and Java JDK 17 are prerequisites for building Camunda
 Optimize. Once you have setup Java and Maven, run
 
 ```

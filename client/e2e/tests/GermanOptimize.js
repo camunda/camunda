@@ -12,7 +12,10 @@ import * as Common from './Common.elements.js';
 
 fixture('German Optimize')
   .page(config.endpoint)
-  .beforeEach(login)
+  .beforeEach(async (t) => {
+    await login(t);
+    await t.navigateTo(config.collectionsEndpoint);
+  })
   .afterEach(cleanEntities)
   .clientScripts({
     content: `
