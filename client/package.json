@@ -6,7 +6,7 @@
     "@axe-core/playwright": "4.7.3",
     "@bpmn-io/element-template-icon-renderer": "0.5.1",
     "@camunda/camunda-composite-components": "0.1.4",
-    "@carbon/elements": "11.30.0",
+    "@carbon/elements": "11.31.0",
     "@carbon/react": "1.39.0",
     "@devbookhq/splitter": "1.4.2",
     "@floating-ui/react-dom": "2.0.2",
