@@ -19,6 +19,7 @@ package io.atomix.raft.roles;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import io.atomix.raft.RaftException;
+import io.atomix.raft.RaftException.NoLeader;
 import io.atomix.raft.RaftServer;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
@@ -519,6 +520,11 @@ final class LeaderAppender {
       raft.setCommitIndex(index);
       completeCommits(index);
       return CompletableFuture.completedFuture(index);
+    }
+
+    if (!open) {
+      return CompletableFuture.failedFuture(
+          new NoLeader("Cannot replicate entries on closed leader"));
     }
 
     // Only send entry-specific AppendRequests to active members of the cluster.
