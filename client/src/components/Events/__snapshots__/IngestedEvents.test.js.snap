@@ -101,11 +101,11 @@ exports[`should match snapshot 1`] = `
       <NoDataNotice
         title="No ingested events."
       >
-        <Unknown
+        <DocsLink
           location="apis-clients/optimize-api/event-ingestion/"
         >
           Learn more
-        </Unknown>
+        </DocsLink>
       </NoDataNotice>
     }
     size="md"

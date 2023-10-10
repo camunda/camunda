@@ -21,7 +21,7 @@
       "workDurationInMs": null,
       "definitionVersion": "1",
       "candidateGroups": [ ],
-      "tenantId": null,
+      "tenantId": "<default>",
       "definitionKey": "invoice",
       "assignee": null,
       "flowNodeType": "businessRuleTask",
@@ -44,7 +44,7 @@
       "workDurationInMs": null,
       "definitionVersion": "1",
       "candidateGroups": [ ],
-      "tenantId": null,
+      "tenantId": "<default>",
       "definitionKey": "invoice",
       "assignee": null,
       "flowNodeType": "startEvent",
@@ -66,7 +66,7 @@
       "canceled": null,
       "definitionKey": "invoice",
       "definitionVersion": "1",
-      "tenantId": null,
+      "tenantId": "<default>",
       "userTaskInstanceId": "3fa8440d-955a-11ec-aa40-0242ac120003",
       "dueDate": "2022-03-03T11:12:18.923+0100",
       "deleteReason": null,
@@ -142,5 +142,5 @@
     "name": "camunda-bpm",
     "type": "engine"
   },
-  "tenantId": null
+  "tenantId": "<default>"
 }

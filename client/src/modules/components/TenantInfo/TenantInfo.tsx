@@ -5,11 +5,13 @@
  * except in compliance with the proprietary license.
  */
 
+import {useState, useEffect} from 'react';
 import classnames from 'classnames';
 
 import {Labeled} from 'components';
 import {t} from 'translation';
 import {formatters} from 'services';
+import {areTenantsAvailable} from 'config';
 
 import './TenantInfo.scss';
 
@@ -18,8 +20,20 @@ export default function TenantInfo({
   useCarbonVariant,
 }: {
   tenant: {id: string; name?: string};
-  useCarbonVariant: boolean;
-}) {
+  useCarbonVariant?: boolean;
+}): JSX.Element | null {
+  const [tenantsAvailable, setTenantsAvailable] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      setTenantsAvailable(await areTenantsAvailable());
+    })();
+  }, []);
+
+  if (!tenantsAvailable) {
+    return null;
+  }
+
   return (
     <div className={classnames('TenantInfo', {useCarbonVariant})}>
       {useCarbonVariant ? (

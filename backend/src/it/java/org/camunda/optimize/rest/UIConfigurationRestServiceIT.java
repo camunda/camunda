@@ -152,6 +152,7 @@ public class UIConfigurationRestServiceIT extends AbstractPlatformIT {
 
     // then
     assertThat(response.getOptimizeVersion()).isEqualTo(Version.RAW_VERSION);
+    assertThat(response.getOptimizeDocsVersion()).isEqualTo(Version.VERSION);
   }
 
   @Test

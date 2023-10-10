@@ -16,7 +16,7 @@ import {withDocs, withErrorHandling} from 'HOC';
 import {getCollection, formatters} from 'services';
 import {t} from 'translation';
 import {showError} from 'notifications';
-import {getOptimizeProfile} from 'config';
+import {getOptimizeProfile, areTenantsAvailable} from 'config';
 
 import {loadTenants} from './service';
 import DefinitionEditor from './DefinitionEditor';
@@ -38,6 +38,7 @@ export function DefinitionList({
   const [openPopover, setOpenPopover] = useState();
   const [tenantInfo, setTenantInfo] = useState();
   const [optimizeProfile, setOptimizeProfile] = useState();
+  const [tenantsAvailable, setTenantsAvailable] = useState(false);
 
   const collection = getCollection(location.pathname);
   const definitionKeysAndVersions = definitions.map(({key, versions}) => ({key, versions}));
@@ -50,6 +51,7 @@ export function DefinitionList({
   useEffect(() => {
     (async () => {
       setOptimizeProfile(await getOptimizeProfile());
+      setTenantsAvailable(await areTenantsAvailable());
     })();
   }, []);
 
@@ -68,7 +70,8 @@ export function DefinitionList({
       {definitions.map((definition, idx) => {
         const tenantInfo = getTenantInfoForDefinition(definition);
 
-        const showOnlyTenant = tenantInfo?.length === 1 && optimizeProfile === 'ccsm';
+        const showOnlyTenant =
+          tenantsAvailable && tenantInfo?.length === 1 && optimizeProfile === 'ccsm';
 
         return (
           <li key={idx + definition.key} className={classnames({active: openPopover === idx})}>

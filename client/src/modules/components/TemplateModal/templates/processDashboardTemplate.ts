@@ -9,7 +9,9 @@ import {t} from 'translation';
 
 import processDashboard from '../images/processDashboard.png';
 
-export function processDashboardTemplate() {
+import {getExternalResourcePath} from './service';
+
+export function processDashboardTemplate(docsLink: string) {
   return {
     name: 'processDashboard',
     disabled: (definitions: unknown[]) => definitions.length > 1,
@@ -26,9 +28,14 @@ export function processDashboardTemplate() {
                 {
                   children: [
                     {
-                      altText:
-                        '/external/static/instant_preview_dashboards/prod_business_reporting.png',
-                      src: '/external/static/instant_preview_dashboards/prod_business_reporting.png',
+                      altText: getExternalResourcePath(
+                        'prod_business_reporting.png',
+                        'instant_preview_dashboards'
+                      ),
+                      src: getExternalResourcePath(
+                        'prod_business_reporting.png',
+                        'instant_preview_dashboards'
+                      ),
                       width: 0,
                       caption: {
                         editorState: {
@@ -78,12 +85,6 @@ export function processDashboardTemplate() {
             filter: [
               {
                 type: 'runningInstancesOnly',
-                data: null,
-                filterLevel: 'instance',
-                appliedTo: ['all'],
-              },
-              {
-                type: 'doesNotIncludeIncident',
                 data: null,
                 filterLevel: 'instance',
                 appliedTo: ['all'],
@@ -140,8 +141,7 @@ export function processDashboardTemplate() {
             },
             filter: [
               {
-                type: 'runningFlowNodesOnly',
-                data: null,
+                type: 'includesOpenIncident',
                 filterLevel: 'view',
                 appliedTo: ['all'],
               },
@@ -223,9 +223,14 @@ export function processDashboardTemplate() {
                 {
                   children: [
                     {
-                      altText:
-                        '/external/static/instant_preview_dashboards/prod_business_operations.png',
-                      src: '/external/static/instant_preview_dashboards/prod_business_operations.png',
+                      altText: getExternalResourcePath(
+                        'prod_business_operations.png',
+                        'instant_preview_dashboards'
+                      ),
+                      src: getExternalResourcePath(
+                        'prod_business_operations.png',
+                        'instant_preview_dashboards'
+                      ),
                       width: 0,
                       caption: {
                         editorState: {
@@ -272,9 +277,14 @@ export function processDashboardTemplate() {
                 {
                   children: [
                     {
-                      altText:
-                        '/external/static/instant_preview_dashboards/prod_process_improvement.png',
-                      src: '/external/static/instant_preview_dashboards/prod_process_improvement.png',
+                      altText: getExternalResourcePath(
+                        'prod_process_improvement.png',
+                        'instant_preview_dashboards'
+                      ),
+                      src: getExternalResourcePath(
+                        'prod_process_improvement.png',
+                        'instant_preview_dashboards'
+                      ),
                       width: 0,
                       caption: {
                         editorState: {
@@ -419,7 +429,9 @@ export function processDashboardTemplate() {
                       rel: 'noopener norefereer',
                       type: 'link',
                       version: 1,
-                      url: 'https://docs.camunda.io/optimize/components/userguide/process-dashboards/#configuring-process-owner-and-digests',
+                      url:
+                        docsLink +
+                        'components/userguide/process-dashboards/#configuring-process-owner-and-digests',
                       direction: 'ltr',
                       target: '_blank',
                     },
@@ -511,7 +523,7 @@ export function processDashboardTemplate() {
                       rel: 'noopener norefereer',
                       type: 'link',
                       version: 1,
-                      url: 'https://docs.camunda.io/optimize/components/userguide/process-analysis/outlier-analysis/',
+                      url: docsLink + 'components/userguide/process-analysis/outlier-analysis/',
                       direction: 'ltr',
                       target: '_blank',
                     },
@@ -603,7 +615,9 @@ export function processDashboardTemplate() {
                       rel: 'noopener norefereer',
                       type: 'link',
                       version: 1,
-                      url: 'https://docs.camunda.io/optimize/components/userguide/creating-reports/#creating-a-single-report',
+                      url:
+                        docsLink +
+                        'components/userguide/creating-reports/#creating-a-single-report',
                       direction: 'ltr',
                       target: '_blank',
                     },

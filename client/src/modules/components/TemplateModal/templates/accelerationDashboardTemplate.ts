@@ -9,7 +9,9 @@ import {t} from 'translation';
 
 import acceleration from '../images/acceleration.png';
 
-export function accelerationDashboardTemplate() {
+import {getExternalResourcePath} from './service';
+
+export function accelerationDashboardTemplate(docsLink: string) {
   return {
     name: 'acceleration',
     disabled: (definitions: unknown[]) => definitions.length > 1,
@@ -26,8 +28,8 @@ export function accelerationDashboardTemplate() {
                 {
                   children: [
                     {
-                      altText: '/external/static/templates/acc_cycle_time.png',
-                      src: '/external/static/templates/acc_cycle_time.png',
+                      altText: getExternalResourcePath('acc_cycle_time.png', 'templates'),
+                      src: getExternalResourcePath('acc_cycle_time.png', 'templates'),
                       width: 0,
                       caption: {
                         editorState: {
@@ -74,8 +76,8 @@ export function accelerationDashboardTemplate() {
                 {
                   children: [
                     {
-                      altText: '/external/static/templates/acc_task_duration.png',
-                      src: '/external/static/templates/acc_task_duration.png',
+                      altText: getExternalResourcePath('acc_task_duration.png', 'templates'),
+                      src: getExternalResourcePath('acc_task_duration.png', 'templates'),
                       width: 0,
                       caption: {
                         editorState: {
@@ -185,8 +187,8 @@ export function accelerationDashboardTemplate() {
                 {
                   children: [
                     {
-                      altText: '/external/static/templates/Target.png',
-                      src: '/external/static/templates/Target.png',
+                      altText: getExternalResourcePath('Target.png', 'templates'),
+                      src: getExternalResourcePath('Target.png', 'templates'),
                       width: 0,
                       caption: {
                         editorState: {
@@ -251,8 +253,8 @@ export function accelerationDashboardTemplate() {
                 {
                   children: [
                     {
-                      altText: '/external/static/templates/customize.png',
-                      src: '/external/static/templates/customize.png',
+                      altText: getExternalResourcePath('customize.png', 'templates'),
+                      src: getExternalResourcePath('customize.png', 'templates'),
                       width: 0,
                       caption: {
                         editorState: {
@@ -316,7 +318,9 @@ export function accelerationDashboardTemplate() {
                       rel: 'noopener norefereer',
                       type: 'link',
                       version: 1,
-                      url: 'https://docs.camunda.io/optimize/components/what-is-optimize/',
+                      url:
+                        docsLink +
+                        'components/userguide/process-analysis/report-analysis/configure-reports/#chart-goal-line',
                       direction: 'ltr',
                       target: '_blank',
                     },
@@ -382,7 +386,9 @@ export function accelerationDashboardTemplate() {
                       rel: 'noopener norefereer',
                       type: 'link',
                       version: 1,
-                      url: 'https://docs.camunda.io/optimize/components/userguide/process-analysis/flow-node-filters/#flow-node-selection',
+                      url:
+                        docsLink +
+                        'components/userguide/process-analysis/flow-node-filters/#flow-node-selection',
                       direction: 'ltr',
                       target: '_blank',
                     },
@@ -442,8 +448,8 @@ export function accelerationDashboardTemplate() {
                   children: [
                     {type: 'linebreak', version: 1},
                     {
-                      altText: '/external/static/templates/Target.png',
-                      src: '/external/static/templates/Target.png',
+                      altText: getExternalResourcePath('Target.png', 'templates'),
+                      src: getExternalResourcePath('Target.png', 'templates'),
                       width: 0,
                       caption: {
                         editorState: {
@@ -714,8 +720,8 @@ export function accelerationDashboardTemplate() {
                 {
                   children: [
                     {
-                      altText: '/external/static/templates/customize.png',
-                      src: '/external/static/templates/customize.png',
+                      altText: getExternalResourcePath('customize.png', 'templates'),
+                      src: getExternalResourcePath('customize.png', 'templates'),
                       width: 0,
                       caption: {
                         editorState: {
@@ -760,6 +766,29 @@ export function accelerationDashboardTemplate() {
                       text: t('dashboard.templates.acceleration_text3_line3'),
                       type: 'text',
                       version: 1,
+                    },
+                    {
+                      children: [
+                        {
+                          mode: 'normal',
+                          format: 0,
+                          style: '',
+                          detail: 0,
+                          text: t('dashboard.templates.acceleration_text3_line4'),
+                          type: 'text',
+                          version: 1,
+                        },
+                      ],
+                      indent: 0,
+                      format: '',
+                      rel: 'noopener norefereer',
+                      type: 'link',
+                      version: 1,
+                      url:
+                        docsLink +
+                        'components/userguide/process-analysis/report-analysis/compare-target-values/',
+                      direction: 'ltr',
+                      target: '_blank',
                     },
                   ],
                   indent: 0,

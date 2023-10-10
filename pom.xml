@@ -23,14 +23,14 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <project.previousVersion>3.10.5</project.previousVersion>
+    <project.previousVersion>3.11.0</project.previousVersion>
 
     <camunda.engine.version>7.18.0</camunda.engine.version>
     <camunda.maven.artifacts.version>7.18.11-ee</camunda.maven.artifacts.version>
 
     <!-- We use this version to compile but run IT against containers with zeebe.docker.version -->
-    <zeebe.version>8.3.0-alpha6</zeebe.version>
-    <identity.version>8.3.0-alpha6</identity.version>
+    <zeebe.version>8.3.0</zeebe.version>
+    <identity.version>8.3.0</identity.version>
     <!-- We use this for the Zeebe test container version only -->
     <zeebe.docker.version>${zeebe.version}</zeebe.docker.version>
 

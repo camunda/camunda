@@ -44,7 +44,7 @@ public class OnboardingDataGeneratorMain {
   }
 
   private static Map<String, OnboardingDataGeneratorParameters> fillArgumentMapWithDefaultValues() {
-    return defaultParams.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue()));
+    return defaultParams.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
   }
 
   private static String stripLeadingHyphens(String str) {

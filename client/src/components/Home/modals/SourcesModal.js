@@ -202,9 +202,11 @@ export function SourcesModal({onClose, onConfirm, mightFail, confirmText, preSel
             ];
 
             if (tenants.length !== 0) {
-              body.push(
-                // clicking inside the popover
-                optimizeProfile === 'platform' ? (
+              if (optimizeProfile === 'ccsm' && tenants.length === 1) {
+                body.push(formatTenantName(def.tenants[0]));
+              } else {
+                body.push(
+                  // clicking inside the popover
                   <TenantPopover
                     tenants={def.tenants}
                     selected={selectedDefinition?.tenants || ['']}
@@ -224,10 +226,8 @@ export function SourcesModal({onClose, onConfirm, mightFail, confirmText, preSel
                     }}
                     floating
                   />
-                ) : (
-                  formatTenantName(def.tenants[0])
-                )
-              );
+                );
+              }
             }
 
             return body;

@@ -15,7 +15,10 @@ import DefinitionEditor from './DefinitionEditor';
 import {DefinitionList} from './DefinitionList';
 import {loadTenants} from './service';
 
-jest.mock('config', () => ({getOptimizeProfile: jest.fn().mockReturnValue('platform')}));
+jest.mock('config', () => ({
+  getOptimizeProfile: jest.fn().mockReturnValue('platform'),
+  areTenantsAvailable: jest.fn().mockReturnValue(true),
+}));
 
 jest.mock('./service', () => ({
   loadTenants: jest.fn().mockReturnValue([
@@ -48,6 +51,8 @@ const props = {
 
 it('should show a list of added definitions', () => {
   const node = shallow(<DefinitionList {...props} />);
+
+  runAllEffects();
 
   expect(node.find('li').length).toBe(1);
   expect(node.find(DefinitionEditor).prop('definition')).toEqual(props.definitions[0]);
@@ -85,7 +90,8 @@ it('should show the only tenant in self managed mode', async () => {
     />
   );
 
-  await runAllEffects();
+  runAllEffects();
+  await flushPromises();
   expect(node.find('.info').at(1).text()).toBe('Tenant: Default');
 });
 

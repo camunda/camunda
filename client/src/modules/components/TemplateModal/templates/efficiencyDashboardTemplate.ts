@@ -9,7 +9,9 @@ import {t} from 'translation';
 
 import efficiency from '../images/efficiency.png';
 
-export function efficiencyDashboardTemplate() {
+import {getExternalResourcePath} from './service';
+
+export function efficiencyDashboardTemplate(docsLink: string) {
   return {
     name: 'efficiency',
     disabled: (definitions: unknown[]) => definitions.length > 1,
@@ -26,8 +28,8 @@ export function efficiencyDashboardTemplate() {
                 {
                   children: [
                     {
-                      altText: '/external/static/templates/eff_outcome.png',
-                      src: '/external/static/templates/eff_outcome.png',
+                      altText: getExternalResourcePath('eff_outcome.png', 'templates'),
+                      src: getExternalResourcePath('eff_outcome.png', 'templates'),
                       width: 0,
                       caption: {
                         editorState: {
@@ -74,8 +76,8 @@ export function efficiencyDashboardTemplate() {
                 {
                   children: [
                     {
-                      altText: '/external/static/templates/eff_capability.png',
-                      src: '/external/static/templates/eff_capability.png',
+                      altText: getExternalResourcePath('eff_capability.png', 'templates'),
+                      src: getExternalResourcePath('eff_capability.png', 'templates'),
                       width: 0,
                       caption: {
                         editorState: {
@@ -122,8 +124,8 @@ export function efficiencyDashboardTemplate() {
                 {
                   children: [
                     {
-                      altText: '/external/static/templates/eff_error_rate.png',
-                      src: '/external/static/templates/eff_error_rate.png',
+                      altText: getExternalResourcePath('eff_error_rate.png', 'templates'),
+                      src: getExternalResourcePath('eff_error_rate.png', 'templates'),
                       width: 0,
                       caption: {
                         editorState: {
@@ -236,8 +238,8 @@ export function efficiencyDashboardTemplate() {
                 {
                   children: [
                     {
-                      altText: '/external/static/templates/Target.png',
-                      src: '/external/static/templates/Target.png',
+                      altText: getExternalResourcePath('Target.png', 'templates'),
+                      src: getExternalResourcePath('Target.png', 'templates'),
                       width: 0,
                       caption: {
                         editorState: {
@@ -338,8 +340,8 @@ export function efficiencyDashboardTemplate() {
                 {
                   children: [
                     {
-                      altText: '/external/static/templates/Target.png',
-                      src: '/external/static/templates/Target.png',
+                      altText: getExternalResourcePath('Target.png', 'templates'),
+                      src: getExternalResourcePath('Target.png', 'templates'),
                       width: 0,
                       caption: {
                         editorState: {
@@ -404,8 +406,8 @@ export function efficiencyDashboardTemplate() {
                 {
                   children: [
                     {
-                      altText: '/external/static/templates/customize.png',
-                      src: '/external/static/templates/customize.png',
+                      altText: getExternalResourcePath('customize.png', 'templates'),
+                      src: getExternalResourcePath('customize.png', 'templates'),
                       width: 0,
                       caption: {
                         editorState: {
@@ -468,7 +470,9 @@ export function efficiencyDashboardTemplate() {
                       rel: 'noopener norefereer',
                       type: 'link',
                       version: 1,
-                      url: 'https://docs.camunda.io/optimize/components/userguide/process-analysis/flow-node-filters/#flow-node-selection',
+                      url:
+                        docsLink +
+                        'components/userguide/process-analysis/flow-node-filters/#flow-node-selection',
                       direction: 'ltr',
                       target: '_blank',
                     },
@@ -503,8 +507,10 @@ export function efficiencyDashboardTemplate() {
         dimensions: {width: 5, height: 4},
         type: 'optimize_report',
         report: {
-          name: t('dashboard.templates.efficiency_unwantedOutcomeLastWeek'),
-          description: t('dashboard.templates.efficiency_unwantedOutcomeLastWeek-description'),
+          name: t('dashboard.templates.efficiency_typesOfUnwantedOutcomeLastWeek'),
+          description: t(
+            'dashboard.templates.efficiency_typesOfUnwantedOutcomeLastWeek-description'
+          ),
           data: {
             configuration: {
               sorting: {by: 'value', order: 'desc'},
@@ -734,8 +740,8 @@ export function efficiencyDashboardTemplate() {
                   children: [
                     {type: 'linebreak', version: 1},
                     {
-                      altText: '/external/static/templates/Target.png',
-                      src: '/external/static/templates/Target.png',
+                      altText: getExternalResourcePath('Target.png', 'templates'),
+                      src: getExternalResourcePath('Target.png', 'templates'),
                       width: 0,
                       caption: {
                         editorState: {
@@ -800,8 +806,8 @@ export function efficiencyDashboardTemplate() {
                 {
                   children: [
                     {
-                      altText: '/external/static/templates/customize.png',
-                      src: '/external/static/templates/customize.png',
+                      altText: getExternalResourcePath('customize.png', 'templates'),
+                      src: getExternalResourcePath('customize.png', 'templates'),
                       width: 0,
                       caption: {
                         editorState: {
@@ -865,7 +871,9 @@ export function efficiencyDashboardTemplate() {
                       rel: 'noopener norefereer',
                       type: 'link',
                       version: 1,
-                      url: 'https://docs.camunda.io/optimize/components/userguide/process-analysis/flow-node-filters/#flow-node-selection',
+                      url:
+                        docsLink +
+                        'components/userguide/process-analysis/flow-node-filters/#flow-node-selection',
                       direction: 'ltr',
                       target: '_blank',
                     },

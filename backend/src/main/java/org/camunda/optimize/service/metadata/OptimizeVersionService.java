@@ -16,5 +16,5 @@ public abstract class OptimizeVersionService {
 
   private final String rawVersion;
   private final String version;
-
+  private final String docsVersion;
 }

@@ -204,8 +204,9 @@ it('should change the selected tenants based on the popover in C7', async () => 
   ]);
 });
 
-it('should display tenant value as text in self managed mode', async () => {
+it('should display the only tenant value as text in self managed mode', async () => {
   getOptimizeProfile.mockReturnValueOnce('ccsm');
+  getTenantsWithDefinitions.mockReturnValueOnce([{id: 'engineering'}]);
   getDefinitionsWithTenants.mockReturnValueOnce([
     {key: 'testDef', name: null, type: 'process', tenants: [{id: '<default>', name: 'Default'}]},
   ]);

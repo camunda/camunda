@@ -11,7 +11,6 @@ import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.SimpleDefinitionDto;
 import org.camunda.optimize.dto.optimize.TenantDto;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -20,19 +19,19 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
+import static org.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT;
+
 @RequiredArgsConstructor
 @Conditional(CCSaaSCondition.class)
 @Component
 public class CamundaSaaSDefinitionAuthorizationService implements DataSourceDefinitionAuthorizationService {
-
-  private final ConfigurationService configurationService;
 
   @Override
   public List<TenantDto> resolveAuthorizedTenantsForProcess(final String userId,
                                                             final SimpleDefinitionDto definitionDto,
                                                             final List<String> tenantIds,
                                                             final Set<String> engines) {
-    return Collections.singletonList(new TenantDto(null, null, configurationService.getConfiguredZeebe().getName()));
+    return Collections.singletonList(ZEEBE_DEFAULT_TENANT);
   }
 
   @Override

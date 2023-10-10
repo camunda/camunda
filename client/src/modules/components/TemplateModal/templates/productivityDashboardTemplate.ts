@@ -8,8 +8,9 @@
 import {t} from 'translation';
 
 import productivity from '../images/productivity.png';
+import {getExternalResourcePath} from './service';
 
-export function productivityDashboardTemplate() {
+export function productivityDashboardTemplate(docsLink: string) {
   return {
     name: 'productivity',
     disabled: (definitions: unknown[]) => definitions.length > 1,
@@ -26,8 +27,8 @@ export function productivityDashboardTemplate() {
                 {
                   children: [
                     {
-                      altText: '/external/static/templates/pro_input_rate.png',
-                      src: '/external/static/templates/pro_input_rate.png',
+                      altText: getExternalResourcePath('pro_input_rate.png', 'templates'),
+                      src: getExternalResourcePath('pro_input_rate.png', 'templates'),
                       width: 0,
                       caption: {
                         editorState: {
@@ -100,8 +101,8 @@ export function productivityDashboardTemplate() {
                 {
                   children: [
                     {
-                      altText: '/external/static/templates/Target.png',
-                      src: '/external/static/templates/Target.png',
+                      altText: getExternalResourcePath('Target.png', 'templates'),
+                      src: getExternalResourcePath('Target.png', 'templates'),
                       width: 0,
                       caption: {
                         editorState: {
@@ -166,8 +167,8 @@ export function productivityDashboardTemplate() {
                 {
                   children: [
                     {
-                      altText: '/external/static/templates/customize.png',
-                      src: '/external/static/templates/customize.png',
+                      altText: getExternalResourcePath('customize.png', 'templates'),
+                      src: getExternalResourcePath('customize.png', 'templates'),
                       width: 0,
                       caption: {
                         editorState: {
@@ -231,7 +232,9 @@ export function productivityDashboardTemplate() {
                       rel: 'noopener norefereer',
                       type: 'link',
                       version: 1,
-                      url: 'https://docs.camunda.io/optimize/components/what-is-optimize/',
+                      url:
+                        docsLink +
+                        'components/userguide/process-analysis/report-analysis/configure-reports/#chart-goal-line',
                       direction: 'ltr',
                       target: '_blank',
                     },
@@ -262,6 +265,61 @@ export function productivityDashboardTemplate() {
                       type: 'text',
                       version: 1,
                     },
+                    {
+                      children: [
+                        {
+                          mode: 'normal',
+                          format: 0,
+                          style: '',
+                          detail: 0,
+                          text: t('dashboard.templates.productivity_text3_line8'),
+                          type: 'text',
+                          version: 1,
+                        },
+                      ],
+                      indent: 0,
+                      format: '',
+                      rel: 'noopener norefereer',
+                      type: 'link',
+                      version: 1,
+                      url:
+                        docsLink +
+                        'components/userguide/process-dashboards/#set-time-and-quality-kpis',
+                      direction: 'ltr',
+                      target: '_blank',
+                    },
+                    {
+                      mode: 'normal',
+                      format: 0,
+                      style: '',
+                      detail: 0,
+                      text: t('dashboard.templates.productivity_text3_line9'),
+                      type: 'text',
+                      version: 1,
+                    },
+                    {
+                      children: [
+                        {
+                          mode: 'normal',
+                          format: 0,
+                          style: '',
+                          detail: 0,
+                          text: t('dashboard.templates.productivity_text3_line10'),
+                          type: 'text',
+                          version: 1,
+                        },
+                      ],
+                      indent: 0,
+                      format: '',
+                      rel: 'noopener norefereer',
+                      type: 'link',
+                      version: 1,
+                      url:
+                        docsLink +
+                        'components/userguide/process-dashboards/#configuring-process-owner-and-digests',
+                      direction: 'ltr',
+                      target: '_blank',
+                    },
                   ],
                   indent: 0,
                   format: '',
@@ -290,8 +348,8 @@ export function productivityDashboardTemplate() {
                 {
                   children: [
                     {
-                      altText: '/external/static/templates/pro_completion.png',
-                      src: '/external/static/templates/pro_completion.png',
+                      altText: getExternalResourcePath('pro_completion.png', 'templates'),
+                      src: getExternalResourcePath('pro_completion.png', 'templates'),
                       width: 0,
                       caption: {
                         editorState: {
@@ -338,8 +396,8 @@ export function productivityDashboardTemplate() {
                 {
                   children: [
                     {
-                      altText: '/external/static/templates/pro_work_in_progress.png',
-                      src: '/external/static/templates/pro_work_in_progress.png',
+                      altText: getExternalResourcePath('pro_work_in_progress.png', 'templates'),
+                      src: getExternalResourcePath('pro_work_in_progress.png', 'templates'),
                       width: 0,
                       caption: {
                         editorState: {
@@ -453,8 +511,8 @@ export function productivityDashboardTemplate() {
                 {
                   children: [
                     {
-                      altText: '/external/static/templates/Target.png',
-                      src: '/external/static/templates/Target.png',
+                      altText: getExternalResourcePath('Target.png', 'templates'),
+                      src: getExternalResourcePath('Target.png', 'templates'),
                       width: 0,
                       caption: {
                         editorState: {
@@ -519,8 +577,8 @@ export function productivityDashboardTemplate() {
                 {
                   children: [
                     {
-                      altText: '/external/static/templates/customize.png',
-                      src: '/external/static/templates/customize.png',
+                      altText: getExternalResourcePath('customize.png', 'templates'),
+                      src: getExternalResourcePath('customize.png', 'templates'),
                       width: 0,
                       caption: {
                         editorState: {
@@ -583,7 +641,9 @@ export function productivityDashboardTemplate() {
                       rel: 'noopener norefereer',
                       type: 'link',
                       version: 1,
-                      url: 'https://docs.camunda.io/optimize/components/what-is-optimize/',
+                      url:
+                        docsLink +
+                        'components/userguide/process-analysis/report-analysis/configure-reports/#chart-goal-line',
                       direction: 'ltr',
                       target: '_blank',
                     },
@@ -622,7 +682,9 @@ export function productivityDashboardTemplate() {
                       rel: 'noopener norefereer',
                       type: 'link',
                       version: 1,
-                      url: '/analysis',
+                      url:
+                        docsLink +
+                        'components/userguide/process-dashboards/#set-time-and-quality-kpis',
                       direction: 'ltr',
                       target: '_blank',
                     },
@@ -652,7 +714,9 @@ export function productivityDashboardTemplate() {
                       rel: 'noopener norefereer',
                       type: 'link',
                       version: 1,
-                      url: '/analysis',
+                      url:
+                        docsLink +
+                        'components/userguide/process-dashboards/#configuring-process-owner-and-digests',
                       direction: 'ltr',
                       target: '_blank',
                     },
@@ -743,8 +807,8 @@ export function productivityDashboardTemplate() {
                 {
                   children: [
                     {
-                      altText: '/external/static/templates/Target.png',
-                      src: '/external/static/templates/Target.png',
+                      altText: getExternalResourcePath('Target.png', 'templates'),
+                      src: getExternalResourcePath('Target.png', 'templates'),
                       width: 0,
                       caption: {
                         editorState: {
@@ -809,8 +873,8 @@ export function productivityDashboardTemplate() {
                 {
                   children: [
                     {
-                      altText: '/external/static/templates/customize.png',
-                      src: '/external/static/templates/customize.png',
+                      altText: getExternalResourcePath('customize.png', 'templates'),
+                      src: getExternalResourcePath('customize.png', 'templates'),
                       width: 0,
                       caption: {
                         editorState: {
@@ -873,7 +937,9 @@ export function productivityDashboardTemplate() {
                       rel: 'noopener norefereer',
                       type: 'link',
                       version: 1,
-                      url: '/analysis',
+                      url:
+                        docsLink +
+                        'components/userguide/process-analysis/report-analysis/configure-reports/#chart-goal-line',
                       direction: 'ltr',
                       target: '_blank',
                     },
@@ -912,7 +978,9 @@ export function productivityDashboardTemplate() {
                       rel: 'noopener norefereer',
                       type: 'link',
                       version: 1,
-                      url: '/analysis',
+                      url:
+                        docsLink +
+                        'components/userguide/process-dashboards/#set-time-and-quality-kpis',
                       direction: 'ltr',
                       target: '_blank',
                     },
@@ -942,7 +1010,9 @@ export function productivityDashboardTemplate() {
                       rel: 'noopener norefereer',
                       type: 'link',
                       version: 1,
-                      url: '/analysis',
+                      url:
+                        docsLink +
+                        'components/userguide/process-dashboards/#configuring-process-owner-and-digests',
                       direction: 'ltr',
                       target: '_blank',
                     },

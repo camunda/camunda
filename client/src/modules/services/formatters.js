@@ -192,7 +192,7 @@ export function formatVersions(versions) {
 
 export function formatTenants(tenantIds, tenantInfo, showOnlyTenant) {
   if (showOnlyTenant) {
-    return formatTenantName(tenantInfo.find(({id}) => id === tenantIds[0]));
+    return formatTenantName(tenantInfo[0]);
   }
 
   if (tenantIds.length === 0) {

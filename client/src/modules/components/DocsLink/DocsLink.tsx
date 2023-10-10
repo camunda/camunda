@@ -6,19 +6,20 @@
  */
 
 import {ReactNode} from 'react';
-import {withDocs, WithDocsProps} from 'HOC';
 
-interface DocsLinkProps extends WithDocsProps {
+import {useDocs} from 'hooks';
+
+interface DocsLinkProps {
   location: string;
   children: ReactNode;
 }
 
-const DocsLink = ({docsLink, location, children}: DocsLinkProps): JSX.Element => {
+export default function DocsLink({location, children}: DocsLinkProps): JSX.Element {
+  const {docsLink} = useDocs();
+
   return (
     <a href={docsLink + location} target="_blank" rel="noopener noreferrer">
       {children}
     </a>
   );
-};
-
-export default withDocs(DocsLink);
+}
