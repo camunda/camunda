@@ -21,6 +21,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.collect.ImmutableList;
 import io.atomix.raft.cluster.RaftMember;
+import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -58,8 +59,8 @@ public record Configuration(
     this.index = index;
     this.term = term;
     this.time = time;
-    this.newMembers = ImmutableList.copyOf(newMembers);
-    this.oldMembers = ImmutableList.copyOf(oldMembers);
+    this.newMembers = copyMembers(newMembers);
+    this.oldMembers = copyMembers(oldMembers);
   }
 
   public Configuration(
@@ -76,5 +77,14 @@ public record Configuration(
     all.addAll(newMembers);
     all.addAll(oldMembers);
     return all;
+  }
+
+  private static Collection<RaftMember> copyMembers(final Collection<RaftMember> members) {
+    final var copied = ImmutableList.<RaftMember>builderWithExpectedSize(members.size());
+    for (final var member : members) {
+      copied.add(
+          new DefaultRaftMember(member.memberId(), member.getType(), member.getLastUpdated()));
+    }
+    return copied.build();
   }
 }
