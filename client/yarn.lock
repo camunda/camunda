@@ -2983,19 +2983,19 @@
     hoist-non-react-statics "^3.3.1"
     react-is "^16.12.0"
 
-"@monaco-editor/loader@^1.3.3":
-  version "1.3.3"
-  resolved "https://registry.yarnpkg.com/@monaco-editor/loader/-/loader-1.3.3.tgz#7f1742bd3cc21c0362a46a4056317f6e5215cfca"
-  integrity sha512-6KKF4CTzcJiS8BJwtxtfyYt9shBiEv32ateQ9T4UVogwn4HM/uPo9iJd2Dmbkpz8CM6Y0PDUpjnZzCwC+eYo2Q==
+"@monaco-editor/loader@^1.4.0":
+  version "1.4.0"
+  resolved "https://registry.yarnpkg.com/@monaco-editor/loader/-/loader-1.4.0.tgz#f08227057331ec890fa1e903912a5b711a2ad558"
+  integrity sha512-00ioBig0x642hytVspPl7DbQyaSWRaolYie/UFNjoTdvoKPzo6xrXLhTk9ixgIKcLH5b5vDOjVNiGyY+uDCUlg==
   dependencies:
     state-local "^1.0.6"
 
-"@monaco-editor/react@4.5.2":
-  version "4.5.2"
-  resolved "https://registry.yarnpkg.com/@monaco-editor/react/-/react-4.5.2.tgz#e8cc802203f729b423a998ea6fcb466604d61258"
-  integrity sha512-emcWu6vg1OpXPiYll4aPOaXe8bwYB4UaaNTwtArFLgMoNGBzRZb2Xn0Bra2HMIFM7QLgs7fCGunHO5LkfT2LBA==
+"@monaco-editor/react@4.6.0":
+  version "4.6.0"
+  resolved "https://registry.yarnpkg.com/@monaco-editor/react/-/react-4.6.0.tgz#bcc68671e358a21c3814566b865a54b191e24119"
+  integrity sha512-RFkU9/i7cN2bsq/iTkurMWOEErmYcY6JiQI3Jn+WeR/FGISH8JbHERjpS9oRuSOPvDMJI0Z8nJeKkbOs9sBYQw==
   dependencies:
-    "@monaco-editor/loader" "^1.3.3"
+    "@monaco-editor/loader" "^1.4.0"
 
 "@mswjs/cookies@^0.2.2":
   version "0.2.2"
