@@ -11,13 +11,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
-import io.camunda.zeebe.it.clustering.ClusteringRuleExtension;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
-import io.camunda.zeebe.qa.util.jobstream.JobStreamServiceAssert;
+import io.camunda.zeebe.qa.util.actuator.JobStreamActuator;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.qa.util.jobstream.JobStreamActuatorAssert;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.Strings;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.grpc.Status;
 import io.grpc.Status.Code;
@@ -30,21 +35,16 @@ import java.util.function.Consumer;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.assertj.core.data.Offset;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
+@AutoCloseResources
+@ZeebeIntegration
 final class StreamJobsTest {
-  @SuppressWarnings("JUnitMalformedDeclaration")
-  @RegisterExtension
-  private static final ClusteringRuleExtension CLUSTER = new ClusteringRuleExtension(1, 1, 1);
+  @TestZeebe
+  private static final TestStandaloneBroker ZEEBE =
+      new TestStandaloneBroker().withRecordingExporter(true);
 
-  private ZeebeClient client;
-
-  @BeforeEach
-  void beforeEach() {
-    client = CLUSTER.getClient();
-  }
+  @AutoCloseResource private final ZeebeClient client = ZEEBE.newClientBuilder().build();
 
   @Test
   void shouldStreamJobs() {
@@ -187,7 +187,7 @@ final class StreamJobsTest {
             .workerName("stream")
             .send();
     awaitStreamRegistered(uniqueId);
-    CLUSTER.restartGateway();
+    ZEEBE.stop().start().awaitCompleteTopology();
 
     // then
     assertThat((Future<?>) stream)
@@ -201,13 +201,13 @@ final class StreamJobsTest {
   }
 
   private void awaitStreamRegistered(final String jobType) {
-    final var brokerBridge = CLUSTER.getBrokerBridge(0);
-    final var jobStreamService = brokerBridge.getJobStreamService().orElseThrow();
-
+    final var actuator = JobStreamActuator.of(ZEEBE);
     Awaitility.await("until stream with type '%s' is registered".formatted(jobType))
         .untilAsserted(
             () ->
-                JobStreamServiceAssert.assertThat(jobStreamService).hasStreamWithType(1, jobType));
+                JobStreamActuatorAssert.assertThat(actuator)
+                    .remoteStreams()
+                    .haveJobType(1, jobType));
   }
 
   private long createProcessInstance(final String processId) {
