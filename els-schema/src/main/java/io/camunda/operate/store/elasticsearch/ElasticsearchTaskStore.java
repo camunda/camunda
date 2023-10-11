@@ -9,10 +9,12 @@ package io.camunda.operate.store.elasticsearch;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.store.TaskStore;
+
+import org.apache.http.client.methods.HttpGet;
 import org.elasticsearch.action.admin.cluster.node.tasks.list.ListTasksRequest;
+import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.client.tasks.GetTaskRequest;
 import org.elasticsearch.client.tasks.GetTaskResponse;
 import org.elasticsearch.tasks.RawTaskStatus;
 import org.elasticsearch.tasks.TaskInfo;
@@ -22,7 +24,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -33,6 +38,8 @@ import java.util.Optional;
 public class ElasticsearchTaskStore implements TaskStore {
 
   public static final String ID = "id";
+
+  private static final String TASKS_ENDPOINT = "_tasks";
   private static final Logger logger = LoggerFactory.getLogger(ElasticsearchTaskStore.class);
 
   public static final String ERROR = "error";
@@ -47,16 +54,20 @@ public class ElasticsearchTaskStore implements TaskStore {
   public static final String TASK_ACTION_INDICES_REINDEX = "indices:data/write/reindex";
   public static final String DESCRIPTION_PREFIX_FROM_INDEX = "reindex from [";
   public static final String DESCRIPTION_PREFIX_TO_INDEX = "to [";
+
   @Autowired
   private RestHighLevelClient esClient;
 
-  public void checkForErrorsOrFailures(final String node,final Integer id) throws IOException {
-    Optional<GetTaskResponse> response = esClient.tasks().get(new GetTaskRequest(node,Long.valueOf(id)), RequestOptions.DEFAULT);
-    if(response.isPresent()){
-      var taskStatus = getTaskStatusMap(response.get());
-      checkForErrors(taskStatus);
-      checkForFailures(taskStatus);
-    }
+  @Autowired
+  private ObjectMapper objectMapper;
+
+  public void checkForErrorsOrFailures(final String taskId) throws IOException {
+    final var request = new Request(HttpGet.METHOD_NAME, "/" + TASKS_ENDPOINT + "/" + taskId);
+    final var response = esClient.getLowLevelClient().performRequest(request);
+    final var taskStatus = objectMapper.readValue(response.getEntity().getContent(), HashMap.class);
+
+    checkForErrors(taskStatus);
+    checkForFailures(taskStatus);
   }
 
   public List<String> getRunningReindexTasksIdsFor(final String fromIndex,final String toIndex) throws IOException {
@@ -80,7 +91,7 @@ public class ElasticsearchTaskStore implements TaskStore {
   }
 
   private List<TaskInfo> getReindexTasks() throws IOException {
-    var response = esClient.tasks().list(new ListTasksRequest().setActions(TASK_ACTION_INDICES_REINDEX), RequestOptions.DEFAULT);
+    var response = esClient.tasks().list(new ListTasksRequest().setActions(TASK_ACTION_INDICES_REINDEX).setDetailed(true), RequestOptions.DEFAULT);
     return response.getTasks();
   }
 

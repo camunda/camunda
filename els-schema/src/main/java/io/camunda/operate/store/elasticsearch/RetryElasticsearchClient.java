@@ -363,13 +363,13 @@ public class RetryElasticsearchClient {
   // - If the response is empty we can immediately return false to force a new reindex in outer retry loop
   // - If the response has a status with uncompleted flag and a sum of changed documents (created,updated and deleted documents) not equal to total documents
   //   we need to wait and poll again the task status
-  private boolean waitUntilTaskIsCompleted(String taskId, Long srcCount) {
+  private boolean waitUntilTaskIsCompleted(final String taskId, Long srcCount) {
     final String[] taskIdParts = taskId.split(":");
     final String nodeId = taskIdParts[0];
     final Long smallTaskId = Long.parseLong(taskIdParts[1]);
     Optional<GetTaskResponse> taskResponse = executeWithGivenRetries(Integer.MAX_VALUE ,"GetTaskInfo{" + nodeId + "},{" + smallTaskId + "}",
         () -> {
-          elasticsearchTaskStore.checkForErrorsOrFailures(nodeId, smallTaskId.intValue());
+          elasticsearchTaskStore.checkForErrorsOrFailures(taskId);
           final Optional<GetTaskResponse> getTaskResponse = esClient.tasks()
             .get(new GetTaskRequest(nodeId, smallTaskId), requestOptions);
           getTaskResponse.ifPresent(theTaskResponse -> logger.info(
