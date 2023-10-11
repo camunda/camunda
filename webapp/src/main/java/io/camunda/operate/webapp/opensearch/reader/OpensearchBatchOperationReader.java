@@ -29,6 +29,7 @@ import static io.camunda.operate.store.opensearch.dsl.QueryDSL.sortOptions;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.term;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
 import static io.camunda.operate.util.CollectionUtil.reversedView;
+import static io.camunda.operate.util.ConversionUtils.toStringArray;
 
 @Conditional(OpensearchCondition.class)
 @Component
@@ -85,7 +86,7 @@ public class OpensearchBatchOperationReader implements BatchOperationReader {
       .size(batchOperationRequestDto.getPageSize());;
 
     if(querySearchAfter != null){
-      searchRequestBuilder.searchAfter(Arrays.asList((String[]) querySearchAfter));
+      searchRequestBuilder.searchAfter(Arrays.asList(toStringArray(querySearchAfter)));
     }
 
     return searchRequestBuilder;

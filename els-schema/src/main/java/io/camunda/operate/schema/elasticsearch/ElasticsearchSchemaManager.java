@@ -263,4 +263,8 @@ public class ElasticsearchSchemaManager implements SchemaManager {
     }
   }
 
+  @Override
+  public String getIndexPrefix() {
+    return operateProperties.getElasticsearch().getIndexPrefix();
+  }
 }

@@ -47,4 +47,5 @@ public interface SchemaManager {
 
   Map<String, String> getIndexSettingsFor(String s, String... fields);
 
+  String getIndexPrefix();
 }

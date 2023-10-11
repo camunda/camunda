@@ -17,10 +17,11 @@ import org.springframework.stereotype.Component;
 @Component("schemaManager")
 @Conditional(ElasticsearchCondition.class)
 @Profile("test")
-public class TestElasticsearchSchemaManager extends ElasticsearchSchemaManager{
+public class TestElasticsearchSchemaManager extends ElasticsearchSchemaManager implements TestSchemaManager {
 
   private static final Logger logger = LoggerFactory.getLogger(TestElasticsearchSchemaManager.class);
 
+  @Override
   public void deleteSchema() {
     String prefix = this.operateProperties.getElasticsearch().getIndexPrefix();
     logger.info("Removing indices {}*", prefix);
@@ -28,11 +29,27 @@ public class TestElasticsearchSchemaManager extends ElasticsearchSchemaManager{
     retryElasticsearchClient.deleteTemplatesFor(prefix + "*");
   }
 
+  @Override
   public void deleteSchemaQuietly() {
     try {
       deleteSchema();
     } catch (Exception t) {
       logger.debug(t.getMessage());
     }
+  }
+
+  @Override
+  public void setCreateSchema(boolean createSchema) {
+    operateProperties.getElasticsearch().setCreateSchema(createSchema);
+  }
+
+  @Override
+  public void setIndexPrefix(String indexPrefix) {
+    operateProperties.getElasticsearch().setIndexPrefix(indexPrefix);
+  }
+
+  @Override
+  public void setDefaultIndexPrefix() {
+    operateProperties.getElasticsearch().setDefaultIndexPrefix();
   }
 }

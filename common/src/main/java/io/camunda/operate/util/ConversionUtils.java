@@ -7,6 +7,7 @@
 package io.camunda.operate.util;
 
 import java.net.InetSocketAddress;
+import java.util.Arrays;
 import java.util.function.Function;
 
 public class ConversionUtils {
@@ -36,5 +37,9 @@ public class ConversionUtils {
 
   public static boolean stringIsEmpty(String aString) {
     return aString == null || aString.isEmpty();
+  }
+
+  public static <A> String[] toStringArray(A[] arr) {
+    return Arrays.copyOf(arr, arr.length, String[].class);
   }
 }

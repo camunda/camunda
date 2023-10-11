@@ -268,4 +268,9 @@ public class OpensearchSchemaManager implements SchemaManager {
     method.invoke(null, deserializer);
     return deserializer;
   }
+
+  @Override
+  public String getIndexPrefix() {
+    return operateProperties.getOpensearch().getIndexPrefix();
+  }
 }

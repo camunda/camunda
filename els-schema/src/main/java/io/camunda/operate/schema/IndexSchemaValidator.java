@@ -7,7 +7,6 @@
 package io.camunda.operate.schema;
 
 import io.camunda.operate.exceptions.OperateRuntimeException;
-import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.indices.IndexDescriptor;
 import io.camunda.operate.schema.migration.SemanticVersion;
 import org.slf4j.Logger;
@@ -33,9 +32,6 @@ public class IndexSchemaValidator {
   Set<IndexDescriptor> indexDescriptors;
 
   @Autowired
-  OperateProperties operateProperties;
-
-  @Autowired
   SchemaManager schemaManager;
 
   private Set<String> getAllIndexNamesForIndex(String index) {
@@ -51,7 +47,7 @@ public class IndexSchemaValidator {
   }
 
   private String getIndexPrefix() {
-    return operateProperties.getElasticsearch().getIndexPrefix();
+    return schemaManager.getIndexPrefix();
   }
 
   public Set<String> newerVersionsForIndex(IndexDescriptor indexDescriptor) {
@@ -110,14 +106,13 @@ public class IndexSchemaValidator {
 
   public boolean hasAnyOperateIndices() {
     final Set<String> indices = schemaManager
-        .getIndexNames(operateProperties.getElasticsearch().getIndexPrefix() + "*");
+        .getIndexNames(schemaManager.getIndexPrefix() + "*");
     return !indices.isEmpty();
   }
 
   public boolean schemaExists() {
     try {
-      final Set<String> indices = schemaManager
-          .getIndexNames(operateProperties.getElasticsearch().getIndexPrefix() + "*");
+      final Set<String> indices = schemaManager.getIndexNames(schemaManager.getIndexPrefix() + "*");
       List<String> allIndexNames = map(indexDescriptors, IndexDescriptor::getFullQualifiedName);
       return indices.containsAll(allIndexNames);
     } catch (Exception e) {

@@ -12,6 +12,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.operate.management.IndicesCheck;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.qa.util.TestElasticsearchSchemaManager;
+import io.camunda.operate.qa.util.TestSchemaManager;
 import io.camunda.operate.util.TestApplication;
 import io.camunda.operate.util.TestUtil;
 import io.camunda.operate.webapp.rest.dto.UserDto;
@@ -40,7 +41,7 @@ public class ProbesTestIT{
   private OperateProperties operateProperties;
 
   @Autowired
-  private TestElasticsearchSchemaManager schemaManager;
+  private TestSchemaManager schemaManager;
 
   @Autowired
   private IndicesCheck probes;
@@ -51,30 +52,26 @@ public class ProbesTestIT{
   @Before
   public void before() {
     when(userService.getCurrentUser()).thenReturn(new UserDto().setUserId("testuser"));
-    operateProperties.getElasticsearch().setIndexPrefix("test-probes-"+TestUtil.createRandomString(5));
+    schemaManager.setIndexPrefix("test-probes-"+TestUtil.createRandomString(5));
   }
 
   @After
   public void after() {
     schemaManager.deleteSchemaQuietly();
-    operateProperties.getElasticsearch().setDefaultIndexPrefix();
+    schemaManager.setDefaultIndexPrefix();
   }
 
   @Test
   public void testIsReady() {
     assertThat(probes.indicesArePresent()).isFalse();
-    enableCreateSchema(true);
+    schemaManager.setCreateSchema(true);
     schemaManager.createSchema();
     assertThat(probes.indicesArePresent()).isTrue();
   }
 
   @Test
   public void testIsNotReady() {
-    enableCreateSchema(false);
+    schemaManager.setCreateSchema(false);
     assertThat(probes.indicesArePresent()).isFalse();
-  }
-
-  protected void enableCreateSchema(boolean createSchema) {
-    operateProperties.getElasticsearch().setCreateSchema(createSchema);
   }
 }
