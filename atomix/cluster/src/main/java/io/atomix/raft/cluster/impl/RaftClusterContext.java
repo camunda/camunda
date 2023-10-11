@@ -400,6 +400,8 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
     if (member.getType() == Type.ACTIVE) {
       remoteActiveMembers.add(context);
       hasRemoteActiveMembers = true;
+    } else if (remoteActiveMembers.remove(context)) {
+      hasRemoteActiveMembers = !remoteActiveMembers.isEmpty();
     }
 
     if (member.getType() != Type.INACTIVE) {
