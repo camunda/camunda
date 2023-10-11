@@ -162,7 +162,6 @@ public final class ProcessingStateMachine {
   private final int maxCommandsInBatch;
   private int processedCommandsCount;
   private final ProcessingMetrics processingMetrics;
-  private LoggedEvent loggedEvent;
 
   public ProcessingStateMachine(
       final StreamProcessorContext context,
@@ -263,8 +262,8 @@ public final class ProcessingStateMachine {
                 loggedEvent -> {
                   if (eventFilter.applies(currentRecord) && !currentRecord.shouldSkipProcessing()) {
                     metadata.reset();
-                    this.loggedEvent = loggedEvent;
-                    this.loggedEvent.readMetadata(metadata);
+                    currentRecord = loggedEvent;
+                    currentRecord.readMetadata(metadata);
                     // Here we need to get the current time, since we want to calculate
                     // how long it took between writing to the dispatcher and processing.
                     // In all other cases we should prefer to use the Prometheus Timer API.
@@ -293,12 +292,12 @@ public final class ProcessingStateMachine {
       // recoverable
       LOG.error(
           ERROR_MESSAGE_PROCESSING_FAILED_RETRY_PROCESSING,
-          loggedEvent,
+          currentRecord,
           metadata,
           recoverableException);
       actor.schedule(PROCESSING_RETRY_DELAY, () -> processCommand(batch));
     } catch (final UnrecoverableException unrecoverableException) {
-      LOG.error(ERROR_MESSAGE_PROCESSING_FAILED_UNRECOVERABLE, loggedEvent, metadata);
+      LOG.error(ERROR_MESSAGE_PROCESSING_FAILED_UNRECOVERABLE, currentRecord, metadata);
       throw unrecoverableException;
     } catch (final ExceededBatchRecordSizeException exceededBatchRecordSizeException) {
       if (processedCommandsCount > 0) {
