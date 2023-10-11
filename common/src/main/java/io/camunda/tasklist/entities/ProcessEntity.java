@@ -21,7 +21,8 @@ public class ProcessEntity extends TasklistZeebeEntity<ProcessEntity> {
   private boolean startedByForm;
 
   private String formKey;
-
+  private String formId;
+  private Boolean isFormEmbedded;
   private List<ProcessFlowNodeEntity> flowNodes = new ArrayList<>();
 
   public String getName() {
@@ -69,6 +70,24 @@ public class ProcessEntity extends TasklistZeebeEntity<ProcessEntity> {
     return this;
   }
 
+  public String getFormId() {
+    return formId;
+  }
+
+  public ProcessEntity setFormId(String formId) {
+    this.formId = formId;
+    return this;
+  }
+
+  public Boolean getIsFormEmbedded() {
+    return isFormEmbedded;
+  }
+
+  public ProcessEntity setIsFormEmbedded(Boolean isFormEmbedded) {
+    this.isFormEmbedded = isFormEmbedded;
+    return this;
+  }
+
   public boolean isStartedByForm() {
     return startedByForm;
   }
@@ -95,12 +114,22 @@ public class ProcessEntity extends TasklistZeebeEntity<ProcessEntity> {
         && Objects.equals(name, that.name)
         && Objects.equals(version, that.version)
         && Objects.equals(formKey, that.formKey)
+        && Objects.equals(formId, that.formId)
+        && Objects.equals(isFormEmbedded, that.isFormEmbedded)
         && Objects.equals(flowNodes, that.flowNodes);
   }
 
   @Override
   public int hashCode() {
     return Objects.hash(
-        super.hashCode(), bpmnProcessId, name, version, startedByForm, formKey, flowNodes);
+        super.hashCode(),
+        bpmnProcessId,
+        name,
+        version,
+        startedByForm,
+        formKey,
+        formId,
+        isFormEmbedded,
+        flowNodes);
   }
 }

@@ -42,6 +42,12 @@
     "formKey": {
       "type": "keyword"
     },
+    "formId": {
+      "type": "keyword"
+    },
+    "isFormEmbedded": {
+      "type": "boolean"
+    },
     "version": {
       "type": "integer"
     },

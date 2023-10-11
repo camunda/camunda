@@ -23,6 +23,10 @@ public class ProcessDTO {
 
   private String formKey;
 
+  private String formId;
+
+  private Boolean isFormEmbedded;
+
   private Integer version;
 
   public static ProcessDTO createFrom(ProcessEntity processEntity) {
@@ -37,7 +41,9 @@ public class ProcessDTO {
             .setProcessDefinitionId(processEntity.getBpmnProcessId())
             .setVersion(processEntity.getVersion())
             .setStartedByForm(processEntity.isStartedByForm())
-            .setFormKey(processEntity.getFormKey());
+            .setFormKey(processEntity.getFormKey())
+            .setFormId(processEntity.getFormId())
+            .setFormEmbedded(processEntity.getIsFormEmbedded());
 
     if (sortValues != null) {
       processDTO.setSortValues(CollectionUtil.toArrayOfStrings(sortValues));
@@ -105,6 +111,24 @@ public class ProcessDTO {
 
   public ProcessDTO setFormKey(String formKey) {
     this.formKey = formKey;
+    return this;
+  }
+
+  public Boolean getFormEmbedded() {
+    return isFormEmbedded;
+  }
+
+  public ProcessDTO setFormEmbedded(Boolean formEmbedded) {
+    isFormEmbedded = formEmbedded;
+    return this;
+  }
+
+  public String getFormId() {
+    return formId;
+  }
+
+  public ProcessDTO setFormId(String formId) {
+    this.formId = formId;
     return this;
   }
 }

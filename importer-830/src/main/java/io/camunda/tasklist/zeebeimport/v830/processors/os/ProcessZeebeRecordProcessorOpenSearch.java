@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import org.opensearch.client.opensearch.core.bulk.BulkOperation;
@@ -72,8 +73,8 @@ public class ProcessZeebeRecordProcessorOpenSearch {
                   recordValue.getProcessDefinitionKey(),
                   formKey,
                   schema,
-                  operations,
-                  recordValue.getTenantId());
+                  recordValue.getTenantId(),
+                  operations);
             } catch (PersistenceException e) {
               exceptions.add(e);
             }
@@ -121,7 +122,17 @@ public class ProcessZeebeRecordProcessorOpenSearch {
         flowNode -> processEntity.getFlowNodes().add(flowNode),
         userTaskFormCollector,
         processEntity::setFormKey,
+        formId -> processEntity.setFormId(formId),
         processEntity::setStartedByForm);
+
+    Optional.ofNullable(processEntity.getFormKey())
+        .ifPresent(key -> processEntity.setIsFormEmbedded(true));
+
+    Optional.ofNullable(processEntity.getFormId())
+        .ifPresent(
+            id -> {
+              processEntity.setIsFormEmbedded(false);
+            });
 
     return processEntity;
   }
@@ -130,8 +141,8 @@ public class ProcessZeebeRecordProcessorOpenSearch {
       long processDefinitionKey,
       String formKey,
       String schema,
-      List<BulkOperation> operations,
-      String tenantId)
+      String tenantId,
+      List<BulkOperation> operations)
       throws PersistenceException {
     final FormEntity formEntity =
         new FormEntity(String.valueOf(processDefinitionKey), formKey, schema, tenantId);

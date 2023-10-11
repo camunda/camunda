@@ -1,0 +1,8 @@
+{
+  "description": "Set true for isEmbedded for 'task' index",
+  "@type": "processorStep",
+  "indexName": "task",
+  "version": "8.4.0",
+  "order": 5,
+  "content": "{\"set\": {\"field\": \"isFormEmbedded\", \"value\": \"true\"}}"
+}

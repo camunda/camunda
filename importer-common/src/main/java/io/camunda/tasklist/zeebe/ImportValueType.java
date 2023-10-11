@@ -11,10 +11,11 @@ public enum ImportValueType {
   JOB(ZeebeESConstants.JOB_INDEX_NAME),
   PROCESS(ZeebeESConstants.PROCESS_INDEX_NAME),
   VARIABLE(ZeebeESConstants.VARIABLE_INDEX_NAME),
-  VARIABLE_DOCUMENT(ZeebeESConstants.VARIABLE_DOCUMENT_INDEX_NAME);
+  VARIABLE_DOCUMENT(ZeebeESConstants.VARIABLE_DOCUMENT_INDEX_NAME),
+  FORM(ZeebeESConstants.FORM_INDEX_NAME);
 
   public static final ImportValueType[] IMPORT_VALUE_TYPES =
-      new ImportValueType[] {PROCESS_INSTANCE, PROCESS, JOB, VARIABLE};
+      new ImportValueType[] {PROCESS_INSTANCE, PROCESS, JOB, VARIABLE, FORM};
   private final String aliasTemplate;
 
   ImportValueType(String aliasTemplate) {

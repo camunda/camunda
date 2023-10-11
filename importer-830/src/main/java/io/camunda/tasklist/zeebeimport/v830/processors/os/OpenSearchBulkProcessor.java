@@ -22,6 +22,7 @@ import io.camunda.tasklist.zeebeimport.v830.record.value.ProcessInstanceRecordVa
 import io.camunda.tasklist.zeebeimport.v830.record.value.VariableDocumentRecordImpl;
 import io.camunda.tasklist.zeebeimport.v830.record.value.VariableRecordValueImpl;
 import io.camunda.tasklist.zeebeimport.v830.record.value.deployment.DeployedProcessImpl;
+import io.camunda.tasklist.zeebeimport.v830.record.value.deployment.FormRecordImpl;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import java.time.OffsetDateTime;
@@ -48,6 +49,8 @@ public class OpenSearchBulkProcessor extends AbstractImportBatchProcessorOpenSea
   @Autowired private JobZeebeRecordProcessorOpenSearch jobZeebeRecordProcessor;
 
   @Autowired private ProcessZeebeRecordProcessorOpenSearch processZeebeRecordProcessor;
+
+  @Autowired private FormZeebeRecordProcessorOpenSearch formZeebeRecordProcessor;
 
   @Autowired private ObjectMapper objectMapper;
 
@@ -84,6 +87,10 @@ public class OpenSearchBulkProcessor extends AbstractImportBatchProcessorOpenSea
           // deployment records can be processed one by one
           processZeebeRecordProcessor.processDeploymentRecord(record, operations);
           break;
+        case FORM:
+          // form records can be processed one by one
+          formZeebeRecordProcessor.processFormRecord(record, operations);
+          break;
         default:
           LOGGER.debug("Default case triggered for type {}", importValueType);
           break;
@@ -118,6 +125,8 @@ public class OpenSearchBulkProcessor extends AbstractImportBatchProcessorOpenSea
         return VariableDocumentRecordImpl.class;
       case PROCESS:
         return DeployedProcessImpl.class;
+      case FORM:
+        return FormRecordImpl.class;
       default:
         throw new TasklistRuntimeException(
             String.format("No value type class found for: %s", importValueType));

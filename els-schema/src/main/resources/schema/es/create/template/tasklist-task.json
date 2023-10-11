@@ -52,6 +52,15 @@
 			"formKey": {
 				"type": "keyword"
 			},
+			"formId": {
+				"type": "keyword"
+			},
+			"formVersion": {
+				"type": "long"
+			},
+			"isFormEmbedded": {
+				"type": "boolean"
+			},
 			"followUpDate" : {
 				"format": "date_time || epoch_millis",
 				"type": "date"

@@ -80,7 +80,8 @@ public class ProcessExternalControllerTest {
             .setName("Process Name")
             .setVersion(1)
             .setFormKey("camunda-forms:bpmn:testForm")
-            .setStartedByForm(true);
+            .setStartedByForm(true)
+            .setTenantId(DEFAULT_TENANT_IDENTIFIER);
     final var expectedFormResponse =
         new FormResponse()
             .setId("testForm")
@@ -95,7 +96,8 @@ public class ProcessExternalControllerTest {
             .setId("2251799813686367_testForm")
             .setBpmnId("testForm")
             .setProcessDefinitionId("2251799813686367")
-            .setSchema("formSchema");
+            .setSchema("formSchema")
+            .setTenantId(DEFAULT_TENANT_IDENTIFIER);
 
     when(processStore.getProcessByBpmnProcessId(bpmnProcessId)).thenReturn(processEntity);
     when(formStore.getForm("testForm", processEntity.getId())).thenReturn(formEntity);
@@ -168,7 +170,8 @@ public class ProcessExternalControllerTest {
             .setStartedByForm(true)
             .setName("StartFormProcess")
             .setVersion(1)
-            .setFormKey("camundaForm:bpmn:startForm");
+            .setFormKey("camundaForm:bpmn:startForm")
+            .setTenantId(DEFAULT_TENANT_IDENTIFIER);
     final Long processInstanceId = RandomUtils.nextLong();
     final ProcessInstanceDTO processInstanceDTO = new ProcessInstanceDTO().setId(processInstanceId);
 

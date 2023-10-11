@@ -50,6 +50,7 @@ public class XMLUtil {
       Consumer<ProcessFlowNodeEntity> flowNodeConsumer,
       BiConsumer<String, String> userTaskFormConsumer,
       Consumer<String> formKeyConsumer,
+      Consumer<String> formIdConsumer,
       Consumer<Boolean> startedByFormConsumer) {
     final SAXParserFactory saxParserFactory = getSAXParserFactory();
     final InputStream is = new ByteArrayInputStream(byteArray);
@@ -59,6 +60,7 @@ public class XMLUtil {
             flowNodeConsumer,
             userTaskFormConsumer,
             formKeyConsumer,
+            formIdConsumer,
             startedByFormConsumer);
     try {
       saxParserFactory.newSAXParser().parse(is, handler);
@@ -73,6 +75,7 @@ public class XMLUtil {
     private Consumer<ProcessFlowNodeEntity> flowNodeConsumer;
     private BiConsumer<String, String> userTaskFormConsumer;
     private Consumer<String> formKeyConsumer;
+    private Consumer<String> formIdConsumer;
     private Consumer<Boolean> startedByFormConsumer;
     private boolean isUserTaskForm = false;
 
@@ -86,11 +89,13 @@ public class XMLUtil {
         final Consumer<ProcessFlowNodeEntity> flowNodeConsumer,
         final BiConsumer<String, String> userTaskFormConsumer,
         final Consumer<String> formKeyConsumer,
+        final Consumer<String> formIdConsumer,
         final Consumer<Boolean> startedByFormConsumer) {
       this.nameConsumer = nameConsumer;
       this.flowNodeConsumer = flowNodeConsumer;
       this.userTaskFormConsumer = userTaskFormConsumer;
       this.formKeyConsumer = formKeyConsumer;
+      this.formIdConsumer = formIdConsumer;
       this.startedByFormConsumer = startedByFormConsumer;
     }
 
@@ -117,6 +122,9 @@ public class XMLUtil {
         if ("formDefinition".equalsIgnoreCase(localName)) {
           if (attributes.getValue("formKey") != null) {
             formKeyConsumer.accept(attributes.getValue("formKey"));
+          }
+          if (attributes.getValue("formId") != null) {
+            formIdConsumer.accept(attributes.getValue("formId"));
           }
         } else if ("property".equalsIgnoreCase(localName)) {
           if (attributes.getValue("name").equalsIgnoreCase("publicAccess")

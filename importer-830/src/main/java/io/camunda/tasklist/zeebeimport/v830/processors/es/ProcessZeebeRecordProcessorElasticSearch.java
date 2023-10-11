@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -122,7 +123,17 @@ public class ProcessZeebeRecordProcessorElasticSearch {
         flowNode -> processEntity.getFlowNodes().add(flowNode),
         userTaskFormCollector,
         processEntity::setFormKey,
+        formId -> processEntity.setFormId(formId),
         processEntity::setStartedByForm);
+
+    Optional.ofNullable(processEntity.getFormKey())
+        .ifPresent(key -> processEntity.setIsFormEmbedded(true));
+
+    Optional.ofNullable(processEntity.getFormId())
+        .ifPresent(
+            id -> {
+              processEntity.setIsFormEmbedded(false);
+            });
 
     return processEntity;
   }
@@ -143,6 +154,7 @@ public class ProcessZeebeRecordProcessorElasticSearch {
               .index(formIndex.getFullQualifiedName())
               .id(ConversionUtils.toStringOrNull(formEntity.getId()))
               .source(objectMapper.writeValueAsString(formEntity), XContentType.JSON));
+
     } catch (JsonProcessingException e) {
       throw new PersistenceException(
           String.format("Error preparing the query to insert task form [%s]", formEntity.getId()),

@@ -72,7 +72,12 @@ public class ProcessZeebeRecordProcessorElasticSearch {
       userTaskForms.forEach(
           (formKey, schema) -> {
             try {
-              persistForm(recordValue.getProcessDefinitionKey(), formKey, schema, bulkRequest);
+              persistForm(
+                  recordValue.getProcessDefinitionKey(),
+                  formKey,
+                  schema,
+                  recordValue.getTenantId(),
+                  bulkRequest);
             } catch (PersistenceException e) {
               exceptions.add(e);
             }
@@ -120,6 +125,7 @@ public class ProcessZeebeRecordProcessorElasticSearch {
         flowNode -> processEntity.getFlowNodes().add(flowNode),
         userTaskFormCollector,
         formKey -> processEntity.setFormKey(formKey),
+        formId -> processEntity.setFormId(formId),
         startedByForm -> processEntity.setStartedByForm(startedByForm));
 
     return processEntity;
@@ -131,10 +137,14 @@ public class ProcessZeebeRecordProcessorElasticSearch {
   }
 
   private void persistForm(
-      long processDefinitionKey, String formKey, String schema, BulkRequest bulkRequest)
+      long processDefinitionKey,
+      String formKey,
+      String schema,
+      String tenantId,
+      BulkRequest bulkRequest)
       throws PersistenceException {
     final FormEntity formEntity =
-        new FormEntity(String.valueOf(processDefinitionKey), formKey, schema);
+        new FormEntity(String.valueOf(processDefinitionKey), formKey, schema, tenantId);
     LOGGER.debug("Form: key {}", formKey);
     try {
       bulkRequest.add(

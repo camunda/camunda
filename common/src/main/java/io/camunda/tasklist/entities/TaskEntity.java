@@ -24,6 +24,9 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
   private String[] candidateGroups;
   private String[] candidateUsers;
   private String formKey;
+  private String formId;
+  private Long formVersion;
+  private Boolean isFormEmbedded;
   private OffsetDateTime followUpDate;
   private OffsetDateTime dueDate;
 
@@ -126,6 +129,33 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
     return this;
   }
 
+  public String getFormId() {
+    return formId;
+  }
+
+  public TaskEntity setFormId(String formId) {
+    this.formId = formId;
+    return this;
+  }
+
+  public Long getFormVersion() {
+    return formVersion;
+  }
+
+  public TaskEntity setFormVersion(Long formVersion) {
+    this.formVersion = formVersion;
+    return this;
+  }
+
+  public Boolean getIsFormEmbedded() {
+    return isFormEmbedded;
+  }
+
+  public TaskEntity setIsFormEmbedded(Boolean isFormEmbedded) {
+    this.isFormEmbedded = isFormEmbedded;
+    return this;
+  }
+
   public OffsetDateTime getFollowUpDate() {
     return followUpDate;
   }
@@ -170,6 +200,9 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
         .setCandidateGroups(this.getCandidateGroups())
         .setCandidateUsers(this.getCandidateUsers())
         .setFormKey(this.getFormKey())
+        .setFormId(this.getFormId())
+        .setFormVersion(this.getFormVersion())
+        .setIsFormEmbedded(this.getIsFormEmbedded())
         .setTenantId(this.getTenantId());
   }
 
@@ -198,7 +231,10 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
         && Objects.equals(followUpDate, that.followUpDate)
         && Objects.equals(dueDate, that.dueDate)
         && Arrays.equals(candidateUsers, that.candidateUsers)
-        && Objects.equals(formKey, that.formKey);
+        && Objects.equals(formKey, that.formKey)
+        && Objects.equals(formId, that.formId)
+        && Objects.equals(formVersion, that.formVersion)
+        && Objects.equals(isFormEmbedded, that.isFormEmbedded);
   }
 
   @Override
@@ -216,6 +252,9 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
             state,
             assignee,
             formKey,
+            formId,
+            formVersion,
+            isFormEmbedded,
             followUpDate,
             dueDate);
     result = 31 * result + Arrays.hashCode(candidateGroups);

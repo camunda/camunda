@@ -11,12 +11,18 @@
       "bpmnId": {
         "type": "keyword"
       },
-      "schema": {
-        "type": "text",
-        "index": false
+      "version": {
+        "type": "long"
+      },
+      "embedded": {
+        "type": "boolean"
       },
       "tenantId": {
         "type": "keyword"
+      },
+      "schema": {
+        "type": "text",
+        "index": false
       }
     }
   }

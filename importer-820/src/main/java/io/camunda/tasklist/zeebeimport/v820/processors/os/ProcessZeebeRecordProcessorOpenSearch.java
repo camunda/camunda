@@ -66,7 +66,12 @@ public class ProcessZeebeRecordProcessorOpenSearch {
       userTaskForms.forEach(
           (formKey, schema) -> {
             try {
-              persistForm(recordValue.getProcessDefinitionKey(), formKey, schema, operations);
+              persistForm(
+                  recordValue.getProcessDefinitionKey(),
+                  formKey,
+                  schema,
+                  recordValue.getTenantId(),
+                  operations);
             } catch (PersistenceException e) {
               exceptions.add(e);
             }
@@ -114,6 +119,7 @@ public class ProcessZeebeRecordProcessorOpenSearch {
         flowNode -> processEntity.getFlowNodes().add(flowNode),
         userTaskFormCollector,
         formKey -> processEntity.setFormKey(formKey),
+        formId -> processEntity.setFormId(formId),
         startedByForm -> processEntity.setStartedByForm(startedByForm));
 
     return processEntity;
@@ -125,10 +131,14 @@ public class ProcessZeebeRecordProcessorOpenSearch {
   }
 
   private void persistForm(
-      long processDefinitionKey, String formKey, String schema, List<BulkOperation> operations)
+      long processDefinitionKey,
+      String formKey,
+      String schema,
+      String tenantId,
+      List<BulkOperation> operations)
       throws PersistenceException {
     final FormEntity formEntity =
-        new FormEntity(String.valueOf(processDefinitionKey), formKey, schema);
+        new FormEntity(String.valueOf(processDefinitionKey), formKey, schema, tenantId);
     LOGGER.debug("Form: key {}", formKey);
 
     operations.add(

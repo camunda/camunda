@@ -15,8 +15,35 @@ public class FormEntity extends TenantAwareTasklistEntity<FormEntity> {
   private String bpmnId;
   private String processDefinitionId;
   private String schema;
+  private Long version;
+  private String tenantId;
+  private Boolean embedded;
 
   public FormEntity() {}
+
+  /* This constructor is used for either embedded or linked forms. */
+  public FormEntity(
+      String processDefinitionId,
+      String bpmnId,
+      String schema,
+      Long version,
+      String tenantId,
+      String formKey,
+      Boolean embedded) {
+    if (embedded) {
+      setId(createId(processDefinitionId, bpmnId));
+    } else {
+      setId(formKey);
+    }
+    this.bpmnId = bpmnId;
+    this.processDefinitionId = processDefinitionId;
+    this.schema = schema;
+    this.version = version;
+    this.tenantId = tenantId;
+    this.embedded = embedded;
+  }
+
+  /* This constructor is used for embedded forms. */
 
   public FormEntity(String processDefinitionId, String bpmnId, String schema) {
     this(processDefinitionId, bpmnId, schema, DEFAULT_TENANT_IDENTIFIER);
@@ -28,6 +55,17 @@ public class FormEntity extends TenantAwareTasklistEntity<FormEntity> {
     this.bpmnId = bpmnId;
     this.processDefinitionId = processDefinitionId;
     this.schema = schema;
+    this.tenantId = tenantId;
+    this.embedded = true;
+  }
+
+  public Boolean getEmbedded() {
+    return embedded;
+  }
+
+  public FormEntity setEmbedded(Boolean embedded) {
+    this.embedded = embedded;
+    return this;
   }
 
   public String getSchema() {
@@ -57,13 +95,31 @@ public class FormEntity extends TenantAwareTasklistEntity<FormEntity> {
     return this;
   }
 
+  public Long getVersion() {
+    return version;
+  }
+
+  public FormEntity setVersion(Long version) {
+    this.version = version;
+    return this;
+  }
+
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  public FormEntity setTenantId(String tenantId) {
+    this.tenantId = tenantId;
+    return this;
+  }
+
   public static String createId(String processId, String formKey) {
     return String.format("%s_%s", processId, formKey);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), bpmnId, processDefinitionId, schema);
+    return Objects.hash(super.hashCode(), bpmnId, processDefinitionId, schema, version);
   }
 
   @Override
@@ -80,7 +136,8 @@ public class FormEntity extends TenantAwareTasklistEntity<FormEntity> {
     final FormEntity that = (FormEntity) o;
     return Objects.equals(bpmnId, that.bpmnId)
         && Objects.equals(processDefinitionId, that.processDefinitionId)
-        && Objects.equals(schema, that.schema);
+        && Objects.equals(schema, that.schema)
+        && Objects.equals(version, that.version);
   }
 
   @Override
@@ -94,6 +151,9 @@ public class FormEntity extends TenantAwareTasklistEntity<FormEntity> {
         + '\''
         + ", schema='"
         + schema
+        + '\''
+        + ", version='"
+        + version
         + '\''
         + '}';
   }

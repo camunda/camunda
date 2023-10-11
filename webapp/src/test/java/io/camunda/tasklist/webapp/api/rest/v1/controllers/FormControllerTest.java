@@ -54,7 +54,8 @@ class FormControllerTest {
             .setId(processDefinitionKey.concat("_").concat(formId))
             .setBpmnId(formId)
             .setProcessDefinitionId(processDefinitionKey)
-            .setSchema("{}");
+            .setSchema("{}")
+            .setTenantId(DEFAULT_TENANT_IDENTIFIER);
     final var expectedFormResponse =
         new FormResponse()
             .setId(formId)
