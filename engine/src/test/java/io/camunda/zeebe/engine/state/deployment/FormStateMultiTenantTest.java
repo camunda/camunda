@@ -40,6 +40,7 @@ public class FormStateMultiTenantTest {
 
   @Test
   public void shouldPutFormForDifferentTenants() {
+    // given
     final long formKey = keyGenerator.nextKey();
     final String formId = Strings.newRandomValidBpmnId();
     final int version = 1;
@@ -60,6 +61,26 @@ public class FormStateMultiTenantTest {
     form2 = formState.findLatestFormById(wrapString(formId), TENANT_2).orElseThrow();
     assertPersistedForm(form1, formKey, formId, version, TENANT_1);
     assertPersistedForm(form2, formKey, formId, version, TENANT_2);
+  }
+
+  @Test
+  public void shouldDeleteFormForSpecificTenant() {
+    // given
+    final long formKey = keyGenerator.nextKey();
+    final String formId = Strings.newRandomValidBpmnId();
+    final int version = 1;
+    final var tenant1Form = createFormRecord(formKey, formId, version, TENANT_1);
+    final var tenant2Form = createFormRecord(formKey, formId, version, TENANT_2);
+
+    formState.storeFormRecord(tenant1Form);
+    formState.storeFormRecord(tenant2Form);
+
+    // when
+    formState.deleteForm(tenant1Form);
+
+    // then
+    assertThat(formState.findLatestFormById(tenant1Form.getFormIdBuffer(), TENANT_1)).isEmpty();
+    assertThat(formState.findLatestFormById(tenant2Form.getFormIdBuffer(), TENANT_2)).isNotEmpty();
   }
 
   private FormRecord createFormRecord(

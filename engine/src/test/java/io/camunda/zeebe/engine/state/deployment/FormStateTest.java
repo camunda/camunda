@@ -96,6 +96,68 @@ public class FormStateTest {
     assertThat(persistedForm).isEmpty();
   }
 
+  @Test
+  void shouldNotFindFormAfterDeletion() {
+    // given
+    final var form = sampleFormRecord();
+    formState.storeFormRecord(form);
+
+    assertThat(formState.findLatestFormById(form.getFormIdBuffer(), form.getTenantId()))
+        .isNotEmpty();
+
+    // when
+    formState.deleteForm(form);
+
+    // then
+    assertThat(formState.findLatestFormById(form.getFormIdBuffer(), form.getTenantId())).isEmpty();
+  }
+
+  @Test
+  void shouldNotFindVersion2AsLatestFormAfterDeletion() {
+    // given
+    final var formV1 = sampleFormRecord();
+    final var formV2 = sampleFormRecord(2, formV1.getFormKey());
+    formState.storeFormRecord(formV1);
+    formState.storeFormRecord(formV2);
+
+    final var latestFormOpt =
+        formState.findLatestFormById(formV2.getFormIdBuffer(), formV2.getTenantId());
+    assertThat(latestFormOpt).isNotEmpty();
+    assertThat(latestFormOpt.get().getVersion()).isEqualTo(2);
+
+    // when
+    formState.deleteForm(formV2);
+
+    // then
+    final var latestFormV1Opt =
+        formState.findLatestFormById(formV2.getFormIdBuffer(), formV2.getTenantId());
+    assertThat(latestFormV1Opt).isNotEmpty();
+    assertThat(latestFormV1Opt.get().getVersion()).isEqualTo(1);
+  }
+
+  @Test
+  void shouldFindVersion2AsLatestFormAfterDeletion() {
+    // given
+    final var formV1 = sampleFormRecord();
+    final var formV2 = sampleFormRecord(2, formV1.getFormKey());
+    formState.storeFormRecord(formV1);
+    formState.storeFormRecord(formV2);
+
+    final var latestFormOpt =
+        formState.findLatestFormById(formV2.getFormIdBuffer(), formV2.getTenantId());
+    assertThat(latestFormOpt).isNotEmpty();
+    assertThat(latestFormOpt.get().getVersion()).isEqualTo(2);
+
+    // when
+    formState.deleteForm(formV1);
+
+    // then
+    final var latestFormV2Opt =
+        formState.findLatestFormById(formV2.getFormIdBuffer(), formV2.getTenantId());
+    assertThat(latestFormV2Opt).isNotEmpty();
+    assertThat(latestFormV2Opt.get().getVersion()).isEqualTo(2);
+  }
+
   private FormRecord sampleFormRecord(final int version, final long key) {
     return new FormRecord()
         .setFormId("form-id")
