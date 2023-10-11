@@ -10,7 +10,7 @@ import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.zeebe.ImportValueType;
 import io.camunda.tasklist.zeebeimport.ImportBatch;
-import io.camunda.tasklist.zeebeimport.v820.processors.es.BulkProcessorElasticSearch;
+import io.camunda.tasklist.zeebeimport.v840.processors.es.BulkProcessorElasticSearch;
 import java.util.HashSet;
 import java.util.Set;
 import org.springframework.context.annotation.Bean;

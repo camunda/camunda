@@ -9,7 +9,7 @@ package io.camunda.tasklist.util.apps.retry_after_failure;
 import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.zeebe.ImportValueType;
 import io.camunda.tasklist.zeebeimport.ImportBatch;
-import io.camunda.tasklist.zeebeimport.v820.processors.os.OpenSearchBulkProcessor;
+import io.camunda.tasklist.zeebeimport.v840.processors.os.OpenSearchBulkProcessor;
 import java.util.HashSet;
 import java.util.Set;
 import org.springframework.context.annotation.Bean;
