@@ -10,8 +10,10 @@ package io.camunda.zeebe.stream.impl;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDbTransaction;
 import io.camunda.zeebe.logstreams.impl.Loggers;
+import io.camunda.zeebe.logstreams.impl.log.LogStreamBatchReaderImpl;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
-import io.camunda.zeebe.logstreams.log.LogStreamReader;
+import io.camunda.zeebe.logstreams.log.LogStreamBatchReader;
+import io.camunda.zeebe.logstreams.log.LogStreamBatchReader.Batch;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
@@ -124,7 +126,7 @@ public final class ProcessingStateMachine {
   private final MutableLastProcessedPositionState lastProcessedPositionState;
   private final RecordMetadata metadata = new RecordMetadata();
   private final ActorControl actor;
-  private final LogStreamReader logStreamReader;
+  private final LogStreamBatchReader logStreamBatchReader;
   private final TransactionContext transactionContext;
   private final RetryStrategy writeRetryStrategy;
   private final RetryStrategy sideEffectsRetryStrategy;
@@ -138,6 +140,7 @@ public final class ProcessingStateMachine {
 
   // current iteration
   private LoggedEvent currentRecord;
+  private Batch currentBatch;
   private ZeebeDbTransaction zeebeDbTransaction;
   private long writtenPosition = StreamProcessor.UNSET_POSITION;
   private long lastSuccessfulProcessedRecordPosition = StreamProcessor.UNSET_POSITION;
@@ -159,6 +162,7 @@ public final class ProcessingStateMachine {
   private final int maxCommandsInBatch;
   private int processedCommandsCount;
   private final ProcessingMetrics processingMetrics;
+  private LoggedEvent loggedEvent;
 
   public ProcessingStateMachine(
       final StreamProcessorContext context,
@@ -168,7 +172,7 @@ public final class ProcessingStateMachine {
     this.recordProcessors = recordProcessors;
     actor = context.getActor();
     recordValues = context.getRecordValues();
-    logStreamReader = context.getLogStreamReader();
+    logStreamBatchReader = new LogStreamBatchReaderImpl(context.getLogStreamReader());
     logStreamWriter = context.getLogStreamWriter();
     transactionContext = context.getTransactionContext();
     abortCondition = context.getAbortCondition();
@@ -206,7 +210,7 @@ public final class ProcessingStateMachine {
   }
 
   private void tryToReadNextRecord() {
-    final var hasNext = logStreamReader.hasNext();
+    final var hasNext = logStreamBatchReader.hasNext();
 
     if (currentRecord != null) {
       final var previousRecord = currentRecord;
@@ -223,10 +227,10 @@ public final class ProcessingStateMachine {
     }
 
     if (shouldProcessNext.getAsBoolean() && hasNext && !inProcessing) {
-      currentRecord = logStreamReader.next();
+      currentBatch = logStreamBatchReader.next();
 
       if (eventFilter.applies(currentRecord) && !currentRecord.shouldSkipProcessing()) {
-        processCommand(currentRecord);
+        processCommand(currentBatch);
       } else {
         skipRecord();
       }
@@ -244,32 +248,44 @@ public final class ProcessingStateMachine {
     return reachedEnd;
   }
 
-  private void processCommand(final LoggedEvent loggedEvent) {
+  private void processCommand(final Batch batch) {
     // we have to mark ourself has inProcessing to not interfere with readNext calls, which
     // are triggered from commit listener
     inProcessing = true;
 
     currentProcessingResult = EmptyProcessingResult.INSTANCE;
 
-    metadata.reset();
-    loggedEvent.readMetadata(metadata);
-
     try {
-      // Here we need to get the current time, since we want to calculate
-      // how long it took between writing to the dispatcher and processing.
-      // In all other cases we should prefer to use the Prometheus Timer API.
-      final var processingStartTime = ActorClock.currentTimeMillis();
-      metrics.processingLatency(loggedEvent.getTimestamp(), processingStartTime);
-      processingTimer = metrics.startProcessingDurationTimer(metadata.getRecordType());
-
-      final var value = recordValues.readRecordValue(loggedEvent, metadata.getValueType());
-      typedCommand.wrap(loggedEvent, metadata, value);
-
       zeebeDbTransaction = transactionContext.getCurrentTransaction();
-      try (final var timer = processingMetrics.startBatchProcessingDurationTimer()) {
-        zeebeDbTransaction.run(() -> batchProcessing(typedCommand));
-        processingMetrics.observeCommandCount(processedCommandsCount);
-      }
+      zeebeDbTransaction.run(
+          () -> {
+            batch.forEachRemaining(
+                loggedEvent -> {
+                  if (eventFilter.applies(currentRecord) && !currentRecord.shouldSkipProcessing()) {
+                    metadata.reset();
+                    this.loggedEvent = loggedEvent;
+                    this.loggedEvent.readMetadata(metadata);
+                    // Here we need to get the current time, since we want to calculate
+                    // how long it took between writing to the dispatcher and processing.
+                    // In all other cases we should prefer to use the Prometheus Timer API.
+                    final var processingStartTime = ActorClock.currentTimeMillis();
+                    metrics.processingLatency(loggedEvent.getTimestamp(), processingStartTime);
+                    processingTimer =
+                        metrics.startProcessingDurationTimer(metadata.getRecordType());
+
+                    try (final var timer = processingMetrics.startBatchProcessingDurationTimer()) {
+                      final var value =
+                          recordValues.readRecordValue(loggedEvent, metadata.getValueType());
+                      typedCommand.wrap(loggedEvent, metadata, value);
+
+                      batchProcessing(typedCommand);
+                      processingMetrics.observeCommandCount(processedCommandsCount);
+                    }
+                  } else {
+                    skipRecord();
+                  }
+                });
+          });
 
       finalizeCommandProcessing();
       writeRecords();
@@ -280,7 +296,7 @@ public final class ProcessingStateMachine {
           loggedEvent,
           metadata,
           recoverableException);
-      actor.schedule(PROCESSING_RETRY_DELAY, () -> processCommand(currentRecord));
+      actor.schedule(PROCESSING_RETRY_DELAY, () -> processCommand(batch));
     } catch (final UnrecoverableException unrecoverableException) {
       LOG.error(ERROR_MESSAGE_PROCESSING_FAILED_UNRECOVERABLE, loggedEvent, metadata);
       throw unrecoverableException;
@@ -292,7 +308,7 @@ public final class ProcessingStateMachine {
             maxCommandsInBatch,
             exceededBatchRecordSizeException);
         processingMetrics.countRetry();
-        onError(() -> processCommand(loggedEvent));
+        onError(() -> processCommand(batch));
       } else {
         onError(
             () -> {
@@ -629,7 +645,7 @@ public final class ProcessingStateMachine {
     // we need to seek to the next record after that position where the processing should start
     // Be aware on processing we ignore events, so we will process the next command
     final var lastProcessedPosition = lastProcessingPositions.getLastProcessedPosition();
-    logStreamReader.seekToNextEvent(lastProcessedPosition);
+    logStreamBatchReader.seekToNextBatch(lastProcessedPosition);
     if (lastSuccessfulProcessedRecordPosition == StreamProcessor.UNSET_POSITION) {
       lastSuccessfulProcessedRecordPosition = lastProcessedPosition;
     }
