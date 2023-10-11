@@ -142,9 +142,11 @@ public class RetryElasticsearchClient {
   }
 
   public long getNumberOfDocumentsFor(String... indexPatterns){
-    return executeWithRetries("Count number of documents in " + Arrays.asList(indexPatterns), () ->
-       esClient.count(new CountRequest(indexPatterns), requestOptions).getCount()
-    );
+    final var response = executeWithRetries(
+        "Count number of documents in " + Arrays.asList(indexPatterns),
+        () -> esClient.count(new CountRequest(indexPatterns), requestOptions),
+        (c) -> c.getFailedShards() > 0);
+    return response.getCount();
   }
 
   public Set<String> getIndexNames(String namePattern) {
