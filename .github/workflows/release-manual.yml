@@ -53,7 +53,7 @@ on:
 jobs:
   release:
     name: "release manually v${{ inputs.releaseVersion }}"
-    uses: ./.github/workflows/release-reusable.yml
+    uses: camunda/operate/.github/workflows/release-reusable.yml@master
     secrets: inherit
     with:
       branch: ${{ inputs.branch }}
