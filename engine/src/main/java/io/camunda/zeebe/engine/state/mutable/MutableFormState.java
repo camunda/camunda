@@ -18,4 +18,11 @@ public interface MutableFormState extends FormState {
    * @param record the record of the form
    */
   void storeFormRecord(FormRecord record);
+
+  /**
+   * Deletes a form from the state and cache
+   *
+   * @param record the record of the form that is deleted
+   */
+  void deleteForm(final FormRecord record);
 }
