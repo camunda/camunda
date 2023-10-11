@@ -9,7 +9,6 @@ package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableFormState;
-import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.FormRecord;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
 
@@ -17,8 +16,8 @@ public class FormCreatedApplier implements TypedEventApplier<FormIntent, FormRec
 
   private final MutableFormState formState;
 
-  public FormCreatedApplier(final MutableProcessingState state) {
-    formState = state.getFormState();
+  public FormCreatedApplier(final MutableFormState state) {
+    formState = state;
   }
 
   @Override
