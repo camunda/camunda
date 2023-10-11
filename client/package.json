@@ -1,6 +1,6 @@
 {
   "name": "camunda-tasklist",
-  "version": "8.3.0-SNAPSHOT",
+  "version": "8.4.0-SNAPSHOT",
   "private": true,
   "dependencies": {
     "@bpmn-io/form-js-carbon-styles": "1.3.0",
