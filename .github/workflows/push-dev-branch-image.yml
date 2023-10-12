@@ -5,7 +5,7 @@ on:
     inputs:
       image_tag:
         required: true
-        description: 'Required format: 3.x.branchnumber-SNAPSHOT, eg 3.11.6861-SNAPSHOT for a branch called OPT-6861'
+        description: 'Required format: 3.x.branchnumber-SNAPSHOT, eg 3.12.6861-SNAPSHOT for a branch called OPT-6861'
 env:
   IMAGE_NAME: optimize
 permissions:
@@ -86,7 +86,7 @@ jobs:
           push: true
           platforms: linux/amd64
           build-args: |
-            VERSION=3.11.0-SNAPSHOT
+            VERSION=3.12.0-SNAPSHOT
             DATE= ${{ steps.get-date.outputs.result }}
             REVISION= ${{ github.sha }}
           tags: ${{ steps.meta.outputs.docker_image }}
