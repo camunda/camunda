@@ -135,14 +135,16 @@ public final class JobStreamEndpoint {
 
   /** View model of a single remote job stream for JSON serialization */
   public record RemoteJobStream(
-      String jobType, Metadata metadata, Collection<RemoteStreamId> consumers) {}
+      String jobType, Metadata metadata, Collection<RemoteStreamId> consumers)
+      implements JobStream {}
 
   /**
    * View model of a client job stream for JSON serialization. The {@link #connectedTo()} collection
    * is the set of broker IDs this stream is registered on, from the gateway's point of view.
    */
   public record ClientJobStream(
-      String jobType, Object id, Metadata metadata, Collection<Integer> connectedTo) {}
+      String jobType, Object id, Metadata metadata, Collection<Integer> connectedTo)
+      implements JobStream {}
 
   /** View model for the {@link JobActivationProperties} of a job stream. */
   public record Metadata(String worker, Duration timeout, Collection<String> fetchVariables) {}
@@ -157,5 +159,11 @@ public final class JobStreamEndpoint {
 
     /** Returns the list of registered client/gateway job streams. */
     Collection<ClientStream<JobActivationProperties>> clientJobStreams();
+  }
+
+  public interface JobStream {
+    Metadata metadata();
+
+    String jobType();
   }
 }

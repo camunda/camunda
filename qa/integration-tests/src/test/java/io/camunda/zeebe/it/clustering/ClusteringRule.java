@@ -18,7 +18,6 @@ import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.AtomixCluster;
-import io.atomix.cluster.Member;
 import io.atomix.cluster.messaging.impl.NettyMessagingService;
 import io.atomix.cluster.messaging.impl.NettyUnicastService;
 import io.atomix.utils.Version;
@@ -307,19 +306,6 @@ public class ClusteringRule extends ExternalResource {
     partitionLeader.clear();
   }
 
-  private void awaitCompleteTopology() {
-    try {
-      waitForTopology(
-          assertion -> assertion.isComplete(clusterSize, partitionCount, replicationFactor));
-      LOG.info("All brokers in topology {}", getTopologyFromClient());
-
-    } catch (final Exception e) {
-      // If the previous waits timeouts, the brokers are not closed automatically.
-      after();
-      throw new UncheckedExecutionException("Cluster start failed", e);
-    }
-  }
-
   public Broker getBroker(final int nodeId) {
     return brokers.computeIfAbsent(nodeId, this::createBroker);
   }
@@ -421,10 +407,6 @@ public class ClusteringRule extends ExternalResource {
     }
 
     return base;
-  }
-
-  public SpringBrokerBridge getBrokerBridge(final int nodeId) {
-    return springBrokerBridge.get(nodeId);
   }
 
   private GatewayResource createGateway() {
@@ -563,45 +545,6 @@ public class ClusteringRule extends ExternalResource {
       LOG.error("Failed to restart cluster", e);
       Assert.fail("Failed to restart cluster");
     }
-  }
-
-  public void restartGateway() {
-    final var config = stopGateway();
-    startGateway(config);
-  }
-
-  public void startGateway(final GatewayCfg config) {
-    gatewayResource = createGateway(config);
-    awaitCompleteTopology();
-  }
-
-  public GatewayCfg stopGateway() {
-    GatewayCfg config = null;
-    if (gatewayResource != null) {
-      final var gatewayMember = gatewayResource.cluster.getMembershipService().getLocalMember();
-      config = gatewayResource.config;
-      gatewayResource.close();
-      gatewayResource = null;
-
-      // since we're reusing the same gateway ports and members, it's better we wait for it to be
-      // removed from the cluster before restarting, so let's wait for it here
-      awaitMemberRemovedFromCluster(gatewayMember);
-    }
-
-    return config;
-  }
-
-  private void awaitMemberRemovedFromCluster(final Member gatewayMember) {
-    Awaitility.await("until gateway is removed from cluster")
-        .untilAsserted(
-            () ->
-                assertThat(brokers.values())
-                    .allSatisfy(broker -> assertMemberRemovedFromCluster(gatewayMember, broker)));
-  }
-
-  private void assertMemberRemovedFromCluster(final Member gatewayMember, final Broker broker) {
-    assertThat(broker.getBrokerContext().getClusterServices().getMembershipService().getMembers())
-        .doesNotContain(gatewayMember);
   }
 
   /** Returns the list of available brokers in a cluster. */
@@ -845,10 +788,6 @@ public class ClusteringRule extends ExternalResource {
     }
   }
 
-  public JobStreamClient gatewayJobStreamClient() {
-    return gatewayResource.jobStreamClient;
-  }
-
   /**
    * Runs until a given number of segments are filled on all brokers. This is useful for publishing
    * messages until a segment is full, thus triggering log compaction.
@@ -947,11 +886,6 @@ public class ClusteringRule extends ExternalResource {
     return Optional.ofNullable(partitionStatus)
         .map(PartitionStatus::snapshotId)
         .flatMap(FileBasedSnapshotId::ofFileName);
-  }
-
-  public Optional<SnapshotId> getSnapshot(final int brokerId) {
-    final var broker = getBroker(brokerId);
-    return getSnapshot(broker, 1);
   }
 
   public Optional<SnapshotId> getSnapshot(final Broker broker) {
