@@ -26,7 +26,7 @@
     <license.header>com/mycila/maven/plugin/license/templates/APACHE-2.txt</license.header>
 
     <!-- java version -->
-    <version.java>17</version.java>
+    <version.java>21</version.java>
 
     <!-- dependency versions -->
     <version.config>1.4.2</version.config>
@@ -141,6 +141,9 @@
             <artifactId>jib-maven-plugin</artifactId>
             <version>${plugin.version.jib}</version>
             <configuration>
+              <from>
+                <image>eclipse-temurin:21</image>
+              </from>
               <to>
                 <image>gcr.io/zeebe-io/starter:SNAPSHOT</image>
               </to>
@@ -161,6 +164,9 @@
             <artifactId>jib-maven-plugin</artifactId>
             <version>${plugin.version.jib}</version>
             <configuration>
+              <from>
+                <image>eclipse-temurin:21</image>
+              </from>
               <to>
                 <image>gcr.io/zeebe-io/worker:SNAPSHOT</image>
               </to>
