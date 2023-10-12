@@ -103,7 +103,6 @@ export default forwardRef(function MenuDropdown(
 	return (
 		<div
 			{...rest}
-			ref={ref}
 			aria-owns={open ? id : undefined}
 			className={classnames(className, "MenuDropdown")}
 		>
@@ -113,6 +112,7 @@ export default forwardRef(function MenuDropdown(
 				disabled={disabled}
 				invalid={invalid}
 				invalidText={invalidText}
+				ref={ref}
 			>
 				<button
 					type="button"
