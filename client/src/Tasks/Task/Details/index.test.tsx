@@ -18,10 +18,6 @@ import {ReactQueryProvider} from 'modules/ReactQueryProvider';
 import {useCurrentUser} from 'modules/queries/useCurrentUser';
 import {DEFAULT_MOCK_CLIENT_CONFIG} from 'modules/mocks/window';
 
-jest.mock('modules/featureFlags', () => ({
-  IS_MULTI_TENANCY_ENABLED: true,
-}));
-
 const UserName = () => {
   const {data: currentUser} = useCurrentUser();
 

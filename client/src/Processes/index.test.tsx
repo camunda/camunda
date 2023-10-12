@@ -31,9 +31,6 @@ jest.mock('modules/stores/notifications', () => ({
     displayNotification: jest.fn(() => () => {}),
   },
 }));
-jest.mock('modules/featureFlags', () => ({
-  IS_MULTI_TENANCY_ENABLED: true,
-}));
 
 const mockedNotificationsStore = notificationsStore as jest.Mocked<
   typeof notificationsStore
