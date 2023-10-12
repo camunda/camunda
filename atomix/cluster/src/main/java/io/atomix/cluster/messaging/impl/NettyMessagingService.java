@@ -45,11 +45,14 @@ import io.netty.channel.ServerChannel;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.WriteBufferWaterMark;
 import io.netty.channel.epoll.Epoll;
+import io.netty.channel.epoll.EpollDatagramChannel;
 import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.epoll.EpollServerSocketChannel;
 import io.netty.channel.epoll.EpollSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.compression.SnappyFrameDecoder;
@@ -59,10 +62,13 @@ import io.netty.handler.codec.compression.ZlibWrapper;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslProvider;
+import io.netty.resolver.dns.DnsAddressResolverGroup;
+import io.netty.resolver.dns.DnsNameResolverBuilder;
+import io.netty.resolver.dns.LoggingDnsQueryLifeCycleObserverFactory;
 import io.netty.util.concurrent.DefaultThreadFactory;
 import io.netty.util.concurrent.Future;
 import java.net.ConnectException;
-import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -110,6 +116,8 @@ public final class NettyMessagingService implements ManagedMessagingService {
   private EventLoopGroup clientGroup;
   private Class<? extends ServerChannel> serverChannelClass;
   private Class<? extends Channel> clientChannelClass;
+  private Class<? extends DatagramChannel> clientDataGramChannelClass;
+
   private Channel serverChannel;
 
   // a single thread executor which silently rejects tasks being submitted when it's shutdown
@@ -490,6 +498,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
         new EpollEventLoopGroup(0, namedThreads("netty-messaging-event-epoll-server-%d", log));
     serverChannelClass = EpollServerSocketChannel.class;
     clientChannelClass = EpollSocketChannel.class;
+    clientDataGramChannelClass = EpollDatagramChannel.class;
   }
 
   private void initNioTransport() {
@@ -499,6 +508,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
         new NioEventLoopGroup(0, namedThreads("netty-messaging-event-nio-server-%d", log));
     serverChannelClass = NioServerSocketChannel.class;
     clientChannelClass = NioSocketChannel.class;
+    clientDataGramChannelClass = NioDatagramChannel.class;
   }
 
   /**
@@ -697,15 +707,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
    */
   private CompletableFuture<Channel> bootstrapClient(final Address address) {
     final CompletableFuture<Channel> future = new OrderedFuture<>();
-    final InetAddress resolvedAddress = address.address(true);
-    if (resolvedAddress == null) {
-      future.completeExceptionally(
-          new ConnectException(
-              "Failed to bootstrap client (address "
-                  + address.toString()
-                  + " cannot be resolved)"));
-      return future;
-    }
+    final InetSocketAddress socketAddress = address.socketAddress();
 
     final Bootstrap bootstrap = new Bootstrap();
     bootstrap.option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT);
@@ -718,11 +720,15 @@ public final class NettyMessagingService implements ManagedMessagingService {
     bootstrap.option(ChannelOption.TCP_NODELAY, true);
     bootstrap.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 1000);
     bootstrap.group(clientGroup);
-    // TODO: Make this faster:
-    // http://normanmaurer.me/presentations/2014-facebook-eng-netty/slides.html#37.0
     bootstrap.channel(clientChannelClass);
-    bootstrap.remoteAddress(resolvedAddress, address.port());
+    bootstrap.resolver(
+        new DnsAddressResolverGroup(
+            new DnsNameResolverBuilder(clientGroup.next())
+                .dnsQueryLifecycleObserverFactory(new LoggingDnsQueryLifeCycleObserverFactory())
+                .channelType(clientDataGramChannelClass)));
+    bootstrap.remoteAddress(socketAddress);
     bootstrap.handler(new BasicClientChannelInitializer(future));
+
     final Channel channel =
         bootstrap
             .connect()
@@ -733,7 +739,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
                         new ConnectException(
                             String.format(
                                 "Failed to connect channel for address %s (resolved: %s) : %s",
-                                address, address.address(), onConnect.cause())));
+                                address, address.getAddress(), onConnect.cause())));
                   }
                 })
             .channel();

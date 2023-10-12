@@ -18,11 +18,9 @@ package io.atomix.cluster.messaging.impl;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import io.atomix.utils.concurrent.OrderedFuture;
 import io.atomix.utils.net.Address;
 import io.camunda.zeebe.util.collection.Tuple;
 import io.netty.channel.Channel;
-import java.net.ConnectException;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.List;
@@ -89,13 +87,8 @@ class ChannelPool {
    * @return a future to be completed with a channel from the pool
    */
   CompletableFuture<Channel> getChannel(final Address address, final String messageType) {
-    final InetAddress inetAddress = address.address();
-    if (inetAddress == null) {
-      final CompletableFuture<Channel> failedFuture = new OrderedFuture<>();
-      failedFuture.completeExceptionally(
-          new ConnectException("Failed to resolve address %s".formatted(address)));
-      return failedFuture;
-    }
+    final InetAddress inetAddress = address.getAddress();
+
     final List<CompletableFuture<Channel>> channelPool = getChannelPool(address, inetAddress);
     final int offset = getChannelOffset(messageType);
 

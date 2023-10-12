@@ -152,7 +152,8 @@ public class NettyMessagingServiceTest {
     final String subject = nextSubject();
     final CompletableFuture<Void> response =
         netty1.sendAsync(unresolvable, subject, "hello world".getBytes());
-    assertTrue(response.isCompletedExceptionally());
+
+    assertThat(response).failsWithin(Duration.ofSeconds(10));
   }
 
   @Test
@@ -200,7 +201,7 @@ public class NettyMessagingServiceTest {
     assertTrue(Arrays.equals("hello there".getBytes(), response.join()));
     assertTrue(handlerInvoked.get());
     assertTrue(Arrays.equals(request.get(), "hello world".getBytes()));
-    assertEquals(address1.address(), sender.get().address());
+    assertEquals(address1.tryResolveAddress(), sender.get().tryResolveAddress());
   }
 
   @Test
@@ -313,7 +314,7 @@ public class NettyMessagingServiceTest {
     assertTrue(Arrays.equals("hello there".getBytes(), response.join()));
     assertTrue(handlerInvoked.get());
     assertTrue(Arrays.equals(request.get(), "hello world".getBytes()));
-    assertEquals(address1.address(), sender.get().address());
+    assertEquals(address1.tryResolveAddress(), sender.get().tryResolveAddress());
   }
 
   @Test
