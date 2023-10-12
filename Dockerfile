@@ -20,7 +20,7 @@ ARG BASE_SHA="${BASE_IMAGE_SHA_ARM64}"
 # hadolint ignore=DL3006
 FROM ${BASE_IMAGE_NAME} as builder
 
-ARG VERSION=2.0.0
+ARG VERSION=""
 ARG DISTRO=production
 ARG ARTIFACT_PATH=./distro/target
 
