@@ -16,6 +16,7 @@ import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.db.impl.DbTenantAwareKey;
 import io.camunda.zeebe.db.impl.DbTenantAwareKey.PlacementType;
+import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.state.immutable.PendingMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState.PendingSubscription;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
@@ -26,6 +27,7 @@ import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
+import org.slf4j.Logger;
 
 public final class DbMessageSubscriptionState
     implements MutableMessageSubscriptionState,
@@ -33,6 +35,7 @@ public final class DbMessageSubscriptionState
         StreamProcessorLifecycleAware {
 
   // (elementInstanceKey, messageName) => MessageSubscription
+  private static final Logger LOG = Loggers.STREAM_PROCESSING;
   private final DbLong elementInstanceKey;
   private final DbString messageName;
   private final MessageSubscription messageSubscription;
@@ -250,7 +253,16 @@ public final class DbMessageSubscriptionState
               pendingSubscription.elementInstanceKey(),
               BufferUtil.wrapString(pendingSubscription.messageName()));
 
-      visitor.visit(subscription);
+      if (subscription == null) {
+        // This case can occur while a scheduled job is running asynchronously
+        // and the stream processor removes one of the returned subscriptions from the state.
+        LOG.warn(
+            "Expected to find a subscription with key {} and message name {}, but none found. The state is inconsistent.",
+            pendingSubscription.elementInstanceKey(),
+            pendingSubscription.messageName());
+      } else {
+        visitor.visit(subscription);
+      }
     }
   }
 
