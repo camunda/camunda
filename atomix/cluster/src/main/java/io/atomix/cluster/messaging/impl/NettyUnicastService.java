@@ -105,7 +105,7 @@ public class NettyUnicastService implements ManagedUnicastService {
     final ByteBuf buf = channel.alloc().buffer(Integer.BYTES + Integer.BYTES + bytes.length);
     buf.writeInt(preamble);
     buf.writeInt(bytes.length).writeBytes(bytes);
-    channel.writeAndFlush(new DatagramPacket(buf, address.getResolvedSocketAddress()));
+    channel.writeAndFlush(new DatagramPacket(buf, address.socketAddress()));
   }
 
   @Override

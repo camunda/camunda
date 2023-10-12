@@ -64,6 +64,7 @@ import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslProvider;
 import io.netty.resolver.dns.DnsAddressResolverGroup;
 import io.netty.resolver.dns.DnsNameResolverBuilder;
+import io.netty.resolver.dns.LoggingDnsQueryLifeCycleObserverFactory;
 import io.netty.util.concurrent.DefaultThreadFactory;
 import io.netty.util.concurrent.Future;
 import java.net.ConnectException;
@@ -723,6 +724,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
     bootstrap.resolver(
         new DnsAddressResolverGroup(
             new DnsNameResolverBuilder(clientGroup.next())
+                .dnsQueryLifecycleObserverFactory(new LoggingDnsQueryLifeCycleObserverFactory())
                 .channelType(clientDataGramChannelClass)));
     bootstrap.remoteAddress(socketAddress);
     bootstrap.handler(new BasicClientChannelInitializer(future));

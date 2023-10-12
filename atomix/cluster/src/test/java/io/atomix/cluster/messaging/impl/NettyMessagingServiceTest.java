@@ -23,7 +23,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import com.google.common.util.concurrent.MoreExecutors;
@@ -154,11 +153,7 @@ public class NettyMessagingServiceTest {
     final CompletableFuture<Void> response =
         netty1.sendAsync(unresolvable, subject, "hello world".getBytes());
 
-    assertThrows(
-        CompletionException.class,
-        () -> {
-          netty1.sendAsync(unresolvable, subject, "hello world".getBytes()).join();
-        });
+    assertThat(response).failsWithin(Duration.ofSeconds(10));
   }
 
   @Test

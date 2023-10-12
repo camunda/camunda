@@ -250,7 +250,6 @@
     <dependency>
       <groupId>io.netty</groupId>
       <artifactId>netty-resolver</artifactId>
-      <version>4.1.97.Final</version>
     </dependency>
 
   </dependencies>
