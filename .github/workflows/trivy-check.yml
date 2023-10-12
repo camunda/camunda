@@ -24,6 +24,7 @@ jobs:
         branch:
           [
             "master",
+            "maintenance/3.11",
             "maintenance/3.10",
             "maintenance/3.9",
             "maintenance/3.7",
