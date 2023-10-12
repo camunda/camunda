@@ -103,15 +103,17 @@ const JSONEditorModal: React.FC<Props> = observer(
             options={options}
             language="json"
             value={editedValue}
-            theme={themeStore.actualTheme === 'light' ? 'light' : 'vs-dark'}
             onChange={(value) => {
               const newValue = value ?? '';
               setEditedValue(newValue);
               setIsValid(isValidJSON(newValue));
             }}
-            onMount={(editor) => {
+            onMount={(editor, monaco) => {
               editor.focus();
               editorRef.current = editor;
+              monaco.editor.setTheme(
+                themeStore.actualTheme === 'light' ? 'light' : 'vs-dark',
+              );
             }}
           />
         ) : (
