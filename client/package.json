@@ -80,6 +80,7 @@
     "ancestorSeparator": " @ "
   },
   "devDependencies": {
+    "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
     "@types/carbon__icons-react": "^11.26.1",
     "@types/enzyme": "^3.10.13",
     "@types/enzyme-adapter-react-16": "^1.0.6",
