@@ -9,8 +9,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.dashboard.InstantDashboardDataDto;
+import org.camunda.optimize.service.db.writer.InstantDashboardMetadataWriter;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.elasticsearch.action.DocWriteResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.delete.DeleteRequest;
@@ -22,6 +24,7 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.xcontent.XContentType;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -34,11 +37,13 @@ import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDI
 @AllArgsConstructor
 @Component
 @Slf4j
-public class InstantDashboardMetadataWriter {
+@Conditional(ElasticSearchCondition.class)
+public class InstantDashboardMetadataWriterES implements InstantDashboardMetadataWriter {
 
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
 
+  @Override
   public void saveInstantDashboard(InstantDashboardDataDto dashboardDataDto) {
     log.debug("Writing new Instant Preview Dashboard to Elasticsearch");
     String id = dashboardDataDto.getInstantDashboardId();
@@ -65,6 +70,7 @@ public class InstantDashboardMetadataWriter {
     log.debug("Instant Preview Dashboard information with id [{}] has been created", id);
   }
 
+  @Override
   public List<String> deleteOutdatedTemplateEntriesAndGetExistingDashboardIds(List<Long> hashesAllowed) throws IOException {
     List<String> dashboardIdsToBeDeleted = new ArrayList<>();
     SearchRequest searchRequest = new SearchRequest(INSTANT_DASHBOARD_INDEX_NAME);

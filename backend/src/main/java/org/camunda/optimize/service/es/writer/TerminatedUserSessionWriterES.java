@@ -9,12 +9,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.TerminatedUserSessionDto;
+import org.camunda.optimize.service.db.writer.TerminatedUserSessionWriter;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.index.TerminatedUserSessionIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.xcontent.XContentType;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -30,12 +33,14 @@ import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
 @AllArgsConstructor
 @Component
 @Slf4j
-public class TerminatedUserSessionWriter {
+@Conditional(ElasticSearchCondition.class)
+public class TerminatedUserSessionWriterES implements TerminatedUserSessionWriter {
 
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
   private final DateTimeFormatter dateTimeFormatter;
 
+  @Override
   public void writeTerminatedUserSession(final TerminatedUserSessionDto sessionDto) {
     log.debug("Writing terminated user session with id [{}] to elasticsearch.", sessionDto.getId());
     try {
@@ -55,6 +60,7 @@ public class TerminatedUserSessionWriter {
     }
   }
 
+  @Override
   public void deleteTerminatedUserSessionsOlderThan(final OffsetDateTime timestamp) {
     final BoolQueryBuilder filterQuery = boolQuery().filter(
       rangeQuery(TerminatedUserSessionIndex.TERMINATION_TIMESTAMP)

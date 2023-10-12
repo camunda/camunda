@@ -10,12 +10,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.index.PositionBasedImportIndexDto;
+import org.camunda.optimize.service.db.writer.PositionBasedImportIndexWriter;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.util.EsHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.xcontent.XContentType;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -25,12 +28,14 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.POSITION_BA
 @AllArgsConstructor
 @Component
 @Slf4j
-public class PositionBasedImportIndexWriter {
+@Conditional(ElasticSearchCondition.class)
+public class PositionBasedImportIndexWriterES implements PositionBasedImportIndexWriter {
 
   private final OptimizeElasticsearchClient esClient;
   private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
 
+  @Override
   public void importIndexes(List<PositionBasedImportIndexDto> importIndexDtos) {
     String importItemName = "position based import index information";
     log.debug("Writing [{}] {} to ES.", importIndexDtos.size(), importItemName);

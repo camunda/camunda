@@ -129,7 +129,7 @@ public class ElasticsearchWriterUtil {
   public static void executeImportRequestsAsBulk(String bulkRequestName, List<ImportRequestDto> importRequestDtos,
                                                  boolean retryFailedRequestsOnNestedDocLimit) {
     final Map<OptimizeElasticsearchClient, List<ImportRequestDto>> esClientToImportRequests = importRequestDtos.stream()
-      .collect(groupingBy(ImportRequestDto::getEsClient));
+      .collect(groupingBy(ImportRequestDto::getClient));
     esClientToImportRequests.forEach((esClient, requestList) -> {
       if (requestList.isEmpty()) {
         log.warn("No requests supplied, cannot create bulk request");

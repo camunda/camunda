@@ -60,7 +60,7 @@ public abstract class AbstractActivityInstanceWriter extends AbstractProcessInst
     return processInstanceToEvents.entrySet().stream()
       .map(entry -> ImportRequestDto.builder()
         .importName(importItemName)
-        .esClient(esClient)
+        .client(esClient)
         .request(createImportRequestForActivityInstance(entry))
         .build())
       .collect(Collectors.toList());

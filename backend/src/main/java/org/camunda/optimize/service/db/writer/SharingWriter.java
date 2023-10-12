@@ -9,6 +9,7 @@ import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareRestDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareRestDto;
 
 public interface SharingWriter {
+
   ReportShareRestDto saveReportShare(final ReportShareRestDto createSharingDto);
 
   DashboardShareRestDto saveDashboardShare(final DashboardShareRestDto createSharingDto);
@@ -18,4 +19,5 @@ public interface SharingWriter {
   void deleteReportShare(final String shareId);
 
   void deleteDashboardShare(final String shareId);
+
 }

@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
+import org.camunda.optimize.service.db.writer.DecisionInstanceWriter;
 import org.camunda.optimize.service.es.EsBulkByScrollTaskActionProgressReporter;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
@@ -17,12 +18,14 @@ import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.reindex.DeleteByQueryAction;
 import org.elasticsearch.xcontent.XContentType;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 import java.time.OffsetDateTime;
@@ -41,7 +44,8 @@ import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
 @AllArgsConstructor
 @Component
 @Slf4j
-public class DecisionInstanceWriter implements ConfigurationReloadable {
+@Conditional(ElasticSearchCondition.class)
+public class DecisionInstanceWriterES implements ConfigurationReloadable, DecisionInstanceWriter {
 
   private final ObjectMapper objectMapper;
   private final DateTimeFormatter dateTimeFormatter;
@@ -51,6 +55,7 @@ public class DecisionInstanceWriter implements ConfigurationReloadable {
 
   private final Set<String> existingInstanceIndexDefinitionKeys = ConcurrentHashMap.newKeySet();
 
+  @Override
   public void importDecisionInstances(List<DecisionInstanceDto> decisionInstanceDtos) {
     final String importItemName = "decision instances";
     log.debug("Writing [{}] {} to ES.", decisionInstanceDtos.size(), importItemName);
@@ -64,6 +69,7 @@ public class DecisionInstanceWriter implements ConfigurationReloadable {
     );
   }
 
+  @Override
   public void deleteDecisionInstancesByDefinitionKeyAndEvaluationDateOlderThan(final String decisionDefinitionKey,
                                                                                final OffsetDateTime evaluationDate) {
     if (!indexExists(decisionDefinitionKey)) {

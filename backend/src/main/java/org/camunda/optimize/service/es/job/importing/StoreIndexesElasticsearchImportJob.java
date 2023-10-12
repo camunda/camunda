@@ -6,8 +6,8 @@
 package org.camunda.optimize.service.es.job.importing;
 
 import org.camunda.optimize.dto.optimize.index.EngineImportIndexDto;
+import org.camunda.optimize.service.db.writer.ImportIndexWriter;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
-import org.camunda.optimize.service.es.writer.ImportIndexWriter;
 
 import java.util.List;
 

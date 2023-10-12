@@ -11,12 +11,15 @@ import jakarta.ws.rs.BadRequestException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.SettingsResponseDto;
+import org.camunda.optimize.service.db.writer.SettingsWriter;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.index.SettingsIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.xcontent.XContentType;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -34,11 +37,13 @@ import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDI
 @AllArgsConstructor
 @Slf4j
 @Component
-public class SettingsWriter {
+@Conditional(ElasticSearchCondition.class)
+public class SettingsWriterES implements SettingsWriter {
 
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
 
+  @Override
   public void upsertSettings(final SettingsResponseDto settingsDto) {
     log.debug("Writing settings to ES");
 

@@ -13,15 +13,18 @@ import org.camunda.optimize.dto.optimize.OptimizeDto;
 import org.camunda.optimize.dto.optimize.index.AllEntitiesBasedImportIndexDto;
 import org.camunda.optimize.dto.optimize.index.EngineImportIndexDto;
 import org.camunda.optimize.dto.optimize.index.TimestampBasedImportIndexDto;
+import org.camunda.optimize.service.db.writer.ImportIndexWriter;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.index.index.ImportIndexIndex;
 import org.camunda.optimize.service.util.EsHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.xcontent.XContentBuilder;
 import org.elasticsearch.xcontent.XContentFactory;
 import org.elasticsearch.xcontent.XContentType;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -34,13 +37,15 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TIMESTAMP_B
 @AllArgsConstructor
 @Component
 @Slf4j
-public class ImportIndexWriter {
+@Conditional(ElasticSearchCondition.class)
+public class ImportIndexWriterES implements ImportIndexWriter {
 
   private final OptimizeElasticsearchClient esClient;
   private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
   private final DateTimeFormatter dateTimeFormatter;
 
+  @Override
   public void importIndexes(List<EngineImportIndexDto> engineImportIndexDtos) {
     String importItemName = "import index information";
     log.debug("Writing [{}] {} to ES.", engineImportIndexDtos.size(), importItemName);
@@ -55,11 +60,9 @@ public class ImportIndexWriter {
   }
 
   private void addImportIndexRequest(BulkRequest bulkRequest, OptimizeDto optimizeDto) {
-    if (optimizeDto instanceof TimestampBasedImportIndexDto) {
-      TimestampBasedImportIndexDto timestampBasedIndexDto = (TimestampBasedImportIndexDto) optimizeDto;
+    if (optimizeDto instanceof TimestampBasedImportIndexDto timestampBasedIndexDto) {
       bulkRequest.add(createTimestampBasedRequest(timestampBasedIndexDto));
-    } else if (optimizeDto instanceof AllEntitiesBasedImportIndexDto) {
-      AllEntitiesBasedImportIndexDto entitiesBasedIndexDto = (AllEntitiesBasedImportIndexDto) optimizeDto;
+    } else if (optimizeDto instanceof AllEntitiesBasedImportIndexDto entitiesBasedIndexDto) {
       bulkRequest.add(createAllEntitiesBasedRequest(entitiesBasedIndexDto));
     }
   }

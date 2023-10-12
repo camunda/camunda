@@ -64,7 +64,7 @@ public class ZeebeProcessInstanceWriter extends AbstractProcessInstanceDataWrite
                String newEntryIfAbsent = objectMapper.writeValueAsString(procInst);
                return ImportRequestDto.builder()
                  .importName(importItemName)
-                 .esClient(esClient)
+                 .client(esClient)
                  .request(new UpdateRequest()
                             .index(getProcessInstanceIndexAliasName(procInst.getProcessDefinitionKey()))
                             .id(procInst.getProcessInstanceId())

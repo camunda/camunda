@@ -12,11 +12,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.persistence.BusinessKeyDto;
+import org.camunda.optimize.service.db.writer.BusinessKeyWriter;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.xcontent.XContentType;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -28,16 +31,17 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.BUSINESS_KE
 @AllArgsConstructor
 @Component
 @Slf4j
-public class BusinessKeyWriter {
+@Conditional(ElasticSearchCondition.class)
+public class BusinessKeyWriterES implements BusinessKeyWriter {
 
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
 
+  @Override
   public List<ImportRequestDto> generateBusinessKeyImports(List<ProcessInstanceDto> processInstanceDtos) {
     List<BusinessKeyDto> businessKeysToSave = processInstanceDtos.stream()
       .map(this::extractBusinessKey)
-      .distinct()
-      .collect(Collectors.toList());
+      .distinct().toList();
 
     String importItemName = "business keys";
     log.debug("Creating imports for {} [{}].", businessKeysToSave.size(), importItemName);
@@ -47,12 +51,13 @@ public class BusinessKeyWriter {
       .filter(Optional::isPresent)
       .map(request -> ImportRequestDto.builder()
         .importName(importItemName)
-        .esClient(esClient)
+        .client(esClient)
         .request(request.get())
         .build())
-      .collect(Collectors.toList());
+      .toList();
   }
 
+  @Override
   public void deleteByProcessInstanceIds(final List<String> processInstanceIds) {
     final BulkRequest bulkRequest = new BulkRequest();
     log.debug("Deleting [{}] business key documents by id with bulk request.", processInstanceIds.size());

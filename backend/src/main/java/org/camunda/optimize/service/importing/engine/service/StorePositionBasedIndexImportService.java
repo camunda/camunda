@@ -8,9 +8,9 @@ package org.camunda.optimize.service.importing.engine.service;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.index.PositionBasedImportIndexDto;
+import org.camunda.optimize.service.db.writer.PositionBasedImportIndexWriter;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.importing.StorePositionBasedIndexElasticsearchImportJob;
-import org.camunda.optimize.service.es.writer.PositionBasedImportIndexWriter;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
 import java.util.List;

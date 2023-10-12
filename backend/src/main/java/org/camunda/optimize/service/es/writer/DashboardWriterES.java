@@ -13,11 +13,13 @@ import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionUpdateDto;
+import org.camunda.optimize.service.db.writer.DashboardWriter;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.index.DashboardIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.IdGenerator;
+import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.DocWriteResponse;
 import org.elasticsearch.action.delete.DeleteRequest;
@@ -31,9 +33,11 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
 import org.elasticsearch.xcontent.XContentType;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 import jakarta.ws.rs.NotFoundException;
+
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Optional;
@@ -48,17 +52,19 @@ import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDI
 @AllArgsConstructor
 @Component
 @Slf4j
-public class DashboardWriter {
-  private static final String DEFAULT_DASHBOARD_NAME = "New Dashboard";
+@Conditional(ElasticSearchCondition.class)
+public class DashboardWriterES implements DashboardWriter {
 
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
 
+  @Override
   public IdResponseDto createNewDashboard(@NonNull final String userId,
                                           @NonNull final DashboardDefinitionRestDto dashboardDefinitionDto) {
     return createNewDashboard(userId, dashboardDefinitionDto, IdGenerator.getNextId());
   }
 
+  @Override
   public IdResponseDto createNewDashboard(@NonNull final String userId,
                                           @NonNull final DashboardDefinitionRestDto dashboardDefinitionDto,
                                           @NonNull final String id) {
@@ -71,6 +77,7 @@ public class DashboardWriter {
     return saveDashboard(dashboardDefinitionDto);
   }
 
+  @Override
   public IdResponseDto saveDashboard(@NonNull final DashboardDefinitionRestDto dashboardDefinitionDto) {
     dashboardDefinitionDto.setCreated(LocalDateUtil.getCurrentDateTime());
     dashboardDefinitionDto.setLastModified(LocalDateUtil.getCurrentDateTime());
@@ -99,6 +106,7 @@ public class DashboardWriter {
     return new IdResponseDto(dashboardId);
   }
 
+  @Override
   public void updateDashboard(DashboardDefinitionUpdateDto dashboard, String id) {
     log.debug("Updating dashboard with id [{}] in Elasticsearch", id);
     try {
@@ -138,6 +146,7 @@ public class DashboardWriter {
     }
   }
 
+  @Override
   public void removeReportFromDashboards(String reportId) {
     final String updateItem = String.format("report from dashboard with report ID [%s]", reportId);
     log.info("Removing {}}.", updateItem);
@@ -164,6 +173,7 @@ public class DashboardWriter {
     );
   }
 
+  @Override
   public void deleteDashboardsOfCollection(String collectionId) {
     ElasticsearchWriterUtil.tryDeleteByQueryRequest(
       esClient,
@@ -174,6 +184,7 @@ public class DashboardWriter {
     );
   }
 
+  @Override
   public void deleteDashboard(String dashboardId) {
     log.debug("Deleting dashboard with id [{}]", dashboardId);
     DeleteRequest request = new DeleteRequest(DASHBOARD_INDEX_NAME)
@@ -199,6 +210,7 @@ public class DashboardWriter {
     }
   }
 
+  @Override
   public void deleteManagementDashboard() {
     ElasticsearchWriterUtil.tryDeleteByQueryRequest(
       esClient,

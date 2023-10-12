@@ -20,8 +20,8 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
-import static java.util.stream.Collectors.toList;
 import static org.camunda.optimize.dto.optimize.ProcessInstanceConstants.ACTIVE_STATE;
 import static org.camunda.optimize.dto.optimize.ProcessInstanceConstants.SUSPENDED_STATE;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.BUSINESS_KEY;
@@ -62,15 +62,14 @@ public class RunningProcessInstanceWriter extends AbstractProcessInstanceWriter 
     log.debug("Creating imports for {} [{}].", processInstanceDtos.size(), IMPORT_ITEM_NAME);
     createInstanceIndicesIfMissing(processInstanceDtos, ProcessInstanceDto::getProcessDefinitionKey);
 
-    return processInstanceDtos.stream()
-      .map(instance -> ImportRequestDto.builder()
-        .importName(IMPORT_ITEM_NAME)
-        .esClient(esClient)
-        .request(createImportRequestForProcessInstance(instance, UPDATABLE_FIELDS))
-        .build())
-      .toList();
+    return processInstanceDtos.stream().map(instance -> ImportRequestDto.builder()
+            .importName(IMPORT_ITEM_NAME)
+            .client(esClient)
+            .request(createImportRequestForProcessInstance(instance, UPDATABLE_FIELDS))
+            .build())
+            .collect(Collectors.toList());
   }
-
+  
   @SuppressWarnings(UNCHECKED_CAST)
   public void importProcessInstancesFromUserOperationLogs(final List<ProcessInstanceDto> processInstanceDtos) {
     log.debug(

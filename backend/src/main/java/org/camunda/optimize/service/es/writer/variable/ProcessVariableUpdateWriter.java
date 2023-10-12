@@ -71,7 +71,7 @@ public class ProcessVariableUpdateWriter extends AbstractProcessInstanceDataWrit
     return processInstanceIdToVariables.entrySet().stream()
       .map(entry -> ImportRequestDto.builder()
         .importName(importItemName)
-        .esClient(esClient)
+        .client(esClient)
         .request(createUpdateRequestForProcessInstanceVariables(entry))
         .build())
       .filter(update -> Objects.nonNull(update.getRequest()))

@@ -40,6 +40,7 @@ public class SharingWriterES implements SharingWriter {
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
 
+  @Override
   public ReportShareRestDto saveReportShare(final ReportShareRestDto createSharingDto) {
     log.debug("Writing new report share to Elasticsearch");
     String id = IdGenerator.getNextId();
@@ -68,6 +69,7 @@ public class SharingWriterES implements SharingWriter {
     return createSharingDto;
   }
 
+  @Override
   public DashboardShareRestDto saveDashboardShare(final DashboardShareRestDto createSharingDto) {
     log.debug("Writing new dashboard share to Elasticsearch");
     String id = IdGenerator.getNextId();
@@ -100,6 +102,7 @@ public class SharingWriterES implements SharingWriter {
     return createSharingDto;
   }
 
+  @Override
   public void updateDashboardShare(final DashboardShareRestDto updatedShare) {
     String id = updatedShare.getId();
     try {
@@ -129,6 +132,7 @@ public class SharingWriterES implements SharingWriter {
     log.debug("dashboard share with id [{}] for resource [{}] has been updated", id, updatedShare.getDashboardId());
   }
 
+  @Override
   public void deleteReportShare(final String shareId) {
     log.debug("Deleting report share with id [{}]", shareId);
     DeleteRequest request =
@@ -155,6 +159,7 @@ public class SharingWriterES implements SharingWriter {
     }
   }
 
+  @Override
   public void deleteDashboardShare(final String shareId) {
     log.debug("Deleting dashboard share with id [{}]", shareId);
     DeleteRequest request = new DeleteRequest(DASHBOARD_SHARE_INDEX_NAME)

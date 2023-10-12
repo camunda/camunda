@@ -9,10 +9,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
+import org.camunda.optimize.service.db.writer.AlertWriter;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.index.AlertIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.IdGenerator;
+import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
+import org.elasticsearch.action.DocWriteResponse;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.index.IndexRequest;
@@ -23,9 +26,11 @@ import org.elasticsearch.index.engine.DocumentMissingException;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.xcontent.XContentBuilder;
 import org.elasticsearch.xcontent.XContentType;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 import jakarta.ws.rs.NotFoundException;
+
 import java.io.IOException;
 import java.util.List;
 
@@ -40,11 +45,13 @@ import static org.elasticsearch.xcontent.XContentFactory.jsonBuilder;
 @AllArgsConstructor
 @Component
 @Slf4j
-public class AlertWriter {
+@Conditional(ElasticSearchCondition.class)
+public class AlertWriterES implements AlertWriter {
 
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
 
+  @Override
   public AlertDefinitionDto createAlert(AlertDefinitionDto alertDefinitionDto) {
     log.debug("Writing new alert to Elasticsearch");
 
@@ -58,7 +65,7 @@ public class AlertWriter {
 
       IndexResponse indexResponse = esClient.index(request);
 
-      if (!indexResponse.getResult().equals(IndexResponse.Result.CREATED)) {
+      if (!indexResponse.getResult().equals(DocWriteResponse.Result.CREATED)) {
         String message = "Could not write alert to Elasticsearch. " +
           "Maybe the connection to Elasticsearch got lost?";
         log.error(message);
@@ -74,6 +81,7 @@ public class AlertWriter {
     return alertDefinitionDto;
   }
 
+  @Override
   public void updateAlert(AlertDefinitionDto alertUpdate) {
     log.debug("Updating alert with id [{}] in Elasticsearch", alertUpdate.getId());
     try {
@@ -113,6 +121,7 @@ public class AlertWriter {
     }
   }
 
+  @Override
   public void deleteAlert(String alertId) {
     log.debug("Deleting alert with id [{}]", alertId);
     DeleteRequest request =
@@ -131,7 +140,7 @@ public class AlertWriter {
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    if (!deleteResponse.getResult().equals(DeleteResponse.Result.DELETED)) {
+    if (!deleteResponse.getResult().equals(DocWriteResponse.Result.DELETED)) {
       String message =
         String.format("Could not delete alert with id [%s]. Alert does not exist." +
                         "Maybe it was already deleted by someone else?", alertId);
@@ -140,6 +149,7 @@ public class AlertWriter {
     }
   }
 
+  @Override
   public void deleteAlerts(List<String> alertIds) {
     log.debug("Deleting alerts with ids: {}", alertIds);
     ElasticsearchWriterUtil.tryDeleteByQueryRequest(
@@ -151,6 +161,7 @@ public class AlertWriter {
     );
   }
 
+  @Override
   public void writeAlertTriggeredStatus(boolean alertStatus, String alertId) {
     log.debug("Writing alert status for alert with id [{}] to Elasticsearch", alertId);
     try {
@@ -176,6 +187,7 @@ public class AlertWriter {
   /**
    * Delete all alerts that are associated with following report ID
    */
+  @Override
   public void deleteAlertsForReport(String reportId) {
     ElasticsearchWriterUtil.tryDeleteByQueryRequest(
       esClient,

@@ -9,9 +9,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.OnboardingStateDto;
+import org.camunda.optimize.service.db.writer.OnboardingStateWriter;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.elasticsearch.action.update.UpdateRequest;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -22,10 +25,12 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ONBOARDING_
 @AllArgsConstructor
 @Slf4j
 @Component
-public class OnboardingStateWriter {
+@Conditional(ElasticSearchCondition.class)
+public class OnboardingStateWriterES implements OnboardingStateWriter {
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
 
+  @Override
   public void upsertOnboardingState(final OnboardingStateDto onboardingStateDto) {
     log.debug("Writing onboarding state [{}] to elasticsearch", onboardingStateDto.getId());
     try {

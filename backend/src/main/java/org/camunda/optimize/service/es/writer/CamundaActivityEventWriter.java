@@ -55,7 +55,7 @@ public class CamundaActivityEventWriter {
       .filter(Optional::isPresent)
       .map(request -> ImportRequestDto.builder()
         .importName(importItemName)
-        .esClient(esClient)
+        .client(esClient)
         .request(request.get())
         .build())
       .filter(importRequest -> Objects.nonNull(importRequest.getRequest()))

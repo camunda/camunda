@@ -92,7 +92,7 @@ public abstract class AbstractUserTaskWriter extends AbstractProcessInstanceData
     return userTaskToProcessInstance.entrySet().stream()
       .map(entry -> ImportRequestDto.builder()
         .importName(importItemName)
-        .esClient(esClient)
+        .client(esClient)
         .request(createUserTaskUpdateImportRequest(entry))
         .build())
       .collect(Collectors.toList());

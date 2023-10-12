@@ -52,7 +52,7 @@ public class VariableUpdateInstanceWriter {
       .filter(Optional::isPresent)
       .map(request -> ImportRequestDto.builder()
         .importName(importItemName)
-        .esClient(esClient)
+        .client(esClient)
         .request(request.get())
         .build())
       .toList();

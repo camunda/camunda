@@ -9,10 +9,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.engine.TenantEngineDto;
 import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.rest.engine.EngineContext;
+import org.camunda.optimize.service.db.writer.TenantWriter;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.TenantElasticsearchImportJob;
-import org.camunda.optimize.service.es.writer.TenantWriter;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
 import java.util.List;

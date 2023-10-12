@@ -10,14 +10,17 @@ import com.google.common.collect.Lists;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
+import org.camunda.optimize.service.db.writer.DecisionDefinitionWriter;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
@@ -27,12 +30,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static org.camunda.optimize.service.es.schema.index.AbstractDefinitionIndex.DATA_SOURCE;
 import static org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_ID;
 import static org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_KEY;
-import static org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_NAME;
 import static org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_VERSION;
-import static org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_VERSION_TAG;
 import static org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex.TENANT_ID;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
@@ -43,19 +43,13 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 @AllArgsConstructor
 @Component
 @Slf4j
-public class DecisionDefinitionWriter {
-  private static final Set<String> FIELDS_TO_UPDATE = Set.of(
-    DECISION_DEFINITION_KEY,
-    DECISION_DEFINITION_VERSION,
-    DECISION_DEFINITION_VERSION_TAG,
-    DECISION_DEFINITION_NAME,
-    DATA_SOURCE,
-    TENANT_ID
-  );
+@Conditional(ElasticSearchCondition.class)
+public class DecisionDefinitionWriterES implements DecisionDefinitionWriter {
 
   private final ObjectMapper objectMapper;
   private final OptimizeElasticsearchClient esClient;
   private final ConfigurationService configurationService;
+
   private static final Script MARK_AS_DELETED_SCRIPT = new Script(
     ScriptType.INLINE,
     Script.DEFAULT_SCRIPT_LANG,
@@ -63,11 +57,13 @@ public class DecisionDefinitionWriter {
     Collections.emptyMap()
   );
 
+  @Override
   public void importDecisionDefinitions(List<DecisionDefinitionOptimizeDto> decisionDefinitionOptimizeDtos) {
     log.debug("Writing [{}] decision definitions to elasticsearch", decisionDefinitionOptimizeDtos.size());
     writeDecisionDefinitionInformation(decisionDefinitionOptimizeDtos);
   }
 
+  @Override
   public void markDefinitionAsDeleted(final String definitionId) {
     log.debug("Marking decision definition with ID {} as deleted", definitionId);
     try {
@@ -85,6 +81,7 @@ public class DecisionDefinitionWriter {
     }
   }
 
+  @Override
   public boolean markRedeployedDefinitionsAsDeleted(final List<DecisionDefinitionOptimizeDto> importedDefinitions) {
     final AtomicBoolean definitionsUpdated = new AtomicBoolean(false);
     // We must partition this into batches to avoid the maximum ES boolQuery clause limit being reached

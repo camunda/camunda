@@ -61,7 +61,7 @@ public abstract class AbstractIncidentWriter extends AbstractProcessInstanceData
     return processInstanceToEvents.entrySet().stream()
       .map(entry -> ImportRequestDto.builder()
         .importName(importItemName)
-        .esClient(esClient)
+        .client(esClient)
         .request(createImportRequestForIncident(entry))
         .build())
       .collect(Collectors.toList());

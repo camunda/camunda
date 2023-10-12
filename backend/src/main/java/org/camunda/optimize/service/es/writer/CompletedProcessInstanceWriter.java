@@ -54,7 +54,7 @@ public class CompletedProcessInstanceWriter extends AbstractProcessInstanceWrite
     return processInstances.stream()
       .map(key -> ImportRequestDto.builder()
         .importName(importItemName)
-        .esClient(esClient)
+        .client(esClient)
         .request(createImportRequestForProcessInstance(key))
         .build())
       .collect(Collectors.toList());

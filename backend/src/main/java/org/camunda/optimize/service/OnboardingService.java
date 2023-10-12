@@ -10,8 +10,8 @@ import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.OnboardingStateDto;
+import org.camunda.optimize.service.db.writer.OnboardingStateWriter;
 import org.camunda.optimize.service.es.reader.OnboardingStateReader;
-import org.camunda.optimize.service.es.writer.OnboardingStateWriter;
 import org.springframework.stereotype.Component;
 
 import jakarta.ws.rs.NotFoundException;
