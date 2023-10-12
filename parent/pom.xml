@@ -25,7 +25,7 @@
   </licenses>
 
   <properties>
-    <version.java>17</version.java>
+    <version.java>21</version.java>
 
     <project.build.sourceEncoding>utf-8</project.build.sourceEncoding>
     <!-- disable jdk8 javadoc checks on release build -->

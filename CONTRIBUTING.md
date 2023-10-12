@@ -19,8 +19,8 @@
 Zeebe is a multi-module maven project. To build all components,
 run the command: `mvn clean install -DskipTests` in the root folder.
 
-> NOTE: All Java modules in Zeebe are built and tested with JDK 17. Most modules use language level
-> 17, exceptions are: zeebe-bpmn-model, zeebe-client-java, zeebe-gateway-protocol,
+> NOTE: All Java modules in Zeebe are built and tested with JDK 21. Most modules use language level
+> 21, exceptions are: zeebe-bpmn-model, zeebe-client-java, zeebe-gateway-protocol,
 > zeebe-gateway-protocol-impl, zeebe-protocol and zeebe-protocol-jackson which use language level 8
 >
 > NOTE: The Go client and zbctl are built and tested with Go 1.15

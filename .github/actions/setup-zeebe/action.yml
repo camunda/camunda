@@ -16,7 +16,7 @@ inputs:
     default: "true"
   java-version:
     description: The JDK version to setup
-    default: "17"
+    default: "21"
     required: false
   maven-cache-key-modifier:
     description: A modifier key used for the maven cache, can be used to create isolated caches for certain jobs.
