@@ -186,4 +186,28 @@ public class MetaStoreSerializer {
     metaEncoder.wrap(buffer, offset + headerEncoder.encodedLength());
     metaEncoder.lastFlushedIndex(index);
   }
+
+  public long readCommitIndex(final MutableDirectBuffer buffer, final int offset) {
+    headerDecoder.wrap(buffer, offset);
+    metaDecoder.wrap(
+        buffer,
+        offset + headerDecoder.encodedLength(),
+        headerDecoder.blockLength(),
+        headerDecoder.version());
+
+    return metaDecoder.commitIndex();
+  }
+
+  public void writeCommitIndex(
+      final long index, final MutableDirectBuffer buffer, final int offset) {
+    headerEncoder
+        .wrap(buffer, offset)
+        .blockLength(metaEncoder.sbeBlockLength())
+        .templateId(metaEncoder.sbeTemplateId())
+        .schemaId(metaEncoder.sbeSchemaId())
+        .version(metaEncoder.sbeSchemaVersion());
+
+    metaEncoder.wrap(buffer, offset + headerEncoder.encodedLength());
+    metaEncoder.commitIndex(index);
+  }
 }

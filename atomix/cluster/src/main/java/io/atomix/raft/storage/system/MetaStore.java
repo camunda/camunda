@@ -72,7 +72,7 @@ public class MetaStore implements JournalMetaStore, AutoCloseable {
 
     // Note that for raft safety, irrespective of the storage level, <term, vote> metadata is always
     // persisted on disk.
-    final File metaFile = new File(storage.directory(), String.format("%s.meta", storage.prefix()));
+    final var metaFile = new File(storage.directory(), String.format("%s.meta", storage.prefix()));
     if (!metaFile.exists()) {
       Files.write(
           metaFile.toPath(),
@@ -87,11 +87,7 @@ public class MetaStore implements JournalMetaStore, AutoCloseable {
     }
 
     metaFileChannel =
-        FileChannel.open(
-            metaFile.toPath(),
-            StandardOpenOption.READ,
-            StandardOpenOption.WRITE,
-            StandardOpenOption.DSYNC);
+        FileChannel.open(metaFile.toPath(), StandardOpenOption.READ, StandardOpenOption.WRITE);
 
     confFile = new File(storage.directory(), String.format("%s.conf", storage.prefix()));
 
@@ -116,15 +112,21 @@ public class MetaStore implements JournalMetaStore, AutoCloseable {
     final var term = loadTerm();
     final long index = loadLastFlushedIndex();
     final var voted = loadVote();
+    final var commitIndex = loadCommitIndex();
 
     metaBuffer.put(0, VERSION);
     storeTerm(term);
     storeLastFlushedIndex(index);
     storeVote(voted);
+    storeCommitIndex(commitIndex);
+
+    flushMetaStore();
   }
 
   /**
    * Stores the current server term.
+   *
+   * <p>NOTE: The caller should take care to call {@link #flushMetaStore()} if required.
    *
    * @param term The current server term.
    */
@@ -132,12 +134,7 @@ public class MetaStore implements JournalMetaStore, AutoCloseable {
     log.trace("Store term {}", term);
     final MutableDirectBuffer directBuffer = new UnsafeBuffer(metaBuffer);
     serializer.writeTerm(term, directBuffer, VERSION_LENGTH);
-    try {
-      metaFileChannel.write(metaBuffer, 0);
-      metaBuffer.position(0);
-    } catch (final IOException e) {
-      throw new StorageException(e);
-    }
+    writeMetaFile();
   }
 
   /**
@@ -146,30 +143,22 @@ public class MetaStore implements JournalMetaStore, AutoCloseable {
    * @return The stored server term.
    */
   public synchronized long loadTerm() {
-    try {
-      metaFileChannel.read(metaBuffer, 0);
-      metaBuffer.position(0);
-    } catch (final IOException e) {
-      throw new StorageException(e);
-    }
+    readMetaFile();
     return serializer.readTerm(new UnsafeBuffer(metaBuffer), VERSION_LENGTH);
   }
 
   /**
    * Stores the last voted server.
    *
+   * <p>NOTE: The caller should take care to call {@link #flushMetaStore()} if required.
+   *
    * @param vote The server vote.
    */
   public synchronized void storeVote(final MemberId vote) {
+    final String id = vote == null ? null : vote.id();
     log.trace("Store vote {}", vote);
-    try {
-      final String id = vote == null ? null : vote.id();
-      serializer.writeVotedFor(id, new UnsafeBuffer(metaBuffer), VERSION_LENGTH);
-      metaFileChannel.write(metaBuffer, 0);
-      metaBuffer.position(0);
-    } catch (final IOException e) {
-      throw new StorageException(e);
-    }
+    serializer.writeVotedFor(id, new UnsafeBuffer(metaBuffer), VERSION_LENGTH);
+    writeMetaFile();
   }
 
   /**
@@ -178,16 +167,16 @@ public class MetaStore implements JournalMetaStore, AutoCloseable {
    * @return The last vote for the server.
    */
   public synchronized MemberId loadVote() {
-    try {
-      metaFileChannel.read(metaBuffer, 0);
-      metaBuffer.position(0);
-    } catch (final IOException e) {
-      throw new StorageException(e);
-    }
+    readMetaFile();
     final String id = serializer.readVotedFor(new UnsafeBuffer(metaBuffer), VERSION_LENGTH);
     return id.isEmpty() ? null : MemberId.from(id);
   }
 
+  /**
+   * NOTE: The caller should take care to call {@link #flushMetaStore()} if required.
+   *
+   * <p>{@inheritDoc}
+   */
   @Override
   public synchronized void storeLastFlushedIndex(final long index) {
     if (index == lastFlushedIndex) {
@@ -198,11 +187,8 @@ public class MetaStore implements JournalMetaStore, AutoCloseable {
     log.trace("Store last flushed index {}", index);
     try (final var ignored = metrics.observeLastFlushedIndexUpdate()) {
       serializer.writeLastFlushedIndex(index, new UnsafeBuffer(metaBuffer), VERSION_LENGTH);
-      metaFileChannel.write(metaBuffer, 0);
-      metaBuffer.position(0);
+      writeMetaFile();
       lastFlushedIndex = index;
-    } catch (final IOException e) {
-      throw new StorageException(e);
     }
   }
 
@@ -211,6 +197,11 @@ public class MetaStore implements JournalMetaStore, AutoCloseable {
     return lastFlushedIndex;
   }
 
+  /**
+   * NOTE: The caller should take care to call {@link #flushMetaStore()} if required.
+   *
+   * <p>{@inheritDoc}
+   */
   @Override
   public void resetLastFlushedIndex() {
     storeLastFlushedIndex(MetaEncoder.lastFlushedIndexNullValue());
@@ -219,6 +210,15 @@ public class MetaStore implements JournalMetaStore, AutoCloseable {
   @Override
   public boolean hasLastFlushedIndex() {
     return lastFlushedIndex != MetaEncoder.lastFlushedIndexNullValue();
+  }
+
+  @Override
+  public synchronized void flushMetaStore() {
+    try {
+      metaFileChannel.force(false);
+    } catch (final IOException e) {
+      throw new StorageException(e);
+    }
   }
 
   /**
@@ -260,6 +260,29 @@ public class MetaStore implements JournalMetaStore, AutoCloseable {
     }
   }
 
+  /**
+   * Stores the given commit index in the meta store file.
+   *
+   * <p>NOTE: The caller should take care to call {@link #flushMetaStore()} if required.
+   *
+   * @param index the new commit index
+   */
+  public synchronized void storeCommitIndex(final long index) {
+    log.trace("Store commit index {}", index);
+    serializer.writeCommitIndex(index, new UnsafeBuffer(metaBuffer), VERSION_LENGTH);
+    writeMetaFile();
+  }
+
+  /**
+   * Loads the commit index from the meta store.
+   *
+   * @return the commit index in the meta store file
+   */
+  public synchronized long loadCommitIndex() {
+    readMetaFile();
+    return serializer.readCommitIndex(new UnsafeBuffer(metaBuffer), VERSION_LENGTH);
+  }
+
   @Override
   public synchronized void close() {
     try {
@@ -275,13 +298,26 @@ public class MetaStore implements JournalMetaStore, AutoCloseable {
     return toStringHelper(this).toString();
   }
 
-  private long readLastFlushedIndex() {
+  private void writeMetaFile() {
+    try {
+      metaFileChannel.write(metaBuffer, 0);
+      metaBuffer.position(0);
+    } catch (final IOException e) {
+      throw new StorageException(e);
+    }
+  }
+
+  private void readMetaFile() {
     try {
       metaFileChannel.read(metaBuffer, 0);
       metaBuffer.position(0);
     } catch (final IOException e) {
       throw new StorageException(e);
     }
+  }
+
+  private long readLastFlushedIndex() {
+    readMetaFile();
     return serializer.readLastFlushedIndex(new UnsafeBuffer(metaBuffer), VERSION_LENGTH);
   }
 }

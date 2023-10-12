@@ -80,6 +80,7 @@
   <sbe:message name="Meta" id="6">
     <field name="term" id="0" type="uint64"/>
     <field name="lastFlushedIndex" id="1" type="uint64"/>
+    <field name="commitIndex" id="3" type="uint64" />
     <data name="votedFor" id="2" type="varDataEncoding"/>
   </sbe:message>
 

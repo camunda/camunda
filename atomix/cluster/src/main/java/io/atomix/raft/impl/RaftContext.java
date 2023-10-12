@@ -195,9 +195,10 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     // Open the metadata store.
     meta = storage.openMetaStore();
 
-    // Load the current term and last vote from disk.
+    // Load meta store information
     term = meta.loadTerm();
     lastVotedFor = meta.loadVote();
+    commitIndex = meta.loadCommitIndex();
 
     // Construct the core log, reader, writer, and compactor.
     raftLog =
@@ -496,10 +497,13 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     if (commitIndex > previousCommitIndex) {
       this.commitIndex = commitIndex;
       raftLog.setCommitIndex(Math.min(commitIndex, raftLog.getLastIndex()));
+      meta.storeCommitIndex(commitIndex);
+
       if (isLeader()) {
         // leader counts itself in quorum, so in order to commit the leader must persist
         raftLog.flush();
       }
+
       final long configurationIndex = cluster.getConfiguration().index();
       if (configurationIndex > previousCommitIndex && configurationIndex <= commitIndex) {
         cluster.commitCurrentConfiguration();
@@ -1053,6 +1057,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     checkState(!(lastVotedFor != null && candidate != null), "Already voted for another candidate");
     lastVotedFor = candidate;
     meta.storeVote(lastVotedFor);
+    meta.flushMetaStore();
 
     if (candidate != null) {
       log.debug("Voted for {}", candidate);
@@ -1203,6 +1208,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
       lastVotedFor = null;
       meta.storeTerm(this.term);
       meta.storeVote(lastVotedFor);
+      meta.flushMetaStore();
       log.debug("Set term {}", term);
     }
   }
