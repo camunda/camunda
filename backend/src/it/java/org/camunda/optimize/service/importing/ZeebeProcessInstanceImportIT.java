@@ -264,7 +264,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
     waitUntilMinimumProcessInstanceEventsExportedCount(4);
     zeebeExtension.setClock(Instant.now().plus(1, ChronoUnit.DAYS));
     zeebeExtension.completeTaskForInstanceWithJobType(SERVICE_TASK);
-    waitUntilMinimumProcessInstanceEventsExportedCount(7);
+    waitUntilMinimumProcessInstanceEventsExportedCount(8);
     importAllZeebeEntitiesFromScratch();
 
     // then
@@ -432,7 +432,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
     deployAndStartInstanceForProcess(createTerminateEndEventProcess(processName));
 
     // when
-    waitUntilMinimumProcessInstanceEventsExportedCount(2);
+    waitUntilMinimumProcessInstanceEventsExportedCount(6);
     importAllZeebeEntitiesFromScratch();
 
     // then
