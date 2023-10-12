@@ -37,7 +37,7 @@
   // When renovate should do the checks
   schedule: ["every weekday"],
   // How many PRs can exist at once
-  prConcurrentLimit: 30,
+  prConcurrentLimit: 60,
   // Additional notes added to PRs
   prBodyNotes: [
     // Add warning note to each major version PR
