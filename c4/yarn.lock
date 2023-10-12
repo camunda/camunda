@@ -2065,7 +2065,7 @@ __metadata:
     storybook: ^7.4.6
     typescript: 5.2.2
   peerDependencies:
-    "@carbon/react": ^1.36.0
+    "@carbon/react": ^1.39.0
     react: 17.0.2
     react-dom: 17.0.2
   languageName: unknown
