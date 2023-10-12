@@ -141,6 +141,12 @@ public class RetryElasticsearchClient {
       );
   }
 
+  private void refreshAndRetryOnShardFailures(final String indexPattern) {
+    executeWithRetries("Refresh " + indexPattern,
+        () -> esClient.indices().refresh(new RefreshRequest(indexPattern), requestOptions),
+        (r) -> r.getFailedShards() > 0);
+  }
+
   public long getNumberOfDocumentsFor(String... indexPatterns){
     final var response = executeWithRetries(
         "Count number of documents in " + Arrays.asList(indexPatterns),
@@ -328,24 +334,31 @@ public class RetryElasticsearchClient {
   public void reindex(final ReindexRequest reindexRequest, boolean checkDocumentCount) {
     executeWithRetries("Reindex " + Arrays.asList(reindexRequest.getSearchRequest().indices()) + " -> " + reindexRequest.getDestination().index(),
         () -> {
-          String srcIndices = reindexRequest.getSearchRequest().indices()[0];
-          String dstIndex = reindexRequest.getDestination().indices()[0];
-          long srcCount = getNumberOfDocumentsFor(srcIndices);
-          if (checkDocumentCount) {
-            long dstCount = getNumberOfDocumentsFor(dstIndex + "*");
-            if (srcCount == dstCount) {
-              logger.info("Reindex of {} -> {} is already done.", srcIndices, dstIndex);
-              return true;
+          final var srcIndices = reindexRequest.getSearchRequest().indices()[0];
+          final var dstIndex = reindexRequest.getDestination().indices()[0];
+          final var srcCount = getNumberOfDocumentsFor(srcIndices);
+
+          final var taskIds = elasticsearchTaskStore.getRunningReindexTasksIdsFor(srcIndices, dstIndex);
+          final String taskId;
+
+          if (taskIds == null || taskIds.isEmpty()) {
+            // no running reindex task
+
+            if (checkDocumentCount) {
+              refreshAndRetryOnShardFailures(dstIndex + "*");
+              final var dstCount = getNumberOfDocumentsFor(dstIndex + "*");
+              if (srcCount == dstCount) {
+                logger.info("Reindex of {} -> {} is already done.", srcIndices, dstIndex);
+                return true;
+              }
             }
-          }
-          final List<String> taskIds = elasticsearchTaskStore.getRunningReindexTasksIdsFor(srcIndices,dstIndex);
-          String taskId;
-          if(taskIds.isEmpty()) {
-             taskId = esClient.submitReindexTask(reindexRequest, requestOptions).getTask();
-          }else {
+
+            taskId = esClient.submitReindexTask(reindexRequest, requestOptions).getTask();
+          } else {
             logger.info("There is an already running reindex task for [{}] -> [{}]. Will not submit another reindex task but wait for completion of this task", srcIndices, dstIndex);
             taskId = taskIds.get(0);
           }
+
           TimeUnit.of(ChronoUnit.MILLIS).sleep(2_000);
           if (checkDocumentCount) {
             return waitUntilTaskIsCompleted(taskId, srcCount);
