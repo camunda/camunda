@@ -29,6 +29,7 @@ final class SegmentsFlusher {
   void setLastFlushedIndex(final long lastFlushedIndex) {
     this.lastFlushedIndex = lastFlushedIndex;
     metaStore.storeLastFlushedIndex(lastFlushedIndex);
+    metaStore.flushMetaStore();
   }
 
   long nextFlushIndex() {

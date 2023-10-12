@@ -36,6 +36,9 @@ public interface JournalMetaStore {
   /** Returns true if there is no known last flushed index. */
   boolean hasLastFlushedIndex();
 
+  /** Flushes any buffer to disk if backed by a file on disk. */
+  void flushMetaStore();
+
   class InMemory implements JournalMetaStore {
     private volatile long index = -1L;
 
@@ -58,5 +61,8 @@ public interface JournalMetaStore {
     public boolean hasLastFlushedIndex() {
       return index != -1L;
     }
+
+    @Override
+    public void flushMetaStore() {}
   }
 }
