@@ -1337,7 +1337,6 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
     }
   }
 
-  @SneakyThrows
   private Response updateReportWithValidXml(final String id, final ReportType reportType) {
     final Response response;
     if (PROCESS.equals(reportType)) {

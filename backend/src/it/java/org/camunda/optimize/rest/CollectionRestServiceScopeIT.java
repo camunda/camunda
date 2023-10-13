@@ -8,6 +8,7 @@ package org.camunda.optimize.rest;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.Lists;
 import io.github.netmikey.logunit.api.LogCapturer;
+import jakarta.ws.rs.core.Response;
 import org.assertj.core.api.Condition;
 import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.AbstractPlatformIT;
@@ -19,11 +20,15 @@ import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.collection.CollectionScopeEntryResponseDto;
 import org.camunda.optimize.service.collection.CollectionScopeService;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeCollectionConflictException;
+import org.camunda.optimize.service.util.ProcessReportDataType;
+import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -36,15 +41,13 @@ import org.mockserver.model.HttpRequest;
 import org.mockserver.verify.VerificationTimes;
 import org.slf4j.event.Level;
 
-import jakarta.ws.rs.core.Response;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static java.util.Arrays.asList;
 import static jakarta.ws.rs.HttpMethod.POST;
+import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
@@ -411,6 +414,51 @@ public class CollectionRestServiceScopeIT extends AbstractPlatformIT {
           .extracting(TenantDto::getId)
           .containsExactly((String) null)
       );
+  }
+
+  @Test
+  public void updateDefinitionScopeEntry_removeTenant_reportXmlNotAffected() {
+    // given
+    final String definitionXml = "someXml";
+    addProcessDefinitionToElasticsearch(DEFAULT_DEFINITION_KEY, null);
+    final String collectionId = collectionClient.createNewCollection();
+    final String tenant = "tenant";
+    addTenantToElasticsearch(tenant);
+    final CollectionScopeEntryDto entry = createSimpleScopeEntry(DEFAULT_DEFINITION_KEY);
+    entry.getTenants().add(tenant);
+    importAllEngineEntitiesFromScratch();
+
+    collectionClient.addScopeEntryToCollection(collectionId, entry);
+    final ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
+      .setReportDataType(ProcessReportDataType.RAW_DATA)
+      .definitions(List.of(new ReportDataDefinitionDto(DEFAULT_DEFINITION_KEY)))
+      .setTenantIds(List.of(tenant))
+      .build();
+    reportData.getConfiguration().setXml(definitionXml);
+    final String reportId = reportClient.createSingleProcessReport(reportData, collectionId);
+
+    // then
+    assertThat(reportClient.evaluateRawReportById(reportId).getReportDefinition().getData().getConfiguration().getXml())
+      .isEqualTo(definitionXml);
+
+    // when
+    entry.setTenants(Collections.singletonList(null));
+    embeddedOptimizeExtension.getRequestExecutor()
+      .buildUpdateCollectionScopeEntryRequest(collectionId, entry.getId(), new CollectionScopeEntryUpdateDto(entry), true)
+      .execute(Response.Status.NO_CONTENT.getStatusCode());
+
+    // then the scope is updated
+    assertThat(collectionClient.getCollectionScope(collectionId))
+      .hasSize(1)
+      .singleElement()
+      .satisfies(
+        scopeEntryDto -> assertThat(scopeEntryDto.getTenants())
+          .extracting(TenantDto::getId)
+          .containsExactly((String) null)
+      );
+    // and the collection report still has the expected xml
+    assertThat(reportClient.evaluateRawReportById(reportId).getReportDefinition().getData().getConfiguration().getXml())
+      .isEqualTo(definitionXml);
   }
 
   @Test

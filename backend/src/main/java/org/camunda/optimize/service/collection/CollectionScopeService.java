@@ -85,7 +85,7 @@ public class CollectionScopeService {
         authorizedTenantDtos.stream().map(TenantDto::getId).forEach(unauthorizedTenantsIds::remove);
 
         authorizedTenantDtos.addAll(
-          unauthorizedTenantsIds.stream().map((t) -> UNAUTHORIZED_TENANT_MASK).collect(Collectors.toList())
+          unauthorizedTenantsIds.stream().map((t) -> UNAUTHORIZED_TENANT_MASK).toList()
         );
         return CollectionScopeEntryResponseDto.from(scope, authorizedTenantDtos);
       })
@@ -131,7 +131,7 @@ public class CollectionScopeService {
       .filter(entry -> entry.getDefinitionType().equals(type) && entry.getDefinitionKey().equals(key))
       .findFirst();
 
-    if (!optionalScopeEntry.isPresent()) {
+    if (optionalScopeEntry.isEmpty()) {
       return Collections.emptyList();
     }
 
@@ -147,7 +147,7 @@ public class CollectionScopeService {
       .filter(entry -> entry.getDefinitionType().equals(type) && entry.getDefinitionKey().equals(key))
       .findFirst();
 
-    if (!optionalScopeEntry.isPresent()) {
+    if (optionalScopeEntry.isEmpty()) {
       return Collections.emptyList();
     }
 
@@ -283,7 +283,7 @@ public class CollectionScopeService {
   private Set<String> retrieveRemovedTenants(final CollectionScopeEntryUpdateDto scopeUpdate,
                                              final CollectionScopeEntryDto currentScope) {
     final Set<String> tenantsToBeRemoved = new HashSet<>(currentScope.getTenants());
-    tenantsToBeRemoved.removeAll(scopeUpdate.getTenants());
+    scopeUpdate.getTenants().forEach(tenantsToBeRemoved::remove);
     return tenantsToBeRemoved;
   }
 
@@ -361,7 +361,7 @@ public class CollectionScopeService {
 
   private List<SingleReportDefinitionDto<?>> getReportsAffectedByScopeUpdate(final String collectionId,
                                                                              final CollectionDefinitionDto collectionDefinition) {
-    List<ReportDefinitionDto> reportsInCollection = reportReader.getReportsForCollectionOmitXml(collectionId);
+    List<ReportDefinitionDto> reportsInCollection = reportReader.getReportsForCollectionIncludingXml(collectionId);
     return reportsInCollection.stream()
       .filter(report -> !report.isCombined())
       .map(report -> (SingleReportDefinitionDto<?>) report)

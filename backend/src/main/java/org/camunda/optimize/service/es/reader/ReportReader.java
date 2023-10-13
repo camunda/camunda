@@ -232,32 +232,12 @@ public class ReportReader {
     return getReportDefinitionDtos(reportIds, reportType, indices);
   }
 
-  public List<ReportDefinitionDto> getReportsForCollectionOmitXml(String collectionId) {
-    log.debug("Fetching reports using collection with id {}", collectionId);
+  public List<ReportDefinitionDto> getReportsForCollectionOmitXml(final String collectionId) {
+    return getReportsForCollection(collectionId, false);
+  }
 
-    QueryBuilder qb = boolQuery().must(termQuery(COLLECTION_ID, collectionId))
-      .minimumShouldMatch(1)
-      .should(boolQuery().must(termQuery(DATA + "." + MANAGEMENT_REPORT, false)))
-      .should(boolQuery().mustNot(existsQuery(DATA + "." + MANAGEMENT_REPORT)));
-    SearchRequest searchRequest = getSearchRequestOmitXml(
-      qb,
-      new String[]{
-        COMBINED_REPORT_INDEX_NAME,
-        SINGLE_PROCESS_REPORT_INDEX_NAME,
-        SINGLE_DECISION_REPORT_INDEX_NAME
-      }
-    );
-
-    SearchResponse searchResponse;
-    try {
-      searchResponse = esClient.search(searchRequest);
-    } catch (IOException e) {
-      String reason = String.format("Was not able to fetch reports for collection with id [%s]", collectionId);
-      log.error(reason, e);
-      throw new OptimizeRuntimeException(reason, e);
-    }
-
-    return ElasticsearchReaderUtil.mapHits(searchResponse.getHits(), ReportDefinitionDto.class, objectMapper);
+  public List<ReportDefinitionDto> getReportsForCollectionIncludingXml(final String collectionId) {
+    return getReportsForCollection(collectionId, true);
   }
 
   public List<CombinedReportDefinitionRequestDto> getCombinedReportsForSimpleReport(String simpleReportId) {
@@ -314,6 +294,36 @@ public class ReportReader {
       CombinedReportDefinitionRequestDto.class,
       objectMapper
     );
+  }
+
+  private List<ReportDefinitionDto> getReportsForCollection(final String collectionId, final boolean includeXml) {
+    log.debug("Fetching reports using collection with id {}", collectionId);
+
+    QueryBuilder qb = boolQuery().must(termQuery(COLLECTION_ID, collectionId))
+      .minimumShouldMatch(1)
+      .should(boolQuery().must(termQuery(DATA + "." + MANAGEMENT_REPORT, false)))
+      .should(boolQuery().mustNot(existsQuery(DATA + "." + MANAGEMENT_REPORT)));
+    SearchRequest searchRequest;
+    final String[] indices = {
+      COMBINED_REPORT_INDEX_NAME,
+      SINGLE_PROCESS_REPORT_INDEX_NAME,
+      SINGLE_DECISION_REPORT_INDEX_NAME
+    };
+    if (includeXml) {
+      searchRequest = getSearchRequestIncludingXml(qb, indices);
+    } else {
+      searchRequest = getSearchRequestOmitXml(qb, indices);
+    }
+
+    SearchResponse searchResponse;
+    try {
+      searchResponse = esClient.search(searchRequest);
+      return ElasticsearchReaderUtil.mapHits(searchResponse.getHits(), ReportDefinitionDto.class, objectMapper);
+    } catch (IOException e) {
+      String reason = String.format("Was not able to fetch reports for collection with id [%s]", collectionId);
+      log.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
   }
 
   private <T extends ReportDefinitionDto> List<T> getReportDefinitionDtos(final List<String> reportIds,
@@ -387,11 +397,24 @@ public class ReportReader {
     return getSearchRequestOmitXml(query, indices, LIST_FETCH_LIMIT);
   }
 
+  private SearchRequest getSearchRequestIncludingXml(final QueryBuilder query, final String[] indices) {
+    return getSearchRequest(query, indices, LIST_FETCH_LIMIT, new String[]{});
+  }
+
   private SearchRequest getSearchRequestOmitXml(final QueryBuilder query, final String[] indices,
                                                 final int size) {
+    return getSearchRequest(query, indices, size, REPORT_LIST_EXCLUDES);
+  }
+
+  private SearchRequest getSearchRequest(final QueryBuilder query, final String[] indices,
+                                         final int size, final String[] excludeFields) {
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .size(size)
-      .fetchSource(null, REPORT_LIST_EXCLUDES);
+      .size(size);
+    if (excludeFields.length == 0) {
+      searchSourceBuilder.fetchSource(true);
+    } else {
+      searchSourceBuilder.fetchSource(null, excludeFields);
+    }
     searchSourceBuilder.query(query);
     return new SearchRequest(indices)
       .source(searchSourceBuilder);

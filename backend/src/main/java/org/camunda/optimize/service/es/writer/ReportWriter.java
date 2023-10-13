@@ -7,6 +7,7 @@ package org.camunda.optimize.service.es.writer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableSet;
+import jakarta.ws.rs.NotFoundException;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -41,7 +42,6 @@ import org.elasticsearch.script.ScriptType;
 import org.elasticsearch.xcontent.XContentType;
 import org.springframework.stereotype.Component;
 
-import jakarta.ws.rs.NotFoundException;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.Collections;
