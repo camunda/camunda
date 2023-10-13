@@ -21,7 +21,12 @@ function useAssignTask() {
         return response.json();
       }
 
-      throw error ?? new Error('Could not assign task');
+      const errorMessage =
+        error.response instanceof Response
+          ? (await error.response.json())?.message
+          : undefined;
+
+      throw errorMessage === undefined ? error : new Error(errorMessage);
     },
     onSettled: async (newTask, error) => {
       if (error !== null || newTask === undefined) {

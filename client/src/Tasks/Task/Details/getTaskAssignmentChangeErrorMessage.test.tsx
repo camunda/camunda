@@ -23,7 +23,7 @@ describe('getTaskAssignmentChangeErrorMessage', () => {
   it('should return an error message for a task which is already assigned', () => {
     expect(
       getTaskAssignmentChangeErrorMessage('Task is already assigned'),
-    ).toBeUndefined();
+    ).toBe('Task has been assigned to another user');
   });
 
   it('should return a generic error message', () => {

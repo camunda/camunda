@@ -7,7 +7,7 @@
 
 function getTaskAssignmentChangeErrorMessage(code: string) {
   if (code === 'Task is already assigned') {
-    return undefined;
+    return 'Task has been assigned to another user';
   }
 
   if (code === 'Task is not active') {
