@@ -23,7 +23,7 @@ public final class VersionInfo extends UnpackedObject implements DbValue {
   // can do to hide this name.
   private final LongProperty highestVersionProp = new LongProperty("nextValue", -1L);
   private final ArrayProperty<LongValue> knownVersions =
-      new ArrayProperty<>("knownVersions", new LongValue());
+      new ArrayProperty<>("knownVersions", LongValue::new);
 
   public VersionInfo() {
     declareProperty(highestVersionProp).declareProperty(knownVersions);
