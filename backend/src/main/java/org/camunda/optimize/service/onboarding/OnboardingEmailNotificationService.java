@@ -39,7 +39,6 @@ public class OnboardingEmailNotificationService {
   private final ProcessOverviewReader processOverviewReader;
   private final AbstractIdentityService identityService;
   private final DefinitionService definitionService;
-  private final TenantService tenantService;
 
   public void sendOnboardingEmailWithErrorHandling(@NonNull final String processKey) {
     final Optional<ProcessOverviewDto> optProcessOverview = processOverviewReader.getProcessOverviewByKey(processKey);

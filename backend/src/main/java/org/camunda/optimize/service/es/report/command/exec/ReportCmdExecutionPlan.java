@@ -45,7 +45,7 @@ public abstract class ReportCmdExecutionPlan<T, D extends SingleReportDataDto> {
   protected GroupByPart<D> groupByPart;
   protected DistributedByPart<D> distributedByPart;
   protected OptimizeElasticsearchClient esClient;
-  private Function<CompositeCommandResult, CommandEvaluationResult<T>> mapToReportResult;
+  private final Function<CompositeCommandResult, CommandEvaluationResult<T>> mapToReportResult;
 
   protected ReportCmdExecutionPlan(final ViewPart<D> viewPart,
                                    final GroupByPart<D> groupByPart,

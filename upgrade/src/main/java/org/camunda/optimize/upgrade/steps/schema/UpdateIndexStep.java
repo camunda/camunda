@@ -81,7 +81,7 @@ public class UpdateIndexStep extends UpgradeStep {
       // in resumed update scenarios this could also contain indices based on the targetTemplateName already
       // which we don't need to care about
       .filter(indexName -> indexName.contains(sourceTemplateName))
-      .sorted().collect(Collectors.toList());
+      .sorted().toList();
     for (final String sourceIndex : sortedIndices) {
       final String suffix;
       final Matcher suffixMatcher = indexSuffixPattern.matcher(sourceIndex);

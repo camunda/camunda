@@ -94,15 +94,16 @@ public class UIConfigurationServiceTest {
   }
 
   @Test
-  public void testInvalidProfilesDoesNotWork() {
+  public void testUnknownProfileUsesDefault() {
     // given
     initializeMocks();
     when(environment.getActiveProfiles()).thenReturn(new String[]{"someUnknownProfile"});
 
+    // when
+    final UIConfigurationResponseDto configurationResponse = underTest.getUIConfiguration();
+
     // then
-    assertThatThrownBy(() -> underTest.getUIConfiguration())
-      .isInstanceOf(OptimizeConfigurationException.class)
-      .hasMessage("Invalid profile configured");
+    assertThat(configurationResponse.getOptimizeProfile()).isEqualTo(PLATFORM_PROFILE);
   }
 
   @ParameterizedTest

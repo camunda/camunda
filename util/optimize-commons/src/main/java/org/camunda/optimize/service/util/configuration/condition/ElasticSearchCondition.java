@@ -5,23 +5,21 @@
  */
 package org.camunda.optimize.service.util.configuration.condition;
 
-import org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants;
 import org.springframework.context.annotation.Condition;
 import org.springframework.context.annotation.ConditionContext;
 import org.springframework.core.type.AnnotatedTypeMetadata;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ELASTICSEARCH_PROFILE;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.optimizeDatabaseProfiles;
 
 public class ElasticSearchCondition implements Condition {
   @Override
   public boolean matches(final ConditionContext context, final AnnotatedTypeMetadata metadata) {
-    // Necessary because Arrays.asList(...) returns an immutable list
-    final List<String> activeProfiles = new ArrayList<>(Arrays.asList(context.getEnvironment().getActiveProfiles()));
-    activeProfiles.removeAll(ConfigurationServiceConstants.optimizeModeProfiles);
-    return activeProfiles.isEmpty() || activeProfiles.contains(ELASTICSEARCH_PROFILE);
+    final List<String> databaseProfilesFound = Arrays.stream(context.getEnvironment().getActiveProfiles())
+      .filter(optimizeDatabaseProfiles::contains).toList();
+    return databaseProfilesFound.isEmpty() || databaseProfilesFound.contains(ELASTICSEARCH_PROFILE);
   }
 }
