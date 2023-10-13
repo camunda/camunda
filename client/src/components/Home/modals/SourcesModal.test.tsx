@@ -12,7 +12,7 @@ import {shallow} from 'enzyme';
 import {areTenantsAvailable, getOptimizeProfile} from 'config';
 
 import {getDefinitionsWithTenants, getTenantsWithDefinitions} from './service';
-import {SourcesModal} from './SourcesModal';
+import SourcesModal from './SourcesModal';
 
 jest.mock('./service', () => ({
   getDefinitionsWithTenants: jest.fn().mockReturnValue([
@@ -225,5 +225,5 @@ it('should display the only tenant value as text in self managed mode', async ()
   await runAllEffects();
   await node.update();
 
-  expect((node.find('Table').prop('body') as any)[0][3]).toBe('Default');
+  expect((node.find('Table').prop('body') as any)[0][3]).toEqual(<>Default</>);
 });

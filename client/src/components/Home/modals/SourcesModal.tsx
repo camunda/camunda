@@ -43,11 +43,16 @@ interface SourcesModalProps {
   preSelectAll?: boolean;
 }
 
-export function SourcesModal({onClose, onConfirm, confirmText, preSelectAll}: SourcesModalProps) {
+export default function SourcesModal({
+  onClose,
+  onConfirm,
+  confirmText,
+  preSelectAll,
+}: SourcesModalProps): JSX.Element {
   const [definitions, setDefinitions] = useState<DefinitionWithTenants[]>();
   const [tenants, setTenants] = useState<TenantWithDefinitions[]>([]);
   const [selected, setSelected] = useState<Source[]>([]);
-  const [selectedTenant, setSelectedTenant] = useState('');
+  const [selectedTenant, setSelectedTenant] = useState();
   const [query, setQuery] = useState('');
   const [optimizeProfile, setOptimizeProfile] = useState('');
   const {mightFail} = useErrorHandling();
@@ -180,7 +185,7 @@ export function SourcesModal({onClose, onConfirm, confirmText, preSelectAll}: So
                     initialSelectedItem={tenantsSelectorItems[0]}
                     onChange={({selectedItem}) => {
                       setSelected([]);
-                      setSelectedTenant(selectedItem?.value || '');
+                      setSelectedTenant(selectedItem?.value);
                     }}
                   />
                 )}
@@ -274,8 +279,6 @@ export function SourcesModal({onClose, onConfirm, confirmText, preSelectAll}: So
     </Modal>
   );
 }
-
-export default SourcesModal;
 
 function format({key, type, tenants}: DefinitionWithTenants): Source {
   return {
