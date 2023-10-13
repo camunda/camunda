@@ -158,7 +158,7 @@ public class OpensearchDecisionInstanceReader implements DecisionInstanceReader 
       var query = RangeQuery.of(q -> {
         q.field(EVALUATION_DATE);
         if (decisionInstanceListQueryDto.getEvaluationDateAfter() != null) {
-          q.gt(JsonData.of(dateTimeFormatter.format(decisionInstanceListQueryDto.getEvaluationDateAfter())));
+          q.gte(JsonData.of(dateTimeFormatter.format(decisionInstanceListQueryDto.getEvaluationDateAfter())));
         }
         if (decisionInstanceListQueryDto.getEvaluationDateBefore() != null) {
           q.lt(JsonData.of(dateTimeFormatter.format(decisionInstanceListQueryDto.getEvaluationDateBefore())));
