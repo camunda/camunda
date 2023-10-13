@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.upgrade.exception;
 
-
 public class UpgradeRuntimeException extends RuntimeException {
   public UpgradeRuntimeException(String message) {
     super(message);

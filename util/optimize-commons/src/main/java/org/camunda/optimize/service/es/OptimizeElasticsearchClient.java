@@ -390,8 +390,22 @@ public class OptimizeElasticsearchClient implements ConfigurationReloadable {
     highLevelClient.snapshot().deleteAsync(deleteSnapshotRequest, requestOptions(), listener);
   }
 
-  public long countWithoutPrefix(final CountRequest request) throws IOException {
-    return highLevelClient.count(request, requestOptions()).getCount();
+  public long countWithoutPrefix(final CountRequest request) throws IOException, InterruptedException {
+    final int maxNumberOfRetries = 10;
+    final int waitIntervalMillis = 3000;
+    int retryAttempts = 0;
+    while (retryAttempts < maxNumberOfRetries) {
+      final CountResponse countResponse = highLevelClient.count(request, requestOptions());
+      if (countResponse.getFailedShards() > 0) {
+        log.info("Not all shards returned successful for count response from indices: {}", Arrays.asList(request.indices()));
+        retryAttempts++;
+        Thread.sleep(waitIntervalMillis);
+      } else {
+        return countResponse.getCount();
+      }
+    }
+    throw new OptimizeRuntimeException(
+      String.format("Could not determine count from indices: %s", Arrays.asList(request.indices())));
   }
 
   public Response performRequest(final Request request) throws IOException {

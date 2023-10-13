@@ -418,8 +418,8 @@ public class ElasticsearchWriterUtil {
     }
   }
 
-  private static TaskResponse getTaskResponse(final OptimizeElasticsearchClient esClient,
-                                              final String taskId) throws IOException {
+  public static TaskResponse getTaskResponse(final OptimizeElasticsearchClient esClient,
+                                             final String taskId) throws IOException {
     final Request request = new Request(HttpGet.METHOD_NAME, "/" + TASKS_ENDPOINT + "/" + taskId);
     final Response response = esClient.performRequest(request);
     final ObjectMapper objectMapper = new ObjectMapperFactory(
@@ -429,7 +429,7 @@ public class ElasticsearchWriterUtil {
     return objectMapper.readValue(response.getEntity().getContent(), TaskResponse.class);
   }
 
-  private static void validateTaskResponse(final TaskResponse taskResponse) {
+  public static void validateTaskResponse(final TaskResponse taskResponse) {
     if (taskResponse.getError() != null) {
       log.error("An Elasticsearch task failed with error: {}", taskResponse.getError());
       throw new OptimizeRuntimeException(taskResponse.getError().toString());

@@ -34,6 +34,7 @@ import org.elasticsearch.client.core.CountRequest;
 import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.cluster.metadata.AliasMetadata;
 import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.reindex.AbstractBulkByScrollRequest;
 import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 import org.elasticsearch.index.reindex.ReindexRequest;
 import org.elasticsearch.index.reindex.UpdateByQueryRequest;
@@ -47,9 +48,12 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 
 import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScript;
 import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScriptWithSpecificDtoParams;
+import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.getTaskResponse;
+import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.validateTaskResponse;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.INDEX_ALREADY_EXISTS_EXCEPTION_TYPE;
 
 @Slf4j
@@ -83,31 +87,17 @@ public class SchemaUpgradeClient {
                       final IndexMappingCreator targetIndex,
                       final QueryBuilder sourceDocumentFilterQuery,
                       final String mappingScript) {
-    final ReindexRequest reindexRequest = new ReindexRequest()
-      .setSourceIndices(getIndexNameService().getOptimizeIndexNameWithVersion(sourceIndex))
-      .setDestIndex(getIndexNameService().getOptimizeIndexNameWithVersion(targetIndex))
-      .setSourceQuery(sourceDocumentFilterQuery)
-      .setRefresh(true);
+    final ReindexRequest reindexRequest = createReindexRequest(
+      getIndexNameService().getOptimizeIndexNameWithVersion(sourceIndex),
+      getIndexNameService().getOptimizeIndexNameWithVersion(targetIndex)
+    );
+    reindexRequest.setSourceQuery(sourceDocumentFilterQuery);
 
     if (mappingScript != null) {
       reindexRequest.setScript(createDefaultScript(mappingScript));
     }
 
-    String reindexTaskId;
-
-    try {
-      reindexTaskId = submitReindexTask(reindexRequest);
-    } catch (IOException e) {
-      throw new UpgradeRuntimeException(
-        String.format(
-          "Error while trying to reindex data from index [%s] to [%s] with filterQuery.",
-          sourceIndex,
-          targetIndex
-        ),
-        e
-      );
-    }
-
+    String reindexTaskId = submitReindexTask(reindexRequest);
     waitUntilTaskIsFinished(reindexTaskId, targetIndex.getIndexName());
   }
 
@@ -115,29 +105,25 @@ public class SchemaUpgradeClient {
                       final String targetIndex,
                       final String mappingScript,
                       final Map<String, Object> parameters) {
-    log.debug(
-      "Reindexing from index [{}] to [{}] using the mapping script [{}].", sourceIndex, targetIndex, mappingScript
-    );
-
+    log.debug("Reindexing from index [{}] to [{}] using the mapping script [{}].", sourceIndex, targetIndex, mappingScript);
     if (areDocCountsEqual(sourceIndex, targetIndex)) {
       log.info(
         "Found that index [{}] already contains the same amount of documents as [{}], will skip reindex.",
         targetIndex, sourceIndex
       );
     } else {
-      String reindexTaskId;
-      // if the reindex wasn't completed previously, try to get the pending task to resume waiting for
-      final Optional<TaskInfo> pendingReindexTask = getPendingReindexTask(sourceIndex, targetIndex);
-      if (pendingReindexTask.isPresent()) {
-        reindexTaskId = pendingReindexTask.get().getTaskId().toString();
-        log.info(
-          "Found pending reindex task with id [{}] from index [{}] to [{}], will wait for it to finish.",
-          reindexTaskId, sourceIndex, targetIndex
+      final ReindexRequest reindexRequest = createReindexRequest(sourceIndex, targetIndex);
+      if (mappingScript != null) {
+        reindexRequest.setScript(
+          createDefaultScriptWithSpecificDtoParams(mappingScript, parameters, objectMapper)
         );
-      } else {
-        reindexTaskId = submitReindexTask(sourceIndex, targetIndex, mappingScript, parameters);
       }
-      waitUntilTaskIsFinished(reindexTaskId, targetIndex);
+      waitForOrSubmitNewTask(
+        "reindex from " + sourceIndex + " to " + targetIndex,
+        reindexRequest,
+        String -> getPendingReindexTask(reindexRequest),
+        String -> submitReindexTask(reindexRequest)
+      );
     }
   }
 
@@ -327,23 +313,17 @@ public class SchemaUpgradeClient {
                                     final Map<String, Object> parameters) {
     final String aliasName = getIndexNameService().getOptimizeIndexAliasForIndex(indexMapping);
     log.debug("Updating data on [{}] using script [{}] and query [{}].", aliasName, updateScript, query);
-
     final UpdateByQueryRequest request = new UpdateByQueryRequest(aliasName);
     request.setRefresh(true);
     request.setQuery(query);
     request.setScript(createDefaultScriptWithSpecificDtoParams(updateScript, parameters, objectMapper));
-    final String taskId;
-    try {
-      taskId = elasticsearchClient.submitUpdateTask(request).getTask();
-    } catch (IOException e) {
-      final String errorMessage = String.format(
-        "Could not create updateBy task for [%s] with query [%s]!",
-        aliasName,
-        query
-      );
-      throw new UpgradeRuntimeException(errorMessage, e);
-    }
-    waitUntilTaskIsFinished(taskId, aliasName);
+
+    waitForOrSubmitNewTask(
+      "updateBy" + aliasName,
+      request,
+      String -> getPendingUpdateTask(request),
+      String -> submitUpdateTask(request)
+    );
   }
 
   public void deleteDataByIndexName(final IndexMappingCreator indexMapping,
@@ -354,16 +334,13 @@ public class SchemaUpgradeClient {
     final DeleteByQueryRequest request = new DeleteByQueryRequest(aliasName);
     request.setRefresh(true);
     request.setQuery(query);
-    final String taskId;
-    try {
-      taskId = elasticsearchClient.submitDeleteTask(request).getTask();
-    } catch (Exception e) {
-      final String errorMessage = String.format(
-        "Could not create deleteBy task for [%s] with query [%s]!", aliasName, query
-      );
-      throw new UpgradeRuntimeException(errorMessage, e);
-    }
-    waitUntilTaskIsFinished(taskId, aliasName);
+
+    waitForOrSubmitNewTask(
+      "deleteBy" + aliasName,
+      request,
+      String -> getPendingDeleteTask(request),
+      String -> submitDeleteTask(request)
+    );
   }
 
   public void updateIndexDynamicSettingsAndMappings(final IndexMappingCreator indexMapping) {
@@ -399,72 +376,115 @@ public class SchemaUpgradeClient {
       final long targetIndexDocCount = elasticsearchClient.countWithoutPrefix(new CountRequest(targetIndex));
       return sourceIndexDocCount == targetIndexDocCount;
     } catch (Exception e) {
-      log.warn(
-        "Could not compare doc counts of index [{}] and [{}], assuming them to be not equal.", sourceIndex, targetIndex
-      );
-      return false;
+      final String errorMessage = String.format(
+        "Could not compare doc counts of index [%s] and [%s].", sourceIndex, targetIndex);
+      log.warn(errorMessage, e);
+      throw new OptimizeRuntimeException(errorMessage, e);
     }
   }
 
-  private Optional<TaskInfo> getPendingReindexTask(final String sourceIndex,
-                                                   final String targetIndex) {
+  private <T extends AbstractBulkByScrollRequest<T>> void waitForOrSubmitNewTask(
+    final String identifier,
+    final T request,
+    final Function<T, Optional<TaskInfo>> getPendingTaskFunction,
+    final Function<T, String> submitNewTaskFunction) {
+    String taskId;
+    // if the task wasn't completed previously, try to get the pending task to resume waiting for
+    final Optional<TaskInfo> pendingTask = getPendingTaskFunction.apply(request);
+    if (pendingTask.isEmpty()) {
+      taskId = submitNewTaskFunction.apply(request);
+    } else {
+      taskId = pendingTask.get().getTaskId().toString();
+      try {
+        validateStatusOfPendingTask(taskId);
+        log.info("Found pending task with id {}, will wait for it to finish.", taskId);
+      } catch (UpgradeRuntimeException ex) {
+        log.info("Pending task is not completable, submitting new task for identifier {}", identifier);
+        taskId = submitNewTaskFunction.apply(request);
+      } catch (IOException e) {
+        throw new UpgradeRuntimeException(String.format(
+          "Could not check status of pending task with id %s for identifier %s", taskId, identifier));
+      }
+    }
+    waitUntilTaskIsFinished(taskId, identifier);
+  }
 
+  private Optional<TaskInfo> getPendingReindexTask(final ReindexRequest reindexRequest) {
+    return getPendingTask(reindexRequest, "indices:data/write/reindex");
+  }
+
+  private Optional<TaskInfo> getPendingUpdateTask(final UpdateByQueryRequest updateByQueryRequest) {
+    return getPendingTask(updateByQueryRequest, "indices:data/write/update/byquery");
+  }
+
+  private Optional<TaskInfo> getPendingDeleteTask(final DeleteByQueryRequest deleteByQueryRequest) {
+    return getPendingTask(deleteByQueryRequest, "indices:data/write/delete/byquery");
+  }
+
+  private <T extends AbstractBulkByScrollRequest<T>> Optional<TaskInfo> getPendingTask(final T request, final String taskAction) {
     try {
       final ListTasksResponse tasksResponse = elasticsearchClient.getTaskList(
-        new ListTasksRequest().setDetailed(true).setActions("indices:data/write" + "/reindex"));
+        new ListTasksRequest().setDetailed(true).setActions(taskAction));
       return tasksResponse.getTasks().stream()
         .filter(taskInfo ->
-                  taskInfo.getDescription() != null
-                    && taskInfo.getDescription().contains(sourceIndex)
-                    && taskInfo.getDescription().contains(targetIndex)
+                  taskInfo.getDescription() != null && taskInfo.getDescription().contains(request.getDescription())
         ).findAny();
     } catch (Exception e) {
       log.warn(
-        "Could not get pending reindex task from index [{}] to [{}], assuming there are none.", sourceIndex, targetIndex
+        "Could not get pending task for description matching [{}].", request.getDescription()
       );
       return Optional.empty();
     }
   }
 
-  private String submitReindexTask(final String sourceIndexName,
-                                   final String targetIndexName,
-                                   final String mappingScript,
-                                   final Map<String, Object> parameters) {
-    final ReindexRequest reindexRequest = new ReindexRequest()
+  private static ReindexRequest createReindexRequest(final String sourceIndexName, final String targetIndexName) {
+    return new ReindexRequest()
       .setSourceIndices(sourceIndexName)
       .setDestIndex(targetIndexName)
       .setRefresh(true);
-
-    if (mappingScript != null) {
-      reindexRequest.setScript(
-        createDefaultScriptWithSpecificDtoParams(mappingScript, parameters, objectMapper)
-      );
-    }
-
-    String taskId;
-    try {
-      taskId = submitReindexTask(reindexRequest);
-    } catch (Exception e) {
-      throw new UpgradeRuntimeException(
-        String.format(
-          "Error while trying to reindex data from index [%s] to [%s]!", sourceIndexName, targetIndexName
-        ),
-        e
-      );
-    }
-    return taskId;
   }
 
-  private String submitReindexTask(final ReindexRequest reindexRequest) throws IOException {
-    return elasticsearchClient.submitReindexTask(reindexRequest).getTask();
+  private String submitReindexTask(final ReindexRequest reindexRequest) {
+    try {
+      return elasticsearchClient.submitReindexTask(reindexRequest).getTask();
+    } catch (IOException ex) {
+      throw new UpgradeRuntimeException("Could not submit reindex task");
+    }
+  }
+
+  private String submitUpdateTask(final UpdateByQueryRequest request) {
+    try {
+      return elasticsearchClient.submitUpdateTask(request).getTask();
+    } catch (IOException ex) {
+      throw new UpgradeRuntimeException("Could not submit update task");
+    }
+  }
+
+  private String submitDeleteTask(final DeleteByQueryRequest request) {
+    try {
+      return elasticsearchClient.submitDeleteTask(request).getTask();
+    } catch (IOException ex) {
+      throw new UpgradeRuntimeException("Could not submit delete task");
+    }
   }
 
   private void waitUntilTaskIsFinished(final String taskId,
-                                       final String destinationIndex) {
+                                       final String taskIdentifier) {
     try {
-      ElasticsearchWriterUtil.waitUntilTaskIsFinished(elasticsearchClient, taskId, destinationIndex);
+      ElasticsearchWriterUtil.waitUntilTaskIsFinished(elasticsearchClient, taskId, taskIdentifier);
     } catch (OptimizeRuntimeException e) {
       throw new UpgradeRuntimeException(e.getCause().getMessage(), e);
+    }
+  }
+
+  private void validateStatusOfPendingTask(final String reindexTaskId) throws UpgradeRuntimeException, IOException {
+    try {
+      validateTaskResponse(getTaskResponse(elasticsearchClient, reindexTaskId));
+    } catch (OptimizeRuntimeException ex) {
+      throw new UpgradeRuntimeException(String.format(
+        "Found pending task with id %s, but it is not in a completable state",
+        reindexTaskId
+      ), ex);
     }
   }
 

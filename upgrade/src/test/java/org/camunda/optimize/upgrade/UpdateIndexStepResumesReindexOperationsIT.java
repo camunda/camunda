@@ -80,10 +80,8 @@ public class UpdateIndexStepResumesReindexOperationsIT extends AbstractUpgradeIT
       .singleElement()
       .satisfies(aliasMetadata -> assertThat(aliasMetadata.writeIndex()).isTrue());
 
-    schemaUpdateClientLogs.assertContains("Found pending reindex task with id");
-    schemaUpdateClientLogs.assertContains(
-      "from index [optimize-users_v1] to [optimize-users_v2], will wait for it to finish."
-    );
+    schemaUpdateClientLogs.assertContains("Found pending task with id");
+    schemaUpdateClientLogs.assertContains("will wait for it to finish.");
   }
 
   @Test
@@ -119,10 +117,8 @@ public class UpdateIndexStepResumesReindexOperationsIT extends AbstractUpgradeIT
       .singleElement()
       .satisfies(aliasMetadata -> assertThat(aliasMetadata.writeIndex()).isTrue());
 
-    schemaUpdateClientLogs.assertContains("Found pending reindex task with id");
-    schemaUpdateClientLogs.assertContains(
-      "from index [optimize-users_v1-000001] to [optimize-users_v2-000001], will wait for it to finish."
-    );
+    schemaUpdateClientLogs.assertContains("Found pending task with id");
+    schemaUpdateClientLogs.assertContains("will wait for it to finish.");
   }
 
   @Test
@@ -165,10 +161,8 @@ public class UpdateIndexStepResumesReindexOperationsIT extends AbstractUpgradeIT
       .singleElement()
       .satisfies(aliasMetadata -> assertThat(aliasMetadata.writeIndex()).isTrue());
 
-    schemaUpdateClientLogs.assertContains("Found pending reindex task with id");
-    schemaUpdateClientLogs.assertContains(
-      "from index [optimize-users_v1-000001] to [optimize-users_v2-000001], will wait for it to finish."
-    );
+    schemaUpdateClientLogs.assertContains("Found pending task with id");
+    schemaUpdateClientLogs.assertContains("will wait for it to finish.");
   }
 
   @Test

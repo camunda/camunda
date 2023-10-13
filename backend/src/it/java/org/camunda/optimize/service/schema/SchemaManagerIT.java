@@ -73,7 +73,6 @@ public class SchemaManagerIT extends AbstractPlatformIT {
 
   @Test
   public void schemaIsNotInitializedTwice() {
-
     // when I initialize schema twice
     initializeSchema();
     initializeSchema();
