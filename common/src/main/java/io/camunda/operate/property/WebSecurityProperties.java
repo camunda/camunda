@@ -15,16 +15,16 @@ public class WebSecurityProperties {
            + " base-uri 'self';"
            + " script-src 'self';"
            + " script-src-elem 'self' cdn.jsdelivr.net *.mixpanel.com *.osano.com *.appcues.com;"
-           + " connect-src 'self' cdn.jsdelivr.net *.appcues.net wss://api.appcues.net;"
-           + " style-src 'self' 'unsafe-inline' cdn.jsdelivr.net *.appcues.com;"
+           + " connect-src 'self' cdn.jsdelivr.net *.appcues.net wss://api.appcues.net *.osano.com *.mixpanel.com;"
+           + " style-src 'self' 'unsafe-inline' cdn.jsdelivr.net *.appcues.com *.osano.com *.mixpanel.com;"
            + " img-src * data:;"
            + " block-all-mixed-content;"
            + " form-action 'self';"
            + " frame-ancestors 'none';"
-           + " frame-src 'self' https: *.osano.com;"
+           + " frame-src 'self' https: *.osano.com *.mixpanel.com;"
            + " object-src 'none';"
            + " font-src 'self' fonts.camunda.io cdn.jsdelivr.net;"
-           + " worker-src 'self' blob:;"
+           + " worker-src 'self' *.osano.com *.mixpanel.com blob:;"
            + " sandbox allow-forms allow-scripts allow-same-origin allow-popups";
 
   // What if a year has 366 days? :)
