@@ -330,7 +330,21 @@
                 <from>src/main/resources/docker/home</from>
                 <into>/home</into>
               </path>
+              <path>
+                <from>../distro/target/camunda-tasklist</from>
+                <into>/usr/local/tasklist</into>
+              </path>
             </paths>
+            <permissions>
+              <permission>
+                <file>/usr/local/tasklist/bin/tasklist</file>
+                <mode>755</mode>
+              </permission>
+              <permission>
+                <file>/usr/local/tasklist/bin/migrate</file>
+                <mode>755</mode>
+              </permission>
+            </permissions>
           </extraDirectories>
           <pluginExtensions>
             <pluginExtension>

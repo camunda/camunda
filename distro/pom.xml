@@ -50,6 +50,13 @@
               <mainClass>org.springframework.boot.loader.JarLauncher</mainClass>
               <id>tasklist</id>
             </program>
+            <program>
+              <jvmSettings>
+                <extraArgument>-Dloader.main=io.camunda.tasklist.schema.migration.SchemaMigration</extraArgument>
+              </jvmSettings>
+              <mainClass>org.springframework.boot.loader.PropertiesLauncher</mainClass>
+              <id>migrate</id>
+            </program>
           </programs>
         </configuration>
 
