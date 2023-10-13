@@ -21,7 +21,7 @@ RUN chmod +x -R ${TMP_DIR}/bin/
 FROM eclipse-temurin:17-jre-focal@sha256:e8ea04888b8db26e7e9b3072ae825e9e9e89653d42981eec8071a02373589aad as prod
 
 # Building dev image
-FROM eclipse-temurin:17-jdk-focal@sha256:5658e7f097123b7d7e941498e28973f2bc5d5eb8c07c1027bd970552e0cb8115 as dev
+FROM eclipse-temurin:17-jdk-focal@sha256:2f2a7992987400a71d1e89fefb56814ecf161a31612d8aa34964789239a69fa7 as dev
 RUN echo "running DEV pre-install commands"
 RUN apt-get update
 RUN curl -sSL https://github.com/jvm-profiling-tools/async-profiler/releases/download/v1.7.1/async-profiler-1.7.1-linux-x64.tar.gz | tar xzv
