@@ -331,7 +331,7 @@
                 <into>/home</into>
               </path>
               <path>
-                <from>../distro/target/camunda-tasklist</from>
+                <from>../distro/target/camunda-tasklist-${project.version}/camunda-tasklist-${project.version}</from>
                 <into>/usr/local/tasklist</into>
               </path>
             </paths>

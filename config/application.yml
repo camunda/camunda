@@ -1,6 +1,11 @@
+springfox.documentation.swagger.v2.path: /documentation
 camunda.tasklist:
   elasticsearch:
-    clusterName: docker-cluster
+    clusterName: elasticsearch
+    url: http://elasticsearch:9200
+  zeebe:
+    brokerContactPoint: zeebe:26500
   zeebeElasticsearch:
-    clusterName: docker-cluster
+    clusterName: elasticsearch
+    url: http://elasticsearch:9200
     prefix: zeebe-record

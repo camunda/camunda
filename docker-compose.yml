@@ -139,6 +139,7 @@ services:
       - graphql.playground.enabled=true
       - graphql.playground.settings.request.credentials=include
     volumes:
+      - ./config/application.yml:/usr/local/tasklist/config/application.yml
       - ./distro/src/main/config/application.yml:/app/resources/application.yaml
       - ./distro/src/main/config/log4j2.xml:/app/resources/log4j2.xml
     depends_on:
