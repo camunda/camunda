@@ -34,12 +34,12 @@ public final class JobBatchRecord extends UnifiedRecordValue implements JobBatch
   private final IntegerProperty maxJobsToActivateProp =
       new IntegerProperty("maxJobsToActivate", -1);
   private final ArrayProperty<LongValue> jobKeysProp =
-      new ArrayProperty<>("jobKeys", new LongValue());
-  private final ArrayProperty<JobRecord> jobsProp = new ArrayProperty<>("jobs", new JobRecord());
+      new ArrayProperty<>("jobKeys", LongValue::new);
+  private final ArrayProperty<JobRecord> jobsProp = new ArrayProperty<>("jobs", JobRecord::new);
   private final ArrayProperty<StringValue> tenantIdsProp =
-      new ArrayProperty<>("tenantIds", new StringValue());
+      new ArrayProperty<>("tenantIds", StringValue::new);
   private final ArrayProperty<StringValue> variablesProp =
-      new ArrayProperty<>("variables", new StringValue());
+      new ArrayProperty<>("variables", StringValue::new);
   private final BooleanProperty truncatedProp = new BooleanProperty("truncated", false);
 
   public JobBatchRecord() {

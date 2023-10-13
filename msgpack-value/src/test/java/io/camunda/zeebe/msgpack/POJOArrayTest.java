@@ -14,6 +14,7 @@ import static org.assertj.core.api.Assertions.entry;
 
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import io.camunda.zeebe.msgpack.value.ValueArray;
+import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.Map;
 import org.agrona.DirectBuffer;
@@ -216,13 +217,9 @@ public final class POJOArrayTest {
             });
 
     pojo.wrap(buffer);
-    final Iterator<MinimalPOJO> iterator = pojo.simpleArray().iterator();
-    iterator.next();
-    iterator.next();
-    iterator.next();
 
     // when
-    pojo.simpleArrayProp.add().setLongProp(999L);
+    pojo.simpleArrayProp.add(3).setLongProp(999L);
 
     // then
     final int writeLength = pojo.getLength();
@@ -368,10 +365,10 @@ public final class POJOArrayTest {
     pojo.wrap(buffer);
     final Iterator<MinimalPOJO> iterator = pojo.simpleArray().iterator();
     iterator.next();
-    pojo.simpleArray().add().setLongProp(999L);
+    pojo.simpleArray().add(1).setLongProp(999L);
 
     // then
-    exception.expect(IllegalStateException.class);
+    exception.expect(ConcurrentModificationException.class);
 
     // when
     iterator.remove();

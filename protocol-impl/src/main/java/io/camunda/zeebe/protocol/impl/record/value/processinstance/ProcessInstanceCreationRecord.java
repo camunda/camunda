@@ -39,10 +39,10 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
   private final LongProperty processInstanceKeyProperty =
       new LongProperty("processInstanceKey", -1);
   private final ArrayProperty<StringValue> fetchVariablesProperty =
-      new ArrayProperty<>("fetchVariables", new StringValue());
+      new ArrayProperty<>("fetchVariables", StringValue::new);
 
   private final ArrayProperty<ProcessInstanceCreationStartInstruction> startInstructionsProperty =
-      new ArrayProperty<>("startInstructions", new ProcessInstanceCreationStartInstruction());
+      new ArrayProperty<>("startInstructions", ProcessInstanceCreationStartInstruction::new);
 
   public ProcessInstanceCreationRecord() {
     declareProperty(bpmnProcessIdProperty)

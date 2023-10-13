@@ -19,14 +19,15 @@ import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.Predicate;
 import org.agrona.DirectBuffer;
-import org.agrona.ExpandableArrayBuffer;
 import org.agrona.collections.MutableInteger;
 import org.agrona.collections.MutableReference;
 import org.agrona.collections.ObjectHashSet;
+import org.agrona.concurrent.UnsafeBuffer;
 
 /**
  * Collects jobs to be activated as part of a {@link JobBatchRecord}. Activate-able jobs are read
@@ -75,7 +76,6 @@ final class JobBatchCollector {
     final Collection<DirectBuffer> requestedVariables = collectVariableNames(value);
     final var maxActivatedCount = value.getMaxJobsToActivate();
     final var activatedCount = new MutableInteger(0);
-    final var jobCopyBuffer = new ExpandableArrayBuffer();
     final var unwritableJob = new MutableReference<TooLargeJob>();
     final var tenantIds =
         value.getTenantIds().isEmpty()
@@ -102,7 +102,7 @@ final class JobBatchCollector {
                   + EngineConfiguration.BATCH_SIZE_CALCULATION_BUFFER;
           if (activatedCount.value <= maxActivatedCount
               && canWriteEventOfLength.test(expectedEventLength)) {
-            appendJobToBatch(jobIterator, jobKeyIterator, jobCopyBuffer, key, jobRecord);
+            appendJobToBatch(jobIterator, jobKeyIterator, key, jobRecord);
             activatedCount.increment();
           } else {
             // if no jobs were activated, then the current job is simply too large, and we cannot
@@ -128,15 +128,15 @@ final class JobBatchCollector {
   private void appendJobToBatch(
       final ValueArray<JobRecord> jobIterator,
       final ValueArray<LongValue> jobKeyIterator,
-      final ExpandableArrayBuffer jobCopyBuffer,
-      final Long key,
+      final long key,
       final JobRecord jobRecord) {
     jobKeyIterator.add().setValue(key);
     final JobRecord arrayValueJob = jobIterator.add();
 
     // clone job record since buffer is reused during iteration
+    final var jobCopyBuffer = new UnsafeBuffer(ByteBuffer.allocate(jobRecord.getLength()));
     jobRecord.write(jobCopyBuffer, 0);
-    arrayValueJob.wrap(jobCopyBuffer, 0, jobRecord.getLength());
+    arrayValueJob.wrap(jobCopyBuffer);
   }
 
   private Collection<DirectBuffer> collectVariableNames(final JobBatchRecord batchRecord) {

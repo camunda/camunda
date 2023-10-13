@@ -12,23 +12,20 @@ import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
-import io.camunda.zeebe.msgpack.value.ValueArray;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Collection;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.collections.UnmodifiableCollectionView;
 
 public class JobActivationPropertiesImpl extends UnpackedObject implements JobActivationProperties {
   private final StringProperty workerProp = new StringProperty("worker", "");
   private final LongProperty timeoutProp = new LongProperty("timeout", -1);
   private final ArrayProperty<StringValue> fetchVariablesProp =
-      new ArrayProperty<>("variables", new StringValue());
+      new ArrayProperty<>("variables", StringValue::new);
   private final ArrayProperty<StringValue> tenantIdsProp =
-      new ArrayProperty<>("tenantIds", new StringValue(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
+      new ArrayProperty<>(
+          "tenantIds", () -> new StringValue(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
 
   public JobActivationPropertiesImpl() {
     declareProperty(workerProp)
@@ -48,9 +45,15 @@ public class JobActivationPropertiesImpl extends UnpackedObject implements JobAc
     return this;
   }
 
-  public JobActivationPropertiesImpl setFetchVariables(final List<StringValue> variables) {
+  public JobActivationPropertiesImpl setFetchVariables(final Collection<StringValue> variables) {
     fetchVariablesProp.reset();
     variables.forEach(variable -> fetchVariablesProp.add().wrap(variable));
+    return this;
+  }
+
+  public JobActivationPropertiesImpl setTenantIds(final Collection<String> tenantIds) {
+    tenantIdsProp.reset();
+    tenantIds.forEach(tenantId -> tenantIdsProp.add().wrap(BufferUtil.wrapString(tenantId)));
     return this;
   }
 
@@ -61,9 +64,8 @@ public class JobActivationPropertiesImpl extends UnpackedObject implements JobAc
 
   @Override
   public Collection<DirectBuffer> fetchVariables() {
-    return fetchVariablesProp.stream()
-        .map(val -> new UnsafeBuffer(val.getValue()))
-        .collect(Collectors.toList());
+    return new UnmodifiableCollectionView<>(
+        StringValue::getValue, fetchVariablesProp.asCollection());
   }
 
   @Override
@@ -72,20 +74,7 @@ public class JobActivationPropertiesImpl extends UnpackedObject implements JobAc
   }
 
   @Override
-  public List<String> getTenantIds() {
-    return StreamSupport.stream(tenantIdsProp.spliterator(), false)
-        .map(StringValue::getValue)
-        .map(BufferUtil::bufferAsString)
-        .collect(Collectors.toList());
-  }
-
-  public JobActivationPropertiesImpl setTenantIds(final List<String> tenantIds) {
-    tenantIdsProp.reset();
-    tenantIds.forEach(tenantId -> tenantIdsProp.add().wrap(BufferUtil.wrapString(tenantId)));
-    return this;
-  }
-
-  public ValueArray<StringValue> tenantIds() {
-    return tenantIdsProp;
+  public Collection<String> tenantIds() {
+    return new UnmodifiableCollectionView<>(StringValue::toString, tenantIdsProp.asCollection());
   }
 }
