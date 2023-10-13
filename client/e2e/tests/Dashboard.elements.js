@@ -18,7 +18,8 @@ export const externalSourceInput = Selector('.externalInput');
 export const addTileButton = Selector('.CreateTileModal button').withText('Add Tile');
 export const textReportLink = Selector('button').withText('Text');
 export const textReportInput = Selector('.editor');
-export const textReportToolButton = (title) => Selector(`.Button[title=${title}]`);
+export const textReportToolButton = (text) =>
+  Selector('.toolbar .cds--popover-container').withText(text);
 export const textReportInsertDropdown = Selector('.InsertOptions');
 export const textReportUrlInput = Selector('.InsertModal input').nth(0);
 export const textReportAltInput = Selector('.InsertModal input').nth(1);

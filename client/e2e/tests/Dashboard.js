@@ -289,13 +289,13 @@ test('text report', async (t) => {
   await t.click(e.textReportToolButton('Italic'));
 
   await t.click(e.textReportInsertDropdown);
-  await t.click(Common.option('Link'));
+  await t.click(Common.menuOption('Link'));
   await t.typeText(e.textReportUrlInput, 'https://example.com/');
   await t.typeText(e.textReportAltInput, 'This is a link to example.com');
   await t.click(e.textReportInsertAddButton);
 
   await t.click(e.textReportInsertDropdown);
-  await t.click(Common.option('Image'));
+  await t.click(Common.menuOption('Image'));
   await t.typeText(e.textReportUrlInput, 'https://avatars3.githubusercontent.com/u/2443838');
   await t.typeText(e.textReportAltInput, 'This is a camunda logo');
   await t.click(e.textReportInsertAddButton);

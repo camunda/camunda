@@ -7,12 +7,12 @@
 
 import {INSERT_HORIZONTAL_RULE_COMMAND} from '@lexical/react/LexicalHorizontalRuleNode';
 
-import {Dropdown} from 'components';
 import {LexicalEditor} from 'lexical';
 import {t} from 'translation';
 
 import {InsertImageModal} from '../ImagesPlugin';
 import {InsertLinkModal} from '../LinkPlugin';
+import {MenuButton, MenuItem} from '@carbon/react';
 
 export default function InsertOptions({
   editor,
@@ -24,33 +24,31 @@ export default function InsertOptions({
   showModal: (getModal: (onClose: () => void) => JSX.Element) => void;
 }) {
   return (
-    <Dropdown
-      small
+    <MenuButton
+      kind="ghost"
+      size="sm"
       disabled={disabled}
-      label={t('textEditor.toolbar.insert.label')}
+      label={t('textEditor.toolbar.insert.label').toString()}
       className="InsertOptions"
     >
-      <Dropdown.Option
+      <MenuItem
         onClick={() => {
           editor.dispatchCommand(INSERT_HORIZONTAL_RULE_COMMAND, undefined);
         }}
-      >
-        {t('textEditor.toolbar.insert.horizontalRule')}
-      </Dropdown.Option>
-      <Dropdown.Option
+        label={t('textEditor.toolbar.insert.horizontalRule').toString()}
+      />
+      <MenuItem
         onClick={() => {
           showModal((onClose) => <InsertImageModal editor={editor} onClose={onClose} />);
         }}
-      >
-        {t('textEditor.toolbar.insert.image')}
-      </Dropdown.Option>
-      <Dropdown.Option
+        label={t('textEditor.toolbar.insert.image').toString()}
+      />
+      <MenuItem
         onClick={() => {
           showModal((onClose) => <InsertLinkModal editor={editor} onClose={onClose} />);
         }}
-      >
-        {t('textEditor.toolbar.insert.link')}
-      </Dropdown.Option>
-    </Dropdown>
+        label={t('textEditor.toolbar.insert.link').toString()}
+      />
+    </MenuButton>
   );
 }

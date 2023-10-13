@@ -5,9 +5,9 @@
  * except in compliance with the proprietary license.
  */
 
+import {MenuButton, MenuItem} from '@carbon/react';
 import {ElementFormatType, FORMAT_ELEMENT_COMMAND, LexicalEditor} from 'lexical';
 
-import {Dropdown} from 'components';
 import {t} from 'translation';
 
 export default function AlignOptions({
@@ -24,17 +24,20 @@ export default function AlignOptions({
   const ALIGN_TYPES: ElementFormatType[] = ['left', 'center', 'right'];
 
   return (
-    <Dropdown
-      small
+    <MenuButton
       disabled={disabled}
-      label={t('textEditor.toolbar.align.label')}
+      label={t('textEditor.toolbar.align.label').toString()}
       className="AlignOptions"
+      kind="ghost"
+      size="sm"
     >
       {ALIGN_TYPES.map((type) => (
-        <Dropdown.Option key={type} onClick={onAlign(type)}>
-          {t(`textEditor.toolbar.align.${type}`)}
-        </Dropdown.Option>
+        <MenuItem
+          key={type}
+          onClick={onAlign(type)}
+          label={t(`textEditor.toolbar.align.${type}`).toString()}
+        />
       ))}
-    </Dropdown>
+    </MenuButton>
   );
 }

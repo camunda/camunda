@@ -95,7 +95,7 @@ a:active {
   color: inherit;
 }
 
-.focus-visible:not(.cds--search-input, .cds--text-input, .textInput) {
+.focus-visible:not(.cds--search-input, .cds--text-input, .cds--text-area, .textInput) {
   outline: none;
   border-radius: 3px;
   box-shadow:

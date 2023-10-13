@@ -5,11 +5,14 @@
  * except in compliance with the proprietary license.
  */
 
+import {useState} from 'react';
 import classnames from 'classnames';
 import {SerializedEditorState, SerializedLexicalNode} from 'lexical';
 import {InitialConfigType, LexicalComposer} from '@lexical/react/LexicalComposer';
+import {TextArea} from '@carbon/react';
 
 import {isTextTileTooLong, TEXT_REPORT_MAX_CHARACTERS} from 'services';
+import {t} from 'translation';
 
 import editorNodes from './nodes';
 import Editor from './Editor';
@@ -59,16 +62,21 @@ type SimpleEditorProps = {
   limit?: number;
 };
 
-type TextEditorProps =
-  | SimpleEditorProps
-  | {
-      simpleEditor?: false;
-      onChange?: (value: SerializedEditorState) => void;
-      initialValue?: SerializedEditorState;
-      limit?: never;
-    };
+type RichEditorProps = {
+  simpleEditor?: never;
+  onChange?: (value: SerializedEditorState) => void;
+  initialValue?: SerializedEditorState;
+  limit?: number;
+};
 
-export default function TextEditor({onChange, simpleEditor, initialValue, limit}: TextEditorProps) {
+type TextEditorProps = SimpleEditorProps | RichEditorProps;
+
+export default function TextEditor({
+  onChange,
+  simpleEditor,
+  initialValue,
+  limit = TEXT_REPORT_MAX_CHARACTERS,
+}: TextEditorProps) {
   const initialConfig: InitialConfigType = {
     editorState: JSON.stringify(initialValue || emptyState),
     editable: !!onChange,
@@ -77,6 +85,9 @@ export default function TextEditor({onChange, simpleEditor, initialValue, limit}
     theme,
     onError,
   };
+  const [isError, setIsError] = useState(
+    !simpleEditor && isTextTileTooLong(TextEditor.getEditorStateLength(initialValue || emptyState))
+  );
 
   return (
     <div
@@ -86,19 +97,26 @@ export default function TextEditor({onChange, simpleEditor, initialValue, limit}
       className="TextEditor"
     >
       {simpleEditor ? (
-        <textarea
+        <TextArea
+          labelText={t('common.description')}
+          hideLabel
           value={initialValue || undefined}
-          className={classnames('SimpleEditor', {
-            error: isTextTileTooLong(initialValue?.length || 0, limit),
-          })}
+          className="SimpleEditor"
+          invalid={isTextTileTooLong(initialValue?.length || 0, limit)}
           onChange={(evt) => onChange(evt.target.value)}
           data-modal-primary-focus
         />
       ) : (
         <LexicalComposer initialConfig={initialConfig}>
           <Editor
-            onChange={onChange}
-            error={isTextTileTooLong(TextEditor.getEditorStateLength(initialValue || emptyState))}
+            onChange={(sanitizedEditorState) => {
+              setIsError(
+                isTextTileTooLong(TextEditor.getEditorStateLength(sanitizedEditorState), limit)
+              );
+              onChange?.(sanitizedEditorState);
+            }}
+            showToolbar={!!onChange}
+            error={isError}
           />
         </LexicalComposer>
       )}

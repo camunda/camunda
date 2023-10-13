@@ -38,19 +38,19 @@ it('should disable the button if the url is invalid', () => {
   expect(node.find('Button').at(1).prop('disabled')).toBe(true);
 
   node
-    .find('ForwardRef(Input)')
+    .find('TextInput')
     .at(0)
     .simulate('change', {target: {value: 'http:/'}});
 
   node
-    .find('ForwardRef(Input)')
+    .find('TextInput')
     .at(1)
     .simulate('change', {target: {value: 'some link'}});
 
   expect(node.find('Button').at(1).prop('disabled')).toBe(true);
 
   node
-    .find('ForwardRef(Input)')
+    .find('TextInput')
     .at(0)
     .simulate('change', {target: {value: 'http://example.com'}});
 
@@ -62,12 +62,12 @@ it('should dispatch insert link command on report add button', () => {
   const node = shallow(<InsertImageModal editor={editor} onClose={spy} />);
 
   node
-    .find('ForwardRef(Input)')
+    .find('TextInput')
     .at(0)
     .simulate('change', {target: {value: 'http://example.com'}});
 
   node
-    .find('ForwardRef(Input)')
+    .find('TextInput')
     .at(1)
     .simulate('change', {target: {value: 'some link'}});
 
@@ -85,7 +85,7 @@ it('should dispatch insert image command with alt text defaulted to url when not
   const node = shallow(<InsertImageModal editor={editor} onClose={spy} />);
 
   node
-    .find('ForwardRef(Input)')
+    .find('TextInput')
     .at(0)
     .simulate('change', {target: {value: 'http://example.com'}});
 

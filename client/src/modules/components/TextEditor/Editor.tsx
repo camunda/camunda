@@ -21,11 +21,15 @@ import './Editor.scss';
 export default function Editor({
   onChange,
   error,
+  showToolbar,
 }: {
   onChange?: (value: SerializedEditorState) => void;
   error?: boolean;
+  showToolbar?: boolean;
 }) {
-  const contentEditable = <ContentEditable className={classnames('editor', {error})} />;
+  const contentEditable = (
+    <ContentEditable className={classnames('editor', 'cds--text-area', {error})} />
+  );
 
   const onEditorChange = useCallback(
     (editorState: EditorState) => {
@@ -36,7 +40,7 @@ export default function Editor({
 
   return (
     <div className="Editor">
-      {onChange && <ToolbarPlugin />}
+      {showToolbar && <ToolbarPlugin />}
       <RichTextPlugin
         contentEditable={contentEditable}
         placeholder={null}

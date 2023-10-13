@@ -99,3 +99,13 @@ it('should trim empty paragraphs', function () {
     },
   });
 });
+
+it('should show toolbar when showToolbar prop is passed', () => {
+  const node = shallow(<Editor />);
+
+  expect(node.children().length).toBe(2);
+
+  node.setProps({showToolbar: true});
+
+  expect(node.children().length).toBe(3);
+});

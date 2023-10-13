@@ -4,15 +4,8 @@
     height: 150px;
     resize: none;
 
-    &.error {
-      border-color: var(--red-darken-38);
-
-      &.focus-visible,
-      &:focus {
-        box-shadow:
-          inset 0px 0px 0px 2px var(--red-darken-38),
-          var(--red-lighten-85) 0px 0px 0px 4px;
-      }
+    .cds--text-area__wrapper {
+      flex-grow: 1;
     }
   }
 
