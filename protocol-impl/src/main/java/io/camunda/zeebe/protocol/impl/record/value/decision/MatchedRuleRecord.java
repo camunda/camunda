@@ -28,7 +28,7 @@ public final class MatchedRuleRecord extends UnifiedRecordValue implements Match
   private final IntegerProperty ruleIndexProp = new IntegerProperty("ruleIndex");
 
   private final ArrayProperty<EvaluatedOutputRecord> evaluatedOutputsProp =
-      new ArrayProperty<>("evaluatedOutputs", new EvaluatedOutputRecord());
+      new ArrayProperty<>("evaluatedOutputs", EvaluatedOutputRecord::new);
 
   public MatchedRuleRecord() {
     declareProperty(ruleIdProp)

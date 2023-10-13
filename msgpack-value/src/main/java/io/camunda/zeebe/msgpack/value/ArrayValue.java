@@ -9,75 +9,48 @@ package io.camunda.zeebe.msgpack.value;
 
 import io.camunda.zeebe.msgpack.spec.MsgPackReader;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
-import java.util.NoSuchElementException;
+import java.util.List;
 import java.util.Objects;
-import org.agrona.ExpandableArrayBuffer;
+import java.util.RandomAccess;
+import java.util.function.Supplier;
+import org.agrona.collections.CollectionUtil;
 
+// avoids allocation, but only efficient with an underlying collection that supports RandomAccess
+@SuppressWarnings("ForLoopReplaceableByForEach")
 public final class ArrayValue<T extends BaseValue> extends BaseValue
-    implements Iterator<T>, Iterable<T> {
-  private final MsgPackWriter writer = new MsgPackWriter();
-  private final MsgPackReader reader = new MsgPackReader();
+    implements Iterable<T>, RandomAccess {
+  private final List<T> items;
+  private final Supplier<T> valueFactory;
 
-  // buffer
-  private final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
-  // inner value
-  private final T innerValue;
-  private int elementCount;
-  private int bufferLength;
-  private int oldInnerValueLength;
-  private InnerValueState innerValueState;
+  public ArrayValue(final Supplier<T> valueFactory) {
+    this.valueFactory = valueFactory;
 
-  // iterator
-  private int cursorOffset;
-  private int cursorIndex;
-
-  public ArrayValue(final T innerValue) {
-    this.innerValue = innerValue;
-    reset();
+    items = new ArrayList<>();
   }
 
   @Override
   public void reset() {
-    elementCount = 0;
-    bufferLength = 0;
-
-    resetIterator();
-    resetInnerValue();
-  }
-
-  private void resetIterator() {
-    cursorIndex = 0;
-    cursorOffset = 0;
-  }
-
-  private void resetInnerValue() {
-    innerValue.reset();
-    oldInnerValueLength = 0;
-
-    innerValueState = InnerValueState.Uninitialized;
+    items.clear();
   }
 
   public boolean isEmpty() {
-    return elementCount == 0;
+    return items.isEmpty();
   }
 
   @Override
   public void writeJSON(final StringBuilder builder) {
-    flushAndResetInnerValue();
-
     builder.append("[");
 
-    boolean firstElement = true;
-
-    for (final T element : this) {
-      if (!firstElement) {
+    for (int i = 0; i < items.size(); i++) {
+      if (i > 0) {
         builder.append(",");
-      } else {
-        firstElement = false;
       }
 
-      element.writeJSON(builder);
+      items.get(i).writeJSON(builder);
     }
 
     builder.append("]");
@@ -85,119 +58,38 @@ public final class ArrayValue<T extends BaseValue> extends BaseValue
 
   @Override
   public void write(final MsgPackWriter writer) {
-    flushAndResetInnerValue();
-
-    writer.writeArrayHeader(elementCount);
-    writer.writeRaw(buffer, 0, bufferLength);
+    writer.writeArrayHeader(items.size());
+    for (int i = 0; i < items.size(); i++) {
+      items.get(i).write(writer);
+    }
   }
 
   @Override
   public void read(final MsgPackReader reader) {
     reset();
 
-    elementCount = reader.readArrayHeader();
-
-    writer.wrap(buffer, 0);
-
-    for (int i = 0; i < elementCount; i++) {
-      innerValue.read(reader);
-      innerValue.write(writer);
+    final var size = reader.readArrayHeader();
+    for (int i = 0; i < size; i++) {
+      final var value = valueFactory.get();
+      value.read(reader);
+      items.add(i, value);
     }
-
-    resetInnerValue();
-
-    bufferLength = writer.getOffset();
   }
 
   @Override
   public int getEncodedLength() {
-    flushAndResetInnerValue();
-    return MsgPackWriter.getEncodedArrayHeaderLenght(elementCount) + bufferLength;
+    return MsgPackWriter.getEncodedArrayHeaderLenght(items.size())
+        + CollectionUtil.sum(items, BaseValue::getEncodedLength);
   }
 
-  /**
-   * Please be aware that iterating over an {@link ArrayValue} is not thread-safe. Iterating over
-   * this will modify the buffer. Multiple threads iterating over the same object will result in
-   * exceptions!
-   *
-   * @return an iterator for this object
-   */
   @Override
   public Iterator<T> iterator() {
-    flushAndResetInnerValue();
-
-    resetIterator();
-    resetInnerValue();
-
-    return this;
-  }
-
-  @Override
-  public boolean hasNext() {
-    return cursorIndex < elementCount;
-  }
-
-  /**
-   * Please be aware that iterating over an {@link ArrayValue} is not thread-safe. Iterating over
-   * this will modify the buffer. Multiple threads iterating over the same object will result in
-   * exceptions!
-   *
-   * @return the next element
-   */
-  @Override
-  public T next() {
-    if (!hasNext()) {
-      throw new NoSuchElementException("No more elements left");
-    }
-
-    final int innerValueLength = getInnerValueLength();
-
-    flushAndResetInnerValue();
-
-    cursorIndex += 1;
-    cursorOffset += innerValueLength;
-
-    readInnerValue();
-
-    return innerValue;
-  }
-
-  @Override
-  public void remove() {
-    if (innerValueState != InnerValueState.Modify) {
-      throw new IllegalStateException("No element available to remove, call next() before");
-    }
-
-    elementCount -= 1;
-    cursorIndex -= 1;
-
-    moveValuesLeft(cursorOffset + oldInnerValueLength, oldInnerValueLength);
-
-    innerValueState = InnerValueState.Uninitialized;
-  }
-
-  public T add() {
-    final boolean elementUpdated = innerValueState == InnerValueState.Modify;
-    final int innerValueLength = getInnerValueLength();
-
-    flushAndResetInnerValue();
-
-    elementCount += 1;
-
-    if (elementUpdated) {
-      // if the previous element was return by iterator the new element should be added after it
-      cursorOffset += innerValueLength;
-      cursorIndex += 1;
-    }
-
-    innerValueState = InnerValueState.Insert;
-
-    return innerValue;
+    return items.iterator();
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(buffer, elementCount, bufferLength);
+    return Objects.hash(items);
   }
 
   @Override
@@ -206,107 +98,39 @@ public final class ArrayValue<T extends BaseValue> extends BaseValue
       return true;
     }
 
-    if (!(o instanceof ArrayValue)) {
+    if (!(o instanceof final ArrayValue<?> that)) {
       return false;
     }
 
-    final ArrayValue<?> that = (ArrayValue<?>) o;
-    return elementCount == that.elementCount
-        && bufferLength == that.bufferLength
-        && Objects.equals(buffer, that.buffer);
+    return items.equals(that.items);
   }
 
-  private int getInnerValueLength() {
-    switch (innerValueState) {
-      case Insert:
-      case Modify:
-        return innerValue.getEncodedLength();
-      case Uninitialized:
-      default:
-        return 0;
-    }
+  public T add() {
+    final var item = valueFactory.get();
+    items.add(item);
+
+    return item;
   }
 
-  private void readInnerValue() {
-    reader.wrap(buffer, cursorOffset, bufferLength - cursorOffset);
-
-    innerValueState = InnerValueState.Modify;
-    innerValue.read(reader);
-    oldInnerValueLength = innerValue.getEncodedLength();
+  public T add(final int index) {
+    final var item = valueFactory.get();
+    items.add(index, item);
+    return item;
   }
 
-  private void flushAndResetInnerValue() {
-    switch (innerValueState) {
-      case Insert:
-        insertInnerValue();
-        break;
-      case Modify:
-        updateInnerValue();
-        break;
-      case Uninitialized:
-      default:
-        break;
-    }
-
-    resetInnerValue();
+  public T get(final int index) {
+    return items.get(index);
   }
 
-  private void insertInnerValue() {
-    final int innerValueLength = innerValue.getEncodedLength();
-    moveValuesRight(cursorOffset, innerValueLength);
-
-    writeInnerValue();
-
-    cursorOffset += innerValueLength;
-    cursorIndex += 1;
+  public T remove(final int index) {
+    return items.remove(index);
   }
 
-  private void updateInnerValue() {
-    final int innerValueLength = innerValue.getEncodedLength();
-
-    if (oldInnerValueLength < innerValueLength) {
-      // the inner value length increased
-      // move bytes back to have space for updated value
-      final int difference = innerValueLength - oldInnerValueLength;
-      moveValuesRight(cursorOffset + oldInnerValueLength, difference);
-    } else if (oldInnerValueLength > innerValueLength) {
-      // the inner value length decreased
-      // move bytes to front to fill gap for smaller updated value
-      final int difference = oldInnerValueLength - innerValueLength;
-      moveValuesLeft(cursorOffset + oldInnerValueLength, difference);
-    }
-
-    writeInnerValue();
+  public int size() {
+    return items.size();
   }
 
-  private void writeInnerValue() {
-    writer.wrap(buffer, cursorOffset);
-    innerValue.write(writer);
-  }
-
-  private void moveValuesLeft(final int srcOffset, final int removedLength) {
-    if (srcOffset <= bufferLength) {
-      final int targetOffset = srcOffset - removedLength;
-      final int copyLength = bufferLength - srcOffset;
-      buffer.putBytes(targetOffset, buffer, srcOffset, copyLength);
-    }
-
-    bufferLength -= removedLength;
-  }
-
-  private void moveValuesRight(final int srcOffset, final int requiredLength) {
-    if (srcOffset < bufferLength) {
-      final int targetOffset = srcOffset + requiredLength;
-      final int copyLength = bufferLength - srcOffset;
-      buffer.putBytes(targetOffset, buffer, srcOffset, copyLength);
-    }
-
-    bufferLength += requiredLength;
-  }
-
-  enum InnerValueState {
-    Uninitialized,
-    Insert,
-    Modify,
+  public Collection<T> asCollection() {
+    return Collections.unmodifiableCollection(items);
   }
 }

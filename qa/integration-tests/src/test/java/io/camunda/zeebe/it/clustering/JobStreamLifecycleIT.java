@@ -7,37 +7,45 @@
  */
 package io.camunda.zeebe.it.clustering;
 
-import io.camunda.zeebe.it.util.GrpcClientRule;
-import io.camunda.zeebe.qa.util.jobstream.JobStreamClientAssert;
-import io.camunda.zeebe.qa.util.jobstream.JobStreamServiceAssert;
+import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.qa.util.actuator.JobStreamActuator;
+import io.camunda.zeebe.qa.util.cluster.TestCluster;
+import io.camunda.zeebe.qa.util.cluster.TestGateway;
+import io.camunda.zeebe.qa.util.cluster.TestHealthProbe;
+import io.camunda.zeebe.qa.util.jobstream.AbstractJobStreamsAssert;
+import io.camunda.zeebe.qa.util.jobstream.JobStreamActuatorAssert;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.Strings;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import java.time.Duration;
-import org.assertj.core.condition.AllOf;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
+@AutoCloseResources
+@ZeebeIntegration
 final class JobStreamLifecycleIT {
-  @SuppressWarnings("JUnitMalformedDeclaration")
-  @RegisterExtension
-  private static final ClusteringRuleExtension CLUSTER = new ClusteringRuleExtension(1, 2, 2);
+  @TestZeebe
+  private static final TestCluster CLUSTER =
+      TestCluster.builder()
+          .withReplicationFactor(2)
+          .withBrokersCount(2)
+          .withGatewaysCount(2)
+          .withEmbeddedGateway(false)
+          .build();
 
-  private static GrpcClientRule client;
+  private final TestGateway<?> gateway = CLUSTER.availableGateway();
+  @AutoCloseResource private final ZeebeClient client = gateway.newClientBuilder().build();
 
   private final String jobType = Strings.newRandomValidBpmnId();
-
-  @BeforeAll
-  static void beforeAll() {
-    client = new GrpcClientRule(CLUSTER.getClient());
-  }
 
   @Test
   void shouldRegisterStream() {
     // given
     final var command =
         client
-            .getClient()
             .newStreamJobsCommand()
             .jobType(jobType)
             .consumer(ignored -> {})
@@ -52,27 +60,27 @@ final class JobStreamLifecycleIT {
     Awaitility.await("until stream is registered")
         .untilAsserted(
             () ->
-                JobStreamClientAssert.assertThat(CLUSTER.gatewayJobStreamClient())
-                    .hasStreamMatchingCount(
+                JobStreamActuatorAssert.assertThat(JobStreamActuator.of(gateway))
+                    .clientStreams()
+                    .haveExactlyAll(
                         1,
-                        AllOf.allOf(
-                            JobStreamClientAssert.hasStreamType(jobType),
-                            JobStreamClientAssert.hasWorker("worker"),
-                            JobStreamClientAssert.hasTimeout(500),
-                            JobStreamClientAssert.hasFetchVariables("foo", "bar"))));
+                        AbstractJobStreamsAssert.hasJobType(jobType),
+                        AbstractJobStreamsAssert.hasWorker("worker"),
+                        AbstractJobStreamsAssert.hasTimeout(500),
+                        AbstractJobStreamsAssert.hasFetchVariables("foo", "bar")));
     for (int nodeId = 0; nodeId < 2; nodeId++) {
-      final var service = CLUSTER.getBrokerBridge(nodeId).getJobStreamService().orElseThrow();
+      final var actuator = brokerActuator(nodeId);
       Awaitility.await("until stream is registered on broker '%d'".formatted(nodeId))
           .untilAsserted(
               () ->
-                  JobStreamServiceAssert.assertThat(service)
-                      .hasStreamMatchingCount(
+                  JobStreamActuatorAssert.assertThat(actuator)
+                      .remoteStreams()
+                      .haveExactlyAll(
                           1,
-                          AllOf.allOf(
-                              JobStreamServiceAssert.hasStreamType(jobType),
-                              JobStreamServiceAssert.hasWorker("worker"),
-                              JobStreamServiceAssert.hasTimeout(500),
-                              JobStreamServiceAssert.hasFetchVariables("foo", "bar"))));
+                          AbstractJobStreamsAssert.hasJobType(jobType),
+                          AbstractJobStreamsAssert.hasWorker("worker"),
+                          AbstractJobStreamsAssert.hasTimeout(500),
+                          AbstractJobStreamsAssert.hasFetchVariables("foo", "bar")));
     }
   }
 
@@ -81,7 +89,6 @@ final class JobStreamLifecycleIT {
     // given - two logically DIFFERENT streams
     final var commandA =
         client
-            .getClient()
             .newStreamJobsCommand()
             .jobType(jobType)
             .consumer(ignored -> {})
@@ -90,7 +97,6 @@ final class JobStreamLifecycleIT {
             .workerName("commandA");
     final var commandB =
         client
-            .getClient()
             .newStreamJobsCommand()
             .jobType(jobType)
             .consumer(ignored -> {})
@@ -104,15 +110,19 @@ final class JobStreamLifecycleIT {
     Awaitility.await("until streams are registered")
         .untilAsserted(
             () ->
-                JobStreamClientAssert.assertThat(CLUSTER.gatewayJobStreamClient())
-                    .hasStreamWithType(2, jobType));
+                JobStreamActuatorAssert.assertThat(JobStreamActuator.of(gateway))
+                    .clientStreams()
+                    .haveJobType(2, jobType));
 
     // then - the streams are not aggregated on the broker side, as they are logically different
     for (int nodeId = 0; nodeId < 2; nodeId++) {
-      final var service = CLUSTER.getBrokerBridge(nodeId).getJobStreamService().orElseThrow();
+      final var actuator = brokerActuator(nodeId);
       Awaitility.await("until stream is registered on broker '%d'".formatted(nodeId))
           .untilAsserted(
-              () -> JobStreamServiceAssert.assertThat(service).hasStreamWithType(2, jobType));
+              () ->
+                  JobStreamActuatorAssert.assertThat(actuator)
+                      .remoteStreams()
+                      .haveJobType(2, jobType));
     }
   }
 
@@ -121,7 +131,6 @@ final class JobStreamLifecycleIT {
     // given - two logically equivalent streams
     final var commandA =
         client
-            .getClient()
             .newStreamJobsCommand()
             .jobType(jobType)
             .consumer(ignored -> {})
@@ -130,7 +139,6 @@ final class JobStreamLifecycleIT {
             .workerName("command");
     final var commandB =
         client
-            .getClient()
             .newStreamJobsCommand()
             .jobType(jobType)
             .consumer(ignored -> {})
@@ -144,15 +152,74 @@ final class JobStreamLifecycleIT {
     Awaitility.await("until streams are registered")
         .untilAsserted(
             () ->
-                JobStreamClientAssert.assertThat(CLUSTER.gatewayJobStreamClient())
-                    .hasStreamWithType(2, jobType));
+                JobStreamActuatorAssert.assertThat(JobStreamActuator.of(gateway))
+                    .clientStreams()
+                    .haveJobType(2, jobType));
 
     // then - only one stream is registered on each broker as it is aggregated per gateway
     for (int nodeId = 0; nodeId < 2; nodeId++) {
-      final var service = CLUSTER.getBrokerBridge(nodeId).getJobStreamService().orElseThrow();
+      final var actuator = brokerActuator(nodeId);
       Awaitility.await("until stream is registered on broker '%d'".formatted(nodeId))
           .untilAsserted(
-              () -> JobStreamServiceAssert.assertThat(service).hasStreamWithType(1, jobType, 2));
+              () ->
+                  JobStreamActuatorAssert.assertThat(actuator)
+                      .remoteStreams()
+                      .haveConsumerCount(1, jobType, 1));
+    }
+  }
+
+  @Test
+  void shouldAggregateStreamWithDifferentReceivers() {
+    // given - two logically equivalent streams on different gateways
+    //noinspection resource
+    final var otherGateway =
+        CLUSTER.gateways().values().stream()
+            .filter(g -> !g.nodeId().equals(gateway.nodeId()))
+            .findAny()
+            .orElseThrow();
+    try (final var otherClient = otherGateway.newClientBuilder().build()) {
+      final var commandA =
+          client
+              .newStreamJobsCommand()
+              .jobType(jobType)
+              .consumer(ignored -> {})
+              .fetchVariables("foo", "bar")
+              .timeout(Duration.ofMillis(500))
+              .workerName("command");
+      final var commandB =
+          otherClient
+              .newStreamJobsCommand()
+              .jobType(jobType)
+              .consumer(ignored -> {})
+              .fetchVariables("foo", "bar")
+              .timeout(Duration.ofMillis(500))
+              .workerName("command");
+
+      // when - both streams are opened and registered on the gateway as individual client streams
+      commandA.send();
+      commandB.send();
+      Awaitility.await("until streams are registered")
+          .untilAsserted(
+              () -> {
+                JobStreamActuatorAssert.assertThat(JobStreamActuator.of(gateway))
+                    .clientStreams()
+                    .haveJobType(1, jobType);
+                JobStreamActuatorAssert.assertThat(JobStreamActuator.of(otherGateway))
+                    .clientStreams()
+                    .haveJobType(1, jobType);
+              });
+
+      // then - only one stream is registered on each broker as it is aggregated per gateway, with
+      // two consumers
+      for (int nodeId = 0; nodeId < 2; nodeId++) {
+        final var actuator = brokerActuator(nodeId);
+        Awaitility.await("until stream is registered on broker '%d'".formatted(nodeId))
+            .untilAsserted(
+                () ->
+                    JobStreamActuatorAssert.assertThat(actuator)
+                        .remoteStreams()
+                        .haveConsumerCount(1, jobType, 2));
+      }
     }
   }
 
@@ -160,12 +227,13 @@ final class JobStreamLifecycleIT {
   void shouldRemoveStreamOnClientCancel() {
     // given - one stream is registered on the gateway
     final var stream =
-        client.getClient().newStreamJobsCommand().jobType(jobType).consumer(ignored -> {}).send();
+        client.newStreamJobsCommand().jobType(jobType).consumer(ignored -> {}).send();
     Awaitility.await("until stream is fully registered")
         .untilAsserted(
             () ->
-                JobStreamClientAssert.assertThat(CLUSTER.gatewayJobStreamClient())
-                    .hasStreamWithType(1, jobType, 0, 1));
+                JobStreamActuatorAssert.assertThat(JobStreamActuator.of(gateway))
+                    .clientStreams()
+                    .haveConnectedTo(1, jobType, 0, 1));
 
     // when - that stream is cancelled
     stream.cancel(true);
@@ -174,13 +242,17 @@ final class JobStreamLifecycleIT {
     Awaitility.await("until no gateway streams are registered")
         .untilAsserted(
             () ->
-                JobStreamClientAssert.assertThat(CLUSTER.gatewayJobStreamClient())
-                    .doesNotHaveStreamWithType(jobType));
+                JobStreamActuatorAssert.assertThat(JobStreamActuator.of(gateway))
+                    .clientStreams()
+                    .doNotHaveJobType(jobType));
     for (int nodeId = 0; nodeId < 2; nodeId++) {
-      final var service = CLUSTER.getBrokerBridge(nodeId).getJobStreamService().orElseThrow();
+      final var actuator = brokerActuator(nodeId);
       Awaitility.await("until no stream is registered on broker '%d'".formatted(nodeId))
           .untilAsserted(
-              () -> JobStreamServiceAssert.assertThat(service).doesNotHaveStreamWithType(jobType));
+              () ->
+                  JobStreamActuatorAssert.assertThat(actuator)
+                      .remoteStreams()
+                      .doNotHaveJobType(jobType));
     }
   }
 
@@ -188,35 +260,36 @@ final class JobStreamLifecycleIT {
   void shouldNotRemoveOtherStreamOnClientCancel() {
     // given - two logically equivalent clients
     final var stream =
-        client.getClient().newStreamJobsCommand().jobType(jobType).consumer(ignored -> {}).send();
-    client.getClient().newStreamJobsCommand().jobType(jobType).consumer(ignored -> {}).send();
+        client.newStreamJobsCommand().jobType(jobType).consumer(ignored -> {}).send();
+    client.newStreamJobsCommand().jobType(jobType).consumer(ignored -> {}).send();
 
     // when - two clients are registered on the gateway, and one of them is closed
     Awaitility.await("until gateway streams are fully connected")
         .untilAsserted(
             () ->
-                JobStreamClientAssert.assertThat(CLUSTER.gatewayJobStreamClient())
-                    .hasStreamWithType(2, jobType, 0, 1));
+                JobStreamActuatorAssert.assertThat(JobStreamActuator.of(gateway))
+                    .clientStreams()
+                    .haveConnectedTo(2, jobType, 0, 1));
     stream.cancel(true);
 
     // then - the remaining gateway stream is present, and it's still connected to the brokers
     Awaitility.await("until gateway has only one stream")
         .untilAsserted(
             () ->
-                JobStreamClientAssert.assertThat(CLUSTER.gatewayJobStreamClient())
-                    .hasStreamWithType(1, jobType, 0, 1));
+                JobStreamActuatorAssert.assertThat(JobStreamActuator.of(gateway))
+                    .clientStreams()
+                    .haveConnectedTo(1, jobType, 0, 1));
     for (int nodeId = 0; nodeId < 2; nodeId++) {
-      final var service = CLUSTER.getBrokerBridge(nodeId).getJobStreamService().orElseThrow();
-      JobStreamServiceAssert.assertThat(service).hasStreamWithType(1, jobType);
+      final var actuator = brokerActuator(nodeId);
+      JobStreamActuatorAssert.assertThat(actuator).remoteStreams().haveJobType(1, jobType);
     }
   }
 
   @Test
   void shouldRemoveAllStreamsOnGatewayShutdown() {
     // given - two logically different clients
-    client.getClient().newStreamJobsCommand().jobType(jobType).consumer(ignored -> {}).send();
+    client.newStreamJobsCommand().jobType(jobType).consumer(ignored -> {}).send();
     client
-        .getClient()
         .newStreamJobsCommand()
         .jobType(jobType)
         .consumer(ignored -> {})
@@ -225,18 +298,29 @@ final class JobStreamLifecycleIT {
     Awaitility.await("until gateway streams are fully connected")
         .untilAsserted(
             () ->
-                JobStreamClientAssert.assertThat(CLUSTER.gatewayJobStreamClient())
-                    .hasStreamWithType(2, jobType, 0, 1));
+                JobStreamActuatorAssert.assertThat(JobStreamActuator.of(gateway))
+                    .clientStreams()
+                    .haveConnectedTo(2, jobType, 0, 1));
 
     // when
-    CLUSTER.restartGateway();
+    CLUSTER.availableGateway().stop().start().await(TestHealthProbe.READY);
+    CLUSTER.awaitCompleteTopology();
 
     // then - no streams will be registered on any broker
     for (int nodeId = 0; nodeId < 2; nodeId++) {
-      final var service = CLUSTER.getBrokerBridge(nodeId).getJobStreamService().orElseThrow();
+      final var actuator = brokerActuator(nodeId);
       Awaitility.await("until no stream is registered on broker '%d'".formatted(nodeId))
           .untilAsserted(
-              () -> JobStreamServiceAssert.assertThat(service).doesNotHaveStreamWithType(jobType));
+              () ->
+                  JobStreamActuatorAssert.assertThat(actuator)
+                      .remoteStreams()
+                      .doNotHaveJobType(jobType));
     }
+  }
+
+  private JobStreamActuator brokerActuator(final int nodeId) {
+    final var brokerId = MemberId.from(String.valueOf(nodeId));
+    final var broker = CLUSTER.brokers().get(brokerId);
+    return JobStreamActuator.of(broker);
   }
 }

@@ -7,10 +7,16 @@
  */
 package io.camunda.zeebe.msgpack.value;
 
+import java.util.Collection;
+import java.util.RandomAccess;
 import java.util.stream.Stream;
 
-public interface ValueArray<T> extends Iterable<T> {
+public interface ValueArray<T> extends Iterable<T>, RandomAccess {
   T add();
 
+  T add(final int index);
+
   Stream<T> stream();
+
+  Collection<T> asCollection();
 }

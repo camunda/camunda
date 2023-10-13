@@ -53,7 +53,7 @@ public final class DecisionEvaluationRecord extends UnifiedRecordValue
   private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey", -1L);
 
   private final ArrayProperty<EvaluatedDecisionRecord> evaluatedDecisionsProp =
-      new ArrayProperty<>("evaluatedDecisions", new EvaluatedDecisionRecord());
+      new ArrayProperty<>("evaluatedDecisions", EvaluatedDecisionRecord::new);
 
   private final StringProperty evaluationFailureMessageProp =
       new StringProperty("evaluationFailureMessage", "");
