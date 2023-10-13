@@ -1,0 +1,93 @@
+---
+name: preview-env-deploy
+on:
+  pull_request:
+    types: [ labeled,synchronize ]
+
+jobs:
+  deploy-preview:
+    # checks that the PR isn't closed AND check whether the labeled event contains deploy-preview as substring || check whether on new commit of PR the label deploy-preview is part of label array
+    if: github.event.pull_request.state != 'closed' && (contains( github.event.label.name, 'deploy-preview') || contains( github.event.pull_request.labels.*.name, 'deploy-preview'))
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    name: deploy-preview-env-${{ matrix.product_context }}
+    env:
+      BRANCH_NAME: ${{ github.head_ref }} # head_ref = branch on PR
+    concurrency:
+      group: pr-update-${{ github.head_ref }}-${{ matrix.product_context }} # env is not yet available here
+      cancel-in-progress: true
+    strategy:
+      fail-fast: false # Don't disrupt other deployments because of failure
+      matrix:
+        product_context: [c7]
+        # TODO: product_context: [c7,c8sm,c8saas]
+
+    steps:
+    #########################################################################
+    # Sanitize the branch name to remove dependabot/,renovate/ and transform the name
+    - id: sanitize
+      uses: camunda/infra-global-github-actions/sanitize-branch-name@main
+      with:
+        branch: ${{ env.BRANCH_NAME }}
+        max_length: '40'
+    #########################################################################
+    # Setup: import secrets from vault
+    - name: Import secrets
+      id: secrets
+      uses: hashicorp/vault-action@cb841f2c86fb6d07cff94fda240828c1abc5ba43 # v2.7.3
+      with:
+        url: ${{ secrets.VAULT_ADDR }}
+        method: approle
+        roleId: ${{ secrets.VAULT_ROLE_ID }}
+        secretId: ${{ secrets.VAULT_SECRET_ID }}
+        secrets: |
+          secret/data/products/optimize/ci/camunda-optimize ARGOCD_TOKEN;
+    #########################################################################
+    # Setup: checkout code. This is required because we are using
+    # composite actions and deployment manifests.
+    - name: Checkout
+      uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4.1.0
+
+    - name: "Read Java / Version Info"
+      id: pom-info
+      uses: YunaBraska/java-info-action@main
+    #########################################################################
+    # Determine the argocd arguments that need to be passed to the create app command
+    - name: Determine Argocd Arguments
+      shell: bash
+      run: |
+        echo "argocd_arguments=--dest-namespace ${app_name} \
+          --file .ci/preview-environments/argo/${argocd_app_file_name}.yml \
+          --helm-set optimize.image.tag=${docker_tag} \
+          --helm-set cambpm.image.tag=${cambpm_image_tag} \
+          --helm-set elasticsearch.image.tag=${elasticsearch_image_tag} \
+          --helm-set git.branch=${revision} \
+          --helm-set global.labels.app=${app_name} \
+          --name ${app_name} \
+          --revision ${revision} \
+          --upsert" >> $GITHUB_ENV
+      env:
+        docker_tag: "pr-${{ github.event.pull_request.head.sha }}" # commit id of latest PR event
+        revision: ${{ env.BRANCH_NAME }}
+        app_name: optimize-${{ steps.sanitize.outputs.branch_name }}-${{ matrix.product_context }}
+        argocd_app_file_name: ${{ matrix.product_context }}
+        cambpm_image_tag: ${{ steps.pom-info.outputs.x_camunda_engine_version }}
+        elasticsearch_image_tag: ${{ steps.pom-info.outputs.x_elasticsearch_version }}
+    #########################################################################
+    # Create a preview environment
+    - name: Deploy Preview Environment for ${{ matrix.product_context }}
+      uses: camunda/infra-global-github-actions/preview-env/create@main
+      with:
+        revision: ${{ env.BRANCH_NAME }}
+        argocd_token: ${{ steps.secrets.outputs.ARGOCD_TOKEN }}
+        app_name: optimize-${{ steps.sanitize.outputs.branch_name }}-${{ matrix.product_context }}
+        app_url: https://${{ steps.sanitize.outputs.branch_name }}-${{ matrix.product_context }}.optimize.camunda.cloud
+        argocd_arguments: ${{ env.argocd_arguments }}
+
+  clean:
+    if: always() && github.event_name == 'pull_request' && needs.deploy-preview.result != 'skipped'
+    uses: camunda/camunda-optimize/.github/workflows/preview-env-clean.yml@master
+    needs: [deploy-preview]
+    secrets: inherit
+    with:
+      pull-request: ${{ github.event.pull_request.number }}
