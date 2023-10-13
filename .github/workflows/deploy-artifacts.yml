@@ -6,13 +6,21 @@ on:
 jobs:
   deploy-artifacts:
     name: Deploy Artifacts
-    runs-on: ubuntu-latest
+    runs-on: gcp-core-2-default
     timeout-minutes: 30
     env:
       DOCKER_IMAGE_TEAM: registry.camunda.cloud/team-optimize/optimize
       DOCKER_IMAGE_DOCKER_HUB: camunda/optimize
     steps:
     - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4
+    - name: Install common tooling (buildx)  # required on self-hosted runners
+      uses: camunda/infra-global-github-actions/common-tooling@main
+      with:
+        buildx-enabled: true
+        java-enabled: false
+        node-enabled: false
+        python-enabled: false
+        yarn-enabled: false
     - name: Define common variables
       id: define-values
       uses: ./.github/actions/git-environment
@@ -45,7 +53,7 @@ jobs:
         secrets: |
           secret/data/products/optimize/ci/camunda-optimize REGISTRY_HUB_DOCKER_COM_USR;
           secret/data/products/optimize/ci/camunda-optimize REGISTRY_HUB_DOCKER_COM_PSW;
-    - name: Login to Harbor docker registery
+    - name: Login to Harbor docker registry
       uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3
       with:
         username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
@@ -71,6 +79,12 @@ jobs:
       env:
         OPTIMIZE_IMAGE_TAG: ${{ env.DOCKER_TAG }}
         ELASTIC_VERSION: ${{ steps.pom-info.outputs.x_elasticsearch8_test_version }}
+        CAMBPM_HOST: "172.17.0.1"
+        CAMBPM_PORT: "8080"
+        # ^ starting ~2023-10-10, the hostname resolution for the cambpm docker-compose service
+        # http://cambpm:8080 does not work anymore for neither SaaS nor self-hosted Linux runners. 
+        # 172.17.0.1 is the host IP address from the container perspective, and cambpm is running
+        # exposed there on port 8080.
     # This is partly done already by the healthcheck in the compose file
     - name: Check that Optimize is running and available
       run: |
