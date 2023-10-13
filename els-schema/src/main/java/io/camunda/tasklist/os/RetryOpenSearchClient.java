@@ -60,7 +60,7 @@ public class RetryOpenSearchClient {
   private int numberOfRetries = DEFAULT_NUMBER_OF_RETRIES;
   private int delayIntervalInSeconds = DEFAULT_DELAY_INTERVAL_IN_SECONDS;
 
-  @Autowired private OpenSearchTask openSearchTask;
+  @Autowired private OpenSearchInternalTask openSearchInternalTask;
 
   public boolean isHealthy() {
     try {
@@ -111,9 +111,12 @@ public class RetryOpenSearchClient {
   }
 
   public long getNumberOfDocumentsFor(String... indexPatterns) {
-    return executeWithRetries(
-        "Count number of documents in " + Arrays.asList(indexPatterns),
-        () -> openSearchClient.count(c -> c.index(List.of(indexPatterns))).count());
+    final CountResponse countResponse =
+        executeWithRetries(
+            "Count number of documents in " + Arrays.asList(indexPatterns),
+            () -> openSearchClient.count(c -> c.index(List.of(indexPatterns))),
+            (c) -> c.shards().failures().size() > 0);
+    return countResponse.count();
   }
 
   public Set<String> getIndexNames(String namePattern) {
@@ -334,6 +337,13 @@ public class RetryOpenSearchClient {
     reindex(reindexRequest, true);
   }
 
+  private void refreshAndRetryOnShardFailures(final String indexPattern) {
+    executeWithRetries(
+        "Refresh " + indexPattern,
+        () -> openSearchClient.indices().refresh(r -> r.index(indexPattern)),
+        (r) -> r.shards().failures().size() > 0);
+  }
+
   public void reindex(final ReindexRequest reindexRequest, boolean checkDocumentCount) {
     executeWithRetries(
         "Reindex "
@@ -341,21 +351,22 @@ public class RetryOpenSearchClient {
             + " -> "
             + reindexRequest.dest().index(),
         () -> {
-          final String srcIndices = reindexRequest.source().index().get(0);
-          final String dstIndex = reindexRequest.dest().index();
-          final long srcCount = getNumberOfDocumentsFor(srcIndices);
-          if (checkDocumentCount) {
+          final var srcIndices = reindexRequest.source().index().get(0);
+          final var dstIndex = reindexRequest.dest().index();
+          final var srcCount = getNumberOfDocumentsFor(srcIndices);
 
-            final long dstCount = getNumberOfDocumentsFor(dstIndex + "*");
-            if (srcCount == dstCount) {
-              LOGGER.info("Reindex of {} -> {} is already done.", srcIndices, dstIndex);
-              return true;
-            }
-          }
-          final List<String> taskIds =
-              openSearchTask.getRunningReindexTasksIdsFor(srcIndices, dstIndex);
+          final var taskIds =
+              openSearchInternalTask.getRunningReindexTasksIdsFor(srcIndices, dstIndex);
           final String taskId;
-          if (taskIds.isEmpty()) {
+          if (taskIds == null || taskIds.isEmpty()) {
+            if (checkDocumentCount) {
+              refreshAndRetryOnShardFailures(dstIndex + "*");
+              final var dstCount = getNumberOfDocumentsFor(dstIndex + "*");
+              if (srcCount == dstCount) {
+                LOGGER.info("Reindex of {} -> {} is already done.", srcIndices, dstIndex);
+                return true;
+              }
+            }
             taskId = openSearchClient.reindex(reindexRequest).task();
           } else {
             LOGGER.info(
@@ -364,11 +375,18 @@ public class RetryOpenSearchClient {
                 dstIndex);
             taskId = taskIds.get(0);
           }
-
           TimeUnit.of(ChronoUnit.MILLIS).sleep(2_000);
-          return waitUntilTaskIsCompleted(taskId, srcCount);
+          if (checkDocumentCount) {
+            return waitUntilTaskIsCompleted(taskId, srcCount);
+          } else {
+            return waitUntilTaskIsCompleted(taskId);
+          }
         },
         done -> !done);
+  }
+
+  private boolean waitUntilTaskIsCompleted(String taskId) {
+    return waitUntilTaskIsCompleted(taskId, null);
   }
 
   // Returns if task is completed under this conditions:
@@ -377,7 +395,7 @@ public class RetryOpenSearchClient {
   // - If the response has a status with uncompleted flag and a sum of changed documents
   // (created,updated and deleted documents) not equal to to total documents
   //   we need to wait and poll again the task status
-  private boolean waitUntilTaskIsCompleted(String taskId, long srcCount) {
+  private boolean waitUntilTaskIsCompleted(String taskId, Long srcCount) {
     final GetTasksResponse taskResponse =
         executeWithGivenRetries(
             Integer.MAX_VALUE,
@@ -385,12 +403,12 @@ public class RetryOpenSearchClient {
             () -> {
               final GetTasksResponse tasksResponse =
                   openSearchClient.tasks().get(t -> t.taskId(taskId));
-              openSearchTask.checkForErrorsOrFailures(tasksResponse);
+              openSearchInternalTask.checkForErrorsOrFailures(tasksResponse);
               return tasksResponse;
             },
-            openSearchTask::needsToPollAgain);
+            openSearchInternalTask::needsToPollAgain);
     if (taskResponse != null) {
-      final long total = openSearchTask.getTotal(taskResponse);
+      final long total = openSearchInternalTask.getTotal(taskResponse);
       LOGGER.info("Source docs: {}, Migrated docs: {}", srcCount, total);
       return total == srcCount;
     } else {

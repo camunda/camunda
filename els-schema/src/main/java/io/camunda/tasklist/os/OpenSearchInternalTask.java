@@ -23,7 +23,7 @@ import org.springframework.util.CollectionUtils;
 
 @Component
 @Conditional(OpenSearchCondition.class)
-public class OpenSearchTask {
+public class OpenSearchInternalTask {
 
   public static final String ERROR = "error";
   public static final String REASON = "reason";

@@ -6,24 +6,23 @@
  */
 package io.camunda.tasklist.es;
 
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import java.io.IOException;
-import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import org.elasticsearch.action.get.GetRequest;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.elasticsearch.action.admin.cluster.node.tasks.list.ListTasksRequest;
+import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.client.tasks.GetTaskResponse;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.tasks.RawTaskStatus;
+import org.elasticsearch.tasks.TaskInfo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -51,17 +50,19 @@ public class ElasticsearchInternalTask {
   public static final String DESCRIPTION_PREFIX_TO_INDEX = "to [";
   public static final String NODE = "node";
   public static final int MAX_TASKS_ENTRIES = 2_000;
+  private static final String TASKS_ENDPOINT = "_tasks";
+
   @Autowired private RestHighLevelClient esClient;
 
-  public void checkForErrorsOrFailures(final String node, final Integer id) throws IOException {
-    final Map<String, Object> taskStatus =
-        esClient
-            .get(new GetRequest(SYSTEM_TASKS_INDEX, node + ":" + id), RequestOptions.DEFAULT)
-            .getSourceAsMap();
-    if (taskStatus != null) {
-      checkForErrors(taskStatus);
-      checkForFailures(taskStatus);
-    }
+  @Autowired private ObjectMapper objectMapper;
+
+  public void checkForErrorsOrFailures(final String taskId) throws IOException {
+    final var request = new Request(HttpGet.METHOD_NAME, "/" + TASKS_ENDPOINT + "/" + taskId);
+    final var response = esClient.getLowLevelClient().performRequest(request);
+    final var taskStatus = objectMapper.readValue(response.getEntity().getContent(), HashMap.class);
+
+    checkForErrors(taskStatus);
+    checkForFailures(taskStatus);
   }
 
   public List<String> getRunningReindexTasksIdsFor(final String fromIndex, final String toIndex)
@@ -71,9 +72,38 @@ public class ElasticsearchInternalTask {
     }
 
     return getReindexTasks().stream()
-        .filter(taskState -> descriptionContainsReindexFromTo(taskState, fromIndex, toIndex))
+        .filter(
+            taskInfo ->
+                descriptionContainsReindexFromTo(taskInfo.getDescription(), fromIndex, toIndex))
         .map(this::toTaskId)
         .toList();
+  }
+
+  private String toTaskId(TaskInfo taskInfo) {
+    return String.format("%s:%s", taskInfo.getTaskId().getNodeId(), taskInfo.getTaskId().getId());
+  }
+
+  private boolean descriptionContainsReindexFromTo(
+      final String description, final String fromIndex, final String toIndex) {
+    return description != null
+        && description.contains(DESCRIPTION_PREFIX_FROM_INDEX + fromIndex)
+        && description.contains(DESCRIPTION_PREFIX_TO_INDEX + toIndex);
+  }
+
+  private List<TaskInfo> getReindexTasks() throws IOException {
+    final var response =
+        esClient
+            .tasks()
+            .list(
+                new ListTasksRequest().setActions(TASK_ACTION_INDICES_REINDEX).setDetailed(true),
+                RequestOptions.DEFAULT);
+    return response.getTasks();
+  }
+
+  private boolean systemTaskIndexExists() throws IOException {
+    return esClient
+        .indices()
+        .exists(new GetIndexRequest(SYSTEM_TASKS_INDEX), RequestOptions.DEFAULT);
   }
 
   private String toTaskId(Map<String, Object> taskState) {
@@ -86,28 +116,6 @@ public class ElasticsearchInternalTask {
     return desc != null
         && desc.contains(DESCRIPTION_PREFIX_FROM_INDEX + fromIndex)
         && desc.contains(DESCRIPTION_PREFIX_TO_INDEX + toIndex);
-  }
-
-  private List<Map<String, Object>> getReindexTasks() throws IOException {
-    final SearchResponse searchResponse =
-        esClient.search(
-            new SearchRequest()
-                .indices(SYSTEM_TASKS_INDEX)
-                .source(
-                    SearchSourceBuilder.searchSource()
-                        .query(termQuery(TASK_ACTION, TASK_ACTION_INDICES_REINDEX))
-                        .size(MAX_TASKS_ENTRIES)),
-            RequestOptions.DEFAULT);
-
-    return Arrays.stream(searchResponse.getHits().getHits())
-        .map(h -> (Map<String, Object>) h.getSourceAsMap().get(TASK))
-        .toList();
-  }
-
-  private boolean systemTaskIndexExists() throws IOException {
-    return esClient
-        .indices()
-        .exists(new GetIndexRequest(SYSTEM_TASKS_INDEX), RequestOptions.DEFAULT);
   }
 
   private void checkForErrors(final Map<String, Object> taskStatus) {

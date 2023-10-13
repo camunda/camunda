@@ -162,10 +162,20 @@ public class RetryElasticsearchClient {
         });
   }
 
+  private void refreshAndRetryOnShardFailures(final String indexPattern) {
+    executeWithRetries(
+        "Refresh " + indexPattern,
+        () -> esClient.indices().refresh(new RefreshRequest(indexPattern), requestOptions),
+        (r) -> r.getFailedShards() > 0);
+  }
+
   public long getNumberOfDocumentsFor(String... indexPatterns) {
-    return executeWithRetries(
-        "Count number of documents in " + Arrays.asList(indexPatterns),
-        () -> esClient.count(new CountRequest(indexPatterns), requestOptions).getCount());
+    final var response =
+        executeWithRetries(
+            "Count number of documents in " + Arrays.asList(indexPatterns),
+            () -> esClient.count(new CountRequest(indexPatterns), requestOptions),
+            (c) -> c.getFailedShards() > 0);
+    return response.getCount();
   }
 
   public Set<String> getIndexNames(String namePattern) {
@@ -405,20 +415,23 @@ public class RetryElasticsearchClient {
             + " -> "
             + reindexRequest.getDestination().index(),
         () -> {
-          final String srcIndices = reindexRequest.getSearchRequest().indices()[0];
-          final String dstIndex = reindexRequest.getDestination().indices()[0];
-          final long srcCount = getNumberOfDocumentsFor(srcIndices);
-          if (checkDocumentCount) {
-            final long dstCount = getNumberOfDocumentsFor(dstIndex + "*");
-            if (srcCount == dstCount) {
-              LOGGER.info("Reindex of {} -> {} is already done.", srcIndices, dstIndex);
-              return true;
-            }
-          }
-          final List<String> taskIds =
-              elasticsearchTask.getRunningReindexTasksIdsFor(srcIndices, dstIndex);
+          final var srcIndices = reindexRequest.getSearchRequest().indices()[0];
+          final var dstIndex = reindexRequest.getDestination().indices()[0];
+          final var srcCount = getNumberOfDocumentsFor(srcIndices);
+
+          final var taskIds = elasticsearchTask.getRunningReindexTasksIdsFor(srcIndices, dstIndex);
           final String taskId;
-          if (taskIds.isEmpty()) {
+
+          if (taskIds == null || taskIds.isEmpty()) {
+            // no running reindex task
+            if (checkDocumentCount) {
+              refreshAndRetryOnShardFailures(dstIndex + "*");
+              final var dstCount = getNumberOfDocumentsFor(dstIndex + "*");
+              if (srcCount == dstCount) {
+                LOGGER.info("Reindex of {} -> {} is already done.", srcIndices, dstIndex);
+                return true;
+              }
+            }
             taskId = esClient.submitReindexTask(reindexRequest, requestOptions).getTask();
           } else {
             LOGGER.info(
@@ -428,9 +441,17 @@ public class RetryElasticsearchClient {
             taskId = taskIds.get(0);
           }
           TimeUnit.of(ChronoUnit.MILLIS).sleep(2_000);
-          return waitUntilTaskIsCompleted(taskId, srcCount);
+          if (checkDocumentCount) {
+            return waitUntilTaskIsCompleted(taskId, srcCount);
+          } else {
+            return waitUntilTaskIsCompleted(taskId);
+          }
         },
         done -> !done);
+  }
+
+  private boolean waitUntilTaskIsCompleted(String taskId) {
+    return waitUntilTaskIsCompleted(taskId, null);
   }
 
   // Returns if task is completed under this conditions:
@@ -439,7 +460,7 @@ public class RetryElasticsearchClient {
   // - If the response has a status with uncompleted flag and a sum of changed documents
   // (created,updated and deleted documents) not equal to to total documents
   //   we need to wait and poll again the task status
-  private boolean waitUntilTaskIsCompleted(String taskId, long srcCount) {
+  private boolean waitUntilTaskIsCompleted(String taskId, Long srcCount) {
     final String[] taskIdParts = taskId.split(":");
     final String nodeId = taskIdParts[0];
     final Long smallTaskId = Long.parseLong(taskIdParts[1]);
@@ -448,7 +469,7 @@ public class RetryElasticsearchClient {
             Integer.MAX_VALUE,
             "GetTaskInfo{" + nodeId + "},{" + smallTaskId + "}",
             () -> {
-              elasticsearchTask.checkForErrorsOrFailures(nodeId, smallTaskId.intValue());
+              elasticsearchTask.checkForErrorsOrFailures(taskId);
               return esClient.tasks().get(new GetTaskRequest(nodeId, smallTaskId), requestOptions);
             },
             elasticsearchTask::needsToPollAgain);
