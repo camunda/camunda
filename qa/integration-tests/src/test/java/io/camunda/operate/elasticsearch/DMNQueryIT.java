@@ -35,22 +35,14 @@ public class DMNQueryIT extends OperateIntegrationTest {
   private DecisionInstanceTemplate decisionInstanceTemplate;
 
   @Autowired
-  private RestHighLevelClient esClient;
-
-  @Autowired
-  private ObjectMapper objectMapper;
+  private TestSearchRepository testSearchRepository;
 
   @Test
   public void testReadWriteDecisions() throws Exception {
     createData();
 
-    final SearchRequest searchRequest = new SearchRequest(decisionInstanceTemplate.getFullQualifiedName())
-        .source(new SearchSourceBuilder()
-        .query(matchAllQuery()));
-    final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
-    final List<DecisionInstanceEntity> decisionInstances = ElasticsearchUtil
-        .mapSearchHits(response.getHits().getHits(), objectMapper,
-            DecisionInstanceEntity.class);
+    final List<DecisionInstanceEntity> decisionInstances = testSearchRepository.searchAll(decisionInstanceTemplate.getFullQualifiedName(), DecisionInstanceEntity.class);
+
     assertThat(decisionInstances).hasSize(2);
     assertThat(decisionInstances.get(0).getEvaluatedInputs()).hasSize(2);
     assertThat(decisionInstances.get(0).getEvaluatedOutputs()).hasSize(2);
