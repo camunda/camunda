@@ -23,10 +23,10 @@ public final class EventScopeInstance extends UnpackedObject implements DbValue 
   private final BooleanProperty interruptedProp = new BooleanProperty("interrupted", false);
 
   private final ArrayProperty<StringValue> interruptingElementIdsProp =
-      new ArrayProperty<>("interrupting", new StringValue());
+      new ArrayProperty<>("interrupting", StringValue::new);
 
   private final ArrayProperty<StringValue> boundaryElementIdsProp =
-      new ArrayProperty<>("boundaryElementIds", new StringValue());
+      new ArrayProperty<>("boundaryElementIds", StringValue::new);
 
   public EventScopeInstance() {
     declareProperty(acceptingProp)

@@ -38,10 +38,10 @@ public final class EvaluatedDecisionRecord extends UnifiedRecordValue
   private final BinaryProperty decisionOutputProp = new BinaryProperty("decisionOutput");
 
   private final ArrayProperty<EvaluatedInputRecord> evaluatedInputsProp =
-      new ArrayProperty<>("evaluatedInputs", new EvaluatedInputRecord());
+      new ArrayProperty<>("evaluatedInputs", EvaluatedInputRecord::new);
 
   private final ArrayProperty<MatchedRuleRecord> matchedRulesProp =
-      new ArrayProperty<>("matchedRules", new MatchedRuleRecord());
+      new ArrayProperty<>("matchedRules", MatchedRuleRecord::new);
 
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);

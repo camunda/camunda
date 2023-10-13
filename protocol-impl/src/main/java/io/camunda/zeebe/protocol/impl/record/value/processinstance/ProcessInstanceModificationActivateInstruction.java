@@ -35,10 +35,10 @@ public final class ProcessInstanceModificationActivateInstruction extends Object
   private final ArrayProperty<ProcessInstanceModificationVariableInstruction>
       variableInstructionsProperty =
           new ArrayProperty<>(
-              "variableInstructions", new ProcessInstanceModificationVariableInstruction());
+              "variableInstructions", ProcessInstanceModificationVariableInstruction::new);
 
   private final ArrayProperty<LongValue> ancestorScopeKeysProperty =
-      new ArrayProperty<>("ancestorScopeKeys", new LongValue());
+      new ArrayProperty<>("ancestorScopeKeys", LongValue::new);
 
   public ProcessInstanceModificationActivateInstruction() {
     declareProperty(elementIdProperty)
