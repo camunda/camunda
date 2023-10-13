@@ -17,7 +17,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import io.camunda.tasklist.Application;
 import io.camunda.tasklist.es.ElasticsearchConnector;
-import io.camunda.tasklist.es.ElasticsearchTask;
+import io.camunda.tasklist.es.ElasticsearchInternalTask;
 import io.camunda.tasklist.es.RetryElasticsearchClient;
 import io.camunda.tasklist.management.HealthCheckIT.AddManagementPropertiesInitializer;
 import io.camunda.tasklist.property.TasklistProperties;
@@ -55,7 +55,7 @@ import org.springframework.web.context.WebApplicationContext;
       WebSecurityConfig.class,
       ElasticsearchSessionRepository.class,
       RetryElasticsearchClient.class,
-      ElasticsearchTask.class,
+      ElasticsearchInternalTask.class,
       TasklistProperties.class,
       ElasticsearchConnector.class
     },

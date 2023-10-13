@@ -12,15 +12,18 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.BDDMockito.given;
 
 import io.camunda.tasklist.es.ElasticsearchConnector;
-import io.camunda.tasklist.es.ElasticsearchTask;
+import io.camunda.tasklist.es.ElasticsearchInternalTask;
 import io.camunda.tasklist.es.RetryElasticsearchClient;
 import io.camunda.tasklist.management.HealthCheckIT.AddManagementPropertiesInitializer;
 import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.tasklist.util.TestUtil;
 import io.camunda.tasklist.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.tasklist.webapp.security.ElasticsearchSessionRepository;
 import io.camunda.tasklist.webapp.security.TasklistProfileService;
 import io.camunda.tasklist.webapp.security.WebSecurityConfig;
 import io.camunda.tasklist.webapp.security.oauth.OAuth2WebConfigurer;
+import org.junit.Assume;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,7 +48,7 @@ import org.springframework.test.context.junit4.SpringRunner;
       TasklistProfileService.class,
       ElasticsearchSessionRepository.class,
       RetryElasticsearchClient.class,
-      ElasticsearchTask.class,
+      ElasticsearchInternalTask.class,
       TasklistProperties.class,
       ElasticsearchConnector.class
     },
@@ -59,6 +62,11 @@ public class HealthCheckAuthenticationIT {
   @MockBean private SearchEngineHealthIndicator probes;
 
   @MockBean private OAuth2WebConfigurer oAuth2WebConfigurer;
+
+  @BeforeClass
+  public static void beforeClass() {
+    Assume.assumeTrue(TestUtil.isElasticSearch());
+  }
 
   @Test
   public void testHealthStateEndpointIsNotSecured() {

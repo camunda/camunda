@@ -99,7 +99,7 @@ public class RetryElasticsearchClient {
 
   @Autowired private RestHighLevelClient esClient;
 
-  @Autowired private ElasticsearchTask elasticsearchTask;
+  @Autowired private ElasticsearchInternalTask elasticsearchTask;
   private RequestOptions requestOptions = RequestOptions.DEFAULT;
   private int numberOfRetries = DEFAULT_NUMBER_OF_RETRIES;
   private int delayIntervalInSeconds = DEFAULT_DELAY_INTERVAL_IN_SECONDS;
@@ -406,17 +406,27 @@ public class RetryElasticsearchClient {
             + reindexRequest.getDestination().index(),
         () -> {
           final String srcIndices = reindexRequest.getSearchRequest().indices()[0];
+          final String dstIndex = reindexRequest.getDestination().indices()[0];
           final long srcCount = getNumberOfDocumentsFor(srcIndices);
           if (checkDocumentCount) {
-            final String dstIndex = reindexRequest.getDestination().indices()[0];
             final long dstCount = getNumberOfDocumentsFor(dstIndex + "*");
             if (srcCount == dstCount) {
               LOGGER.info("Reindex of {} -> {} is already done.", srcIndices, dstIndex);
               return true;
             }
           }
-          final String taskId =
-              esClient.submitReindexTask(reindexRequest, requestOptions).getTask();
+          final List<String> taskIds =
+              elasticsearchTask.getRunningReindexTasksIdsFor(srcIndices, dstIndex);
+          final String taskId;
+          if (taskIds.isEmpty()) {
+            taskId = esClient.submitReindexTask(reindexRequest, requestOptions).getTask();
+          } else {
+            LOGGER.info(
+                "There is an already running reindex task for [{}] -> [{}]. Will not submit another reindex task but wait for completion of this task",
+                srcIndices,
+                dstIndex);
+            taskId = taskIds.get(0);
+          }
           TimeUnit.of(ChronoUnit.MILLIS).sleep(2_000);
           return waitUntilTaskIsCompleted(taskId, srcCount);
         },

@@ -342,19 +342,31 @@ public class RetryOpenSearchClient {
             + reindexRequest.dest().index(),
         () -> {
           final String srcIndices = reindexRequest.source().index().get(0);
+          final String dstIndex = reindexRequest.dest().index();
           final long srcCount = getNumberOfDocumentsFor(srcIndices);
           if (checkDocumentCount) {
-            final String dstIndex = reindexRequest.dest().index();
+
             final long dstCount = getNumberOfDocumentsFor(dstIndex + "*");
             if (srcCount == dstCount) {
               LOGGER.info("Reindex of {} -> {} is already done.", srcIndices, dstIndex);
               return true;
             }
           }
-          final ReindexResponse reindex = openSearchClient.reindex(reindexRequest);
-          final String task = reindex.task();
+          final List<String> taskIds =
+              openSearchTask.getRunningReindexTasksIdsFor(srcIndices, dstIndex);
+          final String taskId;
+          if (taskIds.isEmpty()) {
+            taskId = openSearchClient.reindex(reindexRequest).task();
+          } else {
+            LOGGER.info(
+                "There is an already running reindex task for [{}] -> [{}]. Will not submit another reindex task but wait for completion of this task",
+                srcIndices,
+                dstIndex);
+            taskId = taskIds.get(0);
+          }
+
           TimeUnit.of(ChronoUnit.MILLIS).sleep(2_000);
-          return waitUntilTaskIsCompleted(task, srcCount);
+          return waitUntilTaskIsCompleted(taskId, srcCount);
         },
         done -> !done);
   }
@@ -386,34 +398,6 @@ public class RetryOpenSearchClient {
       return false;
     }
   }
-
-  /*public int doWithEachSearchResult(
-      SearchRequest searchRequest, Consumer<SearchHit> searchHitConsumer) {
-    return executeWithRetries(
-        () -> {
-          int doneOnSearchHits = 0;
-          searchRequest.scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
-          SearchResponse response = esClient.search(searchRequest, requestOptions);
-
-          String scrollId = null;
-          while (response.getHits().getHits().length > 0) {
-            Arrays.stream(response.getHits().getHits()).sequential().forEach(searchHitConsumer);
-            doneOnSearchHits += response.getHits().getHits().length;
-
-            scrollId = response.getScrollId();
-            final SearchScrollRequest scrollRequest =
-                new SearchScrollRequest(scrollId)
-                    .scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
-            response = esClient.scroll(scrollRequest, requestOptions);
-          }
-          if (scrollId != null) {
-            final ClearScrollRequest clearScrollRequest = new ClearScrollRequest();
-            clearScrollRequest.addScrollId(scrollId);
-            esClient.clearScroll(clearScrollRequest, requestOptions);
-          }
-          return doneOnSearchHits;
-        });
-  }*/
 
   public <T> List<T> searchWithScroll(
       SearchRequest searchRequest, Class<T> resultClass, ObjectMapper objectMapper) {
