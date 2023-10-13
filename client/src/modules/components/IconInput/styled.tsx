@@ -12,12 +12,16 @@ import {
   IconButton as BaseIconButton,
 } from '@carbon/react';
 
+const SCROLLBAR_WIDTH = 5;
+const ICON_WIDTH = 32;
+const RIGHT_SPACING = 8;
+
 const IconButton = styled(BaseIconButton)`
   min-height: calc(2rem - 4px);
   margin: 2px 0;
 `;
 
-const IconContainer = styled.div<{$isTextArea?: boolean}>`
+const IconContainer = styled.div<{$isTextArea?: boolean; $isInvalid?: boolean}>`
   position: absolute;
 
   ${({$isTextArea}) =>
@@ -29,27 +33,55 @@ const IconContainer = styled.div<{$isTextArea?: boolean}>`
           bottom: 0;
         `}
 
-  right: 0;
-`;
-
-const getInputStyles = (invalid?: boolean) => {
-  return invalid
-    ? css`
-        padding-right: var(--cds-spacing-11);
-      `
-    : css`
-        padding-right: var(--cds-spacing-07);
+  ${({$isTextArea, $isInvalid}) => {
+    if ($isTextArea) {
+      return $isInvalid
+        ? css`
+            right: ${SCROLLBAR_WIDTH}px;
+          `
+        : css`
+            right: calc(${RIGHT_SPACING}px + ${SCROLLBAR_WIDTH}px);
+          `;
+    } else {
+      return css`
+        right: 0;
       `;
-};
+    }
+  }}
+`;
 
 const TextInput = styled(BaseTextInput)`
   input {
-    ${({invalid}) => getInputStyles(invalid)}
+    ${({invalid}) =>
+      invalid
+        ? // padding for warning icon, icon button
+          css`
+            padding-right: calc(
+              ${ICON_WIDTH}px + ${ICON_WIDTH}px + ${RIGHT_SPACING}px
+            );
+          `
+        : // padding for icon button
+          css`
+            padding-right: ${ICON_WIDTH}px;
+          `}
   }
 `;
 const TextArea = styled(BaseTextArea)`
   textarea {
-    ${({invalid}) => getInputStyles(invalid)}
+    ${({invalid}) =>
+      invalid
+        ? // padding for warning icon, icon button and scrollbar
+          css`
+            padding-right: calc(
+              ${ICON_WIDTH}px + ${ICON_WIDTH}px + ${SCROLLBAR_WIDTH}px
+            );
+          `
+        : // padding for icon button and scrollbar
+          css`
+            padding-right: calc(
+              ${ICON_WIDTH}px + ${SCROLLBAR_WIDTH}px + ${RIGHT_SPACING}px
+            );
+          `}
   }
 `;
 

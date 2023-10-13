@@ -31,7 +31,7 @@ const IconTextArea: React.FC<Props> = ({
   return (
     <Container $isInvalid={invalid}>
       <TextArea invalid={invalid} {...props} />
-      <IconContainer $isTextArea>
+      <IconContainer $isTextArea $isInvalid={invalid}>
         <IconButton
           kind="ghost"
           size="sm"
