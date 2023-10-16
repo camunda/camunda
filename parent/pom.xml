@@ -1014,14 +1014,13 @@
         <scope>import</scope>
       </dependency>
 
-      <!-- Dependencies present for convergence only -->
-      <!-- between duct-tape (from testcontainers) and kotlin-stdlib (from identity-sdk) -->
       <dependency>
         <groupId>org.jetbrains</groupId>
         <artifactId>annotations</artifactId>
         <version>${version.jetbrains-annotations}</version>
       </dependency>
 
+      <!-- Dependencies present for convergence only -->
       <!-- between log4j2 and commons-compress (from testcontainers) -->
       <dependency>
         <groupId>org.osgi</groupId>
