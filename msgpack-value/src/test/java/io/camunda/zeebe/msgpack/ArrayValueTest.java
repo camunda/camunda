@@ -17,8 +17,6 @@ import io.camunda.zeebe.msgpack.value.BaseValue;
 import io.camunda.zeebe.msgpack.value.IntegerValue;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -37,7 +35,7 @@ public final class ArrayValueTest {
   @Rule public final ExpectedException exception = ExpectedException.none();
   private final MsgPackWriter writer = new MsgPackWriter();
   private final MsgPackReader reader = new MsgPackReader();
-  private final ArrayValue<IntegerValue> array = new ArrayValue<>(new IntegerValue());
+  private final ArrayValue<IntegerValue> array = new ArrayValue<IntegerValue>(IntegerValue::new);
 
   @Test
   public void shouldAppendValues() {
@@ -213,7 +211,7 @@ public final class ArrayValueTest {
   @Test
   public void shouldUpdateWithSmallerValue() {
     // given
-    final ArrayValue<StringValue> array = new ArrayValue<>(new StringValue());
+    final ArrayValue<StringValue> array = new ArrayValue<StringValue>(StringValue::new);
     addStringValues(array, "foo", "bar", "baz");
 
     // when
@@ -233,7 +231,7 @@ public final class ArrayValueTest {
   @Test
   public void shouldUpdateWithBiggerValue() {
     // given
-    final ArrayValue<StringValue> array = new ArrayValue<>(new StringValue());
+    final ArrayValue<StringValue> array = new ArrayValue<StringValue>(StringValue::new);
     addStringValues(array, "foo", "bar", "baz");
 
     // when
@@ -298,12 +296,12 @@ public final class ArrayValueTest {
   @Test
   public void shouldSerializeUndeclaredProperties() {
     // given
-    final ArrayValue<Foo> fooArray = new ArrayValue<>(new Foo());
+    final ArrayValue<Foo> fooArray = new ArrayValue<Foo>(Foo::new);
     fooArray.add().setFoo("foo").setBar("bar");
 
     final DirectBuffer buffer = encode(fooArray);
 
-    final ArrayValue<Bar> barArray = new ArrayValue<>(new Bar());
+    final ArrayValue<Bar> barArray = new ArrayValue<Bar>(Bar::new);
 
     // when
     decode(barArray, buffer);
@@ -356,7 +354,7 @@ public final class ArrayValueTest {
   @Test
   public void shouldWriteJson() {
     // given
-    final ArrayValue<MinimalPOJO> array = new ArrayValue<>(new MinimalPOJO());
+    final ArrayValue<MinimalPOJO> array = new ArrayValue<MinimalPOJO>(MinimalPOJO::new);
     array.add().setLongProp(1);
     array.add().setLongProp(2);
     array.add().setLongProp(3);

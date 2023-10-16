@@ -10,8 +10,9 @@ package io.camunda.zeebe.msgpack.property;
 import io.camunda.zeebe.msgpack.MsgpackPropertyException;
 import io.camunda.zeebe.msgpack.value.ArrayValue;
 import io.camunda.zeebe.msgpack.value.BaseValue;
+import io.camunda.zeebe.msgpack.value.MutableArrayValueIterator;
 import io.camunda.zeebe.msgpack.value.ValueArray;
-import java.util.Iterator;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -22,6 +23,11 @@ public final class ArrayProperty<T extends BaseValue> extends BaseProperty<Array
     isSet = true;
   }
 
+  public ArrayProperty(final String keyString, final Supplier<T> innerValueFactory) {
+    super(keyString, new ArrayValue<>(innerValueFactory));
+    isSet = true;
+  }
+
   @Override
   public void reset() {
     super.reset();
@@ -29,7 +35,7 @@ public final class ArrayProperty<T extends BaseValue> extends BaseProperty<Array
   }
 
   @Override
-  public Iterator<T> iterator() {
+  public MutableArrayValueIterator<T> iterator() {
     return resolveValue().iterator();
   }
 
