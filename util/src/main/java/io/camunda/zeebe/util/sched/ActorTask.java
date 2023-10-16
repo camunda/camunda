@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
+import org.jetbrains.annotations.Async;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -97,7 +98,7 @@ public class ActorTask {
   }
 
   /** Used to externally submit a job. */
-  public void submit(final ActorJob job) {
+  public void submit(@Async.Schedule final ActorJob job) {
     // get reference to jobs queue
     final Queue<ActorJob> submittedJobs = this.submittedJobs;
 
@@ -531,7 +532,7 @@ public class ActorTask {
     actorThreadGroup.submit(this);
   }
 
-  public void insertJob(final ActorJob job) {
+  public void insertJob(@Async.Schedule final ActorJob job) {
     fastLaneJobs.addFirst(job);
   }
 
