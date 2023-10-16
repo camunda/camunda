@@ -157,6 +157,33 @@ public final class Partition {
     return result;
   }
 
+  public ActorFuture<Void> reconfigurePriority(final int newPriority) {
+    final var concurrencyControl = context.concurrencyControl();
+    final var result = concurrencyControl.<Void>createFuture();
+    concurrencyControl.run(
+        () -> {
+          final var raftPartition = raftPartition();
+          if (raftPartition == null) {
+            result.completeExceptionally(
+                new IllegalStateException("Raft partition is not available"));
+            return;
+          }
+          raftPartition
+              .getServer()
+              .reconfigurePriority(newPriority)
+              .whenComplete(
+                  (configureOk, configureError) -> {
+                    if (configureError != null) {
+                      result.completeExceptionally(configureError);
+                    } else {
+                      result.complete(null);
+                    }
+                  });
+        });
+
+    return result;
+  }
+
   public ZeebePartition zeebePartition() {
     return context.zeebePartition();
   }

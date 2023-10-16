@@ -40,4 +40,13 @@ public interface PartitionChangeExecutor {
    * @return a future that completes when the partition is stopped and removed from the replication.
    */
   ActorFuture<Void> leave(int partitionId);
+
+  /**
+   * Updates the priority of the member used for raft priority election for the given partition.
+   *
+   * @param partitionId id of hte partition
+   * @param newPriority new priority value
+   * @return a future that completes when the priority is updated
+   */
+  ActorFuture<Void> reconfigurePriority(int partitionId, int newPriority);
 }
