@@ -12,7 +12,7 @@ import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.schema.indices.DecisionIndex;
 import io.camunda.operate.schema.indices.DecisionRequirementsIndex;
 import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
-import io.camunda.operate.util.OperateZeebeIntegrationTest;
+import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.webapp.writer.DecisionWriter;
 import java.io.IOException;
 import java.util.Arrays;
@@ -30,7 +30,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-public class DecisionWriterIT extends OperateZeebeIntegrationTest {
+public class DecisionWriterIT extends OperateZeebeAbstractIT {
 
   @Autowired
   private DecisionWriter decisionWriter;

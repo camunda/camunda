@@ -11,11 +11,6 @@
   <name>Operate QA Integration Tests</name>
   <artifactId>operate-qa-it-tests</artifactId>
 
-    <properties>
-        <skipIntegrationTests>false</skipIntegrationTests>
-        <failOnMissingTests>true</failOnMissingTests>
-    </properties>
-
   <dependencies>
 
     <dependency>
@@ -167,8 +162,6 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
         <configuration>
-            <failIfNoTests>${failOnMissingTests}</failIfNoTests>
-            <skipITs>${skipIntegrationTests}</skipITs>
             <systemPropertyVariables>
               <spring.profiles.active>test</spring.profiles.active>
             </systemPropertyVariables>
@@ -178,14 +171,6 @@
   </build>
 
   <profiles>
-
-      <profile>
-          <id>skip-its</id>
-          <properties>
-              <skipIntegrationTests>true</skipIntegrationTests>
-              <failOnMissingTests>false</failOnMissingTests>
-          </properties>
-      </profile>
     <profile>
       <id>old-zeebe</id>
       <dependencyManagement>
@@ -241,7 +226,9 @@
     <profile>
       <id>docker</id>
       <activation>
-        <activeByDefault>true</activeByDefault>
+          <property>
+              <name>!skipDockerProfile</name>
+          </property>
       </activation>
       <build>
         <plugins>

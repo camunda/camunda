@@ -9,7 +9,7 @@ package io.camunda.operate.util;
 import static io.camunda.operate.entities.ErrorType.JOB_NO_RETRIES;
 import static io.camunda.operate.property.OperationExecutorProperties.LOCK_TIMEOUT_DEFAULT;
 import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
-import static io.camunda.operate.util.OperateIntegrationTest.DEFAULT_USER;
+import static io.camunda.operate.util.OperateAbstractIT.DEFAULT_USER;
 
 import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.entities.FlowNodeState;

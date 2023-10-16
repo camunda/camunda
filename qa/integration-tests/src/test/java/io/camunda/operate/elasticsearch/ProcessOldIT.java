@@ -8,7 +8,7 @@ package io.camunda.operate.elasticsearch;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.camunda.operate.entities.ProcessEntity;
-import io.camunda.operate.util.OperateIntegrationTest;
+import io.camunda.operate.util.OperateAbstractIT;
 import io.camunda.operate.util.SearchTestRule;
 import io.camunda.operate.webapp.rest.ProcessRestService;
 import io.camunda.operate.webapp.rest.dto.ProcessGroupDto;
@@ -31,7 +31,7 @@ import static org.mockito.Mockito.when;
  */
 @Deprecated
 //TODO remove when GET /api/processes/grouped is removed
-public class ProcessOldIT extends OperateIntegrationTest {
+public class ProcessOldIT extends OperateAbstractIT {
 
   private static final String QUERY_PROCESS_GROUPED_URL = ProcessRestService.PROCESS_URL + "/grouped";
 

@@ -23,7 +23,7 @@ import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.util.SearchTestRule;
-import io.camunda.operate.util.OperateIntegrationTest;
+import io.camunda.operate.util.OperateAbstractIT;
 import io.camunda.operate.webapp.rest.dto.SortingDto;
 import io.camunda.operate.webapp.rest.dto.dmn.DecisionInstanceStateDto;
 import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceForListDto;
@@ -48,7 +48,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 /**
  * Tests Elasticsearch queries for decision instances.
  */
-public class DecisionListQueryIT extends OperateIntegrationTest {
+public class DecisionListQueryIT extends OperateAbstractIT {
 
   private static final String QUERY_INSTANCES_URL = DECISION_INSTANCE_URL;
 

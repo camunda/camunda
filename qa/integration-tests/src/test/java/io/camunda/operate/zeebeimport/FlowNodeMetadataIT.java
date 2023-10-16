@@ -21,7 +21,7 @@ import io.camunda.operate.entities.EventType;
 import io.camunda.operate.entities.FlowNodeInstanceEntity;
 import io.camunda.operate.entities.FlowNodeType;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
-import io.camunda.operate.util.OperateZeebeIntegrationTest;
+import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.reader.ListViewReader;
 import io.camunda.operate.webapp.rest.dto.ProcessInstanceReferenceDto;
@@ -46,7 +46,7 @@ import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MvcResult;
 
-public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
+public class FlowNodeMetadataIT extends OperateZeebeAbstractIT {
 
   @Autowired
   private CancelProcessInstanceHandler cancelProcessInstanceHandler;

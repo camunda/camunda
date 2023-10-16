@@ -12,8 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.operate.entities.dmn.DecisionType;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
-import io.camunda.operate.util.OperateZeebeIntegrationTest;
-import io.camunda.operate.util.ThreadUtil;
+import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.webapp.api.v1.entities.*;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
@@ -35,7 +34,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-public class ElasticsearchDecisionInstanceDaoIT extends OperateZeebeIntegrationTest {
+public class ElasticsearchDecisionInstanceDaoIT extends OperateZeebeAbstractIT {
 
   protected static final Logger logger = LoggerFactory.getLogger(ElasticsearchDecisionInstanceDaoIT.class);
 

@@ -18,7 +18,7 @@ import io.camunda.operate.entities.OperationState;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceState;
 import io.camunda.operate.util.SearchTestRule;
-import io.camunda.operate.util.OperateIntegrationTest;
+import io.camunda.operate.util.OperateAbstractIT;
 import io.camunda.operate.util.TestUtil;
 import io.camunda.operate.webapp.rest.dto.VariableDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
@@ -44,7 +44,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * Tests retrieval of operation taking into account current user name.
  */
-public class OperationReaderIT extends OperateIntegrationTest {
+public class OperationReaderIT extends OperateAbstractIT {
 
   private static final String QUERY_LIST_VIEW_URL = PROCESS_INSTANCE_URL;
 

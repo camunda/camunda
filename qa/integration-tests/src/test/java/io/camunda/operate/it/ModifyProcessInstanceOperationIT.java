@@ -8,7 +8,7 @@ package io.camunda.operate.it;
 
 import io.camunda.operate.entities.FlowNodeInstanceEntity;
 import io.camunda.operate.entities.FlowNodeState;
-import io.camunda.operate.util.OperateZeebeIntegrationTest;
+import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeStateDto;
 import static io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.*;
@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
 import static org.assertj.core.api.Assertions.fail;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-public class ModifyProcessInstanceOperationIT extends OperateZeebeIntegrationTest {
+public class ModifyProcessInstanceOperationIT extends OperateZeebeAbstractIT {
 
   @Autowired
   private ModifyProcessInstanceHandler modifyProcessInstanceHandler;

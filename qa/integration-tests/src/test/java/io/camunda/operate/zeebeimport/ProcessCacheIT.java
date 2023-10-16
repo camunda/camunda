@@ -11,14 +11,14 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import io.camunda.operate.util.OperateZeebeIntegrationTest;
+import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.util.ZeebeTestUtil;
 import io.camunda.operate.cache.ProcessCache;
 import org.junit.After;
 import org.junit.Test;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 
-public class ProcessCacheIT extends OperateZeebeIntegrationTest {
+public class ProcessCacheIT extends OperateZeebeAbstractIT {
 
   @SpyBean
   private ProcessCache processCache;

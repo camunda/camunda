@@ -16,7 +16,7 @@ import static org.assertj.core.api.Assertions.fail;
 
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.schema.indices.DecisionRequirementsIndex;
-import io.camunda.operate.util.OperateZeebeIntegrationTest;
+import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.webapp.api.v1.entities.DecisionRequirements;
 import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.Results;
@@ -43,7 +43,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class ElasticsearchDecisionRequirementsDaoIT extends OperateZeebeIntegrationTest {
+public class ElasticsearchDecisionRequirementsDaoIT extends OperateZeebeAbstractIT {
 
   @Autowired
   ElasticsearchDecisionRequirementsDao dao;

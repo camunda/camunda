@@ -8,7 +8,7 @@ package io.camunda.operate.zeebeimport;
 
 import io.camunda.operate.entities.FlowNodeInstanceEntity;
 import io.camunda.operate.entities.FlowNodeType;
-import io.camunda.operate.util.OperateZeebeIntegrationTest;
+import io.camunda.operate.util.OperateZeebeAbstractIT;
 import java.util.List;
 import org.junit.Test;
 import org.springframework.test.annotation.IfProfileValue;
@@ -16,7 +16,7 @@ import org.springframework.test.annotation.IfProfileValue;
 import static io.camunda.operate.util.CollectionUtil.map;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class IntermediateThrowEventIT extends OperateZeebeIntegrationTest {
+public class IntermediateThrowEventIT extends OperateZeebeAbstractIT {
 
   @Test
   @IfProfileValue(name="spring.profiles.active", value="test")

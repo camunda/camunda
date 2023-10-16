@@ -29,7 +29,7 @@ import io.camunda.operate.entities.listview.VariableForListViewEntity;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.SearchTestRule;
-import io.camunda.operate.util.OperateIntegrationTest;
+import io.camunda.operate.util.OperateAbstractIT;
 import io.camunda.operate.util.TestUtil;
 import io.camunda.operate.webapp.rest.dto.SortingDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
@@ -56,7 +56,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 /**
  * Tests Elasticsearch queries for process instances.
  */
-public class ListViewQueryIT extends OperateIntegrationTest {
+public class ListViewQueryIT extends OperateAbstractIT {
 
   private static final String QUERY_INSTANCES_URL = PROCESS_INSTANCE_URL;
 

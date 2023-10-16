@@ -30,7 +30,7 @@ import io.camunda.operate.store.NotFoundException;
 import io.camunda.operate.store.SequenceFlowStore;
 import io.camunda.operate.util.ConversionUtils;
 import io.camunda.operate.util.ElasticsearchUtil;
-import io.camunda.operate.util.OperateZeebeIntegrationTest;
+import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.util.ZeebeTestUtil;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
@@ -58,7 +58,7 @@ import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MvcResult;
 
-public class ImportIT extends OperateZeebeIntegrationTest {
+public class ImportIT extends OperateZeebeAbstractIT {
 
   @Autowired
   private ProcessInstanceReader processInstanceReader;

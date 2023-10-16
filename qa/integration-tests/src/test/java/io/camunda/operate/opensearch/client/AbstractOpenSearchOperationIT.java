@@ -9,7 +9,7 @@ package io.camunda.operate.opensearch.client;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.SchemaManager;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
-import io.camunda.operate.util.OpensearchOperateIntegrationTest;
+import io.camunda.operate.util.OpensearchOperateAbstractIT;
 import io.camunda.operate.util.TestUtil;
 import org.junit.After;
 import org.junit.Before;
@@ -18,7 +18,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 
 import java.util.function.Function;
 
-public abstract class AbstractOpenSearchOperationIT extends OpensearchOperateIntegrationTest {
+public abstract class AbstractOpenSearchOperationIT extends OpensearchOperateAbstractIT {
   @Autowired
   protected RichOpenSearchClient richOpenSearchClient;
 

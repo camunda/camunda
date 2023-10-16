@@ -12,7 +12,7 @@ import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.schema.indices.ProcessIndex;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.store.ProcessStore;
-import io.camunda.operate.util.OperateZeebeIntegrationTest;
+import io.camunda.operate.util.OperateZeebeAbstractIT;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -32,7 +32,7 @@ import static io.camunda.operate.util.ElasticsearchUtil.QueryType;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertTrue;
 
-public class ProcessStoreIT extends OperateZeebeIntegrationTest {
+public class ProcessStoreIT extends OperateZeebeAbstractIT {
 
   private static final String DEMO_PROCESS_RESOURCE = "demoProcess_v_3.bpmn";
   private static final String DEMO_PROCESS_BPMN_ID = "demoProcess";

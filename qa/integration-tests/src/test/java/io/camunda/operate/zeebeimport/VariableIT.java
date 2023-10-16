@@ -23,7 +23,7 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.util.List;
 import io.camunda.operate.entities.FlowNodeInstanceEntity;
-import io.camunda.operate.util.OperateZeebeIntegrationTest;
+import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.util.ZeebeTestUtil;
 import io.camunda.operate.webapp.rest.dto.VariableDto;
 import io.camunda.operate.webapp.rest.dto.VariableRequestDto;
@@ -34,7 +34,7 @@ import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MvcResult;
 
-public class VariableIT extends OperateZeebeIntegrationTest {
+public class VariableIT extends OperateZeebeAbstractIT {
 
   @Autowired
   private FlowNodeInstanceReader flowNodeInstanceReader;

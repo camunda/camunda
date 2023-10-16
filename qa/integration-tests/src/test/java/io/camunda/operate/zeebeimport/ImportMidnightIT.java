@@ -24,7 +24,7 @@ import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceState;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.SearchTestRule;
-import io.camunda.operate.util.OperateZeebeIntegrationTest;
+import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.util.ZeebeTestUtil;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.zeebeimport.elasticsearch.ElasticsearchRecordsReader;
@@ -53,7 +53,7 @@ import static org.mockito.Mockito.when;
         OperateProperties.PREFIX + ".importer.threadsCount = 1",
         OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",
         "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER"})
-public class ImportMidnightIT extends OperateZeebeIntegrationTest {
+public class ImportMidnightIT extends OperateZeebeAbstractIT {
 
   @Autowired
   private ProcessInstanceReader processInstanceReader;

@@ -20,7 +20,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import io.camunda.operate.entities.FlowNodeType;
 import io.camunda.operate.util.ConversionUtils;
-import io.camunda.operate.util.OperateZeebeIntegrationTest;
+import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.util.ZeebeTestUtil;
 import io.camunda.operate.webapp.rest.ProcessInstanceRestService;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceDto;
@@ -34,7 +34,7 @@ import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MvcResult;
 
-public class FlowNodeInstanceIT extends OperateZeebeIntegrationTest {
+public class FlowNodeInstanceIT extends OperateZeebeAbstractIT {
 
   @Autowired
   private IncidentReader incidentReader;

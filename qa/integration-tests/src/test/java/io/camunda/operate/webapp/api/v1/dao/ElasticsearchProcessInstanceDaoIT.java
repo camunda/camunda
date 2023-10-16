@@ -12,7 +12,7 @@ import static io.camunda.operate.webapp.api.v1.entities.ProcessInstance.PROCESS_
 import static io.camunda.operate.webapp.api.v1.entities.ProcessInstance.VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.operate.util.OperateZeebeIntegrationTest;
+import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.webapp.api.v1.entities.ChangeStatus;
 import io.camunda.operate.webapp.api.v1.entities.ProcessInstance;
 import io.camunda.operate.webapp.api.v1.entities.Query;
@@ -29,7 +29,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-public class ElasticsearchProcessInstanceDaoIT extends OperateZeebeIntegrationTest {
+public class ElasticsearchProcessInstanceDaoIT extends OperateZeebeAbstractIT {
 
   @Autowired
   private ElasticsearchProcessInstanceDao dao;

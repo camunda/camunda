@@ -32,7 +32,7 @@ import io.camunda.operate.webapp.rest.dto.ProcessInstanceCoreStatisticsDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.SearchTestRule;
-import io.camunda.operate.util.OperateIntegrationTest;
+import io.camunda.operate.util.OperateAbstractIT;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.identity.PermissionsService;
@@ -44,7 +44,7 @@ import org.springframework.test.web.servlet.MvcResult;
 /**
  * Tests Elasticsearch query for process statistics.
  */
-public class ProcessStatisticsIT extends OperateIntegrationTest {
+public class ProcessStatisticsIT extends OperateAbstractIT {
 
   private static final String QUERY_PROCESS_STATISTICS_URL = "/api/process-instances/statistics";
   private static final String QUERY_PROCESS_CORE_STATISTICS_URL = "/api/process-instances/core-statistics";

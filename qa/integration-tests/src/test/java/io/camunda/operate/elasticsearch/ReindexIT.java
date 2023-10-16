@@ -11,14 +11,13 @@ import io.camunda.operate.schema.elasticsearch.ElasticsearchSchemaManager;
 import io.camunda.operate.schema.migration.Plan;
 import io.camunda.operate.schema.migration.ReindexPlan;
 import io.camunda.operate.store.elasticsearch.RetryElasticsearchClient;
-import io.camunda.operate.util.OperateIntegrationTest;
+import io.camunda.operate.util.OperateAbstractIT;
 import org.apache.logging.log4j.junit.LoggerContextRule;
 import org.apache.logging.log4j.test.appender.ListAppender;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import io.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -26,9 +25,6 @@ import org.junit.Test;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 import java.util.stream.IntStream;
 
 import static io.camunda.operate.schema.SchemaManager.NO_REFRESH;
@@ -37,7 +33,7 @@ import static io.camunda.operate.schema.SchemaManager.NUMBERS_OF_REPLICA;
 import static io.camunda.operate.schema.SchemaManager.REFRESH_INTERVAL;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class ReindexIT extends OperateIntegrationTest {
+public class ReindexIT extends OperateAbstractIT {
 
   @Autowired
   private RetryElasticsearchClient retryElasticsearchClient;

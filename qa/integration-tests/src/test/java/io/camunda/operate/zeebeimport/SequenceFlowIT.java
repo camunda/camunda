@@ -15,7 +15,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.util.List;
 import io.camunda.operate.webapp.rest.dto.SequenceFlowDto;
 import io.camunda.operate.schema.templates.SequenceFlowTemplate;
-import io.camunda.operate.util.OperateZeebeIntegrationTest;
+import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.util.ZeebeTestUtil;
 import org.junit.Test;
 import org.springframework.test.web.servlet.MvcResult;
@@ -23,7 +23,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 
-public class SequenceFlowIT extends OperateZeebeIntegrationTest {
+public class SequenceFlowIT extends OperateZeebeAbstractIT {
 
   protected String getSequenceFlowURL(Long processInstanceKey) {
     return String.format(PROCESS_INSTANCE_URL + "/%s/sequence-flows", processInstanceKey);

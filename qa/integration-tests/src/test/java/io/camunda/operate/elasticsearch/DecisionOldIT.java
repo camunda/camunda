@@ -8,7 +8,7 @@ package io.camunda.operate.elasticsearch;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.camunda.operate.entities.dmn.definition.DecisionDefinitionEntity;
-import io.camunda.operate.util.OperateIntegrationTest;
+import io.camunda.operate.util.OperateAbstractIT;
 import io.camunda.operate.util.SearchTestRule;
 import io.camunda.operate.webapp.rest.DecisionRestService;
 import io.camunda.operate.webapp.rest.dto.dmn.DecisionGroupDto;
@@ -29,7 +29,7 @@ import static org.mockito.Mockito.when;
 /**
  * Tests Elasticsearch queries for decision.
  */
-public class DecisionOldIT extends OperateIntegrationTest {
+public class DecisionOldIT extends OperateAbstractIT {
 
   private static final String QUERY_DECISION_GROUPED_URL = DecisionRestService.DECISION_URL + "/grouped";
 

@@ -16,12 +16,12 @@ import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.store.NotFoundException;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
-import io.camunda.operate.util.OperateZeebeIntegrationTest;
+import io.camunda.operate.util.OperateZeebeAbstractIT;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-public class ProcessInstanceReaderIT extends OperateZeebeIntegrationTest {
+public class ProcessInstanceReaderIT extends OperateZeebeAbstractIT {
 
   @Autowired
   private ProcessInstanceReader processInstanceReader;

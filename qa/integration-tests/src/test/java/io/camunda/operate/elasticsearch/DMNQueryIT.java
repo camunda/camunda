@@ -8,25 +8,18 @@ package io.camunda.operate.elasticsearch;
 
 import static io.camunda.operate.util.TestUtil.createDecisionInstanceEntity;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.entities.dmn.DecisionInstanceEntity;
 import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
 import io.camunda.operate.util.SearchTestRule;
-import io.camunda.operate.util.ElasticsearchUtil;
-import io.camunda.operate.util.OperateIntegrationTest;
+import io.camunda.operate.util.OperateAbstractIT;
 import java.util.List;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-public class DMNQueryIT extends OperateIntegrationTest {
+public class DMNQueryIT extends OperateAbstractIT {
 
   @Rule
   public SearchTestRule searchTestRule = new SearchTestRule();

@@ -27,7 +27,7 @@ import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.schema.templates.OperationTemplate;
 import io.camunda.operate.util.ConversionUtils;
-import io.camunda.operate.util.OperateZeebeIntegrationTest;
+import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.util.ZeebeTestUtil;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.reader.*;
@@ -59,7 +59,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
-public class OperationIT extends OperateZeebeIntegrationTest {
+public class OperationIT extends OperateZeebeAbstractIT {
 
   private static final String QUERY_INSTANCES_URL = PROCESS_INSTANCE_URL;
 

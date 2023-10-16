@@ -30,7 +30,7 @@ import io.camunda.operate.webapp.rest.dto.incidents.IncidentByProcessStatisticsD
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentsByErrorMsgStatisticsDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentsByProcessGroupStatisticsDto;
 import io.camunda.operate.util.SearchTestRule;
-import io.camunda.operate.util.OperateIntegrationTest;
+import io.camunda.operate.util.OperateAbstractIT;
 import io.camunda.operate.util.TestUtil;
 
 import java.util.Objects;
@@ -44,7 +44,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.boot.test.mock.mockito.MockBean;
 
-public class IncidentStatisticsIT extends OperateIntegrationTest {
+public class IncidentStatisticsIT extends OperateAbstractIT {
 
   private static final String QUERY_INCIDENTS_BY_PROCESS_URL = INCIDENT_URL + "/byProcess";
   private static final String QUERY_INCIDENTS_BY_ERROR_URL = INCIDENT_URL + "/byError";

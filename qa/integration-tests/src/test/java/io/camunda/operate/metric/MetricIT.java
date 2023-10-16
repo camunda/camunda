@@ -12,14 +12,12 @@ import static org.hamcrest.CoreMatchers.containsString;
 
 import io.camunda.operate.Metrics;
 import io.camunda.operate.management.ModelMetricProvider;
-import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.util.TestApplication;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.operate.entities.OperationState;
 import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.util.MetricAssert;
-import io.camunda.operate.util.OperateZeebeIntegrationTest;
+import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.webapp.zeebe.operation.CancelProcessInstanceHandler;
 import io.camunda.operate.webapp.zeebe.operation.ResolveIncidentHandler;
 import io.camunda.operate.webapp.zeebe.operation.UpdateVariableHandler;
@@ -27,8 +25,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-public class MetricIT extends OperateZeebeIntegrationTest {
-  
+public class MetricIT extends OperateZeebeAbstractIT {
+
   @Autowired
   private CancelProcessInstanceHandler cancelProcessInstanceHandler;
 
@@ -57,7 +55,7 @@ public class MetricIT extends OperateZeebeIntegrationTest {
     updateVariableHandler.setZeebeClient(zeebeClient);
   }
 
-  @Test // OPE-624 
+  @Test // OPE-624
   public void testProcessedEventsDuringImport() {
     // Given metrics are enabled
     // When
@@ -72,8 +70,8 @@ public class MetricIT extends OperateZeebeIntegrationTest {
         containsString("operate_import_index_query")
     ));
   }
-  
-  @Test // OPE-624 
+
+  @Test // OPE-624
   public void testProcessedEventsDuringImportWithIncidents() {
     // Given metrics are enabled
     // When
@@ -85,7 +83,7 @@ public class MetricIT extends OperateZeebeIntegrationTest {
     // Then
     assertThatMetricsFrom(mockMvc, containsString("operate_events_processed_total"));
   }
-  
+
   @Test // OPE-642
   public void testOperationThatSucceeded() throws Exception {
     // Given metrics are enabled
@@ -101,7 +99,7 @@ public class MetricIT extends OperateZeebeIntegrationTest {
         new MetricAssert.ValueMatcher("operate_commands_total{status=\"" + OperationState.SENT + "\",type=\"" + OperationType.UPDATE_VARIABLE + "\",}",
             d -> d.doubleValue() == 1));
   }
-  
+
   @Test // OPE-642
   public void testOperationThatFailed() throws Exception {
     // given
@@ -111,7 +109,7 @@ public class MetricIT extends OperateZeebeIntegrationTest {
         .startEvent()
         .endEvent()
         .done();
-    
+
     tester
       .deployProcess(startEndProcess, "startEndProcess.bpmn").processIsDeployed()
       .and()
@@ -152,5 +150,5 @@ public class MetricIT extends OperateZeebeIntegrationTest {
                 + "{"+Metrics.TAG_KEY_ORGANIZATIONID+"=\"orga\",} 2.0")
     ));
   }
-  
+
 }

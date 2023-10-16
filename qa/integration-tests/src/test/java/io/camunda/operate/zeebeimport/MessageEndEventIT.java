@@ -11,12 +11,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.operate.entities.FlowNodeInstanceEntity;
 import io.camunda.operate.entities.FlowNodeType;
-import io.camunda.operate.util.OperateZeebeIntegrationTest;
+import io.camunda.operate.util.OperateZeebeAbstractIT;
 import java.util.List;
 import org.junit.Test;
 import org.springframework.test.annotation.IfProfileValue;
 
-public class MessageEndEventIT extends OperateZeebeIntegrationTest {
+public class MessageEndEventIT extends OperateZeebeAbstractIT {
 
   @Test
   @IfProfileValue(name="spring.profiles.active", value="test")

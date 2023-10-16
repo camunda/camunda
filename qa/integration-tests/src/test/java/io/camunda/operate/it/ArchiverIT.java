@@ -20,7 +20,7 @@ import io.camunda.operate.schema.templates.ProcessInstanceDependant;
 import io.camunda.operate.schema.templates.SequenceFlowTemplate;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.MetricAssert;
-import io.camunda.operate.util.OperateZeebeIntegrationTest;
+import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.util.ZeebeTestUtil;
 import io.camunda.operate.webapp.reader.ListViewReader;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
@@ -59,7 +59,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 
-public class ArchiverIT extends OperateZeebeIntegrationTest {
+public class ArchiverIT extends OperateZeebeAbstractIT {
   @Autowired
   private ArchiverITRepository archiverITRepository;
 

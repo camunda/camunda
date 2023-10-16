@@ -74,6 +74,8 @@
     <version.guava.annotations>r03</version.guava.annotations>
     <version.commons.codec>1.16.0</version.commons.codec>
 
+      <includeLongITNames>**/*IT.java</includeLongITNames>
+
   </properties>
 
   <dependencyManagement>
@@ -442,6 +444,10 @@
           <artifactId>maven-failsafe-plugin</artifactId>
           <version>3.1.2</version>
           <configuration>
+              <includes>
+                  <include>${includeLongITNames}</include>
+                  <include>**/*ITMocked.java</include>
+              </includes>
             <forkCount>${env.LIMITS_CPU}</forkCount>
             <reuseForks>true</reuseForks>
             <redirectTestOutputToFile>true</redirectTestOutputToFile>
@@ -531,6 +537,15 @@
       </plugin>
     </plugins>
   </build>
+
+    <profiles>
+        <profile>
+            <id>skip-long-its</id>
+            <properties>
+                <includeLongITNames>none</includeLongITNames>
+            </properties>
+        </profile>
+    </profiles>
 
   <distributionManagement>
     <snapshotRepository>

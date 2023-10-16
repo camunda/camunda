@@ -8,7 +8,7 @@ package io.camunda.operate.webapp.api.v1.dao;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.operate.util.OperateZeebeIntegrationTest;
+import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.webapp.api.v1.entities.FlowNodeStatistics;
 
 import java.util.List;
@@ -17,7 +17,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-public class ElasticsearchFlowNodeStatisticsDaoIT extends OperateZeebeIntegrationTest {
+public class ElasticsearchFlowNodeStatisticsDaoIT extends OperateZeebeAbstractIT {
 
   @Autowired
   ElasticsearchFlowNodeStatisticsDao dao;

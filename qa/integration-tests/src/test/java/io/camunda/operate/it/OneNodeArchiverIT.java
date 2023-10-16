@@ -19,7 +19,7 @@ import io.camunda.operate.schema.templates.ProcessInstanceDependant;
 import io.camunda.operate.schema.templates.SequenceFlowTemplate;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.ElasticsearchUtil;
-import io.camunda.operate.util.OperateZeebeIntegrationTest;
+import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.util.ZeebeTestUtil;
 import io.camunda.operate.webapp.reader.ListViewReader;
 import io.camunda.operate.webapp.writer.BatchOperationWriter;
@@ -64,7 +64,7 @@ import static org.elasticsearch.index.query.QueryBuilders.*;
 @TestPropertySource(properties = { OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
     OperateProperties.PREFIX + ".clusterNode.nodeCount = 2",
     OperateProperties.PREFIX + ".clusterNode.currentNodeId = 0" })
-public class OneNodeArchiverIT extends OperateZeebeIntegrationTest {
+public class OneNodeArchiverIT extends OperateZeebeAbstractIT {
 
   private ProcessInstancesArchiverJob archiverJob;
 

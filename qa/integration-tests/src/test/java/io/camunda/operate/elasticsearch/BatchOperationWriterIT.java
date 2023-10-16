@@ -12,7 +12,7 @@ import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceState;
 import io.camunda.operate.util.SearchTestRule;
-import io.camunda.operate.util.OperateIntegrationTest;
+import io.camunda.operate.util.OperateAbstractIT;
 import io.camunda.operate.webapp.rest.ProcessInstanceRestService;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
@@ -33,7 +33,7 @@ import static org.mockito.Mockito.when;
 /**
  * Tests Elasticsearch queries for operations.
  */
-public class BatchOperationWriterIT extends OperateIntegrationTest {
+public class BatchOperationWriterIT extends OperateAbstractIT {
 
   private static final String QUERY_CREATE_BATCH_OPERATIONS_URL = ProcessInstanceRestService.PROCESS_INSTANCE_URL + "/batch-operation";
   private static final IdentityPermission UPDATE = IdentityPermission.UPDATE_PROCESS_INSTANCE;

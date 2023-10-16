@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import io.camunda.operate.util.OperateZeebeIntegrationTest;
+import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.Query.Sort;
 import io.camunda.operate.webapp.api.v1.entities.Query.Sort.Order;
@@ -24,7 +24,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-public class ElasticsearchVariableDaoIT extends OperateZeebeIntegrationTest {
+public class ElasticsearchVariableDaoIT extends OperateZeebeAbstractIT {
 
   @Autowired
   ElasticsearchVariableDao dao;

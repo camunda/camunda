@@ -13,7 +13,7 @@ import java.util.ArrayList;
 import java.util.Map;
 
 import io.camunda.operate.util.ElasticsearchUtil;
-import io.camunda.operate.util.OperateZeebeIntegrationTest;
+import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.util.PayloadUtil;
 import io.camunda.operate.webapp.zeebe.operation.UpdateVariableHandler;
 import org.elasticsearch.client.RequestOptions;
@@ -23,7 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
-public class ImportFieldsIT extends OperateZeebeIntegrationTest {
+public class ImportFieldsIT extends OperateZeebeAbstractIT {
 
   private static final Logger logger = LoggerFactory.getLogger(ImportFieldsIT.class);
 

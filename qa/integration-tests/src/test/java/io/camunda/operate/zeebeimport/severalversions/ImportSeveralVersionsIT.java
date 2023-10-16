@@ -25,7 +25,7 @@ import io.camunda.operate.schema.indices.ProcessIndex;
 import io.camunda.operate.schema.templates.IncidentTemplate;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.util.SearchTestRule;
-import io.camunda.operate.util.OperateIntegrationTest;
+import io.camunda.operate.util.OperateAbstractIT;
 import io.camunda.operate.util.TestImportListener;
 import io.camunda.operate.util.TestUtil;
 import io.camunda.operate.zeebe.PartitionHolder;
@@ -49,7 +49,7 @@ import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.test.context.ContextConfiguration;
 
 @ContextConfiguration(initializers = ImportSeveralVersionsInitializer.class)
-public class ImportSeveralVersionsIT extends OperateIntegrationTest {
+public class ImportSeveralVersionsIT extends OperateAbstractIT {
 
   private static final Logger logger = LoggerFactory.getLogger(ImportSeveralVersionsIT.class);
   private static final int TIMEOUT_IN_SECONDS = 5 * 60; // 5 minutes

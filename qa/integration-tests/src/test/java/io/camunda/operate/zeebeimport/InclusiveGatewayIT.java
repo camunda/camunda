@@ -8,7 +8,7 @@ package io.camunda.operate.zeebeimport;
 
 import io.camunda.operate.entities.FlowNodeInstanceEntity;
 import io.camunda.operate.entities.FlowNodeType;
-import io.camunda.operate.util.OperateZeebeIntegrationTest;
+import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import org.junit.Test;
@@ -18,7 +18,7 @@ import java.util.List;
 import static io.camunda.operate.util.CollectionUtil.map;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class InclusiveGatewayIT  extends OperateZeebeIntegrationTest {
+public class InclusiveGatewayIT  extends OperateZeebeAbstractIT {
 
   @Test
   public void shouldImportIntermediateThrowEvent(){

@@ -62,7 +62,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
-public class ZeebeImportIT extends OperateZeebeIntegrationTest {
+public class ZeebeImportIT extends OperateZeebeAbstractIT {
 
   @Autowired
   private ProcessInstanceReader processInstanceReader;

@@ -11,7 +11,7 @@ import io.camunda.operate.entities.FlowNodeState;
 import io.camunda.operate.entities.IncidentEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.exceptions.OperateRuntimeException;
-import io.camunda.operate.util.OperateZeebeIntegrationTest;
+import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.util.ThreadUtil;
 import io.camunda.operate.util.Tuple;
 import io.camunda.operate.webapp.reader.IncidentReader;
@@ -40,7 +40,7 @@ import static io.camunda.operate.util.ElasticsearchUtil.scroll;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
-public class IncidentPostImportIT extends OperateZeebeIntegrationTest {
+public class IncidentPostImportIT extends OperateZeebeAbstractIT {
 
   @Autowired
   private ProcessInstanceReader processInstanceReader;

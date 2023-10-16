@@ -11,15 +11,13 @@ import java.util.List;
 import io.camunda.operate.util.*;
 import org.assertj.core.api.Assertions;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.rest.HealthCheckTest.AddManagementPropertiesInitializer;
+import io.camunda.operate.rest.HealthCheckIT.AddManagementPropertiesInitializer;
 import io.camunda.operate.zeebe.PartitionHolder;
 import io.camunda.operate.zeebeimport.ZeebeImporter;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -31,7 +29,7 @@ import org.springframework.test.util.ReflectionTestUtils;
         OperateProperties.PREFIX + ".zeebe.gatewayAddress = localhost:55500",
         "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER"})
 @ContextConfiguration(initializers = AddManagementPropertiesInitializer.class)
-public class ZeebeConnectorIT extends OperateIntegrationTest {
+public class ZeebeConnectorIT extends OperateAbstractIT {
 
   @Rule
   public SearchTestRule searchTestRule = new SearchTestRule();

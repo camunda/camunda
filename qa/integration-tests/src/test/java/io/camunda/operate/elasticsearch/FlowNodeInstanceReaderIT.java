@@ -6,7 +6,7 @@
  */
 package io.camunda.operate.elasticsearch;
 
-import io.camunda.operate.util.OperateZeebeIntegrationTest;
+import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.webapp.rest.dto.FlowNodeStatisticsDto;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -20,7 +20,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Fail.fail;
 
-public class FlowNodeInstanceReaderIT extends OperateZeebeIntegrationTest {
+public class FlowNodeInstanceReaderIT extends OperateZeebeAbstractIT {
 
   @Test
   public void testFlowNodeStatisticsForASimpleProcessInstance() throws Exception {

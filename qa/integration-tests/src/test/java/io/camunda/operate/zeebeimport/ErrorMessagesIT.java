@@ -10,7 +10,7 @@ import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllProcessInst
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Arrays;
-import io.camunda.operate.util.OperateZeebeIntegrationTest;
+import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.webapp.reader.IncidentReader;
 import io.camunda.operate.webapp.reader.ListViewReader;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
@@ -23,7 +23,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-public class ErrorMessagesIT extends OperateZeebeIntegrationTest{
+public class ErrorMessagesIT extends OperateZeebeAbstractIT {
 
   @Autowired
   private CancelProcessInstanceHandler cancelProcessInstanceHandler;

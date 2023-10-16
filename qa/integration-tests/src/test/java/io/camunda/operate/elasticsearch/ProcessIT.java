@@ -9,7 +9,7 @@ package io.camunda.operate.elasticsearch;
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.camunda.operate.entities.ProcessEntity;
 import io.camunda.operate.util.SearchTestRule;
-import io.camunda.operate.util.OperateIntegrationTest;
+import io.camunda.operate.util.OperateAbstractIT;
 import io.camunda.operate.webapp.rest.ProcessRestService;
 import io.camunda.operate.webapp.rest.dto.ProcessGroupDto;
 import io.camunda.operate.webapp.rest.dto.ProcessRequestDto;
@@ -30,7 +30,7 @@ import static org.mockito.Mockito.when;
 /**
  * Tests Elasticsearch queries for process.
  */
-public class ProcessIT extends OperateIntegrationTest {
+public class ProcessIT extends OperateAbstractIT {
 
   private static final String QUERY_PROCESS_GROUPED_URL = ProcessRestService.PROCESS_URL + "/grouped";
 

@@ -10,15 +10,13 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import io.camunda.operate.entities.dmn.definition.DecisionDefinitionEntity;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.SearchTestRule;
-import io.camunda.operate.util.OperateIntegrationTest;
+import io.camunda.operate.util.OperateAbstractIT;
 import io.camunda.operate.util.TestApplication;
 import io.camunda.operate.webapp.rest.DecisionRestService;
 import io.camunda.operate.webapp.rest.dto.DecisionRequestDto;
 import io.camunda.operate.webapp.rest.dto.dmn.DecisionGroupDto;
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.identity.PermissionsService;
-import io.camunda.operate.webapp.security.tenant.TenantService;
-import io.camunda.operate.webapp.security.tenant.TenantService.AuthenticatedTenants;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -43,7 +41,7 @@ import static org.mockito.Mockito.when;
         OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",
         "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER",
         OperateProperties.PREFIX + ".multiTenancy.enabled = true"})
-public class DecisionIT extends OperateIntegrationTest {
+public class DecisionIT extends OperateAbstractIT {
 
   private static final String QUERY_DECISION_GROUPED_URL = DecisionRestService.DECISION_URL + "/grouped";
 

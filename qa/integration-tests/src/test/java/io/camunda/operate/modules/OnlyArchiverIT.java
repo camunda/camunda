@@ -17,7 +17,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @TestPropertySource(properties = {OperateProperties.PREFIX + ".importerEnabled = false",
     OperateProperties.PREFIX + ".webappEnabled = false"})
-public class OnlyArchiverIT extends ModuleIntegrationTest {
+public class OnlyArchiverIT extends ModuleAbstractIT {
 
   @Test
   public void testArchiverModuleIsPresent() {

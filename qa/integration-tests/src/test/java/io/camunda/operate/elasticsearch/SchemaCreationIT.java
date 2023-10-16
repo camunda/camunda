@@ -18,7 +18,7 @@ import io.camunda.operate.schema.migration.ProcessorStep;
 import io.camunda.operate.schema.templates.EventTemplate;
 import io.camunda.operate.schema.templates.IncidentTemplate;
 import io.camunda.operate.util.SearchTestRule;
-import io.camunda.operate.util.OperateIntegrationTest;
+import io.camunda.operate.util.OperateAbstractIT;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
@@ -33,7 +33,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-public class SchemaCreationIT extends OperateIntegrationTest {
+public class SchemaCreationIT extends OperateAbstractIT {
 
   @Rule
   public SearchTestRule searchTestRule = new SearchTestRule();

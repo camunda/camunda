@@ -24,7 +24,7 @@ import io.camunda.operate.schema.templates.OperationTemplate;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.DateUtil;
 import io.camunda.operate.util.SearchTestRule;
-import io.camunda.operate.util.OperateIntegrationTest;
+import io.camunda.operate.util.OperateAbstractIT;
 import io.camunda.operate.util.TestUtil;
 import io.camunda.operate.webapp.reader.OperationReader;
 import io.camunda.operate.webapp.zeebe.operation.OperationExecutor;
@@ -40,7 +40,7 @@ import static io.camunda.operate.util.TestUtil.createOperationEntity;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
-public class OperationExecutorIT extends OperateIntegrationTest {
+public class OperationExecutorIT extends OperateAbstractIT {
 
   private Random random = new Random();
 

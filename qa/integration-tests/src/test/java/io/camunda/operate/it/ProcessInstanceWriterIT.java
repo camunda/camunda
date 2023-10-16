@@ -11,7 +11,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import io.camunda.operate.schema.templates.OperationTemplate;
 import io.camunda.operate.schema.templates.ProcessInstanceDependant;
 import io.camunda.operate.store.NotFoundException;
-import io.camunda.operate.util.OperateZeebeIntegrationTest;
+import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.webapp.writer.ProcessInstanceWriter;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.zeebe.operation.CancelProcessInstanceHandler;
@@ -28,7 +28,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-public class ProcessInstanceWriterIT extends OperateZeebeIntegrationTest {
+public class ProcessInstanceWriterIT extends OperateZeebeAbstractIT {
 
   @Autowired
   private ProcessInstanceWriter processInstanceWriter;

@@ -12,7 +12,7 @@ import io.camunda.operate.WebappModuleConfiguration;
 import org.junit.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class FullAppIT extends ModuleIntegrationTest {
+public class FullAppIT extends ModuleAbstractIT {
 
   @Test
   public void testImportModuleIsPresent() {

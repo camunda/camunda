@@ -20,7 +20,7 @@ import io.camunda.operate.data.util.DecisionDataUtil;
 import io.camunda.operate.entities.dmn.definition.DecisionDefinitionEntity;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.util.SearchTestRule;
-import io.camunda.operate.util.OperateZeebeIntegrationTest;
+import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.webapp.reader.DecisionReader;
 import io.camunda.operate.webapp.rest.dto.DecisionRequestDto;
 import io.camunda.operate.webapp.rest.dto.dmn.DecisionGroupDto;
@@ -36,7 +36,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
-public class DecisionIT extends OperateZeebeIntegrationTest {
+public class DecisionIT extends OperateZeebeAbstractIT {
 
   private static final String QUERY_DECISIONS_GROUPED_URL = "/api/decisions/grouped";
   private static final String QUERY_DECISION_XML_URL = "/api/decisions/%s/xml";

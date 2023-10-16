@@ -12,7 +12,7 @@ import java.util.Map;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.indices.UserIndex;
 import io.camunda.operate.util.SearchTestRule;
-import io.camunda.operate.util.OperateIntegrationTest;
+import io.camunda.operate.util.OperateAbstractIT;
 import io.camunda.operate.util.TestApplication;
 import io.camunda.operate.webapp.security.auth.OperateUserDetailsService;
 import io.camunda.operate.webapp.security.auth.User;
@@ -44,7 +44,7 @@ import static org.assertj.core.api.Assertions.assertThat;
         OperateProperties.PREFIX + ".password = " + ElasticSearchUserDetailsServiceIT.TEST_PASSWORD,
         "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER"
     })
-public class ElasticSearchUserDetailsServiceIT extends OperateIntegrationTest {
+public class ElasticSearchUserDetailsServiceIT extends OperateAbstractIT {
 
   public static final String TEST_USER_ID = "user1";
   public static final String TEST_USER_DISPLAYNAME = "Quentin Tarantino";

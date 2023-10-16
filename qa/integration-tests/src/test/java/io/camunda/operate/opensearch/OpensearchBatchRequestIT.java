@@ -13,7 +13,7 @@ import io.camunda.operate.schema.SchemaManager;
 import io.camunda.operate.schema.indices.ProcessIndex;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
-import io.camunda.operate.util.OpensearchOperateIntegrationTest;
+import io.camunda.operate.util.OpensearchOperateAbstractIT;
 import io.camunda.operate.util.TestUtil;
 import org.junit.After;
 import org.junit.Before;
@@ -30,7 +30,7 @@ import static io.camunda.operate.store.opensearch.dsl.QueryDSL.term;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class OpensearchBatchRequestIT extends OpensearchOperateIntegrationTest {
+public class OpensearchBatchRequestIT extends OpensearchOperateAbstractIT {
 
   @Autowired
   RichOpenSearchClient richOpenSearchClient;

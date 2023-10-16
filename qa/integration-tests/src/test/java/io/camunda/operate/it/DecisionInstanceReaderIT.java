@@ -25,7 +25,7 @@ import io.camunda.operate.entities.dmn.DecisionInstanceEntity;
 import io.camunda.operate.entities.dmn.DecisionInstanceState;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.util.SearchTestRule;
-import io.camunda.operate.util.OperateIntegrationTest;
+import io.camunda.operate.util.OperateAbstractIT;
 import io.camunda.operate.webapp.rest.dto.dmn.DRDDataEntryDto;
 import io.camunda.operate.webapp.rest.dto.dmn.DecisionInstanceDto;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
@@ -37,7 +37,7 @@ import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MvcResult;
 
-public class DecisionInstanceReaderIT extends OperateIntegrationTest {
+public class DecisionInstanceReaderIT extends OperateAbstractIT {
 
   private static final String QUERY_DECISION_INSTANCES_URL = DECISION_INSTANCE_URL + "/%s";
 

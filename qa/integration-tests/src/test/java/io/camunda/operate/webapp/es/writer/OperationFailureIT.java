@@ -9,7 +9,7 @@ package io.camunda.operate.webapp.es.writer;
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.schema.templates.BatchOperationTemplate;
-import io.camunda.operate.util.OperateZeebeIntegrationTest;
+import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.webapp.elasticsearch.writer.BatchOperationWriter;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
@@ -33,7 +33,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-public class OperationFailureIT extends OperateZeebeIntegrationTest {
+public class OperationFailureIT extends OperateZeebeAbstractIT {
 
   private static final String QUERY_INSTANCES_URL = PROCESS_INSTANCE_URL;
 

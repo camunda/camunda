@@ -18,7 +18,7 @@ import static org.junit.Assert.assertEquals;
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.camunda.operate.qa.util.RestAPITestUtil;
 import io.camunda.operate.util.CollectionUtil;
-import io.camunda.operate.util.OperateZeebeIntegrationTest;
+import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.webapp.rest.ProcessInstanceRestService;
 import io.camunda.operate.webapp.rest.dto.FlowNodeStatisticsDto;
 import io.camunda.operate.webapp.rest.dto.ProcessInstanceCoreStatisticsDto;
@@ -40,7 +40,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.springframework.test.web.servlet.MvcResult;
 
-public class CallActivityIncidentIT extends OperateZeebeIntegrationTest {
+public class CallActivityIncidentIT extends OperateZeebeAbstractIT {
 
   private static final String QUERY_PROCESS_STATISTICS_URL = "/api/process-instances/statistics";
   private static final String QUERY_INCIDENTS_BY_PROCESS_URL = INCIDENT_URL + "/byProcess";

@@ -11,7 +11,7 @@ import io.camunda.operate.entities.ErrorType;
 import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.store.BatchRequest;
-import io.camunda.operate.util.OperateZeebeIntegrationTest;
+import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.util.OperationsManager;
 import io.camunda.operate.util.TestApplication;
 import io.camunda.operate.util.ZeebeTestUtil;
@@ -46,7 +46,7 @@ import static org.mockito.Mockito.*;
         //configure webhook to notify about the incidents
         OperateProperties.PREFIX + ".alert.webhook = http://somepath",
         "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER"})
-public class IncidentWithFailingOperationIT extends OperateZeebeIntegrationTest {
+public class IncidentWithFailingOperationIT extends OperateZeebeAbstractIT {
 
   private static final Logger logger = LoggerFactory.getLogger(IncidentWithFailingOperationIT.class);
 

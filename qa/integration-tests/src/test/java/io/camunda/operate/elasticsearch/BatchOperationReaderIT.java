@@ -15,7 +15,7 @@ import java.util.List;
 import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.entities.OperateEntity;
 import io.camunda.operate.util.SearchTestRule;
-import io.camunda.operate.util.OperateIntegrationTest;
+import io.camunda.operate.util.OperateAbstractIT;
 import io.camunda.operate.webapp.rest.BatchOperationRestService;
 import io.camunda.operate.webapp.rest.dto.operation.BatchOperationDto;
 import io.camunda.operate.webapp.rest.dto.operation.BatchOperationRequestDto;
@@ -30,7 +30,7 @@ import static org.mockito.Mockito.when;
 /**
  * Tests retrieval of batch operation list taking into account current user name.
  */
-public class BatchOperationReaderIT extends OperateIntegrationTest {
+public class BatchOperationReaderIT extends OperateAbstractIT {
 
   public static final String USER_1 = "user1";
   public static final String USER_2 = "user2";

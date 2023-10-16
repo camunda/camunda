@@ -22,7 +22,7 @@ import io.camunda.operate.entities.ProcessEntity;
 import io.camunda.operate.schema.indices.ProcessIndex;
 import io.camunda.operate.webapp.reader.ProcessReader;
 import io.camunda.operate.webapp.rest.dto.ProcessGroupDto;
-import io.camunda.operate.util.OperateZeebeIntegrationTest;
+import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.util.ZeebeTestUtil;
 import io.camunda.operate.webapp.security.identity.PermissionsService;
 import org.junit.Before;
@@ -37,7 +37,7 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.ProcessBuilder;
 
-public class ProcessIT extends OperateZeebeIntegrationTest {
+public class ProcessIT extends OperateZeebeAbstractIT {
 
   private static final String QUERY_PROCESSES_GROUPED_URL = "/api/processes/grouped";
   private static final String QUERY_PROCESS_XML_URL = "/api/processes/%s/xml";

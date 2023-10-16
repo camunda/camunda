@@ -45,7 +45,7 @@ import org.springframework.util.unit.DataSize;
         //configure webhook to notify about the incidents
         OperateProperties.PREFIX + ".alert.webhook = http://somepath",
         "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER"})
-public class IncidentIT extends OperateZeebeIntegrationTest {
+public class IncidentIT extends OperateZeebeAbstractIT {
 
   @Autowired
   private UpdateVariableHandler updateVariableHandler;
