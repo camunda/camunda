@@ -11,7 +11,9 @@ import static io.camunda.tasklist.util.assertions.CustomAssertions.assertThat;
 import static org.apache.commons.lang3.RandomStringUtils.randomNumeric;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.tuple;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.property.TasklistProperties;
@@ -28,6 +30,8 @@ import io.camunda.tasklist.webapp.security.TasklistURIs;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.assertj.core.api.Assertions;
 import org.junit.Before;
 import org.junit.Test;
@@ -123,6 +127,33 @@ public class ProcessInternalControllerIT extends TasklistZeebeIntegrationTest {
             tuple(processId1, "Process_1g4wt4m", 1),
             tuple(processId2, "testProcess2", 1),
             tuple(processId3, "userTaskFormProcess", 1));
+  }
+
+  @Test
+  public void searchProcessesWhenMoreThan10ProcessesAreDeployedThenAllProcessesReturned() {
+    tasklistProperties.setVersion(tasklistProperties.ALPHA_RELEASES_SUFIX);
+    // given
+    final int processesCount = 15;
+    for (int i = 0; i < processesCount; i++) {
+      tester
+          .createAndDeploySimpleProcess("process_" + i, "task_" + i)
+          .waitUntil()
+          .processIsDeployed();
+    }
+
+    // when
+    final var result = mockMvcHelper.doRequest(get(TasklistURIs.PROCESSES_URL_V1));
+
+    // then
+    assertThat(result)
+        .hasOkHttpStatus()
+        .hasApplicationJsonContentType()
+        .extractingListContent(objectMapper, ProcessResponse.class)
+        .extracting("bpmnProcessId", "version")
+        .containsExactlyInAnyOrderElementsOf(
+            IntStream.range(0, processesCount)
+                .mapToObj(i -> tuple("process_" + i, 1))
+                .collect(Collectors.toSet()));
   }
 
   @Test

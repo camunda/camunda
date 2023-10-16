@@ -390,7 +390,8 @@ public class ProcessStoreOpenSearch implements ProcessStore {
         .index(List.of(processIndex.getAlias()))
         .query(qbTenantCheck)
         .collapse(keyCollapse)
-        .sort(sortOptions);
+        .sort(sortOptions)
+        .size(OpenSearchUtil.QUERY_MAX_SIZE);
   }
 
   @Override

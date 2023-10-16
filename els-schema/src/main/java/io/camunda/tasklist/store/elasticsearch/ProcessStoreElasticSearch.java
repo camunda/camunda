@@ -263,13 +263,15 @@ public class ProcessStoreElasticSearch implements ProcessStore {
         new SearchSourceBuilder()
             .query(qb)
             .sort(SortBuilders.fieldSort(ProcessIndex.VERSION).order(SortOrder.DESC))
-            .size(ElasticsearchUtil.QUERY_MAX_SIZE)
+            .size(0) // Set size to 0 to retrieve only aggregation results
             .aggregation(
                 AggregationBuilders.terms("group_by_definition_id")
                     .field(ProcessIndex.PROCESS_DEFINITION_ID)
+                    .size(ElasticsearchUtil.QUERY_MAX_SIZE)
                     .subAggregation(
                         AggregationBuilders.terms("group_by_tenant_id")
                             .field(ProcessIndex.TENANT_ID)
+                            .size(ElasticsearchUtil.QUERY_MAX_SIZE)
                             .subAggregation(
                                 AggregationBuilders.topHits("top_hit_doc")
                                     .sort(
