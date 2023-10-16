@@ -30,6 +30,16 @@ public final class ArrayProperty<T extends BaseValue> extends BaseProperty<Array
     isSet = true;
   }
 
+  /**
+   * Please be aware that doing modifications whiles iterating over an {@link ArrayValue} is not
+   * thread-safe. Modification will modify the underlying buffer and will lead to exceptions when
+   * done multiple threads are accessing this buffer simultaneously.
+   *
+   * <p>When modifying during iteration make sure to {@link MutableArrayValueIterator#flush} when
+   * done.
+   *
+   * @return an iterator for this object
+   */
   @Override
   public MutableArrayValueIterator<T> iterator() {
     return resolveValue().iterator();

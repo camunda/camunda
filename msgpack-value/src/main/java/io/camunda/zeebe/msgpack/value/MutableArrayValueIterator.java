@@ -11,5 +11,9 @@ import java.util.Iterator;
 
 public interface MutableArrayValueIterator<T extends BaseValue> extends Iterator<T> {
 
+  /**
+   * Write any changes made to the value to the underlying buffer. This must be called when
+   * modifying a value during iteration. If not, the changes are not written to the buffer!
+   */
   void flush();
 }

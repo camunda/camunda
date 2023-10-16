@@ -108,9 +108,12 @@ public final class ArrayValue<T extends BaseValue> extends BaseValue implements 
   }
 
   /**
-   * Please be aware that iterating over an {@link ArrayValue} is not thread-safe. Iterating over
-   * this will modify the buffer. Multiple threads iterating over the same object will result in
-   * exceptions!
+   * Please be aware that doing modifications whiles iterating over an {@link ArrayValue} is not
+   * thread-safe. Modification will modify the underlying buffer and will lead to exceptions when
+   * done multiple threads are accessing this buffer simultaneously.
+   *
+   * <p>When modifying during iteration make sure to {@link MutableArrayValueIterator#flush} when
+   * done.
    *
    * @return an iterator for this object
    */
