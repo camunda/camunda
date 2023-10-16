@@ -17,12 +17,13 @@ package io.atomix.raft.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.atomix.utils.concurrent.SingleThreadContext;
+import io.atomix.raft.DeterministicSingleThreadContext;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.awaitility.Awaitility;
+import org.jmock.lib.concurrent.DeterministicScheduler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -31,7 +32,8 @@ import org.slf4j.LoggerFactory;
 final class PriorityElectionTimerTest {
 
   private final Logger log = LoggerFactory.getLogger(PriorityElectionTimerTest.class);
-  private final SingleThreadContext threadContext = new SingleThreadContext("priorityElectionTest");
+  private final DeterministicSingleThreadContext threadContext =
+      new DeterministicSingleThreadContext(new DeterministicScheduler());
 
   @AfterEach
   void afterEach() {
@@ -43,15 +45,22 @@ final class PriorityElectionTimerTest {
     // given
     final AtomicInteger triggerCount = new AtomicInteger();
 
+    final Duration electionTimeout = Duration.ofMillis(100);
+    final int targetPriority = 4;
     final PriorityElectionTimer timer =
         new PriorityElectionTimer(
-            Duration.ofMillis(100), threadContext, triggerCount::getAndIncrement, log, 4, 1);
+            electionTimeout, threadContext, triggerCount::getAndIncrement, log, targetPriority, 1);
 
     // when
     timer.reset();
+    for (int i = 0; i < targetPriority; i++) {
+      threadContext
+          .getDeterministicScheduler()
+          .tick(electionTimeout.toMillis(), TimeUnit.MILLISECONDS);
+    }
 
     // then
-    Awaitility.await().until(() -> triggerCount.get() >= 1);
+    assertThat(triggerCount.get()).describedAs("Time is triggered once").isOne();
   }
 
   @Test
@@ -62,9 +71,10 @@ final class PriorityElectionTimerTest {
     final List<String> electionOrder = new CopyOnWriteArrayList<>();
 
     final int targetPriority = 4;
+    final Duration electionTimeout = Duration.ofMillis(100);
     final PriorityElectionTimer timerHighPrio =
         new PriorityElectionTimer(
-            Duration.ofMillis(100),
+            electionTimeout,
             threadContext,
             () -> electionOrder.add(highPrioId),
             log,
@@ -73,7 +83,7 @@ final class PriorityElectionTimerTest {
 
     final PriorityElectionTimer timerLowPrio =
         new PriorityElectionTimer(
-            Duration.ofMillis(100),
+            electionTimeout,
             threadContext,
             () -> electionOrder.add(lowPrioId),
             log,
@@ -84,13 +94,16 @@ final class PriorityElectionTimerTest {
     timerLowPrio.reset();
     timerHighPrio.reset();
 
+    for (int i = 0; i < targetPriority; i++) {
+      threadContext
+          .getDeterministicScheduler()
+          .tick(electionTimeout.toMillis(), TimeUnit.MILLISECONDS);
+    }
+
     // then
-    Awaitility.await()
-        .untilAsserted(
-            () ->
-                assertThat(electionOrder)
-                    .as("both elections should have been triggered eventually")
-                    .contains(highPrioId, lowPrioId));
+    assertThat(electionOrder)
+        .as("both elections should have been triggered eventually")
+        .contains(highPrioId, lowPrioId);
     assertThat(electionOrder.get(0))
         .as("the first election triggered should have been the high priority election")
         .isEqualTo(highPrioId);
