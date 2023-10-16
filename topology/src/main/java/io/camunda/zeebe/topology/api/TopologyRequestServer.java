@@ -10,7 +10,7 @@ package io.camunda.zeebe.topology.api;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.topology.api.TopologyManagementResponses.TopologyChangeStatus;
+import io.camunda.zeebe.topology.api.TopologyManagementResponse.TopologyChangeStatus;
 import io.camunda.zeebe.topology.serializer.TopologyRequestsSerializer;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;

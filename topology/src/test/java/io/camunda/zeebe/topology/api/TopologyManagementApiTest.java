@@ -93,8 +93,7 @@ final class TopologyManagementApiTest {
   @Test
   void shouldAddMembers() {
     // given
-    final var request =
-        new TopologyManagementRequests.AddMembersRequest(Set.of(MemberId.from("1")));
+    final var request = new TopologyManagementRequest.AddMembersRequest(Set.of(MemberId.from("1")));
 
     // when
     final var changeStatus = clientAPI.addMembers(request).join();

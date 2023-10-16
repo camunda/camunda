@@ -7,14 +7,14 @@
  */
 package io.camunda.zeebe.topology.serializer;
 
-import io.camunda.zeebe.topology.api.TopologyManagementRequests;
-import io.camunda.zeebe.topology.api.TopologyManagementRequests.AddMembersRequest;
-import io.camunda.zeebe.topology.api.TopologyManagementResponses.TopologyChangeStatus;
+import io.camunda.zeebe.topology.api.TopologyManagementRequest;
+import io.camunda.zeebe.topology.api.TopologyManagementRequest.AddMembersRequest;
+import io.camunda.zeebe.topology.api.TopologyManagementResponse.TopologyChangeStatus;
 
 public interface TopologyRequestsSerializer {
   byte[] encode(AddMembersRequest addMembersRequest);
 
-  TopologyManagementRequests.AddMembersRequest decodeAddMembersRequest(byte[] encodedState);
+  TopologyManagementRequest.AddMembersRequest decodeAddMembersRequest(byte[] encodedState);
 
   byte[] encode(TopologyChangeStatus topologyChangeStatus);
 

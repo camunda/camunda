@@ -7,10 +7,14 @@
  */
 package io.camunda.zeebe.topology.api;
 
-import io.atomix.cluster.MemberId;
-import java.util.Set;
+public sealed interface TopologyManagementResponse {
 
-/** Defines the supported requests for the topology management. */
-public final class TopologyManagementRequests {
-  public record AddMembersRequest(Set<MemberId> members) {}
+  record TopologyChangeStatus(long changeId, StatusCode status)
+      implements TopologyManagementResponse {}
+
+  enum StatusCode {
+    IN_PROGRESS,
+    COMPLETED,
+    FAILED
+  }
 }

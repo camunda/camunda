@@ -9,9 +9,9 @@ package io.camunda.zeebe.topology.api;
 
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.topology.api.TopologyManagementRequests.AddMembersRequest;
-import io.camunda.zeebe.topology.api.TopologyManagementResponses.StatusCode;
-import io.camunda.zeebe.topology.api.TopologyManagementResponses.TopologyChangeStatus;
+import io.camunda.zeebe.topology.api.TopologyManagementRequest.AddMembersRequest;
+import io.camunda.zeebe.topology.api.TopologyManagementResponse.StatusCode;
+import io.camunda.zeebe.topology.api.TopologyManagementResponse.TopologyChangeStatus;
 import io.camunda.zeebe.topology.changes.TopologyChangeCoordinator;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.MemberJoinOperation;
@@ -45,7 +45,7 @@ final class TopologyManagementRequestsHandler implements TopologyManagementApi {
         (topology, error) -> {
           if (error == null) {
             final var status =
-                new TopologyManagementResponses.TopologyChangeStatus(
+                new TopologyManagementResponse.TopologyChangeStatus(
                     topology.version(), StatusCode.IN_PROGRESS);
             responseFuture.complete(status);
           } else {
