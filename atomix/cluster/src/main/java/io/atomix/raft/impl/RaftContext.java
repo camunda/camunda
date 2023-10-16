@@ -1306,6 +1306,21 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     partitionConfig.setPreferSnapshotReplicationThreshold(snapshotReplicationThreshold);
   }
 
+  public CompletableFuture<Void> reconfigurePriority(final int newPriority) {
+    final CompletableFuture<Void> configureFuture = new CompletableFuture<>();
+    threadContext.execute(
+        () -> {
+          electionConfig.setNodePriority(newPriority);
+          if (role instanceof final FollowerRole followerRole
+              && followerRole.getElectionTimer()
+                  instanceof final PriorityElectionTimer priorityElectionTimer) {
+            priorityElectionTimer.setNodePriority(newPriority);
+          }
+          configureFuture.complete(null);
+        });
+    return configureFuture;
+  }
+
   public int getPartitionId() {
     return partitionId;
   }

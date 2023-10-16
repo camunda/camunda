@@ -19,7 +19,7 @@ public final class RaftElectionConfig {
 
   private final boolean priorityElectionEnabled;
   private final int initialTargetPriority;
-  private final int nodePriority;
+  private int nodePriority;
 
   private RaftElectionConfig(
       final boolean priorityElectionEnabled,
@@ -49,5 +49,9 @@ public final class RaftElectionConfig {
 
   public int getNodePriority() {
     return nodePriority;
+  }
+
+  public void setNodePriority(final int nodePriority) {
+    this.nodePriority = nodePriority;
   }
 }

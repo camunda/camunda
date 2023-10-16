@@ -323,6 +323,16 @@ public interface RaftServer {
   CompletableFuture<RaftServer> promote();
 
   /**
+   * Update priority of this server used for priority election. If priority election is not enabled,
+   * this method has no effect. To get the desired result, priority of all replicas must be updated
+   * accordingly. This method only updates the local server's priority.
+   *
+   * @param newPriority the priority to be set
+   * @return a future to be completed when the new priority is applied
+   */
+  CompletableFuture<Void> reconfigurePriority(int newPriority);
+
+  /**
    * Ensures that all records written to the log are flushed to disk
    *
    * @return a future which will be completed after the log is flushed to disk

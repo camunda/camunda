@@ -143,6 +143,10 @@ public class RaftPartitionServer implements HealthMonitorable {
     return server != null ? server.shutdown() : CompletableFuture.completedFuture(null);
   }
 
+  public CompletableFuture<Void> reconfigurePriority(final int newPriority) {
+    return server.reconfigurePriority(newPriority);
+  }
+
   private RaftServer buildServer() {
     final var partitionId = partition.id().id();
     final var electionConfig =
