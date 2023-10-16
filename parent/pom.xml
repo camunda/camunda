@@ -93,6 +93,7 @@
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.kryo>5.3.0</version.kryo>
     <version.failsafe>2.4.4</version.failsafe>
+    <version.jetbrains-annotations>24.0.1</version.jetbrains-annotations>
     <version.jqwik>1.6.5</version.jqwik>
     <version.jmock>2.12.0</version.jmock>
     <version.json-smart>2.4.8</version.json-smart>
@@ -940,6 +941,12 @@
         <version>${version.awssdk}</version>
         <type>pom</type>
         <scope>import</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jetbrains</groupId>
+        <artifactId>annotations</artifactId>
+        <version>${version.jetbrains-annotations}</version>
       </dependency>
 
       <!-- Dependencies present for convergence only -->
