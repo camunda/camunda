@@ -9,7 +9,6 @@ package io.camunda.zeebe.msgpack.value;
 
 import io.camunda.zeebe.msgpack.spec.MsgPackReader;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
-import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.function.Supplier;
@@ -20,7 +19,7 @@ public final class ArrayValue<T extends BaseValue> extends BaseValue implements 
   private final MsgPackReader reader = new MsgPackReader();
 
   // buffer
-  private final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
+  private final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer(10);
   // inner value
   private final T innerValue;
   private final Supplier<T> innerValueFactory;
@@ -257,6 +256,7 @@ public final class ArrayValue<T extends BaseValue> extends BaseValue implements 
     private final MsgPackReader iterationReader = new MsgPackReader();
     private int cursorOffset;
     private int cursorIndex;
+    private int oldIterationValueLength;
 
     public ArrayValueIterator(final V iterationValue) {
       this.iterationValue = iterationValue;
@@ -279,7 +279,9 @@ public final class ArrayValue<T extends BaseValue> extends BaseValue implements 
       iterationValue.read(iterationReader);
 
       cursorIndex += 1;
-      cursorOffset += iterationValue.getEncodedLength();
+      final int iterationValueLength = iterationValue.getEncodedLength();
+      cursorOffset += iterationValueLength;
+      oldIterationValueLength = iterationValueLength;
 
       return iterationValue;
     }
@@ -302,7 +304,24 @@ public final class ArrayValue<T extends BaseValue> extends BaseValue implements 
 
     @Override
     public void flush() {
-      // TODO
+      final int iterationValueLength = iterationValue.getEncodedLength();
+      cursorOffset -= oldIterationValueLength;
+
+      if (oldIterationValueLength < iterationValueLength) {
+        // the iteration value length increased
+        // move bytes back to have space for updated value
+        final int difference = iterationValueLength - oldIterationValueLength;
+        moveValuesRight(cursorOffset + oldIterationValueLength, difference);
+      } else if (oldIterationValueLength > iterationValueLength) {
+        // the iteration value length decreased
+        // move bytes to front to fill gap for smaller updated value
+        final int difference = oldIterationValueLength - iterationValueLength;
+        moveValuesLeft(cursorOffset + oldIterationValueLength, difference);
+      }
+
+      writer.wrap(buffer, cursorOffset);
+      iterationValue.write(writer);
+      cursorOffset += iterationValue.getEncodedLength();
     }
   }
 }
