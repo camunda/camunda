@@ -70,10 +70,13 @@ public final class ArrayValueTest {
     addIntValues(array, 1, 2, 3);
 
     // when
-    final Iterator<IntegerValue> iterator = array.iterator();
+    final var iterator = array.iterator();
     iterator.next().setValue(4);
+    iterator.flush();
     iterator.next().setValue(5);
+    iterator.flush();
     iterator.next().setValue(6);
+    iterator.flush();
 
     // then
     encodeAndDecode(array);
@@ -185,13 +188,16 @@ public final class ArrayValueTest {
     addStringValues(array, "foo", "bar", "baz");
 
     // when
-    final Iterator<StringValue> iterator = array.iterator();
+    final var iterator = array.iterator();
     StringValue element = iterator.next();
     element.wrap(BufferUtil.wrapString("a"));
+    iterator.flush();
     element = iterator.next();
     element.wrap(BufferUtil.wrapString("b"));
+    iterator.flush();
     element = iterator.next();
     element.wrap(BufferUtil.wrapString("c"));
+    iterator.flush();
 
     // then
     encodeAndDecode(array);
@@ -205,13 +211,16 @@ public final class ArrayValueTest {
     addStringValues(array, "foo", "bar", "baz");
 
     // when
-    final Iterator<StringValue> iterator = array.iterator();
+    final var iterator = array.iterator();
     StringValue element = iterator.next();
     element.wrap(BufferUtil.wrapString("hello"));
+    iterator.flush();
     element = iterator.next();
     element.wrap(BufferUtil.wrapString("world"));
+    iterator.flush();
     element = iterator.next();
     element.wrap(BufferUtil.wrapString("friend"));
+    iterator.flush();
 
     // then
     encodeAndDecode(array);
@@ -250,7 +259,9 @@ public final class ArrayValueTest {
 
     // when
     decode(barArray, buffer);
-    barArray.iterator().next().setBar("barbar");
+    final var iterator = barArray.iterator();
+    iterator.next().setBar("barbar");
+    iterator.flush();
 
     // then
     encodeAndDecode(barArray);
