@@ -17,9 +17,13 @@ import io.camunda.zeebe.msgpack.value.BaseValue;
 import io.camunda.zeebe.msgpack.value.IntegerValue;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.StreamSupport;
@@ -35,7 +39,7 @@ public final class ArrayValueTest {
   @Rule public final ExpectedException exception = ExpectedException.none();
   private final MsgPackWriter writer = new MsgPackWriter();
   private final MsgPackReader reader = new MsgPackReader();
-  private final ArrayValue<IntegerValue> array = new ArrayValue<IntegerValue>(IntegerValue::new);
+  private final ArrayValue<IntegerValue> array = new ArrayValue<>(IntegerValue::new);
 
   @Test
   public void shouldAppendValues() {
@@ -345,6 +349,33 @@ public final class ArrayValueTest {
 
     // then
     assertThat(isEmpty).isFalse();
+  }
+
+  @Test
+  public void shouldByAbleToIterateFromMultipleThreads() {
+    // given
+    addIntValues(array, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+    final var executor = Executors.newFixedThreadPool(5);
+
+    // when
+    final ArrayList<Future<ArrayList<Integer>>> futures = new ArrayList<>();
+    for (int i = 0; i < 100; i++) {
+      futures.add(
+          executor.submit(
+              () -> {
+                final var result = new ArrayList<Integer>();
+                for (final var intValue : array) {
+                  result.add(intValue.getValue());
+                }
+                return result;
+              }));
+    }
+
+    // then
+    assertThat(futures)
+        .hasSize(100)
+        .flatMap(future -> future.get(100, TimeUnit.MILLISECONDS))
+        .containsOnly(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
   }
 
   // Helpers
