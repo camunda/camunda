@@ -10,6 +10,7 @@ package io.camunda.zeebe.topology.serializer;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.topology.api.TopologyManagementRequests.AddMembersRequest;
 import io.camunda.zeebe.topology.gossip.ClusterTopologyGossipState;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.MemberState;
@@ -21,6 +22,7 @@ import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOp
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -59,6 +61,20 @@ final class ProtoBufSerializerTest {
     assertThat(decodedClusterTopology)
         .describedAs("Decoded clusterTopology must be equal to initial one")
         .isEqualTo(initialClusterTopology);
+  }
+
+  @Test
+  void shouldEncodeAndDecodeAddMembersRequest() {
+    // given
+    final var addMembersRequest =
+        new AddMembersRequest(Set.of(MemberId.from("1"), MemberId.from("2")));
+
+    // when
+    final var encodedRequest = protoBufSerializer.encode(addMembersRequest);
+
+    // then
+    final var decodedRequest = protoBufSerializer.decodeAddMembersRequest(encodedRequest);
+    assertThat(decodedRequest).isEqualTo(addMembersRequest);
   }
 
   private static Stream<ClusterTopology> provideClusterTopologies() {
