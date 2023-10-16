@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {useState} from 'react';
+import {ChangeEvent, useState} from 'react';
 import classnames from 'classnames';
 import {
   TableSelectAll,
@@ -193,11 +193,13 @@ export default function Checklist<
           <TableToolbar>
             <TableToolbarContent>
               <TableToolbarSearch
-                value={query}
                 placeholder={labels.search?.toString()}
-                onChange={({target: {value}}) => {
-                  setQuery(value);
-                  onSearch(value);
+                onChange={(evt) => {
+                  if (evt) {
+                    const value = (evt as ChangeEvent<HTMLInputElement>).target.value;
+                    setQuery(value);
+                    onSearch(value);
+                  }
                 }}
                 onClear={() => {
                   setQuery('');

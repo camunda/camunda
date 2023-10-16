@@ -66,7 +66,6 @@ export default function CopyModal({
                 parentCollection={parentCollection}
                 moving={moving}
                 setMoving={(moving) => setMoving(moving)}
-                collection={collection}
                 setCollection={(collection) => setCollection(collection)}
               />
             )}

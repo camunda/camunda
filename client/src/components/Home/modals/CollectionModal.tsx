@@ -25,7 +25,7 @@ interface CollectionModalProps {
   title?: ReactNode;
   confirmText: string;
   initialName?: string;
-  onConfirm: (name?: string) => Promise<void>;
+  onConfirm: (name?: string) => Promise<string>;
   showSourcesModal?: boolean;
 }
 
@@ -39,7 +39,7 @@ export function CollectionModal({
 }: CollectionModalProps) {
   const [name, setName] = useState(initialName);
   const [loading, setLoading] = useState(false);
-  const [redirect, setRedirect] = useState(null);
+  const [redirect, setRedirect] = useState<string | null>(null);
   const [displaySourcesModal, setDisplaySourcesModal] = useState(false);
   const {mightFail} = useErrorHandling();
 

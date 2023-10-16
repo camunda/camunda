@@ -174,3 +174,9 @@ a[disabled] {
   // support to disable links: https://github.com/ReactTraining/react-router/issues/1082
   pointer-events: none;
 }
+
+// TODO: remove this once OPT-7355 is fixed
+// hide overlay displayed by dev server
+iframe#webpack-dev-server-client-overlay {
+  display: none;
+}

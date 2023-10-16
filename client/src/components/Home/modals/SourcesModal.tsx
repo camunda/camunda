@@ -52,7 +52,7 @@ export default function SourcesModal({
   const [definitions, setDefinitions] = useState<DefinitionWithTenants[]>();
   const [tenants, setTenants] = useState<TenantWithDefinitions[]>([]);
   const [selected, setSelected] = useState<Source[]>([]);
-  const [selectedTenant, setSelectedTenant] = useState();
+  const [selectedTenant, setSelectedTenant] = useState<string | null | undefined>();
   const [query, setQuery] = useState('');
   const [optimizeProfile, setOptimizeProfile] = useState('');
   const {mightFail} = useErrorHandling();
@@ -288,7 +288,7 @@ function format({key, type, tenants}: DefinitionWithTenants): Source {
   };
 }
 
-function definitionHasSelectedTenant(def: DefinitionWithTenants, selectedTenant?: string) {
+function definitionHasSelectedTenant(def: DefinitionWithTenants, selectedTenant?: string | null) {
   return def.tenants.some(({id}) =>
     typeof selectedTenant !== 'undefined' ? selectedTenant === id : true
   );

@@ -27,7 +27,6 @@ export default function MoveCopy({
   parentCollection,
   entity,
   moving,
-  collection,
   setMoving,
   setCollection,
 }: MoveCopyProps) {
@@ -72,6 +71,8 @@ export default function MoveCopy({
       : t('home.copy.noCollections')
     ).toString();
 
+  const multiTextCopy = getMulticopyText();
+
   return (
     <>
       <Toggle
@@ -84,10 +85,9 @@ export default function MoveCopy({
       />
       {moving && (
         <>
-          <ComboBox
+          <ComboBox<Partial<GenericEntity>>
             id="collectionSelection"
             items={availableCollections}
-            initialSelectedItem={collection ? collection.id || undefined : undefined}
             itemToString={(collection) => (collection as GenericEntity)?.name}
             onChange={({selectedItem}) => {
               const collection =
@@ -97,7 +97,9 @@ export default function MoveCopy({
             placeholder={getPlaceholder()}
             disabled={!availableCollections.length}
           />
-          <InlineNotification kind="info" hideCloseButton subtitle={getMulticopyText()} />
+          {multiTextCopy && (
+            <InlineNotification kind="info" hideCloseButton subtitle={getMulticopyText()} />
+          )}
         </>
       )}
     </>

@@ -24,10 +24,10 @@ export default function withErrorHandling<P extends object, T = any>(
   Component: ComponentType<P>
 ): ComponentType<Omit<P, keyof WithErrorHandlingProps<T>>> {
   const Wrapper = (props: Omit<P, keyof WithErrorHandlingProps<T>>) => {
-    const {error, mightFail, resetError} = useErrorHandling<T>();
+    const {error, mightFail, resetError} = useErrorHandling();
 
     return (
-      <Component mightFail={mightFail} error={error} resetError={resetError} {...(props as P)} />
+      <Component mightFail={mightFail<T>} error={error} resetError={resetError} {...(props as P)} />
     );
   };
 

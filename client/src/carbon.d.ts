@@ -590,27 +590,6 @@ declare module '@carbon/react' {
     newValue?: boolean
   ) => void;
 
-  export interface TableToolbarSearchProps
-    extends Omit<SearchElementProps, 'labelText' | 'onBlur' | 'onFocus'>,
-      InternationalProps<TableToolbarTranslationKey> {
-    defaultExpanded?: boolean | undefined;
-    expanded?: boolean | undefined;
-    labelText?: ReactNode | undefined;
-    onBlur?(
-      event: FocusEvent<HTMLInputElement>,
-      handleExpand: TableToolbarSearchHandleExpand
-    ): void;
-    onExpand?(event: FocusEvent<HTMLInputElement>, newExpand: boolean): void;
-    onFocus?(
-      event: FocusEvent<HTMLInputElement>,
-      handleExpand: TableToolbarSearchHandleExpand
-    ): void;
-    persistent?: boolean | undefined;
-    searchContainerClass?: string | undefined;
-  }
-
-  declare const TableToolbarSearch: FC<TableToolbarSearchProps>;
-
   export interface TabListProps extends DivAttributes {
     leftOverflowButtonProps?: HTMLAttributes<HTMLButtonElement>;
     rightOverflowButtonProps?: HTMLAttributes<HTMLButtonElement>;
