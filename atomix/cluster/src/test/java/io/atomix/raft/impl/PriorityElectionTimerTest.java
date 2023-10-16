@@ -108,4 +108,56 @@ final class PriorityElectionTimerTest {
         .as("the first election triggered should have been the high priority election")
         .isEqualTo(highPrioId);
   }
+
+  @Test
+  void canChangePriorityDynamically() {
+    final String highPrioId = "highPrioTimer";
+    final String lowPrioId = "lowPrioTimer";
+    final List<String> electionOrder = new CopyOnWriteArrayList<>();
+
+    final int targetPriority = 4;
+    final Duration electionTimeout = Duration.ofMillis(100);
+    final PriorityElectionTimer timerLowPrio =
+        new PriorityElectionTimer(
+            electionTimeout,
+            threadContext,
+            () -> electionOrder.add(lowPrioId),
+            log,
+            targetPriority, // set higher priority first
+            2);
+
+    final PriorityElectionTimer timerHighPrio =
+        new PriorityElectionTimer(
+            electionTimeout,
+            threadContext,
+            () -> electionOrder.add(highPrioId),
+            log,
+            targetPriority,
+            1); // set lower priority first
+
+    // when
+    timerLowPrio.reset();
+    timerHighPrio.reset();
+
+    threadContext
+        .getDeterministicScheduler()
+        .tick(electionTimeout.toMillis(), TimeUnit.MILLISECONDS);
+
+    timerLowPrio.setNodePriority(1);
+    timerHighPrio.setNodePriority(targetPriority);
+
+    for (int i = 0; i < targetPriority - 1; i++) {
+      threadContext
+          .getDeterministicScheduler()
+          .tick(electionTimeout.toMillis(), TimeUnit.MILLISECONDS);
+    }
+
+    // then
+    assertThat(electionOrder)
+        .as("both elections should have been triggered eventually")
+        .contains(highPrioId, lowPrioId);
+    assertThat(electionOrder.get(0))
+        .as("the first election triggered should have been the high priority election")
+        .isEqualTo(highPrioId);
+  }
 }
