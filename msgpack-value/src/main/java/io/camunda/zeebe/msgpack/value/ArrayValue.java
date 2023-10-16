@@ -30,12 +30,6 @@ public final class ArrayValue<T extends BaseValue> extends BaseValue implements 
   // iterator
   private int cursorOffset;
 
-  public ArrayValue(final T innerValue) {
-    this.innerValue = innerValue;
-    innerValueFactory = null;
-    reset();
-  }
-
   public ArrayValue(final Supplier<T> innerValueFactory) {
     this.innerValueFactory = innerValueFactory;
     innerValue = innerValueFactory.get();

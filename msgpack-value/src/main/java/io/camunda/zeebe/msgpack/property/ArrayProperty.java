@@ -18,10 +18,6 @@ import java.util.stream.StreamSupport;
 
 public final class ArrayProperty<T extends BaseValue> extends BaseProperty<ArrayValue<T>>
     implements ValueArray<T> {
-  public ArrayProperty(final String keyString, final T innerValue) {
-    super(keyString, new ArrayValue<>(innerValue));
-    isSet = true;
-  }
 
   public ArrayProperty(final String keyString, final Supplier<T> innerValueFactory) {
     super(keyString, new ArrayValue<>(innerValueFactory));
