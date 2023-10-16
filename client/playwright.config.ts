@@ -10,6 +10,19 @@ import {devices, PlaywrightTestConfig} from '@playwright/test';
 const IS_CI = Boolean(process.env.CI);
 const IS_E2E = Boolean(process.env.IS_E2E);
 const IS_A11Y = Boolean(process.env.IS_A11Y);
+const IS_SCREENSHOT_GENERATOR = Boolean(process.env.IS_SCREENSHOT_GENERATOR);
+
+const getPort = () => {
+  if (IS_A11Y || IS_SCREENSHOT_GENERATOR) {
+    return 3000;
+  }
+
+  if (IS_E2E) {
+    return IS_CI ? 8080 : 3001;
+  }
+
+  return 8081;
+};
 
 /**
  * See https://playwright.dev/docs/test-configuration.
@@ -38,9 +51,7 @@ const config: PlaywrightTestConfig = {
   outputDir: 'test-results/',
   use: {
     actionTimeout: 0,
-    baseURL: `http://localhost:${
-      IS_A11Y ? 3000 : IS_E2E ? (IS_CI ? 8080 : 3001) : 8081
-    }`,
+    baseURL: `http://localhost:${getPort()}`,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
   },

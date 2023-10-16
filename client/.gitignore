@@ -27,3 +27,4 @@ yarn-error.log*
 /playwright-report/
 /playwright/.cache/
 /playwright/.auth/
+/e2e-playwright/docs-screenshots/**/*.png

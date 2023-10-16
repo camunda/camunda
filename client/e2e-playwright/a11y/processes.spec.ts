@@ -7,7 +7,6 @@
 
 import {expect} from '@playwright/test';
 import {test} from '../test-fixtures';
-import {Paths} from 'modules/Routes';
 import {
   mockBatchOperations,
   mockGroupedProcesses,
@@ -22,6 +21,7 @@ test.describe('processes', () => {
     test(`have no violations in ${theme} theme`, async ({
       page,
       commonPage,
+      processesPage,
       makeAxeBuilder,
     }) => {
       await commonPage.changeTheme(theme);
@@ -36,8 +36,9 @@ test.describe('processes', () => {
         }),
       );
 
-      await page.goto(`${Paths.processes()}?active=true&incidents=true`, {
-        waitUntil: 'networkidle',
+      await processesPage.navigateToProcesses({
+        searchParams: {active: 'true', incidents: 'true'},
+        options: {waitUntil: 'networkidle'},
       });
 
       const results = await makeAxeBuilder().analyze();

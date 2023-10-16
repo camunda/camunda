@@ -7,7 +7,6 @@
 
 import {expect} from '@playwright/test';
 import {test} from '../test-fixtures';
-import {Paths} from 'modules/Routes';
 import {
   mockIncidentsByError,
   mockIncidentsByProcess,
@@ -17,7 +16,7 @@ import {
 
 test.describe('dashboard page', () => {
   for (const theme of ['light', 'dark']) {
-    test(`empty page - ${theme}`, async ({page, commonPage}) => {
+    test(`empty page - ${theme}`, async ({page, commonPage, dashboardPage}) => {
       await commonPage.changeTheme(theme);
 
       await page.route(
@@ -33,26 +32,26 @@ test.describe('dashboard page', () => {
         }),
       );
 
-      await page.goto(Paths.dashboard(), {
-        waitUntil: 'networkidle',
-      });
+      await dashboardPage.navigateToDashboard({waitUntil: 'networkidle'});
 
       await expect(page).toHaveScreenshot();
     });
 
-    test(`error page - ${theme}`, async ({page, commonPage}) => {
+    test(`error page - ${theme}`, async ({page, commonPage, dashboardPage}) => {
       await commonPage.changeTheme(theme);
 
       await page.route(/^.*\/api.*$/i, mockResponses({}));
 
-      await page.goto(Paths.dashboard(), {
-        waitUntil: 'networkidle',
-      });
+      await dashboardPage.navigateToDashboard({waitUntil: 'networkidle'});
 
       await expect(page).toHaveScreenshot();
     });
 
-    test(`filled with data - ${theme}`, async ({page, commonPage}) => {
+    test(`filled with data - ${theme}`, async ({
+      page,
+      commonPage,
+      dashboardPage,
+    }) => {
       await commonPage.changeTheme(theme);
 
       await page.route(
@@ -64,14 +63,16 @@ test.describe('dashboard page', () => {
         }),
       );
 
-      await page.goto(Paths.dashboard(), {
-        waitUntil: 'networkidle',
-      });
+      await dashboardPage.navigateToDashboard({waitUntil: 'networkidle'});
 
       await expect(page).toHaveScreenshot();
     });
 
-    test(`expanded rows - ${theme}`, async ({page, commonPage}) => {
+    test(`expanded rows - ${theme}`, async ({
+      page,
+      commonPage,
+      dashboardPage,
+    }) => {
       await commonPage.changeTheme(theme);
 
       await page.route(
@@ -83,9 +84,7 @@ test.describe('dashboard page', () => {
         }),
       );
 
-      await page.goto(Paths.dashboard(), {
-        waitUntil: 'networkidle',
-      });
+      await dashboardPage.navigateToDashboard({waitUntil: 'networkidle'});
 
       const expandInstancesByProcessRow = page
         .getByTestId('instances-by-process')

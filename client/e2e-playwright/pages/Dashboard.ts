@@ -17,7 +17,7 @@ export class Dashboard {
     this.metricPanel = page.getByTestId('metric-panel');
   }
 
-  async navigateToDashboard() {
-    await this.page.goto(Paths.dashboard());
+  async navigateToDashboard(options?: Parameters<Page['goto']>[1]) {
+    await this.page.goto(Paths.dashboard(), options);
   }
 }

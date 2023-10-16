@@ -7,7 +7,6 @@
 
 import {expect} from '@playwright/test';
 import {test} from '../test-fixtures';
-import {Paths} from 'modules/Routes';
 import {
   mockIncidentsByError,
   mockIncidentsByProcess,
@@ -20,6 +19,7 @@ test.describe('dashboard', () => {
     test(`have no violations in ${theme} theme`, async ({
       page,
       commonPage,
+      dashboardPage,
       makeAxeBuilder,
     }) => {
       await commonPage.changeTheme(theme);
@@ -33,9 +33,7 @@ test.describe('dashboard', () => {
         }),
       );
 
-      await page.goto(Paths.dashboard(), {
-        waitUntil: 'networkidle',
-      });
+      await dashboardPage.navigateToDashboard({waitUntil: 'networkidle'});
 
       const results = await makeAxeBuilder()
         .disableRules(['td-headers-attr'])

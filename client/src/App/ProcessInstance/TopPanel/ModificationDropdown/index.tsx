@@ -182,6 +182,7 @@ const ModificationDropdown: React.FC<Props> = observer(
                         <Button
                           kind="ghost"
                           title="Move selected instance in this flow node to another target"
+                          aria-label="Move selected instance in this flow node to another target"
                           size="sm"
                           renderIcon={ArrowRight}
                           onClick={() => {

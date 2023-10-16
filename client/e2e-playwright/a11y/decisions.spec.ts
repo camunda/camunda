@@ -7,7 +7,6 @@
 
 import {expect} from '@playwright/test';
 import {test} from '../test-fixtures';
-import {Paths} from 'modules/Routes';
 import {
   mockDecisionInstances,
   mockGroupedDecisions,
@@ -20,6 +19,7 @@ test.describe('decisions', () => {
     test(`have no violations in ${theme} theme`, async ({
       page,
       commonPage,
+      decisionsPage,
       makeAxeBuilder,
     }) => {
       await commonPage.changeTheme(theme);
@@ -33,8 +33,9 @@ test.describe('decisions', () => {
         }),
       );
 
-      await page.goto(`${Paths.decisions()}?evaluated=true&failed=true`, {
-        waitUntil: 'networkidle',
+      await decisionsPage.navigateToDecisions({
+        searchParams: {evaluated: 'true', failed: 'true'},
+        options: {waitUntil: 'networkidle'},
       });
 
       const results = await makeAxeBuilder().analyze();

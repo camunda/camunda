@@ -6,7 +6,7 @@
  */
 
 const generateUniqueID = () => {
-  return (Date.now() + Math.random()).toString();
+  return (Date.now() + Math.floor(Math.random() * 100)).toString();
 };
 
 export {generateUniqueID};
