@@ -10,6 +10,7 @@ package io.camunda.zeebe.topology.serializer;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Timestamp;
 import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.topology.api.TopologyManagementRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.AddMembersRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementResponse.StatusCode;
 import io.camunda.zeebe.topology.api.TopologyManagementResponse.TopologyChangeStatus;
@@ -264,11 +265,13 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
   }
 
   @Override
-  public byte[] encode(final AddMembersRequest addMembersRequest) {
-    return Requests.AddMemberRequest.newBuilder()
-        .addAllMemberIds(addMembersRequest.members().stream().map(MemberId::id).toList())
-        .build()
-        .toByteArray();
+  public byte[] encodeRequest(final TopologyManagementRequest topologyManagementRequest) {
+    return switch (topologyManagementRequest) {
+      case AddMembersRequest add -> Requests.AddMemberRequest.newBuilder()
+          .addAllMemberIds(add.members().stream().map(MemberId::id).toList())
+          .build()
+          .toByteArray();
+    };
   }
 
   @Override

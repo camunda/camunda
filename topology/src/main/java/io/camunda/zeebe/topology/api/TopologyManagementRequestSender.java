@@ -42,7 +42,7 @@ final class TopologyManagementRequestSender implements TopologyManagementApi {
         communicationService.send(
             TopologyRequestTopics.ADD_MEMBER.topic(),
             addMembersRequest,
-            serializer::encode,
+            serializer::encodeRequest,
             serializer::decodeTopologyChangeStatus,
             coordinator,
             TIMEOUT);

@@ -70,7 +70,7 @@ final class ProtoBufSerializerTest {
         new AddMembersRequest(Set.of(MemberId.from("1"), MemberId.from("2")));
 
     // when
-    final var encodedRequest = protoBufSerializer.encode(addMembersRequest);
+    final var encodedRequest = protoBufSerializer.encodeRequest(addMembersRequest);
 
     // then
     final var decodedRequest = protoBufSerializer.decodeAddMembersRequest(encodedRequest);
