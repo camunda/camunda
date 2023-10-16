@@ -33,7 +33,6 @@ const NodeContainer = styled.div`
 
 const ErrorMessage = styled(BaseErrorMessage)`
   margin: auto;
-  margin-top: var(--cds-spacing-08);
 `;
 
 export {NodeContainer, InstanceHistory, PanelHeader, Container, ErrorMessage};
