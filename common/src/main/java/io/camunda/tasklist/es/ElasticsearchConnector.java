@@ -23,6 +23,7 @@ import io.camunda.tasklist.property.ElasticsearchProperties;
 import io.camunda.tasklist.property.SslProperties;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.RetryOperation;
+import jakarta.annotation.PreDestroy;
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -81,6 +82,8 @@ public class ElasticsearchConnector {
 
   @Autowired private TasklistProperties tasklistProperties;
 
+  private ElasticsearchClient elasticsearchClient;
+
   @Bean
   public co.elastic.clients.elasticsearch.ElasticsearchClient elasticsearchClient() {
     LOGGER.debug("Creating ElasticsearchClient ...");
@@ -101,14 +104,24 @@ public class ElasticsearchConnector {
         new RestClientTransport(restClient, new JacksonJsonpMapper());
 
     // And create the API client
-    final co.elastic.clients.elasticsearch.ElasticsearchClient elasticsearchClient =
-        new ElasticsearchClient(transport);
+    elasticsearchClient = new ElasticsearchClient(transport);
     if (!checkHealth(elasticsearchClient)) {
       LOGGER.warn("Elasticsearch cluster is not accessible");
     } else {
       LOGGER.debug("Elasticsearch connection was successfully created.");
     }
     return elasticsearchClient;
+  }
+
+  @PreDestroy
+  public void tearDown() {
+    if (elasticsearchClient != null) {
+      try {
+        elasticsearchClient._transport().close();
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+    }
   }
 
   @Bean(destroyMethod = "close")

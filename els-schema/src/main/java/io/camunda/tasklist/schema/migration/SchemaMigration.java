@@ -55,7 +55,7 @@ public class SchemaMigration implements CommandLineRunner {
     springApplication.setAddCommandLineProperties(true);
     springApplication.addListeners(new ApplicationErrorListener());
     final ConfigurableApplicationContext ctx = springApplication.run(args);
-    System.exit(SpringApplication.exit(ctx));
+    SpringApplication.exit(ctx);
   }
 
   public static class ApplicationErrorListener
