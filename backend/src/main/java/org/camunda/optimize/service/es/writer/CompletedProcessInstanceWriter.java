@@ -20,16 +20,16 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.BUSINESS_KEY;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.DATA_SOURCE;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.DURATION;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.END_DATE;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.PROCESS_DEFINITION_ID;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.PROCESS_DEFINITION_KEY;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.PROCESS_DEFINITION_VERSION;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.START_DATE;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.STATE;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.TENANT_ID;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.BUSINESS_KEY;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.DATA_SOURCE;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.DURATION;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.END_DATE;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.PROCESS_DEFINITION_ID;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.PROCESS_DEFINITION_KEY;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.PROCESS_DEFINITION_VERSION;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.START_DATE;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.STATE;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.TENANT_ID;
 import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 
 @Component

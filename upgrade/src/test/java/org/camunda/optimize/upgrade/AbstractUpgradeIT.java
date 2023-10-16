@@ -17,9 +17,9 @@ import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
-import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
+import org.camunda.optimize.service.es.schema.IndexSettingsBuilderES;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
-import org.camunda.optimize.service.es.schema.index.MetadataIndex;
+import org.camunda.optimize.service.es.schema.index.MetadataIndexES;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.elasticsearch.DatabaseConnectionNodeConfiguration;
@@ -81,7 +81,7 @@ import static org.mockserver.model.HttpRequest.request;
 
 public abstract class AbstractUpgradeIT {
 
-  protected static final MetadataIndex METADATA_INDEX = new MetadataIndex();
+  protected static final MetadataIndexES METADATA_INDEX = new MetadataIndexES();
 
   protected static final String FROM_VERSION = "2.6.0";
   protected static final String INTERMEDIATE_VERSION = "2.6.1";
@@ -144,7 +144,7 @@ public abstract class AbstractUpgradeIT {
     this.esMockServer.close();
   }
 
-  protected void initSchema(List<IndexMappingCreator> mappingCreators) {
+  protected void initSchema(List<IndexMappingCreator<?>> mappingCreators) {
     final ElasticSearchSchemaManager elasticSearchSchemaManager = new ElasticSearchSchemaManager(
       metadataService, createDefaultConfiguration(), indexNameService, mappingCreators
     );
@@ -269,7 +269,7 @@ public abstract class AbstractUpgradeIT {
 
   private Settings createIndexSettings(IndexMappingCreator indexMappingCreator) {
     try {
-      return IndexSettingsBuilder.buildAllSettings(configurationService, indexMappingCreator);
+      return IndexSettingsBuilderES.buildAllSettings(configurationService, indexMappingCreator);
     } catch (IOException e) {
       throw new OptimizeRuntimeException("Could not create index settings");
     }

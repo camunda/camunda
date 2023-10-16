@@ -15,8 +15,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Proc
 import java.time.OffsetDateTime;
 import java.util.List;
 
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_END_DATE;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_START_DATE;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_END_DATE;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_START_DATE;
 
 public class FixedFlowNodeDateFilterBuilder {
   private final ProcessFilterBuilder filterBuilder;

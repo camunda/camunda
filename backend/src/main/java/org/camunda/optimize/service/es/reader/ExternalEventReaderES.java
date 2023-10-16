@@ -23,7 +23,7 @@ import org.camunda.optimize.service.db.reader.ExternalEventReader;
 import org.camunda.optimize.service.es.CompositeAggregationScroller;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
-import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
+import org.camunda.optimize.service.es.schema.IndexSettingsBuilderES;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
@@ -59,13 +59,13 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.dto.optimize.query.sorting.SortOrder.DESC;
-import static org.camunda.optimize.service.es.schema.index.events.EventIndex.EVENT_NAME;
-import static org.camunda.optimize.service.es.schema.index.events.EventIndex.GROUP;
-import static org.camunda.optimize.service.es.schema.index.events.EventIndex.INGESTION_TIMESTAMP;
-import static org.camunda.optimize.service.es.schema.index.events.EventIndex.N_GRAM_FIELD;
-import static org.camunda.optimize.service.es.schema.index.events.EventIndex.SOURCE;
-import static org.camunda.optimize.service.es.schema.index.events.EventIndex.TIMESTAMP;
-import static org.camunda.optimize.service.es.schema.index.events.EventIndex.TRACE_ID;
+import static org.camunda.optimize.service.db.schema.index.events.EventIndex.EVENT_NAME;
+import static org.camunda.optimize.service.db.schema.index.events.EventIndex.GROUP;
+import static org.camunda.optimize.service.db.schema.index.events.EventIndex.INGESTION_TIMESTAMP;
+import static org.camunda.optimize.service.db.schema.index.events.EventIndex.N_GRAM_FIELD;
+import static org.camunda.optimize.service.db.schema.index.events.EventIndex.SOURCE;
+import static org.camunda.optimize.service.db.schema.index.events.EventIndex.TIMESTAMP;
+import static org.camunda.optimize.service.db.schema.index.events.EventIndex.TRACE_ID;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SORT_NULLS_FIRST;
@@ -175,7 +175,7 @@ public class ExternalEventReaderES implements ExternalEventReader {
     AbstractQueryBuilder<?> query;
     if (searchTerm == null) {
       query = matchAllQuery();
-    } else if (searchTerm.length() > IndexSettingsBuilder.MAX_GRAM) {
+    } else if (searchTerm.length() > IndexSettingsBuilderES.MAX_GRAM) {
       query = boolQuery().must(prefixQuery(GROUP, searchTerm));
     } else {
       query = boolQuery()
@@ -290,7 +290,7 @@ public class ExternalEventReaderES implements ExternalEventReader {
       return matchAllQuery();
     }
 
-    if (searchTerm.length() > IndexSettingsBuilder.MAX_GRAM) {
+    if (searchTerm.length() > IndexSettingsBuilderES.MAX_GRAM) {
       return boolQuery().minimumShouldMatch(1)
         .should(prefixQuery(GROUP, searchTerm))
         .should(prefixQuery(SOURCE, searchTerm))

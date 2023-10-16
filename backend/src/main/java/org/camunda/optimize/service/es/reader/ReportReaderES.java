@@ -47,11 +47,11 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.COLLECTION_ID;
-import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.DATA;
-import static org.camunda.optimize.service.es.schema.index.report.CombinedReportIndex.REPORTS;
-import static org.camunda.optimize.service.es.schema.index.report.CombinedReportIndex.REPORT_ITEM_ID;
-import static org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex.MANAGEMENT_REPORT;
+import static org.camunda.optimize.service.db.schema.index.report.CombinedReportIndex.COLLECTION_ID;
+import static org.camunda.optimize.service.db.schema.index.report.CombinedReportIndex.DATA;
+import static org.camunda.optimize.service.db.schema.index.report.CombinedReportIndex.REPORTS;
+import static org.camunda.optimize.service.db.schema.index.report.CombinedReportIndex.REPORT_ITEM_ID;
+import static org.camunda.optimize.service.db.schema.index.report.SingleProcessReportIndex.MANAGEMENT_REPORT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_DECISION_REPORT_INDEX_NAME;

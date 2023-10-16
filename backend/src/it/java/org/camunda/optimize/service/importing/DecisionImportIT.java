@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.importing;
 
 import io.github.netmikey.logunit.api.LogCapturer;
+import jakarta.ws.rs.core.Response;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
@@ -16,8 +17,9 @@ import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.index.TimestampBasedImportIndexDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
-import org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex;
-import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex;
+import org.camunda.optimize.service.db.schema.index.DecisionDefinitionIndex;
+import org.camunda.optimize.service.db.schema.index.DecisionInstanceIndex;
+import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndexES;
 import org.camunda.optimize.service.importing.engine.fetcher.definition.DecisionDefinitionFetcher;
 import org.camunda.optimize.service.importing.engine.service.DecisionInstanceImportService;
 import org.camunda.optimize.test.it.extension.ErrorResponseMock;
@@ -39,7 +41,6 @@ import org.mockserver.model.HttpResponse;
 import org.mockserver.verify.VerificationTimes;
 import org.slf4j.event.Level;
 
-import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
@@ -53,7 +54,7 @@ import static jakarta.ws.rs.HttpMethod.GET;
 import static jakarta.ws.rs.HttpMethod.POST;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.groups.Tuple.tuple;
-import static org.camunda.optimize.service.es.schema.index.index.TimestampBasedImportIndex.ES_TYPE_INDEX_REFERS_TO;
+import static org.camunda.optimize.service.db.schema.index.index.TimestampBasedImportIndex.ES_TYPE_INDEX_REFERS_TO;
 import static org.camunda.optimize.service.importing.engine.handler.DecisionDefinitionImportIndexHandler.DECISION_DEFINITION_IMPORT_INDEX_DOC_ID;
 import static org.camunda.optimize.service.util.InstanceIndexUtil.getDecisionInstanceIndexAliasName;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
@@ -188,8 +189,8 @@ public class DecisionImportIT extends AbstractImportIT {
 
     // then both instance indices exist
     assertThat(indicesExist(Arrays.asList(
-      new DecisionInstanceIndex(key1),
-      new DecisionInstanceIndex(key2)
+      new DecisionInstanceIndexES(key1),
+      new DecisionInstanceIndexES(key2)
     ))).isTrue();
 
     // there is one instance in each index

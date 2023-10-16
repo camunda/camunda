@@ -26,7 +26,7 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
 
-import static org.camunda.optimize.service.es.schema.index.ExternalProcessVariableIndex.INGESTION_TIMESTAMP;
+import static org.camunda.optimize.service.db.schema.index.ExternalProcessVariableIndex.INGESTION_TIMESTAMP;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_PROCESS_VARIABLE_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
 import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;

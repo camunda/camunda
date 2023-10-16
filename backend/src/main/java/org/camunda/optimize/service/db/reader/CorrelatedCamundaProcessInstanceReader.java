@@ -10,8 +10,8 @@ import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEvent
 
 import java.util.List;
 
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.BUSINESS_KEY;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.BUSINESS_KEY;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLES;
 
 public interface CorrelatedCamundaProcessInstanceReader {
 

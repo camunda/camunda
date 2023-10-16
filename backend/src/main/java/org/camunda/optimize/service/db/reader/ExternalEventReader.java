@@ -18,11 +18,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static org.camunda.optimize.service.es.schema.index.events.EventIndex.EVENT_NAME;
-import static org.camunda.optimize.service.es.schema.index.events.EventIndex.GROUP;
-import static org.camunda.optimize.service.es.schema.index.events.EventIndex.SOURCE;
-import static org.camunda.optimize.service.es.schema.index.events.EventIndex.TIMESTAMP;
-import static org.camunda.optimize.service.es.schema.index.events.EventIndex.TRACE_ID;
+import static org.camunda.optimize.service.db.schema.index.events.EventIndex.EVENT_NAME;
+import static org.camunda.optimize.service.db.schema.index.events.EventIndex.GROUP;
+import static org.camunda.optimize.service.db.schema.index.events.EventIndex.SOURCE;
+import static org.camunda.optimize.service.db.schema.index.events.EventIndex.TIMESTAMP;
+import static org.camunda.optimize.service.db.schema.index.events.EventIndex.TRACE_ID;
 
 public interface ExternalEventReader {
 

@@ -12,7 +12,8 @@ import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.rest.export.ExportEntityType;
-import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
+import org.camunda.optimize.service.db.schema.index.report.SingleProcessReportIndex;
+import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndexES;
 
 import jakarta.validation.constraints.NotNull;
 

@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
+import jakarta.ws.rs.NotFoundException;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.StringSubstitutor;
@@ -31,15 +32,15 @@ import org.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleReq
 import org.camunda.optimize.dto.optimize.query.event.process.es.EsEventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableUpdateInstanceDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
+import org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
+import org.camunda.optimize.service.db.schema.index.events.CamundaActivityEventIndex;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.report.MinMaxStatDto;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
-import org.camunda.optimize.service.es.schema.index.ExternalProcessVariableIndex;
-import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
-import org.camunda.optimize.service.es.schema.index.VariableUpdateInstanceIndex;
-import org.camunda.optimize.service.es.schema.index.events.CamundaActivityEventIndex;
-import org.camunda.optimize.service.es.schema.index.events.EventIndex;
+import org.camunda.optimize.service.es.schema.index.ExternalProcessVariableIndexES;
+import org.camunda.optimize.service.es.schema.index.VariableUpdateInstanceIndexES;
+import org.camunda.optimize.service.es.schema.index.events.EventIndexES;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.EsHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -85,7 +86,6 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import org.mockserver.integration.ClientAndServer;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 
-import jakarta.ws.rs.NotFoundException;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
@@ -102,15 +102,15 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_TOTAL_DURATION;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_TYPE;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.PROCESS_INSTANCE_ID;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.USER_TASK_IDLE_DURATION;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.USER_TASK_WORK_DURATION;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLES;
 import static org.camunda.optimize.service.es.OptimizeElasticsearchClient.INDICES_EXIST_OPTIONS;
 import static org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil.mapHits;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_TOTAL_DURATION;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_TYPE;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.PROCESS_INSTANCE_ID;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_IDLE_DURATION;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_WORK_DURATION;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
 import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableIdField;
 import static org.camunda.optimize.service.util.importing.EngineConstants.FLOW_NODE_TYPE_USER_TASK;
@@ -496,13 +496,13 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
 
   public void deleteAllVariableUpdateInstanceIndices() {
     final String[] indexNames = getOptimizeElasticClient().getAllIndicesForAlias(
-      getIndexNameService().getOptimizeIndexAliasForIndex(new VariableUpdateInstanceIndex())).toArray(String[]::new);
+      getIndexNameService().getOptimizeIndexAliasForIndex(new VariableUpdateInstanceIndexES())).toArray(String[]::new);
     getOptimizeElasticClient().deleteIndexByRawIndexNames(indexNames);
   }
 
   public void deleteAllExternalVariableIndices() {
     final String[] indexNames = getOptimizeElasticClient().getAllIndicesForAlias(
-      getIndexNameService().getOptimizeIndexAliasForIndex(new ExternalProcessVariableIndex())).toArray(String[]::new);
+      getIndexNameService().getOptimizeIndexAliasForIndex(new ExternalProcessVariableIndexES())).toArray(String[]::new);
     getOptimizeElasticClient().deleteIndexByRawIndexNames(indexNames);
   }
 
@@ -569,7 +569,7 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
   @SneakyThrows
   public List<CamundaActivityEventDto> getAllStoredCamundaActivityEventsForDefinition(final String processDefinitionKey) {
     return getAllDocumentsOfIndexAs(
-      new CamundaActivityEventIndex(processDefinitionKey).getIndexName(), CamundaActivityEventDto.class
+      CamundaActivityEventIndex.constructIndexName(processDefinitionKey), CamundaActivityEventDto.class
     );
   }
 
@@ -654,7 +654,7 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
   }
 
   public void deleteAllExternalEventIndices() {
-    final String eventIndexAlias = getIndexNameService().getOptimizeIndexAliasForIndex(new EventIndex());
+    final String eventIndexAlias = getIndexNameService().getOptimizeIndexAliasForIndex(new EventIndexES());
     final String[] eventIndices = getOptimizeElasticClient().getAllIndicesForAlias(eventIndexAlias).toArray(String[]::new);
     getOptimizeElasticClient().deleteIndexByRawIndexNames(eventIndices);
   }

@@ -15,22 +15,23 @@ import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.es.schema.RequestOptionsProvider;
-import org.camunda.optimize.service.es.schema.index.BusinessKeyIndex;
-import org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex;
-import org.camunda.optimize.service.es.schema.index.ExternalProcessVariableIndex;
-import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex;
-import org.camunda.optimize.service.es.schema.index.TenantIndex;
-import org.camunda.optimize.service.es.schema.index.VariableUpdateInstanceIndex;
-import org.camunda.optimize.service.es.schema.index.events.EventProcessDefinitionIndex;
-import org.camunda.optimize.service.es.schema.index.events.EventProcessPublishStateIndex;
-import org.camunda.optimize.service.es.schema.index.index.ImportIndexIndex;
-import org.camunda.optimize.service.es.schema.index.index.TimestampBasedImportIndex;
+import org.camunda.optimize.service.es.schema.index.BusinessKeyIndexES;
+import org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndexES;
+import org.camunda.optimize.service.es.schema.index.ExternalProcessVariableIndexES;
+import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndexES;
+import org.camunda.optimize.service.es.schema.index.TenantIndexES;
+import org.camunda.optimize.service.es.schema.index.VariableUpdateInstanceIndexES;
+import org.camunda.optimize.service.es.schema.index.events.EventProcessDefinitionIndexES;
+import org.camunda.optimize.service.es.schema.index.events.EventProcessPublishStateIndexES;
+import org.camunda.optimize.service.es.schema.index.index.ImportIndexIndexES;
+import org.camunda.optimize.service.es.schema.index.index.TimestampBasedImportIndexES;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
 import org.camunda.optimize.util.jetty.LoggingConfigurationReader;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.xcontent.XContentBuilder;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -54,17 +55,18 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INS
 @Slf4j
 public class ReimportPreparation {
 
-  private static final List<IndexMappingCreator> STATIC_INDICES_TO_DELETE = List.of(
-    new ImportIndexIndex(),
-    new TimestampBasedImportIndex(),
-    new ProcessDefinitionIndex(),
-    new EventProcessDefinitionIndex(),
-    new DecisionDefinitionIndex(),
-    new TenantIndex(),
-    new BusinessKeyIndex(),
-    new VariableUpdateInstanceIndex(),
-    new EventProcessPublishStateIndex(),
-    new ExternalProcessVariableIndex()
+  // TODO deal with this with OPT-7244
+  private static final List<IndexMappingCreator<?>> STATIC_INDICES_TO_DELETE = List.of(
+    new ImportIndexIndexES(),
+    new TimestampBasedImportIndexES(),
+    new ProcessDefinitionIndexES(),
+    new EventProcessDefinitionIndexES(),
+    new DecisionDefinitionIndexES(),
+    new TenantIndexES(),
+    new BusinessKeyIndexES(),
+    new VariableUpdateInstanceIndexES(),
+    new EventProcessPublishStateIndexES(),
+    new ExternalProcessVariableIndexES()
   );
 
   public static void main(String[] args) {

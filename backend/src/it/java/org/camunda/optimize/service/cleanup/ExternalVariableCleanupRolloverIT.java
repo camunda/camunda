@@ -7,7 +7,7 @@ package org.camunda.optimize.service.cleanup;
 
 import org.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableDto;
 import org.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableRequestDto;
-import org.camunda.optimize.service.es.schema.index.ExternalProcessVariableIndex;
+import org.camunda.optimize.service.es.schema.index.ExternalProcessVariableIndexES;
 import org.camunda.optimize.service.util.configuration.cleanup.ExternalVariableCleanupConfiguration;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,7 +30,7 @@ public class ExternalVariableCleanupRolloverIT extends AbstractCleanupIT {
     elasticSearchIntegrationTestExtension.deleteAllExternalVariableIndices();
     embeddedOptimizeExtension.getElasticSearchSchemaManager().createOrUpdateOptimizeIndex(
       embeddedOptimizeExtension.getOptimizeElasticClient(),
-      new ExternalProcessVariableIndex()
+      new ExternalProcessVariableIndexES()
     );
   }
 

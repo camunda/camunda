@@ -14,7 +14,8 @@ import org.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEven
 import org.camunda.optimize.service.db.reader.CamundaActivityEventReader;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
-import org.camunda.optimize.service.es.schema.index.events.CamundaActivityEventIndex;
+import org.camunda.optimize.service.db.schema.index.events.CamundaActivityEventIndex;
+import org.camunda.optimize.service.es.schema.index.events.CamundaActivityEventIndexES;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -75,14 +76,14 @@ public class CamundaActivityEventWriter {
       false,
       // use wildcarded index name to catch all indices that exist after potential rollover
       esClient.getIndexNameService()
-        .getOptimizeIndexNameWithVersionWithWildcardSuffix(new CamundaActivityEventIndex(definitionKey))
+        .getOptimizeIndexNameWithVersionWithWildcardSuffix(new CamundaActivityEventIndexES(definitionKey))
     );
   }
 
   private Optional<IndexRequest> createIndexRequestForActivityEvent(CamundaActivityEventDto camundaActivityEventDto) {
     try {
       return Optional.of(
-        new IndexRequest(new CamundaActivityEventIndex(camundaActivityEventDto.getProcessDefinitionKey()).getIndexName())
+        new IndexRequest(CamundaActivityEventIndex.constructIndexName(camundaActivityEventDto.getProcessDefinitionKey()))
           .id(IdGenerator.getNextId())
           .source(objectMapper.writeValueAsString(camundaActivityEventDto), XContentType.JSON)
       );
@@ -98,7 +99,7 @@ public class CamundaActivityEventWriter {
     processDefinitionKeys.removeAll(currentProcessDefinitions);
     processDefinitionKeys.stream()
       .distinct()
-      .map(CamundaActivityEventIndex::new)
+      .map(CamundaActivityEventIndexES::new)
       .forEach(activityIndex -> elasticSearchSchemaManager.createIndexIfMissing(esClient, activityIndex));
   }
 }

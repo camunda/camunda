@@ -9,8 +9,8 @@ import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventSequenceCountDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventTraceStateDto;
-import org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex;
-import org.camunda.optimize.service.es.schema.index.events.EventTraceStateIndex;
+import org.camunda.optimize.service.db.schema.index.events.EventSequenceCountIndex;
+import org.camunda.optimize.service.db.schema.index.events.EventTraceStateIndex;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.search.SearchResponse;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,14 +39,14 @@ public abstract class AbstractEventTraceStateImportIT extends AbstractPlatformIT
 
   protected List<EventTraceStateDto> getAllStoredExternalEventTraceStates() {
     return getAllStoredDocumentsForIndexAsClass(
-      new EventTraceStateIndex(EXTERNAL_EVENTS_INDEX_SUFFIX).getIndexName(),
+      EventTraceStateIndex.constructIndexName(EXTERNAL_EVENTS_INDEX_SUFFIX),
       EventTraceStateDto.class
     );
   }
 
   protected List<EventSequenceCountDto> getAllStoredExternalEventSequenceCounts() {
     return getAllStoredDocumentsForIndexAsClass(
-      new EventSequenceCountIndex(EXTERNAL_EVENTS_INDEX_SUFFIX).getIndexName(),
+      EventSequenceCountIndex.constructIndexName(EXTERNAL_EVENTS_INDEX_SUFFIX),
       EventSequenceCountDto.class
     );
   }

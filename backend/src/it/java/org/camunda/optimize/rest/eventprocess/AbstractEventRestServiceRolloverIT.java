@@ -8,7 +8,7 @@ package org.camunda.optimize.rest.eventprocess;
 import org.camunda.optimize.dto.optimize.query.event.DeletableEventDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto;
-import org.camunda.optimize.service.es.schema.index.events.EventIndex;
+import org.camunda.optimize.service.es.schema.index.events.EventIndexES;
 import org.camunda.optimize.service.importing.eventprocess.AbstractEventProcessIT;
 import org.junit.jupiter.api.BeforeEach;
 
@@ -49,7 +49,7 @@ public abstract class AbstractEventRestServiceRolloverIT extends AbstractEventPr
     elasticSearchIntegrationTestExtension.deleteAllExternalEventIndices();
     embeddedOptimizeExtension.getElasticSearchSchemaManager().createOrUpdateOptimizeIndex(
       embeddedOptimizeExtension.getOptimizeElasticClient(),
-      new EventIndex()
+      new EventIndexES()
     );
     embeddedOptimizeExtension.getConfigurationService().getEventIndexRolloverConfiguration().setMaxIndexSizeGB(0);
     embeddedOptimizeExtension.getDefaultEngineConfiguration().setEventImportEnabled(true);

@@ -12,8 +12,8 @@ import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableValueReq
 import org.camunda.optimize.service.db.reader.DecisionDefinitionReader;
 import org.camunda.optimize.service.db.reader.DecisionVariableReader;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
-import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex;
+import org.camunda.optimize.service.es.schema.IndexSettingsBuilderES;
+import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndexES;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.elasticsearch.ElasticsearchStatusException;
@@ -39,8 +39,8 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
-import static org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex.INPUTS;
-import static org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex.OUTPUTS;
+import static org.camunda.optimize.service.es.schema.index.DecisionInstanceIndexES.INPUTS;
+import static org.camunda.optimize.service.es.schema.index.DecisionInstanceIndexES.OUTPUTS;
 import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableClauseIdField;
 import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableValueField;
 import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableValueFieldForType;
@@ -151,7 +151,7 @@ public class DecisionVariableReaderES implements DecisionVariableReader {
       requestDto.getDecisionDefinitionKey(),
       requestDto.getDecisionDefinitionVersions(),
       requestDto.getTenantIds(),
-      new DecisionInstanceIndex(requestDto.getDecisionDefinitionKey()),
+      new DecisionInstanceIndexES(requestDto.getDecisionDefinitionKey()),
       decisionDefinitionReader::getLatestVersionToKey
     );
 
@@ -238,7 +238,7 @@ public class DecisionVariableReaderES implements DecisionVariableReader {
                               final BoolQueryBuilder filterQuery) {
     if (valueFilter != null && !valueFilter.isEmpty()) {
       final String lowerCaseValue = valueFilter.toLowerCase();
-      QueryBuilder filter = (lowerCaseValue.length() > IndexSettingsBuilder.MAX_GRAM)
+      QueryBuilder filter = (lowerCaseValue.length() > IndexSettingsBuilderES.MAX_GRAM)
           /*
             using the slow wildcard query for uncommonly large filter strings (> 10 chars)
           */

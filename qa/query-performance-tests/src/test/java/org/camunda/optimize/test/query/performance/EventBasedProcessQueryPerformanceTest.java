@@ -11,7 +11,7 @@ import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.process.es.EsEventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.rest.event.EventProcessMappingResponseDto;
-import org.camunda.optimize.service.es.schema.index.events.EventProcessMappingIndex;
+import org.camunda.optimize.service.es.schema.index.events.EventProcessMappingIndexES;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -66,7 +66,7 @@ public class EventBasedProcessQueryPerformanceTest extends AbstractQueryPerforma
       })
       .collect(Collectors.toMap(EsEventProcessMappingDto::getId, mapping -> mapping));
     elasticSearchIntegrationTestExtension.addEntriesToElasticsearch(
-      new EventProcessMappingIndex().getIndexName(), mappingsById
+      new EventProcessMappingIndexES().getIndexName(), mappingsById
     );
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
   }

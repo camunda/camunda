@@ -11,8 +11,8 @@ import org.camunda.optimize.dto.optimize.query.event.sequence.EventSequenceCount
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventTraceStateDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.TracedEventDto;
 import org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto;
-import org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex;
-import org.camunda.optimize.service.es.schema.index.events.EventTraceStateIndex;
+import org.camunda.optimize.service.db.schema.index.events.EventSequenceCountIndex;
+import org.camunda.optimize.service.db.schema.index.events.EventTraceStateIndex;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -33,11 +33,11 @@ public class ExternalEventTraceStateImportIT extends AbstractEventTraceStateImpo
 
     // then
     assertThat(
-      elasticSearchIntegrationTestExtension.getDocumentCountOf(new EventTraceStateIndex(EXTERNAL_EVENTS_INDEX_SUFFIX).getIndexName()))
+      elasticSearchIntegrationTestExtension.getDocumentCountOf(EventTraceStateIndex.constructIndexName(EXTERNAL_EVENTS_INDEX_SUFFIX)))
       .isZero();
     assertThat(
       elasticSearchIntegrationTestExtension
-        .getDocumentCountOf(new EventSequenceCountIndex(EXTERNAL_EVENTS_INDEX_SUFFIX).getIndexName())
+        .getDocumentCountOf(EventSequenceCountIndex.constructIndexName(EXTERNAL_EVENTS_INDEX_SUFFIX))
     ).isZero();
   }
 

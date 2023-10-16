@@ -17,7 +17,7 @@ import org.camunda.optimize.service.dashboard.DashboardService;
 import org.camunda.optimize.service.db.writer.DashboardWriter;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
-import org.camunda.optimize.service.es.schema.index.DashboardIndex;
+import org.camunda.optimize.service.es.schema.index.DashboardIndexES;
 import org.camunda.optimize.service.exceptions.OptimizeImportFileInvalidException;
 import org.camunda.optimize.service.exceptions.OptimizeImportIncorrectIndexVersionException;
 import org.camunda.optimize.service.util.IdGenerator;
@@ -112,7 +112,7 @@ public class DashboardImportService {
   }
 
   private void validateIndexVersionOrFail(final Integer sourceIndexVersion) {
-    final IndexMappingCreator targetIndex = new DashboardIndex();
+    final IndexMappingCreator targetIndex = new DashboardIndexES();
     if (targetIndex.getVersion() != sourceIndexVersion) {
       throw new OptimizeImportIncorrectIndexVersionException(
         "Could not import because source and target index versions do not match",

@@ -13,8 +13,8 @@ import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMapping
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.process.es.EsEventProcessMappingDto;
 import org.camunda.optimize.service.db.reader.EventProcessMappingReader;
+import org.camunda.optimize.service.db.schema.index.events.EventProcessMappingIndex;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.schema.index.events.EventProcessMappingIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
@@ -31,7 +31,6 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_MAPPING_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
@@ -41,7 +40,7 @@ import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 @AllArgsConstructor
 @Component
 @Slf4j
-@Conditional({ElasticSearchCondition.class})
+@Conditional(ElasticSearchCondition.class)
 public class EventProcessMappingReaderES implements EventProcessMappingReader {
 
   private final OptimizeElasticsearchClient esClient;
@@ -107,7 +106,7 @@ public class EventProcessMappingReaderES implements EventProcessMappingReader {
       objectMapper,
       esClient,
       configurationService.getEsScrollTimeoutInSeconds()
-    ).stream().map(EsEventProcessMappingDto::toEventProcessMappingDto).collect(Collectors.toList());
+    ).stream().map(EsEventProcessMappingDto::toEventProcessMappingDto).toList();
   }
 
   @Override

@@ -15,7 +15,7 @@ import org.camunda.optimize.service.es.report.command.modules.distributed_by.Dis
 import org.camunda.optimize.service.es.report.command.modules.group_by.GroupByPart;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
 import org.camunda.optimize.service.es.report.command.modules.view.ViewPart;
-import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex;
+import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndexES;
 import org.camunda.optimize.service.util.DefinitionQueryUtil;
 import org.camunda.optimize.service.util.InstanceIndexUtil;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -65,7 +65,7 @@ public class DecisionReportCmdExecutionPlan<T> extends ReportCmdExecutionPlan<T,
           definitionDto.getKey(),
           definitionDto.getVersions(),
           definitionDto.getTenantIds(),
-          new DecisionInstanceIndex(definitionDto.getKey()),
+          new DecisionInstanceIndexES(definitionDto.getKey()),
           decisionDefinitionReader::getLatestVersionToKey
         )
       ));

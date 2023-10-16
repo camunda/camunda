@@ -15,7 +15,7 @@ import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewDt
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessUpdateDto;
 import org.camunda.optimize.service.db.writer.ProcessOverviewWriter;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.schema.index.ProcessOverviewIndex;
+import org.camunda.optimize.service.es.schema.index.ProcessOverviewIndexES;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -162,7 +162,7 @@ public class ProcessOverviewWriterES implements ProcessOverviewWriter {
         ElasticsearchWriterUtil.doBulkRequest(
                 esClient,
                 bulkRequest,
-                new ProcessOverviewIndex().getIndexName(),
+                new ProcessOverviewIndexES().getIndexName(),
                 false
         );
     }

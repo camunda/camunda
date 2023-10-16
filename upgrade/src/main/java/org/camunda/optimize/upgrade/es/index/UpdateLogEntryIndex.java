@@ -18,7 +18,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_KEYWOR
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_LONG;
 
 @Component
-public class UpdateLogEntryIndex extends DefaultIndexMappingCreator {
+public class UpdateLogEntryIndex extends DefaultIndexMappingCreator<XContentBuilder> {
   public static final String INDEX_NAME = "update-log";
   public static final int VERSION = 1;
 
@@ -55,4 +55,10 @@ public class UpdateLogEntryIndex extends DefaultIndexMappingCreator {
     // @formatter:on
   }
 
+  @Override
+  public XContentBuilder addStaticSetting(final String key,
+                                          final int value,
+                                          final XContentBuilder contentBuilder) throws IOException {
+    return contentBuilder.field(key, value);
+  }
 }

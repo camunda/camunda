@@ -13,14 +13,14 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 
 import java.util.Optional;
 
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.MULTIVALUE_FIELD_DATE;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.MULTIVALUE_FIELD_DOUBLE;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.MULTIVALUE_FIELD_LONG;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLE_ID;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLE_NAME;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLE_TYPE;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLE_VALUE;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.MULTIVALUE_FIELD_DATE;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.MULTIVALUE_FIELD_DOUBLE;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.MULTIVALUE_FIELD_LONG;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLES;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLE_ID;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLE_NAME;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLE_TYPE;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLE_VALUE;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;

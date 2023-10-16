@@ -10,7 +10,7 @@ import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import java.util.List;
 import java.util.Set;
 
-import static org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex.*;
+import static org.camunda.optimize.service.db.schema.index.DecisionDefinitionIndex.*;
 
 public interface DecisionDefinitionXmlWriter {
   Set<String> FIELDS_TO_UPDATE =

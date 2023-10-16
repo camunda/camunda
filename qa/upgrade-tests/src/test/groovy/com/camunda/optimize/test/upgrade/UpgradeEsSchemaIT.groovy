@@ -5,7 +5,7 @@
  */
 package com.camunda.optimize.test.upgrade
 
-import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex
+import org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex
 import org.junit.jupiter.api.Test
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory

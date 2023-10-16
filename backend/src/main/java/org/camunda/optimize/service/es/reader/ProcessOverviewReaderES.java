@@ -29,8 +29,8 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.es.schema.index.ProcessOverviewIndex.DIGEST;
-import static org.camunda.optimize.service.es.schema.index.ProcessOverviewIndex.ENABLED;
+import static org.camunda.optimize.service.db.schema.index.ProcessOverviewIndex.DIGEST;
+import static org.camunda.optimize.service.db.schema.index.ProcessOverviewIndex.ENABLED;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_OVERVIEW_INDEX_NAME;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;

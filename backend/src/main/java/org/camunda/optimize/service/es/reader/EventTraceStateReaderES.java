@@ -12,8 +12,8 @@ import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventTraceStateDto;
 import org.camunda.optimize.service.db.reader.EventTraceStateReader;
+import org.camunda.optimize.service.db.schema.index.events.EventTraceStateIndex;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.schema.index.events.EventTraceStateIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.elasticsearch.action.search.SearchRequest;
@@ -27,10 +27,10 @@ import org.springframework.context.annotation.Conditional;
 import java.io.IOException;
 import java.util.List;
 
-import static org.camunda.optimize.service.es.schema.index.events.EventTraceStateIndex.EVENT_NAME;
-import static org.camunda.optimize.service.es.schema.index.events.EventTraceStateIndex.EVENT_TRACE;
-import static org.camunda.optimize.service.es.schema.index.events.EventTraceStateIndex.GROUP;
-import static org.camunda.optimize.service.es.schema.index.events.EventTraceStateIndex.SOURCE;
+import static org.camunda.optimize.service.db.schema.index.events.EventTraceStateIndex.EVENT_NAME;
+import static org.camunda.optimize.service.db.schema.index.events.EventTraceStateIndex.EVENT_TRACE;
+import static org.camunda.optimize.service.db.schema.index.events.EventTraceStateIndex.GROUP;
+import static org.camunda.optimize.service.db.schema.index.events.EventTraceStateIndex.SOURCE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
@@ -145,7 +145,7 @@ public class EventTraceStateReaderES implements EventTraceStateReader {
   }
 
   private String getIndexName() {
-    return new EventTraceStateIndex(indexKey).getIndexName();
+    return EventTraceStateIndex.constructIndexName(indexKey);
   }
 
 }

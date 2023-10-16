@@ -27,7 +27,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult;
-import static org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex.MATCHED_RULES;
+import static org.camunda.optimize.service.db.schema.index.DecisionInstanceIndex.MATCHED_RULES;
 
 @RequiredArgsConstructor
 @Component

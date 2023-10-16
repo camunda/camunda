@@ -20,8 +20,9 @@ import org.camunda.optimize.service.db.reader.ProcessVariableReader;
 import org.camunda.optimize.service.db.reader.VariableLabelReader;
 import org.camunda.optimize.service.es.CompositeAggregationScroller;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
-import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
+import org.camunda.optimize.service.es.schema.IndexSettingsBuilderES;
+import org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
+import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndexES;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.DefinitionQueryUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -55,9 +56,9 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.LOWERCASE_FIELD;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.N_GRAM_FIELD;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.LOWERCASE_FIELD;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.N_GRAM_FIELD;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLES;
 import static org.camunda.optimize.service.util.InstanceIndexUtil.isInstanceIndexNotFoundException;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.buildWildcardQuery;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameField;
@@ -122,7 +123,7 @@ public class ProcessVariableReaderES implements ProcessVariableReader {
                                   request.getProcessDefinitionKey(),
                                   request.getProcessDefinitionVersions(),
                                   request.getTenantIds(),
-                                  new ProcessInstanceIndex(request.getProcessDefinitionKey()),
+                                  new ProcessInstanceIndexES(request.getProcessDefinitionKey()),
                                   processDefinitionReader::getLatestVersionToKey
                                 )));
     return getVariableNamesForInstancesMatchingQuery(query, definitionLabelsDtos);
@@ -199,7 +200,7 @@ public class ProcessVariableReaderES implements ProcessVariableReader {
           source.getProcessDefinitionKey(),
           source.getProcessDefinitionVersions(),
           source.getTenantIds(),
-          new ProcessInstanceIndex(source.getProcessDefinitionKey()),
+          new ProcessInstanceIndexES(source.getProcessDefinitionKey()),
           processDefinitionReader::getLatestVersionToKey
         ));
         if (source.getProcessInstanceId() != null) {
@@ -321,7 +322,7 @@ public class ProcessVariableReaderES implements ProcessVariableReader {
     boolean valueFilterIsConfigured = valueFilter != null && !valueFilter.isEmpty();
     if (isStringVariable && valueFilterIsConfigured) {
       final String lowerCaseValue = valueFilter.toLowerCase();
-      QueryBuilder filter = (lowerCaseValue.length() > IndexSettingsBuilder.MAX_GRAM)
+      QueryBuilder filter = (lowerCaseValue.length() > IndexSettingsBuilderES.MAX_GRAM)
           /*
             using the slow wildcard query for uncommonly large filter strings (> 10 chars)
           */

@@ -22,7 +22,7 @@ import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewRe
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessUpdateDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.rest.sorting.ProcessOverviewSorter;
-import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex;
+import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndexES;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.camunda.optimize.util.BpmnModels;
 import org.junit.jupiter.api.Test;
@@ -341,7 +341,7 @@ public class ProcessOverviewRetrievalIT extends AbstractPlatformIT {
   private void addProcessDefinitionWithGivenNameAndKeyToElasticSearch(String name, String key) {
     final DefinitionOptimizeResponseDto definition = createProcessDefinition(key, name);
     elasticSearchIntegrationTestExtension.addEntriesToElasticsearch(
-      new ProcessDefinitionIndex().getIndexName(),
+      new ProcessDefinitionIndexES().getIndexName(),
       Map.of(definition.getId(), definition)
     );
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();

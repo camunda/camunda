@@ -7,9 +7,10 @@ package org.camunda.optimize.service.es.writer;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.service.db.schema.index.ProcessInstanceArchiveIndex;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
-import org.camunda.optimize.service.es.schema.index.ProcessInstanceArchiveIndex;
+import org.camunda.optimize.service.es.schema.index.ProcessInstanceArchiveIndexES;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
@@ -49,7 +50,7 @@ public class ArchiveProcessInstanceWriter implements ConfigurationReloadable {
     log.debug("Creating process instance archive indices for definition keys [{}].", defKeysOfMissingArchiveIndices);
     defKeysOfMissingArchiveIndices.forEach(defKey -> elasticSearchSchemaManager.createOrUpdateOptimizeIndex(
       esClient,
-      new ProcessInstanceArchiveIndex(defKey),
+      new ProcessInstanceArchiveIndexES(defKey),
       Collections.singleton(PROCESS_INSTANCE_MULTI_ALIAS)
     ));
     existingArchiveInstanceIndexDefinitionKeys.addAll(defKeysOfMissingArchiveIndices);
@@ -57,8 +58,7 @@ public class ArchiveProcessInstanceWriter implements ConfigurationReloadable {
 
   private boolean indexExists(final String definitionKey) {
     return existingArchiveInstanceIndexDefinitionKeys.contains(definitionKey)
-      || elasticSearchSchemaManager.indexExists(esClient, new ProcessInstanceArchiveIndex(definitionKey).getIndexName()
-    );
+      || elasticSearchSchemaManager.indexExists(esClient, ProcessInstanceArchiveIndex.constructIndexName(definitionKey));
   }
 
 }

@@ -22,9 +22,9 @@ import org.camunda.optimize.service.db.reader.DefinitionReader;
 import org.camunda.optimize.service.es.CompositeAggregationScroller;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
-import org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex;
-import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex;
-import org.camunda.optimize.service.es.schema.index.events.EventProcessDefinitionIndex;
+import org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndexES;
+import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndexES;
+import org.camunda.optimize.service.es.schema.index.events.EventProcessDefinitionIndexES;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.DefinitionVersionHandlingUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -75,20 +75,20 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
-import static org.camunda.optimize.service.es.schema.index.AbstractDefinitionIndex.DATA_SOURCE;
-import static org.camunda.optimize.service.es.schema.index.AbstractDefinitionIndex.DEFINITION_DELETED;
-import static org.camunda.optimize.service.es.schema.index.AbstractDefinitionIndex.DEFINITION_KEY;
-import static org.camunda.optimize.service.es.schema.index.AbstractDefinitionIndex.DEFINITION_NAME;
-import static org.camunda.optimize.service.es.schema.index.AbstractDefinitionIndex.DEFINITION_TENANT_ID;
-import static org.camunda.optimize.service.es.schema.index.AbstractDefinitionIndex.DEFINITION_VERSION;
-import static org.camunda.optimize.service.es.schema.index.AbstractDefinitionIndex.DEFINITION_VERSION_TAG;
-import static org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_KEY;
-import static org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_VERSION;
-import static org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_XML;
-import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_KEY;
-import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_VERSION;
-import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_XML;
-import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex.TENANT_ID;
+import static org.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DATA_SOURCE;
+import static org.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DEFINITION_DELETED;
+import static org.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DEFINITION_KEY;
+import static org.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DEFINITION_NAME;
+import static org.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DEFINITION_TENANT_ID;
+import static org.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DEFINITION_VERSION;
+import static org.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DEFINITION_VERSION_TAG;
+import static org.camunda.optimize.service.db.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_KEY;
+import static org.camunda.optimize.service.db.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_VERSION;
+import static org.camunda.optimize.service.db.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_XML;
+import static org.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_KEY;
+import static org.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_VERSION;
+import static org.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_XML;
+import static org.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex.TENANT_ID;
 import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScript;
 import static org.camunda.optimize.service.util.DefinitionVersionHandlingUtil.convertToLatestParticularVersion;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
@@ -797,10 +797,10 @@ public class DefinitionReaderES implements DefinitionReader {
   }
 
   private DefinitionType resolveDefinitionTypeFromIndexAlias(String indexName) {
-    if (indexName.equals(getOptimizeIndexNameForIndex(new ProcessDefinitionIndex()))
-      || indexName.equals(getOptimizeIndexNameForIndex(new EventProcessDefinitionIndex()))) {
+    if (indexName.equals(getOptimizeIndexNameForIndex(new ProcessDefinitionIndexES()))
+      || indexName.equals(getOptimizeIndexNameForIndex(new EventProcessDefinitionIndexES()))) {
       return DefinitionType.PROCESS;
-    } else if (indexName.equals(getOptimizeIndexNameForIndex(new DecisionDefinitionIndex()))) {
+    } else if (indexName.equals(getOptimizeIndexNameForIndex(new DecisionDefinitionIndexES()))) {
       return DefinitionType.DECISION;
     } else {
       throw new OptimizeRuntimeException("Unexpected definition index name: " + indexName);
@@ -808,7 +808,7 @@ public class DefinitionReaderES implements DefinitionReader {
   }
 
   private boolean resolveIsEventProcessFromIndexAlias(String indexName) {
-    return indexName.equals(getOptimizeIndexNameForIndex(new EventProcessDefinitionIndex()));
+    return indexName.equals(getOptimizeIndexNameForIndex(new EventProcessDefinitionIndexES()));
   }
 
   private String getOptimizeIndexNameForIndex(final DefaultIndexMappingCreator index) {

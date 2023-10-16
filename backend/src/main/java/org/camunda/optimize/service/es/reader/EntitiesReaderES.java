@@ -22,10 +22,10 @@ import org.camunda.optimize.service.db.reader.EntitiesReader;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
-import org.camunda.optimize.service.es.schema.index.DashboardIndex;
-import org.camunda.optimize.service.es.schema.index.report.CombinedReportIndex;
-import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportIndex;
-import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
+import org.camunda.optimize.service.es.schema.index.DashboardIndexES;
+import org.camunda.optimize.service.es.schema.index.report.CombinedReportIndexES;
+import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportIndexES;
+import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndexES;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
@@ -53,14 +53,14 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static org.camunda.optimize.service.db.schema.index.DashboardIndex.INSTANT_PREVIEW_DASHBOARD;
+import static org.camunda.optimize.service.db.schema.index.DashboardIndex.MANAGEMENT_DASHBOARD;
+import static org.camunda.optimize.service.db.schema.index.report.AbstractReportIndex.COLLECTION_ID;
+import static org.camunda.optimize.service.db.schema.index.report.AbstractReportIndex.DATA;
+import static org.camunda.optimize.service.db.schema.index.report.AbstractReportIndex.OWNER;
+import static org.camunda.optimize.service.db.schema.index.report.SingleProcessReportIndex.INSTANT_PREVIEW_REPORT;
+import static org.camunda.optimize.service.db.schema.index.report.SingleProcessReportIndex.MANAGEMENT_REPORT;
 import static org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil.atLeastOneResponseExistsForMultiGet;
-import static org.camunda.optimize.service.es.schema.index.DashboardIndex.INSTANT_PREVIEW_DASHBOARD;
-import static org.camunda.optimize.service.es.schema.index.DashboardIndex.MANAGEMENT_DASHBOARD;
-import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.COLLECTION_ID;
-import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.DATA;
-import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.OWNER;
-import static org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex.INSTANT_PREVIEW_REPORT;
-import static org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex.MANAGEMENT_REPORT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_INDEX_NAME;
@@ -235,10 +235,10 @@ public class EntitiesReaderES implements EntitiesReader {
 
   private Map<EntityType, Long> extractEntityIndexCounts(final Filter collectionFilterAggregation) {
     final Terms byIndexNameTerms = collectionFilterAggregation.getAggregations().get(AGG_BY_INDEX_COUNT);
-    final long singleProcessReportCount = getDocCountForIndex(byIndexNameTerms, new SingleProcessReportIndex());
-    final long combinedProcessReportCount = getDocCountForIndex(byIndexNameTerms, new CombinedReportIndex());
-    final long singleDecisionReportCount = getDocCountForIndex(byIndexNameTerms, new SingleDecisionReportIndex());
-    final long dashboardCount = getDocCountForIndex(byIndexNameTerms, new DashboardIndex());
+    final long singleProcessReportCount = getDocCountForIndex(byIndexNameTerms, new SingleProcessReportIndexES());
+    final long combinedProcessReportCount = getDocCountForIndex(byIndexNameTerms, new CombinedReportIndexES());
+    final long singleDecisionReportCount = getDocCountForIndex(byIndexNameTerms, new SingleDecisionReportIndexES());
+    final long dashboardCount = getDocCountForIndex(byIndexNameTerms, new DashboardIndexES());
     return ImmutableMap.of(
       EntityType.DASHBOARD,
       dashboardCount,

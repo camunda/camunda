@@ -18,8 +18,8 @@ import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto
 import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.process.source.ExternalEventSourceEntryDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.service.db.schema.index.events.CamundaActivityEventIndex;
 import org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil;
-import org.camunda.optimize.service.es.schema.index.events.CamundaActivityEventIndex;
 import org.camunda.optimize.service.util.EsHelper;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.junit.jupiter.api.Test;
@@ -675,7 +675,7 @@ public class EventProcessInstanceImportSourceScenariosIT extends AbstractEventPr
   private CamundaActivityEventDto getLastImportedActivityForProcessDefinition(final String processDefinitionKey) {
     return ElasticsearchReaderUtil.mapHits(
       elasticSearchIntegrationTestExtension.getSearchResponseForAllDocumentsOfIndex(
-        new CamundaActivityEventIndex(processDefinitionKey).getIndexName()
+        CamundaActivityEventIndex.constructIndexName(processDefinitionKey)
       ).getHits(),
       CamundaActivityEventDto.class,
       embeddedOptimizeExtension.getObjectMapper()

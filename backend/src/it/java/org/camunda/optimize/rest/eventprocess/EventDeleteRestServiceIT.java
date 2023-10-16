@@ -5,20 +5,20 @@
  */
 package org.camunda.optimize.rest.eventprocess;
 
+import jakarta.ws.rs.core.Response;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto;
-import org.camunda.optimize.service.es.schema.index.events.EventIndex;
-import org.camunda.optimize.service.es.schema.index.events.EventProcessInstanceIndex;
+import org.camunda.optimize.service.db.schema.index.events.EventProcessInstanceIndex;
+import org.camunda.optimize.service.es.schema.index.events.EventIndexES;
 import org.junit.jupiter.api.Test;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.matchers.Times;
 import org.mockserver.model.HttpRequest;
 import org.mockserver.verify.VerificationTimes;
 
-import jakarta.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -33,7 +33,7 @@ import static org.mockserver.model.HttpRequest.request;
 public class EventDeleteRestServiceIT extends AbstractEventRestServiceIT {
 
   @Test
-  public void deleteEvents_userNotAuthenticated() {
+  void deleteEvents_userNotAuthenticated() {
     // when
     final Response response = embeddedOptimizeExtension.getRequestExecutor()
       .buildDeleteEventsRequest(Collections.singletonList(backendKetchupEvent.getId()))
@@ -45,7 +45,7 @@ public class EventDeleteRestServiceIT extends AbstractEventRestServiceIT {
   }
 
   @Test
-  public void deleteEvents_userNotAuthorized() {
+  void deleteEvents_userNotAuthorized() {
     // given
     removeAllUserEventProcessAuthorizations();
 
@@ -59,7 +59,7 @@ public class EventDeleteRestServiceIT extends AbstractEventRestServiceIT {
   }
 
   @Test
-  public void deleteEvents_emptyListOfIdsToDelete() {
+  void deleteEvents_emptyListOfIdsToDelete() {
     // when
     final Response response = embeddedOptimizeExtension.getRequestExecutor()
       .buildDeleteEventsRequest(Collections.emptyList())
@@ -70,7 +70,7 @@ public class EventDeleteRestServiceIT extends AbstractEventRestServiceIT {
   }
 
   @Test
-  public void deleteEvents_listOfIdsToDeleteLargerThanMaxAllowed() {
+  void deleteEvents_listOfIdsToDeleteLargerThanMaxAllowed() {
     // when
     final Response response = embeddedOptimizeExtension.getRequestExecutor()
       .buildDeleteEventsRequest(Collections.nCopies(1001, "someEventId"))
@@ -81,7 +81,7 @@ public class EventDeleteRestServiceIT extends AbstractEventRestServiceIT {
   }
 
   @Test
-  public void deleteEvents_deleteEventWithGroupAuthorization() {
+  void deleteEvents_deleteEventWithGroupAuthorization() {
     // given
     removeAllUserEventProcessAuthorizations();
     final String authorizedGroup = "humans";
@@ -100,7 +100,7 @@ public class EventDeleteRestServiceIT extends AbstractEventRestServiceIT {
   }
 
   @Test
-  public void deleteEvents_deleteSingleEventNotUsedInEventInstance() {
+  void deleteEvents_deleteSingleEventNotUsedInEventInstance() {
     // given
     final List<EventDto> savedEvents = getAllStoredEvents();
     final List<String> eventIdsToDelete = Collections.singletonList(eventTraceOne.get(0).getId());
@@ -116,7 +116,7 @@ public class EventDeleteRestServiceIT extends AbstractEventRestServiceIT {
   }
 
   @Test
-  public void deleteEvents_deleteWholeEventTraceNotUsedInEventInstance() {
+  void deleteEvents_deleteWholeEventTraceNotUsedInEventInstance() {
     // given
     final List<EventDto> savedEvents = getAllStoredEvents();
     final List<String> eventIdsToDelete = eventTraceOne.stream()
@@ -134,7 +134,7 @@ public class EventDeleteRestServiceIT extends AbstractEventRestServiceIT {
   }
 
   @Test
-  public void deleteEvents_deleteSingleEventIdNotExistDoesNotFail() {
+  void deleteEvents_deleteSingleEventIdNotExistDoesNotFail() {
     // when
     final Response response = embeddedOptimizeExtension.getRequestExecutor()
       .buildDeleteEventsRequest(Collections.singletonList("idDoesNotExist"))
@@ -145,7 +145,7 @@ public class EventDeleteRestServiceIT extends AbstractEventRestServiceIT {
   }
 
   @Test
-  public void deleteEvents_deleteMultipleEventsOneIdNotExistDoesNotFail() {
+  void deleteEvents_deleteMultipleEventsOneIdNotExistDoesNotFail() {
     // given
     final List<EventDto> savedEvents = getAllStoredEvents();
     final List<String> realEventsToDelete = eventTraceOne.stream()
@@ -165,7 +165,7 @@ public class EventDeleteRestServiceIT extends AbstractEventRestServiceIT {
   }
 
   @Test
-  public void deleteEvents_deleteSingleEventThatIsUsedInSingleEventInstance() {
+  void deleteEvents_deleteSingleEventThatIsUsedInSingleEventInstance() {
     // given
     final ProcessInstanceDto instance = createAndSaveEventInstanceContainingEvents(eventTraceOne, "indexId");
     final List<EventDto> allSavedEventsBeforeDelete =
@@ -186,7 +186,7 @@ public class EventDeleteRestServiceIT extends AbstractEventRestServiceIT {
   }
 
   @Test
-  public void deleteEvents_deleteSingleEventThatIsUsedInSingleEventInstance_otherInstancesUnaffected() {
+  void deleteEvents_deleteSingleEventThatIsUsedInSingleEventInstance_otherInstancesUnaffected() {
     // given
     final ProcessInstanceDto traceOneInst = createAndSaveEventInstanceContainingEvents(eventTraceOne, "indexId");
     final ProcessInstanceDto traceTwoInst = createAndSaveEventInstanceContainingEvents(eventTraceTwo, "indexId");
@@ -217,7 +217,7 @@ public class EventDeleteRestServiceIT extends AbstractEventRestServiceIT {
   }
 
   @Test
-  public void deleteEvents_deleteSingleEventThatIsUsedInMultipleEventProcessInstances() {
+  void deleteEvents_deleteSingleEventThatIsUsedInMultipleEventProcessInstances() {
     // given
     final ProcessInstanceDto traceOneInst = createAndSaveEventInstanceContainingEvents(eventTraceOne, "firstProcess");
     final ProcessInstanceDto traceTwoInst = createAndSaveEventInstanceContainingEvents(eventTraceOne, "secondProcess");
@@ -248,7 +248,7 @@ public class EventDeleteRestServiceIT extends AbstractEventRestServiceIT {
   }
 
   @Test
-  public void deleteEvents_deleteMultipleEventsThatAreUsedInSingleEventInstance() {
+  void deleteEvents_deleteMultipleEventsThatAreUsedInSingleEventInstance() {
     // given
     final ProcessInstanceDto instance = createAndSaveEventInstanceContainingEvents(eventTraceOne, "indexId");
     final List<EventDto> allSavedEventsBeforeDelete = getAllStoredEvents();
@@ -270,7 +270,7 @@ public class EventDeleteRestServiceIT extends AbstractEventRestServiceIT {
   }
 
   @Test
-  public void deleteEvents_deleteMultipleEventsThatAreUsedInSingleEventInstance_otherInstanceUnaffected() {
+  void deleteEvents_deleteMultipleEventsThatAreUsedInSingleEventInstance_otherInstanceUnaffected() {
     // given
     final ProcessInstanceDto traceOneInst = createAndSaveEventInstanceContainingEvents(eventTraceOne, "indexId");
     final ProcessInstanceDto traceTwoInst = createAndSaveEventInstanceContainingEvents(eventTraceTwo, "indexId");
@@ -303,7 +303,7 @@ public class EventDeleteRestServiceIT extends AbstractEventRestServiceIT {
   }
 
   @Test
-  public void deleteEvents_deleteMultipleEventsThatAreUsedInMultipleEventProcessInstances() {
+  void deleteEvents_deleteMultipleEventsThatAreUsedInMultipleEventProcessInstances() {
     // given
     final ProcessInstanceDto traceOneInst = createAndSaveEventInstanceContainingEvents(eventTraceOne, "firstProcess");
     final ProcessInstanceDto traceTwoInst = createAndSaveEventInstanceContainingEvents(eventTraceOne, "secondProcess");
@@ -336,7 +336,7 @@ public class EventDeleteRestServiceIT extends AbstractEventRestServiceIT {
   }
 
   @Test
-  public void deleteEvents_deleteSingleEventThatIsUsedInSingleEventInstance_idempotentSecondDelete() {
+  void deleteEvents_deleteSingleEventThatIsUsedInSingleEventInstance_idempotentSecondDelete() {
     // given
     final ProcessInstanceDto instance = createAndSaveEventInstanceContainingEvents(eventTraceOne, "indexId");
     final List<EventDto> allSavedEventsBeforeDelete = getAllStoredEvents();
@@ -366,7 +366,7 @@ public class EventDeleteRestServiceIT extends AbstractEventRestServiceIT {
   }
 
   @Test
-  public void deleteEvents_deleteMultipleEventsThatAreUsedInSingleEventInstance_idempotentSecondDelete() {
+  void deleteEvents_deleteMultipleEventsThatAreUsedInSingleEventInstance_idempotentSecondDelete() {
     // given
     final ProcessInstanceDto instance = createAndSaveEventInstanceContainingEvents(eventTraceOne, "indexId");
     final List<EventDto> allSavedEventsBeforeDelete = getAllStoredEvents();
@@ -398,7 +398,7 @@ public class EventDeleteRestServiceIT extends AbstractEventRestServiceIT {
   }
 
   @Test
-  public void deleteEvents_deleteSingleEventThatIsUsedInSingleEventInstance_firstInstanceEventDeleteFailsSecondRequestSucceeds() {
+  void deleteEvents_deleteSingleEventThatIsUsedInSingleEventInstance_firstInstanceEventDeleteFailsSecondRequestSucceeds() {
     // given
     final ProcessInstanceDto instance = createAndSaveEventInstanceContainingEvents(eventTraceOne, "indexId");
     final List<EventDto> allSavedEventsBeforeDelete = getAllStoredEvents();
@@ -407,7 +407,7 @@ public class EventDeleteRestServiceIT extends AbstractEventRestServiceIT {
       getSavedInstanceWithId(instance.getProcessInstanceId()), eventIdsToDelete);
     final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
     final HttpRequest requestMatcher = request()
-      .withPath("/.*" + new EventProcessInstanceIndex("*").getIndexName() + ".*/_update_by_query")
+      .withPath("/.*" + EventProcessInstanceIndex.constructIndexName("*") + ".*/_update_by_query")
       .withMethod(POST);
     esMockServer.when(requestMatcher, Times.once())
       .error(error().withDropConnection(true));
@@ -434,7 +434,7 @@ public class EventDeleteRestServiceIT extends AbstractEventRestServiceIT {
   }
 
   @Test
-  public void deleteEvents_deleteMultipleEventsThatAreUsedInSingleEventInstance_firstInstanceEventDeleteFailsSecondRequestSucceeds() {
+  void deleteEvents_deleteMultipleEventsThatAreUsedInSingleEventInstance_firstInstanceEventDeleteFailsSecondRequestSucceeds() {
     // given
     final ProcessInstanceDto instance = createAndSaveEventInstanceContainingEvents(eventTraceOne, "indexId");
     final List<EventDto> allSavedEventsBeforeDelete = getAllStoredEvents();
@@ -445,7 +445,7 @@ public class EventDeleteRestServiceIT extends AbstractEventRestServiceIT {
       getSavedInstanceWithId(instance.getProcessInstanceId()), eventIdsToDelete);
     final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
     final HttpRequest requestMatcher = request()
-      .withPath("/.*" + new EventProcessInstanceIndex("*").getIndexName() + ".*/_update_by_query")
+      .withPath("/.*" + EventProcessInstanceIndex.constructIndexName("*") + ".*/_update_by_query")
       .withMethod(POST);
     esMockServer.when(requestMatcher, Times.once())
       .error(error().withDropConnection(true));
@@ -472,7 +472,7 @@ public class EventDeleteRestServiceIT extends AbstractEventRestServiceIT {
   }
 
   @Test
-  public void deleteEvents_deleteSingleEventThatIsUsedInSingleEventInstance_firstEventDeletionFails() {
+  void deleteEvents_deleteSingleEventThatIsUsedInSingleEventInstance_firstEventDeletionFails() {
     // given
     final ProcessInstanceDto instance = createAndSaveEventInstanceContainingEvents(eventTraceOne, "indexId");
     final List<EventDto> allSavedEventsBeforeDelete = getAllStoredEvents();
@@ -482,7 +482,8 @@ public class EventDeleteRestServiceIT extends AbstractEventRestServiceIT {
     final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
     final HttpRequest requestMatcher = request()
       .withPath("/" + embeddedOptimizeExtension.getIndexNameService()
-        .getOptimizeIndexNameWithVersionWithoutSuffix(new EventIndex()) + ".*/_delete_by_query")
+        // TODO don't use ES coupling here, to be dealt with OPT-7246
+        .getOptimizeIndexNameWithVersionWithoutSuffix(new EventIndexES()) + ".*/_delete_by_query")
       .withMethod(POST);
     esMockServer.when(requestMatcher, Times.once())
       .error(error().withDropConnection(true));
@@ -509,7 +510,7 @@ public class EventDeleteRestServiceIT extends AbstractEventRestServiceIT {
   }
 
   @Test
-  public void deleteEvents_deleteMultipleEventsThatAreUsedInSingleEventInstance_firstEventDeletionFails() {
+  void deleteEvents_deleteMultipleEventsThatAreUsedInSingleEventInstance_firstEventDeletionFails() {
     // given
     final ProcessInstanceDto instance = createAndSaveEventInstanceContainingEvents(eventTraceOne, "indexId");
     final List<EventDto> allSavedEventsBeforeDelete = getAllStoredEvents();
@@ -521,7 +522,8 @@ public class EventDeleteRestServiceIT extends AbstractEventRestServiceIT {
     final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
     final HttpRequest requestMatcher = request()
       .withPath("/" + embeddedOptimizeExtension.getIndexNameService()
-        .getOptimizeIndexNameWithVersionWithoutSuffix(new EventIndex()) + ".*/_delete_by_query")
+        // TODO don't use ES coupling here, to be dealt with OPT-7246
+        .getOptimizeIndexNameWithVersionWithoutSuffix(new EventIndexES()) + ".*/_delete_by_query")
       .withMethod(POST);
     esMockServer.when(requestMatcher, Times.once())
       .error(error().withDropConnection(true));

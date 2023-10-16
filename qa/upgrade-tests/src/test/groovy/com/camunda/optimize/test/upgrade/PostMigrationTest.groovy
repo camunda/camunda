@@ -23,7 +23,7 @@ import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEval
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedSingleReportEvaluationResponseDto
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService
-import org.camunda.optimize.service.es.schema.index.events.EventProcessInstanceIndex
+import org.camunda.optimize.service.es.schema.index.events.EventProcessInstanceIndexES
 import org.camunda.optimize.service.exceptions.evaluation.TooManyBucketsException
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder
 import org.camunda.optimize.test.optimize.AlertClient
@@ -232,7 +232,7 @@ class PostMigrationTest {
       .map(hit -> hit.getSourceAsMap())
       .filter(publishState -> processMappingId.equals(publishState.get(EventProcessPublishStateDto.Fields.processMappingId)))
       .map(publishState -> (String) publishState.get(EventProcessPublishStateDto.Fields.id))
-      .map(publishStateId -> new EventProcessInstanceIndex(publishStateId).getIndexName())
+      .map(publishStateId -> new EventProcessInstanceIndexES(publishStateId).getIndexName())
       .collect(Collectors.toList());
     boolean singleIndexExists = false;
     while (!singleIndexExists) {

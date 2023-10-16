@@ -12,7 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.NotImplementedException;
 import org.camunda.optimize.dto.optimize.SettingsResponseDto;
 import org.camunda.optimize.service.db.writer.SettingsWriter;
-import org.camunda.optimize.service.es.schema.index.SettingsIndex;
+import org.camunda.optimize.service.db.schema.index.SettingsIndex;
 import org.camunda.optimize.service.os.OptimizeOpensearchClient;
 import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import org.opensearch.client.opensearch._types.Refresh;
@@ -24,7 +24,10 @@ import org.springframework.stereotype.Component;
 import java.util.HashSet;
 import java.util.Set;
 
-import static org.camunda.optimize.service.es.schema.index.SettingsIndex.*;
+import static org.camunda.optimize.service.db.schema.index.SettingsIndex.LAST_MODIFIED;
+import static org.camunda.optimize.service.db.schema.index.SettingsIndex.LAST_MODIFIER;
+import static org.camunda.optimize.service.db.schema.index.SettingsIndex.METADATA_TELEMETRY_ENABLED;
+import static org.camunda.optimize.service.db.schema.index.SettingsIndex.SHARING_ENABLED;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SETTINGS_INDEX_NAME;
 

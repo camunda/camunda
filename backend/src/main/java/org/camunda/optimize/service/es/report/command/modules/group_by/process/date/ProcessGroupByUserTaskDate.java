@@ -15,7 +15,7 @@ import org.elasticsearch.index.query.QueryBuilder;
 
 import static org.camunda.optimize.service.es.filter.util.ModelElementFilterQueryUtil.createModelElementAggregationFilter;
 import static org.camunda.optimize.service.es.filter.util.ModelElementFilterQueryUtil.createUserTaskFlowNodeTypeFilter;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 
 @Slf4j
 public abstract class ProcessGroupByUserTaskDate extends AbstractProcessGroupByModelElementDate {

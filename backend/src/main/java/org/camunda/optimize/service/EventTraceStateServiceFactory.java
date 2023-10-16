@@ -13,8 +13,8 @@ import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.reader.EventSequenceCountReaderES;
 import org.camunda.optimize.service.es.reader.EventTraceStateReaderES;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
-import org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex;
-import org.camunda.optimize.service.es.schema.index.events.EventTraceStateIndex;
+import org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndexES;
+import org.camunda.optimize.service.es.schema.index.events.EventTraceStateIndexES;
 import org.camunda.optimize.service.es.writer.EventSequenceCountWriter;
 import org.camunda.optimize.service.es.writer.EventTraceStateWriter;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -37,24 +37,27 @@ public class EventTraceStateServiceFactory {
     );
   }
 
-  //TODO would be handled properly with https://jira.camunda.com/browse/OPT-7244
+  //TODO will be handled properly with https://jira.camunda.com/browse/OPT-7244
   private EventSequenceCountReader createEventSequenceCountReader(final String indexKey) {
-    elasticSearchSchemaManager.createIndexIfMissing(esClient, new EventSequenceCountIndex(indexKey));
+    elasticSearchSchemaManager.createIndexIfMissing(esClient, new EventSequenceCountIndexES(indexKey));
     return new EventSequenceCountReaderES(indexKey, esClient, objectMapper, configurationService);
   }
 
+  //TODO will be handled properly with https://jira.camunda.com/browse/OPT-7244
   private EventSequenceCountWriter createEventSequenceCountWriter(final String indexKey) {
-    elasticSearchSchemaManager.createIndexIfMissing(esClient, new EventSequenceCountIndex(indexKey));
+    elasticSearchSchemaManager.createIndexIfMissing(esClient, new EventSequenceCountIndexES(indexKey));
     return new EventSequenceCountWriter(indexKey, esClient, objectMapper);
   }
 
+  //TODO will be handled properly with https://jira.camunda.com/browse/OPT-7244
   private EventTraceStateReader createEventTraceStateReader(final String indexKey) {
-    elasticSearchSchemaManager.createIndexIfMissing(esClient, new EventTraceStateIndex(indexKey));
+    elasticSearchSchemaManager.createIndexIfMissing(esClient, new EventTraceStateIndexES(indexKey));
     return new EventTraceStateReaderES(indexKey, esClient, objectMapper);
   }
 
+  //TODO will be handled properly with https://jira.camunda.com/browse/OPT-7244
   private EventTraceStateWriter createEventTraceStateWriter(final String indexKey) {
-    elasticSearchSchemaManager.createIndexIfMissing(esClient, new EventTraceStateIndex(indexKey));
+    elasticSearchSchemaManager.createIndexIfMissing(esClient, new EventTraceStateIndexES(indexKey));
     return new EventTraceStateWriter(indexKey, esClient, objectMapper);
   }
 }

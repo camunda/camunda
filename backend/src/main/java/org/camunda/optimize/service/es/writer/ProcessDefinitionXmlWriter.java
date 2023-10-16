@@ -17,9 +17,9 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.Set;
 
-import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex.FLOW_NODE_DATA;
-import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_XML;
-import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex.USER_TASK_NAMES;
+import static org.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex.FLOW_NODE_DATA;
+import static org.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_XML;
+import static org.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex.USER_TASK_NAMES;
 
 @Component
 @Slf4j

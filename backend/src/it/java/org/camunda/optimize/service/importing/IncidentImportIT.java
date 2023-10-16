@@ -15,7 +15,8 @@ import org.camunda.optimize.dto.optimize.persistence.incident.IncidentType;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.single.incident.duration.IncidentDataDeployer;
-import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
+
+import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndexES;
 import org.camunda.optimize.service.importing.engine.EngineImportScheduler;
 import org.camunda.optimize.service.importing.engine.mediator.CompletedIncidentEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.mediator.OpenIncidentEngineImportMediator;
@@ -517,7 +518,7 @@ public class IncidentImportIT extends AbstractImportIT {
     embeddedOptimizeExtension.getElasticSearchSchemaManager()
       .createIndexIfMissing(
         elasticSearchIntegrationTestExtension.getOptimizeElasticClient(),
-        new ProcessInstanceIndex(processInstanceWithIncident.getProcessDefinitionKey()),
+        new ProcessInstanceIndexES(processInstanceWithIncident.getProcessDefinitionKey()),
         Collections.singleton(PROCESS_INSTANCE_MULTI_ALIAS)
       );
     elasticSearchIntegrationTestExtension.addEntryToElasticsearch(

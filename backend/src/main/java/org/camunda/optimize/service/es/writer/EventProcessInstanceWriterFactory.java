@@ -9,8 +9,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessPublishStateDto;
+import org.camunda.optimize.service.db.schema.index.events.EventProcessInstanceIndex;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.schema.index.events.EventProcessInstanceIndex;
+import org.camunda.optimize.service.es.schema.index.events.EventProcessInstanceIndexES;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.stereotype.Component;
 
@@ -27,7 +28,7 @@ public class EventProcessInstanceWriterFactory {
 
   public EventProcessInstanceWriter createEventProcessInstanceWriter(final EventProcessPublishStateDto processPublishStateDto) {
     return new EventProcessInstanceWriter(
-      new EventProcessInstanceIndex(processPublishStateDto.getId()),
+      new EventProcessInstanceIndexES(processPublishStateDto.getId()),
       elasticsearchClient,
       configurationService,
       objectMapper,
@@ -37,7 +38,7 @@ public class EventProcessInstanceWriterFactory {
 
   public EventProcessInstanceWriter createAllEventProcessInstanceWriter() {
     return new EventProcessInstanceWriter(
-      new EventProcessInstanceIndex("*"),
+      new EventProcessInstanceIndexES("*"),
       elasticsearchClient,
       configurationService,
       objectMapper,

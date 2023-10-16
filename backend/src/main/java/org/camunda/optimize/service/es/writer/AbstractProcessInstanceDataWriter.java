@@ -9,7 +9,8 @@ import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
-import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
+import org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
+import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndexES;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,7 +57,7 @@ public abstract class AbstractProcessInstanceDataWriter<T extends OptimizeDto> i
     log.debug("Creating process instance indices for definition keys [{}].", defKeysOfMissingIndices);
     defKeysOfMissingIndices.forEach(defKey -> elasticSearchSchemaManager.createOrUpdateOptimizeIndex(
       esClient,
-      new ProcessInstanceIndex(defKey),
+      new ProcessInstanceIndexES(defKey),
       Collections.singleton(PROCESS_INSTANCE_MULTI_ALIAS)
     ));
     existingInstanceIndexDefinitionKeys.addAll(defKeysOfMissingIndices);

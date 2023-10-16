@@ -24,14 +24,13 @@ import org.camunda.optimize.dto.optimize.rest.export.report.ReportDefinitionExpo
 import org.camunda.optimize.dto.optimize.rest.export.report.SingleDecisionReportDefinitionExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.SingleProcessReportDefinitionExportDto;
 import org.camunda.optimize.service.DefinitionService;
+import org.camunda.optimize.service.db.schema.index.report.CombinedReportIndex;
+import org.camunda.optimize.service.db.schema.index.report.SingleDecisionReportIndex;
+import org.camunda.optimize.service.db.schema.index.report.SingleProcessReportIndex;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
-import org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex;
-import org.camunda.optimize.service.es.schema.index.report.CombinedReportIndex;
-import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportIndex;
-import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
 import org.camunda.optimize.service.es.writer.ReportWriter;
-import org.camunda.optimize.service.exceptions.OptimizeImportDescriptionNotValidException;
 import org.camunda.optimize.service.exceptions.OptimizeImportDefinitionDoesNotExistException;
+import org.camunda.optimize.service.exceptions.OptimizeImportDescriptionNotValidException;
 import org.camunda.optimize.service.exceptions.OptimizeImportForbiddenException;
 import org.camunda.optimize.service.exceptions.OptimizeImportIncorrectIndexVersionException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -50,12 +49,14 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import static java.util.stream.Collectors.toList;
+import static org.camunda.optimize.dto.optimize.ReportConstants.API_IMPORT_OWNER_NAME;
 import static org.camunda.optimize.dto.optimize.rest.export.ExportEntityType.COMBINED_REPORT;
 import static org.camunda.optimize.dto.optimize.rest.export.ExportEntityType.SINGLE_DECISION_REPORT;
 import static org.camunda.optimize.dto.optimize.rest.export.ExportEntityType.SINGLE_PROCESS_REPORT;
-import static org.camunda.optimize.dto.optimize.ReportConstants.API_IMPORT_OWNER_NAME;
 import static org.camunda.optimize.service.util.DefinitionVersionHandlingUtil.isDefinitionVersionSetToAllOrLatest;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_DECISION_REPORT_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
 
 @AllArgsConstructor
 @Component
@@ -173,32 +174,25 @@ public class ReportImportService {
                                           final ReportDefinitionExportDto reportToImport,
                                           final Map<String, EntityIdResponseDto> originalIdToNewIdMap) {
     switch (reportToImport.getExportEntityType()) {
-      case SINGLE_PROCESS_REPORT:
-        importProcessReportIntoCollection(
-          Optional.ofNullable(userId).orElse(API_IMPORT_OWNER_NAME),
-          collectionId,
-          (SingleProcessReportDefinitionExportDto) reportToImport,
-          originalIdToNewIdMap
-        );
-        break;
-      case SINGLE_DECISION_REPORT:
-        importDecisionReportIntoCollection(
-          Optional.ofNullable(userId).orElse(API_IMPORT_OWNER_NAME),
-          collectionId,
-          (SingleDecisionReportDefinitionExportDto) reportToImport,
-          originalIdToNewIdMap
-        );
-        break;
-      case COMBINED_REPORT:
-        importCombinedProcessReportIntoCollection(
-          Optional.ofNullable(userId).orElse(API_IMPORT_OWNER_NAME),
-          collectionId,
-          (CombinedProcessReportDefinitionExportDto) reportToImport,
-          originalIdToNewIdMap
-        );
-        break;
-      default:
-        throw new OptimizeRuntimeException("Unknown single report entity type: " + reportToImport.getExportEntityType());
+      case SINGLE_PROCESS_REPORT -> importProcessReportIntoCollection(
+        Optional.ofNullable(userId).orElse(API_IMPORT_OWNER_NAME),
+        collectionId,
+        (SingleProcessReportDefinitionExportDto) reportToImport,
+        originalIdToNewIdMap
+      );
+      case SINGLE_DECISION_REPORT -> importDecisionReportIntoCollection(
+        Optional.ofNullable(userId).orElse(API_IMPORT_OWNER_NAME),
+        collectionId,
+        (SingleDecisionReportDefinitionExportDto) reportToImport,
+        originalIdToNewIdMap
+      );
+      case COMBINED_REPORT -> importCombinedProcessReportIntoCollection(
+        Optional.ofNullable(userId).orElse(API_IMPORT_OWNER_NAME),
+        collectionId,
+        (CombinedProcessReportDefinitionExportDto) reportToImport,
+        originalIdToNewIdMap
+      );
+      default -> throw new OptimizeRuntimeException("Unknown single report entity type: " + reportToImport.getExportEntityType());
     }
   }
 
@@ -378,7 +372,8 @@ public class ReportImportService {
       case SINGLE_PROCESS_REPORT:
         final SingleProcessReportDefinitionExportDto processExport =
           (SingleProcessReportDefinitionExportDto) reportToImport;
-        validateIndexVersionOrFail(new SingleProcessReportIndex(), processExport);
+
+        validateIndexVersionOrFail(SingleProcessReportIndex.VERSION, SINGLE_PROCESS_REPORT_INDEX_NAME, processExport);
         removeMissingVersionsOrFailIfNoVersionsExist(processExport);
         if (userId != null) {
           validateAuthorizedToAccessDefinitionOrFail(userId, processExport);
@@ -389,7 +384,7 @@ public class ReportImportService {
       case SINGLE_DECISION_REPORT:
         final SingleDecisionReportDefinitionExportDto decisionExport =
           (SingleDecisionReportDefinitionExportDto) reportToImport;
-        validateIndexVersionOrFail(new SingleDecisionReportIndex(), decisionExport);
+        validateIndexVersionOrFail(SingleDecisionReportIndex.VERSION, SINGLE_DECISION_REPORT_INDEX_NAME, decisionExport);
         removeMissingVersionsOrFailIfNoVersionsExist(decisionExport);
         if (userId != null) {
           validateAuthorizedToAccessDefinitionOrFail(userId, decisionExport);
@@ -400,23 +395,32 @@ public class ReportImportService {
       case COMBINED_REPORT:
         final CombinedProcessReportDefinitionExportDto combinedExport =
           (CombinedProcessReportDefinitionExportDto) reportToImport;
-        validateIndexVersionOrFail(new CombinedReportIndex(), combinedExport);
+        validateIndexVersionOrFail(CombinedReportIndex.VERSION, COMBINED_REPORT_INDEX_NAME, combinedExport);
         break;
       default:
         throw new OptimizeRuntimeException("Unknown report entity type: " + reportToImport.getExportEntityType());
     }
   }
 
-  private void validateIndexVersionOrFail(final AbstractReportIndex targetIndex,
+  private String getFullyQualifiedIndexName(final String name, final int version) {
+    String indexName = OptimizeIndexNameService
+      .getOptimizeIndexOrTemplateNameForAliasAndVersion(name, Integer.toString(version));
+    return OptimizeIndexNameService.getOptimizeIndexAliasForIndexNameAndPrefix(indexName,
+                                                                               optimizeIndexNameService.getIndexPrefix());
+  }
+
+  private void validateIndexVersionOrFail(final int targetVersion,
+                                          final String rawIndexName,
                                           final ReportDefinitionExportDto exportDto) {
-    if (targetIndex.getVersion() != exportDto.getSourceIndexVersion()) {
+    String targetName = getFullyQualifiedIndexName(rawIndexName, targetVersion);
+    if (targetVersion != exportDto.getSourceIndexVersion()) {
       throw new OptimizeImportIncorrectIndexVersionException(
         "Could not import because source and target index versions do not match",
         Sets.newHashSet(
           ImportIndexMismatchDto.builder()
-            .indexName(optimizeIndexNameService.getOptimizeIndexNameWithVersion(targetIndex))
+            .indexName(targetName)
             .sourceIndexVersion(exportDto.getSourceIndexVersion())
-            .targetIndexVersion(targetIndex.getVersion())
+            .targetIndexVersion(targetVersion)
             .build()
         )
       );

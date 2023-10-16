@@ -14,10 +14,10 @@ import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEvent
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountResponseDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventSequenceCountDto;
 import org.camunda.optimize.service.db.reader.EventSequenceCountReader;
+import org.camunda.optimize.service.db.schema.index.events.EventSequenceCountIndex;
 import org.camunda.optimize.service.es.CompositeAggregationScroller;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
-import org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex;
+import org.camunda.optimize.service.es.schema.IndexSettingsBuilderES;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
@@ -45,13 +45,13 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex.COUNT;
-import static org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex.EVENT_NAME;
-import static org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex.GROUP;
-import static org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex.N_GRAM_FIELD;
-import static org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex.SOURCE;
-import static org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex.SOURCE_EVENT;
-import static org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex.TARGET_EVENT;
+import static org.camunda.optimize.service.db.schema.index.events.EventSequenceCountIndex.COUNT;
+import static org.camunda.optimize.service.db.schema.index.events.EventSequenceCountIndex.EVENT_NAME;
+import static org.camunda.optimize.service.db.schema.index.events.EventSequenceCountIndex.GROUP;
+import static org.camunda.optimize.service.db.schema.index.events.EventSequenceCountIndex.N_GRAM_FIELD;
+import static org.camunda.optimize.service.db.schema.index.events.EventSequenceCountIndex.SOURCE;
+import static org.camunda.optimize.service.db.schema.index.events.EventSequenceCountIndex.SOURCE_EVENT;
+import static org.camunda.optimize.service.db.schema.index.events.EventSequenceCountIndex.TARGET_EVENT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_SEQUENCE_COUNT_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
 import static org.elasticsearch.core.TimeValue.timeValueSeconds;
@@ -122,9 +122,8 @@ public class EventSequenceCountReaderES implements EventSequenceCountReader {
     searchSourceBuilder.size(0);
 
     final String[] indicesToSearch = camundaSources.stream()
-      .map(source -> new EventSequenceCountIndex(source.getConfiguration().getProcessDefinitionKey()).getIndexName())
-      .toList()
-      .toArray(new String[camundaSources.size()]);
+      .map(source -> EventSequenceCountIndex.constructIndexName(source.getConfiguration().getProcessDefinitionKey()))
+      .toList().toArray(new String[camundaSources.size()]);
     final SearchRequest searchRequest = new SearchRequest(indicesToSearch)
       .source(searchSourceBuilder);
     List<EventCountResponseDto> eventCountDtos = new ArrayList<>();
@@ -275,7 +274,7 @@ public class EventSequenceCountReaderES implements EventSequenceCountReader {
     }
 
     final String lowerCaseSearchTerm = searchTerm.toLowerCase();
-    if (searchTerm.length() > IndexSettingsBuilder.MAX_GRAM) {
+    if (searchTerm.length() > IndexSettingsBuilderES.MAX_GRAM) {
       return boolQuery()
         .should(prefixQuery(getNestedField(SOURCE_EVENT, GROUP), lowerCaseSearchTerm))
         .should(prefixQuery(getNestedField(SOURCE_EVENT, SOURCE), lowerCaseSearchTerm))

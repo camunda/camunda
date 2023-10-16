@@ -12,7 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableDto;
 import org.camunda.optimize.service.es.EsBulkByScrollTaskActionProgressReporter;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.schema.index.ExternalProcessVariableIndex;
+import org.camunda.optimize.service.es.schema.index.ExternalProcessVariableIndexES;
 import org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.index.IndexRequest;
@@ -86,7 +86,7 @@ public class ExternalProcessVariableWriter {
         false,
         // use wildcarded index name to catch all indices that exist after potential rollover
         esClient.getIndexNameService()
-          .getOptimizeIndexNameWithVersionWithWildcardSuffix(new ExternalProcessVariableIndex())
+          .getOptimizeIndexNameWithVersionWithWildcardSuffix(new ExternalProcessVariableIndexES())
       );
     } finally {
       progressReporter.stop();

@@ -9,9 +9,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
+import org.camunda.optimize.service.db.schema.index.events.EventIndex;
 import org.camunda.optimize.service.es.EsBulkByScrollTaskActionProgressReporter;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.schema.index.events.EventIndex;
+import org.camunda.optimize.service.es.schema.index.events.EventIndexES;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
@@ -83,7 +84,7 @@ public class ExternalEventWriter {
         deletedItemIdentifier,
         false,
         // use wildcarded index name to catch all indices that exist after potential rollover
-        esClient.getIndexNameService().getOptimizeIndexNameWithVersionWithWildcardSuffix(new EventIndex())
+        esClient.getIndexNameService().getOptimizeIndexNameWithVersionWithWildcardSuffix(new EventIndexES())
       );
     } finally {
       progressReporter.stop();
@@ -104,7 +105,7 @@ public class ExternalEventWriter {
       deletedItemIdentifier,
       true,
       // use wildcarded index name to catch all indices that exist after potential rollover
-      esClient.getIndexNameService().getOptimizeIndexNameWithVersionWithWildcardSuffix(new EventIndex())
+      esClient.getIndexNameService().getOptimizeIndexNameWithVersionWithWildcardSuffix(new EventIndexES())
     );
   }
 

@@ -16,7 +16,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProce
 import java.util.List;
 import java.util.Optional;
 
-import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.DATA;
+import static org.camunda.optimize.service.db.schema.index.report.AbstractReportIndex.DATA;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_DECISION_REPORT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;

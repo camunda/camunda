@@ -24,7 +24,8 @@ import org.camunda.optimize.service.db.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.filter.FilterContext;
 import org.camunda.optimize.service.es.filter.ProcessQueryFilterEnhancer;
-import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
+
+import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndexES;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.elasticsearch.ElasticsearchStatusException;
@@ -47,8 +48,8 @@ import java.util.Optional;
 import java.util.Set;
 
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_ID;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_ID;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 import static org.camunda.optimize.service.util.DefinitionQueryUtil.createDefinitionQuery;
 import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static org.camunda.optimize.service.util.InstanceIndexUtil.isInstanceIndexNotFoundException;
@@ -194,7 +195,7 @@ public class BranchAnalysisReaderES implements BranchAnalysisReader {
       request.getProcessDefinitionKey(),
       request.getProcessDefinitionVersions(),
       request.getTenantIds(),
-      new ProcessInstanceIndex(request.getProcessDefinitionKey()),
+      new ProcessInstanceIndexES(request.getProcessDefinitionKey()),
       processDefinitionReader::getLatestVersionToKey
     );
     excludeFlowNodes(activitiesToExclude, query);

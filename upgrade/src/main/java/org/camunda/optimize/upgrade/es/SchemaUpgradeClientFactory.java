@@ -10,13 +10,12 @@ import lombok.NoArgsConstructor;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
+import org.camunda.optimize.service.es.schema.MappingMetadataUtilES;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.util.OptimizeDateTimeFormatterFactory;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.mapper.ObjectMapperFactory;
 import org.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
-
-import static org.camunda.optimize.service.es.schema.MappingMetadataUtil.getAllMappings;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class SchemaUpgradeClientFactory {
@@ -33,8 +32,9 @@ public class SchemaUpgradeClientFactory {
                                                               final ConfigurationService configurationService,
                                                               final OptimizeIndexNameService indexNameService,
                                                               final OptimizeElasticsearchClient esClient) {
+    MappingMetadataUtilES mappingUtil = new MappingMetadataUtilES(esClient);
     return createSchemaUpgradeClient(
-      new ElasticSearchSchemaManager(metadataService, configurationService, indexNameService, getAllMappings(esClient)),
+      new ElasticSearchSchemaManager(metadataService, configurationService, indexNameService, mappingUtil.getAllMappings()),
       metadataService,
       configurationService,
       esClient

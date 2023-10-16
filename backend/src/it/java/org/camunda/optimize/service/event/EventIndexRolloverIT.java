@@ -11,9 +11,9 @@ import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableUpdateInstanceDto;
 import org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.service.es.schema.index.VariableUpdateInstanceIndex;
-import org.camunda.optimize.service.es.schema.index.events.CamundaActivityEventIndex;
-import org.camunda.optimize.service.es.schema.index.events.EventIndex;
+import org.camunda.optimize.service.es.schema.index.VariableUpdateInstanceIndexES;
+import org.camunda.optimize.service.es.schema.index.events.CamundaActivityEventIndexES;
+import org.camunda.optimize.service.es.schema.index.events.EventIndexES;
 import org.camunda.optimize.service.events.rollover.EventIndexRolloverService;
 import org.camunda.optimize.service.util.configuration.IndexRolloverConfiguration;
 import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest;
@@ -28,7 +28,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.IntStream;
 
-import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_NAME;
@@ -57,11 +56,11 @@ public class EventIndexRolloverIT extends AbstractPlatformIT {
     elasticSearchIntegrationTestExtension.deleteAllVariableUpdateInstanceIndices();
     embeddedOptimizeExtension.getElasticSearchSchemaManager().createOrUpdateOptimizeIndex(
       embeddedOptimizeExtension.getOptimizeElasticClient(),
-      new EventIndex()
+      new EventIndexES()
     );
     embeddedOptimizeExtension.getElasticSearchSchemaManager().createOrUpdateOptimizeIndex(
       embeddedOptimizeExtension.getOptimizeElasticClient(),
-      new VariableUpdateInstanceIndex()
+      new VariableUpdateInstanceIndexES()
     );
   }
 
@@ -107,8 +106,8 @@ public class EventIndexRolloverIT extends AbstractPlatformIT {
     ingestExternalEvents();
     importVariableUpdateInstances(3);
     final ProcessInstanceEngineDto processInstanceEngineDto = importCamundaEvents();
-    final CamundaActivityEventIndex camundaActivityIndex =
-      new CamundaActivityEventIndex(processInstanceEngineDto.getProcessDefinitionKey());
+    final CamundaActivityEventIndexES camundaActivityIndex =
+      new CamundaActivityEventIndexES(processInstanceEngineDto.getProcessDefinitionKey());
     final List<String> rolledOverIndicesFirstRollover = getEventIndexRolloverService().triggerRollover();
     List<String> indicesWithExternalEventWriteAliasFirstRollover =
       getAllIndicesWithWriteAlias(EXTERNAL_EVENTS_INDEX_NAME);
@@ -195,8 +194,8 @@ public class EventIndexRolloverIT extends AbstractPlatformIT {
     // given
     ingestExternalEvents();
     final ProcessInstanceEngineDto processInstanceEngineDto = importCamundaEvents();
-    final CamundaActivityEventIndex camundaActivityIndex =
-      new CamundaActivityEventIndex(processInstanceEngineDto.getProcessDefinitionKey());
+    final CamundaActivityEventIndexES camundaActivityIndex =
+      new CamundaActivityEventIndexES(processInstanceEngineDto.getProcessDefinitionKey());
     getEventIndexRolloverConfiguration().setMaxIndexSizeGB(0);
 
     // when
@@ -260,11 +259,11 @@ public class EventIndexRolloverIT extends AbstractPlatformIT {
     // given
     getEventIndexRolloverConfiguration().setMaxIndexSizeGB(0);
     final ProcessInstanceEngineDto firstProcessInstanceEngineDto = importCamundaEvents();
-    final CamundaActivityEventIndex firstCamundaActivityIndex =
-      new CamundaActivityEventIndex(firstProcessInstanceEngineDto.getProcessDefinitionKey());
+    final CamundaActivityEventIndexES firstCamundaActivityIndex =
+      new CamundaActivityEventIndexES(firstProcessInstanceEngineDto.getProcessDefinitionKey());
     final ProcessInstanceEngineDto secondProcessInstanceEngineDto = importCamundaEvents();
-    final CamundaActivityEventIndex secondCamundaActivityIndex =
-      new CamundaActivityEventIndex(secondProcessInstanceEngineDto.getProcessDefinitionKey());
+    final CamundaActivityEventIndexES secondCamundaActivityIndex =
+      new CamundaActivityEventIndexES(secondProcessInstanceEngineDto.getProcessDefinitionKey());
 
     // when
     getEventIndexRolloverService().triggerRollover();

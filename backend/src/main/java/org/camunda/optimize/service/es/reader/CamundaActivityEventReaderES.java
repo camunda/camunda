@@ -12,8 +12,8 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEventDto;
 import org.camunda.optimize.service.db.reader.CamundaActivityEventReader;
+import org.camunda.optimize.service.db.schema.index.events.CamundaActivityEventIndex;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.schema.index.events.CamundaActivityEventIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest;
@@ -120,7 +120,7 @@ public class CamundaActivityEventReaderES implements CamundaActivityEventReader 
       .size(0);
 
     try {
-      String indexName = new CamundaActivityEventIndex(processDefinitionKey).getIndexName();
+      String indexName = CamundaActivityEventIndex.constructIndexName(processDefinitionKey);
       boolean indexExists = esClient.exists(new GetIndexRequest(indexName));
       if (indexExists) {
         final SearchResponse searchResponse = esClient.search(
@@ -185,7 +185,7 @@ public class CamundaActivityEventReaderES implements CamundaActivityEventReader 
       .size(limit);
 
     final SearchRequest searchRequest =
-      new SearchRequest(new CamundaActivityEventIndex(definitionKey).getIndexName())
+      new SearchRequest(CamundaActivityEventIndex.constructIndexName(definitionKey))
         .source(searchSourceBuilder);
 
     try {

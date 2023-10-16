@@ -12,8 +12,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableUpdateInstanceDto;
+import org.camunda.optimize.service.db.schema.index.VariableUpdateInstanceIndex;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.schema.index.VariableUpdateInstanceIndex;
+import org.camunda.optimize.service.es.schema.index.VariableUpdateInstanceIndexES;
 import org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.elasticsearch.action.index.IndexRequest;
@@ -71,7 +72,7 @@ public class VariableUpdateInstanceWriter {
       false,
       // use wildcarded index name to catch all indices that exist after potential rollover
       esClient.getIndexNameService()
-        .getOptimizeIndexNameWithVersionWithWildcardSuffix(new VariableUpdateInstanceIndex())
+        .getOptimizeIndexNameWithVersionWithWildcardSuffix(new VariableUpdateInstanceIndexES())
     );
   }
 

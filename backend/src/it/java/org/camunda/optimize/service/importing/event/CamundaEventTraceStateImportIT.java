@@ -14,8 +14,8 @@ import org.camunda.optimize.dto.optimize.query.event.sequence.EventSequenceCount
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventTraceStateDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.TracedEventDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex;
-import org.camunda.optimize.service.es.schema.index.events.EventTraceStateIndex;
+import org.camunda.optimize.service.db.schema.index.events.EventSequenceCountIndex;
+import org.camunda.optimize.service.db.schema.index.events.EventTraceStateIndex;
 import org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil;
 import org.camunda.optimize.service.events.CamundaEventService;
 import org.camunda.optimize.util.BpmnModels;
@@ -294,11 +294,11 @@ public class CamundaEventTraceStateImportIT extends AbstractEventTraceStateImpor
   }
 
   private String getSequenceCountIndexNameForDefinitionKey(final String definitionKey) {
-    return new EventSequenceCountIndex(definitionKey).getIndexName();
+    return EventSequenceCountIndex.constructIndexName(definitionKey);
   }
 
   private String getTraceStateIndexNameForDefinitionKey(final String definitionKey) {
-    return new EventTraceStateIndex(definitionKey).getIndexName();
+    return EventTraceStateIndex.constructIndexName(definitionKey);
   }
 
 }

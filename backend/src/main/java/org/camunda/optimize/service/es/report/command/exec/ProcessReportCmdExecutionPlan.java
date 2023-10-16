@@ -23,7 +23,8 @@ import org.camunda.optimize.service.es.report.command.modules.distributed_by.Dis
 import org.camunda.optimize.service.es.report.command.modules.group_by.GroupByPart;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
 import org.camunda.optimize.service.es.report.command.modules.view.ViewPart;
-import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
+
+import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndexES;
 import org.camunda.optimize.service.util.DefinitionQueryUtil;
 import org.camunda.optimize.service.util.InstanceIndexUtil;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -157,7 +158,7 @@ public class ProcessReportCmdExecutionPlan<T> extends ReportCmdExecutionPlan<T, 
       definitionDto.getKey(),
       definitionDto.getVersions(),
       definitionDto.getTenantIds(),
-      new ProcessInstanceIndex(definitionDto.getKey()),
+      new ProcessInstanceIndexES(definitionDto.getKey()),
       processDefinitionReader::getLatestVersionToKey
     );
   }

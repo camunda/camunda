@@ -16,8 +16,10 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.view.Proces
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResponseDto;
 import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
-import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
+
+import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndexES;
 import org.camunda.optimize.test.util.DateCreationFreezer;
 import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Test;
@@ -98,8 +100,8 @@ public class ProcessInstancePercentageByNoneReportEvaluationIT extends AbstractP
     ReportResultResponseDto<Double> result = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
-    assertThat(result.getInstanceCount()).isEqualTo(0L);
-    assertThat(result.getFirstMeasureData()).isEqualTo(null);
+    assertThat(result.getInstanceCount()).isZero();
+    assertThat(result.getFirstMeasureData()).isNull();
   }
 
   @Test
@@ -194,8 +196,8 @@ public class ProcessInstancePercentageByNoneReportEvaluationIT extends AbstractP
         .add()
         .buildList());
     ReportResultResponseDto<Double> result = reportClient.evaluateNumberReport(reportData).getResult();
-    final Integer storedInstanceCount = elasticSearchIntegrationTestExtension.getDocumentCountOf(
-      new ProcessInstanceIndex(processInstance.getProcessDefinitionKey()).getIndexName());
+    final Integer storedInstanceCount =
+      elasticSearchIntegrationTestExtension.getDocumentCountOf(ProcessInstanceIndex.constructIndexName(processInstance.getProcessDefinitionKey()));
 
     // then all three instance have been imported
     assertThat(storedInstanceCount).isEqualTo(3);

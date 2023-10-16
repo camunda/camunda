@@ -22,7 +22,7 @@ import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto;
 import org.camunda.optimize.dto.optimize.rest.sorting.EventCountSorter;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex;
+import org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndexES;
 import org.camunda.optimize.service.events.EventCountService;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Order;
@@ -876,7 +876,7 @@ public class EventCountRestServiceIT extends AbstractEventRestServiceIT {
   @Test
   public void getEventCounts_externalSource_countsEmptyWhenSequenceNotYetProcessed() {
     // given the external event sequence does not exist
-    elasticSearchIntegrationTestExtension.deleteIndexOfMapping(new EventSequenceCountIndex(EXTERNAL_EVENTS_INDEX_SUFFIX));
+    elasticSearchIntegrationTestExtension.deleteIndexOfMapping(new EventSequenceCountIndexES(EXTERNAL_EVENTS_INDEX_SUFFIX));
 
     // when
     List<EventCountResponseDto> eventCountDtos = createPostEventCountsRequestAllExternalEvents()

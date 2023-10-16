@@ -10,7 +10,7 @@ import org.elasticsearch.xcontent.XContentBuilder;
 
 import java.io.IOException;
 
-public interface IndexMappingCreator {
+public interface IndexMappingCreator<TBuilder> {
 
   String getIndexName();
 
@@ -30,7 +30,8 @@ public interface IndexMappingCreator {
 
   XContentBuilder getSource();
 
-  XContentBuilder getStaticSettings(XContentBuilder xContentBuilder,
-                                    ConfigurationService configurationService) throws IOException;
+  TBuilder getStaticSettings(TBuilder xContentBuilder,
+                             ConfigurationService configurationService) throws IOException;
+
 
 }

@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.service.es.filter;
 
-import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex;
+import org.camunda.optimize.service.db.schema.index.DecisionInstanceIndex;
 import org.springframework.stereotype.Component;
 
 @Component

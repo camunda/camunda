@@ -7,19 +7,19 @@ package org.camunda.optimize.service.schema.type;
 
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
-import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
+import org.camunda.optimize.service.es.schema.IndexSettingsBuilderES;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.xcontent.XContentBuilder;
 
 import java.io.IOException;
 
-import static org.camunda.optimize.service.es.schema.index.MetadataIndex.SCHEMA_VERSION;
+import static org.camunda.optimize.service.db.schema.index.MetadataIndex.SCHEMA_VERSION;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_SHARDS_SETTING;
 import static org.elasticsearch.xcontent.XContentFactory.jsonBuilder;
 
 @Slf4j
-public class MyUpdatedEventIndex implements IndexMappingCreator {
+public class MyUpdatedEventIndex implements IndexMappingCreator<XContentBuilder> {
 
   public static final String MY_NEW_FIELD = "myAwesomeNewField";
 
@@ -61,7 +61,7 @@ public class MyUpdatedEventIndex implements IndexMappingCreator {
   @Override
   public XContentBuilder getStaticSettings(XContentBuilder xContentBuilder,
                                            ConfigurationService configurationService) throws IOException {
-    return xContentBuilder.field(NUMBER_OF_SHARDS_SETTING, IndexSettingsBuilder.DEFAULT_SHARD_NUMBER);
+    return xContentBuilder.field(NUMBER_OF_SHARDS_SETTING, IndexSettingsBuilderES.DEFAULT_SHARD_NUMBER);
   }
 
 }

@@ -10,7 +10,7 @@ import org.elasticsearch.xcontent.XContentBuilder;
 
 import java.io.IOException;
 
-public class UserTestUpdatedMappingIndex extends DefaultIndexMappingCreator {
+public class UserTestUpdatedMappingIndex extends DefaultIndexMappingCreator<XContentBuilder> {
 
   private static final int VERSION = 2;
 
@@ -36,5 +36,12 @@ public class UserTestUpdatedMappingIndex extends DefaultIndexMappingCreator {
       .startObject("email")
         .field("type", "keyword")
       .endObject();
+  }
+
+  @Override
+  public XContentBuilder addStaticSetting(final String key,
+                                          final int value,
+                                          final XContentBuilder contentBuilder) throws IOException {
+    return contentBuilder.field(key, value);
   }
 }

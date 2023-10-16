@@ -13,6 +13,7 @@ import net.jodah.failsafe.FailsafeException;
 import net.jodah.failsafe.FailsafeExecutor;
 import net.jodah.failsafe.RetryPolicy;
 import org.camunda.optimize.plugin.ElasticsearchCustomHeaderProvider;
+import org.camunda.optimize.service.db.schema.index.RichClient;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.es.schema.RequestOptionsProvider;
@@ -108,7 +109,7 @@ import java.util.Set;
  */
 @Slf4j
 @Conditional(ElasticSearchCondition.class)
-public class OptimizeElasticsearchClient implements ConfigurationReloadable {
+public class OptimizeElasticsearchClient implements ConfigurationReloadable, RichClient {
   private static final int DEFAULT_SNAPSHOT_IN_PROGRESS_RETRY_DELAY = 30;
 
   // we had to introduce our own options due to a regression with the client's behaviour with the 7.16

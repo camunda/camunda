@@ -55,8 +55,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static org.camunda.optimize.service.es.schema.index.CollectionIndex.DATA;
-import static org.camunda.optimize.service.es.schema.index.CollectionIndex.SCOPE;
+import static org.camunda.optimize.service.db.schema.index.CollectionIndex.DATA;
+import static org.camunda.optimize.service.db.schema.index.CollectionIndex.SCOPE;
 import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScriptWithSpecificDtoParams;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;

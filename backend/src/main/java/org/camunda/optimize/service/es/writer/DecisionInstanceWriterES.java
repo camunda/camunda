@@ -10,11 +10,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
+import org.camunda.optimize.service.db.schema.index.DecisionInstanceIndex;
 import org.camunda.optimize.service.db.writer.DecisionInstanceWriter;
 import org.camunda.optimize.service.es.EsBulkByScrollTaskActionProgressReporter;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
-import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex;
+import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndexES;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -145,7 +146,7 @@ public class DecisionInstanceWriterES implements ConfigurationReloadable, Decisi
     log.debug("Creating decision instance index for definition keys [{}].", defKeysOfMissingIndices);
     defKeysOfMissingIndices.forEach(defKey -> elasticSearchSchemaManager.createOrUpdateOptimizeIndex(
       esClient,
-      new DecisionInstanceIndex(defKey),
+      new DecisionInstanceIndexES(defKey),
       Collections.singleton(DECISION_INSTANCE_MULTI_ALIAS)
     ));
     existingInstanceIndexDefinitionKeys.addAll(defKeysOfMissingIndices);

@@ -26,8 +26,9 @@ import org.camunda.optimize.dto.optimize.rest.ImportedIndexMismatchResponseDto;
 import org.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.CombinedProcessReportDefinitionExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.SingleProcessReportDefinitionExportDto;
+import org.camunda.optimize.service.db.schema.index.report.SingleProcessReportIndex;
 import org.camunda.optimize.service.entities.AbstractExportImportEntityDefinitionIT;
-import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
+import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndexES;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -107,7 +108,7 @@ public class ProcessReportDefinitionImportIT extends AbstractExportImportEntityD
       .containsExactly(
         ImportIndexMismatchDto.builder()
           .indexName(embeddedOptimizeExtension.getIndexNameService()
-                       .getOptimizeIndexNameWithVersion(new SingleProcessReportIndex()))
+                       .getOptimizeIndexNameWithVersion(new SingleProcessReportIndexES()))
           .sourceIndexVersion(SingleProcessReportIndex.VERSION + 1)
           .targetIndexVersion(SingleProcessReportIndex.VERSION)
           .build());

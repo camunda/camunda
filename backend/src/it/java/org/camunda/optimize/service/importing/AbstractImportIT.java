@@ -105,7 +105,7 @@ public abstract class AbstractImportIT extends AbstractPlatformIT {
     );
   }
 
-  protected boolean indicesExist(final List<IndexMappingCreator> mappings) {
+  protected boolean indicesExist(final List<IndexMappingCreator<?>> mappings) {
     return embeddedOptimizeExtension.getElasticSearchSchemaManager()
       .indicesExist(embeddedOptimizeExtension.getOptimizeElasticClient(), mappings);
   }

@@ -14,12 +14,14 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
+import org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
-import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex;
-import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
+import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndexES;
+
+import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndexES;
 import org.camunda.optimize.service.exceptions.DataGenerationException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
@@ -62,7 +64,7 @@ public class OnboardingDataGenerator {
       elasticsearchMetadataService,
       configurationService,
       optimizeIndexNameService,
-      List.of(new ProcessDefinitionIndex())
+      List.of(new ProcessDefinitionIndexES())
     );
     this.elasticsearchClient = new OptimizeElasticsearchClient(
       ElasticsearchHighLevelRestClientBuilder.build(configurationService),
@@ -120,7 +122,7 @@ public class OnboardingDataGenerator {
     BulkRequest bulkRequest = new BulkRequest();
     elasticSearchSchemaManager.createOrUpdateOptimizeIndex(
       elasticsearchClient,
-      new ProcessInstanceIndex(processInstanceDto.getProcessDefinitionKey()),
+      new ProcessInstanceIndexES(processInstanceDto.getProcessDefinitionKey()),
       Collections.singleton(PROCESS_INSTANCE_MULTI_ALIAS)
     );
     try {
@@ -131,7 +133,7 @@ public class OnboardingDataGenerator {
           .forEach(flowNodeInstanceDto -> flowNodeInstanceDto.setProcessInstanceId(processInstanceId));
         String json = OBJECT_MAPPER.writeValueAsString(processInstanceDto);
         IndexRequest request =
-          new IndexRequest(new ProcessInstanceIndex(processInstanceDto.getProcessDefinitionKey()).getIndexName())
+          new IndexRequest(ProcessInstanceIndex.constructIndexName(processInstanceDto.getProcessDefinitionKey()))
             .id(processInstanceDto.getProcessInstanceId())
             .source(json, XContentType.JSON);
         bulkRequest.add(request);

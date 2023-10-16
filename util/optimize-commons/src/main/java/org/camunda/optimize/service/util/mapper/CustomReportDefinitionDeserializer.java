@@ -22,8 +22,8 @@ import java.io.IOException;
 import static org.camunda.optimize.dto.optimize.ReportType.DECISION;
 import static org.camunda.optimize.dto.optimize.ReportType.PROCESS;
 import static org.camunda.optimize.dto.optimize.ReportType.valueOf;
-import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.COMBINED;
-import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.REPORT_TYPE;
+import static org.camunda.optimize.service.db.schema.index.report.AbstractReportIndex.COMBINED;
+import static org.camunda.optimize.service.db.schema.index.report.AbstractReportIndex.REPORT_TYPE;
 
 public class CustomReportDefinitionDeserializer extends StdDeserializer<ReportDefinitionDto> {
 

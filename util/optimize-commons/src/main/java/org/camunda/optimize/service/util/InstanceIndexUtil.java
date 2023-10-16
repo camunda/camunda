@@ -11,8 +11,8 @@ import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex;
-import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
+import org.camunda.optimize.service.db.schema.index.DecisionInstanceIndex;
+import org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.ElasticsearchStatusException;
 
@@ -42,7 +42,7 @@ public class InstanceIndexUtil {
     if (decisionDefinitionKey == null) {
       return DECISION_INSTANCE_MULTI_ALIAS;
     } else {
-      return new DecisionInstanceIndex(decisionDefinitionKey).getIndexName();
+      return DecisionInstanceIndex.constructIndexName(decisionDefinitionKey);
     }
   }
 
@@ -62,7 +62,7 @@ public class InstanceIndexUtil {
     if (processDefinitionKey == null) {
       return PROCESS_INSTANCE_MULTI_ALIAS;
     } else {
-      return new ProcessInstanceIndex(processDefinitionKey).getIndexName();
+      return ProcessInstanceIndex.constructIndexName(processDefinitionKey);
     }
   }
 

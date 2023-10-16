@@ -16,7 +16,8 @@ import java.io.IOException;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_SHARDS_SETTING;
 
-public abstract class DefaultIndexMappingCreator implements IndexMappingCreator, PropertiesAppender {
+public abstract class DefaultIndexMappingCreator<TBuilder> implements PropertiesAppender,
+  IndexMappingCreator<TBuilder>  {
 
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
   private static final String DYNAMIC_MAPPINGS_VALUE_DEFAULT = "strict";
@@ -27,7 +28,9 @@ public abstract class DefaultIndexMappingCreator implements IndexMappingCreator,
   @Setter
   private String dynamic = DYNAMIC_MAPPINGS_VALUE_DEFAULT;
 
-  @Override
+  public abstract TBuilder addStaticSetting(final String key, final int value, TBuilder contentBuilder) throws
+                                                                                                        IOException;
+
   public XContentBuilder getSource() {
     XContentBuilder source = null;
     try {
@@ -40,10 +43,9 @@ public abstract class DefaultIndexMappingCreator implements IndexMappingCreator,
   }
 
   @Override
-  public XContentBuilder getStaticSettings(XContentBuilder xContentBuilder,
-                                           ConfigurationService configurationService) throws IOException {
-    xContentBuilder.field(NUMBER_OF_SHARDS_SETTING, IndexSettingsBuilder.DEFAULT_SHARD_NUMBER);
-    return xContentBuilder;
+  public TBuilder getStaticSettings(TBuilder xContentBuilder,
+                                    ConfigurationService configurationService) throws IOException {
+    return addStaticSetting(NUMBER_OF_SHARDS_SETTING, IndexSettingsBuilderES.DEFAULT_SHARD_NUMBER, xContentBuilder);
   }
 
   protected XContentBuilder createMapping() throws IOException {
@@ -82,5 +84,4 @@ public abstract class DefaultIndexMappingCreator implements IndexMappingCreator,
       .endObject();
     // @formatter:on
   }
-
 }

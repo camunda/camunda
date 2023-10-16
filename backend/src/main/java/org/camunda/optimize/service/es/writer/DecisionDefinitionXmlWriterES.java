@@ -22,11 +22,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
-import static org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_XML;
-import static org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex.INPUT_VARIABLE_NAMES;
-import static org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex.OUTPUT_VARIABLE_NAMES;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 
