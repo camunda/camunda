@@ -68,11 +68,11 @@ public final class ActorJob {
   private void observeSchedulingLatency(final ActorMetrics metrics) {
     if (metrics.isEnabled()) {
       final var now = System.nanoTime();
-      if (subscription instanceof ActorFutureSubscription s
-          && s.getFuture() instanceof CompletableActorFuture<?> f) {
+      if (subscription instanceof final ActorFutureSubscription s
+          && s.getFuture() instanceof final CompletableActorFuture<?> f) {
         final var subscriptionCompleted = f.getCompletedAt();
         metrics.observeJobSchedulingLatency(now - subscriptionCompleted, "Future");
-      } else if (subscription instanceof TimerSubscription s) {
+      } else if (subscription instanceof final TimerSubscription s) {
         final var timerExpired = s.getTimerExpiredAt();
         metrics.observeJobSchedulingLatency(now - timerExpired, "Timer");
       } else if (subscription == null && scheduledAt != -1) {
