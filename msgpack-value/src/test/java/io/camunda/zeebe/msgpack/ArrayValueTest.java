@@ -48,36 +48,6 @@ public final class ArrayValueTest {
   }
 
   @Test
-  public void shouldAddValueAtBeginning() {
-    // given
-    addIntValues(array, 1, 2, 3);
-
-    // when
-    // reset iterator to append at beginning
-    array.iterator();
-    addIntValues(array, 4, 5, 6);
-
-    // then
-    encodeAndDecode(array);
-    assertIntValues(array, 4, 5, 6, 1, 2, 3);
-  }
-
-  @Test
-  public void shouldAddValueInBetween() {
-    // given
-    addIntValues(array, 1, 2, 3);
-
-    // when
-    final Iterator<IntegerValue> iterator = array.iterator();
-    iterator.next();
-    addIntValues(array, 4, 5, 6);
-
-    // then
-    encodeAndDecode(array);
-    assertIntValues(array, 1, 4, 5, 6, 2, 3);
-  }
-
-  @Test
   public void shouldAddValuesAtEndAfterRead() {
     // given
     addIntValues(array, 1, 2, 3);
@@ -266,31 +236,6 @@ public final class ArrayValueTest {
     // then
     encodeAndDecode(array);
     assertIntValues(array, values);
-  }
-
-  @Test
-  public void shouldIncreaseInternalBufferWhenAddingToBeginning() {
-    // given
-    final int valueCount = 10_000;
-    final List<Integer> generatedList =
-        IntStream.iterate(0, (i) -> ++i).limit(valueCount).boxed().collect(Collectors.toList());
-    final List<Integer> reverseList = new ArrayList<>(generatedList);
-    Collections.reverse(generatedList);
-
-    final Integer[] values = generatedList.toArray(new Integer[valueCount]);
-
-    // when
-    for (final Integer value : values) {
-      // reset cursor to first position
-      array.iterator();
-      array.add().setValue(value);
-    }
-
-    // then
-    encodeAndDecode(array);
-
-    final Integer[] resultValues = reverseList.toArray(new Integer[valueCount]);
-    assertIntValues(array, resultValues);
   }
 
   @Test
