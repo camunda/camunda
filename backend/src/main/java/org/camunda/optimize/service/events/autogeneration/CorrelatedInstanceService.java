@@ -15,7 +15,7 @@ import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceE
 import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceType;
 import org.camunda.optimize.service.EventTraceStateService;
 import org.camunda.optimize.service.EventTraceStateServiceFactory;
-import org.camunda.optimize.service.es.reader.CorrelatedCamundaProcessInstanceReader;
+import org.camunda.optimize.service.db.reader.CorrelatedCamundaProcessInstanceReader;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;

@@ -11,8 +11,8 @@ import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventSequenceCountDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventTraceStateDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.TracedEventDto;
-import org.camunda.optimize.service.es.reader.EventSequenceCountReader;
-import org.camunda.optimize.service.es.reader.EventTraceStateReader;
+import org.camunda.optimize.service.db.reader.EventSequenceCountReader;
+import org.camunda.optimize.service.db.reader.EventTraceStateReader;
 import org.camunda.optimize.service.es.writer.EventSequenceCountWriter;
 import org.camunda.optimize.service.es.writer.EventTraceStateWriter;
 
@@ -31,6 +31,7 @@ import static org.camunda.optimize.service.util.EventDtoBuilderUtil.fromTracedEv
 
 @AllArgsConstructor
 public class EventTraceStateService {
+
   private final EventTraceStateWriter eventTraceStateWriter;
   private final EventTraceStateReader eventTraceStateReader;
   private final EventSequenceCountWriter eventSequenceCountWriter;

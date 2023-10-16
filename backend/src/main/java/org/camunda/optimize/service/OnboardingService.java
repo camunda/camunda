@@ -10,8 +10,8 @@ import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.OnboardingStateDto;
+import org.camunda.optimize.service.db.reader.OnboardingStateReader;
 import org.camunda.optimize.service.db.writer.OnboardingStateWriter;
-import org.camunda.optimize.service.es.reader.OnboardingStateReader;
 import org.springframework.stereotype.Component;
 
 import jakarta.ws.rs.NotFoundException;
@@ -22,6 +22,7 @@ import java.util.Set;
 @Component
 @Slf4j
 public class OnboardingService {
+
   private static final Set<String> VALID_KEYS = ImmutableSet.of("whatsnew");
 
   private final OnboardingStateReader onboardingStateReader;

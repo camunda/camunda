@@ -10,7 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
 import org.camunda.optimize.dto.optimize.index.PositionBasedImportIndexDto;
-import org.camunda.optimize.service.es.reader.importindex.PositionBasedImportIndexReader;
+import org.camunda.optimize.service.db.reader.importindex.PositionBasedImportIndexReader;
 import org.camunda.optimize.service.importing.page.PositionBasedImportPage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;

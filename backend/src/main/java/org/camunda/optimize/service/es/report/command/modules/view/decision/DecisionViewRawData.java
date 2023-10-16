@@ -20,8 +20,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.view.Decis
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
+import org.camunda.optimize.service.db.reader.DecisionVariableReader;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.reader.DecisionVariableReader;
 import org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil;
 import org.camunda.optimize.service.es.report.command.decision.mapping.RawDecisionDataResultDtoMapper;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;

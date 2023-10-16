@@ -13,10 +13,9 @@ import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewDto;
 import org.camunda.optimize.service.DefinitionService;
+import org.camunda.optimize.service.db.reader.ProcessOverviewReader;
 import org.camunda.optimize.service.email.EmailService;
-import org.camunda.optimize.service.es.reader.ProcessOverviewReader;
 import org.camunda.optimize.service.identity.AbstractIdentityService;
-import org.camunda.optimize.service.tenant.TenantService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.stereotype.Component;
 

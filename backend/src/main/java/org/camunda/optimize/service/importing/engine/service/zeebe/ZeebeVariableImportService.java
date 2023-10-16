@@ -20,7 +20,7 @@ import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableUpdateDto
 import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
 import org.camunda.optimize.dto.zeebe.variable.ZeebeVariableDataDto;
 import org.camunda.optimize.dto.zeebe.variable.ZeebeVariableRecordDto;
-import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
+import org.camunda.optimize.service.db.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.es.writer.ZeebeProcessInstanceWriter;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.importing.engine.service.ObjectVariableService;

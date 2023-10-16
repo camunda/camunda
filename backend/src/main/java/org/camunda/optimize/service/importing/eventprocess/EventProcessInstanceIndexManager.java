@@ -9,8 +9,8 @@ import com.google.common.collect.Sets;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessPublishStateDto;
+import org.camunda.optimize.service.db.reader.EventProcessPublishStateReader;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.reader.EventProcessPublishStateReader;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
@@ -32,6 +32,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INS
 @Slf4j
 @Component
 public class EventProcessInstanceIndexManager implements ConfigurationReloadable {
+
   private final OptimizeElasticsearchClient elasticsearchClient;
   private final ElasticSearchSchemaManager elasticSearchSchemaManager;
   private final EventProcessPublishStateReader eventProcessPublishStateReader;
@@ -127,4 +128,5 @@ public class EventProcessInstanceIndexManager implements ConfigurationReloadable
     publishedInstanceIndices.clear();
     usageCountPerIndex.clear();
   }
+
 }

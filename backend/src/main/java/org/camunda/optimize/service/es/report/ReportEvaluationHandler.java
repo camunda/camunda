@@ -28,7 +28,7 @@ import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRespo
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponseDto;
 import org.camunda.optimize.service.DefinitionService;
-import org.camunda.optimize.service.es.reader.ReportReader;
+import org.camunda.optimize.service.db.reader.ReportReader;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.exceptions.evaluation.ReportEvaluationException;

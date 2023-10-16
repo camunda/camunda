@@ -12,8 +12,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.dto.optimize.BackupState;
 import org.camunda.optimize.dto.optimize.rest.BackupInfoDto;
 import org.camunda.optimize.dto.optimize.rest.SnapshotInfoDto;
-import org.camunda.optimize.service.es.reader.BackupReader;
-import org.camunda.optimize.service.es.reader.BackupWriter;
+import org.camunda.optimize.service.db.reader.BackupReader;
+import org.camunda.optimize.service.es.writer.BackupWriter;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.snapshots.SnapshotInfo;
@@ -35,6 +35,7 @@ import static java.util.stream.Collectors.joining;
 @Component
 @Slf4j
 public class BackupService {
+
   private final BackupReader backupReader;
   private final BackupWriter backupWriter;
   private final ConfigurationService configurationService;
@@ -136,4 +137,5 @@ public class BackupService {
       backupReader.validateRepositoryExistsOrFail();
     }
   }
+
 }

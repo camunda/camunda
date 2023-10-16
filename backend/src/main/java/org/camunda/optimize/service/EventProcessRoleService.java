@@ -11,7 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleRequestDto;
-import org.camunda.optimize.service.es.reader.EventProcessMappingReader;
+import org.camunda.optimize.service.db.reader.EventProcessMappingReader;
 import org.camunda.optimize.service.es.writer.EventProcessMappingWriter;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.identity.AbstractIdentityService;

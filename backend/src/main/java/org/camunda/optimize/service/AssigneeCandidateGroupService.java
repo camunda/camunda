@@ -25,7 +25,7 @@ import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDef
 import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
-import org.camunda.optimize.service.es.reader.AssigneeAndCandidateGroupsReader;
+import org.camunda.optimize.service.db.reader.AssigneeAndCandidateGroupsReader;
 import org.camunda.optimize.service.identity.PlatformUserTaskIdentityCache;
 import org.camunda.optimize.service.report.ReportService;
 import org.camunda.optimize.service.security.util.definition.DataSourceDefinitionAuthorizationService;

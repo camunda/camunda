@@ -16,7 +16,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionRe
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
-import org.camunda.optimize.service.es.reader.ReportReader;
+import org.camunda.optimize.service.db.reader.ReportReader;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.identity.AbstractIdentityService;
 import org.camunda.optimize.service.security.util.definition.DataSourceDefinitionAuthorizationService;

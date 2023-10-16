@@ -7,7 +7,7 @@ package org.camunda.optimize.service.importing;
 
 import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.index.AllEntitiesBasedImportIndexDto;
-import org.camunda.optimize.service.es.reader.ImportIndexReader;
+import org.camunda.optimize.service.db.reader.ImportIndexReader;
 import org.camunda.optimize.service.importing.page.AllEntitiesBasedImportPage;
 import org.camunda.optimize.service.util.EsHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -25,6 +25,7 @@ public abstract class AllEntitiesBasedImportIndexHandler
 
   @Autowired
   protected ImportIndexReader importIndexReader;
+
   @Autowired
   protected ConfigurationService configurationService;
 

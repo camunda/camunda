@@ -12,7 +12,7 @@ import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.MaxEntryLimitHitException;
 import org.camunda.optimize.service.SearchableIdentityCache;
-import org.camunda.optimize.service.es.reader.AssigneeAndCandidateGroupsReader;
+import org.camunda.optimize.service.db.reader.AssigneeAndCandidateGroupsReader;
 import org.camunda.optimize.service.util.BackoffCalculator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.stereotype.Component;

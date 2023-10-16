@@ -11,7 +11,7 @@ import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableValueRequestDto;
-import org.camunda.optimize.service.es.reader.DecisionVariableReader;
+import org.camunda.optimize.service.db.reader.DecisionVariableReader;
 import org.camunda.optimize.service.security.util.tenant.DataSourceTenantAuthorizationService;
 import org.springframework.stereotype.Component;
 

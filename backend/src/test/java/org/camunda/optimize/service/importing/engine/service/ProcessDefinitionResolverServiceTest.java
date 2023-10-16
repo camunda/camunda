@@ -9,7 +9,7 @@ import com.google.common.collect.Lists;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
+import org.camunda.optimize.service.db.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionResolverService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

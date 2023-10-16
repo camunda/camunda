@@ -15,8 +15,8 @@ import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleRequestD
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleResponseDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleUpdateRequestDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedCollectionDefinitionDto;
+import org.camunda.optimize.service.db.reader.CollectionReader;
 import org.camunda.optimize.service.db.writer.CollectionWriter;
-import org.camunda.optimize.service.es.reader.CollectionReader;
 import org.camunda.optimize.service.exceptions.OptimizeUserOrGroupIdNotFoundException;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeCollectionConflictException;

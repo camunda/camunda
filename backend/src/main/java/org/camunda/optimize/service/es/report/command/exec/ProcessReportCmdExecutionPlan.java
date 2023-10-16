@@ -15,9 +15,9 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Flow
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.InstanceEndDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.InstanceStartDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
+import org.camunda.optimize.service.db.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.filter.ProcessQueryFilterEnhancer;
-import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.es.report.MinMaxStatDto;
 import org.camunda.optimize.service.es.report.command.modules.distributed_by.DistributedByPart;
 import org.camunda.optimize.service.es.report.command.modules.group_by.GroupByPart;

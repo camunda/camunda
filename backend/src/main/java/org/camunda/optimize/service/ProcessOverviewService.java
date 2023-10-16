@@ -20,9 +20,9 @@ import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewDt
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewResponseDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOwnerResponseDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessUpdateDto;
+import org.camunda.optimize.service.db.reader.ProcessOverviewReader;
 import org.camunda.optimize.service.db.writer.ProcessOverviewWriter;
 import org.camunda.optimize.service.digest.DigestService;
-import org.camunda.optimize.service.es.reader.ProcessOverviewReader;
 import org.camunda.optimize.service.identity.AbstractIdentityService;
 import org.camunda.optimize.service.security.util.definition.DataSourceDefinitionAuthorizationService;
 import org.springframework.stereotype.Component;

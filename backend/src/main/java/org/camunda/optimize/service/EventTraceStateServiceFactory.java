@@ -7,9 +7,11 @@ package org.camunda.optimize.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
+import org.camunda.optimize.service.db.reader.EventSequenceCountReader;
+import org.camunda.optimize.service.db.reader.EventTraceStateReader;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.reader.EventSequenceCountReader;
-import org.camunda.optimize.service.es.reader.EventTraceStateReader;
+import org.camunda.optimize.service.es.reader.EventSequenceCountReaderES;
+import org.camunda.optimize.service.es.reader.EventTraceStateReaderES;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventTraceStateIndex;
@@ -35,9 +37,10 @@ public class EventTraceStateServiceFactory {
     );
   }
 
+  //TODO would be handled properly with https://jira.camunda.com/browse/OPT-7244
   private EventSequenceCountReader createEventSequenceCountReader(final String indexKey) {
     elasticSearchSchemaManager.createIndexIfMissing(esClient, new EventSequenceCountIndex(indexKey));
-    return new EventSequenceCountReader(indexKey, esClient, objectMapper, configurationService);
+    return new EventSequenceCountReaderES(indexKey, esClient, objectMapper, configurationService);
   }
 
   private EventSequenceCountWriter createEventSequenceCountWriter(final String indexKey) {
@@ -47,7 +50,7 @@ public class EventTraceStateServiceFactory {
 
   private EventTraceStateReader createEventTraceStateReader(final String indexKey) {
     elasticSearchSchemaManager.createIndexIfMissing(esClient, new EventTraceStateIndex(indexKey));
-    return new EventTraceStateReader(indexKey, esClient, objectMapper);
+    return new EventTraceStateReaderES(indexKey, esClient, objectMapper);
   }
 
   private EventTraceStateWriter createEventTraceStateWriter(final String indexKey) {

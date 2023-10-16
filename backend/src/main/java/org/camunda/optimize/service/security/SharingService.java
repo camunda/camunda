@@ -24,8 +24,8 @@ import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponse
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
 import org.camunda.optimize.service.dashboard.DashboardService;
+import org.camunda.optimize.service.db.reader.SharingReader;
 import org.camunda.optimize.service.db.writer.SharingWriter;
-import org.camunda.optimize.service.es.reader.SharingReader;
 import org.camunda.optimize.service.es.report.PlainReportEvaluationHandler;
 import org.camunda.optimize.service.es.report.ReportEvaluationInfo;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;

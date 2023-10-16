@@ -8,7 +8,7 @@ package org.camunda.optimize.service.es.report;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.service.DefinitionService;
-import org.camunda.optimize.service.es.reader.ReportReader;
+import org.camunda.optimize.service.db.reader.ReportReader;
 import org.camunda.optimize.service.security.ReportAuthorizationService;
 import org.camunda.optimize.service.variable.ProcessVariableService;
 import org.springframework.stereotype.Component;

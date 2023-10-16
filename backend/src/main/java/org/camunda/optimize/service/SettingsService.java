@@ -8,8 +8,8 @@ package org.camunda.optimize.service;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.SettingsResponseDto;
+import org.camunda.optimize.service.db.reader.SettingsReader;
 import org.camunda.optimize.service.db.writer.SettingsWriter;
-import org.camunda.optimize.service.es.reader.SettingsReader;
 import org.camunda.optimize.service.identity.AbstractIdentityService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -21,6 +21,7 @@ import jakarta.ws.rs.ForbiddenException;
 @Component
 @Slf4j
 public class SettingsService {
+
   private final SettingsReader settingsReader;
   private final SettingsWriter settingsWriter;
   private final AbstractIdentityService identityService;
@@ -57,4 +58,5 @@ public class SettingsService {
       );
     }
   }
+
 }

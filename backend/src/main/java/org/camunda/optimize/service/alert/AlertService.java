@@ -29,8 +29,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.group.Proce
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
+import org.camunda.optimize.service.db.reader.AlertReader;
 import org.camunda.optimize.service.db.writer.AlertWriter;
-import org.camunda.optimize.service.es.reader.AlertReader;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.relations.ReportReferencingService;
 import org.camunda.optimize.service.report.ReportService;

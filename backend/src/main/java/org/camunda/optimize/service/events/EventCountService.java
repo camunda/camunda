@@ -24,8 +24,9 @@ import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountRequestD
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountResponseDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventSequenceCountDto;
 import org.camunda.optimize.service.EventProcessService;
+import org.camunda.optimize.service.db.reader.EventSequenceCountReader;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.reader.EventSequenceCountReader;
+import org.camunda.optimize.service.es.reader.EventSequenceCountReaderES;
 import org.camunda.optimize.service.util.BpmnModelUtil;
 import org.camunda.optimize.service.util.EventDtoBuilderUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -65,7 +66,8 @@ public class EventCountService {
                            final ConfigurationService configurationService) {
     this.camundaEventService = camundaEventService;
     this.eventProcessService = eventProcessService;
-    this.eventSequenceCountReader = new EventSequenceCountReader(
+    //TODO decouple this from ElasticSearch dependency, will be dealt with OPT-7246
+    this.eventSequenceCountReader = new EventSequenceCountReaderES(
       EXTERNAL_EVENTS_INDEX_SUFFIX,
       esClient,
       objectMapper,

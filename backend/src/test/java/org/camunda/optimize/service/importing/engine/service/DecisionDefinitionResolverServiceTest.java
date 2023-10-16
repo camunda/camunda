@@ -9,7 +9,7 @@ import com.google.common.collect.Lists;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.es.reader.DecisionDefinitionReader;
+import org.camunda.optimize.service.db.reader.DecisionDefinitionReader;
 import org.camunda.optimize.service.importing.engine.service.definition.DecisionDefinitionResolverService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

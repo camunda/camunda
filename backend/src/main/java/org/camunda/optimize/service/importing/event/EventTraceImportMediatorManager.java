@@ -8,7 +8,7 @@ package org.camunda.optimize.service.importing.event;
 import com.google.common.collect.ImmutableList;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
-import org.camunda.optimize.service.es.reader.CamundaActivityEventReader;
+import org.camunda.optimize.service.db.reader.CamundaActivityEventReader;
 import org.camunda.optimize.service.importing.BackoffImportMediator;
 import org.camunda.optimize.service.importing.event.mediator.EventTraceImportMediator;
 import org.camunda.optimize.service.importing.event.mediator.EventTraceImportMediatorFactory;
