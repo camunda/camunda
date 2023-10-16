@@ -7,11 +7,14 @@
 package io.camunda.tasklist.webapp.security.identity;
 
 import io.camunda.identity.sdk.Identity;
+import io.camunda.tasklist.property.IdentityProperties;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.SpringContextHolder;
 import io.camunda.tasklist.webapp.security.sso.TokenAuthentication;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -52,7 +55,13 @@ public class IdentityAuthorizationService {
       }
     }
     final List<String> result = new ArrayList<String>();
-    result.add("*");
+    result.add(IdentityProperties.ALL_RESOURCES);
     return result;
+  }
+
+  public boolean isAllowedToStartProcess(String processDefinitionKey) {
+    return !Collections.disjoint(
+        getProcessDefinitionsFromAuthorization(),
+        Set.of(IdentityProperties.ALL_RESOURCES, processDefinitionKey));
   }
 }

@@ -10,8 +10,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.webapp.graphql.entity.ProcessInstanceDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
+import io.camunda.tasklist.webapp.rest.exception.ForbiddenActionException;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
+import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService;
 import io.camunda.tasklist.webapp.security.tenant.TenantService;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.command.ClientException;
@@ -39,6 +41,8 @@ public class ProcessService {
 
   @Autowired private TenantService tenantService;
 
+  @Autowired private IdentityAuthorizationService identityAuthorizationService;
+
   public ProcessInstanceDTO startProcessInstance(
       final String processDefinitionKey, final String tenantId) {
     return startProcessInstance(processDefinitionKey, null, tenantId);
@@ -48,6 +52,11 @@ public class ProcessService {
       final String processDefinitionKey,
       final List<VariableInputDTO> variables,
       final String tenantId) {
+
+    if (!identityAuthorizationService.isAllowedToStartProcess(processDefinitionKey)) {
+      throw new ForbiddenActionException(
+          "User does not have the permission to start this process.");
+    }
 
     final boolean isMultiTenancyEnabled = tenantService.isMultiTenancyEnabled();
 
