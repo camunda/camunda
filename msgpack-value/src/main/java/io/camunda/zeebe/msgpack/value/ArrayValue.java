@@ -12,10 +12,10 @@ import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.function.Supplier;
 import org.agrona.ExpandableArrayBuffer;
 
-public final class ArrayValue<T extends BaseValue> extends BaseValue
-    implements Iterator<T>, Iterable<T> {
+public final class ArrayValue<T extends BaseValue> extends BaseValue implements Iterable<T> {
   private final MsgPackWriter writer = new MsgPackWriter();
   private final MsgPackReader reader = new MsgPackReader();
 
@@ -23,6 +23,7 @@ public final class ArrayValue<T extends BaseValue> extends BaseValue
   private final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
   // inner value
   private final T innerValue;
+  private final Supplier<T> innerValueFactory;
   private int elementCount;
   private int bufferLength;
   private int oldInnerValueLength;
@@ -30,10 +31,16 @@ public final class ArrayValue<T extends BaseValue> extends BaseValue
 
   // iterator
   private int cursorOffset;
-  private int cursorIndex;
 
   public ArrayValue(final T innerValue) {
     this.innerValue = innerValue;
+    innerValueFactory = null;
+    reset();
+  }
+
+  public ArrayValue(final Supplier<T> innerValueFactory) {
+    this.innerValueFactory = innerValueFactory;
+    innerValue = innerValueFactory.get();
     reset();
   }
 
@@ -41,14 +48,7 @@ public final class ArrayValue<T extends BaseValue> extends BaseValue
   public void reset() {
     elementCount = 0;
     bufferLength = 0;
-
-    resetIterator();
     resetInnerValue();
-  }
-
-  private void resetIterator() {
-    cursorIndex = 0;
-    cursorOffset = 0;
   }
 
   private void resetInnerValue() {
@@ -123,57 +123,9 @@ public final class ArrayValue<T extends BaseValue> extends BaseValue
    * @return an iterator for this object
    */
   @Override
-  public Iterator<T> iterator() {
+  public MutableArrayValueIterator<T> iterator() {
     flushAndResetInnerValue();
-
-    resetIterator();
-    resetInnerValue();
-
-    return this;
-  }
-
-  @Override
-  public boolean hasNext() {
-    return cursorIndex < elementCount;
-  }
-
-  /**
-   * Please be aware that iterating over an {@link ArrayValue} is not thread-safe. Iterating over
-   * this will modify the buffer. Multiple threads iterating over the same object will result in
-   * exceptions!
-   *
-   * @return the next element
-   */
-  @Override
-  public T next() {
-    if (!hasNext()) {
-      throw new NoSuchElementException("No more elements left");
-    }
-
-    final int innerValueLength = getInnerValueLength();
-
-    flushAndResetInnerValue();
-
-    cursorIndex += 1;
-    cursorOffset += innerValueLength;
-
-    readInnerValue();
-
-    return innerValue;
-  }
-
-  @Override
-  public void remove() {
-    if (innerValueState != InnerValueState.Modify) {
-      throw new IllegalStateException("No element available to remove, call next() before");
-    }
-
-    elementCount -= 1;
-    cursorIndex -= 1;
-
-    moveValuesLeft(cursorOffset + oldInnerValueLength, oldInnerValueLength);
-
-    innerValueState = InnerValueState.Uninitialized;
+    return new ArrayValueIterator<>(innerValueFactory.get());
   }
 
   public T add() {
@@ -187,7 +139,6 @@ public final class ArrayValue<T extends BaseValue> extends BaseValue
     if (elementUpdated) {
       // if the previous element was return by iterator the new element should be added after it
       cursorOffset += innerValueLength;
-      cursorIndex += 1;
     }
 
     innerValueState = InnerValueState.Insert;
@@ -227,14 +178,6 @@ public final class ArrayValue<T extends BaseValue> extends BaseValue
     }
   }
 
-  private void readInnerValue() {
-    reader.wrap(buffer, cursorOffset, bufferLength - cursorOffset);
-
-    innerValueState = InnerValueState.Modify;
-    innerValue.read(reader);
-    oldInnerValueLength = innerValue.getEncodedLength();
-  }
-
   private void flushAndResetInnerValue() {
     switch (innerValueState) {
       case Insert:
@@ -258,7 +201,6 @@ public final class ArrayValue<T extends BaseValue> extends BaseValue
     writeInnerValue();
 
     cursorOffset += innerValueLength;
-    cursorIndex += 1;
   }
 
   private void updateInnerValue() {
@@ -308,5 +250,59 @@ public final class ArrayValue<T extends BaseValue> extends BaseValue
     Uninitialized,
     Insert,
     Modify,
+  }
+
+  private class ArrayValueIterator<V extends BaseValue> implements MutableArrayValueIterator<V> {
+    private final V iterationValue;
+    private final MsgPackReader iterationReader = new MsgPackReader();
+    private int cursorOffset;
+    private int cursorIndex;
+
+    public ArrayValueIterator(final V iterationValue) {
+      this.iterationValue = iterationValue;
+      cursorOffset = 0;
+      cursorIndex = 0;
+    }
+
+    @Override
+    public boolean hasNext() {
+      return cursorIndex < elementCount;
+    }
+
+    @Override
+    public V next() {
+      if (!hasNext()) {
+        throw new NoSuchElementException("No more elements left");
+      }
+
+      iterationReader.wrap(buffer, cursorOffset, bufferLength - cursorOffset);
+      iterationValue.read(iterationReader);
+
+      cursorIndex += 1;
+      cursorOffset += iterationValue.getEncodedLength();
+
+      return iterationValue;
+    }
+
+    @Override
+    public void remove() {
+      if (cursorIndex == 0) {
+        throw new IllegalStateException("No element available to remove, call next() before");
+      }
+
+      final int iterationValueLength = iterationValue.getEncodedLength();
+
+      elementCount -= 1;
+      moveValuesLeft(cursorOffset, iterationValueLength);
+      innerValueState = InnerValueState.Uninitialized;
+
+      cursorIndex--;
+      cursorOffset -= iterationValueLength;
+    }
+
+    @Override
+    public void flush() {
+      // TODO
+    }
   }
 }
