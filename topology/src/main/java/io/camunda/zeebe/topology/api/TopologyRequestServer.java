@@ -18,7 +18,7 @@ import java.util.stream.Stream;
 /** Server that receives the topology management requests */
 public final class TopologyRequestServer implements AutoCloseable {
 
-  private final TopologyManagementAPI topologyManagementAPI;
+  private final TopologyManagementApi topologyManagementAPI;
   private final ClusterCommunicationService communicationService;
   private final ConcurrencyControl executor;
   private final TopologyRequestsSerializer serializer;
@@ -26,7 +26,7 @@ public final class TopologyRequestServer implements AutoCloseable {
   TopologyRequestServer(
       final ClusterCommunicationService communicationService,
       final TopologyRequestsSerializer serializer,
-      final TopologyManagementAPI topologyManagementAPI,
+      final TopologyManagementApi topologyManagementAPI,
       final ConcurrencyControl executor) {
     this.topologyManagementAPI = topologyManagementAPI;
     this.communicationService = communicationService;

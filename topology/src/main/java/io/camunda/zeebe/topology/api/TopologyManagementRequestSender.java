@@ -17,7 +17,7 @@ import io.camunda.zeebe.topology.serializer.TopologyRequestsSerializer;
 import java.time.Duration;
 
 /** Forwards all requests to the coordinator. */
-final class TopologyManagementRequestSender implements TopologyManagementAPI {
+final class TopologyManagementRequestSender implements TopologyManagementApi {
   private static final Duration TIMEOUT = Duration.ofSeconds(10);
   private final ClusterCommunicationService communicationService;
   private final MemberId coordinator;

@@ -12,7 +12,7 @@ import io.camunda.zeebe.topology.api.TopologyManagementRequests.AddMembersReques
 import io.camunda.zeebe.topology.api.TopologyManagementResponses.TopologyChangeStatus;
 
 /** Defines the API for the topology management requests. */
-public interface TopologyManagementAPI {
+public interface TopologyManagementApi {
 
   ActorFuture<TopologyChangeStatus> addMembers(AddMembersRequest addMembersRequest);
 }

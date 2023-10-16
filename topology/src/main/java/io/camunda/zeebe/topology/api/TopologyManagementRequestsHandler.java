@@ -20,7 +20,7 @@ import io.camunda.zeebe.topology.state.TopologyChangeOperation.MemberJoinOperati
  * Handles the requests for the topology management. This is expected be running on the coordinator
  * node.
  */
-final class TopologyManagementRequestsHandler implements TopologyManagementAPI {
+final class TopologyManagementRequestsHandler implements TopologyManagementApi {
 
   private final TopologyChangeCoordinator coordinator;
   private final ConcurrencyControl executor;
