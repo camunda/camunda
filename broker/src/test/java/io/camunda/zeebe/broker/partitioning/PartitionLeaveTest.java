@@ -72,7 +72,7 @@ final class PartitionLeaveTest {
       // when -- one broker leaves partition 1
       ((PartitionManagerImpl) broker1.getBrokerContext().getPartitionManager()).leave(1).join();
 
-      // then -- process instance can still be completed because quorum is still available
+      // then -- request can still be processed because quorum is still available
       client.newPublishMessageCommand().messageName("msg").correlationKey("key").send().join();
     } finally {
       broker0.close();
