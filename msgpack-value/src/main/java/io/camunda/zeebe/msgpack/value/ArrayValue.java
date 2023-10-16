@@ -16,7 +16,6 @@ import org.agrona.ExpandableArrayBuffer;
 
 public final class ArrayValue<T extends BaseValue> extends BaseValue implements Iterable<T> {
   private final MsgPackWriter writer = new MsgPackWriter();
-  private final MsgPackReader reader = new MsgPackReader();
 
   // buffer
   private final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer(10);
