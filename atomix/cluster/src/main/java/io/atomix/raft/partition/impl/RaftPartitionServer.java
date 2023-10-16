@@ -135,6 +135,10 @@ public class RaftPartitionServer implements HealthMonitorable {
         .thenApply(v -> this);
   }
 
+  public CompletableFuture<RaftPartitionServer> leave() {
+    return server.leave().thenApply(v -> this);
+  }
+
   public CompletableFuture<Void> stop() {
     return server != null ? server.shutdown() : CompletableFuture.completedFuture(null);
   }

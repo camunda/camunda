@@ -119,6 +119,44 @@ public final class Partition {
     return result;
   }
 
+  /** Requests to leave the partition and shuts down on success. Partition data is not deleted. */
+  public ActorFuture<Partition> leave() {
+    final var concurrencyControl = context.concurrencyControl();
+    final var result = concurrencyControl.<Partition>createFuture();
+    concurrencyControl.run(
+        () -> {
+          final var raftPartition = raftPartition();
+          if (raftPartition == null) {
+            result.completeExceptionally(
+                new IllegalStateException("Raft partition is not available"));
+            return;
+          }
+          raftPartition
+              .leave()
+              .whenComplete(
+                  (leaveOk, leaveError) -> {
+                    concurrencyControl.run(
+                        () -> {
+                          if (leaveError != null) {
+                            result.completeExceptionally(leaveError);
+                            return;
+                          }
+                          concurrencyControl.runOnCompletion(
+                              startupProcess.shutdown(concurrencyControl, context),
+                              (shutdownOk, shutdownError) -> {
+                                if (shutdownError != null) {
+                                  result.completeExceptionally(shutdownError);
+                                  return;
+                                }
+                                result.complete(this);
+                              });
+                        });
+                  });
+        });
+
+    return result;
+  }
+
   public ZeebePartition zeebePartition() {
     return context.zeebePartition();
   }
