@@ -12,6 +12,8 @@ import com.google.protobuf.Timestamp;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.AddMembersRequest;
+import io.camunda.zeebe.topology.api.TopologyManagementRequest.JoinPartitionRequest;
+import io.camunda.zeebe.topology.api.TopologyManagementRequest.LeavePartitionRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementResponse.StatusCode;
 import io.camunda.zeebe.topology.api.TopologyManagementResponse.TopologyChangeStatus;
 import io.camunda.zeebe.topology.gossip.ClusterTopologyGossipState;
@@ -266,12 +268,19 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
 
   @Override
   public byte[] encodeRequest(final TopologyManagementRequest topologyManagementRequest) {
-    return switch (topologyManagementRequest) {
-      case AddMembersRequest add -> Requests.AddMemberRequest.newBuilder()
-          .addAllMemberIds(add.members().stream().map(MemberId::id).toList())
-          .build()
-          .toByteArray();
-    };
+    final var messageBuilder =
+        switch (topologyManagementRequest) {
+          case final AddMembersRequest add -> Requests.AddMemberRequest.newBuilder()
+              .addAllMemberIds(add.members().stream().map(MemberId::id).toList());
+          case final JoinPartitionRequest join -> Requests.JoinPartitionRequest.newBuilder()
+              .setMemberId(join.memberId().id())
+              .setPartitionId(join.partitionId())
+              .setPriority(join.priority());
+          case final LeavePartitionRequest leave -> Requests.LeavePartitionRequest.newBuilder()
+              .setMemberId(leave.memberId().id())
+              .setPartitionId(leave.partitionId());
+        };
+    return messageBuilder.build().toByteArray();
   }
 
   @Override
@@ -282,6 +291,31 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
           addMemberRequest.getMemberIdsList().stream()
               .map(MemberId::from)
               .collect(Collectors.toSet()));
+    } catch (final InvalidProtocolBufferException e) {
+      throw new DecodingFailed(e);
+    }
+  }
+
+  @Override
+  public JoinPartitionRequest decodeJoinPartitionRequest(final byte[] encodedState) {
+    try {
+      final var joinPartitionRequest = Requests.JoinPartitionRequest.parseFrom(encodedState);
+      return new JoinPartitionRequest(
+          MemberId.from(joinPartitionRequest.getMemberId()),
+          joinPartitionRequest.getPartitionId(),
+          joinPartitionRequest.getPriority());
+    } catch (final InvalidProtocolBufferException e) {
+      throw new DecodingFailed(e);
+    }
+  }
+
+  @Override
+  public LeavePartitionRequest decodeLeavePartitionRequest(final byte[] encodedState) {
+    try {
+      final var leavePartitionRequest = Requests.LeavePartitionRequest.parseFrom(encodedState);
+      return new LeavePartitionRequest(
+          MemberId.from(leavePartitionRequest.getMemberId()),
+          leavePartitionRequest.getPartitionId());
     } catch (final InvalidProtocolBufferException e) {
       throw new DecodingFailed(e);
     }

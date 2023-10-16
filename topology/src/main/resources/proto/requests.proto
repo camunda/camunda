@@ -9,6 +9,17 @@ message AddMemberRequest {
   repeated string memberIds = 1;
 }
 
+message JoinPartitionRequest {
+  string memberId = 1;
+  int32 partitionId = 2;
+  int32 priority = 3;
+}
+
+message LeavePartitionRequest {
+  string memberId = 1;
+  int32 partitionId = 2;
+}
+
 message TopologyChangeStatus {
   int64 changeId = 1;
   ChangeStatus status = 2;

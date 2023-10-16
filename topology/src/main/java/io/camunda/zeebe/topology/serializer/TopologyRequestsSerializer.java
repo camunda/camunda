@@ -15,6 +15,10 @@ public interface TopologyRequestsSerializer {
 
   TopologyManagementRequest.AddMembersRequest decodeAddMembersRequest(byte[] encodedState);
 
+  TopologyManagementRequest.JoinPartitionRequest decodeJoinPartitionRequest(byte[] encodedState);
+
+  TopologyManagementRequest.LeavePartitionRequest decodeLeavePartitionRequest(byte[] encodedState);
+
   byte[] encode(TopologyChangeStatus topologyChangeStatus);
 
   TopologyChangeStatus decodeTopologyChangeStatus(byte[] encodedTopologyChangeStatus);

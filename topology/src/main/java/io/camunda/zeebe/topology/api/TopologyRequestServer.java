@@ -18,7 +18,7 @@ import java.util.stream.Stream;
 /** Server that receives the topology management requests */
 public final class TopologyRequestServer implements AutoCloseable {
 
-  private final TopologyManagementApi topologyManagementAPI;
+  private final TopologyManagementApi topologyManagementApi;
   private final ClusterCommunicationService communicationService;
   private final ConcurrencyControl executor;
   private final TopologyRequestsSerializer serializer;
@@ -26,9 +26,9 @@ public final class TopologyRequestServer implements AutoCloseable {
   TopologyRequestServer(
       final ClusterCommunicationService communicationService,
       final TopologyRequestsSerializer serializer,
-      final TopologyManagementApi topologyManagementAPI,
+      final TopologyManagementApi topologyManagementApi,
       final ConcurrencyControl executor) {
-    this.topologyManagementAPI = topologyManagementAPI;
+    this.topologyManagementApi = topologyManagementApi;
     this.communicationService = communicationService;
     this.serializer = serializer;
     this.executor = executor;
@@ -36,6 +36,8 @@ public final class TopologyRequestServer implements AutoCloseable {
 
   void start() {
     registerAddMemberRequestsHandler();
+    registerJoinPartitionRequestsHandler();
+    registerLeavePartitionRequestsHandler();
   }
 
   @Override
@@ -49,7 +51,23 @@ public final class TopologyRequestServer implements AutoCloseable {
     communicationService.replyTo(
         TopologyRequestTopics.ADD_MEMBER.topic(),
         serializer::decodeAddMembersRequest,
-        request -> toCompletableFuture(topologyManagementAPI.addMembers(request)),
+        request -> toCompletableFuture(topologyManagementApi.addMembers(request)),
+        serializer::encode);
+  }
+
+  private void registerJoinPartitionRequestsHandler() {
+    communicationService.replyTo(
+        TopologyRequestTopics.JOIN_PARTITION.topic(),
+        serializer::decodeJoinPartitionRequest,
+        request -> toCompletableFuture(topologyManagementApi.joinPartition(request)),
+        serializer::encode);
+  }
+
+  private void registerLeavePartitionRequestsHandler() {
+    communicationService.replyTo(
+        TopologyRequestTopics.LEAVE_PARTITION.topic(),
+        serializer::decodeLeavePartitionRequest,
+        request -> toCompletableFuture(topologyManagementApi.leavePartition(request)),
         serializer::encode);
   }
 
