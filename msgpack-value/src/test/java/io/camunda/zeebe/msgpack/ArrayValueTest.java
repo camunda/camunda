@@ -28,6 +28,7 @@ import java.util.stream.StreamSupport;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.assertj.core.api.Assertions;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -391,6 +392,38 @@ public final class ArrayValueTest {
 
     // then
     assertThat(isEmpty).isFalse();
+  }
+
+  @Test
+  public void shouldBeEqual() {
+    // given
+    final var other = new ArrayValue<>(new IntegerValue());
+    addIntValues(array, 1, 2, 3);
+    array.iterator(); // force flush
+
+    // when
+    other.add().setValue(1);
+    other.add().setValue(2);
+    other.add().setValue(3);
+
+    // then - fails because it's not flushed
+    Assertions.assertThat((Object) other).isEqualTo(array);
+  }
+
+  @Test
+  public void shouldHashLatestModification() {
+    // given
+    final var other = new ArrayValue<>(new IntegerValue());
+    addIntValues(array, 1, 2, 3);
+    array.iterator(); // force flush
+
+    // when
+    other.add().setValue(1);
+    other.add().setValue(2);
+    other.add().setValue(3);
+
+    // then - fails because it's not flushed
+    Assertions.assertThat((Object) other).hasSameHashCodeAs(array);
   }
 
   // Helpers

@@ -197,6 +197,10 @@ public final class ArrayValue<T extends BaseValue> extends BaseValue
 
   @Override
   public int hashCode() {
+    if (innerValueState != InnerValueState.Uninitialized) {
+      flushAndResetInnerValue();
+    }
+
     return Objects.hash(buffer, elementCount, bufferLength);
   }
 
@@ -206,25 +210,28 @@ public final class ArrayValue<T extends BaseValue> extends BaseValue
       return true;
     }
 
-    if (!(o instanceof ArrayValue)) {
+    if (!(o instanceof final ArrayValue<?> that)) {
       return false;
     }
 
-    final ArrayValue<?> that = (ArrayValue<?>) o;
+    if (innerValueState != InnerValueState.Uninitialized) {
+      flushAndResetInnerValue();
+    }
+
+    if (that.innerValueState != InnerValueState.Uninitialized) {
+      that.flushAndResetInnerValue();
+    }
+
     return elementCount == that.elementCount
         && bufferLength == that.bufferLength
         && Objects.equals(buffer, that.buffer);
   }
 
   private int getInnerValueLength() {
-    switch (innerValueState) {
-      case Insert:
-      case Modify:
-        return innerValue.getEncodedLength();
-      case Uninitialized:
-      default:
-        return 0;
-    }
+    return switch (innerValueState) {
+      case Insert, Modify -> innerValue.getEncodedLength();
+      default -> 0;
+    };
   }
 
   private void readInnerValue() {
@@ -237,15 +244,9 @@ public final class ArrayValue<T extends BaseValue> extends BaseValue
 
   private void flushAndResetInnerValue() {
     switch (innerValueState) {
-      case Insert:
-        insertInnerValue();
-        break;
-      case Modify:
-        updateInnerValue();
-        break;
-      case Uninitialized:
-      default:
-        break;
+      case Insert -> insertInnerValue();
+      case Modify -> updateInnerValue();
+      default -> {}
     }
 
     resetInnerValue();
