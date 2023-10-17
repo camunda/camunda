@@ -22,6 +22,7 @@ import io.camunda.zeebe.topology.state.TopologyChangeOperation.MemberJoinOperati
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.MemberLeaveOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
+import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -183,7 +184,8 @@ final class ProtoBufSerializerTest {
     final List<TopologyChangeOperation> changes =
         List.of(
             new PartitionLeaveOperation(MemberId.from("1"), 1),
-            new PartitionJoinOperation(MemberId.from("2"), 2, 5));
+            new PartitionJoinOperation(MemberId.from("2"), 2, 5),
+            new PartitionReconfigurePriorityOperation(MemberId.from("3"), 4, 3));
     return ClusterTopology.init()
         .addMember(MemberId.from("1"), MemberState.initializeAsActive(Map.of()))
         .startTopologyChange(changes);

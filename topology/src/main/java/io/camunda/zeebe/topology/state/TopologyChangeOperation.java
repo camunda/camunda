@@ -29,5 +29,8 @@ public sealed interface TopologyChangeOperation {
 
     record PartitionLeaveOperation(MemberId memberId, int partitionId)
         implements PartitionChangeOperation {}
+
+    record PartitionReconfigurePriorityOperation(MemberId memberId, int partitionId, int priority)
+        implements PartitionChangeOperation {}
   }
 }
