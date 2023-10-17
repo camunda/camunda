@@ -10,6 +10,7 @@ package io.camunda.zeebe.qa.util.jobstream;
 import io.camunda.zeebe.shared.management.JobStreamEndpoint.ClientJobStream;
 import io.camunda.zeebe.shared.management.JobStreamEndpoint.JobStream;
 import io.camunda.zeebe.shared.management.JobStreamEndpoint.RemoteJobStream;
+import io.camunda.zeebe.shared.management.JobStreamEndpoint.RemoteStreamId;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.stream.Collectors;
@@ -141,6 +142,23 @@ public abstract class AbstractJobStreamsAssert<
     return VerboseCondition.verboseCondition(
         stream -> stream.consumers().size() == count,
         "a stream with '%d' consumers".formatted(count),
+        stream -> " but actual consumers are '%s'".formatted(stream.consumers()));
+  }
+
+  /**
+   * Returns a condition which checks that a stream consumers contains exactly the given receivers,
+   * in any order.
+   */
+  public static Condition<RemoteJobStream> hasConsumerReceivers(
+      final Collection<String> receivers) {
+    return VerboseCondition.verboseCondition(
+        stream ->
+            stream.consumers().size() == receivers.size()
+                && stream.consumers().stream()
+                    .map(RemoteStreamId::receiver)
+                    .collect(Collectors.toSet())
+                    .containsAll(receivers),
+        "a stream with consumer receivers '%s'".formatted(receivers),
         stream -> " but actual consumers are '%s'".formatted(stream.consumers()));
   }
 }
