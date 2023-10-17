@@ -11,13 +11,15 @@ import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.topology.api.TopologyManagementRequests.AddMembersRequest;
-import io.camunda.zeebe.topology.api.TopologyManagementResponses.TopologyChangeStatus;
+import io.camunda.zeebe.topology.api.TopologyManagementRequest.AddMembersRequest;
+import io.camunda.zeebe.topology.api.TopologyManagementRequest.JoinPartitionRequest;
+import io.camunda.zeebe.topology.api.TopologyManagementRequest.LeavePartitionRequest;
+import io.camunda.zeebe.topology.api.TopologyManagementResponse.TopologyChangeStatus;
 import io.camunda.zeebe.topology.serializer.TopologyRequestsSerializer;
 import java.time.Duration;
 
 /** Forwards all requests to the coordinator. */
-final class TopologyManagementRequestSender implements TopologyManagementAPI {
+final class TopologyManagementRequestSender implements TopologyManagementApi {
   private static final Duration TIMEOUT = Duration.ofSeconds(10);
   private final ClusterCommunicationService communicationService;
   private final MemberId coordinator;
@@ -42,7 +44,51 @@ final class TopologyManagementRequestSender implements TopologyManagementAPI {
         communicationService.send(
             TopologyRequestTopics.ADD_MEMBER.topic(),
             addMembersRequest,
-            serializer::encode,
+            serializer::encodeAddMembersRequest,
+            serializer::decodeTopologyChangeStatus,
+            coordinator,
+            TIMEOUT);
+    responseFuture
+        .thenAccept(resultFuture::complete)
+        .exceptionally(
+            error -> {
+              resultFuture.completeExceptionally(error);
+              return null;
+            });
+    return resultFuture;
+  }
+
+  @Override
+  public ActorFuture<TopologyChangeStatus> joinPartition(
+      final JoinPartitionRequest joinPartitionRequest) {
+    final ActorFuture<TopologyChangeStatus> resultFuture = executor.createFuture();
+    final var responseFuture =
+        communicationService.send(
+            TopologyRequestTopics.JOIN_PARTITION.topic(),
+            joinPartitionRequest,
+            serializer::encodeJoinPartitionRequest,
+            serializer::decodeTopologyChangeStatus,
+            coordinator,
+            TIMEOUT);
+    responseFuture
+        .thenAccept(resultFuture::complete)
+        .exceptionally(
+            error -> {
+              resultFuture.completeExceptionally(error);
+              return null;
+            });
+    return resultFuture;
+  }
+
+  @Override
+  public ActorFuture<TopologyChangeStatus> leavePartition(
+      final LeavePartitionRequest leavePartitionRequest) {
+    final ActorFuture<TopologyChangeStatus> resultFuture = executor.createFuture();
+    final var responseFuture =
+        communicationService.send(
+            TopologyRequestTopics.LEAVE_PARTITION.topic(),
+            leavePartitionRequest,
+            serializer::encodeLeavePartitionRequest,
             serializer::decodeTopologyChangeStatus,
             coordinator,
             TIMEOUT);

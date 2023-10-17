@@ -23,6 +23,8 @@ import io.camunda.zeebe.topology.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.MemberJoinOperation;
+import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
+import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -33,8 +35,8 @@ import org.junit.jupiter.api.Test;
 
 // Test to verify that server handles requests from the clients. This test uses the actual
 // communicationService to ensure that request subscription and handling is done correctly.
-final class TopologyManagementAPITest {
-  private TopologyManagementAPI clientAPI;
+final class TopologyManagementApiTest {
+  private TopologyManagementApi clientApi;
 
   private final RecordingChangeCoordinator recordingCoordinator = new RecordingChangeCoordinator();
   private TopologyRequestServer requestServer;
@@ -56,7 +58,7 @@ final class TopologyManagementAPITest {
     final var coordinatorStarted = coordinator.start();
     CompletableFuture.allOf(gatewayStarted, coordinatorStarted).join();
 
-    clientAPI =
+    clientApi =
         new TopologyManagementRequestSender(
             gateway.getCommunicationService(),
             coordinator.getMembershipService().getLocalMember().id(),
@@ -93,15 +95,43 @@ final class TopologyManagementAPITest {
   @Test
   void shouldAddMembers() {
     // given
-    final var request =
-        new TopologyManagementRequests.AddMembersRequest(Set.of(MemberId.from("1")));
+    final var request = new TopologyManagementRequest.AddMembersRequest(Set.of(MemberId.from("1")));
 
     // when
-    final var changeStatus = clientAPI.addMembers(request).join();
+    final var changeStatus = clientApi.addMembers(request).join();
 
     // then
     assertThat(recordingCoordinator.getLastAppliedOperation())
         .containsExactly(new MemberJoinOperation(MemberId.from("1")));
+    assertThat(changeStatus.changeId()).isEqualTo(initialTopology.version() + 1);
+  }
+
+  @Test
+  void shouldJoinPartition() {
+    // given
+    final var request =
+        new TopologyManagementRequest.JoinPartitionRequest(MemberId.from("1"), 1, 3);
+
+    // when
+    final var changeStatus = clientApi.joinPartition(request).join();
+
+    // then
+    assertThat(recordingCoordinator.getLastAppliedOperation())
+        .containsExactly(new PartitionJoinOperation(MemberId.from("1"), 1, 3));
+    assertThat(changeStatus.changeId()).isEqualTo(initialTopology.version() + 1);
+  }
+
+  @Test
+  void shouldLeavePartition() {
+    // given
+    final var request = new TopologyManagementRequest.LeavePartitionRequest(MemberId.from("1"), 1);
+
+    // when
+    final var changeStatus = clientApi.leavePartition(request).join();
+
+    // then
+    assertThat(recordingCoordinator.getLastAppliedOperation())
+        .containsExactly(new PartitionLeaveOperation(MemberId.from("1"), 1));
     assertThat(changeStatus.changeId()).isEqualTo(initialTopology.version() + 1);
   }
 

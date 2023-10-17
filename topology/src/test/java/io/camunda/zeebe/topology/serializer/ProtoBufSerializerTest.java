@@ -10,7 +10,9 @@ package io.camunda.zeebe.topology.serializer;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.zeebe.topology.api.TopologyManagementRequests.AddMembersRequest;
+import io.camunda.zeebe.topology.api.TopologyManagementRequest.AddMembersRequest;
+import io.camunda.zeebe.topology.api.TopologyManagementRequest.JoinPartitionRequest;
+import io.camunda.zeebe.topology.api.TopologyManagementRequest.LeavePartitionRequest;
 import io.camunda.zeebe.topology.gossip.ClusterTopologyGossipState;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.MemberState;
@@ -70,11 +72,38 @@ final class ProtoBufSerializerTest {
         new AddMembersRequest(Set.of(MemberId.from("1"), MemberId.from("2")));
 
     // when
-    final var encodedRequest = protoBufSerializer.encode(addMembersRequest);
+    final var encodedRequest = protoBufSerializer.encodeAddMembersRequest(addMembersRequest);
 
     // then
     final var decodedRequest = protoBufSerializer.decodeAddMembersRequest(encodedRequest);
     assertThat(decodedRequest).isEqualTo(addMembersRequest);
+  }
+
+  @Test
+  void shouldEncodeAndDecodeJoinPartitionRequest() {
+    // given
+    final var joinPartitionRequest = new JoinPartitionRequest(MemberId.from("2"), 3, 5);
+
+    // when
+    final var encodedRequest = protoBufSerializer.encodeJoinPartitionRequest(joinPartitionRequest);
+
+    // then
+    final var decodedRequest = protoBufSerializer.decodeJoinPartitionRequest(encodedRequest);
+    assertThat(decodedRequest).isEqualTo(joinPartitionRequest);
+  }
+
+  @Test
+  void shouldEncodeAndDecodeLeavePartitionRequest() {
+    // given
+    final var leavePartitionRequest = new LeavePartitionRequest(MemberId.from("6"), 2);
+
+    // when
+    final var encodedRequest =
+        protoBufSerializer.encodeLeavePartitionRequest(leavePartitionRequest);
+
+    // then
+    final var decodedRequest = protoBufSerializer.decodeLeavePartitionRequest(encodedRequest);
+    assertThat(decodedRequest).isEqualTo(leavePartitionRequest);
   }
 
   private static Stream<ClusterTopology> provideClusterTopologies() {

@@ -11,6 +11,12 @@ import io.atomix.cluster.MemberId;
 import java.util.Set;
 
 /** Defines the supported requests for the topology management. */
-public final class TopologyManagementRequests {
-  public record AddMembersRequest(Set<MemberId> members) {}
+public sealed interface TopologyManagementRequest {
+  record AddMembersRequest(Set<MemberId> members) implements TopologyManagementRequest {}
+
+  record JoinPartitionRequest(MemberId memberId, int partitionId, int priority)
+      implements TopologyManagementRequest {}
+
+  record LeavePartitionRequest(MemberId memberId, int partitionId)
+      implements TopologyManagementRequest {}
 }

@@ -10,11 +10,14 @@ package io.camunda.zeebe.topology.serializer;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Timestamp;
 import io.atomix.cluster.MemberId;
-import io.camunda.zeebe.topology.api.TopologyManagementRequests.AddMembersRequest;
-import io.camunda.zeebe.topology.api.TopologyManagementResponses.StatusCode;
-import io.camunda.zeebe.topology.api.TopologyManagementResponses.TopologyChangeStatus;
+import io.camunda.zeebe.topology.api.TopologyManagementRequest.AddMembersRequest;
+import io.camunda.zeebe.topology.api.TopologyManagementRequest.JoinPartitionRequest;
+import io.camunda.zeebe.topology.api.TopologyManagementRequest.LeavePartitionRequest;
+import io.camunda.zeebe.topology.api.TopologyManagementResponse.StatusCode;
+import io.camunda.zeebe.topology.api.TopologyManagementResponse.TopologyChangeStatus;
 import io.camunda.zeebe.topology.gossip.ClusterTopologyGossipState;
 import io.camunda.zeebe.topology.protocol.Requests;
+import io.camunda.zeebe.topology.protocol.Requests.AddMemberRequest;
 import io.camunda.zeebe.topology.protocol.Requests.ChangeStatus;
 import io.camunda.zeebe.topology.protocol.Topology;
 import io.camunda.zeebe.topology.protocol.Topology.MemberState;
@@ -264,9 +267,28 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
   }
 
   @Override
-  public byte[] encode(final AddMembersRequest addMembersRequest) {
-    return Requests.AddMemberRequest.newBuilder()
-        .addAllMemberIds(addMembersRequest.members().stream().map(MemberId::id).toList())
+  public byte[] encodeAddMembersRequest(final AddMembersRequest req) {
+    return AddMemberRequest.newBuilder()
+        .addAllMemberIds(req.members().stream().map(MemberId::id).toList())
+        .build()
+        .toByteArray();
+  }
+
+  @Override
+  public byte[] encodeJoinPartitionRequest(final JoinPartitionRequest req) {
+    return Requests.JoinPartitionRequest.newBuilder()
+        .setMemberId(req.memberId().id())
+        .setPartitionId(req.partitionId())
+        .setPriority(req.priority())
+        .build()
+        .toByteArray();
+  }
+
+  @Override
+  public byte[] encodeLeavePartitionRequest(final LeavePartitionRequest req) {
+    return Requests.LeavePartitionRequest.newBuilder()
+        .setMemberId(req.memberId().id())
+        .setPartitionId(req.partitionId())
         .build()
         .toByteArray();
   }
@@ -279,6 +301,31 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
           addMemberRequest.getMemberIdsList().stream()
               .map(MemberId::from)
               .collect(Collectors.toSet()));
+    } catch (final InvalidProtocolBufferException e) {
+      throw new DecodingFailed(e);
+    }
+  }
+
+  @Override
+  public JoinPartitionRequest decodeJoinPartitionRequest(final byte[] encodedState) {
+    try {
+      final var joinPartitionRequest = Requests.JoinPartitionRequest.parseFrom(encodedState);
+      return new JoinPartitionRequest(
+          MemberId.from(joinPartitionRequest.getMemberId()),
+          joinPartitionRequest.getPartitionId(),
+          joinPartitionRequest.getPriority());
+    } catch (final InvalidProtocolBufferException e) {
+      throw new DecodingFailed(e);
+    }
+  }
+
+  @Override
+  public LeavePartitionRequest decodeLeavePartitionRequest(final byte[] encodedState) {
+    try {
+      final var leavePartitionRequest = Requests.LeavePartitionRequest.parseFrom(encodedState);
+      return new LeavePartitionRequest(
+          MemberId.from(leavePartitionRequest.getMemberId()),
+          leavePartitionRequest.getPartitionId());
     } catch (final InvalidProtocolBufferException e) {
       throw new DecodingFailed(e);
     }

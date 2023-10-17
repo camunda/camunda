@@ -7,11 +7,12 @@
  */
 package io.camunda.zeebe.topology.api;
 
-public final class TopologyManagementResponses {
+public sealed interface TopologyManagementResponse {
 
-  public record TopologyChangeStatus(long changeId, StatusCode status) {}
+  record TopologyChangeStatus(long changeId, StatusCode status)
+      implements TopologyManagementResponse {}
 
-  public enum StatusCode {
+  enum StatusCode {
     IN_PROGRESS,
     COMPLETED,
     FAILED
