@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.broker.partitioning.distribution;
+package io.camunda.zeebe.topology.util;
 
 import com.google.common.collect.Sets;
 import io.atomix.cluster.MemberId;
