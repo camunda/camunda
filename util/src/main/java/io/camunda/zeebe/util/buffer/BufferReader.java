@@ -23,4 +23,14 @@ public interface BufferReader {
    * @param length the length of the values to read
    */
   void wrap(DirectBuffer buffer, int offset, int length);
+
+  /**
+   * Copies the contents of {@code source} into a newly allocated buffer before reading it back.
+   *
+   * @param source the source writer
+   * @throws NullPointerException if source is null
+   */
+  default void copyFrom(final BufferWriter source) {
+    BufferUtil.copy(source, this);
+  }
 }
