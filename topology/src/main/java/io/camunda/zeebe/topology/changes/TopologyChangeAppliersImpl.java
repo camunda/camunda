@@ -16,6 +16,7 @@ import io.camunda.zeebe.topology.state.TopologyChangeOperation.MemberJoinOperati
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.MemberLeaveOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
+import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
 import io.camunda.zeebe.util.Either;
 import java.util.function.UnaryOperator;
 
@@ -48,6 +49,13 @@ public class TopologyChangeAppliersImpl implements TopologyChangeAppliers {
     } else if (operation instanceof final MemberLeaveOperation memberLeaveOperation) {
       return new MemberLeaveApplier(
           memberLeaveOperation.memberId(), topologyMembershipChangeExecutor);
+    } else if (operation
+        instanceof final PartitionReconfigurePriorityOperation reconfigurePriorityOperation) {
+      return new PartitionReconfigurePriorityApplier(
+          reconfigurePriorityOperation.partitionId(),
+          reconfigurePriorityOperation.priority(),
+          reconfigurePriorityOperation.memberId(),
+          partitionChangeExecutor);
     } else {
       return new FailingApplier(operation);
     }
