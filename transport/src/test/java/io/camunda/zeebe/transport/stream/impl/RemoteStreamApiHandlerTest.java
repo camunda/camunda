@@ -31,7 +31,13 @@ final class RemoteStreamApiHandlerTest {
   private final RemoteStreamRegistry<TestMetadata> registry =
       new RemoteStreamRegistry<>(RemoteStreamMetrics.noop());
   private final RemoteStreamApiHandler<TestMetadata> server =
-      new RemoteStreamApiHandler<>(registry, TestMetadata::new);
+      new RemoteStreamApiHandler<>(
+          registry,
+          buffer -> {
+            final var data = new TestMetadata();
+            data.wrap(buffer, 0, buffer.capacity());
+            return data;
+          });
 
   @Test
   void shouldNotAddOnMetadataReadError() {

@@ -17,13 +17,12 @@ import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamInfo;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamService;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamer;
-import io.camunda.zeebe.util.buffer.BufferReader;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.stream.Stream;
 
-public class RemoteStreamServiceImpl<M extends BufferReader, P extends BufferWriter>
+public class RemoteStreamServiceImpl<M, P extends BufferWriter>
     implements RemoteStreamService<M, P> {
   private final RemoteStreamerImpl<M, P> streamer;
   private final RemoteStreamTransport<M> apiServer;
