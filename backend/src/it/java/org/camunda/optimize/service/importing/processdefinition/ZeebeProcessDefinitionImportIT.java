@@ -8,7 +8,6 @@ package org.camunda.optimize.service.importing.processdefinition;
 import io.camunda.zeebe.client.api.response.Process;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
-import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import lombok.SneakyThrows;
 import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.AbstractCCSMIT;
@@ -17,11 +16,9 @@ import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.FlowNodeDataDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
-import org.camunda.optimize.dto.zeebe.definition.ZeebeProcessDefinitionRecordDto;
-import org.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceDataDto;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIf;
+import org.junit.jupiter.api.condition.EnabledIf;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -29,14 +26,13 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT_ID;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ZEEBE_PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.util.ZeebeBpmnModels.END_EVENT;
 import static org.camunda.optimize.util.ZeebeBpmnModels.START_EVENT;
 import static org.camunda.optimize.util.ZeebeBpmnModels.USER_TASK;
 import static org.camunda.optimize.util.ZeebeBpmnModels.createSimpleServiceTaskProcess;
 import static org.camunda.optimize.util.ZeebeBpmnModels.createSimpleUserTaskProcess;
 import static org.camunda.optimize.util.ZeebeBpmnModels.createStartEndProcess;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 public class ZeebeProcessDefinitionImportIT extends AbstractCCSMIT {
 
@@ -252,22 +248,29 @@ public class ZeebeProcessDefinitionImportIT extends AbstractCCSMIT {
       .isEqualTo(ZEEBE_DEFAULT_TENANT_ID);
   }
 
+  @EnabledIf("isZeebeVersionWithMultiTenancy")
+  @Test
+  public void tenantIdImported_processDefinitionData() {
+    // given
+    deployAndStartInstanceForProcess(createSimpleServiceTaskProcess("aProcess"));
+    waitUntilDefinitionWithIdExported("aProcess");
+    final String expectedTenantId = "testTenant";
+    setTenantIdForExportedZeebeRecords(ZEEBE_PROCESS_DEFINITION_INDEX_NAME, expectedTenantId);
+
+    // when
+    importAllZeebeEntitiesFromScratch();
+
+    // then
+    assertThat(elasticSearchIntegrationTestExtension.getAllProcessDefinitions())
+      .extracting(ProcessDefinitionOptimizeDto::getTenantId)
+      .singleElement()
+      .isEqualTo(expectedTenantId);
+  }
+
   private Process deployProcessAndStartInstance(final BpmnModelInstance simpleProcess) {
     final Process deployedProcess = zeebeExtension.deployProcess(simpleProcess);
     zeebeExtension.startProcessInstanceForProcess(deployedProcess.getBpmnProcessId());
     return deployedProcess;
-  }
-
-  private void waitUntilDefinitionWithIdExported(final String processDefinitionId) {
-    waitUntilRecordMatchingQueryExported(
-      ElasticsearchConstants.ZEEBE_PROCESS_DEFINITION_INDEX_NAME,
-      boolQuery()
-        .must(termQuery(ZeebeProcessDefinitionRecordDto.Fields.intent, ProcessIntent.CREATED.name()))
-        .must(termQuery(
-          ZeebeProcessDefinitionRecordDto.Fields.value + "." + ZeebeProcessInstanceDataDto.Fields.bpmnProcessId,
-          processDefinitionId
-        ))
-    );
   }
 
 }

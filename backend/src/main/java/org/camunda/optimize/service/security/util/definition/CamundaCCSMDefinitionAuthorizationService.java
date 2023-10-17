@@ -50,20 +50,24 @@ public class CamundaCCSMDefinitionAuthorizationService implements DataSourceDefi
                                                 final String definitionKey,
                                                 final DefinitionType definitionType,
                                                 final List<String> tenantIds) {
-    return StringUtils.isBlank(definitionKey) || tenantAuthorizationService.isCurrentUserAuthorizedToSeeAllTenants(tenantIds);
+    return StringUtils.isBlank(definitionKey) || tenantAuthorizationService.isAuthorizedToSeeAllTenants(
+      identityId,
+      identityType,
+      tenantIds
+    );
   }
 
   @Override
   public boolean isAuthorizedToAccessDefinition(final String userId,
                                                 final String tenantId,
                                                 final SimpleDefinitionDto definition) {
-    return tenantAuthorizationService.isCurrentUserAuthorizedToSeeTenant(tenantId);
+    return tenantAuthorizationService.isAuthorizedToSeeTenant(userId, IdentityType.USER, tenantId);
   }
 
   @Override
   public <T extends DefinitionOptimizeResponseDto> boolean isAuthorizedToAccessDefinition(final String userId,
                                                                                           final T definition) {
-    return tenantAuthorizationService.isCurrentUserAuthorizedToSeeTenant(definition.getTenantId());
+    return tenantAuthorizationService.isAuthorizedToSeeTenant(userId, IdentityType.USER, definition.getTenantId());
   }
 
 }

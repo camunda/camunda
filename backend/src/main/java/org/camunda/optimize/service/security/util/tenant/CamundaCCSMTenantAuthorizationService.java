@@ -75,14 +75,6 @@ public class CamundaCCSMTenantAuthorizationService implements DataSourceTenantAu
     return getCurrentUserAuthorizedTenants().stream().collect(toMap(TenantDto::getId, Function.identity()));
   }
 
-  public boolean isCurrentUserAuthorizedToSeeAllTenants(final List<String> tenantIds) {
-    return tenantIds.stream().allMatch(this::isCurrentUserAuthorizedToSeeTenant);
-  }
-
-  public boolean isCurrentUserAuthorizedToSeeTenant(final String tenantId) {
-    return getCurrentUserAuthorizedTenants().stream().anyMatch(tenant -> Objects.equals(tenantId, tenant.getId()));
-  }
-
   public List<TenantDto> getCurrentUserAuthorizedTenants() {
     if (configurationService.isMultiTenancyEnabled()) {
       Optional<String> currentUserId = getCurrentUserId();
@@ -101,6 +93,14 @@ public class CamundaCCSMTenantAuthorizationService implements DataSourceTenantAu
     } else {
       return Collections.singletonList(ZEEBE_DEFAULT_TENANT);
     }
+  }
+
+  private boolean isCurrentUserAuthorizedToSeeAllTenants(final List<String> tenantIds) {
+    return tenantIds.stream().allMatch(this::isCurrentUserAuthorizedToSeeTenant);
+  }
+
+  private boolean isCurrentUserAuthorizedToSeeTenant(final String tenantId) {
+    return getCurrentUserAuthorizedTenants().stream().anyMatch(tenant -> Objects.equals(tenantId, tenant.getId()));
   }
 
   private void repopulateCacheWithCurrentUserTenantAuthorization() {

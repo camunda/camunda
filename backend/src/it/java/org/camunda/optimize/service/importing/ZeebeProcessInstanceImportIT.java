@@ -16,7 +16,6 @@ import org.camunda.optimize.AbstractCCSMIT;
 import org.camunda.optimize.dto.optimize.ProcessInstanceConstants;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
-import org.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceDataDto;
 import org.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceRecordDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
@@ -28,6 +27,7 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIf;
+import org.junit.jupiter.api.condition.EnabledIf;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -40,6 +40,7 @@ import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT_ID;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME;
 import static org.camunda.optimize.util.ZeebeBpmnModels.END_EVENT;
 import static org.camunda.optimize.util.ZeebeBpmnModels.END_EVENT_2;
 import static org.camunda.optimize.util.ZeebeBpmnModels.SEND_TASK;
@@ -54,8 +55,6 @@ import static org.camunda.optimize.util.ZeebeBpmnModels.createSimpleUserTaskProc
 import static org.camunda.optimize.util.ZeebeBpmnModels.createSingleStartDoubleEndEventProcess;
 import static org.camunda.optimize.util.ZeebeBpmnModels.createStartEndProcess;
 import static org.camunda.optimize.util.ZeebeBpmnModels.createTerminateEndEventProcess;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
 
@@ -192,7 +191,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
             new FlowNodeInstanceDto(
               String.valueOf(deployedInstance.getBpmnProcessId()),
               String.valueOf(deployedInstance.getVersion()),
-              ZEEBE_DEFAULT_TENANT_ID ,
+              ZEEBE_DEFAULT_TENANT_ID,
               String.valueOf(deployedInstance.getProcessInstanceKey()),
               USER_TASK,
               getBpmnElementTypeNameForType(BpmnElementType.USER_TASK),
@@ -563,6 +562,31 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
       .containsOnly(ZEEBE_DEFAULT_TENANT_ID);
   }
 
+  @EnabledIf("isZeebeVersionWithMultiTenancy")
+  @Test
+  public void importZeebeProcessInstanceData_tenantIdImported() {
+    // given
+    deployAndStartInstanceForProcess(createStartEndProcess("aProcess"));
+    waitUntilInstanceRecordWithElementIdExported(START_EVENT);
+    final String expectedTenantId = "testTenant";
+    setTenantIdForExportedZeebeRecords(ZEEBE_PROCESS_INSTANCE_INDEX_NAME, expectedTenantId);
+
+    // when
+    importAllZeebeEntitiesFromScratch();
+
+    // then
+    final List<ProcessInstanceDto> instances = elasticSearchIntegrationTestExtension.getAllProcessInstances();
+    assertThat(instances)
+      .extracting(ProcessInstanceDto::getTenantId)
+      .singleElement()
+      .isEqualTo(expectedTenantId);
+    assertThat(instances)
+      .flatExtracting(ProcessInstanceDto::getFlowNodeInstances)
+      .extracting(FlowNodeInstanceDto::getTenantId)
+      .hasSize(2)
+      .containsOnly(expectedTenantId);
+  }
+
   private FlowNodeInstanceDto createFlowNodeInstance(final ProcessInstanceEvent deployedInstance,
                                                      final Map<String, List<ZeebeProcessInstanceRecordDto>> events,
                                                      final String eventId,
@@ -634,16 +658,6 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
   private String getBpmnElementTypeNameForType(final BpmnElementType type) {
     return type.getElementTypeName()
       .orElseThrow(() -> new OptimizeRuntimeException("Cannot find name for type: " + type));
-  }
-
-  private void waitUntilInstanceRecordWithElementIdExported(final String instanceElementId) {
-    waitUntilRecordMatchingQueryExported(
-      ElasticsearchConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME,
-      boolQuery().must(termQuery(
-        ZeebeProcessInstanceRecordDto.Fields.value + "." + ZeebeProcessInstanceDataDto.Fields.elementId,
-        instanceElementId
-      ))
-    );
   }
 
 }
