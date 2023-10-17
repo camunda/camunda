@@ -127,7 +127,49 @@ final class JobStreamLifecycleIT {
   }
 
   @Test
-  void shouldAggregateStream() {
+  void shouldAggregateStreams() {
+    // given - two logically equivalent streams
+    final var commandA =
+        client
+            .newStreamJobsCommand()
+            .jobType(jobType)
+            .consumer(ignored -> {})
+            .fetchVariables("foo", "bar")
+            .timeout(Duration.ofMillis(500))
+            .workerName("command");
+    final var commandB =
+        client
+            .newStreamJobsCommand()
+            .jobType(jobType)
+            .consumer(ignored -> {})
+            .fetchVariables("foo", "bar")
+            .timeout(Duration.ofMillis(500))
+            .workerName("command");
+
+    // when - both streams are opened and registered on the gateway as individual client streams
+    commandA.send();
+    commandB.send();
+    Awaitility.await("until streams are registered")
+        .untilAsserted(
+            () ->
+                JobStreamActuatorAssert.assertThat(JobStreamActuator.of(gateway))
+                    .clientStreams()
+                    .haveJobType(2, jobType));
+
+    // then - only one stream is registered on each broker as it is aggregated per gateway
+    for (int nodeId = 0; nodeId < 2; nodeId++) {
+      final var actuator = brokerActuator(nodeId);
+      Awaitility.await("until stream is registered on broker '%d'".formatted(nodeId))
+          .untilAsserted(
+              () ->
+                  JobStreamActuatorAssert.assertThat(actuator)
+                      .remoteStreams()
+                      .haveConsumerCount(1, jobType, 1));
+    }
+  }
+
+  @Test
+  void shouldAggregateStreamWithDifferentReceivers() {
     // given - two logically equivalent streams on different gateways
     //noinspection resource
     final var otherGateway =
