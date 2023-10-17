@@ -129,7 +129,7 @@ final class JobBatchCollector {
       final long key,
       final JobRecord jobRecord) {
     jobKeyIterator.add().setValue(key);
-    BufferUtil.copy(jobRecord, jobIterator.add());
+    jobIterator.add().copyFrom(jobRecord);
   }
 
   private Collection<DirectBuffer> collectVariableNames(final JobBatchRecord batchRecord) {
