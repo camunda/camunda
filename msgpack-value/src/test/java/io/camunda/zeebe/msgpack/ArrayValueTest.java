@@ -369,6 +369,38 @@ public final class ArrayValueTest {
     assertThat(isEmpty).isFalse();
   }
 
+  @Test
+  void shouldBeEqual() {
+    // given
+    final var other = new ArrayValue<>(IntegerValue::new);
+    addIntValues(array, 1, 2, 3);
+    array.iterator(); // force flush
+
+    // when
+    other.add().setValue(1);
+    other.add().setValue(2);
+    other.add().setValue(3);
+
+    // then - fails because it's not flushed
+    assertThat((Object) other).isEqualTo(array);
+  }
+
+  @Test
+  void shouldHashLatestModification() {
+    // given
+    final var other = new ArrayValue<>(IntegerValue::new);
+    addIntValues(array, 1, 2, 3);
+    array.iterator(); // force flush
+
+    // when
+    other.add().setValue(1);
+    other.add().setValue(2);
+    other.add().setValue(3);
+
+    // then - fails because it's not flushed
+    assertThat((Object) other).hasSameHashCodeAs(array);
+  }
+
   // Helpers
 
   private void addIntValues(final ArrayValue<IntegerValue> array, final Integer... values) {
