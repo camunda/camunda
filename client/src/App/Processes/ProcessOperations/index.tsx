@@ -98,7 +98,7 @@ const ProcessOperations: React.FC<Props> = observer(
                 </ListItem>
               </UnorderedList>
               <Link
-                href="https://docs.camunda.io/docs/components/operate/operate-introduction/"
+                href="https://docs.camunda.io/docs/components/operate/userguide/delete-resources/"
                 target="_blank"
               >
                 For a detailed overview, please view our guide on deleting a
