@@ -52,6 +52,10 @@ public final class FollowerRole extends ActiveRole {
     electionTimer = electionTimerFactory.create(this::schedulePollRequests, log);
   }
 
+  public ElectionTimer getElectionTimer() {
+    return electionTimer;
+  }
+
   @Override
   public synchronized CompletableFuture<RaftRole> start() {
     raft.getMembershipService().addListener(clusterListener);

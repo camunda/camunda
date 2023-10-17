@@ -295,4 +295,33 @@ public final class PartitionManagerImpl implements PartitionManager, PartitionCh
         });
     return result;
   }
+
+  @Override
+  public ActorFuture<Void> reconfigurePriority(final int partitionId, final int newPriority) {
+    final var result = concurrencyControl.<Void>createFuture();
+    concurrencyControl.run(
+        () -> {
+          final var partition = partitions.get(partitionId);
+          if (partition == null) {
+            result.completeExceptionally(
+                new IllegalArgumentException("No partition with id %s".formatted(partitionId)));
+            return;
+          }
+          LOGGER.info("Reconfiguring priority of partition {} to {}", partitionId, newPriority);
+          concurrencyControl.runOnCompletion(
+              partition.reconfigurePriority(newPriority),
+              (ok, error) -> {
+                if (error != null) {
+                  result.completeExceptionally(error);
+                  return;
+                }
+
+                LOGGER.info(
+                    "Reconfigured priority of partition {} to {}", partitionId, newPriority);
+                result.complete(null);
+              });
+        });
+
+    return result;
+  }
 }

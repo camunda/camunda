@@ -29,7 +29,7 @@ public final class DeterministicSingleThreadContext implements ThreadContext {
 
   private final DeterministicScheduler deterministicScheduler;
 
-  private DeterministicSingleThreadContext(final DeterministicScheduler executor) {
+  public DeterministicSingleThreadContext(final DeterministicScheduler executor) {
     deterministicScheduler = executor;
   }
 

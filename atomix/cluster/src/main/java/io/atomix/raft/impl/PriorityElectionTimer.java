@@ -29,7 +29,7 @@ public class PriorityElectionTimer implements ElectionTimer {
   private final Runnable triggerElection;
   private final Logger log;
   private final int initialTargetPriority;
-  private final int nodePriority;
+  private int nodePriority;
   private int targetPriority;
 
   public PriorityElectionTimer(
@@ -60,6 +60,10 @@ public class PriorityElectionTimer implements ElectionTimer {
     if (electionTimer != null) {
       electionTimer.cancel();
     }
+  }
+
+  public void setNodePriority(final int newPriority) {
+    nodePriority = newPriority;
   }
 
   private void onElectionTimeout() {
