@@ -10,6 +10,7 @@ package io.camunda.zeebe.qa.util.jobstream;
 import io.camunda.zeebe.qa.util.actuator.JobStreamActuator;
 import io.camunda.zeebe.shared.management.JobStreamEndpoint.ClientJobStream;
 import io.camunda.zeebe.shared.management.JobStreamEndpoint.RemoteJobStream;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -104,6 +105,22 @@ public final class JobStreamActuatorAssert
         final int expectedCount, final String jobType, final int consumerCount) {
       return haveExactly(
           expectedCount, AllOf.allOf(hasJobType(jobType), hasConsumerCount(consumerCount)));
+    }
+
+    /**
+     * Asserts that the given service contains exactly {@code expectedCount} streams with the given
+     * job type and the expected consumer receivers (in any order).
+     *
+     * @param expectedCount the exact count of streams to find
+     * @param jobType the expected type of the streams
+     * @param receivers the expected consumer receivers
+     * @return itself for chaining
+     */
+    public RemoteJobStreamsAssert haveConsumerReceiver(
+        final int expectedCount, final String jobType, final String... receivers) {
+      final var collection = Arrays.asList(receivers);
+      return haveExactly(
+          expectedCount, AllOf.allOf(hasJobType(jobType), hasConsumerReceivers(collection)));
     }
 
     @Override
