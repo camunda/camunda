@@ -77,6 +77,18 @@ public final class BufferUtil {
   }
 
   /**
+   * Copies the contents of the source writer into the destination reader via a fresh intermediate
+   * buffer.
+   *
+   * @param source the buffer to copy from
+   * @param dest the buffer to write to
+   */
+  public static void copy(final BufferWriter source, final BufferReader dest) {
+    final var buffer = createCopy(source);
+    dest.wrap(buffer, 0, buffer.capacity());
+  }
+
+  /**
    * Creates a new instance of the src buffer class and copies the underlying bytes.
    *
    * @param src the buffer to copy from
