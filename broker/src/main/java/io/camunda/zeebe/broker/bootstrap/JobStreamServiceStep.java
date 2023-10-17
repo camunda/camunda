@@ -19,6 +19,7 @@ import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.transport.TransportFactory;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamService;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.Collection;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
@@ -115,7 +116,8 @@ public final class JobStreamServiceStep extends AbstractBrokerStartupStep {
     }
   }
 
-  private static JobActivationProperties readJobActivationProperties(final DirectBuffer buffer) {
+  @VisibleForTesting("https://github.com/camunda/zeebe/issues/14624")
+  static JobActivationProperties readJobActivationProperties(final DirectBuffer buffer) {
     final var mutable = new JobActivationPropertiesImpl();
     mutable.wrap(buffer);
 
