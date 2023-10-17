@@ -55,7 +55,7 @@ services:
     - OPTIMIZE_ELASTICSEARCH_HTTP_PORT=${ELASTIC_HTTP_PORT:-9200}
     - WAIT_FOR=elasticsearch:${ELASTIC_HTTP_PORT:-9200}
     - WAIT_FOR_TIMEOUT=60
-    - OPTIMIZE_CAMUNDABPM_REST_URL=http://cambpm:8080/engine-rest
+    - OPTIMIZE_CAMUNDABPM_REST_URL=http://${CAMBPM_HOST:-cambpm}:${CAMBPM_PORT:-8080}/engine-rest
     depends_on:
     - cambpm
     - elasticsearch
