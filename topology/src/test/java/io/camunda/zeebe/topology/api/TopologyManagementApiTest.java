@@ -14,14 +14,10 @@ import io.atomix.cluster.MemberId;
 import io.atomix.cluster.Node;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.cluster.impl.DiscoveryMembershipProtocol;
-import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
-import io.camunda.zeebe.topology.changes.TopologyChangeCoordinator;
 import io.camunda.zeebe.topology.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.topology.state.ClusterTopology;
-import io.camunda.zeebe.topology.state.TopologyChangeOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.MemberJoinOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
@@ -133,27 +129,5 @@ final class TopologyManagementApiTest {
     assertThat(recordingCoordinator.getLastAppliedOperation())
         .containsExactly(new PartitionLeaveOperation(MemberId.from("1"), 1));
     assertThat(changeStatus.changeId()).isEqualTo(initialTopology.version() + 1);
-  }
-
-  private final class RecordingChangeCoordinator implements TopologyChangeCoordinator {
-
-    private List<TopologyChangeOperation> lastAppliedOperation;
-
-    @Override
-    public ActorFuture<ClusterTopology> applyOperations(
-        final List<TopologyChangeOperation> operations) {
-      lastAppliedOperation = List.copyOf(operations);
-
-      return CompletableActorFuture.completed(initialTopology.startTopologyChange(operations));
-    }
-
-    @Override
-    public ActorFuture<Boolean> hasCompletedChanges(final long version) {
-      return CompletableActorFuture.completed(true);
-    }
-
-    public List<TopologyChangeOperation> getLastAppliedOperation() {
-      return lastAppliedOperation;
-    }
   }
 }
