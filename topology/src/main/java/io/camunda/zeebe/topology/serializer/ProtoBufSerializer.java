@@ -10,7 +10,6 @@ package io.camunda.zeebe.topology.serializer;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Timestamp;
 import io.atomix.cluster.MemberId;
-import io.camunda.zeebe.topology.api.TopologyManagementRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.AddMembersRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.LeavePartitionRequest;
@@ -18,6 +17,7 @@ import io.camunda.zeebe.topology.api.TopologyManagementResponse.StatusCode;
 import io.camunda.zeebe.topology.api.TopologyManagementResponse.TopologyChangeStatus;
 import io.camunda.zeebe.topology.gossip.ClusterTopologyGossipState;
 import io.camunda.zeebe.topology.protocol.Requests;
+import io.camunda.zeebe.topology.protocol.Requests.AddMemberRequest;
 import io.camunda.zeebe.topology.protocol.Requests.ChangeStatus;
 import io.camunda.zeebe.topology.protocol.Topology;
 import io.camunda.zeebe.topology.protocol.Topology.MemberState;
@@ -267,20 +267,30 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
   }
 
   @Override
-  public byte[] encodeRequest(final TopologyManagementRequest topologyManagementRequest) {
-    final var messageBuilder =
-        switch (topologyManagementRequest) {
-          case final AddMembersRequest add -> Requests.AddMemberRequest.newBuilder()
-              .addAllMemberIds(add.members().stream().map(MemberId::id).toList());
-          case final JoinPartitionRequest join -> Requests.JoinPartitionRequest.newBuilder()
-              .setMemberId(join.memberId().id())
-              .setPartitionId(join.partitionId())
-              .setPriority(join.priority());
-          case final LeavePartitionRequest leave -> Requests.LeavePartitionRequest.newBuilder()
-              .setMemberId(leave.memberId().id())
-              .setPartitionId(leave.partitionId());
-        };
-    return messageBuilder.build().toByteArray();
+  public byte[] encodeAddMembersRequest(final AddMembersRequest req) {
+    return AddMemberRequest.newBuilder()
+        .addAllMemberIds(req.members().stream().map(MemberId::id).toList())
+        .build()
+        .toByteArray();
+  }
+
+  @Override
+  public byte[] encodeJoinPartitionRequest(final JoinPartitionRequest req) {
+    return Requests.JoinPartitionRequest.newBuilder()
+        .setMemberId(req.memberId().id())
+        .setPartitionId(req.partitionId())
+        .setPriority(req.priority())
+        .build()
+        .toByteArray();
+  }
+
+  @Override
+  public byte[] encodeLeavePartitionRequest(final LeavePartitionRequest req) {
+    return Requests.LeavePartitionRequest.newBuilder()
+        .setMemberId(req.memberId().id())
+        .setPartitionId(req.partitionId())
+        .build()
+        .toByteArray();
   }
 
   @Override

@@ -44,7 +44,7 @@ final class TopologyManagementRequestSender implements TopologyManagementApi {
         communicationService.send(
             TopologyRequestTopics.ADD_MEMBER.topic(),
             addMembersRequest,
-            serializer::encodeRequest,
+            serializer::encodeAddMembersRequest,
             serializer::decodeTopologyChangeStatus,
             coordinator,
             TIMEOUT);
@@ -66,7 +66,7 @@ final class TopologyManagementRequestSender implements TopologyManagementApi {
         communicationService.send(
             TopologyRequestTopics.JOIN_PARTITION.topic(),
             joinPartitionRequest,
-            serializer::encodeRequest,
+            serializer::encodeJoinPartitionRequest,
             serializer::decodeTopologyChangeStatus,
             coordinator,
             TIMEOUT);
@@ -88,7 +88,7 @@ final class TopologyManagementRequestSender implements TopologyManagementApi {
         communicationService.send(
             TopologyRequestTopics.LEAVE_PARTITION.topic(),
             leavePartitionRequest,
-            serializer::encodeRequest,
+            serializer::encodeLeavePartitionRequest,
             serializer::decodeTopologyChangeStatus,
             coordinator,
             TIMEOUT);

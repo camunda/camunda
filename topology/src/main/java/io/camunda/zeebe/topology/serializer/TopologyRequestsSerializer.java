@@ -11,7 +11,12 @@ import io.camunda.zeebe.topology.api.TopologyManagementRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementResponse.TopologyChangeStatus;
 
 public interface TopologyRequestsSerializer {
-  byte[] encodeRequest(TopologyManagementRequest topologyManagementRequest);
+
+  byte[] encodeAddMembersRequest(TopologyManagementRequest.AddMembersRequest req);
+
+  byte[] encodeJoinPartitionRequest(TopologyManagementRequest.JoinPartitionRequest req);
+
+  byte[] encodeLeavePartitionRequest(TopologyManagementRequest.LeavePartitionRequest req);
 
   TopologyManagementRequest.AddMembersRequest decodeAddMembersRequest(byte[] encodedState);
 
