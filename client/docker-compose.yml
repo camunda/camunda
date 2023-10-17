@@ -2,13 +2,17 @@ version: '2.4'
 
 services:
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:${ES_VERSION:-7.10.0}
+    image: docker.elastic.co/elasticsearch/elasticsearch:${ES_VERSION:-8.7.0}
     container_name: elasticsearch
     environment:
-      - cluster.name=elasticsearch
-      - bootstrap.memory_lock=true
+      - TZ=Europe/Berlin
+      - xpack.security.enabled=false
       - discovery.type=single-node
-      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+      - bootstrap.memory_lock=true
+      - cluster.name=elasticsearch
+      - action.destructive_requires_name=false
+      - http.port=9200
+      - ES_JAVA_OPTS=-Xms${ELASTIC_JVM_MEMORY:-1}g -Xmx${ELASTIC_JVM_MEMORY:-1}g
     ulimits:
       memlock:
         soft: -1
@@ -17,7 +21,7 @@ services:
       - 9200:9200
       - 9300:9300
     restart: always
-    cpu_count: 2
+    cpu_count: 4
     mem_limit: 2g
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:9200/_cat/health | grep -q green"]
@@ -72,7 +76,7 @@ services:
     volumes:
       - ./databaseDumps:/dump/
   zeebe:
-    image: camunda/zeebe:${ZEEBE_VERSION:-8.0.0}
+    image: camunda/zeebe:${ZEEBE_VERSION:-8.3.0}
     profiles: ['cloud', 'self-managed']
     container_name: zeebe
     environment:

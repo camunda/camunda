@@ -312,7 +312,7 @@ function setVersionInfo() {
 
         backendVersion = data.project.version;
         const properties = data.project.properties;
-        elasticSearchVersion = properties['elasticsearch.version'];
+        elasticSearchVersion = properties['elasticsearch8.test.version'];
         cambpmVersion = properties['camunda.engine.version'];
         zeebeVersion = properties['zeebe.version'];
         resolve();
