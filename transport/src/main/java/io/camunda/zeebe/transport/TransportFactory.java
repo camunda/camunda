@@ -23,9 +23,9 @@ import io.camunda.zeebe.transport.stream.impl.RemoteStreamRegistry;
 import io.camunda.zeebe.transport.stream.impl.RemoteStreamServiceImpl;
 import io.camunda.zeebe.transport.stream.impl.RemoteStreamTransport;
 import io.camunda.zeebe.transport.stream.impl.RemoteStreamerImpl;
-import io.camunda.zeebe.util.buffer.BufferReader;
 import io.camunda.zeebe.util.buffer.BufferWriter;
-import java.util.function.Supplier;
+import java.util.function.Function;
+import org.agrona.DirectBuffer;
 
 public final class TransportFactory {
 
@@ -48,12 +48,11 @@ public final class TransportFactory {
     return atomixClientTransportAdapter;
   }
 
-  public <M extends BufferReader, P extends BufferWriter>
-      RemoteStreamService<M, P> createRemoteStreamServer(
-          final ClusterCommunicationService clusterCommunicationService,
-          final Supplier<M> metadataFactory,
-          final RemoteStreamErrorHandler<P> errorHandler,
-          final RemoteStreamMetrics metrics) {
+  public <M, P extends BufferWriter> RemoteStreamService<M, P> createRemoteStreamServer(
+      final ClusterCommunicationService clusterCommunicationService,
+      final Function<DirectBuffer, M> metadataFactory,
+      final RemoteStreamErrorHandler<P> errorHandler,
+      final RemoteStreamMetrics metrics) {
     final RemoteStreamRegistry<M> registry = new RemoteStreamRegistry<>(metrics);
     return new RemoteStreamServiceImpl<>(
         new RemoteStreamerImpl<>(clusterCommunicationService, registry, errorHandler, metrics),

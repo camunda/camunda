@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.transport.stream.api;
 
-import io.camunda.zeebe.util.buffer.BufferReader;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.Optional;
 import java.util.function.Predicate;
@@ -22,7 +21,7 @@ import org.agrona.DirectBuffer;
  * @param <P> the payload type that can be pushed to the stream
  */
 @FunctionalInterface
-public interface RemoteStreamer<M extends BufferReader, P extends BufferWriter> {
+public interface RemoteStreamer<M, P extends BufferWriter> {
   /**
    * Returns a valid stream for the given streamType, or {@link Optional#empty()} if there is none.
    *

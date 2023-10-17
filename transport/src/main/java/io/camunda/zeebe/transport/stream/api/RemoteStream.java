@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.transport.stream.api;
 
-import io.camunda.zeebe.util.buffer.BufferReader;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 
 /**
@@ -23,7 +22,7 @@ import io.camunda.zeebe.util.buffer.BufferWriter;
  * @param <M> associated metadata with the stream
  * @param <P> the payload type that can be pushed to the stream
  */
-public interface RemoteStream<M extends BufferReader, P extends BufferWriter> {
+public interface RemoteStream<M, P extends BufferWriter> {
   /** Returns the stream's metadata */
   M metadata();
 

@@ -12,9 +12,9 @@ import io.camunda.zeebe.transport.stream.impl.messages.AddStreamRequest;
 import io.camunda.zeebe.transport.stream.impl.messages.RemoveStreamRequest;
 import io.camunda.zeebe.transport.stream.impl.messages.UUIDEncoder;
 import io.camunda.zeebe.util.CloseableSilently;
-import io.camunda.zeebe.util.buffer.BufferReader;
 import java.util.UUID;
-import java.util.function.Supplier;
+import java.util.function.Function;
+import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory;
  *
  * @param <M> the metadata type of the registered streams
  */
-public final class RemoteStreamApiHandler<M extends BufferReader> implements CloseableSilently {
+public final class RemoteStreamApiHandler<M> implements CloseableSilently {
   private static final Logger LOG = LoggerFactory.getLogger(RemoteStreamApiHandler.class);
 
   // differs from the UUID RFC, which describes the nil-UUID as (0L, 0L), but there is no real way
@@ -35,10 +35,10 @@ public final class RemoteStreamApiHandler<M extends BufferReader> implements Clo
       new UUID(UUIDEncoder.highNullValue(), UUIDEncoder.lowNullValue());
 
   private final RemoteStreamRegistry<M> registry;
-  private final Supplier<M> metadataFactory;
+  private final Function<DirectBuffer, M> metadataFactory;
 
   public RemoteStreamApiHandler(
-      final RemoteStreamRegistry<M> registry, final Supplier<M> metadataFactory) {
+      final RemoteStreamRegistry<M> registry, final Function<DirectBuffer, M> metadataFactory) {
     this.registry = registry;
     this.metadataFactory = metadataFactory;
   }
@@ -49,8 +49,7 @@ public final class RemoteStreamApiHandler<M extends BufferReader> implements Clo
   }
 
   public void add(final MemberId sender, final AddStreamRequest request) {
-    final M properties = metadataFactory.get();
-    properties.wrap(request.metadata(), 0, request.metadata().capacity());
+    final M properties = metadataFactory.apply(request.metadata());
 
     if (request.streamType().capacity() <= 0) {
       final String errorMessage =

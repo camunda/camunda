@@ -11,7 +11,6 @@ import io.camunda.zeebe.transport.stream.api.RemoteStream;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamErrorHandler;
 import io.camunda.zeebe.transport.stream.api.StreamExhaustedException;
 import io.camunda.zeebe.transport.stream.impl.AggregatedRemoteStream.StreamConsumer;
-import io.camunda.zeebe.util.buffer.BufferReader;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -20,8 +19,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class RemoteStreamImpl<M extends BufferReader, P extends BufferWriter>
-    implements RemoteStream<M, P> {
+public final class RemoteStreamImpl<M, P extends BufferWriter> implements RemoteStream<M, P> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(RemoteStreamImpl.class);
   private final AggregatedRemoteStream<M> stream;
