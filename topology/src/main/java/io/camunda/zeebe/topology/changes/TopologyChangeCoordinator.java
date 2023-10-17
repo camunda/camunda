@@ -37,4 +37,6 @@ public interface TopologyChangeCoordinator {
    * @return a future that completes with true if the topology change has completed, false otherwise
    */
   ActorFuture<Boolean> hasCompletedChanges(final long version);
+
+  ActorFuture<ClusterTopology> getCurrentTopology();
 }

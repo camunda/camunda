@@ -7,9 +7,12 @@
  */
 package io.camunda.zeebe.topology.api;
 
+import io.atomix.cluster.MemberId;
+import io.atomix.primitive.partition.PartitionId;
+import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.topology.PartitionDistributor;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.AddMembersRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.LeavePartitionRequest;
@@ -17,11 +20,18 @@ import io.camunda.zeebe.topology.api.TopologyManagementRequest.ReassignPartition
 import io.camunda.zeebe.topology.api.TopologyManagementResponse.StatusCode;
 import io.camunda.zeebe.topology.api.TopologyManagementResponse.TopologyChangeStatus;
 import io.camunda.zeebe.topology.changes.TopologyChangeCoordinator;
+import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.MemberJoinOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
+import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
+import io.camunda.zeebe.topology.util.RoundRobinPartitionDistributor;
+import io.camunda.zeebe.topology.util.TopologyUtil;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.IntStream;
 
 /**
  * Handles the requests for the topology management. This is expected be running on the coordinator
@@ -70,9 +80,21 @@ final class TopologyManagementRequestsHandler implements TopologyManagementApi {
   @Override
   public ActorFuture<TopologyChangeStatus> reassignPartitions(
       final ReassignPartitionsRequest reassignPartitionsRequest) {
-    return CompletableActorFuture.completedExceptionally(
-        new UnsupportedOperationException(
-            "Reassign partitions is not yet supported by the topology management"));
+
+    final ActorFuture<TopologyChangeStatus> responseFuture = executor.createFuture();
+    executor.runOnCompletion(
+        coordinator.getCurrentTopology(),
+        (clusterTopology, error) -> {
+          if (error == null) {
+            applyOperations(
+                    generatePartitionDistributionOperations(
+                        clusterTopology, reassignPartitionsRequest.members()))
+                .onComplete(responseFuture);
+          } else {
+            responseFuture.completeExceptionally(error);
+          }
+        });
+    return responseFuture;
   }
 
   private ActorFuture<TopologyChangeStatus> applyOperations(
@@ -92,5 +114,75 @@ final class TopologyManagementRequestsHandler implements TopologyManagementApi {
             });
 
     return responseFuture;
+  }
+
+  private List<TopologyChangeOperation> generatePartitionDistributionOperations(
+      final ClusterTopology currentTopology, final Set<MemberId> brokers) {
+    final List<TopologyChangeOperation> operations = new ArrayList<>();
+
+    final var oldDistribution = TopologyUtil.getPartitionDistributionFrom(currentTopology, "temp");
+    // We assume that all partitions have the same replication factor
+    final int replicationFactor =
+        oldDistribution.stream().map(p -> p.members().size()).findFirst().orElseThrow();
+
+    final var partitionCount = currentTopology.partitionCount();
+    final var sortedPartitions =
+        IntStream.rangeClosed(1, partitionCount)
+            .mapToObj(i -> PartitionId.from("temp", i))
+            .sorted()
+            .toList();
+
+    final PartitionDistributor roundRobinDistributor = new RoundRobinPartitionDistributor();
+
+    final var newDistribution =
+        roundRobinDistributor.distributePartitions(brokers, sortedPartitions, replicationFactor);
+
+    for (final PartitionMetadata newMetadata : newDistribution) {
+      final var oldMetadata =
+          oldDistribution.stream()
+              .filter(old -> old.id().id().equals(newMetadata.id().id()))
+              .findFirst()
+              .orElseThrow();
+
+      operations.addAll(movePartition(oldMetadata, newMetadata));
+    }
+
+    return operations;
+  }
+
+  private List<TopologyChangeOperation> movePartition(
+      final PartitionMetadata oldMetadata, final PartitionMetadata newMetadata) {
+    final Integer partitionId = newMetadata.id().id();
+    final List<TopologyChangeOperation> operations = new ArrayList<>();
+
+    final var membersToJoin =
+        newMetadata.members().stream()
+            .filter(member -> !oldMetadata.members().contains(member))
+            .map(
+                newMember ->
+                    new PartitionJoinOperation(
+                        newMember, partitionId, newMetadata.getPriority(newMember)))
+            .toList();
+    final var membersToLeave =
+        oldMetadata.members().stream()
+            .filter(member -> !newMetadata.members().contains(member))
+            .map(oldMember -> new PartitionLeaveOperation(oldMember, partitionId))
+            .toList();
+    final var membersToChangePriority =
+        oldMetadata.members().stream()
+            .filter(memberId -> newMetadata.members().contains(memberId))
+            .filter(
+                memberId -> newMetadata.getPriority(memberId) != oldMetadata.getPriority(memberId))
+            .map(
+                memberId ->
+                    new PartitionReconfigurePriorityOperation(
+                        memberId, partitionId, newMetadata.getPriority(memberId)))
+            .toList();
+
+    // TODO: interleave join and leave operation
+    operations.addAll(membersToJoin);
+    operations.addAll(membersToLeave);
+    operations.addAll(membersToChangePriority);
+    return operations;
   }
 }

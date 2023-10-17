@@ -98,6 +98,11 @@ public class TopologyChangeCoordinatorImpl implements TopologyChangeCoordinator 
     return future;
   }
 
+  @Override
+  public ActorFuture<ClusterTopology> getCurrentTopology() {
+    return clusterTopologyManager.getClusterTopology();
+  }
+
   private ActorFuture<ClusterTopology> validateTopologyChangeRequest(
       final ClusterTopology currentClusterTopology,
       final List<TopologyChangeOperation> operations) {
