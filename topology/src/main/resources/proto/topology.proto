@@ -39,6 +39,7 @@ message TopologyChangeOperation {
     PartitionLeaveOperation partitionLeave = 3;
     MemberJoinOperation memberJoin = 4;
     MemberLeaveOperation memberLeave = 5;
+    PartitionReconfigurePriorityOperation partitionReconfigurePriority = 6;
   }
 }
 
@@ -51,6 +52,10 @@ message PartitionLeaveOperation {
   int32 partitionId = 1;
 }
 
+message PartitionReconfigurePriorityOperation {
+  int32 partitionId = 1;
+  int32 priority = 2;
+}
 message MemberJoinOperation {}
 
 message MemberLeaveOperation {}

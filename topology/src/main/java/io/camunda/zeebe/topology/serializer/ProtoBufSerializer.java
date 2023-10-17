@@ -29,6 +29,7 @@ import io.camunda.zeebe.topology.state.TopologyChangeOperation.MemberJoinOperati
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.MemberLeaveOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
+import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -212,21 +213,25 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
       final io.camunda.zeebe.topology.state.TopologyChangeOperation operation) {
     final var builder =
         Topology.TopologyChangeOperation.newBuilder().setMemberId(operation.memberId().id());
-    if (operation instanceof final PartitionJoinOperation joinOperation) {
-      builder.setPartitionJoin(
+    switch (operation) {
+      case final PartitionJoinOperation joinOperation -> builder.setPartitionJoin(
           Topology.PartitionJoinOperation.newBuilder()
               .setPartitionId(joinOperation.partitionId())
               .setPriority(joinOperation.priority()));
-    } else if (operation instanceof final PartitionLeaveOperation leaveOperation) {
-      builder.setPartitionLeave(
+      case final PartitionLeaveOperation leaveOperation -> builder.setPartitionLeave(
           Topology.PartitionLeaveOperation.newBuilder()
               .setPartitionId(leaveOperation.partitionId()));
-    } else if (operation instanceof MemberJoinOperation) {
-      builder.setMemberJoin(Topology.MemberJoinOperation.newBuilder().build());
-    } else if (operation instanceof MemberLeaveOperation) {
-      builder.setMemberLeave(Topology.MemberLeaveOperation.newBuilder().build());
-    } else {
-      throw new IllegalArgumentException(
+      case final MemberJoinOperation memberJoinOperation -> builder.setMemberJoin(
+          Topology.MemberJoinOperation.newBuilder().build());
+      case final MemberLeaveOperation memberLeaveOperation -> builder.setMemberLeave(
+          Topology.MemberLeaveOperation.newBuilder().build());
+      case final PartitionReconfigurePriorityOperation reconfigurePriorityOperation -> builder
+          .setPartitionReconfigurePriority(
+              Topology.PartitionReconfigurePriorityOperation.newBuilder()
+                  .setPartitionId(reconfigurePriorityOperation.partitionId())
+                  .setPriority(reconfigurePriorityOperation.priority())
+                  .build());
+      default -> throw new IllegalArgumentException(
           "Unknown operation type: " + operation.getClass().getSimpleName());
     }
     return builder.build();
@@ -256,6 +261,11 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
       return new MemberJoinOperation(MemberId.from(topologyChangeOperation.getMemberId()));
     } else if (topologyChangeOperation.hasMemberLeave()) {
       return new MemberLeaveOperation(MemberId.from(topologyChangeOperation.getMemberId()));
+    } else if (topologyChangeOperation.hasPartitionReconfigurePriority()) {
+      return new PartitionReconfigurePriorityOperation(
+          MemberId.from(topologyChangeOperation.getMemberId()),
+          topologyChangeOperation.getPartitionReconfigurePriority().getPartitionId(),
+          topologyChangeOperation.getPartitionReconfigurePriority().getPriority());
     } else {
       // If the node does not know of a type, the exception thrown will prevent
       // ClusterTopologyGossiper from processing the incoming topology. This helps to prevent any
