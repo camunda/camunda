@@ -23,7 +23,7 @@ import org.assertj.core.condition.VerboseCondition;
 
 @SuppressWarnings("UnusedReturnValue")
 public abstract class AbstractJobStreamsAssert<
-    SELF extends io.camunda.zeebe.qa.util.jobstream.AbstractJobStreamsAssert<SELF, T>, T extends JobStream>
+        SELF extends AbstractJobStreamsAssert<SELF, T>, T extends JobStream>
     extends AbstractCollectionAssert<SELF, Collection<T>, T, ObjectAssert<T>> {
 
   public AbstractJobStreamsAssert(final Collection<T> actual, final Class<?> selfType) {
@@ -155,9 +155,9 @@ public abstract class AbstractJobStreamsAssert<
         stream ->
             stream.consumers().size() == receivers.size()
                 && stream.consumers().stream()
-                .map(RemoteStreamId::receiver)
-                .collect(Collectors.toSet())
-                .containsAll(receivers),
+                    .map(RemoteStreamId::receiver)
+                    .collect(Collectors.toSet())
+                    .containsAll(receivers),
         "a stream with consumer receivers '%s'".formatted(receivers),
         stream -> " but actual consumers are '%s'".formatted(stream.consumers()));
   }

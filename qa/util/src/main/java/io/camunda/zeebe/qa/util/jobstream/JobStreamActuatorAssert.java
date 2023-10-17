@@ -8,8 +8,6 @@
 package io.camunda.zeebe.qa.util.jobstream;
 
 import io.camunda.zeebe.qa.util.actuator.JobStreamActuator;
-import io.camunda.zeebe.qa.util.jobstream.JobStreamActuatorAssert.ClientJobStreamsAssert;
-import io.camunda.zeebe.qa.util.jobstream.JobStreamActuatorAssert.RemoteJobStreamsAssert;
 import io.camunda.zeebe.shared.management.JobStreamEndpoint.ClientJobStream;
 import io.camunda.zeebe.shared.management.JobStreamEndpoint.RemoteJobStream;
 import java.util.Arrays;
@@ -25,42 +23,42 @@ import org.assertj.core.condition.AllOf;
  * io.camunda.zeebe.qa.util.actuator.JobStreamActuator}.
  */
 public final class JobStreamActuatorAssert
-    extends AbstractObjectAssert<io.camunda.zeebe.qa.util.jobstream.JobStreamActuatorAssert, JobStreamActuator> {
+    extends AbstractObjectAssert<JobStreamActuatorAssert, JobStreamActuator> {
   /**
    * @param jobStreamActuator the actual actuator to assert against
    */
   public JobStreamActuatorAssert(final JobStreamActuator jobStreamActuator) {
-    super(jobStreamActuator, io.camunda.zeebe.qa.util.jobstream.JobStreamActuatorAssert.class);
+    super(jobStreamActuator, JobStreamActuatorAssert.class);
   }
 
   /**
    * A convenience factory method that's consistent with AssertJ conventions.
    *
    * @param actual the actual client to assert against
-   * @return an instance of {@link io.camunda.zeebe.qa.util.jobstream.JobStreamActuatorAssert} to assert properties of the given client
+   * @return an instance of {@link JobStreamActuatorAssert} to assert properties of the given client
    */
-  public static io.camunda.zeebe.qa.util.jobstream.JobStreamActuatorAssert assertThat(final JobStreamActuator actual) {
-    return new io.camunda.zeebe.qa.util.jobstream.JobStreamActuatorAssert(actual);
+  public static JobStreamActuatorAssert assertThat(final JobStreamActuator actual) {
+    return new JobStreamActuatorAssert(actual);
   }
 
   /** Returns collection assertions on the underlying client job streams. */
-  public io.camunda.zeebe.qa.util.jobstream.JobStreamActuatorAssert.ClientJobStreamsAssert clientStreams() {
+  public ClientJobStreamsAssert clientStreams() {
     isNotNull();
-    return new io.camunda.zeebe.qa.util.jobstream.JobStreamActuatorAssert.ClientJobStreamsAssert(actual.listClient());
+    return new ClientJobStreamsAssert(actual.listClient());
   }
 
   /** Returns collection assertions on the underlying remote job streams. */
-  public io.camunda.zeebe.qa.util.jobstream.JobStreamActuatorAssert.RemoteJobStreamsAssert remoteStreams() {
+  public RemoteJobStreamsAssert remoteStreams() {
     isNotNull();
-    return new io.camunda.zeebe.qa.util.jobstream.JobStreamActuatorAssert.RemoteJobStreamsAssert(actual.listRemote());
+    return new RemoteJobStreamsAssert(actual.listRemote());
   }
 
   @SuppressWarnings("UnusedReturnValue")
   public static final class ClientJobStreamsAssert
-      extends AbstractJobStreamsAssert<io.camunda.zeebe.qa.util.jobstream.JobStreamActuatorAssert.ClientJobStreamsAssert, ClientJobStream> {
+      extends AbstractJobStreamsAssert<ClientJobStreamsAssert, ClientJobStream> {
 
     public ClientJobStreamsAssert(final Collection<ClientJobStream> actual) {
-      super(actual, io.camunda.zeebe.qa.util.jobstream.JobStreamActuatorAssert.ClientJobStreamsAssert.class);
+      super(actual, ClientJobStreamsAssert.class);
     }
 
     /**
@@ -72,26 +70,26 @@ public final class JobStreamActuatorAssert
      * @param nodeId the IDs of the nodes the stream should be connected to
      * @return itself for chaining
      */
-    public io.camunda.zeebe.qa.util.jobstream.JobStreamActuatorAssert.ClientJobStreamsAssert haveConnectedTo(
+    public ClientJobStreamsAssert haveConnectedTo(
         final int expectedCount, final String jobType, final int... nodeId) {
       return haveExactly(expectedCount, AllOf.allOf(hasJobType(jobType), isConnectedTo(nodeId)));
     }
 
     @Override
-    protected io.camunda.zeebe.qa.util.jobstream.JobStreamActuatorAssert.ClientJobStreamsAssert newAbstractIterableAssert(
+    protected ClientJobStreamsAssert newAbstractIterableAssert(
         final Iterable<? extends ClientJobStream> iterable) {
       final List<ClientJobStream> collection =
           StreamSupport.stream(iterable.spliterator(), false).collect(Collectors.toList());
-      return new io.camunda.zeebe.qa.util.jobstream.JobStreamActuatorAssert.ClientJobStreamsAssert(collection);
+      return new ClientJobStreamsAssert(collection);
     }
   }
 
   @SuppressWarnings("UnusedReturnValue")
   public static final class RemoteJobStreamsAssert
-      extends AbstractJobStreamsAssert<io.camunda.zeebe.qa.util.jobstream.JobStreamActuatorAssert.RemoteJobStreamsAssert, RemoteJobStream> {
+      extends AbstractJobStreamsAssert<RemoteJobStreamsAssert, RemoteJobStream> {
 
     public RemoteJobStreamsAssert(final Collection<RemoteJobStream> actual) {
-      super(actual, io.camunda.zeebe.qa.util.jobstream.JobStreamActuatorAssert.RemoteJobStreamsAssert.class);
+      super(actual, RemoteJobStreamsAssert.class);
     }
 
     /**
@@ -103,7 +101,7 @@ public final class JobStreamActuatorAssert
      * @param consumerCount the expected consumer count
      * @return itself for chaining
      */
-    public io.camunda.zeebe.qa.util.jobstream.JobStreamActuatorAssert.RemoteJobStreamsAssert haveConsumerCount(
+    public RemoteJobStreamsAssert haveConsumerCount(
         final int expectedCount, final String jobType, final int consumerCount) {
       return haveExactly(
           expectedCount, AllOf.allOf(hasJobType(jobType), hasConsumerCount(consumerCount)));
@@ -118,7 +116,7 @@ public final class JobStreamActuatorAssert
      * @param receivers the expected consumer receivers
      * @return itself for chaining
      */
-    public io.camunda.zeebe.qa.util.jobstream.JobStreamActuatorAssert.RemoteJobStreamsAssert haveConsumerReceiver(
+    public RemoteJobStreamsAssert haveConsumerReceiver(
         final int expectedCount, final String jobType, final String... receivers) {
       final var collection = Arrays.asList(receivers);
       return haveExactly(
@@ -126,11 +124,11 @@ public final class JobStreamActuatorAssert
     }
 
     @Override
-    protected io.camunda.zeebe.qa.util.jobstream.JobStreamActuatorAssert.RemoteJobStreamsAssert newAbstractIterableAssert(
+    protected RemoteJobStreamsAssert newAbstractIterableAssert(
         final Iterable<? extends RemoteJobStream> iterable) {
       final List<RemoteJobStream> collection =
           StreamSupport.stream(iterable.spliterator(), false).collect(Collectors.toList());
-      return new io.camunda.zeebe.qa.util.jobstream.JobStreamActuatorAssert.RemoteJobStreamsAssert(collection);
+      return new RemoteJobStreamsAssert(collection);
     }
   }
 }
