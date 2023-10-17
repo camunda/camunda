@@ -36,7 +36,7 @@ import static jakarta.ws.rs.HttpMethod.GET;
 import static jakarta.ws.rs.HttpMethod.POST;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.INDEX_SUFFIX_PRE_ROLLOVER;
+import static org.camunda.optimize.service.db.DatabaseConstants.INDEX_SUFFIX_PRE_ROLLOVER;
 import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.verify.VerificationTimes.atLeast;
 import static org.mockserver.verify.VerificationTimes.exactly;

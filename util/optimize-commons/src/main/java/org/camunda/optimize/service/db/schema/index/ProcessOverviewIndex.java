@@ -9,17 +9,17 @@ import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestResponseDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewDto;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
+import org.camunda.optimize.service.db.DatabaseConstants;
 import org.elasticsearch.xcontent.XContentBuilder;
 
 import java.io.IOException;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DYNAMIC_PROPERTY_TYPE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAPPING_PROPERTY_TYPE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROPERTIES_PROPERTY_TYPE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_BOOLEAN;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_KEYWORD;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_OBJECT;
+import static org.camunda.optimize.service.db.DatabaseConstants.DYNAMIC_PROPERTY_TYPE;
+import static org.camunda.optimize.service.db.DatabaseConstants.MAPPING_PROPERTY_TYPE;
+import static org.camunda.optimize.service.db.DatabaseConstants.PROPERTIES_PROPERTY_TYPE;
+import static org.camunda.optimize.service.db.DatabaseConstants.TYPE_BOOLEAN;
+import static org.camunda.optimize.service.db.DatabaseConstants.TYPE_KEYWORD;
+import static org.camunda.optimize.service.db.DatabaseConstants.TYPE_OBJECT;
 
 public abstract class ProcessOverviewIndex<TBuilder> extends DefaultIndexMappingCreator<TBuilder> {
   public static final int VERSION = 2;
@@ -33,7 +33,7 @@ public abstract class ProcessOverviewIndex<TBuilder> extends DefaultIndexMapping
 
   @Override
   public String getIndexName() {
-    return ElasticsearchConstants.PROCESS_OVERVIEW_INDEX_NAME;
+    return DatabaseConstants.PROCESS_OVERVIEW_INDEX_NAME;
   }
 
   @Override

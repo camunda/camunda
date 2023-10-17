@@ -24,7 +24,7 @@ import static org.camunda.optimize.rest.RestTestUtil.getOffsetDiffInHours;
 import static org.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_TIMEZONE;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
 import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ALERT_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.ALERT_INDEX_NAME;
 
 public class CollectionRestServiceAlertIT extends AbstractAlertIT {
 

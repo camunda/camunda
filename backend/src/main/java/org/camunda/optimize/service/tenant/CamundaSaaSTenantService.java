@@ -14,7 +14,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT_ID;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ZEEBE_DATA_SOURCE;
+import static org.camunda.optimize.service.db.DatabaseConstants.ZEEBE_DATA_SOURCE;
 
 @Component
 @Conditional(CCSaaSCondition.class)

@@ -48,8 +48,8 @@ import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.groupingBy;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
+import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
+import static org.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
 
 @Slf4j
 @NoArgsConstructor(access = AccessLevel.PRIVATE)

@@ -20,7 +20,7 @@ import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndexES;
 import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportIndexES;
 import org.camunda.optimize.service.schema.type.MyUpdatedEventIndex;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
+import org.camunda.optimize.service.db.DatabaseConstants;
 import org.camunda.optimize.util.BpmnModels;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.admin.indices.settings.get.GetSettingsResponse;
@@ -52,10 +52,10 @@ import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager.INDEX_EXIST_BATCH_SIZE;
 import static org.camunda.optimize.service.es.schema.IndexSettingsBuilderES.DYNAMIC_SETTING_MAX_NGRAM_DIFF;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAPPING_NESTED_OBJECTS_LIMIT;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.METADATA_INDEX_NAME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_REPLICAS_SETTING;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.REFRESH_INTERVAL_SETTING;
+import static org.camunda.optimize.service.db.DatabaseConstants.MAPPING_NESTED_OBJECTS_LIMIT;
+import static org.camunda.optimize.service.db.DatabaseConstants.METADATA_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_REPLICAS_SETTING;
+import static org.camunda.optimize.service.db.DatabaseConstants.REFRESH_INTERVAL_SETTING;
 import static org.elasticsearch.xcontent.XContentFactory.jsonBuilder;
 import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.verify.VerificationTimes.exactly;
@@ -274,7 +274,7 @@ public class SchemaManagerIT extends AbstractPlatformIT {
     // then an exception is thrown when we add an event with an undefined type in schema
     ExtendedFlowNodeEventDto extendedEventDto = new ExtendedFlowNodeEventDto();
     assertThatThrownBy(() -> elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
-      ElasticsearchConstants.METADATA_INDEX_NAME,
+      DatabaseConstants.METADATA_INDEX_NAME,
       "12312412",
       extendedEventDto
     )).isInstanceOf(ElasticsearchStatusException.class);

@@ -39,7 +39,7 @@ import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.
 import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLE_ID;
 import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static org.camunda.optimize.service.util.InstanceIndexUtil.isInstanceIndexNotFoundException;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
+import static org.camunda.optimize.service.db.DatabaseConstants.MAX_RESPONSE_SIZE_LIMIT;
 import static org.elasticsearch.core.TimeValue.timeValueSeconds;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;

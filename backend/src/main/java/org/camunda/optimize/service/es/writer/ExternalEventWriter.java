@@ -15,7 +15,7 @@ import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.index.events.EventIndexES;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.IdGenerator;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
+import org.camunda.optimize.service.db.DatabaseConstants;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.update.UpdateRequest;
@@ -111,7 +111,7 @@ public class ExternalEventWriter {
 
   private UpdateRequest createEventUpsert(final EventDto eventDto) {
     return new UpdateRequest()
-      .index(ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_NAME)
+      .index(DatabaseConstants.EXTERNAL_EVENTS_INDEX_NAME)
       .id(IdGenerator.getNextId())
       .doc(objectMapper.convertValue(eventDto, Map.class))
       .docAsUpsert(true);

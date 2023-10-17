@@ -22,7 +22,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.db.schema.index.DecisionInstanceIndex.DECISION_INSTANCE_ID;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_MULTI_ALIAS;
+import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_INSTANCE_MULTI_ALIAS;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 public class EngineDataDecisionCleanupServiceIT extends AbstractCleanupIT {

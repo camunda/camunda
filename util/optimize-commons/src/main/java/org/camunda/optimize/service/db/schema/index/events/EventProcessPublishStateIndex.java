@@ -14,8 +14,8 @@ import org.elasticsearch.xcontent.XContentBuilder;
 
 import java.io.IOException;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
+import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
 
 public abstract class EventProcessPublishStateIndex<TBuilder> extends DefaultIndexMappingCreator<TBuilder> {
 

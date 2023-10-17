@@ -9,12 +9,12 @@ import org.camunda.optimize.dto.optimize.query.alert.AlertCreationRequestDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
+import org.camunda.optimize.service.db.DatabaseConstants;
 import org.elasticsearch.xcontent.XContentBuilder;
 
 import java.io.IOException;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
+import static org.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
 
 public abstract class AlertIndex<TBuilder> extends DefaultIndexMappingCreator<TBuilder> {
 
@@ -42,7 +42,7 @@ public abstract class AlertIndex<TBuilder> extends DefaultIndexMappingCreator<TB
 
   @Override
   public String getIndexName() {
-    return ElasticsearchConstants.ALERT_INDEX_NAME;
+    return DatabaseConstants.ALERT_INDEX_NAME;
   }
 
   @Override

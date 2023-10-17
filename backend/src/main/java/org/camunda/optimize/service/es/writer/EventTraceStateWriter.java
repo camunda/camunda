@@ -26,7 +26,7 @@ import java.util.Map;
 
 import static org.camunda.optimize.service.db.schema.index.events.EventTraceStateIndex.EVENT_TRACE;
 import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScriptWithSpecificDtoParams;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
+import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 
 @AllArgsConstructor
 @Slf4j

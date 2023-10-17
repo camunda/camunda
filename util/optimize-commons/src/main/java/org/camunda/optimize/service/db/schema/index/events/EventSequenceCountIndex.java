@@ -8,14 +8,14 @@ package org.camunda.optimize.service.db.schema.index.events;
 import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventSequenceCountDto;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
+import org.camunda.optimize.service.db.DatabaseConstants;
 import org.elasticsearch.xcontent.XContentBuilder;
 
 import java.io.IOException;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.FIELDS;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LOWERCASE_NGRAM;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LOWERCASE_NORMALIZER;
+import static org.camunda.optimize.service.db.DatabaseConstants.FIELDS;
+import static org.camunda.optimize.service.db.DatabaseConstants.LOWERCASE_NGRAM;
+import static org.camunda.optimize.service.db.DatabaseConstants.LOWERCASE_NORMALIZER;
 
 public abstract class EventSequenceCountIndex<TBuilder> extends DefaultIndexMappingCreator<TBuilder> {
 
@@ -39,7 +39,7 @@ public abstract class EventSequenceCountIndex<TBuilder> extends DefaultIndexMapp
   }
 
   public static String constructIndexName(final String indexKey) {
-    return ElasticsearchConstants.EVENT_SEQUENCE_COUNT_INDEX_PREFIX + indexKey.toLowerCase();
+    return DatabaseConstants.EVENT_SEQUENCE_COUNT_INDEX_PREFIX + indexKey.toLowerCase();
   }
 
   @Override

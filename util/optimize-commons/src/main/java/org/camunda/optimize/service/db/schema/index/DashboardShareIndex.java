@@ -9,12 +9,12 @@ import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardReportTil
 import org.camunda.optimize.dto.optimize.query.dashboard.tile.DimensionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.tile.PositionDto;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
+import org.camunda.optimize.service.db.DatabaseConstants;
 import org.elasticsearch.xcontent.XContentBuilder;
 
 import java.io.IOException;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAPPING_ENABLED_SETTING;
+import static org.camunda.optimize.service.db.DatabaseConstants.MAPPING_ENABLED_SETTING;
 
 public abstract class DashboardShareIndex<TBuilder> extends DefaultIndexMappingCreator<TBuilder> {
 
@@ -40,7 +40,7 @@ public abstract class DashboardShareIndex<TBuilder> extends DefaultIndexMappingC
 
   @Override
   public String getIndexName() {
-    return ElasticsearchConstants.DASHBOARD_SHARE_INDEX_NAME;
+    return DatabaseConstants.DASHBOARD_SHARE_INDEX_NAME;
   }
 
   @Override

@@ -27,7 +27,6 @@ import org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil;
 import org.camunda.optimize.service.es.report.command.decision.mapping.RawDecisionDataResultDtoMapper;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.ViewResult;
-import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndexES;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -60,7 +59,7 @@ import static org.camunda.optimize.service.export.CSVUtils.extractAllDecisionIns
 import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableClauseIdField;
 import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableMultivalueFields;
 import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableValueFieldForType;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
+import static org.camunda.optimize.service.db.DatabaseConstants.MAX_RESPONSE_SIZE_LIMIT;
 import static org.elasticsearch.core.TimeValue.timeValueSeconds;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 

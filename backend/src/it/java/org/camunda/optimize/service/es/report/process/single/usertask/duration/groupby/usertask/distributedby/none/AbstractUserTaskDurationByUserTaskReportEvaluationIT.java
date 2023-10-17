@@ -71,7 +71,7 @@ import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurations;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.getSupportedAggregationTypes;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_MULTI_ALIAS;
+import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagram;
 import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;

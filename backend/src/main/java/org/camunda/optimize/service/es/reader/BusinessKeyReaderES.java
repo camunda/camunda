@@ -14,7 +14,7 @@ import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
+import org.camunda.optimize.service.db.DatabaseConstants;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -27,7 +27,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
+import static org.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
 import static org.elasticsearch.core.TimeValue.timeValueSeconds;
 
 @RequiredArgsConstructor
@@ -51,7 +51,7 @@ public class BusinessKeyReaderES implements BusinessKeyReader {
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(QueryBuilders.idsQuery().addIds(processInstanceIds.toArray(new String[0])))
       .size(LIST_FETCH_LIMIT);
-    SearchRequest searchRequest = new SearchRequest(ElasticsearchConstants.BUSINESS_KEY_INDEX_NAME)
+    SearchRequest searchRequest = new SearchRequest(DatabaseConstants.BUSINESS_KEY_INDEX_NAME)
       .source(searchSourceBuilder)
       .scroll(timeValueSeconds(configurationService.getEsScrollTimeoutInSeconds()));
 

@@ -21,7 +21,7 @@ import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
+import org.camunda.optimize.service.db.DatabaseConstants;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -40,7 +40,7 @@ import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT_ID;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME;
 import static org.camunda.optimize.util.ZeebeBpmnModels.END_EVENT;
 import static org.camunda.optimize.util.ZeebeBpmnModels.END_EVENT_2;
 import static org.camunda.optimize.util.ZeebeBpmnModels.SEND_TASK;
@@ -609,7 +609,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
   @SneakyThrows
   private Map<String, List<ZeebeProcessInstanceRecordDto>> getZeebeExportedProcessInstanceEventsByElementId() {
     final String expectedIndex =
-      zeebeExtension.getZeebeRecordPrefix() + "-" + ElasticsearchConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME;
+      zeebeExtension.getZeebeRecordPrefix() + "-" + DatabaseConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME;
     final OptimizeElasticsearchClient esClient =
       elasticSearchIntegrationTestExtension.getOptimizeElasticClient();
     SearchRequest searchRequest = new SearchRequest()

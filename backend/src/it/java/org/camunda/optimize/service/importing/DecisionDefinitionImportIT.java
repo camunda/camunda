@@ -16,7 +16,7 @@ import org.mockserver.model.MediaType;
 import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_DEFINITION_INDEX_NAME;
 import static org.mockserver.model.HttpRequest.request;
 
 public class DecisionDefinitionImportIT extends AbstractImportIT {

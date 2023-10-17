@@ -6,13 +6,11 @@
 package org.camunda.optimize.service.es.reader;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.ImmutableMap;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.lucene.search.TotalHits;
 import org.camunda.optimize.dto.optimize.query.event.DeletableEventDto;
 import org.camunda.optimize.dto.optimize.query.event.EventGroupRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.EventSearchRequestDto;
@@ -53,7 +51,6 @@ import java.time.ZoneId;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -66,10 +63,10 @@ import static org.camunda.optimize.service.db.schema.index.events.EventIndex.N_G
 import static org.camunda.optimize.service.db.schema.index.events.EventIndex.SOURCE;
 import static org.camunda.optimize.service.db.schema.index.events.EventIndex.TIMESTAMP;
 import static org.camunda.optimize.service.db.schema.index.events.EventIndex.TRACE_ID;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_NAME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SORT_NULLS_FIRST;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SORT_NULLS_LAST;
+import static org.camunda.optimize.service.db.DatabaseConstants.EXTERNAL_EVENTS_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.MAX_RESPONSE_SIZE_LIMIT;
+import static org.camunda.optimize.service.db.DatabaseConstants.SORT_NULLS_FIRST;
+import static org.camunda.optimize.service.db.DatabaseConstants.SORT_NULLS_LAST;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;

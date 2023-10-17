@@ -8,15 +8,15 @@ package org.camunda.optimize.service.db.schema.index;
 import org.camunda.optimize.dto.optimize.query.variable.DefinitionVariableLabelsDto;
 import org.camunda.optimize.dto.optimize.query.variable.LabelDto;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
+import org.camunda.optimize.service.db.DatabaseConstants;
 import org.elasticsearch.xcontent.XContentBuilder;
 
 import java.io.IOException;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAPPING_PROPERTY_TYPE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_KEYWORD;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_OBJECT;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_TEXT;
+import static org.camunda.optimize.service.db.DatabaseConstants.MAPPING_PROPERTY_TYPE;
+import static org.camunda.optimize.service.db.DatabaseConstants.TYPE_KEYWORD;
+import static org.camunda.optimize.service.db.DatabaseConstants.TYPE_OBJECT;
+import static org.camunda.optimize.service.db.DatabaseConstants.TYPE_TEXT;
 
 public abstract class VariableLabelIndex<TBuilder> extends DefaultIndexMappingCreator<TBuilder> {
 
@@ -49,7 +49,7 @@ public abstract class VariableLabelIndex<TBuilder> extends DefaultIndexMappingCr
 
     @Override
     public String getIndexName() {
-        return ElasticsearchConstants.VARIABLE_LABEL_INDEX_NAME;
+        return DatabaseConstants.VARIABLE_LABEL_INDEX_NAME;
     }
 
     @Override

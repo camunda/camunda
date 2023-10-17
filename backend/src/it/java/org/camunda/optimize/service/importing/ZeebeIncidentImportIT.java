@@ -22,7 +22,7 @@ import org.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceRecordDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
+import org.camunda.optimize.service.db.DatabaseConstants;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -45,7 +45,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.persistence.incident.IncidentStatus.OPEN;
 import static org.camunda.optimize.dto.optimize.persistence.incident.IncidentStatus.RESOLVED;
 import static org.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT_ID;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ZEEBE_INCIDENT_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.ZEEBE_INCIDENT_INDEX_NAME;
 import static org.camunda.optimize.util.ZeebeBpmnModels.CATCH_EVENT;
 import static org.camunda.optimize.util.ZeebeBpmnModels.SERVICE_TASK;
 import static org.camunda.optimize.util.ZeebeBpmnModels.createIncidentProcess;
@@ -283,7 +283,7 @@ public class ZeebeIncidentImportIT extends AbstractCCSMIT {
   @SneakyThrows
   private Map<Long, List<ZeebeIncidentRecordDto>> getZeebeExportedIncidentEventsByElementId() {
     final String expectedIndex =
-      zeebeExtension.getZeebeRecordPrefix() + "-" + ElasticsearchConstants.ZEEBE_INCIDENT_INDEX_NAME;
+      zeebeExtension.getZeebeRecordPrefix() + "-" + DatabaseConstants.ZEEBE_INCIDENT_INDEX_NAME;
     final OptimizeElasticsearchClient esClient =
       elasticSearchIntegrationTestExtension.getOptimizeElasticClient();
     SearchRequest searchRequest = new SearchRequest()
@@ -322,7 +322,7 @@ public class ZeebeIncidentImportIT extends AbstractCCSMIT {
   private void waitUntilIncidentRecordsWithProcessIdExported(final long minRecordCount, final String processId) {
     waitUntilRecordMatchingQueryExported(
       minRecordCount,
-      ElasticsearchConstants.ZEEBE_INCIDENT_INDEX_NAME,
+      DatabaseConstants.ZEEBE_INCIDENT_INDEX_NAME,
       boolQuery().must(termQuery(
         ZeebeIncidentRecordDto.Fields.value + "." + ZeebeIncidentDataDto.Fields.bpmnProcessId,
         processId

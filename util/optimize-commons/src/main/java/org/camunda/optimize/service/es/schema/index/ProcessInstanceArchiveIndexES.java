@@ -7,12 +7,12 @@ package org.camunda.optimize.service.es.schema.index;
 
 import org.camunda.optimize.service.db.schema.index.ProcessInstanceArchiveIndex;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
+import org.camunda.optimize.service.db.DatabaseConstants;
 import org.elasticsearch.xcontent.XContentBuilder;
 
 import java.io.IOException;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_SHARDS_SETTING;
+import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_SHARDS_SETTING;
 
 public class ProcessInstanceArchiveIndexES extends ProcessInstanceArchiveIndex<XContentBuilder> {
 
@@ -22,7 +22,7 @@ public class ProcessInstanceArchiveIndexES extends ProcessInstanceArchiveIndex<X
 
   @Override
   protected String getIndexPrefix() {
-    return ElasticsearchConstants.PROCESS_INSTANCE_ARCHIVE_INDEX_PREFIX;
+    return DatabaseConstants.PROCESS_INSTANCE_ARCHIVE_INDEX_PREFIX;
   }
 
   @Override

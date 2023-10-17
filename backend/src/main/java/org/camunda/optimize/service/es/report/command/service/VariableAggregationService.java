@@ -32,7 +32,7 @@ import java.util.Optional;
 
 import static java.util.stream.Collectors.toMap;
 import static org.camunda.optimize.service.es.report.command.modules.group_by.AbstractGroupByVariable.FILTERED_FLOW_NODE_AGGREGATION;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
+import static org.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 

@@ -24,7 +24,6 @@ import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.db.schema.index.DecisionInstanceIndex;
 import org.camunda.optimize.service.es.report.command.modules.view.decision.DecisionViewRawData;
-import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndexES;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 import org.camunda.optimize.test.util.decision.DecisionTypeRef;
@@ -48,7 +47,7 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.PAGINATION_DEFAU
 import static org.camunda.optimize.dto.optimize.ReportConstants.PAGINATION_DEFAULT_OFFSET;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto.INPUT_PREFIX;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto.OUTPUT_PREFIX;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
+import static org.camunda.optimize.service.db.DatabaseConstants.MAX_RESPONSE_SIZE_LIMIT;
 import static org.camunda.optimize.util.DmnModels.INPUT_AMOUNT_ID;
 import static org.camunda.optimize.util.DmnModels.INPUT_CATEGORY_ID;
 import static org.camunda.optimize.util.DmnModels.OUTPUT_AUDIT_ID;

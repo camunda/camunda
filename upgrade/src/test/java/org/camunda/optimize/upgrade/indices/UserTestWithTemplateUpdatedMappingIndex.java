@@ -7,7 +7,7 @@ package org.camunda.optimize.upgrade.indices;
 
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
+import org.camunda.optimize.service.db.DatabaseConstants;
 import org.elasticsearch.xcontent.XContentBuilder;
 
 import java.io.IOException;
@@ -24,7 +24,7 @@ public class UserTestWithTemplateUpdatedMappingIndex extends DefaultIndexMapping
 
   @Override
   public String getIndexNameInitialSuffix() {
-    return ElasticsearchConstants.INDEX_SUFFIX_PRE_ROLLOVER;
+    return DatabaseConstants.INDEX_SUFFIX_PRE_ROLLOVER;
   }
 
   @Override

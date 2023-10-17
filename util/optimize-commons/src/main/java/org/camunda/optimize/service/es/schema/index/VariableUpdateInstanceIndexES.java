@@ -11,9 +11,9 @@ import org.elasticsearch.xcontent.XContentBuilder;
 
 import java.io.IOException;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SORT_FIELD_SETTING;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SORT_ORDER_SETTING;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SORT_SETTING;
+import static org.camunda.optimize.service.db.DatabaseConstants.SORT_FIELD_SETTING;
+import static org.camunda.optimize.service.db.DatabaseConstants.SORT_ORDER_SETTING;
+import static org.camunda.optimize.service.db.DatabaseConstants.SORT_SETTING;
 
 public class VariableUpdateInstanceIndexES extends VariableUpdateInstanceIndex<XContentBuilder> {
 

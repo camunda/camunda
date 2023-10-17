@@ -53,7 +53,7 @@ import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.mapping;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TOO_MANY_BUCKETS_EXCEPTION_TYPE;
+import static org.camunda.optimize.service.db.DatabaseConstants.TOO_MANY_BUCKETS_EXCEPTION_TYPE;
 
 @RequiredArgsConstructor
 @Component

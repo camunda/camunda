@@ -6,12 +6,12 @@
 package org.camunda.optimize.service.db.schema.index;
 
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
+import org.camunda.optimize.service.db.DatabaseConstants;
 import org.elasticsearch.xcontent.XContentBuilder;
 
 import java.io.IOException;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAPPING_ENABLED_SETTING;
+import static org.camunda.optimize.service.db.DatabaseConstants.MAPPING_ENABLED_SETTING;
 
 public abstract class ProcessDefinitionIndex<TBuilder> extends AbstractDefinitionIndex<TBuilder> {
 
@@ -30,7 +30,7 @@ public abstract class ProcessDefinitionIndex<TBuilder> extends AbstractDefinitio
 
   @Override
   public String getIndexName() {
-    return ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
+    return DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
   }
 
   @Override
@@ -43,20 +43,20 @@ public abstract class ProcessDefinitionIndex<TBuilder> extends AbstractDefinitio
     // @formatter:off
     return super.addProperties(xContentBuilder)
       .startObject(FLOW_NODE_DATA)
-        .field("type", ElasticsearchConstants.TYPE_OBJECT)
+        .field("type", DatabaseConstants.TYPE_OBJECT)
         .field(MAPPING_ENABLED_SETTING, "false")
       .endObject()
       .startObject(USER_TASK_NAMES)
-        .field("type", ElasticsearchConstants.TYPE_OBJECT)
+        .field("type", DatabaseConstants.TYPE_OBJECT)
         .field(MAPPING_ENABLED_SETTING, "false")
       .endObject()
       .startObject(PROCESS_DEFINITION_XML)
-        .field("type", ElasticsearchConstants.TYPE_TEXT)
+        .field("type", DatabaseConstants.TYPE_TEXT)
         .field("index", true)
         .field("analyzer", "is_present_analyzer")
       .endObject()
       .startObject(ONBOARDED)
-        .field("type", ElasticsearchConstants.TYPE_BOOLEAN)
+        .field("type", DatabaseConstants.TYPE_BOOLEAN)
       .endObject();
     // @formatter:on
   }

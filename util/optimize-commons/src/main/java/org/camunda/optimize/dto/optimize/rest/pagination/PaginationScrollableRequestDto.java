@@ -14,7 +14,7 @@ import lombok.NoArgsConstructor;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
+import static org.camunda.optimize.service.db.DatabaseConstants.MAX_RESPONSE_SIZE_LIMIT;
 
 @Data
 @NoArgsConstructor

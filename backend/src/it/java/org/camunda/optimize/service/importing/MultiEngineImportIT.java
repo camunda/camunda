@@ -28,8 +28,8 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.db.schema.index.index.TimestampBasedImportIndex.TIMESTAMP_OF_LAST_ENTITY;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
 import static org.camunda.optimize.util.BpmnModels.getExternalTaskProcess;
 import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
 

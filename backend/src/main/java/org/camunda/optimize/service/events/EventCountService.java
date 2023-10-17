@@ -49,7 +49,7 @@ import static org.camunda.optimize.service.util.BpmnModelUtil.extractFlowNodeDat
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaProcessInstanceEndEventSuffix;
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaProcessInstanceStartEventSuffix;
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.fromEventCountDto;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
+import static org.camunda.optimize.service.db.DatabaseConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
 
 @Slf4j
 @Component

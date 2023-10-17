@@ -20,7 +20,7 @@ import org.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceRecordDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil;
 import org.camunda.optimize.service.importing.zeebe.fetcher.AbstractZeebeRecordFetcher;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
+import org.camunda.optimize.service.db.DatabaseConstants;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -167,7 +167,7 @@ public class ZeebePositionBasedImportIndexIT extends AbstractCCSMIT {
     zeebeExtension.completeTaskForInstanceWithJobType(SERVICE_TASK);
     waitUntilMinimumDataExportedCount(
       3, // need all records up to the startEvent completing
-      ElasticsearchConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME,
+      DatabaseConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME,
       getQueryForProcessableEvents()
     );
     // change the process start/end records to have no sequence, so we can check that fetcher queries correctly based on position
@@ -347,7 +347,7 @@ public class ZeebePositionBasedImportIndexIT extends AbstractCCSMIT {
     deployAndStartInstanceForProcess(createSimpleServiceTaskProcess("secondProcess"));
     waitUntilMinimumDataExportedCount(
       8,
-      ElasticsearchConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME,
+      DatabaseConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME,
       getQueryForProcessableEvents()
     );
   }
@@ -359,7 +359,7 @@ public class ZeebePositionBasedImportIndexIT extends AbstractCCSMIT {
 
     elasticSearchIntegrationTestExtension.updateZeebeRecordsForPrefix(
       zeebeExtension.getZeebeRecordPrefix(),
-      ElasticsearchConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME,
+      DatabaseConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME,
       boolQuery()
         .must(termQuery(
           ZeebeRecordDto.Fields.value + "." + ZeebeProcessInstanceDataDto.Fields.bpmnElementType,
@@ -376,7 +376,7 @@ public class ZeebePositionBasedImportIndexIT extends AbstractCCSMIT {
 
     elasticSearchIntegrationTestExtension.updateZeebeRecordsForPrefix(
       zeebeExtension.getZeebeRecordPrefix(),
-      ElasticsearchConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME,
+      DatabaseConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME,
       boolQuery()
         .must(termQuery(
           ZeebeRecordDto.Fields.value + "." + ZeebeProcessInstanceDataDto.Fields.bpmnElementType,
@@ -405,7 +405,7 @@ public class ZeebePositionBasedImportIndexIT extends AbstractCCSMIT {
 
     elasticSearchIntegrationTestExtension.updateZeebeRecordsForPrefix(
       zeebeExtension.getZeebeRecordPrefix(),
-      ElasticsearchConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME,
+      DatabaseConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME,
       query,
       substitutor.replace("ctx._source.${fieldName} = ${sequence};")
     );
@@ -440,7 +440,7 @@ public class ZeebePositionBasedImportIndexIT extends AbstractCCSMIT {
   @SneakyThrows
   private List<ZeebeProcessInstanceRecordDto> getZeebeExportedProcessInstances() {
     final String expectedIndex =
-      zeebeExtension.getZeebeRecordPrefix() + "-" + ElasticsearchConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME;
+      zeebeExtension.getZeebeRecordPrefix() + "-" + DatabaseConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME;
     final OptimizeElasticsearchClient esClient =
       elasticSearchIntegrationTestExtension.getOptimizeElasticClient();
     SearchRequest searchRequest = new SearchRequest()
@@ -460,7 +460,7 @@ public class ZeebePositionBasedImportIndexIT extends AbstractCCSMIT {
   private void waitUntilInstanceRecordWithElementTypeAndIntentExported(final BpmnElementType elementType, final Intent intent) {
     waitUntilMinimumDataExportedCount(
       1,
-      ElasticsearchConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME,
+      DatabaseConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME,
       boolQuery()
         .must(termQuery(
           ZeebeProcessInstanceRecordDto.Fields.value + "." + ZeebeProcessInstanceDataDto.Fields.bpmnElementType,

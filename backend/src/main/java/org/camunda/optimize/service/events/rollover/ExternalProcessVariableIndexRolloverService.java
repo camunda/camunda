@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 import java.util.Collections;
 import java.util.Set;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_PROCESS_VARIABLE_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.EXTERNAL_PROCESS_VARIABLE_INDEX_NAME;
 
 @Component
 public class ExternalProcessVariableIndexRolloverService extends AbstractIndexRolloverService {

@@ -14,7 +14,7 @@ import org.camunda.optimize.service.importing.event.handler.EventImportIndexHand
 import org.camunda.optimize.service.importing.event.service.EventTraceImportService;
 import org.camunda.optimize.service.util.BackoffCalculator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
+import org.camunda.optimize.service.db.DatabaseConstants;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.stereotype.Component;
 
@@ -50,7 +50,7 @@ public class EventTraceImportMediatorFactory {
       eventImportIndexHandlerRegistry.getExternalEventTraceImportIndexHandler(),
       new EventTraceImportService(
         configurationService,
-        eventTraceStateServiceFactory.createEventTraceStateService(ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_SUFFIX)
+        eventTraceStateServiceFactory.createEventTraceStateService(DatabaseConstants.EXTERNAL_EVENTS_INDEX_SUFFIX)
       ),
       configurationService,
       idleBackoffCalculator

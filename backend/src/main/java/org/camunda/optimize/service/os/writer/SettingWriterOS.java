@@ -28,8 +28,8 @@ import static org.camunda.optimize.service.db.schema.index.SettingsIndex.LAST_MO
 import static org.camunda.optimize.service.db.schema.index.SettingsIndex.LAST_MODIFIER;
 import static org.camunda.optimize.service.db.schema.index.SettingsIndex.METADATA_TELEMETRY_ENABLED;
 import static org.camunda.optimize.service.db.schema.index.SettingsIndex.SHARING_ENABLED;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SETTINGS_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
+import static org.camunda.optimize.service.db.DatabaseConstants.SETTINGS_INDEX_NAME;
 
 @AllArgsConstructor
 @Slf4j

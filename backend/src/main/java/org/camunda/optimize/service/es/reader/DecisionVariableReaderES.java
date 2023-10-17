@@ -47,7 +47,7 @@ import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariab
 import static org.camunda.optimize.service.util.DefinitionQueryUtil.createDefinitionQuery;
 import static org.camunda.optimize.service.util.InstanceIndexUtil.getDecisionInstanceIndexAliasName;
 import static org.camunda.optimize.service.util.InstanceIndexUtil.isInstanceIndexNotFoundException;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
+import static org.camunda.optimize.service.db.DatabaseConstants.MAX_RESPONSE_SIZE_LIMIT;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.wildcardQuery;

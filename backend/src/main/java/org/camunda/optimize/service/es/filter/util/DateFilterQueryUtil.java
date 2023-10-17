@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateUnit.QUARTERS;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
+import static org.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
 
 @Slf4j
 @NoArgsConstructor(access = AccessLevel.PRIVATE)

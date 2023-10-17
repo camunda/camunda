@@ -7,16 +7,16 @@ package org.camunda.optimize.service.db.schema.index;
 
 import org.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableDto;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
+import org.camunda.optimize.service.db.DatabaseConstants;
 import org.elasticsearch.xcontent.XContentBuilder;
 
 import java.io.IOException;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_PROCESS_VARIABLE_INDEX_NAME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAPPING_ENABLED_SETTING;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAPPING_PROPERTY_TYPE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_DATE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_KEYWORD;
+import static org.camunda.optimize.service.db.DatabaseConstants.EXTERNAL_PROCESS_VARIABLE_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.MAPPING_ENABLED_SETTING;
+import static org.camunda.optimize.service.db.DatabaseConstants.MAPPING_PROPERTY_TYPE;
+import static org.camunda.optimize.service.db.DatabaseConstants.TYPE_DATE;
+import static org.camunda.optimize.service.db.DatabaseConstants.TYPE_KEYWORD;
 
 public abstract class ExternalProcessVariableIndex<TBuilder> extends DefaultIndexMappingCreator<TBuilder> {
 
@@ -43,7 +43,7 @@ public abstract class ExternalProcessVariableIndex<TBuilder> extends DefaultInde
 
   @Override
   public String getIndexNameInitialSuffix() {
-    return ElasticsearchConstants.INDEX_SUFFIX_PRE_ROLLOVER;
+    return DatabaseConstants.INDEX_SUFFIX_PRE_ROLLOVER;
   }
 
   @Override

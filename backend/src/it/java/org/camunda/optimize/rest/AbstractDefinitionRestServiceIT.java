@@ -13,7 +13,7 @@ import java.util.Collections;
 
 import static org.camunda.optimize.service.util.importing.EngineConstants.ALL_PERMISSION;
 import static org.camunda.optimize.service.util.importing.EngineConstants.AUTHORIZATION_TYPE_GRANT;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.TENANT_INDEX_NAME;
 
 public abstract class AbstractDefinitionRestServiceIT extends AbstractPlatformIT {
 

@@ -16,7 +16,7 @@ import org.elasticsearch.search.fetch.subphase.FetchSourceContext;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TERMINATED_USER_SESSION_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.TERMINATED_USER_SESSION_INDEX_NAME;
 
 @RequiredArgsConstructor
 @Component

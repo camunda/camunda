@@ -9,7 +9,7 @@ import org.camunda.optimize.dto.optimize.query.variable.DefinitionVariableLabels
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableValuesQueryDto;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
+import org.camunda.optimize.service.db.DatabaseConstants;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 
 import java.util.List;
@@ -24,7 +24,7 @@ public interface ProcessVariableReader {
   String VAR_NAME_AND_TYPE_COMPOSITE_AGG = "varNameAndTypeCompositeAgg";
   String INDEX_AGGREGATION = "_index";
   String PROCESS_INSTANCE_INDEX_NAME_SUBSECTION =
-    "-" + ElasticsearchConstants.PROCESS_INSTANCE_INDEX_PREFIX;
+    "-" + DatabaseConstants.PROCESS_INSTANCE_INDEX_PREFIX;
 
   List<ProcessVariableNameResponseDto> getVariableNames(ProcessVariableNameRequestDto requestDto);
 

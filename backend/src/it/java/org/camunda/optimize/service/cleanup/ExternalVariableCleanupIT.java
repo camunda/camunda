@@ -14,11 +14,10 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.stream.IntStream;
 
-import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_PROCESS_VARIABLE_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.EXTERNAL_PROCESS_VARIABLE_INDEX_NAME;
 
 public class ExternalVariableCleanupIT extends AbstractCleanupIT {
 

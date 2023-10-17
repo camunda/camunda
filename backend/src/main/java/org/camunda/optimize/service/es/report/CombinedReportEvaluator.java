@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
 import static org.camunda.optimize.service.util.InstanceIndexUtil.isInstanceIndexNotFoundException;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_MULTI_ALIAS;
+import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 
 @Slf4j

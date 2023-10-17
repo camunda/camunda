@@ -11,7 +11,7 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ENGINE_ALIAS_OPTIMIZE;
+import static org.camunda.optimize.service.db.DatabaseConstants.ENGINE_ALIAS_OPTIMIZE;
 
 @RequiredArgsConstructor
 @Component

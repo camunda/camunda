@@ -10,19 +10,19 @@ import org.elasticsearch.xcontent.XContentBuilder;
 
 import java.io.IOException;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.FORMAT_PROPERTY_TYPE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.IGNORE_ABOVE_CHAR_LIMIT;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.IGNORE_ABOVE_SETTING;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.IGNORE_MALFORMED;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LOWERCASE_NGRAM;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LOWERCASE_NORMALIZER;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAPPING_PROPERTY_TYPE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_DATE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_DOUBLE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_KEYWORD;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_LONG;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_TEXT;
+import static org.camunda.optimize.service.db.DatabaseConstants.FORMAT_PROPERTY_TYPE;
+import static org.camunda.optimize.service.db.DatabaseConstants.IGNORE_ABOVE_CHAR_LIMIT;
+import static org.camunda.optimize.service.db.DatabaseConstants.IGNORE_ABOVE_SETTING;
+import static org.camunda.optimize.service.db.DatabaseConstants.IGNORE_MALFORMED;
+import static org.camunda.optimize.service.db.DatabaseConstants.LOWERCASE_NGRAM;
+import static org.camunda.optimize.service.db.DatabaseConstants.LOWERCASE_NORMALIZER;
+import static org.camunda.optimize.service.db.DatabaseConstants.MAPPING_PROPERTY_TYPE;
+import static org.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
+import static org.camunda.optimize.service.db.DatabaseConstants.TYPE_DATE;
+import static org.camunda.optimize.service.db.DatabaseConstants.TYPE_DOUBLE;
+import static org.camunda.optimize.service.db.DatabaseConstants.TYPE_KEYWORD;
+import static org.camunda.optimize.service.db.DatabaseConstants.TYPE_LONG;
+import static org.camunda.optimize.service.db.DatabaseConstants.TYPE_TEXT;
 
 public abstract class AbstractInstanceIndex<TBuilder> extends DefaultIndexMappingCreator<TBuilder> {
 

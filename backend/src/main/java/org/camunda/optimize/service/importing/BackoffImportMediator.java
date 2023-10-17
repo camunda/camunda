@@ -20,7 +20,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ENGINE_ALIAS_OPTIMIZE;
+import static org.camunda.optimize.service.db.DatabaseConstants.ENGINE_ALIAS_OPTIMIZE;
 
 public abstract class BackoffImportMediator<T extends EngineImportIndexHandler<?, ?>, DTO> implements ImportMediator {
 

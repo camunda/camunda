@@ -22,7 +22,7 @@ import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
 import org.camunda.optimize.test.it.extension.ZeebeExtension;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
+import org.camunda.optimize.service.db.DatabaseConstants;
 import org.elasticsearch.client.core.CountRequest;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -106,7 +106,7 @@ public abstract class AbstractCCSMIT extends AbstractIT {
   protected void waitUntilMinimumProcessInstanceEventsExportedCount(final int minExportedEventCount) {
     waitUntilMinimumDataExportedCount(
       minExportedEventCount,
-      ElasticsearchConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME,
+      DatabaseConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME,
       getQueryForProcessableEvents()
     );
   }
@@ -114,7 +114,7 @@ public abstract class AbstractCCSMIT extends AbstractIT {
   protected void waitUntilNumberOfDefinitionsExported(final int expectedDefinitionsCount) {
     waitUntilMinimumDataExportedCount(
       expectedDefinitionsCount,
-      ElasticsearchConstants.ZEEBE_PROCESS_DEFINITION_INDEX_NAME,
+      DatabaseConstants.ZEEBE_PROCESS_DEFINITION_INDEX_NAME,
       boolQuery().must(termQuery(ZeebeProcessDefinitionRecordDto.Fields.intent, ProcessIntent.CREATED.name()))
     );
   }
@@ -130,7 +130,7 @@ public abstract class AbstractCCSMIT extends AbstractIT {
 
   protected void waitUntilInstanceRecordWithElementIdExported(final String instanceElementId) {
     waitUntilRecordMatchingQueryExported(
-      ElasticsearchConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME,
+      DatabaseConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME,
       boolQuery().must(termQuery(
         ZeebeProcessInstanceRecordDto.Fields.value + "." + ZeebeProcessInstanceDataDto.Fields.elementId,
         instanceElementId
@@ -140,7 +140,7 @@ public abstract class AbstractCCSMIT extends AbstractIT {
 
   protected void waitUntilDefinitionWithIdExported(final String processDefinitionId) {
     waitUntilRecordMatchingQueryExported(
-      ElasticsearchConstants.ZEEBE_PROCESS_DEFINITION_INDEX_NAME,
+      DatabaseConstants.ZEEBE_PROCESS_DEFINITION_INDEX_NAME,
       boolQuery()
         .must(termQuery(ZeebeProcessDefinitionRecordDto.Fields.intent, ProcessIntent.CREATED.name()))
         .must(termQuery(

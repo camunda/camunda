@@ -19,7 +19,7 @@ import org.mockserver.model.HttpResponse;
 import org.mockserver.model.HttpStatusCode;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.METADATA_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.METADATA_INDEX_NAME;
 import static org.mockserver.model.HttpRequest.request;
 
 public class UpdateMissingMetadataIT extends AbstractUpgradeIT {

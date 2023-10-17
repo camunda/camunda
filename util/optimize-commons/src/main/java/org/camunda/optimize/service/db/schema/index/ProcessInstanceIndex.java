@@ -15,20 +15,20 @@ import org.elasticsearch.xcontent.XContentBuilder;
 
 import java.io.IOException;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.FIELDS;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.FORMAT_PROPERTY_TYPE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.IGNORE_ABOVE_CHAR_LIMIT;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.IGNORE_ABOVE_SETTING;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAPPING_PROPERTY_TYPE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_PREFIX;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_BOOLEAN;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_DATE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_KEYWORD;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_LONG;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_NESTED;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_OBJECT;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_TEXT;
+import static org.camunda.optimize.service.db.DatabaseConstants.FIELDS;
+import static org.camunda.optimize.service.db.DatabaseConstants.FORMAT_PROPERTY_TYPE;
+import static org.camunda.optimize.service.db.DatabaseConstants.IGNORE_ABOVE_CHAR_LIMIT;
+import static org.camunda.optimize.service.db.DatabaseConstants.IGNORE_ABOVE_SETTING;
+import static org.camunda.optimize.service.db.DatabaseConstants.MAPPING_PROPERTY_TYPE;
+import static org.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
+import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_INDEX_PREFIX;
+import static org.camunda.optimize.service.db.DatabaseConstants.TYPE_BOOLEAN;
+import static org.camunda.optimize.service.db.DatabaseConstants.TYPE_DATE;
+import static org.camunda.optimize.service.db.DatabaseConstants.TYPE_KEYWORD;
+import static org.camunda.optimize.service.db.DatabaseConstants.TYPE_LONG;
+import static org.camunda.optimize.service.db.DatabaseConstants.TYPE_NESTED;
+import static org.camunda.optimize.service.db.DatabaseConstants.TYPE_OBJECT;
+import static org.camunda.optimize.service.db.DatabaseConstants.TYPE_TEXT;
 
 public abstract class ProcessInstanceIndex<TBuilder> extends AbstractInstanceIndex<TBuilder> {
 

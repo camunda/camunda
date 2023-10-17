@@ -7,15 +7,15 @@ package org.camunda.optimize.service.db.schema.index.events;
 
 import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
+import org.camunda.optimize.service.db.DatabaseConstants;
 import org.elasticsearch.xcontent.XContentBuilder;
 
 import java.io.IOException;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.FIELDS;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LOWERCASE_NGRAM;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LOWERCASE_NORMALIZER;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAPPING_ENABLED_SETTING;
+import static org.camunda.optimize.service.db.DatabaseConstants.FIELDS;
+import static org.camunda.optimize.service.db.DatabaseConstants.LOWERCASE_NGRAM;
+import static org.camunda.optimize.service.db.DatabaseConstants.LOWERCASE_NORMALIZER;
+import static org.camunda.optimize.service.db.DatabaseConstants.MAPPING_ENABLED_SETTING;
 
 public abstract class EventIndex<TBuilder> extends DefaultIndexMappingCreator<TBuilder> {
 
@@ -33,12 +33,12 @@ public abstract class EventIndex<TBuilder> extends DefaultIndexMappingCreator<TB
 
   @Override
   public String getIndexName() {
-    return ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_NAME;
+    return DatabaseConstants.EXTERNAL_EVENTS_INDEX_NAME;
   }
 
   @Override
   public String getIndexNameInitialSuffix() {
-    return ElasticsearchConstants.INDEX_SUFFIX_PRE_ROLLOVER;
+    return DatabaseConstants.INDEX_SUFFIX_PRE_ROLLOVER;
   }
 
   @Override

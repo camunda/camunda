@@ -10,20 +10,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.NotImplementedException;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.service.db.writer.AlertWriter;
-import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.os.OptimizeOpensearchClient;
-import org.camunda.optimize.service.util.IdGenerator;
 import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
-import org.opensearch.client.opensearch._types.Refresh;
-import org.opensearch.client.opensearch._types.Result;
-import org.opensearch.client.opensearch.core.IndexRequest;
-import org.opensearch.client.opensearch.core.IndexResponse;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
-
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ALERT_INDEX_NAME;
 
 @AllArgsConstructor
 @Component

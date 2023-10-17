@@ -9,13 +9,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.IndexSettingsBuilderES;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
+import org.camunda.optimize.service.db.DatabaseConstants;
 import org.elasticsearch.xcontent.XContentBuilder;
 
 import java.io.IOException;
 
 import static org.camunda.optimize.service.db.schema.index.MetadataIndex.SCHEMA_VERSION;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_SHARDS_SETTING;
+import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_SHARDS_SETTING;
 import static org.elasticsearch.xcontent.XContentFactory.jsonBuilder;
 
 @Slf4j
@@ -25,7 +25,7 @@ public class MyUpdatedEventIndex implements IndexMappingCreator<XContentBuilder>
 
   @Override
   public String getIndexName() {
-    return ElasticsearchConstants.METADATA_INDEX_NAME;
+    return DatabaseConstants.METADATA_INDEX_NAME;
   }
 
   @Override

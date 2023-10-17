@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_SHARDS_SETTING;
+import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_SHARDS_SETTING;
 
 public abstract class DefaultIndexMappingCreator<TBuilder> implements PropertiesAppender,
   IndexMappingCreator<TBuilder>  {

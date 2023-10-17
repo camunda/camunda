@@ -29,7 +29,7 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.DefinitionVersionHandlingUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
+import org.camunda.optimize.service.db.DatabaseConstants;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -91,10 +91,10 @@ import static org.camunda.optimize.service.db.schema.index.ProcessDefinitionInde
 import static org.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex.TENANT_ID;
 import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScript;
 import static org.camunda.optimize.service.util.DefinitionVersionHandlingUtil.convertToLatestParticularVersion;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_DEFINITION_INDEX_NAME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESS_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
+import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 import static org.elasticsearch.core.TimeValue.timeValueSeconds;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
@@ -262,7 +262,7 @@ public class DefinitionReaderES implements DefinitionReader {
     );
     keyAndTypeAndTenantSources.add(new TermsValuesSourceBuilder(DEFINITION_KEY_AGGREGATION).field(DEFINITION_KEY));
     keyAndTypeAndTenantSources
-      .add(new TermsValuesSourceBuilder(DEFINITION_TYPE_AGGREGATION).field(ElasticsearchConstants.INDEX));
+      .add(new TermsValuesSourceBuilder(DEFINITION_TYPE_AGGREGATION).field(DatabaseConstants.INDEX));
 
     CompositeAggregationBuilder keyAndTypeAndTenantAggregation =
       new CompositeAggregationBuilder(DEFINITION_KEY_AND_TYPE_AND_TENANT_AGGREGATION, keyAndTypeAndTenantSources)
@@ -649,7 +649,7 @@ public class DefinitionReaderES implements DefinitionReader {
     // 1. group by key and type
     List<CompositeValuesSourceBuilder<?>> keyAndTypeSources = new ArrayList<>();
     keyAndTypeSources.add(new TermsValuesSourceBuilder(DEFINITION_KEY_AGGREGATION).field(DEFINITION_KEY));
-    keyAndTypeSources.add(new TermsValuesSourceBuilder(DEFINITION_TYPE_AGGREGATION).field(ElasticsearchConstants.INDEX));
+    keyAndTypeSources.add(new TermsValuesSourceBuilder(DEFINITION_TYPE_AGGREGATION).field(DatabaseConstants.INDEX));
 
     CompositeAggregationBuilder keyAndTypeAggregation =
       new CompositeAggregationBuilder(DEFINITION_KEY_AND_TYPE_AGGREGATION, keyAndTypeSources)

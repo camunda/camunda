@@ -31,8 +31,8 @@ import static org.camunda.optimize.service.db.schema.index.events.EventTraceStat
 import static org.camunda.optimize.service.db.schema.index.events.EventTraceStateIndex.EVENT_TRACE;
 import static org.camunda.optimize.service.db.schema.index.events.EventTraceStateIndex.GROUP;
 import static org.camunda.optimize.service.db.schema.index.events.EventTraceStateIndex.SOURCE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
+import static org.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
+import static org.camunda.optimize.service.db.DatabaseConstants.MAX_RESPONSE_SIZE_LIMIT;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.functionScoreQuery;

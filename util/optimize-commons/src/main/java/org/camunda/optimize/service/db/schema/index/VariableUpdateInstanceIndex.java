@@ -7,13 +7,13 @@ package org.camunda.optimize.service.db.schema.index;
 
 import org.camunda.optimize.dto.optimize.query.variable.VariableUpdateInstanceDto;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
+import org.camunda.optimize.service.db.DatabaseConstants;
 import org.elasticsearch.xcontent.XContentBuilder;
 
 import java.io.IOException;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.VARIABLE_UPDATE_INSTANCE_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
+import static org.camunda.optimize.service.db.DatabaseConstants.VARIABLE_UPDATE_INSTANCE_INDEX_NAME;
 
 public abstract class VariableUpdateInstanceIndex<TBuilder> extends DefaultIndexMappingCreator<TBuilder> {
 
@@ -34,7 +34,7 @@ public abstract class VariableUpdateInstanceIndex<TBuilder> extends DefaultIndex
 
   @Override
   public String getIndexNameInitialSuffix() {
-    return ElasticsearchConstants.INDEX_SUFFIX_PRE_ROLLOVER;
+    return DatabaseConstants.INDEX_SUFFIX_PRE_ROLLOVER;
   }
 
   @Override

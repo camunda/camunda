@@ -43,7 +43,7 @@ import static org.camunda.optimize.dto.optimize.query.event.sequence.EventCountR
 import static org.camunda.optimize.dto.optimize.query.event.sequence.EventCountResponseDto.Fields.source;
 import static org.camunda.optimize.dto.optimize.query.sorting.SortOrder.ASC;
 import static org.camunda.optimize.dto.optimize.query.sorting.SortOrder.DESC;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
+import static org.camunda.optimize.service.db.DatabaseConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
 
 @Slf4j
 public class OptimizeEventsQueryPerformanceTest extends AbstractQueryPerformanceTest {

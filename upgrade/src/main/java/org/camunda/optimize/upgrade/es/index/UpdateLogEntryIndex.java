@@ -12,10 +12,10 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAPPING_PROPERTY_TYPE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_DATE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_KEYWORD;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_LONG;
+import static org.camunda.optimize.service.db.DatabaseConstants.MAPPING_PROPERTY_TYPE;
+import static org.camunda.optimize.service.db.DatabaseConstants.TYPE_DATE;
+import static org.camunda.optimize.service.db.DatabaseConstants.TYPE_KEYWORD;
+import static org.camunda.optimize.service.db.DatabaseConstants.TYPE_LONG;
 
 @Component
 public class UpdateLogEntryIndex extends DefaultIndexMappingCreator<XContentBuilder> {

@@ -45,8 +45,8 @@ import java.util.Optional;
 import static org.camunda.optimize.service.db.schema.index.DashboardIndex.COLLECTION_ID;
 import static org.camunda.optimize.service.db.schema.index.DashboardIndex.MANAGEMENT_DASHBOARD;
 import static org.camunda.optimize.service.db.schema.index.DashboardIndex.TILES;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_INDEX_NAME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
+import static org.camunda.optimize.service.db.DatabaseConstants.DASHBOARD_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 
 @AllArgsConstructor

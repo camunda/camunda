@@ -48,7 +48,7 @@ import static org.camunda.optimize.service.dashboard.ManagementDashboardService.
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_TENANT;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
 import static org.camunda.optimize.util.BpmnModels.VERSION_TAG;
 import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 import static org.camunda.optimize.util.SuppressionConstants.UNUSED;

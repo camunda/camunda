@@ -36,7 +36,7 @@ import static org.camunda.optimize.dto.optimize.query.variable.VariableType.OBJE
 import static org.camunda.optimize.service.util.importing.EngineConstants.VARIABLE_SERIALIZATION_DATA_FORMAT;
 import static org.camunda.optimize.service.util.importing.EngineConstants.VARIABLE_TYPE_JSON;
 import static org.camunda.optimize.service.util.importing.EngineConstants.VARIABLE_TYPE_OBJECT;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
+import static org.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
 import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 
 @Component

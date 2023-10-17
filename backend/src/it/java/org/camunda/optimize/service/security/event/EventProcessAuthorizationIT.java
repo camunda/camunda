@@ -29,7 +29,7 @@ import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.optimize.EventProcessClient.createEventMappingsDto;
 import static org.camunda.optimize.test.optimize.EventProcessClient.createMappedEventDto;
 import static org.camunda.optimize.test.optimize.EventProcessClient.createSimpleCamundaEventSourceEntry;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
 
 public class EventProcessAuthorizationIT extends AbstractEventProcessIT {
 

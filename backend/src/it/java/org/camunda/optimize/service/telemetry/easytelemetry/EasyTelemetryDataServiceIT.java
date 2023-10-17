@@ -45,7 +45,7 @@ import static org.camunda.optimize.service.telemetry.easytelemetry.EasyTelemetry
 import static org.camunda.optimize.service.telemetry.easytelemetry.EasyTelemetryDataService.FEATURE_NAMES;
 import static org.camunda.optimize.service.telemetry.easytelemetry.EasyTelemetryDataService.INFORMATION_UNAVAILABLE_STRING;
 import static org.camunda.optimize.service.telemetry.easytelemetry.EasyTelemetryDataService.OPTIMIZE_FEATURE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.METADATA_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.METADATA_INDEX_NAME;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 import static org.mockserver.model.HttpRequest.request;
 

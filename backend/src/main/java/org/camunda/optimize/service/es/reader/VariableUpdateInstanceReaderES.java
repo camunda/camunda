@@ -16,7 +16,7 @@ import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
+import org.camunda.optimize.service.db.DatabaseConstants;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -30,7 +30,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
+import static org.camunda.optimize.service.db.DatabaseConstants.MAX_RESPONSE_SIZE_LIMIT;
 import static org.elasticsearch.core.TimeValue.timeValueSeconds;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
@@ -61,7 +61,7 @@ public class VariableUpdateInstanceReaderES implements VariableUpdateInstanceRea
       .query(query)
       .sort(SortBuilders.fieldSort(CamundaActivityEventIndex.TIMESTAMP).order(ASC))
       .size(MAX_RESPONSE_SIZE_LIMIT);
-    SearchRequest searchRequest = new SearchRequest(ElasticsearchConstants.VARIABLE_UPDATE_INSTANCE_INDEX_NAME)
+    SearchRequest searchRequest = new SearchRequest(DatabaseConstants.VARIABLE_UPDATE_INSTANCE_INDEX_NAME)
       .source(searchSourceBuilder)
       .scroll(timeValueSeconds(configurationService.getEsScrollTimeoutInSeconds()));
 

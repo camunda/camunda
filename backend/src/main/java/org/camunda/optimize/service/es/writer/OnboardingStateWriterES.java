@@ -20,7 +20,7 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.util.Map;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ONBOARDING_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.ONBOARDING_INDEX_NAME;
 
 @AllArgsConstructor
 @Slf4j

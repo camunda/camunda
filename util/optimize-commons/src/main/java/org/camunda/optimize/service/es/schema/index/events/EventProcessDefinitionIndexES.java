@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.es.schema.index.events;
 
 import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndexES;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
+import org.camunda.optimize.service.db.DatabaseConstants;
 
 public class EventProcessDefinitionIndexES extends ProcessDefinitionIndexES {
 
@@ -14,7 +14,7 @@ public class EventProcessDefinitionIndexES extends ProcessDefinitionIndexES {
 
   @Override
   public String getIndexName() {
-    return ElasticsearchConstants.EVENT_PROCESS_DEFINITION_INDEX_NAME;
+    return DatabaseConstants.EVENT_PROCESS_DEFINITION_INDEX_NAME;
   }
 
   @Override

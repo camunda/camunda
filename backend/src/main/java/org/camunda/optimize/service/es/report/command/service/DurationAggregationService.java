@@ -52,7 +52,7 @@ import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.
 import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasNames;
 import static org.camunda.optimize.service.util.RoundingUtil.roundDownToNearestPowerOfTen;
 import static org.camunda.optimize.service.util.RoundingUtil.roundUpToNearestPowerOfTen;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
+import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 
 

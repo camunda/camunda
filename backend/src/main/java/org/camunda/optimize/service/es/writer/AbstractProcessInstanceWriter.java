@@ -19,7 +19,7 @@ import org.elasticsearch.xcontent.XContentType;
 import java.util.Set;
 
 import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
+import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 
 public abstract class AbstractProcessInstanceWriter extends AbstractProcessInstanceDataWriter<ProcessInstanceDto> {
   protected final ObjectMapper objectMapper;

@@ -57,7 +57,7 @@ import static org.camunda.optimize.dto.optimize.query.report.single.group.Aggreg
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
+import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 import static org.camunda.optimize.util.BpmnModels.CALL_ACTIVITY;
 import static org.camunda.optimize.util.BpmnModels.MULTI_INSTANCE_END;
 import static org.camunda.optimize.util.BpmnModels.MULTI_INSTANCE_START;

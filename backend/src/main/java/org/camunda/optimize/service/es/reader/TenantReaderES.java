@@ -25,8 +25,8 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
+import static org.camunda.optimize.service.db.DatabaseConstants.TENANT_INDEX_NAME;
 import static org.elasticsearch.core.TimeValue.timeValueSeconds;
 
 @AllArgsConstructor

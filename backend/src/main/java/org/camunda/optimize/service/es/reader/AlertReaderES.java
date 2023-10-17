@@ -30,8 +30,8 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ALERT_INDEX_NAME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
+import static org.camunda.optimize.service.db.DatabaseConstants.ALERT_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
 import static org.elasticsearch.core.TimeValue.timeValueSeconds;
 
 @RequiredArgsConstructor

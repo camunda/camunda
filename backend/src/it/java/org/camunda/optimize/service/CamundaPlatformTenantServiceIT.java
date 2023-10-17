@@ -22,7 +22,7 @@ import static org.camunda.optimize.service.util.importing.EngineConstants.AUTHOR
 import static org.camunda.optimize.service.util.importing.EngineConstants.AUTHORIZATION_TYPE_REVOKE;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_TENANT;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.TENANT_INDEX_NAME;
 
 public class CamundaPlatformTenantServiceIT extends AbstractPlatformIT {
 

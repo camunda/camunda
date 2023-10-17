@@ -65,8 +65,8 @@ import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedV
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableTypeField;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableValueFieldForType;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getValueSearchField;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_MULTI_ALIAS;
+import static org.camunda.optimize.service.db.DatabaseConstants.MAX_RESPONSE_SIZE_LIMIT;
+import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.wildcardQuery;

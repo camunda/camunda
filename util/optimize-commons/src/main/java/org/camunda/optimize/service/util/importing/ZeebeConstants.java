@@ -9,7 +9,7 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.TenantDto;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ZEEBE_DATA_SOURCE;
+import static org.camunda.optimize.service.db.DatabaseConstants.ZEEBE_DATA_SOURCE;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ZeebeConstants {

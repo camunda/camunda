@@ -13,12 +13,12 @@ import org.elasticsearch.xcontent.XContentType;
 
 import java.io.IOException;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ANALYSIS_SETTING;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LOWERCASE_NGRAM;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LOWERCASE_NORMALIZER;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAPPING_NESTED_OBJECTS_LIMIT;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_REPLICAS_SETTING;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.REFRESH_INTERVAL_SETTING;
+import static org.camunda.optimize.service.db.DatabaseConstants.ANALYSIS_SETTING;
+import static org.camunda.optimize.service.db.DatabaseConstants.LOWERCASE_NGRAM;
+import static org.camunda.optimize.service.db.DatabaseConstants.LOWERCASE_NORMALIZER;
+import static org.camunda.optimize.service.db.DatabaseConstants.MAPPING_NESTED_OBJECTS_LIMIT;
+import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_REPLICAS_SETTING;
+import static org.camunda.optimize.service.db.DatabaseConstants.REFRESH_INTERVAL_SETTING;
 import static org.elasticsearch.xcontent.XContentFactory.jsonBuilder;
 
 public class IndexSettingsBuilderES {

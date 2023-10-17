@@ -15,7 +15,7 @@ import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCo
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.POSITION_BASED_IMPORT_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.POSITION_BASED_IMPORT_INDEX_NAME;
 
 @Component
 @Slf4j

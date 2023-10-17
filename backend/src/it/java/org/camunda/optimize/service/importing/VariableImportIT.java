@@ -67,8 +67,8 @@ import static org.camunda.optimize.dto.optimize.query.variable.VariableType.OBJE
 import static org.camunda.optimize.dto.optimize.query.variable.VariableType.STRING;
 import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLES;
 import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLE_VALUE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_MULTI_ALIAS;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.VARIABLE_UPDATE_INSTANCE_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
+import static org.camunda.optimize.service.db.DatabaseConstants.VARIABLE_UPDATE_INSTANCE_INDEX_NAME;
 import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
 import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;

@@ -58,7 +58,7 @@ import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamunda
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_TENANT;
 import static org.camunda.optimize.test.optimize.EventProcessClient.createExternalEventAllGroupsSourceEntry;
 import static org.camunda.optimize.test.optimize.EventProcessClient.createExternalEventSourceEntryForGroup;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
+import static org.camunda.optimize.service.db.DatabaseConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
 
 public class EventCountRestServiceIT extends AbstractEventRestServiceIT {
 

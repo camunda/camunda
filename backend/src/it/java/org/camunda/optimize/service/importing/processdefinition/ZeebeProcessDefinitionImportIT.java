@@ -26,7 +26,7 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT_ID;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ZEEBE_PROCESS_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.ZEEBE_PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.util.ZeebeBpmnModels.END_EVENT;
 import static org.camunda.optimize.util.ZeebeBpmnModels.START_EVENT;
 import static org.camunda.optimize.util.ZeebeBpmnModels.USER_TASK;

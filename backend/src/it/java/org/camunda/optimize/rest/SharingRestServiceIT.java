@@ -17,7 +17,7 @@ import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.dashboard.InstantPreviewDashboardService;
 import org.camunda.optimize.service.sharing.AbstractSharingIT;
 import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
+import org.camunda.optimize.service.db.DatabaseConstants;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
@@ -29,8 +29,8 @@ import java.util.HashMap;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.util.ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_NONE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_INDEX_NAME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
+import static org.camunda.optimize.service.db.DatabaseConstants.DASHBOARD_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
 public class SharingRestServiceIT extends AbstractSharingIT {
@@ -457,7 +457,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
       new SingleProcessReportDefinitionRequestDto(reportData));
 
     final UpdateRequest update = new UpdateRequest()
-      .index(ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME)
+      .index(DatabaseConstants.SINGLE_PROCESS_REPORT_INDEX_NAME)
       .id(reportId)
       .script(new Script(
         ScriptType.INLINE,

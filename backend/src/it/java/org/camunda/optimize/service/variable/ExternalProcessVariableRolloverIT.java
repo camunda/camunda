@@ -23,8 +23,8 @@ import java.util.Set;
 import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_PROCESS_VARIABLE_INDEX_NAME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.INDEX_SUFFIX_PRE_ROLLOVER;
+import static org.camunda.optimize.service.db.DatabaseConstants.EXTERNAL_PROCESS_VARIABLE_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.INDEX_SUFFIX_PRE_ROLLOVER;
 
 public class ExternalProcessVariableRolloverIT extends AbstractPlatformIT {
   private static final int NUMBER_OF_VARIABLES_IN_BATCH = 10;

@@ -8,7 +8,7 @@ package org.camunda.optimize.service.importing.engine.handler;
 import org.camunda.optimize.dto.engine.TenantEngineDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.importing.AllEntitiesBasedImportIndexHandler;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
+import org.camunda.optimize.service.db.DatabaseConstants;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -50,7 +50,7 @@ public class TenantImportIndexHandler extends AllEntitiesBasedImportIndexHandler
 
   @Override
   protected String getElasticsearchImportIndexType() {
-    return ElasticsearchConstants.TENANT_INDEX_NAME;
+    return DatabaseConstants.TENANT_INDEX_NAME;
   }
 
   @Override

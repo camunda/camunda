@@ -23,7 +23,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.POSITION_BASED_IMPORT_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.POSITION_BASED_IMPORT_INDEX_NAME;
 
 @AllArgsConstructor
 @Component

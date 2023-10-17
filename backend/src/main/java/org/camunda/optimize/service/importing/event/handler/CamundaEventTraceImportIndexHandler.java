@@ -7,7 +7,7 @@ package org.camunda.optimize.service.importing.event.handler;
 
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.service.importing.TimestampBasedEventDataImportIndexHandler;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
+import org.camunda.optimize.service.db.DatabaseConstants;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -21,6 +21,6 @@ public class CamundaEventTraceImportIndexHandler extends TimestampBasedEventData
 
   @Override
   protected String getElasticsearchDocID() {
-    return ElasticsearchConstants.EVENT_PROCESSING_IMPORT_REFERENCE_PREFIX + definitionKey;
+    return DatabaseConstants.EVENT_PROCESSING_IMPORT_REFERENCE_PREFIX + definitionKey;
   }
 }

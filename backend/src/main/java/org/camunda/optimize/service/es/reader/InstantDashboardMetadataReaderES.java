@@ -21,7 +21,7 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.util.Optional;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.INSTANT_DASHBOARD_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.INSTANT_DASHBOARD_INDEX_NAME;
 
 @RequiredArgsConstructor
 @Component

@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.db.schema.index;
 
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
+import org.camunda.optimize.service.db.DatabaseConstants;
 import org.elasticsearch.xcontent.XContentBuilder;
 
 import java.io.IOException;
@@ -23,7 +23,7 @@ public abstract class ReportShareIndex<TBuilder> extends DefaultIndexMappingCrea
 
   @Override
   public String getIndexName() {
-    return ElasticsearchConstants.REPORT_SHARE_INDEX_NAME;
+    return DatabaseConstants.REPORT_SHARE_INDEX_NAME;
   }
 
   @Override

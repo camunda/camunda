@@ -10,7 +10,6 @@ import org.camunda.optimize.Main;
 import org.camunda.optimize.dto.optimize.query.MetadataDto;
 import org.camunda.optimize.service.db.schema.index.MetadataIndex;
 import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
-import org.camunda.optimize.service.es.schema.index.MetadataIndexES;
 import org.junit.jupiter.api.Test;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.model.HttpResponse;
@@ -22,7 +21,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.METADATA_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.METADATA_INDEX_NAME;
 import static org.mockserver.model.HttpRequest.request;
 
 public class ElasticMetadataVersionIT extends AbstractPlatformIT {

@@ -5,12 +5,12 @@
  */
 package org.camunda.optimize.service.db.schema.index;
 
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
+import org.camunda.optimize.service.db.DatabaseConstants;
 import org.elasticsearch.xcontent.XContentBuilder;
 
 import java.io.IOException;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAPPING_ENABLED_SETTING;
+import static org.camunda.optimize.service.db.DatabaseConstants.MAPPING_ENABLED_SETTING;
 
 public abstract class DecisionDefinitionIndex<TBuilder> extends AbstractDefinitionIndex<TBuilder> {
 
@@ -28,7 +28,7 @@ public abstract class DecisionDefinitionIndex<TBuilder> extends AbstractDefiniti
 
   @Override
   public String getIndexName() {
-    return ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
+    return DatabaseConstants.DECISION_DEFINITION_INDEX_NAME;
   }
 
   @Override

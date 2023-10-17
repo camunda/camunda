@@ -25,7 +25,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameService.getOptimizeIndexAliasForIndexNameAndPrefix;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameService.getOptimizeIndexOrTemplateNameForAliasAndVersion;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_MULTI_ALIAS;
+import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 
 public class CustomIndexPrefixIT extends AbstractPlatformIT {
   private static final String CUSTOM_PREFIX = UUID.randomUUID().toString().substring(0, 5);

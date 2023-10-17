@@ -60,7 +60,7 @@ import static org.camunda.optimize.test.util.DateModificationHelper.truncateToSt
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurations;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.getSupportedAggregationTypes;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
+import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 
 public abstract class AbstractProcessInstanceDurationByInstanceDateReportEvaluationIT
   extends AbstractProcessDefinitionIT {

@@ -54,7 +54,7 @@ import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.cre
 import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScriptWithSpecificDtoParams;
 import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.getTaskResponse;
 import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.validateTaskResponse;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.INDEX_ALREADY_EXISTS_EXCEPTION_TYPE;
+import static org.camunda.optimize.service.db.DatabaseConstants.INDEX_ALREADY_EXISTS_EXCEPTION_TYPE;
 
 @Slf4j
 public class SchemaUpgradeClient {

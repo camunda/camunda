@@ -10,21 +10,14 @@ import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.NotImplementedException;
-import org.camunda.optimize.dto.optimize.IdentityDto;
-import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.collection.*;
 import org.camunda.optimize.service.db.writer.CollectionWriter;
-import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import org.camunda.optimize.service.exceptions.conflict.OptimizeCollectionConflictException;
 import org.camunda.optimize.service.os.OptimizeOpensearchClient;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
-import org.camunda.optimize.service.util.IdGenerator;
 import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import org.opensearch.client.json.JsonData;
-import org.opensearch.client.opensearch._types.Refresh;
-import org.opensearch.client.opensearch._types.Result;
 import org.opensearch.client.opensearch._types.Script;
 import org.opensearch.client.opensearch.core.*;
 import org.springframework.context.annotation.Conditional;
@@ -34,12 +27,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import static org.camunda.optimize.service.os.writer.OpensearchWriterUtil.createDefaultScriptWithPrimitiveParams;
-import static org.camunda.optimize.service.os.writer.OpensearchWriterUtil.createDefaultScriptWithSpecificDtoParams;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_INDEX_NAME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 
 @AllArgsConstructor
 @Component

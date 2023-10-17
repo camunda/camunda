@@ -12,12 +12,12 @@ import org.camunda.optimize.dto.optimize.query.event.process.es.EsEventMappingDt
 import org.camunda.optimize.dto.optimize.query.event.process.es.EsEventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceEntryDto;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
+import org.camunda.optimize.service.db.DatabaseConstants;
 import org.elasticsearch.xcontent.XContentBuilder;
 
 import java.io.IOException;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
+import static org.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
 
 public abstract class EventProcessMappingIndex<TBuilder> extends DefaultIndexMappingCreator<TBuilder> {
 
@@ -52,7 +52,7 @@ public abstract class EventProcessMappingIndex<TBuilder> extends DefaultIndexMap
 
   @Override
   public String getIndexName() {
-    return ElasticsearchConstants.EVENT_PROCESS_MAPPING_INDEX_NAME;
+    return DatabaseConstants.EVENT_PROCESS_MAPPING_INDEX_NAME;
   }
 
   @Override

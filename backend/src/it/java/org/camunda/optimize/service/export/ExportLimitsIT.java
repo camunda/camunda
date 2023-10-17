@@ -16,7 +16,7 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndexES;
 import org.camunda.optimize.service.util.ProcessReportDataType;
 import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
+import org.camunda.optimize.service.db.DatabaseConstants;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.xcontent.XContentType;
@@ -97,7 +97,7 @@ public class ExportLimitsIT extends AbstractPlatformIT {
   @Test
   public void exportWithBiggerThanDefaultElasticsearchPageLimit() throws Exception {
     // given
-    final int highExportCsvLimit = ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT + 1;
+    final int highExportCsvLimit = DatabaseConstants.MAX_RESPONSE_SIZE_LIMIT + 1;
     final  ProcessDefinitionEngineDto processDefinitionEngineDto = deploySimpleProcessDefinition();
     importAllEngineEntitiesFromScratch();
     final String reportId = createAndStoreRawReportDefinition(processDefinitionEngineDto.getKey(), ALL_VERSIONS);

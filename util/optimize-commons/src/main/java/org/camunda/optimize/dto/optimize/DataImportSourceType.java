@@ -7,10 +7,10 @@ package org.camunda.optimize.dto.optimize;
 
 import com.fasterxml.jackson.annotation.JsonValue;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ENGINE_DATA_SOURCE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENTS_DATA_SOURCE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.INGESTED_DATA_SOURCE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ZEEBE_DATA_SOURCE;
+import static org.camunda.optimize.service.db.DatabaseConstants.ENGINE_DATA_SOURCE;
+import static org.camunda.optimize.service.db.DatabaseConstants.EVENTS_DATA_SOURCE;
+import static org.camunda.optimize.service.db.DatabaseConstants.INGESTED_DATA_SOURCE;
+import static org.camunda.optimize.service.db.DatabaseConstants.ZEEBE_DATA_SOURCE;
 
 public enum DataImportSourceType {
   ENGINE(ENGINE_DATA_SOURCE),

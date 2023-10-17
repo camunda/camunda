@@ -9,7 +9,6 @@ import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
-import org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndexES;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.slf4j.Logger;
@@ -25,7 +24,7 @@ import java.util.function.Function;
 
 import static java.util.stream.Collectors.toSet;
 import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_MULTI_ALIAS;
+import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 
 @RequiredArgsConstructor
 public abstract class AbstractProcessInstanceDataWriter<T extends OptimizeDto> implements ConfigurationReloadable {
