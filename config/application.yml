@@ -4,7 +4,7 @@ camunda.tasklist:
     clusterName: elasticsearch
     url: http://localhost:9200
   zeebe:
-    brokerContactPoint: zeebe:26500
+    brokerContactPoint: localhost:26500
   zeebeElasticsearch:
     clusterName: elasticsearch
     url: http://localhost:9200
