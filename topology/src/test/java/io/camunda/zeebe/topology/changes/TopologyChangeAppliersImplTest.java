@@ -15,6 +15,7 @@ import io.camunda.zeebe.topology.state.TopologyChangeOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.MemberJoinOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
+import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
 import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -43,6 +44,9 @@ final class TopologyChangeAppliersImplTest {
         Arguments.of(new PartitionJoinOperation(localMemberId, 1, 1), PartitionJoinApplier.class),
         Arguments.of(new PartitionLeaveOperation(localMemberId, 1), PartitionLeaveApplier.class),
         Arguments.of(new MemberJoinOperation(localMemberId), MemberJoinApplier.class),
-        Arguments.of(new MemberLeaveOperation(localMemberId), MemberLeaveApplier.class));
+        Arguments.of(new MemberLeaveOperation(localMemberId), MemberLeaveApplier.class),
+        Arguments.of(
+            new PartitionReconfigurePriorityOperation(localMemberId, 1, 1),
+            PartitionReconfigurePriorityApplier.class));
   }
 }
