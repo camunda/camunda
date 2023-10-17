@@ -7,19 +7,18 @@
  */
 package io.camunda.zeebe.it.management;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
+import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.qa.util.actuator.JobStreamActuator;
-import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.qa.util.cluster.TestCluster;
+import io.camunda.zeebe.qa.util.cluster.TestGateway;
+import io.camunda.zeebe.qa.util.jobstream.JobStreamActuatorAssert;
+import io.camunda.zeebe.qa.util.jobstream.JobStreamActuatorAssert.RemoteJobStreamsAssert;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
-import io.camunda.zeebe.shared.management.JobStreamEndpoint.RemoteJobStream;
-import io.camunda.zeebe.shared.management.JobStreamEndpoint.RemoteStreamId;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import java.time.Duration;
-import org.assertj.core.api.InstanceOfAssertFactories;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -27,11 +26,12 @@ import org.junit.jupiter.api.Test;
 @ZeebeIntegration
 @AutoCloseResources
 final class JobStreamEndpointIT {
-  @TestZeebe private static final TestStandaloneBroker BROKER = new TestStandaloneBroker();
+  @TestZeebe
+  private static final TestCluster CLUSTER =
+      TestCluster.builder().withGatewaysCount(2).withEmbeddedGateway(false).build();
 
-  @AutoCloseResource private final ZeebeClient client = BROKER.newClientBuilder().build();
-
-  private final JobStreamActuator actuator = JobStreamActuator.of(BROKER);
+  private final TestGateway<?> gateway = CLUSTER.availableGateway();
+  @AutoCloseResource private final ZeebeClient client = gateway.newClientBuilder().build();
 
   @AfterEach
   void afterEach() {
@@ -39,12 +39,12 @@ final class JobStreamEndpointIT {
     client.close();
 
     // avoid flakiness between tests by waiting until the registries are empty
+    final var actuator = JobStreamActuator.of(gateway);
     Awaitility.await("until no streams are registered")
         .untilAsserted(
             () -> {
-              final var streams = actuator.list();
-              assertThat(streams.remote()).isEmpty();
-              assertThat(streams.client()).isEmpty();
+              JobStreamActuatorAssert.assertThat(actuator).remoteStreams().isEmpty();
+              JobStreamActuatorAssert.assertThat(actuator).clientStreams().isEmpty();
             });
   }
 
@@ -68,66 +68,69 @@ final class JobStreamEndpointIT {
         .fetchVariables("bar", "barz")
         .send();
 
-    // when
-    final var streams =
-        Awaitility.await("until all streams are registered")
-            .until(actuator::listRemote, list -> list.size() == 2);
-
     // then
-    assertThat(streams)
-        .anySatisfy(
-            stream -> {
-              assertThat(stream.jobType()).isEqualTo("foo");
-              assertThat(stream.metadata().worker()).isEqualTo("foo");
-              assertThat(stream.metadata().timeout()).isEqualTo(Duration.ofMillis(100L));
-              assertThat(stream.metadata().fetchVariables())
-                  .containsExactlyInAnyOrder("foo", "fooz");
-            })
-        .anySatisfy(
-            stream -> {
-              assertThat(stream.jobType()).isEqualTo("bar");
-              assertThat(stream.metadata().worker()).isEqualTo("bar");
-              assertThat(stream.metadata().timeout()).isEqualTo(Duration.ofMillis(250));
-              assertThat(stream.metadata().fetchVariables())
-                  .containsExactlyInAnyOrder("bar", "barz");
-            });
+    final var brokerActuator = JobStreamActuator.of(CLUSTER.brokers().get(MemberId.from("0")));
+    Awaitility.await("until foo stream is registered")
+        .untilAsserted(
+            () ->
+                JobStreamActuatorAssert.assertThat(brokerActuator)
+                    .remoteStreams()
+                    .haveExactlyAll(
+                        1,
+                        RemoteJobStreamsAssert.hasJobType("foo"),
+                        RemoteJobStreamsAssert.hasWorker("foo"),
+                        RemoteJobStreamsAssert.hasTimeout(100L),
+                        RemoteJobStreamsAssert.hasFetchVariables("foo", "fooz")));
+    Awaitility.await("until bar stream is registered")
+        .untilAsserted(
+            () ->
+                JobStreamActuatorAssert.assertThat(brokerActuator)
+                    .remoteStreams()
+                    .haveExactlyAll(
+                        1,
+                        RemoteJobStreamsAssert.hasJobType("bar"),
+                        RemoteJobStreamsAssert.hasWorker("bar"),
+                        RemoteJobStreamsAssert.hasTimeout(250L),
+                        RemoteJobStreamsAssert.hasFetchVariables("bar", "barz")));
   }
 
   @Test
   void shouldListMultipleRemoteConsumers() {
     // given
-    client
-        .newStreamJobsCommand()
-        .jobType("foo")
-        .consumer(ignored -> {})
-        .workerName("foo")
-        .timeout(Duration.ofMillis(100))
-        .fetchVariables("foo", "fooz")
-        .send();
-    client
-        .newStreamJobsCommand()
-        .jobType("foo")
-        .consumer(ignored -> {})
-        .workerName("foo")
-        .timeout(Duration.ofMillis(100))
-        .fetchVariables("foo", "fooz")
-        .send();
+    //noinspection resource
+    final var otherGateway =
+        CLUSTER.gateways().values().stream()
+            .filter(g -> !g.nodeId().equals(gateway.nodeId()))
+            .findAny()
+            .orElseThrow();
+    try (final var otherClient = otherGateway.newClientBuilder().build()) {
+      client
+          .newStreamJobsCommand()
+          .jobType("foo")
+          .consumer(ignored -> {})
+          .workerName("foo")
+          .timeout(Duration.ofMillis(100))
+          .fetchVariables("foo", "fooz")
+          .send();
+      otherClient
+          .newStreamJobsCommand()
+          .jobType("foo")
+          .consumer(ignored -> {})
+          .workerName("foo")
+          .timeout(Duration.ofMillis(100))
+          .fetchVariables("foo", "fooz")
+          .send();
 
-    // when
-    final var streams =
-        Awaitility.await("until all streams are registered")
-            .atMost(Duration.ofSeconds(60))
-            .until(
-                actuator::listRemote,
-                list -> list.size() == 1 && list.get(0).consumers().size() == 2);
-
-    // then
-    assertThat(streams)
-        .first(InstanceOfAssertFactories.type(RemoteJobStream.class))
-        .extracting(RemoteJobStream::consumers)
-        .asInstanceOf(InstanceOfAssertFactories.list(RemoteStreamId.class))
-        .extracting(RemoteStreamId::receiver)
-        .containsExactly("0", "0");
+      // then
+      final var brokerActuator = JobStreamActuator.of(CLUSTER.brokers().get(MemberId.from("0")));
+      Awaitility.await("until all streams are registered")
+          .untilAsserted(
+              () ->
+                  JobStreamActuatorAssert.assertThat(brokerActuator)
+                      .remoteStreams()
+                      .haveConsumerReceiver(
+                          1, "foo", gateway.nodeId().id(), otherGateway.nodeId().id()));
+    }
   }
 
   @Test
@@ -150,30 +153,29 @@ final class JobStreamEndpointIT {
         .fetchVariables("bar", "barz")
         .send();
 
-    // when
-    final var streams =
-        Awaitility.await("until all streams are registered")
-            .until(actuator::listClient, list -> list.size() == 2);
-
     // then
-    assertThat(streams)
-        .anySatisfy(
-            stream -> {
-              assertThat(stream.jobType()).isEqualTo("foo");
-              assertThat(stream.metadata().worker()).isEqualTo("foo");
-              assertThat(stream.metadata().timeout()).isEqualTo(Duration.ofMillis(100));
-              assertThat(stream.metadata().fetchVariables())
-                  .containsExactlyInAnyOrder("foo", "fooz");
-              assertThat(stream.id()).isNotNull();
-            })
-        .anySatisfy(
-            stream -> {
-              assertThat(stream.jobType()).isEqualTo("bar");
-              assertThat(stream.metadata().worker()).isEqualTo("bar");
-              assertThat(stream.metadata().timeout()).isEqualTo(Duration.ofMillis(250));
-              assertThat(stream.metadata().fetchVariables())
-                  .containsExactlyInAnyOrder("bar", "barz");
-              assertThat(stream.id()).isNotNull();
-            });
+    final var actuator = JobStreamActuator.of(gateway);
+    Awaitility.await("until foo stream is registered")
+        .untilAsserted(
+            () ->
+                JobStreamActuatorAssert.assertThat(actuator)
+                    .clientStreams()
+                    .haveExactlyAll(
+                        1,
+                        RemoteJobStreamsAssert.hasJobType("foo"),
+                        RemoteJobStreamsAssert.hasWorker("foo"),
+                        RemoteJobStreamsAssert.hasTimeout(100L),
+                        RemoteJobStreamsAssert.hasFetchVariables("foo", "fooz")));
+    Awaitility.await("until bar stream is registered")
+        .untilAsserted(
+            () ->
+                JobStreamActuatorAssert.assertThat(actuator)
+                    .clientStreams()
+                    .haveExactlyAll(
+                        1,
+                        RemoteJobStreamsAssert.hasJobType("bar"),
+                        RemoteJobStreamsAssert.hasWorker("bar"),
+                        RemoteJobStreamsAssert.hasTimeout(250L),
+                        RemoteJobStreamsAssert.hasFetchVariables("bar", "barz")));
   }
 }
