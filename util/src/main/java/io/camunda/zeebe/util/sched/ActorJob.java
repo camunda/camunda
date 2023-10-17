@@ -13,6 +13,7 @@ import io.camunda.zeebe.util.sched.ActorTask.TaskSchedulingState;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.util.concurrent.Callable;
+import org.jetbrains.annotations.Async;
 import org.slf4j.Logger;
 
 @SuppressWarnings({"unchecked", "rawtypes"})
@@ -36,6 +37,7 @@ public final class ActorJob {
     schedulingState = TaskSchedulingState.QUEUED;
   }
 
+  @Async.Execute
   void execute(final ActorThread runner) {
     actorThread = runner;
     try {
