@@ -8,17 +8,15 @@
 package io.camunda.zeebe.protocol.impl.stream.job;
 
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
-import io.camunda.zeebe.util.buffer.BufferReader;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.Collection;
-import java.util.List;
 import org.agrona.DirectBuffer;
 
 /**
  * {@link JobActivationProperties} represents the minimum set of properties required to activate a
  * {@link JobRecordValue} in the engine.
  */
-public interface JobActivationProperties extends BufferReader, BufferWriter {
+public interface JobActivationProperties extends BufferWriter {
 
   /**
    * Returns the name of the worker. This is mostly used for debugging purposes.
@@ -49,5 +47,5 @@ public interface JobActivationProperties extends BufferReader, BufferWriter {
    *
    * @return the identifiers of the tenants for which to activate jobs
    */
-  List<String> getTenantIds();
+  Collection<String> tenantIds();
 }

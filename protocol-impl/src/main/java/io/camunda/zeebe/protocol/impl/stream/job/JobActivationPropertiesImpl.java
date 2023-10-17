@@ -12,7 +12,6 @@ import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
-import io.camunda.zeebe.msgpack.value.ValueArray;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Collection;
@@ -72,7 +71,7 @@ public class JobActivationPropertiesImpl extends UnpackedObject implements JobAc
   }
 
   @Override
-  public List<String> getTenantIds() {
+  public Collection<String> tenantIds() {
     return StreamSupport.stream(tenantIdsProp.spliterator(), false)
         .map(StringValue::getValue)
         .map(BufferUtil::bufferAsString)
@@ -83,9 +82,5 @@ public class JobActivationPropertiesImpl extends UnpackedObject implements JobAc
     tenantIdsProp.reset();
     tenantIds.forEach(tenantId -> tenantIdsProp.add().wrap(BufferUtil.wrapString(tenantId)));
     return this;
-  }
-
-  public ValueArray<StringValue> tenantIds() {
-    return tenantIdsProp;
   }
 }
