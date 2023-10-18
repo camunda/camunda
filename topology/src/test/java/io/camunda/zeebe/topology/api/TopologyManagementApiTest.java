@@ -14,19 +14,18 @@ import io.atomix.cluster.MemberId;
 import io.atomix.cluster.Node;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.cluster.impl.DiscoveryMembershipProtocol;
-import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
-import io.camunda.zeebe.topology.changes.TopologyChangeCoordinator;
 import io.camunda.zeebe.topology.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.topology.state.ClusterTopology;
-import io.camunda.zeebe.topology.state.TopologyChangeOperation;
+import io.camunda.zeebe.topology.state.MemberState;
+import io.camunda.zeebe.topology.state.PartitionState;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.MemberJoinOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.AfterEach;
@@ -135,25 +134,29 @@ final class TopologyManagementApiTest {
     assertThat(changeStatus.changeId()).isEqualTo(initialTopology.version() + 1);
   }
 
-  private final class RecordingChangeCoordinator implements TopologyChangeCoordinator {
+  @Test
+  void shouldReassignPartitions() {
+    // given
+    final var request =
+        new TopologyManagementRequest.ReassignPartitionsRequest(
+            Set.of(MemberId.from("1"), MemberId.from("2")));
+    final ClusterTopology currentTopology =
+        ClusterTopology.init()
+            .addMember(
+                MemberId.from("1"),
+                MemberState.initializeAsActive(
+                    Map.of(1, PartitionState.active(1), 2, PartitionState.active(1))))
+            .addMember(MemberId.from("2"), MemberState.initializeAsActive(Map.of()));
+    recordingCoordinator.setCurrentTopology(currentTopology);
 
-    private List<TopologyChangeOperation> lastAppliedOperation;
+    // when
+    final var changeStatus = clientApi.reassignPartitions(request).join();
 
-    @Override
-    public ActorFuture<ClusterTopology> applyOperations(
-        final List<TopologyChangeOperation> operations) {
-      lastAppliedOperation = List.copyOf(operations);
-
-      return CompletableActorFuture.completed(initialTopology.startTopologyChange(operations));
-    }
-
-    @Override
-    public ActorFuture<Boolean> hasCompletedChanges(final long version) {
-      return CompletableActorFuture.completed(true);
-    }
-
-    public List<TopologyChangeOperation> getLastAppliedOperation() {
-      return lastAppliedOperation;
-    }
+    // then
+    assertThat(recordingCoordinator.getLastAppliedOperation())
+        .containsExactly(
+            new PartitionJoinOperation(MemberId.from("2"), 2, 1),
+            new PartitionLeaveOperation(MemberId.from("1"), 2));
+    assertThat(changeStatus.changeId()).isEqualTo(initialTopology.version() + 1);
   }
 }

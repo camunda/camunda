@@ -14,6 +14,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.AddMembersRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.LeavePartitionRequest;
+import io.camunda.zeebe.topology.api.TopologyManagementRequest.ReassignPartitionsRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementResponse.TopologyChangeStatus;
 import io.camunda.zeebe.topology.serializer.TopologyRequestsSerializer;
 import java.time.Duration;
@@ -89,6 +90,28 @@ final class TopologyManagementRequestSender implements TopologyManagementApi {
             TopologyRequestTopics.LEAVE_PARTITION.topic(),
             leavePartitionRequest,
             serializer::encodeLeavePartitionRequest,
+            serializer::decodeTopologyChangeStatus,
+            coordinator,
+            TIMEOUT);
+    responseFuture
+        .thenAccept(resultFuture::complete)
+        .exceptionally(
+            error -> {
+              resultFuture.completeExceptionally(error);
+              return null;
+            });
+    return resultFuture;
+  }
+
+  @Override
+  public ActorFuture<TopologyChangeStatus> reassignPartitions(
+      final ReassignPartitionsRequest reassignPartitionsRequest) {
+    final ActorFuture<TopologyChangeStatus> resultFuture = executor.createFuture();
+    final var responseFuture =
+        communicationService.send(
+            TopologyRequestTopics.REASSIGN_PARTITIONS.topic(),
+            reassignPartitionsRequest,
+            serializer::encodeReassignPartitionsRequest,
             serializer::decodeTopologyChangeStatus,
             coordinator,
             TIMEOUT);

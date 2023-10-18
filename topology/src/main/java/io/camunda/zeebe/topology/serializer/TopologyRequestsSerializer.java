@@ -18,11 +18,17 @@ public interface TopologyRequestsSerializer {
 
   byte[] encodeLeavePartitionRequest(TopologyManagementRequest.LeavePartitionRequest req);
 
+  byte[] encodeReassignPartitionsRequest(
+      TopologyManagementRequest.ReassignPartitionsRequest reassignPartitionsRequest);
+
   TopologyManagementRequest.AddMembersRequest decodeAddMembersRequest(byte[] encodedState);
 
   TopologyManagementRequest.JoinPartitionRequest decodeJoinPartitionRequest(byte[] encodedState);
 
   TopologyManagementRequest.LeavePartitionRequest decodeLeavePartitionRequest(byte[] encodedState);
+
+  TopologyManagementRequest.ReassignPartitionsRequest decodeReassignPartitionsRequest(
+      byte[] encodedState);
 
   byte[] encode(TopologyChangeStatus topologyChangeStatus);
 

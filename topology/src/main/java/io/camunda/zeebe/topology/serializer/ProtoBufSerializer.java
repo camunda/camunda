@@ -13,6 +13,7 @@ import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.AddMembersRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.LeavePartitionRequest;
+import io.camunda.zeebe.topology.api.TopologyManagementRequest.ReassignPartitionsRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementResponse.StatusCode;
 import io.camunda.zeebe.topology.api.TopologyManagementResponse.TopologyChangeStatus;
 import io.camunda.zeebe.topology.gossip.ClusterTopologyGossipState;
@@ -304,6 +305,15 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
   }
 
   @Override
+  public byte[] encodeReassignPartitionsRequest(
+      final ReassignPartitionsRequest reassignPartitionsRequest) {
+    return Requests.ReassignAllPartitionsRequest.newBuilder()
+        .addAllMemberIds(reassignPartitionsRequest.members().stream().map(MemberId::id).toList())
+        .build()
+        .toByteArray();
+  }
+
+  @Override
   public AddMembersRequest decodeAddMembersRequest(final byte[] encodedState) {
     try {
       final var addMemberRequest = Requests.AddMemberRequest.parseFrom(encodedState);
@@ -336,6 +346,20 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
       return new LeavePartitionRequest(
           MemberId.from(leavePartitionRequest.getMemberId()),
           leavePartitionRequest.getPartitionId());
+    } catch (final InvalidProtocolBufferException e) {
+      throw new DecodingFailed(e);
+    }
+  }
+
+  @Override
+  public ReassignPartitionsRequest decodeReassignPartitionsRequest(final byte[] encodedState) {
+    try {
+      final var reassignPartitionsRequest =
+          Requests.ReassignAllPartitionsRequest.parseFrom(encodedState);
+      return new ReassignPartitionsRequest(
+          reassignPartitionsRequest.getMemberIdsList().stream()
+              .map(MemberId::from)
+              .collect(Collectors.toSet()));
     } catch (final InvalidProtocolBufferException e) {
       throw new DecodingFailed(e);
     }
