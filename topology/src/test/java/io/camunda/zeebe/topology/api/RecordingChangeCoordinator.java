@@ -17,7 +17,7 @@ import java.util.List;
 final class RecordingChangeCoordinator implements TopologyChangeCoordinator {
 
   private ClusterTopology currentTopology = ClusterTopology.init();
-  private List<TopologyChangeOperation> lastAppliedOperation;
+  private List<TopologyChangeOperation> lastAppliedOperation = List.of();
 
   @Override
   public ActorFuture<ClusterTopology> applyOperations(

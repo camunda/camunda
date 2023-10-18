@@ -16,6 +16,7 @@ import io.camunda.zeebe.topology.api.TopologyManagementRequest.ReassignPartition
 import io.camunda.zeebe.topology.changes.NoopPartitionChangeExecutor;
 import io.camunda.zeebe.topology.changes.NoopTopologyMembershipChangeExecutor;
 import io.camunda.zeebe.topology.changes.TopologyChangeAppliersImpl;
+import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.MemberState;
 import io.camunda.zeebe.topology.util.RoundRobinPartitionDistributor;
 import io.camunda.zeebe.topology.util.TopologyUtil;
@@ -73,8 +74,10 @@ class TopologyManagementRequestsHandlerTest {
     final var topologyChangeSimulator =
         new TopologyChangeAppliersImpl(
             new NoopPartitionChangeExecutor(), new NoopTopologyMembershipChangeExecutor());
-    var newTopology = oldClusterTopology.startTopologyChange(coordinator.getLastAppliedOperation());
-
+    ClusterTopology newTopology = oldClusterTopology;
+    if (!coordinator.getLastAppliedOperation().isEmpty()) {
+      newTopology = oldClusterTopology.startTopologyChange(coordinator.getLastAppliedOperation());
+    }
     while (newTopology.hasPendingChanges()) {
       final var operation = newTopology.changes().pendingOperations().get(0);
       final var applier = topologyChangeSimulator.getApplier(operation);
@@ -113,6 +116,9 @@ class TopologyManagementRequestsHandlerTest {
         Arguments.of(6, 3, 6, 3),
         Arguments.of(6, 3, 6, 4),
         Arguments.of(9, 1, 9, 3),
-        Arguments.of(8, 4, 8, 3));
+        Arguments.of(8, 4, 8, 4),
+        // no change
+        Arguments.of(1, 1, 1, 3),
+        Arguments.of(1, 1, 3, 1));
   }
 }
