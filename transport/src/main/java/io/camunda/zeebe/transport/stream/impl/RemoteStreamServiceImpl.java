@@ -84,13 +84,16 @@ public class RemoteStreamServiceImpl<M extends BufferReader, P extends BufferWri
 
   @Override
   public boolean isRelevant(final ClusterMembershipEvent event) {
-    return event.type() == Type.MEMBER_REMOVED;
+    return event.type() == Type.MEMBER_REMOVED || event.type() == Type.MEMBER_ADDED;
   }
 
   @Override
   public void event(final ClusterMembershipEvent event) {
-    apiServer.removeAll(event.subject().id());
-    if (event.type() == Type.MEMBER_ADDED) {
+    final var type = event.type();
+
+    if (type == Type.MEMBER_REMOVED) {
+      apiServer.removeAll(event.subject().id());
+    } else if (type == Type.MEMBER_ADDED) {
       apiServer.recreateStreams(event.subject().id());
     }
   }
