@@ -20,7 +20,9 @@ import java.util.stream.Collectors;
 
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
+import io.camunda.operate.store.elasticsearch.dao.response.TaskResponse;
 import io.camunda.operate.util.RetryOperation;
+
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.DocWriteResponse;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
@@ -54,8 +56,6 @@ import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.client.indices.GetIndexResponse;
 import org.elasticsearch.client.indices.PutComponentTemplateRequest;
 import org.elasticsearch.client.indices.PutComposableIndexTemplateRequest;
-import org.elasticsearch.client.tasks.GetTaskRequest;
-import org.elasticsearch.client.tasks.GetTaskResponse;
 import org.elasticsearch.cluster.health.ClusterHealthStatus;
 import org.elasticsearch.common.bytes.BytesArray;
 import org.elasticsearch.common.bytes.BytesReference;
@@ -374,7 +374,7 @@ public class RetryElasticsearchClient {
     return waitUntilTaskIsCompleted(taskId, null);
   }
 
-  // Returns if task is completed under this conditions:
+  // Returns if task is completed under these conditions:
   // - If the response is empty we can immediately return false to force a new reindex in outer retry loop
   // - If the response has a status with uncompleted flag and a sum of changed documents (created,updated and deleted documents) not equal to total documents
   //   we need to wait and poll again the task status
@@ -382,25 +382,40 @@ public class RetryElasticsearchClient {
     final String[] taskIdParts = taskId.split(":");
     final String nodeId = taskIdParts[0];
     final Long smallTaskId = Long.parseLong(taskIdParts[1]);
-    Optional<GetTaskResponse> taskResponse = executeWithGivenRetries(Integer.MAX_VALUE ,"GetTaskInfo{" + nodeId + "},{" + smallTaskId + "}",
+
+    Optional<TaskResponse> maybeTaskResponse = executeWithGivenRetries(Integer.MAX_VALUE ,"GetTaskInfo{" + nodeId + "},{" + smallTaskId + "}",
         () -> {
-          elasticsearchTaskStore.checkForErrorsOrFailures(taskId);
-          final Optional<GetTaskResponse> getTaskResponse = esClient.tasks()
-            .get(new GetTaskRequest(nodeId, smallTaskId), requestOptions);
-          getTaskResponse.ifPresent(theTaskResponse -> logger.info(
+          final var result = elasticsearchTaskStore.getTaskResponse(taskId);
+
+          if (result.isLeft()) {
+            final var exception = result.getLeft();
+            final var message = exception.getMessage();
+            logger.warn(String.format("Failed to retrieve TaskInfo {%s},{%d}: %s", nodeId, smallTaskId, message), exception);
+            // return empty result so that the entire reindex task gets retried
+            return Optional.empty();
+          }
+
+          final var taskResponse = result.get();
+          elasticsearchTaskStore.checkForErrorsOrFailures(taskResponse);
+
+          logger.info(
             "TaskId: {}, Progress: {}%",
-            taskId, String.format("%.2f", elasticsearchTaskStore.getProgress(theTaskResponse) * 100.0D)
-          ));
-          return getTaskResponse;
+            taskId, String.format("%.2f", taskResponse.getProgress() * 100.0D)
+          );
+
+          return Optional.of(taskResponse);
+
         }, elasticsearchTaskStore::needsToPollAgain);
-    if (taskResponse.isPresent()) {
-      final long total = elasticsearchTaskStore.getTotal(taskResponse.get());
+
+    if (maybeTaskResponse.isPresent()) {
+      final long total = maybeTaskResponse.get().getTaskStatus().getTotal();
+
       if (srcCount != null) {
         logger.info("Source docs: {}, Migrated docs: {}", srcCount, total);
         return total == srcCount;
       } else {
         logger.info("Migrated docs: {}", total);
-        return taskResponse.get().isCompleted();
+        return maybeTaskResponse.get().isCompleted();
       }
     } else {
       // need to reindex again

@@ -9,14 +9,14 @@ package io.camunda.operate.store.elasticsearch;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.store.TaskStore;
+import io.camunda.operate.store.elasticsearch.dao.response.TaskResponse;
+import io.camunda.operate.util.Either;
 
 import org.apache.http.client.methods.HttpGet;
 import org.elasticsearch.action.admin.cluster.node.tasks.list.ListTasksRequest;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.client.tasks.GetTaskResponse;
-import org.elasticsearch.tasks.RawTaskStatus;
 import org.elasticsearch.tasks.TaskInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,10 +27,8 @@ import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 
 @Conditional(ElasticsearchCondition.class)
@@ -38,19 +36,11 @@ import java.util.Optional;
 public class ElasticsearchTaskStore implements TaskStore {
 
   public static final String ID = "id";
-
   private static final String TASKS_ENDPOINT = "_tasks";
   private static final Logger logger = LoggerFactory.getLogger(ElasticsearchTaskStore.class);
-
-  public static final String ERROR = "error";
   public static final String REASON = "reason";
-  public static final String RESPONSE = "response";
-  public static final String FAILURES = "failures";
   public static final String CAUSE = "cause";
-  public static final String TOTAL = "total";
   public static final String CREATED = "created";
-  public static final String UPDATED = "updated";
-  public static final String DELETED = "deleted";
   public static final String TASK_ACTION_INDICES_REINDEX = "indices:data/write/reindex";
   public static final String DESCRIPTION_PREFIX_FROM_INDEX = "reindex from [";
   public static final String DESCRIPTION_PREFIX_TO_INDEX = "to [";
@@ -61,13 +51,20 @@ public class ElasticsearchTaskStore implements TaskStore {
   @Autowired
   private ObjectMapper objectMapper;
 
-  public void checkForErrorsOrFailures(final String taskId) throws IOException {
-    final var request = new Request(HttpGet.METHOD_NAME, "/" + TASKS_ENDPOINT + "/" + taskId);
-    final var response = esClient.getLowLevelClient().performRequest(request);
-    final var taskStatus = objectMapper.readValue(response.getEntity().getContent(), HashMap.class);
+  public Either<IOException, TaskResponse> getTaskResponse(final String taskId) {
+    try {
+      final var request = new Request(HttpGet.METHOD_NAME, "/" + TASKS_ENDPOINT + "/" + taskId);
+      final var response = esClient.getLowLevelClient().performRequest(request);
+      final var taskResponse = objectMapper.readValue(response.getEntity().getContent(), TaskResponse.class);
+      return Either.right(taskResponse);
+    } catch (IOException e) {
+      return Either.left(e);
+    }
+  }
 
-    checkForErrors(taskStatus);
-    checkForFailures(taskStatus);
+  public void checkForErrorsOrFailures(final TaskResponse taskResponse) {
+    checkForErrors(taskResponse);
+    checkForFailures(taskResponse);
   }
 
   public List<String> getRunningReindexTasksIdsFor(final String fromIndex,final String toIndex) throws IOException {
@@ -95,54 +92,30 @@ public class ElasticsearchTaskStore implements TaskStore {
     return response.getTasks();
   }
 
-  private void checkForErrors(final Map<String, Object> taskStatus) {
-    if (taskStatus!= null && !taskStatus.isEmpty() && taskStatus.containsKey(ERROR)) {
-      final Map<String, String> taskError = (Map<String, String>) taskStatus.get(ERROR);
-      logger.error("Task status contains error: " + taskError);
-      throw new OperateRuntimeException(taskError.get(REASON));
+  private void checkForErrors(final TaskResponse taskResponse) {
+    if (taskResponse!= null && taskResponse.getError() != null) {
+      final var error = taskResponse.getError();
+      logger.error("Task status contains error: " + error);
+      throw new OperateRuntimeException(error.getReason());
     }
   }
 
-  private void checkForFailures(final Map<String, Object> taskStatus) {
-    if (taskStatus!= null && !taskStatus.isEmpty() && taskStatus.containsKey(RESPONSE)) {
-      final Map<String, Object> taskResponse = (Map<String, Object>) taskStatus.get(RESPONSE);
-      if(taskResponse.containsKey(FAILURES)){
-          final List<Map<String,Object>> failures = (List<Map<String,Object>>) taskResponse.get(FAILURES);
-          if(!failures.isEmpty()) {
-            final Map<String, Object> failure = failures.get(0);
-            final Map<String,String> cause = (Map<String, String>) failure.get(CAUSE);
-            throw new OperateRuntimeException(cause.get(REASON));
-          }
+  private void checkForFailures(final TaskResponse taskStatus) {
+    if (taskStatus!= null && taskStatus.getResponseDetails() != null) {
+      final var taskResponse = taskStatus.getResponseDetails();
+      final var failures = taskResponse.getFailures();
+      if(!failures.isEmpty()) {
+        final Map<String, Object> failure = (Map<String, Object>) failures.get(0);
+        final Map<String,String> cause = (Map<String, String>) failure.get(CAUSE);
+        throw new OperateRuntimeException(cause.get(REASON));
       }
     }
   }
 
-  public boolean needsToPollAgain(final Optional<GetTaskResponse> taskResponse) {
-    return taskResponse
-      .filter(getTaskResponse -> !getTaskResponse.isCompleted() || getProgress(getTaskResponse) < 1.0D)
+  public boolean needsToPollAgain(final Optional<TaskResponse> maybeTaskResponse) {
+    return maybeTaskResponse
+      .filter(tr -> !tr.isCompleted())
       .isPresent();
-  }
-
-  public int getTotal(final GetTaskResponse taskResponse){
-    return getAsInt(getTaskStatusMap(taskResponse), TOTAL);
-  }
-
-  public double getProgress(final GetTaskResponse taskResponse) {
-    final Map<String, Object> taskStatusMap = getTaskStatusMap(taskResponse);
-    return Optional.of(taskStatusMap)
-      .filter(status -> getAsInt(status, TOTAL) != 0)
-      .map(status ->
-             ((double) (getAsInt(status, CREATED) + getAsInt(status, UPDATED) + getAsInt(status, DELETED)))
-               / getAsInt(status, TOTAL))
-      .orElse(0.0D);
-  }
-
-  private Map<String, Object> getTaskStatusMap(final GetTaskResponse taskResponse){
-    return ((RawTaskStatus) taskResponse.getTaskInfo().getStatus()).toMap();
-  }
-
-  private static int getAsInt(final Map<String, Object> status, final String key) {
-    return Objects.requireNonNullElse((Integer) status.get(key), 0);
   }
 
 }

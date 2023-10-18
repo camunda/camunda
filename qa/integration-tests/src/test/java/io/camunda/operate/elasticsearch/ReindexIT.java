@@ -127,9 +127,10 @@ public class ReindexIT extends OperateAbstractIT {
     assertThat(progressLogMessages)
       // we expect at least a `100%` entry, on varying performance we fuzzily also assert sub 100% values
       .hasSizeGreaterThanOrEqualTo(1)
-      .allSatisfy(logMessage -> assertThat(logMessage).matches("TaskId: .+:.+, Progress: \\d{1,3}\\.\\d{2}%"))
+        // Use regex '.' to match decimal separator '.' and ','
+      .allSatisfy(logMessage -> assertThat(logMessage).matches("TaskId: .+:.+, Progress: \\d{1,3}.\\d{2}%"))
       .last()
-      .satisfies(logMessage -> assertThat(logMessage).matches("TaskId: .+:.+, Progress: 100\\.00%"));
+      .satisfies(logMessage -> assertThat(logMessage).matches("TaskId: .+:.+, Progress: 100.00%"));
   }
 
   @Test // OPE-1311
