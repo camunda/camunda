@@ -15,8 +15,7 @@ jobs:
     strategy:
       fail-fast: false # Don't disrupt other deployments because of failure
       matrix:
-        product_context: [c7]
-        # TODO: product_context: [c7,c8sm,c8saas]
+        product_context: [c7,c8sm]
 
     steps:
     #########################################################################

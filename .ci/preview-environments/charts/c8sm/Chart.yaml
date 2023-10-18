@@ -1,0 +1,18 @@
+---
+apiVersion: v2
+name: preview-environments
+appVersion: dev
+description: A Helm chart to deploy a C8 Self-Managed Optimize preview environment to the Camunda-CI cluster managed by the Infrastructure team.
+icon: https://console.cloud.camunda.io/favicon.ico
+type: application
+# Chart version; expected to follow Semantic Versioning (https://semver.org/)
+version: 0.1.0
+
+dependencies:
+- name: infra-preview-environments-ingress
+  repository: oci://registry.camunda.cloud/library
+  version: 1.2.0
+- name: camunda-platform
+  # @camunda-cloud references https://helm.camunda.io repository configured as camunda-cloud in Argo CD
+  repository: "@helm-camunda-io"
+  version: 8.2.16  # TODO: C8 Helm chart which version?
