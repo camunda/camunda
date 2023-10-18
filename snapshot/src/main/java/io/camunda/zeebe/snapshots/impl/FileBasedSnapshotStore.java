@@ -64,9 +64,9 @@ public final class FileBasedSnapshotStore extends Actor
   // instead of using the implicit sort order.
   static final String METADATA_FILE_NAME = "zeebe.metadata";
   // first is the metadata and the second the received snapshot count
-  private static final String RECEIVING_DIR_FORMAT = "%s-%d";
   private static final Logger LOGGER = LoggerFactory.getLogger(FileBasedSnapshotStore.class);
   private static final String CHECKSUM_SUFFIX = ".checksum";
+  private static final String TMP_CHECKSUM_SUFFIX = ".tmp";
   // the root snapshotsDirectory where all snapshots should be stored
   private final Path snapshotsDirectory;
   // the root snapshotsDirectory when pending snapshots should be stored
@@ -132,9 +132,7 @@ public final class FileBasedSnapshotStore extends Actor
 
   private FileBasedSnapshot loadLatestSnapshot(final Path snapshotDirectory) {
     FileBasedSnapshot latestPersistedSnapshot = null;
-    try (final var stream =
-        Files.newDirectoryStream(
-            snapshotDirectory, p -> !p.getFileName().toString().endsWith(CHECKSUM_SUFFIX))) {
+    try (final var stream = Files.newDirectoryStream(snapshotDirectory, Files::isDirectory)) {
       for (final var path : stream) {
         final var snapshot = collectSnapshot(path);
         if (snapshot != null) {
@@ -526,12 +524,15 @@ public final class FileBasedSnapshotStore extends Actor
 
     try (final var ignored = snapshotMetrics.startPersistTimer()) {
       // it's important to persist the checksum file only after the move is finished, since we use
-      // it
-      // as a marker file to guarantee the move was complete and not partial
+      // it as a marker file to guarantee the move was complete and not partial
       final var destination = buildSnapshotDirectory(snapshotId);
       final var checksumPath = buildSnapshotsChecksumPath(snapshotId);
+      final var tmpChecksumPath =
+          checksumPath.resolveSibling(checksumPath.getFileName().toString() + TMP_CHECKSUM_SUFFIX);
       try {
-        SnapshotChecksum.persist(checksumPath, immutableChecksumsSFV);
+        SnapshotChecksum.persist(tmpChecksumPath, immutableChecksumsSFV);
+        Files.move(tmpChecksumPath, checksumPath, StandardCopyOption.ATOMIC_MOVE);
+        FileUtil.flushDirectory(snapshotsDirectory);
       } catch (final IOException e) {
         rollbackPartialSnapshot(destination);
         throw new UncheckedIOException(e);
