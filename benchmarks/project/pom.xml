@@ -29,7 +29,7 @@
     <version.java>17</version.java>
 
     <!-- dependency versions -->
-    <version.config>1.4.2</version.config>
+    <version.config>1.4.3</version.config>
 
     <!-- maven plugin versions -->
     <plugin.version.license>3.0</plugin.version.license>
