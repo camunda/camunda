@@ -19,6 +19,10 @@ import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.transport.TransportFactory;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamService;
+import io.camunda.zeebe.util.VisibleForTesting;
+import java.util.Collection;
+import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
 
 /**
  * Sets up the {@link JobStreamService}, which manages the lifecycle of the job specific stream API
@@ -40,7 +44,7 @@ public final class JobStreamServiceStep extends AbstractBrokerStartupStep {
         new TransportFactory(scheduler)
             .createRemoteStreamServer(
                 clusterServices.getCommunicationService(),
-                JobActivationPropertiesImpl::new,
+                JobStreamServiceStep::readJobActivationProperties,
                 errorHandlerService,
                 new JobStreamMetrics());
     final var errorHandlerStarted = scheduler.submitActor(errorHandlerService);
@@ -112,8 +116,35 @@ public final class JobStreamServiceStep extends AbstractBrokerStartupStep {
     }
   }
 
+  @VisibleForTesting("https://github.com/camunda/zeebe/issues/14624")
+  static JobActivationProperties readJobActivationProperties(final DirectBuffer buffer) {
+    final var mutable = new JobActivationPropertiesImpl();
+    mutable.wrap(buffer);
+
+    return new ImmutableJobActivationPropertiesImpl(
+        mutable.worker(), mutable.timeout(), mutable.fetchVariables(), mutable.tenantIds());
+  }
+
   @Override
   public String getName() {
     return "JobStreamService";
+  }
+
+  private record ImmutableJobActivationPropertiesImpl(
+      DirectBuffer worker,
+      long timeout,
+      Collection<DirectBuffer> fetchVariables,
+      Collection<String> tenantIds)
+      implements JobActivationProperties {
+
+    @Override
+    public int getLength() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void write(final MutableDirectBuffer buffer, final int offset) {
+      throw new UnsupportedOperationException();
+    }
   }
 }

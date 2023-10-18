@@ -395,7 +395,11 @@ final class StreamIntegrationTest {
       streamService =
           factory.createRemoteStreamServer(
               cluster.getCommunicationService(),
-              TestSerializableData::new,
+              buffer -> {
+                final var data = new TestSerializableData();
+                data.wrap(buffer, 0, buffer.capacity());
+                return data;
+              },
               dynamicErrorHandler,
               RemoteStreamMetrics.noop());
     }

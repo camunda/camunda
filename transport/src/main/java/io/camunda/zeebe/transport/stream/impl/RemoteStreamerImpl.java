@@ -16,7 +16,6 @@ import io.camunda.zeebe.transport.stream.api.RemoteStreamMetrics;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamer;
 import io.camunda.zeebe.transport.stream.impl.messages.PushStreamRequest;
 import io.camunda.zeebe.transport.stream.impl.messages.StreamTopics;
-import io.camunda.zeebe.util.buffer.BufferReader;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.time.Duration;
@@ -39,7 +38,7 @@ import org.agrona.concurrent.UnsafeBuffer;
  * asynchronous, so the payload should be immutable, and the errors reported to the given {@link
  * RemoteStreamErrorHandler} may be reported on different threads.
  */
-public final class RemoteStreamerImpl<M extends BufferReader, P extends BufferWriter> extends Actor
+public final class RemoteStreamerImpl<M, P extends BufferWriter> extends Actor
     implements RemoteStreamer<M, P> {
   private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(5);
 
