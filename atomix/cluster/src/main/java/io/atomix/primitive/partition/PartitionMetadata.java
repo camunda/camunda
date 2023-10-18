@@ -90,16 +90,38 @@ public class PartitionMetadata {
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, members);
+    int result = id.hashCode();
+    result = 31 * result + (members != null ? members.hashCode() : 0);
+    result = 31 * result + (priority != null ? priority.hashCode() : 0);
+    result = 31 * result + targetPriority;
+    result = 31 * result + (primary != null ? primary.hashCode() : 0);
+    return result;
   }
 
   @Override
-  public boolean equals(final Object object) {
-    if (object instanceof PartitionMetadata) {
-      final PartitionMetadata partition = (PartitionMetadata) object;
-      return partition.id.equals(id) && partition.members.equals(members);
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
     }
-    return false;
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+
+    final PartitionMetadata that = (PartitionMetadata) o;
+
+    if (targetPriority != that.targetPriority) {
+      return false;
+    }
+    if (!id.equals(that.id)) {
+      return false;
+    }
+    if (!Objects.equals(members, that.members)) {
+      return false;
+    }
+    if (!Objects.equals(priority, that.priority)) {
+      return false;
+    }
+    return Objects.equals(primary, that.primary);
   }
 
   @Override
