@@ -38,24 +38,22 @@ jobs:
             maven-build-threads: 2
             maven-test-fork-count: 7
             tcc-enabled: 'false'
+            tcc-concurrency: 1
           - group: qa-integration
             name: "QA Integration Tests"
             maven-modules: "qa/integration-tests"
             maven-build-threads: 1
             maven-test-fork-count: 10
-            tcc-enabled: 'false'
-            tcc-concurrency: 4
+            tcc-enabled: 'true'
+            tcc-concurrency: 1
           - group: qa-update
             name: "QA Update Tests"
             maven-modules: "qa/update-tests"
             maven-build-threads: 1
             maven-test-fork-count: 10
-            tcc-enabled: 'false'
-            tcc-concurrency: 3
+            tcc-enabled: 'true'
+            tcc-concurrency: 2
     env:
-      TC_CLOUD_LOGS_VERBOSE: true
-      TC_CLOUD_TOKEN: ${{ matrix.tcc-enabled == 'true' && secrets.TC_CLOUD_TOKEN || '' }}
-      TC_CLOUD_CONCURRENCY: ${{ matrix.tcc-concurrency }}
       ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
     services:
       registry:
@@ -80,13 +78,19 @@ jobs:
           version: current-test
           push: true
           distball: ${{ steps.build-zeebe.outputs.distball }}
-      - name: Prepare Testcontainers Cloud agent
-        if: env.TC_CLOUD_TOKEN != ''
-        run: |
-          curl -L -o agent https://app.testcontainers.cloud/download/testcontainers-cloud-agent_linux_x86-64
-          chmod +x agent
-          ./agent --private-registry-url=http://localhost:5000 '--private-registry-allowed-image-name-globs=*,*/*' --terminate > .testcontainers-agent.log 2>&1 &
-          ./agent wait
+      - name: Setup TCC
+        if: matrix.tcc-enabled == 'true'
+        uses: atomicjar/testcontainers-cloud-setup-action@v1
+        env:
+          TC_CLOUD_LOGS_VERBOSE: true
+          TC_CLOUD_CONCURRENCY: ${{ matrix.tcc-concurrency }}
+        with:
+          token: ${{ secrets.TC_CLOUD_TOKEN }}
+          logfile: .testcontainers-agent.log
+          wait: true
+          args: >
+            --private-registry-url=http://localhost:5000
+            --private-registry-allowed-image-name-globs=camunda/zeebe
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
       - name: Maven Test Build
@@ -100,9 +104,11 @@ jobs:
           -pl ${{ matrix.maven-modules }}
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
-      - name: Terminate TCC session
-        if: env.TC_CLOUD_TOKEN != ''
-        run: ./agent terminate
+      - name: Terminate TCC
+        if: matrix.tcc-enabled == 'true'
+        uses: atomicjar/testcontainers-cloud-setup-action@v1
+        with:
+          action: terminate
       - name: Duplicate Test Check
         uses: ./.github/actions/check-duplicate-tests
         with:
