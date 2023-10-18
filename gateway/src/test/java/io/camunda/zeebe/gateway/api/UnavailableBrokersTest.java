@@ -18,6 +18,7 @@ import io.camunda.zeebe.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.gateway.Gateway;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClientImpl;
+import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManagerImpl;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.impl.configuration.NetworkCfg;
 import io.camunda.zeebe.gateway.impl.stream.JobStreamClient;
@@ -49,6 +50,7 @@ class UnavailableBrokersTest {
   static ZeebeClient client;
   static BrokerClient brokerClient;
   static JobStreamClient jobStreamClient;
+  static BrokerTopologyManagerImpl topologyManager;
 
   @BeforeAll
   static void setUp() throws IOException {
@@ -62,14 +64,18 @@ class UnavailableBrokersTest {
     actorScheduler = ActorScheduler.newActorScheduler().build();
     actorScheduler.start();
 
+    topologyManager =
+        new BrokerTopologyManagerImpl(() -> cluster.getMembershipService().getMembers());
+    actorScheduler.submitActor(topologyManager).join();
+    cluster.getMembershipService().addListener(topologyManager);
+
     brokerClient =
         new BrokerClientImpl(
             config.getCluster().getRequestTimeout(),
             cluster.getMessagingService(),
-            cluster.getMembershipService(),
             cluster.getEventService(),
-            cluster.getCommunicationService(),
-            actorScheduler);
+            actorScheduler,
+            topologyManager);
     jobStreamClient = new JobStreamClientImpl(actorScheduler, cluster.getCommunicationService());
     jobStreamClient.start().join();
 
@@ -92,6 +98,7 @@ class UnavailableBrokersTest {
         gateway,
         brokerClient,
         jobStreamClient,
+        topologyManager,
         actorScheduler,
         () -> cluster.stop().join());
   }

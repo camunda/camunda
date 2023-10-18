@@ -17,6 +17,7 @@ import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.Backup
 import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionCfg.NodeCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
+import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
 import java.io.File;
@@ -327,6 +328,7 @@ final class SystemContextTest {
   }
 
   private SystemContext initSystemContext(final BrokerCfg brokerCfg) {
-    return new SystemContext(brokerCfg, mock(ActorScheduler.class), mock(AtomixCluster.class));
+    return new SystemContext(
+        brokerCfg, mock(ActorScheduler.class), mock(AtomixCluster.class), mock(BrokerClient.class));
   }
 }

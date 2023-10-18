@@ -80,7 +80,8 @@ public class StandaloneBroker
 
   @Override
   public void run(final String... args) throws IOException {
-    final SystemContext systemContext = new SystemContext(configuration, actorScheduler, cluster);
+    final SystemContext systemContext =
+        new SystemContext(configuration, actorScheduler, cluster, brokerClient);
 
     actorScheduler.start();
     brokerClient.start();

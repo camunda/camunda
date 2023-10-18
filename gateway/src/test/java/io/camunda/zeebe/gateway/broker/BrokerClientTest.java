@@ -66,6 +66,7 @@ public final class BrokerClientTest {
   @Rule public final TestName testContext = new TestName();
   private BrokerClient client;
   private AtomixCluster atomixCluster;
+  private BrokerTopologyManagerImpl topologyManager;
 
   @Before
   public void setUp() {
@@ -92,14 +93,17 @@ public final class BrokerClientTest {
             .build();
     atomixCluster.start().join();
 
+    topologyManager =
+        new BrokerTopologyManagerImpl(() -> atomixCluster.getMembershipService().getMembers());
+    actorScheduler.submitActor(topologyManager).join();
+    atomixCluster.getMembershipService().addListener(topologyManager);
     client =
         new BrokerClientImpl(
             configuration.getCluster().getRequestTimeout(),
             atomixCluster.getMessagingService(),
-            atomixCluster.getMembershipService(),
             atomixCluster.getEventService(),
-            atomixCluster.getCommunicationService(),
-            actorScheduler.get());
+            actorScheduler.get(),
+            topologyManager);
 
     client.start().forEach(ActorFuture::join);
 

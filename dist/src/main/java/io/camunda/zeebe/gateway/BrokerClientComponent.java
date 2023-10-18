@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway;
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClientImpl;
+import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.util.VisibleForTesting;
@@ -23,15 +24,18 @@ public final class BrokerClientComponent {
   final GatewayCfg config;
   final AtomixCluster atomixCluster;
   final ActorScheduler actorScheduler;
+  private final BrokerTopologyManager topologyManager;
 
   @Autowired
   public BrokerClientComponent(
       final GatewayCfg config,
       final AtomixCluster atomixCluster,
-      final ActorScheduler actorScheduler) {
+      final ActorScheduler actorScheduler,
+      final BrokerTopologyManager topologyManager) {
     this.config = config;
     this.atomixCluster = atomixCluster;
     this.actorScheduler = actorScheduler;
+    this.topologyManager = topologyManager;
   }
 
   @Bean(destroyMethod = "close")
@@ -39,9 +43,8 @@ public final class BrokerClientComponent {
     return new BrokerClientImpl(
         config.getCluster().getRequestTimeout(),
         atomixCluster.getMessagingService(),
-        atomixCluster.getMembershipService(),
         atomixCluster.getEventService(),
-        atomixCluster.getCommunicationService(),
-        actorScheduler);
+        actorScheduler,
+        topologyManager);
   }
 }

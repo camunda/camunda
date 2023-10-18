@@ -11,6 +11,7 @@ import io.atomix.cluster.AtomixCluster;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClientImpl;
+import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -21,13 +22,18 @@ final class BrokerClientConfiguration {
   private final BrokerCfg config;
   private final AtomixCluster cluster;
   private final ActorScheduler scheduler;
+  private final BrokerTopologyManager topologyManager;
 
   @Autowired
   BrokerClientConfiguration(
-      final BrokerCfg config, final AtomixCluster cluster, final ActorScheduler scheduler) {
+      final BrokerCfg config,
+      final AtomixCluster cluster,
+      final ActorScheduler scheduler,
+      final BrokerTopologyManager topologyManager) {
     this.config = config;
     this.cluster = cluster;
     this.scheduler = scheduler;
+    this.topologyManager = topologyManager;
   }
 
   @Bean(destroyMethod = "close")
@@ -35,9 +41,8 @@ final class BrokerClientConfiguration {
     return new BrokerClientImpl(
         config.getGateway().getCluster().getRequestTimeout(),
         cluster.getMessagingService(),
-        cluster.getMembershipService(),
         cluster.getEventService(),
-        cluster.getCommunicationService(),
-        scheduler);
+        scheduler,
+        topologyManager);
   }
 }

@@ -14,6 +14,7 @@ import io.atomix.utils.net.Address;
 import io.camunda.zeebe.gateway.Gateway;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClientImpl;
+import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManagerImpl;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.impl.configuration.NetworkCfg;
 import io.camunda.zeebe.gateway.impl.configuration.SecurityCfg;
@@ -38,6 +39,7 @@ final class SecurityTest {
   private AtomixCluster atomix;
   private BrokerClient brokerClient;
   private JobStreamClient jobStreamClient;
+  private BrokerTopologyManagerImpl topologyManager;
 
   @BeforeEach
   void beforeEach() throws Exception {
@@ -47,7 +49,12 @@ final class SecurityTest {
   @AfterEach
   public void tearDown() {
     CloseHelper.quietCloseAll(
-        gateway, brokerClient, jobStreamClient, actorScheduler, () -> atomix.stop().join());
+        gateway,
+        brokerClient,
+        topologyManager,
+        jobStreamClient,
+        actorScheduler,
+        () -> atomix.stop().join());
   }
 
   @Test
@@ -153,21 +160,25 @@ final class SecurityTest {
             .build();
     actorScheduler = ActorScheduler.newActorScheduler().build();
     actorScheduler.start();
+    topologyManager =
+        new BrokerTopologyManagerImpl(() -> atomix.getMembershipService().getMembers());
+    actorScheduler.submitActor(topologyManager).join();
+
     brokerClient =
         new BrokerClientImpl(
             gatewayCfg.getCluster().getRequestTimeout(),
             atomix.getMessagingService(),
-            atomix.getMembershipService(),
             atomix.getEventService(),
-            atomix.getCommunicationService(),
-            actorScheduler);
+            actorScheduler,
+            topologyManager);
     jobStreamClient = new JobStreamClientImpl(actorScheduler, atomix.getCommunicationService());
     jobStreamClient.start().join();
 
     // before we can add the job stream client as a topology listener, we need to wait for the
     // topology to be set up, otherwise the callback may be lost
     brokerClient.start().forEach(ActorFuture::join);
-    brokerClient.getTopologyManager().addTopologyListener(jobStreamClient);
+    topologyManager.addTopologyListener(jobStreamClient);
+    atomix.getMembershipService().addListener(topologyManager);
     return new Gateway(gatewayCfg, brokerClient, actorScheduler, jobStreamClient.streamer());
   }
 }

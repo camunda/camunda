@@ -26,6 +26,7 @@ import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiServiceImpl;
+import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
@@ -43,6 +44,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private final BrokerHealthCheckService healthCheckService;
   private final ExporterRepository exporterRepository;
   private final ClusterServicesImpl clusterServices;
+  private final BrokerClient brokerClient;
   private final List<PartitionListener> partitionListeners = new ArrayList<>();
   private final List<PartitionRaftListener> partitionRaftListeners = new ArrayList<>();
 
@@ -66,6 +68,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
       final BrokerHealthCheckService healthCheckService,
       final ExporterRepository exporterRepository,
       final ClusterServicesImpl clusterServices,
+      final BrokerClient brokerClient,
       final List<PartitionListener> additionalPartitionListeners) {
 
     this.brokerInfo = requireNonNull(brokerInfo);
@@ -75,6 +78,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
     this.healthCheckService = requireNonNull(healthCheckService);
     this.exporterRepository = requireNonNull(exporterRepository);
     this.clusterServices = requireNonNull(clusterServices);
+    this.brokerClient = brokerClient;
     partitionListeners.addAll(additionalPartitionListeners);
   }
 
@@ -255,5 +259,10 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   @Override
   public void setClusterTopology(final ClusterTopologyService clusterTopologyService) {
     this.clusterTopologyService = clusterTopologyService;
+  }
+
+  @Override
+  public BrokerClient getBrokerClient() {
+    return brokerClient;
   }
 }
