@@ -16,7 +16,6 @@ import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Collection;
 import org.agrona.DirectBuffer;
-import org.agrona.collections.UnmodifiableCollectionView;
 
 public class JobActivationPropertiesImpl extends UnpackedObject implements JobActivationProperties {
   private final StringProperty workerProp = new StringProperty("worker", "");
@@ -64,8 +63,7 @@ public class JobActivationPropertiesImpl extends UnpackedObject implements JobAc
 
   @Override
   public Collection<DirectBuffer> fetchVariables() {
-    return new UnmodifiableCollectionView<>(
-        StringValue::getValue, fetchVariablesProp.asCollection());
+    return fetchVariablesProp.stream().map(StringValue::getValue).toList();
   }
 
   @Override
@@ -75,6 +73,6 @@ public class JobActivationPropertiesImpl extends UnpackedObject implements JobAc
 
   @Override
   public Collection<String> tenantIds() {
-    return new UnmodifiableCollectionView<>(StringValue::toString, tenantIdsProp.asCollection());
+    return tenantIdsProp.stream().map(StringValue::toString).toList();
   }
 }
