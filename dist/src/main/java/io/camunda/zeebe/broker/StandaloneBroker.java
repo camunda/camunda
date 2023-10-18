@@ -83,8 +83,6 @@ public class StandaloneBroker
     final SystemContext systemContext =
         new SystemContext(configuration, actorScheduler, cluster, brokerClient);
 
-    actorScheduler.start();
-    brokerClient.start();
     broker = new Broker(systemContext, springBrokerBridge);
     broker.start();
   }

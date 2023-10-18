@@ -36,13 +36,16 @@ public final class ActorSchedulerConfiguration {
     final var ioThreads = cfg.getIoThreadCount();
     final var metricsEnabled = brokerCfg.getExperimental().getFeatures().isEnableActorMetrics();
 
-    return ActorScheduler.newActorScheduler()
-        .setActorClock(actorClockConfiguration.getClock().orElse(null))
-        .setCpuBoundActorThreadCount(cpuThreads)
-        .setIoBoundActorThreadCount(ioThreads)
-        .setMetricsEnabled(metricsEnabled)
-        .setSchedulerName(String.format("Broker-%d", brokerCfg.getCluster().getNodeId()))
-        .setIdleStrategySupplier(idleStrategySupplier)
-        .build();
+    final var scheduler =
+        ActorScheduler.newActorScheduler()
+            .setActorClock(actorClockConfiguration.getClock().orElse(null))
+            .setCpuBoundActorThreadCount(cpuThreads)
+            .setIoBoundActorThreadCount(ioThreads)
+            .setMetricsEnabled(metricsEnabled)
+            .setSchedulerName(String.format("Broker-%d", brokerCfg.getCluster().getNodeId()))
+            .setIdleStrategySupplier(idleStrategySupplier)
+            .build();
+    scheduler.start();
+    return scheduler;
   }
 }

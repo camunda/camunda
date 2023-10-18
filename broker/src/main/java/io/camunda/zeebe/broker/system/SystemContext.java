@@ -51,7 +51,9 @@ public final class SystemContext {
   private final BrokerClient brokerClient;
 
   public SystemContext(
-      final BrokerCfg brokerCfg, final ActorScheduler scheduler, final AtomixCluster cluster,
+      final BrokerCfg brokerCfg,
+      final ActorScheduler scheduler,
+      final AtomixCluster cluster,
       final BrokerClient brokerClient) {
     this.brokerCfg = brokerCfg;
     this.scheduler = scheduler;

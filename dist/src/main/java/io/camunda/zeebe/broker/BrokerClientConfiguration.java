@@ -13,6 +13,7 @@ import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClientImpl;
 import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
 import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -38,11 +39,14 @@ final class BrokerClientConfiguration {
 
   @Bean(destroyMethod = "close")
   BrokerClient brokerClient() {
-    return
+    final var brokerClient =
         new BrokerClientImpl(
             config.getGateway().getCluster().getRequestTimeout(),
             cluster.getMessagingService(),
+            cluster.getEventService(),
             scheduler,
             topologyManager);
+    brokerClient.start().forEach(ActorFuture::join);
+    return brokerClient;
   }
 }
