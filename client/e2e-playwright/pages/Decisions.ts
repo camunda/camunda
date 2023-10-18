@@ -8,6 +8,7 @@
 import {Page, Locator} from '@playwright/test';
 import {Paths} from 'modules/Routes';
 import {convertToQueryString} from '../utils/convertToQueryString';
+import {DeleteResourceModal} from './components/DeleteResourceModal';
 
 type OptionalFilter =
   | 'Process Instance Key'
@@ -16,13 +17,19 @@ type OptionalFilter =
 
 export class Decisions {
   private page: Page;
+
   readonly decisionNameFilter: Locator;
   readonly decisionVersionFilter: Locator;
   readonly decisionViewer: Locator;
   readonly decisionInstanceKeysFilter: Locator;
+  readonly deleteResourceButton: Locator;
+  readonly deleteResourceModal: InstanceType<typeof DeleteResourceModal>;
 
   constructor(page: Page) {
     this.page = page;
+    this.deleteResourceModal = new DeleteResourceModal(page, {
+      name: /Delete DRD/i,
+    });
 
     this.decisionNameFilter = page.getByRole('combobox', {
       name: 'Name',
@@ -34,6 +41,10 @@ export class Decisions {
       /^decision instance key\(s\)$/i,
     );
     this.decisionViewer = page.getByTestId('decision-viewer');
+
+    this.deleteResourceButton = page.getByRole('button', {
+      name: 'Delete Decision Definition',
+    });
   }
 
   async selectDecision(option: string) {

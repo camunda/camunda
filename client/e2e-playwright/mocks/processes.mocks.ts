@@ -9,6 +9,7 @@ import {Route} from '@playwright/test';
 import {ProcessInstancesDto} from 'modules/api/processInstances/fetchProcessInstances';
 import {ProcessInstancesStatisticsDto} from 'modules/api/processInstances/fetchProcessInstancesStatistics';
 import {ProcessDto} from 'modules/api/processes/fetchGroupedProcesses';
+import {BatchOperationDto} from 'modules/api/sharedTypes';
 
 function mockResponses({
   batchOperations,
@@ -16,12 +17,14 @@ function mockResponses({
   statistics,
   processInstances,
   processXml,
+  deleteProcess,
 }: {
   batchOperations?: OperationEntity[];
   groupedProcesses?: ProcessDto[];
   statistics?: ProcessInstancesStatisticsDto[];
   processInstances?: ProcessInstancesDto;
   processXml?: string;
+  deleteProcess?: BatchOperationDto;
 }) {
   return (route: Route) => {
     if (route.request().url().includes('/api/authentications/user')) {
@@ -87,6 +90,19 @@ function mockResponses({
       return route.fulfill({
         status: processXml === undefined ? 400 : 200,
         body: JSON.stringify(processXml),
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
+    }
+
+    if (
+      route.request().url().includes('/api/processes') &&
+      route.request().method() === 'DELETE'
+    ) {
+      return route.fulfill({
+        status: deleteProcess === undefined ? 400 : 200,
+        body: JSON.stringify(deleteProcess),
         headers: {
           'content-type': 'application/json',
         },
@@ -3938,6 +3954,18 @@ const mockProcessXml = `<?xml version="1.0" encoding="UTF-8"?>
 </bpmn:definitions>
 `;
 
+const mockDeleteProcess = {
+  username: 'demo',
+  id: 'b5aa7d44-3a4b-4dfb-9694-e3cf582a80a8',
+  name: 'Order Process - Version 1',
+  type: 'DELETE_PROCESS_DEFINITION',
+  startDate: '2023-10-13T08:49:44.008+0200',
+  endDate: null,
+  instancesCount: 0,
+  operationsTotalCount: 1,
+  operationsFinishedCount: 0,
+} as const;
+
 export {
   mockGroupedProcesses,
   mockBatchOperations,
@@ -3948,4 +3976,5 @@ export {
   mockProcessXml,
   mockResponses,
   mockNewDeleteOperation,
+  mockDeleteProcess,
 };

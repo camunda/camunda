@@ -1,0 +1,36 @@
+name: Update screenshots
+on: workflow_dispatch
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.38.1
+      options: --user 1001:1000
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+      - name: Setup yarn cache
+        uses: actions/setup-node@v3
+        with:
+          node-version: "20"
+          cache: "yarn"
+          cache-dependency-path: client/yarn.lock
+      - name: Install node dependencies
+        working-directory: ./client
+        run: yarn
+      - name: Build frontend
+        working-directory: ./client
+        run: yarn build
+      - name: Start server
+        working-directory: ./client
+        run: yarn start:visual-regression &
+      - name: Run Playwright
+        working-directory: ./client
+        run: yarn playwright e2e-playwright/docs-screenshots
+      - uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: Playwright report
+          path: client/e2e-playwright/docs-screenshots
+          retention-days: 30

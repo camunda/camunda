@@ -48,6 +48,19 @@ export class Common {
     }, theme);
   }
 
+  async disableModalAnimation() {
+    return this.page.addStyleTag({
+      content: `
+        .cds--modal-container {
+          transform: none !important;
+        }
+        .cds--modal {
+          transition: none !important;
+        }
+    `,
+    });
+  }
+
   async createArrowElement({
     direction,
     additionalContent,

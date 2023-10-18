@@ -8,6 +8,7 @@
 import {Page, Locator, expect} from '@playwright/test';
 import {convertToQueryString} from '../utils/convertToQueryString';
 import {Paths} from 'modules/Routes';
+import {DeleteResourceModal} from './components/DeleteResourceModal';
 
 type OptionalFilter =
   | 'Variable'
@@ -21,6 +22,7 @@ type OptionalFilter =
 
 export class Processes {
   private page: Page;
+  readonly deleteResourceModal: InstanceType<typeof DeleteResourceModal>;
   readonly activeCheckbox: Locator;
   readonly incidentsCheckbox: Locator;
   readonly runningInstancesCheckbox: Locator;
@@ -39,9 +41,13 @@ export class Processes {
   readonly startDateFilter: Locator;
   readonly variableNameFilter: Locator;
   readonly variableValueFilter: Locator;
+  readonly deleteResourceButton: Locator;
 
   constructor(page: Page) {
     this.page = page;
+    this.deleteResourceModal = new DeleteResourceModal(page, {
+      name: /Delete Process Definition/i,
+    });
     this.activeCheckbox = page.getByRole('checkbox', {name: 'Active'});
     this.incidentsCheckbox = page.getByRole('checkbox', {name: 'Incidents'});
     this.runningInstancesCheckbox = page.getByRole('checkbox', {
@@ -95,6 +101,10 @@ export class Processes {
 
     this.variableValueFilter = page.getByRole('textbox', {
       name: /value/i,
+    });
+
+    this.deleteResourceButton = page.getByRole('button', {
+      name: 'Delete Process Definition',
     });
   }
 

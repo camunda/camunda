@@ -42,11 +42,17 @@ const config: PlaywrightTestConfig = {
       name: 'setup',
       testMatch: IS_E2E ? /e2e.setup\.ts/ : /visual.setup\.ts/,
     },
-    {
-      name: 'chromium',
-      use: {...devices['Desktop Chrome']},
-      dependencies: ['setup'],
-    },
+    IS_SCREENSHOT_GENERATOR
+      ? {
+          name: 'firefox',
+          use: {...devices['Desktop Firefox']},
+          dependencies: ['setup'],
+        }
+      : {
+          name: 'chromium',
+          use: {...devices['Desktop Chrome']},
+          dependencies: ['setup'],
+        },
   ],
   outputDir: 'test-results/',
   use: {
