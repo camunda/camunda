@@ -212,17 +212,18 @@ final class StreamIntegrationTest {
         clientStreamer
             .add(streamType, properties, p -> CompletableActorFuture.completed(null))
             .join();
+    final var member = client.cluster.getMembershipService().getLocalMember();
+    final var memberRemovedEvent = new ClusterMembershipEvent(Type.MEMBER_REMOVED, member);
+    final var memberAddedEvent = new ClusterMembershipEvent(Type.MEMBER_ADDED, member);
     awaitStreamAdded(streamType, streamId, server1, server2);
 
     // when - remove client from server's members, then add it back, and expect it to be
     // re-registered
-    server1.streamService.event(
-        new ClusterMembershipEvent(
-            Type.MEMBER_REMOVED, client.cluster.getMembershipService().getLocalMember()));
+    assertThat(server1.streamService.isRelevant(memberRemovedEvent)).isTrue();
+    server1.streamService.event(memberRemovedEvent);
     awaitStreamOnServer(streamType, server1, stream -> assertThat(stream).isEmpty());
-    server1.streamService.event(
-        new ClusterMembershipEvent(
-            Type.MEMBER_ADDED, client.cluster.getMembershipService().getLocalMember()));
+    assertThat(server1.streamService.isRelevant(memberAddedEvent)).isTrue();
+    server1.streamService.event(memberAddedEvent);
 
     awaitStreamAdded(streamType, streamId, server1, server2);
   }
