@@ -52,7 +52,7 @@ public class SingleStepModifyProcessInstanceHandler extends AbstractOperationHan
         final Long processInstanceKey = Long.parseLong(modifyProcessInstanceRequest.getProcessInstanceKey());
         final List<Modification> modifications = modifyProcessInstanceRequest.getModifications();
         // Variables first
-        modifyVariables(processInstanceKey, getVariableModifications(modifications));
+        modifyVariables(processInstanceKey, getVariableModifications(modifications), operation);
         // Token Modifications in given order
         List<Modification> tokenModifications = getTokenModifications(modifications);
 
@@ -83,27 +83,33 @@ public class SingleStepModifyProcessInstanceHandler extends AbstractOperationHan
                     lastStep = nextStep;
                 }
             }
+            updateFinishedInBatchOperation(operation);
         }
         if(lastStep != null){
             lastStep.send().join();
         }
         markAsSent(operation);
-        completeOperation(operation);
+        completeOperation(operation, false);
     }
 
-    private void completeOperation(final OperationEntity operation) throws PersistenceException {
-        operationsManager.completeOperation(operation);
+    private void updateFinishedInBatchOperation(final OperationEntity operation) throws PersistenceException {
+        operationsManager.updateFinishedInBatchOperation(operation.getBatchOperationId());
     }
 
-    private void modifyVariables(final Long processInstanceKey, final List<Modification> modifications) {
-        modifications.forEach(modification -> {
+    private void completeOperation(final OperationEntity operation, boolean updateFinishedInBatch) throws PersistenceException {
+        operationsManager.completeOperation(operation, updateFinishedInBatch);
+    }
+
+    private void modifyVariables(final Long processInstanceKey, final List<Modification> modifications, OperationEntity operation) throws PersistenceException {
+        for (Modification modification : modifications) {
             final Long scopeKey = determineScopeKey(processInstanceKey, modification);
             zeebeClient
                 .newSetVariablesCommand(scopeKey)
                 .variables(modification.getVariables())
                 .local(true)
                 .send().join();
-        });
+            updateFinishedInBatchOperation(operation);
+        }
     }
 
     private Long determineScopeKey(final Long processInstanceKey, final Modification modification) {

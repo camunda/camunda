@@ -94,11 +94,15 @@ public class OperationsManager {
   }
 
   public void completeOperation(final OperationEntity operationEntity) throws PersistenceException {
+    completeOperation(operationEntity, true);
+  }
+
+  public void completeOperation(final OperationEntity operationEntity, boolean updateFinishedInBatch) throws PersistenceException {
     final BatchRequest batchRequest = newBatchRequest();
-    if (operationEntity.getBatchOperationId() != null) {
-        updateFinishedInBatchOperation(operationEntity.getBatchOperationId(), batchRequest);
+    if (operationEntity.getBatchOperationId() != null && updateFinishedInBatch) {
+      updateFinishedInBatchOperation(operationEntity.getBatchOperationId(), batchRequest);
     }
-    final Map<String,String> ids2indexNames =  getIndexNameForAliasAndId(operationTemplate.getAlias(), operationEntity.getId());
+    final Map<String, String> ids2indexNames = getIndexNameForAliasAndId(operationTemplate.getAlias(), operationEntity.getId());
     completeOperation(ids2indexNames.get(operationEntity.getId()), operationEntity.getId(), batchRequest);
     batchRequest.execute();
   }
