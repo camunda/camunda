@@ -40,7 +40,7 @@
           <execution>
             <id>update package.json version</id>
             <goals>
-                <goal>yarn</goal>
+              <goal>yarn</goal>
             </goals>
             <configuration>
               <skip>${skip.fe.build}</skip>

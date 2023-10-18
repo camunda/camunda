@@ -26,8 +26,15 @@ import static io.camunda.operate.OperateProfileService.IDENTITY_AUTH_PROFILE;
 @Profile(IDENTITY_AUTH_PROFILE)
 public class IdentityUserService implements UserService<AbstractAuthenticationToken> {
 
+  private final Identity identity;
+
+  private final PermissionConverter permissionConverter;
+
   @Autowired
-  private Identity identity;
+  public IdentityUserService(Identity identity, PermissionConverter permissionConverter) {
+    this.identity = identity;
+    this.permissionConverter = permissionConverter;
+  }
 
   @Override
   public UserDto createUserDtoFrom(
@@ -43,7 +50,7 @@ public class IdentityUserService implements UserService<AbstractAuthenticationTo
       final AccessToken accessToken = identity.authentication()
           .verifyToken(((Jwt)authentication.getPrincipal()).getTokenValue());
       final List<Permission> permissions = accessToken.getPermissions().stream()
-          .map(PermissionConverter.getInstance()::convert).collect(Collectors.toList());
+          .map(permissionConverter::convert).collect(Collectors.toList());
       return new UserDto()
           .setUserId(authentication.getName())
           .setDisplayName(authentication.getName())

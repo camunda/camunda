@@ -18,17 +18,17 @@ import io.camunda.operate.util.SpringContextHolder;
 import io.camunda.operate.webapp.security.Permission;
 import io.camunda.operate.webapp.security.tenant.OperateTenant;
 import io.camunda.operate.webapp.security.tenant.TenantAwareAuthentication;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.security.authentication.AbstractAuthenticationToken;
+import org.springframework.security.authentication.InsufficientAuthenticationException;
+import org.springframework.util.StringUtils;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.security.authentication.AbstractAuthenticationToken;
-import org.springframework.security.authentication.InsufficientAuthenticationException;
-import org.springframework.util.StringUtils;
 
 public class IdentityAuthentication extends AbstractAuthenticationToken implements Serializable, TenantAwareAuthentication {
 
@@ -109,7 +109,8 @@ public class IdentityAuthentication extends AbstractAuthenticationToken implemen
   }
 
   public List<Permission> getPermissions() {
-    return permissions.stream().map(PermissionConverter.getInstance()::convert).collect(Collectors.toList());
+    PermissionConverter permissionConverter = getPermissionConverter();
+    return permissions.stream().map(permissionConverter::convert).collect(Collectors.toList());
   }
 
   public List<IdentityAuthorization> getAuthorizations() {
@@ -207,8 +208,8 @@ public class IdentityAuthentication extends AbstractAuthenticationToken implemen
   }
 
   private Tokens renewTokens(final String refreshToken) throws Exception {
-    return IdentityService.requestWithRetry(
-        () -> getIdentity().authentication().renewToken(refreshToken), "IdentityAuthentication#renewTokens");
+    return getIdentityRetryService().requestWithRetry(
+            () -> getIdentity().authentication().renewToken(refreshToken), "IdentityAuthentication#renewTokens");
   }
 
   public IdentityAuthentication setExpires(final Date expires) {
@@ -229,4 +230,11 @@ public class IdentityAuthentication extends AbstractAuthenticationToken implemen
     return SpringContextHolder.getBean(OperateProperties.class);
   }
 
+  private IdentityRetryService getIdentityRetryService() {
+    return SpringContextHolder.getBean(IdentityRetryService.class);
+  }
+
+  private PermissionConverter getPermissionConverter() {
+    return SpringContextHolder.getBean(PermissionConverter.class);
+  }
 }

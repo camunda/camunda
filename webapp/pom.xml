@@ -19,7 +19,7 @@
       <version>${project.version}</version>
     </dependency>
 
-     <dependency>
+    <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>operate-els-schema</artifactId>
       <version>${project.version}</version>
@@ -90,12 +90,12 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-thymeleaf</artifactId>
-        <exclusions>
-          <exclusion>
-            <groupId>org.thymeleaf</groupId>
-            <artifactId>thymeleaf</artifactId>
-          </exclusion>
-        </exclusions>
+      <exclusions>
+        <exclusion>
+          <groupId>org.thymeleaf</groupId>
+          <artifactId>thymeleaf</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <dependency>
@@ -144,11 +144,11 @@
 
     <!-- Micrometer Prometheus -->
     <dependency>
-  	  <groupId>io.micrometer</groupId>
-  	  <artifactId>micrometer-registry-prometheus</artifactId>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-registry-prometheus</artifactId>
     </dependency>
 
-     <!-- OAuth0 -->
+    <!-- OAuth0 -->
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>operate-mvc-auth-commons</artifactId>
@@ -231,16 +231,6 @@
           </systemPropertyVariables>
         </configuration>
       </plugin>
-
-        <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-failsafe-plugin</artifactId>
-            <configuration>
-                <systemPropertyVariables>
-                    <spring.profiles.active>test</spring.profiles.active>
-                </systemPropertyVariables>
-            </configuration>
-        </plugin>
 
     </plugins>
   </build>

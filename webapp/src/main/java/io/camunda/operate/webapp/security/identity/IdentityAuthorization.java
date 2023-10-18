@@ -10,6 +10,7 @@ import io.camunda.identity.sdk.authorizations.dto.Authorization;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -34,7 +35,8 @@ public class IdentityAuthorization implements Serializable {
   }
 
   public IdentityAuthorization setPermissions(Set<String> permissions) {
-    this.permissions = permissions;
+    // Copy the container so that it remains independent of any changes to the original
+    this.permissions = new HashSet<>(permissions);
     return this;
   }
 

@@ -8,20 +8,23 @@ package io.camunda.operate.webapp.security.identity;
 
 import io.camunda.identity.sdk.Identity;
 import io.camunda.operate.property.OperateProperties;
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.junit4.SpringRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@ActiveProfiles({"identity-auth"})
+@RunWith(SpringRunner.class)
 @SpringBootTest(
     classes = {
         IdentityConfigurer.class,
         OperateProperties.class}
 )
-public class IdentityCreatedTest {
+@ActiveProfiles({"identity-auth"})
+public class IdentityCreatedITMocked {
 
   @Autowired
   private Identity identity;

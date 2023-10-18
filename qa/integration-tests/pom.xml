@@ -86,8 +86,8 @@
 
     <!-- Micrometer Prometheus -->
     <dependency>
-  	  <groupId>io.micrometer</groupId>
-  	  <artifactId>micrometer-registry-prometheus</artifactId>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-registry-prometheus</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -162,9 +162,9 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
         <configuration>
-            <systemPropertyVariables>
-              <spring.profiles.active>test</spring.profiles.active>
-            </systemPropertyVariables>
+          <systemPropertyVariables>
+            <spring.profiles.active>test</spring.profiles.active>
+          </systemPropertyVariables>
         </configuration>
       </plugin>
     </plugins>
@@ -226,9 +226,9 @@
     <profile>
       <id>docker</id>
       <activation>
-          <property>
-              <name>!skipDockerProfile</name>
-          </property>
+        <property>
+          <name>!skipDockerProfile</name>
+        </property>
       </activation>
       <build>
         <plugins>

@@ -74,7 +74,7 @@
     <version.guava.annotations>r03</version.guava.annotations>
     <version.commons.codec>1.16.0</version.commons.codec>
 
-      <includeLongITNames>**/*IT.java</includeLongITNames>
+    <includeLongITNames>**/*IT.java</includeLongITNames>
 
   </properties>
 
@@ -121,13 +121,13 @@
         <groupId>org.elasticsearch</groupId>
         <artifactId>elasticsearch-x-content</artifactId>
         <version>${version.elasticsearch}</version>
-          <exclusions>
-            <exclusion>
-              <groupId>org.yaml</groupId>
-              <artifactId>snakeyaml</artifactId>
-            </exclusion>
-          </exclusions>
-        </dependency>
+        <exclusions>
+          <exclusion>
+            <groupId>org.yaml</groupId>
+            <artifactId>snakeyaml</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
 
       <dependency>
         <groupId>co.elastic.clients</groupId>
@@ -155,17 +155,17 @@
       </dependency>
 
       <!-- End Opensearch  -->
-        <dependency>
-            <groupId>net.jodah</groupId>
-            <artifactId>failsafe</artifactId>
-            <version>${version.failsafe}</version>
-        </dependency>
+      <dependency>
+        <groupId>net.jodah</groupId>
+        <artifactId>failsafe</artifactId>
+        <version>${version.failsafe}</version>
+      </dependency>
 
-        <dependency>
-          <groupId>org.yaml</groupId>
-          <artifactId>snakeyaml</artifactId>
-          <version>${version.snakeyaml}</version>
-        </dependency>
+      <dependency>
+        <groupId>org.yaml</groupId>
+        <artifactId>snakeyaml</artifactId>
+        <version>${version.snakeyaml}</version>
+      </dependency>
 
       <dependency>
         <groupId>org.apache.logging.log4j</groupId>
@@ -283,7 +283,7 @@
         <version>${version.auth0}</version>
       </dependency>
 
-     <dependency>
+      <dependency>
         <groupId>com.auth0</groupId>
         <artifactId>java-jwt</artifactId>
         <version>${version.auth0.jwt}</version>
@@ -319,26 +319,26 @@
         <version>${version.commons.codec}</version>
       </dependency>
 
-        <!-- Start AWS -->
-        <dependency>
-            <groupId>software.amazon.awssdk</groupId>
-            <artifactId>auth</artifactId>
-            <version>2.20.10</version>
-        </dependency>
+      <!-- Start AWS -->
+      <dependency>
+        <groupId>software.amazon.awssdk</groupId>
+        <artifactId>auth</artifactId>
+        <version>2.20.10</version>
+      </dependency>
 
-        <dependency>
-            <groupId>com.amazonaws</groupId>
-            <artifactId>aws-java-sdk-sts</artifactId>
-            <version>1.12.415</version>
-        </dependency>
+      <dependency>
+        <groupId>com.amazonaws</groupId>
+        <artifactId>aws-java-sdk-sts</artifactId>
+        <version>1.12.415</version>
+      </dependency>
 
-        <dependency>
-            <groupId>software.amazon.awssdk</groupId>
-            <artifactId>sts</artifactId>
-            <version>2.20.8</version>
-        </dependency>
+      <dependency>
+        <groupId>software.amazon.awssdk</groupId>
+        <artifactId>sts</artifactId>
+        <version>2.20.8</version>
+      </dependency>
 
-        <!-- End AWS -->
+      <!-- End AWS -->
     </dependencies>
   </dependencyManagement>
 
@@ -444,10 +444,10 @@
           <artifactId>maven-failsafe-plugin</artifactId>
           <version>3.1.2</version>
           <configuration>
-              <includes>
-                  <include>${includeLongITNames}</include>
-                  <include>**/*ITMocked.java</include>
-              </includes>
+            <includes>
+              <include>${includeLongITNames}</include>
+              <include>**/*ITMocked.java</include>
+            </includes>
             <forkCount>${env.LIMITS_CPU}</forkCount>
             <reuseForks>true</reuseForks>
             <redirectTestOutputToFile>true</redirectTestOutputToFile>
@@ -538,14 +538,14 @@
     </plugins>
   </build>
 
-    <profiles>
-        <profile>
-            <id>skip-long-its</id>
-            <properties>
-                <includeLongITNames>none</includeLongITNames>
-            </properties>
-        </profile>
-    </profiles>
+  <profiles>
+    <profile>
+      <id>skip-long-its</id>
+      <properties>
+        <includeLongITNames>none</includeLongITNames>
+      </properties>
+    </profile>
+  </profiles>
 
   <distributionManagement>
     <snapshotRepository>

@@ -35,17 +35,18 @@ public class IdentityController {
 
   protected final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-  @Autowired
-  protected OperateProperties operateProperties;
+  private final IdentityService identityService;
 
-  @Autowired
-  private IdentityService identityService;
-
-  private SecurityContextRepository securityContextRepository =
+  private final SecurityContextRepository securityContextRepository =
       new HttpSessionSecurityContextRepository();
 
   private final SecurityContextHolderStrategy securityContextHolderStrategy =
       SecurityContextHolder.getContextHolderStrategy();
+
+  @Autowired
+  public IdentityController(IdentityService identityService) {
+    this.identityService = identityService;
+  }
 
   /**
    * Initiates user login - the user will be redirected to Camunda Account

@@ -7,16 +7,18 @@
 package io.camunda.operate.webapp.security.identity;
 
 import io.camunda.operate.property.OperateProperties;
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.junit4.SpringRunner;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+@RunWith(SpringRunner.class)
 @ActiveProfiles({"sso-auth"})
 @SpringBootTest(
     classes = {
@@ -27,7 +29,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
         OperateProperties.PREFIX + ".identity.resourcePermissionsEnabled = false"
     }
 )
-public class SSOIdentityNotCreatedTest {
+public class SSOIdentityNotCreatedITMocked {
 
   @Autowired
   private ApplicationContext applicationContext;

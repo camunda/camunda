@@ -6,34 +6,38 @@
  */
 package io.camunda.operate.webapp.security.identity;
 
-import static io.camunda.operate.OperateProfileService.IDENTITY_AUTH_PROFILE;
-import static io.camunda.operate.webapp.security.OperateURIs.IDENTITY_CALLBACK_URI;
-
 import io.camunda.identity.sdk.Identity;
 import io.camunda.identity.sdk.authentication.Tokens;
 import io.camunda.identity.sdk.authentication.dto.AuthCodeDto;
-import io.camunda.identity.sdk.exception.IdentityException;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.util.RetryOperation;
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 import jakarta.servlet.http.HttpServletRequest;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
+import java.util.UUID;
+
+import static io.camunda.operate.OperateProfileService.IDENTITY_AUTH_PROFILE;
+import static io.camunda.operate.webapp.security.OperateURIs.IDENTITY_CALLBACK_URI;
+
 @Component
 @Profile(IDENTITY_AUTH_PROFILE)
 public class IdentityService {
 
-  @Autowired
-  private OperateProperties operateProperties;
+  private final OperateProperties operateProperties;
+
+  private final Identity identity;
+
+  private final IdentityRetryService identityRetryService;
 
   @Autowired
-  private Identity identity;
+  public IdentityService(IdentityRetryService identityRetryService, OperateProperties operateProperties, Identity identity) {
+    this.identityRetryService = identityRetryService;
+    this.operateProperties = operateProperties;
+    this.identity = identity;
+  }
 
   public String getRedirectUrl(final HttpServletRequest req) {
     return identity
@@ -66,7 +70,7 @@ public class IdentityService {
     final String result;
     if (contextPathIsUUID(req.getContextPath())) {
       final String clusterId = req.getContextPath().replace("/", "");
-      result = redirectRootUri + /* req.getContextPath()+ */ redirectTo + "?uuid=" + clusterId;
+      result = redirectRootUri + redirectTo + "?uuid=" + clusterId;
     } else {
       result = redirectRootUri + req.getContextPath() + redirectTo;
     }
@@ -76,7 +80,7 @@ public class IdentityService {
   public IdentityAuthentication getAuthenticationFor(
       final HttpServletRequest req, final AuthCodeDto authCodeDto) throws Exception {
     final Tokens tokens =
-        requestWithRetry(
+        identityRetryService.requestWithRetry(
             () ->
                 identity
                     .authentication()
@@ -85,18 +89,6 @@ public class IdentityService {
     final IdentityAuthentication authentication = new IdentityAuthentication();
     authentication.authenticate(tokens);
     return authentication;
-  }
-
-  public static <T> T requestWithRetry(final RetryOperation.RetryConsumer<T> retryConsumer, final String operationName)
-      throws Exception {
-    return RetryOperation.<T>newBuilder()
-        .noOfRetry(10)
-        .delayInterval(500, TimeUnit.MILLISECONDS)
-        .retryOn(IdentityException.class)
-        .retryConsumer(retryConsumer)
-        .message(operationName)
-        .build()
-        .retry();
   }
 
   private boolean contextPathIsUUID(String contextPath) {

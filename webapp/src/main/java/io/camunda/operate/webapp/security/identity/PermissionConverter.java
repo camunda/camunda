@@ -7,30 +7,17 @@
 package io.camunda.operate.webapp.security.identity;
 
 import io.camunda.operate.webapp.security.Permission;
+import org.springframework.context.annotation.Profile;
 import org.springframework.core.convert.converter.Converter;
+import org.springframework.stereotype.Component;
 
+import static io.camunda.operate.OperateProfileService.IDENTITY_AUTH_PROFILE;
+
+@Component
 public final class PermissionConverter implements Converter<String, Permission> {
 
   public static final String READ_PERMISSION_VALUE = "read:*";
   public static final String WRITE_PERMISSION_VALUE = "write:*";
-
-  private static volatile PermissionConverter _instance;
-  private static Object lock = new Object();
-
-  private PermissionConverter() {
-    //private constructor
-  }
-
-  public static PermissionConverter getInstance(){
-    if (_instance == null) {
-      synchronized (lock) {
-        if (_instance == null) {
-          _instance = new PermissionConverter();
-        }
-      }
-    }
-    return _instance;
-  }
 
   @Override
   public Permission convert(final String source) {
