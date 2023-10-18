@@ -28,6 +28,7 @@ import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOp
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
 import io.camunda.zeebe.topology.util.RoundRobinPartitionDistributor;
 import io.camunda.zeebe.topology.util.TopologyUtil;
+import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -80,16 +81,26 @@ final class TopologyManagementRequestsHandler implements TopologyManagementApi {
   @Override
   public ActorFuture<TopologyChangeStatus> reassignPartitions(
       final ReassignPartitionsRequest reassignPartitionsRequest) {
-
     final ActorFuture<TopologyChangeStatus> responseFuture = executor.createFuture();
+
+    if (reassignPartitionsRequest.members() == null
+        || reassignPartitionsRequest.members().isEmpty()) {
+      responseFuture.completeExceptionally(
+          new IllegalArgumentException("Cannot reassign partitions if no brokers are provided"));
+      return responseFuture;
+    }
+
     executor.runOnCompletion(
         coordinator.getCurrentTopology(),
         (clusterTopology, error) -> {
           if (error == null) {
-            applyOperations(
-                    generatePartitionDistributionOperations(
-                        clusterTopology, reassignPartitionsRequest.members()))
-                .onComplete(responseFuture);
+            final var generatedOperation =
+                generatePartitionDistributionOperations(
+                    clusterTopology, reassignPartitionsRequest.members());
+            if (generatedOperation.isLeft()) {
+              responseFuture.completeExceptionally(generatedOperation.getLeft());
+            }
+            applyOperations(generatedOperation.get()).onComplete(responseFuture);
           } else {
             responseFuture.completeExceptionally(error);
           }
@@ -116,7 +127,7 @@ final class TopologyManagementRequestsHandler implements TopologyManagementApi {
     return responseFuture;
   }
 
-  private List<TopologyChangeOperation> generatePartitionDistributionOperations(
+  private Either<Exception, List<TopologyChangeOperation>> generatePartitionDistributionOperations(
       final ClusterTopology currentTopology, final Set<MemberId> brokers) {
     final List<TopologyChangeOperation> operations = new ArrayList<>();
 
@@ -124,6 +135,14 @@ final class TopologyManagementRequestsHandler implements TopologyManagementApi {
     // We assume that all partitions have the same replication factor
     final int replicationFactor =
         oldDistribution.stream().map(p -> p.members().size()).findFirst().orElseThrow();
+
+    if (brokers.size() < replicationFactor) {
+      return Either.left(
+          new IllegalArgumentException(
+              String.format(
+                  "Number of brokers [%d] is less than the replication factor [%d]",
+                  brokers.size(), replicationFactor)));
+    }
 
     final var partitionCount = currentTopology.partitionCount();
     final var sortedPartitions =
@@ -147,7 +166,7 @@ final class TopologyManagementRequestsHandler implements TopologyManagementApi {
       operations.addAll(movePartition(oldMetadata, newMetadata));
     }
 
-    return operations;
+    return Either.right(operations);
   }
 
   private List<TopologyChangeOperation> movePartition(
