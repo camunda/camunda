@@ -40,11 +40,14 @@ public final class BrokerClientComponent {
 
   @Bean(destroyMethod = "close")
   public BrokerClient brokerClient() {
-    return new BrokerClientImpl(
-        config.getCluster().getRequestTimeout(),
-        atomixCluster.getMessagingService(),
-        atomixCluster.getEventService(),
-        actorScheduler,
-        topologyManager);
+    final var brokerClient =
+        new BrokerClientImpl(
+            config.getCluster().getRequestTimeout(),
+            atomixCluster.getMessagingService(),
+            atomixCluster.getEventService(),
+            actorScheduler,
+            topologyManager);
+    brokerClient.start();
+    return brokerClient;
   }
 }

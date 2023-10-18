@@ -32,12 +32,15 @@ public final class ActorSchedulerConfiguration {
 
   @Bean(destroyMethod = "close")
   public ActorScheduler actorScheduler(final IdleStrategySupplier idleStrategySupplier) {
-    return ActorScheduler.newActorScheduler()
-        .setCpuBoundActorThreadCount(config.getThreads().getManagementThreads())
-        .setIoBoundActorThreadCount(0)
-        .setSchedulerName("Gateway-%s".formatted(config.getCluster().getMemberId()))
-        .setActorClock(clockConfiguration.getClock().orElse(null))
-        .setIdleStrategySupplier(idleStrategySupplier)
-        .build();
+    final var scheduler =
+        ActorScheduler.newActorScheduler()
+            .setCpuBoundActorThreadCount(config.getThreads().getManagementThreads())
+            .setIoBoundActorThreadCount(0)
+            .setSchedulerName("Gateway-%s".formatted(config.getCluster().getMemberId()))
+            .setActorClock(clockConfiguration.getClock().orElse(null))
+            .setIdleStrategySupplier(idleStrategySupplier)
+            .build();
+    scheduler.start();
+    return scheduler;
   }
 }

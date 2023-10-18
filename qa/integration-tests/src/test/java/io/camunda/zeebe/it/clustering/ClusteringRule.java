@@ -349,8 +349,6 @@ public class ClusteringRule extends ExternalResource {
 
     final var systemContext = new SystemContext(brokerCfg, scheduler, atomixCluster, brokerClient);
     systemContexts.put(nodeId, systemContext);
-
-    scheduler.start();
     scheduler.submitActor(topologyManager).join();
 
     atomixCluster.getMembershipService().addListener(topologyManager);
@@ -456,8 +454,6 @@ public class ClusteringRule extends ExternalResource {
     final ActorScheduler actorScheduler =
         new ActorSchedulerConfiguration(gatewayCfg, actorClockConfiguration)
             .actorScheduler(IdleStrategySupplier.ofDefault());
-    actorScheduler.start();
-
     final var topologyManager =
         new BrokerTopologyManagerImpl(() -> atomixCluster.getMembershipService().getMembers());
     actorScheduler.submitActor(topologyManager).join();
