@@ -9,8 +9,9 @@ package io.camunda.tasklist.es;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
+import io.camunda.tasklist.store.elasticsearch.dao.response.TaskResponse;
+import io.camunda.tasklist.util.Either;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -23,6 +24,8 @@ import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.client.tasks.GetTaskResponse;
 import org.elasticsearch.tasks.RawTaskStatus;
 import org.elasticsearch.tasks.TaskInfo;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -51,18 +54,27 @@ public class ElasticsearchInternalTask {
   public static final String NODE = "node";
   public static final int MAX_TASKS_ENTRIES = 2_000;
   private static final String TASKS_ENDPOINT = "_tasks";
+  private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchInternalTask.class);
 
   @Autowired private RestHighLevelClient esClient;
 
   @Autowired private ObjectMapper objectMapper;
 
-  public void checkForErrorsOrFailures(final String taskId) throws IOException {
-    final var request = new Request(HttpGet.METHOD_NAME, "/" + TASKS_ENDPOINT + "/" + taskId);
-    final var response = esClient.getLowLevelClient().performRequest(request);
-    final var taskStatus = objectMapper.readValue(response.getEntity().getContent(), HashMap.class);
+  public Either<IOException, TaskResponse> getTaskResponse(final String taskId) {
+    try {
+      final var request = new Request(HttpGet.METHOD_NAME, "/" + TASKS_ENDPOINT + "/" + taskId);
+      final var response = esClient.getLowLevelClient().performRequest(request);
+      final var taskResponse =
+          objectMapper.readValue(response.getEntity().getContent(), TaskResponse.class);
+      return Either.right(taskResponse);
+    } catch (IOException e) {
+      return Either.left(e);
+    }
+  }
 
-    checkForErrors(taskStatus);
-    checkForFailures(taskStatus);
+  public void checkForErrorsOrFailures(final TaskResponse taskResponse) throws IOException {
+    checkForErrors(taskResponse);
+    checkForFailures(taskResponse);
   }
 
   public List<String> getRunningReindexTasksIdsFor(final String fromIndex, final String toIndex)
@@ -118,38 +130,28 @@ public class ElasticsearchInternalTask {
         && desc.contains(DESCRIPTION_PREFIX_TO_INDEX + toIndex);
   }
 
-  private void checkForErrors(final Map<String, Object> taskStatus) {
-    if (!taskStatus.isEmpty() && taskStatus.containsKey(ERROR)) {
-      final Map<String, String> taskError = (Map<String, String>) taskStatus.get(ERROR);
-      throw new TasklistRuntimeException(taskError.get(REASON));
+  private void checkForErrors(final TaskResponse taskResponse) {
+    if (taskResponse != null && taskResponse.getError() != null) {
+      final var error = taskResponse.getError();
+      LOGGER.error("Task status contains error: " + error);
+      throw new TasklistRuntimeException(error.getReason());
     }
   }
 
-  private void checkForFailures(final Map<String, Object> taskStatus) {
-    if (!taskStatus.isEmpty() && taskStatus.containsKey(RESPONSE)) {
-      final Map<String, Object> taskResponse = (Map<String, Object>) taskStatus.get(RESPONSE);
-      if (taskResponse.containsKey(FAILURES)) {
-        final List<Map<String, Object>> failures =
-            (List<Map<String, Object>>) taskResponse.get(FAILURES);
-        if (!failures.isEmpty()) {
-          final Map<String, Object> failure = failures.get(0);
-          final Map<String, String> cause = (Map<String, String>) failure.get(CAUSE);
-          throw new TasklistRuntimeException(cause.get(REASON));
-        }
+  private void checkForFailures(final TaskResponse taskStatus) {
+    if (taskStatus != null && taskStatus.getResponseDetails() != null) {
+      final var taskResponse = taskStatus.getResponseDetails();
+      final var failures = taskResponse.getFailures();
+      if (!failures.isEmpty()) {
+        final Map<String, Object> failure = (Map<String, Object>) failures.get(0);
+        final Map<String, String> cause = (Map<String, String>) failure.get(CAUSE);
+        throw new TasklistRuntimeException(cause.get(REASON));
       }
     }
   }
 
-  public boolean needsToPollAgain(final Optional<GetTaskResponse> taskResponse) {
-    if (taskResponse.isEmpty()) {
-      return false;
-    }
-    final Map<String, Object> statusMap = getTaskStatusMap(taskResponse.get());
-    final long total = (Integer) statusMap.get(TOTAL);
-    final long created = (Integer) statusMap.get(CREATED);
-    final long updated = (Integer) statusMap.get(UPDATED);
-    final long deleted = (Integer) statusMap.get(DELETED);
-    return !taskResponse.get().isCompleted() || (created + updated + deleted != total);
+  public boolean needsToPollAgain(final Optional<TaskResponse> maybeTaskResponse) {
+    return maybeTaskResponse.filter(tr -> !tr.isCompleted()).isPresent();
   }
 
   private Map<String, Object> getTaskStatusMap(final GetTaskResponse taskResponse) {

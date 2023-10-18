@@ -12,17 +12,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
+import io.camunda.tasklist.store.elasticsearch.dao.response.TaskResponse;
 import io.camunda.tasklist.util.CollectionUtil;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -56,15 +51,7 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.core.CountRequest;
 import org.elasticsearch.client.indexlifecycle.PutLifecyclePolicyRequest;
-import org.elasticsearch.client.indices.ComposableIndexTemplateExistRequest;
-import org.elasticsearch.client.indices.CreateIndexRequest;
-import org.elasticsearch.client.indices.DeleteComposableIndexTemplateRequest;
-import org.elasticsearch.client.indices.GetIndexRequest;
-import org.elasticsearch.client.indices.GetIndexResponse;
-import org.elasticsearch.client.indices.PutComponentTemplateRequest;
-import org.elasticsearch.client.indices.PutComposableIndexTemplateRequest;
-import org.elasticsearch.client.tasks.GetTaskRequest;
-import org.elasticsearch.client.tasks.GetTaskResponse;
+import org.elasticsearch.client.indices.*;
 import org.elasticsearch.cluster.health.ClusterHealthStatus;
 import org.elasticsearch.common.bytes.BytesArray;
 import org.elasticsearch.common.bytes.BytesReference;
@@ -460,23 +447,50 @@ public class RetryElasticsearchClient {
   // - If the response has a status with uncompleted flag and a sum of changed documents
   // (created,updated and deleted documents) not equal to to total documents
   //   we need to wait and poll again the task status
-  private boolean waitUntilTaskIsCompleted(String taskId, Long srcCount) {
+  private boolean waitUntilTaskIsCompleted(final String taskId, Long srcCount) {
     final String[] taskIdParts = taskId.split(":");
     final String nodeId = taskIdParts[0];
     final Long smallTaskId = Long.parseLong(taskIdParts[1]);
-    final Optional<GetTaskResponse> taskResponse =
+
+    final Optional<TaskResponse> maybeTaskResponse =
         executeWithGivenRetries(
             Integer.MAX_VALUE,
             "GetTaskInfo{" + nodeId + "},{" + smallTaskId + "}",
             () -> {
-              elasticsearchTask.checkForErrorsOrFailures(taskId);
-              return esClient.tasks().get(new GetTaskRequest(nodeId, smallTaskId), requestOptions);
+              final var result = elasticsearchTask.getTaskResponse(taskId);
+
+              if (result.isLeft()) {
+                final var exception = result.getLeft();
+                final var message = exception.getMessage();
+                LOGGER.warn(
+                    String.format(
+                        "Failed to retrieve TaskInfo {%s},{%d}: %s", nodeId, smallTaskId, message),
+                    exception);
+                // return empty result so that the entire reindex task gets retried
+                return Optional.empty();
+              }
+
+              final var taskResponse = result.get();
+              elasticsearchTask.checkForErrorsOrFailures(taskResponse);
+
+              LOGGER.info(
+                  "TaskId: {}, Progress: {}%",
+                  taskId, String.format("%.2f", taskResponse.getProgress() * 100.0D));
+
+              return Optional.of(taskResponse);
             },
             elasticsearchTask::needsToPollAgain);
-    if (taskResponse.isPresent()) {
-      final long total = elasticsearchTask.getTotal(taskResponse.get());
-      LOGGER.info("Source docs: {}, Migrated docs: {}", srcCount, total);
-      return total == srcCount;
+
+    if (maybeTaskResponse.isPresent()) {
+      final long total = maybeTaskResponse.get().getTaskStatus().getTotal();
+
+      if (srcCount != null) {
+        LOGGER.info("Source docs: {}, Migrated docs: {}", srcCount, total);
+        return total == srcCount;
+      } else {
+        LOGGER.info("Migrated docs: {}", total);
+        return maybeTaskResponse.get().isCompleted();
+      }
     } else {
       // need to reindex again
       return false;
