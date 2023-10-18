@@ -14,14 +14,13 @@ import io.camunda.zeebe.transport.stream.impl.messages.AddStreamRequest;
 import io.camunda.zeebe.transport.stream.impl.messages.MessageUtil;
 import io.camunda.zeebe.transport.stream.impl.messages.RemoveStreamRequest;
 import io.camunda.zeebe.transport.stream.impl.messages.StreamTopics;
-import io.camunda.zeebe.util.buffer.BufferReader;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class RemoteStreamTransport<M extends BufferReader> extends Actor {
+public final class RemoteStreamTransport<M> extends Actor {
   private static final byte[] EMPTY_PAYLOAD = new byte[0];
   private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(5);
   private static final Logger LOG = LoggerFactory.getLogger(RemoteStreamTransport.class);
