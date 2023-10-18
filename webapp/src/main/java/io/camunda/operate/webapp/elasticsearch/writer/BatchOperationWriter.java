@@ -376,7 +376,8 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
     decisionReader.getDecision(decisionDefinitionKey);
 
     // Create batch operation
-    String batchOperationName = String.format("%s - Version %s", decisionDefinitionEntity.getName(), decisionDefinitionEntity.getVersion());
+    String displayName = (decisionDefinitionEntity.getName() == null) ? decisionDefinitionEntity.getDecisionId() : decisionDefinitionEntity.getName();
+    String batchOperationName = String.format("%s - Version %s", displayName, decisionDefinitionEntity.getVersion());
     final BatchOperationEntity batchOperation = createBatchOperationEntity(operationType, batchOperationName)
         .setOperationsTotalCount(1).setInstancesCount(0);
 
@@ -412,7 +413,8 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
     processReader.getProcess(processDefinitionKey);
 
     // Create batch operation
-    String batchOperationName = String.format("%s - Version %s", processEntity.getName(), processEntity.getVersion());
+    String displayName = (processEntity.getName() == null) ? processEntity.getBpmnProcessId() : processEntity.getName();
+    String batchOperationName = String.format("%s - Version %s", displayName, processEntity.getVersion());
     final BatchOperationEntity batchOperation = createBatchOperationEntity(operationType, batchOperationName)
         .setOperationsTotalCount(1).setInstancesCount(0);
 
