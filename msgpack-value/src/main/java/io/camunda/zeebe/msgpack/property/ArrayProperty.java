@@ -11,7 +11,6 @@ import io.camunda.zeebe.msgpack.MsgpackPropertyException;
 import io.camunda.zeebe.msgpack.value.ArrayValue;
 import io.camunda.zeebe.msgpack.value.BaseValue;
 import io.camunda.zeebe.msgpack.value.ValueArray;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -58,11 +57,6 @@ public final class ArrayProperty<T extends BaseValue> extends BaseProperty<Array
     // ArrayValue is not a thread-safe Iterable
     final var parallel = false;
     return StreamSupport.stream(spliterator(), parallel);
-  }
-
-  @Override
-  public Collection<T> asCollection() {
-    return value.asCollection();
   }
 
   public boolean isEmpty() {

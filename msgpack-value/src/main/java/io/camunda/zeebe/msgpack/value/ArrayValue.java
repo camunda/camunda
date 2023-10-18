@@ -10,8 +10,6 @@ package io.camunda.zeebe.msgpack.value;
 import io.camunda.zeebe.msgpack.spec.MsgPackReader;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
@@ -128,9 +126,5 @@ public final class ArrayValue<T extends BaseValue> extends BaseValue
 
   public int size() {
     return items.size();
-  }
-
-  public Collection<T> asCollection() {
-    return Collections.unmodifiableCollection(items);
   }
 }
