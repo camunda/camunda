@@ -99,8 +99,15 @@ final class TopologyManagementRequestsHandler implements TopologyManagementApi {
                     clusterTopology, reassignPartitionsRequest.members());
             if (generatedOperation.isLeft()) {
               responseFuture.completeExceptionally(generatedOperation.getLeft());
+            } else {
+              final var operations = generatedOperation.get();
+              if (!operations.isEmpty()) {
+                applyOperations(operations).onComplete(responseFuture);
+              } else {
+                responseFuture.complete(
+                    new TopologyChangeStatus(clusterTopology.version(), StatusCode.COMPLETED));
+              }
             }
-            applyOperations(generatedOperation.get()).onComplete(responseFuture);
           } else {
             responseFuture.completeExceptionally(error);
           }
