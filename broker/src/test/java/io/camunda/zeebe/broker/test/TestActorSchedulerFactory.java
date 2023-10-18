@@ -23,11 +23,14 @@ public final class TestActorSchedulerFactory {
     final var threads = config.getThreads();
     final var features = config.getExperimental().getFeatures();
 
-    return ActorScheduler.newActorScheduler()
-        .setCpuBoundActorThreadCount(threads.getCpuThreadCount())
-        .setIoBoundActorThreadCount(threads.getIoThreadCount())
-        .setMetricsEnabled(features.isEnableActorMetrics())
-        .setActorClock(clock)
-        .build();
+    final var scheduler =
+        ActorScheduler.newActorScheduler()
+            .setCpuBoundActorThreadCount(threads.getCpuThreadCount())
+            .setIoBoundActorThreadCount(threads.getIoThreadCount())
+            .setMetricsEnabled(features.isEnableActorMetrics())
+            .setActorClock(clock)
+            .build();
+    scheduler.start();
+    return scheduler;
   }
 }

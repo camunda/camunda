@@ -69,6 +69,7 @@ public final class Broker implements AutoCloseable {
             healthCheckService,
             buildExporterRepository(getConfig()),
             new ClusterServicesImpl(systemContext.getCluster()),
+            systemContext.getBrokerClient(),
             additionalPartitionListeners);
 
     brokerStartupActor = new BrokerStartupActor(startupContext);

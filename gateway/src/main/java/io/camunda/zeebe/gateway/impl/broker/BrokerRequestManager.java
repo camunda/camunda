@@ -16,7 +16,7 @@ import io.camunda.zeebe.gateway.cmd.NoTopologyAvailableException;
 import io.camunda.zeebe.gateway.cmd.PartitionNotFoundException;
 import io.camunda.zeebe.gateway.impl.ErrorResponseHandler;
 import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
-import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManagerImpl;
+import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerPublishMessageRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerRequest;
 import io.camunda.zeebe.gateway.impl.broker.response.BrokerResponse;
@@ -44,12 +44,12 @@ final class BrokerRequestManager extends Actor {
   private static final TransportRequestSender SENDER_WITHOUT_RETRY = ClientTransport::sendRequest;
   private final ClientTransport clientTransport;
   private final RequestDispatchStrategy dispatchStrategy;
-  private final BrokerTopologyManagerImpl topologyManager;
+  private final BrokerTopologyManager topologyManager;
   private final Duration requestTimeout;
 
   BrokerRequestManager(
       final ClientTransport clientTransport,
-      final BrokerTopologyManagerImpl topologyManager,
+      final BrokerTopologyManager topologyManager,
       final RequestDispatchStrategy dispatchStrategy,
       final Duration requestTimeout) {
     this.clientTransport = clientTransport;
@@ -216,7 +216,7 @@ final class BrokerRequestManager extends Actor {
       // already know partition id
       return new BrokerAddressProvider(request.getPartitionId());
     } else if (request.requiresPartitionId()) {
-      if (request instanceof BrokerPublishMessageRequest publishMessageRequest) {
+      if (request instanceof final BrokerPublishMessageRequest publishMessageRequest) {
         determinePartitionIdForPublishMessageRequest(publishMessageRequest);
       } else {
         // select next partition id for request
