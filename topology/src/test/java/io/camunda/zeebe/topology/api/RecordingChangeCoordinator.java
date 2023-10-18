@@ -8,33 +8,35 @@
 package io.camunda.zeebe.topology.api;
 
 import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import io.camunda.zeebe.topology.changes.TopologyChangeCoordinator;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation;
+import java.util.ArrayList;
 import java.util.List;
 
 final class RecordingChangeCoordinator implements TopologyChangeCoordinator {
 
   private ClusterTopology currentTopology = ClusterTopology.init();
-  private List<TopologyChangeOperation> lastAppliedOperation = List.of();
+  private final List<TopologyChangeOperation> lastAppliedOperation = new ArrayList<>();
 
   @Override
   public ActorFuture<ClusterTopology> applyOperations(
       final List<TopologyChangeOperation> operations) {
-    lastAppliedOperation = List.copyOf(operations);
+    lastAppliedOperation.clear();
+    lastAppliedOperation.addAll(operations);
 
-    return CompletableActorFuture.completed(currentTopology.startTopologyChange(operations));
+    return TestActorFuture.completedFuture(currentTopology.startTopologyChange(operations));
   }
 
   @Override
   public ActorFuture<Boolean> hasCompletedChanges(final long version) {
-    return CompletableActorFuture.completed(true);
+    return TestActorFuture.completedFuture(true);
   }
 
   @Override
   public ActorFuture<ClusterTopology> getCurrentTopology() {
-    return CompletableActorFuture.completed(currentTopology);
+    return TestActorFuture.completedFuture(currentTopology);
   }
 
   public void setCurrentTopology(final ClusterTopology topology) {
