@@ -135,7 +135,7 @@ final class FixedPartitionDistributorTest {
         Set.of(
             // expect a partition without assigned primary
             new PartitionMetadata(
-                partition(1), Set.of(node(0), node(1)), Map.of(node(0), 2), 2, null));
+                partition(1), Set.of(node(0), node(1)), Map.of(node(0), 2, node(1), 2), 2, null));
     final var distributor =
         new FixedPartitionDistributorBuilder(PARTITION_GROUP_NAME)
             // two members with the same priority
