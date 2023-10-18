@@ -15,6 +15,7 @@ import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.test.TestActorSchedulerFactory;
+import io.camunda.zeebe.broker.test.TestBrokerClientFactory;
 import io.camunda.zeebe.broker.test.TestClusterFactory;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -94,12 +95,12 @@ final class PartitionJoinTest {
     assignSocketAddresses(brokerCfg);
     brokerCfg.init(tmp.toAbsolutePath().toString());
     configure.accept(brokerCfg);
+    final var atomixCluster = TestClusterFactory.createAtomixCluster(brokerCfg);
+    final var actorScheduler = TestActorSchedulerFactory.ofBrokerConfig(brokerCfg);
+    final var brokerClient =
+        TestBrokerClientFactory.createBrokerClient(atomixCluster, actorScheduler);
     final var systemContext =
-        new SystemContext(
-            brokerCfg,
-            TestActorSchedulerFactory.ofBrokerConfig(brokerCfg),
-            TestClusterFactory.createAtomixCluster(brokerCfg));
-    systemContext.getScheduler().start();
+        new SystemContext(brokerCfg, actorScheduler, atomixCluster, brokerClient);
 
     return new Broker(systemContext, new SpringBrokerBridge(), List.of());
   }

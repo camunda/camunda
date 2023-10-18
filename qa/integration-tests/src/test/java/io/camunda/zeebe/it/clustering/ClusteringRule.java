@@ -41,11 +41,12 @@ import io.camunda.zeebe.client.api.response.PartitionInfo;
 import io.camunda.zeebe.client.api.response.Topology;
 import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.gateway.ActorSchedulerConfiguration;
-import io.camunda.zeebe.gateway.BrokerClientComponent;
 import io.camunda.zeebe.gateway.Gateway;
 import io.camunda.zeebe.gateway.GatewayClusterConfiguration;
 import io.camunda.zeebe.gateway.JobStreamComponent;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
+import io.camunda.zeebe.gateway.impl.broker.BrokerClientImpl;
+import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManagerImpl;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
@@ -336,10 +337,23 @@ public class ClusteringRule extends ExternalResource {
     final var scheduler =
         new io.camunda.zeebe.broker.ActorSchedulerConfiguration(brokerCfg, actorClockConfiguration)
             .scheduler(IdleStrategySupplier.ofDefault());
-    final var systemContext = new SystemContext(brokerCfg, scheduler, atomixCluster);
+    final var topologyManager =
+        new BrokerTopologyManagerImpl(() -> atomixCluster.getMembershipService().getMembers());
+    final var brokerClient =
+        new BrokerClientImpl(
+            brokerCfg.getGateway().getCluster().getRequestTimeout(),
+            atomixCluster.getMessagingService(),
+            atomixCluster.getEventService(),
+            scheduler,
+            topologyManager);
+
+    final var systemContext = new SystemContext(brokerCfg, scheduler, atomixCluster, brokerClient);
     systemContexts.put(nodeId, systemContext);
 
-    systemContext.getScheduler().start();
+    scheduler.start();
+    scheduler.submitActor(topologyManager).join();
+
+    atomixCluster.getMembershipService().addListener(topologyManager);
 
     final Broker broker =
         new Broker(
@@ -444,8 +458,18 @@ public class ClusteringRule extends ExternalResource {
             .actorScheduler(IdleStrategySupplier.ofDefault());
     actorScheduler.start();
 
+    final var topologyManager =
+        new BrokerTopologyManagerImpl(() -> atomixCluster.getMembershipService().getMembers());
+    actorScheduler.submitActor(topologyManager).join();
+    atomixCluster.getMembershipService().addListener(topologyManager);
+
     final var brokerClient =
-        new BrokerClientComponent(gatewayCfg, atomixCluster, actorScheduler).brokerClient();
+        new BrokerClientImpl(
+            gatewayCfg.getCluster().getRequestTimeout(),
+            atomixCluster.getMessagingService(),
+            atomixCluster.getEventService(),
+            actorScheduler,
+            topologyManager);
     final var jobStreamClient =
         new JobStreamComponent().jobStreamClient(actorScheduler, atomixCluster);
     jobStreamClient.start().join();
@@ -453,7 +477,7 @@ public class ClusteringRule extends ExternalResource {
     // before we can add the job stream client as a topology listener, we need to wait for the
     // topology to be set up, otherwise the callback may be lost
     brokerClient.start().forEach(ActorFuture::join);
-    brokerClient.getTopologyManager().addTopologyListener(jobStreamClient);
+    topologyManager.addTopologyListener(jobStreamClient);
 
     final var gateway =
         new Gateway(gatewayCfg, brokerClient, actorScheduler, jobStreamClient.streamer());

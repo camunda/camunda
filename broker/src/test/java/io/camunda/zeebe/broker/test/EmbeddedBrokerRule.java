@@ -232,8 +232,12 @@ public final class EmbeddedBrokerRule extends ExternalResource {
 
     final var scheduler = TestActorSchedulerFactory.ofBrokerConfig(brokerCfg, controlledActorClock);
     atomixCluster = TestClusterFactory.createAtomixCluster(brokerCfg);
-    systemContext = new SystemContext(brokerCfg, scheduler, atomixCluster);
-    scheduler.start();
+    systemContext =
+        new SystemContext(
+            brokerCfg,
+            scheduler,
+            atomixCluster,
+            TestBrokerClientFactory.createBrokerClient(atomixCluster, scheduler));
 
     final var additionalListeners = new ArrayList<>(Arrays.asList(listeners));
     final CountDownLatch latch = new CountDownLatch(brokerCfg.getCluster().getPartitionsCount());
