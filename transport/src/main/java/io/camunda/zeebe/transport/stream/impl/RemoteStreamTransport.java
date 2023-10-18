@@ -85,10 +85,18 @@ public final class RemoteStreamTransport<M extends BufferReader> extends Actor {
 
   public void recreateStreams(final MemberId receiver) {
     try {
-      sendRestartStreamsCommand(receiver);
-      LOG.debug("Tried to restart streams with member: {}", receiver);
+      LOG.debug("Restarting streams with for newly added member '{}'", receiver);
+      sendRestartStreamsCommand(receiver)
+          .whenComplete(
+              (ok, error) -> {
+                if (error != null) {
+                  LOG.warn("Failed to restart streams for member '{}'", receiver, error);
+                } else {
+                  LOG.debug("Restarted streams for member '{}'", receiver);
+                }
+              });
     } catch (final Exception e) {
-      LOG.warn("Failed to restart streams with member: {}", receiver, e);
+      LOG.warn("Failed to restart streams for member '{}'", receiver, e);
     }
   }
 
