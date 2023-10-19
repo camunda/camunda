@@ -10,6 +10,11 @@ package io.camunda.zeebe.snapshots.impl;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.snapshots.ImmutableChecksumsSFV;
+import io.camunda.zeebe.test.util.STracer;
+import io.camunda.zeebe.test.util.STracer.Syscall;
+import io.camunda.zeebe.test.util.asserts.strace.FSyncTraceAssert;
+import io.camunda.zeebe.test.util.asserts.strace.STracerAssert;
+import io.camunda.zeebe.util.FileUtil;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -21,24 +26,26 @@ import java.nio.file.StandardOpenOption;
 import java.util.zip.CRC32C;
 import java.util.zip.Checksum;
 import org.agrona.IoUtil;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable;
+import org.junit.jupiter.api.condition.EnabledOnOs;
+import org.junit.jupiter.api.condition.OS;
+import org.junit.jupiter.api.io.TempDir;
 
-public class SnapshotChecksumTest {
+public final class SnapshotChecksumTest {
 
-  @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
+  private @TempDir Path temporaryFolder;
 
   private Path singleFileSnapshot;
   private Path multipleFileSnapshot;
   private Path corruptedSnapshot;
 
-  @Before
-  public void setup() throws Exception {
-    singleFileSnapshot = temporaryFolder.newFolder().toPath();
-    multipleFileSnapshot = temporaryFolder.newFolder().toPath();
-    corruptedSnapshot = temporaryFolder.newFolder().toPath();
+  @BeforeEach
+  void setup() throws Exception {
+    singleFileSnapshot = createTempDir("single");
+    multipleFileSnapshot = createTempDir("multi");
+    corruptedSnapshot = createTempDir("corrupted");
 
     createChunk(singleFileSnapshot, "file1.txt");
 
@@ -60,7 +67,7 @@ public class SnapshotChecksumTest {
   }
 
   @Test
-  public void shouldGenerateTheSameChecksumForOneFile() throws Exception {
+  void shouldGenerateTheSameChecksumForOneFile() throws Exception {
     // given
     final var expectedChecksum = SnapshotChecksum.calculate(singleFileSnapshot).getCombinedValue();
 
@@ -72,7 +79,7 @@ public class SnapshotChecksumTest {
   }
 
   @Test
-  public void shouldGenerateDifferentChecksumWhenFileNameIsDifferent() throws Exception {
+  void shouldGenerateDifferentChecksumWhenFileNameIsDifferent() throws Exception {
     // given
     final var expectedChecksum = SnapshotChecksum.calculate(singleFileSnapshot).getCombinedValue();
 
@@ -85,7 +92,7 @@ public class SnapshotChecksumTest {
   }
 
   @Test
-  public void shouldGenerateTheSameChecksumForMultipleFiles() throws Exception {
+  void shouldGenerateTheSameChecksumForMultipleFiles() throws Exception {
     // given
     final var expectedChecksum =
         SnapshotChecksum.calculate(multipleFileSnapshot).getCombinedValue();
@@ -98,7 +105,7 @@ public class SnapshotChecksumTest {
   }
 
   @Test
-  public void shouldGenerateDifferentChecksumForDifferentFiles() throws Exception {
+  void shouldGenerateDifferentChecksumForDifferentFiles() throws Exception {
     // given
     final var expectedChecksum = SnapshotChecksum.calculate(singleFileSnapshot).getCombinedValue();
 
@@ -110,7 +117,7 @@ public class SnapshotChecksumTest {
   }
 
   @Test
-  public void shouldPersistChecksum() throws Exception {
+  void shouldPersistChecksum() throws Exception {
     // given
     final var expectedChecksum = SnapshotChecksum.calculate(multipleFileSnapshot);
     final var checksumPath = multipleFileSnapshot.resolveSibling("checksum");
@@ -123,8 +130,32 @@ public class SnapshotChecksumTest {
     assertThat(actual.getCombinedValue()).isEqualTo(expectedChecksum.getCombinedValue());
   }
 
+  @DisabledIfEnvironmentVariable(named = "GITHUB_ACTIONS", matches = "true")
+  @EnabledOnOs(OS.LINUX)
   @Test
-  public void shouldDetectCorruptedSnapshot() throws IOException {
+  void shouldFlushOnPersist() throws Exception {
+    // given
+    final var traceFile = temporaryFolder.resolve("traceFile");
+    final var expectedChecksum = SnapshotChecksum.calculate(multipleFileSnapshot);
+    final var checksumPath = multipleFileSnapshot.resolveSibling("checksum");
+    final var tracer = STracer.traceFor(Syscall.FSYNC, traceFile);
+
+    // when
+    try (tracer) {
+      SnapshotChecksum.persist(checksumPath, expectedChecksum);
+    }
+
+    // then
+    STracerAssert.assertThat(tracer)
+        .fsyncTraces()
+        .hasSize(1)
+        .first(FSyncTraceAssert.factory())
+        .hasPath(checksumPath)
+        .isSuccessful();
+  }
+
+  @Test
+  void shouldDetectCorruptedSnapshot() throws IOException {
     // given
     final var expectedChecksum = SnapshotChecksum.calculate(corruptedSnapshot);
     final var checksumPath = corruptedSnapshot.resolveSibling("checksum");
@@ -139,9 +170,9 @@ public class SnapshotChecksumTest {
   }
 
   @Test
-  public void shouldCalculateSameChecksumOfLargeFile() throws IOException {
+  void shouldCalculateSameChecksumOfLargeFile() throws IOException {
     // given
-    final var largeSnapshot = temporaryFolder.newFolder().toPath();
+    final var largeSnapshot = createTempDir("large");
     final Path file = largeSnapshot.resolve("file");
     final String largeData = "a".repeat(4 * IoUtil.BLOCK_SIZE + 100);
     Files.writeString(file, largeData, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
@@ -159,12 +190,12 @@ public class SnapshotChecksumTest {
   }
 
   @Test
-  public void shouldReadFormerSimpleChecksumFile() throws IOException {
+  void shouldReadFormerSimpleChecksumFile() throws IOException {
     // given
-    final Path temp = temporaryFolder.newFolder().toPath();
+    final Path temp = createTempDir("temp");
     final File tempFile = new File(temp.toFile(), "checksum");
     final long expectedChecksum = 0xccaaffeeL;
-    try (final RandomAccessFile file = new RandomAccessFile(tempFile, "rw"); ) {
+    try (final RandomAccessFile file = new RandomAccessFile(tempFile, "rw")) {
       file.writeLong(expectedChecksum);
     }
 
@@ -177,9 +208,9 @@ public class SnapshotChecksumTest {
   }
 
   @Test
-  public void shouldWriteTheNumberOfFiles() throws IOException {
+  void shouldWriteTheNumberOfFiles() throws IOException {
     // given
-    final var folder = temporaryFolder.newFolder().toPath();
+    final var folder = createTempDir("folder");
     createChunk(folder, "file1.txt");
     createChunk(folder, "file2.txt");
     createChunk(folder, "file3.txt");
@@ -195,9 +226,9 @@ public class SnapshotChecksumTest {
   }
 
   @Test
-  public void shouldAddChecksumOfMetadataAtTheEnd() throws IOException {
+  void shouldAddChecksumOfMetadataAtTheEnd() throws IOException {
     // given
-    final var folder = temporaryFolder.newFolder().toPath();
+    final var folder = createTempDir("folder");
     createChunk(folder, "file1.txt");
     createChunk(folder, "file2.txt");
     createChunk(folder, "file3.txt");
@@ -215,5 +246,11 @@ public class SnapshotChecksumTest {
     // then
     assertThat(checksumCalculatedInSteps.getCombinedValue())
         .isEqualTo(checksumCalculatedAtOnce.getCombinedValue());
+  }
+
+  private Path createTempDir(final String name) throws IOException {
+    final var path = temporaryFolder.resolve(name);
+    FileUtil.ensureDirectoryExists(path);
+    return path;
   }
 }

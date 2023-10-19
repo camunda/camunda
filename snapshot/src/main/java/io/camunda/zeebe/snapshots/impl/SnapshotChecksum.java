@@ -9,12 +9,14 @@ package io.camunda.zeebe.snapshots.impl;
 
 import io.camunda.zeebe.snapshots.ImmutableChecksumsSFV;
 import io.camunda.zeebe.snapshots.MutableChecksumsSFV;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.io.UncheckedIOException;
+import java.nio.channels.Channels;
+import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.stream.Stream;
 
 final class SnapshotChecksum {
@@ -62,8 +64,16 @@ final class SnapshotChecksum {
 
   public static void persist(final Path checksumPath, final ImmutableChecksumsSFV checksum)
       throws IOException {
-    try (final var stream = new FileOutputStream(checksumPath.toFile())) {
-      checksum.write(stream);
+    // FileOutputStream#flush does nothing, so use a file channel to enforce it
+    try (final var channel =
+            FileChannel.open(
+                checksumPath,
+                StandardOpenOption.CREATE,
+                StandardOpenOption.WRITE,
+                StandardOpenOption.TRUNCATE_EXISTING);
+        final var output = Channels.newOutputStream(channel)) {
+      checksum.write(output);
+      channel.force(true);
     }
   }
 
