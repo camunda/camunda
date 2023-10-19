@@ -3,7 +3,7 @@ ARG BASE_DIGEST_AMD64="sha256:47bb851c475780124df3e6baa9fb39a6029098113114c66957
 ARG BASE_DIGEST_ARM64="sha256:3b8ea833ccf9aada6328babf593c3d8bd19d784cc9c8e8a840f6827bf9b9c882"
 
 # Prepare Operate Distribution
-FROM alpine:3.18.3 as prepare
+FROM alpine:3.18.4 as prepare
 
 WORKDIR /tmp/operate
 
