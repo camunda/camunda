@@ -9,13 +9,6 @@ package io.camunda.zeebe.shared.management;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
-import io.camunda.zeebe.shared.management.JobStreamEndpoint.ClientJobStream;
-import io.camunda.zeebe.shared.management.JobStreamEndpoint.JobStream;
-import io.camunda.zeebe.shared.management.JobStreamEndpoint.JobStreams;
-import io.camunda.zeebe.shared.management.JobStreamEndpoint.Metadata;
-import io.camunda.zeebe.shared.management.JobStreamEndpoint.RemoteJobStream;
-import io.camunda.zeebe.shared.management.JobStreamEndpoint.RemoteStreamId;
-import io.camunda.zeebe.shared.management.JobStreamEndpoint.Service;
 import io.camunda.zeebe.transport.stream.api.ClientStream;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamInfo;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -47,10 +40,10 @@ import org.springframework.util.MimeTypeUtils;
 public final class JobStreamEndpoint {
   private static final Set<String> TYPES = Set.of("remote", "client");
 
-  private final io.camunda.zeebe.shared.management.JobStreamEndpoint.Service service;
+  private final Service service;
 
   @Autowired
-  public JobStreamEndpoint(final io.camunda.zeebe.shared.management.JobStreamEndpoint.Service service) {
+  public JobStreamEndpoint(final Service service) {
     this.service = Objects.requireNonNull(service, "must specify a job stream service");
   }
 
@@ -62,9 +55,9 @@ public final class JobStreamEndpoint {
    * the gateway and brokers.
    */
   @ReadOperation
-  public WebEndpointResponse<io.camunda.zeebe.shared.management.JobStreamEndpoint.JobStreams> list() {
+  public WebEndpointResponse<JobStreams> list() {
     return new WebEndpointResponse<>(
-        new io.camunda.zeebe.shared.management.JobStreamEndpoint.JobStreams(getRemoteStreams(), getClientStreams()),
+        new JobStreams(getRemoteStreams(), getClientStreams()),
         200,
         MimeTypeUtils.APPLICATION_JSON);
   }
@@ -89,48 +82,48 @@ public final class JobStreamEndpoint {
     return new WebEndpointResponse<>(streams, 200, MimeTypeUtils.APPLICATION_JSON);
   }
 
-  private Collection<io.camunda.zeebe.shared.management.JobStreamEndpoint.RemoteJobStream> getRemoteStreams() {
+  private Collection<RemoteJobStream> getRemoteStreams() {
     return transformRemote(service.remoteJobStreams());
   }
 
-  private Collection<io.camunda.zeebe.shared.management.JobStreamEndpoint.ClientJobStream> getClientStreams() {
+  private Collection<ClientJobStream> getClientStreams() {
     return transformClient(service.clientJobStreams());
   }
 
-  private Collection<io.camunda.zeebe.shared.management.JobStreamEndpoint.RemoteJobStream> transformRemote(
+  private Collection<RemoteJobStream> transformRemote(
       final Collection<RemoteStreamInfo<JobActivationProperties>> streams) {
     return streams.stream().map(this::transformRemote).toList();
   }
 
-  private Collection<io.camunda.zeebe.shared.management.JobStreamEndpoint.ClientJobStream> transformClient(
+  private Collection<ClientJobStream> transformClient(
       final Collection<ClientStream<JobActivationProperties>> streams) {
     return streams.stream().map(this::transformClient).toList();
   }
 
-  private io.camunda.zeebe.shared.management.JobStreamEndpoint.RemoteJobStream transformRemote(final RemoteStreamInfo<JobActivationProperties> stream) {
+  private RemoteJobStream transformRemote(final RemoteStreamInfo<JobActivationProperties> stream) {
     final var consumers =
         stream.consumers().stream()
-            .map(id -> new io.camunda.zeebe.shared.management.JobStreamEndpoint.RemoteStreamId(id.streamId(), id.receiver().id()))
+            .map(id -> new RemoteStreamId(id.streamId(), id.receiver().id()))
             .toList();
-    return new io.camunda.zeebe.shared.management.JobStreamEndpoint.RemoteJobStream(
+    return new RemoteJobStream(
         BufferUtil.bufferAsString(stream.streamType()), transform(stream.metadata()), consumers);
   }
 
-  private io.camunda.zeebe.shared.management.JobStreamEndpoint.ClientJobStream transformClient(final ClientStream<JobActivationProperties> stream) {
+  private ClientJobStream transformClient(final ClientStream<JobActivationProperties> stream) {
     // it's safe to cast any filtered member ID to an integer, since a client stream can only be
     // connected to a broker, and brokers always have integer node IDs
     final var brokers =
         stream.liveConnections().stream().map(MemberId::id).map(Integer::valueOf).toList();
 
-    return new io.camunda.zeebe.shared.management.JobStreamEndpoint.ClientJobStream(
+    return new ClientJobStream(
         BufferUtil.bufferAsString(stream.streamType()),
         stream.streamId(),
         transform(stream.metadata()),
         brokers);
   }
 
-  private io.camunda.zeebe.shared.management.JobStreamEndpoint.Metadata transform(final JobActivationProperties properties) {
-    return new io.camunda.zeebe.shared.management.JobStreamEndpoint.Metadata(
+  private Metadata transform(final JobActivationProperties properties) {
+    return new Metadata(
         BufferUtil.bufferAsString(properties.worker()),
         Duration.ofMillis(properties.timeout()),
         properties.fetchVariables().stream().map(BufferUtil::bufferAsString).toList());
@@ -138,20 +131,20 @@ public final class JobStreamEndpoint {
 
   /** View model for the combined list of all remote and client job streams. */
   public record JobStreams(
-      Collection<io.camunda.zeebe.shared.management.JobStreamEndpoint.RemoteJobStream> remote, Collection<io.camunda.zeebe.shared.management.JobStreamEndpoint.ClientJobStream> client) {}
+      Collection<RemoteJobStream> remote, Collection<ClientJobStream> client) {}
 
   /** View model of a single remote job stream for JSON serialization */
   public record RemoteJobStream(
-      String jobType, io.camunda.zeebe.shared.management.JobStreamEndpoint.Metadata metadata, Collection<io.camunda.zeebe.shared.management.JobStreamEndpoint.RemoteStreamId> consumers)
-      implements io.camunda.zeebe.shared.management.JobStreamEndpoint.JobStream {}
+      String jobType, Metadata metadata, Collection<RemoteStreamId> consumers)
+      implements JobStream {}
 
   /**
    * View model of a client job stream for JSON serialization. The {@link #connectedTo()} collection
    * is the set of broker IDs this stream is registered on, from the gateway's point of view.
    */
   public record ClientJobStream(
-      String jobType, Object id, io.camunda.zeebe.shared.management.JobStreamEndpoint.Metadata metadata, Collection<Integer> connectedTo)
-      implements io.camunda.zeebe.shared.management.JobStreamEndpoint.JobStream {}
+      String jobType, Object id, Metadata metadata, Collection<Integer> connectedTo)
+      implements JobStream {}
 
   /** View model for the {@link JobActivationProperties} of a job stream. */
   public record Metadata(String worker, Duration timeout, Collection<String> fetchVariables) {}
@@ -169,7 +162,7 @@ public final class JobStreamEndpoint {
   }
 
   public interface JobStream {
-    io.camunda.zeebe.shared.management.JobStreamEndpoint.Metadata metadata();
+    Metadata metadata();
 
     String jobType();
   }
