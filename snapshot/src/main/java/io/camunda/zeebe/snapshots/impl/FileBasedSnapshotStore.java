@@ -531,8 +531,7 @@ public final class FileBasedSnapshotStore extends Actor
           checksumPath.resolveSibling(checksumPath.getFileName().toString() + TMP_CHECKSUM_SUFFIX);
       try {
         SnapshotChecksum.persist(tmpChecksumPath, immutableChecksumsSFV);
-        Files.move(tmpChecksumPath, checksumPath, StandardCopyOption.ATOMIC_MOVE);
-        FileUtil.flushDirectory(snapshotsDirectory);
+        FileUtil.moveDurably(tmpChecksumPath, checksumPath);
       } catch (final IOException e) {
         rollbackPartialSnapshot(destination);
         throw new UncheckedIOException(e);
