@@ -12,11 +12,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.api.worker.JobWorker;
 import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep3;
-import io.camunda.zeebe.it.clustering.ClusteringRuleExtension;
 import io.camunda.zeebe.it.util.GrpcClientRule;
 import io.camunda.zeebe.it.util.RecordingJobHandler;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.qa.util.jobstream.JobStreamServiceAssert;
+import io.camunda.zeebe.qa.util.actuator.JobStreamActuator;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.qa.util.jobstream.JobStreamActuatorAssert;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.Strings;
 import java.util.List;
 import java.util.Map;
@@ -24,18 +27,19 @@ import java.util.function.BiFunction;
 import java.util.stream.Stream;
 import org.assertj.core.data.Offset;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+@ZeebeIntegration
 final class JobWorkerTest {
 
-  @SuppressWarnings("JUnitMalformedDeclaration")
-  @RegisterExtension
-  private static final ClusteringRuleExtension CLUSTER = new ClusteringRuleExtension(1, 1, 1);
+  @TestZeebe
+  private static final TestStandaloneBroker ZEEBE =
+      new TestStandaloneBroker().withRecordingExporter(true);
 
   private static GrpcClientRule client;
 
@@ -43,7 +47,12 @@ final class JobWorkerTest {
 
   @BeforeAll
   static void beforeAll() {
-    client = new GrpcClientRule(CLUSTER.getClient());
+    client = new GrpcClientRule(ZEEBE.newClientBuilder().build());
+  }
+
+  @AfterAll
+  static void afterAll() {
+    client.after();
   }
 
   @ParameterizedTest
@@ -183,13 +192,7 @@ final class JobWorkerTest {
     // when
     try (final var ignored = builder.open()) {
       awaitStreamRegistered(jobType);
-      // have to reuse the same gateway config, otherwise we need to recreate the client to point to
-      // the new gateway, which sort of negates the point of this test
-      final var gatewayConfig = CLUSTER.stopGateway();
-      // avoid flakiness by awaiting it gets removed properly; this may be removed once the
-      // following issue is finished: https://github.com/camunda/zeebe/issues/13389
-      awaitStreamRemoved(jobType);
-      CLUSTER.startGateway(gatewayConfig);
+      ZEEBE.stop().start().awaitCompleteTopology();
       // need to stream being registered, as otherwise the job will be polled, not streamed
       awaitStreamRegistered(jobType);
       client.createSingleJob(jobType, b -> {});
@@ -215,19 +218,22 @@ final class JobWorkerTest {
   }
 
   private static void awaitStreamRegistered(final String jobType) {
-    final var jobStreamService = CLUSTER.getBrokerBridge(0).getJobStreamService().orElseThrow();
+    final var actuator = JobStreamActuator.of(ZEEBE);
     Awaitility.await("until stream is registered")
         .untilAsserted(
             () ->
-                JobStreamServiceAssert.assertThat(jobStreamService).hasStreamWithType(1, jobType));
+                JobStreamActuatorAssert.assertThat(actuator)
+                    .remoteStreams()
+                    .haveJobType(1, jobType));
   }
 
   private void awaitStreamRemoved(final String jobType) {
-    final var jobStreamService = CLUSTER.getBrokerBridge(0).getJobStreamService().orElseThrow();
+    final var actuator = JobStreamActuator.of(ZEEBE);
     Awaitility.await("until no streams are registered")
         .untilAsserted(
             () ->
-                JobStreamServiceAssert.assertThat(jobStreamService)
-                    .doesNotHaveStreamWithType(jobType));
+                JobStreamActuatorAssert.assertThat(actuator)
+                    .remoteStreams()
+                    .doNotHaveJobType(jobType));
   }
 }
