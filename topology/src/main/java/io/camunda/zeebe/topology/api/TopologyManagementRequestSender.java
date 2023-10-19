@@ -19,6 +19,7 @@ import io.camunda.zeebe.topology.api.TopologyManagementRequest.RemoveMembersRequ
 import io.camunda.zeebe.topology.api.TopologyManagementResponse.TopologyChangeStatus;
 import io.camunda.zeebe.topology.serializer.TopologyRequestsSerializer;
 import java.time.Duration;
+import java.util.concurrent.CompletableFuture;
 
 /** Forwards all requests to the coordinator. */
 final class TopologyManagementRequestSender implements TopologyManagementApi {
@@ -41,7 +42,6 @@ final class TopologyManagementRequestSender implements TopologyManagementApi {
 
   @Override
   public ActorFuture<TopologyChangeStatus> addMembers(final AddMembersRequest addMembersRequest) {
-    final ActorFuture<TopologyChangeStatus> resultFuture = executor.createFuture();
     final var responseFuture =
         communicationService.send(
             TopologyRequestTopics.ADD_MEMBER.topic(),
@@ -50,20 +50,12 @@ final class TopologyManagementRequestSender implements TopologyManagementApi {
             serializer::decodeTopologyChangeStatus,
             coordinator,
             TIMEOUT);
-    responseFuture
-        .thenAccept(resultFuture::complete)
-        .exceptionally(
-            error -> {
-              resultFuture.completeExceptionally(error);
-              return null;
-            });
-    return resultFuture;
+    return toActorFuture(responseFuture);
   }
 
   @Override
   public ActorFuture<TopologyChangeStatus> removeMembers(
       final RemoveMembersRequest removeMembersRequest) {
-    final ActorFuture<TopologyChangeStatus> resultFuture = executor.createFuture();
     final var responseFuture =
         communicationService.send(
             TopologyRequestTopics.REMOVE_MEMBER.topic(),
@@ -72,20 +64,12 @@ final class TopologyManagementRequestSender implements TopologyManagementApi {
             serializer::decodeTopologyChangeStatus,
             coordinator,
             TIMEOUT);
-    responseFuture
-        .thenAccept(resultFuture::complete)
-        .exceptionally(
-            error -> {
-              resultFuture.completeExceptionally(error);
-              return null;
-            });
-    return resultFuture;
+    return toActorFuture(responseFuture);
   }
 
   @Override
   public ActorFuture<TopologyChangeStatus> joinPartition(
       final JoinPartitionRequest joinPartitionRequest) {
-    final ActorFuture<TopologyChangeStatus> resultFuture = executor.createFuture();
     final var responseFuture =
         communicationService.send(
             TopologyRequestTopics.JOIN_PARTITION.topic(),
@@ -94,20 +78,12 @@ final class TopologyManagementRequestSender implements TopologyManagementApi {
             serializer::decodeTopologyChangeStatus,
             coordinator,
             TIMEOUT);
-    responseFuture
-        .thenAccept(resultFuture::complete)
-        .exceptionally(
-            error -> {
-              resultFuture.completeExceptionally(error);
-              return null;
-            });
-    return resultFuture;
+    return toActorFuture(responseFuture);
   }
 
   @Override
   public ActorFuture<TopologyChangeStatus> leavePartition(
       final LeavePartitionRequest leavePartitionRequest) {
-    final ActorFuture<TopologyChangeStatus> resultFuture = executor.createFuture();
     final var responseFuture =
         communicationService.send(
             TopologyRequestTopics.LEAVE_PARTITION.topic(),
@@ -116,20 +92,12 @@ final class TopologyManagementRequestSender implements TopologyManagementApi {
             serializer::decodeTopologyChangeStatus,
             coordinator,
             TIMEOUT);
-    responseFuture
-        .thenAccept(resultFuture::complete)
-        .exceptionally(
-            error -> {
-              resultFuture.completeExceptionally(error);
-              return null;
-            });
-    return resultFuture;
+    return toActorFuture(responseFuture);
   }
 
   @Override
   public ActorFuture<TopologyChangeStatus> reassignPartitions(
       final ReassignPartitionsRequest reassignPartitionsRequest) {
-    final ActorFuture<TopologyChangeStatus> resultFuture = executor.createFuture();
     final var responseFuture =
         communicationService.send(
             TopologyRequestTopics.REASSIGN_PARTITIONS.topic(),
@@ -138,6 +106,12 @@ final class TopologyManagementRequestSender implements TopologyManagementApi {
             serializer::decodeTopologyChangeStatus,
             coordinator,
             TIMEOUT);
+    return toActorFuture(responseFuture);
+  }
+
+  private ActorFuture<TopologyChangeStatus> toActorFuture(
+      final CompletableFuture<TopologyChangeStatus> responseFuture) {
+    final ActorFuture<TopologyChangeStatus> resultFuture = executor.createFuture();
     responseFuture
         .thenAccept(resultFuture::complete)
         .exceptionally(
