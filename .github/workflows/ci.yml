@@ -118,6 +118,8 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+      - name: Install strace tests
+        run: sudo apt-get -qq update && sudo apt-get install -y strace
       - uses: ./.github/actions/setup-zeebe
         with:
           go: false

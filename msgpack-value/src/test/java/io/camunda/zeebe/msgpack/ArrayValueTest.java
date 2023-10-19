@@ -8,6 +8,7 @@
 package io.camunda.zeebe.msgpack;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.spec.MsgPackReader;
@@ -28,19 +29,16 @@ import java.util.stream.StreamSupport;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 public final class ArrayValueTest {
 
-  @Rule public final ExpectedException exception = ExpectedException.none();
   private final MsgPackWriter writer = new MsgPackWriter();
   private final MsgPackReader reader = new MsgPackReader();
-  private final ArrayValue<IntegerValue> array = new ArrayValue<>(new IntegerValue());
+  private final ArrayValue<IntegerValue> array = new ArrayValue<>(IntegerValue::new);
 
   @Test
-  public void shouldAppendValues() {
+  void shouldAppendValues() {
     // when
     addIntValues(array, 1, 2, 3);
 
@@ -50,14 +48,14 @@ public final class ArrayValueTest {
   }
 
   @Test
-  public void shouldAddValueAtBeginning() {
+  void shouldAddValueAtBeginning() {
     // given
     addIntValues(array, 1, 2, 3);
 
     // when
-    // reset iterator to append at beginning
-    array.iterator();
-    addIntValues(array, 4, 5, 6);
+    array.add(0).setValue(4);
+    array.add(1).setValue(5);
+    array.add(2).setValue(6);
 
     // then
     encodeAndDecode(array);
@@ -65,14 +63,14 @@ public final class ArrayValueTest {
   }
 
   @Test
-  public void shouldAddValueInBetween() {
+  void shouldAddValueInBetween() {
     // given
     addIntValues(array, 1, 2, 3);
 
     // when
-    final Iterator<IntegerValue> iterator = array.iterator();
-    iterator.next();
-    addIntValues(array, 4, 5, 6);
+    array.add(1).setValue(4);
+    array.add(2).setValue(5);
+    array.add(3).setValue(6);
 
     // then
     encodeAndDecode(array);
@@ -80,15 +78,11 @@ public final class ArrayValueTest {
   }
 
   @Test
-  public void shouldAddValuesAtEndAfterRead() {
+  void shouldAddValuesAtEnd() {
     // given
     addIntValues(array, 1, 2, 3);
 
     // when
-    final Iterator<IntegerValue> iterator = array.iterator();
-    iterator.next();
-    iterator.next();
-    iterator.next();
     addIntValues(array, 4, 5, 6);
 
     // then
@@ -97,7 +91,7 @@ public final class ArrayValueTest {
   }
 
   @Test
-  public void shouldUpdateValues() {
+  void shouldUpdateValues() {
     // given
     addIntValues(array, 1, 2, 3);
 
@@ -113,7 +107,7 @@ public final class ArrayValueTest {
   }
 
   @Test
-  public void shouldSerializeValuesAfterPartialRead() {
+  void shouldSerializeValuesAfterPartialRead() {
     // given
     addIntValues(array, 1, 2, 3);
 
@@ -128,7 +122,7 @@ public final class ArrayValueTest {
   }
 
   @Test
-  public void shouldRemoveValueAtBeginning() {
+  void shouldRemoveValueAtBeginning() {
     // given
     addIntValues(array, 1, 2, 3);
 
@@ -143,7 +137,7 @@ public final class ArrayValueTest {
   }
 
   @Test
-  public void shouldRemoveValueInBetween() {
+  void shouldRemoveValueInBetween() {
     // given
     addIntValues(array, 1, 2, 3);
 
@@ -159,7 +153,7 @@ public final class ArrayValueTest {
   }
 
   @Test
-  public void shouldRemoveValueAtEnd() {
+  void shouldRemoveValueAtEnd() {
     // given
     addIntValues(array, 1, 2, 3);
 
@@ -176,7 +170,7 @@ public final class ArrayValueTest {
   }
 
   @Test
-  public void shouldRemoveAllValues() {
+  void shouldRemoveAllValues() {
     // given
     addIntValues(array, 1, 2, 3);
 
@@ -195,7 +189,7 @@ public final class ArrayValueTest {
   }
 
   @Test
-  public void shouldNotInvalidElementOnRemove() {
+  void shouldNotInvalidElementOnRemove() {
     // given
     addIntValues(array, 1, 2, 3);
 
@@ -205,15 +199,15 @@ public final class ArrayValueTest {
     iterator.remove();
 
     // then
-    assertThat(element.getValue()).isEqualTo(1);
+    assertThat(element.getValue()).isOne();
     encodeAndDecode(array);
     assertIntValues(array, 2, 3);
   }
 
   @Test
-  public void shouldUpdateWithSmallerValue() {
+  void shouldUpdateWithSmallerValue() {
     // given
-    final ArrayValue<StringValue> array = new ArrayValue<>(new StringValue());
+    final ArrayValue<StringValue> array = new ArrayValue<>(StringValue::new);
     addStringValues(array, "foo", "bar", "baz");
 
     // when
@@ -231,9 +225,9 @@ public final class ArrayValueTest {
   }
 
   @Test
-  public void shouldUpdateWithBiggerValue() {
+  void shouldUpdateWithBiggerValue() {
     // given
-    final ArrayValue<StringValue> array = new ArrayValue<>(new StringValue());
+    final ArrayValue<StringValue> array = new ArrayValue<>(StringValue::new);
     addStringValues(array, "foo", "bar", "baz");
 
     // when
@@ -251,16 +245,12 @@ public final class ArrayValueTest {
   }
 
   @Test
-  public void shouldIncreaseInternalBufferWhenAddingToEnd() {
+  void shouldIncreaseInternalBufferWhenAddingToEnd() {
     // given
     final int valueCount = 10_000;
 
     final Integer[] values =
-        IntStream.iterate(0, (i) -> ++i)
-            .limit(valueCount)
-            .boxed()
-            .collect(Collectors.toList())
-            .toArray(new Integer[valueCount]);
+        IntStream.iterate(0, (i) -> ++i).limit(valueCount).boxed().toArray(Integer[]::new);
 
     // when
     addIntValues(array, values);
@@ -271,7 +261,7 @@ public final class ArrayValueTest {
   }
 
   @Test
-  public void shouldIncreaseInternalBufferWhenAddingToBeginning() {
+  void shouldIncreaseInternalBufferWhenAddingToBeginning() {
     // given
     final int valueCount = 10_000;
     final List<Integer> generatedList =
@@ -282,10 +272,9 @@ public final class ArrayValueTest {
     final Integer[] values = generatedList.toArray(new Integer[valueCount]);
 
     // when
-    for (final Integer value : values) {
-      // reset cursor to first position
-      array.iterator();
-      array.add().setValue(value);
+    array.add().setValue(values[0]);
+    for (int i = 1; i < values.length; i++) {
+      array.add(0).setValue(values[i]);
     }
 
     // then
@@ -296,14 +285,14 @@ public final class ArrayValueTest {
   }
 
   @Test
-  public void shouldSerializeUndeclaredProperties() {
+  void shouldSerializeUndeclaredProperties() {
     // given
-    final ArrayValue<Foo> fooArray = new ArrayValue<>(new Foo());
+    final ArrayValue<Foo> fooArray = new ArrayValue<>(Foo::new);
     fooArray.add().setFoo("foo").setBar("bar");
 
     final DirectBuffer buffer = encode(fooArray);
 
-    final ArrayValue<Bar> barArray = new ArrayValue<>(new Bar());
+    final ArrayValue<Bar> barArray = new ArrayValue<>(Bar::new);
 
     // when
     decode(barArray, buffer);
@@ -317,27 +306,19 @@ public final class ArrayValueTest {
   }
 
   @Test
-  public void shouldThrowExceptionIfNoNextElementExists() {
-    // then
-    exception.expect(NoSuchElementException.class);
-    exception.expectMessage("No more elements left");
-
-    // when
-    array.iterator().next();
+  void shouldThrowExceptionIfNoNextElementExists() {
+    // when - then
+    assertThatThrownBy(() -> array.iterator().next()).isInstanceOf(NoSuchElementException.class);
   }
 
   @Test
-  public void shouldThrowExceptionIfRemoveWithoutNext() {
-    // then
-    exception.expect(IllegalStateException.class);
-    exception.expectMessage("No element available to remove, call next() before");
-
-    // when
-    array.iterator().remove();
+  void shouldThrowExceptionIfRemoveWithoutNext() {
+    // when - then
+    assertThatThrownBy(() -> array.iterator().remove()).isInstanceOf(IllegalStateException.class);
   }
 
   @Test
-  public void shouldThrowExceptionIfRemoveIsCalledTwice() {
+  void shouldThrowExceptionIfRemoveIsCalledTwice() {
     // given
     array.add().setValue(1);
     final Iterator<IntegerValue> iterator = array.iterator();
@@ -345,18 +326,14 @@ public final class ArrayValueTest {
     iterator.next();
     iterator.remove();
 
-    // then
-    exception.expect(IllegalStateException.class);
-    exception.expectMessage("No element available to remove, call next() before");
-
-    // when
-    iterator.remove();
+    // when - then
+    assertThatThrownBy(iterator::remove).isInstanceOf(IllegalStateException.class);
   }
 
   @Test
-  public void shouldWriteJson() {
+  void shouldWriteJson() {
     // given
-    final ArrayValue<MinimalPOJO> array = new ArrayValue<>(new MinimalPOJO());
+    final ArrayValue<MinimalPOJO> array = new ArrayValue<>(MinimalPOJO::new);
     array.add().setLongProp(1);
     array.add().setLongProp(2);
     array.add().setLongProp(3);
@@ -367,12 +344,11 @@ public final class ArrayValueTest {
     array.writeJSON(builder);
 
     // then
-    assertThat(builder.toString())
-        .isEqualTo("[{\"longProp\":1},{\"longProp\":2},{\"longProp\":3}]");
+    assertThat(builder).hasToString("[{\"longProp\":1},{\"longProp\":2},{\"longProp\":3}]");
   }
 
   @Test
-  public void shouldReturnTrueIfIsEmptyIsCalledWithoutElements() {
+  void shouldReturnTrueIfIsEmptyIsCalledWithoutElements() {
     // given no elements are added
     // when
     final boolean isEmpty = array.isEmpty();
@@ -382,7 +358,7 @@ public final class ArrayValueTest {
   }
 
   @Test
-  public void shouldReturnFalseIfIsEmptyIsCalledWithElements() {
+  void shouldReturnFalseIfIsEmptyIsCalledWithElements() {
     // given
     addIntValues(array, 1);
 
@@ -393,15 +369,47 @@ public final class ArrayValueTest {
     assertThat(isEmpty).isFalse();
   }
 
+  @Test
+  void shouldBeEqual() {
+    // given
+    final var other = new ArrayValue<>(IntegerValue::new);
+    addIntValues(array, 1, 2, 3);
+    array.iterator(); // force flush
+
+    // when
+    other.add().setValue(1);
+    other.add().setValue(2);
+    other.add().setValue(3);
+
+    // then - fails because it's not flushed
+    assertThat((Object) other).isEqualTo(array);
+  }
+
+  @Test
+  void shouldHashLatestModification() {
+    // given
+    final var other = new ArrayValue<>(IntegerValue::new);
+    addIntValues(array, 1, 2, 3);
+    array.iterator(); // force flush
+
+    // when
+    other.add().setValue(1);
+    other.add().setValue(2);
+    other.add().setValue(3);
+
+    // then - fails because it's not flushed
+    assertThat((Object) other).hasSameHashCodeAs(array);
+  }
+
   // Helpers
 
-  protected void addIntValues(final ArrayValue<IntegerValue> array, final Integer... values) {
+  private void addIntValues(final ArrayValue<IntegerValue> array, final Integer... values) {
     for (final Integer value : values) {
       array.add().setValue(value);
     }
   }
 
-  protected void assertIntValues(final ArrayValue<IntegerValue> array, final Integer... expected) {
+  private void assertIntValues(final ArrayValue<IntegerValue> array, final Integer... expected) {
     final List<Integer> values =
         StreamSupport.stream(array.spliterator(), false)
             .map(IntegerValue::getValue)
@@ -409,13 +417,13 @@ public final class ArrayValueTest {
     assertThat(values).containsExactly(expected);
   }
 
-  protected void addStringValues(final ArrayValue<StringValue> array, final String... values) {
+  private void addStringValues(final ArrayValue<StringValue> array, final String... values) {
     for (final String value : values) {
       array.add().wrap(BufferUtil.wrapString(value));
     }
   }
 
-  protected void assertStringValues(final ArrayValue<StringValue> array, final String... expected) {
+  private void assertStringValues(final ArrayValue<StringValue> array, final String... expected) {
     final List<String> values =
         StreamSupport.stream(array.spliterator(), false)
             .map(StringValue::getValue)
@@ -425,12 +433,12 @@ public final class ArrayValueTest {
     assertThat(values).containsExactly(expected);
   }
 
-  protected void encodeAndDecode(final BaseValue value) {
+  private void encodeAndDecode(final BaseValue value) {
     final DirectBuffer buffer = encode(value);
     decode(value, buffer);
   }
 
-  protected DirectBuffer encode(final BaseValue value) {
+  private DirectBuffer encode(final BaseValue value) {
     final int encodedLength = value.getEncodedLength();
     final MutableDirectBuffer buffer = new UnsafeBuffer(new byte[encodedLength]);
 
@@ -440,24 +448,20 @@ public final class ArrayValueTest {
     return buffer;
   }
 
-  protected void decode(final BaseValue value, final DirectBuffer buffer) {
+  private void decode(final BaseValue value, final DirectBuffer buffer) {
     value.reset();
 
     reader.wrap(buffer, 0, buffer.capacity());
     value.read(reader);
   }
 
-  class Foo extends UnpackedObject {
+  private static final class Foo extends UnpackedObject {
 
     private final StringProperty fooProp = new StringProperty("foo");
     private final StringProperty barProp = new StringProperty("bar");
 
-    Foo() {
+    private Foo() {
       declareProperty(fooProp).declareProperty(barProp);
-    }
-
-    public String getFoo() {
-      return BufferUtil.bufferAsString(fooProp.getValue());
     }
 
     public Foo setFoo(final String foo) {
@@ -465,21 +469,16 @@ public final class ArrayValueTest {
       return this;
     }
 
-    public String getBar() {
-      return BufferUtil.bufferAsString(barProp.getValue());
-    }
-
-    public Foo setBar(final String bar) {
+    void setBar(final String bar) {
       barProp.setValue(bar);
-      return this;
     }
   }
 
-  class Bar extends UnpackedObject {
+  private static final class Bar extends UnpackedObject {
 
     private final StringProperty barProp = new StringProperty("bar");
 
-    Bar() {
+    private Bar() {
       declareProperty(barProp);
     }
 
@@ -487,9 +486,8 @@ public final class ArrayValueTest {
       return BufferUtil.bufferAsString(barProp.getValue());
     }
 
-    public Bar setBar(final String bar) {
+    void setBar(final String bar) {
       barProp.setValue(bar);
-      return this;
     }
   }
 }

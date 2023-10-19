@@ -29,19 +29,19 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
   public static final String PROCESSES = "processesMetadata";
 
   private final ArrayProperty<DeploymentResource> resourcesProp =
-      new ArrayProperty<>(RESOURCES, new DeploymentResource());
+      new ArrayProperty<>(RESOURCES, DeploymentResource::new);
 
   private final ArrayProperty<ProcessMetadata> processesMetadataProp =
-      new ArrayProperty<>(PROCESSES, new ProcessMetadata());
+      new ArrayProperty<>(PROCESSES, ProcessMetadata::new);
 
   private final ArrayProperty<DecisionRecord> decisionMetadataProp =
-      new ArrayProperty<>("decisionsMetadata", new DecisionRecord());
+      new ArrayProperty<>("decisionsMetadata", DecisionRecord::new);
 
   private final ArrayProperty<DecisionRequirementsMetadataRecord> decisionRequirementsMetadataProp =
-      new ArrayProperty<>("decisionRequirementsMetadata", new DecisionRequirementsMetadataRecord());
+      new ArrayProperty<>("decisionRequirementsMetadata", DecisionRequirementsMetadataRecord::new);
 
   private final ArrayProperty<FormMetadataRecord> formMetadataProp =
-      new ArrayProperty<>("formMetadata", new FormMetadataRecord());
+      new ArrayProperty<>("formMetadata", FormMetadataRecord::new);
 
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
