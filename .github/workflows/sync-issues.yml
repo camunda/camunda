@@ -29,7 +29,7 @@ jobs:
           secret/data/github.com/apps/engineering-issue-sync GITHUB_APP_PEM_FILE_CONTENT;
     - name: Generate token
       id: generate_token
-      uses: tibdex/github-app-token@v1
+      uses: tibdex/github-app-token@v2
       with:
         app_id: ${{ steps.secrets.outputs.GITHUB_APP_ID }}
         private_key: ${{ steps.secrets.outputs.GITHUB_APP_PEM_FILE_CONTENT }}
