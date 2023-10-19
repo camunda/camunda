@@ -27,7 +27,7 @@ services:
       timeout: 5s
       retries: 3
   opensearch:
-    image: opensearchproject/opensearch:2.9.0
+    image: opensearchproject/opensearch:2.11.0@sha256:5a0167874ff2a2c224ff42cded37f31aeac96df3aa306a2db603a444d096c078
     profiles: ["opensearch"]
     container_name: opensearch
     environment:
