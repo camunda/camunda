@@ -41,7 +41,7 @@
     <jackson.version>2.15.2</jackson.version>
     <jsonpath.version>2.8.0</jsonpath.version>
     <elasticsearch.version>7.17.14</elasticsearch.version>
-    <opensearch.version>2.6.0</opensearch.version>
+    <opensearch.version>2.7.0</opensearch.version>
     <apache.http5-client.version>5.2.1</apache.http5-client.version>
     <apache.http5-core.version>5.2.3</apache.http5-core.version>
     <!-- The default es 8 version we are going to be testing with-->
