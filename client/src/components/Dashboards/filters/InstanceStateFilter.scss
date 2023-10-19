@@ -1,5 +1,7 @@
+@use '@carbon/colors';
+
 .InstanceStateFilter {
-  .Popover .buttonWrapper button {
+  .Popover .ButtonTrigger {
     align-items: center;
     justify-content: flex-start;
 
@@ -7,11 +9,11 @@
       display: inline-block;
       width: 10px;
       height: 10px;
-      background-color: var(--silver-darken-80);
+      background-color: colors.$gray-40;
       border-radius: 50%;
       margin-right: 0.7em;
       &.active {
-        background-color: var(--cds-support-success);
+        background-color: colors.$green-50;
       }
     }
   }
