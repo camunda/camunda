@@ -3784,13 +3784,13 @@ bplist-parser@^0.2.0:
   dependencies:
     big-integer "^1.6.44"
 
-bpmn-js@14.0.0:
-  version "14.0.0"
-  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-14.0.0.tgz#84a765acb091cd08ebd68f5c6a7b59cf9e109b6e"
-  integrity sha512-/P09jowzcib0Yg9XuHWIugrwfubtq/7Z/0/DgjYJ2Q/Z7LogDkCPiNFIyWX4cKx/eYXJJ5kqtgmDpXv8MnT7gw==
+bpmn-js@14.1.1:
+  version "14.1.1"
+  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-14.1.1.tgz#ce897169db7c294efa60863f5dcb16912ddef519"
+  integrity sha512-ivczzBWp3jtaUETi6Q+6HUS2Q9rBRjIoFyURUiK7pX1zsb+2jAXLz7X3HVH1rx0DGyqlMhOuBBUMUesFksG9/A==
   dependencies:
     bpmn-moddle "^8.0.1"
-    diagram-js "^12.3.0"
+    diagram-js "^12.4.0"
     diagram-js-direct-editing "^2.0.0"
     ids "^1.0.3"
     inherits-browser "^0.1.0"
@@ -4941,10 +4941,10 @@ diagram-js@^12.0.0:
     path-intersection "^2.2.1"
     tiny-svg "^3.0.1"
 
-diagram-js@^12.3.0:
-  version "12.3.0"
-  resolved "https://registry.yarnpkg.com/diagram-js/-/diagram-js-12.3.0.tgz#793de223ac196bf40d279955cc05da049d4c04ee"
-  integrity sha512-sE9MieoQiifVGPPztVjdDYdU1oJEztN1gG0RksCBNYH0rOTpEnAw4hmRdBqrDsdJen08EmFGfcoTbeZ9W2NCqA==
+diagram-js@^12.4.0:
+  version "12.5.0"
+  resolved "https://registry.yarnpkg.com/diagram-js/-/diagram-js-12.5.0.tgz#b4de7f906f9b15acf9614e27a0a73216fcd12203"
+  integrity sha512-jrX+NFUPVcCdrUD11Fo1frwWHF9FWys4r/lhi8M4CBuQ8eSePkOq5osFhc6tUoXZawS3sjhbNvd2AYAZZBUjnQ==
   dependencies:
     "@bpmn-io/diagram-js-ui" "^0.2.2"
     clsx "^2.0.0"
