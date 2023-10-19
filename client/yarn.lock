@@ -1358,20 +1358,20 @@
   resolved "https://registry.yarnpkg.com/@carbon/motion/-/motion-11.15.0.tgz#a4f8239c06a3f71ac25f780b22a3338ecb203656"
   integrity sha512-l7SIZMwTmv8BHPvDsQ26Y/dBLKnLGZUvD5bGcDppoUInUcKv2Dg4J0r5JONUsB2OagpBmbj/a5skcahzlaL1JQ==
 
-"@carbon/react@1.39.0":
-  version "1.39.0"
-  resolved "https://registry.yarnpkg.com/@carbon/react/-/react-1.39.0.tgz#b1752b5cfc83a570d4e91b5498b499b8f4095b0b"
-  integrity sha512-SFWPjln+fDMsafMBapC9rlXFoFj3z3J0sulT5wm2p3RP1Sl92fHjYUkCqfFK3FI1rvyfhwE72xCF2pXm6biDEw==
+"@carbon/react@1.40.0":
+  version "1.40.0"
+  resolved "https://registry.yarnpkg.com/@carbon/react/-/react-1.40.0.tgz#bdd383ec435d4e09cca1bbb507fd1f50bf20fc78"
+  integrity sha512-08ry2eP0J+BVsM8M8nCTV1QxGIosI0ocHUjIPyY0ok6oa7fmlZc2LCIUJSXmn+8X3ep8MXLFTSWpEep+ezzwhA==
   dependencies:
     "@babel/runtime" "^7.18.3"
     "@carbon/feature-flags" "^0.16.0"
     "@carbon/icons-react" "^11.28.0"
     "@carbon/layout" "^11.19.0"
-    "@carbon/styles" "^1.39.0"
+    "@carbon/styles" "^1.40.0"
     "@carbon/telemetry" "0.1.0"
     classnames "2.3.2"
     copy-to-clipboard "^3.3.1"
-    downshift "8.2.0"
+    downshift "8.2.1"
     flatpickr "4.6.9"
     invariant "^2.2.3"
     lodash.debounce "^4.0.8"
@@ -1385,10 +1385,10 @@
     wicg-inert "^3.1.1"
     window-or-global "^1.0.1"
 
-"@carbon/styles@^1.39.0":
-  version "1.39.0"
-  resolved "https://registry.yarnpkg.com/@carbon/styles/-/styles-1.39.0.tgz#a2da9f8e8b054505b3b077f4759728ca75fb60ac"
-  integrity sha512-mbFOPtiO5OG7d989LZkc4soBX8hfhss/hVeDEx1kLASkt+2bZOCTYopV/O6i00DtrjdHEY6/T2O7eAQa4oSjOA==
+"@carbon/styles@^1.40.0":
+  version "1.40.0"
+  resolved "https://registry.yarnpkg.com/@carbon/styles/-/styles-1.40.0.tgz#73e82b135faf9bd8d85d614d23d1f15d9fa49368"
+  integrity sha512-fCzgFUaakU5f9ArIFk5hEeSIpmlj/zJfwJl5cyA8yrltm4jznc4AdoEmS3Lp5hZwaIP9BEO6Oso81J+DRKggNQ==
   dependencies:
     "@carbon/colors" "^11.19.0"
     "@carbon/feature-flags" "^0.16.0"
@@ -5209,10 +5209,10 @@ dotenv@^10.0.0:
   resolved "https://registry.yarnpkg.com/dotenv/-/dotenv-10.0.0.tgz#3d4227b8fb95f81096cdd2b66653fb2c7085ba81"
   integrity sha512-rlBi9d8jpv9Sf1klPjNfFAuWDjKLwTIJJ/VxtoTwIR6hnZxcEOQCZg2oIL3MWBYw5GpUDKOEnND7LXTbIpQ03Q==
 
-downshift@8.2.0:
-  version "8.2.0"
-  resolved "https://registry.yarnpkg.com/downshift/-/downshift-8.2.0.tgz#ce98537cb9cf767bb49d3baea46f362b420b1737"
-  integrity sha512-hZksevuD/sYDxM8nSN9q79wumnsf5bLrzAanOEN26RrgB9dbmRtKKqKzwtRK5/H+6CodxctpY0pIlgj11hZUcw==
+downshift@8.2.1:
+  version "8.2.1"
+  resolved "https://registry.yarnpkg.com/downshift/-/downshift-8.2.1.tgz#b5e0521abe6296713d3fad3e9087bd1236e3f129"
+  integrity sha512-mHQUQMWCliXkoWvhxlRyEyKcdlbs8rZjZ+nSqGi8dKIv26gWtbQ8yVTPuYSHT7X8ff+FkEcskT9ktLuNKNoEHA==
   dependencies:
     "@babel/runtime" "^7.22.15"
     compute-scroll-into-view "^3.0.3"
