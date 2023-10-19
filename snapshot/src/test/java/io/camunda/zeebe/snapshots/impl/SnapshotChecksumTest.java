@@ -10,6 +10,10 @@ package io.camunda.zeebe.snapshots.impl;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.snapshots.ImmutableChecksumsSFV;
+import io.camunda.zeebe.test.util.STracer;
+import io.camunda.zeebe.test.util.STracer.Syscall;
+import io.camunda.zeebe.test.util.asserts.strace.FSyncTraceAssert;
+import io.camunda.zeebe.test.util.asserts.strace.STracerAssert;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -121,6 +125,28 @@ public class SnapshotChecksumTest {
 
     // then
     assertThat(actual.getCombinedValue()).isEqualTo(expectedChecksum.getCombinedValue());
+  }
+
+  @Test
+  public void shouldFlushOnPersist() throws Exception {
+    // given
+    final var traceFile = temporaryFolder.newFile().toPath();
+    final var expectedChecksum = SnapshotChecksum.calculate(multipleFileSnapshot);
+    final var checksumPath = multipleFileSnapshot.resolveSibling("checksum");
+    final var tracer = STracer.traceFor(Syscall.FSYNC, traceFile);
+
+    // when
+    try (tracer) {
+      SnapshotChecksum.persist(checksumPath, expectedChecksum);
+    }
+
+    // then
+    STracerAssert.assertThat(tracer)
+        .fsyncTraces()
+        .hasSize(1)
+        .first(FSyncTraceAssert.factory())
+        .hasPath(checksumPath)
+        .isSuccessful();
   }
 
   @Test
