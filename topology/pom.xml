@@ -6,9 +6,7 @@
   ~ Licensed under the Zeebe Community License 1.1. You may not use this file
   ~ except in compliance with the Zeebe Community License 1.1.
   -->
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>io.camunda</groupId>
@@ -145,8 +143,7 @@
         <configuration>
           <ignoredNonTestScopedDependencies>
             <!-- When not set, we get error "Non-test scoped test only dependencies found". If we set the scope to test only, the build fails. -->
-            <ignoredNonTestScopedDependency>io.camunda:zeebe-atomix-utils
-            </ignoredNonTestScopedDependency>
+            <ignoredNonTestScopedDependency>io.camunda:zeebe-atomix-utils</ignoredNonTestScopedDependency>
           </ignoredNonTestScopedDependencies>
           <usedDependencies>
             <dependency>net.jqwik:jqwik</dependency>
