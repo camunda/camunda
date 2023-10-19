@@ -51,7 +51,7 @@ jobs:
       - name: Build backend
         run: mvn clean install -P -docker -DskipTests=true -B -DskipRemoteStaging=true -Dmaven.deploy.skip=true
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v3
         with:
           driver-opts: network=host
       - name: Build and push to local registry
