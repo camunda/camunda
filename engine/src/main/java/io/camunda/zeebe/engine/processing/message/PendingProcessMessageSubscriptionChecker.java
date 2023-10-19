@@ -20,7 +20,7 @@ public final class PendingProcessMessageSubscriptionChecker
     implements StreamProcessorLifecycleAware {
 
   private static final Duration SUBSCRIPTION_TIMEOUT = Duration.ofSeconds(10);
-  private static final Duration SUBSCRIPTION_CHECK_INTERVAL = Duration.ofSeconds(30);
+  private static final Duration SUBSCRIPTION_CHECK_INTERVAL = Duration.ofSeconds(300);
 
   private final SubscriptionCommandSender commandSender;
   private final MutablePendingProcessMessageSubscriptionState pendingState;
