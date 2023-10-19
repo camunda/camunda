@@ -7,7 +7,7 @@
   resolved "https://registry.yarnpkg.com/@adobe/css-tools/-/css-tools-4.0.1.tgz#b38b444ad3aa5fedbb15f2f746dcd934226a12dd"
   integrity sha512-+u76oB43nOHrF4DDWRLWDCtci7f3QJoEBigemIdIeTi1ODqjx6Tad9NCVnPRwewWlKkVab5PlK8DCtPTyX7S8g==
 
-"@adobe/css-tools@^4.3.0":
+"@adobe/css-tools@^4.3.1":
   version "4.3.1"
   resolved "https://registry.yarnpkg.com/@adobe/css-tools/-/css-tools-4.3.1.tgz#abfccb8ca78075a2b6187345c26243c1a0842f28"
   integrity sha512-/62yikz7NLScCGAAST5SHdnjaDJQBDq0M2muyRTpf2VQhw6StBg2ALiu73zSJQ4fMVLA+0uBhBHAle7Wg+2kSg==
@@ -1291,10 +1291,10 @@
     "@codemirror/language" "^6.8.0"
     lezer-feel "^1.0.1"
 
-"@camunda/camunda-composite-components@0.2.13":
-  version "0.2.13"
-  resolved "https://registry.yarnpkg.com/@camunda/camunda-composite-components/-/camunda-composite-components-0.2.13.tgz#e63814a8901e1268020e138d0ec39d4e1c2eb73b"
-  integrity sha512-l3U/aEcxJ2MLbhkjlJvNiwDVgVYC2rQxumDhR7vwMi+HNfvrPYpe9Y4+KlQsjkCUxnPmtwOC5WvG8PH6PhqNXA==
+"@camunda/camunda-composite-components@0.2.17":
+  version "0.2.17"
+  resolved "https://registry.yarnpkg.com/@camunda/camunda-composite-components/-/camunda-composite-components-0.2.17.tgz#b2562151f79d40acf45e0023226c9127423cc8e4"
+  integrity sha512-44Eb8QDp36IXNWBY9ssyC/k4/8FRAo+hFsoPNJGuXkqZtFAolU65EAPm+YXM8QuI+jq+5tX7n6bSBwpreKkzZA==
   dependencies:
     jwt-decode "3.1.2"
     react-markdown "8.0.7"
@@ -2432,12 +2432,12 @@
     lz-string "^1.5.0"
     pretty-format "^27.0.2"
 
-"@testing-library/jest-dom@6.1.3":
-  version "6.1.3"
-  resolved "https://registry.yarnpkg.com/@testing-library/jest-dom/-/jest-dom-6.1.3.tgz#443118c9e4043f96396f120de2c7122504a079c5"
-  integrity sha512-YzpjRHoCBWPzpPNtg6gnhasqtE/5O4qz8WCwDEaxtfnPO6gkaLrnuXusrGSPyhIGPezr1HM7ZH0CFaUTY9PJEQ==
+"@testing-library/jest-dom@6.1.4":
+  version "6.1.4"
+  resolved "https://registry.yarnpkg.com/@testing-library/jest-dom/-/jest-dom-6.1.4.tgz#cf0835c33bc5ef00befb9e672b1e3e6a710e30e3"
+  integrity sha512-wpoYrCYwSZ5/AxcrjLxJmCU6I5QAJXslEeSiMQqaWmP2Kzpd1LvF/qxmAIW2qposULGWq2gw30GgVNFLSc2Jnw==
   dependencies:
-    "@adobe/css-tools" "^4.3.0"
+    "@adobe/css-tools" "^4.3.1"
     "@babel/runtime" "^7.9.2"
     aria-query "^5.0.0"
     chalk "^3.0.0"
@@ -2541,18 +2541,18 @@
     "@types/node" "*"
     "@types/responselike" "^1.0.0"
 
-"@types/carbon-components-react@7.55.3":
-  version "7.55.3"
-  resolved "https://registry.yarnpkg.com/@types/carbon-components-react/-/carbon-components-react-7.55.3.tgz#bc0dd6fe01c86e9c274ee76b1892d01ee4c926d5"
-  integrity sha512-CZjYyPkEPjKNyR1WRfGW4xwG30CQ3gvc71Ljw7IyFw0686mAu5q3UdwIiRh8qsb5SsU7eU+8ll+rP+NI0+UqZQ==
+"@types/carbon-components-react@7.55.5":
+  version "7.55.5"
+  resolved "https://registry.yarnpkg.com/@types/carbon-components-react/-/carbon-components-react-7.55.5.tgz#7595ce677b501a879acf7d573d0f39e5e5ecfb4c"
+  integrity sha512-qiDHZC49BBEioXLCoV+82yi58DArEY4LtLpIejwMhiYvRS9b+ctSQV2zgSX2AiZLT2yDXxC7eBi0FWZgSkzWkw==
   dependencies:
     "@types/react" "*"
     flatpickr "4.6.9"
 
-"@types/carbon__elements@11.10.1":
-  version "11.10.1"
-  resolved "https://registry.yarnpkg.com/@types/carbon__elements/-/carbon__elements-11.10.1.tgz#efdd169c4716c3a91fe24ef00070a6cab1256cb8"
-  integrity sha512-Eha6aCTNe5yTp2np9YZYfeA8DBFMh/97Bq2mP/8Nig/eEr3SigPhvEtt76IMEpJJNBxbIEOltueuVRN3mFsL/w==
+"@types/carbon__elements@11.10.2":
+  version "11.10.2"
+  resolved "https://registry.yarnpkg.com/@types/carbon__elements/-/carbon__elements-11.10.2.tgz#b5fbc6627020b8abe2c887eb2c3fa6a2efbd17ff"
+  integrity sha512-3N0PAq+Ifxw57WQOQYfNHXNF432oT7lxMLDDm90dvicUt9ylkEFj4eRdXy5ZANhgJrlbFUfhDyXscDJNjC6x/A==
 
 "@types/connect-history-api-fallback@^1.3.5":
   version "1.3.5"
@@ -2688,10 +2688,10 @@
   dependencies:
     "@types/istanbul-lib-report" "*"
 
-"@types/jest@29.5.5":
-  version "29.5.5"
-  resolved "https://registry.yarnpkg.com/@types/jest/-/jest-29.5.5.tgz#727204e06228fe24373df9bae76b90f3e8236a2a"
-  integrity sha512-ebylz2hnsWR9mYvmBFbXJXr+33UPc4+ZdxyDXh5w0FlPBTfCVN3wPL+kuOiQt3xvrK419v7XWeAs+AeOksafXg==
+"@types/jest@29.5.6":
+  version "29.5.6"
+  resolved "https://registry.yarnpkg.com/@types/jest/-/jest-29.5.6.tgz#f4cf7ef1b5b0bfc1aa744e41b24d9cc52533130b"
+  integrity sha512-/t9NnzkOpXb4Nfvg17ieHE6EeSjDS2SGSpNYfoLbUAeL/EOueU/RSdOWFpfQTXBEM7BguYW1XQ0EbM+6RlIh6w==
   dependencies:
     expect "^29.0.0"
     pretty-format "^29.0.0"
@@ -2718,17 +2718,17 @@
   dependencies:
     "@types/node" "*"
 
-"@types/loadable__component@5.13.5":
-  version "5.13.5"
-  resolved "https://registry.yarnpkg.com/@types/loadable__component/-/loadable__component-5.13.5.tgz#8e9e40e4381fbfb0e6475f926039a5d7d8849bf5"
-  integrity sha512-YMpOC3hkzuLKi0ZBRn1LFglw4cDP70cGeQ9ZXBh5mYCLo+dJtw+DflNTx55VGl7BQ3MATiS+VNd8apEtaQcl5w==
+"@types/loadable__component@5.13.6":
+  version "5.13.6"
+  resolved "https://registry.yarnpkg.com/@types/loadable__component/-/loadable__component-5.13.6.tgz#08ccaf86b3f74d96b9bf930e2e08085301321825"
+  integrity sha512-Xph+OBc6BfduajBZLoMkHYfdot5TH2TOW6dW3bZVb0zSjBrFUiMI6Ltu8L4w7FV8VJMRDodybA4u9yIzfEE7aA==
   dependencies:
     "@types/react" "*"
 
-"@types/lodash@4.14.199":
-  version "4.14.199"
-  resolved "https://registry.yarnpkg.com/@types/lodash/-/lodash-4.14.199.tgz#c3edb5650149d847a277a8961a7ad360c474e9bf"
-  integrity sha512-Vrjz5N5Ia4SEzWWgIVwnHNEnb1UE1XMkvY5DGXrAeOGE9imk0hgTHh5GyDjLDJi9OTCn9oo9dXH1uToK1VRfrg==
+"@types/lodash@4.14.200":
+  version "4.14.200"
+  resolved "https://registry.yarnpkg.com/@types/lodash/-/lodash-4.14.200.tgz#435b6035c7eba9cdf1e039af8212c9e9281e7149"
+  integrity sha512-YI/M/4HRImtNf3pJgbF+W6FrXovqj+T+/HpENLTooK9PnkacBsDpeP3IpHab40CClUfhNmdM2WTNP2sa2dni5Q==
 
 "@types/long@^4.0.1":
   version "4.0.2"
@@ -2816,10 +2816,10 @@
   dependencies:
     "@types/react" "*"
 
-"@types/react-transition-group@4.4.7":
-  version "4.4.7"
-  resolved "https://registry.yarnpkg.com/@types/react-transition-group/-/react-transition-group-4.4.7.tgz#bf69f269d74aa78b99097673ca6dd6824a68ef1c"
-  integrity sha512-ICCyBl5mvyqYp8Qeq9B5G/fyBSRC0zx3XM3sCC6KkcMsNeAHqXBKkmat4GqdJET5jtYUpZXrxI5flve5qhi2Eg==
+"@types/react-transition-group@4.4.8":
+  version "4.4.8"
+  resolved "https://registry.yarnpkg.com/@types/react-transition-group/-/react-transition-group-4.4.8.tgz#46f87d80512959cac793ecc610a93d80ef241ccf"
+  integrity sha512-QmQ22q+Pb+HQSn04NL3HtrqHwYMf4h3QKArOy5F8U5nEVMaihBs3SR10WiOM1iwPz5jIo8x/u11al+iEGZZrvg==
   dependencies:
     "@types/react" "*"
 
@@ -5526,10 +5526,10 @@ eslint-plugin-license-header@^0.2.0:
   dependencies:
     requireindex "^1.2.0"
 
-eslint-plugin-prettier@5.0.0:
-  version "5.0.0"
-  resolved "https://registry.yarnpkg.com/eslint-plugin-prettier/-/eslint-plugin-prettier-5.0.0.tgz#6887780ed95f7708340ec79acfdf60c35b9be57a"
-  integrity sha512-AgaZCVuYDXHUGxj/ZGu1u8H8CYgDY3iG6w5kUFw4AzMVXzB7VvbKgYR4nATIN+OvUrghMbiDLeimVjVY5ilq3w==
+eslint-plugin-prettier@5.0.1:
+  version "5.0.1"
+  resolved "https://registry.yarnpkg.com/eslint-plugin-prettier/-/eslint-plugin-prettier-5.0.1.tgz#a3b399f04378f79f066379f544e42d6b73f11515"
+  integrity sha512-m3u5RnR56asrwV/lDC4GHorlW75DsFfmUcjfCYylTUs85dBRnB7VM6xG8eCMJdeDRnppzmxZVf1GEPJvl1JmNg==
   dependencies:
     prettier-linter-helpers "^1.0.0"
     synckit "^0.8.5"
@@ -10616,10 +10616,10 @@ sass-loader@^12.3.0:
     klona "^2.0.4"
     neo-async "^2.6.2"
 
-sass@1.69.1:
-  version "1.69.1"
-  resolved "https://registry.yarnpkg.com/sass/-/sass-1.69.1.tgz#659b3b04452245dcf82f731684831e990ddb0c89"
-  integrity sha512-nc969GvTVz38oqKgYYVHM/Iq7Yl33IILy5uqaH2CWSiSUmRCvw+UR7tA3845Sp4BD5ykCUimvrT3k1EjTwpVUA==
+sass@1.69.4:
+  version "1.69.4"
+  resolved "https://registry.yarnpkg.com/sass/-/sass-1.69.4.tgz#10c735f55e3ea0b7742c6efa940bce30e07fbca2"
+  integrity sha512-+qEreVhqAy8o++aQfCJwp0sklr2xyEzkm9Pp/Igu9wNPoe7EZEQ8X/MBvvXggI2ql607cxKg/RKOwDj6pp2XDA==
   dependencies:
     chokidar ">=3.0.0 <4.0.0"
     immutable "^4.0.0"
