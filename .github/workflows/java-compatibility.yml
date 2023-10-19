@@ -17,7 +17,7 @@ jobs:
         javaVersion: [ 17, 20 ]
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
       - name: Setup Maven
         uses: ./.github/actions/setup-maven
         with:
@@ -63,7 +63,7 @@ jobs:
             profiles: 'it,engine-latest'
             requiresCambpm: true
     steps:
-      - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
       - name: Setup Maven
         uses: ./.github/actions/setup-maven
         with:
@@ -124,7 +124,7 @@ jobs:
       matrix:
         javaVersion: [ 17, 20 ]
     steps:
-      - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
       - name: Setup Maven
         uses: ./.github/actions/setup-maven
         with:
