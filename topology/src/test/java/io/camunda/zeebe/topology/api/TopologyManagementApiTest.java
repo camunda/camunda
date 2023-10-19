@@ -21,6 +21,7 @@ import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.MemberState;
 import io.camunda.zeebe.topology.state.PartitionState;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.MemberJoinOperation;
+import io.camunda.zeebe.topology.state.TopologyChangeOperation.MemberLeaveOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import java.util.Collection;
@@ -102,6 +103,25 @@ final class TopologyManagementApiTest {
     // then
     assertThat(recordingCoordinator.getLastAppliedOperation())
         .containsExactly(new MemberJoinOperation(MemberId.from("1")));
+    assertThat(changeStatus.changeId()).isEqualTo(initialTopology.version() + 1);
+  }
+
+  @Test
+  void shouldRemoveMembers() {
+    // given
+    final var request =
+        new TopologyManagementRequest.RemoveMembersRequest(
+            Set.of(MemberId.from("1"), MemberId.from("2")));
+
+    // when
+    final var changeStatus = clientApi.removeMembers(request).join();
+
+    // then
+    assertThat(recordingCoordinator.getLastAppliedOperation())
+        .containsExactlyInAnyOrderElementsOf(
+            Set.of(
+                new MemberLeaveOperation(MemberId.from("1")),
+                new MemberLeaveOperation(MemberId.from("2"))));
     assertThat(changeStatus.changeId()).isEqualTo(initialTopology.version() + 1);
   }
 
