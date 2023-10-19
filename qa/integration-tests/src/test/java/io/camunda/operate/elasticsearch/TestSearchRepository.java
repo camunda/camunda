@@ -11,4 +11,8 @@ import java.util.List;
 
 public interface TestSearchRepository {
   <R> List<R> searchAll(String index, Class<R> clazz) throws IOException;
+
+  boolean isConnected();
+
+  boolean isZeebeConnected();
 }

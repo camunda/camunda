@@ -7,9 +7,12 @@
 package io.camunda.operate.elasticsearch;
 
 import io.camunda.operate.connect.ElasticsearchConnector;
+import io.camunda.operate.connect.OpensearchConnector;
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
+import io.camunda.operate.store.opensearch.client.sync.ZeebeRichOpenSearchClient;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
-import org.elasticsearch.client.RestHighLevelClient;
+import io.camunda.operate.util.testcontainers.ContainerApplicationContextInitializer;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,60 +24,25 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import java.util.Map;
+
+import static org.junit.Assert.assertTrue;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(
-    classes = { TestApplicationWithNoBeans.class, OperateProperties.class, ElasticsearchConnector.class}
+    classes = { TestApplicationWithNoBeans.class, OperateProperties.class,
+      TestElasticSearchRepository.class, ElasticsearchConnector.class,
+      TestOpenSearchRepository.class, RichOpenSearchClient.class, ZeebeRichOpenSearchClient.class, OpensearchConnector.class}
 )
-@ContextConfiguration(initializers = { ElasticsearchConnectorBasicAuthIT.ElasticsearchStarter.class})
+@ContextConfiguration(initializers = { ContainerApplicationContextInitializer.class})
 public class ElasticsearchConnectorBasicAuthIT {
-
-  static ElasticsearchContainer elasticsearch =
-      new ElasticsearchContainer("docker.elastic.co/elasticsearch/elasticsearch:7.16.2")
-          .withEnv(Map.of(
-          "xpack.security.enabled", "true",
-          "ELASTIC_PASSWORD","changeme"
-//        "xpack.security.transport.ssl.enabled","true",
-//        "xpack.security.http.ssl.enabled", "true",
-//        "xpack.security.transport.ssl.verification_mode","none",//"certificate",
-//        "xpack.security.transport.ssl.keystore.path", "elastic-certificates.p12",
-//        "xpack.security.transport.ssl.truststore.path", "elastic-certificates.p12"
-        )).withExposedPorts(9200);
-
   @Autowired
-  RestHighLevelClient esClient;
-
-  @Autowired
-  RestHighLevelClient zeebeEsClient;
-
-  static class ElasticsearchStarter implements ApplicationContextInitializer<ConfigurableApplicationContext>{
-
-    @Override public void initialize(ConfigurableApplicationContext applicationContext) {
-      elasticsearch.start();
-      String elsUrl = String.format("http://%s:%d/", elasticsearch.getHost(), elasticsearch.getFirstMappedPort());
-      TestPropertyValues.of(
-          "camunda.operate.elasticsearch.url=" + elsUrl,
-          //"camunda.operate.elasticsearch.host="+elasticsearch.getHost(),
-          //"camunda.operate.elasticsearch.port="+elasticsearch.getFirstMappedPort(),
-          "camunda.operate.elasticsearch.username=elastic",
-          "camunda.operate.elasticsearch.password=changeme",
-          "camunda.operate.elasticsearch.clusterName=docker-cluster",
-          "camunda.operate.zeebeElasticsearch.url="+ elsUrl,
-          "camunda.operate.zeebeElasticsearch.username=elastic",
-          "camunda.operate.zeebeElasticsearch.password=changeme",
-          "camunda.operate.zeebeElasticsearch.clusterName=docker-cluster",
-          "camunda.operate.zeebeElasticsearch.prefix=zeebe-record"
-      ).applyTo(applicationContext.getEnvironment());
-    }
-  }
+  TestSearchRepository testSearchRepository;
 
   @Test
   public void canConnect(){
-    assertThat(esClient).isNotNull();
-    assertThat(zeebeEsClient).isNotNull();
+    assertTrue(testSearchRepository.isConnected());
+    assertTrue(testSearchRepository.isZeebeConnected());
   }
 
 }

@@ -15,6 +15,7 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -30,6 +31,10 @@ public class TestElasticSearchRepository implements TestSearchRepository {
   private RestHighLevelClient esClient;
 
   @Autowired
+  @Qualifier("zeebeEsClient")
+  private RestHighLevelClient zeebeEsClient;
+
+  @Autowired
   private ObjectMapper objectMapper;
 
   @Override
@@ -39,5 +44,15 @@ public class TestElasticSearchRepository implements TestSearchRepository {
         .query(matchAllQuery()));
     final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
     return ElasticsearchUtil.mapSearchHits(response.getHits().getHits(), objectMapper, clazz);
+  }
+
+  @Override
+  public boolean isConnected() {
+    return esClient != null;
+  }
+
+  @Override
+  public boolean isZeebeConnected() {
+    return zeebeEsClient != null;
   }
 }

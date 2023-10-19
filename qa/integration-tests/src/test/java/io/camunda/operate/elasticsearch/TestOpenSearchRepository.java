@@ -8,6 +8,7 @@ package io.camunda.operate.elasticsearch;
 
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
+import io.camunda.operate.store.opensearch.client.sync.ZeebeRichOpenSearchClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -24,9 +25,22 @@ public class TestOpenSearchRepository implements TestSearchRepository {
   @Autowired
   private RichOpenSearchClient richOpenSearchClient;
 
+  @Autowired
+  private ZeebeRichOpenSearchClient zeebeRichOpenSearchClient;
+
   @Override
   public <R> List<R> searchAll(String index, Class<R> clazz) throws IOException {
     var requestBuilder = searchRequestBuilder(index).query(matchAll());
     return richOpenSearchClient.doc().searchValues(requestBuilder, clazz);
+  }
+
+  @Override
+  public boolean isConnected() {
+    return richOpenSearchClient != null;
+  }
+
+  @Override
+  public boolean isZeebeConnected() {
+    return zeebeRichOpenSearchClient != null;
   }
 }

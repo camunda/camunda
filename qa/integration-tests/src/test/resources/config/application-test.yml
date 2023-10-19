@@ -1,3 +1,7 @@
+testcontainers:
+  elasticsearch: "docker.elastic.co/elasticsearch/elasticsearch:7.16.2"
+  opensearch: "opensearchproject/opensearch:2.5.0"
+
 camunda.operate:
   username: demo
   password: demo
