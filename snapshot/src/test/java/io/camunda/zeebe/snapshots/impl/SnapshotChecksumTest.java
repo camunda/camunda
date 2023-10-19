@@ -28,7 +28,6 @@ import java.util.zip.Checksum;
 import org.agrona.IoUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
@@ -130,7 +129,6 @@ public final class SnapshotChecksumTest {
     assertThat(actual.getCombinedValue()).isEqualTo(expectedChecksum.getCombinedValue());
   }
 
-  @DisabledIfEnvironmentVariable(named = "GITHUB_ACTIONS", matches = "true")
   @EnabledOnOs(OS.LINUX)
   @Test
   void shouldFlushOnPersist() throws Exception {
