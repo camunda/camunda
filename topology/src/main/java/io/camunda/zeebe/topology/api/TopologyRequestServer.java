@@ -36,6 +36,7 @@ public final class TopologyRequestServer implements AutoCloseable {
 
   void start() {
     registerAddMemberRequestsHandler();
+    registerRemoveMemberRequestsHandler();
     registerJoinPartitionRequestsHandler();
     registerLeavePartitionRequestsHandler();
     registerReassignPartitionRequestHandler();
@@ -53,6 +54,14 @@ public final class TopologyRequestServer implements AutoCloseable {
         TopologyRequestTopics.ADD_MEMBER.topic(),
         serializer::decodeAddMembersRequest,
         request -> toCompletableFuture(topologyManagementApi.addMembers(request)),
+        serializer::encode);
+  }
+
+  private void registerRemoveMemberRequestsHandler() {
+    communicationService.replyTo(
+        TopologyRequestTopics.REMOVE_MEMBER.topic(),
+        serializer::decodeRemoveMembersRequest,
+        request -> toCompletableFuture(topologyManagementApi.removeMembers(request)),
         serializer::encode);
   }
 

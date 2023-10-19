@@ -17,12 +17,14 @@ import io.camunda.zeebe.topology.api.TopologyManagementRequest.AddMembersRequest
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.LeavePartitionRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.ReassignPartitionsRequest;
+import io.camunda.zeebe.topology.api.TopologyManagementRequest.RemoveMembersRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementResponse.StatusCode;
 import io.camunda.zeebe.topology.api.TopologyManagementResponse.TopologyChangeStatus;
 import io.camunda.zeebe.topology.changes.TopologyChangeCoordinator;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.MemberJoinOperation;
+import io.camunda.zeebe.topology.state.TopologyChangeOperation.MemberLeaveOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
@@ -54,6 +56,16 @@ final class TopologyManagementRequestsHandler implements TopologyManagementApi {
     return applyOperations(
         addMembersRequest.members().stream()
             .map(MemberJoinOperation::new)
+            .map(TopologyChangeOperation.class::cast)
+            .toList());
+  }
+
+  @Override
+  public ActorFuture<TopologyChangeStatus> removeMembers(
+      final RemoveMembersRequest removeMembersRequest) {
+    return applyOperations(
+        removeMembersRequest.members().stream()
+            .map(MemberLeaveOperation::new)
             .map(TopologyChangeOperation.class::cast)
             .toList());
   }

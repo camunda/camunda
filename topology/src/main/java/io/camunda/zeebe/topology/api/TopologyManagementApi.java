@@ -12,12 +12,15 @@ import io.camunda.zeebe.topology.api.TopologyManagementRequest.AddMembersRequest
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.LeavePartitionRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.ReassignPartitionsRequest;
+import io.camunda.zeebe.topology.api.TopologyManagementRequest.RemoveMembersRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementResponse.TopologyChangeStatus;
 
 /** Defines the API for the topology management requests. */
 public interface TopologyManagementApi {
 
   ActorFuture<TopologyChangeStatus> addMembers(AddMembersRequest addMembersRequest);
+
+  ActorFuture<TopologyChangeStatus> removeMembers(RemoveMembersRequest removeMembersRequest);
 
   ActorFuture<TopologyChangeStatus> joinPartition(JoinPartitionRequest joinPartitionRequest);
 

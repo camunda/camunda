@@ -14,6 +14,8 @@ import java.util.Set;
 public sealed interface TopologyManagementRequest {
   record AddMembersRequest(Set<MemberId> members) implements TopologyManagementRequest {}
 
+  record RemoveMembersRequest(Set<MemberId> members) implements TopologyManagementRequest {}
+
   record JoinPartitionRequest(MemberId memberId, int partitionId, int priority)
       implements TopologyManagementRequest {}
 
