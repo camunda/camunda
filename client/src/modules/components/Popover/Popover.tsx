@@ -320,7 +320,7 @@ Popover.ListBox = function ListBoxTrigger({label, children, disabled}: ListBoxTr
           {label}
         </label>
       )}
-      <ListBox isOpen={open} size="sm" disabled={disabled}>
+      <ListBox isOpen={open} size="sm" disabled={disabled} className="ListBoxTrigger">
         <button
           id={buttonId}
           type="button"

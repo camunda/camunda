@@ -1,10 +1,7 @@
 @use '@carbon/colors';
 
 .InstanceStateFilter {
-  .Popover .ButtonTrigger {
-    align-items: center;
-    justify-content: flex-start;
-
+  .Popover .ListBoxTrigger {
     .indicator {
       display: inline-block;
       width: 10px;

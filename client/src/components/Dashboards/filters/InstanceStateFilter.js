@@ -54,11 +54,11 @@ export default function InstanceStateFilter({filter = [], setFilter, children}) 
       <Popover
         isTabTip
         trigger={
-          <Popover.Button size="sm" kind="tertiary">
+          <Popover.ListBox size="sm">
             <span className={classnames('indicator', {active})} />
             {stateFilter.map(({type}) => t('dashboard.filter.types.' + type)).join(', ') ||
               t('common.off')}
-          </Popover.Button>
+          </Popover.ListBox>
         }
       >
         <Form>

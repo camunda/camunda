@@ -7,11 +7,11 @@
 
 import React from 'react';
 import {shallow} from 'enzyme';
+import {Button, Toggle} from '@carbon/react';
 
 import {Popover} from 'components';
 
 import InstanceStateFilter from './InstanceStateFilter';
-import {Button, Toggle} from '@carbon/react';
 
 jest.mock('services', () => {
   return {
@@ -50,8 +50,8 @@ it('should show the filter state', () => {
 
   expect(node.find(Toggle).at(0)).toHaveProp('toggled', true);
   const popoverButton = shallow(node.find(Popover).prop('trigger'));
-  expect(popoverButton.text()).toBe('Running');
-  expect(popoverButton.find('span')).toHaveClassName('indicator active');
+  expect(popoverButton.text()).toContain('Running');
+  expect(popoverButton.find('span.indicator.active')).toExist();
 });
 
 it('should reset the filter state', () => {
