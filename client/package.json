@@ -55,7 +55,7 @@
     "coverage": "yarn test --coverage --collectCoverageFrom=src/**/* --changedSince=origin/master --watchAll=false --passWithNoTests",
     "analyze-bundle": "react-scripts build && source-map-explorer 'build/static/js/*.js'",
     "playwright": "playwright test",
-    "start-visual-regression-docker": "docker run --rm --network host -v $(pwd):/work/ -w /work/ -it mcr.microsoft.com/playwright:v1.38.1-focal /bin/bash",
+    "start-visual-regression-docker": "docker run --rm --network host -v $(pwd):/work/ -w /work/ -it mcr.microsoft.com/playwright:v1.39.0-focal /bin/bash",
     "start:visual-regression": "serve build/ -p 8081 -n -s -L",
     "build:visual-regression": "REACT_APP_VERSION=0.0.0-SNAPSHOT yarn build"
   },
@@ -66,7 +66,7 @@
   },
   "devDependencies": {
     "@babel/plugin-proposal-private-property-in-object": "7.21.11",
-    "@playwright/test": "1.38.1",
+    "@playwright/test": "1.39.0",
     "@testing-library/jest-dom": "6.1.3",
     "@testing-library/react": "14.0.0",
     "@testing-library/react-hooks": "8.0.1",
