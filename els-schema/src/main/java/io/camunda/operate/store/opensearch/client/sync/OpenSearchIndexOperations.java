@@ -90,6 +90,18 @@ public class OpenSearchIndexOperations extends OpenSearchRetryOperation {
     }
   }
 
+  public void refresh(String ... indexPatterns) {
+    final var refreshRequest = new RefreshRequest.Builder().index(List.of(indexPatterns)).build();
+    try {
+      final RefreshResponse refresh = openSearchClient.indices().refresh(refreshRequest);
+      if (refresh.shards().failures().size() > 0) {
+        logger.warn("Unable to refresh indices: {}", List.of(indexPatterns));
+      }
+    } catch (Exception ex) {
+      logger.warn(String.format("Unable to refresh indices: %s", List.of(indexPatterns)), ex);
+    }
+  }
+
   public void refreshWithRetries(final String indexPattern) {
     executeWithRetries(
       "Refresh " + indexPattern,

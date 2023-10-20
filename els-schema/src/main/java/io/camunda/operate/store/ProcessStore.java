@@ -14,8 +14,6 @@ import org.springframework.lang.Nullable;
 import java.io.IOException;
 import java.util.*;
 
-import static io.camunda.operate.util.ElasticsearchUtil.QueryType;
-
 public interface ProcessStore {
 
 
@@ -49,10 +47,9 @@ public interface ProcessStore {
   void deleteProcessInstanceFromTreePath(String processInstanceKey);
 
   List<ProcessInstanceForListViewEntity> getProcessInstancesByProcessAndStates(long processDefinitionKey, Set<ProcessInstanceState> states, int size,
-                                                                               String[] includeFields, String[] excludeFields, QueryType queryType);
+                                                                               String[] includeFields);
 
-  List<ProcessInstanceForListViewEntity> getProcessInstancesByParentKeys(Set<Long> parentProcessInstanceKeys, int size, String[] includeFields,
-                                                                         String[] excludeFields, QueryType queryType);
+  List<ProcessInstanceForListViewEntity> getProcessInstancesByParentKeys(Set<Long> parentProcessInstanceKeys, int size, String[] includeFields);
 
   long deleteProcessInstancesAndDependants(Set<Long> processInstanceKeys);
 

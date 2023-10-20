@@ -7,6 +7,7 @@
 package io.camunda.operate.store.opensearch.dsl;
 
 import io.camunda.operate.tenant.TenantCheckApplierHolder;
+import io.camunda.operate.util.CollectionUtil;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.Script;
@@ -178,11 +179,20 @@ public interface QueryDSL {
   }
 
   static SourceConfig sourceInclude(String... fields) {
+    if (CollectionUtil.isEmpty(fields)) return sourceInclude(List.of());
     return sourceInclude(List.of(fields));
   }
 
   static SourceConfig sourceExclude(String... fields) {
+    if (CollectionUtil.isEmpty(fields)) return sourceExclude(List.of());
     return sourceExclude(List.of(fields));
+  }
+
+  static SourceConfig sourceIncludesExcludes(String[] includes, String[] excludes) {
+    return sourceIncludesExcludes(
+        includes == null? List.of() : List.of(includes),
+        excludes == null? List.of() : List.of(excludes)
+    );
   }
 
   static SourceConfig sourceExclude(List<String> fields) {
@@ -191,6 +201,10 @@ public interface QueryDSL {
 
   static SourceConfig sourceInclude(List<String> fields) {
     return SourceConfig.of(s -> s.filter(f -> f.includes(fields)));
+  }
+
+  static SourceConfig sourceIncludesExcludes(List<String> includes, List<String> excludes) {
+    return SourceConfig.of(s -> s.filter(f -> f.includes(includes).excludes(excludes)));
   }
 
   static <C extends Collection<String>> Query stringTerms(String field, C values) {

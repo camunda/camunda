@@ -6,20 +6,13 @@
  */
 package io.camunda.operate.it.store;
 
+import io.camunda.operate.elasticsearch.TestSearchRepository;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceState;
-import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.schema.indices.ProcessIndex;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.store.ProcessStore;
 import io.camunda.operate.util.OperateZeebeAbstractIT;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,7 +44,7 @@ public class ProcessStoreIT extends OperateZeebeAbstractIT {
   private ProcessIndex processIndex;
 
   @Autowired
-  private RestHighLevelClient esClient;
+  private TestSearchRepository searchRepository;
 
   @Before
   public void before() {
@@ -63,7 +56,7 @@ public class ProcessStoreIT extends OperateZeebeAbstractIT {
     // given
 
     // when
-    List<ProcessInstanceForListViewEntity> processInstances = processStore.getProcessInstancesByProcessAndStates(123L, Set.of(ProcessInstanceState.COMPLETED), 10, null, null, QueryType.ALL);
+    List<ProcessInstanceForListViewEntity> processInstances = processStore.getProcessInstancesByProcessAndStates(123L, Set.of(ProcessInstanceState.COMPLETED), 10, null);
 
     // then
     assertThat(processInstances.size()).isZero();
@@ -79,7 +72,7 @@ public class ProcessStoreIT extends OperateZeebeAbstractIT {
     }
 
     // when
-    List<ProcessInstanceForListViewEntity> processInstances = processStore.getProcessInstancesByProcessAndStates(processDefinitionKey, Set.of(ProcessInstanceState.ACTIVE), 10, null, null, QueryType.ALL);
+    List<ProcessInstanceForListViewEntity> processInstances = processStore.getProcessInstancesByProcessAndStates(processDefinitionKey, Set.of(ProcessInstanceState.ACTIVE), 10, null);
 
     // then
     assertThat(processInstances.size()).isZero();
@@ -95,7 +88,7 @@ public class ProcessStoreIT extends OperateZeebeAbstractIT {
     }
 
     // when
-    List<ProcessInstanceForListViewEntity> processInstances = processStore.getProcessInstancesByProcessAndStates(processDefinitionKey, Set.of(ProcessInstanceState.COMPLETED), 1, null, null, QueryType.ALL);
+    List<ProcessInstanceForListViewEntity> processInstances = processStore.getProcessInstancesByProcessAndStates(processDefinitionKey, Set.of(ProcessInstanceState.COMPLETED), 1, null);
 
     // then
     assertThat(processInstances.size()).isEqualTo(1);
@@ -111,7 +104,7 @@ public class ProcessStoreIT extends OperateZeebeAbstractIT {
     }
 
     // when
-    List<ProcessInstanceForListViewEntity> processInstances = processStore.getProcessInstancesByProcessAndStates(processDefinitionKey, Set.of(ProcessInstanceState.COMPLETED), 10, null, null, QueryType.ALL);
+    List<ProcessInstanceForListViewEntity> processInstances = processStore.getProcessInstancesByProcessAndStates(processDefinitionKey, Set.of(ProcessInstanceState.COMPLETED), 10, null);
 
     // then
     assertThat(processInstances.size()).isEqualTo(2);
@@ -128,7 +121,7 @@ public class ProcessStoreIT extends OperateZeebeAbstractIT {
     }
 
     // when
-    List<ProcessInstanceForListViewEntity> processInstances = processStore.getProcessInstancesByParentKeys(parentKeys, 10, null, null, QueryType.ALL);
+    List<ProcessInstanceForListViewEntity> processInstances = processStore.getProcessInstancesByParentKeys(parentKeys, 10, null);
 
     // then
     assertThat(processInstances.size()).isEqualTo(2);
@@ -136,7 +129,7 @@ public class ProcessStoreIT extends OperateZeebeAbstractIT {
   }
 
   @Test
-  public void shouldDeleteProcessDefinitionsByKeys() {
+  public void shouldDeleteProcessDefinitionsByKeys() throws IOException {
     // given
     long processDefinitionKeyParent = deployProcess(PARENT_PROCESS_RESOURCE);
     long processDefinitionKeyChild = deployProcess(CHILD_PROCESS_RESOURCE);
@@ -144,16 +137,17 @@ public class ProcessStoreIT extends OperateZeebeAbstractIT {
     // when
     long deleted = processStore.deleteProcessDefinitionsByKeys(processDefinitionKeyParent);
     processStore.refreshIndices(processIndex.getAlias());
-    List<SearchHit> documents = searchAllDocuments(processIndex.getAlias());
+    record Result(Long key){}
+    List<Result> documents = searchRepository.searchAll(processIndex.getAlias(), Result.class);
 
     // then
     assertThat(deleted).isEqualTo(1);
     assertThat(documents.size()).isEqualTo(1);
-    assertThat(documents.get(0).getSourceAsMap().get(ProcessIndex.KEY)).isEqualTo(processDefinitionKeyChild);
+    assertThat(documents.get(0).key()).isEqualTo(processDefinitionKeyChild);
   }
 
   @Test
-  public void shouldDeleteAllProcessDefinitionsByKeys() {
+  public void shouldDeleteAllProcessDefinitionsByKeys() throws IOException {
     // given
     long processDefinitionKeyParent = deployProcess(PARENT_PROCESS_RESOURCE);
     long processDefinitionKeyChild = deployProcess(CHILD_PROCESS_RESOURCE);
@@ -161,7 +155,7 @@ public class ProcessStoreIT extends OperateZeebeAbstractIT {
     // when
     long deleted = processStore.deleteProcessDefinitionsByKeys(processDefinitionKeyParent, processDefinitionKeyChild);
     processStore.refreshIndices(processIndex.getAlias());
-    List<SearchHit> documents = searchAllDocuments(processIndex.getAlias());
+    List<Void> documents = searchRepository.searchAll(processIndex.getAlias(), Void.class);
 
     // then
     assertThat(deleted).isEqualTo(2);
@@ -169,7 +163,7 @@ public class ProcessStoreIT extends OperateZeebeAbstractIT {
   }
 
   @Test
-  public void shouldDeleteProcessInstancesAndDependants() {
+  public void shouldDeleteProcessInstancesAndDependants() throws IOException {
     // given
     long processDefinitionKey = deployProcess(DEMO_PROCESS_RESOURCE);
     String payload = "{\"manualTasks\":true}";
@@ -181,8 +175,9 @@ public class ProcessStoreIT extends OperateZeebeAbstractIT {
     // when
     long deleted = processStore.deleteProcessInstancesAndDependants(Set.of(processInstances.get(0)));
     processStore.refreshIndices(listViewTemplate.getAlias());
-    List<SearchHit> documents = searchAllDocuments(listViewTemplate.getAlias());
-    Set<Long> processInstanceKeysLeft = documents.stream().map(x -> (Long) x.getSourceAsMap().get(ListViewTemplate.PROCESS_INSTANCE_KEY)).collect(Collectors.toSet());
+    record Result(Long processInstanceKey){}
+    List<Result> documents = searchRepository.searchAll(listViewTemplate.getAlias(), Result.class);
+    Set<Long> processInstanceKeysLeft = documents.stream().map(Result::processInstanceKey).collect(Collectors.toSet());
 
     // then
     assertThat(deleted).isEqualTo(22);
@@ -191,7 +186,7 @@ public class ProcessStoreIT extends OperateZeebeAbstractIT {
   }
 
   @Test
-  public void shouldDeleteAllProcessInstancesAndDependants() {
+  public void shouldDeleteAllProcessInstancesAndDependants() throws IOException {
     // given
     long processDefinitionKey = deployProcess(DEMO_PROCESS_RESOURCE);
     String payload = "{\"manualTasks\":true}";
@@ -203,7 +198,7 @@ public class ProcessStoreIT extends OperateZeebeAbstractIT {
     // when
     long deleted = processStore.deleteProcessInstancesAndDependants(new HashSet<>(processInstances));
     processStore.refreshIndices(listViewTemplate.getAlias());
-    List<SearchHit> documents = searchAllDocuments(listViewTemplate.getAlias());
+    List<Void> documents = searchRepository.searchAll(listViewTemplate.getAlias(), Void.class);
 
     // then
     assertThat(deleted).isEqualTo(44);
@@ -213,15 +208,5 @@ public class ProcessStoreIT extends OperateZeebeAbstractIT {
   protected Long deployProcess(String resourceName) {
     Long processDefinitionKey = tester.deployProcess(resourceName).waitUntil().processIsDeployed().getProcessDefinitionKey();
     return processDefinitionKey;
-  }
-
-  protected List<SearchHit> searchAllDocuments(String index) {
-    SearchRequest searchRequest = new SearchRequest(index).source(new SearchSourceBuilder().size(1000).query(QueryBuilders.matchAllQuery()));
-    try {
-      SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      return Arrays.asList(response.getHits().getHits());
-    } catch (IOException ex) {
-      throw new OperateRuntimeException("Search failed for index " + index, ex);
-    }
   }
 }

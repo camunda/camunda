@@ -303,6 +303,15 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
       });
   }
 
+  public long deleteByQuery(String index, Query query) {
+    return executeWithRetries(
+        () -> {
+          final DeleteByQueryRequest request = deleteByQueryRequestBuilder(index).query(query).build();
+          final DeleteByQueryResponse response = openSearchClient.deleteByQuery(request);
+          return response.deleted();
+        });
+  }
+
   public boolean deleteWithRetries(String index, String id) {
     return executeWithRetries(() -> openSearchClient.delete(deleteRequestBuilder(index, id).build()).result() == Result.Deleted);
   }

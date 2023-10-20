@@ -10,11 +10,15 @@ import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.entities.ProcessEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceState;
+import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.schema.indices.ProcessIndex;
 import io.camunda.operate.schema.templates.ListViewTemplate;
+import io.camunda.operate.schema.templates.OperationTemplate;
+import io.camunda.operate.schema.templates.ProcessInstanceDependant;
+import io.camunda.operate.schema.templates.TemplateDescriptor;
 import io.camunda.operate.store.ProcessStore;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
-import io.camunda.operate.util.ElasticsearchUtil;
+import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.TreePath;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.aggregations.FiltersBucket;
@@ -37,14 +41,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.TREE_PATH;
-import static io.camunda.operate.schema.templates.ListViewTemplate.BPMN_PROCESS_ID;
-import static io.camunda.operate.schema.templates.ListViewTemplate.ID;
-import static io.camunda.operate.schema.templates.ListViewTemplate.INCIDENT;
-import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
-import static io.camunda.operate.schema.templates.ListViewTemplate.KEY;
-import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
-import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_KEY;
-import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_NAME;
+import static io.camunda.operate.schema.templates.ListViewTemplate.*;
 import static io.camunda.operate.store.opensearch.client.sync.OpenSearchDocumentOperations.TERMS_AGG_SIZE;
 import static io.camunda.operate.store.opensearch.client.sync.OpenSearchDocumentOperations.TOPHITS_AGG_SIZE;
 import static io.camunda.operate.store.opensearch.client.sync.OpenSearchRetryOperation.UPDATE_RETRY_COUNT;
@@ -61,8 +58,8 @@ import static java.util.function.UnaryOperator.identity;
 
 @Conditional(OpensearchCondition.class)
 @Component
-public class OpenSearchProcessStore implements ProcessStore {
-  private static final Logger logger = LoggerFactory.getLogger(OpenSearchProcessStore.class);
+public class OpensearchProcessStore implements ProcessStore {
+  private static final Logger logger = LoggerFactory.getLogger(OpensearchProcessStore.class);
   private static final String DISTINCT_FIELD_COUNTS = "distinctFieldCounts";
 
   @Autowired
@@ -73,6 +70,9 @@ public class OpenSearchProcessStore implements ProcessStore {
 
   @Autowired
   private ListViewTemplate listViewTemplate;
+
+  @Autowired
+  private List<ProcessInstanceDependant> processInstanceDependantTemplates;
 
   @Override
   public Optional<Long> getDistinctCountFor(String fieldName) {
@@ -302,27 +302,72 @@ public class OpenSearchProcessStore implements ProcessStore {
   }
 
   @Override
-  public List<ProcessInstanceForListViewEntity> getProcessInstancesByProcessAndStates(long processDefinitionKey, Set<ProcessInstanceState> states, int size, String[] includeFields, String[] excludeFields, ElasticsearchUtil.QueryType queryType) {
-    throw new UnsupportedOperationException();
+  public List<ProcessInstanceForListViewEntity> getProcessInstancesByProcessAndStates(long processDefinitionKey, Set<ProcessInstanceState> states, int size, String[] includeFields) {
+    if (CollectionUtil.isEmpty(states)){
+      throw new OperateRuntimeException("Parameter 'states' is needed to search by states.");
+    }
+
+    var searchRequest = searchRequestBuilder(listViewTemplate)
+        .size(size)
+        .query(
+            withTenantCheck(
+              and(
+                term(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION),
+                term(PROCESS_KEY, processDefinitionKey),
+                stringTerms(STATE,  states.stream().map(Enum::name).collect(Collectors.toList()))
+              )
+            )
+        )
+        .source(sourceInclude(includeFields));
+    return richOpenSearchClient.doc().searchValues(searchRequest, ProcessInstanceForListViewEntity.class);
   }
 
   @Override
-  public List<ProcessInstanceForListViewEntity> getProcessInstancesByParentKeys(Set<Long> parentProcessInstanceKeys, int size, String[] includeFields, String[] excludeFields, ElasticsearchUtil.QueryType queryType) {
-    throw new UnsupportedOperationException();
+  public List<ProcessInstanceForListViewEntity> getProcessInstancesByParentKeys(Set<Long> parentProcessInstanceKeys, int size, String[] includeFields) {
+    if (CollectionUtil.isEmpty(parentProcessInstanceKeys)) {
+      throw new OperateRuntimeException("Parameter 'parentProcessInstanceKeys' is needed to search by parents.");
+    }
+
+    var searchRequest = searchRequestBuilder(listViewTemplate)
+        .query(withTenantCheck(
+            and(
+                term(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION),
+                longTerms(PARENT_PROCESS_INSTANCE_KEY, parentProcessInstanceKeys)
+            )
+        ))
+        .source(sourceIncludesExcludes(includeFields, null));
+    return richOpenSearchClient.doc().scrollValues(searchRequest, ProcessInstanceForListViewEntity.class);
   }
 
   @Override
   public long deleteProcessDefinitionsByKeys(Long... processDefinitionKeys) {
-    throw new UnsupportedOperationException();
+    if (CollectionUtil.isEmpty(processDefinitionKeys)) return 0;
+    return richOpenSearchClient.doc()
+        .deleteByQuery(processIndex.getAlias(), longTerms(ProcessIndex.KEY, List.of(processDefinitionKeys)));
   }
 
   @Override
   public long deleteProcessInstancesAndDependants(Set<Long> processInstanceKeys) {
-    throw new UnsupportedOperationException();
+    if (CollectionUtil.isEmpty(processInstanceKeys)) return 0;
+
+    long count = 0;
+    List<ProcessInstanceDependant> processInstanceDependantsWithoutOperation =
+        processInstanceDependantTemplates.stream()
+            .filter(template -> !(template instanceof OperationTemplate))
+            .toList();
+    for (ProcessInstanceDependant template : processInstanceDependantsWithoutOperation) {
+      String indexName = ((TemplateDescriptor) template).getAlias();
+      count += richOpenSearchClient.doc()
+          .deleteByQuery(indexName, longTerms(ProcessInstanceDependant.PROCESS_INSTANCE_KEY, processInstanceKeys));
+    }
+    count += richOpenSearchClient.doc()
+        .deleteByQuery(listViewTemplate.getAlias(), longTerms(ListViewTemplate.PROCESS_INSTANCE_KEY, processInstanceKeys));
+    return count;
   }
 
   @Override
   public void refreshIndices(String... indices) {
-    throw new UnsupportedOperationException();
+    richOpenSearchClient.index().refresh(indices);
   }
+
 }

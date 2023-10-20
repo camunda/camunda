@@ -139,6 +139,14 @@ public abstract class CollectionUtil {
     return aCollection!=null && !aCollection.isEmpty();
   }
 
+  public static boolean isEmpty(Collection<?> aCollection) {
+    return aCollection == null || aCollection.isEmpty();
+  }
+
+  public static boolean isEmpty(Object ... objects) {
+    return objects == null || objects.length == 0;
+  }
+
   /**
    *
    * @param list

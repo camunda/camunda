@@ -28,8 +28,6 @@ import java.util.stream.Collectors;
 
 import static io.camunda.operate.schema.templates.ListViewTemplate.KEY;
 import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_KEY;
-import static io.camunda.operate.util.ElasticsearchUtil.QueryType;
-import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ALL;
 
 /**
  * Operation handler to delete process definitions and related data
@@ -61,7 +59,7 @@ public class DeleteProcessDefinitionHandler extends AbstractOperationHandler imp
     }
 
     List<ProcessInstanceForListViewEntity> runningInstances = processStore.getProcessInstancesByProcessAndStates(processDefinitionKey,
-            Set.of(ProcessInstanceState.ACTIVE), 1, null, null, QueryType.ALL);
+            Set.of(ProcessInstanceState.ACTIVE), 1, null);
     if (!runningInstances.isEmpty()) {
       failOperation(operation, String.format("Cannot delete process definition with key [%s]. Process instances still running.", processDefinitionKey));
       return;
@@ -91,7 +89,7 @@ public class DeleteProcessDefinitionHandler extends AbstractOperationHandler imp
     long totalDeleted = 0;
     while (true) {
       List<ProcessInstanceForListViewEntity> processInstances = processStore.getProcessInstancesByProcessAndStates(processDefinitionKey, states,
-              blockSize, includeFields, null, ALL);
+              blockSize, includeFields);
       if (processInstances.isEmpty()) {
         break;
       }
@@ -101,8 +99,7 @@ public class DeleteProcessDefinitionHandler extends AbstractOperationHandler imp
       while (!treeLevels.isEmpty()) {
         List<ProcessInstanceForListViewEntity> currentProcessInstances = treeLevels.get(currentLevel);
         Set<Long> currentKeys = currentProcessInstances.stream().map(OperateZeebeEntity::getKey).collect(Collectors.toSet());
-        List<ProcessInstanceForListViewEntity> children = processStore.getProcessInstancesByParentKeys(currentKeys, blockSize,
-                includeFields, null, ALL);
+        List<ProcessInstanceForListViewEntity> children = processStore.getProcessInstancesByParentKeys(currentKeys, blockSize, includeFields);
         if (children.isEmpty()) {
           long deleted = processStore.deleteProcessInstancesAndDependants(currentKeys);
           updateInstancesInBatchOperation(operation, currentKeys.size());

@@ -30,8 +30,6 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.client.core.CountRequest;
-import org.elasticsearch.client.core.CountResponse;
 import org.elasticsearch.index.query.*;
 import org.elasticsearch.index.reindex.BulkByScrollResponse;
 import org.elasticsearch.index.reindex.DeleteByQueryRequest;
@@ -443,7 +441,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
 
   @Override
   public List<ProcessInstanceForListViewEntity> getProcessInstancesByProcessAndStates(
-      long processDefinitionKey, Set<ProcessInstanceState> states, int size, String[] includeFields, String[] excludeFields, QueryType queryType) {
+      long processDefinitionKey, Set<ProcessInstanceState> states, int size, String[] includeFields) {
 
     if (states == null || states.isEmpty()) {
       throw new OperateRuntimeException("Parameter 'states' is needed to search by states.");
@@ -454,8 +452,8 @@ public class ElasticsearchProcessStore implements ProcessStore {
         QueryBuilders.termQuery(PROCESS_KEY, processDefinitionKey),
         QueryBuilders.termsQuery(STATE, states.stream().map(Enum::name).collect(Collectors.toList())));
     SearchSourceBuilder source = new SearchSourceBuilder().size(size).query(query)
-        .fetchSource(includeFields, excludeFields);
-    SearchRequest searchRequest = createSearchRequest(listViewTemplate, queryType).source(source);
+        .fetchSource(includeFields, null);
+    SearchRequest searchRequest = createSearchRequest(listViewTemplate, ALL).source(source);
 
     try {
       SearchResponse response = tenantAwareClient.search(searchRequest);
@@ -467,7 +465,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
 
   @Override
   public List<ProcessInstanceForListViewEntity> getProcessInstancesByParentKeys(Set<Long> parentProcessInstanceKeys, int size,
-                                                                                String[] includeFields, String[] excludeFields, QueryType queryType) {
+                                                                                String[] includeFields) {
 
     if (parentProcessInstanceKeys == null || parentProcessInstanceKeys.isEmpty()) {
       throw new OperateRuntimeException("Parameter 'parentProcessInstanceKeys' is needed to search by parents.");
@@ -477,8 +475,8 @@ public class ElasticsearchProcessStore implements ProcessStore {
         QueryBuilders.termQuery(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION),
         QueryBuilders.termsQuery(PARENT_PROCESS_INSTANCE_KEY, parentProcessInstanceKeys));
     SearchSourceBuilder source = new SearchSourceBuilder().size(size).query(query)
-        .fetchSource(includeFields, excludeFields);
-    SearchRequest searchRequest = createSearchRequest(listViewTemplate, queryType).source(source);
+        .fetchSource(includeFields, null);
+    SearchRequest searchRequest = createSearchRequest(listViewTemplate, ALL).source(source);
 
     try {
       return tenantAwareClient.search(searchRequest,
