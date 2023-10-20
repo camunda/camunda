@@ -90,12 +90,6 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-thymeleaf</artifactId>
-      <exclusions>
-        <exclusion>
-          <groupId>org.thymeleaf</groupId>
-          <artifactId>thymeleaf</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
 
     <dependency>

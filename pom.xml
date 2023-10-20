@@ -8,6 +8,12 @@
   <version>8.4.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
+  <parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>3.1.4</version>
+  </parent>
+
   <modules>
     <module>client</module>
     <module>common</module>
@@ -29,31 +35,6 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-    <version.zeebe>8.3.0</version.zeebe>
-    <version.identity>8.3.0</version.identity>
-    <version.log4j>2.17.2</version.log4j>
-    <version.elasticsearch>7.17.13</version.elasticsearch>
-    <version.elasticsearch-client>8.7.1</version.elasticsearch-client>
-    <version.opensearch>2.5.0</version.opensearch>
-    <version.spring.boot>3.1.4</version.spring.boot>
-    <version.junit>4.13.2</version.junit>
-    <version.springdoc>2.2.0</version.springdoc>
-    <version.jakarta.json>2.0.1</version.jakarta.json>
-    <version.micrometer>1.11.3</version.micrometer>
-    <version.mockito>5.5.0</version.mockito>
-    <version.assertj-core>3.24.2</version.assertj-core>
-    <version.jackson>2.15.2</version.jackson>
-    <version.gson>2.10.1</version.gson>
-    <version.node>v20.8.0</version.node>
-    <version.yarn>v1.22.10</version.yarn>
-    <version.snakeyaml>2.2</version.snakeyaml>
-    <version.apache.http5>5.2.1</version.apache.http5>
-    <version.thymeleaf>3.1.2.RELEASE</version.thymeleaf>
-    <version.failsafe>2.4.4</version.failsafe>
-
-    <zeebe-test-container.version>3.6.0</zeebe-test-container.version>
-    <elasticsearch-test-container.version>1.19.0</elasticsearch-test-container.version>
-
     <maven.compiler.target>17</maven.compiler.target>
     <maven.compiler.source>17</maven.compiler.source>
 
@@ -62,34 +43,45 @@
     <plugin.version.license>4.2</plugin.version.license>
     <license.header>${project.baseUri}/../license/license-header</license.header>
 
+    <includeLongITNames>**/*IT.java</includeLongITNames>
+
+    <!-- Version overrides from spring-boot parent pom -->
+    <commons-codec.version>1.16.0</commons-codec.version>
+    <commons-lang3.version>3.13.0</commons-lang3.version>
+    <snakeyaml.version>2.2</snakeyaml.version>
+    <mockito.version>5.5.0</mockito.version>
+    <!-- These are technically downgrades from what spring boot provides but keeping them as-is until reviewed by team -->
+    <httpcore5.version>5.2.1</httpcore5.version>
+    <jackson.version>2.15.2</jackson.version>
+    <micrometer.version>1.11.3</micrometer.version>
+
+    <!-- Library versions not provided by spring boot -->
+    <version.zeebe>8.3.0</version.zeebe>
+    <version.identity>8.3.0</version.identity>
+    <version.elasticsearch>7.17.13</version.elasticsearch>
+    <version.opensearch>2.5.0</version.opensearch>
+    <version.springdoc>2.2.0</version.springdoc>
+    <version.jakarta.json>2.0.1</version.jakarta.json>
+    <version.node>v20.8.0</version.node>
+    <version.yarn>v1.22.10</version.yarn>
+    <version.failsafe>2.4.4</version.failsafe>
+    <version.log4j.testjar>2.17.2</version.log4j.testjar>
+    <zeebe-test-container.version>3.6.0</zeebe-test-container.version>
+    <elasticsearch-test-container.version>1.19.0</elasticsearch-test-container.version>
+
     <!-- Auth0 Dependencies -->
     <!-- If any of the following version changes, -->
     <!-- please check if they are compatible with "mvc-auth-commons" -->
     <version.auth0>1.44.2</version.auth0>
     <version.auth0.commons>1.10.0</version.auth0.commons>
     <version.auth0.jwt>4.4.0</version.auth0.jwt>
-    <version.jakarta.servlet>6.0.0</version.jakarta.servlet>
     <version.jwks-rsa>0.22.1</version.jwks-rsa>
-    <version.commons.lang>3.13.0</version.commons.lang>
     <version.guava.annotations>r03</version.guava.annotations>
-    <version.commons.codec>1.16.0</version.commons.codec>
-
-    <includeLongITNames>**/*IT.java</includeLongITNames>
 
   </properties>
 
   <dependencyManagement>
     <dependencies>
-
-      <dependency>
-        <!-- Import dependency management from Spring Boot -->
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-dependencies</artifactId>
-        <version>${version.spring.boot}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-bom</artifactId>
@@ -121,33 +113,9 @@
         <groupId>org.elasticsearch</groupId>
         <artifactId>elasticsearch-x-content</artifactId>
         <version>${version.elasticsearch}</version>
-        <exclusions>
-          <exclusion>
-            <groupId>org.yaml</groupId>
-            <artifactId>snakeyaml</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-
-      <dependency>
-        <groupId>co.elastic.clients</groupId>
-        <artifactId>elasticsearch-java</artifactId>
-        <version>${version.elasticsearch-client}</version>
       </dependency>
 
       <!-- Opensearch  -->
-      <dependency>
-        <groupId>org.apache.httpcomponents.core5</groupId>
-        <artifactId>httpcore5</artifactId>
-        <version>${version.apache.http5}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.apache.httpcomponents.core5</groupId>
-        <artifactId>httpcore5-h2</artifactId>
-        <version>${version.apache.http5}</version>
-      </dependency>
-
       <dependency>
         <groupId>org.opensearch.client</groupId>
         <artifactId>opensearch-java</artifactId>
@@ -162,15 +130,9 @@
       </dependency>
 
       <dependency>
-        <groupId>org.yaml</groupId>
-        <artifactId>snakeyaml</artifactId>
-        <version>${version.snakeyaml}</version>
-      </dependency>
-
-      <dependency>
         <groupId>org.apache.logging.log4j</groupId>
         <artifactId>log4j-core</artifactId>
-        <version>${version.log4j}</version>
+        <version>${version.log4j.testjar}</version>
         <type>test-jar</type>
       </dependency>
 
@@ -187,87 +149,15 @@
       </dependency>
 
       <dependency>
-        <groupId>org.thymeleaf</groupId>
-        <artifactId>thymeleaf</artifactId>
-        <version>${version.thymeleaf}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>junit</groupId>
-        <artifactId>junit</artifactId>
-        <version>${version.junit}</version>
-      </dependency>
-
-      <dependency>
         <groupId>io.zeebe</groupId>
         <artifactId>zeebe-test-container</artifactId>
         <version>${zeebe-test-container.version}</version>
-        <exclusions>
-          <exclusion>
-            <groupId>org.testcontainers</groupId>
-            <artifactId>testcontainers</artifactId>
-          </exclusion>
-        </exclusions>
       </dependency>
 
       <dependency>
         <groupId>org.testcontainers</groupId>
         <artifactId>elasticsearch</artifactId>
         <version>${elasticsearch-test-container.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.fasterxml.jackson.core</groupId>
-        <artifactId>jackson-core</artifactId>
-        <version>${version.jackson}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.fasterxml.jackson.core</groupId>
-        <artifactId>jackson-databind</artifactId>
-        <version>${version.jackson}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.fasterxml.jackson.core</groupId>
-        <artifactId>jackson-annotations</artifactId>
-        <version>${version.jackson}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.micrometer</groupId>
-        <artifactId>micrometer-registry-prometheus</artifactId>
-        <version>${version.micrometer}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.micrometer</groupId>
-        <artifactId>micrometer-core</artifactId>
-        <version>${version.micrometer}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.mockito</groupId>
-        <artifactId>mockito-core</artifactId>
-        <version>${version.mockito}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.assertj</groupId>
-        <artifactId>assertj-core</artifactId>
-        <version>${version.assertj-core}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.google.code.gson</groupId>
-        <artifactId>gson</artifactId>
-        <version>${version.gson}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.apache.httpcomponents.client5</groupId>
-        <artifactId>httpclient5</artifactId>
-        <version>${version.apache.http5}</version>
       </dependency>
 
       <!-- Auth0 and it's direct dependencies -->
@@ -296,27 +186,9 @@
       </dependency>
 
       <dependency>
-        <groupId>jakarta.servlet</groupId>
-        <artifactId>jakarta.servlet-api</artifactId>
-        <version>${version.jakarta.servlet}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.apache.commons</groupId>
-        <artifactId>commons-lang3</artifactId>
-        <version>${version.commons.lang}</version>
-      </dependency>
-
-      <dependency>
         <groupId>com.google.guava</groupId>
         <artifactId>guava-annotations</artifactId>
         <version>${version.guava.annotations}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>commons-codec</groupId>
-        <artifactId>commons-codec</artifactId>
-        <version>${version.commons.codec}</version>
       </dependency>
 
       <!-- Start AWS -->
@@ -400,7 +272,6 @@
         <plugin>
           <groupId>org.springframework.boot</groupId>
           <artifactId>spring-boot-maven-plugin</artifactId>
-          <version>${version.spring.boot}</version>
         </plugin>
 
         <plugin>
