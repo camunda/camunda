@@ -135,6 +135,7 @@ public class OpensearchIncidentStatisticsReader implements IncidentStatisticsRea
     for (List<ProcessEntity> processes: processGroups.values()) {
       IncidentsByProcessGroupStatisticsDto stat = new IncidentsByProcessGroupStatisticsDto();
       stat.setBpmnProcessId(processes.get(0).getBpmnProcessId());
+      stat.setTenantId(processes.get(0).getTenantId());
 
       //accumulate stat for process group
       long activeInstancesCount = 0;
@@ -154,6 +155,7 @@ public class OpensearchIncidentStatisticsReader implements IncidentStatisticsRea
         }
         statForProcess.setName(processEntity.getName());
         statForProcess.setBpmnProcessId(processEntity.getBpmnProcessId());
+        statForProcess.setTenantId(processEntity.getTenantId());
         statForProcess.setVersion(processEntity.getVersion());
         stat.getProcesses().add(statForProcess);
 
@@ -176,7 +178,7 @@ public class OpensearchIncidentStatisticsReader implements IncidentStatisticsRea
     Set<IncidentsByErrorMsgStatisticsDto> result = new TreeSet<>(IncidentsByErrorMsgStatisticsDto.COMPARATOR);
 
     Map<Long, ProcessEntity> processes = processReader.getProcessesWithFields(
-      ProcessIndex.KEY, ProcessIndex.NAME, ProcessIndex.BPMN_PROCESS_ID, ProcessIndex.VERSION);
+      ProcessIndex.KEY, ProcessIndex.NAME, ProcessIndex.BPMN_PROCESS_ID, ProcessIndex.TENANT_ID, ProcessIndex.VERSION);
 
     Query query = permissionsService == null ? ACTIVE_INCIDENT_QUERY : and(ACTIVE_INCIDENT_QUERY, createQueryForProcessesByPermission(IdentityPermission.READ));
 
@@ -237,6 +239,7 @@ public class OpensearchIncidentStatisticsReader implements IncidentStatisticsRea
           ProcessEntity process = processes.get(processDefinitionKey);
           statisticForProcess.setName(process.getName());
           statisticForProcess.setBpmnProcessId(process.getBpmnProcessId());
+          statisticForProcess.setTenantId(process.getTenantId());
           statisticForProcess.setVersion(process.getVersion());
           processStatistics.getProcesses().add(statisticForProcess);
         }
