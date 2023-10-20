@@ -15,7 +15,7 @@ public final class POJOArray extends UnpackedObject {
   protected final ArrayProperty<MinimalPOJO> simpleArrayProp;
 
   public POJOArray() {
-    simpleArrayProp = new ArrayProperty<>("simpleArray", new MinimalPOJO());
+    simpleArrayProp = new ArrayProperty<>("simpleArray", MinimalPOJO::new);
 
     declareProperty(simpleArrayProp);
   }

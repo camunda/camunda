@@ -20,7 +20,7 @@ public final class MessageBatchRecord extends UnifiedRecordValue
     implements MessageBatchRecordValue {
 
   private final ArrayProperty<LongValue> messageKeysProp =
-      new ArrayProperty<>("messageKeys", new LongValue());
+      new ArrayProperty<>("messageKeys", LongValue::new);
 
   public MessageBatchRecord() {
     declareProperty(messageKeysProp);

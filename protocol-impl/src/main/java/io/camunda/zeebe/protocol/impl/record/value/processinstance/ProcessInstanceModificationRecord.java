@@ -26,15 +26,15 @@ public final class ProcessInstanceModificationRecord extends UnifiedRecordValue
   private final ArrayProperty<ProcessInstanceModificationTerminateInstruction>
       terminateInstructionsProperty =
           new ArrayProperty<>(
-              "terminateInstructions", new ProcessInstanceModificationTerminateInstruction());
+              "terminateInstructions", ProcessInstanceModificationTerminateInstruction::new);
   private final ArrayProperty<ProcessInstanceModificationActivateInstruction>
       activateInstructionsProperty =
           new ArrayProperty<>(
-              "activateInstructions", new ProcessInstanceModificationActivateInstruction());
+              "activateInstructions", ProcessInstanceModificationActivateInstruction::new);
 
   @Deprecated(since = "8.1.3")
   private final ArrayProperty<LongValue> activatedElementInstanceKeys =
-      new ArrayProperty<>("activatedElementInstanceKeys", new LongValue());
+      new ArrayProperty<>("activatedElementInstanceKeys", LongValue::new);
 
   public ProcessInstanceModificationRecord() {
     declareProperty(processInstanceKeyProperty)
