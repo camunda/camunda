@@ -76,7 +76,7 @@ jobs:
 
       # Reports: publish test results
       - name: Publish Test Results
-        uses: EnricoMi/publish-unit-test-result-action@v2.10.0
+        uses: EnricoMi/publish-unit-test-result-action@v2.11.0
         if: always()
         with:
           check_name: "BackupRestore test results with '${{ inputs.database }}'"

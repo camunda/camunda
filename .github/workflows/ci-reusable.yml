@@ -147,7 +147,7 @@ jobs:
       #########################################################################
       # Reports: publish test metrics results
       - name: Publish Test Results
-        uses: EnricoMi/publish-unit-test-result-action@v2.10.0
+        uses: EnricoMi/publish-unit-test-result-action@v2.11.0
         if: ${{ env.IS_FE_BRANCH == 'false' && (success() || failure()) }} # Publish results for non-FE branch even if the build step was failed
         with:
           files: |
