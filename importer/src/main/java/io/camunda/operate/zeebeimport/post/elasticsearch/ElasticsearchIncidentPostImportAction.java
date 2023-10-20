@@ -4,25 +4,20 @@
  * See the License.txt file for more information. You may not use this file
  * except in compliance with the proprietary license.
  */
-package io.camunda.operate.zeebeimport.post;
+package io.camunda.operate.zeebeimport.post.elasticsearch;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.entities.IncidentEntity;
 import io.camunda.operate.entities.IncidentState;
-import io.camunda.operate.entities.meta.ImportPositionEntity;
 import io.camunda.operate.entities.post.PostImporterActionType;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.*;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.ElasticsearchUtil;
-import io.camunda.operate.util.ThreadUtil;
-import io.camunda.operate.zeebe.ImportValueType;
-import io.camunda.operate.zeebeimport.ImportPositionHolder;
 import io.camunda.operate.util.TreePath;
-import org.elasticsearch.action.bulk.BulkRequest;
+import io.camunda.operate.zeebeimport.post.*;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.update.UpdateRequest;
@@ -38,17 +33,13 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Scope;
 import org.springframework.lang.Nullable;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.time.Instant;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import static io.camunda.operate.entities.IncidentState.ACTIVE;
@@ -62,7 +53,6 @@ import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION
 import static io.camunda.operate.schema.templates.PostImporterQueueTemplate.*;
 import static io.camunda.operate.schema.templates.TemplateDescriptor.PARTITION_ID;
 import static io.camunda.operate.util.ElasticsearchUtil.*;
-import static java.time.temporal.ChronoUnit.MILLIS;
 import static java.util.stream.Collectors.toMap;
 import static org.elasticsearch.index.query.QueryBuilders.*;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
@@ -70,16 +60,9 @@ import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROT
 @Conditional(ElasticsearchCondition.class)
 @Component
 @Scope(SCOPE_PROTOTYPE)
-public class ElasticsearchIncidentPostImportAction implements PostImportAction {
+public class ElasticsearchIncidentPostImportAction extends AbstractIncidentPostImportAction implements PostImportAction {
 
   private static final Logger logger = LoggerFactory.getLogger(ElasticsearchIncidentPostImportAction.class);
-  public static final long BACKOFF = 2000L;
-
-  private int partitionId;
-
-  @Autowired
-  @Qualifier("postImportThreadPoolScheduler")
-  private ThreadPoolTaskScheduler postImportScheduler;
 
   @Autowired
   private RestHighLevelClient esClient;
@@ -100,66 +83,15 @@ public class ElasticsearchIncidentPostImportAction implements PostImportAction {
   private PostImporterQueueTemplate postImporterQueueTemplate;
 
   @Autowired
-  private OperateProperties operateProperties;
-
-  @Autowired
   private ObjectMapper objectMapper;
 
-  @Autowired
-  private ImportPositionHolder importPositionHolder;
-
-  private ImportPositionEntity lastProcessedPosition;
-
   public ElasticsearchIncidentPostImportAction(final int partitionId) {
-    this.partitionId = partitionId;
+      super(partitionId);
   }
 
-  private List<IncidentEntity> processPendingIncidents() throws IOException {
+  protected boolean processIncidents(AdditionalData data, PendingIncidentsBatch batch) throws PersistenceException {
 
-    if (lastProcessedPosition == null) {
-      lastProcessedPosition = importPositionHolder.getLatestLoadedPosition(
-        ImportValueType.INCIDENT.getAliasTemplate(), partitionId);
-    }
-
-    AdditionalData data = new AdditionalData();
-
-    PendingIncidentsBatch batch = getPendingIncidents(data, lastProcessedPosition.getPostImporterPosition());
-
-    if (batch.getIncidents().isEmpty()) {
-      return new ArrayList<>();
-    }
-
-    if (logger.isDebugEnabled()) {
-      logger.debug("Processing pending incidents: " + batch.getIncidents());
-    }
-
-    try {
-
-      searchForInstances(batch.getIncidents(), data);
-
-      boolean done = processIncidents(data, batch);
-
-      if (batch.getIncidents().size() > 0 && done) {
-        lastProcessedPosition.setPostImporterPosition(batch.getLastProcessedPosition());
-        importPositionHolder.recordLatestPostImportedPosition(lastProcessedPosition);
-      }
-
-      if (logger.isDebugEnabled()) {
-        logger.debug("Finished processing");
-      }
-
-    } catch (IOException | PersistenceException e) {
-      final String message = String.format(
-          "Exception occurred, while processing pending incidents: %s",
-          e.getMessage());
-      throw new OperateRuntimeException(message, e);
-    }
-    return batch.getIncidents();
-  }
-
-  private boolean processIncidents(AdditionalData data, PendingIncidentsBatch batch) throws PersistenceException {
-
-    PostImporterRequests updateRequests = new PostImporterRequests();
+    ElasticsearchPostImporterRequests updateRequests = new ElasticsearchPostImporterRequests();
 
     final List<String> treePathTerms = data.getIncidentTreePaths().values().stream().map(s -> getTreePathTerms(s))
         .flatMap(List::stream).collect(Collectors.toList());
@@ -202,7 +134,7 @@ public class ElasticsearchIncidentPostImportAction implements PostImportAction {
    * @param lastProcessedPosition
    * @return
    */
-  private PendingIncidentsBatch getPendingIncidents(final AdditionalData data, final Long lastProcessedPosition) {
+  protected PendingIncidentsBatch getPendingIncidents(final AdditionalData data, final Long lastProcessedPosition) {
 
     PendingIncidentsBatch pendingIncidentsBatch = new PendingIncidentsBatch();
 
@@ -323,7 +255,7 @@ public class ElasticsearchIncidentPostImportAction implements PostImportAction {
 
   private void updateProcessInstancesState(final String incidentId, final IncidentState newState, final List<String> piIds,
       final AdditionalData data,
-      final PostImporterRequests requests) {
+      final ElasticsearchPostImporterRequests requests) {
 
     if (!data.getProcessInstanceIndices().keySet().containsAll(piIds)) {
       data.getProcessInstanceIndices().putAll(getIndexNames(listViewTemplate, piIds, esClient));
@@ -354,7 +286,7 @@ public class ElasticsearchIncidentPostImportAction implements PostImportAction {
 
   }
 
-  private void updateProcessInstance(Map<String, String> processInstanceIndices, PostImporterRequests requests,
+  private void updateProcessInstance(Map<String, String> processInstanceIndices, ElasticsearchPostImporterRequests requests,
       Map<String, Object> updateFields, String piId) {
     String index = processInstanceIndices.get(piId);
     UpdateRequest updateRequest = createUpdateRequestFor(index, piId, updateFields, null, piId);
@@ -362,7 +294,7 @@ public class ElasticsearchIncidentPostImportAction implements PostImportAction {
   }
 
   private void updateFlowNodeInstancesState(final IncidentEntity incident, final List<String> fniIds,
-      final AdditionalData data, final PostImporterRequests requests) {
+      final AdditionalData data, final ElasticsearchPostImporterRequests requests) {
 
     if (!data.getFlowNodeInstanceIndices().keySet().containsAll(fniIds)) {
       data.getFlowNodeInstanceIndices().putAll(getIndexNamesAsList(flowNodeInstanceTemplate, fniIds, esClient));
@@ -404,7 +336,7 @@ public class ElasticsearchIncidentPostImportAction implements PostImportAction {
   }
 
   private void updateFlowNodeInstance(IncidentEntity incident, Map<String, List<String>> flowNodeInstanceIndices,
-      Map<String, List<String>> flowNodeInstanceInListViewIndices, PostImporterRequests requests,
+      Map<String, List<String>> flowNodeInstanceInListViewIndices, ElasticsearchPostImporterRequests requests,
       Map<String, Object> updateFields, String fniId) {
     if (flowNodeInstanceIndices.get(fniId) == null) {
       throw new OperateRuntimeException(String.format("Flow node instance was not yet imported %s", fniId));
@@ -425,7 +357,7 @@ public class ElasticsearchIncidentPostImportAction implements PostImportAction {
     });
   }
 
-  private void updateIncidents(final IncidentEntity incident, final IncidentState newState, final String index, final String incidentTreePath, final PostImporterRequests requests) {
+  private void updateIncidents(final IncidentEntity incident, final IncidentState newState, final String index, final String incidentTreePath, final ElasticsearchPostImporterRequests requests) {
     Map<String, Object> updateFields = new HashMap<>();
     updateFields.put(STATE, newState);
     if (newState.equals(ACTIVE)) {
@@ -442,7 +374,7 @@ public class ElasticsearchIncidentPostImportAction implements PostImportAction {
     return idSet.contains(key);
   }
 
-  private void searchForInstances(final List<IncidentEntity> incidents, final AdditionalData data)
+  protected void searchForInstances(final List<IncidentEntity> incidents, final AdditionalData data)
       throws IOException {
     //find process instances (if they exist) that correspond to given incidents
     final SearchRequest piRequest = ElasticsearchUtil.createSearchRequest(listViewTemplate)
@@ -525,244 +457,5 @@ public class ElasticsearchIncidentPostImportAction implements PostImportAction {
     }
     return updateRequest;
   }
-
-  /**
-   *
-   * @return true when we need to continue
-   */
-  @Override
-  public boolean performOneRound() throws IOException {
-    List<IncidentEntity> pendingIncidents = processPendingIncidents();
-    boolean smthWasProcessed = pendingIncidents.size() > 0;
-    return smthWasProcessed;
-  }
-
-  @Override
-  public void run() {
-    if (operateProperties.getImporter().isPostImportEnabled()) {
-      try {
-        if (performOneRound()) {
-          postImportScheduler.submit(this);
-        } else {
-          postImportScheduler.schedule(this, Instant.now().plus(BACKOFF, MILLIS));
-        }
-      } catch (Exception ex) {
-        logger.error(String.format("Exception occurred when performing post import for partition %d: %s. Will be retried...",
-            partitionId, ex.getMessage()), ex);
-        //TODO can it fail here?
-        postImportScheduler.schedule(this, Instant.now().plus(BACKOFF, MILLIS));
-      }
-    }
-  }
-
-  @Override
-  public void clearCache() {
-    lastProcessedPosition = null;
-  }
-
 }
 
-class PendingIncidentsBatch {
-  private List<IncidentEntity> incidents = new ArrayList<>();
-  private Map<Long, IncidentState> newIncidentStates = new HashMap<>();
-  private Long lastProcessedPosition;
-
-  public List<IncidentEntity> getIncidents() {
-    return incidents;
-  }
-
-  public PendingIncidentsBatch setIncidents(List<IncidentEntity> incidents) {
-    this.incidents = incidents;
-    return this;
-  }
-
-  public Map<Long, IncidentState> getNewIncidentStates() {
-    return newIncidentStates;
-  }
-
-  public PendingIncidentsBatch setNewIncidentStates(Map<Long, IncidentState> newIncidentStates) {
-    this.newIncidentStates = newIncidentStates;
-    return this;
-  }
-
-  public Long getLastProcessedPosition() {
-    return lastProcessedPosition;
-  }
-
-  public PendingIncidentsBatch setLastProcessedPosition(Object lastProcessedPosition) {
-    if (lastProcessedPosition == null) {
-      this.lastProcessedPosition = null;
-    } else if (lastProcessedPosition instanceof Integer) {
-      this.lastProcessedPosition = Long.valueOf((Integer) lastProcessedPosition);
-    } else if (lastProcessedPosition instanceof Long) {
-      this.lastProcessedPosition = (Long) lastProcessedPosition;
-    } else {
-      this.lastProcessedPosition = Long.valueOf(lastProcessedPosition.toString());
-    }
-    return this;
-  }
-}
-
-class PostImporterRequests {
-  private HashMap<String, UpdateRequest> listViewRequests = new HashMap<>();
-  private HashMap<String, UpdateRequest> flowNodeInstanceRequests = new HashMap<>();
-  private HashMap<String, UpdateRequest> incidentRequests = new HashMap<>();
-
-  public HashMap<String, UpdateRequest> getListViewRequests() {
-    return listViewRequests;
-  }
-
-  public PostImporterRequests setListViewRequests(HashMap<String, UpdateRequest> listViewRequests) {
-    this.listViewRequests = listViewRequests;
-    return this;
-  }
-
-  public HashMap<String, UpdateRequest> getFlowNodeInstanceRequests() {
-    return flowNodeInstanceRequests;
-  }
-
-  public PostImporterRequests setFlowNodeInstanceRequests(HashMap<String, UpdateRequest> flowNodeInstanceRequests) {
-    this.flowNodeInstanceRequests = flowNodeInstanceRequests;
-    return this;
-  }
-
-  public HashMap<String, UpdateRequest> getIncidentRequests() {
-    return incidentRequests;
-  }
-
-  public PostImporterRequests setIncidentRequests(HashMap<String, UpdateRequest> incidentRequests) {
-    this.incidentRequests = incidentRequests;
-    return this;
-  }
-  public boolean isEmpty() {
-    return listViewRequests.isEmpty() && flowNodeInstanceRequests.isEmpty() && incidentRequests.isEmpty();
-  }
-
-  public boolean execute(RestHighLevelClient esClient, OperateProperties operateProperties)
-      throws PersistenceException {
-
-    BulkRequest bulkRequest = new BulkRequest();
-
-    listViewRequests.values().stream().forEach(bulkRequest::add);
-    flowNodeInstanceRequests.values().stream().forEach(bulkRequest::add);
-    incidentRequests.values().stream().forEach(bulkRequest::add);
-
-    ElasticsearchUtil.processBulkRequest(esClient, bulkRequest,
-        operateProperties.getElasticsearch().getBulkRequestMaxSizeInBytes());
-
-    ThreadUtil.sleepFor(3000L);
-
-    return true;
-  }
-}
-
-class AdditionalData {
-
-  private Map<String, String> incidentIndices = new ConcurrentHashMap<>();
-  private Map<String, List<String>> flowNodeInstanceIndices = new ConcurrentHashMap<>();
-  private Map<String, List<String>> flowNodeInstanceInListViewIndices = new ConcurrentHashMap<>();
-  private Map<Long, String> processInstanceTreePaths = new ConcurrentHashMap<>();
-  private Map<String, String> incidentTreePaths = new ConcurrentHashMap<>();
-  private Map<String, String> processInstanceIndices = new ConcurrentHashMap<>();
-  private Map<String, Set<String>> piIdsWithIncidentIds = new ConcurrentHashMap<>();     //piId <-> active incident ids
-  private Map<String, Set<String>> fniIdsWithIncidentIds = new ConcurrentHashMap<>();    //flowNodeInstanceId <-> active incident ids
-
-  public Map<String, List<String>> getFlowNodeInstanceIndices() {
-    return flowNodeInstanceIndices;
-  }
-
-  public AdditionalData setFlowNodeInstanceIndices(Map<String, List<String>> flowNodeInstanceIndices) {
-    this.flowNodeInstanceIndices = flowNodeInstanceIndices;
-    return this;
-  }
-
-  public Map<String, List<String>> getFlowNodeInstanceInListViewIndices() {
-    return flowNodeInstanceInListViewIndices;
-  }
-
-  public AdditionalData setFlowNodeInstanceInListViewIndices(
-      Map<String, List<String>> flowNodeInstanceInListViewIndices) {
-    this.flowNodeInstanceInListViewIndices = flowNodeInstanceInListViewIndices;
-    return this;
-  }
-
-  public Map<Long, String> getProcessInstanceTreePaths() {
-    return processInstanceTreePaths;
-  }
-
-  public AdditionalData setProcessInstanceTreePaths(Map<Long, String> processInstanceTreePaths) {
-    this.processInstanceTreePaths = processInstanceTreePaths;
-    return this;
-  }
-
-  public Map<String, String> getProcessInstanceIndices() {
-    return processInstanceIndices;
-  }
-
-  public AdditionalData setProcessInstanceIndices(Map<String, String> processInstanceIndices) {
-    this.processInstanceIndices = processInstanceIndices;
-    return this;
-  }
-
-  public Map<String, String> getIncidentIndices() {
-    return incidentIndices;
-  }
-
-  public AdditionalData setIncidentIndices(Map<String, String> incidentIndices) {
-    this.incidentIndices = incidentIndices;
-    return this;
-  }
-
-  public Map<String, Set<String>> getPiIdsWithIncidentIds() {
-    return piIdsWithIncidentIds;
-  }
-
-  public void addPiIdsWithIncidentIds(String piId, String incidentId) {
-    if (piIdsWithIncidentIds.get(piId) == null) {
-      piIdsWithIncidentIds.put(piId, new HashSet<>());
-    }
-    piIdsWithIncidentIds.get(piId).add(incidentId);
-  }
-
-  public void deleteIncidentIdByPiId(String piId, String incidentId) {
-    if (piIdsWithIncidentIds.get(piId) != null) {
-      piIdsWithIncidentIds.get(piId).remove(incidentId);
-    }
-  }
-
-  public AdditionalData setPiIdsWithIncidentIds(Map<String, Set<String>> piIdsWithIncidentIds) {
-    this.piIdsWithIncidentIds = piIdsWithIncidentIds;
-    return this;
-  }
-
-  public Map<String, Set<String>> getFniIdsWithIncidentIds() {
-    return fniIdsWithIncidentIds;
-  }
-
-  public void addFniIdsWithIncidentIds(String fniId, String incidentId) {
-    if (fniIdsWithIncidentIds.get(fniId) == null) {
-      fniIdsWithIncidentIds.put(fniId, new HashSet<>());
-    }
-    fniIdsWithIncidentIds.get(fniId).add(incidentId);
-  }
-
-  public void deleteIncidentIdByFniId(String fniId, String incidentId) {
-    if (fniIdsWithIncidentIds.get(fniId) != null) {
-      fniIdsWithIncidentIds.get(fniId).remove(incidentId);
-    }
-  }
-
-  public AdditionalData setFniIdsWithIncidentIds(Map<String, Set<String>> fniIdsWithIncidentIds) {
-    this.fniIdsWithIncidentIds = fniIdsWithIncidentIds;
-    return this;
-  }
-
-  public Map<String, String> getIncidentTreePaths() {
-    return incidentTreePaths;
-  }
-
-  public AdditionalData setIncidentTreePaths(Map<String, String> incidentTreePaths) {
-    this.incidentTreePaths = incidentTreePaths;
-    return this;
-  }
-}

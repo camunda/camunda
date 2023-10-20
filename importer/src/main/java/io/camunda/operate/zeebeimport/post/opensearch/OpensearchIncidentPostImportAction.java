@@ -4,28 +4,25 @@
  * See the License.txt file for more information. You may not use this file
  * except in compliance with the proprietary license.
  */
-package io.camunda.operate.zeebeimport.post;
+package io.camunda.operate.zeebeimport.post.opensearch;
 
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.entities.IncidentEntity;
 import io.camunda.operate.entities.IncidentState;
-import io.camunda.operate.entities.meta.ImportPositionEntity;
 import io.camunda.operate.entities.post.PostImporterActionType;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.*;
-import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.util.CollectionUtil;
-import io.camunda.operate.util.ThreadUtil;
 import io.camunda.operate.util.TreePath;
-import io.camunda.operate.zeebe.ImportValueType;
-import io.camunda.operate.zeebeimport.ImportPositionHolder;
+import io.camunda.operate.zeebeimport.post.AbstractIncidentPostImportAction;
+import io.camunda.operate.zeebeimport.post.AdditionalData;
+import io.camunda.operate.zeebeimport.post.PendingIncidentsBatch;
+import io.camunda.operate.zeebeimport.post.PostImportAction;
 import org.opensearch.client.opensearch._types.Script;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
-import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.bulk.UpdateOperation;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.indices.AnalyzeRequest;
@@ -33,15 +30,12 @@ import org.opensearch.client.opensearch.indices.analyze.AnalyzeToken;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Scope;
 import org.springframework.lang.Nullable;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -59,23 +53,15 @@ import static io.camunda.operate.schema.templates.TemplateDescriptor.PARTITION_I
 import static io.camunda.operate.store.opensearch.client.sync.OpenSearchRetryOperation.UPDATE_RETRY_COUNT;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.*;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
-import static java.time.temporal.ChronoUnit.MILLIS;
 import static java.util.stream.Collectors.toMap;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
 @Conditional(OpensearchCondition.class)
 @Component
 @Scope(SCOPE_PROTOTYPE)
-public class OpensearchIncidentPostImportAction implements PostImportAction {
+public class OpensearchIncidentPostImportAction extends AbstractIncidentPostImportAction implements PostImportAction {
 
   private static final Logger logger = LoggerFactory.getLogger(OpensearchIncidentPostImportAction.class);
-  public static final long BACKOFF = 2000L;
-
-  private int partitionId;
-
-  @Autowired
-  @Qualifier("postImportThreadPoolScheduler")
-  private ThreadPoolTaskScheduler postImportScheduler;
 
   @Autowired
   private RichOpenSearchClient richOpenSearchClient;
@@ -95,62 +81,11 @@ public class OpensearchIncidentPostImportAction implements PostImportAction {
   @Autowired
   private PostImporterQueueTemplate postImporterQueueTemplate;
 
-  @Autowired
-  private OperateProperties operateProperties;
-
-  @Autowired
-  private ImportPositionHolder importPositionHolder;
-
-  private ImportPositionEntity lastProcessedPosition;
-
   public OpensearchIncidentPostImportAction(final int partitionId) {
-    this.partitionId = partitionId;
+      super(partitionId);
   }
 
-  private List<IncidentEntity> processPendingIncidents() throws IOException {
-
-    if (lastProcessedPosition == null) {
-      lastProcessedPosition = importPositionHolder.getLatestLoadedPosition(
-        ImportValueType.INCIDENT.getAliasTemplate(), partitionId);
-    }
-
-    AdditionalData data = new AdditionalData();
-
-    PendingIncidentsBatch batch = getPendingIncidents(data, lastProcessedPosition.getPostImporterPosition());
-
-    if (batch.getIncidents().isEmpty()) {
-      return new ArrayList<>();
-    }
-
-    if (logger.isDebugEnabled()) {
-      logger.debug("Processing pending incidents: " + batch.getIncidents());
-    }
-
-    try {
-
-      searchForInstances(batch.getIncidents(), data);
-
-      boolean done = processIncidents(data, batch);
-
-      if (batch.getIncidents().size() > 0 && done) {
-        lastProcessedPosition.setPostImporterPosition(batch.getLastProcessedPosition());
-        importPositionHolder.recordLatestPostImportedPosition(lastProcessedPosition);
-      }
-
-      if (logger.isDebugEnabled()) {
-        logger.debug("Finished processing");
-      }
-
-    } catch (IOException | PersistenceException e) {
-      final String message = String.format(
-          "Exception occurred, while processing pending incidents: %s",
-          e.getMessage());
-      throw new OperateRuntimeException(message, e);
-    }
-    return batch.getIncidents();
-  }
-
-  private boolean processIncidents(AdditionalData data, PendingIncidentsBatch batch) throws PersistenceException {
+  protected boolean processIncidents(AdditionalData data, PendingIncidentsBatch batch) throws PersistenceException {
 
     OpensearchPostImporterRequests updateRequests = new OpensearchPostImporterRequests();
 
@@ -195,7 +130,7 @@ public class OpensearchIncidentPostImportAction implements PostImportAction {
    * @param lastProcessedPosition
    * @return
    */
-  private PendingIncidentsBatch getPendingIncidents(final AdditionalData data, final Long lastProcessedPosition) {
+  protected PendingIncidentsBatch getPendingIncidents(final AdditionalData data, final Long lastProcessedPosition) {
     PendingIncidentsBatch pendingIncidentsBatch = new PendingIncidentsBatch();
     Map<Long, IncidentState> incidents2Process;
 
@@ -441,7 +376,7 @@ public class OpensearchIncidentPostImportAction implements PostImportAction {
     return idSet.contains(key);
   }
 
-  private void searchForInstances(final List<IncidentEntity> incidents, final AdditionalData data) throws IOException {
+  protected void searchForInstances(final List<IncidentEntity> incidents, final AdditionalData data) throws IOException {
     //find process instances (if they exist) that correspond to given incidents
     record Result(String treePath){}
     var request = searchRequestBuilder(listViewTemplate)
@@ -506,6 +441,9 @@ public class OpensearchIncidentPostImportAction implements PostImportAction {
     if ((doc == null) == (script == null)) {
       throw new OperateRuntimeException("One and only one of 'doc' or 'script' must be provided for the update request");
     }
+    if (index == null) {
+        throw new OperateRuntimeException("Update cannot be performed on a null index");
+    }
     return UpdateOperation.of( u -> {
       u.index(index).id(id).retryOnConflict(UPDATE_RETRY_COUNT);
       if (doc == null) {
@@ -519,90 +457,5 @@ public class OpensearchIncidentPostImportAction implements PostImportAction {
       return u;
     });
   }
-
-  /**
-   *
-   * @return true when we need to continue
-   */
-  @Override
-  public boolean performOneRound() throws IOException {
-    List<IncidentEntity> pendingIncidents = processPendingIncidents();
-    boolean smthWasProcessed = pendingIncidents.size() > 0;
-    return smthWasProcessed;
-  }
-
-  @Override
-  public void run() {
-    if (operateProperties.getImporter().isPostImportEnabled()) {
-      try {
-        if (performOneRound()) {
-          postImportScheduler.submit(this);
-        } else {
-          postImportScheduler.schedule(this, Instant.now().plus(BACKOFF, MILLIS));
-        }
-      } catch (Exception ex) {
-        logger.error(String.format("Exception occurred when performing post import for partition %d: %s. Will be retried...",
-            partitionId, ex.getMessage()), ex);
-        //TODO can it fail here?
-        postImportScheduler.schedule(this, Instant.now().plus(BACKOFF, MILLIS));
-      }
-    }
-  }
-
-  @Override
-  public void clearCache() {
-    lastProcessedPosition = null;
-  }
-
 }
 
-class OpensearchPostImporterRequests {
-  private HashMap<String, UpdateOperation> listViewRequests = new HashMap<>();
-  private HashMap<String, UpdateOperation> flowNodeInstanceRequests = new HashMap<>();
-  private HashMap<String, UpdateOperation> incidentRequests = new HashMap<>();
-
-  public HashMap<String, UpdateOperation> getListViewRequests() {
-    return listViewRequests;
-  }
-
-  public OpensearchPostImporterRequests setListViewRequests(HashMap<String, UpdateOperation> listViewRequests) {
-    this.listViewRequests = listViewRequests;
-    return this;
-  }
-
-  public HashMap<String, UpdateOperation> getFlowNodeInstanceRequests() {
-    return flowNodeInstanceRequests;
-  }
-
-  public OpensearchPostImporterRequests setFlowNodeInstanceRequests(HashMap<String, UpdateOperation> flowNodeInstanceRequests) {
-    this.flowNodeInstanceRequests = flowNodeInstanceRequests;
-    return this;
-  }
-
-  public HashMap<String, UpdateOperation> getIncidentRequests() {
-    return incidentRequests;
-  }
-
-  public OpensearchPostImporterRequests setIncidentRequests(HashMap<String, UpdateOperation> incidentRequests) {
-    this.incidentRequests = incidentRequests;
-    return this;
-  }
-  public boolean isEmpty() {
-    return listViewRequests.isEmpty() && flowNodeInstanceRequests.isEmpty() && incidentRequests.isEmpty();
-  }
-
-  public boolean execute(RichOpenSearchClient richOpenSearchClient, OperateProperties operateProperties)
-      throws PersistenceException {
-
-    BulkRequest bulkRequest = BulkRequest.of(b -> {
-      listViewRequests.values().forEach( u -> b.operations( o -> o.update(u)));
-      flowNodeInstanceRequests.values().forEach(u -> b.operations( o -> o.update(u)));
-      incidentRequests.values().stream().forEach(u ->  b.operations( o -> o.update(u)));
-      return b;
-    });
-    richOpenSearchClient.batch().bulk(bulkRequest);
-    ThreadUtil.sleepFor(3000L);
-
-    return true;
-  }
-}

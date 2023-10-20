@@ -6,6 +6,7 @@
  */
 package io.camunda.operate.zeebeimport.post;
 
+import io.camunda.operate.zeebeimport.post.PendingIncidentsBatch;
 import org.junit.Test;
 
 import static org.junit.Assert.assertTrue;
