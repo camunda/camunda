@@ -5,12 +5,8 @@
  * except in compliance with the proprietary license.
  */
 
-import {Loading} from '@carbon/react';
+import {QueryClient} from '@tanstack/react-query';
 
-const LoadingSpinner: React.FC<
-  Omit<React.ComponentProps<typeof Loading>, 'withOverlay'>
-> = (props) => {
-  return <Loading withOverlay={false} {...props} />;
-};
+const reactQueryClient = new QueryClient();
 
-export {LoadingSpinner};
+export {reactQueryClient};

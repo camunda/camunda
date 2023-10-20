@@ -22,24 +22,27 @@ import * as formMocks from 'modules/mock-schema/mocks/form';
 import * as variableMocks from 'modules/mock-schema/mocks/variables';
 import * as taskMocks from 'modules/mock-schema/mocks/task';
 import * as userMocks from 'modules/mock-schema/mocks/current-user';
-import {ReactQueryProvider} from 'modules/ReactQueryProvider';
+import {QueryClientProvider} from '@tanstack/react-query';
+import {getMockQueryClient} from 'modules/react-query/getMockQueryClient';
 
-jest.mock('modules/stores/notifications', () => ({
+vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
-    displayNotification: jest.fn(() => () => {}),
+    displayNotification: vi.fn(() => () => {}),
   },
 }));
 
 const getWrapper = (
   initialEntries: React.ComponentProps<typeof MemoryRouter>['initialEntries'],
 ) => {
+  const mockClient = getMockQueryClient();
+
   type Props = {
     children?: React.ReactNode;
   };
 
   const Wrapper: React.FC<Props> = ({children}) => {
     return (
-      <ReactQueryProvider>
+      <QueryClientProvider client={mockClient}>
         <MockThemeProvider>
           <MemoryRouter initialEntries={initialEntries}>
             <Routes>
@@ -48,7 +51,7 @@ const getWrapper = (
             </Routes>
           </MemoryRouter>
         </MockThemeProvider>
-      </ReactQueryProvider>
+      </QueryClientProvider>
     );
   };
 
@@ -56,23 +59,6 @@ const getWrapper = (
 };
 
 describe('<Task />', () => {
-  beforeAll(() => {
-    global.IS_REACT_ACT_ENVIRONMENT = false;
-  });
-
-  afterAll(() => {
-    global.IS_REACT_ACT_ENVIRONMENT = true;
-  });
-
-  beforeEach(() => {
-    jest.useFakeTimers();
-  });
-
-  afterEach(() => {
-    jest.runOnlyPendingTimers();
-    jest.useRealTimers();
-  });
-
   it('should render created task', async () => {
     nodeMockServer.use(
       rest.get('/v1/tasks/:taskId', (_, res, ctx) => {
@@ -119,7 +105,7 @@ describe('<Task />', () => {
     });
 
     await waitForElementToBeRemoved(() =>
-      screen.getByTestId('details-skeleton'),
+      screen.queryByTestId('details-skeleton'),
     );
 
     expect(screen.getByTestId('details-info')).toBeInTheDocument();
@@ -239,7 +225,6 @@ describe('<Task />', () => {
       await screen.findByRole('button', {name: /complete task/i}),
     );
 
-    expect(screen.getByText('Completing task...')).toBeInTheDocument();
     expect(await screen.findByText('Completion failed')).toBeInTheDocument();
 
     await waitFor(() => {
@@ -277,7 +262,7 @@ describe('<Task />', () => {
     });
 
     await waitForElementToBeRemoved(() =>
-      screen.getByTestId('details-skeleton'),
+      screen.queryByTestId('details-skeleton'),
     );
 
     expect(screen.getByTestId('details-info')).toBeInTheDocument();

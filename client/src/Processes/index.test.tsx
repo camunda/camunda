@@ -5,6 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
+import {Mocked} from 'vitest';
 import {
   fireEvent,
   render,
@@ -20,41 +21,48 @@ import {rest} from 'msw';
 import {MemoryRouter} from 'react-router-dom';
 import {Processes} from './index';
 import {notificationsStore} from 'modules/stores/notifications';
-import {ReactQueryProvider} from 'modules/ReactQueryProvider';
 import * as formMocks from 'modules/mock-schema/mocks/form';
 import * as userMocks from 'modules/mock-schema/mocks/current-user';
 import {DEFAULT_MOCK_CLIENT_CONFIG} from 'modules/mocks/window';
 import {LocationLog} from 'modules/utils/LocationLog';
+import {QueryClientProvider} from '@tanstack/react-query';
+import {getMockQueryClient} from 'modules/react-query/getMockQueryClient';
 
-jest.mock('modules/stores/notifications', () => ({
+vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
-    displayNotification: jest.fn(() => () => {}),
+    displayNotification: vi.fn(() => () => {}),
   },
 }));
 
-const mockedNotificationsStore = notificationsStore as jest.Mocked<
+const mockedNotificationsStore = notificationsStore as Mocked<
   typeof notificationsStore
 >;
 
-type Props = {
-  children?: React.ReactNode;
-};
+const getWrapper = () => {
+  const mockClient = getMockQueryClient();
 
-const Wrapper: React.FC<Props> = ({children}) => {
-  return (
-    <ReactQueryProvider>
-      <MemoryRouter initialEntries={['/']}>
-        <MockThemeProvider>{children}</MockThemeProvider>
-        <LocationLog />
-      </MemoryRouter>
-    </ReactQueryProvider>
-  );
+  type Props = {
+    children?: React.ReactNode;
+  };
+
+  const Wrapper: React.FC<Props> = ({children}) => {
+    return (
+      <QueryClientProvider client={mockClient}>
+        <MemoryRouter initialEntries={['/']}>
+          <MockThemeProvider>{children}</MockThemeProvider>
+          <LocationLog />
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+  };
+
+  return Wrapper;
 };
 
 describe('Processes', () => {
   afterEach(() => {
     mockedNotificationsStore.displayNotification.mockClear();
-    process.env.REACT_APP_VERSION = '1.2.3';
+    import.meta.env.VITE_VERSION = '1.2.3';
   });
 
   beforeEach(() => {
@@ -74,7 +82,7 @@ describe('Processes', () => {
     );
 
     render(<Processes />, {
-      wrapper: Wrapper,
+      wrapper: getWrapper(),
     });
 
     expect(screen.getByPlaceholderText('Search processes')).toBeDisabled();
@@ -85,7 +93,7 @@ describe('Processes', () => {
     ).not.toBeInTheDocument();
 
     await waitForElementToBeRemoved(() =>
-      screen.getAllByTestId('process-skeleton'),
+      screen.queryAllByTestId('process-skeleton'),
     );
 
     expect(screen.getByPlaceholderText('Search processes')).toBeEnabled();
@@ -117,11 +125,11 @@ describe('Processes', () => {
     );
 
     render(<Processes />, {
-      wrapper: Wrapper,
+      wrapper: getWrapper(),
     });
 
     await waitForElementToBeRemoved(() =>
-      screen.getAllByTestId('process-skeleton'),
+      screen.queryAllByTestId('process-skeleton'),
     );
 
     expect(screen.getAllByTestId('process-tile')).toHaveLength(2);
@@ -140,11 +148,11 @@ describe('Processes', () => {
     );
 
     render(<Processes />, {
-      wrapper: Wrapper,
+      wrapper: getWrapper(),
     });
 
     await waitForElementToBeRemoved(() =>
-      screen.getAllByTestId('process-skeleton'),
+      screen.queryAllByTestId('process-skeleton'),
     );
 
     expect(screen.getAllByTestId('process-tile')).toHaveLength(1);
@@ -172,7 +180,7 @@ describe('Processes', () => {
     );
 
     render(<Processes />, {
-      wrapper: Wrapper,
+      wrapper: getWrapper(),
     });
 
     await waitFor(() =>
@@ -196,11 +204,11 @@ describe('Processes', () => {
     );
 
     render(<Processes />, {
-      wrapper: Wrapper,
+      wrapper: getWrapper(),
     });
 
     await waitForElementToBeRemoved(() =>
-      screen.getAllByTestId('process-skeleton'),
+      screen.queryAllByTestId('process-skeleton'),
     );
 
     expect(
@@ -226,7 +234,7 @@ describe('Processes', () => {
     );
 
     render(<Processes />, {
-      wrapper: Wrapper,
+      wrapper: getWrapper(),
     });
 
     expect(
@@ -260,11 +268,11 @@ describe('Processes', () => {
     );
 
     render(<Processes />, {
-      wrapper: Wrapper,
+      wrapper: getWrapper(),
     });
 
     await waitForElementToBeRemoved(() =>
-      screen.getAllByTestId('process-skeleton'),
+      screen.queryAllByTestId('process-skeleton'),
     );
 
     expect(screen.getByTestId('search').textContent).toContain(
@@ -293,11 +301,11 @@ describe('Processes', () => {
     );
 
     render(<Processes />, {
-      wrapper: Wrapper,
+      wrapper: getWrapper(),
     });
 
     await waitForElementToBeRemoved(() =>
-      screen.getAllByTestId('process-skeleton'),
+      screen.queryAllByTestId('process-skeleton'),
     );
 
     expect(

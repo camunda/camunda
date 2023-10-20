@@ -10,21 +10,13 @@ import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import {CurrentUser} from 'modules/types';
 import {rest} from 'msw';
 import {Header} from '..';
-import {Wrapper} from './mocks';
+import {getWrapper} from './mocks';
 import * as userMocks from 'modules/mock-schema/mocks/current-user';
 
 describe('Info bar', () => {
-  beforeAll(() => {
-    global.IS_REACT_ACT_ENVIRONMENT = false;
-  });
-
-  afterAll(() => {
-    global.IS_REACT_ACT_ENVIRONMENT = true;
-  });
-
   it('should render with correct links', async () => {
     const originalWindowOpen = window.open;
-    const mockOpenFn = jest.fn();
+    const mockOpenFn = vi.fn();
     window.open = mockOpenFn;
 
     nodeMockServer.use(
@@ -34,7 +26,7 @@ describe('Info bar', () => {
     );
 
     const {user} = render(<Header />, {
-      wrapper: Wrapper,
+      wrapper: getWrapper(),
     });
 
     expect(await screen.findByText('Demo User')).toBeInTheDocument();
@@ -87,11 +79,11 @@ describe('Info bar', () => {
       );
 
       const originalWindowOpen = window.open;
-      const mockOpenFn = jest.fn();
+      const mockOpenFn = vi.fn();
       window.open = mockOpenFn;
 
       const {user} = render(<Header />, {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       });
 
       expect(await screen.findByText('Demo User')).toBeInTheDocument();

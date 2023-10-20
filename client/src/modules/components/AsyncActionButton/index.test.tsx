@@ -24,11 +24,11 @@ describe('<AsyncActionButton />', () => {
   });
 
   it('should show a loading action', async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     const BUTTON_CONTENT = 'i am a button';
     const LOADING_DESCRIPTION = 'i am loading';
     const FINISHED_DESCRIPTION = 'done with action';
-    const ON_SUCCESS_CALLBACK = jest.fn();
+    const ON_SUCCESS_CALLBACK = vi.fn();
 
     const {rerender} = render(
       <AsyncActionButton status="inactive">{BUTTON_CONTENT}</AsyncActionButton>,
@@ -62,7 +62,7 @@ describe('<AsyncActionButton />', () => {
       </AsyncActionButton>,
     );
 
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
 
     expect(screen.getByText(FINISHED_DESCRIPTION)).toBeInTheDocument();
     expect(
@@ -80,6 +80,6 @@ describe('<AsyncActionButton />', () => {
     ).toBeInTheDocument();
     expect(ON_SUCCESS_CALLBACK).toHaveBeenCalled();
 
-    jest.useFakeTimers();
+    vi.useFakeTimers();
   });
 });

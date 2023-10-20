@@ -7,9 +7,9 @@
 
 import {makeObservable, observable, action} from 'mobx';
 import {api} from 'modules/api';
+import {reactQueryClient} from 'modules/react-query/reactQueryClient';
 import {request} from 'modules/request';
 import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
-import {reactQueryClient} from 'modules/ReactQueryProvider';
 
 type Status =
   | 'initial'

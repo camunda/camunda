@@ -6,9 +6,7 @@
  */
 
 import styled, {createGlobalStyle, css} from 'styled-components';
-
-const MENU_OPTIONS_STYLES_CLASSNAME =
-  'cds--custom-sorting-menu-options-wrapper';
+import {MENU_OPTIONS_STYLES_CLASSNAME} from './constants';
 
 const MenuOptionsStyles = createGlobalStyle`
   ${() => css`
@@ -50,5 +48,4 @@ export {
   SortItemContainer,
   MenuItemWrapper,
   MenuOptionsStyles,
-  MENU_OPTIONS_STYLES_CLASSNAME,
 };

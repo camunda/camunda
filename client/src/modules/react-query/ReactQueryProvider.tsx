@@ -5,24 +5,12 @@
  * except in compliance with the proprietary license.
  */
 
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {QueryClientProvider} from '@tanstack/react-query';
 import {ReactQueryDevtools} from '@tanstack/react-query-devtools';
 import {lazy, useEffect, useState, Suspense} from 'react';
+import {reactQueryClient} from './reactQueryClient';
 
-const reactQueryClient = new QueryClient({
-  logger: {
-    log: console.log,
-    warn: console.warn,
-    error: process.env.NODE_ENV === 'test' ? () => {} : console.error,
-  },
-  defaultOptions: {
-    queries: {
-      retry: process.env.NODE_ENV === 'test' ? false : undefined,
-    },
-  },
-});
-
-const ReactQueryDevtoolsProduction: React.FC = lazy(() =>
+const ReactQueryDevtoolsProduction = lazy(() =>
   import('@tanstack/react-query-devtools/build/lib/index.prod.js').then(
     (module) => ({
       default: module.ReactQueryDevtools,
@@ -47,7 +35,6 @@ const ReactQueryProvider: React.FC<Props> = ({children}) => {
       <ReactQueryDevtools position="bottom-right" />
       {isProdDevtoolsOpen ? (
         <Suspense fallback={null}>
-          {/* @ts-expect-error */}
           <ReactQueryDevtoolsProduction position="bottom-right" />
         </Suspense>
       ) : null}
@@ -55,4 +42,4 @@ const ReactQueryProvider: React.FC<Props> = ({children}) => {
   );
 };
 
-export {ReactQueryProvider, reactQueryClient};
+export {ReactQueryProvider};

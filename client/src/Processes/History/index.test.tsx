@@ -11,23 +11,30 @@ import {
   waitForElementToBeRemoved,
 } from '@testing-library/react';
 import {History} from './index';
-import {ReactQueryProvider} from 'modules/ReactQueryProvider';
 import {MemoryRouter} from 'react-router-dom';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import {rest} from 'msw';
 import * as userMocks from 'modules/mock-schema/mocks/current-user';
 import * as processInstancesMocks from 'modules/mock-schema/mocks/process-instances';
+import {QueryClientProvider} from '@tanstack/react-query';
+import {getMockQueryClient} from 'modules/react-query/getMockQueryClient';
 
-type Props = {
-  children: React.ReactNode;
-};
+const getWrapper = () => {
+  const mockClient = getMockQueryClient();
 
-const Wrapper: React.FC<Props> = ({children}) => {
-  return (
-    <ReactQueryProvider>
-      <MemoryRouter>{children}</MemoryRouter>
-    </ReactQueryProvider>
-  );
+  type Props = {
+    children: React.ReactNode;
+  };
+
+  const Wrapper: React.FC<Props> = ({children}) => {
+    return (
+      <QueryClientProvider client={mockClient}>
+        <MemoryRouter>{children}</MemoryRouter>
+      </QueryClientProvider>
+    );
+  };
+
+  return Wrapper;
 };
 
 describe('<History />', () => {
@@ -47,11 +54,11 @@ describe('<History />', () => {
     );
 
     render(<History />, {
-      wrapper: Wrapper,
+      wrapper: getWrapper(),
     });
 
     await waitForElementToBeRemoved(() =>
-      screen.getByTestId('history-skeleton'),
+      screen.queryByTestId('history-skeleton'),
     );
 
     const [{process, id}] = processInstancesMocks.processInstances;
@@ -76,11 +83,11 @@ describe('<History />', () => {
     );
 
     render(<History />, {
-      wrapper: Wrapper,
+      wrapper: getWrapper(),
     });
 
     await waitForElementToBeRemoved(() =>
-      screen.getByTestId('history-skeleton'),
+      screen.queryByTestId('history-skeleton'),
     );
 
     expect(
@@ -99,11 +106,11 @@ describe('<History />', () => {
     );
 
     render(<History />, {
-      wrapper: Wrapper,
+      wrapper: getWrapper(),
     });
 
     await waitForElementToBeRemoved(() =>
-      screen.getByTestId('history-skeleton'),
+      screen.queryByTestId('history-skeleton'),
     );
 
     expect(screen.getByText('No history entries found')).toBeInTheDocument();

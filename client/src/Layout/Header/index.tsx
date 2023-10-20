@@ -231,7 +231,7 @@ const Header: React.FC = observer(() => {
       }}
       userSideBar={{
         ariaLabel: 'Settings',
-        version: process.env.REACT_APP_VERSION,
+        version: import.meta.env.VITE_VERSION,
         customElements: {
           profile: {
             label: 'Profile',

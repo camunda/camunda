@@ -7,7 +7,7 @@
 
 const getCurrentCopyrightNoticeText = () => {
   return `© Camunda Services GmbH ${new Date().getFullYear()}. All rights reserved. | ${
-    process.env.REACT_APP_VERSION
+    import.meta.env.VITE_VERSION
   }`;
 };
 

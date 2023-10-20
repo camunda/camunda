@@ -7,7 +7,7 @@
 
 const logger = {
   error(message: unknown | Error) {
-    if (['production', 'development'].includes(process.env.NODE_ENV)) {
+    if (import.meta.env.MODE !== 'test') {
       console.error(message);
     }
   },

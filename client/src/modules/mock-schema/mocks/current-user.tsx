@@ -61,7 +61,7 @@ const currentRestrictedUser: CurrentUser = {
 const currentUserWithUnknownRole: CurrentUser = {
   userId: 'demo',
   displayName: 'Demo User',
-  // @ts-ignore
+  // @ts-expect-error done on purpose
   permissions: ['unknown'],
   salesPlanType: null,
   roles: [],
@@ -72,7 +72,7 @@ const currentUserWithUnknownRole: CurrentUser = {
 const currentUserWithoutRole: CurrentUser = {
   userId: 'demo',
   displayName: 'Demo User',
-  // @ts-ignore
+  // @ts-expect-error done on purpose
   permissions: [],
   salesPlanType: null,
   roles: [],

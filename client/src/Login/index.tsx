@@ -31,13 +31,19 @@ import {
 } from '@carbon/react';
 import {LoadingSpinner} from './LoadingSpinner';
 import {CamundaLogo} from 'modules/components/CamundaLogo';
+import {z} from 'zod';
+
+const locationStateSchema = z.object({
+  referrer: z.object({
+    pathname: z.string(),
+    search: z.string(),
+  }),
+});
 
 function stateHasReferrer(state: unknown): state is {referrer: Location} {
-  if (typeof state === 'object' && state?.hasOwnProperty('referrer')) {
-    return true;
-  }
+  const {success} = locationStateSchema.safeParse(state);
 
-  return false;
+  return success;
 }
 
 type FormValues = {

@@ -7,8 +7,8 @@
 
 import {FieldValidator} from 'final-form';
 
-const isPromise = (value: any) => {
-  return Boolean(value && typeof value.then === 'function');
+const isPromise = (value?: {then?: () => void}) => {
+  return Boolean(value && typeof value?.then === 'function');
 };
 
 const mergeValidators = (

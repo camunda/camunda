@@ -6,7 +6,7 @@
  */
 
 import {test, expect, Route, Request} from '@playwright/test';
-import schema from '../resources/bigForm.json';
+import schema from '../resources/bigForm.json' assert {type: 'json'};
 
 const MOCK_TENANTS = [
   {
@@ -73,8 +73,8 @@ const FORM_TASK = {
 
 function mockResponses(
   tasks: Array<unknown> = [],
-  task: any = NON_FORM_TASK,
-  variables: any[] = NON_FORM_TASK_EMPTY_VARIABLES,
+  task = NON_FORM_TASK,
+  variables: unknown[] = NON_FORM_TASK_EMPTY_VARIABLES,
 ): (router: Route, request: Request) => Promise<unknown> | unknown {
   return (route) => {
     if (

@@ -9,7 +9,7 @@ import {render, screen} from 'modules/testing-library';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import {rest} from 'msw';
 import {Header} from '..';
-import {Wrapper} from './mocks';
+import {getWrapper} from './mocks';
 import * as userMocks from 'modules/mock-schema/mocks/current-user';
 
 describe('<Header />', () => {
@@ -21,7 +21,7 @@ describe('<Header />', () => {
     );
 
     render(<Header />, {
-      wrapper: Wrapper,
+      wrapper: getWrapper(),
     });
 
     expect(

@@ -7,20 +7,15 @@
 
 import {getCurrentCopyrightNoticeText} from './getCurrentCopyrightNoticeText';
 
-const getFullYearMock = jest.spyOn(Date.prototype, 'getFullYear');
-
 describe('getCurrentCopyrightNoticeText()', () => {
-  afterAll(() => {
-    getFullYearMock.mockRestore();
-  });
-
   it('should return the copyright notice with the correct year', () => {
+    vi.useFakeTimers();
     const mockYear = 1999;
-
-    getFullYearMock.mockReturnValueOnce(mockYear);
+    vi.setSystemTime(new Date(mockYear, 0));
 
     expect(getCurrentCopyrightNoticeText()).toBe(
       `© Camunda Services GmbH ${mockYear}. All rights reserved. | 1.2.3`,
     );
+    vi.useRealTimers();
   });
 });

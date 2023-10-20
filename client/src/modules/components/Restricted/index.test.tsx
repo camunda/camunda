@@ -13,30 +13,38 @@ import {MemoryRouter} from 'react-router-dom';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {useCurrentUser} from 'modules/queries/useCurrentUser';
 import * as userMocks from 'modules/mock-schema/mocks/current-user';
-import {ReactQueryProvider} from 'modules/ReactQueryProvider';
+import {QueryClientProvider} from '@tanstack/react-query';
+import {getMockQueryClient} from 'modules/react-query/getMockQueryClient';
 
 const UserName = () => {
   const {data: currentUser} = useCurrentUser();
 
   return <div>{currentUser?.displayName}</div>;
 };
-type Props = {
-  children?: React.ReactNode;
-};
 
-const Wrapper: React.FC<Props> = ({children}) => {
-  return (
-    <ReactQueryProvider>
-      <MemoryRouter initialEntries={['/']}>
-        <MockThemeProvider>
-          <>
-            <UserName />
-            {children}
-          </>
-        </MockThemeProvider>
-      </MemoryRouter>
-    </ReactQueryProvider>
-  );
+const getWrapper = () => {
+  const mockClient = getMockQueryClient();
+
+  type Props = {
+    children?: React.ReactNode;
+  };
+
+  const Wrapper: React.FC<Props> = ({children}) => {
+    return (
+      <QueryClientProvider client={mockClient}>
+        <MemoryRouter initialEntries={['/']}>
+          <MockThemeProvider>
+            <>
+              <UserName />
+              {children}
+            </>
+          </MockThemeProvider>
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+  };
+
+  return Wrapper;
 };
 
 describe('Restricted', () => {
@@ -51,7 +59,7 @@ describe('Restricted', () => {
       <Restricted scopes={['write']}>
         <div>test content</div>
       </Restricted>,
-      {wrapper: Wrapper},
+      {wrapper: getWrapper()},
     );
 
     expect(await screen.findByText('Demo User')).toBeInTheDocument();
@@ -69,7 +77,7 @@ describe('Restricted', () => {
       <Restricted scopes={['read', 'write']}>
         <div>test content</div>
       </Restricted>,
-      {wrapper: Wrapper},
+      {wrapper: getWrapper()},
     );
 
     expect(await screen.findByText('Demo User')).toBeInTheDocument();
@@ -87,7 +95,7 @@ describe('Restricted', () => {
       <Restricted scopes={['write']}>
         <div>test content</div>
       </Restricted>,
-      {wrapper: Wrapper},
+      {wrapper: getWrapper()},
     );
 
     expect(await screen.findByText('Demo User')).toBeInTheDocument();
@@ -105,7 +113,7 @@ describe('Restricted', () => {
       <Restricted scopes={['read', 'write']}>
         <div>test content</div>
       </Restricted>,
-      {wrapper: Wrapper},
+      {wrapper: getWrapper()},
     );
 
     expect(await screen.findByText('Demo User')).toBeInTheDocument();
@@ -123,7 +131,7 @@ describe('Restricted', () => {
       <Restricted scopes={['read', 'write']}>
         <div>test content</div>
       </Restricted>,
-      {wrapper: Wrapper},
+      {wrapper: getWrapper()},
     );
 
     expect(await screen.findByText('Demo User')).toBeInTheDocument();
@@ -143,7 +151,7 @@ describe('Restricted', () => {
       <Restricted scopes={['write']} fallback={mockFallback}>
         <div>test content</div>
       </Restricted>,
-      {wrapper: Wrapper},
+      {wrapper: getWrapper()},
     );
 
     expect(await screen.findByText('Demo User')).toBeInTheDocument();

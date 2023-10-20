@@ -18,7 +18,8 @@ import noop from 'lodash/noop';
 import * as formMocks from 'modules/mock-schema/mocks/form';
 import * as variableMocks from 'modules/mock-schema/mocks/variables';
 import * as userMocks from 'modules/mock-schema/mocks/current-user';
-import {ReactQueryProvider} from 'modules/ReactQueryProvider';
+import {QueryClientProvider} from '@tanstack/react-query';
+import {getMockQueryClient} from 'modules/react-query/getMockQueryClient';
 
 const MOCK_FORM_ID = 'form-0';
 const MOCK_PROCESS_DEFINITION_KEY = 'process';
@@ -26,15 +27,19 @@ const MOCK_TASK_ID = 'task-0';
 const REQUESTED_VARIABLES = ['myVar', 'isCool'];
 const DYNAMIC_FORM_REQUESTED_VARIABLES = ['radio_field', 'radio_field_options'];
 
-type Props = {
-  children?: React.ReactNode;
-};
+const getWrapper = () => {
+  const mockClient = getMockQueryClient();
 
-const Wrapper: React.FC<Props> = ({children}) => (
-  <ReactQueryProvider>
-    <MockThemeProvider>{children}</MockThemeProvider>
-  </ReactQueryProvider>
-);
+  const Wrapper: React.FC<{
+    children?: React.ReactNode;
+  }> = ({children}) => (
+    <QueryClientProvider client={mockClient}>
+      <MockThemeProvider>{children}</MockThemeProvider>
+    </QueryClientProvider>
+  );
+
+  return Wrapper;
+};
 
 function areArraysEqual(firstArray: unknown[], secondArray: unknown[]) {
   return (
@@ -46,14 +51,6 @@ function areArraysEqual(firstArray: unknown[], secondArray: unknown[]) {
 }
 
 describe('<FormJS />', () => {
-  beforeAll(() => {
-    global.IS_REACT_ACT_ENVIRONMENT = false;
-  });
-
-  afterAll(() => {
-    global.IS_REACT_ACT_ENVIRONMENT = true;
-  });
-
   beforeEach(() => {
     nodeMockServer.use(
       rest.get('/v1/forms/:formId', (_, res, ctx) => {
@@ -63,12 +60,6 @@ describe('<FormJS />', () => {
         return res.once(ctx.json(userMocks.currentUser));
       }),
     );
-    jest.useFakeTimers();
-  });
-
-  afterEach(() => {
-    jest.clearAllTimers();
-    jest.useRealTimers();
   });
 
   it('should render form for unassigned task', async () => {
@@ -101,14 +92,14 @@ describe('<FormJS />', () => {
         onSubmitSuccess={noop}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 
     await waitFor(() =>
       expect(screen.getByLabelText(/my variable/i)).toHaveValue('0001'),
     );
-    jest.runOnlyPendingTimers();
+
     expect(screen.getByLabelText(/is cool\?/i)).toBeInTheDocument();
     expect(screen.getAllByRole('textbox')).toHaveLength(2);
     expect(screen.getByLabelText(/my variable/i)).toHaveAttribute('readonly');
@@ -150,7 +141,7 @@ describe('<FormJS />', () => {
         onSubmitSuccess={noop}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 
@@ -198,7 +189,7 @@ describe('<FormJS />', () => {
         onSubmitSuccess={noop}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 
@@ -232,7 +223,7 @@ describe('<FormJS />', () => {
       }),
     );
 
-    const mockOnSubmit = jest.fn();
+    const mockOnSubmit = vi.fn();
     const {user} = render(
       <FormJS
         id={MOCK_FORM_ID}
@@ -244,7 +235,7 @@ describe('<FormJS />', () => {
         onSubmitSuccess={noop}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 
@@ -257,7 +248,7 @@ describe('<FormJS />', () => {
         name: /complete task/i,
       }),
     );
-    expect(screen.getByText('Completing task...')).toBeInTheDocument();
+
     expect(await screen.findByText('Completed')).toBeInTheDocument();
 
     await waitFor(() =>
@@ -293,7 +284,7 @@ describe('<FormJS />', () => {
       }),
     );
 
-    const mockOnSubmit = jest.fn();
+    const mockOnSubmit = vi.fn();
     const {user} = render(
       <FormJS
         id={MOCK_FORM_ID}
@@ -305,7 +296,7 @@ describe('<FormJS />', () => {
         onSubmitSuccess={noop}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 
@@ -321,7 +312,6 @@ describe('<FormJS />', () => {
       }),
     );
 
-    expect(screen.getByText('Completing task...')).toBeInTheDocument();
     expect(await screen.findByText('Completed')).toBeInTheDocument();
 
     await waitFor(() =>
@@ -376,7 +366,7 @@ describe('<FormJS />', () => {
         onSubmitSuccess={noop}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 

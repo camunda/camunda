@@ -1,24 +1,29 @@
 {
-  "plugins": ["testing-library"],
+  "root": true,
+  "env": {
+    "browser": true,
+    "es2018": true
+  },
   "extends": [
-    "react-app",
+    "eslint:recommended",
+    "plugin:@typescript-eslint/recommended",
+    "plugin:react-hooks/recommended",
     "plugin:camunda-licensed/commercial",
-    "plugin:prettier/recommended"
+    "plugin:prettier/recommended",
+    "plugin:testing-library/react"
   ],
+  "ignorePatterns": ["dist"],
+  "parser": "@typescript-eslint/parser",
+  "plugins": ["react-refresh", "testing-library"],
   "rules": {
+    "react-refresh/only-export-components": [
+      "error",
+      {
+        "allowConstantExport": true
+      }
+    ],
     "import/no-anonymous-default-export": 0,
-    "testing-library/await-async-query": "error",
-    "testing-library/await-async-utils": "error",
-    "testing-library/no-await-sync-query": "error",
     "testing-library/no-debugging-utils": "error",
-    "testing-library/no-dom-import": "error",
-    "testing-library/no-manual-cleanup": "error",
-    "testing-library/no-wait-for-empty-callback": "error",
-    "testing-library/prefer-explicit-assert": "error",
-    "testing-library/prefer-find-by": "error",
-    "testing-library/prefer-presence-queries": "error",
-    "testing-library/prefer-screen-queries": "error",
-    "testing-library/prefer-wait-for": "error",
     "no-duplicate-imports": "error"
   }
 }

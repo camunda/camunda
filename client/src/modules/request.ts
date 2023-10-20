@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {reactQueryClient} from './ReactQueryProvider';
+import {reactQueryClient} from './react-query/reactQueryClient';
 import {authenticationStore} from './stores/authentication';
 
 type RequestError = {

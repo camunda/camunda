@@ -56,21 +56,15 @@ describe('authentication store', () => {
   });
 
   it('should logout', async () => {
-    const originalWindow = {...window};
-    const windowSpy = jest.spyOn(global, 'window', 'get');
-    const mockReload = jest.fn();
-    // @ts-expect-error
-    windowSpy.mockImplementation(() => ({
-      ...originalWindow,
-      location: {
-        ...originalWindow.location,
-        reload: mockReload,
-      },
-      clientConfig: {
-        canLogout: true,
-        isLoginDelegated: false,
-      },
-    }));
+    const mockReload = vi.fn();
+    vi.spyOn(window, 'location', 'get').mockReturnValue({
+      ...window.location,
+      reload: mockReload,
+    });
+    window.clientConfig = {
+      canLogout: true,
+      isLoginDelegated: false,
+    };
 
     nodeMockServer.use(
       rest.post('/api/login', (_, res, ctx) => res.once(ctx.text(''))),
@@ -89,8 +83,6 @@ describe('authentication store', () => {
 
     expect(mockReload).toHaveBeenCalledTimes(0);
     expect(getStateLocally('wasReloaded')).toBe(false);
-
-    windowSpy.mockRestore();
   });
 
   it('should throw an error on logout failure', async () => {
@@ -104,21 +96,15 @@ describe('authentication store', () => {
   });
 
   it('should disable session', async () => {
-    const originalWindow = {...window};
-    const windowSpy = jest.spyOn(global, 'window', 'get');
-    const mockReload = jest.fn();
-    // @ts-expect-error
-    windowSpy.mockImplementation(() => ({
-      ...originalWindow,
-      location: {
-        ...originalWindow.location,
-        reload: mockReload,
-      },
-      clientConfig: {
-        canLogout: true,
-        isLoginDelegated: false,
-      },
-    }));
+    const mockReload = vi.fn();
+    vi.spyOn(window, 'location', 'get').mockReturnValue({
+      ...window.location,
+      reload: mockReload,
+    });
+    window.clientConfig = {
+      canLogout: true,
+      isLoginDelegated: false,
+    };
 
     authenticationStore.activateSession();
 
@@ -137,8 +123,6 @@ describe('authentication store', () => {
 
     expect(mockReload).toHaveBeenCalledTimes(0);
     expect(getStateLocally('wasReloaded')).toBe(false);
-
-    windowSpy.mockRestore();
   });
 
   [{canLogout: false}, {canLogout: true, isLoginDelegated: true}].forEach(
@@ -147,21 +131,15 @@ describe('authentication store', () => {
 
       describe(`when canLogout is ${canLogout} and isLoginDelegated is ${isLoginDelegated}`, () => {
         it('should disable session', async () => {
-          const originalWindow = {...window};
-          const windowSpy = jest.spyOn(global, 'window', 'get');
-          const mockReload = jest.fn();
-          // @ts-expect-error
-          windowSpy.mockImplementation(() => ({
-            ...originalWindow,
-            location: {
-              ...originalWindow.location,
-              reload: mockReload,
-            },
-            clientConfig: {
-              canLogout,
-              isLoginDelegated,
-            },
-          }));
+          const mockReload = vi.fn();
+          vi.spyOn(window, 'location', 'get').mockReturnValue({
+            ...window.location,
+            reload: mockReload,
+          });
+          window.clientConfig = {
+            canLogout,
+            isLoginDelegated,
+          };
 
           authenticationStore.activateSession();
 
@@ -182,8 +160,6 @@ describe('authentication store', () => {
 
           expect(mockReload).toHaveBeenCalledTimes(1);
           expect(getStateLocally('wasReloaded')).toBe(false);
-
-          windowSpy.mockRestore();
         });
       });
     },
@@ -195,21 +171,15 @@ describe('authentication store', () => {
 
       describe(`when canLogout is ${canLogout} and isLoginDelegated is ${isLoginDelegated}`, () => {
         it('should logout', async () => {
-          const originalWindow = {...window};
-          const windowSpy = jest.spyOn(global, 'window', 'get');
-          const mockReload = jest.fn();
-          // @ts-expect-error
-          windowSpy.mockImplementation(() => ({
-            ...originalWindow,
-            location: {
-              ...originalWindow.location,
-              reload: mockReload,
-            },
-            clientConfig: {
-              canLogout,
-              isLoginDelegated,
-            },
-          }));
+          const mockReload = vi.fn();
+          vi.spyOn(window, 'location', 'get').mockReturnValue({
+            ...window.location,
+            reload: mockReload,
+          });
+          window.clientConfig = {
+            canLogout,
+            isLoginDelegated,
+          };
 
           nodeMockServer.use(
             rest.post('/api/login', (_, res, ctx) => res.once(ctx.text(''))),
@@ -240,8 +210,6 @@ describe('authentication store', () => {
 
           expect(mockReload).toHaveBeenCalledTimes(1);
           expect(getStateLocally('wasReloaded')).toBe(false);
-
-          windowSpy.mockRestore();
         });
       });
     },

@@ -23,14 +23,6 @@ const Wrapper: React.FC<Props> = ({children}) => {
 };
 
 describe('<FirstTimeModal />', () => {
-  beforeAll(() => {
-    global.IS_REACT_ACT_ENVIRONMENT = false;
-  });
-
-  afterAll(() => {
-    global.IS_REACT_ACT_ENVIRONMENT = true;
-  });
-
   it('should save the consent', async () => {
     const {user} = render(<FirstTimeModal />, {
       wrapper: Wrapper,

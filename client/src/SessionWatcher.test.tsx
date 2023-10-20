@@ -6,15 +6,15 @@
  */
 
 import {MemoryRouter} from 'react-router-dom';
-import {render, waitFor} from 'modules/testing-library';
+import {act, render, waitFor} from 'modules/testing-library';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {authenticationStore} from 'modules/stores/authentication';
 import {SessionWatcher} from './SessionWatcher';
 import {notificationsStore} from 'modules/stores/notifications';
 
-jest.mock('modules/stores/notifications', () => ({
+vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
-    displayNotification: jest.fn(() => () => {}),
+    displayNotification: vi.fn(() => () => {}),
   },
 }));
 
@@ -38,27 +38,19 @@ const getWrapper = ({initialEntries}: GetWrapperProps) => {
 };
 
 describe('SessionWatcher', () => {
-  beforeAll(() => {
-    global.IS_REACT_ACT_ENVIRONMENT = false;
-  });
-
-  afterAll(() => {
-    global.IS_REACT_ACT_ENVIRONMENT = true;
-  });
-
   afterEach(() => {
-    authenticationStore.reset();
+    act(() => authenticationStore.reset());
   });
 
   it('should display notification if session is expired on main page', async () => {
-    authenticationStore.activateSession();
+    act(() => authenticationStore.activateSession());
 
     render(<div />, {
       wrapper: getWrapper({
         initialEntries: ['/'],
       }),
     });
-    authenticationStore.disableSession();
+    act(() => authenticationStore.disableSession());
 
     await waitFor(() =>
       expect(notificationsStore.displayNotification).toHaveBeenNthCalledWith(
@@ -73,14 +65,14 @@ describe('SessionWatcher', () => {
   });
 
   it('should display notification if session is expired on task detail page', async () => {
-    authenticationStore.activateSession();
+    act(() => authenticationStore.activateSession());
 
     render(<div />, {
       wrapper: getWrapper({
         initialEntries: ['/1234'],
       }),
     });
-    authenticationStore.disableSession();
+    act(() => authenticationStore.disableSession());
     await waitFor(() =>
       expect(notificationsStore.displayNotification).toHaveBeenNthCalledWith(
         1,
@@ -99,7 +91,7 @@ describe('SessionWatcher', () => {
         initialEntries: ['/'],
       }),
     });
-    authenticationStore.disableSession();
+    act(() => authenticationStore.disableSession());
     expect(notificationsStore.displayNotification).not.toHaveBeenCalled();
   });
 
@@ -109,7 +101,7 @@ describe('SessionWatcher', () => {
         initialEntries: ['/1234'],
       }),
     });
-    authenticationStore.disableSession();
+    act(() => authenticationStore.disableSession());
     await waitFor(() =>
       expect(notificationsStore.displayNotification).toHaveBeenNthCalledWith(
         1,
@@ -130,12 +122,12 @@ describe('SessionWatcher', () => {
     });
 
     // initial state
-    authenticationStore.disableSession();
+    act(() => authenticationStore.disableSession());
     expect(notificationsStore.displayNotification).not.toHaveBeenCalled();
 
     // after first login
-    authenticationStore.activateSession();
-    authenticationStore.disableSession();
+    act(() => authenticationStore.activateSession());
+    act(() => authenticationStore.disableSession());
     expect(notificationsStore.displayNotification).not.toHaveBeenCalled();
   });
 });

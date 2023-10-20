@@ -10,15 +10,17 @@ import {Mixpanel} from 'mixpanel-browser';
 type Appcues = {
   debug: () => void;
   page: () => void;
-  identify: (userId: string, properties?: {[property: string]: any}) => void;
+  identify: (
+    userId: string,
+    properties?: {[property: string]: unknown},
+  ) => void;
   track: (
     eventName: string,
-    properties?: {[eventProperty: string]: any},
+    properties?: {[eventProperty: string]: unknown},
   ) => void;
 };
 
 export declare global {
-  var IS_REACT_ACT_ENVIRONMENT: boolean;
   interface Window {
     clientConfig?: {
       isEnterprise?: boolean;
@@ -38,7 +40,7 @@ export declare global {
         showDrawer: (arg: string) => void;
         addEventListener: (
           eventType: string,
-          callback: (arg: any) => void,
+          callback: (arg: {ANALYTICS: 'ACCEPT' | 'DENY'}) => void,
         ) => void;
       };
     };
@@ -49,15 +51,14 @@ export declare global {
 
   namespace NodeJS {
     interface ProcessEnv {
-      REACT_APP_DEV_ENV_URL: string;
-      REACT_APP_INT_ENV_URL: string;
-      REACT_APP_PROD_ENV_URL: string;
-      REACT_APP_OSANO_DEV_ENV_URL: string;
-      REACT_APP_OSANO_INT_ENV_URL: string;
-      REACT_APP_OSANO_PROD_ENV_URL: string;
-      REACT_APP_MIXPANEL_TOKEN: string;
-      REACT_APP_CUES_HOST: string;
-      REACT_SKIP_STRICT_MODE: string;
+      VITE_DEV_ENV_URL: string;
+      VITE_INT_ENV_URL: string;
+      VITE_PROD_ENV_URL: string;
+      VITE_OSANO_DEV_ENV_URL: string;
+      VITE_OSANO_INT_ENV_URL: string;
+      VITE_OSANO_PROD_ENV_URL: string;
+      VITE_MIXPANEL_TOKEN: string;
+      VITE_CUES_HOST: string;
     }
   }
 }

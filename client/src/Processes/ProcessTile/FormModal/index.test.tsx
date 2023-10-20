@@ -17,19 +17,26 @@ import {createMockProcess} from 'modules/queries/useProcesses';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import {rest} from 'msw';
 import * as formMocks from 'modules/mock-schema/mocks/form';
-import {ReactQueryProvider} from 'modules/ReactQueryProvider';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
+import {QueryClientProvider} from '@tanstack/react-query';
+import {getMockQueryClient} from 'modules/react-query/getMockQueryClient';
 
-type Props = {
-  children?: React.ReactNode;
-};
+const getWrapper = () => {
+  const mockClient = getMockQueryClient();
 
-const Wrapper: React.FC<Props> = ({children}) => {
-  return (
-    <ReactQueryProvider>
-      <MockThemeProvider>{children}</MockThemeProvider>
-    </ReactQueryProvider>
-  );
+  type Props = {
+    children?: React.ReactNode;
+  };
+
+  const Wrapper: React.FC<Props> = ({children}) => {
+    return (
+      <QueryClientProvider client={mockClient}>
+        <MockThemeProvider>{children}</MockThemeProvider>
+      </QueryClientProvider>
+    );
+  };
+
+  return Wrapper;
 };
 
 describe('<FormModal />', () => {
@@ -40,7 +47,7 @@ describe('<FormModal />', () => {
       }),
     );
 
-    const mockOnSubmit = jest.fn();
+    const mockOnSubmit = vi.fn();
 
     const {user} = render(
       <FormModal
@@ -51,11 +58,11 @@ describe('<FormModal />', () => {
         isMultiTenancyEnabled={false}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 
-    await waitForElementToBeRemoved(screen.getByTestId('form-skeleton'));
+    await waitForElementToBeRemoved(screen.queryByTestId('form-skeleton'));
 
     await user.type(
       screen.getByRole('textbox', {name: /my variable \*/i}),
@@ -81,7 +88,7 @@ describe('<FormModal />', () => {
     expect(screen.getByTestId('loading-spinner')).toBeInTheDocument();
     expect(mockOnSubmit).toHaveBeenCalled();
 
-    await waitForElementToBeRemoved(screen.getByTestId('loading-spinner'));
+    await waitForElementToBeRemoved(screen.queryByTestId('loading-spinner'));
   });
 
   it('should handle closing', async () => {
@@ -91,7 +98,7 @@ describe('<FormModal />', () => {
       }),
     );
 
-    const mockOnClose = jest.fn();
+    const mockOnClose = vi.fn();
 
     render(
       <FormModal
@@ -102,11 +109,11 @@ describe('<FormModal />', () => {
         isMultiTenancyEnabled={false}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 
-    await waitForElementToBeRemoved(screen.getByTestId('form-skeleton'));
+    await waitForElementToBeRemoved(screen.queryByTestId('form-skeleton'));
 
     fireEvent.click(
       screen.getByRole('button', {
@@ -141,11 +148,11 @@ describe('<FormModal />', () => {
         isMultiTenancyEnabled={false}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 
-    await waitForElementToBeRemoved(screen.getByTestId('form-skeleton'));
+    await waitForElementToBeRemoved(screen.queryByTestId('form-skeleton'));
 
     expect(
       within(screen.getByRole('alert')).getByText('Something went wrong'),
@@ -173,11 +180,11 @@ describe('<FormModal />', () => {
         isMultiTenancyEnabled={false}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 
-    await waitForElementToBeRemoved(screen.getByTestId('form-skeleton'));
+    await waitForElementToBeRemoved(screen.queryByTestId('form-skeleton'));
 
     expect(
       within(screen.getByRole('alert')).getByText('Something went wrong'),
@@ -196,7 +203,7 @@ describe('<FormModal />', () => {
       }),
     );
 
-    const mockOnSubmit = jest.fn(() => {
+    const mockOnSubmit = vi.fn(() => {
       throw new Error('Mock error');
     });
 
@@ -209,11 +216,11 @@ describe('<FormModal />', () => {
         isMultiTenancyEnabled={false}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 
-    await waitForElementToBeRemoved(screen.getByTestId('form-skeleton'));
+    await waitForElementToBeRemoved(screen.queryByTestId('form-skeleton'));
 
     await user.type(
       screen.getByRole('textbox', {name: /my variable \*/i}),
@@ -248,10 +255,10 @@ describe('<FormModal />', () => {
       }),
     );
 
-    const mockFailOnSubmit = jest.fn(() => {
+    const mockFailOnSubmit = vi.fn(() => {
       throw new Error('Mock error');
     });
-    const mockSuccessOnSubmit = jest.fn();
+    const mockSuccessOnSubmit = vi.fn();
 
     const {user, rerender} = render(
       <FormModal
@@ -263,11 +270,11 @@ describe('<FormModal />', () => {
         tenantId={undefined}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 
-    await waitForElementToBeRemoved(screen.getByTestId('form-skeleton'));
+    await waitForElementToBeRemoved(screen.queryByTestId('form-skeleton'));
 
     await user.type(
       screen.getByRole('textbox', {name: /my variable \*/i}),
@@ -329,6 +336,6 @@ describe('<FormModal />', () => {
     expect(screen.getByTestId('loading-spinner')).toBeInTheDocument();
     expect(mockSuccessOnSubmit).toHaveBeenCalled();
 
-    await waitForElementToBeRemoved(screen.getByTestId('loading-spinner'));
+    await waitForElementToBeRemoved(screen.queryByTestId('loading-spinner'));
   });
 });

@@ -12,18 +12,21 @@ import {MemoryRouter} from 'react-router-dom';
 import {storeStateLocally, clearStateLocally} from 'modules/utils/localStorage';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import {rest} from 'msw';
-import {ReactQueryProvider} from 'modules/ReactQueryProvider';
 import * as userMocks from 'modules/mock-schema/mocks/current-user';
+import {QueryClientProvider} from '@tanstack/react-query';
+import {getMockQueryClient} from 'modules/react-query/getMockQueryClient';
 
 const getWrapper = () => {
+  const mockClient = getMockQueryClient();
+
   const Wrapper: React.FC<{
     children?: React.ReactNode;
   }> = ({children}) => (
-    <ReactQueryProvider>
+    <QueryClientProvider client={mockClient}>
       <MockThemeProvider>
         <MemoryRouter>{children}</MemoryRouter>
       </MockThemeProvider>
-    </ReactQueryProvider>
+    </QueryClientProvider>
   );
 
   return Wrapper;

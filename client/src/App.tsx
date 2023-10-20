@@ -19,7 +19,7 @@ import {SessionWatcher} from './SessionWatcher';
 import {Tasks} from './Tasks';
 import {TrackPagination} from 'modules/tracking/TrackPagination';
 import {Processes} from 'Processes';
-import {ReactQueryProvider} from 'modules/ReactQueryProvider';
+import {ReactQueryProvider} from 'modules/react-query/ReactQueryProvider';
 
 import {Suspense, lazy} from 'react';
 import {Loading} from '@carbon/react';

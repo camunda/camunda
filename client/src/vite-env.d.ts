@@ -5,12 +5,5 @@
  * except in compliance with the proprietary license.
  */
 
-import {Loading} from '@carbon/react';
-
-const LoadingSpinner: React.FC<
-  Omit<React.ComponentProps<typeof Loading>, 'withOverlay'>
-> = (props) => {
-  return <Loading withOverlay={false} {...props} />;
-};
-
-export {LoadingSpinner};
+/// <reference types="vite/client" />
+/// <reference types="vite-plugin-svgr/client" />

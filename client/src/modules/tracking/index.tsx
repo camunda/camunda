@@ -102,12 +102,12 @@ class Tracking {
     organizationId: window.clientConfig?.organizationId,
     clusterId: window.clientConfig?.clusterId,
     stage: STAGE_ENV,
-    version: process.env.REACT_APP_VERSION,
+    version: import.meta.env.VITE_VERSION,
   } as const;
 
   #isTrackingSupported = () => {
     return (
-      process.env.NODE_ENV !== 'development' &&
+      !import.meta.env.DEV &&
       ['prod', 'int', 'dev'].includes(STAGE_ENV) &&
       window.clientConfig?.organizationId
     );
@@ -160,11 +160,11 @@ class Tracking {
     return import('mixpanel-browser').then(({default: mixpanel}) => {
       mixpanel.init(
         window.clientConfig?.mixpanelToken ??
-          process.env.REACT_APP_MIXPANEL_TOKEN,
+          import.meta.env.VITE_MIXPANEL_TOKEN,
         {
           api_host:
             window.clientConfig?.mixpanelAPIHost ??
-            process.env.REACT_MIXPANEL_HOST,
+            import.meta.env.VITE_MIXPANEL_HOST,
           opt_out_tracking_by_default: true,
         },
       );
@@ -177,19 +177,19 @@ class Tracking {
   #loadOsano = (): Promise<void> => {
     return new Promise((resolve) => {
       if (STAGE_ENV === 'dev') {
-        return injectScript(process.env.REACT_APP_OSANO_DEV_ENV_URL).then(
+        return injectScript(import.meta.env.VITE_OSANO_DEV_ENV_URL).then(
           resolve,
         );
       }
 
       if (STAGE_ENV === 'int') {
-        return injectScript(process.env.REACT_APP_OSANO_INT_ENV_URL).then(
+        return injectScript(import.meta.env.VITE_OSANO_INT_ENV_URL).then(
           resolve,
         );
       }
 
       if (STAGE_ENV === 'prod') {
-        return injectScript(process.env.REACT_APP_OSANO_PROD_ENV_URL).then(
+        return injectScript(import.meta.env.VITE_OSANO_PROD_ENV_URL).then(
           resolve,
         );
       }
@@ -200,7 +200,7 @@ class Tracking {
 
   #loadAppCues = (): Promise<void> => {
     return new Promise((resolve) => {
-      return injectScript(process.env.REACT_APP_CUES_HOST).then(() => {
+      return injectScript(import.meta.env.VITE_CUES_HOST).then(() => {
         if (window.Appcues) {
           this.#appCues = window.Appcues;
         }

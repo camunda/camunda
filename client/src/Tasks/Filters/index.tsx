@@ -13,7 +13,6 @@ import {
   MenuItemWrapper,
   MenuOptionsStyles,
   SortItemContainer,
-  MENU_OPTIONS_STYLES_CLASSNAME,
 } from './styled';
 import {taskFilters} from 'modules/constants/taskFilters';
 import {tracking} from 'modules/tracking';
@@ -21,6 +20,7 @@ import {Dropdown, OverflowMenu, OverflowMenuItem} from '@carbon/react';
 import {SortAscending, Checkmark} from '@carbon/react/icons';
 import {useRef} from 'react';
 import {useTaskFilters, TaskFilters} from 'modules/hooks/useTaskFilters';
+import {MENU_OPTIONS_STYLES_CLASSNAME} from './constants';
 
 type FormValues = Pick<TaskFilters, 'filter' | 'sortBy'>;
 

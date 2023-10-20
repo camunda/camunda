@@ -9,11 +9,8 @@ import {render, screen} from 'modules/testing-library';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {AuthenticationCheck} from './index';
 import {authenticationStore} from 'modules/stores/authentication';
-import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
-import {rest} from 'msw';
 
 const LOGIN_CONTENT = 'Login content';
-const fetchMock = jest.spyOn(window, 'fetch');
 const LOGIN_PATH = '/login';
 
 type Props = {
@@ -32,30 +29,30 @@ const Wrapper: React.FC<Props> = ({children}) => {
 };
 
 describe('<AuthenticationCheck />', () => {
-  beforeAll(() => {
-    global.IS_REACT_ACT_ENVIRONMENT = false;
-  });
-
   afterEach(() => {
-    fetchMock.mockClear();
     authenticationStore.reset();
   });
 
-  afterAll(() => {
-    fetchMock.mockRestore();
-    global.IS_REACT_ACT_ENVIRONMENT = true;
-  });
-
-  it('should show the provided content', async () => {
-    nodeMockServer.use(
-      rest.post('/api/login', (_, res, ctx) => {
-        return res.once(ctx.status(204));
-      }),
-    );
-
+  it('should show the provided content', () => {
     const CONTENT = 'Secret route';
 
-    await authenticationStore.handleLogin('demo', 'demo');
+    render(
+      <AuthenticationCheck redirectPath={LOGIN_PATH}>
+        <h1>{CONTENT}</h1>
+      </AuthenticationCheck>,
+      {
+        wrapper: Wrapper,
+      },
+    );
+
+    expect(screen.getByText(CONTENT)).toBeInTheDocument();
+    expect(screen.queryByText(LOGIN_CONTENT)).not.toBeInTheDocument();
+  });
+
+  it('should redirect when not authenticated', () => {
+    authenticationStore.disableSession();
+
+    const CONTENT = 'Secret route';
 
     render(
       <AuthenticationCheck redirectPath={LOGIN_PATH}>
@@ -64,19 +61,7 @@ describe('<AuthenticationCheck />', () => {
       {wrapper: Wrapper},
     );
 
-    expect(screen.getByText(CONTENT)).toBeInTheDocument();
-  });
-
-  it('should redirect when not authenticated', async () => {
-    authenticationStore.disableSession();
-
-    render(
-      <AuthenticationCheck redirectPath={LOGIN_PATH}>
-        <h1>Secret route</h1>
-      </AuthenticationCheck>,
-      {wrapper: Wrapper},
-    );
-
-    expect(await screen.findByText(LOGIN_CONTENT)).toBeInTheDocument();
+    expect(screen.queryByText(CONTENT)).not.toBeInTheDocument();
+    expect(screen.getByText(LOGIN_CONTENT)).toBeInTheDocument();
   });
 });

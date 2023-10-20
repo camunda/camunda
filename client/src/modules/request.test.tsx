@@ -20,7 +20,7 @@ describe('request', () => {
     );
 
     const response = await request(
-      new Request(MOCK_URL, {
+      new Request(new URL(MOCK_URL, window.location.origin), {
         method: 'POST',
         body: JSON.stringify({username: 'demo', password: 'demo'}),
       }),
@@ -42,7 +42,7 @@ describe('request', () => {
     );
 
     const response = await request(
-      new Request(MOCK_URL, {
+      new Request(new URL(MOCK_URL, window.location.origin), {
         method: 'POST',
         body: JSON.stringify({username: 'demo', password: 'demo'}),
       }),
@@ -66,7 +66,7 @@ describe('request', () => {
     );
 
     const response = await request(
-      new Request(MOCK_URL, {
+      new Request(new URL(MOCK_URL, window.location.origin), {
         method: 'POST',
         body: JSON.stringify({username: 'demo', password: 'demo'}),
       }),

@@ -35,7 +35,6 @@ test.describe('variables page', () => {
   test('display info message when task has no variables', async ({
     page,
     taskPanelPage,
-    taskDetailsPage,
   }) => {
     await taskPanelPage.openTask('usertask_without_variables');
     await expect(page.getByText('Task has no variables')).toBeVisible();

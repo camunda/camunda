@@ -11,7 +11,7 @@ import {CarbonTheme} from 'modules/theme/CarbonTheme';
 
 type Props = React.ComponentProps<typeof BaseModal>;
 
-const Modal: React.FC<Props> = ({placeholder, children, ...props}) => {
+const Modal: React.FC<Props> = ({children, ...props}) => {
   return createPortal(
     <CarbonTheme>
       <BaseModal {...props}>{children}</BaseModal>

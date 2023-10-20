@@ -15,18 +15,21 @@ import {
 import {StartProcessFromForm} from './index';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
-import {ReactQueryProvider} from 'modules/ReactQueryProvider';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import {rest} from 'msw';
 import * as formMocks from 'modules/mock-schema/mocks/form';
+import {QueryClientProvider} from '@tanstack/react-query';
+import {getMockQueryClient} from 'modules/react-query/getMockQueryClient';
 
 const getWrapper = ({
   initialEntries,
 }: Pick<React.ComponentProps<typeof MemoryRouter>, 'initialEntries'>) => {
+  const mockClient = getMockQueryClient();
+
   const Wrapper: React.FC<{
     children?: React.ReactNode;
   }> = ({children}) => (
-    <ReactQueryProvider>
+    <QueryClientProvider client={mockClient}>
       <MockThemeProvider>
         <MemoryRouter initialEntries={initialEntries}>
           <Routes>
@@ -34,22 +37,13 @@ const getWrapper = ({
           </Routes>
         </MemoryRouter>
       </MockThemeProvider>
-    </ReactQueryProvider>
+    </QueryClientProvider>
   );
 
   return Wrapper;
 };
 
 describe('<StartProcessFromForm />', () => {
-  beforeEach(() => {
-    jest.useFakeTimers();
-  });
-
-  afterEach(() => {
-    jest.clearAllTimers();
-    jest.useRealTimers();
-  });
-
   it('should submit form', async () => {
     nodeMockServer.use(
       rest.get('/v1/external/process/:bpmnProcessId/form', (_, res, ctx) =>
@@ -76,7 +70,9 @@ describe('<StartProcessFromForm />', () => {
       }),
     });
 
-    await waitForElementToBeRemoved(screen.getByTestId('public-form-skeleton'));
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('public-form-skeleton'),
+    );
 
     await user.type(
       screen.getByRole('textbox', {name: /my variable \*/i}),
@@ -119,7 +115,9 @@ describe('<StartProcessFromForm />', () => {
       }),
     });
 
-    await waitForElementToBeRemoved(screen.getByTestId('public-form-skeleton'));
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('public-form-skeleton'),
+    );
 
     fireEvent.click(
       screen.getByRole('button', {
@@ -150,7 +148,9 @@ describe('<StartProcessFromForm />', () => {
       }),
     });
 
-    await waitForElementToBeRemoved(screen.getByTestId('public-form-skeleton'));
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('public-form-skeleton'),
+    );
 
     await user.type(
       screen.getByRole('textbox', {name: /my variable \*/i}),

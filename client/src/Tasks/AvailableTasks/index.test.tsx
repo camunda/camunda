@@ -17,8 +17,9 @@ import {Link, MemoryRouter} from 'react-router-dom';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import {rest} from 'msw';
 import * as tasksMocks from 'modules/mock-schema/mocks/tasks';
-import {ReactQueryProvider} from 'modules/ReactQueryProvider';
 import * as userMocks from 'modules/mock-schema/mocks/current-user';
+import {QueryClientProvider} from '@tanstack/react-query';
+import {getMockQueryClient} from 'modules/react-query/getMockQueryClient';
 
 function noop() {
   return Promise.resolve([]);
@@ -29,17 +30,19 @@ const getWrapper = (
     typeof MemoryRouter
   >['initialEntries'] = ['/'],
 ) => {
+  const mockClient = getMockQueryClient();
+
   const Wrapper: React.FC<{
     children?: React.ReactNode;
   }> = ({children}) => (
-    <ReactQueryProvider>
+    <QueryClientProvider client={mockClient}>
       <MockThemeProvider>
         <MemoryRouter initialEntries={initialEntries}>
           {children}
           <Link to="/">go home</Link>
         </MemoryRouter>
       </MockThemeProvider>
-    </ReactQueryProvider>
+    </QueryClientProvider>
   );
 
   return Wrapper;
@@ -79,7 +82,7 @@ describe('<Tasks />', () => {
       />,
     );
 
-    await waitForElementToBeRemoved(screen.getByTestId('tasks-skeleton'));
+    await waitForElementToBeRemoved(screen.queryByTestId('tasks-skeleton'));
 
     expect(screen.queryByTestId('tasks-skeleton')).not.toBeInTheDocument();
     expect(screen.getByTestId('task-0')).toBeInTheDocument();
@@ -96,7 +99,7 @@ describe('<Tasks />', () => {
       {wrapper: getWrapper()},
     );
 
-    await waitForElementToBeRemoved(screen.getByTestId('tasks-skeleton'));
+    await waitForElementToBeRemoved(screen.queryByTestId('tasks-skeleton'));
 
     const [firstTask, secondTask] = tasksMocks.tasks;
 
@@ -135,7 +138,7 @@ describe('<Tasks />', () => {
       {wrapper: getWrapper()},
     );
 
-    await waitForElementToBeRemoved(screen.getByTestId('tasks-skeleton'));
+    await waitForElementToBeRemoved(screen.queryByTestId('tasks-skeleton'));
 
     expect(screen.getByText('No tasks found')).toBeInTheDocument();
     expect(

@@ -10,12 +10,12 @@ import {Form} from '@bpmn-io/form-js-viewer';
 class FormManager {
   #form = new Form();
   #schema: string | null = null;
-  #onSubmit: (result: {errors: any; data: any}) => void = () => {};
+  #onSubmit: (result: {errors: object; data: object}) => void = () => {};
 
   render = async (options: {
     schema: string;
     data: Parameters<Form['importSchema']>[1];
-    onSubmit: (result: {errors: any; data: any}) => void;
+    onSubmit: (result: {errors: object; data: object}) => void;
     onImportError?: () => void;
     container: HTMLElement;
   }) => {

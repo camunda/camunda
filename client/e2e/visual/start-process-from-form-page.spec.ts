@@ -6,7 +6,7 @@
  */
 
 import {test, expect} from '@playwright/test';
-import subscribeFormSchema from '../resources/subscribeForm.json';
+import subscribeFormSchema from '../resources/subscribeForm.json' assert {type: 'json'};
 
 test.describe('start process from form page', () => {
   test('initial page', async ({page}) => {

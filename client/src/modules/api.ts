@@ -14,9 +14,17 @@ const BASE_REQUEST_OPTIONS: RequestInit = {
   mode: 'cors',
 };
 
+function getFullURL(url: string) {
+  if (typeof window.location.origin !== 'string') {
+    throw new Error('window.location.origin is not a set');
+  }
+
+  return new URL(mergePathname(BASENAME, url), window.location.origin);
+}
+
 const api = {
   login: (body: {username: string; password: string}) => {
-    return new Request(mergePathname(BASENAME, '/api/login'), {
+    return new Request(getFullURL('/api/login'), {
       ...BASE_REQUEST_OPTIONS,
       method: 'POST',
       body: new URLSearchParams(body).toString(),
@@ -26,7 +34,7 @@ const api = {
     });
   },
   logout: () =>
-    new Request(mergePathname(BASENAME, '/api/logout'), {
+    new Request(getFullURL('/api/logout'), {
       ...BASE_REQUEST_OPTIONS,
       method: 'POST',
       headers: {
@@ -39,11 +47,7 @@ const api = {
     tenantId?: Task['tenantId'];
   }) => {
     const {bpmnProcessId, variables, tenantId} = payload;
-    const url = new URL(window.location.origin);
-    url.pathname = mergePathname(
-      BASENAME,
-      `/v1/internal/processes/${bpmnProcessId}/start`,
-    );
+    const url = getFullURL(`/v1/internal/processes/${bpmnProcessId}/start`);
 
     if (tenantId !== undefined) {
       url.searchParams.set('tenantId', tenantId);
@@ -59,8 +63,7 @@ const api = {
     });
   },
   getProcesses: (params: {query?: string; tenantId?: Task['tenantId']}) => {
-    const url = new URL(window.location.origin);
-    url.pathname = mergePathname(BASENAME, '/v1/internal/processes');
+    const url = getFullURL('/v1/internal/processes');
 
     Object.entries(params).forEach(([key, value]) => {
       if (value !== undefined && value !== '') {
@@ -86,7 +89,7 @@ const api = {
     const {userId, ...body} = payload;
 
     return new Request(
-      mergePathname(BASENAME, `/internal/users/${userId}/process-instances`),
+      getFullURL(`/internal/users/${userId}/process-instances`),
       {
         ...BASE_REQUEST_OPTIONS,
         method: 'POST',
@@ -99,7 +102,7 @@ const api = {
     );
   },
   getCurrentUser: () =>
-    new Request(mergePathname(BASENAME, '/v1/internal/users/current'), {
+    new Request(getFullURL('/v1/internal/users/current'), {
       ...BASE_REQUEST_OPTIONS,
       method: 'GET',
       headers: {
@@ -110,9 +113,8 @@ const api = {
     id,
     processDefinitionKey,
   }: Pick<Form, 'id' | 'processDefinitionKey'>) => {
-    const url = new URL(window.location.href);
+    const url = getFullURL(`/v1/forms/${id}`);
 
-    url.pathname = mergePathname(BASENAME, `/v1/forms/${id}`);
     url.searchParams.set('processDefinitionKey', processDefinitionKey);
 
     return new Request(url, {
@@ -124,7 +126,7 @@ const api = {
     });
   },
   getFullVariable: (variableId: Variable['id']) => {
-    return new Request(mergePathname(BASENAME, `/v1/variables/${variableId}`), {
+    return new Request(getFullURL(`/v1/variables/${variableId}`), {
       ...BASE_REQUEST_OPTIONS,
       method: 'GET',
       headers: {
@@ -139,20 +141,17 @@ const api = {
     taskId: Task['id'];
     variableNames: Task['name'][];
   }) => {
-    return new Request(
-      mergePathname(BASENAME, `/v1/tasks/${taskId}/variables/search`),
-      {
-        ...BASE_REQUEST_OPTIONS,
-        method: 'POST',
-        body: JSON.stringify({variableNames}),
-        headers: {
-          'Content-Type': 'application/json',
-        },
+    return new Request(getFullURL(`/v1/tasks/${taskId}/variables/search`), {
+      ...BASE_REQUEST_OPTIONS,
+      method: 'POST',
+      body: JSON.stringify({variableNames}),
+      headers: {
+        'Content-Type': 'application/json',
       },
-    );
+    });
   },
   searchTasks: (body: TasksSearchBody) => {
-    return new Request(mergePathname(BASENAME, '/v1/tasks/search'), {
+    return new Request(getFullURL('/v1/tasks/search'), {
       ...BASE_REQUEST_OPTIONS,
       method: 'POST',
       body: JSON.stringify(body),
@@ -163,19 +162,16 @@ const api = {
     });
   },
   unassignTask: (taskId: Task['id']) => {
-    return new Request(
-      mergePathname(BASENAME, `/v1/tasks/${taskId}/unassign`),
-      {
-        ...BASE_REQUEST_OPTIONS,
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+    return new Request(getFullURL(`/v1/tasks/${taskId}/unassign`), {
+      ...BASE_REQUEST_OPTIONS,
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
       },
-    );
+    });
   },
   assignTask: (taskId: Task['id']) => {
-    return new Request(mergePathname(BASENAME, `/v1/tasks/${taskId}/assign`), {
+    return new Request(getFullURL(`/v1/tasks/${taskId}/assign`), {
       ...BASE_REQUEST_OPTIONS,
       method: 'PATCH',
       headers: {
@@ -190,20 +186,17 @@ const api = {
     taskId: Task['id'];
     variables: Pick<Variable, 'name' | 'value'>[];
   }) => {
-    return new Request(
-      mergePathname(BASENAME, `/v1/tasks/${taskId}/complete`),
-      {
-        ...BASE_REQUEST_OPTIONS,
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(body),
+    return new Request(getFullURL(`/v1/tasks/${taskId}/complete`), {
+      ...BASE_REQUEST_OPTIONS,
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
       },
-    );
+      body: JSON.stringify(body),
+    });
   },
   getTask: (taskId: Task['id']) => {
-    return new Request(mergePathname(BASENAME, `/v1/tasks/${taskId}`), {
+    return new Request(getFullURL(`/v1/tasks/${taskId}`), {
       ...BASE_REQUEST_OPTIONS,
       method: 'GET',
       headers: {
@@ -212,8 +205,8 @@ const api = {
     });
   },
   getExternalForm: (bpmnProcessId: string) => {
-    return new Request(
-      mergePathname(BASENAME, `/v1/external/process/${bpmnProcessId}/form`),
+    return new window.Request(
+      getFullURL(`/v1/external/process/${bpmnProcessId}/form`),
       {
         ...BASE_REQUEST_OPTIONS,
         method: 'GET',
@@ -231,7 +224,7 @@ const api = {
     variables: Variable[];
   }) => {
     return new Request(
-      mergePathname(BASENAME, `/v1/external/process/${bpmnProcessId}/start`),
+      getFullURL(`/v1/external/process/${bpmnProcessId}/start`),
       {
         ...BASE_REQUEST_OPTIONS,
         method: 'PATCH',

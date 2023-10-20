@@ -10,7 +10,7 @@ import {DEFAULT_MOCK_CLIENT_CONFIG} from 'modules/mocks/window';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import {rest} from 'msw';
 import {Header} from '..';
-import {Wrapper} from './mocks';
+import {getWrapper} from './mocks';
 import * as userMocks from 'modules/mock-schema/mocks/current-user';
 
 describe('license note', () => {
@@ -28,7 +28,7 @@ describe('license note', () => {
 
   it('should show and hide license information', async () => {
     const {user} = render(<Header />, {
-      wrapper: Wrapper,
+      wrapper: getWrapper(),
     });
 
     expect(await screen.findByText('Demo User')).toBeInTheDocument();
@@ -64,7 +64,7 @@ describe('license note', () => {
     };
 
     render(<Header />, {
-      wrapper: Wrapper,
+      wrapper: getWrapper(),
     });
 
     expect(
@@ -79,7 +79,7 @@ describe('license note', () => {
     };
 
     render(<Header />, {
-      wrapper: Wrapper,
+      wrapper: getWrapper(),
     });
 
     expect(await screen.findByText('Demo User')).toBeInTheDocument();
@@ -95,7 +95,7 @@ describe('license note', () => {
     };
 
     render(<Header />, {
-      wrapper: Wrapper,
+      wrapper: getWrapper(),
     });
 
     expect(await screen.findByText('Demo User')).toBeInTheDocument();

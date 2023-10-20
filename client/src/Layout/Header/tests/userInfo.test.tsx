@@ -11,18 +11,10 @@ import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import {authenticationStore} from 'modules/stores/authentication';
 import {rest} from 'msw';
 import {Header} from '..';
-import {Wrapper} from './mocks';
+import {getWrapper} from './mocks';
 import * as userMocks from 'modules/mock-schema/mocks/current-user';
 
 describe('User info', () => {
-  beforeAll(() => {
-    global.IS_REACT_ACT_ENVIRONMENT = false;
-  });
-
-  afterAll(() => {
-    global.IS_REACT_ACT_ENVIRONMENT = true;
-  });
-
   afterEach(() => {
     window.clientConfig = DEFAULT_MOCK_CLIENT_CONFIG;
   });
@@ -35,7 +27,7 @@ describe('User info', () => {
     );
 
     const {user} = render(<Header />, {
-      wrapper: Wrapper,
+      wrapper: getWrapper(),
     });
 
     await user.click(
@@ -57,7 +49,7 @@ describe('User info', () => {
     );
 
     const {user} = render(<Header />, {
-      wrapper: Wrapper,
+      wrapper: getWrapper(),
     });
 
     await user.click(
@@ -75,9 +67,7 @@ describe('User info', () => {
   });
 
   it('should handle logout', async () => {
-    const logoutSpy = jest
-      .spyOn(authenticationStore, 'handleLogout')
-      .mockImplementation();
+    const logoutSpy = vi.spyOn(authenticationStore, 'handleLogout');
 
     nodeMockServer.use(
       rest.get('/v1/internal/users/current', (_, res, ctx) => {
@@ -89,7 +79,7 @@ describe('User info', () => {
     );
 
     const {user} = render(<Header />, {
-      wrapper: Wrapper,
+      wrapper: getWrapper(),
     });
 
     await user.click(
@@ -103,12 +93,11 @@ describe('User info', () => {
     await user.click(screen.getByText('Log out'));
 
     expect(logoutSpy).toHaveBeenCalled();
-    logoutSpy.mockRestore();
   });
 
   it('should render links', async () => {
     const originalWindowOpen = window.open;
-    const mockOpenFn = jest.fn();
+    const mockOpenFn = vi.fn();
     window.open = mockOpenFn;
 
     nodeMockServer.use(
@@ -118,7 +107,7 @@ describe('User info', () => {
     );
 
     const {user} = render(<Header />, {
-      wrapper: Wrapper,
+      wrapper: getWrapper(),
     });
 
     await user.click(
@@ -156,15 +145,15 @@ describe('User info', () => {
 
   it('should cookie preferences with correct link', async () => {
     const originalWindowOpen = window.open;
-    const mockOpenFn = jest.fn();
-    const mockShowDrawer = jest.fn();
+    const mockOpenFn = vi.fn();
+    const mockShowDrawer = vi.fn();
 
     window.open = mockOpenFn;
     window.Osano = {
       cm: {
         analytics: false,
         showDrawer: mockShowDrawer,
-        addEventListener: jest.fn(),
+        addEventListener: vi.fn(),
       },
     };
 
@@ -175,7 +164,7 @@ describe('User info', () => {
     );
 
     const {user} = render(<Header />, {
-      wrapper: Wrapper,
+      wrapper: getWrapper(),
     });
 
     await user.click(

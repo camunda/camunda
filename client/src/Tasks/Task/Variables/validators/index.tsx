@@ -68,7 +68,12 @@ const validateDuplicateNames: FieldValidator<string | undefined> =
         return;
       }
 
-      if (allValues.hasOwnProperty(createVariableFieldName(variableName))) {
+      if (
+        Object.prototype.hasOwnProperty.call(
+          allValues,
+          createVariableFieldName(variableName),
+        )
+      ) {
         return ERROR_MESSAGES.duplicateName;
       }
 

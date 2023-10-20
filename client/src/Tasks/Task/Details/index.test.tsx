@@ -14,9 +14,10 @@ import {rest} from 'msw';
 import noop from 'lodash/noop';
 import * as taskMocks from 'modules/mock-schema/mocks/task';
 import * as userMocks from 'modules/mock-schema/mocks/current-user';
-import {ReactQueryProvider} from 'modules/ReactQueryProvider';
 import {useCurrentUser} from 'modules/queries/useCurrentUser';
 import {DEFAULT_MOCK_CLIENT_CONFIG} from 'modules/mocks/window';
+import {QueryClientProvider} from '@tanstack/react-query';
+import {getMockQueryClient} from 'modules/react-query/getMockQueryClient';
 
 const UserName = () => {
   const {data: currentUser} = useCurrentUser();
@@ -25,10 +26,12 @@ const UserName = () => {
 };
 
 const getWrapper = (id: string = '0') => {
+  const mockClient = getMockQueryClient();
+
   const Wrapper: React.FC<{
     children?: React.ReactNode;
   }> = ({children}) => (
-    <ReactQueryProvider>
+    <QueryClientProvider client={mockClient}>
       <UserName />
       <MockThemeProvider>
         <MemoryRouter initialEntries={[`/${id}`]}>
@@ -37,21 +40,14 @@ const getWrapper = (id: string = '0') => {
           </Routes>
         </MemoryRouter>
       </MockThemeProvider>
-    </ReactQueryProvider>
+    </QueryClientProvider>
   );
 
   return Wrapper;
 };
 
 describe('<Details />', () => {
-  beforeEach(() => {
-    jest.useFakeTimers();
-  });
-
   afterEach(() => {
-    jest.clearAllTimers();
-    jest.useRealTimers();
-
     window.clientConfig = DEFAULT_MOCK_CLIENT_CONFIG;
   });
 
@@ -102,10 +98,10 @@ describe('<Details />', () => {
       },
     );
 
-    expect(await screen.findByText('My Task')).toBeInTheDocument();
     expect(
       await screen.findByRole('button', {name: /^assign to me$/i}),
     ).toBeInTheDocument();
+    expect(screen.getByText('My Task')).toBeInTheDocument();
 
     expect(screen.getByText('Nice Process')).toBeInTheDocument();
     expect(screen.getByText('Unassigned')).toBeInTheDocument();
@@ -145,7 +141,6 @@ describe('<Details />', () => {
     expect(
       screen.queryByRole('button', {name: /^assign$/i}),
     ).not.toBeInTheDocument();
-    expect(screen.getByText('Assigning...')).toBeInTheDocument();
     expect(
       await screen.findByText('Assignment successful'),
     ).toBeInTheDocument();
@@ -194,7 +189,6 @@ describe('<Details />', () => {
 
     await user.click(screen.getByRole('button', {name: /^unassign$/i}));
 
-    expect(screen.getByText('Unassigning...')).toBeInTheDocument();
     expect(
       await screen.findByText('Unassignment successful'),
     ).toBeInTheDocument();

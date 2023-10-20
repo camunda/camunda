@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {render, screen, waitFor} from 'modules/testing-library';
+import {fireEvent, render, screen, waitFor} from 'modules/testing-library';
 import {Link, MemoryRouter} from 'react-router-dom';
 import {rest} from 'msw';
 import {Login} from './index';
@@ -14,7 +14,6 @@ import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import {LocationLog} from 'modules/utils/LocationLog';
 
-const getFullYearMock = jest.spyOn(Date.prototype, 'getFullYear');
 function createWrapper(
   initialEntries: React.ComponentProps<
     typeof MemoryRouter
@@ -45,22 +44,12 @@ function createWrapper(
 }
 
 describe('<Login />', () => {
-  beforeAll(() => {
-    global.IS_REACT_ACT_ENVIRONMENT = false;
-  });
-
   beforeEach(() => {
     authenticationStore.disableSession();
   });
 
   afterEach(() => {
-    getFullYearMock.mockClear();
     authenticationStore.reset();
-  });
-
-  afterAll(() => {
-    getFullYearMock.mockRestore();
-    global.IS_REACT_ACT_ENVIRONMENT = true;
   });
 
   it('should redirect to the initial page on success', async () => {
@@ -74,7 +63,7 @@ describe('<Login />', () => {
 
     await user.type(screen.getByLabelText(/username/i), 'demo');
     await user.type(screen.getByLabelText('Password'), 'demo');
-    await user.click(screen.getByRole('button', {name: 'Login'}));
+    fireEvent.click(screen.getByRole('button', {name: 'Login'}));
 
     expect(
       screen.getByRole('button', {name: 'Logging in'}),
@@ -166,7 +155,7 @@ describe('<Login />', () => {
 
     await user.type(screen.getByLabelText(/username/i), 'demo');
     await user.type(screen.getByLabelText('Password'), 'demo');
-    await user.click(screen.getByRole('button', {name: 'Login'}));
+    fireEvent.click(screen.getByRole('button', {name: 'Login'}));
 
     expect(
       screen.getByRole('button', {
@@ -176,8 +165,9 @@ describe('<Login />', () => {
   });
 
   it('should have the correct copyright notice', () => {
+    vi.useFakeTimers();
     const mockYear = 1984;
-    getFullYearMock.mockReturnValue(mockYear);
+    vi.setSystemTime(new Date(mockYear, 0));
     render(<Login />, {
       wrapper: createWrapper(),
     });
@@ -187,6 +177,7 @@ describe('<Login />', () => {
         `© Camunda Services GmbH ${mockYear}. All rights reserved. | 1.2.3`,
       ),
     ).toBeInTheDocument();
+    vi.useRealTimers();
   });
 
   it('should not allow the form to be submitted with empty fields', async () => {
@@ -239,7 +230,7 @@ describe('<Login />', () => {
     expect(screen.getByTestId('pathname')).toHaveTextContent('/login');
 
     await user.type(screen.getByLabelText(/username/i), 'demo');
-    await user.click(screen.getByRole('button', {name: /login/i}));
+    fireEvent.click(screen.getByRole('button', {name: 'Login'}));
 
     expect(screen.getByTestId('pathname')).toHaveTextContent('/login');
     await waitFor(() =>

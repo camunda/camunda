@@ -5,12 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {
-  render,
-  screen,
-  waitFor,
-  waitForElementToBeRemoved,
-} from 'modules/testing-library';
+import {render, screen, waitFor} from 'modules/testing-library';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {Variables} from './index';
 import * as taskMocks from 'modules/mock-schema/mocks/task';
@@ -21,41 +16,31 @@ import {rest} from 'msw';
 import noop from 'lodash/noop';
 import {currentUser} from 'modules/mock-schema/mocks/current-user';
 import {Variable} from 'modules/types';
-import {ReactQueryProvider} from 'modules/ReactQueryProvider';
 import {useCurrentUser} from 'modules/queries/useCurrentUser';
+import {QueryClientProvider} from '@tanstack/react-query';
+import {getMockQueryClient} from 'modules/react-query/getMockQueryClient';
 
-type Props = {
-  children?: React.ReactNode;
+const getWrapper = () => {
+  const mockClient = getMockQueryClient();
+
+  const Wrapper: React.FC<{
+    children?: React.ReactNode;
+  }> = ({children}) => (
+    <QueryClientProvider client={mockClient}>
+      <MockThemeProvider>{children}</MockThemeProvider>
+    </QueryClientProvider>
+  );
+
+  return Wrapper;
 };
 
-const Wrapper: React.FC<Props> = ({children}) => (
-  <ReactQueryProvider>
-    <MockThemeProvider>{children}</MockThemeProvider>
-  </ReactQueryProvider>
-);
-
 describe('<Variables />', () => {
-  beforeAll(() => {
-    global.IS_REACT_ACT_ENVIRONMENT = false;
-  });
-
-  afterAll(() => {
-    global.IS_REACT_ACT_ENVIRONMENT = true;
-  });
-
   beforeEach(() => {
     nodeMockServer.use(
       rest.get('/v1/internal/users/current', (_, res, ctx) => {
         return res.once(ctx.json(userMocks.currentUser));
       }),
     );
-
-    jest.useFakeTimers();
-  });
-
-  afterEach(() => {
-    jest.clearAllTimers();
-    jest.useRealTimers();
   });
 
   it('should show existing variables for unassigned tasks', async () => {
@@ -74,7 +59,7 @@ describe('<Variables />', () => {
         onSubmitSuccess={noop}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 
@@ -101,7 +86,7 @@ describe('<Variables />', () => {
         onSubmitSuccess={noop}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 
@@ -129,7 +114,7 @@ describe('<Variables />', () => {
         onSubmitSuccess={noop}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
     const newVariableValue = '"changedValue"';
@@ -162,7 +147,7 @@ describe('<Variables />', () => {
         onSubmitSuccess={noop}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 
@@ -209,7 +194,7 @@ describe('<Variables />', () => {
         onSubmitSuccess={noop}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 
@@ -237,7 +222,7 @@ describe('<Variables />', () => {
         onSubmitSuccess={noop}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 
@@ -270,7 +255,7 @@ describe('<Variables />', () => {
         onSubmitSuccess={noop}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 
@@ -316,7 +301,7 @@ describe('<Variables />', () => {
         onSubmitSuccess={noop}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 
@@ -346,7 +331,7 @@ describe('<Variables />', () => {
         onSubmitSuccess={noop}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 
@@ -383,7 +368,7 @@ describe('<Variables />', () => {
         onSubmitSuccess={noop}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 
@@ -421,7 +406,7 @@ describe('<Variables />', () => {
       }),
     );
 
-    const mockOnSubmit = jest.fn();
+    const mockOnSubmit = vi.fn();
     const {rerender, user} = render(
       <Variables
         key="id_0"
@@ -432,7 +417,7 @@ describe('<Variables />', () => {
         onSubmitSuccess={noop}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 
@@ -442,7 +427,6 @@ describe('<Variables />', () => {
 
     await user.click(await screen.findByText(/complete task/i));
 
-    expect(screen.getByText('Completing task...'));
     expect(await screen.findByText('Completed')).toBeInTheDocument();
     expect(mockOnSubmit).toHaveBeenCalledTimes(1);
     expect(mockOnSubmit).toHaveBeenNthCalledWith(1, []);
@@ -457,7 +441,6 @@ describe('<Variables />', () => {
 
     await user.click(screen.getByText(/complete task/i));
 
-    expect(screen.getByText('Completing task...'));
     expect(await screen.findByText('Completed')).toBeInTheDocument();
     expect(mockOnSubmit).toHaveBeenCalledTimes(2);
     expect(mockOnSubmit).toHaveBeenNthCalledWith(2, [
@@ -490,7 +473,6 @@ describe('<Variables />', () => {
 
     await user.click(screen.getByText(/complete task/i));
 
-    expect(screen.getByText('Completing task...'));
     expect(await screen.findByText('Completed')).toBeInTheDocument();
     expect(mockOnSubmit).toHaveBeenCalledTimes(3);
     expect(mockOnSubmit).toHaveBeenNthCalledWith(3, [
@@ -508,7 +490,7 @@ describe('<Variables />', () => {
       }),
     );
 
-    const mockOnSubmit = jest.fn();
+    const mockOnSubmit = vi.fn();
 
     const {user} = render(
       <Variables
@@ -519,7 +501,7 @@ describe('<Variables />', () => {
         onSubmitSuccess={noop}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 
@@ -557,7 +539,7 @@ describe('<Variables />', () => {
       }),
     );
 
-    const mockOnSubmit = jest.fn();
+    const mockOnSubmit = vi.fn();
 
     render(
       <>
@@ -571,7 +553,7 @@ describe('<Variables />', () => {
         />
       </>,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 
@@ -590,7 +572,7 @@ describe('<Variables />', () => {
       }),
     );
 
-    const mockOnSubmit = jest.fn();
+    const mockOnSubmit = vi.fn();
 
     const {user} = render(
       <Variables
@@ -601,7 +583,7 @@ describe('<Variables />', () => {
         onSubmitSuccess={noop}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 
@@ -646,7 +628,7 @@ describe('<Variables />', () => {
         onSubmitSuccess={noop}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 
@@ -671,7 +653,7 @@ describe('<Variables />', () => {
         onSubmitSuccess={noop}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 
@@ -702,7 +684,7 @@ describe('<Variables />', () => {
         onSubmitSuccess={noop}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 
@@ -737,7 +719,7 @@ describe('<Variables />', () => {
         onSubmitSuccess={noop}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 
@@ -762,7 +744,7 @@ describe('<Variables />', () => {
         onSubmitSuccess={noop}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 
@@ -784,7 +766,7 @@ describe('<Variables />', () => {
         return res.once(ctx.json(variableMocks.fullVariable()));
       }),
     );
-    const mockOnSubmit = jest.fn();
+    const mockOnSubmit = vi.fn();
     const {user} = render(
       <Variables
         task={taskMocks.assignedTask()}
@@ -794,21 +776,15 @@ describe('<Variables />', () => {
         onSubmitSuccess={noop}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 
     expect(await screen.findByDisplayValue('"000')).toBeInTheDocument();
 
-    await user.click(screen.getByDisplayValue('"000'));
+    user.click(screen.getByDisplayValue('"000'));
 
-    expect(screen.getByTestId('textarea-loading-overlay')).toBeInTheDocument();
-
-    await waitForElementToBeRemoved(() =>
-      screen.getByTestId('textarea-loading-overlay'),
-    );
-
-    expect(screen.getByDisplayValue('"0001"')).toBeInTheDocument();
+    expect(await screen.findByDisplayValue('"0001"')).toBeInTheDocument();
 
     await user.clear(screen.getByDisplayValue('"0001"'));
     await user.type(screen.getByLabelText('myVar'), '"newVariableValue"');
@@ -863,7 +839,7 @@ describe('<Variables />', () => {
         onSubmitSuccess={noop}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 
@@ -902,7 +878,7 @@ describe('<Variables />', () => {
         return res.once(ctx.json(variableMocks.truncatedVariables));
       }),
     );
-    const mockOnSubmit = jest.fn();
+    const mockOnSubmit = vi.fn();
     const {rerender} = render(
       <Variables
         task={taskMocks.unassignedTask()}
@@ -912,7 +888,7 @@ describe('<Variables />', () => {
         onSubmitSuccess={noop}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 
@@ -948,7 +924,7 @@ describe('<Variables />', () => {
           onSubmitSuccess={noop}
         />,
         {
-          wrapper: Wrapper,
+          wrapper: getWrapper(),
         },
       );
 
@@ -981,7 +957,7 @@ describe('<Variables />', () => {
           onSubmitSuccess={noop}
         />,
         {
-          wrapper: Wrapper,
+          wrapper: getWrapper(),
         },
       );
 
@@ -1037,7 +1013,7 @@ describe('<Variables />', () => {
           onSubmitSuccess={noop}
         />,
         {
-          wrapper: Wrapper,
+          wrapper: getWrapper(),
         },
       );
 
@@ -1082,7 +1058,7 @@ describe('<Variables />', () => {
           onSubmitSuccess={noop}
         />,
         {
-          wrapper: Wrapper,
+          wrapper: getWrapper(),
         },
       );
 

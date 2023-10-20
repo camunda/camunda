@@ -5,28 +5,25 @@
  * except in compliance with the proprietary license.
  */
 
-// jest-dom adds custom jest matchers for asserting on DOM nodes.
-// allows you to do things like:
-// expect(element).toHaveTextContent(/react/i)
-// learn more: https://github.com/testing-library/jest-dom
-import '@testing-library/jest-dom';
+import '@testing-library/jest-dom/vitest';
+import {cleanup} from '@testing-library/react';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import {configure} from 'modules/testing-library';
 import {DEFAULT_MOCK_CLIENT_CONFIG} from 'modules/mocks/window';
-import {reactQueryClient} from 'modules/ReactQueryProvider';
+import {reactQueryClient} from 'modules/react-query/reactQueryClient';
 
 function mockMatchMedia() {
   Object.defineProperty(window, 'matchMedia', {
     writable: true,
-    value: jest.fn().mockImplementation((query) => ({
+    value: vi.fn().mockImplementation((query) => ({
       matches: false,
       media: query,
       onchange: null,
-      addListener: jest.fn(),
-      removeListener: jest.fn(),
-      addEventListener: jest.fn(),
-      removeEventListener: jest.fn(),
-      dispatchEvent: jest.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
     })),
   });
 }
@@ -34,7 +31,6 @@ function mockMatchMedia() {
 mockMatchMedia();
 
 beforeEach(() => {
-  nodeMockServer.resetHandlers();
   mockMatchMedia();
 
   window.localStorage.clear();
@@ -80,16 +76,15 @@ beforeAll(() => {
 });
 
 afterEach(() => {
+  cleanup();
   reactQueryClient.clear();
   window.clientConfig = DEFAULT_MOCK_CLIENT_CONFIG;
+  nodeMockServer.resetHandlers();
 });
 
-afterAll(() => nodeMockServer.close());
-
-jest.mock(
-  '@bpmn-io/form-js-viewer/dist/assets/form-js-base.css',
-  () => undefined,
-);
+afterAll(() => {
+  nodeMockServer.close();
+});
 
 configure({
   asyncUtilTimeout: 7000,

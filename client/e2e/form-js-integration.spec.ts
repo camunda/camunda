@@ -6,7 +6,7 @@
  */
 
 import {test, expect} from '@playwright/test';
-import schema from './resources/bigForm.json';
+import schema from './resources/bigForm.json' assert {type: 'json'};
 
 const MOCK_TASK = {
   id: 'task123',

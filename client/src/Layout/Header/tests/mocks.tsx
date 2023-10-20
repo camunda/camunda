@@ -5,20 +5,26 @@
  * except in compliance with the proprietary license.
  */
 
-import {ReactQueryProvider} from 'modules/ReactQueryProvider';
+import {QueryClientProvider} from '@tanstack/react-query';
+import {getMockQueryClient} from 'modules/react-query/getMockQueryClient';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {MemoryRouter} from 'react-router-dom';
 
-type Props = {
-  children?: React.ReactNode;
+const getWrapper = () => {
+  const mockClient = getMockQueryClient();
+
+  type Props = {
+    children?: React.ReactNode;
+  };
+
+  const Wrapper: React.FC<Props> = ({children}) => (
+    <QueryClientProvider client={mockClient}>
+      <MockThemeProvider>
+        <MemoryRouter initialEntries={['/']}>{children}</MemoryRouter>
+      </MockThemeProvider>
+    </QueryClientProvider>
+  );
+  return Wrapper;
 };
 
-const Wrapper: React.FC<Props> = ({children}) => (
-  <ReactQueryProvider>
-    <MockThemeProvider>
-      <MemoryRouter initialEntries={['/']}>{children}</MemoryRouter>
-    </MockThemeProvider>
-  </ReactQueryProvider>
-);
-
-export {Wrapper};
+export {getWrapper};

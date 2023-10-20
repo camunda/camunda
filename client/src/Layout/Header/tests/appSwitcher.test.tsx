@@ -9,7 +9,7 @@ import {render, screen} from 'modules/testing-library';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import {rest} from 'msw';
 import {Header} from '..';
-import {Wrapper} from './mocks';
+import {getWrapper} from './mocks';
 import {DEFAULT_MOCK_CLIENT_CONFIG} from 'modules/mocks/window';
 import * as userMocks from 'modules/mock-schema/mocks/current-user';
 
@@ -18,8 +18,7 @@ describe('App switcher', () => {
     window.clientConfig = DEFAULT_MOCK_CLIENT_CONFIG;
   });
 
-  // Issue to investigate why it's failing: #3367
-  it.skip('should render with correct links', async () => {
+  it('should render with correct links', async () => {
     window.clientConfig = {
       ...window.clientConfig,
       isEnterprise: false,
@@ -33,7 +32,7 @@ describe('App switcher', () => {
     );
 
     const {user} = render(<Header />, {
-      wrapper: Wrapper,
+      wrapper: getWrapper(),
     });
 
     await user.click(
@@ -78,7 +77,7 @@ describe('App switcher', () => {
     );
 
     render(<Header />, {
-      wrapper: Wrapper,
+      wrapper: getWrapper(),
     });
 
     expect(

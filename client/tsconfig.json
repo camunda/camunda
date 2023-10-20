@@ -26,7 +26,8 @@
     "baseUrl": "src",
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "useDefineForClassFields": true
+    "useDefineForClassFields": true,
+    "types": ["vitest/globals"]
   },
   "include": ["src"]
 }

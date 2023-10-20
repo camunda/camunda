@@ -7,7 +7,7 @@
 
 import {expect} from '@playwright/test';
 import {test} from './test-fixtures';
-import schema from './resources/bigForm.json';
+import schema from './resources/bigForm.json' assert {type: 'json'};
 
 const MOCK_TENANT = {
   id: 'tenantA',

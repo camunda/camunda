@@ -6,15 +6,15 @@
  */
 
 function getStage(host: string): 'dev' | 'int' | 'prod' | 'unknown' {
-  if (host.includes(process.env.REACT_APP_DEV_ENV_URL)) {
+  if (host.includes(import.meta.env.VITE_DEV_ENV_URL)) {
     return 'dev';
   }
 
-  if (host.includes(process.env.REACT_APP_INT_ENV_URL)) {
+  if (host.includes(import.meta.env.VITE_INT_ENV_URL)) {
     return 'int';
   }
 
-  if (host.includes(process.env.REACT_APP_PROD_ENV_URL)) {
+  if (host.includes(import.meta.env.VITE_PROD_ENV_URL)) {
     return 'prod';
   }
 

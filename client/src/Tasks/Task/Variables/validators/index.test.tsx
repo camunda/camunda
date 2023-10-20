@@ -14,9 +14,9 @@ import {
 } from './index';
 
 const mockMeta = {
-  blur: jest.fn(),
-  change: jest.fn(),
-  focus: jest.fn(),
+  blur: vi.fn(),
+  change: vi.fn(),
+  focus: vi.fn(),
 };
 
 describe('Validators', () => {

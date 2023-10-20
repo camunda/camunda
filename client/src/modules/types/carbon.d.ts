@@ -16,13 +16,13 @@ type PropsToOmit<C extends React.ElementType, P> = keyof (AsProp<C> & P);
 
 type PolymorphicComponentProp<
   C extends React.ElementType,
-  Props = {},
+  Props = object,
 > = React.PropsWithChildren<Props & AsProp<C>> &
   Omit<React.ComponentPropsWithoutRef<C>, PropsToOmit<C, Props>>;
 
 type PolymorphicComponentPropWithRef<
   C extends React.ElementType,
-  Props = {},
+  Props = object,
 > = PolymorphicComponentProp<C, Props> & {ref?: PolymorphicRef<C>};
 
 type Size = 'sm' | 'md' | 'lg' | 'xl';
@@ -195,8 +195,6 @@ declare module '@carbon/react' {
   export const usePrefix: () => string;
 
   export * from 'carbon-components-react';
-
-  export {Button} from '@carbon/react';
 }
 
 declare module '@carbon/react/icons' {

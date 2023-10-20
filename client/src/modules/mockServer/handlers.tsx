@@ -10,7 +10,7 @@ import {RequestHandler, rest} from 'msw';
 import * as processInstancesMocks from 'modules/mock-schema/mocks/process-instances';
 import {IS_PROCESS_INSTANCES_ENABLED} from 'modules/featureFlags';
 
-let handlers: RequestHandler[] = [];
+const handlers: RequestHandler[] = [];
 
 if (IS_PROCESS_INSTANCES_ENABLED) {
   handlers.push(

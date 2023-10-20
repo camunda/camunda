@@ -12,8 +12,9 @@ import {generateTask} from 'modules/mock-schema/mocks/tasks';
 import {Tasks} from './index';
 import {rest} from 'msw';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
-import {ReactQueryProvider} from 'modules/ReactQueryProvider';
 import * as userMocks from 'modules/mock-schema/mocks/current-user';
+import {QueryClientProvider} from '@tanstack/react-query';
+import {getMockQueryClient} from 'modules/react-query/getMockQueryClient';
 
 const FIRST_PAGE = Array.from({length: 50}).map((_, index) =>
   generateTask(`${index}`),
@@ -27,17 +28,19 @@ function getWrapper(
     typeof MemoryRouter
   >['initialEntries'] = ['/'],
 ) {
+  const mockClient = getMockQueryClient();
+
   type Props = {
     children?: React.ReactNode;
   };
 
   const Wrapper: React.FC<Props> = ({children}) => {
     return (
-      <ReactQueryProvider>
+      <QueryClientProvider client={mockClient}>
         <MemoryRouter initialEntries={initialEntries}>
           <MockThemeProvider>{children}</MockThemeProvider>
         </MemoryRouter>
-      </ReactQueryProvider>
+      </QueryClientProvider>
     );
   };
 

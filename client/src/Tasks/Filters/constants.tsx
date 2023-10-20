@@ -5,12 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {Loading} from '@carbon/react';
+const MENU_OPTIONS_STYLES_CLASSNAME =
+  'cds--custom-sorting-menu-options-wrapper';
 
-const LoadingSpinner: React.FC<
-  Omit<React.ComponentProps<typeof Loading>, 'withOverlay'>
-> = (props) => {
-  return <Loading withOverlay={false} {...props} />;
-};
-
-export {LoadingSpinner};
+export {MENU_OPTIONS_STYLES_CLASSNAME};

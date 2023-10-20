@@ -6,9 +6,9 @@
  */
 
 import styled from 'styled-components';
-import {ReactComponent} from 'modules/icons/logo.svg';
+import Logo from 'modules/icons/logo.svg?react';
 
-const CamundaLogo = styled(ReactComponent)`
+const CamundaLogo = styled(Logo)`
   color: var(--cds-icon-primary);
 `;
 
