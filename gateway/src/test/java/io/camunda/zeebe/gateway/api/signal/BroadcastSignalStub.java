@@ -24,6 +24,13 @@ public final class BroadcastSignalStub
   @Override
   public BrokerResponse<SignalRecord> handle(final BrokerBroadcastSignalRequest request)
       throws Exception {
-    return new BrokerResponse<>(null);
+    final var requestRecord = request.getRequestWriter();
+    final var responseRecord =
+        new SignalRecord()
+            .setSignalName(requestRecord.getSignalName())
+            .setVariables(requestRecord.getVariablesBuffer())
+            .setTenantId(requestRecord.getTenantId());
+
+    return new BrokerResponse<>(responseRecord, 0, 123L);
   }
 }

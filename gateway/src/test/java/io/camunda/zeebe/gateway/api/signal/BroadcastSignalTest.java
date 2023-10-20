@@ -16,6 +16,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.BroadcastSignalRespon
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.JsonUtil;
 import io.camunda.zeebe.test.util.MsgPackUtil;
 import java.util.Collections;
@@ -32,7 +33,11 @@ public class BroadcastSignalTest extends GatewayTest {
     final String variables = JsonUtil.toJson(Collections.singletonMap("key", "value"));
 
     final BroadcastSignalRequest request =
-        BroadcastSignalRequest.newBuilder().setSignalName("signal").setVariables(variables).build();
+        BroadcastSignalRequest.newBuilder()
+            .setSignalName("signal")
+            .setVariables(variables)
+            .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+            .build();
 
     // when
     final BroadcastSignalResponse response = client.broadcastSignal(request);
@@ -47,5 +52,6 @@ public class BroadcastSignalTest extends GatewayTest {
     final SignalRecord brokerRequestValue = brokerRequest.getRequestWriter();
     assertThat(brokerRequestValue.getSignalName()).isEqualTo(request.getSignalName());
     MsgPackUtil.assertEqualityExcluding(brokerRequestValue.getVariablesBuffer(), variables);
+    assertThat(brokerRequestValue.getTenantId()).isEqualTo(request.getTenantId());
   }
 }
