@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.transport.partitionapi;
 
+import com.google.common.util.concurrent.RateLimiter;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.broker.Loggers;
@@ -25,16 +26,21 @@ import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
 import io.camunda.zeebe.stream.impl.TypedEventRegistry;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.ReflectUtil;
+import io.camunda.zeebe.util.logging.ThrottledLogger;
+import java.time.Duration;
 import java.util.Optional;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
 final class InterPartitionCommandReceiverImpl {
   private static final Logger LOG = Loggers.TRANSPORT_LOGGER;
+  private static final ThrottledLogger THROTTLED_LOGGER =
+      new ThrottledLogger(LOG, Duration.ofSeconds(5));
   private final Decoder decoder = new Decoder();
   private final LogStreamWriter logStreamWriter;
   private boolean diskSpaceAvailable = true;
   private long checkpointId = CheckpointState.NO_CHECKPOINT;
+  private final RateLimiter rateLimiter = RateLimiter.create(35);
 
   InterPartitionCommandReceiverImpl(final LogStreamWriter logStreamWriter) {
     this.logStreamWriter = logStreamWriter;
@@ -43,8 +49,12 @@ final class InterPartitionCommandReceiverImpl {
   void handleMessage(final MemberId memberId, final byte[] message) {
     LOG.trace("Received message from {}", memberId);
 
-    final var decoded = decoder.decodeMessage(message);
+    if (!rateLimiter.tryAcquire()) {
+      THROTTLED_LOGGER.debug("Rejecting command from {} due to rate limit", memberId);
+      return;
+    }
 
+    final var decoded = decoder.decodeMessage(message);
     if (!diskSpaceAvailable) {
       LOG.warn(
           "Ignoring command {} {} from {}, checkpoint {}, no disk space available",
