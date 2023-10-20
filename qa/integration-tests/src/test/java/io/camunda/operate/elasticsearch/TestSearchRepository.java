@@ -8,6 +8,7 @@ package io.camunda.operate.elasticsearch;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 public interface TestSearchRepository {
   <R> List<R> searchAll(String index, Class<R> clazz) throws IOException;
@@ -15,4 +16,8 @@ public interface TestSearchRepository {
   boolean isConnected();
 
   boolean isZeebeConnected();
+
+  boolean createIndex(String indexName, Map<String, ?> mapping) throws IOException, Exception;
+
+  boolean createOrUpdateDocument(String indexName, String string, Map<String, String> doc) throws IOException;
 }

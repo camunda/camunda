@@ -15,9 +15,10 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.matchAll;
-import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
+import static io.camunda.operate.store.opensearch.dsl.RequestDSL.*;
 
 @Component
 @Conditional(OpensearchCondition.class)
@@ -42,5 +43,17 @@ public class TestOpenSearchRepository implements TestSearchRepository {
   @Override
   public boolean isZeebeConnected() {
     return zeebeRichOpenSearchClient != null;
+  }
+
+  @Override
+  public boolean createIndex(String indexName, Map<String, ?> mapping) throws Exception {
+    return true;
+  }
+
+  @Override
+  public boolean createOrUpdateDocument(String indexName, String id, Map<String, String> doc) throws IOException {
+    return richOpenSearchClient.doc().indexWithRetries(
+        indexRequestBuilder(indexName).id(id)
+            .document(doc));
   }
 }

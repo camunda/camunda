@@ -6,7 +6,9 @@
  */
 package io.camunda.operate.elasticsearch;
 
+import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.property.MigrationProperties;
+import io.camunda.operate.schema.SchemaManager;
 import io.camunda.operate.schema.elasticsearch.ElasticsearchSchemaManager;
 import io.camunda.operate.schema.migration.Plan;
 import io.camunda.operate.schema.migration.ReindexPlan;
@@ -36,9 +38,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class ReindexIT extends OperateAbstractIT {
 
   @Autowired
-  private RetryElasticsearchClient retryElasticsearchClient;
+  private TestSearchRepository searchRepository;
   @Autowired
-  private ElasticsearchSchemaManager schemaManager;
+  private SchemaManager schemaManager;
   @Autowired
   private MigrationProperties migrationProperties;
 
@@ -99,7 +101,7 @@ public class ReindexIT extends OperateAbstractIT {
     // slow the reindex down, to increase chance of sub 100% progress logged
     migrationProperties.setReindexBatchSize(1);
     /// Old index
-    createIndex(idxName("index-1.2.3_"), IntStream.range(0, 5000).mapToObj(i -> Map.of("test_name", "test_value" + i)).toList());
+    createIndex(idxName("index-1.2.3_"), IntStream.range(0, 15000).mapToObj(i -> Map.of("test_name", "test_value" + i)).toList());
     /// New index
     createIndex(idxName("index-1.2.4_"), List.of());
 
@@ -120,21 +122,22 @@ public class ReindexIT extends OperateAbstractIT {
         // old indices:
         idxName("index-1.2.3_"));
 
-    final List<String> progressLogMessages = logListAppender.getEvents().stream()
+    var events = logListAppender.getEvents();
+    final List<String> progressLogMessages = events.stream()
       .filter(event -> event.getMessage().getFormat().startsWith("TaskId: "))
       .map(event -> event.getMessage().getFormattedMessage())
       .toList();
     assertThat(progressLogMessages)
       // we expect at least a `100%` entry, on varying performance we fuzzily also assert sub 100% values
       .hasSizeGreaterThanOrEqualTo(1)
-        // Use regex '.' to match decimal separator '.' and ','
+        // We use '.' regex expression for number format with "." or ","
       .allSatisfy(logMessage -> assertThat(logMessage).matches("TaskId: .+:.+, Progress: \\d{1,3}.\\d{2}%"))
       .last()
       .satisfies(logMessage -> assertThat(logMessage).matches("TaskId: .+:.+, Progress: 100.00%"));
   }
 
   @Test // OPE-1311
-  public void resetIndexSettings() {
+  public void resetIndexSettings() throws Exception {
     /// Old version -> before migration
     // create index
     createIndex(idxName("index-1.2.3_"), List.of(Map.of("test_name", "test_value")));
@@ -145,8 +148,8 @@ public class ReindexIT extends OperateAbstractIT {
     Map<String,String> reindexSettings = schemaManager
         .getIndexSettingsFor(idxName("index-1.2.3_"), NUMBERS_OF_REPLICA, REFRESH_INTERVAL);
     assertThat(reindexSettings)
-        .containsEntry(NUMBERS_OF_REPLICA, NO_REPLICA)
-        .containsEntry(REFRESH_INTERVAL, NO_REFRESH);
+        .containsEntry(NUMBERS_OF_REPLICA, DatabaseInfo.isOpensearch()?null:NO_REPLICA)
+        .containsEntry(REFRESH_INTERVAL, DatabaseInfo.isOpensearch()?null:NO_REFRESH);
     // Migrator uses this
     assertThat(schemaManager
         .getOrDefaultNumbersOfReplica(idxName("index-1.2.3_"), "5")).isEqualTo("5");
@@ -154,16 +157,20 @@ public class ReindexIT extends OperateAbstractIT {
         .getOrDefaultRefreshInterval(idxName("index-1.2.3_"), "2")).isEqualTo("2");
   }
 
-  private void createIndex(final String indexName, List<Map<String, String>> documents) {
-    final Map<String, ?> mapping = Map.of("properties",
-        Map.of("test_name",
-            Map.of("type", "keyword")));
-    schemaManager.createIndex(/*new CreateIndexRequest(*/indexName, mapping);
-    assertThat(schemaManager.getIndexNames(idxName("index*")))
-        .contains(indexName);
-    documents.forEach((Map<String, String> doc) ->
-        retryElasticsearchClient.createOrUpdateDocument(indexName,UUID.randomUUID().toString(), doc)
-    );
-
+  private void createIndex(final String indexName, List<Map<String, String>> documents) throws Exception {
+    if(DatabaseInfo.isElasticsearch()) {
+      final Map<String, ?> mapping = Map.of("properties",
+          Map.of("test_name",
+              Map.of("type", "keyword")));
+      searchRepository.createIndex(indexName, mapping);
+      assertThat(schemaManager.getIndexNames(idxName("index*")))
+          .contains(indexName);
+    }
+    if(documents.isEmpty() && DatabaseInfo.isOpensearch()){
+      searchRepository.createOrUpdateDocument(indexName, UUID.randomUUID().toString(), Map.of());
+    }
+    for(var document: documents) {
+      searchRepository.createOrUpdateDocument(indexName, UUID.randomUUID().toString(), document);
+    }
   }
 }

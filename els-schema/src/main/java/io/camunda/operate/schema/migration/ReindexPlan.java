@@ -7,14 +7,11 @@
 package io.camunda.operate.schema.migration;
 
 import java.util.List;
-import java.util.Map;
 
 public interface ReindexPlan extends Plan {
   ReindexPlan setSrcIndex(String srcIndex);
 
   ReindexPlan setDstIndex(String dstIndex);
-
-  ReindexPlan buildScript(String scriptContent, Map<String, Object> params);
 
   ReindexPlan setSteps(List<Step> steps);
 

@@ -129,10 +129,6 @@ public class ElasticsearchSchemaManager implements SchemaManager {
     return retryElasticsearchClient.getIndexSettingsFor(indexName, fields);
   }
 
-  public void createIndex(String indexName, Map<String, ?> mapping) {
-    retryElasticsearchClient.createIndex(new CreateIndexRequest(indexName).mapping(mapping));
-  }
-
   private String settingsTemplateName() {
     final OperateElasticsearchProperties elsConfig = operateProperties.getElasticsearch();
     return String.format("%s_template", elsConfig.getIndexPrefix());

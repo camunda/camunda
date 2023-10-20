@@ -39,6 +39,7 @@ import java.io.StringReader;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.charset.Charset;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -136,7 +137,18 @@ public class OpensearchSchemaManager implements SchemaManager {
 
   @Override
   public Map<String, String> getIndexSettingsFor(String indexName, String... fields) {
-    return richOpenSearchClient.index().getIndexSettingsWithRetries(indexName, fields);
+    IndexSettings indexSettings =  richOpenSearchClient.index().getIndexSettingsWithRetries(indexName);
+    var result = new HashMap<String,String>();
+    for (String field: fields){
+      if(field.equals(REFRESH_INTERVAL)){
+        var refreshInterval = indexSettings.refreshInterval();
+        result.put(REFRESH_INTERVAL, refreshInterval!=null?refreshInterval.time():null);
+      }
+      if(field.equals(NUMBERS_OF_REPLICA)){
+        result.put(NUMBERS_OF_REPLICA, indexSettings.numberOfReplicas());
+      }
+    }
+    return result;
   }
 
 

@@ -6,9 +6,9 @@
  */
 package io.camunda.operate.schema.migration;
 
+import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.exceptions.MigrationException;
 import io.camunda.operate.property.MigrationProperties;
-import io.camunda.operate.property.OperateElasticsearchProperties;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.IndexSchemaValidator;
 import io.camunda.operate.schema.SchemaManager;
@@ -161,10 +161,18 @@ public class Migrator{
   }
 
   public void migrateIndex(final IndexDescriptor indexDescriptor, final Plan plan) throws IOException, MigrationException {
-    final OperateElasticsearchProperties elsConfig = operateProperties.getElasticsearch();
+    String refreshInterval;
+    Integer numberOfReplicas;
+    if(DatabaseInfo.isOpensearch()) {
+        refreshInterval = operateProperties.getOpensearch().getRefreshInterval();
+        numberOfReplicas = operateProperties.getOpensearch().getNumberOfReplicas();
+    } else {
+        refreshInterval = operateProperties.getElasticsearch().getRefreshInterval();
+        numberOfReplicas = operateProperties.getElasticsearch().getNumberOfReplicas();
+    }
 
     logger.debug("Save current settings for {}", indexDescriptor.getFullQualifiedName());
-    final Map<String, String> indexSettings = getIndexSettingsOrDefaultsFor(indexDescriptor, elsConfig);
+    final Map<String, String> indexSettings = getIndexSettingsOrDefaultsFor(indexDescriptor, refreshInterval, numberOfReplicas);
 
     logger.debug("Set reindex settings for {}", indexDescriptor.getDerivedIndexNamePattern());
     schemaManager.setIndexSettingsFor(
@@ -195,12 +203,12 @@ public class Migrator{
     plan.validateMigrationResults(schemaManager);
   }
 
-  private Map<String, String> getIndexSettingsOrDefaultsFor(final IndexDescriptor indexDescriptor, OperateElasticsearchProperties elsConfig) {
+  private Map<String, String> getIndexSettingsOrDefaultsFor(final IndexDescriptor indexDescriptor, String refreshInterval, Integer numberOfReplicas) {
     Map<String,String> settings = new HashMap<>();
     settings.put(REFRESH_INTERVAL, schemaManager.getOrDefaultRefreshInterval(
-        indexDescriptor.getFullQualifiedName(), elsConfig.getRefreshInterval()));
+        indexDescriptor.getFullQualifiedName(), refreshInterval));
     settings.put(NUMBERS_OF_REPLICA, schemaManager.getOrDefaultNumbersOfReplica(
-        indexDescriptor.getFullQualifiedName(), "" + elsConfig.getNumberOfReplicas()));
+        indexDescriptor.getFullQualifiedName(), "" + numberOfReplicas));
     return settings;
   }
 

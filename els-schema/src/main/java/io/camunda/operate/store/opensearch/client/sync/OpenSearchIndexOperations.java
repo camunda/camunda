@@ -18,8 +18,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
-import static io.camunda.operate.util.CollectionUtil.getOrDefaultForNullValue;
-
 public class OpenSearchIndexOperations extends OpenSearchRetryOperation {
   public static final String NUMBERS_OF_REPLICA = "index.number_of_replicas";
   public static final String NO_REPLICA = "0";
@@ -132,22 +130,19 @@ public class OpenSearchIndexOperations extends OpenSearchRetryOperation {
       });
   }
 
-  public Map<String, String> getIndexSettingsWithRetries(String indexName, String... fields) {
+  public IndexSettings getIndexSettingsWithRetries(String indexName) {
     return executeWithRetries(
       "GetIndexSettings " + indexName,
       () -> {
         final Map<String, String> settings = new HashMap<>();
         final GetIndicesSettingsResponse response = openSearchClient.indices().getSettings(s -> s.index(List.of(indexName)));
-        for (String field : fields) {
-          settings.put(field, response.get(field).toString());
-        }
-        return settings;
+        return response.result().get(indexName).settings();
       });
   }
 
   public String getOrDefaultRefreshInterval(String indexName, String defaultValue) {
-    final Map<String, String> settings = getIndexSettingsWithRetries(indexName, REFRESH_INTERVAL);
-    String refreshInterval = getOrDefaultForNullValue(settings, REFRESH_INTERVAL, defaultValue);
+    var refreshIntervalTime = getIndexSettingsWithRetries(indexName).refreshInterval();
+    String refreshInterval = refreshIntervalTime==null?defaultValue:refreshIntervalTime.time();
     if (refreshInterval.trim().equals(NO_REFRESH)) {
       refreshInterval = defaultValue;
     }
@@ -155,8 +150,8 @@ public class OpenSearchIndexOperations extends OpenSearchRetryOperation {
   }
 
   public String getOrDefaultNumbersOfReplica(String indexName, String defaultValue) {
-    final Map<String, String> settings = getIndexSettingsWithRetries(indexName, NUMBERS_OF_REPLICA);
-    String numbersOfReplica = getOrDefaultForNullValue(settings, NUMBERS_OF_REPLICA, defaultValue);
+    String numberOfReplicasOriginal = getIndexSettingsWithRetries(indexName).numberOfReplicas();
+    String numbersOfReplica = numberOfReplicasOriginal==null?defaultValue:numberOfReplicasOriginal;
     if (numbersOfReplica.trim().equals(NO_REPLICA)) {
       numbersOfReplica = defaultValue;
     }
@@ -224,9 +219,10 @@ public class OpenSearchIndexOperations extends OpenSearchRetryOperation {
             return true;
           }
         }
-        final String task = openSearchClient.reindex(reindexRequest).task();
+        var response = openSearchClient.reindex(reindexRequest);
+        if(response.total().equals(srcCount)) return true;
         TimeUnit.of(ChronoUnit.MILLIS).sleep(2_000);
-        return waitUntilTaskIsCompleted(task, srcCount);
+        return waitUntilTaskIsCompleted(response.task(), srcCount);
       },
       done -> !done);
   }

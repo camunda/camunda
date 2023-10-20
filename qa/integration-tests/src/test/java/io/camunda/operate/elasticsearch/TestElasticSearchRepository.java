@@ -9,11 +9,16 @@ package io.camunda.operate.elasticsearch;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.util.ElasticsearchUtil;
+import org.elasticsearch.action.DocWriteResponse;
+import org.elasticsearch.action.index.IndexRequest;
+import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.elasticsearch.xcontent.XContentType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
@@ -21,6 +26,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 
@@ -54,5 +60,19 @@ public class TestElasticSearchRepository implements TestSearchRepository {
   @Override
   public boolean isZeebeConnected() {
     return zeebeEsClient != null;
+  }
+
+  @Override
+  public boolean createIndex(String indexName, Map<String, ?> mapping) throws IOException {
+    return esClient.indices().create(new CreateIndexRequest(indexName).mapping(mapping), RequestOptions.DEFAULT)
+        .isAcknowledged();
+  }
+
+  @Override
+  public boolean createOrUpdateDocument(String name, String id, Map<String, String> doc) throws IOException {
+    final IndexResponse response = esClient.index(new IndexRequest(name).id(id)
+            .source(doc, XContentType.JSON), RequestOptions.DEFAULT);
+    DocWriteResponse.Result result = response.getResult();
+    return result.equals(DocWriteResponse.Result.CREATED) || result.equals(DocWriteResponse.Result.UPDATED);
   }
 }

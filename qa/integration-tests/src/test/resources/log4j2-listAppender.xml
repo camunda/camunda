@@ -9,7 +9,7 @@
     </Console>
   </Appenders>
   <Loggers>
-    <Logger name="io.camunda.operate.store.elasticsearch" level="INFO" additivity="true">
+    <Logger name="io.camunda.operate.store" level="INFO" additivity="true">
       <AppenderRef ref="OperateElasticLogsList" />
     </Logger>
     <Root level="INFO">
