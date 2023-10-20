@@ -26,7 +26,7 @@
     "react-final-form-arrays": "3.1.4",
     "react-router-dom": "6.16.0",
     "react-transition-group": "4.4.5",
-    "sass": "1.68.0",
+    "sass": "1.69.4",
     "styled-components": "6.0.8",
     "ts-pattern": "5.0.5",
     "zod": "3.22.4"
