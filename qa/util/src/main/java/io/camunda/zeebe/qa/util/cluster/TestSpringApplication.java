@@ -14,17 +14,20 @@ import io.camunda.zeebe.shared.MainSupport;
 import io.camunda.zeebe.shared.Profile;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.prometheus.client.CollectorRegistry;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import org.springframework.boot.Banner.Mode;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.http.client.reactive.ReactorResourceFactory;
 
 abstract class TestSpringApplication<T extends TestSpringApplication<T>>
     implements TestApplication<T> {
   private final Class<?> springApplication;
   private final Map<String, Bean<?>> beans;
   private final Map<String, Object> propertyOverrides;
+  private final ReactorResourceFactory reactorResourceFactory = new ReactorResourceFactory();
 
   private ConfigurableApplicationContext springContext;
 
@@ -48,11 +51,23 @@ abstract class TestSpringApplication<T extends TestSpringApplication<T>>
       beans.put(
           "collectorRegistry", new Bean<>(new RelaxedCollectorRegistry(), CollectorRegistry.class));
     }
+
+    // configure each application to use their own resources for the embedded Netty web server,
+    // otherwise shutting one down will shut down all embedded servers
+    reactorResourceFactory.setUseGlobalResources(false);
+    reactorResourceFactory.setShutdownQuietPeriod(Duration.ZERO);
+    beans.put(
+        "reactorResourceFactory", new Bean<>(reactorResourceFactory, ReactorResourceFactory.class));
   }
 
   @Override
   public T start() {
     if (!isStarted()) {
+      // simulate initialization of singleton bean; since injected singleton are not initialized,
+      // but we still want Spring to manage the individual reactor resources. we do this here since
+      // this will create the resources required (which are disposed of later in stop)
+      reactorResourceFactory.afterPropertiesSet();
+
       springContext = createSpringBuilder().run(commandLineArgs());
     }
 
