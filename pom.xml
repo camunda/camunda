@@ -40,20 +40,17 @@
 
     <skip.fe.build>false</skip.fe.build>
 
-    <plugin.version.license>4.2</plugin.version.license>
+    <plugin.version.license>4.3</plugin.version.license>
     <license.header>${project.baseUri}/../license/license-header</license.header>
 
     <includeLongITNames>**/*IT.java</includeLongITNames>
 
-    <!-- Version overrides from spring-boot parent pom -->
+    <!-- Version overrides from spring-boot parent pom, these should be re-reviewed anytime spring boot version is updated -->
     <commons-codec.version>1.16.0</commons-codec.version>
     <commons-lang3.version>3.13.0</commons-lang3.version>
     <snakeyaml.version>2.2</snakeyaml.version>
     <mockito.version>5.5.0</mockito.version>
-    <!-- These are technically downgrades from what spring boot provides but keeping them as-is until reviewed by team -->
-    <httpcore5.version>5.2.1</httpcore5.version>
-    <jackson.version>2.15.2</jackson.version>
-    <micrometer.version>1.11.3</micrometer.version>
+    <netty.version>4.1.100.Final</netty.version>
 
     <!-- Library versions not provided by spring boot -->
     <version.zeebe>8.3.0</version.zeebe>
@@ -66,6 +63,7 @@
     <version.yarn>v1.22.10</version.yarn>
     <version.failsafe>2.4.4</version.failsafe>
     <version.log4j.testjar>2.17.2</version.log4j.testjar>
+    <version.awssdk>2.21.4</version.awssdk>
     <zeebe-test-container.version>3.6.0</zeebe-test-container.version>
     <elasticsearch-test-container.version>1.19.0</elasticsearch-test-container.version>
 
@@ -207,7 +205,7 @@
       <dependency>
         <groupId>software.amazon.awssdk</groupId>
         <artifactId>sts</artifactId>
-        <version>2.20.8</version>
+        <version>${version.awssdk}</version>
       </dependency>
 
       <!-- End AWS -->
@@ -376,7 +374,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-shade-plugin</artifactId>
-          <version>3.5.0</version>
+          <version>3.5.1</version>
         </plugin>
       </plugins>
 
