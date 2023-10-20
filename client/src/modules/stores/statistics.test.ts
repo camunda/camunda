@@ -114,6 +114,14 @@ describe('stores/statistics', () => {
 
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
     mockFetchProcessXML().withSuccess(mockProcessXML);
+
+    // mock for refresh all instances
+    mockFetchProcessInstances().withSuccess({
+      processInstances: [{...mockInstance, hasActiveOperation: true}],
+      totalCount: 1,
+    });
+
+    // mock for refresh running process instances count
     mockFetchProcessInstances().withSuccess({
       processInstances: [{...mockInstance, hasActiveOperation: true}],
       totalCount: 1,

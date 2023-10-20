@@ -22,7 +22,11 @@ const setup = async () => {
     1,
   );
 
-  return {instanceWithoutAnIncident, instanceWithAnIncident};
+  await deployProcess(['processToDelete.bpmn']);
+
+  const instanceToCancel = await createSingleInstance('processToDelete', 1);
+
+  return {instanceWithoutAnIncident, instanceWithAnIncident, instanceToCancel};
 };
 
 export {setup};

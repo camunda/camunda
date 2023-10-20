@@ -34,6 +34,7 @@ type Payload = Parameters<typeof fetchProcessInstances>['0']['payload'];
 type FetchType = 'initial' | 'prev' | 'next';
 type State = {
   filteredProcessInstancesCount: number;
+  runningInstancesCount: number;
   processInstances: ProcessInstancesDto['processInstances'];
   latestFetch: {
     fetchType: FetchType;
@@ -54,6 +55,7 @@ const MAX_INSTANCES_PER_REQUEST = 50;
 
 const DEFAULT_STATE: State = {
   filteredProcessInstancesCount: 0,
+  runningInstancesCount: -1,
   processInstances: [],
   latestFetch: null,
   status: 'initial',
@@ -85,6 +87,7 @@ class ProcessInstances extends NetworkReconnectionHandler {
       setProcessInstances: action,
       markProcessInstancesWithActiveOperations: action,
       unmarkProcessInstancesWithActiveOperations: action,
+      setRunningInstancesCount: action,
       visibleIdsInListPanel: computed,
       areProcessInstancesEmpty: computed,
       processInstanceIdsWithActiveOperations: computed,
@@ -278,27 +281,28 @@ class ProcessInstances extends NetworkReconnectionHandler {
       },
     });
 
-    if (response.isSuccess) {
-      return response.data.totalCount;
-    }
-
-    return 0;
+    this.setRunningInstancesCount(
+      response.isSuccess ? response.data.totalCount : 0,
+    );
   };
 
   refreshAllInstances = async () => {
-    const response = await fetchProcessInstances({
-      payload: {
-        query: getProcessInstancesRequestFilters(),
-        sorting: this.getSorting(),
-        pageSize:
-          this.state.processInstances.length > 0
-            ? this.state.processInstances.length
-            : MAX_INSTANCES_PER_REQUEST,
-      },
-    });
+    const [processInstancesResponse] = await Promise.all([
+      fetchProcessInstances({
+        payload: {
+          query: getProcessInstancesRequestFilters(),
+          sorting: this.getSorting(),
+          pageSize:
+            this.state.processInstances.length > 0
+              ? this.state.processInstances.length
+              : MAX_INSTANCES_PER_REQUEST,
+        },
+      }),
+      this.fetchRunningInstancesCount(),
+    ]);
 
-    if (response.isSuccess) {
-      const {processInstances, totalCount} = response.data;
+    if (processInstancesResponse.isSuccess) {
+      const {processInstances, totalCount} = processInstancesResponse.data;
       this.setProcessInstances({
         filteredProcessInstancesCount: totalCount,
         processInstances,
@@ -344,6 +348,10 @@ class ProcessInstances extends NetworkReconnectionHandler {
   }) => {
     this.state.processInstances = processInstances;
     this.state.filteredProcessInstancesCount = filteredProcessInstancesCount;
+  };
+
+  setRunningInstancesCount = (runningInstancesCount: number) => {
+    this.state.runningInstancesCount = runningInstancesCount;
   };
 
   get visibleIdsInListPanel() {

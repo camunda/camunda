@@ -236,6 +236,15 @@ describe('useOperationApply', () => {
           }),
         ),
       ),
+      // mock for refresh running process instances count
+      rest.post('/api/process-instances', (_, res, ctx) =>
+        res.once(
+          ctx.json({
+            ...mockProcessInstances,
+            totalCount: 200,
+          }),
+        ),
+      ),
     );
 
     jest.runOnlyPendingTimers();
@@ -281,6 +290,15 @@ describe('useOperationApply', () => {
         ),
       ),
       // mock for refreshing instances when an instance operation is complete
+      rest.post('/api/process-instances', (_, res, ctx) =>
+        res.once(
+          ctx.json({
+            ...mockProcessInstances,
+            totalCount: 200,
+          }),
+        ),
+      ),
+      // mock for refresh running process instances count
       rest.post('/api/process-instances', (_, res, ctx) =>
         res.once(
           ctx.json({

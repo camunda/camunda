@@ -85,6 +85,13 @@ describe('Operations - Spinner', () => {
 
     jest.runOnlyPendingTimers();
 
+    // mock for refresh all instances
+    mockFetchProcessInstances().withSuccess({
+      processInstances: [INSTANCE],
+      totalCount: 1,
+    });
+
+    // mock for refresh running process instances count
     mockFetchProcessInstances().withSuccess({
       processInstances: [INSTANCE],
       totalCount: 1,

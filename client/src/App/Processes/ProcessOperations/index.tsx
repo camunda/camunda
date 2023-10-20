@@ -32,18 +32,14 @@ const ProcessOperations: React.FC<Props> = observer(
       useState<boolean>(false);
 
     const [isOperationRunning, setIsOperationRunning] = useState(false);
-    const [runningInstancesCount, setRunningInstancesCount] = useState(-1);
+    const {runningInstancesCount} = processInstancesStore.state;
 
     useEffect(() => {
-      const fetchAndSetRunningInstancesCount = async () => {
-        setRunningInstancesCount(
-          await processInstancesStore.fetchRunningInstancesCount(),
-        );
-      };
-      fetchAndSetRunningInstancesCount();
+      processInstancesStore.fetchRunningInstancesCount();
 
       return () => {
         setIsOperationRunning(false);
+        processInstancesStore.setRunningInstancesCount(-1);
       };
     }, [processDefinitionId]);
 

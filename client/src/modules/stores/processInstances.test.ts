@@ -217,6 +217,16 @@ describe('stores/processInstances', () => {
       processInstancesStore.processInstanceIdsWithActiveOperations,
     ).toEqual(['2251799813685627']);
 
+    // mock for refresh all instances
+    mockFetchProcessInstances().withSuccess({
+      processInstances: [
+        instance,
+        {...instanceWithActiveOperation, hasActiveOperation: false},
+      ],
+      totalCount: 100,
+    });
+
+    // mock for refresh running process instances count
     mockFetchProcessInstances().withSuccess({
       processInstances: [
         instance,
@@ -232,6 +242,16 @@ describe('stores/processInstances', () => {
       ).toEqual([]),
     );
 
+    // mock for refresh all instances
+    mockFetchProcessInstances().withSuccess({
+      processInstances: [
+        {...instance, hasActiveOperation: true},
+        {...instanceWithActiveOperation},
+      ],
+      totalCount: 100,
+    });
+
+    // mock for refresh running process instances count
     mockFetchProcessInstances().withSuccess({
       processInstances: [
         {...instance, hasActiveOperation: true},
@@ -265,6 +285,7 @@ describe('stores/processInstances', () => {
       filteredProcessInstancesCount: 0,
       processInstances: [],
       status: 'initial',
+      runningInstancesCount: -1,
       latestFetch: null,
     });
   });
@@ -499,6 +520,16 @@ describe('stores/processInstances', () => {
       processInstancesStore.processInstanceIdsWithActiveOperations,
     ).toEqual(['1', '2', '3']);
 
+    // mock for refresh all instances
+    mockFetchProcessInstances().withSuccess({
+      totalCount: 100,
+      processInstances: [
+        {...instance, id: '1'},
+        {...instance, id: '2'},
+        {...instance, id: '3'},
+      ],
+    });
+    // mock for refresh running process instances count
     mockFetchProcessInstances().withSuccess({
       totalCount: 100,
       processInstances: [
@@ -623,6 +654,19 @@ describe('stores/processInstances', () => {
           }),
         ),
       ),
+      // mock for refresh all instances
+      rest.post('/api/process-instances', (_, res, ctx) =>
+        res.once(
+          ctx.json({
+            processInstances: [
+              instance,
+              {...instanceWithActiveOperation, hasActiveOperation: false},
+            ],
+            totalCount: 3,
+          }),
+        ),
+      ),
+      // mock for refresh running process instances count
       rest.post('/api/process-instances', (_, res, ctx) =>
         res.once(
           ctx.json({
@@ -685,6 +729,22 @@ describe('stores/processInstances', () => {
         ),
       ),
       // mock for refreshing instances when an instance operation is complete
+      rest.post('/api/process-instances', (_, res, ctx) =>
+        res.once(
+          ctx.json({
+            processInstances: [
+              {...instance, id: '1'},
+              {
+                ...instanceWithActiveOperation,
+                id: '2',
+                hasActiveOperation: false,
+              },
+            ],
+            totalCount: 2,
+          }),
+        ),
+      ),
+      // mock for refresh running process instances count
       rest.post('/api/process-instances', (_, res, ctx) =>
         res.once(
           ctx.json({

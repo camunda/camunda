@@ -48,6 +48,18 @@ test.beforeAll(async ({request}) => {
     expect
       .poll(
         async () => {
+          const response = await request.get(
+            `${config.endpoint}/v1/process-instances/${initialData.instanceToCancel.processInstanceKey}`,
+          );
+
+          return response.status();
+        },
+        {timeout: SETUP_WAITING_TIME},
+      )
+      .toBe(200),
+    expect
+      .poll(
+        async () => {
           const response = await request.post(
             `${config.endpoint}/v1/incidents/search`,
             {
@@ -209,5 +221,83 @@ test.describe('Processes', () => {
 
     await expect(processesPage.processNameFilter).toBeEnabled();
     await expect(processesPage.processNameFilter).toHaveValue('Test Process');
+  });
+
+  test('Delete process definition after canceling running instance', async ({
+    processesPage,
+    page,
+  }) => {
+    await processesPage.navigateToProcesses({
+      searchParams: {
+        active: 'true',
+        incidents: 'true',
+        process: 'processToDelete',
+        version: '1',
+      },
+    });
+
+    await expect(page.getByTestId('data-table-skeleton')).not.toBeVisible();
+    await expect(page.getByTestId('diagram-spinner')).not.toBeVisible();
+
+    await expect(
+      page.getByRole('heading', {
+        name: /process instances - 1 result/i,
+      }),
+    ).toBeVisible();
+
+    await expect(
+      page.getByRole('button', {
+        name: 'Only process definitions without running instances can be deleted.',
+      }),
+    ).toBeDisabled();
+
+    await page
+      .getByRole('button', {
+        name: /cancel instance/i,
+      })
+      .click();
+
+    await page
+      .getByRole('button', {
+        name: 'Apply',
+      })
+      .click();
+
+    await expect(
+      page.getByText('There are no Instances matching this filter set'),
+    ).toBeVisible();
+
+    await expect(processesPage.deleteResourceButton).toBeEnabled();
+
+    await processesPage.deleteResourceButton.click();
+    await expect(
+      processesPage.deleteResourceModal.confirmCheckbox,
+    ).toBeVisible();
+
+    await processesPage.deleteResourceModal.confirmCheckbox.click({
+      force: true,
+    });
+    await processesPage.deleteResourceModal.confirmButton.click();
+
+    await expect
+      .poll(
+        async () => {
+          const response = await page.request.post(
+            `${config.endpoint}/v1/process-definitions/search`,
+            {
+              data: {
+                filter: {
+                  bpmnProcessId: 'processToDelete',
+                },
+              },
+            },
+          );
+
+          const definitions: {total: number} = await response.json();
+          return definitions.total;
+        },
+        {timeout: SETUP_WAITING_TIME},
+      )
+      .toBe(0);
   });
 });
