@@ -81,7 +81,7 @@ message ActivatedJob {
   // JSON document, computed at activation time, consisting of all visible variables to
   // the task scope
   string variables = 13;
-  // // the id of the tenant that owns the job
+  // the id of the tenant that owns the job
   string tenantId = 14;
 }
 
@@ -624,15 +624,18 @@ message DeleteResourceResponse {
 message BroadcastSignalRequest {
   // The name of the signal
   string signalName = 1;
-
   // the signal variables as a JSON document; to be valid, the root of the document must be an
   // object, e.g. { "a": "foo" }. [ "foo" ] would not be valid.
   string variables = 2;
+  // the id of the tenant that owns the job
+  string tenantId = 3;
 }
 
 message BroadcastSignalResponse {
   // the unique ID of the signal that was broadcasted.
   int64 key = 1;
+  // the tenant id of the signal
+  string tenantId = 2;
 }
 
 service Gateway {
