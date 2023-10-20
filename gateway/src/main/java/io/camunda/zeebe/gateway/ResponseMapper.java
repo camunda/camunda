@@ -330,7 +330,10 @@ public final class ResponseMapper {
 
   public static BroadcastSignalResponse toBroadcastSignalResponse(
       final long key, final SignalRecord brokerResponse) {
-    return BroadcastSignalResponse.newBuilder().setKey(key).build();
+    return BroadcastSignalResponse.newBuilder()
+        .setKey(key)
+        .setTenantId(brokerResponse.getTenantId())
+        .build();
   }
 
   private static String bufferAsJson(final DirectBuffer customHeaders) {

@@ -248,7 +248,8 @@ public final class RequestMapper {
   public static BrokerBroadcastSignalRequest toBroadcastSignalRequest(
       final BroadcastSignalRequest grpcRequest) {
     return new BrokerBroadcastSignalRequest(grpcRequest.getSignalName())
-        .setVariables(ensureJsonSet(grpcRequest.getVariables()));
+        .setVariables(ensureJsonSet(grpcRequest.getVariables()))
+        .setTenantId(ensureTenantIdSet("BroadcastSignal", grpcRequest.getTenantId()));
   }
 
   public static JobActivationProperties toJobActivationProperties(

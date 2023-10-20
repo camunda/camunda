@@ -26,6 +26,11 @@ public final class BrokerBroadcastSignalRequest extends BrokerExecuteCommand<Sig
     return this;
   }
 
+  public BrokerBroadcastSignalRequest setTenantId(final String tenantId) {
+    requestDto.setTenantId(tenantId);
+    return this;
+  }
+
   @Override
   public SignalRecord getRequestWriter() {
     return requestDto;
