@@ -9,7 +9,7 @@
     "@camunda/camunda-composite-components": "0.2.17",
     "@carbon/elements": "11.31.0",
     "@carbon/react": "1.40.0",
-    "@monaco-editor/react": "4.5.2",
+    "@monaco-editor/react": "4.6.0",
     "@tanstack/react-query": "4.35.7",
     "date-fns": "2.30.0",
     "event-source-polyfill": "1.0.31",
