@@ -27,7 +27,7 @@ jobs:
           - 26500:26500
     steps:
       - name: Check out repository code
-        uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
       - name: Import Secrets
         id: secrets
         uses: hashicorp/vault-action@86c7f837eb43794c7dc56f74d9cffac710679b28
