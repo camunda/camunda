@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.signal;
 
+import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
@@ -14,28 +16,29 @@ import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
-import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Map;
 import org.agrona.DirectBuffer;
 
 public final class SignalRecord extends UnifiedRecordValue implements SignalRecordValue {
 
   private final StringProperty signalNameProp = new StringProperty("signalName");
-
   private final DocumentProperty variablesProp = new DocumentProperty("variables");
+  private final StringProperty tenantIdProp =
+      new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
   public SignalRecord() {
-    declareProperty(signalNameProp).declareProperty(variablesProp);
+    declareProperty(signalNameProp).declareProperty(variablesProp).declareProperty(tenantIdProp);
   }
 
   public void wrap(final SignalRecord record) {
-    setSignalName(record.getSignalNameBuffer());
-    setVariables(record.getVariablesBuffer());
+    setSignalName(record.getSignalNameBuffer())
+        .setVariables(record.getVariablesBuffer())
+        .setTenantId(record.getTenantId());
   }
 
   @Override
   public String getSignalName() {
-    return BufferUtil.bufferAsString(signalNameProp.getValue());
+    return bufferAsString(signalNameProp.getValue());
   }
 
   public SignalRecord setSignalName(final String signalName) {
@@ -70,7 +73,11 @@ public final class SignalRecord extends UnifiedRecordValue implements SignalReco
 
   @Override
   public String getTenantId() {
-    // todo(#13336): replace dummy implementation
-    return TenantOwned.DEFAULT_TENANT_IDENTIFIER;
+    return bufferAsString(tenantIdProp.getValue());
+  }
+
+  public SignalRecord setTenantId(final String tenantId) {
+    tenantIdProp.setValue(tenantId);
+    return this;
   }
 }

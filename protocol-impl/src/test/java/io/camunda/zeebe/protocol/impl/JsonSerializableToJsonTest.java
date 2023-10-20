@@ -1833,7 +1833,8 @@ final class JsonSerializableToJsonTest {
 
               return new SignalRecord()
                   .setSignalName(wrapString(signalName))
-                  .setVariables(VARIABLES_MSGPACK);
+                  .setVariables(VARIABLES_MSGPACK)
+                  .setTenantId("acme");
             },
         """
         {
@@ -1841,7 +1842,7 @@ final class JsonSerializableToJsonTest {
           "variables": {
             "foo": "bar"
           },
-          "tenantId": "<default>"
+          "tenantId": "acme"
         }
         """
       },
@@ -1883,7 +1884,8 @@ final class JsonSerializableToJsonTest {
                   .setCatchEventId(wrapString(catchEventId))
                   .setProcessDefinitionKey(processDefinitionKey)
                   .setBpmnProcessId(wrapString(bpmnProcessId))
-                  .setCatchEventInstanceKey(3L);
+                  .setCatchEventInstanceKey(3L)
+                  .setTenantId("acme");
             },
         """
         {
@@ -1892,7 +1894,7 @@ final class JsonSerializableToJsonTest {
           "catchEventId": "startEvent",
           "bpmnProcessId": "process",
           "catchEventInstanceKey":3,
-          "tenantId": "<default>"
+          "tenantId": "acme"
         }
         """
       },
