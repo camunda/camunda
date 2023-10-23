@@ -10,21 +10,18 @@ package io.camunda.zeebe.test.broker.protocol.brokerapi;
 import static io.camunda.zeebe.protocol.Protocol.DEPLOYMENT_PARTITION;
 
 import io.atomix.cluster.AtomixCluster;
-import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.Loggers;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.camunda.zeebe.test.broker.protocol.MsgPackHelper;
-import io.camunda.zeebe.test.broker.protocol.brokerapi.data.Topology;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.transport.ServerTransport;
 import io.camunda.zeebe.transport.TransportFactory;
 import java.net.InetSocketAddress;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import org.junit.rules.ExternalResource;
 
@@ -34,7 +31,6 @@ public final class StubBrokerRule extends ExternalResource {
   private final InetSocketAddress socketAddress;
   private ActorScheduler scheduler;
   private MsgPackHelper msgPackHelper;
-  private final AtomicReference<Topology> currentTopology = new AtomicReference<>();
   private final ControlledActorClock clock = new ControlledActorClock();
   private final int partitionCount;
   private StubRequestHandler channelHandler;
@@ -62,13 +58,6 @@ public final class StubBrokerRule extends ExternalResource {
 
     scheduler.start();
 
-    final Topology topology = new Topology();
-    topology.addLeader(nodeId, socketAddress, Protocol.DEPLOYMENT_PARTITION);
-
-    for (int i = TEST_PARTITION_ID; i < TEST_PARTITION_ID + partitionCount; i++) {
-      topology.addLeader(nodeId, socketAddress, i);
-    }
-
     final InetSocketAddress nextAddress = SocketUtil.getNextAddress();
     currentStubHost = nextAddress.getHostName();
     currentStubPort = nextAddress.getPort();
@@ -84,8 +73,6 @@ public final class StubBrokerRule extends ExternalResource {
 
     channelHandler = new StubRequestHandler(msgPackHelper);
     serverTransport.subscribe(1, RequestType.COMMAND, channelHandler);
-
-    currentTopology.set(topology);
   }
 
   @Override

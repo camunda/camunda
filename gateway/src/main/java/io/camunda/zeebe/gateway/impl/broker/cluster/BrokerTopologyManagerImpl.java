@@ -17,14 +17,11 @@ import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.gateway.Loggers;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.Actor;
-import io.camunda.zeebe.scheduler.ActorSchedulingService;
-import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.topology.GatewayClusterTopologyService;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
 
@@ -34,29 +31,22 @@ public final class BrokerTopologyManagerImpl extends Actor
         GatewayClusterTopologyService.Listener {
 
   private static final Logger LOG = Loggers.GATEWAY_LOGGER;
-
-  private final AtomicReference<BrokerClusterStateImpl> topology;
+  private volatile BrokerClusterStateImpl topology = new BrokerClusterStateImpl();
   private final Supplier<Set<Member>> membersSupplier;
   private final GatewayTopologyMetrics topologyMetrics = new GatewayTopologyMetrics();
 
   private final Set<BrokerTopologyListener> topologyListeners = new HashSet<>();
-  private final ActorFuture<Void> startFuture = new CompletableActorFuture<>();
 
   public BrokerTopologyManagerImpl(final Supplier<Set<Member>> membersSupplier) {
     this.membersSupplier = membersSupplier;
-    topology = new AtomicReference<>(null);
   }
 
   /**
-   * @return the current known cluster state or null if the topology was not fetched yet
+   * @return a copy of the currently known topology
    */
   @Override
   public BrokerClusterState getTopology() {
-    return topology.get();
-  }
-
-  public void setTopology(final BrokerClusterStateImpl topology) {
-    this.topology.set(topology);
+    return topology;
   }
 
   @Override
@@ -64,12 +54,9 @@ public final class BrokerTopologyManagerImpl extends Actor
     actor.run(
         () -> {
           topologyListeners.add(listener);
-          final BrokerClusterStateImpl currentTopology = topology.get();
-          if (currentTopology != null) {
-            currentTopology.getBrokers().stream()
-                .map(b -> MemberId.from(String.valueOf(b)))
-                .forEach(listener::brokerAdded);
-          }
+          topology.getBrokers().stream()
+              .map(b -> MemberId.from(String.valueOf(b)))
+              .forEach(listener::brokerAdded);
         });
   }
 
@@ -78,11 +65,14 @@ public final class BrokerTopologyManagerImpl extends Actor
     actor.run(() -> topologyListeners.remove(listener));
   }
 
-  public ActorFuture<Void> start(final ActorSchedulingService actorScheduler) {
-    if (!startFuture.isDone()) {
-      actorScheduler.submitActor(this);
-    }
-    return startFuture;
+  public void updateTopology(final Consumer<BrokerClusterStateImpl> updater) {
+    actor.run(
+        () -> {
+          final var updated = new BrokerClusterStateImpl(topology);
+          updater.accept(updated);
+          topology = updated;
+          updateMetrics(updated);
+        });
   }
 
   private void checkForMissingEvents() {
@@ -90,24 +80,30 @@ public final class BrokerTopologyManagerImpl extends Actor
     if (members == null || members.isEmpty()) {
       return;
     }
-
-    final BrokerClusterStateImpl newTopology = new BrokerClusterStateImpl(topology.get());
-    for (final Member member : members) {
-      final BrokerInfo brokerInfo = BrokerInfo.fromProperties(member.properties());
-      if (brokerInfo != null) {
-        addBroker(newTopology, member, brokerInfo);
-      }
-    }
-    topology.set(newTopology);
+    updateTopology(
+        topology -> {
+          for (final Member member : members) {
+            final BrokerInfo brokerInfo = BrokerInfo.fromProperties(member.properties());
+            if (brokerInfo != null) {
+              addBroker(topology, member, brokerInfo);
+            }
+          }
+        });
   }
 
   private void addBroker(
-      final BrokerClusterStateImpl newTopology, final Member member, final BrokerInfo brokerInfo) {
-    if (newTopology.addBrokerIfAbsent(brokerInfo.getNodeId())) {
+      final BrokerClusterStateImpl topology, final Member member, final BrokerInfo brokerInfo) {
+    if (topology.addBrokerIfAbsent(brokerInfo.getNodeId())) {
       topologyListeners.forEach(l -> l.brokerAdded(member.id()));
     }
 
-    processProperties(brokerInfo, newTopology);
+    processProperties(topology, brokerInfo);
+  }
+
+  private void removeBroker(
+      final BrokerClusterStateImpl topology, final Member member, final BrokerInfo brokerInfo) {
+    topology.removeBroker(brokerInfo.getNodeId());
+    topologyListeners.forEach(l -> l.brokerRemoved(member.id()));
   }
 
   @Override
@@ -119,7 +115,6 @@ public final class BrokerTopologyManagerImpl extends Actor
   protected void onActorStarted() {
     // Get the initial member state before the listener is registered
     checkForMissingEvents();
-    startFuture.complete(null);
   }
 
   @Override
@@ -128,75 +123,67 @@ public final class BrokerTopologyManagerImpl extends Actor
     final Type eventType = event.type();
     final BrokerInfo brokerInfo = BrokerInfo.fromProperties(subject.properties());
 
-    if (brokerInfo != null) {
-      actor.call(
-          () -> {
-            final BrokerClusterStateImpl newTopology = new BrokerClusterStateImpl(topology.get());
+    if (brokerInfo == null) {
+      return;
+    }
 
-            switch (eventType) {
-              case MEMBER_ADDED -> {
-                LOG.debug("Received new broker {}.", brokerInfo);
-                addBroker(newTopology, subject, brokerInfo);
-              }
-              case METADATA_CHANGED -> {
-                LOG.debug(
-                    "Received metadata change from Broker {}, partitions {}, terms {} and health {}.",
-                    brokerInfo.getNodeId(),
-                    brokerInfo.getPartitionRoles(),
-                    brokerInfo.getPartitionLeaderTerms(),
-                    brokerInfo.getPartitionHealthStatuses());
-                addBroker(newTopology, subject, brokerInfo);
-              }
-              case MEMBER_REMOVED -> {
-                LOG.debug("Received broker was removed {}.", brokerInfo);
-                newTopology.removeBroker(brokerInfo.getNodeId());
-                topologyListeners.forEach(l -> l.brokerRemoved(subject.id()));
-              }
-              default -> LOG.debug(
-                  "Received {} for broker {}, do nothing.", eventType, brokerInfo.getNodeId());
-            }
-
-            topology.set(newTopology);
-            updateMetrics(newTopology);
-          });
+    switch (eventType) {
+      case MEMBER_ADDED -> {
+        LOG.debug("Received new broker {}.", brokerInfo);
+        updateTopology(topology -> addBroker(topology, subject, brokerInfo));
+      }
+      case METADATA_CHANGED -> {
+        LOG.debug(
+            "Received metadata change from Broker {}, partitions {}, terms {} and health {}.",
+            brokerInfo.getNodeId(),
+            brokerInfo.getPartitionRoles(),
+            brokerInfo.getPartitionLeaderTerms(),
+            brokerInfo.getPartitionHealthStatuses());
+        updateTopology(topology -> addBroker(topology, subject, brokerInfo));
+      }
+      case MEMBER_REMOVED -> {
+        LOG.debug("Received broker was removed {}.", brokerInfo);
+        updateTopology(topology -> removeBroker(topology, subject, brokerInfo));
+      }
+      default -> LOG.debug(
+          "Received {} for broker {}, do nothing.", eventType, brokerInfo.getNodeId());
     }
   }
 
   // Update topology information based on the distributed event
   private void processProperties(
-      final BrokerInfo distributedBrokerInfo, final BrokerClusterStateImpl newTopology) {
+      final BrokerClusterStateImpl topology, final BrokerInfo distributedBrokerInfo) {
 
     // Do not overwrite clusterSize received from BrokerInfo. ClusterTopology received via
     // GatewayClusterTopologyService.Listener. BrokerInfo contains the static clusterSize which is
     // the initial clusterSize. However, we still have to initialize it because it should have the
     // correct value even when the dynamic ClusterTopology is disabled.
-    if (newTopology.getClusterSize() == BrokerClusterStateImpl.UNINITIALIZED_CLUSTER_SIZE) {
-      newTopology.setClusterSize(distributedBrokerInfo.getClusterSize());
-      newTopology.setPartitionsCount(distributedBrokerInfo.getPartitionsCount());
+    if (topology.getClusterSize() == BrokerClusterStateImpl.UNINITIALIZED_CLUSTER_SIZE) {
+      topology.setClusterSize(distributedBrokerInfo.getClusterSize());
+      topology.setPartitionsCount(distributedBrokerInfo.getPartitionsCount());
     }
-    newTopology.setReplicationFactor(distributedBrokerInfo.getReplicationFactor());
+    topology.setReplicationFactor(distributedBrokerInfo.getReplicationFactor());
 
     final int nodeId = distributedBrokerInfo.getNodeId();
 
     distributedBrokerInfo.consumePartitions(
-        newTopology::addPartitionIfAbsent,
-        (leaderPartitionId, term) ->
-            newTopology.setPartitionLeader(leaderPartitionId, nodeId, term),
-        followerPartitionId -> newTopology.addPartitionFollower(followerPartitionId, nodeId),
-        inactivePartitionId -> newTopology.addPartitionInactive(inactivePartitionId, nodeId));
+        topology::addPartitionIfAbsent,
+        (leaderPartitionId, term) -> topology.setPartitionLeader(leaderPartitionId, nodeId, term),
+        followerPartitionId -> topology.addPartitionFollower(followerPartitionId, nodeId),
+        inactivePartitionId -> topology.addPartitionInactive(inactivePartitionId, nodeId));
 
     distributedBrokerInfo.consumePartitionsHealth(
-        (partition, health) -> newTopology.setPartitionHealthStatus(nodeId, partition, health));
+        (partition, health) -> topology.setPartitionHealthStatus(nodeId, partition, health));
 
     final String clientAddress = distributedBrokerInfo.getCommandApiAddress();
     if (clientAddress != null) {
-      newTopology.setBrokerAddressIfPresent(nodeId, clientAddress);
+      topology.setBrokerAddressIfPresent(nodeId, clientAddress);
     }
 
-    newTopology.setBrokerVersionIfPresent(nodeId, distributedBrokerInfo.getVersion());
+    topology.setBrokerVersionIfPresent(nodeId, distributedBrokerInfo.getVersion());
   }
 
-  private void updateMetrics(final BrokerClusterState topology) {
+  private void updateMetrics(final BrokerClusterStateImpl topology) {
     final var partitions = topology.getPartitions();
     partitions.forEach(
         partition -> {
@@ -214,21 +201,14 @@ public final class BrokerTopologyManagerImpl extends Actor
 
   @Override
   public void onClusterTopologyChanged(final ClusterTopology clusterTopology) {
-    actor.run(
-        () -> {
-          if (clusterTopology.isUninitialized()) {
-            return;
-          }
-
-          final BrokerClusterStateImpl newTopology = new BrokerClusterStateImpl(topology.get());
-
-          // Overwrite clusterSize. ClusterTopology is the source of truth.
-          newTopology.setClusterSize(clusterTopology.clusterSize());
-          newTopology.setPartitionsCount(clusterTopology.partitionCount());
-
-          LOG.debug(
-              "Received new cluster topology with clusterSize {}", newTopology.getClusterSize());
-          topology.set(newTopology);
+    if (clusterTopology.isUninitialized()) {
+      return;
+    }
+    LOG.debug("Received new cluster topology with clusterSize {}", clusterTopology.clusterSize());
+    updateTopology(
+        topology -> {
+          topology.setClusterSize(clusterTopology.clusterSize());
+          topology.setPartitionsCount(clusterTopology.partitionCount());
         });
   }
 }
