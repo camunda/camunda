@@ -87,7 +87,6 @@ export default forwardRef<HTMLDivElement, MenuButtonProps>(function MenuButton(
 					className={classnames("cds--menu-button__trigger", {
 						"cds--menu-button__trigger--open": open,
 					})}
-					ref={triggerRef}
 					size={size}
 					kind={kind}
 					renderIcon={ChevronDown}
@@ -103,7 +102,7 @@ export default forwardRef<HTMLDivElement, MenuButtonProps>(function MenuButton(
 				</Button>
 				<Menu
 					ref={menuRef}
-					target={fullScreenTarget || triggerRef.current}
+					target={fullScreenTarget || undefined}
 					id={id}
 					label={menuLabel}
 					open={open}

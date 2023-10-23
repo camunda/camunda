@@ -23,6 +23,7 @@ declare module "@carbon/react" {
 	interface MenuProps {
 		id: string
 		className?: string
+		target?: Element | null
 		label: ReactNode
 		size: "xs" | "sm" | "md" | "lg"
 		open: boolean

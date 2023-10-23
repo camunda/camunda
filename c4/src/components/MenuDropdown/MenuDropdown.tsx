@@ -32,6 +32,7 @@ export interface MenuDropdownProps extends ComponentPropsWithoutRef<"div"> {
 	label: ReactNode
 	invalid?: boolean
 	invalidText?: string
+	menuTarget?: Element | null
 }
 
 export default forwardRef(function MenuDropdown(
@@ -43,6 +44,7 @@ export default forwardRef(function MenuDropdown(
 		size = "sm",
 		invalid,
 		invalidText,
+		menuTarget,
 		...rest
 	}: MenuDropdownProps,
 	forwardRef: ForwardedRef<HTMLDivElement>,
@@ -131,6 +133,7 @@ export default forwardRef(function MenuDropdown(
 			</ListBox>
 			<Menu
 				id={id}
+				target={menuTarget || undefined}
 				className="MenuDropdownMenu"
 				ref={menuRef}
 				label={label}
