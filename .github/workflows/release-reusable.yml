@@ -222,6 +222,7 @@ jobs:
             --build-arg DATE=$date_time_stamp \
             --build-arg REVISION=$commit_hash \
             --platform linux/amd64 \
+            --provenance false \
             --load \
             .
           export ARCHITECTURE=amd64
@@ -234,6 +235,7 @@ jobs:
             --build-arg DATE=$date_time_stamp \
             --build-arg REVISION=$commit_hash \
             --platform linux/arm64 \
+            --provenance false \
             --load \
             .
           export ARCHITECTURE=arm64
@@ -244,6 +246,7 @@ jobs:
           --build-arg VERSION=$VERSION \
           --build-arg REVISION=$commit_hash \
           --build-arg DATE=$date_time_stamp \
+          --provenance false \
           -t $IMAGE_NAME:$IMAGE_TAG \
           --push
 
@@ -253,6 +256,7 @@ jobs:
             --build-arg VERSION=$VERSION \
             --build-arg REVISION=$commit_hash \
             --build-arg DATE=$date_time_stamp \
+            --provenance false \
             -t $IMAGE_NAME:latest \
             --push
           fi
