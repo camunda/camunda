@@ -56,7 +56,13 @@ final class ExportingEndpointIT {
   @Test
   void shouldPauseExporting() {
     // given
-    startProcess();
+    client
+        .newPublishMessageCommand()
+        .messageName("Test")
+        .correlationKey("1")
+        .messageId("1")
+        .send()
+        .join();
 
     final var recordsBeforePause =
         Awaitility.await()
@@ -66,7 +72,6 @@ final class ExportingEndpointIT {
 
     // when
     getActuator().pause();
-    startProcess();
 
     // then
     RecordingExporter.records().limit(recordsBeforePause + 1).await();
@@ -79,7 +84,13 @@ final class ExportingEndpointIT {
     final var actuator = getActuator();
     actuator.pause();
 
-    startProcess();
+    client
+        .newPublishMessageCommand()
+        .messageName("Test")
+        .correlationKey("1")
+        .messageId("2")
+        .send()
+        .join();
 
     final var recordsBeforePause =
         Awaitility.await()
@@ -89,7 +100,6 @@ final class ExportingEndpointIT {
 
     // when
     getActuator().resume();
-    startProcess();
 
     // then
     RecordingExporter.records().limit(recordsBeforePause + 1).await();
@@ -98,16 +108,6 @@ final class ExportingEndpointIT {
 
   private ExportingActuator getActuator() {
     return ExportingActuator.of(CLUSTER.availableGateway());
-  }
-
-  private void startProcess() {
-    client
-        .newCreateInstanceCommand()
-        .bpmnProcessId("processId")
-        .latestVersion()
-        .withResult()
-        .send()
-        .join();
   }
 
   private void allPartitionsPausedExporting() {
