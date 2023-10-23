@@ -359,7 +359,7 @@
     <dependency>
       <groupId>io.netty</groupId>
       <artifactId>netty-codec-http</artifactId>
-      <version>4.1.99.Final</version>
+      <version>4.1.100.Final</version>
     </dependency>
   </dependencies>
 
