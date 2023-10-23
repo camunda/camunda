@@ -25,12 +25,16 @@ env-ldap-up:
 env-sso-up:
 	@docker-compose up -d elasticsearch zeebe \
 	&& mvn install -DskipTests=true -Dskip.fe.build=false \
-	&& CAMUNDA_OPERATE_AUTH0_CLAIMNAME=https://camunda.com/orgs \
-       CAMUNDA_OPERATE_AUTH0_CLIENTID=CLGSo9RQ1K290Fvy2ohDomndvLR3Qgl3 \
+	&& CAMUNDA_OPERATE_AUTH0_BACKENDDOMAIN=camunda-dev.eu.auth0.com \
+	   CAMUNDA_OPERATE_AUTH0_CLAIMNAME=https://camunda.com/orgs \
+       CAMUNDA_OPERATE_AUTH0_CLIENTID=tgbfvBTrXZroWWap8DgtTIOKGn1Vq9F6 \
        CAMUNDA_OPERATE_AUTH0_DOMAIN=weblogin.cloud.ultrawombat.com \
        CAMUNDA_OPERATE_CLOUD_PERMISSIONAUDIENCE=cloud.ultrawombat.com \
        CAMUNDA_OPERATE_CLOUD_PERMISSIONURL=https://accounts.cloud.ultrawombat.com/external/organizations \
        CAMUNDA_OPERATE_CLOUD_ORGANIZATIONID=6ff582aa-a62e-4a28-aac7-4d2224d8c58a \
+       CAMUNDA_OPERATE_AUTH0_ORGANIZATION=6ff582aa-a62e-4a28-aac7-4d2224d8c58a \
+       CAMUNDA_OPERATE_AUTH0_ORGANIZATIONSKEY=https://camunda.com/orgs \
+       CAMUNDA_OPERATE_CLOUD_CONSOLE_URL=https://console.cloud.ultrawombat.com/ \
 	   mvn -f webapp/pom.xml exec:java -Dexec.mainClass="io.camunda.operate.Application" -Dspring.profiles.active=dev,dev-data,sso-auth
 
 .PHONY: env-identity-up
