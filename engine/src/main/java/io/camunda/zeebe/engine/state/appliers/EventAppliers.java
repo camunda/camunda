@@ -35,6 +35,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
+import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -81,7 +82,15 @@ public final class EventAppliers implements EventApplier {
     registerSignalSubscriptionAppliers(state);
 
     registerCommandDistributionAppliers(state);
+
+    registerUserTaskAppliers(state);
+
     return this;
+  }
+
+  private void registerUserTaskAppliers(final MutableProcessingState state) {
+    register(UserTaskIntent.CREATING, new UserTaskCreatingApplier(state.getUserTaskState()));
+    register(UserTaskIntent.CREATED, new UserTaskCreatedApplier(state.getUserTaskState()));
   }
 
   private void registerProcessAppliers(final MutableProcessingState state) {

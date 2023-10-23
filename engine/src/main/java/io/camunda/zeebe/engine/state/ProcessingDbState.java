@@ -51,6 +51,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableTimerInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
 import io.camunda.zeebe.engine.state.processing.DbBannedInstanceState;
 import io.camunda.zeebe.engine.state.signal.DbSignalSubscriptionState;
+import io.camunda.zeebe.engine.state.usertask.MutableUserTaskState;
 import io.camunda.zeebe.engine.state.variable.DbVariableState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
@@ -82,6 +83,7 @@ public class ProcessingDbState implements MutableProcessingState {
   private final MutableFormState formState;
   private final MutableSignalSubscriptionState signalSubscriptionState;
   private final MutableDistributionState distributionState;
+
   private final int partitionId;
 
   public ProcessingDbState(
@@ -202,6 +204,11 @@ public class ProcessingDbState implements MutableProcessingState {
   }
 
   @Override
+  public MutableFormState getFormState() {
+    return formState;
+  }
+
+  @Override
   public MutableSignalSubscriptionState getSignalSubscriptionState() {
     return signalSubscriptionState;
   }
@@ -212,13 +219,13 @@ public class ProcessingDbState implements MutableProcessingState {
   }
 
   @Override
-  public MutableMigrationState getMigrationState() {
-    return mutableMigrationState;
+  public MutableUserTaskState getUserTaskState() {
+    return null;
   }
 
   @Override
-  public MutableFormState getFormState() {
-    return formState;
+  public MutableMigrationState getMigrationState() {
+    return mutableMigrationState;
   }
 
   @Override
