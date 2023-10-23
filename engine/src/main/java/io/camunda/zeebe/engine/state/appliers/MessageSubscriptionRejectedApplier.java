@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageState;
+import io.camunda.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 
@@ -16,14 +17,18 @@ public final class MessageSubscriptionRejectedApplier
     implements TypedEventApplier<MessageSubscriptionIntent, MessageSubscriptionRecord> {
 
   private final MutableMessageState messageState;
+  private final MutableMessageSubscriptionState subscriptionState;
 
-  public MessageSubscriptionRejectedApplier(final MutableMessageState messageState) {
+  public MessageSubscriptionRejectedApplier(
+      final MutableMessageState messageState,
+      final MutableMessageSubscriptionState subscriptionState) {
     this.messageState = messageState;
+    this.subscriptionState = subscriptionState;
   }
 
   @Override
   public void applyState(final long key, final MessageSubscriptionRecord value) {
-
+    subscriptionState.remove(value.getElementInstanceKey(), value.getMessageNameBuffer());
     messageState.removeMessageCorrelation(value.getMessageKey(), value.getBpmnProcessIdBuffer());
   }
 }
