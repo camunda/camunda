@@ -9,6 +9,7 @@ package io.camunda.zeebe.it.multitenancy;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.identity.sdk.Identity;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.response.ActivateJobsResponse;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
@@ -130,9 +131,12 @@ public class MultiTenancyOverIdentityIT {
   private static final GenericContainer<?> IDENTITY =
       new GenericContainer<>(
               DockerImageName.parse("camunda/identity")
-                  .withTag(System.getProperty("identity.docker.image.version", "8.3.0")))
+                  .withTag(
+                      System.getProperty(
+                          "identity.docker.image.version",
+                          Identity.class.getPackage().getImplementationVersion())))
           .withImagePullPolicy(
-              System.getProperty("identity.docker.image.version", "8.3.0").equals("8.3.0")
+              System.getProperty("identity.docker.image.version", "SNAPSHOT").equals("SNAPSHOT")
                   ? PullPolicy.alwaysPull()
                   : PullPolicy.defaultPolicy())
           .dependsOn(POSTGRES, KEYCLOAK)

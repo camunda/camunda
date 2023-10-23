@@ -158,7 +158,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>identity-sdk</artifactId>
-      <version>${version.identity}</version>
     </dependency>
 
     <dependency>
