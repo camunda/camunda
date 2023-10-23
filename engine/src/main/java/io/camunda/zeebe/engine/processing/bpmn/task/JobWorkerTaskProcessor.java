@@ -19,6 +19,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehav
 import io.camunda.zeebe.engine.processing.bpmn.behavior.UserTaskBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerTask;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeUserTaskListenerEventType;
 import java.util.stream.Collectors;
 
 /**
@@ -68,7 +69,7 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
                 userTaskBehavior.createUserTask(context, element);
 
                 final String listeners =
-                    userTask.getListeners().stream()
+                    userTask.getListeners(ZeebeUserTaskListenerEventType.CREATE).stream()
                         .map(listener -> listener.getName())
                         .collect(Collectors.joining(","));
 
