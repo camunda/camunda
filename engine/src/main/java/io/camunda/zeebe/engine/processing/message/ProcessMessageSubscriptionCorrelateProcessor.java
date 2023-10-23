@@ -156,6 +156,7 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
   private void sendRejectionCommand(final ProcessMessageSubscriptionRecord subscription) {
     subscriptionCommandSender.rejectCorrelateMessageSubscription(
         subscription.getProcessInstanceKey(),
+        subscription.getElementInstanceKey(),
         subscription.getBpmnProcessIdBuffer(),
         subscription.getMessageKey(),
         subscription.getMessageNameBuffer(),
