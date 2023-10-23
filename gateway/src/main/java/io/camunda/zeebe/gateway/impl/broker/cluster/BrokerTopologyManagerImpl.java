@@ -17,7 +17,7 @@ import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.gateway.Loggers;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.Actor;
-import io.camunda.zeebe.topology.GatewayClusterTopologyService;
+import io.camunda.zeebe.topology.TopologyUpdateNotifier.TopologyUpdateListener;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import java.util.HashSet;
 import java.util.Set;
@@ -26,9 +26,7 @@ import java.util.function.Supplier;
 import org.slf4j.Logger;
 
 public final class BrokerTopologyManagerImpl extends Actor
-    implements BrokerTopologyManager,
-        ClusterMembershipEventListener,
-        GatewayClusterTopologyService.Listener {
+    implements BrokerTopologyManager, ClusterMembershipEventListener, TopologyUpdateListener {
 
   private static final Logger LOG = Loggers.GATEWAY_LOGGER;
   private volatile BrokerClusterStateImpl topology = new BrokerClusterStateImpl();
@@ -200,7 +198,7 @@ public final class BrokerTopologyManagerImpl extends Actor
   }
 
   @Override
-  public void onClusterTopologyChanged(final ClusterTopology clusterTopology) {
+  public void onTopologyUpdated(final ClusterTopology clusterTopology) {
     if (clusterTopology.isUninitialized()) {
       return;
     }

@@ -52,7 +52,7 @@ public class TopologyServices {
         new BrokerTopologyManagerImpl(clusterMembershipService::getMembers);
     scheduler.submitActor(brokerTopologyManager).join();
     clusterMembershipService.addListener(brokerTopologyManager);
-    gatewayClusterTopologyService.registerClusterTopologyChangeListener(brokerTopologyManager);
+    gatewayClusterTopologyService.addUpdateListener(brokerTopologyManager);
 
     return brokerTopologyManager;
   }
