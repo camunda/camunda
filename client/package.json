@@ -77,7 +77,7 @@
     "@vitest/ui": "0.34.6",
     "axe-core": "4.8.2",
     "browserslist-to-esbuild": "1.2.0",
-    "eslint": "8.51.0",
+    "eslint": "8.52.0",
     "eslint-config-prettier": "9.0.0",
     "eslint-plugin-camunda-licensed": "0.4.6",
     "eslint-plugin-prettier": "5.0.1",
