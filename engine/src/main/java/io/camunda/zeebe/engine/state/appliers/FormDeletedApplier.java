@@ -12,11 +12,11 @@ import io.camunda.zeebe.engine.state.mutable.MutableFormState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.FormRecord;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
 
-public class FormDeletionApplier implements TypedEventApplier<FormIntent, FormRecord> {
+public class FormDeletedApplier implements TypedEventApplier<FormIntent, FormRecord> {
 
   private final MutableFormState formState;
 
-  public FormDeletionApplier(final MutableFormState formState) {
+  public FormDeletedApplier(final MutableFormState formState) {
     this.formState = formState;
   }
 
