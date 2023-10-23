@@ -8,8 +8,9 @@
 package io.camunda.zeebe.gateway.impl.broker.cluster;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.topology.TopologyUpdateNotifier.TopologyUpdateListener;
 
-public interface BrokerTopologyManager {
+public interface BrokerTopologyManager extends TopologyUpdateListener {
 
   BrokerClusterState getTopology();
 

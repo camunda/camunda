@@ -61,6 +61,8 @@ public class DynamicClusterTopologyService implements ClusterTopologyService {
           if (topologyManagerFailed != null) {
             started.completeExceptionally(topologyManagerFailed);
           } else {
+            clusterTopologyManagerService.addUpdateListener(
+                brokerStartupContext.getBrokerClient().getTopologyManager());
             clusterTopologyManagerService
                 .getClusterTopology()
                 .onComplete(
