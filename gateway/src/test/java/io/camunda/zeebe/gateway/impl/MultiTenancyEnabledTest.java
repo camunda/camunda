@@ -21,11 +21,14 @@ import io.camunda.zeebe.gateway.api.deployment.DeployResourceStub;
 import io.camunda.zeebe.gateway.api.job.ActivateJobsStub;
 import io.camunda.zeebe.gateway.api.job.TestStreamObserver;
 import io.camunda.zeebe.gateway.api.process.CreateProcessInstanceStub;
+import io.camunda.zeebe.gateway.api.signal.BroadcastSignalStub;
 import io.camunda.zeebe.gateway.api.util.GatewayTest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerExecuteCommand;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.BroadcastSignalRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.BroadcastSignalResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DecisionMetadata;
@@ -60,6 +63,7 @@ public class MultiTenancyEnabledTest extends GatewayTest {
     new DeployResourceStub().registerWith(brokerClient);
     new CreateProcessInstanceStub().registerWith(brokerClient);
     new TenantAwareEvaluateDecisionStub().registerWith(brokerClient);
+    new BroadcastSignalStub().registerWith(brokerClient);
     activateJobsStub.registerWith(brokerClient);
   }
 
@@ -525,5 +529,60 @@ public class MultiTenancyEnabledTest extends GatewayTest {
         .is(statusRuntimeExceptionWithStatusCode(Status.PERMISSION_DENIED.getCode()))
         .hasMessageContaining("Expected to handle gRPC request StreamActivatedJobs")
         .hasMessageContaining("tenant is not authorized to perform this request");
+  }
+
+  @Test
+  public void broadcastSignalRequestShouldContainAuthorizedTenants() {
+    // given
+    when(gateway.getIdentityMock().tenants().forToken(anyString()))
+        .thenReturn(List.of(new Tenant("tenant-a", "A"), new Tenant("tenant-b", "B")));
+
+    // when
+    final BroadcastSignalResponse response =
+        client.broadcastSignal(BroadcastSignalRequest.newBuilder().setTenantId("tenant-b").build());
+    assertThat(response).isNotNull();
+
+    // then
+    assertThatAuthorizedTenantIdsSet(List.of("tenant-a", "tenant-b"));
+    assertThatTenantIdsSet("tenant-b");
+  }
+
+  @Test
+  public void broadcastSignalRequestRequiresTenantId() {
+    // given
+    when(gateway.getIdentityMock().tenants().forToken(anyString()))
+        .thenReturn(List.of(new Tenant("tenant-a", "A"), new Tenant("tenant-b", "B")));
+    final var request = BroadcastSignalRequest.newBuilder().build();
+
+    // when/then
+    assertThatRejectsRequestMissingTenantId(
+        () -> client.broadcastSignal(request), "BroadcastSignal");
+  }
+
+  @Test
+  public void broadcastSignalRequestRequiresValidTenantId() {
+    // given
+    when(gateway.getIdentityMock().tenants().forToken(anyString()))
+        .thenReturn(List.of(new Tenant("tenant-a", "A"), new Tenant("tenant-b", "B")));
+    final var request = BroadcastSignalRequest.newBuilder().setTenantId("tenant-c").build();
+
+    // when/then
+    assertThatRejectsUnauthorizedRequest(() -> client.broadcastSignal(request), "BroadcastSignal");
+  }
+
+  @Test
+  public void broadcastSignalResponseHasTenantId() {
+    // given
+    when(gateway.getIdentityMock().tenants().forToken(anyString()))
+        .thenReturn(List.of(new Tenant("tenant-a", "A"), new Tenant("tenant-b", "B")));
+
+    // when
+    final BroadcastSignalRequest request =
+        BroadcastSignalRequest.newBuilder().setSignalName("test").setTenantId("tenant-b").build();
+    final BroadcastSignalResponse response = client.broadcastSignal(request);
+    assertThat(response).isNotNull();
+
+    // then
+    assertThat(response.getTenantId()).isEqualTo("tenant-b");
   }
 }
