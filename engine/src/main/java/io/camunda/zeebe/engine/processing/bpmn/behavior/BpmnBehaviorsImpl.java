@@ -47,6 +47,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   private final BpmnJobActivationBehavior jobActivationBehavior;
   private final BpmnSignalBehavior signalBehavior;
 
+  private final UserTaskBehavior userTaskBehavior;
+
   public BpmnBehaviorsImpl(
       final MutableProcessingState processingState,
       final Writers writers,
@@ -160,6 +162,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             processingState.getVariableState(),
             writers,
             expressionBehavior);
+
+    userTaskBehavior = new UserTaskBehavior(processingState.getKeyGenerator(), writers.state());
   }
 
   @Override
@@ -250,5 +254,10 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   @Override
   public BpmnJobActivationBehavior jobActivationBehavior() {
     return jobActivationBehavior;
+  }
+
+  @Override
+  public UserTaskBehavior userTaskBehavior() {
+    return userTaskBehavior;
   }
 }

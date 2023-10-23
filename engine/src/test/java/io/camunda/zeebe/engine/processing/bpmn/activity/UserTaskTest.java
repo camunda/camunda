@@ -24,6 +24,7 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
@@ -757,5 +758,12 @@ public final class UserTaskTest {
                 .withElementType(BpmnElementType.USER_TASK))
         .extracting(Record::getIntent)
         .contains(ProcessInstanceIntent.ELEMENT_ACTIVATED);
+
+    assertThat(
+            RecordingExporter.userTasksRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(2))
+        .extracting(Record::getIntent)
+        .contains(UserTaskIntent.CREATING, UserTaskIntent.CREATED);
   }
 }

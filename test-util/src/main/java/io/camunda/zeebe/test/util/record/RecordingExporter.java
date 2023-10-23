@@ -55,6 +55,7 @@ import io.camunda.zeebe.protocol.record.value.ResourceDeletionRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
+import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
@@ -378,6 +379,10 @@ public final class RecordingExporter implements Exporter {
 
   public static FormRecordStream formRecords() {
     return new FormRecordStream(records(ValueType.FORM, Form.class));
+  }
+
+  public static UserTaskRecordStream userTasksRecords() {
+    return new UserTaskRecordStream(records(ValueType.USER_TASK, UserTaskRecordValue.class));
   }
 
   public static ErrorRecordStream errorRecords() {

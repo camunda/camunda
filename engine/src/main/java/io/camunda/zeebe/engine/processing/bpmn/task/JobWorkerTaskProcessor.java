@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.UserTaskBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerTask;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
 import java.util.stream.Collectors;
@@ -33,6 +34,8 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
   private final BpmnJobBehavior jobBehavior;
   private final BpmnStateBehavior stateBehavior;
 
+  private final UserTaskBehavior userTaskBehavior;
+
   public JobWorkerTaskProcessor(
       final BpmnBehaviors behaviors, final BpmnStateTransitionBehavior stateTransitionBehavior) {
     eventSubscriptionBehavior = behaviors.eventSubscriptionBehavior();
@@ -41,6 +44,7 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
     variableMappingBehavior = behaviors.variableMappingBehavior();
     jobBehavior = behaviors.jobBehavior();
     stateBehavior = behaviors.stateBehavior();
+    userTaskBehavior = behaviors.userTaskBehavior();
   }
 
   @Override
@@ -60,6 +64,9 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
 
               final ExecutableUserTask userTask = element.getUserTask();
               if (userTask != null) {
+
+                userTaskBehavior.createUserTask(context, element);
+
                 final String listeners =
                     userTask.getListeners().stream()
                         .map(listener -> listener.getName())

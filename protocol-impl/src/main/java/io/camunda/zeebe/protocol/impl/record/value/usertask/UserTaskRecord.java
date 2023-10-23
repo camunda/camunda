@@ -18,6 +18,7 @@ import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
+import org.agrona.DirectBuffer;
 
 public class UserTaskRecord extends UnifiedRecordValue implements UserTaskRecordValue {
 
@@ -104,6 +105,11 @@ public class UserTaskRecord extends UnifiedRecordValue implements UserTaskRecord
     return this;
   }
 
+  public UserTaskRecord setBpmnProcessId(final DirectBuffer bpmnProcessId) {
+    bpmnProcessIdProp.setValue(bpmnProcessId);
+    return this;
+  }
+
   public UserTaskRecord setElementInstanceKey(final long elementInstanceKey) {
     elementInstanceKeyProp.setValue(elementInstanceKey);
     return this;
@@ -114,4 +120,8 @@ public class UserTaskRecord extends UnifiedRecordValue implements UserTaskRecord
     return this;
   }
 
+  public UserTaskRecord setElementId(final DirectBuffer elementId) {
+    elementIdProp.setValue(elementId);
+    return this;
+  }
 }
