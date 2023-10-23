@@ -36,7 +36,6 @@ final class ExportingEndpointIT {
 
   private static final DebugReceiver DEBUG_RECEIVER =
       new DebugReceiver(EXPORTED_RECORDS::add, SocketUtil.getNextAddress()).start();
-  private static ZeebeClient client;
 
   @Container
   private static final ZeebeCluster CLUSTER =
@@ -50,6 +49,8 @@ final class ExportingEndpointIT {
           .withPartitionsCount(2)
           .withReplicationFactor(1)
           .build();
+
+  private static ZeebeClient client;
 
   @BeforeEach
   void resetExportedRecords() {
@@ -70,7 +71,7 @@ final class ExportingEndpointIT {
   void shouldPauseExporting() {
 
     deployProcess(client);
-    startProcess(client);
+    publishMessage("1");
 
     final var recordsBeforePause =
         Awaitility.await()
@@ -80,7 +81,6 @@ final class ExportingEndpointIT {
 
     // when
     ExportingActuator.of(CLUSTER.getAvailableGateway()).pause();
-    startProcess(client);
 
     // then
     Awaitility.await()
@@ -98,7 +98,7 @@ final class ExportingEndpointIT {
     actuator.pause();
 
     deployProcess(client);
-    startProcess(client);
+    publishMessage("2");
 
     final var recordsBeforePause =
         Awaitility.await()
@@ -108,7 +108,6 @@ final class ExportingEndpointIT {
 
     // when
     ExportingActuator.of(CLUSTER.getAvailableGateway()).resume();
-    startProcess(client);
 
     // then
     Awaitility.await()
@@ -119,12 +118,12 @@ final class ExportingEndpointIT {
     Awaitility.await().untilAsserted(this::allPartitionsExporting);
   }
 
-  private static void startProcess(final ZeebeClient client) {
+  private static void publishMessage(final String messageId) {
     client
-        .newCreateInstanceCommand()
-        .bpmnProcessId("processId")
-        .latestVersion()
-        .withResult()
+        .newPublishMessageCommand()
+        .messageName("Test")
+        .correlationKey("1")
+        .messageId(messageId)
         .send()
         .join();
   }
