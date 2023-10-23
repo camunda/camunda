@@ -14,6 +14,7 @@ import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClientImpl;
 import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManagerImpl;
 import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
 
 public final class TestBrokerClientFactory {
   public static BrokerClient createBrokerClient(
@@ -23,11 +24,14 @@ public final class TestBrokerClientFactory {
     actorScheduler.submitActor(topologyManager).join();
     atomixCluster.getMembershipService().addListener(topologyManager);
 
-    return new BrokerClientImpl(
-        DEFAULT_REQUEST_TIMEOUT,
-        atomixCluster.getMessagingService(),
-        atomixCluster.getEventService(),
-        actorScheduler,
-        topologyManager);
+    final var client =
+        new BrokerClientImpl(
+            DEFAULT_REQUEST_TIMEOUT,
+            atomixCluster.getMessagingService(),
+            atomixCluster.getEventService(),
+            actorScheduler,
+            topologyManager);
+    client.start().forEach(ActorFuture::join);
+    return client;
   }
 }

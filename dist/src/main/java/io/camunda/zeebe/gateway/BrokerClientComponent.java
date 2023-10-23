@@ -13,6 +13,7 @@ import io.camunda.zeebe.gateway.impl.broker.BrokerClientImpl;
 import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.VisibleForTesting;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -47,7 +48,7 @@ public final class BrokerClientComponent {
             atomixCluster.getEventService(),
             actorScheduler,
             topologyManager);
-    brokerClient.start();
+    brokerClient.start().forEach(ActorFuture::join);
     return brokerClient;
   }
 }
