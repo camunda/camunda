@@ -49,6 +49,11 @@ on:
         type: boolean
         required: false
         default: false
+      fromCommit:
+        description: "Commit id which the changelog should be generated from."
+        type: string
+        required: true
+        default: ""
 
 jobs:
   release:
@@ -62,3 +67,4 @@ jobs:
       dryRun: ${{ inputs.dryRun }}
       githubUploadRelease: ${{ inputs.githubUploadRelease }}
       isLatest: ${{ inputs.isLatest }}
+      fromCommit: ${{ inputs.fromCommit }}

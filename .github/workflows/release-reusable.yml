@@ -51,6 +51,11 @@ on:
         type: boolean
         required: false
         default: false
+      fromCommit:
+        description: "Commit id which the changelog should be generated from."
+        type: string
+        required: false
+        default: ""
 
 defaults:
   run:
@@ -64,6 +69,7 @@ env:
   RELEASE_VERSION: ${{ inputs.releaseVersion }}
   GITHUB_UPLOAD_RELEASE: ${{ inputs.githubUploadRelease }}
   DRY_RUN: ${{ inputs.dryRun }}
+  CREATE_A_RELEASE: ${{ inputs.dryRun == false && inputs.branch != 'stable/opensearch-8.2' && inputs.fromCommit != '' }}
 
 jobs:
   release:
@@ -102,6 +108,14 @@ jobs:
             secret/data/products/operate/ci/github-actions OPERATE_CI_ALERT_WEBHOOK_URL;
             secret/data/products/operate/release_process GITHUB_TOKEN;
 
+      - name: Calculate changelog
+        uses: dlavrenuek/conventional-changelog-action@v1.2.3
+        id: changelog
+        if: ${{ env.CREATE_A_RELEASE == 'true' }}
+        with:
+          from: ${{ inputs.fromCommit }}
+          to: HEAD
+          config-file: "${{ github.workspace }}/.github/workflows/defaultChangelogConfig.json"
 
       # Setup: configure Java, Maven, settings.xml
       - name: Setup Java ${{ env.JAVA_VERSION }}
@@ -148,7 +162,7 @@ jobs:
           -Darguments='-Dmaven.deploy.skip=$SKIP_DEPLOY -P -docker -DskipTests=true -DskipNexusStagingDeployMojo=$SKIP_DEPLOY -B --fail-at-end -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn'
 
       - name: Create a release
-        if: ${{ inputs.dryRun == false && inputs.branch != 'stable/opensearch-8.2'}}
+        if: ${{ env.CREATE_A_RELEASE == 'true' }}
         env:
           GITHUB_TOKEN: ${{ steps.secrets.outputs.GITHUB_TOKEN }}
         uses: octokit/request-action@v2.1.9
@@ -157,6 +171,7 @@ jobs:
           draft: false
           name: ${{ inputs.releaseVersion }}
           tag_name: ${{ inputs.releaseVersion }}
+          body: ${{ toJSON(format('{0}', steps.changelog.outputs.body)) }}
 
       # Upload: Upload to GitHub Release
       - name: Upload to GitHub Release
