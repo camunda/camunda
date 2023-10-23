@@ -116,7 +116,7 @@ public class FormStateTest {
   void shouldNotFindVersion2AsLatestFormAfterDeletion() {
     // given
     final var formV1 = sampleFormRecord();
-    final var formV2 = sampleFormRecord(2, formV1.getFormKey());
+    final var formV2 = sampleFormRecord(2, 2L);
     formState.storeFormRecord(formV1);
     formState.storeFormRecord(formV2);
 
@@ -139,7 +139,7 @@ public class FormStateTest {
   void shouldFindVersion2AsLatestFormAfterDeletion() {
     // given
     final var formV1 = sampleFormRecord();
-    final var formV2 = sampleFormRecord(2, formV1.getFormKey());
+    final var formV2 = sampleFormRecord(2, 2L);
     formState.storeFormRecord(formV1);
     formState.storeFormRecord(formV2);
 
