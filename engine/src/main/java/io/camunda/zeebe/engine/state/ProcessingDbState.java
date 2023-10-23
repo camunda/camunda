@@ -24,6 +24,7 @@ import io.camunda.zeebe.engine.state.instance.DbEventScopeInstanceState;
 import io.camunda.zeebe.engine.state.instance.DbIncidentState;
 import io.camunda.zeebe.engine.state.instance.DbJobState;
 import io.camunda.zeebe.engine.state.instance.DbTimerInstanceState;
+import io.camunda.zeebe.engine.state.instance.DbUserTaskState;
 import io.camunda.zeebe.engine.state.message.DbMessageStartEventSubscriptionState;
 import io.camunda.zeebe.engine.state.message.DbMessageState;
 import io.camunda.zeebe.engine.state.message.DbMessageSubscriptionState;
@@ -84,6 +85,8 @@ public class ProcessingDbState implements MutableProcessingState {
   private final MutableSignalSubscriptionState signalSubscriptionState;
   private final MutableDistributionState distributionState;
 
+  private final MutableUserTaskState userTaskState;
+
   private final int partitionId;
 
   public ProcessingDbState(
@@ -121,6 +124,8 @@ public class ProcessingDbState implements MutableProcessingState {
     formState = new DbFormState(zeebeDb, transactionContext);
     signalSubscriptionState = new DbSignalSubscriptionState(zeebeDb, transactionContext);
     distributionState = new DbDistributionState(zeebeDb, transactionContext);
+
+    userTaskState = new DbUserTaskState(zeebeDb, transactionContext);
 
     mutableMigrationState = new DbMigrationState(zeebeDb, transactionContext);
   }
@@ -220,7 +225,7 @@ public class ProcessingDbState implements MutableProcessingState {
 
   @Override
   public MutableUserTaskState getUserTaskState() {
-    return null;
+    return userTaskState;
   }
 
   @Override

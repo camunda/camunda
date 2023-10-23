@@ -45,6 +45,16 @@ public class UserTaskRecord extends UnifiedRecordValue implements UserTaskRecord
         .declareProperty(tenantIdProp);
   }
 
+  public void wrap(final UserTaskRecord record) {
+    processInstanceKeyProp.setValue(record.getProcessInstanceKey());
+    bpmnProcessIdProp.setValue(record.getBpmnProcessId());
+    processDefinitionKeyProp.setValue(record.getProcessDefinitionKey());
+    processDefinitionVersionProp.setValue(record.getProcessDefinitionVersion());
+    elementIdProp.setValue(record.getElementId());
+    elementInstanceKeyProp.setValue(record.getElementInstanceKey());
+    tenantIdProp.setValue(record.getTenantId());
+  }
+
   @Override
   public long getProcessInstanceKey() {
     return processInstanceKeyProp.getValue();

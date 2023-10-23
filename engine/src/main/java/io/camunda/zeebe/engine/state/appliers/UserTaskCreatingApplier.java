@@ -9,11 +9,10 @@ package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.usertask.MutableUserTaskState;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
-import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 
-public class UserTaskCreatingApplier
-    implements TypedEventApplier<UserTaskIntent, UserTaskRecordValue> {
+public class UserTaskCreatingApplier implements TypedEventApplier<UserTaskIntent, UserTaskRecord> {
 
   private final MutableUserTaskState state;
 
@@ -22,7 +21,7 @@ public class UserTaskCreatingApplier
   }
 
   @Override
-  public void applyState(final long key, final UserTaskRecordValue value) {
+  public void applyState(final long key, final UserTaskRecord value) {
     // on user task creating
 
     state.create(key, value);

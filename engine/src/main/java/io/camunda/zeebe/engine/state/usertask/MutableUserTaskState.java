@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.engine.state.usertask;
 
-import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 
 public interface MutableUserTaskState extends UserTaskState {
 
-  void create(final long key, final UserTaskRecordValue userTask);
+  void create(final long key, final UserTaskRecord userTask);
 }
