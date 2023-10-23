@@ -22,6 +22,7 @@ import io.camunda.tasklist.zeebeimport.v840.record.value.ProcessInstanceRecordVa
 import io.camunda.tasklist.zeebeimport.v840.record.value.VariableDocumentRecordImpl;
 import io.camunda.tasklist.zeebeimport.v840.record.value.VariableRecordValueImpl;
 import io.camunda.tasklist.zeebeimport.v840.record.value.deployment.DeployedProcessImpl;
+import io.camunda.tasklist.zeebeimport.v840.record.value.deployment.FormRecordImpl;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import java.time.OffsetDateTime;
@@ -49,6 +50,8 @@ public class BulkProcessorElasticSearch extends AbstractImportBatchProcessorElas
 
   @Autowired private ProcessZeebeRecordProcessorElasticSearch processZeebeRecordProcessor;
 
+  @Autowired private FormZeebeRecordProcessorElasticSearch formZeebeRecordProcessor;
+
   @Autowired private ObjectMapper objectMapper;
 
   @Autowired private Metrics metrics;
@@ -70,6 +73,7 @@ public class BulkProcessorElasticSearch extends AbstractImportBatchProcessorElas
     final ImportValueType importValueType = importBatchElasticSearch.getImportValueType();
 
     LOGGER.debug("Writing [{}] Zeebe records to Elasticsearch", zeebeRecords.size());
+
     for (Record record : zeebeRecords) {
       switch (importValueType) {
         case PROCESS_INSTANCE:
@@ -84,6 +88,9 @@ public class BulkProcessorElasticSearch extends AbstractImportBatchProcessorElas
         case PROCESS:
           // deployment records can be processed one by one
           processZeebeRecordProcessor.processDeploymentRecord(record, bulkRequest);
+          break;
+        case FORM:
+          formZeebeRecordProcessor.processFormRecord(record, bulkRequest);
           break;
         default:
           LOGGER.debug("Default case triggered for type {}", importValueType);
@@ -119,6 +126,8 @@ public class BulkProcessorElasticSearch extends AbstractImportBatchProcessorElas
         return VariableDocumentRecordImpl.class;
       case PROCESS:
         return DeployedProcessImpl.class;
+      case FORM:
+        return FormRecordImpl.class;
       default:
         throw new TasklistRuntimeException(
             String.format("No value type class found for: %s", importValueType));
@@ -127,6 +136,6 @@ public class BulkProcessorElasticSearch extends AbstractImportBatchProcessorElas
 
   @Override
   public String getZeebeVersion() {
-    return "8.2";
+    return "8.4";
   }
 }

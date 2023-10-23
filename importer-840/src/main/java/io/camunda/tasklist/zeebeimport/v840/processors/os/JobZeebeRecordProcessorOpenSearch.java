@@ -13,10 +13,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.CommonUtils;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
+import io.camunda.tasklist.entities.FormEntity;
 import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.entities.TaskState;
 import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.tasklist.schema.indices.FormIndex;
 import io.camunda.tasklist.schema.templates.TaskTemplate;
 import io.camunda.tasklist.util.DateUtil;
 import io.camunda.tasklist.util.OpenSearchUtil;
@@ -25,11 +27,16 @@ import io.camunda.tasklist.zeebeimport.v840.record.value.JobRecordValueImpl;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Record;
 import jakarta.json.JsonObjectBuilder;
+import java.io.IOException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch._types.FieldValue;
+import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch.core.bulk.BulkOperation;
 import org.opensearch.client.opensearch.core.bulk.UpdateOperation;
 import org.slf4j.Logger;
@@ -49,12 +56,15 @@ public class JobZeebeRecordProcessorOpenSearch {
 
   @Autowired private TaskTemplate taskTemplate;
 
+  @Autowired private FormIndex formIndex;
+
+  @Autowired private OpenSearchClient openSearchClient;
+
   @Autowired private TasklistProperties tasklistProperties;
 
   public void processJobRecord(Record record, List<BulkOperation> operations)
       throws PersistenceException {
     final JobRecordValueImpl recordValue = (JobRecordValueImpl) record.getValue();
-
     if (recordValue.getType().equals(Protocol.USER_TASK_JOB_TYPE)) {
       if (record.getIntent() != null
           && !record.getIntent().name().equals(Intent.TIMED_OUT.name())) {
@@ -76,7 +86,8 @@ public class JobZeebeRecordProcessorOpenSearch {
             .setFlowNodeInstanceId(String.valueOf(recordValue.getElementInstanceKey()))
             .setProcessInstanceId(String.valueOf(recordValue.getProcessInstanceKey()))
             .setBpmnProcessId(recordValue.getBpmnProcessId())
-            .setProcessDefinitionId(processDefinitionId);
+            .setProcessDefinitionId(processDefinitionId)
+            .setTenantId(recordValue.getTenantId());
 
     final String dueDate =
         recordValue.getCustomHeaders().get(Protocol.USER_TASK_DUE_DATE_HEADER_NAME);
@@ -99,6 +110,20 @@ public class JobZeebeRecordProcessorOpenSearch {
     final String formKey =
         recordValue.getCustomHeaders().get(Protocol.USER_TASK_FORM_KEY_HEADER_NAME);
     entity.setFormKey(formKey);
+
+    Optional.ofNullable(formKey)
+        .map(this::getHighestVersionFormByKey)
+        .ifPresentOrElse(
+            linkedForm -> {
+              entity.setFormVersion(linkedForm.getVersion());
+              entity.setFormId(linkedForm.getBpmnId());
+              entity.setIsFormEmbedded(false);
+            },
+            () -> {
+              entity.setIsFormEmbedded(true);
+              entity.setFormVersion(null);
+              entity.setFormId(null);
+            });
 
     final String assignee = recordValue.getCustomHeaders().get(USER_TASK_ASSIGNEE_HEADER_NAME);
     if (assignee != null) {
@@ -180,5 +205,26 @@ public class JobZeebeRecordProcessorOpenSearch {
                         .docAsUpsert(true)
                         .retryOnConflict(OpenSearchUtil.UPDATE_RETRY_COUNT)))
         .build();
+  }
+
+  private FormEntity getHighestVersionFormByKey(final String formKey) {
+    try {
+
+      final var formEntityResponse =
+          openSearchClient.search(
+              b ->
+                  b.index(formIndex.getFullQualifiedName())
+                      .query(q -> q.term(t -> t.field(FormIndex.ID).value(FieldValue.of(formKey))))
+                      .sort(s -> s.field(f -> f.field(FormIndex.VERSION).order(SortOrder.Desc)))
+                      .size(1),
+              FormEntity.class);
+      if (formEntityResponse.hits().total().value() == 1L) {
+        return formEntityResponse.hits().hits().get(0).source();
+      } else {
+        return null;
+      }
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 }

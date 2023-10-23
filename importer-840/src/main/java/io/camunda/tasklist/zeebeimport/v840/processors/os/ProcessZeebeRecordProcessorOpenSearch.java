@@ -18,12 +18,9 @@ import io.camunda.tasklist.zeebeimport.util.XMLUtil;
 import io.camunda.tasklist.zeebeimport.v840.record.value.deployment.DeployedProcessImpl;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
-import io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import java.util.*;
 import java.util.function.BiConsumer;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import org.opensearch.client.opensearch.core.bulk.BulkOperation;
 import org.opensearch.client.opensearch.core.bulk.IndexOperation;
 import org.slf4j.Logger;
@@ -51,16 +48,16 @@ public class ProcessZeebeRecordProcessorOpenSearch {
 
   @Autowired private XMLUtil xmlUtil;
 
-  public void processDeploymentRecord(Record record, List<BulkOperation> operations)
+  public void processDeploymentRecord(
+      Record<DeployedProcessImpl> record, List<BulkOperation> operations)
       throws PersistenceException {
     final String intentStr = record.getIntent().name();
 
     if (STATES.contains(intentStr)) {
-      final DeployedProcessImpl recordValue = (DeployedProcessImpl) record.getValue();
+      final DeployedProcessImpl recordValue = record.getValue();
 
       final Map<String, String> userTaskForms = new HashMap<>();
-      persistProcess(
-          recordValue, operations, (formKey, schema) -> userTaskForms.put(formKey, schema));
+      persistProcess(recordValue, operations, userTaskForms::put);
 
       final List<PersistenceException> exceptions = new ArrayList<>();
       userTaskForms.forEach(
@@ -85,8 +82,7 @@ public class ProcessZeebeRecordProcessorOpenSearch {
   private void persistProcess(
       Process process,
       List<BulkOperation> operations,
-      BiConsumer<String, String> userTaskFormCollector)
-      throws PersistenceException {
+      BiConsumer<String, String> userTaskFormCollector) {
 
     final ProcessEntity processEntity = createEntity(process, userTaskFormCollector);
     LOGGER.debug("Process: key {}", processEntity.getKey());
@@ -104,30 +100,35 @@ public class ProcessZeebeRecordProcessorOpenSearch {
 
   private ProcessEntity createEntity(
       Process process, BiConsumer<String, String> userTaskFormCollector) {
-    final ProcessEntity processEntity = new ProcessEntity();
-
-    processEntity.setId(String.valueOf(process.getProcessDefinitionKey()));
-    processEntity.setKey(process.getProcessDefinitionKey());
-    processEntity.setBpmnProcessId(process.getBpmnProcessId());
-    processEntity.setVersion(process.getVersion());
+    final ProcessEntity processEntity =
+        new ProcessEntity()
+            .setId(String.valueOf(process.getProcessDefinitionKey()))
+            .setKey(process.getProcessDefinitionKey())
+            .setBpmnProcessId(process.getBpmnProcessId())
+            .setVersion(process.getVersion())
+            .setTenantId(process.getTenantId());
 
     final byte[] byteArray = process.getResource();
 
     xmlUtil.extractDiagramData(
         byteArray,
-        name -> processEntity.setName(name),
+        processEntity::setName,
         flowNode -> processEntity.getFlowNodes().add(flowNode),
         userTaskFormCollector,
-        formKey -> processEntity.setFormKey(formKey),
+        processEntity::setFormKey,
         formId -> processEntity.setFormId(formId),
-        startedByForm -> processEntity.setStartedByForm(startedByForm));
+        processEntity::setStartedByForm);
+
+    Optional.ofNullable(processEntity.getFormKey())
+        .ifPresent(key -> processEntity.setIsFormEmbedded(true));
+
+    Optional.ofNullable(processEntity.getFormId())
+        .ifPresent(
+            id -> {
+              processEntity.setIsFormEmbedded(false);
+            });
 
     return processEntity;
-  }
-
-  private Map<String, DeploymentResource> resourceToMap(List<DeploymentResource> resources) {
-    return resources.stream()
-        .collect(Collectors.toMap(DeploymentResource::getResourceName, Function.identity()));
   }
 
   private void persistForm(
