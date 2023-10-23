@@ -14,11 +14,11 @@ import io.camunda.zeebe.topology.api.TopologyManagementRequest.AddMembersRequest
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.LeavePartitionRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.ReassignPartitionsRequest;
+import io.camunda.zeebe.topology.api.TopologyManagementRequest.RemoveMembersRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementResponse.StatusCode;
 import io.camunda.zeebe.topology.api.TopologyManagementResponse.TopologyChangeStatus;
 import io.camunda.zeebe.topology.gossip.ClusterTopologyGossipState;
 import io.camunda.zeebe.topology.protocol.Requests;
-import io.camunda.zeebe.topology.protocol.Requests.AddMemberRequest;
 import io.camunda.zeebe.topology.protocol.Requests.ChangeStatus;
 import io.camunda.zeebe.topology.protocol.Topology;
 import io.camunda.zeebe.topology.protocol.Topology.MemberState;
@@ -279,7 +279,15 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
 
   @Override
   public byte[] encodeAddMembersRequest(final AddMembersRequest req) {
-    return AddMemberRequest.newBuilder()
+    return Requests.AddMembersRequest.newBuilder()
+        .addAllMemberIds(req.members().stream().map(MemberId::id).toList())
+        .build()
+        .toByteArray();
+  }
+
+  @Override
+  public byte[] encodeRemoveMembersRequest(final RemoveMembersRequest req) {
+    return Requests.RemoveMembersRequest.newBuilder()
         .addAllMemberIds(req.members().stream().map(MemberId::id).toList())
         .build()
         .toByteArray();
@@ -316,9 +324,22 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
   @Override
   public AddMembersRequest decodeAddMembersRequest(final byte[] encodedState) {
     try {
-      final var addMemberRequest = Requests.AddMemberRequest.parseFrom(encodedState);
+      final var addMemberRequest = Requests.AddMembersRequest.parseFrom(encodedState);
       return new AddMembersRequest(
           addMemberRequest.getMemberIdsList().stream()
+              .map(MemberId::from)
+              .collect(Collectors.toSet()));
+    } catch (final InvalidProtocolBufferException e) {
+      throw new DecodingFailed(e);
+    }
+  }
+
+  @Override
+  public RemoveMembersRequest decodeRemoveMembersRequest(final byte[] encodedState) {
+    try {
+      final var removeMemberRequest = Requests.RemoveMembersRequest.parseFrom(encodedState);
+      return new RemoveMembersRequest(
+          removeMemberRequest.getMemberIdsList().stream()
               .map(MemberId::from)
               .collect(Collectors.toSet()));
     } catch (final InvalidProtocolBufferException e) {

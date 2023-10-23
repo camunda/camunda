@@ -14,6 +14,8 @@ public interface TopologyRequestsSerializer {
 
   byte[] encodeAddMembersRequest(TopologyManagementRequest.AddMembersRequest req);
 
+  byte[] encodeRemoveMembersRequest(TopologyManagementRequest.RemoveMembersRequest req);
+
   byte[] encodeJoinPartitionRequest(TopologyManagementRequest.JoinPartitionRequest req);
 
   byte[] encodeLeavePartitionRequest(TopologyManagementRequest.LeavePartitionRequest req);
@@ -22,6 +24,8 @@ public interface TopologyRequestsSerializer {
       TopologyManagementRequest.ReassignPartitionsRequest reassignPartitionsRequest);
 
   TopologyManagementRequest.AddMembersRequest decodeAddMembersRequest(byte[] encodedState);
+
+  TopologyManagementRequest.RemoveMembersRequest decodeRemoveMembersRequest(byte[] encodedState);
 
   TopologyManagementRequest.JoinPartitionRequest decodeJoinPartitionRequest(byte[] encodedState);
 

@@ -14,6 +14,7 @@ import io.camunda.zeebe.topology.api.TopologyManagementRequest.AddMembersRequest
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.LeavePartitionRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.ReassignPartitionsRequest;
+import io.camunda.zeebe.topology.api.TopologyManagementRequest.RemoveMembersRequest;
 import io.camunda.zeebe.topology.gossip.ClusterTopologyGossipState;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.MemberState;
@@ -79,6 +80,20 @@ final class ProtoBufSerializerTest {
     // then
     final var decodedRequest = protoBufSerializer.decodeAddMembersRequest(encodedRequest);
     assertThat(decodedRequest).isEqualTo(addMembersRequest);
+  }
+
+  @Test
+  void shouldEncodeAndDecodeRemoveMembersRequest() {
+    // given
+    final var removeMembersRequest =
+        new RemoveMembersRequest(Set.of(MemberId.from("1"), MemberId.from("2")));
+
+    // when
+    final var encodedRequest = protoBufSerializer.encodeRemoveMembersRequest(removeMembersRequest);
+
+    // then
+    final var decodedRequest = protoBufSerializer.decodeRemoveMembersRequest(encodedRequest);
+    assertThat(decodedRequest).isEqualTo(removeMembersRequest);
   }
 
   @Test
