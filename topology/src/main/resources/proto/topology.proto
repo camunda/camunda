@@ -29,7 +29,25 @@ message PartitionState {
 
 message ClusterChangePlan {
   int32 version = 1;
-  repeated TopologyChangeOperation operation = 2;
+  oneof change {
+    CompletedChange completedChange = 2;
+    PendingChange pendingChange = 3;
+  }
+}
+
+message CompletedChange {
+  int64 id = 1;
+  ChangeStatus status = 2;
+  google.protobuf.Timestamp startedAt = 3;
+  google.protobuf.Timestamp completedAt = 4;
+}
+
+message PendingChange {
+  int64 id = 1;
+  ChangeStatus status = 2;
+  google.protobuf.Timestamp startedAt = 3;
+  repeated CompletedTopologyChangeOperation completedOperations = 4;
+  repeated TopologyChangeOperation pendingOperations = 5;
 }
 
 message TopologyChangeOperation {
@@ -41,6 +59,11 @@ message TopologyChangeOperation {
     MemberLeaveOperation memberLeave = 5;
     PartitionReconfigurePriorityOperation partitionReconfigurePriority = 6;
   }
+}
+
+message CompletedTopologyChangeOperation {
+  TopologyChangeOperation operation = 1;
+  google.protobuf.Timestamp completedAt = 2;
 }
 
 message PartitionJoinOperation {
@@ -66,6 +89,13 @@ enum State {
   ACTIVE = 2;
   LEAVING = 3;
   LEFT = 4;
+}
+
+enum ChangeStatus {
+  CHANGE_STATUS_UNKNOWN = 0;
+  IN_PROGRESS = 1;
+  COMPLETED = 2;
+  FAILED = 3;
 }
 
 

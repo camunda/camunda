@@ -108,7 +108,9 @@ public record ClusterTopology(
       throw new IllegalArgumentException(
           "Expected to start new topology change, but there is no operation");
     } else {
-      return new ClusterTopology(version + 1, members, ClusterChangePlan.init(operations));
+      final long newVersion = version + 1;
+      return new ClusterTopology(
+          newVersion, members, ClusterChangePlan.init(newVersion, operations));
     }
   }
 
@@ -141,8 +143,7 @@ public record ClusterTopology(
    *     otherwise returns false.
    */
   private boolean hasPendingChangesFor(final MemberId memberId) {
-    return !changes.pendingOperations().isEmpty()
-        && changes.pendingOperations().get(0).memberId().equals(memberId);
+    return changes.hasPendingChangesFor(memberId);
   }
 
   /**
@@ -156,7 +157,7 @@ public record ClusterTopology(
     if (!hasPendingChangesFor(memberId)) {
       return Optional.empty();
     }
-    return Optional.of(changes.pendingOperations().get(0));
+    return Optional.of(changes.nextPendingOperation());
   }
 
   /**
@@ -193,7 +194,7 @@ public record ClusterTopology(
               .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
       // Increment the version so that other members can merge by overwriting their local topology.
-      return new ClusterTopology(result.version() + 1, currentMembers, ClusterChangePlan.empty());
+      return new ClusterTopology(result.version() + 1, currentMembers, changes.completed());
     }
 
     return result;
@@ -208,7 +209,7 @@ public record ClusterTopology(
   }
 
   public boolean hasPendingChanges() {
-    return !changes.pendingOperations().isEmpty();
+    return changes.hasPendingChanges();
   }
 
   public int clusterSize() {

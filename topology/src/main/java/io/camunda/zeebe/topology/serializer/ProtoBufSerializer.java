@@ -21,8 +21,11 @@ import io.camunda.zeebe.topology.gossip.ClusterTopologyGossipState;
 import io.camunda.zeebe.topology.protocol.Requests;
 import io.camunda.zeebe.topology.protocol.Requests.ChangeStatus;
 import io.camunda.zeebe.topology.protocol.Topology;
+import io.camunda.zeebe.topology.protocol.Topology.CompletedChange;
 import io.camunda.zeebe.topology.protocol.Topology.MemberState;
+import io.camunda.zeebe.topology.protocol.Topology.PendingChange;
 import io.camunda.zeebe.topology.state.ClusterChangePlan;
+import io.camunda.zeebe.topology.state.ClusterChangePlan.CompletedOperation;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.PartitionState;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation;
@@ -34,6 +37,7 @@ import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOp
 import java.time.Instant;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRequestsSerializer {
@@ -204,9 +208,52 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
 
   private Topology.ClusterChangePlan encodeChangePlan(final ClusterChangePlan changes) {
     final var builder = Topology.ClusterChangePlan.newBuilder().setVersion(changes.version());
-    changes
+    if (changes.ongoingChange().isPresent()) {
+      builder.setPendingChange(encodePendingChange(changes.ongoingChange().get()));
+    } else if (changes.lastChange().isPresent()) {
+      builder.setCompletedChange(encodeCompletedChange(changes.lastChange().get()));
+    }
+    return builder.build();
+  }
+
+  private CompletedChange encodeCompletedChange(
+      final ClusterChangePlan.CompletedChange completedChange) {
+    final var builder = Topology.CompletedChange.newBuilder();
+    builder
+        .setId(completedChange.id())
+        .setStatus(fromTopologyChangeStatus(completedChange.status()))
+        .setCompletedAt(
+            Timestamp.newBuilder()
+                .setSeconds(completedChange.completedAt().getEpochSecond())
+                .setNanos(completedChange.completedAt().getNano())
+                .build())
+        .setStartedAt(
+            Timestamp.newBuilder()
+                .setSeconds(completedChange.startedAt().getEpochSecond())
+                .setNanos(completedChange.startedAt().getNano())
+                .build());
+
+    return builder.build();
+  }
+
+  private Topology.PendingChange encodePendingChange(
+      final ClusterChangePlan.PendingChange pendingChange) {
+    final var builder = Topology.PendingChange.newBuilder();
+    builder
+        .setId(pendingChange.id())
+        .setStatus(fromTopologyChangeStatus(pendingChange.status()))
+        .setStartedAt(
+            Timestamp.newBuilder()
+                .setSeconds(pendingChange.startedAt().getEpochSecond())
+                .setNanos(pendingChange.startedAt().getNano())
+                .build());
+    pendingChange
         .pendingOperations()
-        .forEach(operation -> builder.addOperation(encodeOperation(operation)));
+        .forEach(operation -> builder.addPendingOperations(encodeOperation(operation)));
+    pendingChange
+        .completedOperations()
+        .forEach(operation -> builder.addCompletedOperations(encodeCompletedOperation(operation)));
+
     return builder.build();
   }
 
@@ -238,13 +285,61 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
     return builder.build();
   }
 
+  private Topology.CompletedTopologyChangeOperation encodeCompletedOperation(
+      final ClusterChangePlan.CompletedOperation completedOperation) {
+    return Topology.CompletedTopologyChangeOperation.newBuilder()
+        .setOperation(encodeOperation(completedOperation.operation()))
+        .setCompletedAt(
+            Timestamp.newBuilder()
+                .setSeconds(completedOperation.completedAt().getEpochSecond())
+                .setNanos(completedOperation.completedAt().getNano())
+                .build())
+        .build();
+  }
+
   private ClusterChangePlan decodeChangePlan(final Topology.ClusterChangePlan clusterChangePlan) {
-
     final var version = clusterChangePlan.getVersion();
-    final var pendingOperations =
-        clusterChangePlan.getOperationList().stream().map(this::decodeOperation).toList();
+    final Optional<ClusterChangePlan.PendingChange> pendingChange =
+        clusterChangePlan.hasPendingChange()
+            ? Optional.of(decodePendingChange(clusterChangePlan.getPendingChange()))
+            : Optional.empty();
+    final Optional<ClusterChangePlan.CompletedChange> completedChange =
+        clusterChangePlan.hasCompletedChange()
+            ? Optional.of(decodeCompletedChange(clusterChangePlan.getCompletedChange()))
+            : Optional.empty();
 
-    return new ClusterChangePlan(version, pendingOperations);
+    return new ClusterChangePlan(version, completedChange, pendingChange);
+  }
+
+  private ClusterChangePlan.CompletedChange decodeCompletedChange(
+      final CompletedChange completedChange) {
+    return new ClusterChangePlan.CompletedChange(
+        completedChange.getId(),
+        toChangeStatus(completedChange.getStatus()),
+        Instant.ofEpochSecond(
+            completedChange.getStartedAt().getSeconds(), completedChange.getStartedAt().getNanos()),
+        Instant.ofEpochSecond(
+            completedChange.getCompletedAt().getSeconds(),
+            completedChange.getCompletedAt().getNanos()));
+  }
+
+  private ClusterChangePlan.PendingChange decodePendingChange(final PendingChange pendingChange) {
+    final var pendingOperations =
+        pendingChange.getPendingOperationsList().stream()
+            .map(this::decodeOperation)
+            .collect(Collectors.toList());
+    final var completedOperations =
+        pendingChange.getCompletedOperationsList().stream()
+            .map(this::decodeCompletedOperation)
+            .collect(Collectors.toList());
+
+    return new ClusterChangePlan.PendingChange(
+        pendingChange.getId(),
+        toChangeStatus(pendingChange.getStatus()),
+        Instant.ofEpochSecond(
+            pendingChange.getStartedAt().getSeconds(), pendingChange.getStartedAt().getNanos()),
+        completedOperations,
+        pendingOperations);
   }
 
   private TopologyChangeOperation decodeOperation(
@@ -275,6 +370,13 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
       // rolling update.
       throw new IllegalStateException("Unknown operation: " + topologyChangeOperation);
     }
+  }
+
+  private CompletedOperation decodeCompletedOperation(
+      final Topology.CompletedTopologyChangeOperation operation) {
+    return new CompletedOperation(
+        decodeOperation(operation.getOperation()),
+        Instant.ofEpochSecond(operation.getCompletedAt().getSeconds()));
   }
 
   @Override
@@ -423,6 +525,23 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
       case IN_PROGRESS -> ChangeStatus.IN_PROGRESS;
       case COMPLETED -> ChangeStatus.COMPLETED;
       case FAILED -> ChangeStatus.FAILED;
+    };
+  }
+
+  private Topology.ChangeStatus fromTopologyChangeStatus(final ClusterChangePlan.Status status) {
+    return switch (status) {
+      case IN_PROGRESS -> Topology.ChangeStatus.IN_PROGRESS;
+      case COMPLETED -> Topology.ChangeStatus.COMPLETED;
+      case FAILED -> Topology.ChangeStatus.FAILED;
+    };
+  }
+
+  private ClusterChangePlan.Status toChangeStatus(final Topology.ChangeStatus status) {
+    return switch (status) {
+      case IN_PROGRESS -> ClusterChangePlan.Status.IN_PROGRESS;
+      case COMPLETED -> ClusterChangePlan.Status.COMPLETED;
+      case FAILED -> ClusterChangePlan.Status.FAILED;
+      default -> throw new IllegalStateException("Unknown status: " + status);
     };
   }
 }
