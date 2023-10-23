@@ -12,6 +12,7 @@ import io.camunda.zeebe.el.impl.StaticExpression;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerTask;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
 import io.camunda.zeebe.engine.processing.deployment.model.element.JobWorkerProperties;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.ModelElementTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformContext;
@@ -21,6 +22,7 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeFormDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeHeader;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskHeaders;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskSchedule;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeUserTaskListener;
 import io.camunda.zeebe.protocol.Protocol;
 import java.util.HashMap;
 import java.util.List;
@@ -57,6 +59,22 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
     transformTaskSchedule(element, jobWorkerProperties);
     transformTaskHeaders(element, jobWorkerProperties);
     transformTaskFormId(element, jobWorkerProperties);
+
+    transformUserTaskListener(element, userTask);
+  }
+
+  private void transformUserTaskListener(
+      final UserTask element, final ExecutableJobWorkerTask userTask) {
+
+    final ExecutableUserTask theUserTask = new ExecutableUserTask();
+
+    final ZeebeUserTaskListener userTaskListenerExtension =
+        element.getSingleExtensionElement(ZeebeUserTaskListener.class);
+
+    theUserTask.addListener(
+        userTaskListenerExtension.name(), userTaskListenerExtension.eventType());
+
+    userTask.setUserTask(theUserTask);
   }
 
   private void transformTaskDefinition(final JobWorkerProperties jobWorkerProperties) {

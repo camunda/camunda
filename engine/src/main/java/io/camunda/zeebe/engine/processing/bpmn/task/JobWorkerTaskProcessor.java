@@ -17,6 +17,8 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerTask;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
+import java.util.stream.Collectors;
 
 /**
  * A BPMN processor for tasks that are based on jobs and should be processed by job workers. For
@@ -55,6 +57,17 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
         .ifRightOrLeft(
             jobProperties -> {
               jobBehavior.createNewJob(context, element, jobProperties);
+
+              final ExecutableUserTask userTask = element.getUserTask();
+              if (userTask != null) {
+                final String listeners =
+                    userTask.getListeners().stream()
+                        .map(listener -> listener.getName())
+                        .collect(Collectors.joining(","));
+
+                System.out.println("I found user task listeners: " + listeners);
+              }
+
               stateTransitionBehavior.transitionToActivated(context, element.getEventType());
             },
             failure -> incidentBehavior.createIncident(failure, context));

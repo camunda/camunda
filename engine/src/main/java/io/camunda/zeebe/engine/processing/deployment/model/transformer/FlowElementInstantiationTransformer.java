@@ -89,7 +89,8 @@ public final class FlowElementInstantiationTransformer
     ELEMENT_FACTORIES.put(ServiceTask.class, ExecutableJobWorkerTask::new);
     ELEMENT_FACTORIES.put(StartEvent.class, ExecutableStartEvent::new);
     ELEMENT_FACTORIES.put(SubProcess.class, ExecutableFlowElementContainer::new);
-    ELEMENT_FACTORIES.put(UserTask.class, ExecutableJobWorkerTask::new);
+    ELEMENT_FACTORIES.put(
+        UserTask.class, ExecutableJobWorkerTask::new); // TODO: this may be a real user task object
 
     NON_EXECUTABLE_ELEMENT_TYPES.add(DataObject.class);
     NON_EXECUTABLE_ELEMENT_TYPES.add(DataObjectReference.class);

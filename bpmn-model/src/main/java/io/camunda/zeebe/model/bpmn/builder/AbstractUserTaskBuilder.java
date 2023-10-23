@@ -27,6 +27,8 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeHeader;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskHeaders;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskSchedule;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeUserTaskForm;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeUserTaskListener;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeUserTaskListenerEventType;
 
 /**
  * @author Sebastian Menski
@@ -60,14 +62,6 @@ public abstract class AbstractUserTaskBuilder<B extends AbstractUserTaskBuilder<
     final ZeebeFormDefinition formDefinition =
         getCreateSingleExtensionElement(ZeebeFormDefinition.class);
     formDefinition.setFormKey(formKey);
-    return myself;
-  }
-
-  @Override
-  public B zeebeFormId(final String formId) {
-    final ZeebeFormDefinition formDefinition =
-        getCreateSingleExtensionElement(ZeebeFormDefinition.class);
-    formDefinition.setFormId(formId);
     return myself;
   }
 
@@ -155,11 +149,30 @@ public abstract class AbstractUserTaskBuilder<B extends AbstractUserTaskBuilder<
     return zeebeFollowUpDate(asZeebeExpression(expression));
   }
 
+  @Override
+  public B zeebeFormId(final String formId) {
+    final ZeebeFormDefinition formDefinition =
+        getCreateSingleExtensionElement(ZeebeFormDefinition.class);
+    formDefinition.setFormId(formId);
+    return myself;
+  }
+
   public B zeebeTaskHeader(final String key, final String value) {
     final ZeebeTaskHeaders taskHeaders = getCreateSingleExtensionElement(ZeebeTaskHeaders.class);
     final ZeebeHeader header = createChild(taskHeaders, ZeebeHeader.class);
     header.setKey(key);
     header.setValue(value);
+
+    return myself;
+  }
+
+  public B zeebeUserTaskListener(
+      final String name, final ZeebeUserTaskListenerEventType eventType) {
+    final ZeebeUserTaskListener listener =
+        getCreateSingleExtensionElement(ZeebeUserTaskListener.class);
+
+    listener.setName(name);
+    listener.setEventType(eventType);
 
     return myself;
   }

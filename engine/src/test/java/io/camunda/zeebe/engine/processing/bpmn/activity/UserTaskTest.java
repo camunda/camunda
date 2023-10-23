@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.UserTaskBuilder;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeUserTaskListenerEventType;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
@@ -734,5 +735,27 @@ public final class UserTaskTest {
             RecordingExporter.incidentRecords().withProcessInstanceKey(processInstanceKey).limit(2))
         .extracting(Record::getIntent)
         .containsExactly(IncidentIntent.CREATED, IncidentIntent.RESOLVED);
+  }
+
+  @Test
+  public void shouldInvokeUserTaskListener() {
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            process(
+                userTask ->
+                    userTask.zeebeUserTaskListener(
+                        "my-listener", ZeebeUserTaskListenerEventType.CREATE)))
+        .deploy();
+
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted()
+                .withElementType(BpmnElementType.USER_TASK))
+        .extracting(Record::getIntent)
+        .contains(ProcessInstanceIntent.ELEMENT_ACTIVATED);
   }
 }

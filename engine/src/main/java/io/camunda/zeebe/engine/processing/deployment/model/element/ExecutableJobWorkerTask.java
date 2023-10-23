@@ -12,6 +12,8 @@ public class ExecutableJobWorkerTask extends ExecutableActivity
 
   private JobWorkerProperties jobWorkerProperties;
 
+  private ExecutableUserTask userTask;
+
   public ExecutableJobWorkerTask(final String id) {
     super(id);
   }
@@ -24,5 +26,13 @@ public class ExecutableJobWorkerTask extends ExecutableActivity
   @Override
   public void setJobWorkerProperties(final JobWorkerProperties jobWorkerProperties) {
     this.jobWorkerProperties = jobWorkerProperties;
+  }
+
+  public ExecutableUserTask getUserTask() {
+    return userTask;
+  }
+
+  public void setUserTask(final ExecutableUserTask userTask) {
+    this.userTask = userTask;
   }
 }

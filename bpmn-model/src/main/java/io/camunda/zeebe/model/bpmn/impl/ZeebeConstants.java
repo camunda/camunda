@@ -72,6 +72,8 @@ public class ZeebeConstants {
   public static final String ELEMENT_FORM_DEFINITION = "formDefinition";
   public static final String ELEMENT_USER_TASK_FORM = "userTaskForm";
 
+  public static final String ELEMENT_USER_TASK_LISTENER = "userTaskListener";
+
   public static final String ELEMENT_ASSIGNMENT_DEFINITION = "assignmentDefinition";
 
   public static final String ELEMENT_SCHEDULE_DEFINITION = "taskSchedule";
@@ -91,4 +93,6 @@ public class ZeebeConstants {
 
   /** Form key location used for forms embedded in the same BPMN file, i.e. zeebeUserTaskForm */
   public static final String USER_TASK_FORM_KEY_BPMN_LOCATION = "bpmn";
+
+  public static final String USER_TASK_LISTENER_EVENT_TYPE = "eventType";
 }
