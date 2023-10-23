@@ -284,6 +284,7 @@ public class SubscriptionCommandSender {
 
   public boolean rejectCorrelateMessageSubscription(
       final long processInstanceKey,
+      final long elementInstanceKey,
       final DirectBuffer bpmnProcessId,
       final long messageKey,
       final DirectBuffer messageName,
@@ -295,7 +296,7 @@ public class SubscriptionCommandSender {
         MessageSubscriptionIntent.REJECT,
         new MessageSubscriptionRecord()
             .setProcessInstanceKey(processInstanceKey)
-            .setElementInstanceKey(-1L)
+            .setElementInstanceKey(elementInstanceKey)
             .setBpmnProcessId(bpmnProcessId)
             .setMessageName(messageName)
             .setCorrelationKey(correlationKey)
