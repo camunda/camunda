@@ -13,11 +13,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.UserTaskBuilder;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeUserTaskListenerEventType;
 import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -29,9 +32,11 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -819,11 +824,24 @@ public final class UserTaskTest {
     // when
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
-    ENGINE
-        .job()
-        .ofInstance(processInstanceKey)
-        .withType("_userTaskListener_CREATE_first-listener")
-        .complete();
+    final Record<JobRecordValue> userTaskListenerJobCreated =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    // write the job complete command myself to modify the assignee
+    final JobRecord jobCompleteCommand = new JobRecord();
+    jobCompleteCommand.wrap((JobRecord) userTaskListenerJobCreated.getValue());
+    final Map<String, String> customHeaders = jobCompleteCommand.getCustomHeaders();
+    customHeaders.put(Protocol.USER_TASK_ASSIGNEE_HEADER_NAME, "Daniel");
+
+    jobCompleteCommand.setCustomHeaders(
+        BufferUtil.wrapArray(MsgPackConverter.convertToMsgPack(customHeaders)));
+
+    ENGINE.writeRecords(
+        RecordToWrite.command()
+            .key(userTaskListenerJobCreated.getKey())
+            .job(JobIntent.COMPLETE, jobCompleteCommand));
 
     // then
     assertThat(
@@ -832,6 +850,14 @@ public final class UserTaskTest {
                 .limit(2))
         .extracting(Record::getIntent)
         .contains(UserTaskIntent.CREATING, UserTaskIntent.CREATED);
+
+    final Record<UserTaskRecordValue> userTaskCreated =
+        RecordingExporter.userTasksRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withIntent(UserTaskIntent.CREATED)
+            .getFirst();
+
+    assertThat(userTaskCreated.getValue().getAssignee()).isEqualTo("Daniel");
 
     assertThat(
             RecordingExporter.processInstanceRecords()

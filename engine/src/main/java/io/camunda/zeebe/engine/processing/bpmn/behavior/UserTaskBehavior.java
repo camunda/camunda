@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior.JobProperties;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
@@ -23,10 +24,16 @@ public class UserTaskBehavior {
     this.stateWriter = stateWriter;
   }
 
-  public long createUserTask(final BpmnElementContext context) {
+  public long createUserTask(final BpmnElementContext context, final JobProperties jobProperties) {
 
     final long userTaskKey = keyGenerator.nextKey();
     final UserTaskRecord userTaskRecord = createUserTaskRecordForContext(context);
+
+    final String assignee = jobProperties.getAssignee();
+    if (assignee != null) {
+      userTaskRecord.setAssignee(assignee);
+    }
+
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CREATING, userTaskRecord);
 
     return userTaskKey;

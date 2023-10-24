@@ -44,6 +44,18 @@ public class DbUserTaskState implements MutableUserTaskState {
   }
 
   @Override
+  public void update(final long key, final UserTaskRecord userTask, final UserTaskIntent newState) {
+    final DbLong userTaskKey = new DbLong();
+    userTaskKey.wrapLong(key);
+
+    final UserTaskStateValue stateValue = new UserTaskStateValue();
+    stateValue.setUserTask(userTask);
+    stateValue.setState(newState);
+
+    userTasksColumnFamily.update(userTaskKey, stateValue);
+  }
+
+  @Override
   public UserTaskRecord get(final long key) {
     final DbLong userTaskKey = new DbLong();
     userTaskKey.wrapLong(key);

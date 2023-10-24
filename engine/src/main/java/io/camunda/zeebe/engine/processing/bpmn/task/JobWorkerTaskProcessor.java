@@ -64,7 +64,7 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
               final ExecutableUserTask userTask = element.getUserTask();
               if (userTask != null) {
 
-                final long userTaskKey = userTaskBehavior.createUserTask(context);
+                final long userTaskKey = userTaskBehavior.createUserTask(context, jobProperties);
 
                 final var listeners = userTask.getListeners(ZeebeUserTaskListenerEventType.CREATE);
 

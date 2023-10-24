@@ -49,4 +49,6 @@ public interface UserTaskRecordValue extends RecordValue, ProcessInstanceRelated
   long getProcessDefinitionKey();
 
   String getUserTaskListener();
+
+  String getAssignee();
 }

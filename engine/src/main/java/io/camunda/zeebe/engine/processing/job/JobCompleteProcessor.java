@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.usertask.UserTaskState;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -25,6 +26,7 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import org.agrona.DirectBuffer;
 
 public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
 
@@ -80,6 +82,13 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
 
       // validate user task
 
+      // update user task
+      final String assignee = value.getCustomHeaders().get(Protocol.USER_TASK_ASSIGNEE_HEADER_NAME);
+      if (assignee != null) {
+        userTask.setAssignee(assignee);
+      }
+      // write event to store the change in state (e.g. user task UPDATED)
+
       // check if there are more listeners
 
       stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CREATED, userTask);
@@ -118,6 +127,10 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
     }
 
     job.setVariables(command.getValue().getVariablesBuffer());
+
+    // just update the custom headers - all fine
+    final DirectBuffer modifiedCustomHeaders = command.getValue().getCustomHeadersBuffer();
+    job.setCustomHeaders(modifiedCustomHeaders);
 
     commandControl.accept(JobIntent.COMPLETED, job);
     jobMetrics.jobCompleted(job.getType());

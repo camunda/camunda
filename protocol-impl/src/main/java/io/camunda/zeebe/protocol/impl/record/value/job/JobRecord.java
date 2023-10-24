@@ -63,6 +63,11 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
+  // add new job type: job worker, task listener, execution listener
+
+  // ObjectProperty<UserTaskProperties>
+  // {"user-task-key", "assignee", "candidate-groups"}
+
   public JobRecord() {
     declareProperty(deadlineProp)
         .declareProperty(workerProp)

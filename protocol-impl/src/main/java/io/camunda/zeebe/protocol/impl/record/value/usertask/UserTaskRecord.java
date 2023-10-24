@@ -37,6 +37,8 @@ public class UserTaskRecord extends UnifiedRecordValue implements UserTaskRecord
 
   private final StringProperty listenerProp = new StringProperty("userTaskListener", "");
 
+  private final StringProperty assigneeProp = new StringProperty("assignee", "");
+
   public UserTaskRecord() {
     declareProperty(processInstanceKeyProp)
         .declareProperty(bpmnProcessIdProp)
@@ -45,7 +47,8 @@ public class UserTaskRecord extends UnifiedRecordValue implements UserTaskRecord
         .declareProperty(elementIdProp)
         .declareProperty(elementInstanceKeyProp)
         .declareProperty(tenantIdProp)
-        .declareProperty(listenerProp);
+        .declareProperty(listenerProp)
+        .declareProperty(assigneeProp);
   }
 
   public void wrap(final UserTaskRecord record) {
@@ -116,6 +119,16 @@ public class UserTaskRecord extends UnifiedRecordValue implements UserTaskRecord
 
   public UserTaskRecord setUserTaskListener(final String listener) {
     listenerProp.setValue(listener);
+    return this;
+  }
+
+  @Override
+  public String getAssignee() {
+    return bufferAsString(assigneeProp.getValue());
+  }
+
+  public UserTaskRecord setAssignee(final String assignee) {
+    assigneeProp.setValue(assignee);
     return this;
   }
 
