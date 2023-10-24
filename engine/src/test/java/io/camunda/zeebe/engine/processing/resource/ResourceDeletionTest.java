@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.assertj.core.api.Assertions.tuple;
 
+import io.camunda.zeebe.engine.state.mutable.MutableBannedInstanceState;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Record;
@@ -223,6 +224,36 @@ public class ResourceDeletionTest {
     // given
     final var processId = helper.getBpmnProcessId();
     final var processDefinitionKey = deployProcess(processId);
+
+    // when
+    engine.resourceDeletion().withResourceKey(processDefinitionKey).delete();
+
+    // then
+    verifyProcessIdWithVersionIsDeleted(processId, 1);
+    verifyResourceIsDeleted(processDefinitionKey);
+  }
+
+  @Test
+  public void shouldWriteEventsForDeletedProcessWithBannedInstances() {
+    // given
+    final var processId = helper.getBpmnProcessId();
+    final var processDefinitionKey =
+        engine
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId).startEvent().userTask().endEvent().done())
+            .deploy()
+            .getValue()
+            .getProcessesMetadata()
+            .get(0)
+            .getProcessDefinitionKey();
+    final long processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
+
+    // Note! We don't register the banned instance using an event. You won't see the Error Event in
+    // the log!
+    final var bannedInstanceState =
+        (MutableBannedInstanceState) engine.getProcessingState().getBannedInstanceState();
+    bannedInstanceState.banProcessInstance(processInstanceKey);
 
     // when
     engine.resourceDeletion().withResourceKey(processDefinitionKey).delete();
