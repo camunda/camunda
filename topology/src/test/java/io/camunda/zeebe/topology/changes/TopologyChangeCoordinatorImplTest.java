@@ -15,6 +15,7 @@ import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.topology.ClusterTopologyAssert;
 import io.camunda.zeebe.topology.ClusterTopologyManager;
+import io.camunda.zeebe.topology.changes.TopologyChangeCoordinator.TopologyChangeRequest;
 import io.camunda.zeebe.topology.changes.TopologyChangeCoordinatorImpl.InvalidTopologyChangeException;
 import io.camunda.zeebe.topology.changes.TopologyChangeCoordinatorImpl.OperationNotAllowed;
 import io.camunda.zeebe.topology.state.ClusterTopology;
@@ -23,6 +24,7 @@ import io.camunda.zeebe.topology.state.PartitionState;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
+import io.camunda.zeebe.util.Either;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -44,7 +46,8 @@ final class TopologyChangeCoordinatorImplTest {
     // when
 
     final var applyFuture =
-        coordinator.applyOperations(List.of(new PartitionLeaveOperation(MemberId.from("1"), 1)));
+        coordinator.applyOperations(
+            getTransformer(List.of(new PartitionLeaveOperation(MemberId.from("1"), 1))));
 
     // then
     assertThat(applyFuture)
@@ -53,6 +56,10 @@ final class TopologyChangeCoordinatorImplTest {
         .withCauseInstanceOf(InvalidTopologyChangeException.class)
         .withMessageContaining(
             "Expected to leave partition, but the local member does not exist in the topology");
+  }
+
+  private TopologyChangeRequest getTransformer(final List<TopologyChangeOperation> operations) {
+    return ignore -> Either.right(operations);
   }
 
   @Test
@@ -69,10 +76,11 @@ final class TopologyChangeCoordinatorImplTest {
 
     final var applyFuture =
         coordinator.applyOperations(
-            List.of(
-                new PartitionLeaveOperation(MemberId.from("1"), 1), // Valid operation
-                new PartitionLeaveOperation(MemberId.from("1"), 1) // Duplicate leave not valid
-                ));
+            getTransformer(
+                List.of(
+                    new PartitionLeaveOperation(MemberId.from("1"), 1), // Valid operation
+                    new PartitionLeaveOperation(MemberId.from("1"), 1) // Duplicate leave not valid
+                    )));
 
     // then
     assertThat(applyFuture)
@@ -94,7 +102,8 @@ final class TopologyChangeCoordinatorImplTest {
 
     // when
     final var applyFuture =
-        coordinator.applyOperations(List.of(new PartitionLeaveOperation(MemberId.from("1"), 1)));
+        coordinator.applyOperations(
+            getTransformer(List.of(new PartitionLeaveOperation(MemberId.from("1"), 1))));
 
     // then
     assertThat(applyFuture)
@@ -118,11 +127,12 @@ final class TopologyChangeCoordinatorImplTest {
         new TopologyChangeCoordinatorImpl(clusterTopologyManager, new TestConcurrencyControl());
 
     // when
-    final var applyFuture = coordinator.applyOperations(operations);
+    final var applyFuture = coordinator.applyOperations(getTransformer(operations));
 
     // then
     assertThat(applyFuture).succeedsWithin(Duration.ofMillis(100));
-    ClusterTopologyAssert.assertThatClusterTopology(applyFuture.join())
+    ClusterTopologyAssert.assertThatClusterTopology(
+            clusterTopologyManager.getClusterTopology().join())
         .hasPendingOperationsWithSize(1);
   }
 

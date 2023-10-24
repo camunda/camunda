@@ -8,7 +8,7 @@
 package io.camunda.zeebe.topology.api;
 
 import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.scheduler.testing.TestActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.topology.changes.TopologyChangeCoordinator;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation;
@@ -20,27 +20,28 @@ final class RecordingChangeCoordinator implements TopologyChangeCoordinator {
   private ClusterTopology currentTopology = ClusterTopology.init();
   private final List<TopologyChangeOperation> lastAppliedOperation = new ArrayList<>();
 
-  @Override
-  public ActorFuture<ClusterTopology> applyOperations(
-      final List<TopologyChangeOperation> operations) {
-    lastAppliedOperation.clear();
-    lastAppliedOperation.addAll(operations);
-
-    return TestActorFuture.completedFuture(currentTopology.startTopologyChange(operations));
-  }
-
-  @Override
-  public ActorFuture<Boolean> hasCompletedChanges(final long version) {
-    return TestActorFuture.completedFuture(true);
-  }
-
-  @Override
-  public ActorFuture<ClusterTopology> getCurrentTopology() {
-    return TestActorFuture.completedFuture(currentTopology);
-  }
-
   public void setCurrentTopology(final ClusterTopology topology) {
     currentTopology = topology;
+  }
+
+  @Override
+  public ActorFuture<TopologyChangeResult> applyOperations(final TopologyChangeRequest request) {
+    final var operationsEither = request.operations(currentTopology);
+    if (operationsEither.isLeft()) {
+      return CompletableActorFuture.completedExceptionally(operationsEither.getLeft());
+    }
+
+    final var operations = operationsEither.get();
+    lastAppliedOperation.clear();
+    lastAppliedOperation.addAll(operations);
+    final var newTopology =
+        operations.isEmpty() ? currentTopology : currentTopology.startTopologyChange(operations);
+
+    return CompletableActorFuture.completed(
+        new TopologyChangeResult(
+            currentTopology,
+            newTopology, // This is not correct, but enough for tests
+            operations));
   }
 
   public List<TopologyChangeOperation> getLastAppliedOperation() {

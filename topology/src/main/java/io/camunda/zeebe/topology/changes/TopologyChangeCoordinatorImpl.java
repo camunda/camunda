@@ -32,78 +32,6 @@ public class TopologyChangeCoordinatorImpl implements TopologyChangeCoordinator 
   }
 
   @Override
-  public ActorFuture<ClusterTopology> applyOperations(
-      final List<TopologyChangeOperation> operations) {
-    final ActorFuture<ClusterTopology> future = executor.createFuture();
-
-    clusterTopologyManager
-        .getClusterTopology()
-        .onComplete(
-            (currentClusterTopology, errorOnGettingTopology) -> {
-              if (errorOnGettingTopology != null) {
-                future.completeExceptionally(errorOnGettingTopology);
-                return;
-              }
-
-              final ActorFuture<ClusterTopology> validation =
-                  validateTopologyChangeRequest(currentClusterTopology, operations);
-
-              validation.onComplete(
-                  (simulatedFinalTopology, validationError) -> {
-                    if (validationError != null) {
-                      future.completeExceptionally(validationError);
-                      return;
-                    }
-
-                    // if the validation was successful, apply the changes
-                    applyTopologyChange(
-                        operations, currentClusterTopology, simulatedFinalTopology, future);
-                  });
-            });
-    return future;
-  }
-
-  @Override
-  public ActorFuture<Boolean> hasCompletedChanges(final long version) {
-    final ActorFuture<Boolean> future = executor.createFuture();
-    clusterTopologyManager
-        .getClusterTopology()
-        .onComplete(
-            (currentClusterTopology, error) -> {
-              if (error != null) {
-                future.completeExceptionally(error);
-                return;
-              }
-
-              if (currentClusterTopology.version() == version) {
-                future.complete(!currentClusterTopology.hasPendingChanges());
-              } else if (currentClusterTopology.version() == version + 1) {
-                // We always increment the version, when the changes are completed.
-                future.complete(true);
-              } else if (currentClusterTopology.version() > version + 1) {
-                future.completeExceptionally(
-                    new UnknownStatus(
-                        String.format(
-                            "The topology has changed since the version %d. The current version is %d. The topology change would have been already completed.",
-                            version, currentClusterTopology.version())));
-              } else if (currentClusterTopology.version() < version) {
-                future.completeExceptionally(
-                    new IllegalArgumentException(
-                        String.format(
-                            "Expected version >= %d, but the current version is %d.",
-                            version, currentClusterTopology.version())));
-              }
-            });
-
-    return future;
-  }
-
-  @Override
-  public ActorFuture<ClusterTopology> getCurrentTopology() {
-    return clusterTopologyManager.getClusterTopology();
-  }
-
-  @Override
   public ActorFuture<TopologyChangeResult> applyOperations(final TopologyChangeRequest request) {
     final ActorFuture<TopologyChangeResult> future = executor.createFuture();
     clusterTopologyManager
@@ -262,12 +190,6 @@ public class TopologyChangeCoordinatorImpl implements TopologyChangeCoordinator 
 
   static class OperationNotAllowed extends RuntimeException {
     public OperationNotAllowed(final String message) {
-      super(message);
-    }
-  }
-
-  static class UnknownStatus extends RuntimeException {
-    public UnknownStatus(final String message) {
       super(message);
     }
   }
