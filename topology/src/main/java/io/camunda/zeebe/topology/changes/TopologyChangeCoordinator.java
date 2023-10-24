@@ -10,6 +10,7 @@ package io.camunda.zeebe.topology.changes;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation;
+import io.camunda.zeebe.util.Either;
 import java.util.List;
 
 public interface TopologyChangeCoordinator {
@@ -39,4 +40,16 @@ public interface TopologyChangeCoordinator {
   ActorFuture<Boolean> hasCompletedChanges(final long version);
 
   ActorFuture<ClusterTopology> getCurrentTopology();
+
+  ActorFuture<TopologyChangeResult> applyOperations(TopologyChangeRequest request);
+
+  record TopologyChangeResult(
+      ClusterTopology currentTopology,
+      ClusterTopology finalTopology,
+      List<TopologyChangeOperation> operations) {}
+
+  interface TopologyChangeRequest {
+    Either<Exception, List<TopologyChangeOperation>> operations(
+        final ClusterTopology currentTopology);
+  }
 }

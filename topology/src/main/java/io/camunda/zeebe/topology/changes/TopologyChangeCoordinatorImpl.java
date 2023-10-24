@@ -103,6 +103,62 @@ public class TopologyChangeCoordinatorImpl implements TopologyChangeCoordinator 
     return clusterTopologyManager.getClusterTopology();
   }
 
+  @Override
+  public ActorFuture<TopologyChangeResult> applyOperations(final TopologyChangeRequest request) {
+    final ActorFuture<TopologyChangeResult> future = executor.createFuture();
+    clusterTopologyManager
+        .getClusterTopology()
+        .onComplete(
+            (currentClusterTopology, errorOnGettingTopology) -> {
+              if (errorOnGettingTopology != null) {
+                future.completeExceptionally(errorOnGettingTopology);
+                return;
+              }
+
+              final var operationsEither = request.operations(currentClusterTopology);
+              if (operationsEither.isLeft()) {
+                future.completeExceptionally(operationsEither.getLeft());
+                return;
+              }
+              final var operations = operationsEither.get();
+              if (operations.isEmpty()) {
+                // No operations to apply
+                future.complete(
+                    new TopologyChangeResult(
+                        currentClusterTopology, currentClusterTopology, operations));
+                return;
+              }
+
+              final ActorFuture<ClusterTopology> validation =
+                  validateTopologyChangeRequest(currentClusterTopology, operations);
+
+              validation.onComplete(
+                  (simulatedFinalTopology, validationError) -> {
+                    if (validationError != null) {
+                      future.completeExceptionally(validationError);
+                      return;
+                    }
+
+                    // if the validation was successful, apply the changes
+                    final ActorFuture<ClusterTopology> applyFuture = executor.createFuture();
+                    applyTopologyChange(
+                        operations, currentClusterTopology, simulatedFinalTopology, applyFuture);
+
+                    applyFuture.onComplete(
+                        (ignore, error) -> {
+                          if (error == null) {
+                            future.complete(
+                                new TopologyChangeResult(
+                                    currentClusterTopology, simulatedFinalTopology, operations));
+                          } else {
+                            future.completeExceptionally(error);
+                          }
+                        });
+                  });
+            });
+    return future;
+  }
+
   private ActorFuture<ClusterTopology> validateTopologyChangeRequest(
       final ClusterTopology currentClusterTopology,
       final List<TopologyChangeOperation> operations) {
