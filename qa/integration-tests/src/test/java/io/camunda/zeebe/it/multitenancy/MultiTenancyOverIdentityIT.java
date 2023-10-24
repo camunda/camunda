@@ -13,6 +13,7 @@ import io.camunda.identity.sdk.Identity;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.response.ActivateJobsResponse;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
+import io.camunda.zeebe.client.api.response.BroadcastSignalResponse;
 import io.camunda.zeebe.client.api.response.CompleteJobResponse;
 import io.camunda.zeebe.client.api.response.DeploymentEvent;
 import io.camunda.zeebe.client.api.response.EvaluateDecisionResponse;
@@ -1029,6 +1030,61 @@ public class MultiTenancyOverIdentityIT {
           .withMessageContaining("PERMISSION_DENIED")
           .withMessageContaining(
               "Expected to handle gRPC request EvaluateDecision with tenant identifier 'tenant-b'")
+          .withMessageContaining("but tenant is not authorized to perform this request");
+    }
+  }
+
+  @Test
+  void shouldStartInstanceWhenBroadcastSignalForTenant() {
+    final String signalName = "signal";
+    process =
+        Bpmn.createExecutableProcess(processId).startEvent().signal(signalName).endEvent().done();
+    try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A)) {
+      // given
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(process, "process.bpmn")
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+
+      // when
+      final Future<BroadcastSignalResponse> result =
+          client.newBroadcastSignalCommand().signalName(signalName).tenantId(TENANT_A).send();
+
+      // then
+      assertThat(result)
+          .describedAs(
+              "Expect that signal can be broadcast as the client has access to the process of 'tenant-a'")
+          .succeedsWithin(Duration.ofSeconds(20));
+    }
+  }
+
+  @Test
+  void shouldDenyBroadcastSignalWhenUnauthorized() {
+    final String signalName = "signal";
+    process =
+        Bpmn.createExecutableProcess(processId).startEvent().signal(signalName).endEvent().done();
+    try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A)) {
+      // given
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(process, "process.bpmn")
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+
+      // when
+      final Future<BroadcastSignalResponse> result =
+          client.newBroadcastSignalCommand().signalName(signalName).tenantId(TENANT_B).send();
+
+      // then
+      assertThat(result)
+          .failsWithin(Duration.ofSeconds(10))
+          .withThrowableThat()
+          .withMessageContaining("PERMISSION_DENIED")
+          .withMessageContaining(
+              "Expected to handle gRPC request BroadcastSignal with tenant identifier 'tenant-b'")
           .withMessageContaining("but tenant is not authorized to perform this request");
     }
   }
