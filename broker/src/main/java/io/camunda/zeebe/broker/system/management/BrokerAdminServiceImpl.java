@@ -112,9 +112,12 @@ public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminSe
 
   private CompletableFuture<PartitionStatus> getPartitionStatus(final ZeebePartition partition) {
     final CompletableFuture<PartitionStatus> partitionStatus = new CompletableFuture<>();
-    final var currentRoleFuture = partition.getCurrentRole();
-    final var streamProcessorFuture = partition.getStreamProcessor();
-    final var exporterDirectorFuture = partition.getExporterDirector();
+    final var currentRoleFuture = partition != null ? partition.getCurrentRole() : null;
+    final var streamProcessorFuture = partition != null ? partition.getStreamProcessor() : null;
+    final var exporterDirectorFuture = partition != null ? partition.getExporterDirector() : null;
+    if (partition == null) {
+      LOG.warn("Partition is NULL");
+    }
     actor.runOnCompletion(
         List.of((ActorFuture) streamProcessorFuture, (ActorFuture) exporterDirectorFuture),
         error -> {
@@ -243,4 +246,5 @@ public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminSe
         .map(PartitionAdminAccess::resumeExporting)
         .collect(new ActorFutureCollector<>(actor));
   }
+
 }
