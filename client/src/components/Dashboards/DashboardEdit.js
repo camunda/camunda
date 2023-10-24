@@ -309,7 +309,6 @@ export class DashboardEdit extends React.Component {
                 this.setState({refreshRateSeconds: refreshRateMs / 1000 || null})
               }
             />
-            <div className="separator" />
           </EntityNameForm>
         </div>
         {availableFilters.length > 0 && (

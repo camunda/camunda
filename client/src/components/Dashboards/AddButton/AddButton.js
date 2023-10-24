@@ -6,8 +6,9 @@
  */
 
 import React, {useState} from 'react';
+import {Button} from '@carbon/react';
+import {Add} from '@carbon/icons-react';
 
-import {Button, Icon} from 'components';
 import {t} from 'translation';
 
 import CreateTileModal from './CreateTileModal';
@@ -47,9 +48,15 @@ export default function AddButton({addTile, existingReport}) {
 
   return (
     <>
-      <Button main className="AddButton tool-button" onClick={() => setOpen(true)}>
-        <Icon type="plus" /> {t('dashboard.addButton.addTile')}
-      </Button>
+      <Button
+        size="md"
+        kind="primary"
+        className="AddButton"
+        onClick={() => setOpen(true)}
+        hasIconOnly
+        renderIcon={Add}
+        iconDescription={t('dashboard.addButton.addTile')}
+      />
       {open && <CreateTileModal close={closeModal} confirm={onConfirm} />}
       {creatingNewReport && (
         <ReportCreationModal
