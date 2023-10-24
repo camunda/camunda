@@ -6,9 +6,12 @@
 package org.camunda.optimize.service.es.schema.index;
 
 import org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.xcontent.XContentBuilder;
 
 import java.io.IOException;
+
+import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_SHARDS_SETTING;
 
 public class ProcessInstanceIndexES extends ProcessInstanceIndex<XContentBuilder> {
 
@@ -20,4 +23,10 @@ public class ProcessInstanceIndexES extends ProcessInstanceIndex<XContentBuilder
     public XContentBuilder addStaticSetting(String key, int value, XContentBuilder contentBuilder) throws IOException {
         return contentBuilder.field(key, value);
     }
+
+  @Override
+  public XContentBuilder getStaticSettings(XContentBuilder xContentBuilder,
+                                           ConfigurationService configurationService) throws IOException {
+    return addStaticSetting(NUMBER_OF_SHARDS_SETTING, configurationService.getEsNumberOfShards(), xContentBuilder);
+  }
 }
