@@ -30,8 +30,11 @@ import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Internal Netty channel pool. */
+/**
+ * Internal Netty channel pool.
+ */
 class ChannelPool {
+
   private static final Logger LOGGER = LoggerFactory.getLogger(ChannelPool.class);
 
   private final Function<Address, CompletableFuture<Channel>> factory;
@@ -187,6 +190,10 @@ class ChannelPool {
   }
 
   private void logConnection(final Channel channel, final Throwable e) {
+    if (channel == null) {
+      LOGGER.debug("Failed to connect channel is null");
+      return;
+    }
     if (e == null) {
       LOGGER.debug("Connected to {}", channel.remoteAddress());
     } else {
