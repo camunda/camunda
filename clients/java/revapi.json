@@ -28,6 +28,13 @@
         {
           "justification": "Ignore new methods on all types, as these are not meant to be implemented but simply consumed; as such, new methods are perfectly fine to add",
           "code": "java.method.addedToInterface"
+        },
+        {
+          "ignore": true,
+          "code": "java.annotation.removed",
+          "old": "method java.lang.String io.camunda.zeebe.client.api.response.BroadcastSignalResponse::getTenantId()",
+          "new": "method java.lang.String io.camunda.zeebe.client.api.response.BroadcastSignalResponse::getTenantId()",
+          "justification": "The ExperimentalApi annotation was added to mark this method as 'in-development'. The functionality has since been implemented and the annotation isn't necessary."
         }
       ]
     }
