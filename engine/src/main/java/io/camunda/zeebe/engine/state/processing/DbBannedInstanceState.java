@@ -22,6 +22,8 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceRelatedIntent;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRelated;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
@@ -83,6 +85,13 @@ public final class DbBannedInstanceState implements MutableBannedInstanceState {
       }
     }
     return false;
+  }
+
+  @Override
+  public List<Long> getBannedProcessInstanceKeys() {
+    final List<Long> bannedInstanceKeys = new ArrayList<>();
+    bannedInstanceColumnFamily.forEach((key, nil) -> bannedInstanceKeys.add(key.getValue()));
+    return bannedInstanceKeys;
   }
 
   @Override

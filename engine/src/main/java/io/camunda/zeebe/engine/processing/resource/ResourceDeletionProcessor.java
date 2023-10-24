@@ -25,6 +25,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.deployment.DeployedDrg;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.deployment.PersistedDecision;
+import io.camunda.zeebe.engine.state.immutable.BannedInstanceState;
 import io.camunda.zeebe.engine.state.immutable.DecisionState;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
@@ -58,6 +59,7 @@ public class ResourceDeletionProcessor
   private final ProcessState processState;
   private final ElementInstanceState elementInstanceState;
   private final TimerInstanceState timerInstanceState;
+  private final BannedInstanceState bannedInstanceState;
   private final CatchEventBehavior catchEventBehavior;
   private final ExpressionProcessor expressionProcessor;
   private final StartEventSubscriptionManager startEventSubscriptionManager;
@@ -77,6 +79,7 @@ public class ResourceDeletionProcessor
     processState = processingState.getProcessState();
     elementInstanceState = processingState.getElementInstanceState();
     timerInstanceState = processingState.getTimerState();
+    bannedInstanceState = processingState.getBannedInstanceState();
     catchEventBehavior = bpmnBehaviors.catchEventBehavior();
     expressionProcessor = bpmnBehaviors.expressionBehavior();
     startEventSubscriptionManager =
@@ -214,8 +217,9 @@ public class ResourceDeletionProcessor
       }
     }
 
+    final var bannedInstances = bannedInstanceState.getBannedProcessInstanceKeys();
     final var hasRunningInstances =
-        elementInstanceState.hasActiveProcessInstances(process.getKey());
+        elementInstanceState.hasActiveProcessInstances(process.getKey(), bannedInstances);
 
     if (!hasRunningInstances) {
       stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), ProcessIntent.DELETED, processRecord);
