@@ -8,7 +8,6 @@
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
-import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerTask;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
@@ -24,21 +23,37 @@ public class UserTaskBehavior {
     this.stateWriter = stateWriter;
   }
 
-  public void createUserTask(
-      final BpmnElementContext context, final ExecutableJobWorkerTask element) {
-    final long userTaskKey = keyGenerator.nextKey();
+  public long createUserTask(final BpmnElementContext context) {
 
-    final UserTaskRecord userTaskRecord = new UserTaskRecord();
-    userTaskRecord
+    final long userTaskKey = keyGenerator.nextKey();
+    final UserTaskRecord userTaskRecord = createUserTaskRecordForContext(context);
+    stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CREATING, userTaskRecord);
+
+    return userTaskKey;
+  }
+
+  public void userTaskCreated(final BpmnElementContext context, final long userTaskKey) {
+
+    final UserTaskRecord userTaskRecord = createUserTaskRecordForContext(context);
+    stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CREATED, userTaskRecord);
+  }
+
+  public void invokeUserTaskListener(
+      final BpmnElementContext context, final long userTaskKey, final String listener) {
+
+    final UserTaskRecord userTaskRecord = createUserTaskRecordForContext(context);
+    userTaskRecord.setUserTaskListener(listener);
+    stateWriter.appendFollowUpEvent(
+        userTaskKey, UserTaskIntent.LISTENER_CREATING_READY, userTaskRecord);
+  }
+
+  private static UserTaskRecord createUserTaskRecordForContext(final BpmnElementContext context) {
+    return new UserTaskRecord()
         .setProcessInstanceKey(context.getProcessInstanceKey())
         .setProcessDefinitionKey(context.getProcessDefinitionKey())
         .setProcessDefinitionVersion(context.getProcessVersion())
         .setBpmnProcessId(context.getBpmnProcessId())
         .setElementId(context.getElementId())
         .setTenantId(context.getTenantId());
-
-    stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CREATING, userTaskRecord);
-    // cheating :D
-    stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CREATED, userTaskRecord);
   }
 }

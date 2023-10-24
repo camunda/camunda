@@ -29,6 +29,7 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -739,17 +740,20 @@ public final class UserTaskTest {
   }
 
   @Test
-  public void shouldInvokeUserTaskListener() {
-    ENGINE
-        .deployment()
-        .withXmlResource(
-            process(
-                userTask ->
-                    userTask.zeebeUserTaskListener(
-                        "my-listener", ZeebeUserTaskListenerEventType.CREATE)))
-        .deploy();
+  public void shouldCreateUserTaskWithoutListeners() {
+    // given
+    ENGINE.deployment().withXmlResource(process()).deploy();
 
+    // when
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    assertThat(
+            RecordingExporter.userTasksRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(2))
+        .extracting(Record::getIntent)
+        .contains(UserTaskIntent.CREATING, UserTaskIntent.CREATED);
 
     assertThat(
             RecordingExporter.processInstanceRecords()
@@ -757,13 +761,46 @@ public final class UserTaskTest {
                 .limitToProcessInstanceCompleted()
                 .withElementType(BpmnElementType.USER_TASK))
         .extracting(Record::getIntent)
-        .contains(ProcessInstanceIntent.ELEMENT_ACTIVATED);
+        .containsSequence(
+            ProcessInstanceIntent.ELEMENT_ACTIVATING, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+  }
 
+  @Test
+  public void shouldInvokeUserTaskListener() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            process(
+                userTask ->
+                    userTask.zeebeUserTaskListener(
+                        "first-listener", ZeebeUserTaskListenerEventType.CREATE)))
+        .deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
     assertThat(
             RecordingExporter.userTasksRecords()
                 .withProcessInstanceKey(processInstanceKey)
                 .limit(2))
         .extracting(Record::getIntent)
-        .contains(UserTaskIntent.CREATING, UserTaskIntent.CREATED);
+        .contains(UserTaskIntent.CREATING, UserTaskIntent.LISTENER_CREATING_READY);
+
+    final Record<UserTaskRecordValue> userTaskListenerReady =
+        RecordingExporter.userTasksRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withIntent(UserTaskIntent.LISTENER_CREATING_READY)
+            .getFirst();
+    assertThat(userTaskListenerReady.getValue().getUserTaskListener()).isEqualTo("first-listener");
+
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted()
+                .withElementType(BpmnElementType.USER_TASK))
+        .extracting(Record::getIntent)
+        .contains(ProcessInstanceIntent.ELEMENT_ACTIVATING);
   }
 }

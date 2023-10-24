@@ -35,6 +35,8 @@ public class UserTaskRecord extends UnifiedRecordValue implements UserTaskRecord
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
+  private final StringProperty listenerProp = new StringProperty("userTaskListener", "");
+
   public UserTaskRecord() {
     declareProperty(processInstanceKeyProp)
         .declareProperty(bpmnProcessIdProp)
@@ -42,7 +44,8 @@ public class UserTaskRecord extends UnifiedRecordValue implements UserTaskRecord
         .declareProperty(processDefinitionKeyProp)
         .declareProperty(elementIdProp)
         .declareProperty(elementInstanceKeyProp)
-        .declareProperty(tenantIdProp);
+        .declareProperty(tenantIdProp)
+        .declareProperty(listenerProp);
   }
 
   public void wrap(final UserTaskRecord record) {
@@ -53,6 +56,7 @@ public class UserTaskRecord extends UnifiedRecordValue implements UserTaskRecord
     elementIdProp.setValue(record.getElementId());
     elementInstanceKeyProp.setValue(record.getElementInstanceKey());
     tenantIdProp.setValue(record.getTenantId());
+    listenerProp.setValue(record.getUserTaskListener());
   }
 
   @Override
@@ -102,6 +106,16 @@ public class UserTaskRecord extends UnifiedRecordValue implements UserTaskRecord
 
   public UserTaskRecord setProcessDefinitionKey(final long processDefinitionKey) {
     processDefinitionKeyProp.setValue(processDefinitionKey);
+    return this;
+  }
+
+  @Override
+  public String getUserTaskListener() {
+    return bufferAsString(listenerProp.getValue());
+  }
+
+  public UserTaskRecord setUserTaskListener(final String listener) {
+    listenerProp.setValue(listener);
     return this;
   }
 

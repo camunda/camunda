@@ -19,8 +19,8 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehav
 import io.camunda.zeebe.engine.processing.bpmn.behavior.UserTaskBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerTask;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
+import io.camunda.zeebe.engine.processing.deployment.model.element.UserTaskListener;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeUserTaskListenerEventType;
-import java.util.stream.Collectors;
 
 /**
  * A BPMN processor for tasks that are based on jobs and should be processed by job workers. For
@@ -66,17 +66,21 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
               final ExecutableUserTask userTask = element.getUserTask();
               if (userTask != null) {
 
-                userTaskBehavior.createUserTask(context, element);
+                final long userTaskKey = userTaskBehavior.createUserTask(context);
 
-                final String listeners =
-                    userTask.getListeners(ZeebeUserTaskListenerEventType.CREATE).stream()
-                        .map(listener -> listener.getName())
-                        .collect(Collectors.joining(","));
+                final var listeners = userTask.getListeners(ZeebeUserTaskListenerEventType.CREATE);
 
-                System.out.println("I found user task listeners: " + listeners);
+                if (listeners.isEmpty()) {
+                  userTaskBehavior.userTaskCreated(context, userTaskKey);
+
+                  stateTransitionBehavior.transitionToActivated(context, element.getEventType());
+
+                } else {
+                  final UserTaskListener firstListener = listeners.getFirst();
+                  userTaskBehavior.invokeUserTaskListener(
+                      context, userTaskKey, firstListener.getName());
+                }
               }
-
-              stateTransitionBehavior.transitionToActivated(context, element.getEventType());
             },
             failure -> incidentBehavior.createIncident(failure, context));
   }

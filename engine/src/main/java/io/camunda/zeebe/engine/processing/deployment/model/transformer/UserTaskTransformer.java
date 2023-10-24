@@ -71,8 +71,11 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
     final ZeebeUserTaskListener userTaskListenerExtension =
         element.getSingleExtensionElement(ZeebeUserTaskListener.class);
 
-    theUserTask.addListener(
-        userTaskListenerExtension.name(), userTaskListenerExtension.eventType());
+    if (userTaskListenerExtension != null) {
+      // TODO: get a list of listeners
+      theUserTask.addListener(
+          userTaskListenerExtension.name(), userTaskListenerExtension.eventType());
+    }
 
     userTask.setUserTask(theUserTask);
   }

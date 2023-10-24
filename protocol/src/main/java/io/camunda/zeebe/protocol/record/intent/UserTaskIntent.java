@@ -16,8 +16,15 @@
 package io.camunda.zeebe.protocol.record.intent;
 
 public enum UserTaskIntent implements ProcessInstanceRelatedIntent {
+
+  // user task lifecycle
   CREATING(0),
-  CREATED(1);
+  CREATED(1),
+
+  // listener lifecycle
+  LISTENER_CREATING_READY(2),
+  LISTENER_CREATING_DONE(3),
+  ;
 
   private final short value;
 
@@ -35,6 +42,10 @@ public enum UserTaskIntent implements ProcessInstanceRelatedIntent {
         return CREATING;
       case 1:
         return CREATED;
+      case 2:
+        return LISTENER_CREATING_READY;
+      case 3:
+        return LISTENER_CREATING_DONE;
       default:
         return UNKNOWN;
     }

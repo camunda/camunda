@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.deployment.model.element;
 
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeUserTaskListenerEventType;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,6 +33,6 @@ public class ExecutableUserTask {
   }
 
   public List<UserTaskListener> getListeners(final ZeebeUserTaskListenerEventType eventType) {
-    return listeners.get(eventType);
+    return listeners.getOrDefault(eventType, Collections.emptyList());
   }
 }
