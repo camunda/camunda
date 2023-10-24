@@ -44,4 +44,6 @@ public interface MutableMigrationState extends MigrationState {
   void migrateProcessMessageSubscriptionForMultiTenancy();
 
   void migrateJobStateForMultiTenancy();
+
+  void migrateSignalSubscriptionStateForMultiTenancy();
 }

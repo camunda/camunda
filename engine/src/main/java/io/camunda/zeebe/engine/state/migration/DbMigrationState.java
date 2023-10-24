@@ -30,6 +30,7 @@ import io.camunda.zeebe.engine.state.migration.to_8_3.DbMessageStartEventSubscri
 import io.camunda.zeebe.engine.state.migration.to_8_3.DbMessageSubscriptionMigrationState;
 import io.camunda.zeebe.engine.state.migration.to_8_3.DbProcessMessageSubscriptionMigrationState;
 import io.camunda.zeebe.engine.state.migration.to_8_3.DbProcessMigrationState;
+import io.camunda.zeebe.engine.state.migration.to_8_4.DbSignalSubscriptionMigrationState;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
@@ -117,6 +118,7 @@ public class DbMigrationState implements MutableMigrationState {
   private final DbMessageSubscriptionMigrationState messageSubscriptionMigrationState;
   private final DbProcessMessageSubscriptionMigrationState processMessageSubscriptionMigrationState;
   private final DbJobMigrationState jobMigrationState;
+  private final DbSignalSubscriptionMigrationState signalSubscriptionMigrationState;
 
   public DbMigrationState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
@@ -260,6 +262,9 @@ public class DbMigrationState implements MutableMigrationState {
     processMessageSubscriptionMigrationState =
         new DbProcessMessageSubscriptionMigrationState(zeebeDb, transactionContext);
     jobMigrationState = new DbJobMigrationState(zeebeDb, transactionContext);
+
+    signalSubscriptionMigrationState =
+        new DbSignalSubscriptionMigrationState(zeebeDb, transactionContext);
   }
 
   @Override
@@ -446,6 +451,11 @@ public class DbMigrationState implements MutableMigrationState {
   @Override
   public void migrateJobStateForMultiTenancy() {
     jobMigrationState.migrateJobStateForMultiTenancy();
+  }
+
+  @Override
+  public void migrateSignalSubscriptionStateForMultiTenancy() {
+    signalSubscriptionMigrationState.migrateSignalSubscriptionStateForMultiTenancy();
   }
 
   @Override
