@@ -27,13 +27,16 @@ public final class SignalSubscriptionRecord extends UnifiedRecordValue
   private final StringProperty catchEventIdProp = new StringProperty("catchEventId", "");
   private final LongProperty catchEventInstanceKeyProp =
       new LongProperty("catchEventInstanceKey", -1L);
+  private final StringProperty tenantIdProp =
+      new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
   public SignalSubscriptionRecord() {
     declareProperty(processDefinitionKeyProp)
         .declareProperty(signalNameProp)
         .declareProperty(catchEventIdProp)
         .declareProperty(bpmnProcessIdProp)
-        .declareProperty(catchEventInstanceKeyProp);
+        .declareProperty(catchEventInstanceKeyProp)
+        .declareProperty(tenantIdProp);
   }
 
   public void wrap(final SignalSubscriptionRecord record) {
@@ -42,6 +45,7 @@ public final class SignalSubscriptionRecord extends UnifiedRecordValue
     signalNameProp.setValue(record.getSignalNameBuffer());
     catchEventIdProp.setValue(record.getCatchEventId());
     catchEventInstanceKeyProp.setValue(record.getCatchEventInstanceKey());
+    tenantIdProp.setValue(record.getTenantId());
   }
 
   @JsonIgnore
@@ -117,7 +121,11 @@ public final class SignalSubscriptionRecord extends UnifiedRecordValue
 
   @Override
   public String getTenantId() {
-    // todo(#13336): replace dummy implementation
-    return TenantOwned.DEFAULT_TENANT_IDENTIFIER;
+    return bufferAsString(tenantIdProp.getValue());
+  }
+
+  public SignalSubscriptionRecord setTenantId(final String tenantId) {
+    tenantIdProp.setValue(tenantId);
+    return this;
   }
 }

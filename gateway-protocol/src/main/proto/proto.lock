@@ -1187,6 +1187,11 @@
                 "id": 2,
                 "name": "variables",
                 "type": "string"
+              },
+              {
+                "id": 3,
+                "name": "tenantId",
+                "type": "string"
               }
             ]
           },
@@ -1197,6 +1202,11 @@
                 "id": 1,
                 "name": "key",
                 "type": "int64"
+              },
+              {
+                "id": 2,
+                "name": "tenantId",
+                "type": "string"
               }
             ]
           }
