@@ -62,6 +62,7 @@ import io.netty.handler.codec.compression.ZlibWrapper;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslProvider;
+import io.netty.resolver.dns.BiDnsQueryLifecycleObserverFactory;
 import io.netty.resolver.dns.DnsAddressResolverGroup;
 import io.netty.resolver.dns.DnsNameResolverBuilder;
 import io.netty.resolver.dns.LoggingDnsQueryLifeCycleObserverFactory;
@@ -377,11 +378,14 @@ public final class NettyMessagingService implements ManagedMessagingService {
         .thenCompose(ok -> bootstrapServer())
         .thenRun(
             () -> {
+              final var metrics = new NettyDnsMetrics();
               dnsResolverGroup =
                   new DnsAddressResolverGroup(
                       new DnsNameResolverBuilder(clientGroup.next())
                           .dnsQueryLifecycleObserverFactory(
-                              new LoggingDnsQueryLifeCycleObserverFactory())
+                              new BiDnsQueryLifecycleObserverFactory(
+                                  ignored -> metrics,
+                                  new LoggingDnsQueryLifeCycleObserverFactory()))
                           .channelType(clientDataGramChannelClass));
               timeoutExecutor =
                   Executors.newSingleThreadScheduledExecutor(
