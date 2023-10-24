@@ -413,6 +413,12 @@
       <scope>test</scope>
     </dependency>
 
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>identity-sdk</artifactId>
+      <scope>test</scope>
+    </dependency>
+
   </dependencies>
 
   <build>

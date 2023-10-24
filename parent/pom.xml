@@ -1089,6 +1089,12 @@
         <version>${version.jetbrains-annotations}</version>
       </dependency>
 
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>identity-sdk</artifactId>
+        <version>${version.identity}</version>
+      </dependency>
+
       <!-- Dependencies present for convergence only -->
       <!-- between log4j2 and commons-compress (from testcontainers) -->
       <dependency>
