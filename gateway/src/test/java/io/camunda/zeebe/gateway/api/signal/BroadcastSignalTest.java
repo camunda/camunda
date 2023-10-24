@@ -30,13 +30,14 @@ public class BroadcastSignalTest extends GatewayTest {
     final BroadcastSignalStub stub = new BroadcastSignalStub();
     stub.registerWith(brokerClient);
 
+    final String tenantId = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
     final String variables = JsonUtil.toJson(Collections.singletonMap("key", "value"));
 
     final BroadcastSignalRequest request =
         BroadcastSignalRequest.newBuilder()
             .setSignalName("signal")
             .setVariables(variables)
-            .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+            .setTenantId(tenantId)
             .build();
 
     // when
@@ -52,6 +53,8 @@ public class BroadcastSignalTest extends GatewayTest {
     final SignalRecord brokerRequestValue = brokerRequest.getRequestWriter();
     assertThat(brokerRequestValue.getSignalName()).isEqualTo(request.getSignalName());
     MsgPackUtil.assertEqualityExcluding(brokerRequestValue.getVariablesBuffer(), variables);
-    assertThat(brokerRequestValue.getTenantId()).isEqualTo(request.getTenantId());
+    assertThat(brokerRequestValue.getTenantId())
+        .isEqualTo(request.getTenantId())
+        .isEqualTo(tenantId);
   }
 }
