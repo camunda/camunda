@@ -12,6 +12,8 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.engine.state.appliers.FormCreatedApplier;
+import io.camunda.zeebe.engine.state.appliers.FormDeletedApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableFormState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
@@ -26,17 +28,21 @@ public class FormStateTest {
   private final String tenantId = "<default>";
   private MutableProcessingState processingState;
   private MutableFormState formState;
+  private FormCreatedApplier formCreatedApplier;
+  private FormDeletedApplier formDeletedApplier;
 
   @BeforeEach
   public void setup() {
     formState = processingState.getFormState();
+    formCreatedApplier = new FormCreatedApplier(formState);
+    formDeletedApplier = new FormDeletedApplier(formState);
   }
 
   @Test
   void shouldStoreForm() {
     // given
     final var formRecord = sampleFormRecord();
-    formState.storeFormRecord(formRecord);
+    formCreatedApplier.applyState(formRecord.getFormKey(), formRecord);
 
     // when
     final var maybePersistedForm = formState.findFormByKey(formRecord.getFormKey(), tenantId);
@@ -57,10 +63,10 @@ public class FormStateTest {
   void shouldFindLatestByFormId() {
     // given
     final var formRecord1 = sampleFormRecord();
-    formState.storeFormRecord(formRecord1);
+    formCreatedApplier.applyState(formRecord1.getFormKey(), formRecord1);
 
     final var formRecord2 = sampleFormRecord(2, 2L);
-    formState.storeFormRecord(formRecord2);
+    formCreatedApplier.applyState(formRecord2.getFormKey(), formRecord2);
 
     // when
     final var maybePersistedForm =
@@ -100,13 +106,13 @@ public class FormStateTest {
   void shouldNotFindFormAfterDeletion() {
     // given
     final var form = sampleFormRecord();
-    formState.storeFormRecord(form);
+    formCreatedApplier.applyState(form.getFormKey(), form);
 
     assertThat(formState.findLatestFormById(form.getFormIdBuffer(), form.getTenantId()))
         .isNotEmpty();
 
     // when
-    formState.deleteForm(form);
+    formDeletedApplier.applyState(form.getFormKey(), form);
 
     // then
     assertThat(formState.findLatestFormById(form.getFormIdBuffer(), form.getTenantId())).isEmpty();
@@ -117,8 +123,8 @@ public class FormStateTest {
     // given
     final var formV1 = sampleFormRecord();
     final var formV2 = sampleFormRecord(2, 2L);
-    formState.storeFormRecord(formV1);
-    formState.storeFormRecord(formV2);
+    formCreatedApplier.applyState(formV1.getFormKey(), formV1);
+    formCreatedApplier.applyState(formV2.getFormKey(), formV2);
 
     final var latestFormOpt =
         formState.findLatestFormById(formV2.getFormIdBuffer(), formV2.getTenantId());
@@ -126,7 +132,7 @@ public class FormStateTest {
     assertThat(latestFormOpt.get().getVersion()).isEqualTo(2);
 
     // when
-    formState.deleteForm(formV2);
+    formDeletedApplier.applyState(formV2.getFormKey(), formV2);
 
     // then
     final var latestFormV1Opt =
@@ -140,8 +146,8 @@ public class FormStateTest {
     // given
     final var formV1 = sampleFormRecord();
     final var formV2 = sampleFormRecord(2, 2L);
-    formState.storeFormRecord(formV1);
-    formState.storeFormRecord(formV2);
+    formCreatedApplier.applyState(formV1.getFormKey(), formV1);
+    formCreatedApplier.applyState(formV2.getFormKey(), formV2);
 
     final var latestFormOpt =
         formState.findLatestFormById(formV2.getFormIdBuffer(), formV2.getTenantId());
@@ -149,13 +155,31 @@ public class FormStateTest {
     assertThat(latestFormOpt.get().getVersion()).isEqualTo(2);
 
     // when
-    formState.deleteForm(formV1);
+    formDeletedApplier.applyState(formV1.getFormKey(), formV1);
 
     // then
     final var latestFormV2Opt =
         formState.findLatestFormById(formV2.getFormIdBuffer(), formV2.getTenantId());
     assertThat(latestFormV2Opt).isNotEmpty();
     assertThat(latestFormV2Opt.get().getVersion()).isEqualTo(2);
+  }
+
+  @Test
+  void shouldNotReuseADeletedVersionNumber() {
+    // given
+    final var form = sampleFormRecord();
+    formCreatedApplier.applyState(form.getFormKey(), form);
+    final var formV2 = sampleFormRecord(2, 2L);
+    formCreatedApplier.applyState(formV2.getFormKey(), formV2);
+
+    // when
+    formDeletedApplier.applyState(form.getFormKey(), form);
+    formDeletedApplier.applyState(formV2.getFormKey(), formV2);
+
+    // then
+    final var nextAvailableVersion =
+        formState.getNextFormVersion(form.getFormId(), form.getTenantId());
+    assertThat(nextAvailableVersion).isEqualTo(3);
   }
 
   private FormRecord sampleFormRecord(final int version, final long key) {

@@ -11,6 +11,8 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.engine.state.appliers.FormCreatedApplier;
+import io.camunda.zeebe.engine.state.appliers.FormDeletedApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableFormState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateRule;
@@ -30,12 +32,16 @@ public class FormStateMultiTenantTest {
   private MutableFormState formState;
   private MutableProcessingState processingState;
   private KeyGenerator keyGenerator;
+  private FormCreatedApplier formCreatedApplier;
+  private FormDeletedApplier formDeletedApplier;
 
   @Before
   public void setUp() {
     processingState = stateRule.getProcessingState();
     formState = processingState.getFormState();
     keyGenerator = processingState.getKeyGenerator();
+    formCreatedApplier = new FormCreatedApplier(formState);
+    formDeletedApplier = new FormDeletedApplier(formState);
   }
 
   @Test
@@ -48,8 +54,8 @@ public class FormStateMultiTenantTest {
     final var tenant2Form = createFormRecord(formKey, formId, version, TENANT_2);
 
     // when
-    formState.storeFormRecord(tenant1Form);
-    formState.storeFormRecord(tenant2Form);
+    formCreatedApplier.applyState(tenant1Form.getFormKey(), tenant1Form);
+    formCreatedApplier.applyState(tenant2Form.getFormKey(), tenant2Form);
 
     // then
     var form1 = formState.findFormByKey(formKey, TENANT_1).orElseThrow();
@@ -72,11 +78,11 @@ public class FormStateMultiTenantTest {
     final var tenant1Form = createFormRecord(formKey, formId, version, TENANT_1);
     final var tenant2Form = createFormRecord(formKey, formId, version, TENANT_2);
 
-    formState.storeFormRecord(tenant1Form);
-    formState.storeFormRecord(tenant2Form);
+    formCreatedApplier.applyState(tenant1Form.getFormKey(), tenant1Form);
+    formCreatedApplier.applyState(tenant2Form.getFormKey(), tenant2Form);
 
     // when
-    formState.deleteForm(tenant1Form);
+    formDeletedApplier.applyState(tenant1Form.getFormKey(), tenant1Form);
 
     // then
     assertThat(formState.findLatestFormById(tenant1Form.getFormIdBuffer(), TENANT_1)).isEmpty();
