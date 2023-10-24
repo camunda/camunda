@@ -49,9 +49,6 @@
   baseBranches: [
     "master",
     "maintenance/3.11",
-    "maintenance/3.10",
-    "maintenance/3.9",
-    "maintenance/3.7",
   ],
   // This ignores are the ones comming by default from config:base with exception to **/test/**
   // We do this to be able to test files in docker/test directory
@@ -88,6 +85,18 @@
     },
   },
   packageRules: [
+    // Ignore deps
+    {
+      "matchPackageNames": [
+        "org.camunda.optimize:optimize-data-generator",
+        "org.camunda.optimize:camunda-optimize",
+        "org.camunda.optimize:util",
+        "io.camunda:identity-sdk",
+        "io.camunda:zeebe-client-java",
+        "io.camunda:zeebe-protocol",
+      ],
+      "enabled": false
+    },
     // Frontend deps
     {
       addLabels: ["frontend"],
