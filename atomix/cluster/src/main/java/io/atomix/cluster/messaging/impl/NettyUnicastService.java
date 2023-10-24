@@ -52,6 +52,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
+import org.agrona.CloseHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -149,12 +150,8 @@ public class NettyUnicastService implements ManagedUnicastService {
                 })
             .option(ChannelOption.RCVBUF_ALLOCATOR, new DefaultMaxBytesRecvByteBufAllocator())
             .option(ChannelOption.SO_BROADCAST, true)
-            .option(ChannelOption.SO_REUSEADDR, true);
-    dnsAddressResolverGroup =
-        new DnsAddressResolverGroup(
-            new DnsNameResolverBuilder(group.next())
-                .dnsQueryLifecycleObserverFactory(new LoggingDnsQueryLifeCycleObserverFactory())
-                .channelType(NioDatagramChannel.class));
+            .option(ChannelOption.SO_REUSEADDR, true)
+            .resolver(dnsAddressResolverGroup);
 
     return bind(serverBootstrap);
   }
@@ -202,7 +199,16 @@ public class NettyUnicastService implements ManagedUnicastService {
   public CompletableFuture<UnicastService> start() {
     group = new NioEventLoopGroup(0, namedThreads("netty-unicast-event-nio-client-%d", log));
     return bootstrap()
-        .thenRun(() -> started.set(true))
+        .thenRun(
+            () -> {
+              started.set(true);
+              dnsAddressResolverGroup =
+                  new DnsAddressResolverGroup(
+                      new DnsNameResolverBuilder(group.next())
+                          .dnsQueryLifecycleObserverFactory(
+                              new LoggingDnsQueryLifeCycleObserverFactory())
+                          .channelType(NioDatagramChannel.class));
+            })
         .thenApply(
             v -> {
               log.info(
@@ -230,9 +236,13 @@ public class NettyUnicastService implements ManagedUnicastService {
   private void doStop() {
     boolean interrupted = false;
     if (channel != null) {
+
       try {
         channel.close().sync();
-        dnsAddressResolverGroup.close();
+        if (dnsAddressResolverGroup != null) {
+          CloseHelper.close(
+              error -> log.warn("Failed to close DNS resolvers", error), dnsAddressResolverGroup);
+        }
       } catch (final InterruptedException e) {
         interrupted = true;
       }
