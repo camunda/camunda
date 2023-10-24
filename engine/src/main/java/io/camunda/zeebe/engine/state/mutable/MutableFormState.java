@@ -13,18 +13,18 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.FormRecord;
 public interface MutableFormState extends FormState {
 
   /**
-   * Put the given form in FORMS column
+   * Put the given form in FORMS column family
    *
    * @param record the record of the form
    */
-  void storeFormInFormColumn(FormRecord record);
+  void storeFormInFormColumnFamily(FormRecord record);
 
   /**
-   * Put the given form in FORM_BY_ID_AND_VERSION column
+   * Put the given form in FORM_BY_ID_AND_VERSION column family
    *
    * @param record the record of the form
    */
-  void storeFormInFormByIdAndVersionColumn(FormRecord record);
+  void storeFormInFormByIdAndVersionColumnFamily(FormRecord record);
 
   /**
    * Update the latest version of the form if it is newer.
@@ -34,37 +34,23 @@ public interface MutableFormState extends FormState {
   void updateLatestVersion(FormRecord record);
 
   /**
-   * Put the given form into the cache
-   *
-   * @param record the record of the form
-   */
-  void updateLatestFormCache(FormRecord record);
-
-  /**
    * Deletes a form from FORMS column family
    *
    * @param record the record of the form that is deleted
    */
-  void deleteFormInFormsColumn(FormRecord record);
+  void deleteFormInFormsColumnFamily(FormRecord record);
 
   /**
    * Deletes a form from FORM_BY_ID_AND_VERSION column family
    *
    * @param record the record of the form that is deleted
    */
-  void deleteFormInFormByIdAndVersionColumn(FormRecord record);
-
-  /**
-   * Deletes a form from the cache
-   *
-   * @param record the record of the form that is deleted
-   */
-  void deleteFormFromCache(FormRecord record);
+  void deleteFormInFormByIdAndVersionColumnFamily(FormRecord record);
 
   /**
    * Deletes a form from FORM_VERSION column family
    *
    * @param record the record of the form that is deleted
    */
-  void deleteFormInFormVersionColumn(FormRecord record);
+  void deleteFormInFormVersionColumnFamily(FormRecord record);
 }

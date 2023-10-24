@@ -22,9 +22,8 @@ public class FormCreatedApplier implements TypedEventApplier<FormIntent, FormRec
 
   @Override
   public void applyState(final long formKey, final FormRecord value) {
-    formState.storeFormInFormColumn(value);
-    formState.storeFormInFormByIdAndVersionColumn(value);
+    formState.storeFormInFormColumnFamily(value);
+    formState.storeFormInFormByIdAndVersionColumnFamily(value);
     formState.updateLatestVersion(value);
-    formState.updateLatestFormCache(value);
   }
 }

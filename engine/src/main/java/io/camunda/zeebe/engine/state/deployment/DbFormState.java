@@ -70,15 +70,18 @@ public class DbFormState implements MutableFormState {
   }
 
   @Override
-  public void storeFormInFormColumn(final FormRecord record) {
+  public void storeFormInFormColumnFamily(final FormRecord record) {
     tenantIdKey.wrapString(record.getTenantId());
     dbFormKey.wrapLong(record.getFormKey());
     dbPersistedForm.wrap(record);
     formsByKey.upsert(tenantAwareFormKey, dbPersistedForm);
+    formByTenantAndIdCache.put(
+        new TenantIdAndFormId(record.getTenantId(), record.getFormIdBuffer()),
+        dbPersistedForm.copy());
   }
 
   @Override
-  public void storeFormInFormByIdAndVersionColumn(final FormRecord record) {
+  public void storeFormInFormByIdAndVersionColumnFamily(final FormRecord record) {
     tenantIdKey.wrapString(record.getTenantId());
     dbFormId.wrapString(record.getFormId());
     formVersion.wrapLong(record.getVersion());
@@ -93,21 +96,16 @@ public class DbFormState implements MutableFormState {
   }
 
   @Override
-  public void updateLatestFormCache(final FormRecord record) {
-    formByTenantAndIdCache.put(
-        new TenantIdAndFormId(record.getTenantId(), record.getFormIdBuffer()),
-        dbPersistedForm.copy());
-  }
-
-  @Override
-  public void deleteFormInFormsColumn(final FormRecord record) {
+  public void deleteFormInFormsColumnFamily(final FormRecord record) {
     tenantIdKey.wrapString(record.getTenantId());
     dbFormKey.wrapLong(record.getFormKey());
     formsByKey.deleteExisting(tenantAwareFormKey);
+    formByTenantAndIdCache.remove(
+        new TenantIdAndFormId(record.getTenantId(), record.getFormIdBuffer()));
   }
 
   @Override
-  public void deleteFormInFormByIdAndVersionColumn(final FormRecord record) {
+  public void deleteFormInFormByIdAndVersionColumnFamily(final FormRecord record) {
     tenantIdKey.wrapString(record.getTenantId());
     dbFormId.wrapString(record.getFormId());
     formVersion.wrapLong(record.getVersion());
@@ -115,13 +113,7 @@ public class DbFormState implements MutableFormState {
   }
 
   @Override
-  public void deleteFormFromCache(final FormRecord record) {
-    formByTenantAndIdCache.remove(
-        new TenantIdAndFormId(record.getTenantId(), record.getFormIdBuffer()));
-  }
-
-  @Override
-  public void deleteFormInFormVersionColumn(final FormRecord record) {
+  public void deleteFormInFormVersionColumnFamily(final FormRecord record) {
     versionManager.deleteResourceVersion(
         record.getFormId(), record.getVersion(), record.getTenantId());
   }

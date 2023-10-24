@@ -7,17 +7,12 @@
  */
 package io.camunda.zeebe.engine.state.deployment;
 
-import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsArray;
-import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.engine.state.appliers.FormCreatedApplier;
-import io.camunda.zeebe.engine.state.appliers.FormDeletedApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableFormState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
-import io.camunda.zeebe.protocol.impl.record.value.deployment.FormRecord;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -33,6 +28,7 @@ public class FormStateTest {
   public void setup() {
     formState = processingState.getFormState();
   }
+
   @Test
   void shouldReturnEmptyIfNoFormIsDeployedForFormId() {
     // when
