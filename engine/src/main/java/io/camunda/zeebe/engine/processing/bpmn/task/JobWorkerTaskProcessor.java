@@ -79,11 +79,15 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
                 } else {
                   final UserTaskListener firstListener = listeners.getFirst();
 
+                  // using the job type is very hacky but maybe we could have a type info property
+                  // in the job itself
+
                   // prefix_event-type_listener-name
                   final String jobType =
                       "_userTaskListener_%s_%s"
                           .formatted(firstListener.getEventType().name(), firstListener.getName());
-                  jobBehavior.createNewJob(context, element, jobProperties.type(jobType));
+                  jobBehavior.createNewUserTaskJob(
+                      context, element, jobProperties, jobType, userTaskKey);
                 }
               } else {
                 jobBehavior.createNewJob(context, element, jobProperties);

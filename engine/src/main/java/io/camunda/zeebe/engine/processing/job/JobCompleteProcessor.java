@@ -16,11 +16,14 @@ import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
+import io.camunda.zeebe.engine.state.usertask.UserTaskState;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
 public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
@@ -29,6 +32,9 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
       "Expected to update retries for job with key '%d', but no such job was found";
 
   private final JobState jobState;
+
+  private final UserTaskState userTaskState;
+
   private final ElementInstanceState elementInstanceState;
   private final DefaultJobCommandPreconditionGuard defaultProcessor;
   private final JobMetrics jobMetrics;
@@ -37,6 +43,7 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
   public JobCompleteProcessor(
       final ProcessingState state, final JobMetrics jobMetrics, final EventHandle eventHandle) {
     jobState = state.getJobState();
+    userTaskState = state.getUserTaskState();
     elementInstanceState = state.getElementInstanceState();
     defaultProcessor =
         new DefaultJobCommandPreconditionGuard("complete", jobState, this::acceptCommand);
@@ -61,6 +68,31 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
     final var serviceTaskKey = value.getElementInstanceKey();
 
     final ElementInstance serviceTask = elementInstanceState.getInstance(serviceTaskKey);
+
+    if (value.getType().startsWith("_userTaskListener")) {
+      // this is a user task listener job
+
+      // find the user task
+      final String userTaskKeyAsString = value.getCustomHeaders().get("userTaskKey");
+      final Long userTaskKey = Long.valueOf(userTaskKeyAsString);
+
+      final UserTaskRecord userTask = userTaskState.get(userTaskKey);
+
+      // validate user task
+
+      // check if there are more listeners
+
+      stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CREATED, userTask);
+
+      // transition the element instance
+      stateWriter.appendFollowUpEvent(
+          value.getElementInstanceKey(),
+          ProcessInstanceIntent.ELEMENT_ACTIVATED,
+          serviceTask.getValue());
+
+      // the end
+      return;
+    }
 
     if (serviceTask != null) {
       final long scopeKey = serviceTask.getValue().getFlowScopeKey();

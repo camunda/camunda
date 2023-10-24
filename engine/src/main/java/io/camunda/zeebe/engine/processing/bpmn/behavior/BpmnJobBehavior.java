@@ -118,6 +118,39 @@ public final class BpmnJobBehavior {
     jobMetrics.jobCreated(jobProperties.getType());
   }
 
+  public void createNewUserTaskJob(
+      final BpmnElementContext context,
+      final ExecutableJobWorkerElement element,
+      final JobProperties jobProperties,
+      final String jobType,
+      final long userTaskKey) {
+
+    final var taskHeaders = element.getJobWorkerProperties().getTaskHeaders();
+
+    final HashMap<String, String> modifiableHeaders = new HashMap<>(taskHeaders);
+    modifiableHeaders.put("userTaskKey", String.valueOf(userTaskKey));
+    final var encodedHeaders = encodeHeaders(modifiableHeaders, jobProperties);
+
+    jobRecord
+        .setType(jobType)
+        .setRetries(jobProperties.getRetries().intValue())
+        .setCustomHeaders(encodedHeaders)
+        .setBpmnProcessId(context.getBpmnProcessId())
+        .setProcessDefinitionVersion(context.getProcessVersion())
+        .setProcessDefinitionKey(context.getProcessDefinitionKey())
+        .setProcessInstanceKey(context.getProcessInstanceKey())
+        .setElementId(element.getId())
+        .setElementInstanceKey(context.getElementInstanceKey())
+        .setTenantId(context.getTenantId());
+
+    final var jobKey = keyGenerator.nextKey();
+    stateWriter.appendFollowUpEvent(jobKey, JobIntent.CREATED, jobRecord);
+
+    jobActivationBehavior.publishWork(jobKey, jobRecord);
+
+    jobMetrics.jobCreated(jobProperties.getType());
+  }
+
   private Either<Failure, String> evalTypeExp(final Expression type, final long scopeKey) {
     return expressionBehavior.evaluateStringExpression(type, scopeKey);
   }

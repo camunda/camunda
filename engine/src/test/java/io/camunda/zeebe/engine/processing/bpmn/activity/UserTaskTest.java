@@ -803,4 +803,43 @@ public final class UserTaskTest {
         .extracting(Record::getIntent)
         .contains(ProcessInstanceIntent.ELEMENT_ACTIVATING);
   }
+
+  @Test
+  public void shouldInvokeAndCompleteUserTaskListener() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            process(
+                userTask ->
+                    userTask.zeebeUserTaskListener(
+                        "first-listener", ZeebeUserTaskListenerEventType.CREATE)))
+        .deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType("_userTaskListener_CREATE_first-listener")
+        .complete();
+
+    // then
+    assertThat(
+            RecordingExporter.userTasksRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(2))
+        .extracting(Record::getIntent)
+        .contains(UserTaskIntent.CREATING, UserTaskIntent.CREATED);
+
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted()
+                .withElementType(BpmnElementType.USER_TASK))
+        .extracting(Record::getIntent)
+        .contains(
+            ProcessInstanceIntent.ELEMENT_ACTIVATING, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+  }
 }
