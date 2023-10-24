@@ -29,7 +29,6 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
-import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -784,16 +783,17 @@ public final class UserTaskTest {
     assertThat(
             RecordingExporter.userTasksRecords()
                 .withProcessInstanceKey(processInstanceKey)
-                .limit(2))
+                .limit(1))
         .extracting(Record::getIntent)
-        .contains(UserTaskIntent.CREATING, UserTaskIntent.LISTENER_CREATING_READY);
+        .contains(UserTaskIntent.CREATING);
 
-    final Record<UserTaskRecordValue> userTaskListenerReady =
-        RecordingExporter.userTasksRecords()
+    final Record<JobRecordValue> jobCreated =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
-            .withIntent(UserTaskIntent.LISTENER_CREATING_READY)
             .getFirst();
-    assertThat(userTaskListenerReady.getValue().getUserTaskListener()).isEqualTo("first-listener");
+
+    assertThat(jobCreated.getValue().getType())
+        .isEqualTo("_userTaskListener_CREATE_first-listener");
 
     assertThat(
             RecordingExporter.processInstanceRecords()

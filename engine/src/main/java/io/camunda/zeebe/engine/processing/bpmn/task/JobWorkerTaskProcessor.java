@@ -61,8 +61,6 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
         .flatMap(j -> eventSubscriptionBehavior.subscribeToEvents(element, context).map(ok -> j))
         .ifRightOrLeft(
             jobProperties -> {
-              jobBehavior.createNewJob(context, element, jobProperties);
-
               final ExecutableUserTask userTask = element.getUserTask();
               if (userTask != null) {
 
@@ -71,15 +69,24 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
                 final var listeners = userTask.getListeners(ZeebeUserTaskListenerEventType.CREATE);
 
                 if (listeners.isEmpty()) {
+                  // for compatibility
+                  jobBehavior.createNewJob(context, element, jobProperties);
+
                   userTaskBehavior.userTaskCreated(context, userTaskKey);
 
                   stateTransitionBehavior.transitionToActivated(context, element.getEventType());
 
                 } else {
                   final UserTaskListener firstListener = listeners.getFirst();
-                  userTaskBehavior.invokeUserTaskListener(
-                      context, userTaskKey, firstListener.getName());
+
+                  // prefix_event-type_listener-name
+                  final String jobType =
+                      "_userTaskListener_%s_%s"
+                          .formatted(firstListener.getEventType().name(), firstListener.getName());
+                  jobBehavior.createNewJob(context, element, jobProperties.type(jobType));
                 }
+              } else {
+                jobBehavior.createNewJob(context, element, jobProperties);
               }
             },
             failure -> incidentBehavior.createIncident(failure, context));
