@@ -24,6 +24,6 @@ public final class SignalSubscriptionDeletedApplier
   @Override
   public void applyState(final long key, final SignalSubscriptionRecord value) {
     final var subscriptionKey = value.getSubscriptionKey();
-    subscriptionState.remove(subscriptionKey, value.getSignalNameBuffer());
+    subscriptionState.remove(subscriptionKey, value.getSignalNameBuffer(), value.getTenantId());
   }
 }
