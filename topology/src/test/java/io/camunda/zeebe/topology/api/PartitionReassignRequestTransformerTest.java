@@ -13,8 +13,7 @@ import static org.assertj.core.api.Assertions.fail;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionId;
-import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
-import io.camunda.zeebe.topology.api.TopologyManagementRequest.ReassignPartitionsRequest;
+import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import io.camunda.zeebe.topology.changes.NoopPartitionChangeExecutor;
 import io.camunda.zeebe.topology.changes.NoopTopologyMembershipChangeExecutor;
 import io.camunda.zeebe.topology.changes.TopologyChangeAppliersImpl;
@@ -23,12 +22,10 @@ import io.camunda.zeebe.topology.state.MemberState;
 import io.camunda.zeebe.topology.util.RoundRobinPartitionDistributor;
 import io.camunda.zeebe.topology.util.TopologyUtil;
 import io.camunda.zeebe.util.Either;
-import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -37,18 +34,8 @@ import net.jqwik.api.ForAll;
 import net.jqwik.api.Property;
 import net.jqwik.api.ShrinkingMode;
 import net.jqwik.api.constraints.IntRange;
-import net.jqwik.api.lifecycle.BeforeTry;
 
-class PartitionReassignRequestHandlerTest {
-
-  private final RecordingChangeCoordinator coordinator = new RecordingChangeCoordinator();
-  private final TopologyManagementRequestsHandler handler =
-      new TopologyManagementRequestsHandler(coordinator, new TestConcurrencyControl());
-
-  @BeforeTry
-  void clear() {
-    coordinator.getLastAppliedOperation().clear();
-  }
+class PartitionReassignRequestTransformerTest {
 
   @Property(tries = 10)
   void shouldReassignPartitionsWithReplicationFactor1(
@@ -115,17 +102,17 @@ class PartitionReassignRequestHandlerTest {
                   Objects.requireNonNullElseGet(
                       currentState, () -> MemberState.initializeAsActive(Map.of())));
     }
-    coordinator.setCurrentTopology(oldClusterTopology);
+
     //  when
-    final var applyFuture =
-        handler.reassignPartitions(
-            new ReassignPartitionsRequest(getClusterMembers(newClusterSize)));
+    final var operationsEither =
+        new PartitionReassignRequestTransformer(getClusterMembers(newClusterSize))
+            .operations(oldClusterTopology);
 
     // then
-    assertThat(applyFuture)
-        .failsWithin(Duration.ofMillis(100))
-        .withThrowableOfType(ExecutionException.class)
-        .withCauseInstanceOf(IllegalArgumentException.class);
+    EitherAssert.assertThat(operationsEither)
+        .isLeft()
+        .left()
+        .isInstanceOf(IllegalArgumentException.class);
   }
 
   void shouldReassignPartitionsRoundRobin(
@@ -156,20 +143,20 @@ class PartitionReassignRequestHandlerTest {
                   Objects.requireNonNullElseGet(
                       currentState, () -> MemberState.initializeAsActive(Map.of())));
     }
-    coordinator.setCurrentTopology(oldClusterTopology);
 
     // when
-    handler
-        .reassignPartitions(new ReassignPartitionsRequest(getClusterMembers(newClusterSize)))
-        .join();
+    final var operations =
+        new PartitionReassignRequestTransformer(getClusterMembers(newClusterSize))
+            .operations(oldClusterTopology)
+            .get();
 
     // apply operations to generate new topology
     final var topologyChangeSimulator =
         new TopologyChangeAppliersImpl(
             new NoopPartitionChangeExecutor(), new NoopTopologyMembershipChangeExecutor());
     ClusterTopology newTopology = oldClusterTopology;
-    if (!coordinator.getLastAppliedOperation().isEmpty()) {
-      newTopology = oldClusterTopology.startTopologyChange(coordinator.getLastAppliedOperation());
+    if (!operations.isEmpty()) {
+      newTopology = oldClusterTopology.startTopologyChange(operations);
     }
     while (newTopology.hasPendingChanges()) {
       final var operation = newTopology.changes().pendingOperations().get(0);
