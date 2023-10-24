@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.test.util.MsgPackUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
@@ -397,7 +398,7 @@ public final class ElementInstanceStateTest {
     Assertions.assertThat(processInstanceKeys).isEmpty();
     final var hasRunningInstances =
         elementInstanceState.hasActiveProcessInstances(
-            processInstanceRecord.getProcessDefinitionKey());
+            processInstanceRecord.getProcessDefinitionKey(), Collections.emptyList());
     assertThat(hasRunningInstances).isFalse();
   }
 
@@ -451,7 +452,7 @@ public final class ElementInstanceStateTest {
     // when
     final var hasRunningInstances =
         elementInstanceState.hasActiveProcessInstances(
-            processInstanceRecord.getProcessDefinitionKey());
+            processInstanceRecord.getProcessDefinitionKey(), Collections.emptyList());
 
     // then
     Assertions.assertThat(hasRunningInstances).isTrue();
@@ -466,7 +467,7 @@ public final class ElementInstanceStateTest {
     // when
     final var hasRunningInstances =
         elementInstanceState.hasActiveProcessInstances(
-            processInstanceRecord.getProcessDefinitionKey());
+            processInstanceRecord.getProcessDefinitionKey(), Collections.emptyList());
 
     // then
     Assertions.assertThat(hasRunningInstances).isFalse();

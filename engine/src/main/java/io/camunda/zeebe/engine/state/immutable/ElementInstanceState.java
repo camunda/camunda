@@ -63,7 +63,8 @@ public interface ElementInstanceState {
    * Verifies if there are active process instances for a given process definition
    *
    * @param processDefinitionKey the key of the process definition
+   * @param bannedInstances a list of banned process instance keys
    * @return a boolean indicating if there are running instances
    */
-  boolean hasActiveProcessInstances(long processDefinitionKey);
+  boolean hasActiveProcessInstances(long processDefinitionKey, final List<Long> bannedInstances);
 }
