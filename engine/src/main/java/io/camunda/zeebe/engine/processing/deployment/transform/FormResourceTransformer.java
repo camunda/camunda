@@ -122,18 +122,20 @@ public final class FormResourceTransformer implements DeploymentResourceTransfor
         .findLatestFormById(wrapString(formRecord.getFormId()), tenantId)
         .ifPresentOrElse(
             latestForm -> {
-              final int latestVersion = latestForm.getVersion();
               final boolean isDuplicate =
                   latestForm.getChecksum().equals(formRecord.getChecksumBuffer())
                       && latestForm.getResourceName().equals(formRecord.getResourceNameBuffer());
 
               if (isDuplicate) {
+                final int latestVersion = latestForm.getVersion();
                 formRecord
                     .setFormKey(latestForm.getFormKey())
                     .setVersion(latestVersion)
                     .markAsDuplicate();
               } else {
-                formRecord.setFormKey(newFormKey.getAsLong()).setVersion(latestVersion + 1);
+                formRecord
+                    .setFormKey(newFormKey.getAsLong())
+                    .setVersion(formState.getNextFormVersion(formId, tenantId));
               }
             },
             () -> formRecord.setFormKey(newFormKey.getAsLong()).setVersion(INITIAL_VERSION));
