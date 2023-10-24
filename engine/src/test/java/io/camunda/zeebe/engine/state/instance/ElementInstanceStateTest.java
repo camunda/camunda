@@ -474,6 +474,25 @@ public final class ElementInstanceStateTest {
   }
 
   @Test
+  public void shouldNotFindRunningInstanceForBannedInstance() {
+    // given
+    final var processInstanceKey = 123L;
+    final var processInstanceRecord =
+        createProcessInstanceRecord()
+            .setBpmnElementType(BpmnElementType.PROCESS)
+            .setProcessInstanceKey(processInstanceKey);
+
+    // when
+    final var hasRunningInstances =
+        elementInstanceState.hasActiveProcessInstances(
+            processInstanceRecord.getProcessDefinitionKey(),
+            Collections.singletonList(processInstanceKey));
+
+    // then
+    Assertions.assertThat(hasRunningInstances).isFalse();
+  }
+
+  @Test
   public void shouldUpdateAwaitResultMetadata() {
     final long key = 10L;
     final int streamId = 2;
