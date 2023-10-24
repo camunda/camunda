@@ -29,6 +29,7 @@ import io.camunda.zeebe.client.api.command.SetVariablesCommandStep1;
 import io.camunda.zeebe.client.api.command.TopologyRequestStep1;
 import io.camunda.zeebe.client.api.command.UpdateRetriesJobCommandStep1;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
+import io.camunda.zeebe.client.api.usertask.UserTaskListenerBuilderStep1;
 import io.camunda.zeebe.client.api.worker.JobClient;
 import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1;
 import io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl;
@@ -340,6 +341,8 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * @return a builder for the worker registration
    */
   JobWorkerBuilderStep1 newWorker();
+
+  UserTaskListenerBuilderStep1 newUserTaskListener();
 
   /**
    * Command to delete a resource.

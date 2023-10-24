@@ -40,6 +40,7 @@ import io.camunda.zeebe.client.api.command.ThrowErrorCommandStep1;
 import io.camunda.zeebe.client.api.command.TopologyRequestStep1;
 import io.camunda.zeebe.client.api.command.UpdateRetriesJobCommandStep1;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
+import io.camunda.zeebe.client.api.usertask.UserTaskListenerBuilderStep1;
 import io.camunda.zeebe.client.api.worker.JobClient;
 import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1;
 import io.camunda.zeebe.client.impl.command.BroadcastSignalCommandImpl;
@@ -60,6 +61,7 @@ import io.camunda.zeebe.client.impl.util.ExecutorResource;
 import io.camunda.zeebe.client.impl.util.VersionUtil;
 import io.camunda.zeebe.client.impl.worker.JobClientImpl;
 import io.camunda.zeebe.client.impl.worker.JobWorkerBuilderImpl;
+import io.camunda.zeebe.client.impl.worker.UserTaskListenerBuilderImpl;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.grpc.CallCredentials;
@@ -332,6 +334,12 @@ public final class ZeebeClientImpl implements ZeebeClient {
   @Override
   public JobWorkerBuilderStep1 newWorker() {
     return new JobWorkerBuilderImpl(config, jobClient, executorResource.executor(), closeables);
+  }
+
+  @Override
+  public UserTaskListenerBuilderStep1 newUserTaskListener() {
+    return new UserTaskListenerBuilderImpl(
+        config, jobClient, executorResource.executor(), closeables);
   }
 
   @Override
