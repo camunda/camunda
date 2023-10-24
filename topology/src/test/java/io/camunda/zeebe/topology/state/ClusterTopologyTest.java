@@ -11,10 +11,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.topology.ClusterTopologyAssert;
+import io.camunda.zeebe.topology.state.ClusterChangePlan.CompletedChange;
+import io.camunda.zeebe.topology.state.ClusterChangePlan.Status;
 import io.camunda.zeebe.topology.state.MemberState.State;
+import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 class ClusterTopologyTest {
@@ -168,6 +173,34 @@ class ClusterTopologyTest {
 
     // then
     assertThat(mergedTopology).isEqualTo(updatedTopology);
+  }
+
+  @Test
+  void shouldAddCompletedClusterTopologyChanges() {
+    // given
+    final var initialTopology =
+        ClusterTopology.init()
+            .addMember(member(1), MemberState.initializeAsActive(Map.of()))
+            .startTopologyChange(List.of(new PartitionJoinOperation(member(1), 1, 1)));
+    final var changeId = initialTopology.changes().ongoingChange().orElseThrow().id();
+
+    // when
+    final var finalTopology =
+        initialTopology.advanceTopologyChange(
+            member(1), m -> m.addPartition(1, PartitionState.active(1)));
+
+    // then
+    final var expected =
+        new ClusterTopology(
+            2,
+            Map.of(member(1), MemberState.initializeAsActive(Map.of(1, PartitionState.active(1)))),
+            new ClusterChangePlan(
+                0,
+                Optional.of(
+                    new CompletedChange(changeId, Status.COMPLETED, Instant.now(), Instant.now())),
+                Optional.empty()));
+
+    ClusterTopologyAssert.assertThatClusterTopology(finalTopology).hasSameTopologyAs(expected);
   }
 
   private MemberId member(final int id) {
