@@ -22,6 +22,9 @@ public class FormDeletedApplier implements TypedEventApplier<FormIntent, FormRec
 
   @Override
   public void applyState(final long key, final FormRecord value) {
-    formState.deleteForm(value);
+    formState.deleteFormInFormsColumn(value);
+    formState.deleteFormInFormByIdAndVersionColumn(value);
+    formState.deleteFormInFormVersionColumn(value);
+    formState.deleteFormFromCache(value);
   }
 }
