@@ -7,18 +7,20 @@
  */
 package io.camunda.zeebe.el.impl.feel
 
-import io.camunda.zeebe.el.{EvaluationResult, Expression, ResultType}
+import io.camunda.zeebe.el.{EvaluationResult, EvaluationWarning, Expression, ResultType}
 import io.camunda.zeebe.util.buffer.BufferUtil.cloneBuffer
 import org.agrona.DirectBuffer
 import org.camunda.feel.syntaxtree._
 
 import java.time.{Duration, Period, ZoneId, ZonedDateTime}
 import java.{lang, util}
+import java.util.{List => JavaList}
 import scala.collection.JavaConverters._
 
 class FeelEvaluationResult(
                             expression: Expression,
                             result: Val,
+                            warnings: JavaList[EvaluationWarning],
                             messagePackTransformer: Val => DirectBuffer)
   extends EvaluationResult {
 
@@ -27,6 +29,9 @@ class FeelEvaluationResult(
   override def isFailure: Boolean = false
 
   override def getFailureMessage: String = null
+
+
+  override def getWarnings: JavaList[EvaluationWarning] = warnings
 
   override def getType: ResultType = result match {
     case ValNull => ResultType.NULL
