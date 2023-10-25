@@ -4007,17 +4007,17 @@ bpmn-js-disable-collapsed-subprocess@^0.1.7:
   dependencies:
     min-dash "^4.0.0"
 
-bpmn-js@14.0.0:
-  version "14.0.0"
-  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-14.0.0.tgz#84a765acb091cd08ebd68f5c6a7b59cf9e109b6e"
-  integrity sha512-/P09jowzcib0Yg9XuHWIugrwfubtq/7Z/0/DgjYJ2Q/Z7LogDkCPiNFIyWX4cKx/eYXJJ5kqtgmDpXv8MnT7gw==
+bpmn-js@14.2.0:
+  version "14.2.0"
+  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-14.2.0.tgz#71813cd667339d37aa316f3975075df5dd42fd65"
+  integrity sha512-KuJGjXHugrfUur74xPQ/jkXQXmmlhw+xV8+h2EtDJ4vMZMVP+tJyppiucsHDEjAR6Iq+i3P9yECGt290nbq9cg==
   dependencies:
     bpmn-moddle "^8.0.1"
-    diagram-js "^12.3.0"
+    diagram-js "^12.5.0"
     diagram-js-direct-editing "^2.0.0"
-    ids "^1.0.3"
+    ids "^1.0.5"
     inherits-browser "^0.1.0"
-    min-dash "^4.0.0"
+    min-dash "^4.1.1"
     min-dom "^4.0.3"
     object-refs "^0.3.0"
     tiny-svg "^3.0.0"
@@ -5372,7 +5372,7 @@ diagram-js@^12.0.0:
     path-intersection "^2.2.1"
     tiny-svg "^3.0.1"
 
-diagram-js@^12.3.0:
+diagram-js@^12.5.0:
   version "12.5.0"
   resolved "https://registry.yarnpkg.com/diagram-js/-/diagram-js-12.5.0.tgz#b4de7f906f9b15acf9614e27a0a73216fcd12203"
   integrity sha512-jrX+NFUPVcCdrUD11Fo1frwWHF9FWys4r/lhi8M4CBuQ8eSePkOq5osFhc6tUoXZawS3sjhbNvd2AYAZZBUjnQ==
@@ -7638,7 +7638,7 @@ identity-obj-proxy@^3.0.0:
   dependencies:
     harmony-reflect "^1.4.6"
 
-ids@^1.0.0, ids@^1.0.3:
+ids@^1.0.0, ids@^1.0.5:
   version "1.0.5"
   resolved "https://registry.yarnpkg.com/ids/-/ids-1.0.5.tgz#0aeb4777e77e0017a983c9f7b0ca0cccf352afe4"
   integrity sha512-XQ0yom/4KWTL29sLG+tyuycy7UmeaM/79GRtSJq6IG9cJGIPeBz5kwDCguie3TwxaMNIc3WtPi0cTa1XYHicpw==
@@ -10055,7 +10055,7 @@ min-dash@^3.0.0, min-dash@^3.5.2, min-dash@^3.8.1:
   resolved "https://registry.yarnpkg.com/min-dash/-/min-dash-3.8.1.tgz#09a8bd8a041d65eec4732042cde9cb24a6e84b0d"
   integrity sha512-evumdlmIlg9mbRVPbC4F5FuRhNmcMS5pvuBUbqb1G9v09Ro0ImPEgz5n3khir83lFok1inKqVDjnKEg3GpDxQg==
 
-min-dash@^4.0.0, min-dash@^4.1.0:
+min-dash@^4.0.0, min-dash@^4.1.0, min-dash@^4.1.1:
   version "4.1.1"
   resolved "https://registry.yarnpkg.com/min-dash/-/min-dash-4.1.1.tgz#09b85a5e1d0189ce02a4ec416180aa85db06451b"
   integrity sha512-r+Z6vxXLSGr+otyCPx9NKPCSixw7LdfZREPTmqfd2a/d5D6w4NCdOxRJs+HyFO6v2pQkyHroGSiINWECK+OWPg==
