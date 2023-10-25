@@ -20,14 +20,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.Uninterruptibles;
+import com.sun.security.auth.module.UnixSystem;
 import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.messaging.MessagingException;
 import io.atomix.utils.net.Address;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
+import io.camunda.zeebe.test.util.junit.RegressionTest;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
+import java.io.IOException;
 import java.net.ConnectException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
@@ -48,6 +53,8 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 
 /** Netty messaging service test. */
 @AutoCloseResources
@@ -704,5 +711,49 @@ final class NettyMessagingServiceTest {
         .havingRootCause()
         .isInstanceOf(MessagingException.NoRemoteHandler.class)
         .withMessage(expectedException.getMessage());
+  }
+
+  @EnabledOnOs(OS.LINUX)
+  @RegressionTest("https://github.com/camunda/zeebe/issues/14837")
+  void shouldNotLeakUdpSockets() throws IOException {
+    // given
+    // the configured amount of threads for Netty's epoll transport
+    final var maxConnections = Runtime.getRuntime().availableProcessors() * 2;
+    final var subject = nextSubject();
+    netty2.registerHandler(
+        subject, (address, bytes) -> new byte[0], MoreExecutors.directExecutor());
+
+    // when
+    for (int i = 0; i < maxConnections * 4; i++) {
+      netty1.sendAndReceive(netty2.address(), subject, "hello world".getBytes(), false).join();
+    }
+
+    // then - there seems to be a slight amount more than maxConnections normally, but without the
+    // fix this was way, way, way more, so it should be fine to allow a little bit more than the
+    // expected max number of connections
+    assertThat(udpSocketCount()).isLessThanOrEqualTo(maxConnections * 2L);
+  }
+
+  private long udpSocketCount() throws IOException {
+    final var pid = ProcessHandle.current().pid();
+    final var udpPath = Path.of("/proc/" + pid + "/net/udp");
+    final var udp6Path = Path.of("/proc/" + pid + "/net/udp6");
+    return udpSocketCount(udpPath) + udpSocketCount(udp6Path);
+  }
+
+  private long udpSocketCount(final Path path) throws IOException {
+    // we can drop the first line since it's just the headers
+    final var lines = Files.readAllLines(path);
+    final var uid = new UnixSystem().getUid();
+    lines.remove(0);
+
+    // then filter out any sockets not opened by the current user
+    return lines.stream()
+        .filter(
+            line -> {
+              final String[] columns = line.trim().split("\\s+");
+              return Long.parseLong(columns[7]) == uid;
+            })
+        .count();
   }
 }
