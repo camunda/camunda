@@ -127,6 +127,18 @@
       <name>Zeebe Snapshot Repository</name>
       <url>https://artifacts.camunda.com/artifactory/zeebe-io-snapshots/</url>
     </repository>
+
+    <repository>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <id>camunda-identity</id>
+      <name>Camunda Identity Repository</name>
+      <url>https://artifacts.camunda.com/artifactory/camunda-identity</url>
+    </repository>
   </repositories>
 
   <build>
