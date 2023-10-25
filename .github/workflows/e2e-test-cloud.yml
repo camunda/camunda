@@ -40,7 +40,7 @@ jobs:
         ELASTIC_JVM_MEMORY: 1
         ELASTIC_HTTP_PORT: ${{ steps.pom-info.outputs.x_new_elasticsearch_port }}
     - name: Setup yarn cache
-      uses: actions/setup-node@v3
+      uses: actions/setup-node@8f152de45cc393bb48ce5d89d36b731f54556e65 # v4
       with:
         node-version: "16"
         cache: "yarn"
