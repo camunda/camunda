@@ -35,6 +35,13 @@ public interface EvaluationResult {
   String getFailureMessage();
 
   /**
+   * Returns warnings from the evaluation that can help to reason about the result.
+   *
+   * @return evaluation warnings, can be empty
+   */
+  List<EvaluationWarning> getWarnings();
+
+  /**
    * @return the type of the evaluation result, or {@code null} if the evaluation failed
    */
   ResultType getType();
