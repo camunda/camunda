@@ -45,15 +45,6 @@ public class UserTaskBehavior {
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CREATED, userTaskRecord);
   }
 
-  public void invokeUserTaskListener(
-      final BpmnElementContext context, final long userTaskKey, final String listener) {
-
-    final UserTaskRecord userTaskRecord = createUserTaskRecordForContext(context);
-    userTaskRecord.setUserTaskListener(listener);
-    stateWriter.appendFollowUpEvent(
-        userTaskKey, UserTaskIntent.LISTENER_CREATING_READY, userTaskRecord);
-  }
-
   private static UserTaskRecord createUserTaskRecordForContext(final BpmnElementContext context) {
     return new UserTaskRecord()
         .setProcessInstanceKey(context.getProcessInstanceKey())
