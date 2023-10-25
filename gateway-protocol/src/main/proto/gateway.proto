@@ -83,6 +83,8 @@ message ActivatedJob {
   string variables = 13;
   // // the id of the tenant that owns the job
   string tenantId = 14;
+  // key of the user task
+  int64 userTaskKey = 15;
 }
 
 message CancelProcessInstanceRequest {

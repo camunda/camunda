@@ -114,7 +114,7 @@ public final class UserTaskListenerBuilderImpl
 
     fakeHandler =
         (client, job) -> {
-          final long userTaskKey = Long.valueOf(job.getCustomHeaders().get("userTaskKey"));
+          final long userTaskKey = job.getUserTaskKey();
           final String assignee = job.getCustomHeaders().get("io.camunda.zeebe:assignee");
 
           final UserTaskListenerJob userTask =

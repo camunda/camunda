@@ -126,10 +126,7 @@ public final class BpmnJobBehavior {
       final long userTaskKey) {
 
     final var taskHeaders = element.getJobWorkerProperties().getTaskHeaders();
-
-    final HashMap<String, String> modifiableHeaders = new HashMap<>(taskHeaders);
-    modifiableHeaders.put("userTaskKey", String.valueOf(userTaskKey));
-    final var encodedHeaders = encodeHeaders(modifiableHeaders, jobProperties);
+    final var encodedHeaders = encodeHeaders(taskHeaders, jobProperties);
 
     jobRecord
         .setType(jobType)
@@ -141,7 +138,9 @@ public final class BpmnJobBehavior {
         .setProcessInstanceKey(context.getProcessInstanceKey())
         .setElementId(element.getId())
         .setElementInstanceKey(context.getElementInstanceKey())
-        .setTenantId(context.getTenantId());
+        .setTenantId(context.getTenantId())
+        .getUserTask()
+        .setUserTaskKey(userTaskKey);
 
     final var jobKey = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(jobKey, JobIntent.CREATED, jobRecord);

@@ -15,11 +15,13 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
+import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.msgpack.property.PackedProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskProperties;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.Map;
@@ -65,8 +67,8 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
 
   // add new job type: job worker, task listener, execution listener
 
-  // ObjectProperty<UserTaskProperties>
-  // {"user-task-key", "assignee", "candidate-groups"}
+  private final ObjectProperty<UserTaskProperties> userTaskProps =
+      new ObjectProperty<>("userTask", new UserTaskProperties());
 
   public JobRecord() {
     declareProperty(deadlineProp)
@@ -85,7 +87,8 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
         .declareProperty(processInstanceKeyProp)
         .declareProperty(elementIdProp)
         .declareProperty(elementInstanceKeyProp)
-        .declareProperty(tenantIdProp);
+        .declareProperty(tenantIdProp)
+        .declareProperty(userTaskProps);
   }
 
   public void wrapWithoutVariables(final JobRecord record) {
@@ -106,6 +109,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     elementIdProp.setValue(record.getElementIdBuffer());
     elementInstanceKeyProp.setValue(record.getElementInstanceKey());
     tenantIdProp.setValue(record.getTenantId());
+    userTaskProps.getValue().wrap(record.getUserTask());
   }
 
   public void wrap(final JobRecord record) {
@@ -366,6 +370,15 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
 
   public JobRecord setTenantId(final String tenantId) {
     tenantIdProp.setValue(tenantId);
+    return this;
+  }
+
+  public UserTaskProperties getUserTask() {
+    return userTaskProps.getValue();
+  }
+
+  public JobRecord setUserTask(final UserTaskProperties userTask) {
+    userTaskProps.getValue().wrap(userTask);
     return this;
   }
 }

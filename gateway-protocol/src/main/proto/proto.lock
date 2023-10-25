@@ -195,6 +195,11 @@
                 "id": 14,
                 "name": "tenantId",
                 "type": "string"
+              },
+              {
+                "id": 15,
+                "name": "userTaskKey",
+                "type": "int64"
               }
             ]
           },

@@ -114,4 +114,9 @@ public interface ActivatedJob {
    */
   @ExperimentalApi("https://github.com/camunda/zeebe/issues/13560")
   String getTenantId();
+
+  /**
+   * @return the identifier of the related user task
+   */
+  long getUserTaskKey();
 }
