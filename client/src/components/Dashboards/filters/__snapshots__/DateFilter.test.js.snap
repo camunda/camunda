@@ -2,9 +2,8 @@
 
 exports[`should allow providing a custom icon and empty text 1`] = `
 <React.Fragment>
-  <Icon
+  <customIcon
     className="indicator"
-    type="customIcon"
   />
   customText
 </React.Fragment>
@@ -12,9 +11,8 @@ exports[`should allow providing a custom icon and empty text 1`] = `
 
 exports[`should show the filter state 1`] = `
 <React.Fragment>
-  <Icon
+  <ForwardRef(Filter)
     className="indicator active"
-    type="filter"
   />
   Today
 </React.Fragment>

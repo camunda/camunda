@@ -1254,10 +1254,10 @@
     jwt-decode "3.1.2"
     react-markdown "8.0.7"
 
-"@camunda/camunda-optimize-composite-components@^0.0.12":
-  version "0.0.12"
-  resolved "https://registry.yarnpkg.com/@camunda/camunda-optimize-composite-components/-/camunda-optimize-composite-components-0.0.12.tgz#2d48681188ac71871c9c54cd6c820fff2d096bf7"
-  integrity sha512-qlT6OKgEltaFQgImzN1MIUr2piU6qrGm5zstYIFcZHcyX5yfVQd3ylJd54iqzpFd6iXl4i9oDJhl4WMsFWs+eQ==
+"@camunda/camunda-optimize-composite-components@^0.0.13-rc8":
+  version "0.0.13-rc8"
+  resolved "https://registry.yarnpkg.com/@camunda/camunda-optimize-composite-components/-/camunda-optimize-composite-components-0.0.13-rc8.tgz#50d0489fb29136833cfba1d57cf3c5c682761d55"
+  integrity sha512-gxb/NQqMEEBL8+oBuenZqpgQkt9LWGTcoa64aIpF5jLo6gZp5vzl4UwL23TV79KTYhdIb8cjRWRzU2v7E1A8XA==
 
 "@carbon/colors@^11.19.0":
   version "11.19.0"

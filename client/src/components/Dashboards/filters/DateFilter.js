@@ -8,9 +8,12 @@
 import React, {useState, useEffect} from 'react';
 import classnames from 'classnames';
 import {parseISO, startOfDay, endOfDay} from 'date-fns';
+import {Button, MenuItem, MenuItemSelectable, MenuItemDivider} from '@carbon/react';
+import {Filter} from '@carbon/icons-react';
+import {MenuDropdown} from '@camunda/camunda-optimize-composite-components';
 
 import {format, BACKEND_DATE_FORMAT} from 'dates';
-import {Dropdown, Icon, Popover, DatePicker, Button} from 'components';
+import {Popover, DatePicker} from 'components';
 import {t} from 'translation';
 
 import RollingFilter from './RollingFilter';
@@ -20,7 +23,7 @@ import './DateFilter.scss';
 export default function DateFilter({
   filter,
   setFilter,
-  icon = 'filter',
+  icon: Icon = Filter,
   children,
   emptyText = t('common.select'),
   title,
@@ -109,7 +112,7 @@ export default function DateFilter({
       <>
         {t('common.filter.dateModal.unit.' + fixedType)}{' '}
         {fixedType !== 'before' && startDate && format(startDate, 'yyyy-MM-dd')}
-        {fixedType === 'between' && <span className="to"> {t('common.filter.dateModal.to')} </span>}
+        {fixedType === 'between' && <span className="to">{t('common.filter.dateModal.to')}</span>}
         {fixedType !== 'after' && endDate && format(endDate, 'yyyy-MM-dd')}
       </>
     );
@@ -154,11 +157,11 @@ export default function DateFilter({
       {showFixedPopover && filter?.type !== 'relative' ? (
         <Popover
           isTabTip
-          title={
-            <>
-              <Icon type={icon} className={classnames('indicator', {active: filter})} />{' '}
+          trigger={
+            <Popover.ListBox size="sm">
+              <Icon />
               {getFixedDateFilterName(filter)}
-            </>
+            </Popover.ListBox>
           }
           autoOpen={autoOpen}
         >
@@ -184,6 +187,8 @@ export default function DateFilter({
           )}
           <hr />
           <Button
+            size="sm"
+            kind="ghost"
             className="reset-button"
             onClick={() => {
               setFilter();
@@ -194,68 +199,72 @@ export default function DateFilter({
           </Button>
         </Popover>
       ) : (
-        <Dropdown
+        <MenuDropdown
+          size="sm"
           label={
             <>
-              <Icon type={icon} className={classnames('indicator', {active: filter})} />
+              <Icon className={classnames('indicator', {active: filter})} />
               {getFilterName(filter)}
             </>
           }
+          className="filterMenu"
+          fullScreenTarget={document.querySelector('.fullscreen')}
         >
-          <Dropdown.Option onClick={() => openDatePicker('between')}>
-            {t('common.filter.dateModal.unit.between')}
-          </Dropdown.Option>
-          <Dropdown.Option onClick={() => openDatePicker('after')}>
-            {t('common.filter.dateModal.unit.after')}
-          </Dropdown.Option>
-          <Dropdown.Option onClick={() => openDatePicker('before')}>
-            {t('common.filter.dateModal.unit.before')}
-          </Dropdown.Option>
-          <Dropdown.Option checked={isFilter('days')} onClick={() => setRelativeFilter('days')}>
-            {t('common.filter.dateModal.unit.today')}
-          </Dropdown.Option>
-          <Dropdown.Option
-            checked={isFilter('days', true)}
-            onClick={() => setRelativeFilter('days', true)}
-          >
-            {t('common.filter.dateModal.unit.yesterday')}
-          </Dropdown.Option>
-          <Dropdown.Submenu
+          <MenuItem
+            label={t('common.filter.dateModal.unit.between')}
+            onClick={() => openDatePicker('between')}
+          />
+          <MenuItem
+            label={t('common.filter.dateModal.unit.after')}
+            onClick={() => openDatePicker('after')}
+          />
+          <MenuItem
+            label={t('common.filter.dateModal.unit.before')}
+            onClick={() => openDatePicker('before')}
+          />
+          <MenuItemSelectable
+            label={t('common.filter.dateModal.unit.today')}
+            selected={isFilter('days')}
+            onChange={() => setRelativeFilter('days')}
+          />
+          <MenuItemSelectable
+            label={t('common.filter.dateModal.unit.yesterday')}
+            selected={isFilter('days', true)}
+            onChange={() => setRelativeFilter('days', true)}
+          />
+          <MenuItemSelectable
             label={t('dashboard.filter.date.last')}
-            checked={filter?.start.value === 1 && !isFilter('days', true)}
+            selected={filter?.start.value === 1 && !isFilter('days', true)}
           >
             {['weeks', 'months', 'years', 'quarters'].map((unit) => (
-              <Dropdown.Option
+              <MenuItemSelectable
                 key={unit}
-                checked={isFilter(unit, true)}
-                onClick={() => setRelativeFilter(unit, true)}
-              >
-                {t('dashboard.filter.date.units.' + unit)}
-              </Dropdown.Option>
+                label={t('dashboard.filter.date.units.' + unit)}
+                selected={isFilter(unit, true)}
+                onChange={() => setRelativeFilter(unit, true)}
+              />
             ))}
-          </Dropdown.Submenu>
-          <Dropdown.Submenu
+          </MenuItemSelectable>
+          <MenuItemSelectable
             label={t('dashboard.filter.date.this')}
-            checked={filter?.start.value === 0 && !isFilter('days')}
+            selected={filter?.start.value === 0 && !isFilter('days')}
           >
             {['weeks', 'months', 'years', 'quarters'].map((unit) => (
-              <Dropdown.Option
+              <MenuItemSelectable
                 key={unit}
-                checked={isFilter(unit)}
-                onClick={() => setRelativeFilter(unit)}
-              >
-                {t('dashboard.filter.date.units.' + unit)}
-              </Dropdown.Option>
+                label={t('dashboard.filter.date.units.' + unit)}
+                selected={isFilter(unit)}
+                onChange={() => setRelativeFilter(unit)}
+              />
             ))}
-          </Dropdown.Submenu>
-          <Dropdown.Option onClick={() => openRollingFilter()}>
-            {t('common.filter.dateModal.unit.custom')}
-          </Dropdown.Option>
-          <hr />
-          <Dropdown.Option disabled={!filter} onClick={() => setFilter()}>
-            {t('common.off')}
-          </Dropdown.Option>
-        </Dropdown>
+          </MenuItemSelectable>
+          <MenuItem
+            label={t('common.filter.dateModal.unit.custom')}
+            onClick={() => openRollingFilter()}
+          />
+          <MenuItemDivider />
+          <MenuItem disabled={!filter} label={t('common.off')} onClick={() => setFilter()} />
+        </MenuDropdown>
       )}
     </div>
   );

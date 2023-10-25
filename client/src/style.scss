@@ -95,7 +95,13 @@ a:active {
   color: inherit;
 }
 
-.focus-visible:not(.cds--search-input, .cds--text-input, .cds--text-area, .textInput) {
+.focus-visible:not(
+    .cds--search-input,
+    .cds--text-input,
+    .cds--text-area,
+    .textInput,
+    .cds--number__input-wrapper > input
+  ) {
   outline: none;
   border-radius: 3px;
   box-shadow:
@@ -179,4 +185,13 @@ a[disabled] {
 // hide overlay displayed by dev server
 iframe#webpack-dev-server-client-overlay {
   display: none;
+}
+
+.cds--number input[type='number'] {
+  background-color: var(--cds-field-02, #f4f4f4);
+}
+
+.cds--number__control-btn::before,
+.cds--number__control-btn::after {
+  background: inherit;
 }

@@ -9,8 +9,10 @@ exports[`should match snapshot 1`] = `
     className="inputContainer"
   >
     <ForwardRef
-      className=""
-      isInvalid={false}
+      hideLabel={true}
+      id="dateFieldsBefore"
+      invalid={false}
+      labelText="Before"
       onChange={[Function]}
       onClick={[Function]}
       onFocus={[Function]}
@@ -18,8 +20,10 @@ exports[`should match snapshot 1`] = `
       value="2017-08-29"
     />
     <ForwardRef
-      className=""
-      isInvalid={false}
+      hideLabel={true}
+      id="dateFieldsAfter"
+      invalid={false}
+      labelText="After"
       onChange={[Function]}
       onClick={[Function]}
       onFocus={[Function]}

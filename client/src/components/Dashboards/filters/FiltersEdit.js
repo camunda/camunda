@@ -8,6 +8,7 @@
 import React, {useState} from 'react';
 import update from 'immutability-helper';
 import equals from 'fast-deep-equal';
+import {Calendar} from '@carbon/icons-react';
 
 import {Button, Icon, LabeledInput} from 'components';
 import {VariableFilter, AssigneeFilter} from 'filter';
@@ -61,7 +62,7 @@ export default function FiltersEdit({
               <DateFilter
                 key={type}
                 emptyText={t('common.off')}
-                icon="calender"
+                icon={Calendar}
                 title={t('dashboard.filter.types.' + type)}
                 filter={dateFilter?.data}
                 setFilter={(newFilter) => {

@@ -5,33 +5,19 @@
  * except in compliance with the proprietary license.
  */
 
-import {useState, useEffect, useRef} from 'react';
-import {Button, MenuItemSelectable, Tooltip, Menu} from '@carbon/react';
-import {ChevronDown, UpdateNow} from '@carbon/icons-react';
-import {useAttachedMenu} from '@camunda/camunda-optimize-composite-components';
-import classnames from 'classnames';
+import {useState, useEffect} from 'react';
+import {MenuItemSelectable} from '@carbon/react';
+import {UpdateNow} from '@carbon/icons-react';
+import {MenuButton} from '@camunda/camunda-optimize-composite-components';
 
 import {t} from 'translation';
 
 import AutoRefreshIcon from './AutoRefreshIcon';
 
-import './AutoRefreshSelect.scss';
-
 export default function AutoRefreshSelect({refreshRateMs, onRefresh, onChange, size}) {
   const [autoRefreshHandle, setAutoRefreshHandle] = useState(() =>
     refreshRateMs && onRefresh ? setInterval(onRefresh, refreshRateMs) : null
   );
-  const menuRef = useRef(null);
-  const triggerRef = useRef(null);
-  const [width, setWidth] = useState(0);
-  const {
-    open,
-    x,
-    y,
-    handleClick: hookOnClick,
-    handleMousedown,
-    handleClose,
-  } = useAttachedMenu(triggerRef);
 
   function setAutorefresh(newRefreshRateMs) {
     clearInterval(autoRefreshHandle);
@@ -39,21 +25,6 @@ export default function AutoRefreshSelect({refreshRateMs, onRefresh, onChange, s
       setAutoRefreshHandle(setInterval(onRefresh, newRefreshRateMs));
     }
     onChange(newRefreshRateMs);
-  }
-
-  function handleClick() {
-    if (triggerRef.current) {
-      const {width} = triggerRef.current.getBoundingClientRect();
-      setWidth(width);
-      hookOnClick();
-    }
-  }
-
-  function handleOpen() {
-    if (menuRef.current) {
-      menuRef.current.style.width = `${width}px`;
-      menuRef.current.style.maxWidth = 'unset';
-    }
   }
 
   useEffect(() => {
@@ -73,55 +44,28 @@ export default function AutoRefreshSelect({refreshRateMs, onRefresh, onChange, s
   ];
 
   return (
-    <Tooltip
-      label={t('dashboard.autoRefresh')}
-      className="AutoRefreshSelect cds--icon-tooltip"
-      leaveDelayMs={50}
+    <MenuButton
+      className="AutoRefreshSelect"
+      kind="ghost"
+      label={onRefresh ? <AutoRefreshIcon interval={refreshRateMs} /> : <UpdateNow />}
+      menuLabel={t('dashboard.autoRefresh')}
+      size={size}
+      iconDescription={t('dashboard.autoRefresh')}
+      hasIconOnly
+      fullScreenTarget={document.querySelector('.fullscreen')}
     >
-      <div className="">
-        <Button
-          className={classnames('cds--menu-button__trigger', {
-            'cds--menu-button__trigger--open': open,
-          })}
-          ref={triggerRef}
-          kind="ghost"
-          iconDescription={t('dashboard.autoRefresh')}
-          renderIcon={ChevronDown}
-          aria-haspopup
-          aria-expanded={open}
-          onClick={handleClick}
-          onMouseDown={handleMousedown}
-          aria-controls={open ? 'autoRefreshSelect' : undefined}
-          size={size}
-        >
-          {onRefresh ? <AutoRefreshIcon interval={refreshRateMs} /> : <UpdateNow />}
-        </Button>
-        <Menu
-          ref={menuRef}
-          target={triggerRef.current}
-          id={'autoRefreshSelect'}
-          label={t('dashboard.autoRefresh')}
-          open={open}
-          onClose={handleClose}
-          onOpen={handleOpen}
-          x={x}
-          y={y}
-          size={size}
-        >
-          {menuItems.map(({value, label}) => {
-            const currentValue = !refreshRateMs ? 'off' : (refreshRateMs / (60 * 1000)).toString();
-            return (
-              <MenuItemSelectable
-                key={value}
-                value={value}
-                label={label}
-                selected={value === currentValue}
-                onChange={() => setAutorefresh(value === 'off' ? null : value * 60 * 1000)}
-              />
-            );
-          })}
-        </Menu>
-      </div>
-    </Tooltip>
+      {menuItems.map(({value, label}) => {
+        const currentValue = !refreshRateMs ? 'off' : (refreshRateMs / (60 * 1000)).toString();
+        return (
+          <MenuItemSelectable
+            key={value}
+            value={value}
+            label={label}
+            selected={value === currentValue}
+            onChange={() => setAutorefresh(value === 'off' ? null : value * 60 * 1000)}
+          />
+        );
+      })}
+    </MenuButton>
   );
 }

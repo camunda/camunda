@@ -1,3 +1,5 @@
+@use '@carbon/colors';
+
 .dark .FiltersView {
   border-color: var(--grey-darken-36);
 
@@ -77,12 +79,8 @@
     padding-left: 12px;
   }
 
-  .indicator {
-    vertical-align: middle;
-    color: var(--silver-darken-80);
-    &.active {
-      color: var(--blue-darken-55);
-    }
+  .indicator.active {
+    color: colors.$blue-60;
   }
 
   hr {

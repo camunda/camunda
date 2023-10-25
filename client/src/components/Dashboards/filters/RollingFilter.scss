@@ -1,20 +1,8 @@
 .RollingFilter {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  padding: 20px;
   min-width: 360px;
 
-  .Input.number {
-    min-width: 30%;
-    margin: 0 10px;
-  }
-
-  .Select {
-    flex: 1;
-  }
-
-  .Message {
-    margin-top: 10px;
+  .number,
+  .CarbonSelect {
+    width: 100%;
   }
 }

@@ -19,12 +19,13 @@ export interface CarbonSelectProps<T extends object | string | number = string>
   value?: T;
   onChange?: (value: T) => void;
   labelText?: string | JSX.Element[];
+  helperText?: string | JSX.Element[];
 }
 
 export default function CarbonSelect<T extends object | string | number>(
   props: CarbonSelectProps<T>
 ) {
-  const {labelText, ...rest} = props;
+  const {labelText, helperText, ...rest} = props;
   const renderChildrenWithProps = (children: ReactNode) => {
     return Children.toArray(children)
       .filter(isReactElement)
@@ -82,10 +83,10 @@ export default function CarbonSelect<T extends object | string | number>(
 
   return (
     <div className={classnames('CarbonSelect', props.className)}>
-      {props.labelText && (
+      {labelText && (
         <div className="cds--text-input__label-wrapper">
           <label htmlFor={props.id} className="cds--label">
-            {props.labelText}
+            {labelText}
           </label>
         </div>
       )}
@@ -93,9 +94,11 @@ export default function CarbonSelect<T extends object | string | number>(
         {...rest}
         onChange={(e: any) => onChange(e)}
         label={getLabel() || t('common.select')}
+        fullScreenTarget={document.querySelector('.fullscreen')}
       >
         {renderChildrenWithProps(children)}
       </MenuDropdown>
+      {helperText && !props.invalid && <div className="cds--form__helper-text">{helperText}</div>}
     </div>
   );
 }

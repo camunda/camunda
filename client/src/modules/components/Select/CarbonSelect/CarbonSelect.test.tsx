@@ -117,6 +117,18 @@ it('should allow a custom label', () => {
   expect(node.find('label').text()).toBe('Custom Select Label');
 });
 
+it('should allow a custom helper', () => {
+  const node = shallow(
+    <CarbonSelect {...props} helperText="Custom Helper Text">
+      <CarbonSelect.Option />
+    </CarbonSelect>
+  );
+
+  console.log(node.debug());
+
+  expect(node.find('div').at(1).text()).toBe('Custom Helper Text');
+});
+
 it('should use label attribute to calculate Select button label if provided', () => {
   const node = shallow(
     <CarbonSelect {...props}>
