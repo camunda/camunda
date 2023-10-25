@@ -39,6 +39,7 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.DatagramPacket;
 import io.netty.channel.socket.nio.NioDatagramChannel;
+import io.netty.resolver.dns.BiDnsQueryLifecycleObserverFactory;
 import io.netty.resolver.dns.DnsAddressResolverGroup;
 import io.netty.resolver.dns.DnsNameResolverBuilder;
 import io.netty.resolver.dns.LoggingDnsQueryLifeCycleObserverFactory;
@@ -47,7 +48,6 @@ import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -101,20 +101,28 @@ public class NettyUnicastService implements ManagedUnicastService {
       LOGGER.debug("Failed sending unicast message, unicast service was not started.");
       return;
     }
-    final Future<InetSocketAddress> inetSocketAddress =
-        dnsAddressResolverGroup.getResolver(group.next()).resolve(address.socketAddress());
+
     final Message message = new Message(advertisedAddress, subject, payload);
     final byte[] bytes = SERIALIZER.encode(message);
     final ByteBuf buf = channel.alloc().buffer(Integer.BYTES + Integer.BYTES + bytes.length);
     buf.writeInt(preamble);
     buf.writeInt(bytes.length).writeBytes(bytes);
 
-    try {
-      channel.writeAndFlush(new DatagramPacket(buf, inetSocketAddress.get()));
-    } catch (final InterruptedException | ExecutionException e) {
-      LOGGER.debug(
-          "Failed sending unicast message (destination address {} cannot be resolved)", address, e);
-    }
+    dnsAddressResolverGroup
+        .getResolver(group.next())
+        .resolve(address.socketAddress())
+        .addListener(
+            resolvedAddress -> {
+              if (resolvedAddress.isSuccess()) {
+                channel.writeAndFlush(
+                    new DatagramPacket(buf, (InetSocketAddress) resolvedAddress.get()));
+              } else {
+                log.warn(
+                    "Failed sending unicast message (destination address {} cannot be resolved)",
+                    address,
+                    resolvedAddress.exceptionNow());
+              }
+            });
   }
 
   @Override
@@ -150,8 +158,7 @@ public class NettyUnicastService implements ManagedUnicastService {
                 })
             .option(ChannelOption.RCVBUF_ALLOCATOR, new DefaultMaxBytesRecvByteBufAllocator())
             .option(ChannelOption.SO_BROADCAST, true)
-            .option(ChannelOption.SO_REUSEADDR, true)
-            .resolver(dnsAddressResolverGroup);
+            .option(ChannelOption.SO_REUSEADDR, true);
 
     return bind(serverBootstrap);
   }
@@ -201,12 +208,15 @@ public class NettyUnicastService implements ManagedUnicastService {
     return bootstrap()
         .thenRun(
             () -> {
+              final var metrics = new NettyDnsMetrics();
               started.set(true);
               dnsAddressResolverGroup =
                   new DnsAddressResolverGroup(
                       new DnsNameResolverBuilder(group.next())
                           .dnsQueryLifecycleObserverFactory(
-                              new LoggingDnsQueryLifeCycleObserverFactory())
+                              new BiDnsQueryLifecycleObserverFactory(
+                                  ignored -> metrics,
+                                  new LoggingDnsQueryLifeCycleObserverFactory()))
                           .channelType(NioDatagramChannel.class));
             })
         .thenApply(
