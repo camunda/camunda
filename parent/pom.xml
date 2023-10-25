@@ -52,7 +52,7 @@
     <version.docker-java-api>3.3.3</version.docker-java-api>
     <version.elasticsearch>8.7.1</version.elasticsearch>
     <version.error-prone>2.23.0</version.error-prone>
-    <version.grpc>1.58.0</version.grpc>
+    <version.grpc>1.59.0</version.grpc>
     <version.gson>2.10.1</version.gson>
     <version.guava>32.1.3-jre</version.guava>
     <version.hamcrest>2.2</version.hamcrest>
@@ -135,7 +135,7 @@
     <plugin.version.antrun>3.1.0</plugin.version.antrun>
     <plugin.version.appassembler>2.1.0</plugin.version.appassembler>
     <plugin.version.build-helper>3.4.0</plugin.version.build-helper>
-    <plugin.version.checkstyle>3.3.0</plugin.version.checkstyle>
+    <plugin.version.checkstyle>3.3.1</plugin.version.checkstyle>
     <plugin.version.compiler>3.11.0</plugin.version.compiler>
     <plugin.version.dependency-analyzer>1.13.2</plugin.version.dependency-analyzer>
     <plugin.version.dependency>3.6.1</plugin.version.dependency>
