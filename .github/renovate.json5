@@ -91,6 +91,8 @@
         "org.camunda.optimize:optimize-data-generator",
         "org.camunda.optimize:camunda-optimize",
         "org.camunda.optimize:util",
+        "org.camunda.optimize:qa",
+        "org.camunda.optimize:optimize-plugin-parent",
         "io.camunda:identity-sdk",
         "io.camunda:zeebe-client-java",
         "io.camunda:zeebe-protocol",
