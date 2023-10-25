@@ -61,6 +61,7 @@ import org.junit.jupiter.api.condition.OS;
 final class NettyMessagingServiceTest {
 
   private static final String IP_STRING = "127.0.0.1";
+  private static final int UID_COLUMN = 7;
 
   @AutoCloseResource private NettyMessagingService netty1;
   private Address address1;
@@ -747,12 +748,13 @@ final class NettyMessagingServiceTest {
     final var uid = new UnixSystem().getUid();
     lines.remove(0);
 
-    // then filter out any sockets not opened by the current user
+    // the UDP file is a table, where each row is whitespace separated and here we're only
+    // interested in the lines where the UID column happens to match our user ID
     return lines.stream()
         .filter(
             line -> {
               final String[] columns = line.trim().split("\\s+");
-              return Long.parseLong(columns[7]) == uid;
+              return Long.parseLong(columns[UID_COLUMN]) == uid;
             })
         .count();
   }
