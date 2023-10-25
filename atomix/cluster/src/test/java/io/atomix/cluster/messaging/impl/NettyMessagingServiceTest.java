@@ -17,26 +17,25 @@
 package io.atomix.cluster.messaging.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.slf4j.LoggerFactory.getLogger;
 
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.Uninterruptibles;
+import com.sun.security.auth.module.UnixSystem;
 import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.messaging.MessagingException;
 import io.atomix.utils.net.Address;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
+import io.camunda.zeebe.test.util.junit.RegressionTest;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
+import java.io.IOException;
 import java.net.ConnectException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -49,72 +48,72 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
-import java.util.stream.Stream;
 import org.agrona.collections.MutableReference;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.slf4j.Logger;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 
 /** Netty messaging service test. */
-public class NettyMessagingServiceTest {
+@AutoCloseResources
+final class NettyMessagingServiceTest {
 
-  private static final Logger LOGGER = getLogger(NettyMessagingServiceTest.class);
   private static final String IP_STRING = "127.0.0.1";
-  ManagedMessagingService netty1;
-  ManagedMessagingService netty2;
-  ManagedMessagingService nettyv11;
-  ManagedMessagingService nettyv12;
-  ManagedMessagingService nettyv21;
-  ManagedMessagingService nettyv22;
-  Address address1;
-  Address address2;
-  Address addressv11;
-  Address addressv12;
-  Address addressv21;
-  Address addressv22;
-  Address invalidAddress;
-  private ManagedMessagingService messagingService;
+  private static final int UID_COLUMN = 7;
 
-  @Before
-  public void setUp() throws Exception {
+  @AutoCloseResource private NettyMessagingService netty1;
+  private Address address1;
+  @AutoCloseResource private NettyMessagingService netty2;
+  private Address address2;
+  @AutoCloseResource private NettyMessagingService nettyv11;
+  private Address addressv11;
+  @AutoCloseResource private NettyMessagingService nettyv12;
+  private Address addressv12;
+  @AutoCloseResource private NettyMessagingService nettyv21;
+  private Address addressv21;
+  @AutoCloseResource private NettyMessagingService nettyv22;
+  private Address addressv22;
+  private Address invalidAddress;
+
+  @SuppressWarnings("resource")
+  @BeforeEach
+  void beforeEach() {
     address1 = Address.from(SocketUtil.getNextAddress().getPort());
     final var config = new MessagingConfig().setShutdownQuietPeriod(Duration.ofMillis(50));
 
     netty1 =
-        (ManagedMessagingService)
-            new NettyMessagingService("test", address1, config).start().join();
+        (NettyMessagingService) new NettyMessagingService("test", address1, config).start().join();
 
     address2 = Address.from(SocketUtil.getNextAddress().getPort());
     netty2 =
-        (ManagedMessagingService)
-            new NettyMessagingService("test", address2, config).start().join();
+        (NettyMessagingService) new NettyMessagingService("test", address2, config).start().join();
 
     addressv11 = Address.from(SocketUtil.getNextAddress().getPort());
     nettyv11 =
-        (ManagedMessagingService)
+        (NettyMessagingService)
             new NettyMessagingService("test", addressv11, config, ProtocolVersion.V1)
                 .start()
                 .join();
 
     addressv12 = Address.from(SocketUtil.getNextAddress().getPort());
     nettyv12 =
-        (ManagedMessagingService)
+        (NettyMessagingService)
             new NettyMessagingService("test", addressv12, config, ProtocolVersion.V1)
                 .start()
                 .join();
 
     addressv21 = Address.from(SocketUtil.getNextAddress().getPort());
     nettyv21 =
-        (ManagedMessagingService)
+        (NettyMessagingService)
             new NettyMessagingService("test", addressv21, config, ProtocolVersion.V2)
                 .start()
                 .join();
 
     addressv22 = Address.from(SocketUtil.getNextAddress().getPort());
     nettyv22 =
-        (ManagedMessagingService)
+        (NettyMessagingService)
             new NettyMessagingService("test", addressv22, config, ProtocolVersion.V2)
                 .start()
                 .join();
@@ -131,23 +130,8 @@ public class NettyMessagingServiceTest {
     return UUID.randomUUID().toString();
   }
 
-  @After
-  public void tearDown() throws Exception {
-    Stream.of(netty1, netty2, nettyv11, nettyv12, nettyv21, nettyv22, messagingService)
-        .parallel()
-        .filter(Objects::nonNull)
-        .forEach(
-            service -> {
-              try {
-                service.stop().join();
-              } catch (final Exception e) {
-                LOGGER.warn("Failed stopping NettyMessagingService {}", service, e);
-              }
-            });
-  }
-
   @Test
-  public void testSendAsyncToUnresolvable() {
+  void testSendAsyncToUnresolvable() {
     final Address unresolvable = Address.from("unknown.local", address1.port());
     final String subject = nextSubject();
     final CompletableFuture<Void> response =
@@ -157,14 +141,14 @@ public class NettyMessagingServiceTest {
   }
 
   @Test
-  public void testSendAsync() {
+  void testSendAsync() {
     final String subject = nextSubject();
     final CountDownLatch latch1 = new CountDownLatch(1);
     CompletableFuture<Void> response =
         netty1.sendAsync(address2, subject, "hello world".getBytes());
     response.whenComplete(
         (r, e) -> {
-          assertNull(e);
+          assertThat(e).isNull();
           latch1.countDown();
         });
     Uninterruptibles.awaitUninterruptibly(latch1);
@@ -173,15 +157,14 @@ public class NettyMessagingServiceTest {
     response = netty1.sendAsync(invalidAddress, subject, "hello world".getBytes());
     response.whenComplete(
         (r, e) -> {
-          assertNotNull(e);
-          assertTrue(e instanceof ConnectException);
+          assertThat(e).isInstanceOf(ConnectException.class);
           latch2.countDown();
         });
     Uninterruptibles.awaitUninterruptibly(latch2);
   }
 
   @Test
-  public void testSendAndReceive() {
+  void testSendAndReceive() {
     final String subject = nextSubject();
     final AtomicBoolean handlerInvoked = new AtomicBoolean(false);
     final AtomicReference<byte[]> request = new AtomicReference<>();
@@ -198,14 +181,15 @@ public class NettyMessagingServiceTest {
 
     final CompletableFuture<byte[]> response =
         netty1.sendAndReceive(address2, subject, "hello world".getBytes());
-    assertTrue(Arrays.equals("hello there".getBytes(), response.join()));
-    assertTrue(handlerInvoked.get());
-    assertTrue(Arrays.equals(request.get(), "hello world".getBytes()));
-    assertEquals(address1.tryResolveAddress(), sender.get().tryResolveAddress());
+    assertThat("hello there".getBytes()).isEqualTo(response.join());
+    assertThat(handlerInvoked.get()).isTrue();
+    assertThat(request.get()).asString().isEqualTo("hello world");
+    assertThat(Arrays.equals(request.get(), "hello world".getBytes())).isTrue();
+    assertThat(sender.get().tryResolveAddress()).isEqualTo(address1.tryResolveAddress());
   }
 
   @Test
-  public void shouldCompleteExistingRequestFutureExceptionallyWhenMessagingServiceIsClosed() {
+  void shouldCompleteExistingRequestFutureExceptionallyWhenMessagingServiceIsClosed() {
     final String subject = nextSubject();
     final CompletableFuture<byte[]> response =
         netty1.sendAndReceive(
@@ -234,7 +218,7 @@ public class NettyMessagingServiceTest {
   }
 
   @Test
-  public void shouldCompleteFutureExceptionallyIfMessagingServiceIsClosedInBetween() {
+  void shouldCompleteFutureExceptionallyIfMessagingServiceIsClosedInBetween() {
     final String subject = nextSubject();
 
     // when
@@ -250,7 +234,7 @@ public class NettyMessagingServiceTest {
   }
 
   @Test
-  public void shouldCompleteRequestWithKeepAliveExceptionallyIfMessagingServiceIsClosedInBetween() {
+  void shouldCompleteRequestWithKeepAliveExceptionallyIfMessagingServiceIsClosedInBetween() {
     final String subject = nextSubject();
 
     // when
@@ -266,7 +250,7 @@ public class NettyMessagingServiceTest {
   }
 
   @Test
-  public void shouldCompleteFutureExceptionallyIfMessagingServiceHasAlreadyClosed() {
+  void shouldCompleteFutureExceptionallyIfMessagingServiceHasAlreadyClosed() {
     final String subject = nextSubject();
     netty1.stop().join();
 
@@ -280,7 +264,7 @@ public class NettyMessagingServiceTest {
   }
 
   @Test
-  public void shouldCompleteRequestWithKeepAliveExceptionallyIfMessagingServiceHasAlreadyClosed() {
+  void shouldCompleteRequestWithKeepAliveExceptionallyIfMessagingServiceHasAlreadyClosed() {
     final String subject = nextSubject();
     netty1.stop().join();
 
@@ -294,7 +278,7 @@ public class NettyMessagingServiceTest {
   }
 
   @Test
-  public void testTransientSendAndReceive() {
+  void testTransientSendAndReceive() {
     final String subject = nextSubject();
     final AtomicBoolean handlerInvoked = new AtomicBoolean(false);
     final AtomicReference<byte[]> request = new AtomicReference<>();
@@ -311,14 +295,14 @@ public class NettyMessagingServiceTest {
 
     final CompletableFuture<byte[]> response =
         netty1.sendAndReceive(address2, subject, "hello world".getBytes(), false);
-    assertTrue(Arrays.equals("hello there".getBytes(), response.join()));
-    assertTrue(handlerInvoked.get());
-    assertTrue(Arrays.equals(request.get(), "hello world".getBytes()));
-    assertEquals(address1.tryResolveAddress(), sender.get().tryResolveAddress());
+    assertThat("hello there".getBytes()).isEqualTo(response.join());
+    assertThat(handlerInvoked.get()).isTrue();
+    assertThat(request.get()).asString().isEqualTo("hello world");
+    assertThat(sender.get().tryResolveAddress()).isEqualTo(address1.tryResolveAddress());
   }
 
   @Test
-  public void testSendAndReceiveWithFixedTimeout() {
+  void testSendAndReceiveWithFixedTimeout() {
     final String subject = nextSubject();
     final BiFunction<Address, byte[], CompletableFuture<byte[]>> handler =
         (ep, payload) -> new CompletableFuture<>();
@@ -328,15 +312,15 @@ public class NettyMessagingServiceTest {
       netty1
           .sendAndReceive(address2, subject, "hello world".getBytes(), Duration.ofSeconds(1))
           .join();
-      fail();
+      Assertions.fail();
     } catch (final CompletionException e) {
-      assertTrue(e.getCause() instanceof TimeoutException);
+      assertThat(e.getCause()).isInstanceOf(TimeoutException.class);
     }
   }
 
   @Test
-  @Ignore
-  public void testSendAndReceiveWithExecutor() {
+  @Disabled
+  void testSendAndReceiveWithExecutor() {
     final String subject = nextSubject();
     final ExecutorService completionExecutor =
         Executors.newSingleThreadExecutor(r -> new Thread(r, "completion-thread"));
@@ -354,7 +338,7 @@ public class NettyMessagingServiceTest {
             latch.await();
           } catch (final InterruptedException e1) {
             Thread.currentThread().interrupt();
-            fail("InterruptedException");
+            Assertions.fail("InterruptedException");
           }
           return "hello there".getBytes();
         };
@@ -370,13 +354,13 @@ public class NettyMessagingServiceTest {
 
     // Verify that the message was request handling and response completion happens on the correct
     // thread.
-    assertTrue(Arrays.equals("hello there".getBytes(), response.join()));
-    assertEquals("completion-thread", completionThreadName.get());
-    assertEquals("handler-thread", handlerThreadName.get());
+    assertThat("hello there".getBytes()).isEqualTo(response.join());
+    assertThat(completionThreadName.get()).isEqualTo("completion-thread");
+    assertThat(handlerThreadName.get()).isEqualTo("handler-thread");
   }
 
   @Test
-  public void testV1() throws Exception {
+  void testV1() throws Exception {
     final String subject;
     final byte[] payload = "Hello world!".getBytes();
     final byte[] response;
@@ -384,11 +368,11 @@ public class NettyMessagingServiceTest {
     subject = nextSubject();
     nettyv11.registerHandler(subject, (address, bytes) -> CompletableFuture.completedFuture(bytes));
     response = nettyv12.sendAndReceive(addressv11, subject, payload).get(10, TimeUnit.SECONDS);
-    assertArrayEquals(payload, response);
+    assertThat(response).isEqualTo(payload);
   }
 
   @Test
-  public void testV2() throws Exception {
+  void testV2() throws Exception {
     final String subject;
     final byte[] payload = "Hello world!".getBytes();
     final byte[] response;
@@ -396,11 +380,11 @@ public class NettyMessagingServiceTest {
     subject = nextSubject();
     nettyv21.registerHandler(subject, (address, bytes) -> CompletableFuture.completedFuture(bytes));
     response = nettyv22.sendAndReceive(addressv21, subject, payload).get(10, TimeUnit.SECONDS);
-    assertArrayEquals(payload, response);
+    assertThat(response).isEqualTo(payload);
   }
 
   @Test
-  public void testVersionNegotiation() throws Exception {
+  void testVersionNegotiation() throws Exception {
     String subject;
     final byte[] payload = "Hello world!".getBytes();
     byte[] response;
@@ -408,16 +392,16 @@ public class NettyMessagingServiceTest {
     subject = nextSubject();
     nettyv11.registerHandler(subject, (address, bytes) -> CompletableFuture.completedFuture(bytes));
     response = nettyv21.sendAndReceive(addressv11, subject, payload).get(10, TimeUnit.SECONDS);
-    assertArrayEquals(payload, response);
+    assertThat(response).isEqualTo(payload);
 
     subject = nextSubject();
     nettyv22.registerHandler(subject, (address, bytes) -> CompletableFuture.completedFuture(bytes));
     response = nettyv12.sendAndReceive(addressv22, subject, payload).get(10, TimeUnit.SECONDS);
-    assertArrayEquals(payload, response);
+    assertThat(response).isEqualTo(payload);
   }
 
   @Test
-  public void shouldNotBindToAdvertisedAddress() {
+  void shouldNotBindToAdvertisedAddress() throws Exception {
     // given
     final var bindingAddress = Address.from(SocketUtil.getNextAddress().getPort());
     final MessagingConfig config = new MessagingConfig();
@@ -426,16 +410,16 @@ public class NettyMessagingServiceTest {
 
     // when
     final Address nonBindableAddress = new Address("invalid.host", 1);
-    final var startFuture = new NettyMessagingService("test", nonBindableAddress, config).start();
-
-    // then - should not fail by using advertisedAddress for binding
-    messagingService = (ManagedMessagingService) startFuture.join();
-    assertThat(messagingService.bindingAddresses()).contains(bindingAddress);
-    assertThat(messagingService.address()).isEqualTo(nonBindableAddress);
+    try (final var service = new NettyMessagingService("test", nonBindableAddress, config)) {
+      // then - should not fail by using advertisedAddress for binding
+      assertThat(service.start()).succeedsWithin(Duration.ofSeconds(5));
+      assertThat(service.bindingAddresses()).contains(bindingAddress);
+      assertThat(service.address()).isEqualTo(nonBindableAddress);
+    }
   }
 
   @Test
-  public void testRemoteHandlerFailure() {
+  void testRemoteHandlerFailure() {
     // given
     final var exceptionMessage = "foo bar";
     final var expectedException = new MessagingException.RemoteHandlerFailure(exceptionMessage);
@@ -462,7 +446,7 @@ public class NettyMessagingServiceTest {
   }
 
   @Test
-  public void testRemoteHandlerFailureNullValue() {
+  void testRemoteHandlerFailureNullValue() {
     // given
     final var expectedException = new MessagingException.RemoteHandlerFailure(null);
 
@@ -488,7 +472,7 @@ public class NettyMessagingServiceTest {
   }
 
   @Test
-  public void testRemoteHandlerFailureEmptyStringValue() {
+  void testRemoteHandlerFailureEmptyStringValue() {
     // given
     final var exceptionMessage = "";
     final var expectedException = new MessagingException.RemoteHandlerFailure(null);
@@ -515,7 +499,7 @@ public class NettyMessagingServiceTest {
   }
 
   @Test
-  public void testCompletableRemoteHandlerFailure() {
+  void testCompletableRemoteHandlerFailure() {
     // given
     final var exceptionMessage = "foo bar";
     final var expectedException = new MessagingException.RemoteHandlerFailure(exceptionMessage);
@@ -539,7 +523,7 @@ public class NettyMessagingServiceTest {
   }
 
   @Test
-  public void testCompletableRemoteHandlerFailureNullValue() {
+  void testCompletableRemoteHandlerFailureNullValue() {
     // given
     final var expectedException = new MessagingException.RemoteHandlerFailure(null);
 
@@ -561,7 +545,7 @@ public class NettyMessagingServiceTest {
   }
 
   @Test
-  public void testCompletableRemoteHandlerFailureEmptyStringValue() {
+  void testCompletableRemoteHandlerFailureEmptyStringValue() {
     // given
     final var exceptionMessage = "";
     final var expectedException = new MessagingException.RemoteHandlerFailure(null);
@@ -585,7 +569,7 @@ public class NettyMessagingServiceTest {
   }
 
   @Test
-  public void shouldCloseChannelAfterTimeout() {
+  void shouldCloseChannelAfterTimeout() {
     // given
     final var subject = nextSubject();
     final MutableReference<ChannelPool> poolRef = new MutableReference<>();
@@ -626,7 +610,7 @@ public class NettyMessagingServiceTest {
   }
 
   @Test
-  public void shouldCreateNewChannelOnNewRequestAfterTimeout() {
+  void shouldCreateNewChannelOnNewRequestAfterTimeout() {
     // given
     final var subject = nextSubject();
     final MutableReference<ChannelPool> poolRef = new MutableReference<>();
@@ -693,7 +677,7 @@ public class NettyMessagingServiceTest {
   }
 
   @Test
-  public void testNoRemoteHandlerException() {
+  void testNoRemoteHandlerException() {
     // given
     final var subject = nextSubject();
     final var expectedException = new MessagingException.NoRemoteHandler(subject);
@@ -712,7 +696,7 @@ public class NettyMessagingServiceTest {
   }
 
   @Test
-  public void testNoRemoteHandlerExceptionEmptyStringValue() {
+  void testNoRemoteHandlerExceptionEmptyStringValue() {
     // given
     final var subject = "";
     final var expectedException = new MessagingException.NoRemoteHandler(null);
@@ -728,5 +712,50 @@ public class NettyMessagingServiceTest {
         .havingRootCause()
         .isInstanceOf(MessagingException.NoRemoteHandler.class)
         .withMessage(expectedException.getMessage());
+  }
+
+  @EnabledOnOs(OS.LINUX)
+  @RegressionTest("https://github.com/camunda/zeebe/issues/14837")
+  void shouldNotLeakUdpSockets() throws IOException {
+    // given
+    // the configured amount of threads for Netty's epoll transport
+    final var maxConnections = Runtime.getRuntime().availableProcessors() * 2;
+    final var subject = nextSubject();
+    netty2.registerHandler(
+        subject, (address, bytes) -> new byte[0], MoreExecutors.directExecutor());
+
+    // when
+    for (int i = 0; i < maxConnections * 4; i++) {
+      netty1.sendAndReceive(netty2.address(), subject, "hello world".getBytes(), false).join();
+    }
+
+    // then - there seems to be a slight amount more than maxConnections normally, but without the
+    // fix this was way, way, way more, so it should be fine to allow a little bit more than the
+    // expected max number of connections
+    assertThat(udpSocketCount()).isLessThanOrEqualTo(maxConnections * 2L);
+  }
+
+  private long udpSocketCount() throws IOException {
+    final var pid = ProcessHandle.current().pid();
+    final var udpPath = Path.of("/proc/" + pid + "/net/udp");
+    final var udp6Path = Path.of("/proc/" + pid + "/net/udp6");
+    return udpSocketCount(udpPath) + udpSocketCount(udp6Path);
+  }
+
+  private long udpSocketCount(final Path path) throws IOException {
+    // we can drop the first line since it's just the headers
+    final var lines = Files.readAllLines(path);
+    final var uid = new UnixSystem().getUid();
+    lines.remove(0);
+
+    // the UDP file is a table, where each row is whitespace separated and here we're only
+    // interested in the lines where the UID column happens to match our user ID
+    return lines.stream()
+        .filter(
+            line -> {
+              final String[] columns = line.trim().split("\\s+");
+              return Long.parseLong(columns[UID_COLUMN]) == uid;
+            })
+        .count();
   }
 }

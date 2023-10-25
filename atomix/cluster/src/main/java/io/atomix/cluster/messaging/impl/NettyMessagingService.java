@@ -62,6 +62,7 @@ import io.netty.handler.codec.compression.ZlibWrapper;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslProvider;
+import io.netty.resolver.dns.BiDnsQueryLifecycleObserverFactory;
 import io.netty.resolver.dns.DnsAddressResolverGroup;
 import io.netty.resolver.dns.DnsNameResolverBuilder;
 import io.netty.resolver.dns.LoggingDnsQueryLifeCycleObserverFactory;
@@ -91,6 +92,7 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.agrona.CloseHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -125,6 +127,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
   private volatile LocalClientConnection localConnection;
   private SslContext serverSslContext;
   private SslContext clientSslContext;
+  private DnsAddressResolverGroup dnsResolverGroup;
   private final MessagingMetrics messagingMetrics = new MessagingMetricsImpl();
 
   public NettyMessagingService(
@@ -375,6 +378,15 @@ public final class NettyMessagingService implements ManagedMessagingService {
         .thenCompose(ok -> bootstrapServer())
         .thenRun(
             () -> {
+              final var metrics = new NettyDnsMetrics();
+              dnsResolverGroup =
+                  new DnsAddressResolverGroup(
+                      new DnsNameResolverBuilder(clientGroup.next())
+                          .dnsQueryLifecycleObserverFactory(
+                              new BiDnsQueryLifecycleObserverFactory(
+                                  ignored -> metrics,
+                                  new LoggingDnsQueryLifeCycleObserverFactory()))
+                          .channelType(clientDataGramChannelClass));
               timeoutExecutor =
                   Executors.newSingleThreadScheduledExecutor(
                       new DefaultThreadFactory("netty-messaging-timeout-"));
@@ -397,6 +409,11 @@ public final class NettyMessagingService implements ManagedMessagingService {
           () -> {
             boolean interrupted = false;
             try {
+              if (dnsResolverGroup != null) {
+                CloseHelper.close(
+                    error -> log.warn("Failed to close DNS resolvers", error), dnsResolverGroup);
+              }
+
               try {
                 serverChannel.close().sync();
               } catch (final InterruptedException e) {
@@ -721,11 +738,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
     bootstrap.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 1000);
     bootstrap.group(clientGroup);
     bootstrap.channel(clientChannelClass);
-    bootstrap.resolver(
-        new DnsAddressResolverGroup(
-            new DnsNameResolverBuilder(clientGroup.next())
-                .dnsQueryLifecycleObserverFactory(new LoggingDnsQueryLifeCycleObserverFactory())
-                .channelType(clientDataGramChannelClass)));
+    bootstrap.resolver(dnsResolverGroup);
     bootstrap.remoteAddress(socketAddress);
     bootstrap.handler(new BasicClientChannelInitializer(future));
 

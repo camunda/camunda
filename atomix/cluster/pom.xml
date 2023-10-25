@@ -138,6 +138,11 @@
       <artifactId>simpleclient</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>io.netty</groupId>
+      <artifactId>netty-codec-dns</artifactId>
+    </dependency>
+
     <!-- test dependencies -->
 
     <dependency>
