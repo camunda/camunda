@@ -11,7 +11,6 @@ import io.atomix.cluster.MemberId;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 /**
  * Represents the ongoing cluster topology changes. The pendingOperations are executed sequentially.
@@ -23,50 +22,32 @@ import java.util.Optional;
  * gossip update out of order.
  */
 public record ClusterChangePlan(
-    int version, Optional<CompletedChange> lastChange, Optional<PendingChange> ongoingChange) {
-  public static ClusterChangePlan empty() {
-    return new ClusterChangePlan(0, Optional.empty(), Optional.empty());
-  }
+    long id,
+    int version,
+    Status status,
+    Instant startedAt,
+    List<CompletedOperation> completedOperations,
+    List<TopologyChangeOperation> pendingOperations) {
 
   public static ClusterChangePlan init(
       final long id, final List<TopologyChangeOperation> operations) {
     return new ClusterChangePlan(
-        1,
-        Optional.empty(),
-        Optional.of(
-            new PendingChange(
-                id, Status.IN_PROGRESS, Instant.now(), List.of(), List.copyOf(operations))));
+        id, 1, Status.IN_PROGRESS, Instant.now(), List.of(), List.copyOf(operations));
   }
 
   /** To be called when the first operation is completed. */
   ClusterChangePlan advance() {
     // List#subList hold on to the original list. Make a copy to prevent a potential memory leak.
-    final PendingChange pendingChange = ongoingChange.orElseThrow();
-    final List<TopologyChangeOperation> pendingOperations = pendingChange.pendingOperations();
     final var nextPendingOperations =
         List.copyOf(pendingOperations.subList(1, pendingOperations.size()));
-    final var newCompletedOperations = new ArrayList<>(pendingChange.completedOperations());
+    final var newCompletedOperations = new ArrayList<>(completedOperations);
     newCompletedOperations.add(new CompletedOperation(pendingOperations.get(0), Instant.now()));
     return new ClusterChangePlan(
-        version + 1,
-        lastChange,
-        Optional.of(
-            new PendingChange(
-                pendingChange.id(),
-                pendingChange.status(),
-                pendingChange.startedAt(),
-                newCompletedOperations,
-                nextPendingOperations)));
+        id, version + 1, status, startedAt(), newCompletedOperations, nextPendingOperations);
   }
 
-  ClusterChangePlan completed() {
-    final var pendingChange = ongoingChange.orElseThrow();
-    return new ClusterChangePlan(
-        0, // reset version
-        Optional.of(
-            new CompletedChange(
-                pendingChange.id(), Status.COMPLETED, pendingChange.startedAt(), Instant.now())),
-        Optional.empty());
+  CompletedChange completed() {
+    return new CompletedChange(id, Status.COMPLETED, startedAt(), Instant.now());
   }
 
   public ClusterChangePlan merge(final ClusterChangePlan other) {
@@ -81,35 +62,22 @@ public record ClusterChangePlan(
   }
 
   public boolean hasPendingChangesFor(final MemberId memberId) {
-    if (ongoingChange.isEmpty()) {
-      return false;
-    }
-    final var pendingOperations = ongoingChange.get().pendingOperations();
     return !pendingOperations.isEmpty() && pendingOperations.get(0).memberId().equals(memberId);
   }
 
   public TopologyChangeOperation nextPendingOperation() {
-    return ongoingChange.orElseThrow().pendingOperations().get(0);
+    return pendingOperations().get(0);
   }
 
   public boolean hasPendingChanges() {
-    return ongoingChange.isPresent() && !ongoingChange.get().pendingOperations().isEmpty();
+    return !pendingOperations().isEmpty();
   }
-
-  public record CompletedChange(long id, Status status, Instant startedAt, Instant completedAt) {}
-
-  public record PendingChange(
-      long id,
-      Status status,
-      Instant startedAt,
-      List<CompletedOperation> completedOperations,
-      List<TopologyChangeOperation> pendingOperations) {}
 
   public record CompletedOperation(TopologyChangeOperation operation, Instant completedAt) {}
 
   public enum Status {
     IN_PROGRESS,
     COMPLETED,
-    FAILED
+    FAILED;
   }
 }
