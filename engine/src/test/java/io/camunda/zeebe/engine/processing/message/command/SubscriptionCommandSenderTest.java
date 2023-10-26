@@ -303,6 +303,7 @@ public class SubscriptionCommandSenderTest {
 
     // when
     subscriptionCommandSender.rejectCorrelateMessageSubscription(
+        DIFFERENT_PARTITION,
         DIFFERENT_RECEIVER_PARTITION_KEY,
         DEFAULT_ELEMENT_INSTANCE_KEY,
         DEFAULT_PROCESS_ID,
@@ -322,6 +323,7 @@ public class SubscriptionCommandSenderTest {
 
     // when
     subscriptionCommandSender.rejectCorrelateMessageSubscription(
+        (int) SAME_RECEIVER_PARTITION_KEY,
         SAME_RECEIVER_PARTITION_KEY,
         DEFAULT_ELEMENT_INSTANCE_KEY,
         DEFAULT_PROCESS_ID,
