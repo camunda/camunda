@@ -5,10 +5,11 @@
  * except in compliance with the proprietary license.
  */
 
-import {Modal, TextArea} from '@carbon/react';
+import {Modal} from '@carbon/react';
 import {ERRORS} from 'modules/validators';
 import {validateMultipleVariableValues} from 'modules/validators/validateMultipleVariableValues';
 import {useEffect, useState} from 'react';
+import {TextArea} from './styled';
 
 type Props = {
   isVisible: boolean;
