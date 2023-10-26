@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.protocol.record.intent.FormIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -31,6 +32,7 @@ import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsMetadataValue;
+import io.camunda.zeebe.protocol.record.value.deployment.Form;
 import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -45,6 +47,7 @@ public class ResourceDeletionTest {
   private static final String DRG_SINGLE_DECISION_V2 = "/dmn/decision-table_v2.dmn";
   private static final String DRG_MULTIPLE_DECISIONS = "/dmn/drg-force-user.dmn";
   private static final String RESULT_VARIABLE = "result";
+  private static final String FORM = "/form/test-form-1.form";
 
   @Rule public final EngineRule engine = EngineRule.singlePartition();
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
@@ -619,6 +622,19 @@ public class ResourceDeletionTest {
     verifyResourceIsDeleted(versionTwoProcessDefinitionKey);
   }
 
+  @Test
+  public void shouldWriteDeletedEventsForForm() {
+    // given
+    final long formKey = deployForm(FORM);
+
+    // when
+    engine.resourceDeletion().withResourceKey(formKey).delete();
+
+    // then
+    verifyFormIsDeleted(formKey);
+    verifyResourceIsDeleted(formKey);
+  }
+
   private long deployDrg(final String drgResource) {
     return engine
         .deployment()
@@ -968,5 +984,47 @@ public class ResourceDeletionTest {
             t -> t.getValue().getProcessDefinitionKey(),
             t -> t.getValue().getCatchEventInstanceKey())
         .containsOnly(tuple(processDefinitionKey, NO_ELEMENT_INSTANCE));
+  }
+
+  private long deployForm(final String formResource) {
+    return engine
+        .deployment()
+        .withXmlResource(readResource(formResource), formResource)
+        .deploy()
+        .getValue()
+        .getFormMetadata()
+        .get(0)
+        .getFormKey();
+  }
+
+  private void verifyFormIsDeleted(final long formKey) {
+    final var formCreatedRecord =
+        RecordingExporter.formRecords()
+            .withFormKey(formKey)
+            .withIntent(FormIntent.CREATED)
+            .getFirst()
+            .getValue();
+
+    final var formDeletedRecord =
+        RecordingExporter.formRecords()
+            .withFormKey(formKey)
+            .withIntent(FormIntent.DELETED)
+            .getFirst()
+            .getValue();
+
+    assertThat(formDeletedRecord)
+        .describedAs("Expect deleted form to match the created form")
+        .extracting(
+            Form::getFormId,
+            Form::getFormKey,
+            Form::getVersion,
+            Form::getResourceName,
+            Form::getTenantId)
+        .containsOnly(
+            formCreatedRecord.getFormId(),
+            formCreatedRecord.getFormKey(),
+            formCreatedRecord.getVersion(),
+            formCreatedRecord.getResourceName(),
+            formCreatedRecord.getTenantId());
   }
 }

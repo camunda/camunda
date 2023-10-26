@@ -7,15 +7,12 @@
  */
 package io.camunda.zeebe.engine.state.deployment;
 
-import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsArray;
-import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.state.mutable.MutableFormState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
-import io.camunda.zeebe.protocol.impl.record.value.deployment.FormRecord;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,52 +27,6 @@ public class FormStateTest {
   @BeforeEach
   public void setup() {
     formState = processingState.getFormState();
-  }
-
-  @Test
-  void shouldStoreForm() {
-    // given
-    final var formRecord = sampleFormRecord();
-    formState.storeFormRecord(formRecord);
-
-    // when
-    final var maybePersistedForm = formState.findFormByKey(formRecord.getFormKey(), tenantId);
-
-    // then
-    assertThat(maybePersistedForm).isNotEmpty();
-    final var persistedForm = maybePersistedForm.get();
-    assertThat(bufferAsString(persistedForm.getFormId())).isEqualTo(formRecord.getFormId());
-    assertThat(persistedForm.getVersion()).isEqualTo(formRecord.getVersion());
-    assertThat(persistedForm.getFormKey()).isEqualTo(formRecord.getFormKey());
-    assertThat(bufferAsString(persistedForm.getResourceName()))
-        .isEqualTo(formRecord.getResourceName());
-    assertThat(bufferAsArray(persistedForm.getChecksum())).isEqualTo(formRecord.getChecksum());
-    assertThat(bufferAsArray(persistedForm.getResource())).isEqualTo(formRecord.getResource());
-  }
-
-  @Test
-  void shouldFindLatestByFormId() {
-    // given
-    final var formRecord1 = sampleFormRecord();
-    formState.storeFormRecord(formRecord1);
-
-    final var formRecord2 = sampleFormRecord(2, 2L);
-    formState.storeFormRecord(formRecord2);
-
-    // when
-    final var maybePersistedForm =
-        formState.findLatestFormById(formRecord1.getFormIdBuffer(), tenantId);
-
-    // then
-    assertThat(maybePersistedForm).isNotEmpty();
-    final var persistedForm = maybePersistedForm.get();
-    assertThat(bufferAsString(persistedForm.getFormId())).isEqualTo(formRecord2.getFormId());
-    assertThat(persistedForm.getVersion()).isEqualTo(2);
-    assertThat(persistedForm.getFormKey()).isEqualTo(formRecord2.getFormKey());
-    assertThat(bufferAsString(persistedForm.getResourceName()))
-        .isEqualTo(formRecord2.getResourceName());
-    assertThat(bufferAsArray(persistedForm.getChecksum())).isEqualTo(formRecord2.getChecksum());
-    assertThat(bufferAsArray(persistedForm.getResource())).isEqualTo(formRecord2.getResource());
   }
 
   @Test
@@ -94,20 +45,5 @@ public class FormStateTest {
 
     // then
     assertThat(persistedForm).isEmpty();
-  }
-
-  private FormRecord sampleFormRecord(final int version, final long key) {
-    return new FormRecord()
-        .setFormId("form-id")
-        .setVersion(version)
-        .setFormKey(key)
-        .setResourceName("form-1.form")
-        .setChecksum(wrapString("checksum"))
-        .setResource(wrapString("form-resource"))
-        .setTenantId(tenantId);
-  }
-
-  private FormRecord sampleFormRecord() {
-    return sampleFormRecord(1, 1L);
   }
 }

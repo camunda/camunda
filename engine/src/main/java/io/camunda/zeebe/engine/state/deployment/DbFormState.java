@@ -70,17 +70,52 @@ public class DbFormState implements MutableFormState {
   }
 
   @Override
-  public void storeFormRecord(final FormRecord record) {
+  public void storeFormInFormColumnFamily(final FormRecord record) {
     tenantIdKey.wrapString(record.getTenantId());
     dbFormKey.wrapLong(record.getFormKey());
+    dbPersistedForm.wrap(record);
+    formsByKey.upsert(tenantAwareFormKey, dbPersistedForm);
+    formByTenantAndIdCache.put(
+        new TenantIdAndFormId(record.getTenantId(), record.getFormIdBuffer()),
+        dbPersistedForm.copy());
+  }
+
+  @Override
+  public void storeFormInFormByIdAndVersionColumnFamily(final FormRecord record) {
+    tenantIdKey.wrapString(record.getTenantId());
     dbFormId.wrapString(record.getFormId());
     formVersion.wrapLong(record.getVersion());
     dbPersistedForm.wrap(record);
-    formsByKey.upsert(tenantAwareFormKey, dbPersistedForm);
     formByIdAndVersionColumnFamily.upsert(tenantAwareIdAndVersionKey, dbPersistedForm);
+  }
 
-    updateLatestVersion(record);
-    updateLatestFormCache();
+  @Override
+  public void updateLatestVersion(final FormRecord record) {
+    versionManager.addResourceVersion(
+        record.getFormId(), record.getVersion(), record.getTenantId());
+  }
+
+  @Override
+  public void deleteFormInFormsColumnFamily(final FormRecord record) {
+    tenantIdKey.wrapString(record.getTenantId());
+    dbFormKey.wrapLong(record.getFormKey());
+    formsByKey.deleteExisting(tenantAwareFormKey);
+    formByTenantAndIdCache.remove(
+        new TenantIdAndFormId(record.getTenantId(), record.getFormIdBuffer()));
+  }
+
+  @Override
+  public void deleteFormInFormByIdAndVersionColumnFamily(final FormRecord record) {
+    tenantIdKey.wrapString(record.getTenantId());
+    dbFormId.wrapString(record.getFormId());
+    formVersion.wrapLong(record.getVersion());
+    formByIdAndVersionColumnFamily.deleteExisting(tenantAwareIdAndVersionKey);
+  }
+
+  @Override
+  public void deleteFormInFormVersionColumnFamily(final FormRecord record) {
+    versionManager.deleteResourceVersion(
+        record.getFormId(), record.getVersion(), record.getTenantId());
   }
 
   @Override
@@ -114,22 +149,14 @@ public class DbFormState implements MutableFormState {
   }
 
   @Override
+  public int getNextFormVersion(final String formId, final String tenantId) {
+    return (int) versionManager.getHighestResourceVersion(formId, tenantId) + 1;
+  }
+
+  @Override
   public void clearCache() {
     formByTenantAndIdCache.clear();
     versionManager.clear();
-  }
-
-  private void updateLatestVersion(final FormRecord formRecord) {
-    final var formId = formRecord.getFormId();
-    final var version = formRecord.getVersion();
-    final var tenantId = formRecord.getTenantId();
-    versionManager.addResourceVersion(formId, version, tenantId);
-  }
-
-  private void updateLatestFormCache() {
-    formByTenantAndIdCache.put(
-        new TenantIdAndFormId(dbPersistedForm.getTenantId(), dbPersistedForm.getFormId()),
-        dbPersistedForm.copy());
   }
 
   private record TenantIdAndFormId(String tenantId, DirectBuffer formId) {}

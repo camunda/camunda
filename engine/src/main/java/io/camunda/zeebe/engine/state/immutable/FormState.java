@@ -32,5 +32,13 @@ public interface FormState {
    */
   Optional<PersistedForm> findFormByKey(long formKey, final String tenantId);
 
+  /**
+   * Gets the next version a form of a given id will receive. This is used, for example, when a new
+   * deployment is done. Using this method we decide the version the newly deployed form receives.
+   *
+   * @param formId the id of the form
+   */
+  int getNextFormVersion(String formId, String tenantId);
+
   void clearCache();
 }

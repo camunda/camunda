@@ -25,19 +25,23 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.deployment.DeployedDrg;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.deployment.PersistedDecision;
+import io.camunda.zeebe.engine.state.deployment.PersistedForm;
 import io.camunda.zeebe.engine.state.immutable.DecisionState;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
+import io.camunda.zeebe.engine.state.immutable.FormState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.TimerInstanceState;
 import io.camunda.zeebe.model.bpmn.util.time.Timer;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.FormRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
+import io.camunda.zeebe.protocol.record.intent.FormIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -61,6 +65,7 @@ public class ResourceDeletionProcessor
   private final CatchEventBehavior catchEventBehavior;
   private final ExpressionProcessor expressionProcessor;
   private final StartEventSubscriptionManager startEventSubscriptionManager;
+  private final FormState formState;
 
   public ResourceDeletionProcessor(
       final Writers writers,
@@ -81,6 +86,7 @@ public class ResourceDeletionProcessor
     expressionProcessor = bpmnBehaviors.expressionBehavior();
     startEventSubscriptionManager =
         new StartEventSubscriptionManager(processingState, keyGenerator, stateWriter);
+    formState = processingState.getFormState();
   }
 
   @Override
@@ -141,6 +147,12 @@ public class ResourceDeletionProcessor
             value.getTenantId(), value.getResourceKey());
     if (drgOptional.isPresent()) {
       deleteDecisionRequirements(drgOptional.get());
+      return;
+    }
+
+    final var formOptional = formState.findFormByKey(value.getResourceKey(), value.getTenantId());
+    if (formOptional.isPresent()) {
+      deleteForm(formOptional.get());
       return;
     }
 
@@ -266,6 +278,20 @@ public class ResourceDeletionProcessor
     }
 
     startEventSubscriptionManager.openStartEventSubscriptions(deployedProcess);
+  }
+
+  private void deleteForm(final PersistedForm persistedForm) {
+    final var form =
+        new FormRecord()
+            .setFormId(persistedForm.getFormId())
+            .setFormKey(persistedForm.getFormKey())
+            .setTenantId(persistedForm.getTenantId())
+            .setResourceName(persistedForm.getResourceName())
+            .setResource(persistedForm.getResource())
+            .setChecksum(persistedForm.getChecksum())
+            .setVersion(persistedForm.getVersion());
+
+    stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), FormIntent.DELETED, form);
   }
 
   private static final class NoSuchResourceException extends IllegalStateException {
