@@ -262,6 +262,7 @@ public class SubscriptionCommandSender {
   }
 
   public boolean rejectCorrelateMessageSubscription(
+      final int subscriptionPartitionId,
       final long processInstanceKey,
       final long elementInstanceKey,
       final DirectBuffer bpmnProcessId,
@@ -269,7 +270,7 @@ public class SubscriptionCommandSender {
       final DirectBuffer messageName,
       final DirectBuffer correlationKey) {
     return handleFollowUpCommandBasedOnPartition(
-        Protocol.decodePartitionId(processInstanceKey),
+        subscriptionPartitionId,
         ValueType.MESSAGE_SUBSCRIPTION,
         MessageSubscriptionIntent.REJECT,
         new MessageSubscriptionRecord()
