@@ -137,7 +137,19 @@
       </snapshots>
       <id>camunda-identity</id>
       <name>Camunda Identity Repository</name>
-      <url>https://artifacts.camunda.com/artifactory/camunda-identity</url>
+      <url>https://artifacts.camunda.com/artifactory/camunda-identity/</url>
+    </repository>
+
+    <repository>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+      <id>camunda-identity-snapshots</id>
+      <name>Camunda Identity Snapshot Repository</name>
+      <url>https://artifacts.camunda.com/artifactory/camunda-identity-snapshots/</url>
     </repository>
   </repositories>
 
