@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -143,8 +144,7 @@ public final class ExpressionProcessor {
       final Expression expression, final long scopeKey) {
     final var result = evaluateExpression(expression, scopeKey);
     if (result.isFailure()) {
-      return Either.left(
-          new Failure(result.getFailureMessage(), ErrorType.EXTRACT_VALUE_ERROR, scopeKey));
+      return Either.left(createFailureMessage(result, result.getFailureMessage(), scopeKey));
     }
     switch (result.getType()) {
       case DURATION:
@@ -156,21 +156,21 @@ public final class ExpressionProcessor {
           return Either.right(Interval.parse(result.getString()));
         } catch (final DateTimeParseException e) {
           return Either.left(
-              new Failure(
+              createFailureMessage(
+                  result,
                   String.format(
-                      "Invalid duration format '%s' for expression '%s'",
+                      "Invalid duration format '%s' for expression '%s'.",
                       result.getString(), expression.getExpression()),
-                  ErrorType.EXTRACT_VALUE_ERROR,
                   scopeKey));
         }
       default:
         final var expected = List.of(ResultType.DURATION, ResultType.PERIOD, ResultType.STRING);
         return Either.left(
-            new Failure(
+            createFailureMessage(
+                result,
                 String.format(
-                    "Expected result of the expression '%s' to be one of '%s', but was '%s'",
+                    "Expected result of the expression '%s' to be one of '%s', but was '%s'.",
                     expression.getExpression(), expected, result.getType()),
-                ErrorType.EXTRACT_VALUE_ERROR,
                 scopeKey));
     }
   }
@@ -213,8 +213,7 @@ public final class ExpressionProcessor {
       final Expression expression, final Long scopeKey, final boolean isNullable) {
     final var result = evaluateExpression(expression, scopeKey);
     if (result.isFailure()) {
-      return Either.left(
-          new Failure(result.getFailureMessage(), ErrorType.EXTRACT_VALUE_ERROR, scopeKey));
+      return Either.left(createFailureMessage(result, result.getFailureMessage(), scopeKey));
     }
     if (isNullable && result.getType() == ResultType.NULL) {
       return Either.right(Optional.empty());
@@ -227,11 +226,11 @@ public final class ExpressionProcessor {
     }
     final var expected = List.of(ResultType.DATE_TIME, ResultType.STRING);
     return Either.left(
-        new Failure(
+        createFailureMessage(
+            result,
             String.format(
-                "Expected result of the expression '%s' to be one of '%s', but was '%s'",
+                "Expected result of the expression '%s' to be one of '%s', but was '%s'.",
                 expression.getExpression(), expected, result.getType()),
-            ErrorType.EXTRACT_VALUE_ERROR,
             scopeKey));
   }
 
@@ -287,12 +286,12 @@ public final class ExpressionProcessor {
                 return Either.right(list);
               }
               return Either.left(
-                  new Failure(
+                  createFailureMessage(
+                      evaluationResult.get(),
                       String.format(
                           "Expected result of the expression '%s' to be 'ARRAY' containing 'STRING' items,"
                               + " but was 'ARRAY' containing at least one non-'STRING' item.",
                           expression.getExpression()),
-                      ErrorType.EXTRACT_VALUE_ERROR,
                       scopeKey));
             });
   }
@@ -322,11 +321,11 @@ public final class ExpressionProcessor {
     return typeCheck(result, expectedTypes, scopeKey)
         .mapLeft(
             failure ->
-                new Failure(
+                createFailureMessage(
+                    result,
                     String.format(
-                        "Failed to extract the correlation key for '%s': The value must be either a string or a number, but was %s.",
+                        "Failed to extract the correlation key for '%s': The value must be either a string or a number, but was '%s'.",
                         expression.getExpression(), result.getType()),
-                    ErrorType.EXTRACT_VALUE_ERROR,
                     scopeKey));
   }
 
@@ -357,11 +356,11 @@ public final class ExpressionProcessor {
       final EvaluationResult result, final ResultType expectedResultType, final long scopeKey) {
     if (result.getType() != expectedResultType) {
       return Either.left(
-          new Failure(
+          createFailureMessage(
+              result,
               String.format(
                   "Expected result of the expression '%s' to be '%s', but was '%s'.",
                   result.getExpression(), expectedResultType, result.getType()),
-              ErrorType.EXTRACT_VALUE_ERROR,
               scopeKey));
     }
     return Either.right(result);
@@ -377,11 +376,11 @@ public final class ExpressionProcessor {
         .findFirst()
         .orElse(
             Either.left(
-                new Failure(
+                createFailureMessage(
+                    result,
                     String.format(
-                        "Expected result of expression '%s' to be one of '%s', but was '%s'",
+                        "Expected result of the expression '%s' to be one of '%s', but was '%s'.",
                         result.getExpression(), expectedResultTypes, result.getType()),
-                    ErrorType.EXTRACT_VALUE_ERROR,
                     scopeKey)));
   }
 
@@ -402,10 +401,25 @@ public final class ExpressionProcessor {
       final Expression expression, final long variableScopeKey) {
     final var result = evaluateExpression(expression, variableScopeKey);
     return result.isFailure()
-        ? Either.left(
-            new Failure(
-                result.getFailureMessage(), ErrorType.EXTRACT_VALUE_ERROR, variableScopeKey))
+        ? Either.left(createFailureMessage(result, result.getFailureMessage(), variableScopeKey))
         : Either.right(result);
+  }
+
+  private Failure createFailureMessage(
+      final EvaluationResult evaluationResult,
+      final String failureMessage,
+      final long variableScopeKey) {
+    var message = failureMessage;
+    final var evaluationWarnings = evaluationResult.getWarnings();
+    if (!evaluationWarnings.isEmpty()) {
+      final var formattedWarnings =
+          evaluationWarnings.stream()
+              .map(warning -> "[%s] %s".formatted(warning.getType(), warning.getMessage()))
+              .collect(Collectors.joining("; "));
+      message += " The evaluation reported the following warnings: %s".formatted(formattedWarnings);
+    }
+
+    return new Failure(message, ErrorType.EXTRACT_VALUE_ERROR, variableScopeKey);
   }
 
   private DirectBuffer wrapResult(final String result) {
@@ -425,11 +439,11 @@ public final class ExpressionProcessor {
       return Either.right(Optional.of(ZonedDateTime.parse(resultString)));
     } catch (final DateTimeParseException e) {
       return Either.left(
-          new Failure(
+          createFailureMessage(
+              result,
               String.format(
-                  "Invalid date-time format '%s' for expression '%s'",
+                  "Invalid date-time format '%s' for expression '%s'.",
                   resultString, result.getExpression()),
-              ErrorType.EXTRACT_VALUE_ERROR,
               scopeKey));
     }
   }
