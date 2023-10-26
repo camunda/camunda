@@ -49,38 +49,6 @@ public class CollectionRoleService {
     collectionWriter.addRoleToCollection(collectionId, resolvedRolesToAdd, userId);
   }
 
-  public void addUserAsEditorToAutomaticallyCreatedCollection(final String collectionId,
-                                                              final IdentityDto user) {
-    Optional<CollectionDefinitionDto> collectionDefinition = collectionReader.getCollection(collectionId);
-    collectionDefinition.ifPresent(collectionDefinitionDto -> {
-      CollectionRoleRequestDto roleRequestDto = new CollectionRoleRequestDto(user, RoleType.EDITOR);
-      if (collectionDefinitionDto.isAutomaticallyCreated()) {
-        if (!userAlreadyHasAtLeastEditorAccessToCollection(roleRequestDto, collectionDefinitionDto.getData().getRoles())) {
-
-          final List<CollectionRoleRequestDto> resolvedRolesToAdd = validateAndResolveIdentities(
-            user.getId(),
-            List.of(roleRequestDto)
-          );
-          collectionWriter.addRoleToCollection(collectionId, resolvedRolesToAdd, user.getId());
-        }
-      } else {
-        throw new NotAuthorizedException("User " + user.getId() + " is not authorized to edit membership for " +
-                                           "collection " + collectionId);
-      }
-    });
-  }
-
-  private boolean userAlreadyHasAtLeastEditorAccessToCollection(final CollectionRoleRequestDto roleRequestDto,
-                                                                final List<CollectionRoleRequestDto> roles) {
-    for (CollectionRoleRequestDto role : roles) {
-      if (role.getIdentity().equals(roleRequestDto.getIdentity()) &&
-        role.getRole().compareTo(roleRequestDto.getRole()) >= 0) {
-        return true;
-      }
-    }
-    return false;
-  }
-
   private List<CollectionRoleRequestDto> validateAndResolveIdentities(final String userId,
                                                                       List<CollectionRoleRequestDto> rolesToAdd) {
     return rolesToAdd.stream()
