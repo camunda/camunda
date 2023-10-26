@@ -9,6 +9,7 @@ package io.camunda.zeebe.el;
 
 import static io.camunda.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.zeebe.el.impl.StaticExpression;
 import io.camunda.zeebe.el.util.TestFeelEngineClock;
@@ -107,6 +108,7 @@ public class ExpressionLanguageTest {
     assertThat(evaluationResult.getExpression()).isEqualTo("x");
     assertThat(expression.getVariableName()).isEmpty();
     assertThat(evaluationResult.getFailureMessage()).isNull();
+    assertThat(evaluationResult.getWarnings()).isEmpty();
   }
 
   @Test
@@ -121,6 +123,7 @@ public class ExpressionLanguageTest {
     assertThat(evaluationResult.getExpression()).isEqualTo("3");
     assertThat(expression.getVariableName()).isEmpty();
     assertThat(evaluationResult.getFailureMessage()).isNull();
+    assertThat(evaluationResult.getWarnings()).isEmpty();
   }
 
   @Test
@@ -135,8 +138,7 @@ public class ExpressionLanguageTest {
     assertThat(evaluationResult.getExpression()).isEqualTo("3.141");
     assertThat(expression.getVariableName()).isEmpty();
     assertThat(evaluationResult.getFailureMessage()).isNull();
-    // given
-    final StaticExpression sutStaticExpression = new StaticExpression("3.141");
+    assertThat(evaluationResult.getWarnings()).isEmpty();
   }
 
   @Test
@@ -166,6 +168,7 @@ public class ExpressionLanguageTest {
     assertThat(evaluationResult.getExpression()).isEqualTo("x");
     assertThat(expression.getVariableName()).contains("x");
     assertThat(evaluationResult.getFailureMessage()).isNull();
+    assertThat(evaluationResult.getWarnings()).isEmpty();
   }
 
   @Test
@@ -179,5 +182,38 @@ public class ExpressionLanguageTest {
     assertThat(evaluationResult.getExpression()).isEqualTo("x");
     assertThat(expression.getVariableName()).contains("x");
     assertThat(evaluationResult.getFailureMessage()).isNull();
+  }
+
+  @Test
+  public void shouldReturnEvaluationWarnings() {
+    final var expression = expressionLanguage.parseExpression("= x < 3");
+    final var evaluationResult = expressionLanguage.evaluateExpression(expression, EMPTY_CONTEXT);
+
+    assertThat(evaluationResult).isNotNull();
+    assertThat(evaluationResult.getWarnings())
+        .extracting(EvaluationWarning::getType, EvaluationWarning::getMessage)
+        .hasSize(2)
+        .contains(
+            tuple("NO_VARIABLE_FOUND", "No variable found with name 'x'"),
+            tuple("NOT_COMPARABLE", "Can't compare 'null' with '3'"));
+  }
+
+  @Test
+  public void shouldFailEvaluationWithAssertion() {
+    final var expression = expressionLanguage.parseExpression("=assert(x, x != null)");
+    final var evaluationResult = expressionLanguage.evaluateExpression(expression, EMPTY_CONTEXT);
+
+    assertThat(evaluationResult).isNotNull();
+    assertThat(evaluationResult.isFailure()).isTrue();
+    assertThat(evaluationResult.getType()).isNull();
+    assertThat(evaluationResult.getExpression()).isEqualTo("assert(x, x != null)");
+    assertThat(evaluationResult.getFailureMessage())
+        .isEqualTo(
+            "Assertion failure on evaluate the expression 'assert(x, x != null)': The condition is not fulfilled");
+    assertThat(evaluationResult.getWarnings())
+        .extracting(EvaluationWarning::getType, EvaluationWarning::getMessage)
+        .contains(
+            tuple("NO_VARIABLE_FOUND", "No variable found with name 'x'"),
+            tuple("ASSERT_FAILURE", "The condition is not fulfilled"));
   }
 }
