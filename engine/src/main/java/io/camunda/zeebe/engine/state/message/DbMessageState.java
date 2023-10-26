@@ -265,7 +265,7 @@ public final class DbMessageState implements MutableMessageState {
     this.messageKey.wrapLong(messageKey);
     bpmnProcessIdKey.wrapBuffer(bpmnProcessId);
 
-    correlatedMessageColumnFamily.deleteExisting(messageBpmnProcessIdKey);
+    correlatedMessageColumnFamily.deleteIfExists(messageBpmnProcessIdKey);
   }
 
   @Override
