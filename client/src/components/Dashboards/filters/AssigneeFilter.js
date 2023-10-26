@@ -5,12 +5,14 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {useState, useEffect} from 'react';
+import {useState, useEffect} from 'react';
+import {Filter} from '@carbon/icons-react';
+import {Button, Form, FormGroup, Stack, Toggle} from '@carbon/react';
 import classnames from 'classnames';
 
 import {t} from 'translation';
-import {Popover, Form, Switch, Button, Icon, UserTypeahead} from 'components';
-import {withErrorHandling} from 'HOC';
+import {Popover, UserTypeahead} from 'components';
+import {useErrorHandling} from 'hooks';
 import {AssigneeFilterPreview} from 'filter';
 
 import {getAssigneeNames, loadUsersByReportIds} from './service';
@@ -26,11 +28,10 @@ function getOperatorText(operator) {
   }
 }
 
-export function AssigneeFilter({
+export default function AssigneeFilter({
   config,
   setFilter,
   reports,
-  mightFail,
   filter,
   type,
   children,
@@ -38,6 +39,7 @@ export function AssigneeFilter({
 }) {
   const [users, setUsers] = useState([]);
   const [names, setNames] = useState({});
+  const {mightFail} = useErrorHandling();
 
   const {operator, values, defaultValues, allowCustomValues} = config;
 
@@ -80,9 +82,9 @@ export function AssigneeFilter({
   }
 
   function removeValue(value, scopedFilter = filter) {
-    const values = scopedFilter.values.filter((existingValue) => existingValue !== value);
+    const values = scopedFilter?.values.filter((existingValue) => existingValue !== value);
 
-    const newFilter = values.length ? {operator, values} : null;
+    const newFilter = values?.length ? {operator, values} : null;
     setFilter(newFilter);
 
     return newFilter;
@@ -142,9 +144,9 @@ export function AssigneeFilter({
       </div>
       <Popover
         isTabTip
-        title={
-          <>
-            <Icon type="filter" className={classnames('indicator', {active: filter})} />{' '}
+        trigger={
+          <Popover.ListBox size="sm">
+            <Filter className={classnames('indicator', {active: filter})} />
             {filter ? (
               <AssigneeFilterPreview
                 filter={{type, data: previewFilter}}
@@ -153,68 +155,85 @@ export function AssigneeFilter({
             ) : (
               getOperatorText(operator) + ' ...'
             )}
-          </>
+          </Popover.ListBox>
         }
       >
-        <Form compact>
-          <fieldset>
-            {values.map((value, idx) => (
-              <Switch
-                key={idx}
-                checked={!!filter?.values.includes(value)}
-                label={
+        <Form>
+          <FormGroup legendText={t('common.filter.types.' + type)}>
+            <Stack gap={4}>
+              {values.map((value, idx) => {
+                const label =
                   value === null
-                    ? t('common.filter.assigneeModal.unassigned')
-                    : names[value]?.name || value
-                }
-                onChange={({target}) => {
-                  if (target.checked) {
-                    addValue(value);
-                  } else {
-                    removeValue(value);
-                  }
-                }}
-              />
-            ))}
-            {allowCustomValues && (
-              <div className="customValue">
-                <Switch
-                  checked={!!filter?.values.some((user) => !values.includes(user))}
-                  onChange={(evt) => {
-                    if (evt.target.checked) {
-                      addCustomValues(users);
-                    } else {
-                      removeCustomValues();
-                    }
-                  }}
-                  disabled={!users.length}
-                />
-                <UserTypeahead
-                  users={users}
-                  onChange={(users) => {
-                    setUsers(users);
+                    ? t('common.filter.assigneeModal.unassigned').toString()
+                    : names[value]?.name || value;
+                return (
+                  <Toggle
+                    key={idx}
+                    id={`assignee-${idx}`}
+                    size="sm"
+                    toggled={!!filter?.values.includes(value)}
+                    labelA={label}
+                    labelB={label}
+                    onToggle={(checked) => {
+                      if (checked) {
+                        addValue(value);
+                      } else {
+                        removeValue(value);
+                      }
+                    }}
+                  />
+                );
+              })}
+              {allowCustomValues && (
+                <Stack gap={4} className="customValue">
+                  <Toggle
+                    id="customValue"
+                    size="sm"
+                    labelA={t('common.filter.assignee.allowCustomValues')}
+                    labelB={t('common.filter.assignee.allowCustomValues')}
+                    toggled={!!filter?.values.some((user) => !values.includes(user))}
+                    onToggle={(checked) => {
+                      if (checked) {
+                        addCustomValues(users);
+                      } else {
+                        removeCustomValues();
+                      }
+                    }}
+                    disabled={!users.length}
+                  />
+                  <UserTypeahead
+                    users={users}
+                    onChange={(users) => {
+                      setUsers(users);
 
-                    if (users.length) {
-                      addCustomValues(users);
-                      setNames({
-                        ...names,
-                        ...users.reduce((obj, {identity}) => {
-                          obj[identity.id] = identity;
-                          return obj;
-                        }, {}),
-                      });
-                    } else {
-                      removeCustomValues();
-                    }
-                  }}
-                  fetchUsers={fetchUsers}
-                  optionsOnly
-                />
-              </div>
-            )}
-          </fieldset>
+                      if (users.length) {
+                        addCustomValues(users);
+                        setNames({
+                          ...names,
+                          ...users.reduce((obj, {identity}) => {
+                            obj[identity.id] = identity;
+                            return obj;
+                          }, {}),
+                        });
+                      } else {
+                        removeCustomValues();
+                      }
+                    }}
+                    fetchUsers={fetchUsers}
+                    optionsOnly
+                  />
+                </Stack>
+              )}
+            </Stack>
+          </FormGroup>
           <hr />
-          <Button className="reset-button" disabled={!filter} onClick={() => setFilter()}>
+          <Button
+            size="sm"
+            kind="ghost"
+            className="reset-button"
+            disabled={!filter}
+            onClick={() => setFilter()}
+          >
             {t('common.off')}
           </Button>
         </Form>
@@ -222,5 +241,3 @@ export function AssigneeFilter({
     </div>
   );
 }
-
-export default withErrorHandling(AssigneeFilter);

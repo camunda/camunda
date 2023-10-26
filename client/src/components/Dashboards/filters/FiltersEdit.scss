@@ -37,17 +37,8 @@
     display: none;
   }
 
-  .preText {
-    margin-bottom: 22px;
-  }
-
   .customValueCheckbox {
     display: inline-block;
-    font-size: 14px;
-
-    .label {
-      padding-left: 10px;
-    }
   }
 
   .StringInput {
@@ -70,21 +61,6 @@
         display: block;
         border-top: 1px solid var(--silver-darken-87);
       }
-    }
-  }
-}
-
-.dashboardAssigneeFilter {
-  .preText {
-    margin-bottom: 22px;
-  }
-
-  .customValueCheckbox {
-    display: inline-block;
-    font-size: 14px;
-
-    .label {
-      padding-left: 10px;
     }
   }
 }

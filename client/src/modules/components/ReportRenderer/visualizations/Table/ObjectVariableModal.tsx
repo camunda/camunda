@@ -33,7 +33,7 @@ export function ObjectVariableModal({
   onClose,
   mightFail,
 }: ObjectVariableModalProps) {
-  const [objectString, setObjectString] = useState();
+  const [objectString, setObjectString] = useState<string>();
 
   useEffect(() => {
     mightFail(

@@ -1408,6 +1408,9 @@
           }
         }
       },
+      "assignee": {
+        "allowCustomValues": "Allow viewer to add filter values"
+      },
       "assigneeModal": {
         "includeOnly": "Include only",
         "excludeOnly": "Exclude only",

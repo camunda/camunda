@@ -9,13 +9,13 @@ import {ComponentType} from 'react';
 
 import {useErrorHandling} from 'hooks';
 
-export interface WithErrorHandlingProps<T = any> {
-  mightFail: (
+export interface WithErrorHandlingProps<D = any> {
+  mightFail: <T = D, R = unknown>(
     retriever: Promise<T>,
-    successHandler: ((response: any) => T) | undefined,
+    successHandler: (response: T) => R,
     errorHandler?: ((error: any) => void) | undefined,
     finallyHandler?: () => void
-  ) => Promise<T | undefined>;
+  ) => Promise<R | undefined>;
   error?: any;
   resetError?: () => void;
 }

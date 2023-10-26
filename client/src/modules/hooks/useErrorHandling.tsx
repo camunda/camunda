@@ -7,20 +7,20 @@
 
 import {useCallback, useEffect, useRef, useState} from 'react';
 
-export default function useErrorHandling() {
+export default function useErrorHandling<D = any>() {
   const [error, setError] = useState<any>(undefined);
   const mounted = useRef<boolean>();
 
-  const mightFail = useCallback(async function callback<T>(
+  const mightFail = useCallback(async function callback<T = D, R = unknown>(
     retriever: Promise<T>,
-    successHandler: ((response: T) => Promise<T | void> | T | void) | undefined,
+    successHandler: (response: T) => R,
     errorHandler?: ((error: any) => void) | undefined,
     finallyHandler?: () => void
-  ) {
+  ): Promise<R | undefined> {
     try {
       const response = await retriever;
       if (mounted.current) {
-        return successHandler?.(response);
+        return successHandler(response);
       }
     } catch (error) {
       if (mounted.current) {

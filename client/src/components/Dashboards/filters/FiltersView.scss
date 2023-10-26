@@ -79,7 +79,7 @@
     padding-left: 12px;
   }
 
-  .indicator.active {
+  .indicator .active {
     color: colors.$blue-60;
   }
 
@@ -87,5 +87,14 @@
     border: none;
     border-bottom: 1px solid var(--cds-border-subtle);
     margin: 8px 0;
+  }
+
+  .cds--list-box__label {
+    display: flex;
+    align-items: center;
+
+    svg {
+      margin-right: 0.5rem;
+    }
   }
 }

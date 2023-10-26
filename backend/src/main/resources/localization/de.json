@@ -1408,6 +1408,9 @@
           }
         }
       },
+      "assignee": {
+        "allowCustomValues": "Betrachter können Filterwerte hinzufügen"
+      },
       "assigneeModal": {
         "includeOnly": "Nur einschließen",
         "excludeOnly": "Nur ausschließen",

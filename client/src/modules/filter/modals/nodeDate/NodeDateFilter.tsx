@@ -58,7 +58,7 @@ export function NodeDateFilter({
       validDefinitions[0]
     );
   });
-  const [xml, setXml] = useState(null);
+  const [xml, setXml] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<FilterState>({
     type: '',
     unit: '',
@@ -74,9 +74,7 @@ export function NodeDateFilter({
       setXml(null);
       mightFail(
         loadProcessDefinitionXml(applyTo.key, applyTo.versions?.[0], applyTo.tenantIds?.[0]),
-        (xml) => {
-          setXml(xml);
-        },
+        setXml,
         showError
       );
     }

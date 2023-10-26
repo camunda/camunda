@@ -15,14 +15,11 @@
   }
 
   .customValue {
-    display: flex;
-
-    .Switch {
-      margin-right: 0;
-    }
-
     .MultiUserInput {
       width: 300px;
+      .cds--list-box {
+        background-color: var(--cds-field-02, #ffffff);
+      }
     }
   }
 }
