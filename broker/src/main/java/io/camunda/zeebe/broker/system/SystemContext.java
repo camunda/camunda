@@ -24,6 +24,7 @@ import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.S3BackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
+import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import java.util.Collections;
 import java.util.HashMap;
@@ -47,12 +48,17 @@ public final class SystemContext {
   private Map<String, String> diagnosticContext;
   private final ActorScheduler scheduler;
   private final AtomixCluster cluster;
+  private final BrokerClient brokerClient;
 
   public SystemContext(
-      final BrokerCfg brokerCfg, final ActorScheduler scheduler, final AtomixCluster cluster) {
+      final BrokerCfg brokerCfg,
+      final ActorScheduler scheduler,
+      final AtomixCluster cluster,
+      final BrokerClient brokerClient) {
     this.brokerCfg = brokerCfg;
     this.scheduler = scheduler;
     this.cluster = cluster;
+    this.brokerClient = brokerClient;
     initSystemContext();
   }
 
@@ -248,5 +254,9 @@ public final class SystemContext {
 
   public Map<String, String> getDiagnosticContext() {
     return diagnosticContext;
+  }
+
+  public BrokerClient getBrokerClient() {
+    return brokerClient;
   }
 }

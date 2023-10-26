@@ -7,20 +7,15 @@
  */
 package io.camunda.zeebe.gateway.impl.broker;
 
-import io.atomix.cluster.ClusterMembershipService;
-import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.cluster.messaging.ClusterEventService;
 import io.atomix.cluster.messaging.MessagingService;
 import io.atomix.cluster.messaging.Subscription;
 import io.camunda.zeebe.gateway.Loggers;
 import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
-import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManagerImpl;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerRequest;
 import io.camunda.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.topology.GatewayClusterTopologyService;
-import io.camunda.zeebe.topology.gossip.ClusterTopologyGossiperConfig;
 import io.camunda.zeebe.transport.impl.AtomixClientTransportAdapter;
 import java.time.Duration;
 import java.util.Collection;
@@ -32,10 +27,9 @@ import org.slf4j.Logger;
 public final class BrokerClientImpl implements BrokerClient {
   public static final Logger LOG = Loggers.GATEWAY_LOGGER;
 
-  private final BrokerTopologyManagerImpl topologyManager;
+  private final BrokerTopologyManager topologyManager;
   private final BrokerRequestManager requestManager;
 
-  private final GatewayClusterTopologyService clusterTopologyService;
   private boolean isClosed;
   private Subscription jobAvailableSubscription;
   private final ClusterEventService eventService;
@@ -45,22 +39,13 @@ public final class BrokerClientImpl implements BrokerClient {
   public BrokerClientImpl(
       final Duration requestTimeout,
       final MessagingService messagingService,
-      final ClusterMembershipService membershipService,
       final ClusterEventService eventService,
-      final ClusterCommunicationService communicationService,
-      final ActorSchedulingService schedulingService) {
+      final ActorSchedulingService schedulingService,
+      final BrokerTopologyManager topologyManager) {
     this.eventService = eventService;
     this.schedulingService = schedulingService;
 
-    topologyManager = new BrokerTopologyManagerImpl(membershipService::getMembers);
-    membershipService.addListener(topologyManager);
-    clusterTopologyService =
-        new GatewayClusterTopologyService(
-            communicationService,
-            membershipService,
-            new ClusterTopologyGossiperConfig(
-                false, Duration.ofSeconds(10), Duration.ofSeconds(1), 2));
-
+    this.topologyManager = topologyManager;
     atomixTransportAdapter = new AtomixClientTransportAdapter(messagingService);
     requestManager =
         new BrokerRequestManager(
@@ -72,25 +57,9 @@ public final class BrokerClientImpl implements BrokerClient {
 
   @Override
   public Collection<ActorFuture<Void>> start() {
-    final var clusterTopologyServiceStarted = schedulingService.submitActor(clusterTopologyService);
-    final var topologyManagerStarted = topologyManager.start(schedulingService);
     final var transportStarted = schedulingService.submitActor(atomixTransportAdapter);
     final var requestManagerStarted = schedulingService.submitActor(requestManager);
-    clusterTopologyServiceStarted.onComplete(
-        (ignoreServiceStated, clusterTopologyServiceError) -> {
-          if (clusterTopologyServiceError == null) {
-            topologyManagerStarted.onComplete(
-                (ignoreTopologyManagerStarted, topologyManagerError) ->
-                    clusterTopologyService.registerClusterTopologyChangeListener(topologyManager),
-                Runnable::run); // The caller is not an actor.
-          }
-        },
-        Runnable::run); // The caller is sometimes an actor, sometimes not. So provide an executor.
-    return List.of(
-        topologyManagerStarted,
-        transportStarted,
-        requestManagerStarted,
-        clusterTopologyServiceStarted);
+    return List.of(transportStarted, requestManagerStarted);
   }
 
   @Override
@@ -107,12 +76,6 @@ public final class BrokerClientImpl implements BrokerClient {
 
     doAndLogException(atomixTransportAdapter::close);
     LOG.debug("transport client closed");
-
-    doAndLogException(topologyManager::close);
-    LOG.debug("topology manager closed");
-
-    doAndLogException(clusterTopologyService::closeAsync);
-    LOG.debug("cluster topology service closed");
 
     if (jobAvailableSubscription != null) {
       jobAvailableSubscription.close();

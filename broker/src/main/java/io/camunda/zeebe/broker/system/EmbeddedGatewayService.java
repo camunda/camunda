@@ -7,40 +7,30 @@
  */
 package io.camunda.zeebe.broker.system;
 
-import io.camunda.zeebe.broker.clustering.ClusterServices;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.gateway.Gateway;
 import io.camunda.zeebe.gateway.Loggers;
-import io.camunda.zeebe.gateway.impl.broker.BrokerClientImpl;
+import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
 import io.camunda.zeebe.gateway.impl.stream.JobStreamClient;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.scheduler.future.ActorFutureCollector;
-import java.util.stream.Stream;
 import org.agrona.CloseHelper;
 
 public final class EmbeddedGatewayService implements AutoCloseable {
   private final Gateway gateway;
-  private final BrokerClientImpl brokerClient;
+  private final BrokerClient brokerClient;
   private final JobStreamClient jobStreamClient;
   private final ConcurrencyControl concurrencyControl;
 
   public EmbeddedGatewayService(
       final BrokerCfg configuration,
       final ActorSchedulingService actorScheduler,
-      final ClusterServices clusterServices,
       final ConcurrencyControl concurrencyControl,
-      final JobStreamClient jobStreamClient) {
+      final JobStreamClient jobStreamClient,
+      final BrokerClient brokerClient) {
     this.concurrencyControl = concurrencyControl;
-    brokerClient =
-        new BrokerClientImpl(
-            configuration.getGateway().getCluster().getRequestTimeout(),
-            clusterServices.getMessagingService(),
-            clusterServices.getMembershipService(),
-            clusterServices.getEventService(),
-            clusterServices.getCommunicationService(),
-            actorScheduler);
+    this.brokerClient = brokerClient;
     this.jobStreamClient = jobStreamClient;
     gateway =
         new Gateway(
@@ -63,16 +53,10 @@ public final class EmbeddedGatewayService implements AutoCloseable {
   }
 
   public ActorFuture<Gateway> start() {
-    final var jobStreamClientStart = jobStreamClient.start();
-    final var brokerClientStart = brokerClient.start();
-    final var allStart =
-        Stream.concat(Stream.of(jobStreamClientStart), brokerClientStart.stream())
-            .collect(new ActorFutureCollector<>(concurrencyControl));
-
     // before we can add the job stream client as a topology listener, we need to wait for the
     // topology to be set up, otherwise the callback may be lost
     concurrencyControl.runOnCompletion(
-        allStart,
+        jobStreamClient.start(),
         (ok, error) -> brokerClient.getTopologyManager().addTopologyListener(jobStreamClient));
 
     return gateway.start();

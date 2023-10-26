@@ -17,6 +17,7 @@ import io.camunda.zeebe.client.api.response.DeploymentEvent;
 import io.camunda.zeebe.gateway.Gateway;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClientImpl;
+import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManagerImpl;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.impl.configuration.InterceptorCfg;
 import io.camunda.zeebe.gateway.impl.stream.JobStreamClient;
@@ -49,6 +50,7 @@ final class InterceptorIT {
   private BrokerClient brokerClient;
   private JobStreamClient jobStreamClient;
   private Gateway gateway;
+  private BrokerTopologyManagerImpl topologyManager;
 
   @BeforeEach
   void beforeEach() {
@@ -66,22 +68,28 @@ final class InterceptorIT {
         AtomixCluster.builder()
             .withAddress(Address.from(clusterAddress.getHostName(), clusterAddress.getPort()))
             .build();
+    topologyManager =
+        new BrokerTopologyManagerImpl(() -> cluster.getMembershipService().getMembers());
+    cluster.getMembershipService().addListener(topologyManager);
+
     brokerClient =
         new BrokerClientImpl(
             config.getCluster().getRequestTimeout(),
             cluster.getMessagingService(),
-            cluster.getMembershipService(),
             cluster.getEventService(),
-            cluster.getCommunicationService(),
-            scheduler);
+            scheduler,
+            topologyManager);
+
     jobStreamClient = new JobStreamClientImpl(scheduler, cluster.getCommunicationService());
     gateway = new Gateway(config, brokerClient, scheduler, jobStreamClient.streamer());
 
     cluster.start().join();
     scheduler.start();
+    scheduler.submitActor(topologyManager);
     jobStreamClient.start().join();
     brokerClient.start().forEach(ActorFuture::join);
-    brokerClient.getTopologyManager().addTopologyListener(jobStreamClient);
+    cluster.getMembershipService().addListener(topologyManager);
+    topologyManager.addTopologyListener(jobStreamClient);
 
     // gateway is purposefully not started to allow configuration changes
   }
@@ -89,7 +97,12 @@ final class InterceptorIT {
   @AfterEach
   void afterEach() {
     CloseHelper.quietCloseAll(
-        gateway, brokerClient, jobStreamClient, scheduler, () -> cluster.stop().join());
+        gateway,
+        brokerClient,
+        topologyManager,
+        jobStreamClient,
+        scheduler,
+        () -> cluster.stop().join());
   }
 
   @Test

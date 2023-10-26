@@ -16,17 +16,14 @@ import io.camunda.zeebe.topology.gossip.ClusterTopologyGossiper;
 import io.camunda.zeebe.topology.gossip.ClusterTopologyGossiperConfig;
 import io.camunda.zeebe.topology.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.topology.state.ClusterTopology;
-import java.util.HashSet;
-import java.util.Set;
 
 /**
  * The GatewayClusterTopologyService contains minimal functionality required for the Gateway. The
  * Gateway only listens to ClusterTopology changes. It cannot make changes to the topology. So the
  * service does not run ClusterTopologyManager, but only contains the ClusterTopologyGossiper.
  */
-public class GatewayClusterTopologyService extends Actor {
+public class GatewayClusterTopologyService extends Actor implements TopologyUpdateNotifier {
 
-  private final Set<Listener> topologyChangeListeners = new HashSet<>();
   private final ClusterTopologyGossiper clusterTopologyGossiper;
 
   // Keep an in memory copy of the topology. No need to persist it.
@@ -52,13 +49,8 @@ public class GatewayClusterTopologyService extends Actor {
     actor.run(
         () -> {
           try {
-            final var updateTopology = this.clusterTopology.merge(clusterTopology);
-            if (!updateTopology.equals(this.clusterTopology)) {
-              this.clusterTopology = updateTopology;
-              topologyChangeListeners.forEach(
-                  listener -> listener.onClusterTopologyChanged(updateTopology));
-            }
-            updated.complete(updateTopology);
+            this.clusterTopology = this.clusterTopology.merge(clusterTopology);
+            updated.complete(clusterTopology);
           } catch (final Exception updateFailed) {
             updated.completeExceptionally(updateFailed);
           }
@@ -77,21 +69,13 @@ public class GatewayClusterTopologyService extends Actor {
     clusterTopologyGossiper.closeAsync();
   }
 
-  public void registerClusterTopologyChangeListener(final Listener listener) {
-    actor.run(
-        () -> {
-          topologyChangeListeners.add(listener);
-          if (!clusterTopology.isUninitialized()) {
-            listener.onClusterTopologyChanged(clusterTopology);
-          }
-        });
+  @Override
+  public void addUpdateListener(final TopologyUpdateListener listener) {
+    clusterTopologyGossiper.addUpdateListener(listener);
   }
 
-  public void removeClusterTopologyChangeListener(final Listener listener) {
-    actor.run(() -> topologyChangeListeners.remove(listener));
-  }
-
-  public interface Listener {
-    void onClusterTopologyChanged(ClusterTopology clusterTopology);
+  @Override
+  public void removeUpdateListener(final TopologyUpdateListener listener) {
+    clusterTopologyGossiper.removeUpdateListener(listener);
   }
 }

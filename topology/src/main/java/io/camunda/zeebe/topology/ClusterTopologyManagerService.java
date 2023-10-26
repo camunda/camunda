@@ -33,7 +33,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.Optional;
 
-public final class ClusterTopologyManagerService extends Actor {
+public final class ClusterTopologyManagerService extends Actor implements TopologyUpdateNotifier {
   // Use a node 0 as always the coordinator. Later we can make it configurable or allow changing it
   // dynamically.
   private static final String COORDINATOR_ID = "0";
@@ -168,5 +168,15 @@ public final class ClusterTopologyManagerService extends Actor {
 
   public void removePartitionChangeExecutor() {
     clusterTopologyManager.removeTopologyChangeAppliers();
+  }
+
+  @Override
+  public void addUpdateListener(final TopologyUpdateListener listener) {
+    clusterTopologyGossiper.addUpdateListener(listener);
+  }
+
+  @Override
+  public void removeUpdateListener(final TopologyUpdateListener listener) {
+    clusterTopologyGossiper.removeUpdateListener(listener);
   }
 }

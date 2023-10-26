@@ -397,7 +397,7 @@ final class TopologyUpdateTest {
         ClusterTopology.init()
             .addMember(MemberId.from("1"), MemberState.initializeAsActive(Map.of()))
             .addMember(MemberId.from("2"), MemberState.initializeAsActive(Map.of()));
-    topologyManager.onClusterTopologyChanged(clusterTopologyWithTwoBrokers);
+    topologyManager.onTopologyUpdated(clusterTopologyWithTwoBrokers);
     actorSchedulerRule.workUntilDone();
 
     // then
@@ -413,7 +413,7 @@ final class TopologyUpdateTest {
         ClusterTopology.init()
             .addMember(MemberId.from("1"), MemberState.initializeAsActive(Map.of()))
             .addMember(MemberId.from("2"), MemberState.initializeAsActive(Map.of()));
-    topologyManager.onClusterTopologyChanged(clusterTopologyWithTwoBrokers);
+    topologyManager.onTopologyUpdated(clusterTopologyWithTwoBrokers);
     actorSchedulerRule.workUntilDone();
 
     // when

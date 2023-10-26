@@ -22,7 +22,6 @@ import io.camunda.zeebe.gateway.cmd.ClientResponseException;
 import io.camunda.zeebe.gateway.cmd.PartitionNotFoundException;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClientImpl;
-import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerClusterStateImpl;
 import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManagerImpl;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCompleteJobRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceRequest;
@@ -66,6 +65,7 @@ public final class BrokerClientTest {
   @Rule public final TestName testContext = new TestName();
   private BrokerClient client;
   private AtomixCluster atomixCluster;
+  private BrokerTopologyManagerImpl topologyManager;
 
   @Before
   public void setUp() {
@@ -92,24 +92,28 @@ public final class BrokerClientTest {
             .build();
     atomixCluster.start().join();
 
+    topologyManager =
+        new BrokerTopologyManagerImpl(() -> atomixCluster.getMembershipService().getMembers());
+    actorScheduler.submitActor(topologyManager).join();
+    atomixCluster.getMembershipService().addListener(topologyManager);
+
+    topologyManager.updateTopology(
+        topology -> {
+          topology.addPartitionIfAbsent(START_PARTITION_ID);
+          topology.setPartitionLeader(START_PARTITION_ID, 0, 1);
+          topology.addBrokerIfAbsent(0);
+          topology.setBrokerAddressIfPresent(0, stubAddress.toString());
+        });
+
     client =
         new BrokerClientImpl(
             configuration.getCluster().getRequestTimeout(),
             atomixCluster.getMessagingService(),
-            atomixCluster.getMembershipService(),
             atomixCluster.getEventService(),
-            atomixCluster.getCommunicationService(),
-            actorScheduler.get());
+            actorScheduler.get(),
+            topologyManager);
 
     client.start().forEach(ActorFuture::join);
-
-    final BrokerClusterStateImpl topology = new BrokerClusterStateImpl();
-    topology.addPartitionIfAbsent(START_PARTITION_ID);
-    topology.setPartitionLeader(START_PARTITION_ID, 0, 1);
-    topology.addBrokerIfAbsent(0);
-    topology.setBrokerAddressIfPresent(0, stubAddress.toString());
-
-    ((BrokerTopologyManagerImpl) client.getTopologyManager()).setTopology(topology);
   }
 
   @After

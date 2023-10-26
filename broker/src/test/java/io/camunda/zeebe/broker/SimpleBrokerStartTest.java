@@ -15,8 +15,10 @@ import io.atomix.cluster.AtomixCluster;
 import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.test.TestActorSchedulerFactory;
+import io.camunda.zeebe.broker.test.TestBrokerClientFactory;
 import io.camunda.zeebe.broker.test.TestClusterFactory;
 import io.camunda.zeebe.engine.state.QueryService;
+import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -56,7 +58,10 @@ public final class SimpleBrokerStartTest {
             () -> {
               final var systemContext =
                   new SystemContext(
-                      brokerCfg, mock(ActorScheduler.class), mock(AtomixCluster.class));
+                      brokerCfg,
+                      mock(ActorScheduler.class),
+                      mock(AtomixCluster.class),
+                      mock(BrokerClient.class));
               new Broker(systemContext, TEST_SPRING_BROKER_BRIDGE);
             });
 
@@ -71,12 +76,13 @@ public final class SimpleBrokerStartTest {
     assignSocketAddresses(brokerCfg);
     brokerCfg.init(newTemporaryFolder.getAbsolutePath());
 
+    final var atomixCluster = TestClusterFactory.createAtomixCluster(brokerCfg);
+    final var actorScheduler = TestActorSchedulerFactory.ofBrokerConfig(brokerCfg);
+    final var brokerClient =
+        TestBrokerClientFactory.createBrokerClient(atomixCluster, actorScheduler);
+
     final var systemContext =
-        new SystemContext(
-            brokerCfg,
-            TestActorSchedulerFactory.ofBrokerConfig(brokerCfg),
-            TestClusterFactory.createAtomixCluster(brokerCfg));
-    systemContext.getScheduler().start();
+        new SystemContext(brokerCfg, actorScheduler, atomixCluster, brokerClient);
 
     final var leaderLatch = new CountDownLatch(1);
     final var listener =
