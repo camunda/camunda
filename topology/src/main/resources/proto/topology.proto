@@ -12,7 +12,8 @@ message GossipState {
 message ClusterTopology {
   int64 version = 1;
   map<string, MemberState> members = 2;
-  ClusterChangePlan changes = 3;
+  CompletedChange lastChange = 3;
+  ClusterChangePlan currentChange = 4;
 }
 
 message MemberState {
@@ -28,11 +29,13 @@ message PartitionState {
 }
 
 message ClusterChangePlan {
-  int32 version = 1;
-  oneof change {
-    CompletedChange completedChange = 2;
-    PendingChange pendingChange = 3;
-  }
+  int64 id = 1;
+  int32 version = 2;
+  ChangeStatus status = 3;
+  google.protobuf.Timestamp startedAt = 4;
+  repeated CompletedTopologyChangeOperation completedOperations = 5;
+  repeated TopologyChangeOperation pendingOperations = 6;
+
 }
 
 message CompletedChange {
@@ -40,14 +43,6 @@ message CompletedChange {
   ChangeStatus status = 2;
   google.protobuf.Timestamp startedAt = 3;
   google.protobuf.Timestamp completedAt = 4;
-}
-
-message PendingChange {
-  int64 id = 1;
-  ChangeStatus status = 2;
-  google.protobuf.Timestamp startedAt = 3;
-  repeated CompletedTopologyChangeOperation completedOperations = 4;
-  repeated TopologyChangeOperation pendingOperations = 5;
 }
 
 message TopologyChangeOperation {
