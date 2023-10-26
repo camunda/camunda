@@ -34,7 +34,6 @@ public class TopologyServices {
         new BrokerTopologyManagerImpl(clusterMembershipService::getMembers);
     scheduler.submitActor(brokerTopologyManager).join();
     clusterMembershipService.addListener(brokerTopologyManager);
-    // TODO: register with gossip
     return brokerTopologyManager;
   }
 }
