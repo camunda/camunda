@@ -42,6 +42,7 @@ export class Processes {
   readonly variableNameFilter: Locator;
   readonly variableValueFilter: Locator;
   readonly deleteResourceButton: Locator;
+  readonly processInstancesTable: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -105,6 +106,10 @@ export class Processes {
 
     this.deleteResourceButton = page.getByRole('button', {
       name: 'Delete Process Definition',
+    });
+
+    this.processInstancesTable = page.getByRole('region', {
+      name: /process instances panel/i,
     });
   }
 

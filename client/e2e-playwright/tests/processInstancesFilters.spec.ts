@@ -159,4 +159,90 @@ test.describe('Process Instances Filters', () => {
 
     await expect(processesPage.flowNodeFilter).toHaveValue('');
   });
+
+  test('variable filters', async ({page, processesPage}) => {
+    const {
+      callActivityProcessInstance: {
+        processInstanceKey: callActivityProcessInstanceKey,
+      },
+      orderProcessInstance: {processInstanceKey: orderProcessInstanceKey},
+    } = initialData;
+
+    // filter by process instances keys, including completed instances
+    await processesPage.displayOptionalFilter('Process Instance Key(s)');
+    await processesPage.processInstanceKeysFilter.fill(
+      `${orderProcessInstanceKey}, ${callActivityProcessInstanceKey}`,
+    );
+    await processesPage.completedCheckbox.check({force: true});
+
+    // add variable filter
+    await processesPage.displayOptionalFilter('Variable');
+    await processesPage.variableNameFilter.fill('filtersTest');
+    await processesPage.variableValueFilter.fill('123');
+
+    // open json editor modal and check content
+    await page.getByRole('button', {name: /open json editor modal/i}).click();
+    await expect(
+      page.getByRole('dialog').getByText(/edit variable value/i),
+    ).toBeVisible();
+    await expect(page.getByRole('dialog').getByText(/123/i)).toBeVisible();
+
+    // close modal
+    await page
+      .getByRole('dialog')
+      .getByRole('button', {name: /cancel/i})
+      .click();
+    await expect(page.getByRole('dialog')).not.toBeVisible();
+
+    // check that process instances table is filtered correctly
+    await expect(
+      processesPage.processInstancesTable.getByRole('heading'),
+    ).toContainText('1 result');
+    await expect(
+      processesPage.processInstancesTable.getByText(orderProcessInstanceKey, {
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(
+      processesPage.processInstancesTable.getByText(
+        callActivityProcessInstanceKey,
+        {exact: true},
+      ),
+    ).not.toBeVisible();
+
+    // switch to multiple mode and add multiple variables
+    await page.getByRole('switch', {name: /multiple/i}).click({force: true});
+    await processesPage.variableNameFilter.fill('filtersTest');
+    await processesPage.variableValueFilter.fill('123, 456');
+
+    // open editor modal and check content
+    await page.getByRole('button', {name: /open editor modal/i}).click();
+    await expect(
+      page.getByRole('dialog').getByText(/edit multiple variable values/i),
+    ).toBeVisible();
+    await expect(page.getByRole('dialog').getByText(/123, 456/i)).toBeVisible();
+
+    // close modal
+    await page
+      .getByRole('dialog')
+      .getByRole('button', {name: /cancel/i})
+      .click();
+    await expect(page.getByRole('dialog')).not.toBeVisible();
+
+    // check that process instances table is filtered correctly
+    await expect(
+      processesPage.processInstancesTable.getByRole('heading'),
+    ).toContainText('2 results');
+    await expect(
+      processesPage.processInstancesTable.getByText(orderProcessInstanceKey, {
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(
+      processesPage.processInstancesTable.getByText(
+        callActivityProcessInstanceKey,
+        {exact: true},
+      ),
+    ).toBeVisible();
+  });
 });

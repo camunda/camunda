@@ -37,6 +37,7 @@ const IconTextInput: React.FC<Props> = ({
           size="sm"
           onClick={onIconClick}
           label={buttonLabel}
+          aria-label={buttonLabel}
           align={tooltipPosition}
         >
           <Icon />

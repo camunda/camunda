@@ -22,7 +22,7 @@ const setup = async () => {
 
   await deployProcess(['orderProcess_v_1.bpmn']);
 
-  await createSingleInstance('orderProcess', 1, {
+  const orderProcessInstance = await createSingleInstance('orderProcess', 1, {
     filtersTest: 123,
   });
 
@@ -31,9 +31,11 @@ const setup = async () => {
   const callActivityProcessInstance = await createSingleInstance(
     'CallActivityProcess',
     1,
+    {filtersTest: 456},
   );
 
   return {
+    orderProcessInstance,
     callActivityProcessInstance,
   };
 };
